@@ -1,285 +1,584 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab0D1U6Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 16:58:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab0D1U6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 16:58:14 -0400
-Date: Wed, 28 Apr 2010 16:57:34 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC PATCH -v3] take all anon_vma locks in anon_vma_lock
-Message-ID: <20100428165734.6541bab3@annuminas.surriel.com>
-In-Reply-To: <20100428161711.5a815fa8@annuminas.surriel.com>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
-	<1272403852-10479-3-git-send-email-mel@csn.ul.ie>
-	<20100427231007.GA510@random.random>
-	<20100428091555.GB15815@csn.ul.ie>
-	<20100428153525.GR510@random.random>
-	<20100428155558.GI15815@csn.ul.ie>
-	<20100428162305.GX510@random.random>
-	<20100428134719.32e8011b@annuminas.surriel.com>
-	<20100428142510.09984e15@annuminas.surriel.com>
-	<20100428161711.5a815fa8@annuminas.surriel.com>
-Organization: Red Hat, Inc.
+	id S1755041Ab0D1U6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 16:58:24 -0400
+Received: from tomts20.bellnexxia.net ([209.226.175.74]:59429 "EHLO
+	tomts20-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753589Ab0D1U6S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 16:58:18 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAAs92EtGGNqG/2dsb2JhbACce3K+MYUOBA
+Date: Wed, 28 Apr 2010 16:58:03 -0400
+From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCH 05/10][RFC] tracing: Move fields from event to class
+	structure
+Message-ID: <20100428205803.GF8591@Krystal>
+References: <20100426195024.256424113@goodmis.org> <20100426200242.470116062@goodmis.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100426200242.470116062@goodmis.org>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 16:48:35 up 21 days,  6:42,  4 users,  load average: 0.48, 0.40,
+	0.27
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Take all the locks for all the anon_vmas in anon_vma_lock, this properly
-excludes migration and the transparent hugepage code from VMA changes done
-by mmap/munmap/mprotect/expand_stack/etc...
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
+> 
+> Move the defined fields from the event to the class structure.
+> Since the fields of the event are defined by the class they belong
+> to, it makes sense to have the class hold the information instead
+> of the individual events. The events of the same class would just
+> hold duplicate information.
+> 
+> After this change the size of the kernel dropped another 8K:
+> 
+>    text	   data	    bss	    dec	    hex	filename
+> 5788186	1337252	9351592	16477030	 fb6b66	vmlinux.orig
+> 5774316	1306580	9351592	16432488	 fabd68	vmlinux.reg
+> 5774503	1297492	9351592	16423587	 fa9aa3	vmlinux.fields
+> 
+> Although the text increased, this was mainly due to the C files
+> having to adapt to the change. This is a constant increase, where
+> new tracepoints will not increase the Text. But the big drop is
+> in the data size (as well as needed allocations to hold the fields).
+> This will give even more savings as more tracepoints are created.
+> 
+> Note, if just TRACE_EVENT()s are used and not DECLARE_EVENT_CLASS()
+> with several DEFINE_EVENT()s, then the savings will be lost. But
+> we are pushing developers to consolidate events with DEFINE_EVENT()
+> so this should not be an issue.
+> 
+> The kprobes define a unique class to every new event, but are dynamic
+> so it should not be a issue.
+> 
+> The syscalls however have a single class but the fields for the individual
+> events are different. The syscalls use a metadata to define the
+> fields. I moved the fields list from the event to the metadata and
+> added a "get_fields()" function to the class. This function is used
+> to find the fields. For normal events and kprobes, get_fields() just
+> returns a pointer to the fields list_head in the class. For syscall
+> events, it returns the fields list_head in the metadata for the event.
 
-Unfortunately, this requires adding a new lock (mm->anon_vma_chain_lock),
-otherwise we have an unavoidable lock ordering conflict.  This changes the
-locking rules for the "same_vma" list to be either mm->mmap_sem for write, 
-or mm->mmap_sem for read plus the new mm->anon_vma_chain lock.  This limits
-the place where the new lock is taken to 2 locations - anon_vma_prepare and
-expand_downwards.
+So, playing catch-up here, why don't we simply put each syscall event in
+their own class ? We could possibly share the class where it makes
+sense (e.g. exact same fields).
 
-Document the locking rules for the same_vma list in the anon_vma_chain and
-remove the anon_vma_lock call from expand_upwards, which does not need it.
+With the per-class sub-metadata, what's the limitations we have to
+expect with these system call events ? Can we map to a field size
+directly from the event ID, or do we have to somehow have the event size
+encoded in the header to make sense of the payload ?
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
+Thanks,
 
---- 
-Posted quickly as an RFC patch, only compile tested so far.
-Andrea, Mel, does this look like a reasonable approach?
+Mathieu
 
-v3:
- - change anon_vma_unlock into a macro so lockdep works right
- - fix lock ordering in anon_vma_prepare
-v2:
- - also change anon_vma_unlock to walk the loop
- - add calls to anon_vma_lock & anon_vma_unlock to vma_adjust
- - introduce a new lock for the vma->anon_vma_chain list, to prevent
-   the lock inversion that Andrea pointed out
+> 
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: Masami Hiramatsu <mhiramat@redhat.com>
+> Cc: Tom Zanussi <tzanussi@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/linux/ftrace_event.h       |    5 ++-
+>  include/linux/syscalls.h           |   12 +++++-----
+>  include/trace/ftrace.h             |   10 +++++---
+>  include/trace/syscall.h            |    3 +-
+>  kernel/trace/trace.h               |    3 ++
+>  kernel/trace/trace_events.c        |   43 +++++++++++++++++++++++++++++++-----
+>  kernel/trace/trace_events_filter.c |   10 +++++---
+>  kernel/trace/trace_export.c        |   14 ++++++------
+>  kernel/trace/trace_kprobe.c        |    8 +++---
+>  kernel/trace/trace_syscalls.c      |   23 ++++++++++++++++---
+>  10 files changed, 92 insertions(+), 39 deletions(-)
+> 
+> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> index dd0051e..1e2c8f5 100644
+> --- a/include/linux/ftrace_event.h
+> +++ b/include/linux/ftrace_event.h
+> @@ -128,6 +128,9 @@ struct ftrace_event_class {
+>  	void			*perf_probe;
+>  	int			(*reg)(struct ftrace_event_call *event,
+>  				       enum trace_reg type);
+> +	int			(*define_fields)(struct ftrace_event_call *);
+> +	struct list_head	*(*get_fields)(struct ftrace_event_call *);
+> +	struct list_head	fields;
+>  };
+>  
+>  struct ftrace_event_call {
+> @@ -140,8 +143,6 @@ struct ftrace_event_call {
+>  	int			id;
+>  	const char		*print_fmt;
+>  	int			(*raw_init)(struct ftrace_event_call *);
+> -	int			(*define_fields)(struct ftrace_event_call *);
+> -	struct list_head	fields;
+>  	int			filter_active;
+>  	struct event_filter	*filter;
+>  	void			*mod;
+> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+> index e3348c4..ef4f81c 100644
+> --- a/include/linux/syscalls.h
+> +++ b/include/linux/syscalls.h
+> @@ -122,7 +122,7 @@ extern struct ftrace_event_class event_class_syscall_enter;
+>  extern struct ftrace_event_class event_class_syscall_exit;
+>  
+>  #define SYSCALL_TRACE_ENTER_EVENT(sname)				\
+> -	static const struct syscall_metadata __syscall_meta_##sname;	\
+> +	static struct syscall_metadata __syscall_meta_##sname;		\
+>  	static struct ftrace_event_call					\
+>  	__attribute__((__aligned__(4))) event_enter_##sname;		\
+>  	static struct trace_event enter_syscall_print_##sname = {	\
+> @@ -136,12 +136,11 @@ extern struct ftrace_event_class event_class_syscall_exit;
+>  		.class			= &event_class_syscall_enter,	\
+>  		.event                  = &enter_syscall_print_##sname,	\
+>  		.raw_init		= init_syscall_trace,		\
+> -		.define_fields		= syscall_enter_define_fields,	\
+>  		.data			= (void *)&__syscall_meta_##sname,\
+>  	}
+>  
+>  #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
+> -	static const struct syscall_metadata __syscall_meta_##sname;	\
+> +	static struct syscall_metadata __syscall_meta_##sname;		\
+>  	static struct ftrace_event_call					\
+>  	__attribute__((__aligned__(4))) event_exit_##sname;		\
+>  	static struct trace_event exit_syscall_print_##sname = {	\
+> @@ -155,14 +154,13 @@ extern struct ftrace_event_class event_class_syscall_exit;
+>  		.class			= &event_class_syscall_exit,	\
+>  		.event                  = &exit_syscall_print_##sname,	\
+>  		.raw_init		= init_syscall_trace,		\
+> -		.define_fields		= syscall_exit_define_fields,	\
+>  		.data			= (void *)&__syscall_meta_##sname,\
+>  	}
+>  
+>  #define SYSCALL_METADATA(sname, nb)				\
+>  	SYSCALL_TRACE_ENTER_EVENT(sname);			\
+>  	SYSCALL_TRACE_EXIT_EVENT(sname);			\
+> -	static const struct syscall_metadata __used		\
+> +	static struct syscall_metadata __used			\
+>  	  __attribute__((__aligned__(4)))			\
+>  	  __attribute__((section("__syscalls_metadata")))	\
+>  	  __syscall_meta_##sname = {				\
+> @@ -172,12 +170,13 @@ extern struct ftrace_event_class event_class_syscall_exit;
+>  		.args		= args_##sname,			\
+>  		.enter_event	= &event_enter_##sname,		\
+>  		.exit_event	= &event_exit_##sname,		\
+> +		.fields		= LIST_HEAD_INIT(__syscall_meta_##sname.fields), \
+>  	};
+>  
+>  #define SYSCALL_DEFINE0(sname)					\
+>  	SYSCALL_TRACE_ENTER_EVENT(_##sname);			\
+>  	SYSCALL_TRACE_EXIT_EVENT(_##sname);			\
+> -	static const struct syscall_metadata __used		\
+> +	static struct syscall_metadata __used			\
+>  	  __attribute__((__aligned__(4)))			\
+>  	  __attribute__((section("__syscalls_metadata")))	\
+>  	  __syscall_meta__##sname = {				\
+> @@ -185,6 +184,7 @@ extern struct ftrace_event_class event_class_syscall_exit;
+>  		.nb_args 	= 0,				\
+>  		.enter_event	= &event_enter__##sname,	\
+>  		.exit_event	= &event_exit__##sname,		\
+> +		.fields		= LIST_HEAD_INIT(__syscall_meta__##sname.fields), \
+>  	};							\
+>  	asmlinkage long sys_##sname(void)
+>  #else
+> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+> index 62fe622..e6ec392 100644
+> --- a/include/trace/ftrace.h
+> +++ b/include/trace/ftrace.h
+> @@ -429,6 +429,9 @@ static inline notrace int ftrace_get_offsets_##call(			\
+>   *
+>   * static struct ftrace_event_class __used event_class_<template> = {
+>   *	.system			= "<system>",
+> + *	.define_fields		= ftrace_define_fields_<call>,
+> +	.fields			= LIST_HEAD_INIT(event_class_##call.fields),\
+> +	.probe			= ftrace_raw_event_##call,		\
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index b8bb9a6..a0679c6 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -239,6 +239,7 @@ struct mm_struct {
- 	int map_count;				/* number of VMAs */
- 	struct rw_semaphore mmap_sem;
- 	spinlock_t page_table_lock;		/* Protects page tables and some counters */
-+	spinlock_t anon_vma_chain_lock;		/* Protects vma->anon_vma_chain, with mmap_sem */
- 
- 	struct list_head mmlist;		/* List of maybe swapped mm's.	These are globally strung
- 						 * together off init_mm.mmlist, and are protected
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index d25bd22..703c472 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -52,11 +52,15 @@ struct anon_vma {
-  * all the anon_vmas associated with this VMA.
-  * The "same_anon_vma" list contains the anon_vma_chains
-  * which link all the VMAs associated with this anon_vma.
-+ *
-+ * The "same_vma" list is locked by either having mm->mmap_sem
-+ * locked for writing, or having mm->mmap_sem locked for reading
-+ * AND holding the mm->anon_vma_chain_lock.
-  */
- struct anon_vma_chain {
- 	struct vm_area_struct *vma;
- 	struct anon_vma *anon_vma;
--	struct list_head same_vma;   /* locked by mmap_sem & page_table_lock */
-+	struct list_head same_vma;	/* see above */
- 	struct list_head same_anon_vma;	/* locked by anon_vma->lock */
- };
- 
-@@ -90,18 +94,24 @@ static inline struct anon_vma *page_anon_vma(struct page *page)
- 	return page_rmapping(page);
- }
- 
--static inline void anon_vma_lock(struct vm_area_struct *vma)
--{
--	struct anon_vma *anon_vma = vma->anon_vma;
--	if (anon_vma)
--		spin_lock(&anon_vma->lock);
--}
-+#define anon_vma_lock(vma, nest_lock)					\
-+({									\
-+	struct anon_vma *anon_vma = vma->anon_vma;			\
-+	if (anon_vma) {							\
-+		struct anon_vma_chain *avc;				\
-+		list_for_each_entry(avc, &vma->anon_vma_chain, same_vma) \
-+			spin_lock_nest_lock(&avc->anon_vma->lock, nest_lock); \
-+	}								\
-+})
- 
- static inline void anon_vma_unlock(struct vm_area_struct *vma)
- {
- 	struct anon_vma *anon_vma = vma->anon_vma;
--	if (anon_vma)
--		spin_unlock(&anon_vma->lock);
-+	if (anon_vma) {
-+		struct anon_vma_chain *avc;
-+		list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
-+			spin_unlock(&avc->anon_vma->lock);
-+	}
- }
- 
- /*
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 44b0791..83b1ba2 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -468,6 +468,7 @@ static struct mm_struct * mm_init(struct mm_struct * mm, struct task_struct *p)
- 	mm->nr_ptes = 0;
- 	memset(&mm->rss_stat, 0, sizeof(mm->rss_stat));
- 	spin_lock_init(&mm->page_table_lock);
-+	spin_lock_init(&mm->anon_vma_chain_lock);
- 	mm->free_area_cache = TASK_UNMAPPED_BASE;
- 	mm->cached_hole_size = ~0UL;
- 	mm_init_aio(mm);
-diff --git a/mm/init-mm.c b/mm/init-mm.c
-index 57aba0d..3ce8a1f 100644
---- a/mm/init-mm.c
-+++ b/mm/init-mm.c
-@@ -15,6 +15,7 @@ struct mm_struct init_mm = {
- 	.mm_count	= ATOMIC_INIT(1),
- 	.mmap_sem	= __RWSEM_INITIALIZER(init_mm.mmap_sem),
- 	.page_table_lock =  __SPIN_LOCK_UNLOCKED(init_mm.page_table_lock),
-+	.anon_vma_chain_lock =  __SPIN_LOCK_UNLOCKED(init_mm.anon_vma_chain_lock),
- 	.mmlist		= LIST_HEAD_INIT(init_mm.mmlist),
- 	.cpu_vm_mask	= CPU_MASK_ALL,
- };
-diff --git a/mm/mmap.c b/mm/mmap.c
-index f90ea92..4602358 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -452,7 +452,7 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
- 		spin_lock(&mapping->i_mmap_lock);
- 		vma->vm_truncate_count = mapping->truncate_count;
- 	}
--	anon_vma_lock(vma);
-+	anon_vma_lock(vma, &mm->mmap_sem);
- 
- 	__vma_link(mm, vma, prev, rb_link, rb_parent);
- 	__vma_link_file(vma);
-@@ -578,6 +578,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- 		}
- 	}
- 
-+	anon_vma_lock(vma, &mm->mmap_sem);
- 	if (root) {
- 		flush_dcache_mmap_lock(mapping);
- 		vma_prio_tree_remove(vma, root);
-@@ -599,6 +600,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- 		vma_prio_tree_insert(vma, root);
- 		flush_dcache_mmap_unlock(mapping);
- 	}
-+	anon_vma_unlock(vma);
- 
- 	if (remove_next) {
- 		/*
-@@ -1705,12 +1707,11 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 		return -EFAULT;
- 
- 	/*
--	 * We must make sure the anon_vma is allocated
--	 * so that the anon_vma locking is not a noop.
-+	 * Unlike expand_downwards, we do not need to take the anon_vma lock,
-+	 * because we leave vma->vm_start and vma->pgoff untouched. 
-+	 * This means rmap lookups of pages inside this VMA stay valid
-+	 * throughout the stack expansion.
- 	 */
--	if (unlikely(anon_vma_prepare(vma)))
--		return -ENOMEM;
--	anon_vma_lock(vma);
- 
- 	/*
- 	 * vma->vm_start/vm_end cannot change under us because the caller
-@@ -1721,7 +1722,6 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 	if (address < PAGE_ALIGN(address+4))
- 		address = PAGE_ALIGN(address+4);
- 	else {
--		anon_vma_unlock(vma);
- 		return -ENOMEM;
- 	}
- 	error = 0;
-@@ -1737,7 +1737,6 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 		if (!error)
- 			vma->vm_end = address;
- 	}
--	anon_vma_unlock(vma);
- 	return error;
- }
- #endif /* CONFIG_STACK_GROWSUP || CONFIG_IA64 */
-@@ -1749,6 +1748,7 @@ static int expand_downwards(struct vm_area_struct *vma,
- 				   unsigned long address)
- {
- 	int error;
-+	struct mm_struct *mm = vma->vm_mm;
- 
- 	/*
- 	 * We must make sure the anon_vma is allocated
-@@ -1762,7 +1762,8 @@ static int expand_downwards(struct vm_area_struct *vma,
- 	if (error)
- 		return error;
- 
--	anon_vma_lock(vma);
-+	spin_lock(&mm->anon_vma_chain_lock);
-+	anon_vma_lock(vma, &mm->anon_vma_chain_lock);
- 
- 	/*
- 	 * vma->vm_start/vm_end cannot change under us because the caller
-@@ -1784,6 +1785,8 @@ static int expand_downwards(struct vm_area_struct *vma,
- 		}
- 	}
- 	anon_vma_unlock(vma);
-+	spin_unlock(&mm->anon_vma_chain_lock);
-+
- 	return error;
- }
- 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 526704e..98d6289 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -23,6 +23,7 @@
-  * inode->i_mutex	(while writing or truncating, not reading or faulting)
-  *   inode->i_alloc_sem (vmtruncate_range)
-  *   mm->mmap_sem
-+ *   mm->anon_vma_chain_lock (mmap_sem for read, protects vma->anon_vma_chain)
-  *     page->flags PG_locked (lock_page)
-  *       mapping->i_mmap_lock
-  *         anon_vma->lock
-@@ -133,10 +134,11 @@ int anon_vma_prepare(struct vm_area_struct *vma)
- 				goto out_enomem_free_avc;
- 			allocated = anon_vma;
- 		}
-+
-+		/* anon_vma_chain_lock to protect against threads */
-+		spin_lock(&mm->anon_vma_chain_lock);
- 		spin_lock(&anon_vma->lock);
- 
--		/* page_table_lock to protect against threads */
--		spin_lock(&mm->page_table_lock);
- 		if (likely(!vma->anon_vma)) {
- 			vma->anon_vma = anon_vma;
- 			avc->anon_vma = anon_vma;
-@@ -145,9 +147,9 @@ int anon_vma_prepare(struct vm_area_struct *vma)
- 			list_add(&avc->same_anon_vma, &anon_vma->head);
- 			allocated = NULL;
- 		}
--		spin_unlock(&mm->page_table_lock);
--
- 		spin_unlock(&anon_vma->lock);
-+		spin_unlock(&mm->anon_vma_chain_lock);
-+
- 		if (unlikely(allocated)) {
- 			anon_vma_free(allocated);
- 			anon_vma_chain_free(avc);
+missing * above.
 
+
+>   * }
+>   *
+>   * static struct ftrace_event_call __used
+> @@ -437,10 +440,8 @@ static inline notrace int ftrace_get_offsets_##call(			\
+>   *	.name			= "<call>",
+>   *	.class			= event_class_<template>,
+>   *	.raw_init		= trace_event_raw_init,
+> - *	.regfunc		= ftrace_reg_event_<call>,
+> - *	.unregfunc		= ftrace_unreg_event_<call>,
+> + *	.event			= &ftrace_event_type_<call>,
+>   *	.print_fmt		= print_fmt_<call>,
+> - *	.define_fields		= ftrace_define_fields_<call>,
+>   * }
+>   *
+>   */
+> @@ -552,6 +553,8 @@ _TRACE_PERF_PROTO(call, PARAMS(proto));					\
+>  static const char print_fmt_##call[] = print;				\
+>  static struct ftrace_event_class __used event_class_##call = {		\
+>  	.system			= __stringify(TRACE_SYSTEM),		\
+> +	.define_fields		= ftrace_define_fields_##call,		\
+> +	.fields			= LIST_HEAD_INIT(event_class_##call.fields),\
+>  	.probe			= ftrace_raw_event_##call,		\
+>  	_TRACE_PERF_INIT(call)						\
+>  }
+> @@ -567,7 +570,6 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
+>  	.event			= &ftrace_event_type_##call,		\
+>  	.raw_init		= trace_event_raw_init,			\
+>  	.print_fmt		= print_fmt_##template,			\
+> -	.define_fields		= ftrace_define_fields_##template,	\
+>  }
+>  
+>  #undef DEFINE_EVENT_PRINT
+> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+> index e5e5f48..25087c3 100644
+> --- a/include/trace/syscall.h
+> +++ b/include/trace/syscall.h
+> @@ -25,6 +25,7 @@ struct syscall_metadata {
+>  	int		nb_args;
+>  	const char	**types;
+>  	const char	**args;
+> +	struct list_head fields;
+>  
+>  	struct ftrace_event_call *enter_event;
+>  	struct ftrace_event_call *exit_event;
+> @@ -34,8 +35,6 @@ struct syscall_metadata {
+>  extern unsigned long arch_syscall_addr(int nr);
+>  extern int init_syscall_trace(struct ftrace_event_call *call);
+>  
+> -extern int syscall_enter_define_fields(struct ftrace_event_call *call);
+> -extern int syscall_exit_define_fields(struct ftrace_event_call *call);
+>  extern int reg_event_syscall_enter(struct ftrace_event_call *call);
+>  extern void unreg_event_syscall_enter(struct ftrace_event_call *call);
+>  extern int reg_event_syscall_exit(struct ftrace_event_call *call);
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 2825ef2..ff63bee 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -771,6 +771,9 @@ extern void print_subsystem_event_filter(struct event_subsystem *system,
+>  					 struct trace_seq *s);
+>  extern int filter_assign_type(const char *type);
+>  
+> +struct list_head *
+> +trace_get_fields(struct ftrace_event_call *event_call);
+> +
+>  static inline int
+>  filter_check_discard(struct ftrace_event_call *call, void *rec,
+>  		     struct ring_buffer *buffer,
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index f84cfcb..c31632e 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -28,11 +28,28 @@ DEFINE_MUTEX(event_mutex);
+>  
+>  LIST_HEAD(ftrace_events);
+>  
+> +static int fields_done(struct ftrace_event_call *event_call)
+> +{
+> +	return 0;
+> +}
+> +
+> +struct list_head *
+> +trace_get_fields(struct ftrace_event_call *event_call)
+> +{
+> +	if (!event_call->class->get_fields)
+> +		return &event_call->class->fields;
+> +	return event_call->class->get_fields(event_call);
+> +}
+> +
+>  int trace_define_field(struct ftrace_event_call *call, const char *type,
+>  		       const char *name, int offset, int size, int is_signed,
+>  		       int filter_type)
+>  {
+>  	struct ftrace_event_field *field;
+> +	struct list_head *head;
+> +
+> +	if (WARN_ON(!call->class) || call->class->define_fields == fields_done)
+> +		return 0;
+>  
+>  	field = kzalloc(sizeof(*field), GFP_KERNEL);
+>  	if (!field)
+> @@ -55,7 +72,8 @@ int trace_define_field(struct ftrace_event_call *call, const char *type,
+>  	field->size = size;
+>  	field->is_signed = is_signed;
+>  
+> -	list_add(&field->link, &call->fields);
+> +	head = trace_get_fields(call);
+> +	list_add(&field->link, head);
+>  
+>  	return 0;
+>  
+> @@ -81,6 +99,9 @@ static int trace_define_common_fields(struct ftrace_event_call *call)
+>  	int ret;
+>  	struct trace_entry ent;
+>  
+> +	if (call->class->define_fields == fields_done)
+> +		return 0;
+> +
+>  	__common_field(unsigned short, type);
+>  	__common_field(unsigned char, flags);
+>  	__common_field(unsigned char, preempt_count);
+> @@ -93,8 +114,10 @@ static int trace_define_common_fields(struct ftrace_event_call *call)
+>  void trace_destroy_fields(struct ftrace_event_call *call)
+>  {
+>  	struct ftrace_event_field *field, *next;
+> +	struct list_head *head;
+>  
+> -	list_for_each_entry_safe(field, next, &call->fields, link) {
+> +	head = trace_get_fields(call);
+> +	list_for_each_entry_safe(field, next, head, link) {
+>  		list_del(&field->link);
+>  		kfree(field->type);
+>  		kfree(field->name);
+> @@ -110,7 +133,6 @@ int trace_event_raw_init(struct ftrace_event_call *call)
+>  	if (!id)
+>  		return -ENODEV;
+>  	call->id = id;
+> -	INIT_LIST_HEAD(&call->fields);
+>  
+>  	return 0;
+>  }
+> @@ -536,6 +558,7 @@ event_format_read(struct file *filp, char __user *ubuf, size_t cnt,
+>  {
+>  	struct ftrace_event_call *call = filp->private_data;
+>  	struct ftrace_event_field *field;
+> +	struct list_head *head;
+>  	struct trace_seq *s;
+>  	int common_field_count = 5;
+>  	char *buf;
+> @@ -554,7 +577,8 @@ event_format_read(struct file *filp, char __user *ubuf, size_t cnt,
+>  	trace_seq_printf(s, "ID: %d\n", call->id);
+>  	trace_seq_printf(s, "format:\n");
+>  
+> -	list_for_each_entry_reverse(field, &call->fields, link) {
+> +	head = trace_get_fields(call);
+> +	list_for_each_entry_reverse(field, head, link) {
+>  		/*
+>  		 * Smartly shows the array type(except dynamic array).
+>  		 * Normal:
+> @@ -954,10 +978,10 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
+>  		trace_create_file("id", 0444, call->dir, call,
+>  		 		  id);
+>  
+> -	if (call->define_fields) {
+> +	if (call->class->define_fields) {
+>  		ret = trace_define_common_fields(call);
+>  		if (!ret)
+> -			ret = call->define_fields(call);
+> +			ret = call->class->define_fields(call);
+>  		if (ret < 0) {
+>  			pr_warning("Could not initialize trace point"
+>  				   " events/%s\n", call->name);
+> @@ -965,6 +989,13 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
+>  		}
+>  		trace_create_file("filter", 0644, call->dir, call,
+>  				  filter);
+> +
+> +		/*
+> +		 * Other events with the same class will call
+> +		 * define fields again, Set the define_fields
+> +		 * to a stub, and it will be skipped.
+> +		 */
+> +		call->class->define_fields = fields_done;
+>  	}
+>  
+>  	trace_create_file("format", 0444, call->dir, call,
+> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+> index 22fa89f..560683d 100644
+> --- a/kernel/trace/trace_events_filter.c
+> +++ b/kernel/trace/trace_events_filter.c
+> @@ -499,8 +499,10 @@ static struct ftrace_event_field *
+>  find_event_field(struct ftrace_event_call *call, char *name)
+>  {
+>  	struct ftrace_event_field *field;
+> +	struct list_head *head;
+>  
+> -	list_for_each_entry(field, &call->fields, link) {
+> +	head = trace_get_fields(call);
+> +	list_for_each_entry(field, head, link) {
+>  		if (!strcmp(field->name, name))
+>  			return field;
+>  	}
+> @@ -624,7 +626,7 @@ static int init_subsystem_preds(struct event_subsystem *system)
+>  	int err;
+>  
+>  	list_for_each_entry(call, &ftrace_events, list) {
+> -		if (!call->define_fields)
+> +		if (!call->class || !call->class->define_fields)
+>  			continue;
+>  
+>  		if (strcmp(call->class->system, system->name) != 0)
+> @@ -643,7 +645,7 @@ static void filter_free_subsystem_preds(struct event_subsystem *system)
+>  	struct ftrace_event_call *call;
+>  
+>  	list_for_each_entry(call, &ftrace_events, list) {
+> -		if (!call->define_fields)
+> +		if (!call->class || !call->class->define_fields)
+>  			continue;
+>  
+>  		if (strcmp(call->class->system, system->name) != 0)
+> @@ -1248,7 +1250,7 @@ static int replace_system_preds(struct event_subsystem *system,
+>  	list_for_each_entry(call, &ftrace_events, list) {
+>  		struct event_filter *filter = call->filter;
+>  
+> -		if (!call->define_fields)
+> +		if (!call->class || !call->class->define_fields)
+>  			continue;
+>  
+>  		if (strcmp(call->class->system, system->name) != 0)
+> diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+> index 7f16e21..e700a0c 100644
+> --- a/kernel/trace/trace_export.c
+> +++ b/kernel/trace/trace_export.c
+> @@ -18,10 +18,6 @@
+>  #undef TRACE_SYSTEM
+>  #define TRACE_SYSTEM	ftrace
+>  
+> -struct ftrace_event_class event_class_ftrace = {
+> -	.system			= __stringify(TRACE_SYSTEM),
+> -};
+> -
+>  /* not needed for this file */
+>  #undef __field_struct
+>  #define __field_struct(type, item)
+> @@ -131,7 +127,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+>  
+>  static int ftrace_raw_init_event(struct ftrace_event_call *call)
+>  {
+> -	INIT_LIST_HEAD(&call->fields);
+> +	INIT_LIST_HEAD(&call->class->fields);
+>  	return 0;
+>  }
+>  
+> @@ -159,15 +155,19 @@ static int ftrace_raw_init_event(struct ftrace_event_call *call)
+>  #undef FTRACE_ENTRY
+>  #define FTRACE_ENTRY(call, struct_name, type, tstruct, print)		\
+>  									\
+> +struct ftrace_event_class event_class_ftrace_##call = {			\
+> +	.system			= __stringify(TRACE_SYSTEM),		\
+> +	.define_fields		= ftrace_define_fields_##call,		\
+> +};									\
+> +									\
+>  struct ftrace_event_call __used						\
+>  __attribute__((__aligned__(4)))						\
+>  __attribute__((section("_ftrace_events"))) event_##call = {		\
+>  	.name			= #call,				\
+>  	.id			= type,					\
+> -	.class			= &event_class_ftrace,			\
+> +	.class			= &event_class_ftrace_##call,		\
+>  	.raw_init		= ftrace_raw_init_event,		\
+>  	.print_fmt		= print,				\
+> -	.define_fields		= ftrace_define_fields_##call,		\
+>  };									\
+>  
+>  #include "trace_entries.h"
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index f8af21a..b14bf74 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -1112,8 +1112,6 @@ static void probe_event_disable(struct ftrace_event_call *call)
+>  
+>  static int probe_event_raw_init(struct ftrace_event_call *event_call)
+>  {
+> -	INIT_LIST_HEAD(&event_call->fields);
+> -
+>  	return 0;
+>  }
+>  
+> @@ -1362,11 +1360,13 @@ static int register_probe_event(struct trace_probe *tp)
+>  	if (probe_is_return(tp)) {
+>  		tp->event.trace = print_kretprobe_event;
+>  		call->raw_init = probe_event_raw_init;
+> -		call->define_fields = kretprobe_event_define_fields;
+> +		INIT_LIST_HEAD(&call->class->fields);
+> +		call->class->define_fields = kretprobe_event_define_fields;
+>  	} else {
+>  		tp->event.trace = print_kprobe_event;
+>  		call->raw_init = probe_event_raw_init;
+> -		call->define_fields = kprobe_event_define_fields;
+> +		INIT_LIST_HEAD(&call->class->fields);
+> +		call->class->define_fields = kprobe_event_define_fields;
+>  	}
+>  	if (set_print_fmt(tp) < 0)
+>  		return -ENOMEM;
+> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+> index c92934d..eb535ba 100644
+> --- a/kernel/trace/trace_syscalls.c
+> +++ b/kernel/trace/trace_syscalls.c
+> @@ -19,14 +19,29 @@ static int syscall_enter_register(struct ftrace_event_call *event,
+>  static int syscall_exit_register(struct ftrace_event_call *event,
+>  				 enum trace_reg type);
+>  
+> +static int syscall_enter_define_fields(struct ftrace_event_call *call);
+> +static int syscall_exit_define_fields(struct ftrace_event_call *call);
+> +
+> +static struct list_head *
+> +syscall_get_fields(struct ftrace_event_call *call)
+> +{
+> +	struct syscall_metadata *entry = call->data;
+> +
+> +	return &entry->fields;
+> +}
+> +
+>  struct ftrace_event_class event_class_syscall_enter = {
+>  	.system			= "syscalls",
+> -	.reg			= syscall_enter_register
+> +	.reg			= syscall_enter_register,
+> +	.define_fields		= syscall_enter_define_fields,
+> +	.get_fields		= syscall_get_fields,
+>  };
+>  
+>  struct ftrace_event_class event_class_syscall_exit = {
+>  	.system			= "syscalls",
+> -	.reg			= syscall_exit_register
+> +	.reg			= syscall_exit_register,
+> +	.define_fields		= syscall_exit_define_fields,
+> +	.get_fields		= syscall_get_fields,
+>  };
+>  
+>  extern unsigned long __start_syscalls_metadata[];
+> @@ -219,7 +234,7 @@ static void free_syscall_print_fmt(struct ftrace_event_call *call)
+>  		kfree(call->print_fmt);
+>  }
+>  
+> -int syscall_enter_define_fields(struct ftrace_event_call *call)
+> +static int syscall_enter_define_fields(struct ftrace_event_call *call)
+>  {
+>  	struct syscall_trace_enter trace;
+>  	struct syscall_metadata *meta = call->data;
+> @@ -242,7 +257,7 @@ int syscall_enter_define_fields(struct ftrace_event_call *call)
+>  	return ret;
+>  }
+>  
+> -int syscall_exit_define_fields(struct ftrace_event_call *call)
+> +static int syscall_exit_define_fields(struct ftrace_event_call *call)
+>  {
+>  	struct syscall_trace_exit trace;
+>  	int ret;
+> -- 
+> 1.7.0
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
