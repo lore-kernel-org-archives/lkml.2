@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab0D1CQw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 22:16:52 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:53183 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab0D1CQu (ORCPT
+	id S1753722Ab0D1Cbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 22:31:39 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:47565 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753223Ab0D1Cbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 22:16:50 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Apr 2010 11:12:48 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/3] mm,migration: Remove straggling migration PTEs when
- page tables are being moved after the VMA has already moved
-Message-Id: <20100428111248.2797801c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100428014434.GM510@random.random>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
-	<1272403852-10479-4-git-send-email-mel@csn.ul.ie>
-	<20100427223004.GF8860@random.random>
-	<20100427225852.GH8860@random.random>
-	<20100428102928.a3b25066.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100428014434.GM510@random.random>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Apr 2010 22:31:38 -0400
+Date: Wed, 28 Apr 2010 12:30:58 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       Eric Sandeen <sandeen@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       Alex Elder <aelder@sgi.com>
+Subject: Re: [PATCH] XFS: Let the broken fiemap work in query mode.
+Message-ID: <20100428023058.GD9783@dastard>
+References: <1272349065-16383-1-git-send-email-tao.ma@oracle.com>
+ <20100428015035.GC9783@dastard>
+ <4BD796A1.7050505@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BD796A1.7050505@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Apr 2010 03:44:34 +0200
-Andrea Arcangeli <aarcange@redhat.com> wrote:
-
-> On Wed, Apr 28, 2010 at 10:29:28AM +0900, KAMEZAWA Hiroyuki wrote:
-> > Hmm..Mel's patch 2/3 takes vma->anon_vma->lock in vma_adjust(),
-> > so this patch clears vma->anon_vma...
+On Wed, Apr 28, 2010 at 10:00:01AM +0800, Tao Ma wrote:
+> Hi Dave,
 > 
-> yep, it should be safe with patch 2 applied too. And I'm unsure why Mel's
-> patch locks the anon_vma also when vm_start != start. See the other
-> email I sent about patch 2.
-> 
-> > I think we can unlock this just after move_page_tables().
-> 
-> Checking this, I can't see where exactly is vma->vm_pgoff adjusted
-> during the atomic section I protected with the anon_vma->lock?
-> For a moment it looks like these pages become unmovable.
-> 
-The page can be replaced with migration_pte before the 1st vma_adjust.
+> Dave Chinner wrote:
+> >On Tue, Apr 27, 2010 at 02:17:45PM +0800, Tao Ma wrote:
+> >>According to Documentation/filesystems/fiemap.txt, If fm_extent_count
+> >>is zero, then the fm_extents[] array is ignored (no extents will be
+> >>returned), and the fm_mapped_extents count will hold the number of
+> >>extents needed.
+> >>
+> >>But as the commit 97db39a1f6f69e906e98118392400de5217aa33a has changed
+> >>bmv_count to the caller's input buffer, this number query function can't
+> >>work any more. As this commit is written to change bmv_count from
+> >>MAXEXTNUM because of ENOMEM, we can't find a really suitable number to
+> >>set bmv_count now in xfs_vn_fiemap. Since we really have no idea of how
+> >>much extents the file has, a big number may cause ENOMEM, while a small
+> >>one will mask the real extent no.
+> >>
+> >>So this patch try to resolve this problem by adding a temporary getbmapx
+> >>in xfs_getbmap. If the caller didn't give bmv_count, we don't allocate
+> >>the "out" either. Instead, every time we want to use 'out', use '&tmp'
+> >>instead.
+> >>
+> >>I know this solution is a bit ugly, but I can't find a way to resolve
+> >>this issue while not changing the codes too much. So any good suggestion
+> >>is welcomed.
+> >
+> >I don't see a need to change xfs_getbmap() to fix this. We can limit
+> >the maximum allocation size to something realistic just by setting
+> >bm.bmv.count to something sane. e.g, in xfs_vn_fiemap:
+> >
+> >-	bm.bmv_count = fieinfo->fi_extents_max + 1;
+> >+	bm.bmv.count = !fieinfo->fi_extents_max ? MAXEXTNUM :
+> >+					fieinfo->fi_extents_max - 1;
+> >+	bm.bmv_count = MIN(bm.bmv_count,
+> >				(PAGE_SIZE * 16 / sizeof(struct getbmapx)));
+> >
+> >Unless I'm missing something, that should also prevent the case of
+> >an application providing a really large fi_extents_max from
+> >triggering ENOMEM in most cases as well.
+> I just worry about one thing: What if the real extent number is
+> larger than the PAGE_SIZE * 16 / sizeof(struct getbmapx)? In this
+> case, we will give up the wrong extent number to the user space.
 
-The key is 
-	(vma, page) <-> address <-> pte <-> page
-relationship.
+Applications need to handle mappings changing from query to getting
+the mapping, so this should not be a major issue. Especially as the
+method of fiemap indicating there are more extents to be extracted
+from the inode in the case the kernel can't allocate a buffer large
+enough is already documented.
 
-	vma_adjust() 
-	(*)
-	move_pagetables();
-	(**)
-	vma_adjust();
+Realistically though, xfs_getbmap() needs a complete rewrite so
+right now I'd prefer just to do the minimum to fix the reported
+problem that continue to make it into even more of a mess than it is
+now...
 
-At (*), vma_address(vma, page) retruns a _new_ address. But pte is not
-updated. This is ciritcal for rmap_walk. We're safe at (**).
+Cheers,
 
-
-> I guess this is why I thought initially that it was move_page_tables
-> to adjust the page->index. If it doesn't then the vma->vm_pgoff has to
-> be moved down of shift >>PAGE_SHIFT and it doesn't seem to be
-> happening which is an unrelated bug.
-> 
-
-Anyway, I have no strong opinion about the placement of unlock(anon_vma->lock).
-
-I wonder why we don't see this at testing memory-hotplug is because memory-hotplug
-disables a new page allocation in the migration range. So, this exec() is hard to get
-a page which can be migration target.
-
-Thanks,
--Kame
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
