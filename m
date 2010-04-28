@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab0D1Ndh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 09:33:37 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50341 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095Ab0D1Ndf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 09:33:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peter Fritzsche <peter.fritzsche@gmx.de>
-Subject: Re: [PATCH 2/2] asm-generic: Don't warn that atomic_t is only 24 bit
-Date: Wed, 28 Apr 2010 15:33:29 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Keith M Wesolowski <wesolows@foobazco.org>
-References: <1272451837-17961-1-git-send-email-peter.fritzsche@gmx.de> <1272453036-18670-1-git-send-email-peter.fritzsche@gmx.de>
-In-Reply-To: <1272453036-18670-1-git-send-email-peter.fritzsche@gmx.de>
+	id S1753235Ab0D1JkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 05:40:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52524 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750788Ab0D1Jj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 05:39:58 -0400
+Message-ID: <4BD80260.3050501@redhat.com>
+Date: Wed, 28 Apr 2010 12:39:44 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Dave Chinner <david@fromorbit.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 1/2] mm: add context argument to shrinker callback
+References: <1271118255-21070-1-git-send-email-david@fromorbit.com> <1271118255-21070-2-git-send-email-david@fromorbit.com>
+In-Reply-To: <1271118255-21070-2-git-send-email-david@fromorbit.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004281533.29327.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+Xwn5/e3Dq+1cxf3qd9stmbBGA95AsTrVN+vN
- KhWbv2mjStAdDQNBOMojw7UKlSqA7j7nq0rrjpA+88ZMA8LWBn
- OCOIbpj/WeRpoj0r8mYhA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 April 2010, Peter Fritzsche wrote:
-> 32-bit Sparc used to only allow usage of 24-bit of it's atomic_t type.
-> This was corrected with linux 2.6.3 when Keith M Wesolowski changed the
-> implementation to use the parisc approach of having an array of
-> spinlocks to protect the atomic_t.
-> 
-> These warnings were also removed from the sparc implementation when the
-> new implementation was merged in BKrev:402e4949VThdc6D3iaosSFUgabMfvw,
-> but the warning still remained in some other places without any
-> 24-bit-only atomic_t implementation inside the kernel.
-> 
-> We should remove these warnings to allow users to rely on the full
-> 32-bit range of atomic_t.
-> 
-> Signed-off-by: Peter Fritzsche <peter.fritzsche@gmx.de>
+On 04/13/2010 03:24 AM, Dave Chinner wrote:
+> From: Dave Chinner<dchinner@redhat.com>
+>
+> The current shrinker implementation requires the registered callback
+> to have global state to work from. This makes it difficult to shrink
+> caches that are not global (e.g. per-filesystem caches). Add a
+> context argument to the shrinker callback so that it can easily be
+> used in such situations.
+>    
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+> @@ -995,7 +995,8 @@ static inline void sync_mm_rss(struct task_struct *task, struct mm_struct *mm)
+>    * querying the cache size, so a fastpath for that case is appropriate.
+>    */
+>   struct shrinker {
+> -	int (*shrink)(int nr_to_scan, gfp_t gfp_mask);
+> +	int (*shrink)(void *ctx, int nr_to_scan, gfp_t gfp_mask);
+> +	void *ctx;	/* user callback context */
+>   	int seeks;	/* seeks to recreate an obj */
+>    
+
+
+It's nicer (and slightly cheaper) to have
+
+   int (*shrink)(struct shrinker *shrinker, int nr_to_scan, gfp_t gfp_mask);
+   /* no void *ctx; */
+
+Clients can use container_of() to reach their context from the shrinker 
+argument.
+
+-- 
+error compiling committee.c: too many arguments to function
+
