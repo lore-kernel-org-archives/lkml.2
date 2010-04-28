@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab0D1CIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 22:08:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22862 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752337Ab0D1CI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 22:08:29 -0400
-Date: Wed, 28 Apr 2010 03:44:34 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/3] mm,migration: Remove straggling migration PTEs
- when page tables are being moved after the VMA has already moved
-Message-ID: <20100428014434.GM510@random.random>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
- <1272403852-10479-4-git-send-email-mel@csn.ul.ie>
- <20100427223004.GF8860@random.random>
- <20100427225852.GH8860@random.random>
- <20100428102928.a3b25066.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1751920Ab0D1CNj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 22:13:39 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:54364 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007Ab0D1CNh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 22:13:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type:content-transfer-encoding;
+        b=eLYXs2xF1FODX+On1G5jWLXuKJeQ5D4f/rLWLxeiH2aKkAIcLIbbDXCZWVdZOBXsjJ
+         I3UhaTISlRFCwTI2dWH/3nssW5DBFFc88CUCrCp8PN2UZi4gVUdtpyc/vR07naGYSg6W
+         R843cOZPbaOjS6Q55rJn7HO3fg/fgBjq6jwNg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100428102928.a3b25066.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100428020819.GN12389@ozlabs.org>
+References: <cover.1271427118.git.jbaron@redhat.com> <20100422.161700.191166551.davem@davemloft.net> 
+	<20100427.175858.134109609.davem@davemloft.net> <20100428013951.GM12389@ozlabs.org> 
+	<20100428014941.GA8389@Krystal> <20100428020819.GN12389@ozlabs.org>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Tue, 27 Apr 2010 22:13:17 -0400
+Message-ID: <j2x8bd0f97a1004271913zedbeaf29td63419aab840dbb5@mail.gmail.com>
+Subject: Re: [PATCH 00/11] jump label v7
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+       linux-kernel@vger.kernel.org, dank@kegel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 10:29:28AM +0900, KAMEZAWA Hiroyuki wrote:
-> Hmm..Mel's patch 2/3 takes vma->anon_vma->lock in vma_adjust(),
-> so this patch clears vma->anon_vma...
+On Tue, Apr 27, 2010 at 22:08, Tony Breeds wrote:
+> In terms of "testing", I build a kernel for each toolchain but I don't boot
+> them and in the past I think blackfin said that what I had wouldn't actually be
+> runable.
 
-yep, it should be safe with patch 2 applied too. And I'm unsure why Mel's
-patch locks the anon_vma also when vm_start != start. See the other
-email I sent about patch 2.
+every Blackfin defconfig should be buildable & bootable
 
-> I think we can unlock this just after move_page_tables().
+> Last time I looked the wasn't a non-intel cross-toolchain for blackfin.
 
-Checking this, I can't see where exactly is vma->vm_pgoff adjusted
-during the atomic section I protected with the anon_vma->lock?
-For a moment it looks like these pages become unmovable.
-
-I guess this is why I thought initially that it was move_page_tables
-to adjust the page->index. If it doesn't then the vma->vm_pgoff has to
-be moved down of shift >>PAGE_SHIFT and it doesn't seem to be
-happening which is an unrelated bug.
+we provide 32bit and 64bit binaries for people, and a simple script to
+build up from source.  if you're looking for some other arch, you need
+only ask.  it's easy for me to ppc/ppc64/ia64 (and ive done them in
+the past), but no one has asked for those in a while.
+-mike
