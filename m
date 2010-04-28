@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab0D1WSQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 18:18:16 -0400
-Received: from tex.lwn.net ([70.33.254.29]:48820 "EHLO vena.lwn.net"
+	id S1756584Ab0D1WXR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 18:23:17 -0400
+Received: from tex.lwn.net ([70.33.254.29]:48833 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752939Ab0D1WSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 18:18:09 -0400
+	id S1757171Ab0D1WSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 18:18:16 -0400
 From: Jonathan Corbet <corbet@lwn.net>
 To: linux-kernel@vger.kernel.org
 Cc: Harald Welte <laforge@gnumonks.org>, linux-fbdev@vger.kernel.org,
        JosephChan@via.com.tw, ScottFang@viatech.com.cn,
        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 02/30] viafb: use proper pci config API
-Date: Wed, 28 Apr 2010 16:17:03 -0600
-Message-Id: <1272493051-25380-3-git-send-email-corbet@lwn.net>
+Subject: [PATCH 11/30] viafb: Only establish i2c busses on ports that always had them
+Date: Wed, 28 Apr 2010 16:17:12 -0600
+Message-Id: <1272493051-25380-12-git-send-email-corbet@lwn.net>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1272493051-25380-1-git-send-email-corbet@lwn.net>
 References: <1272493051-25380-1-git-send-email-corbet@lwn.net>
@@ -21,140 +21,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Harald Welte <laforge@gnumonks.org>
+...otherwise it seems we run into conflicts with shadowy other users which
+don't expect to see i2c taking control of ports it never used to do
+anything with.
 
-This patch alters viafb to use the proper Linux in-kernel API to access
-PCI configuration space, rather than poking at I/O ports by itself.
-
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: ScottFang@viatech.com.cn
-Cc: JosephChan@via.com.tw
-Signed-off-by: Harald Welte <HaraldWelte@viatech.com>
+Reported-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Jonathan Corbet <corbet@lwn.net>
 ---
- drivers/video/via/hw.c       |   62 +++++++++++++++++++++++++----------------
- drivers/video/via/hw.h       |    4 +-
- drivers/video/via/viafbdev.c |    4 +++
- 3 files changed, 44 insertions(+), 26 deletions(-)
+ drivers/video/via/via_i2c.c |   19 +++++++++++++------
+ drivers/video/via/via_i2c.h |    1 +
+ 2 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index f2583b1..c94bcce 100644
---- a/drivers/video/via/hw.c
-+++ b/drivers/video/via/hw.c
-@@ -2473,24 +2473,37 @@ static void disable_second_display_channel(void)
- 	viafb_write_reg_mask(CR6A, VIACR, BIT6, BIT6);
+diff --git a/drivers/video/via/via_i2c.c b/drivers/video/via/via_i2c.c
+index fe5535c..b5253e3 100644
+--- a/drivers/video/via/via_i2c.c
++++ b/drivers/video/via/via_i2c.c
+@@ -170,13 +170,18 @@ static int create_i2c_bus(struct i2c_adapter *adapter,
+ 	return i2c_bit_add_bus(adapter);
  }
  
-+static u_int16_t via_function3[] = {
-+	CLE266_FUNCTION3, KM400_FUNCTION3, CN400_FUNCTION3, CN700_FUNCTION3,
-+	CX700_FUNCTION3, KM800_FUNCTION3, KM890_FUNCTION3, P4M890_FUNCTION3,
-+	P4M900_FUNCTION3, VX800_FUNCTION3, VX855_FUNCTION3,
-+};
-+
-+/* Get the BIOS-configured framebuffer size from PCI configuration space
-+ * of function 3 in the respective chipset */
- int viafb_get_fb_size_from_pci(void)
- {
--	unsigned long configid, deviceid, FBSize = 0;
--	int VideoMemSize;
--	int DeviceFound = false;
--
--	for (configid = 0x80000000; configid < 0x80010800; configid += 0x100) {
--		outl(configid, (unsigned long)0xCF8);
--		deviceid = (inl((unsigned long)0xCFC) >> 16) & 0xffff;
--
--		switch (deviceid) {
--		case CLE266:
--		case KM400:
--			outl(configid + 0xE0, (unsigned long)0xCF8);
--			FBSize = inl((unsigned long)0xCFC);
--			DeviceFound = true;	/* Found device id */
--			break;
-+	int i;
-+	u_int8_t offset = 0;
-+	u_int32_t FBSize;
-+	u_int32_t VideoMemSize;
-+
-+	/* search for the "FUNCTION3" device in this chipset */
-+	for (i = 0; i < ARRAY_SIZE(via_function3); i++) {
-+		struct pci_dev *pdev;
-+
-+		pdev = pci_get_device(PCI_VENDOR_ID_VIA, via_function3[i],
-+				      NULL);
-+		if (!pdev)
-+			continue;
-+
-+		DEBUG_MSG(KERN_INFO "Device ID = %x\n", pdev->device);
- 
-+		switch (pdev->device) {
-+		case CLE266_FUNCTION3:
-+		case KM400_FUNCTION3:
-+			offset = 0xE0;
-+			break;
- 		case CN400_FUNCTION3:
- 		case CN700_FUNCTION3:
- 		case CX700_FUNCTION3:
-@@ -2500,21 +2513,22 @@ int viafb_get_fb_size_from_pci(void)
- 		case P4M900_FUNCTION3:
- 		case VX800_FUNCTION3:
- 		case VX855_FUNCTION3:
--			/*case CN750_FUNCTION3: */
--			outl(configid + 0xA0, (unsigned long)0xCF8);
--			FBSize = inl((unsigned long)0xCFC);
--			DeviceFound = true;	/* Found device id */
--			break;
--
--		default:
-+		/*case CN750_FUNCTION3: */
-+			offset = 0xA0;
- 			break;
- 		}
- 
--		if (DeviceFound)
-+		if (!offset)
- 			break;
-+
-+		pci_read_config_dword(pdev, offset, &FBSize);
-+		pci_dev_put(pdev);
- 	}
- 
--	DEBUG_MSG(KERN_INFO "Device ID = %lx\n", deviceid);
-+	if (!offset) {
-+		printk(KERN_ERR "cannot determine framebuffer size\n");
-+		return -EIO;
-+	}
- 
- 	FBSize = FBSize & 0x00007000;
- 	DEBUG_MSG(KERN_INFO "FB Size = %x\n", FBSize);
-diff --git a/drivers/video/via/hw.h b/drivers/video/via/hw.h
-index 12ef32d..d6b25ac 100644
---- a/drivers/video/via/hw.h
-+++ b/drivers/video/via/hw.h
-@@ -823,8 +823,8 @@ struct iga2_crtc_timing {
++/*
++ * By default, we only activate busses on ports 2c and 31 to avoid
++ * conflicts with other possible users; that default can be changed
++ * below.
++ */
+ static struct via_i2c_adap_cfg adap_configs[] = {
+-	[VIA_I2C_ADAP_26]	= { VIA_I2C_I2C,  VIASR, 0x26 },
+-	[VIA_I2C_ADAP_31]	= { VIA_I2C_I2C,  VIASR, 0x31 },
+-	[VIA_I2C_ADAP_25]	= { VIA_I2C_GPIO, VIASR, 0x25 },
+-	[VIA_I2C_ADAP_2C]	= { VIA_I2C_GPIO, VIASR, 0x2c },
+-	[VIA_I2C_ADAP_3D]	= { VIA_I2C_GPIO, VIASR, 0x3d },
+-	{ 0, 0, 0 }
++	[VIA_I2C_ADAP_26]	= { VIA_I2C_I2C,  VIASR, 0x26, 0 },
++	[VIA_I2C_ADAP_31]	= { VIA_I2C_I2C,  VIASR, 0x31, 1 },
++	[VIA_I2C_ADAP_25]	= { VIA_I2C_GPIO, VIASR, 0x25, 0 },
++	[VIA_I2C_ADAP_2C]	= { VIA_I2C_GPIO, VIASR, 0x2c, 1 },
++	[VIA_I2C_ADAP_3D]	= { VIA_I2C_GPIO, VIASR, 0x3d, 0 },
++	{ 0, 0, 0, 0 }
  };
  
- /* device ID */
--#define CLE266              0x3123
--#define KM400               0x3205
-+#define CLE266_FUNCTION3    0x3123
-+#define KM400_FUNCTION3     0x3205
- #define CN400_FUNCTION2     0x2259
- #define CN400_FUNCTION3     0x3259
- /* support VT3314 chipset */
-diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-index b7018ef..8af405b 100644
---- a/drivers/video/via/viafbdev.c
-+++ b/drivers/video/via/viafbdev.c
-@@ -1782,6 +1782,10 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
- 	viafb_init_chip_info(pdev, ent);
- 	viaparinfo->fbmem = pci_resource_start(pdev, 0);
- 	viaparinfo->memsize = viafb_get_fb_size_from_pci();
-+	if (viaparinfo->memsize < 0) {
-+		rc = viaparinfo->memsize;
-+		goto out_delete_i2c;
-+	}
- 	viaparinfo->fbmem_free = viaparinfo->memsize;
- 	viaparinfo->fbmem_used = 0;
- 	viafbinfo->screen_base = ioremap_nocache(viaparinfo->fbmem,
+ int viafb_create_i2c_busses(struct viafb_par *viapar)
+@@ -189,6 +194,8 @@ int viafb_create_i2c_busses(struct viafb_par *viapar)
+ 
+ 		if (adap_cfg->type == 0)
+ 			break;
++		if (!adap_cfg->is_active)
++			continue;
+ 
+ 		ret = create_i2c_bus(&i2c_stuff->adapter,
+ 				     &i2c_stuff->algo, adap_cfg,
+diff --git a/drivers/video/via/via_i2c.h b/drivers/video/via/via_i2c.h
+index 00ed978..73d682f 100644
+--- a/drivers/video/via/via_i2c.h
++++ b/drivers/video/via/via_i2c.h
+@@ -35,6 +35,7 @@ struct via_i2c_adap_cfg {
+ 	enum via_i2c_type	type;
+ 	u_int16_t		io_port;
+ 	u_int8_t		ioport_index;
++	u8			is_active;
+ };
+ 
+ struct via_i2c_stuff {
 -- 
 1.7.0.1
 
