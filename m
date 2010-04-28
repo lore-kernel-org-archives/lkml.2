@@ -1,160 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab0D1RsK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 13:48:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754880Ab0D1RsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 13:48:05 -0400
-Date: Wed, 28 Apr 2010 13:47:19 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC PATCH] take all anon_vma locks in anon_vma_lock
-Message-ID: <20100428134719.32e8011b@annuminas.surriel.com>
-In-Reply-To: <20100428162305.GX510@random.random>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
-	<1272403852-10479-3-git-send-email-mel@csn.ul.ie>
-	<20100427231007.GA510@random.random>
-	<20100428091555.GB15815@csn.ul.ie>
-	<20100428153525.GR510@random.random>
-	<20100428155558.GI15815@csn.ul.ie>
-	<20100428162305.GX510@random.random>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756855Ab0D1Tek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 15:34:40 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:61044 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab0D1Tej (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 15:34:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=ZCGBlBSJI1I0wX0Kgy7nI+WohwyrBt+F5r0LAKm6Rs1er9uU79bG1bv4FzRYxMq3xE
+         oqcBfsqrlKgGzVffUl5Fb3YNgnXucvcuafxFBFQmrK9eyjzXeHFil7pai8P4iphJ4uQE
+         3LfPV4JFnNle+WpEmUCB/rs5drPlutXMWJPmI=
+From: John Kacur <jkacur@redhat.com>
+To: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: rt-users <linux-rt-users@vger.kernel.org>, John Kacur <jkacur@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Clark Williams <williams@redhat.com>
+Subject: [PATCH] rt: Remove irrelevant CONFIGS from reminder block.
+Date: Wed, 28 Apr 2010 21:34:27 +0200
+Message-Id: <1272483267-10900-1-git-send-email-jkacur@redhat.com>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Take all the locks for all the anon_vmas in anon_vma_lock, this properly
-excludes migration and the transparent hugepage code from VMA changes done
-by mmap/munmap/mprotect/expand_stack/etc...
+- remove CONFIGS that do not have an impact to -rt from the reminder block.
+- reformat DEBUG_COUNT so that it is more easily human readable.
+- correct CONFIG_FTRACE to CONFIG_FUNCTION_TRACER.
 
-Also document the locking rules for the same_vma list in the anon_vma_chain
-and remove the anon_vma_lock call from expand_upwards, which does not need it.
+Signed-off-by: John Kacur <jkacur@redhat.com>
+---
+ init/main.c |   18 ++++++++++--------
+ 1 files changed, 10 insertions(+), 8 deletions(-)
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
+diff --git a/init/main.c b/init/main.c
+index 592c16a..622fe30 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -908,7 +908,15 @@ static int __init kernel_init(void * unused)
+ 	WARN_ON(irqs_disabled());
+ #endif
+ 
+-#define DEBUG_COUNT (defined(CONFIG_DEBUG_RT_MUTEXES) + defined(CONFIG_IRQSOFF_TRACER) + defined(CONFIG_PREEMPT_TRACER) + defined(CONFIG_STACK_TRACER) + defined(CONFIG_INTERRUPT_OFF_HIST) + defined(CONFIG_PREEMPT_OFF_HIST) + defined(CONFIG_WAKEUP_LATENCY_HIST) + defined(CONFIG_DEBUG_SLAB) + defined(CONFIG_DEBUG_PAGEALLOC) + defined(CONFIG_LOCKDEP) + (defined(CONFIG_FTRACE) - defined(CONFIG_FTRACE_MCOUNT_RECORD)))
++#define DEBUG_COUNT	(defined(CONFIG_DEBUG_RT_MUTEXES) +	\
++			defined(CONFIG_IRQSOFF_TRACER) +	\
++			defined(CONFIG_PREEMPT_TRACER) +	\
++			defined(CONFIG_FUNCTION_TRACER) +	\
++			defined(CONFIG_INTERRUPT_OFF_HIST) +	\
++			defined(CONFIG_PREEMPT_OFF_HIST) +	\
++			defined(CONFIG_DEBUG_SLAB) +		\
++			defined(CONFIG_PREEMPT_OFF_HIST) +	\
++			defined(CONFIG_LOCKDEP))
+ 
+ #if DEBUG_COUNT > 0
+ 	printk(KERN_ERR "*****************************************************************************\n");
+@@ -928,11 +936,8 @@ static int __init kernel_init(void * unused)
+ #ifdef CONFIG_PREEMPT_TRACER
+ 	printk(KERN_ERR "*        CONFIG_PREEMPT_TRACER                                              *\n");
+ #endif
+-#ifdef CONFIG_STACK_TRACER
+-	printk(KERN_ERR "*        CONFIG_STACK_TRACER                                                *\n");
+-#endif
+ #if defined(CONFIG_FTRACE) && !defined(CONFIG_FTRACE_MCOUNT_RECORD)
+-	printk(KERN_ERR "*        CONFIG_FTRACE                                                      *\n");
++	printk(KERN_ERR "*        CONFIG_FUNCTION_TRACER                                              *\n");
+ #endif
+ #ifdef CONFIG_INTERRUPT_OFF_HIST
+ 	printk(KERN_ERR "*        CONFIG_INTERRUPT_OFF_HIST                                          *\n");
+@@ -940,9 +945,6 @@ static int __init kernel_init(void * unused)
+ #ifdef CONFIG_PREEMPT_OFF_HIST
+ 	printk(KERN_ERR "*        CONFIG_PREEMPT_OFF_HIST                                            *\n");
+ #endif
+-#ifdef CONFIG_WAKEUP_LATENCY_HIST
+-	printk(KERN_ERR "*        CONFIG_WAKEUP_LATENCY_HIST                                         *\n");
+-#endif
+ #ifdef CONFIG_DEBUG_SLAB
+ 	printk(KERN_ERR "*        CONFIG_DEBUG_SLAB                                                  *\n");
+ #endif
+-- 
+1.6.6.1
 
---- 
-Posted quickly as an RFC patch, only compile tested so far.
-Andrea, Mel, does this look like a reasonable approach?
-
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index d25bd22..1eef42c 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -52,11 +52,15 @@ struct anon_vma {
-  * all the anon_vmas associated with this VMA.
-  * The "same_anon_vma" list contains the anon_vma_chains
-  * which link all the VMAs associated with this anon_vma.
-+ *
-+ * The "same_vma" list is locked by either having mm->mmap_sem
-+ * locked for writing, or having mm->mmap_sem locked for reading
-+ * AND holding the mm->page_table_lock.
-  */
- struct anon_vma_chain {
- 	struct vm_area_struct *vma;
- 	struct anon_vma *anon_vma;
--	struct list_head same_vma;   /* locked by mmap_sem & page_table_lock */
-+	struct list_head same_vma;	/* see above */
- 	struct list_head same_anon_vma;	/* locked by anon_vma->lock */
- };
- 
-@@ -90,11 +94,14 @@ static inline struct anon_vma *page_anon_vma(struct page *page)
- 	return page_rmapping(page);
- }
- 
--static inline void anon_vma_lock(struct vm_area_struct *vma)
-+static inline void anon_vma_lock(struct vm_area_struct *vma, void *nest_lock)
- {
- 	struct anon_vma *anon_vma = vma->anon_vma;
--	if (anon_vma)
--		spin_lock(&anon_vma->lock);
-+	if (anon_vma) {
-+		struct anon_vma_chain *avc;
-+		list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
-+			spin_lock_nest_lock(&avc->anon_vma->lock, nest_lock);
-+	}
- }
- 
- static inline void anon_vma_unlock(struct vm_area_struct *vma)
-diff --git a/mm/mmap.c b/mm/mmap.c
-index f90ea92..2c13bbb 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -452,7 +452,7 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
- 		spin_lock(&mapping->i_mmap_lock);
- 		vma->vm_truncate_count = mapping->truncate_count;
- 	}
--	anon_vma_lock(vma);
-+	anon_vma_lock(vma, &mm->mmap_sem);
- 
- 	__vma_link(mm, vma, prev, rb_link, rb_parent);
- 	__vma_link_file(vma);
-@@ -1705,12 +1705,11 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 		return -EFAULT;
- 
- 	/*
--	 * We must make sure the anon_vma is allocated
--	 * so that the anon_vma locking is not a noop.
-+	 * Unlike expand_downwards, we do not need to take the anon_vma lock,
-+	 * because we leave vma->vm_start and vma->pgoff untouched. 
-+	 * This means rmap lookups of pages inside this VMA stay valid
-+	 * throughout the stack expansion.
- 	 */
--	if (unlikely(anon_vma_prepare(vma)))
--		return -ENOMEM;
--	anon_vma_lock(vma);
- 
- 	/*
- 	 * vma->vm_start/vm_end cannot change under us because the caller
-@@ -1721,7 +1720,6 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 	if (address < PAGE_ALIGN(address+4))
- 		address = PAGE_ALIGN(address+4);
- 	else {
--		anon_vma_unlock(vma);
- 		return -ENOMEM;
- 	}
- 	error = 0;
-@@ -1737,7 +1735,6 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 		if (!error)
- 			vma->vm_end = address;
- 	}
--	anon_vma_unlock(vma);
- 	return error;
- }
- #endif /* CONFIG_STACK_GROWSUP || CONFIG_IA64 */
-@@ -1749,6 +1746,7 @@ static int expand_downwards(struct vm_area_struct *vma,
- 				   unsigned long address)
- {
- 	int error;
-+	struct mm_struct *mm = vma->vm_mm;
- 
- 	/*
- 	 * We must make sure the anon_vma is allocated
-@@ -1762,7 +1760,8 @@ static int expand_downwards(struct vm_area_struct *vma,
- 	if (error)
- 		return error;
- 
--	anon_vma_lock(vma);
-+	spin_lock(&mm->page_table_lock);
-+	anon_vma_lock(vma, &mm->page_table_lock);
- 
- 	/*
- 	 * vma->vm_start/vm_end cannot change under us because the caller
-@@ -1784,6 +1783,8 @@ static int expand_downwards(struct vm_area_struct *vma,
- 		}
- 	}
- 	anon_vma_unlock(vma);
-+	spin_unlock(&mm->page_table_lock);
-+
- 	return error;
- }
- 
