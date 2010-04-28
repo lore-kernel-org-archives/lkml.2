@@ -1,80 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab0D1NWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 09:22:49 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:40376 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754421Ab0D1NWq (ORCPT
+	id S1756782Ab0D1TZf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 15:25:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40258 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756747Ab0D1TZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 09:22:46 -0400
-Date: Wed, 28 Apr 2010 14:21:35 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, Yong Zhang <yong.zhang@windriver.com>,
-       Xiaotian Feng <xtfeng@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Davide Libenzi <davidel@xmailserver.org>,
-       Roland Dreier <rolandd@cisco.com>,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "David S. Miller" <davem@davemloft.net>,
-       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
-       Andreas Herrmann <andreas.herrmann3@amd.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Takashi Iwai <tiwai@suse.de>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
-Message-ID: <20100428132135.GA22268@shareable.org>
-References: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> <u2w7b6bb4a51004280047s8748cbfbi7ed8e2a238121fa9@mail.gmail.com> <q2j412e6f7f1004280052ice434710ra17a4516236bd3f3@mail.gmail.com> <20100428081545.GA19027@windriver.com> <u2t412e6f7f1004280123k642a1511gbce3ed784431dc1d@mail.gmail.com> <8482.1272446987@redhat.com> <q2m412e6f7f1004280417h449c67f9g86fca3dbece106e3@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <q2m412e6f7f1004280417h449c67f9g86fca3dbece106e3@mail.gmail.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Wed, 28 Apr 2010 15:25:33 -0400
+Date: Wed, 28 Apr 2010 12:25:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kelly Burkhart <kelly.burkhart@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Poor localhost net performance on recent stable kernel
+Message-Id: <20100428122502.95647ceb.akpm@linux-foundation.org>
+In-Reply-To: <q2gfa1e4ce71004150844of9c3aaaeh5e5cc7c20d263a41@mail.gmail.com>
+References: <q2gfa1e4ce71004150844of9c3aaaeh5e5cc7c20d263a41@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changli Gao wrote:
-> On Wed, Apr 28, 2010 at 5:29 PM, David Howells <dhowells@redhat.com> wrote:
-> > Changli Gao <xiaosuo@gmail.com> wrote:
-> >
-> >> If there isn't enough work to be done, we'd better not disrupt them
-> >> and  leave them sleeping forever to keep the scheduler happier. Do we
-> >> have reason to keep fair to all the workers? Does it have benefit?
-> >
-> > You've made one important assumption: the processes on the wait queue are
-> > sleeping waiting to service things... but what if the wait queue governs
-> > access to a resource, and all the processes on that wait queue need access to
-> > that resource to do things?  Some of the processes waiting for it may never
-> > get a go, and so necessary work may be left undone.
-> >
+On Thu, 15 Apr 2010 10:44:44 -0500
+Kelly Burkhart <kelly.burkhart@gmail.com> wrote:
+
+> Hello,
 > 
-> You are right. I made the wrong assumption. But we indeed need some
-> primitive to add wait_queue at the head of the wait_queue_head, and I
-> know epoll needs it, at least.
+> While working on upgrading distributions, I've noticed that local
+> network communication is much slower on 2.6.33.2 than on our old
+> kernel 2.6.16.60 (sles 10.2).
 > 
-> fs/eventpoll.c: 1443.
->                 wait.flags |= WQ_FLAG_EXCLUSIVE;
->                 __add_wait_queue(&ep->wq, &wait);
+> Results of netperf, UDP_RR against localhost I get around 150000 tps
+> on the new kernel vs. 290000 tps with the old kernel.  The netperf
+> command:
+> 
+> netperf -T 1 -H 127.0.0.1 -t UDP_RR -c -C -- -r 100
 
-The same thing about assumptions applies here.  The userspace process
-may be waiting for an epoll condition to get access to a resource,
-rather than being a worker thread interchangeable with others.
+I ran this command on a Red Hat 2.6.18-1.2868 kernel and on 2.6.34-rc5.
 
-For example, userspace might be using a pipe as a signal-safe lock, or
-signal-safe multi-token semaphore, and epoll to wait for that pipe.
+2.6.18-1.2868: 43903.29 per second
+2.6.34-rc5:    72506.11 per second
 
-WQ_FLAG_EXCLUSIVE means there is no point waking all tasks, to avoid a
-pointless thundering herd.  It doesn't mean unfairness is ok.
+IIRC, localhost communications have always exhibited quite large
+variations between kernel versions depending on various vagaries
+of alignemnt, cacheline sharing, etc.
 
-The LIFO idea _might_ make sense for interchangeable worker-thread
-situations - including userspace.  It would make sense for pipe
-waiters, socket waiters (especially accept), etc.
+> TCP_RR had similar results.  The problem did not exist with TCP_STREAM.
+> 
+> While trying to track this down, I wrote a test program that writes
+> then reads a 32 bit integer to a pipe:
+> 
+> static void tst_pipe0( int sleep_us )
+> {
+>     int pipefd[2];
+>     int idx;
+>     uint32_t tarr[ITERS];
+> 
+>     printf("tst_pipe0 -- sleep %dus\n", sleep_us);
+> 
+>     if (pipe(pipefd) < 0)
+>         err_exit("pipe");
+> 
+>     for(idx=0; idx<ITERS; ++idx) {
+>         uint32_t btsc;
+>         uint32_t rtsc;
+>         uint32_t etsc;
+>         get_tscl(btsc);
+>         write(pipefd[1], (char *)&btsc, sizeof(btsc));
+>         read(pipefd[0], (char *)&rtsc, sizeof(rtsc));
+>         get_tscl(etsc);
+>         tarr[idx] = etsc-btsc;
+>         do_sleep(sleep_us);
+>     }
+>     prt_avg(tarr, ITERS);
+>     close(pipefd[0]);
+>     close(pipefd[1]);
+>     printf("\n");
+> }
+> 
+> There's a dramatic difference if there's a sleep between iterations on
+> the new kernel.  On the old kernel the write/read round trip takes
+> 1100-1300 cycles with or without sleep.  On the new kernel, with no
+> sleep the round trip is about 1400 cycles.  It doubles with a 1us
+> sleep then gradually increases to 12000-14000 cycles then stabilizes
+> as I increase the sleep time to 1500us.  I'm not sure if this is
+> related to the netperf difference or is a completely different
+> scheduling issue.
+> 
+> I'm running on an Intel Xeon X5570 @ 2.93GHz.  Different tick/notick,
+> preemption, HZ kernel config option values doesn't substantially change
+> the magnitude of the difference.
+> 
+> Does anyone have any ideas regarding what could be causing the netperf
+> issue?  And is the pipe microbenchmark meaningful and if so what does
+> it mean?
 
-Do you have any measurements which showing the LIFO mode performing
-better than FIFO, and by how much?
+Pipes don't share much code with udp-to-localhost - this is probably
+something different.
 
--- Jamie
+If you were using two processes then I'd cheerily blame the scheduler. 
+Because blaming the scheduler for WeirdShitWhichBroke is usually
+correct.  But as you're using a single process then the pipe code
+itself is a more likely source for any slowdowns.
+
+As for the strange behavior with sleeps: dunno.  There are various
+adjustments made to the sleep duration when performing short sleeps -
+some in-kernel, perhaps some in glibc.  Plus we've been evolving the
+internal implementation for sleeps, and changes in x86 clocksources and
+NOHZ could impact the accuracy of the sleep duration.  So perhaps
+what's happening is that different kernels are sleeping for different
+durations when asked to sleep for short durations.
+
+If it's not that then it's probably the scheduler ;) But even the
+scheduler would have trouble causing these sorts of effects if the
+machine is otherwise idle.
+
