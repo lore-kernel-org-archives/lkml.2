@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab0D1UL2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 16:11:28 -0400
-Received: from mail.perches.com ([173.55.12.10]:1805 "EHLO mail.perches.com"
+	id S1753976Ab0D1JsT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 05:48:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33417 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754591Ab0D1UL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 16:11:27 -0400
-Subject: Re: [PATCH 09/13] drivers/staging/rtl8192su: Hoist assign from if
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-       devel@driverdev.osuosl.org
-In-Reply-To: <20100428194100.GA3602@suse.de>
-References: <cover.1269493047.git.joe@perches.com>
-	 <c45ba099fc8f31f166c4067f2eff609c8eaf422f.1269493047.git.joe@perches.com>
-	 <20100428182710.GD8509@kroah.com>
-	 <1272481489.7831.24.camel@Joe-Laptop.home> <20100428191116.GA29828@suse.de>
-	 <1272482446.9188.4.camel@Joe-Laptop.home>  <20100428194100.GA3602@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Apr 2010 13:11:25 -0700
-Message-ID: <1272485485.1609.18.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753732Ab0D1JsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 05:48:17 -0400
+Message-ID: <4BD80449.4010700@redhat.com>
+Date: Wed, 28 Apr 2010 12:47:53 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Huang Ying <ying.huang@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/2] KVM, Fix QEMU-KVM is killed by guest SRAO MCE
+References: <1272351860.24125.15.camel@yhuang-dev.sh.intel.com>	 <4BD69680.10402@redhat.com>	 <1272360341.24125.116.camel@yhuang-dev.sh.intel.com>	 <4BD6AEC7.5020609@redhat.com> <1272423375.24125.189.camel@yhuang-dev.sh.intel.com>
+In-Reply-To: <1272423375.24125.189.camel@yhuang-dev.sh.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-28 at 12:41 -0700, Greg KH wrote:
-> > Define _trivial_ and define obvious.
-> "I know it when I see it."
+On 04/28/2010 05:56 AM, Huang Ying wrote:
+>    
+>>>
+>>> Just want to use the side effect of copy_from_user, SIGBUS will be sent
+>>> to current process because the page touched is marked as poisoned. That
+>>> is, failure is expected, so the return value is not checked.
+>>>
+>>>        
+>> What if the failure doesn't happen?  Say, someone mmap()ed over the page.
+>>      
+> Sorry, not get your idea clearly. hva is re-mmap()ed? We just read the
+> hva, not write, so I think it should be OK here.
+>
+>    
 
-As do I.
+We don't generate a signal in this case.  Does the code continue to work 
+correctly (not sure what correctly is in this case... should probably 
+just continue).
 
-It wasn't an autoscript only process.
+There's also the possibility of -EFAULT.
 
-I inspected all of those hoist patches before sending them
-modified some and decided not to modify others.
-
+-- 
+error compiling committee.c: too many arguments to function
 
