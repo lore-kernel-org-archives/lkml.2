@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab0D1RqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 13:46:06 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:53492 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755488Ab0D1RqC (ORCPT
+	id S1751284Ab0D1IR1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 04:17:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:51210 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab0D1IRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 13:46:02 -0400
-Date: Wed, 28 Apr 2010 13:46:00 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Greg KH <gregkh@suse.de>, Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>,
-       stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [169/197] modules: fix incorrect percpu usage
-Message-ID: <20100428174600.GA4205@Krystal>
-References: <20100422191857.GA13268@kroah.com> <20100422190922.517802235@kvm.kroah.org>
+	Wed, 28 Apr 2010 04:17:24 -0400
+Date: Wed, 28 Apr 2010 16:15:45 +0800
+From: Yong Zhang <yong.zhang@windriver.com>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Roland Dreier <rolandd@cisco.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       David Howells <dhowells@redhat.com>, Takashi Iwai <tiwai@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
+Message-ID: <20100428081545.GA19027@windriver.com>
+Reply-To: Yong Zhang <yong.zhang@windriver.com>
+References: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com>
+ <u2w7b6bb4a51004280047s8748cbfbi7ed8e2a238121fa9@mail.gmail.com>
+ <q2j412e6f7f1004280052ice434710ra17a4516236bd3f3@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100422190922.517802235@kvm.kroah.org>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:45:17 up 95 days, 20:22,  7 users,  load average: 0.04, 0.02,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <q2j412e6f7f1004280052ice434710ra17a4516236bd3f3@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 28 Apr 2010 08:15:48.0183 (UTC) FILETIME=[020F3E70:01CAE6AB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH (gregkh@suse.de) wrote:
-> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Wed, Apr 28, 2010 at 03:52:01PM +0800, Changli Gao wrote:
+> On Wed, Apr 28, 2010 at 3:47 PM, Xiaotian Feng <xtfeng@gmail.com> wrote:
+> > On Wed, Apr 28, 2010 at 1:03 PM, Changli Gao <xiaosuo@gmail.com> wrote:
+> >> implement the exclusive wait queue as a LIFO queue
+> >>
+> >> If the exclusive wait queue is also a LIFO queue as the normal wait queue, the
+> >> process who goes to sleep recently, will be woke up first. As its memory is
+> >> more likely in cache, we will get better performance. And when there are many
+> >> processes waiting on a exclusive wait queue, some of them may not be woke up,
+> >> if the others can handle the workload, and it will reduce the load of
+> >> the scheduler.
+> >>
+> >
+> > Starve some processes for performance?
+> >
 > 
-> ------------------
-> 
-> From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> 
-> Mainline does not need this fix, as commit
-> 259354deaaf03d49a02dbb9975d6ec2a54675672 fixed the problem by refactoring.
-> 
-> Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
-> for per cpu pointers).
-> 
-> Introduced by commit:
-> 
-> module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
-> 
-> This patch should be queued for the stable branch, for kernels 2.6.29.x to
-> 2.6.33.x.  (tested on 2.6.33.1 x86_64)
+> Starve? Oh, No. If we don't need these processes, and we can do better
 
-Tejun, should this patch be applied to 2.6.32.x, or will it cause problems on
-ia64 ?
+What do you mean "we don't need these processes"?
 
-Thanks,
+> without them, why we wake them up?
 
-Mathieu
+So some processs(at the tail of exclusive list)will be treated abnormally
+and it will sleep for a long time, is this reasonable?
 
 > 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> CC: Randy Dunlap <randy.dunlap@oracle.com>
-> CC: Eric Dumazet <dada1@cosmosbay.com>
-> CC: Rusty Russell <rusty@rustcorp.com.au>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Linus Torvalds <torvalds@linux-foundation.org>
-> CC: Greg Kroah-Hartman <gregkh@suse.de>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> ---
->  kernel/module.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -555,7 +555,7 @@ static void percpu_modcopy(void *pcpudes
->  	int cpu;
->  
->  	for_each_possible_cpu(cpu)
-> -		memcpy(pcpudest + per_cpu_offset(cpu), from, size);
-> +		memcpy(per_cpu_ptr(pcpudest, cpu), from, size);
->  }
->  
->  #else /* ... !CONFIG_SMP */
-> 
-> 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+> -- 
+> Regards，
+> Changli Gao(xiaosuo@gmail.com)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
