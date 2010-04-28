@@ -1,165 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab0D1QXr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 12:23:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34853 "EHLO mx1.redhat.com"
+	id S1755001Ab0D1PtP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 11:49:15 -0400
+Received: from kroah.org ([198.145.64.141]:51441 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754040Ab0D1QXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 12:23:46 -0400
-Date: Wed, 28 Apr 2010 18:23:05 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/3] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
- the wrong VMA information
-Message-ID: <20100428162305.GX510@random.random>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
- <1272403852-10479-3-git-send-email-mel@csn.ul.ie>
- <20100427231007.GA510@random.random>
- <20100428091555.GB15815@csn.ul.ie>
- <20100428153525.GR510@random.random>
- <20100428155558.GI15815@csn.ul.ie>
+	id S1754596Ab0D1PtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 11:49:04 -0400
+Date: Wed, 28 Apr 2010 08:28:09 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tobias Klauser <tklauser@distanz.ch>
+Subject: Re: linux-next: build failure after merge of the staging tree
+Message-ID: <20100428152809.GF4483@kroah.com>
+References: <20100427141224.834a102a.sfr@canb.auug.org.au>
+ <20100427151305.GA7653@kroah.com>
+ <20100428161425.eff4c40a.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100428155558.GI15815@csn.ul.ie>
+In-Reply-To: <20100428161425.eff4c40a.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 04:55:58PM +0100, Mel Gorman wrote:
-> Frankly, I don't understand why it was safe to drop the lock either.
-> Maybe it was a mistake but I still haven't convinced myself I fully
-> understand the subtleties of the anon_vma changes.
-
-I understand the design but I'm also unsure about the details. it's
-just this lock that gets splitted and when you update the
-vm_start/pgoff with only the vma->anon_vma->lock, the vma may be
-queued in multiple other anon_vmas, and you're only serializing
-and safe for the pages that have page_mapcount 1, and point to the
-local anon_vma == vma->anon_vma, not any other shared page.
-
-The removal of the vma->anon_vma->lock from vma_adjust just seems an
-unrelated mistake to me too, but I don't know for sure why yet.
-
-Basically vma_adjust needs the anon_vma lock like expand_downards has.
-
-After you fix vma_adjust to be as safe as expand_downards you've also
-to take care of the rmap_walk that may run on a page->mapping =
-anon_vma that isn't the vma->anon_vma and you're not taking that
-anon_vma->lock of the shared page, when you change the vma
-vm_pgoff/vm_start. If rmap_walk finds to find a pte, becauase of that,
-migrate will crash.
-
-> Temporarily at least until I figured out if execve was the only problem. The
-
-For aa.git it is sure enough. And as long as you only see the migrate
-crash in execve it's also sure enough.
-
-> locking in vma_adjust didn't look like the prime reason for the crash
-> but the lack of locking there is still very odd.
-
-And I think it needs fixing to be safe.
-
+On Wed, Apr 28, 2010 at 04:14:25PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> > I agree dropping patch 1 but
-> > to me the having to take all the anon_vma locks for every
-> > vma->anon_vma->lock that we walk seems a must, otherwise
-> > expand_downwards and vma_adjust won't be ok, plus we need to re-add
-> > the anon_vma lock to vma_adjust, it can't be safe to alter vm_pgoff
-> > and vm_start outside of the anon_vma->lock. Or I am mistaken?
+> On Tue, 27 Apr 2010 08:13:05 -0700 Greg KH <greg@kroah.com> wrote:
+> >
+> > On Tue, Apr 27, 2010 at 02:12:24PM +1000, Stephen Rothwell wrote:
+> > > 
+> > > After merging the staging tree, today's linux-next build (x86_64
+> > > allmodconfig) failed like this:
+> > > 
+> > > ERROR: "uart_console_device" [drivers/serial/altera_uart.ko] undefined!
+> > > ERROR: "uart_console_device" [drivers/serial/altera_jtaguart.ko] undefined!
+> > > 
+> > > Introduced by commits 76bdbd933febe791fee114e7bb6c42bbd1a3f4f3 ("serial:
+> > > Add driver for the Altera UART") and
+> > > 11c59b34b299d7214b466cf799410a9a540476e3 ("serial: Add driver for the
+> > > Altera JTAG UART").
+> > > 
+> > > I have reverted those commits for today.
 > > 
+> > Those came in through the tty quilt tree, not the staging tree, right?
 > 
-> No, you're not. If nothing else, vma_address can return the wrong value because
-> the VMAs vm_start and vm_pgoff were in the process of being updated but not
-> fully updated. It's hard to see how vma_address would return the wrong value
-> and miss a migration PTE as a result but it's a possibility.  It's probably
-> a lot more important for transparent hugepage support.
+> Yeah, I just don't do a build between merging the tty and staging trees.
 
-For the rmap_walk itself, migrate and split_huge_page are identical,
-the main problem of transparent hugepage support is that I used the
-anon_vma->lock in a wider way and taken well before the rmap_walk, so
-I'm screwed in a worse way than migrate.
+Ok, that makes sense.
 
-So I may have to change from anon_vma->lock to the compound_lock in
-wait_split_huge_page(). But I'll still need the restarting loop of
-anon_vma locks then inside the two rmap_walk run by split_huge_page.
-Problem is, I would have preferred to do this locking change later as
-a pure optimization than as a requirement for merging and running
-stable, as it'll make things slightly more complex.
-
-BTW, if we were to share the lock across all anon_vmas as I mentioned
-in prev email, and just reduce the chain length, then it'd solve all
-issues for rmap_walk in migrate and also for THP completely.
-
-> > Patch 2 wouldn't help the swapops crash we reproduced because at that
-> > point the anon_vma of the stack is the local one, it's just after
-> > execve.
-> > 
-> > vma_adjust and expand_downards would alter vm_pgoff and vm_start while
-> > taking only the vma->anon_vma->lock where the vma->anon_vma is the
-> > _local_ one of the vma. 
+> > Tobias, care to send me a patch to resolve this?  I already fixed one
+> > Kconfig issue in these patches (forcing the driver to always be built
+> > in.)  Is that what caused this symbol issue?
 > 
-> True, although in the case of expand_downwards, it's highly unlikely that
-> there is also a migration PTE to be cleaned up. It's hard to see how a
-> migration PTE would be left behind in that case but it still looks wrong to
-> be updating the VMA fields without locking.
+> I have reverted those commits again today.
 
-Every time we fail to find the PTE, it can also mean try_to_unmap just
-failed to instantiate the migration pte leading to random memory
-corruption in migrate. If a task fork and the some of the stack pages
-at the bottom of the stack are shared, but the top of the stack isn't
-shared (so the vma->anon_vma->lock only protects the top and not the
-bottom) migrate should be able to silently random corrupt memory right
-now because of this.
+I think I'll go drop these patches now.  Tobias, care to resend them
+when you have them working properly?
 
-> > But a vma in mainline can be indexed in
-> > infinite anon_vmas, so to prevent breaking migration
-> > vma_adjust/expand_downards the rmap_walk would need to take _all_
-> > anon_vma->locks for every anon_vma that the vma is indexed into.
-> 
-> I felt this would be too heavy in the common case which is why I made
-> rmap_walk() do the try-lock-or-back-off instead because rmap_walk is typically
-> in far less critical paths.
+thanks,
 
-If we could take all locks, it'd make life easier as it'd already
-implement the "shared lock" but without sharing it. It won't provide
-much runtime benefit though (just rmap_walk will be even slower than
-real shared lock, and vma_adjust/expand_downards will be slightly faster).
-
-> > Or
-> > alternatively like you implemented rmap_walk would need to check if
-> > the vma we found in the rmap_walk is different from the original
-> > anon_vma and to take the vma->anon_vma->lock (so taking the
-> > anon_vma->lock of the local anon_vma of every vma) before it can
-> > actually read the vma->vm_pgoff/vm_start inside vma_address.
-> > 
-> 
-> To be absolutly sure, yes this is required. I don't think we've been hitting
-> this exact problem in these tests but it still is a better plan than adjusting
-> VMA details without locks.
-
-We've not been hitting it unless somebody crashed with random
-corruption.
-
-> > If the above is right it also means the new anon-vma changes also break
-> > the whole locking of transparent hugepage, see wait_split_huge_page,
-> > it does a spin_unlock_wait(&anon_vma->lock) thinking that waiting the
-> > "local" anon-vma is enough, when in fact the hugepage may be shared
-> > and belonging to the parent parent_vma->anon_vma and not to the local
-> > one of the last child that is waiting on the wrong lock. So I may have
-> > to rewrite this part of the thp locking to solve this. And for me it's
-> > not enough to just taking more locks inside the rmap walks inside
-> > split_huge_page as I used the anon_vma lock outside too.
-> > 
-> 
-> No fun. That potentially could be a lot of locks to take to split the
-> page.
-
-compound_lock should be able to replace it in a more granular way, but
-it's not exactly the time I was looking to apply scalar optimization
-to THP as it may introduce other issues I can't foresee right now.
+greg k-h
