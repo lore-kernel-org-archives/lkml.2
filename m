@@ -1,42 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab0D1Ptg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:49:36 -0400
-Received: from kroah.org ([198.145.64.141]:51427 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381Ab0D1PtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:49:02 -0400
-Date: Wed, 28 Apr 2010 08:25:58 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jason Baldus <jason.baldus@gmail.com>,
-       H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: linux-next: manual merge of the staging-next tree with the
- staging.current tree
-Message-ID: <20100428152558.GC4483@kroah.com>
-References: <20100428160803.29fc7fe8.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100428160803.29fc7fe8.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755051Ab0D1SXE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 14:23:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55021 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753218Ab0D1SXB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 14:23:01 -0400
+Date: Wed, 28 Apr 2010 11:22:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: haavard.skinnemoen@atmel.com, linux-arm-kernel@lists.infradead.org,
+       linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel@avr32linux.org
+Subject: Re: [PATCH 1/4] MMC: atmel-mci: fix two parameters swapped
+Message-Id: <20100428112245.23e99d70.akpm@linux-foundation.org>
+In-Reply-To: <bfa27c51250b39deeccbf6f3a656db4e0b73ce92.1272378853.git.nicolas.ferre@atmel.com>
+References: <bfa27c51250b39deeccbf6f3a656db4e0b73ce92.1272378853.git.nicolas.ferre@atmel.com>
+	<bfa27c51250b39deeccbf6f3a656db4e0b73ce92.1272378853.git.nicolas.ferre@atmel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 04:08:03PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the staging-next tree got a conflict in
-> drivers/staging/dt3155/dt3155_drv.c between commit
-> 19ba984dd7d8dcf67cebc2ba55abbe454e318fb3 ("Staging: dt3155: fix 50Hz
-> configuration") from the staging.current tree and commit
-> da7bcc953ecf52d33b76b983ad5491d4d29f5f6a ("Staging: dt3155: fix
-> parentheses and bracket spacing style issues") from the staging-next tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
+Patches 1-3 (at least) appear to be applicable to 2.6.33.x and perhaps
+earlier.
 
-The fix looks fine, thanks.
+But you didn't cc stable@kernel.org and there was no Cc:
+<stable@kernel.org> in the changelog and in this case I'd prefer not to
+make that decision myself?
 
-greg k-h
