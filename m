@@ -1,111 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab0D1NXH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 09:23:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58598 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754573Ab0D1NW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 09:22:57 -0400
-Date: Wed, 28 Apr 2010 02:59:37 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/3] mm,migration: During fork(), wait for migration to
- end if migration PTE is encountered
-Message-ID: <20100428005937.GI510@random.random>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
- <1272403852-10479-2-git-send-email-mel@csn.ul.ie>
- <20100427222245.GE8860@random.random>
- <20100428085203.4336b761.kamezawa.hiroyu@jp.fujitsu.com>
- <20100428001821.GF510@random.random>
- <20100428001911.GG510@random.random>
- <20100428092802.816e2716.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100428092802.816e2716.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755942Ab0D1Qqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 12:46:48 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39887
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752704Ab0D1Qqq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 12:46:46 -0400
+Date: Wed, 28 Apr 2010 09:46:52 -0700 (PDT)
+Message-Id: <20100428.094652.22534047.davem@davemloft.net>
+To: peter.fritzsche@gmx.de
+Cc: arnd@arndb.de, mingo@elte.hu, akpm@linux-foundation.org,
+       heiko.carstens@de.ibm.com, mathieu.desnoyers@polymtl.ca,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+       wesolows@foobazco.org
+Subject: Re: [PATCH 2/2] asm-generic: Don't warn that atomic_t is only 24
+ bit
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1272453036-18670-1-git-send-email-peter.fritzsche@gmx.de>
+References: <1272451837-17961-1-git-send-email-peter.fritzsche@gmx.de>
+	<1272453036-18670-1-git-send-email-peter.fritzsche@gmx.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 09:28:02AM +0900, KAMEZAWA Hiroyuki wrote:
-> why we have to remove migration_pte by rmap_walk() which doesnt' exist ?
+From: Peter Fritzsche <peter.fritzsche@gmx.de>
+Date: Wed, 28 Apr 2010 13:10:36 +0200
 
-I already thought this for split_huge_page and because split_huge_page
-that already waits inside copy_huge_pmd if there's any
-pmd_trans_splitting bit set, isn't removing the requirement for
-list_add_tail in anon_vma_[chain_]link this patch also isn't removing
-it.
+> 32-bit Sparc used to only allow usage of 24-bit of it's atomic_t type.
+> This was corrected with linux 2.6.3 when Keith M Wesolowski changed the
+> implementation to use the parisc approach of having an array of
+> spinlocks to protect the atomic_t.
+> 
+> These warnings were also removed from the sparc implementation when the
+> new implementation was merged in BKrev:402e4949VThdc6D3iaosSFUgabMfvw,
+> but the warning still remained in some other places without any
+> 24-bit-only atomic_t implementation inside the kernel.
+> 
+> We should remove these warnings to allow users to rely on the full
+> 32-bit range of atomic_t.
+> 
+> Signed-off-by: Peter Fritzsche <peter.fritzsche@gmx.de>
 
-But it's more complex than my prev explanation now that I think about
-it more so no wonder it's not clear why yet (my fault).
-
-So the thing is, if you patch it this way, the second rmap_walk run by
-remove_migration_ptes will be safe even if the ordering is inverted,
-but then the first rmap_walk that establishes the migration entry, will
-still break if the rmap walk scans the child before the parent.
-
-The only objective of the patch is to remove the list_add_tail
-requirement but I'll show that it's still required by the first
-rmap_walk in try_to_unmap below:
-
-CPU A	    		  	      	CPU B
-				      	fork
-try_to_unmap
-try to set migration entry in child (null pte still, nothing done)
-					copy pte and map page in child pte (no
-				      	migration entry set on child)
-set migration entry in parent
-
-parent ends up with migration entry but child not, breaking migration
-in another way. so even with the patch, the only way to be safe is
-that rmap_walk always scans the parent _first_.
-
-So this patch is a noop from every angle, and it just moves the
-ordering requirement from the remove_migration_ptes to try_to_unmap,
-but it doesn't remove it as far as I can tell. So it only slowdown
-fork a bit for no good.
-
-split_huge_page is about the same. If the ordering is inverted,
-split_huge_page could set a splitting pmd in the parent only, like the
-above try_to_unmap would set the migration pte in the parent only.
-
-> Anyway, I agree there are no oops. But there are risks because migration is
-> a feature which people don't tend to take care of (as memcg ;)
-> I like conservative approach for this kind of features.
-
-Don't worry, migrate will run 24/7 the moment THP is in ;).
-
-What migration really changed (and it's beneficial so split_huge_page
-isn't introducing new requirement) is that rmap has to be exact at all
-times, if it was only swap using it, nothing would happen because of
-the vma_adjust/move_page_tables/vma_adjust not being in an atomic
-section against the rmap_walk (the anon_vma lock of the process stack
-vma is enough to make it atomic against rmap_walk luckily).
-
-On a side note: split_huge_page isn't using migration because:
-
-1) migrate.c can't deal with pmd or huge pmd (or compound pages at all)
-2) we need it to split in place for gup (used by futex, o_direct,
-   vmware workstation etc... and they definitely can't be slowed down
-   by having to split the hugepage before gup returns, the only one
-   that wouldn't be able to prevent gup splitting the hugepage without
-   causing issues to split_huge_page is kvm thanks to the mmu
-   notifier, but to do so it'd require to introduce
-   a gup_fast variant that wouldn't be increasing the page count, but
-   because of o_direct and friends we can't avoid to deal with staying
-   in place in split_huge_page), while migrate
-   by definition is about migrating something from here to there,
-   not doing anything in place
-3) we need to convert page structures from compound to not compound in
-   place (beisdes the fact the physical memory is in place too),
-   inside of the two rmap walks which is definitely specialized
-   enough not to fit into the migrate framework
-
-But memory compaction is the definitive user of migration code, as
-it's only moving not-yet-huge pages from here to there, and THP
-will run memory compaction every time we miss a hugepage in the buddy.
+Acked-by: David S. Miller <davem@davemloft.net>
