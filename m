@@ -1,36 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab0D1MVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 08:21:10 -0400
-Received: from web83508.mail.sp1.yahoo.com ([216.252.120.164]:48374 "HELO
-	web83508.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750945Ab0D1MVI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 08:21:08 -0400
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Apr 2010 08:21:08 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=q2AEEIcTODIRNP9q7RKwOsWx0NUEv6Yf1FCW8vjaNrCr+/ENmf1tk/qxtxoUe8G3ebFXT45Y8Ttq/Rj5GYRYkbvXfELRhM4SLbX0RqC6UY6GvFafMLQIWtP44/UPpkJDoufbLMbq2istOg+lytY20wLsRpG4JqHrZVuQEKz27GY=;
-Message-ID: <688332.73820.qm@web83508.mail.sp1.yahoo.com>
-X-YMail-OSG: LOSJg4YVM1nbuHF17E2DKyI.VyFDjXe3zYnsovr5CONLmu4
- n5ME9l7EU9VKdx19YTXLfhIQ1jSNCYjZMtJcVmM8yMO54oL645mGKFAMZ6NH
- lPDsQUp32yKhWeQaIka6pnajLEe_.5Lrd4rVkB2deOfDls.r_B3Rd6IIYK9o
- Xl7uc7msVFN2RJ.93Q5eF2DqEpY1RG17leFxQigTIXqIjaC1DKPuge6oklnD
- EekajPeVTzLWbjVWMP9Ihutrn4aGPuaV2stNozg346SxdjkKnAOzIvBPpwDs
- Nue4CvpRaeNXqzhsnM0g-
-X-Mailer: YahooMailClassic/10.1.9 YahooMailWebService/0.8.102.267879
-Date: Wed, 28 Apr 2010 05:11:04 -0700 (PDT)
-From: Queen Elizabeth Foundation <benton-r@sbcglobal.net>
-Reply-To: sec.qefoundation1@hotmail.com
-To: undisclosed recipients:;
+	id S1756637Ab0D1S6A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 14:58:00 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53136 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754263Ab0D1S57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 14:57:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg@redhat.com>, lenb@kernel.org
+Subject: Re: [PATCH] acpi: Fall back to manually changing SCI_EN
+Date: Wed, 28 Apr 2010 20:58:20 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       Len Brown <len.brown@intel.com>
+References: <1271711614-15527-1-git-send-email-mjg@redhat.com>
+In-Reply-To: <1271711614-15527-1-git-send-email-mjg@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004282058.20910.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 19 April 2010, Matthew Garrett wrote:
+> The ACPI spec tells us that the ACPI SCI_EN bit is under hardware control
+> and shouldn't be touched by the OS. It seems that the Leading Other OS
+> ignores this and some machines expect this behaviour. We have a blacklist
+> for these, but given that we're able to detect the failure case and the
+> alternative to breaking the spec is letting the machine crash and burn,
+> let's try falling back when we know the alternative is a mostly-dead
+> machine.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
+I guess we can try that, but I'd prefer it if that went into .35.
 
-Congratulations The Queen Elizabeth's Foundation has awarded you cash Grant/Donation of £250,000.00. send us your Names...Country....Address....Tel....Age...Occupation
+It _should_ be safe, but ...
+
+Anyway, Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+
+> ---
+>  drivers/acpi/sleep.c |   16 +++++++++++++---
+>  1 files changed, 13 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+> index f74834a..79df8d4 100644
+> --- a/drivers/acpi/sleep.c
+> +++ b/drivers/acpi/sleep.c
+> @@ -227,6 +227,7 @@ static int acpi_suspend_begin(suspend_state_t pm_state)
+>  static int acpi_suspend_enter(suspend_state_t pm_state)
+>  {
+>  	acpi_status status = AE_OK;
+> +	acpi_status enable_status = AE_OK;
+>  	unsigned long flags = 0;
+>  	u32 acpi_state = acpi_target_sleep_state;
+>  
+> @@ -254,10 +255,19 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+>  	}
+>  
+>  	/* If ACPI is not enabled by the BIOS, we need to enable it here. */
+> -	if (set_sci_en_on_resume)
+> +	if (!set_sci_en_on_resume)
+> +		enable_status = acpi_enable();
+> +
+> +	if (set_sci_en_on_resume || enable_status == AE_NO_HARDWARE_RESPONSE)
+> +		/* If we're still in legacy mode then we have a problem. The
+> +		 * spec tells us that this bit is under hardware control, but
+> +		 * there's no plausible way that the OS can transition back to
+> +		 * legacy mode so our choices here are to either ignore the
+> +		 * spec or crash and burn horribly. The latter doesn't seem
+> +		 * like it's ever going to be the preferable choice, so let's
+> +		 * live dangerously.
+> +		 */
+>  		acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
+> -	else
+> -		acpi_enable();
+>  
+>  	/* Reprogram control registers and execute _BFS */
+>  	acpi_leave_sleep_state_prep(acpi_state);
