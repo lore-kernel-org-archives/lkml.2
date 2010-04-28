@@ -1,146 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472Ab0D1Thh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 15:37:37 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57499
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1749667Ab0D1Thf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 15:37:35 -0400
-Date: Wed, 28 Apr 2010 12:37:41 -0700 (PDT)
-Message-Id: <20100428.123741.189712262.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=utf-8
+	id S1754397Ab0D1L4R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 07:56:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57952 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754278Ab0D1L4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 07:56:15 -0400
+Message-ID: <4BD8228D.7090708@cn.fujitsu.com>
+Date: Wed, 28 Apr 2010 19:57:01 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+Subject: [PATCH] kvm mmu: reduce 50% memory usage
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o3SJf4mE021942
 
 
-Mainly I'm pushing this to revert the TCP bind() bug fix, it's
-causing too much fallout to try and sort out this late in the
--rc series.
+I think users will enable tdp when their hardwares support ept or npt.
+This patch can reduce about 50% kvm mmu memory usage for they.
 
-Bunch of OOPS'ers for SCTP, Intel chip fixes (lack of PHY powerdown in
-ixgbe lets crap into chip FIFO wedging the chip completely, etc.), a
-regression fix for tg3 on systems that do run out of MSI vectors, bnx2
-driver fixes (lost MSI-X vectors, 'scheduling while atomic' fix) and
-hopefully r8169 MAC address programming is solid now.
+This simple patch use the fact that:
 
-Please pull, thanks a lot!
+When sp->role.direct is set, sp->gfns does not contain any essential
+information, leaf sptes reachable from this sp are for a continuate
+guest physical memory range(a linear range).
+So sp->gfns[i](if it was set) equals to sp->gfn + i. (PT_PAGE_TABLE_LEVEL)
+Obviously, it is not essential information, we can calculate it when need.
 
-The following changes since commit b91ce4d14a21fc04d165be30319541e0f9204f15:
-  Linus Torvalds (1):
-        Merge git://git.kernel.org/.../davem/net-2.6
+It means we don't need sp->gfns when sp->role.direct=1,
+Thus we can save one page usage for every kvm_mmu_page.
 
-are available in the git repository at:
+Note:
+Access to sp->gfns must be wrapped by kvm_mmu_page_get_gfn()
+or kvm_mmu_page_set_gfn().
+It is only exposed in FNAME(sync_page).
 
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ mmu.c         |   38 +++++++++++++++++++++++++++++---------
+ paging_tmpl.h |    3 +++
+ 2 files changed, 32 insertions(+), 9 deletions(-)
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index ddfa865..a5c6719 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -393,6 +393,22 @@ static void mmu_free_rmap_desc(struct kvm_rmap_desc *rd)
+ 	kfree(rd);
+ }
+ 
++static gfn_t kvm_mmu_page_get_gfn(struct kvm_mmu_page *sp, int index)
++{
++	if (!sp->role.direct)
++		return sp->gfns[index];
++
++	return sp->gfn + (index << ((sp->role.level - 1) * PT64_LEVEL_BITS));
++}
++
++static void kvm_mmu_page_set_gfn(struct kvm_mmu_page *sp, int index, gfn_t gfn)
++{
++	if (sp->role.direct)
++		BUG_ON(gfn != kvm_mmu_page_get_gfn(sp, index));
++	else
++		sp->gfns[index] = gfn;
++}
++
+ /*
+  * Return the pointer to the largepage write count for a given
+  * gfn, handling slots that are not large page aligned.
+@@ -543,7 +559,7 @@ static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+ 		return count;
+ 	gfn = unalias_gfn(vcpu->kvm, gfn);
+ 	sp = page_header(__pa(spte));
+-	sp->gfns[spte - sp->spt] = gfn;
++	kvm_mmu_page_set_gfn(sp, spte - sp->spt, gfn);
+ 	rmapp = gfn_to_rmap(vcpu->kvm, gfn, sp->role.level);
+ 	if (!*rmapp) {
+ 		rmap_printk("rmap_add: %p %llx 0->1\n", spte, *spte);
+@@ -601,6 +617,7 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
+ 	struct kvm_rmap_desc *prev_desc;
+ 	struct kvm_mmu_page *sp;
+ 	pfn_t pfn;
++	gfn_t gfn;
+ 	unsigned long *rmapp;
+ 	int i;
+ 
+@@ -612,7 +629,8 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
+ 		kvm_set_pfn_accessed(pfn);
+ 	if (is_writable_pte(*spte))
+ 		kvm_set_pfn_dirty(pfn);
+-	rmapp = gfn_to_rmap(kvm, sp->gfns[spte - sp->spt], sp->role.level);
++	gfn = kvm_mmu_page_get_gfn(sp, spte - sp->spt);
++	rmapp = gfn_to_rmap(kvm, gfn, sp->role.level);
+ 	if (!*rmapp) {
+ 		printk(KERN_ERR "rmap_remove: %p %llx 0->BUG\n", spte, *spte);
+ 		BUG();
+@@ -896,7 +914,8 @@ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ 	ASSERT(is_empty_shadow_page(sp->spt));
+ 	list_del(&sp->link);
+ 	__free_page(virt_to_page(sp->spt));
+-	__free_page(virt_to_page(sp->gfns));
++	if (!sp->role.direct)
++		__free_page(virt_to_page(sp->gfns));
+ 	kfree(sp);
+ 	++kvm->arch.n_free_mmu_pages;
+ }
+@@ -907,13 +926,15 @@ static unsigned kvm_page_table_hashfn(gfn_t gfn)
+ }
+ 
+ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
+-					       u64 *parent_pte)
++					       u64 *parent_pte, int direct)
+ {
+ 	struct kvm_mmu_page *sp;
+ 
+ 	sp = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_header_cache, sizeof *sp);
+ 	sp->spt = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_cache, PAGE_SIZE);
+-	sp->gfns = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_cache, PAGE_SIZE);
++	if (!direct)
++		sp->gfns = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_cache,
++						  PAGE_SIZE);
+ 	set_page_private(virt_to_page(sp->spt), (unsigned long)sp);
+ 	list_add(&sp->link, &vcpu->kvm->arch.active_mmu_pages);
+ 	bitmap_zero(sp->slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
+@@ -1347,7 +1368,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 			return sp;
+ 		}
+ 	++vcpu->kvm->stat.mmu_cache_miss;
+-	sp = kvm_mmu_alloc_page(vcpu, parent_pte);
++	sp = kvm_mmu_alloc_page(vcpu, parent_pte, direct);
+ 	if (!sp)
+ 		return sp;
+ 	sp->gfn = gfn;
+@@ -3314,7 +3335,7 @@ void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
+ 
+ 	if (*sptep & PT_WRITABLE_MASK) {
+ 		rev_sp = page_header(__pa(sptep));
+-		gfn = rev_sp->gfns[sptep - rev_sp->spt];
++		gfn = kvm_mmu_page_get_gfn(rev_sp, sptep - rev_sp->spt);
+ 
+ 		if (!gfn_to_memslot(kvm, gfn)) {
+ 			if (!printk_ratelimit())
+@@ -3328,8 +3349,7 @@ void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
+ 			return;
+ 		}
+ 
+-		rmapp = gfn_to_rmap(kvm, rev_sp->gfns[sptep - rev_sp->spt],
+-				    rev_sp->role.level);
++		rmapp = gfn_to_rmap(kvm, gfn, rev_sp->role.level);
+ 		if (!*rmapp) {
+ 			if (!printk_ratelimit())
+ 				return;
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index d0cc07e..702c016 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -576,6 +576,9 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 
+ 	offset = nr_present = 0;
+ 
++	/* direct kvm_mmu_page can not be unsync. */
++	BUG_ON(sp->role.direct);
++
+ 	if (PTTYPE == 32)
+ 		offset = sp->role.quadrant << PT64_LEVEL_BITS;
+ 
 
-Andre Detsch (2):
-      tg3: Fix INTx fallback when MSI fails
-      cxgb3: Wait longer for control packets on initialization
-
-Andreas Hartmann (1):
-      drivers/usb/net/kaweth.c: add device "Allied Telesyn AT-USB10 USB Ethernet Adapter"
-
-Andy Fleming (1):
-      gianfar: Wait for both RX and TX to stop
-
-Ben Hutchings (3):
-      sfc: Wait at most 10ms for the MC to finish reading out MAC statistics
-      sfc: Always close net device at the end of a disabling reset
-      sfc: Change falcon_probe_board() to fail for unsupported boards
-
-Bruce Allan (1):
-      e1000e: enable/disable ASPM L0s and L1 and ERT according to hardware errata
-
-Dan Carpenter (2):
-      ipheth: potential null dereferences on error path
-      bluetooth: handle l2cap_create_connless_pdu() errors
-
-David S. Miller (1):
-      Revert "tcp: bind() fix when many ports are bound"
-
-Elina Pasheva (1):
-      net/usb: add sierra_net.c driver
-
-Ken Kawasaki (1):
-      smc91c92_cs: spin_unlock_irqrestore before calling smc_interrupt()
-
-Michael Chan (3):
-      bnx2: Fix lost MSI-X problem on 5709 NICs.
-      bnx2: Prevent "scheduling while atomic" warning with cnic, bonding and vlan.
-      bnx2: Update version to 2.0.9.
-
-Peter Waskiewicz (1):
-      ixgbe: Power down PHY during driver resets
-
-Stefan Schmidt (1):
-      ieee802154: Fix oops during ieee802154_sock_ioctl
-
-Torgny Johansson (1):
-      cdc_ether: fix autosuspend for mbm devices
-
-Vlad Yasevich (3):
-      sctp: fix potential reference of a freed pointer
-      sctp: per_cpu variables should be in bh_disabled section
-      sctp: Fix oops when sending queued ASCONF chunks
-
-Wei Yongjun (2):
-      sctp: avoid irq lock inversion while call sk->sk_data_ready()
-      sctp: fix to calc the INIT/INIT-ACK chunk length correctly is set
-
-YOSHIFUJI Hideaki / å‰è—¤è‹±æ˜ (1):
-      bridge br_multicast: Ensure to initialize BR_INPUT_SKB_CB(skb)->mrouters_only.
-
-franÃ§ois romieu (2):
-      r8169: failure to enable mwi should not be fatal
-      r8169: more broken register writes workaround
-
- drivers/net/bnx2.c               |   48 +-
- drivers/net/cxgb3/cxgb3_main.c   |    2 +-
- drivers/net/e1000e/82571.c       |   20 +-
- drivers/net/e1000e/e1000.h       |    5 +-
- drivers/net/e1000e/netdev.c      |   70 ++-
- drivers/net/gianfar.c            |    6 +-
- drivers/net/ixgbe/ixgbe_82599.c  |   62 ++-
- drivers/net/ixgbe/ixgbe_main.c   |   22 +-
- drivers/net/ixgbe/ixgbe_type.h   |    2 +
- drivers/net/pcmcia/smc91c92_cs.c |   31 +-
- drivers/net/r8169.c              |   32 +-
- drivers/net/sfc/efx.c            |    4 +-
- drivers/net/sfc/falcon.c         |    4 +-
- drivers/net/sfc/falcon_boards.c  |   13 +-
- drivers/net/sfc/nic.h            |    2 +-
- drivers/net/sfc/siena.c          |   13 +-
- drivers/net/tg3.c                |    1 +
- drivers/net/usb/Kconfig          |   10 +
- drivers/net/usb/Makefile         |    1 +
- drivers/net/usb/cdc_ether.c      |    1 +
- drivers/net/usb/ipheth.c         |   15 +-
- drivers/net/usb/kaweth.c         |    1 +
- drivers/net/usb/sierra_net.c     | 1001 ++++++++++++++++++++++++++++++++++++++
- include/net/sctp/command.h       |    1 +
- include/net/sctp/sctp.h          |    1 +
- net/bluetooth/l2cap.c            |    5 +-
- net/bridge/br_multicast.c        |    6 +-
- net/ieee802154/af_ieee802154.c   |    3 +
- net/ipv4/inet_connection_sock.c  |   16 +-
- net/ipv6/inet6_connection_sock.c |   15 +-
- net/sctp/associola.c             |    6 +-
- net/sctp/endpointola.c           |    1 +
- net/sctp/sm_make_chunk.c         |   32 +-
- net/sctp/sm_sideeffect.c         |   26 +
- net/sctp/sm_statefuns.c          |    8 +-
- net/sctp/socket.c                |   14 +-
- 36 files changed, 1312 insertions(+), 188 deletions(-)
- create mode 100644 drivers/net/usb/sierra_net.c
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
