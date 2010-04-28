@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab0D1Tzf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 15:55:35 -0400
-Received: from relay02.digicable.hu ([92.249.128.188]:54614 "EHLO
-	relay02.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab0D1Tzd convert rfc822-to-8bit (ORCPT
+	id S1756163Ab0D1R7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 13:59:35 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:28528 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939Ab0D1R7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 15:55:33 -0400
-Date: Wed, 28 Apr 2010 21:55:29 +0200
-From: Gabor Gombas <gombasg@digikabel.hu>
-To: Tracy Reed <treed@ultraviolet.org>,
-       Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-       Pasi =?iso-8859-2?Q?K=E4rkk=E4inen?= <pasik@iki.fi>,
-       xen-devel@lists.xensource.com, Aoetools-discuss@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org
-Subject: Re: [Aoetools-discuss] [Xen-devel] domU is causing misaligned disk
- writes
-Message-ID: <20100428195528.GA10354@twister.home>
-Mail-Followup-To: Tracy Reed <treed@ultraviolet.org>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Pasi =?iso-8859-2?Q?K=E4rkk=E4inen?= <pasik@iki.fi>,
-	xen-devel@lists.xensource.com,
-	Aoetools-discuss@lists.sourceforge.net,
-	linux-kernel@vger.kernel.org
-References: <20100420080958.GN5660@tracyreed.org>
- <20100420084955.GV1878@reaktio.net>
- <20100420200004.GQ5660@tracyreed.org>
- <20100420202519.GB9220@phenom.dumpdata.com>
- <20100420211913.GV5660@tracyreed.org>
+	Wed, 28 Apr 2010 13:59:34 -0400
+Message-ID: <4BD87781.8030907@retis.net.pl>
+Date: Wed, 28 Apr 2010 19:59:29 +0200
+From: Grzegorz Chwesewicz <grzegorz.chwesewicz@retis.net.pl>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20100420211913.GV5660@tracyreed.org>
-X-Original: 94.21.135.186
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       eric.dumazet@gmail.com
+Subject: Re: Problem with "tcp: bind() fix when many ports are bound" commit
+References: <4BD82B29.3000105@retis.net.pl> <20100428.095032.32709294.davem@davemloft.net>
+In-Reply-To: <20100428.095032.32709294.davem@davemloft.net>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 02:19:13PM -0700, Tracy Reed wrote:
-
-> > How do you know this is a mis-aligned sectors issue? Is this what your
-> > AOE vendor is telling you ?
+David Miller pisze:
+> From: Grzegorz Chwesewicz <grzegorz.chwesewicz@retis.net.pl>
+> Date: Wed, 28 Apr 2010 14:33:45 +0200
 > 
-> No AoE vendor involved. I am using the free stuff. I think it is a
-> misalignment issue because during a purely write test it is doing
-> massive amounts of reading according to iostat.
-
-How about actually verifying that by e.g. using wireshark and comparing
-the I/O patterns in the fast and slow cases? The differences in the
-patterns may give clues where to look further.
-
-> #dd if=/dev/zero of=/dev/etherd/e6.1 oflag=direct bs=4096
-> count=3000000
-> 1764883+0 records in
-> 1764883+0 records out
-> 7228960768 bytes (7.2 GB) copied, 402.852 seconds, 17.9 MB/s
+>> 	Hi, I have a problem with binding to port with the latest git kernel
+>> (my HEAD is at 1600f9def09de07c5dbeb539e978fa73880690dd). Please CC to
+>> me as I'm not subscribed to the list.
 > 
-> But even on my local directly attached SATA workstation disk when
-> doing that same dd on an otherwise idle machine I see performance
-> like:
+> Please send networking bug reports CC:'d to netdev and the people
+> who wrote and signed off on the commit you've narrowed down the
+> problem to.
 > 
-> $ dd if=/dev/zero of=foo.test bs=4096 count=4000000
-> C755202+0 records in
-> 755202+0 records out
-> 3093307392 bytes (3.1 GB) copied, 128.552 s, 24.1 MB/s
+> Otherwise the appropriate people will take longer to find out about
+> your bug, and therefore the bug will take longer to fix than
+> necessary.
 > 
-> which again suggests that oflag=direct isn't doing quite what I expect.
+> Thanks.
 
-oflag=direct turns off caching on the host dd is running on, i.e. the
-initiator. The target still caches writes of course, unless you tell it
-not to by passing the "-d" flag to vblade.
+OK, thanks, next time I'll do like you said.
 
-Gabor
+-- 
+Pozdrawiam
+Grzegorz Chwesewicz
+mailto:grzegorz.chwesewicz@retis.net.pl
