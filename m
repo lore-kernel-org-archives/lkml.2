@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab0D1STH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 14:19:07 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:63656 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab0D1STD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 14:19:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=q7FOi2D6II8PrKP11ui2VogAbfI+iMkilgYkG3GGhTaeTNXE6g9WBXA7glPQqbNjBz
-         2W2/FTcTP7zyw3uabnDX8svogW0S5VjhVrERo/hDcUgoAQh/Di2qMtreLNU3Mev+fjuh
-         eQAmS00tnU9sfBOeMnl7+7JHVDhLTU0xEMqQ4=
+	id S1754902Ab0D1PYP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 11:24:15 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:57561 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751690Ab0D1PYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 11:24:13 -0400
+Date: Wed, 28 Apr 2010 16:23:54 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/3] Fix migration races in rmap_walk() V2
+Message-ID: <20100428152354.GH15815@csn.ul.ie>
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1004271723090.24133@router.home> <20100427223242.GG8860@random.random> <20100428091345.496ca4c4.kamezawa.hiroyu@jp.fujitsu.com> <20100428002056.GH510@random.random> <20100428142356.GF15815@csn.ul.ie> <20100428145737.GG15815@csn.ul.ie> <20100428151614.GQ510@random.random>
 MIME-Version: 1.0
-In-Reply-To: <20100329110339P.fujita.tomonori@lab.ntt.co.jp>
-References: <1269822285.8653.251.camel@localhost>
-	 <20100329105129Y.fujita.tomonori@lab.ntt.co.jp>
-	 <1269827928.8653.307.camel@localhost>
-	 <20100329110339P.fujita.tomonori@lab.ntt.co.jp>
-Date: Wed, 28 Apr 2010 20:19:02 +0200
-Message-ID: <u2kf6ca9fed1004281119g865f263cr26df59e620f6129f@mail.gmail.com>
-Subject: Re: [PATCH] rt28xx: Make PCI_{MAP,UNMAP}_SINGLE type-safe
-From: drago01 <drago01@gmail.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: ben@decadent.org.uk, bzolnier@gmail.com, gregkh@suse.de,
-       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100428151614.GQ510@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 4:04 AM, FUJITA Tomonori
-<fujita.tomonori@lab.ntt.co.jp> wrote:
-> On Mon, 29 Mar 2010 02:58:48 +0100
-> Ben Hutchings <ben@decadent.org.uk> wrote:
->
->> On Mon, 2010-03-29 at 10:52 +0900, FUJITA Tomonori wrote:
->> > On Mon, 29 Mar 2010 01:24:45 +0100
->> > Ben Hutchings <ben@decadent.org.uk> wrote:
->> >
->> > > To avoid recurrence of bugs such as <http://bugs.debian.org/575726>,
->> > > change the type of the first parameter to linux_pci_{map,unmap}_single()
->> > > from void * to struct rt_rtmp_adapter *.  Also do not define the macros
->> > > PCI_{MAP,UNMAP}_SINGLE() when building the rt2870sta driver; they are
->> > > not used and if they were that would be a bug.
->> > >
->> > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
->> > > ---
->> > >  drivers/staging/rt2860/rt_linux.h    |   14 +++++---------
->> > >  drivers/staging/rt2860/rt_pci_rbus.c |   12 ++++--------
->> > >  2 files changed, 9 insertions(+), 17 deletions(-)
->> >
->> > I think using dma_map_single directly instead of inventing a wrapper
->> > function make the code more readable.
->>
->> These functions are not quite simple wrappers, unfortunately.  So while
->> I think that is worth doing it is a separate change.
->
-> Well, the current wrapper functions looks terrible. Needs to fix them
-> before moving the driver out of the staging anyway, I think.
+On Wed, Apr 28, 2010 at 05:16:14PM +0200, Andrea Arcangeli wrote:
+> On Wed, Apr 28, 2010 at 03:57:38PM +0100, Mel Gorman wrote:
+> > On Wed, Apr 28, 2010 at 03:23:56PM +0100, Mel Gorman wrote:
+> > > On Wed, Apr 28, 2010 at 02:20:56AM +0200, Andrea Arcangeli wrote:
+> > > > On Wed, Apr 28, 2010 at 09:13:45AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > Doing some check in move_ptes() after vma_adjust() is not safe.
+> > > > > IOW, when vma's information and information in page-table is incosistent...objrmap
+> > > > > is broken and migartion will cause panic.
+> > > > > 
+> > > > > Then...I think there are 2 ways.
+> > > > >   1. use seqcounter in "mm_struct" as previous patch and lock it at mremap.
+> > > > > or
+> > > > >   2. get_user_pages_fast() when do remap.
+> > > > 
+> > > > 3 take the anon_vma->lock
+> > > > 
+> > > 
+> > > <SNIP>
+> > >
+> > > Here is a different version of the same basic idea to skip temporary VMAs
+> > > during migration. Maybe go with this?
+> > > 
+> > > +static bool is_vma_temporary_stack(struct vm_area_struct *vma)
+> > > +{
+> > > +	if (vma->vm_flags != VM_STACK_FLAGS)
+> > > +		return false;
+> > > +
+> > > +	/*
+> > > +	 * Only during exec will the total VM consumed by a process
+> > > +	 * be exacly the same as the stack
+> > > +	 */
+> > > +	if (vma->vm_mm->stack_vm == 1 && vma->vm_mm->total_vm == 1)
+> > > +		return true;
+> > > +
+> > > +	return false;
+> > > +}
+> > > +
+> > 
+> > The assumptions on the vm flags is of course totally wrong. VM_EXEC might
+> > be applied as well as default flags from the mm.  The following is the same
+> > basic idea, skip VMAs belonging to processes in exec rather than trying
+> > to hold anon_vma->lock across move_page_tables(). Not tested yet.
+> 
+> This is better than the other, that made it look like people could set
+> broken rmap at arbitrary times, at least this shows it's ok only
+> during execve before anything run, but if we can't take the anon-vma
+> lock really better than having to make these special checks inside
+> every rmap_walk that has to be accurate, we should just delay the
+> linkage of the stack vma into its anon-vma, until after the move_pages.
+> 
 
-The driver is not expected to make it ever out of staging ... unless
-someone ports it to mac80211 ... the in kernel rt2x00 drivers are the
-longer term solutions for supporting this hardware.
+Is it possible to delay the linkage like that? As arguments get copied into
+the temporary stack before it gets moved, I'd have expected the normal fault
+path to prepare and attach the anon_vma. We could special case it but
+that isn't very palatable either.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
