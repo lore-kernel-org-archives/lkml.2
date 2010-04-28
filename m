@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab0D1Kse (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 06:48:34 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:52533 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571Ab0D1Ksd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 06:48:33 -0400
-Date: Wed, 28 Apr 2010 11:48:13 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/3] mm,migration: Remove straggling migration PTEs
-	when page tables are being moved after the VMA has already moved
-Message-ID: <20100428104813.GD15815@csn.ul.ie>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie> <1272403852-10479-4-git-send-email-mel@csn.ul.ie> <20100427223004.GF8860@random.random> <20100427225852.GH8860@random.random> <20100428102928.a3b25066.kamezawa.hiroyu@jp.fujitsu.com> <20100428014434.GM510@random.random> <20100428111248.2797801c.kamezawa.hiroyu@jp.fujitsu.com> <20100428024227.GN510@random.random> <20100428114944.3570105f.kamezawa.hiroyu@jp.fujitsu.com> <20100428162838.c762fcda.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754242Ab0D1NBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 09:01:46 -0400
+Received: from 31.mail-out.ovh.net ([213.186.62.10]:49246 "HELO
+	31.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753808Ab0D1NBp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 09:01:45 -0400
+Message-ID: <4BD831B3.40907@example.com>
+Date: Wed, 28 Apr 2010 15:01:39 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100428162838.c762fcda.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Where to submit bug report about linux-next?
+References: <4BD81B66.5010809@example.com> <20100428115622.GA8960@sirena.org.uk>
+In-Reply-To: <20100428115622.GA8960@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 3581487604992667951
+X-Ovh-Remote: 83.24.75.86 (dmt86.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks to you both for looking into this. I far prefer this general approach
-than cleaning up the migration PTEs as the page tables get copied. While it
-might "work", it's sloppy in the same way as having migration_entry_wait()
-do the cleanup was sloppy. It's far preferable to make the VMA move and
-page table copy atomic with anon_vma->lock.
+On 28.04.2010 13:56, Mark Brown wrote:
+> On Wed, Apr 28, 2010 at 01:26:30PM +0200, Piotr Hosowicz wrote:
+>
+>> Where should I submit a bug report about yesterday's and today's linux-next?
+>
+> To the relevant mailing lists and maintainers for the affected subsystem
+> (see MAINTAINERS), or this list if you're not able to identify what's
+> affected/responsible.
 
-On Wed, Apr 28, 2010 at 04:28:38PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Wed, 28 Apr 2010 11:49:44 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > On Wed, 28 Apr 2010 04:42:27 +0200
-> > Andrea Arcangeli <aarcange@redhat.com> wrote:
->  
-> > > migrate.c requires rmap to be able to find all ptes mapping a page at
-> > > all times, otherwise the migration entry can be instantiated, but it
-> > > can't be removed if the second rmap_walk fails to find the page.
-> > > 
-> > > So shift_arg_pages must run atomically with respect of rmap_walk, and
-> > > it's enough to run it under the anon_vma lock to make it atomic.
-> > > 
-> > > And split_huge_page() will have the same requirements as migrate.c
-> > > already has.
-> > > 
-> > > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> > 
-> > Seems good.
-> > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> > I'll test this and report if I see trouble again.
-> > 
-> > Unfortunately, I'll have a week of holidays (in Japan) in 4/29-5/05,
-> > my office is nearly closed. So, please consider no-mail-from-me is
-> > good information.
-> > 
-> Here is bad news. When move_page_tables() fails, "some ptes" are moved
-> but others are not and....there is no rollback routine.
-> 
+I dont know which one is relevant and dont see apropriate person 
+regarding SMP. This is probably the problem. I'll send here in a moment.
 
-The biggest problem is that the reverse mapping is temporarily out of
-sync until do_exit gets rid of the mess, but how serious is that really?
+Rergards,
 
-If there is a migration entry in there, the mapcount should already be zero and
-migration holds a reference to the page to prevent it going away. rmap_walk()
-may then miss the migration_pte so it gets left behind. Ordinarily this
-would be bad but in exec(), we cannot be faulting this page so we won't
-trigger the bug in swapops. Instead, do_exit ultimately will skip over the
-migration PTE doing nothing with the page but as the mapcount is still zero,
-the page won't leak.
-
-> I bet the best way to fix this mess up is 
->  - disable overlap moving of arg pages
->  - use do_mremap().
-> 
-> But maybe you guys want to fix this directly.
-> Here is a temporal fix from me. But don't trust me..
-
-I see the point of your patch but I'm not yet seeing why it is
-necessary to back out if move_page_tables fails.
-
-That said, both patches have a greater problem. Both of them hold a spinlock
-(anon_vma->lock) while calling into the page allocator with GFP_KERNEL (to
-allocate the page tables). We don't want to change that to GFP_ATOMIC so
-either we need to allocate the pages in advance or special case rmap_walk()
-to not walk processes that are in exec.
+Piotr Hosowicz
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+TV: "Jeszcze trzy ruchy i Otylia bêdzie szczê¶liwa."
+NP: Mark Knopfler - Border Reiver
+NB: 2.6.34-rc5-git8
