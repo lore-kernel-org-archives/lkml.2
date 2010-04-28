@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab0D1Pc2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:32:28 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:46043 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab0D1Pc1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:32:27 -0400
-Date: Wed, 28 Apr 2010 21:02:19 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Ingo Molnar <mingo@redhat.com>, Venkatesh Pallipadi <venki@google.com>,
-       Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, ego@in.ibm.com
-Subject: [PATCH] sched: Fix group_capacity for sched_smt_powersavings=1
-Message-ID: <20100428153219.GM5781@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
+	id S1752100Ab0D1LYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 07:24:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22389 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750840Ab0D1LYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 07:24:19 -0400
+Message-ID: <4BD81AE0.3000904@redhat.com>
+Date: Wed, 28 Apr 2010 14:24:16 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/22] KVM: MMU: Add infrastructure for two-level page
+ walker
+References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com> <1272364712-17425-12-git-send-email-joerg.roedel@amd.com> <4BD6D9C2.6020104@redhat.com> <20100428105201.GC18832@amd.com>
+In-Reply-To: <20100428105201.GC18832@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 04/28/2010 01:52 PM, Joerg Roedel wrote:
+> On Tue, Apr 27, 2010 at 03:34:10PM +0300, Avi Kivity wrote:
+>    
+>> On 04/27/2010 01:38 PM, Joerg Roedel wrote:
+>>      
+>>> This patch introduces a mmu-callback to translate gpa
+>>> addresses in the walk_addr code. This is later used to
+>>> translate l2_gpa addresses into l1_gpa addresses.
+>>>
+>>> +static inline gfn_t gpa_to_gfn(gpa_t gpa)
+>>> +{
+>>> +	return (gfn_t)gpa>>   PAGE_SHIFT;
+>>> +}
+>>> +
+>>>        
+>> This overflows on 32-bit, since gpa_t is u64 and gfn_t is ulong.
+>>      
+> Hm, this is a problem outside of this patchset too (for 32bit hosts).
+> The best solution is probably to convert gfn_t to u64 too.
+>    
 
-This is repost of the same patch http://lkml.org/lkml/2010/4/1/71
-(and http://lkml.org/lkml/2010/3/2/216)
+If you cast like
 
-After applying Suresh's fixes from discussion thread
-http://lkml.org/lkml/2010/2/12/352, we still need the attached patch
-to restore sched_smt_powersavings=1 functionality where tasks prefer
-sibling threads and keep more cores idle.
+    (gfn_t)(gpa >> PAGE_SHIFT)
 
-Please apply to sched-tip, the patch is rebased and tested on today's
-sched-tip master.
+you avoid the overflow for MAXPHYADDR < 48.  However, I agree that 
+converting gfn_t to u64 is best, the minor performance degradation is in 
+no way comparable to the corruption that results from a miscast.
 
-The attached patch will run 4 while(1) loops in two cores when
-sched_smt_power_savings=1.  Tested on two socket, quad core, hyper
-threaded system.
-
-Additional testing was done on POWER platform where
-sched_smt_powersavings was able to consolidate tasks on sibling
-threads leaving more idle cores.
-
-Thanks,
-Vaidy
----
-        sched: Fix group_capacity for sched_smt_powersavings=1
-
-        sched_smt_powersavings for threaded systems need this fix for
-        consolidation to sibling threads to work.  Since threads have 
-        fractional capacity, group_capacity will turn out to be one 
-        always and not accommodate another task in the sibling thread.
-        
-        This fix makes group_capacity a function of cpumask_weight that
-        will enable the power saving load balancer to pack tasks among
-        sibling threads and keep more cores idle.
-
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 5a5ea2c..7c0a29a 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2538,6 +2538,21 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
- 		 */
- 		if (prefer_sibling)
- 			sgs.group_capacity = min(sgs.group_capacity, 1UL);
-+		/*
-+		 * If power savings balance is set at this domain, then
-+		 * make capacity equal to number of hardware threads to
-+		 * accommodate more tasks until capacity is reached.
-+		 */
-+		else if (sd->flags & SD_POWERSAVINGS_BALANCE)
-+			sgs.group_capacity =
-+				cpumask_weight(sched_group_cpus(group));
-+
-+			/*
-+			 * The default group_capacity is rounded from sum of
-+			 * fractional cpu_powers of sibling hardware threads
-+			 * in order to enable fair use of available hardware
-+			 * resources.
-+			 */
-
- 		if (local_group) {
- 			sds->this_load = sgs.avg_load;
-@@ -2863,7 +2878,8 @@ static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle)
- 		    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
- 			return 0;
-
--		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
-+		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP &&
-+		    sched_smt_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
- 			return 0;
- 	}
+-- 
+error compiling committee.c: too many arguments to function
 
