@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab0D1SF0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 14:05:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22676 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755014Ab0D1SFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 14:05:23 -0400
-Date: Wed, 28 Apr 2010 15:05:03 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm mmu: reduce 50% memory usage
-Message-ID: <20100428180503.GJ18168@amt.cnet>
-References: <4BD8228D.7090708@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754053Ab0D1Lrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 07:47:35 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:34608 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab0D1Lrd convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:2:1>);
+	Wed, 28 Apr 2010 07:47:33 -0400
+Message-Id: <4BD83C74020000780003C66C@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 28 Apr 2010 12:47:32 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Eric Anholt" <eric@anholt.net>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: intel_i830_chipset_flush(): local clflush() vs. global
+	 wbinvd()
+References: <4BD5787C020000780003C1DB@vpn.id2.novell.com>
+ <8739ygwlf5.fsf@pollan.anholt.net>
+In-Reply-To: <8739ygwlf5.fsf@pollan.anholt.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <4BD8228D.7090708@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 07:57:01PM +0800, Lai Jiangshan wrote:
-> 
-> I think users will enable tdp when their hardwares support ept or npt.
-> This patch can reduce about 50% kvm mmu memory usage for they.
-> 
-> This simple patch use the fact that:
-> 
-> When sp->role.direct is set, sp->gfns does not contain any essential
-> information, leaf sptes reachable from this sp are for a continuate
-> guest physical memory range(a linear range).
-> So sp->gfns[i](if it was set) equals to sp->gfn + i. (PT_PAGE_TABLE_LEVEL)
-> Obviously, it is not essential information, we can calculate it when need.
-> 
-> It means we don't need sp->gfns when sp->role.direct=1,
-> Thus we can save one page usage for every kvm_mmu_page.
-> 
-> Note:
-> Access to sp->gfns must be wrapped by kvm_mmu_page_get_gfn()
-> or kvm_mmu_page_set_gfn().
-> It is only exposed in FNAME(sync_page).
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>>> Eric Anholt <eric@anholt.net> 28.04.10 01:00 >>>
+>On Mon, 26 Apr 2010 10:26:52 +0100, "Jan Beulich" <JBeulich@novell.com> wrote:
+>> Eric, Brice,
+>> 
+>> what is the point of issuing wbinvd() on all CPUs here if clflush isn't
+>> available, but using clflush() (if available) only on the current CPU?
+>
+>My reading of these two is that wbinvd affects this processor's cache
+>lines, while clflush affects the cacheline regardless of which CPU owns
+>it since they all share the same coherence domain.
 
-Applied, thanks.
+Indeed, one can read it that way, although it seems unlikely to me that
+it really means it (namely in large configurations the need to behave
+that way may make clflush less preferable over wbinvd in some
+situations). I'm trying to clarify this with Intel.
+
+>Given that on many systems without CLFLUSH (8xx chipsets), we have
+>issues with getting coherence to external memory successfully (note how
+>neither of those instructions provide that!), I'm not sure it's a good
+>time to be worrying about how to improve cache flushing performance on them!
+
+No, the purpose of the question was not to hint at elimination of
+the global wbinvd (which nevertheless could be reduced in scope),
+but rather to find out why the same isn't needed on the clflush
+path.
+
+Jan
 
