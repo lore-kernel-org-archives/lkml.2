@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab0D1LeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 07:34:04 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43327 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546Ab0D1LeB (ORCPT
+	id S1756712Ab0D1TGn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 15:06:43 -0400
+Received: from fg-out-1718.google.com ([72.14.220.153]:60231 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756643Ab0D1TGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 07:34:01 -0400
-Date: Wed, 28 Apr 2010 07:33:59 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Tao Ma <tao.ma@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Eric Sandeen <sandeen@redhat.com>,
-       xfs@oss.sgi.com, Alex Elder <aelder@sgi.com>,
-       Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH v2] XFS: Let the broken fiemap work in query mode.
-Message-ID: <20100428113359.GB27769@infradead.org>
-References: <20100428023058.GD9783@dastard> <1272423625-20142-1-git-send-email-tao.ma@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272423625-20142-1-git-send-email-tao.ma@oracle.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 28 Apr 2010 15:06:40 -0400
+From: Manfred Spraul <manfred@colorfullife.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Mason <chris.mason@oracle.com>, Zach Brown <zach.brown@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH 3/3] [PATCH] ipc/sem.c: cacheline align the ipc spinlock for semaphores
+Date: Wed, 28 Apr 2010 21:06:28 +0200
+Message-Id: <1272481588-1941-4-git-send-email-manfred@colorfullife.com>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <1272481588-1941-3-git-send-email-manfred@colorfullife.com>
+References: <1272481588-1941-1-git-send-email-manfred@colorfullife.com>
+ <1272481588-1941-2-git-send-email-manfred@colorfullife.com>
+ <1272481588-1941-3-git-send-email-manfred@colorfullife.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 11:00:25AM +0800, Tao Ma wrote:
-> -	bm.bmv_count = fieinfo->fi_extents_max + 1;
-> +	bm.bmv_count = !fieinfo->fi_extents_max ? MAXEXTNUM :
-> +					fieinfo->fi_extents_max + 1;
-> +	bm.bmv_count = MIN(bm.bmv_count,
-> +			   (__s32)(PAGE_SIZE * 16 / sizeof(struct getbmapx)));
+This patch cacheline aligns the spinlock for sysv semaphores:
+Without the patch, the spinlock and sem_otime [written by
+every semop that modified the array] and sem_base [read in the
+hot path of try_atomic_semop()] can be in the same cacheline.
 
-I would use min_t here instead of the case, but otherwise the patch
-looks good to me,
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+---
+ include/linux/sem.h |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+diff --git a/include/linux/sem.h b/include/linux/sem.h
+index 8a4adbe..f2961af 100644
+--- a/include/linux/sem.h
++++ b/include/linux/sem.h
+@@ -79,6 +79,7 @@ struct  seminfo {
+ #ifdef __KERNEL__
+ #include <asm/atomic.h>
+ #include <linux/rcupdate.h>
++#include <linux/cache.h>
+ 
+ struct task_struct;
+ 
+@@ -91,7 +92,8 @@ struct sem {
+ 
+ /* One sem_array data structure for each set of semaphores in the system. */
+ struct sem_array {
+-	struct kern_ipc_perm	sem_perm;	/* permissions .. see ipc.h */
++	struct kern_ipc_perm	____cacheline_aligned_in_smp
++				sem_perm;	/* permissions .. see ipc.h */
+ 	time_t			sem_otime;	/* last semop time */
+ 	time_t			sem_ctime;	/* last change time */
+ 	struct sem		*sem_base;	/* ptr to first semaphore in array */
+-- 
+1.6.6.1
 
