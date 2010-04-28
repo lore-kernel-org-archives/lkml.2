@@ -1,93 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab0D1D6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 23:58:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56323 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754792Ab0D1D6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 23:58:48 -0400
-Message-ID: <4BD7B1B8.8070202@cn.fujitsu.com>
-Date: Wed, 28 Apr 2010 11:55:36 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 6/10] KVM MMU: don't write-protect if have new mapping
- to unsync page
-References: <4BD7AE34.5000408@cn.fujitsu.com>
-In-Reply-To: <4BD7AE34.5000408@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755493Ab0D1D6x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 23:58:53 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37038 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754682Ab0D1D60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 23:58:26 -0400
+Date: Wed, 28 Apr 2010 13:58:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jerome Glisse <jglisse@redhat.com>,
+       Tormod Volden <debian.tormod@gmail.com>,
+       Alex Deucher <alexdeucher@gmail.com>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-Id: <20100428135823.b4b70ca3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two cases maybe happen in kvm_mmu_get_page() function:
+Hi Dave,
 
-- one case is, the goal sp is already in cache, if the sp is unsync,
-  we only need update it to assure this mapping is valid, but not
-  mark it sync and not write-protect sp->gfn since it not broke unsync
-  rule(one shadow page for a gfn)
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/radeon/r300.c between commit
+94f7bf647315472c80b8368c849739038e5620a3 ("drm/radeon: 9800 SE has only
+one quadpipe") from Linus' tree and commit
+90aca4d2740255bd130ea71a91530b9920c70abe ("drm/radeon/kms: simplify &
+improve GPU reset V2") from the drm tree.
 
-- another case is, the goal sp not existed, we need create a new sp
-  for gfn, i.e, gfn (may)has another shadow page, to keep unsync rule,
-  we should sync(mark sync and write-protect) gfn's unsync shadow page.
-  After enabling multiple unsync shadows, we sync those shadow pages
-  only when the new sp not allow to become unsync(also for the unsyc
-  rule, the new rule is: allow all pte page become unsync)
-
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c |   14 +++++++++++---
- 1 files changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index ec283c3..fb0c33c 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1333,7 +1333,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 	unsigned index;
- 	unsigned quadrant;
- 	struct hlist_head *bucket;
--	struct kvm_mmu_page *sp;
-+	struct kvm_mmu_page *sp, *unsync_sp = NULL;
- 	struct hlist_node *node, *tmp;
- 
- 	role = vcpu->arch.mmu.base_role;
-@@ -1352,12 +1352,17 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 	hlist_for_each_entry_safe(sp, node, tmp, bucket, hash_link)
- 		if (sp->gfn == gfn) {
- 			if (sp->unsync)
--				if (kvm_sync_page(vcpu, sp))
--					continue;
-+				unsync_sp = sp;
- 
- 			if (sp->role.word != role.word)
- 				continue;
- 
-+			if (!direct && unsync_sp &&
-+			      kvm_sync_page_transient(vcpu, unsync_sp)) {
-+				unsync_sp = NULL;
-+				break;
-+			}
-+
- 			mmu_page_add_parent_pte(vcpu, sp, parent_pte);
- 			if (sp->unsync_children) {
- 				set_bit(KVM_REQ_MMU_SYNC, &vcpu->requests);
-@@ -1366,6 +1371,9 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 			trace_kvm_mmu_get_page(sp, false);
- 			return sp;
- 		}
-+	if (!direct && unsync_sp)
-+		kvm_sync_page(vcpu, unsync_sp);
-+
- 	++vcpu->kvm->stat.mmu_cache_miss;
- 	sp = kvm_mmu_alloc_page(vcpu, parent_pte);
- 	if (!sp)
+Just context changes. I fixed it up (see below) and can carry the fix for
+a while.
 -- 
-1.6.1.2
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-
-
+diff --cc drivers/gpu/drm/radeon/r300.c
+index eaf1f6b,bb005bf..0000000
+--- a/drivers/gpu/drm/radeon/r300.c
++++ b/drivers/gpu/drm/radeon/r300.c
+@@@ -323,9 -328,9 +328,8 @@@ void r300_gpu_init(struct radeon_devic
+  {
+  	uint32_t gb_tile_config, tmp;
+  
+- 	r100_hdp_reset(rdev);
+ -	/* FIXME: rv380 one pipes ? */
+  	if ((rdev->family == CHIP_R300 && rdev->pdev->device != 0x4144) ||
+ -	    (rdev->family == CHIP_R350)) {
+ +	    (rdev->family == CHIP_R350 && rdev->pdev->device != 0x4148)) {
+  		/* r300,r350 */
+  		rdev->num_gb_pipes = 2;
+  	} else {
