@@ -1,61 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750913Ab0D1EKB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 00:10:01 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35480 "EHLO
+	id S1751008Ab0D1EcN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 00:32:13 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37211 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab0D1EKA (ORCPT
+	with ESMTP id S1750841Ab0D1EcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 00:10:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=N2QkYB4ZggGShusuHagHTnBi48Vw1nLRiLjuWITAqtR3EEnK3tPTMZnkLNiYiUm3Oe
-         2+nC5lo4UcOxwSuRmhVYuVvvK4hCyO7aivDGHrHc6HuOkaQZNYuX8/WjqHa6snSePhw2
-         3fy0ayBS74rXwUwkZz1OMmGQGZ0FoT/afkA+Q=
-From: Changli Gao <xiaosuo@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Andreas Herrmann <andreas.herrmann3@amd.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-       linux-kernel@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
-Subject: [PATCH] sched: use wrapper functions
-Date: Wed, 28 Apr 2010 11:43:08 +0800
-Message-Id: <1272426188-2982-1-git-send-email-xiaosuo@gmail.com>
-X-Mailer: git-send-email 1.6.4.4
+	Wed, 28 Apr 2010 00:32:12 -0400
+From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 0/9] Suspend block api (version 5)
+Date: Tue, 27 Apr 2010 21:31:51 -0700
+Message-Id: <1272429119-12103-1-git-send-email-arve@android.com>
+X-Mailer: git-send-email 1.6.5.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use wrapper functions.
+This patch series adds a suspend-block api that provides the same
+functionality as the android wakelock api. The main change from
+version 4 posted last week is that suspend blocking work has moved out
+of the core workqueue code. The documentation has also been updated.
 
-Since there are add_wait_queue_exclusive_locked() and remove_wait_queue_locked()
-, we'd better use them instead.
+--
+Arve Hjønnevåg <arve@android.com>
 
-Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-----
- kernel/sched.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 6af210a..be5ab70 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4039,8 +4039,7 @@ do_wait_for_common(struct completion *x, long timeout, int state)
- 	if (!x->done) {
- 		DECLARE_WAITQUEUE(wait, current);
- 
--		wait.flags |= WQ_FLAG_EXCLUSIVE;
--		__add_wait_queue_tail(&x->wait, &wait);
-+		add_wait_queue_exclusive_locked(&x->wait, &wait);
- 		do {
- 			if (signal_pending_state(state, current)) {
- 				timeout = -ERESTARTSYS;
-@@ -4051,7 +4050,7 @@ do_wait_for_common(struct completion *x, long timeout, int state)
- 			timeout = schedule_timeout(timeout);
- 			spin_lock_irq(&x->wait.lock);
- 		} while (!x->done && timeout);
--		__remove_wait_queue(&x->wait, &wait);
-+		remove_wait_queue_locked(&x->wait, &wait);
- 		if (!x->done)
- 			return timeout;
- 	}
