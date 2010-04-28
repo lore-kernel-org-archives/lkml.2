@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab0D1DTW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 23:19:22 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48592 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371Ab0D1DTU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 23:19:20 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Robin Holt <holt@sgi.com>
-Subject: Re: Weirdness in /proc/<pid>/maps and /proc/<pid>/stat.
-Cc: kosaki.motohiro@jp.fujitsu.com, Stefani Seibold <stefani@seibold.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20100427185343.GR4920@sgi.com>
-References: <20100427185343.GR4920@sgi.com>
-Message-Id: <20100428085631.F835.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1752688Ab0D1DYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 23:24:18 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43695 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751371Ab0D1DYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 23:24:16 -0400
+Date: Wed, 28 Apr 2010 13:24:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Sripathi Kodi <sripathik@in.ibm.com>,
+       Eric Van Hensbergen <ericvh@gmail.com>
+Subject: linux-next: manual merge of the block tree with the v9fs tree
+Message-Id: <20100428132413.28bc9ff2.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 28 Apr 2010 12:19:17 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> With commit d899bf7b, the behavior of field 28 of /proc/<pid>/stat
-> was changed as was /proc/<pid>/maps.  I don't know if that change was
-> correct, but its resulting behavior is much more difficult to explain.
-> I was wondering if we could determine what the "correct" behavior is
-> before I spend much more time trying to give it the wrong behavior.
-> 
-> My test program is attached below.  Essentially:
-> fork() -> pthread_create() -> fork()
-> 
-> x86_64 2.6.32 stable kernel:
-> Step			stat-28		maps-threadstack
-> p (parent)		0x7fff5607ddc0	N/A
-> c (child)		0x7fff55c7dc50	N/A
-> ppthread		0x7f2cf5c9bff0	0x7f2cf5c9d000:007feff0
-> ppthread+fork		0x7f2cf589be30	0x7f2cf5c9d000:003fee30
-> cpthread		0x7f2cf589be30  0x7f2cf5c9d000:007feff0
-> cpthread+fork		0x7f2cf589be30	0x7f2cf5c9d000:003fee30
-> Note: For all of the above, the /proc/<pids>/task/*/maps files had the
-> stack line like:
-> 7fff55c7d000-7fff56081000 rw-p 00000000 00:00 0                         [stack]
-> 
-> The problems I see are:
-> 1)  In the fork() case, we are using the current userland stack
->     pointer for task->stack_start.  This appears wrong as the
->     function which called fork() may be returned to and may
->     further return to higher level callers, finding sp now
->     beyond the value reported in /proc/self/stat.  Additionally,
->     the value reported for the child of the fork has no relationship
->     to the stack size rlimit any longer.
+Hi Jens,
 
-BUG.
+Today's linux-next merge of the block tree got a conflict in
+fs/9p/vfs_super.c between commit 0b2d973241f9bdbc8ed62caec42543e00ae6bd1e
+("9p: VFS switches for 9p2000.L: VFS switches") from the v9fs tree and
+commit 0ed07ddb56d1348e5ce33f3b8de20d730351983a ("9p: add bdi backing to
+mount session") from the block tree.
 
+Just context changes.  I fixed it up (see below) and can carry the
+fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 2)  In the pthread + fork case, in addition to the problem
->     above, the size information in /proc/self/maps
->     is incorrect as it does not take into consideration
->     the same return paths.
-
-BUG.
-
-Robin, do you really need this feature? if not, I'll revert this one.
-
-
-sidenote: if anyone really need to know thread stack range, I think we need to
-prevent vma consoliation of thread stack, iow need to implement MAP_STACK.
-
-
-> 
-> The problem I am running into is coming up with any way to
-> make the task->stack_start value usable.
-
-
-
-
-
+diff --cc fs/9p/vfs_super.c
+index 7c94cb0,806da5d..0000000
+--- a/fs/9p/vfs_super.c
++++ b/fs/9p/vfs_super.c
+@@@ -77,10 -76,8 +77,11 @@@ v9fs_fill_super(struct super_block *sb
+  	sb->s_blocksize_bits = fls(v9ses->maxdata - 1);
+  	sb->s_blocksize = 1 << sb->s_blocksize_bits;
+  	sb->s_magic = V9FS_MAGIC;
+ -	sb->s_op = &v9fs_super_ops;
+ +	if (v9fs_proto_dotl(v9ses))
+ +		sb->s_op = &v9fs_super_ops_dotl;
+ +	else
+ +		sb->s_op = &v9fs_super_ops;
++ 	sb->s_bdi = &v9ses->bdi;
+  
+  	sb->s_flags = flags | MS_ACTIVE | MS_SYNCHRONOUS | MS_DIRSYNC |
+  	    MS_NOATIME;
