@@ -1,77 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab0D1UWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 16:22:21 -0400
-Received: from www.tglx.de ([62.245.132.106]:58107 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371Ab0D1UWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 16:22:20 -0400
-Date: Wed, 28 Apr 2010 22:22:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Xianghua Xiao <xiaoxianghua@gmail.com>
-cc: john stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.33.3-rt16 Oops caused by umount
-In-Reply-To: <g2we6bf505b1004281306sa6ddb207p7a1b8853c3ab308f@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1004282218470.2951@localhost.localdomain>
-References: <l2ye6bf505b1004271144ta6817962vec8167d813658648@mail.gmail.com>  <alpine.LFD.2.00.1004272053130.2951@localhost.localdomain>  <1272399798.2255.2.camel@localhost>  <1272400246.2255.5.camel@localhost>  <s2me6bf505b1004271354v128e0e89q6b506ce99af6d7fd@mail.gmail.com>
-  <1272434481.1974.101.camel@work-vm>  <w2ge6bf505b1004280821g70610cb7lc3821ee890345273@mail.gmail.com>  <alpine.LFD.2.00.1004281833230.2951@localhost.localdomain>  <y2ge6bf505b1004281054kfc44529fkf87dc5e9d564f9b3@mail.gmail.com> 
- <alpine.LFD.2.00.1004282137330.2951@localhost.localdomain> <g2we6bf505b1004281306sa6ddb207p7a1b8853c3ab308f@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1070554541-1272486132=:2951"
+	id S1757044Ab0D1UWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 16:22:32 -0400
+Received: from tomts13-srv.bellnexxia.net ([209.226.175.34]:57420 "EHLO
+	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757024Ab0D1UWa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 16:22:30 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEANow2EtGGNqG/2dsb2JhbACceHK+WoUOBA
+Date: Wed, 28 Apr 2010 16:22:25 -0400
+From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 01/10][RFC] tracing: Create class struct for events
+Message-ID: <20100428202225.GB8591@Krystal>
+References: <20100426195024.256424113@goodmis.org> <20100426200241.373124697@goodmis.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100426200241.373124697@goodmis.org>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 16:21:07 up 21 days,  6:14,  4 users,  load average: 0.21, 0.21,
+	0.18
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-1070554541-1272486132=:2951
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 28 Apr 2010, Xianghua Xiao wrote:
-> On Wed, Apr 28, 2010 at 2:38 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Wed, 28 Apr 2010, Xianghua Xiao wrote:
-> >> Thomas,
-> >> I patched it and re-run it however did not find any condition from
-> >> your patch had a hit.
-> >> In your patch I changed :
-> >>
-> >> if (!file->f_path) {
-> >> to
-> >> if(!(&(file->f_path))){
-> >> Otherwise it won't compile as f_path is a not a pointer.
-> >
-> > True :)
-> >
-> >> # reboot
-> >> # Oops: Kernel access of bad area, sig: 11 [#1]
-> >
-> > Ok. Can you please enable CONFIG_DEBUG_LIST ?
-> >
-> > Thanks,
-> >
-> >        tglx
-> >
-> I turned on that, could not find any difference from the oops log.
-> If I try to remount it rw then ro, the remount ro will cause similar oops
-> Thanks,
-> Xianghua
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 > 
-> # reboot
-> # Oops: Kernel access of bad area, sig: 11 [#1]
-> PREEMPT 834x SYS
-> Modules linked in:
-> NIP: c009ca1c LR: c009c9cc CTR: 00000000
+> This patch creates a ftrace_event_class struct that event structs point to.
+> This class struct will be made to hold information to modify the
+> events. Currently the class struct only holds the events system name.
+> 
+> This patch slightly increases the size of the text as well as decreases
+> the data size. The overall change is still a slight increase, but
+> this change lays the ground work of other changes to make the footprint
+> of tracepoints smaller.
+> 
+> With 82 standard tracepoints, and 616 system call tracepoints:
+> 
+>    text	   data	    bss	    dec	    hex	filename
+> 5788186	1337252	9351592	16477030	 fb6b66	vmlinux.orig
+> 5792282	1333796	9351592	16477670	 fb6de6	vmlinux.class
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/linux/ftrace_event.h       |    6 +++++-
+>  include/linux/syscalls.h           |    6 ++++--
+>  include/trace/ftrace.h             |   36 +++++++++++++++---------------------
+>  kernel/trace/trace_events.c        |   20 ++++++++++----------
+>  kernel/trace/trace_events_filter.c |    6 +++---
+>  kernel/trace/trace_export.c        |    6 +++++-
+>  kernel/trace/trace_kprobe.c        |   12 ++++++------
+>  kernel/trace/trace_syscalls.c      |    4 ++++
+>  8 files changed, 52 insertions(+), 44 deletions(-)
+> 
+[...]
+> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+> index 75dd778..0921a8f 100644
+> --- a/include/trace/ftrace.h
+> +++ b/include/trace/ftrace.h
+> @@ -62,7 +62,10 @@
+>  		struct trace_entry	ent;				\
+>  		tstruct							\
+>  		char			__data[0];			\
+> -	};
+> +	};								\
+> +									\
+> +	static struct ftrace_event_class event_class_##name;
+> +
+>  #undef DEFINE_EVENT
+>  #define DEFINE_EVENT(template, name, proto, args)	\
+>  	static struct ftrace_event_call			\
+> @@ -430,22 +433,6 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
+>   *
+>   * Override the macros in <trace/trace_events.h> to include the following:
+>   *
+> - * static void ftrace_event_<call>(proto)
+> - * {
+> - *	event_trace_printk(_RET_IP_, "<call>: " <fmt>);
+> - * }
+> - *
+> - * static int ftrace_reg_event_<call>(struct ftrace_event_call *unused)
+> - * {
+> - *	return register_trace_<call>(ftrace_event_<call>);
+> - * }
+> - *
+> - * static void ftrace_unreg_event_<call>(struct ftrace_event_call *unused)
+> - * {
+> - *	unregister_trace_<call>(ftrace_event_<call>);
+> - * }
+> - *
+> - *
+>   * For those macros defined with TRACE_EVENT:
+>   *
+>   * static struct ftrace_event_call event_<call>;
 
-Can you please decode the code lines with 
+So.. just wondering, why are you removing these comments ? What's
+replacing them ?
 
-# addr2line -e vmlinux 0xc009ca1c 0xc009c9cc
-
-You need to enable CONFIG_DEBUG_INFO to get real line numbers.
+Maybe you meant to remove this in a following patch ?
 
 Thanks,
 
-	tglx
---8323328-1070554541-1272486132=:2951--
+Mathieu
+
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
