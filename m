@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab0D1LdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 07:33:18 -0400
-Received: from 31.mail-out.ovh.net ([213.186.62.10]:54959 "HELO
-	31.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751346Ab0D1LdQ (ORCPT
+	id S1754750Ab0D1Oxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 10:53:48 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:62333 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab0D1Oxq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 07:33:16 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Apr 2010 07:33:16 EDT
-Message-ID: <4BD81B66.5010809@example.com>
-Date: Wed, 28 Apr 2010 13:26:30 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
+	Wed, 28 Apr 2010 10:53:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=lFWwhHToMSZQ1TjC8wvd5otMovFWFTg1XW0QiP2b1BFPdfGOi3XCeh+rWbE46Up0/z
+         d3FU9KsYmc9M03OixQZVAucDfz0jaPeuEM7M8B917fgC0m2Q7EC2F766aJJYTMOEe3+K
+         8rjNHuHEyA9H1gpVO1CItHiKG4qYgPyzBCEH0=
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Where to submit bug report about linux-next?
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 1974828438144250136
-X-Ovh-Remote: 83.24.75.86 (dmt86.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+In-Reply-To: <6096.1272463619@redhat.com>
+References: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> 
+	<8526.1272447122@redhat.com> <q2r412e6f7f1004280656t331e9120rc9eab069fb4d4de3@mail.gmail.com> 
+	<6096.1272463619@redhat.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Wed, 28 Apr 2010 22:53:16 +0800
+Message-ID: <v2x412e6f7f1004280753pd3438a3fv860edc580ecd6185@mail.gmail.com>
+Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
+To: David Howells <dhowells@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Roland Dreier <rolandd@cisco.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Takashi Iwai <tiwai@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Apr 28, 2010 at 10:06 PM, David Howells <dhowells@redhat.com> wrote:
+>
+> I suspect you really want to have the semantics defined per-queue.  _Either_ a
+> queue is FIFO (such as processes waiting for a resource so they can do
+> something with it) _or_ it is LIFO (such as a pool of processes waiting to be
+> given work).
+>
+> How often do the two actually mix?  And if they do, is that really an error?
+>
 
-Where should I submit a bug report about yesterday's and today's linux-next?
-
-Regards,
-
-Piotr Hosowicz
+The sock.sk_sleep is used by exclusive and non-exclusive wait queues.
+exclusive and non-exclusive is identified by wait queues, not wait
+queue heads. Maybe there is a historical reason. It is much like a
+hack.
 
 -- 
-- Czy jest cukier w kostkach ?
-- Nie ma.
-- A jakas inna tania bombonierka? Dla tesciowej.
-NP: Mark Knopfler - Monteleone
-NB: 2.6.34-rc5-git8
+Regards，
+Changli Gao(xiaosuo@gmail.com)
