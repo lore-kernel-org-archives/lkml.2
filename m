@@ -1,144 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab0D1O56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 10:57:58 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:35247 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472Ab0D1O55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 10:57:57 -0400
-Date: Wed, 28 Apr 2010 15:57:38 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/3] Fix migration races in rmap_walk() V2
-Message-ID: <20100428145737.GG15815@csn.ul.ie>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1004271723090.24133@router.home> <20100427223242.GG8860@random.random> <20100428091345.496ca4c4.kamezawa.hiroyu@jp.fujitsu.com> <20100428002056.GH510@random.random> <20100428142356.GF15815@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100428142356.GF15815@csn.ul.ie>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1752898Ab0D1LbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 07:31:20 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:52114 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab0D1LbT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 07:31:19 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Wed, 28 Apr 2010 13:31:35 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: USB gadget with drivers "on board"
+In-reply-to: <op.vbu6nahq7p4s8u@pikus>
+To: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>,
+       Josua Dietze <digidietze@draisberghof.de>,
+       Alan Stern <stern@rowland.harvard.edu>
+Cc: Daniel Mack <daniel@caiaq.de>, Marek Szyprowski <m.szyprowski@samsung.com>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kyungmin Park <kyungmin.park@samsung.com>
+Message-id: <op.vbveaxnm7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.10 (Linux)
+References: <Pine.LNX.4.44L0.1004261531480.1764-100000@iolanthe.rowland.org>
+ <4BD5F43E.4090404@draisberghof.de> <op.vbu6nahq7p4s8u@pikus>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 03:23:56PM +0100, Mel Gorman wrote:
-> On Wed, Apr 28, 2010 at 02:20:56AM +0200, Andrea Arcangeli wrote:
-> > On Wed, Apr 28, 2010 at 09:13:45AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > Doing some check in move_ptes() after vma_adjust() is not safe.
-> > > IOW, when vma's information and information in page-table is incosistent...objrmap
-> > > is broken and migartion will cause panic.
-> > > 
-> > > Then...I think there are 2 ways.
-> > >   1. use seqcounter in "mm_struct" as previous patch and lock it at mremap.
-> > > or
-> > >   2. get_user_pages_fast() when do remap.
-> > 
-> > 3 take the anon_vma->lock
-> > 
-> 
-> <SNIP>
->
-> Here is a different version of the same basic idea to skip temporary VMAs
-> during migration. Maybe go with this?
-> 
-> +static bool is_vma_temporary_stack(struct vm_area_struct *vma)
-> +{
-> +	if (vma->vm_flags != VM_STACK_FLAGS)
-> +		return false;
-> +
-> +	/*
-> +	 * Only during exec will the total VM consumed by a process
-> +	 * be exacly the same as the stack
-> +	 */
-> +	if (vma->vm_mm->stack_vm == 1 && vma->vm_mm->total_vm == 1)
-> +		return true;
-> +
-> +	return false;
-> +}
-> +
+>>> On Mon, 26 Apr 2010, Josua Dietze wrote:
+>>>> These are the notorious mode switching devices. In Windows, they
+>>>> obviously install a special storage driver doing one specific action
+>>>> on each following plugging.
+>>>> This action - some storage or control command - will "flip" the
+>>>> device, making it "disconnect" and returning as a completely different
+>>>> composite device.
 
-The assumptions on the vm flags is of course totally wrong. VM_EXEC might
-be applied as well as default flags from the mm.  The following is the same
-basic idea, skip VMAs belonging to processes in exec rather than trying
-to hold anon_vma->lock across move_page_tables(). Not tested yet.
+>> Alan Stern schrieb:
+>>> I was going to say the same thing.  For ease of use, I recommend using
+>>> a "SCSI eject" to trigger the mode change.  That way, Linux users who
+>>> don't have the usb-modeswitch program installed can get the same effect
+>>> by running eject.
 
-==== CUT HERE ====
-mm,migration: Avoid race between shift_arg_pages() and rmap_walk() during migration by not migrating temporary stacks
+On Wed, 28 Apr 2010 10:46:12 +0200, Michał Nazarewicz <m.nazarewicz@samsung.com> wrote:
+> Also, I think that it might be a good idea to make some "standardised"
+> mechanism for all such devices so that a generic udev code could be
+> written.  Adding things to the descriptors may be difficult in a way,
+> but maybe adding "[NoCD]" to the interface name would be enough.
 
-Page migration requires rmap to be able to find all ptes mapping a page
-at all times, otherwise the migration entry can be instantiated, but it
-is possible to leave one behind if the second rmap_walk fails to find
-the page.  If this page is later faulted, migration_entry_to_page() will
-call BUG because the page is locked indicating the page was migrated by
-the migration PTE not cleaned up.
+It got me thinking that maybe, it would be cool to do things in a generic
+way in Linux by using the iConfiguration.  A, let's call it' NoCD-capable
+device would have the first configuration named "Foo Installation Disc
+[NoCD]" end while enumerating Linux would prefer configurations which
+don't have the tag over the ones that have it.  At the same time, for
+older kernels an udev rule would be provided.  And of course, non
+NoCD-capable devices (or Linux-unaware if you will) devices would be
+handled the way they are handled now.
 
-There is a race between shift_arg_pages and migration that allows this
-bug to trigger. A temporary stack is setup during exec and later moved. If
-migration moves a page in the temporary stack and the VMA is then removed,
-the migration PTE may not be found leading to a BUG when the stack is faulted.
-
-Ideally, shift_arg_pages must run atomically with respect of rmap_walk by
-holding the anon_vma lock but this is problematic as pages must be allocated
-for page tables. Instead, this patch skips processes in exec by making an
-assumption that a mm with stack_vm == 1 and total_vm == 1 is a process in
-exec() that hasn't finalised the temporary stack yet.  Memory hot-remove
-will try again, sys_move_pages() wouldn't be operating during exec() time
-and memory compaction will just continue to another page without concern.
-
-[kamezawa.hiroyu@jp.fujitsu.com: Idea for having migration skip temporary stacks]
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/rmap.c |   28 +++++++++++++++++++++++++++-
- 1 files changed, 27 insertions(+), 1 deletions(-)
-
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 85f203e..9e20188 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1141,6 +1141,18 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
- 	return ret;
- }
- 
-+static bool is_vma_in_exec(struct vm_area_struct *vma)
-+{
-+	/*
-+	 * Only during exec will the total VM consumed by a process
-+	 * be exacly the same as the stack and both equal to 1
-+	 */
-+	if (vma->vm_mm->stack_vm == 1 && vma->vm_mm->total_vm == 1)
-+		return true;
-+
-+	return false;
-+}
-+
- /**
-  * try_to_unmap_anon - unmap or unlock anonymous page using the object-based
-  * rmap method
-@@ -1169,7 +1181,21 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
- 
- 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
- 		struct vm_area_struct *vma = avc->vma;
--		unsigned long address = vma_address(page, vma);
-+		unsigned long address;
-+
-+		/*
-+		 * During exec, a temporary VMA is setup and later moved.
-+		 * The VMA is moved under the anon_vma lock but not the
-+		 * page tables leading to a race where migration cannot
-+		 * find the migration ptes. Rather than increasing the
-+		 * locking requirements of exec, migration skips
-+		 * VMAs in processes calling exec.
-+		 */
-+		if (PAGE_MIGRATION && (flags & TTU_MIGRATION) &&
-+				is_vma_in_exec(vma))
-+			continue;
-+
-+		address = vma_address(page, vma);
- 		if (address == -EFAULT)
- 			continue;
- 		ret = try_to_unmap_one(page, vma, address, flags);
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
