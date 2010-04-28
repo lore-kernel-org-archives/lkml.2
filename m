@@ -1,66 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab0D1GWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 02:22:18 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37122 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527Ab0D1GWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 02:22:16 -0400
-Date: Wed, 28 Apr 2010 16:22:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: =?UTF-8?B?IkZyw6lkw6lyaWMgV2Vpc2JlY2tlciI=?= <fweisbec@gmail.com>,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the bkl-ioctl tree with my fixes
- tree
-Message-Id: <20100428162209.cc9b2487.sfr@canb.auug.org.au>
-In-Reply-To: <201004271102.35904.arnd@arndb.de>
-References: <20100427150629.cb526876.sfr@canb.auug.org.au>
-	<201004271102.35904.arnd@arndb.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__28_Apr_2010_16_22_09_+1000_2eMq+FtfqeF_=g5V"
+	id S1754669Ab0D1GXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 02:23:11 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59684 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585Ab0D1GXJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 02:23:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=KhBltZ/VuN3mfh2+kvaar6LEg+7rV0V/ufz8OvWxjSdLBpk53hBpSs9JV2W/N5trhM
+         IbpOqToe59ff4uRwlKhCX27EKQU0Te2JYhvZ7EI+GDPl4m+A6HSCxLwvw7fNZwrtTGzx
+         JYprUTo+BBp++TfvcgNavr7lg3s0G0ivUFs70=
+MIME-Version: 1.0
+In-Reply-To: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com>
+References: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Wed, 28 Apr 2010 14:22:48 +0800
+Message-ID: <i2s412e6f7f1004272322m125531cepdbddff2de596ab65@mail.gmail.com>
+Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Roland Dreier <rolandd@cisco.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       David Howells <dhowells@redhat.com>, Takashi Iwai <tiwai@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Changli Gao <xiaosuo@gmail.com>
+Content-Type: multipart/mixed; boundary=000e0cd13aba28f69f0485460bf7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Apr_2010_16_22_09_+1000_2eMq+FtfqeF_=g5V
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+--000e0cd13aba28f69f0485460bf7
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-Hi Arndt,
-
-On Tue, 27 Apr 2010 11:02:35 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+On Wed, Apr 28, 2010 at 1:03 PM, Changli Gao <xiaosuo@gmail.com> wrote:
 >
-> It's not clear yet how we do it. Ideally "pktcdvd: improve BKL and
-> compat_ioctl.c usage" should find its way into -rc1 in some way, but
-> we need to reshuffle the BKL removal trees to make that go in nicely.
->=20
-> Where is your fixes tree? Maybe Frederic can take all BKL related
-> patches from that into one of his trees.
+> =C2=A0static inline int waitqueue_active(wait_queue_head_t *q)
+> =C2=A0{
+> - =C2=A0 =C2=A0 =C2=A0 return !list_empty(&q->task_list);
+> + =C2=A0 =C2=A0 =C2=A0 return !list_empty(&q->task_list) || !list_empty(&=
+q->task_list);
+> =C2=A0}
+>
 
-My fixes tree is here: ssh://master.kernel.org/~sfr/next-fixes.git it
-currently only contains your pktcdvd patch.  My understanding was that
-this patch was a fix for a build problem with Linus' tree.
+I am sorry. the later task_list should be task_list_ex. The updated
+patch is attached. And I will replace task_list list with hlist for
+saving space.
 
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Regards=EF=BC=8C
+Changli Gao(xiaosuo@gmail.com)
 
---Signature=_Wed__28_Apr_2010_16_22_09_+1000_2eMq+FtfqeF_=g5V
-Content-Type: application/pgp-signature
+--000e0cd13aba28f69f0485460bf7
+Content-Type: text/plain; charset=US-ASCII; name="wq-ex-lifo.diff"
+Content-Disposition: attachment; filename="wq-ex-lifo.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_g8jre0j50
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvX1BEACgkQjjKRsyhoI8yXQACguHlJxUTus4r2hBYK8GIIVONm
-rR4AnRSjGbYRMoHm1OTbZ4ey1snLz4HI
-=sQ8R
------END PGP SIGNATURE-----
-
---Signature=_Wed__28_Apr_2010_16_22_09_+1000_2eMq+FtfqeF_=g5V--
+ZGlmZiAtLWdpdCBhL2ZzL2V2ZW50cG9sbC5jIGIvZnMvZXZlbnRwb2xsLmMKaW5kZXggYmQwNTZh
+NS4uZTliM2ViZSAxMDA2NDQKLS0tIGEvZnMvZXZlbnRwb2xsLmMKKysrIGIvZnMvZXZlbnRwb2xs
+LmMKQEAgLTExNDAsOCArMTE0MCw3IEBAIHJldHJ5OgogCQkgKiBlcF9wb2xsX2NhbGxiYWNrKCkg
+d2hlbiBldmVudHMgd2lsbCBiZWNvbWUgYXZhaWxhYmxlLgogCQkgKi8KIAkJaW5pdF93YWl0cXVl
+dWVfZW50cnkoJndhaXQsIGN1cnJlbnQpOwotCQl3YWl0LmZsYWdzIHw9IFdRX0ZMQUdfRVhDTFVT
+SVZFOwotCQlfX2FkZF93YWl0X3F1ZXVlKCZlcC0+d3EsICZ3YWl0KTsKKwkJX19hZGRfd2FpdF9x
+dWV1ZV9leCgmZXAtPndxLCAmd2FpdCk7CiAKIAkJZm9yICg7OykgewogCQkJLyoKZGlmZiAtLWdp
+dCBhL2luY2x1ZGUvbGludXgvd2FpdC5oIGIvaW5jbHVkZS9saW51eC93YWl0LmgKaW5kZXggYTQ4
+ZTE2Yi4uODM5ZGIzMyAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC93YWl0LmgKKysrIGIvaW5j
+bHVkZS9saW51eC93YWl0LmgKQEAgLTMwLDggKzMwLDYgQEAgdHlwZWRlZiBpbnQgKCp3YWl0X3F1
+ZXVlX2Z1bmNfdCkod2FpdF9xdWV1ZV90ICp3YWl0LCB1bnNpZ25lZCBtb2RlLCBpbnQgZmxhZ3Ms
+IHYKIGludCBkZWZhdWx0X3dha2VfZnVuY3Rpb24od2FpdF9xdWV1ZV90ICp3YWl0LCB1bnNpZ25l
+ZCBtb2RlLCBpbnQgZmxhZ3MsIHZvaWQgKmtleSk7CiAKIHN0cnVjdCBfX3dhaXRfcXVldWUgewot
+CXVuc2lnbmVkIGludCBmbGFnczsKLSNkZWZpbmUgV1FfRkxBR19FWENMVVNJVkUJMHgwMQogCXZv
+aWQgKnByaXZhdGU7CiAJd2FpdF9xdWV1ZV9mdW5jX3QgZnVuYzsKIAlzdHJ1Y3QgbGlzdF9oZWFk
+IHRhc2tfbGlzdDsKQEAgLTUwLDYgKzQ4LDcgQEAgc3RydWN0IHdhaXRfYml0X3F1ZXVlIHsKIHN0
+cnVjdCBfX3dhaXRfcXVldWVfaGVhZCB7CiAJc3BpbmxvY2tfdCBsb2NrOwogCXN0cnVjdCBsaXN0
+X2hlYWQgdGFza19saXN0OworCXN0cnVjdCBsaXN0X2hlYWQgdGFza19saXN0X2V4OwogfTsKIHR5
+cGVkZWYgc3RydWN0IF9fd2FpdF9xdWV1ZV9oZWFkIHdhaXRfcXVldWVfaGVhZF90OwogCkBAIC02
+OSw3ICs2OCw4IEBAIHN0cnVjdCB0YXNrX3N0cnVjdDsKIAogI2RlZmluZSBfX1dBSVRfUVVFVUVf
+SEVBRF9JTklUSUFMSVpFUihuYW1lKSB7CQkJCVwKIAkubG9jawkJPSBfX1NQSU5fTE9DS19VTkxP
+Q0tFRChuYW1lLmxvY2spLAkJXAotCS50YXNrX2xpc3QJPSB7ICYobmFtZSkudGFza19saXN0LCAm
+KG5hbWUpLnRhc2tfbGlzdCB9IH0KKwkudGFza19saXN0CT0geyAmKG5hbWUpLnRhc2tfbGlzdCwg
+JihuYW1lKS50YXNrX2xpc3QgfSwJXAorCS50YXNrX2xpc3RfZXgJPSB7ICYobmFtZSkudGFza19s
+aXN0X2V4LCAmKG5hbWUpLnRhc2tfbGlzdF9leCB9IH0KIAogI2RlZmluZSBERUNMQVJFX1dBSVRf
+UVVFVUVfSEVBRChuYW1lKSBcCiAJd2FpdF9xdWV1ZV9oZWFkX3QgbmFtZSA9IF9fV0FJVF9RVUVV
+RV9IRUFEX0lOSVRJQUxJWkVSKG5hbWUpCkBAIC05Nyw3ICs5Nyw2IEBAIGV4dGVybiB2b2lkIF9f
+aW5pdF93YWl0cXVldWVfaGVhZCh3YWl0X3F1ZXVlX2hlYWRfdCAqcSwgc3RydWN0IGxvY2tfY2xh
+c3Nfa2V5ICopCiAKIHN0YXRpYyBpbmxpbmUgdm9pZCBpbml0X3dhaXRxdWV1ZV9lbnRyeSh3YWl0
+X3F1ZXVlX3QgKnEsIHN0cnVjdCB0YXNrX3N0cnVjdCAqcCkKIHsKLQlxLT5mbGFncyA9IDA7CiAJ
+cS0+cHJpdmF0ZSA9IHA7CiAJcS0+ZnVuYyA9IGRlZmF1bHRfd2FrZV9mdW5jdGlvbjsKIH0KQEAg
+LTEwNSwxNCArMTA0LDEzIEBAIHN0YXRpYyBpbmxpbmUgdm9pZCBpbml0X3dhaXRxdWV1ZV9lbnRy
+eSh3YWl0X3F1ZXVlX3QgKnEsIHN0cnVjdCB0YXNrX3N0cnVjdCAqcCkKIHN0YXRpYyBpbmxpbmUg
+dm9pZCBpbml0X3dhaXRxdWV1ZV9mdW5jX2VudHJ5KHdhaXRfcXVldWVfdCAqcSwKIAkJCQkJd2Fp
+dF9xdWV1ZV9mdW5jX3QgZnVuYykKIHsKLQlxLT5mbGFncyA9IDA7CiAJcS0+cHJpdmF0ZSA9IE5V
+TEw7CiAJcS0+ZnVuYyA9IGZ1bmM7CiB9CiAKIHN0YXRpYyBpbmxpbmUgaW50IHdhaXRxdWV1ZV9h
+Y3RpdmUod2FpdF9xdWV1ZV9oZWFkX3QgKnEpCiB7Ci0JcmV0dXJuICFsaXN0X2VtcHR5KCZxLT50
+YXNrX2xpc3QpOworCXJldHVybiAhbGlzdF9lbXB0eSgmcS0+dGFza19saXN0KSB8fCAhbGlzdF9l
+bXB0eSgmcS0+dGFza19saXN0X2V4KTsKIH0KIAogZXh0ZXJuIHZvaWQgYWRkX3dhaXRfcXVldWUo
+d2FpdF9xdWV1ZV9oZWFkX3QgKnEsIHdhaXRfcXVldWVfdCAqd2FpdCk7CkBAIC0xMjcsMTAgKzEy
+NSwxMCBAQCBzdGF0aWMgaW5saW5lIHZvaWQgX19hZGRfd2FpdF9xdWV1ZSh3YWl0X3F1ZXVlX2hl
+YWRfdCAqaGVhZCwgd2FpdF9xdWV1ZV90ICpuZXcpCiAvKgogICogVXNlZCBmb3Igd2FrZS1vbmUg
+dGhyZWFkczoKICAqLwotc3RhdGljIGlubGluZSB2b2lkIF9fYWRkX3dhaXRfcXVldWVfdGFpbCh3
+YWl0X3F1ZXVlX2hlYWRfdCAqaGVhZCwKK3N0YXRpYyBpbmxpbmUgdm9pZCBfX2FkZF93YWl0X3F1
+ZXVlX2V4KHdhaXRfcXVldWVfaGVhZF90ICpoZWFkLAogCQkJCQkJd2FpdF9xdWV1ZV90ICpuZXcp
+CiB7Ci0JbGlzdF9hZGRfdGFpbCgmbmV3LT50YXNrX2xpc3QsICZoZWFkLT50YXNrX2xpc3QpOwor
+CWxpc3RfYWRkKCZuZXctPnRhc2tfbGlzdCwgJmhlYWQtPnRhc2tfbGlzdF9leCk7CiB9CiAKIHN0
+YXRpYyBpbmxpbmUgdm9pZCBfX3JlbW92ZV93YWl0X3F1ZXVlKHdhaXRfcXVldWVfaGVhZF90ICpo
+ZWFkLApAQCAtNDA5LDggKzQwNyw3IEBAIGRvIHsJCQkJCQkJCQlcCiBzdGF0aWMgaW5saW5lIHZv
+aWQgYWRkX3dhaXRfcXVldWVfZXhjbHVzaXZlX2xvY2tlZCh3YWl0X3F1ZXVlX2hlYWRfdCAqcSwK
+IAkJCQkJCSAgIHdhaXRfcXVldWVfdCAqIHdhaXQpCiB7Ci0Jd2FpdC0+ZmxhZ3MgfD0gV1FfRkxB
+R19FWENMVVNJVkU7Ci0JX19hZGRfd2FpdF9xdWV1ZV90YWlsKHEsICB3YWl0KTsKKwlfX2FkZF93
+YWl0X3F1ZXVlX2V4KHEsICB3YWl0KTsKIH0KIAogLyoKZGlmZiAtLWdpdCBhL2tlcm5lbC9zY2hl
+ZC5jIGIva2VybmVsL3NjaGVkLmMKaW5kZXggYmU1YWI3MC4uNTliMTUzNCAxMDA2NDQKLS0tIGEv
+a2VybmVsL3NjaGVkLmMKKysrIGIva2VybmVsL3NjaGVkLmMKQEAgLTM5MDMsMTEgKzM5MDMsMTEg
+QEAgc3RhdGljIHZvaWQgX193YWtlX3VwX2NvbW1vbih3YWl0X3F1ZXVlX2hlYWRfdCAqcSwgdW5z
+aWduZWQgaW50IG1vZGUsCiB7CiAJd2FpdF9xdWV1ZV90ICpjdXJyLCAqbmV4dDsKIAotCWxpc3Rf
+Zm9yX2VhY2hfZW50cnlfc2FmZShjdXJyLCBuZXh0LCAmcS0+dGFza19saXN0LCB0YXNrX2xpc3Qp
+IHsKLQkJdW5zaWduZWQgZmxhZ3MgPSBjdXJyLT5mbGFnczsKKwlsaXN0X2Zvcl9lYWNoX2VudHJ5
+X3NhZmUoY3VyciwgbmV4dCwgJnEtPnRhc2tfbGlzdCwgdGFza19saXN0KQorCQljdXJyLT5mdW5j
+KGN1cnIsIG1vZGUsIHdha2VfZmxhZ3MsIGtleSk7CiAKLQkJaWYgKGN1cnItPmZ1bmMoY3Vyciwg
+bW9kZSwgd2FrZV9mbGFncywga2V5KSAmJgotCQkJCShmbGFncyAmIFdRX0ZMQUdfRVhDTFVTSVZF
+KSAmJiAhLS1ucl9leGNsdXNpdmUpCisJbGlzdF9mb3JfZWFjaF9lbnRyeV9zYWZlKGN1cnIsIG5l
+eHQsICZxLT50YXNrX2xpc3RfZXgsIHRhc2tfbGlzdCkgeworCQlpZiAoY3Vyci0+ZnVuYyhjdXJy
+LCBtb2RlLCB3YWtlX2ZsYWdzLCBrZXkpICYmICEtLW5yX2V4Y2x1c2l2ZSkKIAkJCWJyZWFrOwog
+CX0KIH0KZGlmZiAtLWdpdCBhL2tlcm5lbC93YWl0LmMgYi9rZXJuZWwvd2FpdC5jCmluZGV4IGM0
+YmQzZDguLmEwNTU5ZGYgMTAwNjQ0Ci0tLSBhL2tlcm5lbC93YWl0LmMKKysrIGIva2VybmVsL3dh
+aXQuYwpAQCAtMTUsNiArMTUsNyBAQCB2b2lkIF9faW5pdF93YWl0cXVldWVfaGVhZCh3YWl0X3F1
+ZXVlX2hlYWRfdCAqcSwgc3RydWN0IGxvY2tfY2xhc3Nfa2V5ICprZXkpCiAJc3Bpbl9sb2NrX2lu
+aXQoJnEtPmxvY2spOwogCWxvY2tkZXBfc2V0X2NsYXNzKCZxLT5sb2NrLCBrZXkpOwogCUlOSVRf
+TElTVF9IRUFEKCZxLT50YXNrX2xpc3QpOworCUlOSVRfTElTVF9IRUFEKCZxLT50YXNrX2xpc3Rf
+ZXgpOwogfQogCiBFWFBPUlRfU1lNQk9MKF9faW5pdF93YWl0cXVldWVfaGVhZCk7CkBAIC0yMyw3
+ICsyNCw2IEBAIHZvaWQgYWRkX3dhaXRfcXVldWUod2FpdF9xdWV1ZV9oZWFkX3QgKnEsIHdhaXRf
+cXVldWVfdCAqd2FpdCkKIHsKIAl1bnNpZ25lZCBsb25nIGZsYWdzOwogCi0Jd2FpdC0+ZmxhZ3Mg
+Jj0gfldRX0ZMQUdfRVhDTFVTSVZFOwogCXNwaW5fbG9ja19pcnFzYXZlKCZxLT5sb2NrLCBmbGFn
+cyk7CiAJX19hZGRfd2FpdF9xdWV1ZShxLCB3YWl0KTsKIAlzcGluX3VubG9ja19pcnFyZXN0b3Jl
+KCZxLT5sb2NrLCBmbGFncyk7CkBAIC0zNCw5ICszNCw4IEBAIHZvaWQgYWRkX3dhaXRfcXVldWVf
+ZXhjbHVzaXZlKHdhaXRfcXVldWVfaGVhZF90ICpxLCB3YWl0X3F1ZXVlX3QgKndhaXQpCiB7CiAJ
+dW5zaWduZWQgbG9uZyBmbGFnczsKIAotCXdhaXQtPmZsYWdzIHw9IFdRX0ZMQUdfRVhDTFVTSVZF
+OwogCXNwaW5fbG9ja19pcnFzYXZlKCZxLT5sb2NrLCBmbGFncyk7Ci0JX19hZGRfd2FpdF9xdWV1
+ZV90YWlsKHEsIHdhaXQpOworCV9fYWRkX3dhaXRfcXVldWVfZXgocSwgd2FpdCk7CiAJc3Bpbl91
+bmxvY2tfaXJxcmVzdG9yZSgmcS0+bG9jaywgZmxhZ3MpOwogfQogRVhQT1JUX1NZTUJPTChhZGRf
+d2FpdF9xdWV1ZV9leGNsdXNpdmUpOwpAQCAtNjksNyArNjgsNiBAQCBwcmVwYXJlX3RvX3dhaXQo
+d2FpdF9xdWV1ZV9oZWFkX3QgKnEsIHdhaXRfcXVldWVfdCAqd2FpdCwgaW50IHN0YXRlKQogewog
+CXVuc2lnbmVkIGxvbmcgZmxhZ3M7CiAKLQl3YWl0LT5mbGFncyAmPSB+V1FfRkxBR19FWENMVVNJ
+VkU7CiAJc3Bpbl9sb2NrX2lycXNhdmUoJnEtPmxvY2ssIGZsYWdzKTsKIAlpZiAobGlzdF9lbXB0
+eSgmd2FpdC0+dGFza19saXN0KSkKIAkJX19hZGRfd2FpdF9xdWV1ZShxLCB3YWl0KTsKQEAgLTgz
+LDEwICs4MSw5IEBAIHByZXBhcmVfdG9fd2FpdF9leGNsdXNpdmUod2FpdF9xdWV1ZV9oZWFkX3Qg
+KnEsIHdhaXRfcXVldWVfdCAqd2FpdCwgaW50IHN0YXRlKQogewogCXVuc2lnbmVkIGxvbmcgZmxh
+Z3M7CiAKLQl3YWl0LT5mbGFncyB8PSBXUV9GTEFHX0VYQ0xVU0lWRTsKIAlzcGluX2xvY2tfaXJx
+c2F2ZSgmcS0+bG9jaywgZmxhZ3MpOwogCWlmIChsaXN0X2VtcHR5KCZ3YWl0LT50YXNrX2xpc3Qp
+KQotCQlfX2FkZF93YWl0X3F1ZXVlX3RhaWwocSwgd2FpdCk7CisJCV9fYWRkX3dhaXRfcXVldWVf
+ZXgocSwgd2FpdCk7CiAJc2V0X2N1cnJlbnRfc3RhdGUoc3RhdGUpOwogCXNwaW5fdW5sb2NrX2ly
+cXJlc3RvcmUoJnEtPmxvY2ssIGZsYWdzKTsKIH0K
+--000e0cd13aba28f69f0485460bf7--
