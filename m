@@ -1,61 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab0D1P2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:28:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:48466 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755251Ab0D1P22 (ORCPT
+	id S1752230Ab0D1Mdv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 08:33:51 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:38822 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab0D1Mdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:28:28 -0400
-Message-ID: <4BD85393.8020400@oracle.com>
-Date: Wed, 28 Apr 2010 08:26:11 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Wed, 28 Apr 2010 08:33:49 -0400
+Message-ID: <4BD82B29.3000105@retis.net.pl>
+Date: Wed, 28 Apr 2010 14:33:45 +0200
+From: Grzegorz Chwesewicz <grzegorz.chwesewicz@retis.net.pl>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Peter Jones <pjones@redhat.com>, linux-next@vger.kernel.org
-Subject: Re: linux-next: April 27 (iscsi_ibft)
-References: <80edf231-ef31-4f21-ab1b-1a21fda35809@default> <20100427230121.GA31743@andromeda.dapyr.net>
-In-Reply-To: <20100427230121.GA31743@andromeda.dapyr.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: Problem with "tcp: bind() fix when many ports are bound" commit
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4BD8540D.0049:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/10 16:01, Konrad Rzeszutek Wilk wrote:
-> On Tue, Apr 27, 2010 at 09:13:16AM -0700, Randy Dunlap wrote:
->> when CONFIG_ACPI is not enabled:
->>
->> drivers/firmware/iscsi_ibft_find.c:112: error: dereferencing pointer to incomplete type
->> drivers/firmware/iscsi_ibft_find.c:112: error: dereferencing pointer to incomplete type
->> drivers/firmware/iscsi_ibft_find.c:112: warning: type defaults to 'int' in declaration of 'type name'
->> drivers/firmware/iscsi_ibft_find.c:112: error: dereferencing pointer to incomplete type
->> drivers/firmware/iscsi_ibft_find.c:112: warning: type defaults to 'int' in declaration of 'type name'
-> 
-> Yikes.
-> 
-> Randy, thank you for spotting this and sending an e-mail my way.
-> 
-> It is all b/c we now use the 'struct acpi_table_ibft *ibft_addr' which
-> is gone when !CONFIG_ACPI.
-> 
-> Peter, if we did in an #ifdef !CONFIG_ACPI in iscsi_ibft.h and included
-> a copy of the old ibft_struct that should work.
-> 
-> Or we make the code dependent on CONFIG_ACPI (in the Kconfig
-> file).
-> 
-> Peter, Randy: Which option do you think makes more sense?
+	Hi, I have a problem with binding to port with the latest git kernel
+(my HEAD is at 1600f9def09de07c5dbeb539e978fa73880690dd). Please CC to
+me as I'm not subscribed to the list.
 
-I think that you and Peter know more about that than I do.
-I'd go for the Kconfig dependency.
+Example with buggy kernel:
+
+ensima-hp ~ # /etc/init.d/apache2 start
+ * Starting apache2 ...
+(98)Address already in use: make_sock: could not bind to address
+127.0.0.1:80
+no listening sockets available, shutting down
+Unable to open logs
+
+As you can see nothing is listening on port 80, but there are old
+connections to port 80 with CLOSE_WAIT and FIN_WAIT2 state.
+
+ensima-hp ~ # netstat -pan --inet|grep 80
+netstat: no support for `AF INET (sctp)' on this system.
+tcp        0      0 127.0.0.1:631           0.0.0.0:*
+LISTEN      4806/cupsd
+tcp        1      0 127.0.0.1:54040         127.0.0.1:80
+CLOSE_WAIT  5814/konquerorHk573
+tcp        0      0 127.0.0.1:80            127.0.0.1:54042
+FIN_WAIT2   -
+tcp        0      0 127.0.0.1:80            127.0.0.1:54040
+FIN_WAIT2   -
+tcp        1      0 127.0.0.1:54042         127.0.0.1:80
+CLOSE_WAIT  6175/konquerordx573
+
+So I can't start apache as long as these connections are not fully
+closed, after that apache starts without problems.
+
+ensima-hp ~ # netstat -pan --inet|grep 80
+netstat: no support for `AF INET (sctp)' on this system.
+tcp        0      0 127.0.0.1:631           0.0.0.0:*
+LISTEN      4806/cupsd
+
+ensima-hp ~ # /etc/init.d/apache2 start
+ * Starting apache2 ...		[OK]
+
+Problem occured between 2.6.34-rc4 and latest git, bisect shows that the
+problem is caused by:
+
+commit fda48a0d7a8412cedacda46a9c0bf8ef9cd13559
+Author: Eric Dumazet <eric.dumazet@gmail.com>
+Date:   Wed Apr 21 09:26:15 2010 +0000
+
+tcp: bind() fix when many ports are bound
+
+Reverting this commit from current HEAD, resolving conflict in
+'net/ipv6/inet6_connection_sock.c' file, and compiling new kernel solves
+the problem.
+
+'net/ipv6/inet6_connection_sock.c' before resolving conflict:
+
+ 41         sk_for_each_bound(sk2, node, &tb->owners) {
+ 42                 if (sk != sk2 &&
+ 43                     (!sk->sk_bound_dev_if ||
+ 44                      !sk2->sk_bound_dev_if ||
+ 45 <<<<<<< HEAD
+ 46                      sk->sk_bound_dev_if == sk2->sk_bound_dev_if)) {
+ 47                         if ((!sk->sk_reuse || !sk2->sk_reuse ||
+ 48                              sk2->sk_state == TCP_LISTEN) &&
+ 49                              ipv6_rcv_saddr_equal(sk, sk2))
+ 50                                 break;
+ 51                         else if (sk->sk_reuse && sk2->sk_reuse &&
+ 52                                 !ipv6_addr_any(inet6_rcv_saddr(sk)) &&
+ 53                                 ipv6_rcv_saddr_equal(sk, sk2))
+ 54                                 break;
+ 55                 }
+ 56 =======
+ 57                      sk->sk_bound_dev_if == sk2->sk_bound_dev_if) &&
+ 58                     (!sk->sk_reuse || !sk2->sk_reuse ||
+ 59                      sk2->sk_state == TCP_LISTEN) &&
+ 60                      ipv6_rcv_saddr_equal(sk, sk2))
+ 61                         break;
+ 62 >>>>>>> fda48a0... tcp: bind() fix when many ports are bound
+ 63         }
+ 64
+ 65         return node != NULL;
+
+
+
+ 66 }
+
+'net/ipv6/inet6_connection_sock.c' after resolving conflict:
+
+ 41         sk_for_each_bound(sk2, node, &tb->owners) {
+ 42                 if (sk != sk2 &&
+ 43                     (!sk->sk_bound_dev_if ||
+ 44                      !sk2->sk_bound_dev_if ||
+ 45                      sk->sk_bound_dev_if == sk2->sk_bound_dev_if) &&
+ 46                     (!sk->sk_reuse || !sk2->sk_reuse ||
+ 47                      sk2->sk_state == TCP_LISTEN) &&
+ 48                      ipv6_rcv_saddr_equal(sk, sk2))
+ 49                         break;
+ 50         }
+
+
+
+ 51
+ 52         return node != NULL;
+ 53 }
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Greetings
+Grzegorz Chwesewicz
+mailto:grzegorz.chwesewicz@retis.net.pl
