@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab0D1KZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 06:25:24 -0400
-Received: from server78.greatnet.de ([83.133.96.102]:35002 "EHLO
-	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab0D1KZW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 06:25:22 -0400
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: linux-fbdev@vger.kernel.org
-Cc: ralf@linux-mips.org, arnaud.patard@rtp-net.org, jayakumar.lkml@gmail.com,
-       gregkh@suse.de, yuasa@linux-mips.org, lethal@linux-sh.org,
-       akpm@linux-foundation.org, adobriyan@gmail.com, support@simtec.co.uk,
-       ben@simtec.co.uk, linux@simtec.co.uk, jkosina@suse.cz,
-       pjones@redhat.com, linux-kernel@vger.kernel.org,
-       Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [PATCH 1/4] cocbalt_lcdfb: correct sections
-Date: Wed, 28 Apr 2010 12:25:02 +0200
-Message-Id: <1272450305-7284-1-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.7.0
+	id S1754351Ab0D1RaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 13:30:05 -0400
+Received: from kroah.org ([198.145.64.141]:43024 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751683Ab0D1RaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 13:30:02 -0400
+Date: Wed, 28 Apr 2010 10:29:44 -0700
+From: Greg KH <greg@kroah.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jiri Benc <jbenc@suse.cz>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk, Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <jkosina@suse.cz>,
+       Anton Blanchard <anton@samba.org>
+Subject: Re: [171/197] module: fix __module_ref_addr()
+Message-ID: <20100428172944.GA14660@kroah.com>
+References: <20100422191857.GA13268@kroah.com>
+ <20100422190922.702027944@kvm.kroah.org>
+ <20100428165201.3d7d6b4a@griffin.suse.cz>
+ <20100428162056.GA2846@Krystal>
+ <20100428185550.4406319c@logostar.upir.cz>
+ <4BD86F3D.7040907@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BD86F3D.7040907@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the drivers probe call was changed from .init.text
-to .devinit.text in commit c2e13037e6794bd0d9de3f9ecabf5615f15c160b
-the fb_fix_screeninfo structure must be
-changed from .init.data to .devinit.data, too.
+On Wed, Apr 28, 2010 at 07:24:13PM +0200, Tejun Heo wrote:
+> On 04/28/2010 06:55 PM, Jiri Benc wrote:
+> > On Wed, 28 Apr 2010 12:20:56 -0400, Mathieu Desnoyers wrote:
+> >> Can you try reverting commit c8d52465f95c4187871f8e65666c07806ca06d41 and see if
+> >> it helps ?
+> > 
+> > It doesn't. The produced code is identical.
+> > 
+> >> If you have other compiler versions handy, that would also be helpful to see if
+> >> the problem is specific to the gcc version you are using.
+> > 
+> > Tried 4.5.0, the same problem (at least looking at the produced assembler
+> > code, I haven't booted the kernel, but it looks very similar to 4.3.3).
+> 
+> I wrote on the bugzilla but this is not a compiler bug but the -stable
+> patch shouldn't have been applied only to 2.6.33.  Not 2.6.32.  This
+> is because till 2.6.32, ia64 hadn't been converted to dynamic percpu
+> allocator, so its static and dynamic percpu areas were separate and
+> the per_cpu_ptr() wouldn't do the offsetting the module code expects
+> there.  So, please revert the patch from 2.6.32.
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
----
-It would be nice if someone with a MIPS gcc could test this patch and
-give me some feedback if it works the way it should, since atm I'm lacking
-a crosscompiler setup.
----
- drivers/video/cobalt_lcdfb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Ah crap, I missed that.  I'll go revert it from .32 now, sorry about
+that.
 
-diff --git a/drivers/video/cobalt_lcdfb.c b/drivers/video/cobalt_lcdfb.c
-index 5eb61b5..42fe155 100644
---- a/drivers/video/cobalt_lcdfb.c
-+++ b/drivers/video/cobalt_lcdfb.c
-@@ -123,7 +123,7 @@ static void lcd_clear(struct fb_info *info)
- 	lcd_write_control(info, LCD_RESET);
- }
- 
--static struct fb_fix_screeninfo cobalt_lcdfb_fix __initdata = {
-+static struct fb_fix_screeninfo cobalt_lcdfb_fix __devinitdata = {
- 	.id		= "cobalt-lcd",
- 	.type		= FB_TYPE_TEXT,
- 	.type_aux	= FB_AUX_TEXT_MDA,
--- 
-1.7.0
-
+greg k-h
