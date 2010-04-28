@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab0D1R7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 13:59:35 -0400
-Received: from fg-out-1718.google.com ([72.14.220.158]:28528 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab0D1R7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 13:59:34 -0400
-Message-ID: <4BD87781.8030907@retis.net.pl>
-Date: Wed, 28 Apr 2010 19:59:29 +0200
-From: Grzegorz Chwesewicz <grzegorz.chwesewicz@retis.net.pl>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
+	id S1753685Ab0D1Ns5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 09:48:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12176 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752576Ab0D1Ns4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 09:48:56 -0400
+Date: Wed, 28 Apr 2010 09:48:52 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, jens.axboe@oracle.com
+Subject: Re: CFQ is broken for CONFIG_BLK_CGROUP=y, CFQ_GROUP_IOSCHED=n
+Message-ID: <20100428134852.GA12720@redhat.com>
+References: <877hnrg30c.fsf@openvz.org>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       eric.dumazet@gmail.com
-Subject: Re: Problem with "tcp: bind() fix when many ports are bound" commit
-References: <4BD82B29.3000105@retis.net.pl> <20100428.095032.32709294.davem@davemloft.net>
-In-Reply-To: <20100428.095032.32709294.davem@davemloft.net>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <877hnrg30c.fsf@openvz.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller pisze:
-> From: Grzegorz Chwesewicz <grzegorz.chwesewicz@retis.net.pl>
-> Date: Wed, 28 Apr 2010 14:33:45 +0200
+On Wed, Apr 28, 2010 at 04:44:51PM +0400, Dmitry Monakhov wrote:
 > 
->> 	Hi, I have a problem with binding to port with the latest git kernel
->> (my HEAD is at 1600f9def09de07c5dbeb539e978fa73880690dd). Please CC to
->> me as I'm not subscribed to the list.
+> I've had an  oops on kernel boot due to NULL pointer deference
+> linux-2.6-block/for-next HEAD:7eaed1226ab411ee5dc8c34fc0d8034e4c98e3c6
+> I've enabled CONFIG_BLK_CGROUP, but not CFQ_GROUP_IOSCHED
+> In this case cfq_ref_get_cfqg() defined as 
+> static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
+> {
+>         return NULL;
+> }
+> So following call trace is simply NOOP
+> cfq_set_request()
+>  rq->elevator_private3 = cfq_ref_get_cfqg(cfqq->cfqg);
 > 
-> Please send networking bug reports CC:'d to netdev and the people
-> who wrote and signed off on the commit you've narrowed down the
-> problem to.
+> Which later result in OOPS on bio insertion
+> cfq_insert_request
+>  -> blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,...)
+>     -> spin_lock_irqsave(&blkg->stats_lock, flags);
 > 
-> Otherwise the appropriate people will take longer to find out about
-> your bug, and therefore the bug will take longer to fix than
-> necessary.
-> 
-> Thanks.
+> Bad commit.
+> >From 7f1dc8a2d2f45fc557b27fd56115338b1d34fc24 Mon Sep 17 00:00:00 2001
+> From: Vivek Goyal <vgoyal@redhat.com>
+> Date: Wed, 21 Apr 2010 17:44:16 +0200
+> Subject: [PATCH] blkio: Fix blkio crash during rq stat update
 
-OK, thanks, next time I'll do like you said.
+Hi Dmitry,
 
--- 
-Pozdrawiam
-Grzegorz Chwesewicz
-mailto:grzegorz.chwesewicz@retis.net.pl
+Thanks for reporting the issue. I am cooking up a patch now.
+
+Vivek
