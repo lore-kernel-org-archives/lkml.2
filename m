@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab0D1J0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 05:26:46 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:58134 "EHLO cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751683Ab0D1J0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 05:26:44 -0400
-Date: Wed, 28 Apr 2010 11:25:48 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Yong Zhang <yong.zhang@windriver.com>, Xiaotian Feng <xtfeng@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Alexander Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Davide Libenzi <davidel@xmailserver.org>,
-       Roland Dreier <rolandd@cisco.com>,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "David S. Miller" <davem@davemloft.net>,
-       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
-       Andreas Herrmann <andreas.herrmann3@amd.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       David Howells <dhowells@redhat.com>, Takashi Iwai <tiwai@suse.de>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
-Message-ID: <20100428092548.GA4413@cmpxchg.org>
-References: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> <u2w7b6bb4a51004280047s8748cbfbi7ed8e2a238121fa9@mail.gmail.com> <q2j412e6f7f1004280052ice434710ra17a4516236bd3f3@mail.gmail.com> <20100428081545.GA19027@windriver.com> <u2t412e6f7f1004280123k642a1511gbce3ed784431dc1d@mail.gmail.com>
-Mime-Version: 1.0
+	id S1753373Ab0D1MsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 08:48:21 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64423 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752280Ab0D1MsT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 08:48:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YBxwWzJaCP31efolXUC7daVz2lYAXYttFZYHjjhV7rMGzRnBybiKqSQycrcAKazHFi
+         rWLPUWRFuXPg4Ukr5E2NCC/OfZar0S12O8AVlhnR9NL+e7Tc9kU7DghXbqhuEQdy5LM5
+         LaWBQvrYPWpRS2Lc/fYdw9OmzhL1vJYnS57Mg=
+Date: Wed, 28 Apr 2010 14:48:18 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
+       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com
+Subject: Re: [PATCH 8/8] [watchdog] separate touch_nmi_watchdog code path
+	from touch_watchdog
+Message-ID: <20100428124815.GB12017@nowhere>
+References: <1272039216-8890-1-git-send-email-dzickus@redhat.com> <1272039216-8890-9-git-send-email-dzickus@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <u2t412e6f7f1004280123k642a1511gbce3ed784431dc1d@mail.gmail.com>
+In-Reply-To: <1272039216-8890-9-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 04:23:52PM +0800, Changli Gao wrote:
-> On Wed, Apr 28, 2010 at 4:15 PM, Yong Zhang <yong.zhang@windriver.com> wrote:
-> >
-> > What do you mean "we don't need these processes"?
+On Fri, Apr 23, 2010 at 12:13:36PM -0400, Don Zickus wrote:
+> When I combined the nmi_watchdog (hardlockup) and softlockup code, I
+> also combined the paths the touch_watchdog and touch_nmi_watchdog took.
+> This may not be the best idea as pointed out by Frederic W., that the
+> touch_watchdog case probably should not reset the hardlockup count.
 > 
-> If the work is less than the workers, we don't need the workers at the
-> tail of the exculsive list.
-
-Have you checked how exclusive waitqueues are even used?
-
-> > So some processs(at the tail of exclusive list)will be treated abnormally
-> > and it will sleep for a long time, is this reasonable?
-> >
+> Therefore the patch belows falls back to the previous idea of keeping
+> the touch_nmi_watchdog a superset of the touch_watchdog case.
 > 
-> If there isn't enough work to be done, we'd better not disrupt them
-> and  leave them sleeping forever to keep the scheduler happier. Do we
-> have reason to keep fair to all the workers? Does it have benefit?
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
 
-How about starving lock contenders?  See wait_on_bit_lock() and grep
-for the users e.g.
+
+
+Good. But now that we have this, it doesn't make sense anymore
+to have the big rename touch_softlockup_watchdog() into touch_watchdog().
+
+I know it was me who advised you to do this big rename, but that was
+before I realised touching the softlockup shouldn't mean touching nmi
+watchdog too.
+
+I'm sorry about this but this big rename doesn't make sense anymore.
+
+Can we drop touch_watchdog() and keep only the two previous APIs we had
+before?
+
+1) we avoid a big patch very likely to bring conflicts everywhere
+2) touch_softlockup_watchdog() is much more self-explanatory in what
+   it does. People will have less doubts about what happens when they
+   call this.
+
+Thanks.
+
