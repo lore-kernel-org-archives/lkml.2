@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab0D1OUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 10:20:37 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:28928 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab0D1OUf (ORCPT
+	id S1752642Ab0D1NpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 09:45:14 -0400
+Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:45128 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751089Ab0D1NpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 10:20:35 -0400
-X-SpamScore: -26
-X-BigFish: VPS-26(zz1432P98dN936eM9371Pab9bhzz1202hzz6ff19hz32i2a8h87h64h)
-X-Spam-TCS-SCL: 3:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L1LBU0-02-2C0-02
-X-M-MSG: 
-Date: Wed, 28 Apr 2010 16:20:23 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
+	Wed, 28 Apr 2010 09:45:12 -0400
+Date: Wed, 28 Apr 2010 23:45:02 +1000
+From: Dave Chinner <david@fromorbit.com>
 To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/22] KVM: MMU: Implement nested gva_to_gpa functions
-Message-ID: <20100428142023.GE18832@amd.com>
-References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com>
- <1272364712-17425-13-git-send-email-joerg.roedel@amd.com>
- <4BD6DA94.7050501@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 1/2] mm: add context argument to shrinker callback
+Message-ID: <20100428134502.GI9783@dastard>
+References: <1271118255-21070-1-git-send-email-david@fromorbit.com>
+ <1271118255-21070-2-git-send-email-david@fromorbit.com>
+ <4BD80260.3050501@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BD6DA94.7050501@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+In-Reply-To: <4BD80260.3050501@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 28 Apr 2010 14:20:23.0804 (UTC) FILETIME=[F0F21BC0:01CAE6DD]
-X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 03:37:40PM +0300, Avi Kivity wrote:
-> On 04/27/2010 01:38 PM, Joerg Roedel wrote:
-> >This patch adds the functions to do a nested l2_gva to
-> >l1_gpa page table walk.
+On Wed, Apr 28, 2010 at 12:39:44PM +0300, Avi Kivity wrote:
+> On 04/13/2010 03:24 AM, Dave Chinner wrote:
+> >From: Dave Chinner<dchinner@redhat.com>
 > >
-> >Signed-off-by: Joerg Roedel<joerg.roedel@amd.com>
-> >---
-> >  arch/x86/include/asm/kvm_host.h |    4 ++++
-> >  arch/x86/kvm/mmu.c              |    8 ++++++++
-> >  arch/x86/kvm/paging_tmpl.h      |   31 +++++++++++++++++++++++++++++++
-> >  3 files changed, 43 insertions(+), 0 deletions(-)
-> >
-> >diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> >index ccdbd2f..3cbfb51 100644
-> >--- a/arch/x86/include/asm/kvm_host.h
-> >+++ b/arch/x86/include/asm/kvm_host.h
-> >@@ -287,6 +287,10 @@ struct kvm_vcpu_arch {
-> >  	bool tpr_access_reporting;
-> >
-> >  	struct kvm_mmu mmu;
-> >+
-> >+	/* Used for two dimensional paging emulation */
-> >+	struct kvm_mmu nested_mmu;
-> >+
-> >  	/* only needed in kvm_pv_mmu_op() path, but it's hot so
-> >  	 * put it here to avoid allocation */
-> >  	struct kvm_pv_mmu_op_buffer mmu_op_buffer;
-> >diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> >index 4e0bfdb..8bd40b5 100644
-> >--- a/arch/x86/kvm/mmu.c
-> >+++ b/arch/x86/kvm/mmu.c
-> >@@ -2144,6 +2144,14 @@ static gpa_t nonpaging_gva_to_gpa(struct kvm_vcpu *vcpu, gva_t vaddr,
-> >  	return vaddr;
-> >  }
-> >
-> >+static gpa_t nonpaging_gva_to_gpa_nested(struct kvm_vcpu *vcpu, gva_t vaddr,
-> >+					 u32 access, u32 *error)
-> >+{
-> >+	if (error)
-> >+		*error = 0;
+> >The current shrinker implementation requires the registered callback
+> >to have global state to work from. This makes it difficult to shrink
+> >caches that are not global (e.g. per-filesystem caches). Add a
+> >context argument to the shrinker callback so that it can easily be
+> >used in such situations.
 > 
-> Why allow error == NULL?
-
-In the emulator there are some functions passing NULL for the error
-code. In general it doesn't matter much because when we track this
-information in the vcpu struct these error parameters can be removed. I
-just let this outside the scope of this patchset and make that cleanup
-later.
-
+> >@@ -995,7 +995,8 @@ static inline void sync_mm_rss(struct task_struct *task, struct mm_struct *mm)
+> >   * querying the cache size, so a fastpath for that case is appropriate.
+> >   */
+> >  struct shrinker {
+> >-	int (*shrink)(int nr_to_scan, gfp_t gfp_mask);
+> >+	int (*shrink)(void *ctx, int nr_to_scan, gfp_t gfp_mask);
+> >+	void *ctx;	/* user callback context */
+> >  	int seeks;	/* seeks to recreate an obj */
 > 
-> >
-> >+static gpa_t FNAME(gva_to_gpa_nested)(struct kvm_vcpu *vcpu, gva_t vaddr,
-> >+				      u32 access, u32 *error)
-> >+{
-> >+	struct guest_walker walker;
-> >+	gpa_t gpa = UNMAPPED_GVA;
-> >+	int r;
-> >+
-> >+	r = FNAME(walk_addr_nested)(&walker, vcpu, vaddr,
-> >+				    !!(access&  PFERR_WRITE_MASK),
-> >+				    !!(access&  PFERR_USER_MASK),
-> >+				    !!(access&  PFERR_FETCH_MASK));
 > 
-> Those !! are unneeded.
+> It's nicer (and slightly cheaper) to have
+> 
+>   int (*shrink)(struct shrinker *shrinker, int nr_to_scan, gfp_t gfp_mask);
+>   /* no void *ctx; */
+> 
+> Clients can use container_of() to reach their context from the
+> shrinker argument.
 
-Ok, I remove them.
+Agreed, that makes a lot of sense. I'll change it for the next version.
 
-	Joerg
+Cheers,
 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
