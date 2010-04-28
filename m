@@ -1,635 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab0D1Bis (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 21:38:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:47941 "EHLO
+	id S1756164Ab0D1BjK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 21:39:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34990 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755565Ab0D1BiJ (ORCPT
+	with ESMTP id S1755532Ab0D1BiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 21:38:09 -0400
-X-Authority-Analysis: v=1.1 cv=elpKMhBbP+pQyLZqL930WohJ6E0KICKd8OrLrcMNK78= c=1 sm=0 a=hbLQ1xw4sJgA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=SdLTp1kpl_WeZvcIs7EA:9 a=dRqn3dfs9AkOlxR4OGQA:7 a=UVNOhzv26b1MlLZRzEae7EA-L2gA:4 a=DHQQ7jDAcw4A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+	Tue, 27 Apr 2010 21:38:08 -0400
+X-Authority-Analysis: v=1.1 cv=m27xf9DC4olkrNDaWzGlhfWN1WyLlD0+t5Z5YaFh7bA= c=1 sm=0 a=2-hINBMSB2YA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=DfNHnWVPAAAA:8 a=meVymXHHAAAA:8 a=ZOs_XStiAc2VpAllHOkA:9 a=ePpaKeEgX15n1XGI8ycA:7 a=i96jaToFPmpfIlqGBKHCRvirJAEA:4 a=lBRciGGoxdUA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
-Message-Id: <20100428013806.148465578@goodmis.org>
+Message-Id: <20100428013807.250593960@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 27 Apr 2010 21:27:26 -0400
+Date: Tue, 27 Apr 2010 21:27:30 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/8] tracing: Add graph output support for irqsoff tracer
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Chase Douglas <chase.douglas@canonical.com>
+Subject: [PATCH 7/8] tracing: Show sample std dev in function profiling
 References: <20100428012723.119106602@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Add-graph-output-support-for-irqsoff-tracer.patch
+Content-Disposition: inline; filename=0007-tracing-Show-sample-std-dev-in-function-profiling.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Chase Douglas <chase.douglas@canonical.com>
 
-Add function graph output to irqsoff tracer.
+When combined with function graph tracing the ftrace function profiler
+also prints the average run time of functions. While this gives us some
+good information, it doesn't tell us anything about the variance of the
+run times of the function. This change prints out the s^2 sample
+standard deviation alongside the average.
 
-The graph output is enabled by setting new 'display-graph' trace option.
+This change adds one entry to the profile record structure. This
+increases the memory footprint of the function profiler by 1/3 on a
+32-bit system, and by 1/5 on a 64-bit system when function graphing is
+enabled, though the memory is only allocated when the profiler is turned
+on. During the profiling, one extra line of code adds the squared
+calltime to the new record entry, so this should not adversly affect
+performance.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-LKML-Reference: <1270227683-14631-4-git-send-email-jolsa@redhat.com>
+Note that the square of the sample standard deviation is printed because
+there is no sqrt implementation for unsigned long long in the kernel.
+
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+LKML-Reference: <1272304925-2436-1-git-send-email-chase.douglas@canonical.com>
+
+[ fixed comment about ns^2 -> us^2 conversion ]
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h               |   15 ++-
- kernel/trace/trace.c                 |   35 +++--
- kernel/trace/trace.h                 |   21 +++
- kernel/trace/trace_functions_graph.c |   15 ++-
- kernel/trace/trace_irqsoff.c         |  271 ++++++++++++++++++++++++++++++++--
- 5 files changed, 324 insertions(+), 33 deletions(-)
+ kernel/trace/ftrace.c |   24 +++++++++++++++++++++---
+ 1 files changed, 21 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index ea5b1aa..8415a52 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -352,6 +352,10 @@ struct ftrace_graph_ret {
- 	int depth;
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 2404b59..3bcb340 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -264,6 +264,7 @@ struct ftrace_profile {
+ 	unsigned long			counter;
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ 	unsigned long long		time;
++	unsigned long long		time_squared;
+ #endif
  };
  
-+/* Type of the callback handlers for tracing function graph*/
-+typedef void (*trace_func_graph_ret_t)(struct ftrace_graph_ret *); /* return */
-+typedef int (*trace_func_graph_ent_t)(struct ftrace_graph_ent *); /* entry */
-+
+@@ -366,9 +367,9 @@ static int function_stat_headers(struct seq_file *m)
+ {
  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- 
- /* for init task */
-@@ -400,10 +404,6 @@ extern char __irqentry_text_end[];
- 
- #define FTRACE_RETFUNC_DEPTH 50
- #define FTRACE_RETSTACK_ALLOC_SIZE 32
--/* Type of the callback handlers for tracing function graph*/
--typedef void (*trace_func_graph_ret_t)(struct ftrace_graph_ret *); /* return */
--typedef int (*trace_func_graph_ent_t)(struct ftrace_graph_ent *); /* entry */
--
- extern int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 				trace_func_graph_ent_t entryfunc);
- 
-@@ -441,6 +441,13 @@ static inline void unpause_graph_tracing(void)
- static inline void ftrace_graph_init_task(struct task_struct *t) { }
- static inline void ftrace_graph_exit_task(struct task_struct *t) { }
- 
-+static inline int register_ftrace_graph(trace_func_graph_ret_t retfunc,
-+			  trace_func_graph_ent_t entryfunc)
-+{
-+	return -1;
-+}
-+static inline void unregister_ftrace_graph(void) { }
-+
- static inline int task_curr_ret_stack(struct task_struct *tsk)
- {
- 	return -1;
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 7b516c7..8b9ba41 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1808,7 +1808,7 @@ static void print_func_help_header(struct seq_file *m)
- }
- 
- 
--static void
-+void
- print_trace_header(struct seq_file *m, struct trace_iterator *iter)
- {
- 	unsigned long sym_flags = (trace_flags & TRACE_ITER_SYM_MASK);
-@@ -2017,7 +2017,7 @@ static enum print_line_t print_bin_fmt(struct trace_iterator *iter)
- 	return event ? event->binary(iter, 0) : TRACE_TYPE_HANDLED;
- }
- 
--static int trace_empty(struct trace_iterator *iter)
-+int trace_empty(struct trace_iterator *iter)
- {
- 	int cpu;
- 
-@@ -2084,6 +2084,23 @@ static enum print_line_t print_trace_line(struct trace_iterator *iter)
- 	return print_trace_fmt(iter);
- }
- 
-+void trace_default_header(struct seq_file *m)
-+{
-+	struct trace_iterator *iter = m->private;
-+
-+	if (iter->iter_flags & TRACE_FILE_LAT_FMT) {
-+		/* print nothing if the buffers are empty */
-+		if (trace_empty(iter))
-+			return;
-+		print_trace_header(m, iter);
-+		if (!(trace_flags & TRACE_ITER_VERBOSE))
-+			print_lat_help_header(m);
-+	} else {
-+		if (!(trace_flags & TRACE_ITER_VERBOSE))
-+			print_func_help_header(m);
-+	}
-+}
-+
- static int s_show(struct seq_file *m, void *v)
- {
- 	struct trace_iterator *iter = v;
-@@ -2096,17 +2113,9 @@ static int s_show(struct seq_file *m, void *v)
- 		}
- 		if (iter->trace && iter->trace->print_header)
- 			iter->trace->print_header(m);
--		else if (iter->iter_flags & TRACE_FILE_LAT_FMT) {
--			/* print nothing if the buffers are empty */
--			if (trace_empty(iter))
--				return 0;
--			print_trace_header(m, iter);
--			if (!(trace_flags & TRACE_ITER_VERBOSE))
--				print_lat_help_header(m);
--		} else {
--			if (!(trace_flags & TRACE_ITER_VERBOSE))
--				print_func_help_header(m);
--		}
-+		else
-+			trace_default_header(m);
-+
- 	} else if (iter->leftover) {
- 		/*
- 		 * If we filled the seq_file buffer earlier, we
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 970004c..911e986 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -378,6 +378,9 @@ void trace_function(struct trace_array *tr,
- 		    unsigned long ip,
- 		    unsigned long parent_ip,
- 		    unsigned long flags, int pc);
-+void trace_default_header(struct seq_file *m);
-+void print_trace_header(struct seq_file *m, struct trace_iterator *iter);
-+int trace_empty(struct trace_iterator *iter);
- 
- void trace_graph_return(struct ftrace_graph_ret *trace);
- int trace_graph_entry(struct ftrace_graph_ent *trace);
-@@ -491,11 +494,29 @@ extern int trace_clock_id;
- 
- /* Standard output formatting function used for function return traces */
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+
-+/* Flag options */
-+#define TRACE_GRAPH_PRINT_OVERRUN       0x1
-+#define TRACE_GRAPH_PRINT_CPU           0x2
-+#define TRACE_GRAPH_PRINT_OVERHEAD      0x4
-+#define TRACE_GRAPH_PRINT_PROC          0x8
-+#define TRACE_GRAPH_PRINT_DURATION      0x10
-+#define TRACE_GRAPH_PRINT_ABS_TIME      0x20
-+
- extern enum print_line_t
- print_graph_function_flags(struct trace_iterator *iter, u32 flags);
- extern void print_graph_headers_flags(struct seq_file *s, u32 flags);
- extern enum print_line_t
- trace_print_graph_duration(unsigned long long duration, struct trace_seq *s);
-+extern void graph_trace_open(struct trace_iterator *iter);
-+extern void graph_trace_close(struct trace_iterator *iter);
-+extern int __trace_graph_entry(struct trace_array *tr,
-+			       struct ftrace_graph_ent *trace,
-+			       unsigned long flags, int pc);
-+extern void __trace_graph_return(struct trace_array *tr,
-+				 struct ftrace_graph_ret *trace,
-+				 unsigned long flags, int pc);
-+
- 
- #ifdef CONFIG_DYNAMIC_FTRACE
- /* TODO: make this variable */
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index de5f651..dd11c83 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -179,7 +179,7 @@ unsigned long ftrace_return_to_handler(unsigned long frame_pointer)
- 	return ret;
- }
- 
--static int __trace_graph_entry(struct trace_array *tr,
-+int __trace_graph_entry(struct trace_array *tr,
- 				struct ftrace_graph_ent *trace,
- 				unsigned long flags,
- 				int pc)
-@@ -246,7 +246,7 @@ int trace_graph_thresh_entry(struct ftrace_graph_ent *trace)
- 		return trace_graph_entry(trace);
- }
- 
--static void __trace_graph_return(struct trace_array *tr,
-+void __trace_graph_return(struct trace_array *tr,
- 				struct ftrace_graph_ret *trace,
- 				unsigned long flags,
- 				int pc)
-@@ -1093,6 +1093,11 @@ print_graph_function_flags(struct trace_iterator *iter, u32 flags)
- 		trace_assign_type(field, entry);
- 		return print_graph_return(&field->ret, s, entry, iter, flags);
- 	}
-+	case TRACE_STACK:
-+	case TRACE_FN:
-+		/* dont trace stack and functions as comments */
-+		return TRACE_TYPE_UNHANDLED;
-+
- 	default:
- 		return print_graph_comment(s, entry, iter, flags);
- 	}
-@@ -1170,12 +1175,12 @@ void print_graph_headers_flags(struct seq_file *s, u32 flags)
- 	seq_printf(s, "               |   |   |   |\n");
- }
- 
--static void print_graph_headers(struct seq_file *s)
-+void print_graph_headers(struct seq_file *s)
- {
- 	print_graph_headers_flags(s, tracer_flags.val);
- }
- 
--static void graph_trace_open(struct trace_iterator *iter)
-+void graph_trace_open(struct trace_iterator *iter)
- {
- 	/* pid and depth on the last trace processed */
- 	struct fgraph_data *data;
-@@ -1210,7 +1215,7 @@ static void graph_trace_open(struct trace_iterator *iter)
- 	pr_warning("function graph tracer: not enough memory\n");
- }
- 
--static void graph_trace_close(struct trace_iterator *iter)
-+void graph_trace_close(struct trace_iterator *iter)
- {
- 	struct fgraph_data *data = iter->private;
- 
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 2974bc7..6fd486e 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -34,6 +34,9 @@ static int trace_type __read_mostly;
- 
- static int save_lat_flag;
- 
-+static void stop_irqsoff_tracer(struct trace_array *tr, int graph);
-+static int start_irqsoff_tracer(struct trace_array *tr, int graph);
-+
- #ifdef CONFIG_PREEMPT_TRACER
- static inline int
- preempt_trace(void)
-@@ -55,6 +58,23 @@ irq_trace(void)
- # define irq_trace() (0)
+ 	seq_printf(m, "  Function                               "
+-		   "Hit    Time            Avg\n"
++		   "Hit    Time            Avg             s^2\n"
+ 		      "  --------                               "
+-		   "---    ----            ---\n");
++		   "---    ----            ---             ---\n");
+ #else
+ 	seq_printf(m, "  Function                               Hit\n"
+ 		      "  --------                               ---\n");
+@@ -384,6 +385,7 @@ static int function_stat_show(struct seq_file *m, void *v)
+ 	static DEFINE_MUTEX(mutex);
+ 	static struct trace_seq s;
+ 	unsigned long long avg;
++	unsigned long long stddev;
  #endif
  
-+#define TRACE_DISPLAY_GRAPH	1
-+
-+static struct tracer_opt trace_opts[] = {
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+	/* display latency trace as call graph */
-+	{ TRACER_OPT(display-graph, TRACE_DISPLAY_GRAPH) },
-+#endif
-+	{ } /* Empty entry */
-+};
-+
-+static struct tracer_flags tracer_flags = {
-+	.val  = 0,
-+	.opts = trace_opts,
-+};
-+
-+#define is_graph() (tracer_flags.val & TRACE_DISPLAY_GRAPH)
-+
- /*
-  * Sequence count - we record it when starting a measurement and
-  * skip the latency if the sequence has changed - some other section
-@@ -108,6 +128,202 @@ static struct ftrace_ops trace_ops __read_mostly =
- };
- #endif /* CONFIG_FUNCTION_TRACER */
+ 	kallsyms_lookup(rec->ip, NULL, NULL, NULL, str);
+@@ -394,11 +396,25 @@ static int function_stat_show(struct seq_file *m, void *v)
+ 	avg = rec->time;
+ 	do_div(avg, rec->counter);
  
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+static int irqsoff_set_flag(u32 old_flags, u32 bit, int set)
-+{
-+	int cpu;
-+
-+	if (!(bit & TRACE_DISPLAY_GRAPH))
-+		return -EINVAL;
-+
-+	if (!(is_graph() ^ set))
-+		return 0;
-+
-+	stop_irqsoff_tracer(irqsoff_trace, !set);
-+
-+	for_each_possible_cpu(cpu)
-+		per_cpu(tracing_cpu, cpu) = 0;
-+
-+	tracing_max_latency = 0;
-+	tracing_reset_online_cpus(irqsoff_trace);
-+
-+	return start_irqsoff_tracer(irqsoff_trace, set);
-+}
-+
-+static int irqsoff_graph_entry(struct ftrace_graph_ent *trace)
-+{
-+	struct trace_array *tr = irqsoff_trace;
-+	struct trace_array_cpu *data;
-+	unsigned long flags;
-+	long disabled;
-+	int ret;
-+	int cpu;
-+	int pc;
-+
-+	cpu = raw_smp_processor_id();
-+	if (likely(!per_cpu(tracing_cpu, cpu)))
-+		return 0;
-+
-+	local_save_flags(flags);
-+	/* slight chance to get a false positive on tracing_cpu */
-+	if (!irqs_disabled_flags(flags))
-+		return 0;
-+
-+	data = tr->data[cpu];
-+	disabled = atomic_inc_return(&data->disabled);
-+
-+	if (likely(disabled == 1)) {
-+		pc = preempt_count();
-+		ret = __trace_graph_entry(tr, trace, flags, pc);
-+	} else
-+		ret = 0;
-+
-+	atomic_dec(&data->disabled);
-+	return ret;
-+}
-+
-+static void irqsoff_graph_return(struct ftrace_graph_ret *trace)
-+{
-+	struct trace_array *tr = irqsoff_trace;
-+	struct trace_array_cpu *data;
-+	unsigned long flags;
-+	long disabled;
-+	int cpu;
-+	int pc;
-+
-+	cpu = raw_smp_processor_id();
-+	if (likely(!per_cpu(tracing_cpu, cpu)))
-+		return;
-+
-+	local_save_flags(flags);
-+	/* slight chance to get a false positive on tracing_cpu */
-+	if (!irqs_disabled_flags(flags))
-+		return;
-+
-+	data = tr->data[cpu];
-+	disabled = atomic_inc_return(&data->disabled);
-+
-+	if (likely(disabled == 1)) {
-+		pc = preempt_count();
-+		__trace_graph_return(tr, trace, flags, pc);
-+	}
-+
-+	atomic_dec(&data->disabled);
-+}
-+
-+static void irqsoff_trace_open(struct trace_iterator *iter)
-+{
-+	if (is_graph())
-+		graph_trace_open(iter);
-+
-+}
-+
-+static void irqsoff_trace_close(struct trace_iterator *iter)
-+{
-+	if (iter->private)
-+		graph_trace_close(iter);
-+}
-+
-+#define GRAPH_TRACER_FLAGS (TRACE_GRAPH_PRINT_CPU | \
-+			    TRACE_GRAPH_PRINT_PROC)
-+
-+static enum print_line_t irqsoff_print_line(struct trace_iterator *iter)
-+{
-+	u32 flags = GRAPH_TRACER_FLAGS;
-+
-+	if (trace_flags & TRACE_ITER_LATENCY_FMT)
-+		flags |= TRACE_GRAPH_PRINT_DURATION;
-+	else
-+		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
-+
-+	/*
-+	 * In graph mode call the graph tracer output function,
-+	 * otherwise go with the TRACE_FN event handler
-+	 */
-+	if (is_graph())
-+		return print_graph_function_flags(iter, flags);
-+
-+	return TRACE_TYPE_UNHANDLED;
-+}
-+
-+static void irqsoff_print_header(struct seq_file *s)
-+{
-+	if (is_graph()) {
-+		struct trace_iterator *iter = s->private;
-+		u32 flags = GRAPH_TRACER_FLAGS;
-+
-+		if (trace_flags & TRACE_ITER_LATENCY_FMT) {
-+			/* print nothing if the buffers are empty */
-+			if (trace_empty(iter))
-+				return;
-+
-+			print_trace_header(s, iter);
-+			flags |= TRACE_GRAPH_PRINT_DURATION;
-+		} else
-+			flags |= TRACE_GRAPH_PRINT_ABS_TIME;
-+
-+		print_graph_headers_flags(s, flags);
-+	} else
-+		trace_default_header(s);
-+}
-+
-+static void
-+trace_graph_function(struct trace_array *tr,
-+		 unsigned long ip, unsigned long flags, int pc)
-+{
-+	u64 time = trace_clock_local();
-+	struct ftrace_graph_ent ent = {
-+		.func  = ip,
-+		.depth = 0,
-+	};
-+	struct ftrace_graph_ret ret = {
-+		.func     = ip,
-+		.depth    = 0,
-+		.calltime = time,
-+		.rettime  = time,
-+	};
-+
-+	__trace_graph_entry(tr, &ent, flags, pc);
-+	__trace_graph_return(tr, &ret, flags, pc);
-+}
-+
-+static void
-+__trace_function(struct trace_array *tr,
-+		 unsigned long ip, unsigned long parent_ip,
-+		 unsigned long flags, int pc)
-+{
-+	if (!is_graph())
-+		trace_function(tr, ip, parent_ip, flags, pc);
++	/* Sample standard deviation (s^2) */
++	if (rec->counter <= 1)
++		stddev = 0;
 +	else {
-+		trace_graph_function(tr, parent_ip, flags, pc);
-+		trace_graph_function(tr, ip, flags, pc);
++		stddev = rec->time_squared - rec->counter * avg * avg;
++		/*
++		 * Divide only 1000 for ns^2 -> us^2 conversion.
++		 * trace_print_graph_duration will divide 1000 again.
++		 */
++		do_div(stddev, (rec->counter - 1) * 1000);
 +	}
-+}
 +
-+#else
-+#define __trace_function trace_function
-+
-+static int irqsoff_set_flag(u32 old_flags, u32 bit, int set)
-+{
-+	return -EINVAL;
-+}
-+
-+static int irqsoff_graph_entry(struct ftrace_graph_ent *trace)
-+{
-+	return -1;
-+}
-+
-+static enum print_line_t irqsoff_print_line(struct trace_iterator *iter)
-+{
-+	return TRACE_TYPE_UNHANDLED;
-+}
-+
-+static void irqsoff_graph_return(struct ftrace_graph_ret *trace) { }
-+static void irqsoff_print_header(struct seq_file *s) { }
-+static void irqsoff_trace_open(struct trace_iterator *iter) { }
-+static void irqsoff_trace_close(struct trace_iterator *iter) { }
-+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-+
- /*
-  * Should this new latency be reported/recorded?
-  */
-@@ -150,7 +366,7 @@ check_critical_timing(struct trace_array *tr,
- 	if (!report_latency(delta))
- 		goto out_unlock;
- 
--	trace_function(tr, CALLER_ADDR0, parent_ip, flags, pc);
-+	__trace_function(tr, CALLER_ADDR0, parent_ip, flags, pc);
- 	/* Skip 5 functions to get to the irq/preempt enable function */
- 	__trace_stack(tr, flags, 5, pc);
- 
-@@ -172,7 +388,7 @@ out_unlock:
- out:
- 	data->critical_sequence = max_sequence;
- 	data->preempt_timestamp = ftrace_now(cpu);
--	trace_function(tr, CALLER_ADDR0, parent_ip, flags, pc);
-+	__trace_function(tr, CALLER_ADDR0, parent_ip, flags, pc);
- }
- 
- static inline void
-@@ -204,7 +420,7 @@ start_critical_timing(unsigned long ip, unsigned long parent_ip)
- 
- 	local_save_flags(flags);
- 
--	trace_function(tr, ip, parent_ip, flags, preempt_count());
-+	__trace_function(tr, ip, parent_ip, flags, preempt_count());
- 
- 	per_cpu(tracing_cpu, cpu) = 1;
- 
-@@ -238,7 +454,7 @@ stop_critical_timing(unsigned long ip, unsigned long parent_ip)
- 	atomic_inc(&data->disabled);
- 
- 	local_save_flags(flags);
--	trace_function(tr, ip, parent_ip, flags, preempt_count());
-+	__trace_function(tr, ip, parent_ip, flags, preempt_count());
- 	check_critical_timing(tr, data, parent_ip ? : ip, cpu);
- 	data->critical_start = 0;
- 	atomic_dec(&data->disabled);
-@@ -347,19 +563,32 @@ void trace_preempt_off(unsigned long a0, unsigned long a1)
- }
- #endif /* CONFIG_PREEMPT_TRACER */
- 
--static void start_irqsoff_tracer(struct trace_array *tr)
-+static int start_irqsoff_tracer(struct trace_array *tr, int graph)
- {
--	register_ftrace_function(&trace_ops);
--	if (tracing_is_enabled())
-+	int ret = 0;
-+
-+	if (!graph)
-+		ret = register_ftrace_function(&trace_ops);
-+	else
-+		ret = register_ftrace_graph(&irqsoff_graph_return,
-+					    &irqsoff_graph_entry);
-+
-+	if (!ret && tracing_is_enabled())
- 		tracer_enabled = 1;
- 	else
- 		tracer_enabled = 0;
-+
-+	return ret;
- }
- 
--static void stop_irqsoff_tracer(struct trace_array *tr)
-+static void stop_irqsoff_tracer(struct trace_array *tr, int graph)
- {
- 	tracer_enabled = 0;
--	unregister_ftrace_function(&trace_ops);
-+
-+	if (!graph)
-+		unregister_ftrace_function(&trace_ops);
-+	else
-+		unregister_ftrace_graph();
- }
- 
- static void __irqsoff_tracer_init(struct trace_array *tr)
-@@ -372,12 +601,14 @@ static void __irqsoff_tracer_init(struct trace_array *tr)
- 	/* make sure that the tracer is visible */
- 	smp_wmb();
- 	tracing_reset_online_cpus(tr);
--	start_irqsoff_tracer(tr);
-+
-+	if (start_irqsoff_tracer(tr, is_graph()))
-+		printk(KERN_ERR "failed to start irqsoff tracer\n");
- }
- 
- static void irqsoff_tracer_reset(struct trace_array *tr)
- {
--	stop_irqsoff_tracer(tr);
-+	stop_irqsoff_tracer(tr, is_graph());
- 
- 	if (!save_lat_flag)
- 		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
-@@ -409,9 +640,15 @@ static struct tracer irqsoff_tracer __read_mostly =
- 	.start		= irqsoff_tracer_start,
- 	.stop		= irqsoff_tracer_stop,
- 	.print_max	= 1,
-+	.print_header   = irqsoff_print_header,
-+	.print_line     = irqsoff_print_line,
-+	.flags		= &tracer_flags,
-+	.set_flag	= irqsoff_set_flag,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_irqsoff,
+ 	mutex_lock(&mutex);
+ 	trace_seq_init(&s);
+ 	trace_print_graph_duration(rec->time, &s);
+ 	trace_seq_puts(&s, "    ");
+ 	trace_print_graph_duration(avg, &s);
++	trace_seq_puts(&s, "    ");
++	trace_print_graph_duration(stddev, &s);
+ 	trace_print_seq(m, &s);
+ 	mutex_unlock(&mutex);
  #endif
-+	.open           = irqsoff_trace_open,
-+	.close          = irqsoff_trace_close,
- };
- # define register_irqsoff(trace) register_tracer(&trace)
- #else
-@@ -435,9 +672,15 @@ static struct tracer preemptoff_tracer __read_mostly =
- 	.start		= irqsoff_tracer_start,
- 	.stop		= irqsoff_tracer_stop,
- 	.print_max	= 1,
-+	.print_header   = irqsoff_print_header,
-+	.print_line     = irqsoff_print_line,
-+	.flags		= &tracer_flags,
-+	.set_flag	= irqsoff_set_flag,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_preemptoff,
- #endif
-+	.open		= irqsoff_trace_open,
-+	.close		= irqsoff_trace_close,
- };
- # define register_preemptoff(trace) register_tracer(&trace)
- #else
-@@ -463,9 +706,15 @@ static struct tracer preemptirqsoff_tracer __read_mostly =
- 	.start		= irqsoff_tracer_start,
- 	.stop		= irqsoff_tracer_stop,
- 	.print_max	= 1,
-+	.print_header   = irqsoff_print_header,
-+	.print_line     = irqsoff_print_line,
-+	.flags		= &tracer_flags,
-+	.set_flag	= irqsoff_set_flag,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_preemptirqsoff,
- #endif
-+	.open		= irqsoff_trace_open,
-+	.close		= irqsoff_trace_close,
- };
+@@ -668,8 +684,10 @@ static void profile_graph_return(struct ftrace_graph_ret *trace)
+ 	}
  
- # define register_preemptirqsoff(trace) register_tracer(&trace)
+ 	rec = ftrace_find_profiled_func(stat, trace->func);
+-	if (rec)
++	if (rec) {
+ 		rec->time += calltime;
++		rec->time_squared += calltime * calltime;
++	}
+ 
+  out:
+ 	local_irq_restore(flags);
 -- 
 1.7.0
 
