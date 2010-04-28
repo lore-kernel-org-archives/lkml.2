@@ -1,101 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab0D1Wkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 18:40:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39448 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755514Ab0D1Wki (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 18:40:38 -0400
-Date: Wed, 28 Apr 2010 15:40:34 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jack Steiner <steiner@sgi.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] - Randomize node rotor used in
- cpuset_mem_spread_node()
-Message-Id: <20100428154034.fb823484.akpm@linux-foundation.org>
-In-Reply-To: <20100428150432.GA3137@sgi.com>
-References: <20100428131158.GA2648@sgi.com>
-	<20100428150432.GA3137@sgi.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757175Ab0D1Wlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 18:41:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53042 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755513Ab0D1Wlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 18:41:35 -0400
+Date: Thu, 29 Apr 2010 00:41:33 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@au1.ibm.com>
+Subject: Re: [PATCH] trivial: use (C) instead of \251
+In-Reply-To: <4BD80037.9060704@kernel.org>
+Message-ID: <alpine.LNX.2.00.1004290040510.9849@pobox.suse.cz>
+References: <4BD80037.9060704@kernel.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Apr 2010 10:04:32 -0500
-Jack Steiner <steiner@sgi.com> wrote:
+On Wed, 28 Apr 2010, Tejun Heo wrote:
 
-> Some workloads that create a large number of small files tend to assign
-> too many pages to node 0 (multi-node systems). Part of the reason is that
-> the rotor (in cpuset_mem_spread_node()) used to assign nodes starts
-> at node 0 for newly created tasks.
+> The latin-1 copyright character \251 is invalid in ASCII or UTF-8 and
+> causes annoying problems with some editors and tools.  Use (C)
+> instead.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Paul Mackerras <paulus@au1.ibm.com>
+> ---
+> I'm not really sure this would survive transport over mail in
+> appliable form, attaching the patch too just in case.
 
-And, presumably, your secret testcase forks lots of subprocesses which
-do the file creation?
+It didn't survive :) But it was easy enough to fix by hand. Applied, 
+thanks Tejun.
 
-> This patch changes the rotor to be initialized to a random node number
-> of the cpuset.
+>  kernel/perf_event.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index 2f3fbf8..827ec53 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -4,7 +4,7 @@
+>   *  Copyright (C) 2008 Thomas Gleixner <tglx@linutronix.de>
+>   *  Copyright (C) 2008-2009 Red Hat, Inc., Ingo Molnar
+>   *  Copyright (C) 2008-2009 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
+> - *  Copyright  ©  2009 Paul Mackerras, IBM Corp. <paulus@au1.ibm.com>
+> + *  Copyright (C) 2009 Paul Mackerras, IBM Corp. <paulus@au1.ibm.com>
+>   *
+>   * For licensing details see kernel-base/COPYING
+>   */
+> 
 
-Why random as opposed to, say, inherit-rotor-from-parent?
-
-> Index: linux/arch/x86/mm/numa.c
-> ===================================================================
-> --- linux.orig/arch/x86/mm/numa.c	2010-04-28 09:44:52.422898844 -0500
-> +++ linux/arch/x86/mm/numa.c	2010-04-28 09:49:39.282899779 -0500
-> @@ -2,6 +2,7 @@
->  #include <linux/topology.h>
->  #include <linux/module.h>
->  #include <linux/bootmem.h>
-> +#include <linux/random.h>
->  
->  #ifdef CONFIG_DEBUG_PER_CPU_MAPS
->  # define DBG(x...) printk(KERN_DEBUG x)
-> @@ -65,3 +66,19 @@ const struct cpumask *cpumask_of_node(in
->  }
->  EXPORT_SYMBOL(cpumask_of_node);
->  #endif
-> +
-> +/*
-> + * Return the bit number of a random bit set in the nodemask.
-> + *   (returns -1 if nodemask is empty)
-> + */
-> +int __node_random(const nodemask_t *maskp)
-> +{
-> +	int w, bit = -1;
-> +
-> +	w = nodes_weight(*maskp);
-> +	if (w)
-> +		bit = bitmap_find_nth_bit(maskp->bits,
-> +			get_random_int() % w, MAX_NUMNODES);
-> +	return bit;
-> +}
-> +EXPORT_SYMBOL(__node_random);
-
-I suspect random32() would suffice here.  It avoids depleting the
-entropy pool altogether.
-
-> +
-> +/**
-> + * bitmap_find_nth_bit(buf, ord, bits)
-> + *	@buf: pointer to bitmap
-> + *	@n: ordinal bit position (n-th set bit, n >= 0)
-> + * @nbits: number of bits in the bitmap
-> + *
-> + * find the Nth bit that is set in the bitmap
-> + * Value of @n should be in range 0 <= @n < weight(buf), else
-> + * results are undefined.
-> + *
-> + * The bit positions 0 through @bits are valid positions in @buf.
-> + */
-> +int bitmap_find_nth_bit(const unsigned long *bitmap, int n, int bits)
-> +{
-> +	return bitmap_ord_to_pos(bitmap, n, bits);
-> +}
-> +EXPORT_SYMBOL(bitmap_find_nth_bit);
-
-This does nothing apart from consume more stack?  Better to rename
-bitmap_ord_to_pos() and export it.
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
