@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324Ab0D1WY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 18:24:28 -0400
+	id S932389Ab0D1WYn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 18:24:43 -0400
 Received: from tex.lwn.net ([70.33.254.29]:48833 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756641Ab0D1WSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 18:18:12 -0400
+	id S1756439Ab0D1WSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 18:18:11 -0400
 From: Jonathan Corbet <corbet@lwn.net>
 To: linux-kernel@vger.kernel.org
 Cc: Harald Welte <laforge@gnumonks.org>, linux-fbdev@vger.kernel.org,
        JosephChan@via.com.tw, ScottFang@viatech.com.cn,
        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 06/30] viafb: Determine type of 2D engine and store it in chip_info
-Date: Wed, 28 Apr 2010 16:17:07 -0600
-Message-Id: <1272493051-25380-7-git-send-email-corbet@lwn.net>
+Subject: [PATCH 04/30] viafb: Retain GEMODE reserved bits
+Date: Wed, 28 Apr 2010 16:17:05 -0600
+Message-Id: <1272493051-25380-5-git-send-email-corbet@lwn.net>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1272493051-25380-1-git-send-email-corbet@lwn.net>
 References: <1272493051-25380-1-git-send-email-corbet@lwn.net>
@@ -21,66 +21,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Harald Welte <laforge@gnumonks.org>
+Commit c3e25673843153ea75fda79a47cf12f10a25ca37 (viafb: 2D engine rewrite)
+changed the setting of the GEMODE register so that the reserved bits are no
+longer preserved.  Fix that; at the same time, move this code to its own
+function and restore the use of symbolic constants.
 
-This will help us for the upcoming support for 2D acceleration using
-the M1 engine.
-
-[jc: fixed merge conflicts]
-Signed-off-by: Harald Welte <HaraldWelte@viatech.com>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: ScottFang@viatech.com.cn
+Cc: JosephChan@via.com.tw
+Signed-off-by: Jonathan Corbet <corbet@lwn.net>
 ---
- drivers/video/via/chip.h |    8 ++++++++
- drivers/video/via/hw.c   |   15 +++++++++++++++
- 2 files changed, 23 insertions(+), 0 deletions(-)
+ drivers/video/via/accel.c |   49 ++++++++++++++++++++++++++++++--------------
+ 1 files changed, 33 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/video/via/chip.h b/drivers/video/via/chip.h
-index 8c06bd3..d9b6e06 100644
---- a/drivers/video/via/chip.h
-+++ b/drivers/video/via/chip.h
-@@ -121,9 +121,17 @@ struct lvds_chip_information {
- 	int i2c_port;
- };
- 
-+/* The type of 2D engine */
-+enum via_2d_engine {
-+	VIA_2D_ENG_H2,
-+	VIA_2D_ENG_H5,
-+	VIA_2D_ENG_M1,
-+};
-+
- struct chip_information {
- 	int gfx_chip_name;
- 	int gfx_chip_revision;
-+	enum via_2d_engine twod_engine;
- 	struct tmds_chip_information tmds_chip_info;
- 	struct lvds_chip_information lvds_chip_info;
- 	struct lvds_chip_information lvds_chip_info2;
-diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index c94bcce..ae664fb 100644
---- a/drivers/video/via/hw.c
-+++ b/drivers/video/via/hw.c
-@@ -2016,6 +2016,21 @@ static void init_gfx_chip_info(struct pci_dev *pdev,
- 				CX700_REVISION_700;
- 		}
- 	}
-+
-+	/* Determine which 2D engine we have */
-+	switch (viaparinfo->chip_info->gfx_chip_name) {
-+	case UNICHROME_VX800:
-+	case UNICHROME_VX855:
-+		viaparinfo->chip_info->twod_engine = VIA_2D_ENG_M1;
-+		break;
-+	case UNICHROME_K8M890:
-+	case UNICHROME_P4M900:
-+		viaparinfo->chip_info->twod_engine = VIA_2D_ENG_H5;
-+		break;
-+	default:
-+		viaparinfo->chip_info->twod_engine = VIA_2D_ENG_H2;
-+		break;
-+	}
+diff --git a/drivers/video/via/accel.c b/drivers/video/via/accel.c
+index d5077df..a52147c 100644
+--- a/drivers/video/via/accel.c
++++ b/drivers/video/via/accel.c
+@@ -165,12 +165,42 @@ static int hw_bitblt_1(void __iomem *engine, u8 op, u32 width, u32 height,
+ 	return 0;
  }
  
- static void init_tmds_chip_info(void)
++/*
++ * Figure out an appropriate bytes-per-pixel setting.
++ */
++static int viafb_set_bpp(void __iomem *engine, u8 bpp)
++{
++	u32 gemode;
++
++	/* Preserve the reserved bits */
++	/* Lowest 2 bits to zero gives us no rotation */
++	gemode = readl(engine + VIA_REG_GEMODE) & 0xfffffcfc;
++	switch (bpp) {
++	case 8:
++		gemode |= VIA_GEM_8bpp;
++		break;
++	case 16:
++		gemode |= VIA_GEM_16bpp;
++		break;
++	case 32:
++		gemode |= VIA_GEM_32bpp;
++		break;
++	default:
++		printk(KERN_WARNING "hw_bitblt_2: Unsupported bpp %d\n", bpp);
++		return -EINVAL;
++	}
++	writel(gemode, engine + VIA_REG_GEMODE);
++	return 0;
++}
++
++
+ static int hw_bitblt_2(void __iomem *engine, u8 op, u32 width, u32 height,
+ 	u8 dst_bpp, u32 dst_addr, u32 dst_pitch, u32 dst_x, u32 dst_y,
+ 	u32 *src_mem, u32 src_addr, u32 src_pitch, u32 src_x, u32 src_y,
+ 	u32 fg_color, u32 bg_color, u8 fill_rop)
+ {
+ 	u32 ge_cmd = 0, tmp, i;
++	int ret;
+ 
+ 	if (!op || op > 3) {
+ 		printk(KERN_WARNING "hw_bitblt_2: Invalid operation: %d\n", op);
+@@ -204,22 +234,9 @@ static int hw_bitblt_2(void __iomem *engine, u8 op, u32 width, u32 height,
+ 		}
+ 	}
+ 
+-	switch (dst_bpp) {
+-	case 8:
+-		tmp = 0x00000000;
+-		break;
+-	case 16:
+-		tmp = 0x00000100;
+-		break;
+-	case 32:
+-		tmp = 0x00000300;
+-		break;
+-	default:
+-		printk(KERN_WARNING "hw_bitblt_2: Unsupported bpp %d\n",
+-			dst_bpp);
+-		return -EINVAL;
+-	}
+-	writel(tmp, engine + 0x04);
++	ret = viafb_set_bpp(engine, dst_bpp);
++	if (ret)
++		return ret;
+ 
+ 	if (op == VIA_BITBLT_FILL)
+ 		tmp = 0;
 -- 
 1.7.0.1
 
