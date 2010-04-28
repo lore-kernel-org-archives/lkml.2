@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab0D1NBq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 09:01:46 -0400
-Received: from 31.mail-out.ovh.net ([213.186.62.10]:49246 "HELO
-	31.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753808Ab0D1NBp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 09:01:45 -0400
-Message-ID: <4BD831B3.40907@example.com>
-Date: Wed, 28 Apr 2010 15:01:39 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
+	id S1756254Ab0D1S3i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 14:29:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60917 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755463Ab0D1S3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 14:29:37 -0400
+Message-ID: <4BD87E72.4050609@redhat.com>
+Date: Wed, 28 Apr 2010 14:29:06 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.5) Gecko/20091210 Fedora/3.0-4.el6 Thunderbird/3.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Where to submit bug report about linux-next?
-References: <4BD81B66.5010809@example.com> <20100428115622.GA8960@sirena.org.uk>
-In-Reply-To: <20100428115622.GA8960@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 3581487604992667951
-X-Ovh-Remote: 83.24.75.86 (dmt86.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com, x86@kernel.org,
+       clalance@redhat.com, drjones@redhat.com
+Subject: Re: [PATCH] Fix NULL pointer for Xen guests
+References: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com> <20100428112658.4cf11292.akpm@linux-foundation.org>
+In-Reply-To: <20100428112658.4cf11292.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.04.2010 13:56, Mark Brown wrote:
-> On Wed, Apr 28, 2010 at 01:26:30PM +0200, Piotr Hosowicz wrote:
+
+
+On 04/28/2010 02:26 PM, Andrew Morton wrote:
+> On Tue, 27 Apr 2010 11:24:42 -0400
+> Prarit Bhargava<prarit@redhat.com>  wrote:
 >
->> Where should I submit a bug report about yesterday's and today's linux-next?
+>    
+>> Upstream PV guests fail to boot because of a NULL pointer.  It is possible that
+>> xen guests have irq_desc->chip_data = NULL.
+>>
+>> Test for NULL chip_data pointer before attempting to complete an irq move.
+>>
+>> Signed-off-by: Prarit Bhargava<prarit@redhat.com>
+>> Acked-by: Suresh Siddha<suresh.b.siddha@intel.com>
+>>
+>> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+>> index 127b871..eb2789c 100644
+>> --- a/arch/x86/kernel/apic/io_apic.c
+>> +++ b/arch/x86/kernel/apic/io_apic.c
+>> @@ -2545,6 +2545,9 @@ void irq_force_complete_move(int irq)
+>>   	struct irq_desc *desc = irq_to_desc(irq);
+>>   	struct irq_cfg *cfg = desc->chip_data;
+>>
+>> +	if (!cfg)
+>> +		return;
+>> +
+>>   	__irq_complete_move(&desc, cfg->vector);
+>>   }
+>>   #else
+>>      
+> I assume this is needed for 2.6.34?
 >
-> To the relevant mailing lists and maintainers for the affected subsystem
-> (see MAINTAINERS), or this list if you're not able to identify what's
-> affected/responsible.
+> What about 2.6.33.x and earlier?
+>    
 
-I dont know which one is relevant and dont see apropriate person 
-regarding SMP. This is probably the problem. I'll send here in a moment.
+Hey Andrew,
 
-Rergards,
+I actually pinged Chris Wright to see about including this in the 
+-stable branches.  I haven't heard anything back so I'll reping him.
 
-Piotr Hosowicz
-
--- 
-TV: "Jeszcze trzy ruchy i Otylia bêdzie szczê¶liwa."
-NP: Mark Knopfler - Border Reiver
-NB: 2.6.34-rc5-git8
+P.
