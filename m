@@ -1,109 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab0D1IZN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 04:25:13 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:48092 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301Ab0D1IZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 04:25:10 -0400
-Date: Wed, 28 Apr 2010 09:24:50 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/3] mm,migration: During fork(), wait for migration to
-	end if migration PTE is encountered
-Message-ID: <20100428082450.GA15815@csn.ul.ie>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie> <1272403852-10479-2-git-send-email-mel@csn.ul.ie> <20100427222245.GE8860@random.random> <20100428085203.4336b761.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754800Ab0D1P0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 11:26:16 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:59778 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754706Ab0D1P0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 11:26:14 -0400
+Date: Wed, 28 Apr 2010 16:25:02 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, Yong Zhang <yong.zhang@windriver.com>,
+       Xiaotian Feng <xtfeng@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Roland Dreier <rolandd@cisco.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Takashi Iwai <tiwai@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
+Message-ID: <20100428152502.GA25569@shareable.org>
+References: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> <u2w7b6bb4a51004280047s8748cbfbi7ed8e2a238121fa9@mail.gmail.com> <q2j412e6f7f1004280052ice434710ra17a4516236bd3f3@mail.gmail.com> <20100428081545.GA19027@windriver.com> <u2t412e6f7f1004280123k642a1511gbce3ed784431dc1d@mail.gmail.com> <8482.1272446987@redhat.com> <q2m412e6f7f1004280417h449c67f9g86fca3dbece106e3@mail.gmail.com> <20100428132135.GA22268@shareable.org> <y2r412e6f7f1004280642n49b8d6f2vcd08774531cb59da@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100428085203.4336b761.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <y2r412e6f7f1004280642n49b8d6f2vcd08774531cb59da@mail.gmail.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 08:52:03AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Wed, 28 Apr 2010 00:22:45 +0200
-> Andrea Arcangeli <aarcange@redhat.com> wrote:
+Changli Gao wrote:
+> On Wed, Apr 28, 2010 at 9:21 PM, Jamie Lokier <jamie@shareable.org> wrote:
+> > Changli Gao wrote:
+> >>
+> >> fs/eventpoll.c: 1443.
+> >>                 wait.flags |= WQ_FLAG_EXCLUSIVE;
+> >>                 __add_wait_queue(&ep->wq, &wait);
+> >
+> > The same thing about assumptions applies here.  The userspace process
+> > may be waiting for an epoll condition to get access to a resource,
+> > rather than being a worker thread interchangeable with others.
 > 
-> > Ok I had a first look:
-> > 
-> > On Tue, Apr 27, 2010 at 10:30:50PM +0100, Mel Gorman wrote:
-> > > 	CPUA			CPU B
-> > > 				do_fork()
-> > > 				copy_mm() (from process 1 to process2)
-> > > 				insert new vma to mmap_list (if inode/anon_vma)
-> > 
-> > Insert to the tail of the anon_vma list...
-> > 
-> > > 	pte_lock(process1)
-> > > 	unmap a page
-> > > 	insert migration_entry
-> > > 	pte_unlock(process1)
-> > > 
-> > > 	migrate page copy
-> > > 				copy_page_range
-> > > 	remap new page by rmap_walk()
-> > 
-> > rmap_walk will walk process1 first! It's at the head, the vmas with
-> > unmapped ptes are at the tail so process1 is walked before process2.
-> > 
-> > > 	pte_lock(process2)
-> > > 	found no pte.
-> > > 	pte_unlock(process2)
-> > > 				pte lock(process2)
-> > > 				pte lock(process1)
-> > > 				copy migration entry to process2
-> > > 				pte unlock(process1)
-> > > 				pte unlokc(process2)
-> > > 	pte_lock(process1)
-> > > 	replace migration entry
-> > > 	to new page's pte.
-> > > 	pte_unlock(process1)
-> > 
-> > rmap_walk has to lock down process1 before process2, this is the
-> > ordering issue I already mentioned in earlier email. So it cannot
-> > happen and this patch is unnecessary.
-> > 
-> > The ordering is fundamental and as said anon_vma_link already adds new
-> > vmas to the _tail_ of the anon-vma. And this is why it has to add to
-> > the tail. If anon_vma_link would add new vmas to the head of the list,
-> > the above bug could materialize, but it doesn't so it cannot happen.
-> > 
-> > In mainline anon_vma_link is called anon_vma_chain_link, see the
-> > list_add_tail there to provide this guarantee.
-> > 
-> > Because process1 is walked first by CPU A, the migration entry is
-> > replaced by the final pte before copy-migration-entry
-> > runs. Alternatively if copy-migration-entry runs before before
-> > process1 is walked, the migration entry will be copied and found in
-> > process 2.
-> > 
+> Oh, the lines above are the current ones. So the assumptions applies
+> and works here.
+
+No, because WQ_FLAG_EXCLUSIVE doesn't have your LIFO semantic at the moment.
+
+Your patch changes the behaviour of epoll, though I don't know if it
+matters.  Perhaps all programs which have multiple tasks waiting on
+the same epoll fd are "interchangeable worker thread" types anyway :-)
+
+> > For example, userspace might be using a pipe as a signal-safe lock, or
+> > signal-safe multi-token semaphore, and epoll to wait for that pipe.
+> >
+> > WQ_FLAG_EXCLUSIVE means there is no point waking all tasks, to avoid a
+> > pointless thundering herd.  It doesn't mean unfairness is ok.
 > 
-> I already explained this doesn't happend and said "I'm sorry".
+> The users should not make any assumption about the waking up sequence,
+> neither LIFO nor FIFO.
+
+Correct, but they should be able to assume non-starvation (eventual
+progress) for all waiters.
+
+It's one of those subtle things, possibly a unixy thing: Non-RT tasks
+should always make progress when the competition is just other non-RT
+tasks, even if the progress is slow.
+
+Starvation can spread out beyond the starved process, to cause
+priority inversions in other tasks that are waiting on a resource
+locked by the starved process.  Among other things, that can cause
+higher priority tasks, and RT priority tasks, to block permanently.
+Very unpleasant.
+
+> > The LIFO idea _might_ make sense for interchangeable worker-thread
+> > situations - including userspace.  It would make sense for pipe
+> > waiters, socket waiters (especially accept), etc.
 > 
+> Yea, and my following patches are for socket waiters.
 
-And after going through it again, I'm happy that this was a red herring.
-The patch is now dropped.
+Occasionally unix socketpairs are occasionally used in the above ways too.
 
-> But considering maintainance, it's not necessary to copy migration ptes
-> and we don't have to keep a fundamental risks of migration circus.
+I'm not against your patch, but I worry that starvation is a new
+semantic, and it may have a significant effect on something - either
+in the kernel, or in userspace which is harder to check.
+
+> > Do you have any measurements which showing the LIFO mode performing
+> > better than FIFO, and by how much?
 > 
-
-Even if it's not strictly necessary, migration should (and does in this case)
-cope with being able to find all its migration ptes. An extra one being copied
-doesn't matter as long as it can be found on the chain. It's not like the
-execve-problem where a migration PTE gets moved to a place it can't be found.
-
-> So, I don't say "we don't need this patch."
+> I didn't do any test yet. But some work done by LSE project years ago
+> showed that it is better.
 > 
+> http://lse.sourceforge.net/io/aionotes.txt
+> 
+> " Also in view of
+> better cache utilization the wake queue mechanism is LIFO by default.
+> (A new exclusive LIFO wakeup option has been introduced for this purpose)"
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+I suspect it's possible to combine LIFO-ish and FIFO-ish queuing to
+prevent starvation while getting some of the locality benefit.
+Something like add-LIFO and increment a small counter in the next wait
+entry, but never add in front of an entry whose counter has reached
+MAX_LIFO_WAITERS? :-)
+
+-- Jamie
