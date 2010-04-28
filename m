@@ -1,131 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab0D1Mdv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 08:33:51 -0400
-Received: from fg-out-1718.google.com ([72.14.220.156]:38822 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab0D1Mdt (ORCPT
+	id S1753407Ab0D1Iq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 04:46:26 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:11444 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab0D1IqY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 08:33:49 -0400
-Message-ID: <4BD82B29.3000105@retis.net.pl>
-Date: Wed, 28 Apr 2010 14:33:45 +0200
-From: Grzegorz Chwesewicz <grzegorz.chwesewicz@retis.net.pl>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Problem with "tcp: bind() fix when many ports are bound" commit
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Apr 2010 04:46:24 -0400
+Date: Wed, 28 Apr 2010 10:46:12 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: USB gadget with drivers "on board"
+In-reply-to: <4BD5F43E.4090404@draisberghof.de>
+To: Josua Dietze <digidietze@draisberghof.de>,
+       Alan Stern <stern@rowland.harvard.edu>
+Cc: Daniel Mack <daniel@caiaq.de>, Marek Szyprowski <m.szyprowski@samsung.com>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kyungmin Park <kyungmin.park@samsung.com>
+Message-id: <op.vbu6nahq7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.10 (Linux)
+References: <Pine.LNX.4.44L0.1004261531480.1764-100000@iolanthe.rowland.org>
+ <4BD5F43E.4090404@draisberghof.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi, I have a problem with binding to port with the latest git kernel
-(my HEAD is at 1600f9def09de07c5dbeb539e978fa73880690dd). Please CC to
-me as I'm not subscribed to the list.
+>> On Mon, 26 Apr 2010, Josua Dietze wrote:
+>>> These are the notorious mode switching devices. In Windows, they
+>>> obviously install a special storage driver doing one specific action
+>>> on each following plugging.
+>>> This action - some storage or control command - will "flip" the
+>>> device, making it "disconnect" and returning as a completely different
+>>> composite device.
+>>>
+>>> Storage commands used for this procedure range from "SCSI rezero" over
+>>> "passthrough" to "SCSI eject", or involve vendor specific stuff.
 
-Example with buggy kernel:
+> Alan Stern schrieb:
+>> I was going to say the same thing.  For ease of use, I recommend using
+>> a "SCSI eject" to trigger the mode change.  That way, Linux users who
+>> don't have the usb-modeswitch program installed can get the same effect
+>> by running eject.
 
-ensima-hp ~ # /etc/init.d/apache2 start
- * Starting apache2 ...
-(98)Address already in use: make_sock: could not bind to address
-127.0.0.1:80
-no listening sockets available, shutting down
-Unable to open logs
+On Mon, 26 Apr 2010 22:14:54 +0200, Josua Dietze <digidietze@draisberghof.de> wrote:
 
-As you can see nothing is listening on port 80, but there are old
-connections to port 80 with CLOSE_WAIT and FIN_WAIT2 state.
+> Important for the Linux handling is that "mode 1" is clearly
+> distinguishable from "mode 2", either by using a different product ID
+> or by setting a different class for the device or interface 0 (will
+> most likely be "8" for the install mode).
 
-ensima-hp ~ # netstat -pan --inet|grep 80
-netstat: no support for `AF INET (sctp)' on this system.
-tcp        0      0 127.0.0.1:631           0.0.0.0:*
-LISTEN      4806/cupsd
-tcp        1      0 127.0.0.1:54040         127.0.0.1:80
-CLOSE_WAIT  5814/konquerorHk573
-tcp        0      0 127.0.0.1:80            127.0.0.1:54042
-FIN_WAIT2   -
-tcp        0      0 127.0.0.1:80            127.0.0.1:54040
-FIN_WAIT2   -
-tcp        1      0 127.0.0.1:54042         127.0.0.1:80
-CLOSE_WAIT  6175/konquerordx573
+So it will be enough to change the USB device class for the zeroth
+interface for udev to recognise the mass storage to be ejected?  Note
+that I will use mass storage in the second mode as well.
 
-So I can't start apache as long as these connections are not fully
-closed, after that apache starts without problems.
-
-ensima-hp ~ # netstat -pan --inet|grep 80
-netstat: no support for `AF INET (sctp)' on this system.
-tcp        0      0 127.0.0.1:631           0.0.0.0:*
-LISTEN      4806/cupsd
-
-ensima-hp ~ # /etc/init.d/apache2 start
- * Starting apache2 ...		[OK]
-
-Problem occured between 2.6.34-rc4 and latest git, bisect shows that the
-problem is caused by:
-
-commit fda48a0d7a8412cedacda46a9c0bf8ef9cd13559
-Author: Eric Dumazet <eric.dumazet@gmail.com>
-Date:   Wed Apr 21 09:26:15 2010 +0000
-
-tcp: bind() fix when many ports are bound
-
-Reverting this commit from current HEAD, resolving conflict in
-'net/ipv6/inet6_connection_sock.c' file, and compiling new kernel solves
-the problem.
-
-'net/ipv6/inet6_connection_sock.c' before resolving conflict:
-
- 41         sk_for_each_bound(sk2, node, &tb->owners) {
- 42                 if (sk != sk2 &&
- 43                     (!sk->sk_bound_dev_if ||
- 44                      !sk2->sk_bound_dev_if ||
- 45 <<<<<<< HEAD
- 46                      sk->sk_bound_dev_if == sk2->sk_bound_dev_if)) {
- 47                         if ((!sk->sk_reuse || !sk2->sk_reuse ||
- 48                              sk2->sk_state == TCP_LISTEN) &&
- 49                              ipv6_rcv_saddr_equal(sk, sk2))
- 50                                 break;
- 51                         else if (sk->sk_reuse && sk2->sk_reuse &&
- 52                                 !ipv6_addr_any(inet6_rcv_saddr(sk)) &&
- 53                                 ipv6_rcv_saddr_equal(sk, sk2))
- 54                                 break;
- 55                 }
- 56 =======
- 57                      sk->sk_bound_dev_if == sk2->sk_bound_dev_if) &&
- 58                     (!sk->sk_reuse || !sk2->sk_reuse ||
- 59                      sk2->sk_state == TCP_LISTEN) &&
- 60                      ipv6_rcv_saddr_equal(sk, sk2))
- 61                         break;
- 62 >>>>>>> fda48a0... tcp: bind() fix when many ports are bound
- 63         }
- 64
- 65         return node != NULL;
-
-
-
- 66 }
-
-'net/ipv6/inet6_connection_sock.c' after resolving conflict:
-
- 41         sk_for_each_bound(sk2, node, &tb->owners) {
- 42                 if (sk != sk2 &&
- 43                     (!sk->sk_bound_dev_if ||
- 44                      !sk2->sk_bound_dev_if ||
- 45                      sk->sk_bound_dev_if == sk2->sk_bound_dev_if) &&
- 46                     (!sk->sk_reuse || !sk2->sk_reuse ||
- 47                      sk2->sk_state == TCP_LISTEN) &&
- 48                      ipv6_rcv_saddr_equal(sk, sk2))
- 49                         break;
- 50         }
-
-
-
- 51
- 52         return node != NULL;
- 53 }
+Also, I think that it might be a good idea to make some "standardised"
+mechanism for all such devices so that a generic udev code could be
+written.  Adding things to the descriptors may be difficult in a way,
+but maybe adding "[NoCD]" to the interface name would be enough.
 
 -- 
-Greetings
-Grzegorz Chwesewicz
-mailto:grzegorz.chwesewicz@retis.net.pl
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
