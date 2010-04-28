@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab0D1RpG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 13:45:06 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:42572 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755448Ab0D1RpD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 13:45:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=oGL7z8366cu2llAzVre5lKZmko50BRuYDk9TU/PrKul5G8+Yxhcb/sHU9unCnGPme3
-         Q0lWe7d/pwtudzrZvyos/r2pFtSUgYJfY8QyI31RGxFHmFD3chLUzvTl/tk3MYVBtiHg
-         H6EXABLKTOsHKbydOhoD2aburf3Smv50j+BmY=
-Subject: Re: Problem with "tcp: bind() fix when many ports are bound" commit
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: grzegorz.chwesewicz@retis.net.pl, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>
-In-Reply-To: <1272476040.2267.87.camel@edumazet-laptop>
-References: <4BD82B29.3000105@retis.net.pl>
-	 <20100428.095032.32709294.davem@davemloft.net>
-	 <1272476040.2267.87.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Apr 2010 19:44:57 +0200
-Message-ID: <1272476697.2267.95.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1754759Ab0D1OrT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 10:47:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38978 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754709Ab0D1OrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 10:47:15 -0400
+Message-ID: <4BD84A27.6010504@redhat.com>
+Date: Wed, 28 Apr 2010 10:45:59 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Mathieu Desnoyers <compudj@krystal.dyndns.org>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 00/10][RFC] tracing: Lowering the footprint of TRACE_EVENTs
+References: <20100426195024.256424113@goodmis.org>
+In-Reply-To: <20100426195024.256424113@goodmis.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 28 avril 2010 à 19:34 +0200, Eric Dumazet a écrit :
-> L
-> I am going to test following patch in a couple of hours (I have to
-> run ...)
+Steven Rostedt wrote:
+> This is an RFC patch set that also affects kprobes and perf.
 > 
-> Always allowing a reuse LISTEN if no other listener is already active on
-> same IP.
+> At the Linux Collaboration Summit, I talked with Mathieu and others about
+> lowering the footprint of trace events. I spent all of last week
+> trying to get the size as small as I could.
 > 
-> diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
-> index 78cbc39..e2076dd 100644
-> --- a/net/ipv4/inet_connection_sock.c
-> +++ b/net/ipv4/inet_connection_sock.c
-> @@ -78,6 +78,7 @@ int inet_csk_bind_conflict(const struct sock *sk,
->  				    sk2_rcv_saddr == sk_rcv_saddr)
->  					break;
->  			} else if (reuse && sk2->sk_reuse &&
-> +				   sk->sk_state != TCP_LISTEN &&
->  				   sk2_rcv_saddr &&
->  				   sk2_rcv_saddr == sk_rcv_saddr)
->  				break;
+> Currently, each TRACE_EVENT() macro adds 1 - 5K per tracepoint. I got various
+> results by adding a TRACE_EVENT() with the compiler, depending on
+> config options that did not seem related. The new tracepoint I added
+> would add between 1 and 5K, but I did not investigate enough to
+> see what the true size was.
+> 
+> What was consistent, was the DEFINE_EVENT(). Currently, it adds
+> a little over 700 bytes per DEFINE_EVENT().
+> 
+> This patch series does not seem to affect TRACE_EVENT() much (had
+> the same various sizes), but consistently brings DEFINE_EVENT()s
+> down from 700 bytes to 250 bytes per DEFINE_EVENT(). Since syscalls
+> use one "class" and are equivalent to DEFINE_EVENT() this can
+> be a significant savings.
+> 
+> With events and syscalls (82 events and 616 syscalls), before this
+> patch series, the size of vmlinux was: 16161794, and afterward: 16058182.
+> 
+> That is 103,612 bytes in savings! (over 100K)
 > 
 > 
-> --
+> Without tracing syscalls (82 events), it brought the size of vmlinux
+> down from 1591046 to 15999394.
+> 
+> 22,071 bytes in savings.
+> 
+> This is just an RFC (for now), to get peoples opinions on the changes.
+> It does a bit of rewriting of the CPP macros, just to warning you ;-)
 
-Hmm, this wont work because we dont know this sk socket will serve as a
-listener.
-
-bind(... port=80);
-
-listen(...) or connect(...)
-
-David, I think we should revert patches for linux-2.6, and work on this
-problem more closely on net-next-2.6
-
-Thanks
+Hm, at least for kprobe tracer, this change is ok, 
+even though it isn't much worth as for tracepoints.
+I think, if we have ftrace_event_ops, it will help reducing
+the size of dynamic events a bit (not so much).
 
 
+Thank you,
+
+
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
