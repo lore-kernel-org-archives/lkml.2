@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab0D1PKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:10:55 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:37274 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752259Ab0D1PKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:10:52 -0400
-Date: Wed, 28 Apr 2010 10:10:15 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ashwin Ganti <ashwin.ganti@gmail.com>,
-       David Howells <dhowells@redhat.com>, Greg KH <greg@kroah.com>,
-       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
-       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
-       Andrew Morgan <morgan@kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Eric Paris <eparis@redhat.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Michael Kerrisk <mtk.manpages@gmail.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Kyle Moffett <kyle@moffetthome.net>, Steve Grubb <sgrubb@redhat.com>
-Subject: Re: [PATCH 3/3] RFC: p9auth: add p9auth fs
-Message-ID: <20100428151015.GB4100@us.ibm.com>
-References: <20100427164139.GA7359@us.ibm.com>
- <20100427164517.GC7530@us.ibm.com>
- <20100428111749.GA27247@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100428111749.GA27247@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756296Ab0D1Sc0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 14:32:26 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51293 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755041Ab0D1ScZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 14:32:25 -0400
+Date: Wed, 28 Apr 2010 11:31:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sergey Temerkhanov <temerkhanov@yandex.ru>
+Cc: "linux-aio" <linux-aio@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][RFC] AIO: always reinitialize iocb->ki_run_list at the
+ end of aio_run_iocb()
+Message-Id: <20100428113149.b912a3e8.akpm@linux-foundation.org>
+In-Reply-To: <201004280251.43430.temerkhanov@yandex.ru>
+References: <201004280251.43430.temerkhanov@yandex.ru>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> On 04/27, Serge E. Hallyn wrote:
-> >
-> > This introduces a Plan 9 style setuid capability filesystem.
-> > See Documentation/p9auth.txt for a description of how to use this.
+On Wed, 28 Apr 2010 02:51:43 +0400
+Sergey Temerkhanov <temerkhanov@yandex.ru> wrote:
+
+> This patch makes aio_run_iocb() to always reinitialize iocb->ki_run_list (not 
+> only when iocb->ki_retry() function returns -EIOCBRETRY) so that subsequent 
+> call of kick_iocb() will succeed.
 > 
-> Can't comment these changes due to the lack of knowledge, just
-> a couple of minor nits.
-
-Thanks, Oleg.
-
-> > +static ssize_t p9auth_use_write(struct file *file, const char __user *buffer,
-> > +			       size_t count, loff_t *ppos)
-> > +{
-> > +	ssize_t retval = -ENOMEM;
-> > +	char *user_buf;
-> > +
-> > +	if (mutex_lock_interruptible(&cap_mutex))
-> > +		return -EINTR;
+> Regards, Sergey Temerkhanov,
+> Cifronic ZAO.
 > 
-> EINTR doesn't look exactly right here, especially if TIF_SIGPENDING is
-> spurious. Probably ERESTARTNOINTR makes more sense. Or mutex_lock_killable().
-
-Ashwin had had this as ERESTARTSYS I believe.  I'd read something about
-userspace should only see -EINTR so I changed it.  Sounds like I need
-to follow the caller chain some more and learn a thing or two, before
-I repost.
-
-> > +	user_buf = kzalloc(count+1, GFP_KERNEL);
 > 
-> Probably this is OK, but it looks a bit strange we do no check that
-> count is not too large.
+> [reinit-ki_run_list.patch  text/x-patch (657B)]
+> diff -r 97344a0f62c9 fs/aio.c
+> --- a/fs/aio.c	Tue Apr 27 21:18:14 2010 +0400
+> +++ b/fs/aio.c	Tue Apr 27 21:30:23 2010 +0400
+> @@ -748,6 +748,9 @@
+>  out:
+>  	spin_lock_irq(&ctx->ctx_lock);
+>  
+> +	/* will make __queue_kicked_iocb succeed from here on */
+> +	INIT_LIST_HEAD(&iocb->ki_run_list);
+> +
+>  	if (-EIOCBRETRY == ret) {
+>  		/*
+>  		 * OK, now that we are done with this iteration
+> @@ -756,8 +759,6 @@
+>  		 * "kick" can start the next iteration
+>  		 */
+>  
+> -		/* will make __queue_kicked_iocb succeed from here on */
+> -		INIT_LIST_HEAD(&iocb->ki_run_list);
+>  		/* we must queue the next iteration ourselves, if it
+>  		 * has already been kicked */
+>  		if (kiocbIsKicked(iocb)) {
 
-Yes, I should check that, thanks!
+I assume that this fixes some runtime problem which you observed?
 
-> > +	if (copy_from_user(user_buf, buffer, count)) {
-> > +		retval = -EFAULT;
-> > +		goto out;
-> > +	}
-> > +
-> > +	retval = use_setuid_capability(user_buf);
-> 
-> It seems that use_setuid_capability() pathes assume that user_buf is
-> null terminated? Say, parse_user_capability() does kstrdup(user_buf).
+Can you please describe that problem?  This code is pretty old - what
+was your application doing that nobody else's application has thus far
+done?
 
-I kzalloc()d to count+1 before, and only copy_from_user() count bytes,
-so the last byte should always be 0.
+Also, please send your Signed-off-by: for this patch, as per
+Documentation/Submittingpatches, thanks.
 
-Thanks again,
-
--serge
