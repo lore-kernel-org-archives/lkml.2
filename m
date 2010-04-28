@@ -1,117 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab0D1UJK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 16:09:10 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37598 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932158Ab0D1UJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 16:09:08 -0400
-Date: Wed, 28 Apr 2010 13:09:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Miles Lane <miles.lane@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       netdev@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>, shemminger@vyatta.com
-Subject: Re: 2.6.34-rc5-git7 (plus all patches) -- another suspicious
- rcu_dereference_check() usage.
-Message-ID: <20100428200904.GS2540@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <h2ya44ae5cd1004261751waa5cb65ei3d139cbcfa2cc5cf@mail.gmail.com>
- <20100428175426.GK2540@linux.vnet.ibm.com>
- <1272483491.2201.9.camel@edumazet-laptop>
+	id S1754193Ab0D1LSj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 07:18:39 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:12285 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab0D1LSe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 07:18:34 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:in-reply-to:references:
+	user-agent:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=Q0l7mn0jwWEwRcwfLPKwWLuva/kEVAkSKT+mMeOwAvpmyJ/JYZebJ074toNUBgF4R
+	Yu44mU0/ziv4GfjIEFa1g==
+Subject: [PATCH v2 3/6] sched: throttle cfs_rq entities which exceed their
+	local quota
+To: linux-kernel@vger.kernel.org
+From: Paul Turner <pjt@google.com>
+Cc: Paul Menage <menage@google.com>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+       Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+       Gautham R Shenoy <ego@in.ibm.com>,
+       Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+       Herbert Poetzl <herbert@13thfloor.at>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Chris Friesen <cfriesen@nortel.com>, Avi Kivity <avi@redhat.com>,
+       Bharata B Rao <bharata@linux.vnet.ibm.com>,
+       Nikhil Rao <ncrao@google.com>, Ingo Molnar <mingo@elte.hu>,
+       Pavel Emelyanov <xemul@openvz.org>, Mike Waychison <mikew@google.com>,
+       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Wed, 28 Apr 2010 04:17:01 -0700
+Message-ID: <20100428111701.7954.32045.stgit@kitami.corp.google.com>
+In-Reply-To: <20100428110720.7954.53537.stgit@kitami.corp.google.com>
+References: <20100428110720.7954.53537.stgit@kitami.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1272483491.2201.9.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 09:38:11PM +0200, Eric Dumazet wrote:
-> Le mercredi 28 avril 2010 à 10:54 -0700, Paul E. McKenney a écrit :
-> > On Mon, Apr 26, 2010 at 08:51:06PM -0400, Miles Lane wrote:
-> > > This one occurred during the wakeup from suspend to RAM.
-> > > 
-> > > [  984.724697] [ INFO: suspicious rcu_dereference_check() usage. ]
-> > > [  984.724700] ---------------------------------------------------
-> > > [  984.724703] include/linux/fdtable.h:88 invoked
-> > > rcu_dereference_check() without protection!
-> > > [  984.724706]
-> > > [  984.724707] other info that might help us debug this:
-> > > [  984.724708]
-> > > [  984.724711]
-> > > [  984.724711] rcu_scheduler_active = 1, debug_locks = 1
-> > > [  984.724714] no locks held by dbus-daemon/4680.
-> > > [  984.724717]
-> > > [  984.724717] stack backtrace:
-> > > [  984.724721] Pid: 4680, comm: dbus-daemon Not tainted 2.6.34-rc5-git7 #33
-> > > [  984.724724] Call Trace:
-> > > [  984.724734]  [<ffffffff81074556>] lockdep_rcu_dereference+0x9d/0xa6
-> > > [  984.724740]  [<ffffffff810fc785>] fcheck_files+0xb1/0xc9
-> > > [  984.724745]  [<ffffffff810fc7f5>] fget_light+0x35/0xab
-> > > [  984.724751]  [<ffffffff81433e1b>] ? sock_poll_wait+0x13/0x18
-> > > [  984.724755]  [<ffffffff81433e39>] ? unix_poll+0x19/0x95
-> > > [  984.724762]  [<ffffffff8110aa95>] do_sys_poll+0x1ff/0x3e5
-> > > [  984.724766]  [<ffffffff8110a19e>] ? __pollwait+0x0/0xc7
-> > > [  984.724771]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > > [  984.724776]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > > [  984.724780]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > > [  984.724784]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > > [  984.724788]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > > [  984.724793]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > > [  984.724797]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > > [  984.724802]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > > [  984.724806]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > > [  984.724812]  [<ffffffff8110ae0f>] sys_poll+0x50/0xbb
-> > > [  984.724818]  [<ffffffff81009d82>] system_call_fastpath+0x16/0x1b
-> > 
-> > Hmmm...  I am not convinced that this is a false positive.  Couldn't
-> > there be a multi-threaded process where one thread is invoking poll()
-> > on a UNIX socket just as another thread is calling close() on it?
-> > 
-> > The current fcheck_files() logic requires that the caller either (1) be in
-> > an RCU read-side critical section, (2) hold ->files_lock, or (3) passing
-> > in a files_struct with ->count equal to 1 (initialization or cleanup).
-> > 
-> > So I don't feel comfortable just slapping an RCU read-side critical
-> > section around this one, at least not unless someone who understands
-> > the locking says that doing so is OK.
-> > 
-> > 		
-> 
-> Its a single threaded program.
-> 
-> So fget_light() calls fcheck_files(files, fd); without rcu lock,
-> but some /proc/pid/fd/... user temporarly raised files->count just
-> before we perform the condition check.
+In account_cfs_rq_quota() (via update_curr()) we track consumption versus a
+cfs_rq's local quota and whether there is global quota available to continue
+enabling it in the event we run out.
 
-So I should add a single-threaded check.  My first thought was to use
-current_is_single_threaded(), but the bit about scanning the full list
-of processes does give me pause.  However, thread_group_empty() looks
-like a much lighter-weight alternative.
+This patch adds the required support for the latter case, throttling entities
+until quota is available to run.  Throttling dequeues the entity in question
+and sends a reschedule to the owning cpu so that it can be evicted.
 
-I believe that it is possible for a pair of single-threaded processes
-to share a file descriptor, but that should not be a problem, as both
-of them would need to close it for it to go away.
+The following restrictions apply to a throttled cfs_rq:
+- It is dequeued from sched_entity hierarchy and restricted from being
+  re-enqueued.  This means that new/waking children of this entity will be
+  queued up to it, but not past it.
+- It does not contribute to weight calculations in tg_shares_up
+- In the case that the cfs_rq of the cpu we are trying to pull from is throttled
+  it is  is ignored by the loadbalancer in __load_balance_fair() and
+  move_one_task_fair().
 
-But what happens if someone does a clone() with CLONE_FILES, as some
-of the AIO stuff seems to do?  Won't that allow one of the resulting
-processes to close the file for both of them, even though both are
-otherwise single-threaded?  And the ->count seems to be the only
-distinction between these two cases.
+Signed-off-by: Paul Turner <pjt@google.com>
+Signed-off-by: Nikhil Rao <ncrao@google.com>
+Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+---
+ kernel/sched.c      |   12 +++++++++-
+ kernel/sched_fair.c |   62 +++++++++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 68 insertions(+), 6 deletions(-)
 
-And AIO does CLONE_VM as well as CLONE_FILES, but that seems to mean that
-the check must scan the processes with current_is_single_threaded().
-Besides which, a user could invoke clone() with only CLONE_FILES
-specified, right?
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3b53695..d072881 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -422,6 +422,7 @@ struct cfs_rq {
+ #endif
+ #ifdef CONFIG_CFS_BANDWIDTH
+ 	u64 quota_assigned, quota_used;
++	int throttled;
+ #endif
+ #endif
+ };
+@@ -1647,6 +1648,8 @@ static void update_group_shares_cpu(struct task_group *tg, int cpu,
+ 	}
+ }
+ 
++static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq);
++
+ /*
+  * Re-compute the task group their per cpu shares over the given domain.
+  * This needs to be done in a bottom-up fashion because the rq weight of a
+@@ -1667,7 +1670,14 @@ static int tg_shares_up(struct task_group *tg, void *data)
+ 	usd_rq_weight = per_cpu_ptr(update_shares_data, smp_processor_id());
+ 
+ 	for_each_cpu(i, sched_domain_span(sd)) {
+-		weight = tg->cfs_rq[i]->load.weight;
++		/*
++		 * bandwidth throttled entities cannot contribute to load
++		 * balance
++		 */
++		if (!cfs_rq_throttled(tg->cfs_rq[i]))
++			weight = tg->cfs_rq[i]->load.weight;
++		else
++			weight = 0;
+ 		usd_rq_weight[i] = weight;
+ 
+ 		rq_weight += weight;
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 1db1991..0e480ae 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -273,8 +273,18 @@ static inline struct cfs_bandwidth *tg_cfs_bandwidth(struct task_group *tg)
+ 	return &tg->cfs_bandwidth;
+ }
+ 
++static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq)
++{
++	return cfs_rq->throttled;
++}
++
+ static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
+ 		unsigned long delta_exec);
++#else
++static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq)
++{
++	return 0;
++}
+ #endif
+ 
+ 
+@@ -799,6 +809,11 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 	 * Update run-time statistics of the 'current'.
+ 	 */
+ 	update_curr(cfs_rq);
++
++	if (!entity_is_task(se) && (cfs_rq_throttled(group_cfs_rq(se)) ||
++	     !group_cfs_rq(se)->nr_running))
++		return;
++
+ 	account_entity_enqueue(cfs_rq, se);
+ 
+ 	if (flags & ENQUEUE_WAKEUP) {
+@@ -835,6 +850,9 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int sleep)
+ 	 */
+ 	update_curr(cfs_rq);
+ 
++	if (!entity_is_task(se) && cfs_rq_throttled(group_cfs_rq(se)))
++		return;
++
+ 	update_stats_dequeue(cfs_rq, se);
+ 	if (sleep) {
+ #ifdef CONFIG_SCHEDSTATS
+@@ -1086,6 +1104,9 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int wakeup, bool head)
+ 			break;
+ 		cfs_rq = cfs_rq_of(se);
+ 		enqueue_entity(cfs_rq, se, flags);
++		/* don't continue to enqueue if our parent is throttled */
++		if (cfs_rq_throttled(cfs_rq))
++			break;
+ 		flags = ENQUEUE_WAKEUP;
+ 	}
+ 
+@@ -1105,8 +1126,11 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int sleep)
+ 	for_each_sched_entity(se) {
+ 		cfs_rq = cfs_rq_of(se);
+ 		dequeue_entity(cfs_rq, se, sleep);
+-		/* Don't dequeue parent if it has other entities besides us */
+-		if (cfs_rq->load.weight)
++		/*
++		 * Don't dequeue parent if it has other entities besides us,
++		 * or if it is throttled
++		 */
++		if (cfs_rq->load.weight || cfs_rq_throttled(cfs_rq))
+ 			break;
+ 		sleep = 1;
+ 	}
+@@ -1184,6 +1208,22 @@ static u64 tg_request_cfs_quota(struct task_group *tg)
+ 	return delta;
+ }
+ 
++static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
++{
++	struct sched_entity *se;
++
++	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
++
++	for_each_sched_entity(se) {
++		struct cfs_rq *cfs_rq = cfs_rq_of(se);
++
++		dequeue_entity(cfs_rq, se, 1);
++		if (cfs_rq->load.weight || cfs_rq_throttled(cfs_rq))
++			break;
++	}
++	cfs_rq->throttled = 1;
++}
++
+ static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
+ 		unsigned long delta_exec)
+ {
+@@ -1192,10 +1232,16 @@ static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
+ 
+ 	cfs_rq->quota_used += delta_exec;
+ 
+-	if (cfs_rq->quota_used < cfs_rq->quota_assigned)
++	if (cfs_rq_throttled(cfs_rq) ||
++		cfs_rq->quota_used < cfs_rq->quota_assigned)
+ 		return;
+ 
+ 	cfs_rq->quota_assigned += tg_request_cfs_quota(cfs_rq->tg);
++
++	if (cfs_rq->quota_used >= cfs_rq->quota_assigned) {
++		throttle_cfs_rq(cfs_rq);
++		resched_task(cfs_rq->rq->curr);
++	}
+ }
+ 
+ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+@@ -2057,9 +2103,10 @@ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		u64 rem_load, moved_load;
+ 
+ 		/*
+-		 * empty group
++		 * empty group or throttled cfs_rq
+ 		 */
+-		if (!busiest_cfs_rq->task_weight)
++		if (!busiest_cfs_rq->task_weight ||
++				cfs_rq_throttled(busiest_cfs_rq))
+ 			continue;
+ 
+ 		rem_load = (u64)rem_load_move * busiest_weight;
+@@ -2119,6 +2166,11 @@ static int move_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		total_load_moved += load_moved;
+ 
+ #ifdef CONFIG_PREEMPT
++	for_each_leaf_cfs_rq(busiest, busy_cfs_rq) {
++		/* skip throttled cfs_rq */
++		if (cfs_rq_throttled(busy_cfs_rq))
++			continue;
++
+ 		/*
+ 		 * NEWIDLE balancing is a source of latency, so preemptible
+ 		 * kernels will stop after the first task is pulled to minimize
 
-Or am I just confused here?
-
-							Thanx, Paul
