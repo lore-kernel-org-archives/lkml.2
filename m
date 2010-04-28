@@ -1,55 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab0D1LvZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 07:51:25 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55409 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752095Ab0D1LvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 07:51:23 -0400
-Date: Wed, 28 Apr 2010 13:51:22 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Wayne Thomas <waynethomas69@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: HID: expand hid-topseed driver to support BTC "Emprex 3009URF
- III  Vista MCE Remote"
-In-Reply-To: <y2u3711715e1004272206u4700fac7u744b2fb0cf203367@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1004281349130.9849@pobox.suse.cz>
-References: <t2g3711715e1004240718m8aacffc5o68fc9ccd1e66f212@mail.gmail.com>  <w2l3711715e1004271145v133cd94ax971aa213eb60cfaa@mail.gmail.com>  <alpine.LNX.2.00.1004272242050.9849@pobox.suse.cz>
- <y2u3711715e1004272206u4700fac7u744b2fb0cf203367@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753843Ab0D1JBj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 05:01:39 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:65097 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753619Ab0D1JBg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 05:01:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=rW9ZjrewHvRf3lU2mKrufuNa8EPmb0GeicKukH9pKu2NlizlLu0OI5HqbiwtzfXA4o
+         MUjPERGut1OmrNBSZE5bM8SoLAVUxFbePLCAfiXKeV18xzEvQvgSQ+EjYw7wBTuWUN7k
+         Y689/TsXuCzrJ5F5cENVa//i0QZfRxF4pWhsU=
+Date: Wed, 28 Apr 2010 11:01:15 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Samuel Ortiz <samuel.ortiz@intel.com>
+Cc: Zhu Yi <yi.zhu@intel.com>, Intel Linux Wireless <ilw@linux.intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>, linux-wireless@vger.kernel.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [patch] iwl: cleanup: remove unneeded error handling
+Message-ID: <20100428090115.GF29093@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Samuel Ortiz <samuel.ortiz@intel.com>, Zhu Yi <yi.zhu@intel.com>,
+	Intel Linux Wireless <ilw@linux.intel.com>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Alexey Dobriyan <adobriyan@gmail.com>,
+	linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Apr 2010, Wayne Thomas wrote:
+This is just a cleanup and doesn't change how the code works.
 
-> >> OK, next attempt...
-> >
-> > The patch is OK, but your mail client whitespace-damaged it. Could you
-> > please fix up your client and resend? (or attach it separately as an
-> > attachment, if your client can't be fixed).
-> >
-> > Thanks,
-> 
-> I thought it might have; sorry about that.
-> Have attached patch as separate file as a precaution.
+debugfs_create_dir() and debugfs_create_file() return an error pointer 
+(-ENODEV) if CONFIG_DEBUG_FS is not enabled, otherwise if an error occurs
+they return NULL.  This is how they are implemented and what it says in 
+the DebugFS documentation.  DebugFS can not be compiled as a module.  
 
-Thanks for the patch.
+As a result, we only need to check for error pointers and particularly 
+-ENODEV one time to know that DebugFS is enabled.  This patch keeps the 
+first check for error pointers and removes the rest. 
 
-What is the reason for it being backwards-compatible with the older 
-topspeed device?
+The other reason for this patch, is that it silences some Smatch warnings.
+Smatch sees the condition "(result != -ENODEV)" and assumes that it's 
+possible for "result" to equal -ENODEV.  If it were possible it would lead
+to an error pointer dereference.  But since it's not, we can just remove
+the check.
 
-Changes such as
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
--	case 0x048: ts_map_key_clear(KEY_RED);            break;
-+	case 0x05b: ts_map_key_clear(KEY_RED);          break;
-
-(and no other handling of neither 0x048 nor KEY_RED) make me wonder ...
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+diff --git a/drivers/net/wireless/iwmc3200wifi/debugfs.c b/drivers/net/wireless/iwmc3200wifi/debugfs.c
+index cbb81be..10eeeeb 100644
+--- a/drivers/net/wireless/iwmc3200wifi/debugfs.c
++++ b/drivers/net/wireless/iwmc3200wifi/debugfs.c
+@@ -438,40 +438,10 @@ int iwm_debugfs_init(struct iwm_priv *iwm)
+ 	snprintf(devdir, sizeof(devdir), "%s", wiphy_name(iwm_to_wiphy(iwm)));
+ 
+ 	iwm->dbg.devdir = debugfs_create_dir(devdir, iwm->dbg.rootdir);
+-	result = PTR_ERR(iwm->dbg.devdir);
+-	if (IS_ERR(iwm->dbg.devdir) && (result != -ENODEV)) {
+-		IWM_ERR(iwm, "Couldn't create devdir: %d\n", result);
+-		goto error;
+-	}
+-
+ 	iwm->dbg.dbgdir = debugfs_create_dir("debug", iwm->dbg.devdir);
+-	result = PTR_ERR(iwm->dbg.dbgdir);
+-	if (IS_ERR(iwm->dbg.dbgdir) && (result != -ENODEV)) {
+-		IWM_ERR(iwm, "Couldn't create dbgdir: %d\n", result);
+-		goto error;
+-	}
+-
+ 	iwm->dbg.rxdir = debugfs_create_dir("rx", iwm->dbg.devdir);
+-	result = PTR_ERR(iwm->dbg.rxdir);
+-	if (IS_ERR(iwm->dbg.rxdir) && (result != -ENODEV)) {
+-		IWM_ERR(iwm, "Couldn't create rx dir: %d\n", result);
+-		goto error;
+-	}
+-
+ 	iwm->dbg.txdir = debugfs_create_dir("tx", iwm->dbg.devdir);
+-	result = PTR_ERR(iwm->dbg.txdir);
+-	if (IS_ERR(iwm->dbg.txdir) && (result != -ENODEV)) {
+-		IWM_ERR(iwm, "Couldn't create tx dir: %d\n", result);
+-		goto error;
+-	}
+-
+ 	iwm->dbg.busdir = debugfs_create_dir("bus", iwm->dbg.devdir);
+-	result = PTR_ERR(iwm->dbg.busdir);
+-	if (IS_ERR(iwm->dbg.busdir) && (result != -ENODEV)) {
+-		IWM_ERR(iwm, "Couldn't create bus dir: %d\n", result);
+-		goto error;
+-	}
+-
+ 	if (iwm->bus_ops->debugfs_init) {
+ 		result = iwm->bus_ops->debugfs_init(iwm, iwm->dbg.busdir);
+ 		if (result < 0) {
+@@ -480,27 +450,15 @@ int iwm_debugfs_init(struct iwm_priv *iwm)
+ 		}
+ 	}
+ 
+-
+ 	iwm->dbg.dbg_level = IWM_DL_NONE;
+ 	iwm->dbg.dbg_level_dentry =
+ 		debugfs_create_file("level", 0200, iwm->dbg.dbgdir, iwm,
+ 				    &fops_iwm_dbg_level);
+-	result = PTR_ERR(iwm->dbg.dbg_level_dentry);
+-	if (IS_ERR(iwm->dbg.dbg_level_dentry) && (result != -ENODEV)) {
+-		IWM_ERR(iwm, "Couldn't create dbg_level: %d\n", result);
+-		goto error;
+-	}
+-
+ 
+ 	iwm->dbg.dbg_modules = IWM_DM_DEFAULT;
+ 	iwm->dbg.dbg_modules_dentry =
+ 		debugfs_create_file("modules", 0200, iwm->dbg.dbgdir, iwm,
+ 				    &fops_iwm_dbg_modules);
+-	result = PTR_ERR(iwm->dbg.dbg_modules_dentry);
+-	if (IS_ERR(iwm->dbg.dbg_modules_dentry) && (result != -ENODEV)) {
+-		IWM_ERR(iwm, "Couldn't create dbg_modules: %d\n", result);
+-		goto error;
+-	}
+ 
+ 	for (i = 0; i < __IWM_DM_NR; i++)
+ 		add_dbg_module(iwm->dbg, iwm_debug_module[i].name,
+@@ -509,39 +467,18 @@ int iwm_debugfs_init(struct iwm_priv *iwm)
+ 	iwm->dbg.txq_dentry = debugfs_create_file("queues", 0200,
+ 						  iwm->dbg.txdir, iwm,
+ 						  &iwm_debugfs_txq_fops);
+-	result = PTR_ERR(iwm->dbg.txq_dentry);
+-	if (IS_ERR(iwm->dbg.txq_dentry) && (result != -ENODEV)) {
+-		IWM_ERR(iwm, "Couldn't create tx queue: %d\n", result);
+-		goto error;
+-	}
+ 
+ 	iwm->dbg.tx_credit_dentry = debugfs_create_file("credits", 0200,
+ 						   iwm->dbg.txdir, iwm,
+ 						   &iwm_debugfs_tx_credit_fops);
+-	result = PTR_ERR(iwm->dbg.tx_credit_dentry);
+-	if (IS_ERR(iwm->dbg.tx_credit_dentry) && (result != -ENODEV)) {
+-		IWM_ERR(iwm, "Couldn't create tx credit: %d\n", result);
+-		goto error;
+-	}
+ 
+ 	iwm->dbg.rx_ticket_dentry = debugfs_create_file("tickets", 0200,
+ 						  iwm->dbg.rxdir, iwm,
+ 						  &iwm_debugfs_rx_ticket_fops);
+-	result = PTR_ERR(iwm->dbg.rx_ticket_dentry);
+-	if (IS_ERR(iwm->dbg.rx_ticket_dentry) && (result != -ENODEV)) {
+-		IWM_ERR(iwm, "Couldn't create rx ticket: %d\n", result);
+-		goto error;
+-	}
+ 
+ 	iwm->dbg.fw_err_dentry = debugfs_create_file("last_fw_err", 0200,
+ 						     iwm->dbg.dbgdir, iwm,
+ 						     &iwm_debugfs_fw_err_fops);
+-	result = PTR_ERR(iwm->dbg.fw_err_dentry);
+-	if (IS_ERR(iwm->dbg.fw_err_dentry) && (result != -ENODEV)) {
+-		IWM_ERR(iwm, "Couldn't create last FW err: %d\n", result);
+-		goto error;
+-	}
+-
+ 
+ 	return 0;
+ 
