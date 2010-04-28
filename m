@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab0D1SMH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 14:12:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10025 "EHLO mx1.redhat.com"
+	id S1755628Ab0D1QWs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 12:22:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36355 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753493Ab0D1SMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 14:12:03 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Michael Tokarev <mjt@tls.msk.ru>, linux-aio@kvack.org,
-       Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: aio: compat_ioctl issue?
-References: <4B956E5B.9020302@msgid.tls.msk.ru>
-	<x497hpm8p69.fsf@segfault.boston.devel.redhat.com>
-	<4B957122.4060007@msgid.tls.msk.ru>
-	<x49mxyi78ob.fsf@segfault.boston.devel.redhat.com>
-	<4B957AF3.6040801@msgid.tls.msk.ru>
-	<4B957D20.4010904@msgid.tls.msk.ru>
-	<x49wrxij11s.fsf@segfault.boston.devel.redhat.com>
-	<4B994022.6030703@msgid.tls.msk.ru>
-	<4B994888.8020007@msgid.tls.msk.ru>
-	<x49eijqiqcd.fsf@segfault.boston.devel.redhat.com>
-	<4B994EFE.70005@msgid.tls.msk.ru>
-	<x49d3z4t7yt.fsf@segfault.boston.devel.redhat.com>
-	<4B9FEBB0.4020300@msgid.tls.msk.ru>
-	<x498w9st2rr.fsf@segfault.boston.devel.redhat.com>
-	<4BD877D9.6040703@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 28 Apr 2010 14:11:57 -0400
-In-Reply-To: <4BD877D9.6040703@redhat.com> (Avi Kivity's message of "Wed, 28
-	Apr 2010 21:00:57 +0300")
-Message-ID: <x498w87saz6.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754821Ab0D1QWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 12:22:46 -0400
+Date: Wed, 28 Apr 2010 12:21:01 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Avi Kivity <avi@redhat.com>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Alexander Graf <agraf@suse.de>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20100428152101.GB12091@amt.cnet>
+References: <20100427154917.405e21df.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100427154917.405e21df.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity <avi@redhat.com> writes:
+On Tue, Apr 27, 2010 at 03:49:17PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> arch/powerpc/kvm/book3s.c: In function 'kvmppc_core_vcpu_create':
+> arch/powerpc/kvm/book3s.c:1241: error: implicit declaration of function 'kzalloc'
+> arch/powerpc/kvm/book3s.c:1241: warning: cast to pointer from integer of different size
+> arch/powerpc/kvm/book3s.c:1281: error: implicit declaration of function 'kfree'
+> 
+> Caused by commit 046cdc052ffcbf1ee1c627ef811031d18654bafe ("KVM: PPC:
+> Improve indirect svcpu accessors") from the kvm tree.
+> 
+> You have to include slab.h directly to use kzalloc/kfree ...
+> 
+> I have applied the following patch for today.
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 27 Apr 2010 15:32:53 +1000
+> Subject: [PATCH] kvm: powerpc: use of kzalloc/kfree requires including slab.h
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-> On 03/16/2010 10:44 PM, Jeff Moyer wrote:
->>
->>> Thank you for your support!
->>>
->>> You can add my
->>> Tested-By: Michael Tokarev<mjt@tls.msk.ru>
->>> if you want.  Thanks!
->>>      
->> Thanks!
->>
->>    
->
-> Is this patch getting upstreamed?
+Applied, thanks.
 
-Sorry, I've been inundated with a host of other issues.  I will post a
-new version as soon as I can (hopefully this week).
-
-Cheers,
-Jeff
