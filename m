@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab0D1TUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 15:20:49 -0400
-Received: from mail.perches.com ([173.55.12.10]:1797 "EHLO mail.perches.com"
+	id S1756240Ab0D1SMH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 14:12:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753827Ab0D1TUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 15:20:48 -0400
-Subject: Re: [PATCH 09/13] drivers/staging/rtl8192su: Hoist assign from if
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-       devel@driverdev.osuosl.org
-In-Reply-To: <20100428191116.GA29828@suse.de>
-References: <cover.1269493047.git.joe@perches.com>
-	 <c45ba099fc8f31f166c4067f2eff609c8eaf422f.1269493047.git.joe@perches.com>
-	 <20100428182710.GD8509@kroah.com>
-	 <1272481489.7831.24.camel@Joe-Laptop.home> <20100428191116.GA29828@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Apr 2010 12:20:46 -0700
-Message-ID: <1272482446.9188.4.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753493Ab0D1SMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 14:12:03 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Michael Tokarev <mjt@tls.msk.ru>, linux-aio@kvack.org,
+       Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: aio: compat_ioctl issue?
+References: <4B956E5B.9020302@msgid.tls.msk.ru>
+	<x497hpm8p69.fsf@segfault.boston.devel.redhat.com>
+	<4B957122.4060007@msgid.tls.msk.ru>
+	<x49mxyi78ob.fsf@segfault.boston.devel.redhat.com>
+	<4B957AF3.6040801@msgid.tls.msk.ru>
+	<4B957D20.4010904@msgid.tls.msk.ru>
+	<x49wrxij11s.fsf@segfault.boston.devel.redhat.com>
+	<4B994022.6030703@msgid.tls.msk.ru>
+	<4B994888.8020007@msgid.tls.msk.ru>
+	<x49eijqiqcd.fsf@segfault.boston.devel.redhat.com>
+	<4B994EFE.70005@msgid.tls.msk.ru>
+	<x49d3z4t7yt.fsf@segfault.boston.devel.redhat.com>
+	<4B9FEBB0.4020300@msgid.tls.msk.ru>
+	<x498w9st2rr.fsf@segfault.boston.devel.redhat.com>
+	<4BD877D9.6040703@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 28 Apr 2010 14:11:57 -0400
+In-Reply-To: <4BD877D9.6040703@redhat.com> (Avi Kivity's message of "Wed, 28
+	Apr 2010 21:00:57 +0300")
+Message-ID: <x498w87saz6.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-28 at 12:11 -0700, Greg KH wrote:
-> On Wed, Apr 28, 2010 at 12:04:49PM -0700, Joe Perches wrote:
-> > On Wed, 2010-04-28 at 11:27 -0700, Greg KH wrote:
-> > > On Wed, Mar 24, 2010 at 10:17:03PM -0700, Joe Perches wrote:
-> > > > --- a/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c
-> > > > +++ b/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c
-> > > > @@ -1690,7 +1690,8 @@ ieee80211_rx_auth_rq(struct ieee80211_device *ieee, struct sk_buff *skb)
-> > > >  	//IEEE80211DMESG("Rx probe");
-> > > >  	ieee->softmac_stats.rx_auth_rq++;
-> > > >  
-> > > > -	if ((status = auth_rq_parse(skb, dest))!= -1){
-> > > > +	status = auth_rq_parse(skb, dest);
-> > > > +	if (status!= -1) {
-> > > 
-> > > And again.  Did you do this with some tool and not by hand?
-> > []
-> > > Did you not run your patch through checkpatch after creating it and 
-> > > before sending it to me?
-> > 
-> > >From the original 0/13 introduction:
-> > http://lkml.org/lkml/2010/3/25/6
-> > 
-> >         Used scripts/cvt_kernel.style.pl:
-> >         --convert-hoist_assigns_from_if
-> >         and verified visually.
-> >         
-> >         checkpatch errors ignored
-> > 
-> > The script itself is:
-> > http://lkml.org/lkml/2010/3/24/447
-> 
-> And this points out why I hate scripts.
-> 
-> It is _trivial_ to fix up the obvious formatting problem, on the same
-> line that you are modifying, when doing so.
+Avi Kivity <avi@redhat.com> writes:
 
-Define _trivial_ and define obvious.
+> On 03/16/2010 10:44 PM, Jeff Moyer wrote:
+>>
+>>> Thank you for your support!
+>>>
+>>> You can add my
+>>> Tested-By: Michael Tokarev<mjt@tls.msk.ru>
+>>> if you want.  Thanks!
+>>>      
+>> Thanks!
+>>
+>>    
+>
+> Is this patch getting upstreamed?
 
-Here you've multiple situations of initial line spacing
-not using tabs, odd use of parentheses in the original
-style, compressed logical tests or assigns, etc.
+Sorry, I've been inundated with a host of other issues.  I will post a
+new version as soon as I can (hopefully this week).
 
-All trivially fixable, but not necessarily correct to do
-in a single pass.
-
-If you do them in a single pass, you run into your "do too
-much in a single patch" argument.
-
-cheers, Joe
-
+Cheers,
+Jeff
