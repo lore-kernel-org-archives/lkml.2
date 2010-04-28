@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab0D1LlG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 07:41:06 -0400
-Received: from 007.netroom.de ([194.0.247.207]:19917 "EHLO 007.netroom.de"
+	id S1754896Ab0D1PKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 11:10:55 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:37274 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751346Ab0D1LlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 07:41:04 -0400
-Message-ID: <4BD81ED5.1050408@draisberghof.de>
-Date: Wed, 28 Apr 2010 13:41:09 +0200
-From: Josua Dietze <digidietze@draisberghof.de>
-Reply-To: digidietze@draisberghof.de
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752259Ab0D1PKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 11:10:52 -0400
+Date: Wed, 28 Apr 2010 10:10:15 -0500
+From: "Serge E. Hallyn" <serue@us.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ashwin Ganti <ashwin.ganti@gmail.com>,
+       David Howells <dhowells@redhat.com>, Greg KH <greg@kroah.com>,
+       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
+       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
+       Andrew Morgan <morgan@kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Eric Paris <eparis@redhat.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Michael Kerrisk <mtk.manpages@gmail.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Kyle Moffett <kyle@moffetthome.net>, Steve Grubb <sgrubb@redhat.com>
+Subject: Re: [PATCH 3/3] RFC: p9auth: add p9auth fs
+Message-ID: <20100428151015.GB4100@us.ibm.com>
+References: <20100427164139.GA7359@us.ibm.com>
+ <20100427164517.GC7530@us.ibm.com>
+ <20100428111749.GA27247@redhat.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, Daniel Mack <daniel@caiaq.de>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       USB list <linux-usb@vger.kernel.org>,
-       Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: USB gadget with drivers "on board"
-References: <Pine.LNX.4.44L0.1004261531480.1764-100000@iolanthe.rowland.org> <4BD5F43E.4090404@draisberghof.de> <op.vbu6nahq7p4s8u@pikus>
-In-Reply-To: <op.vbu6nahq7p4s8u@pikus>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100428111749.GA27247@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michał Nazarewicz schrieb:
-> On Mon, 26 Apr 2010 22:14:54 +0200, Josua Dietze 
-> <digidietze@draisberghof.de> wrote:
+Quoting Oleg Nesterov (oleg@redhat.com):
+> On 04/27, Serge E. Hallyn wrote:
+> >
+> > This introduces a Plan 9 style setuid capability filesystem.
+> > See Documentation/p9auth.txt for a description of how to use this.
 > 
->> Important for the Linux handling is that "mode 1" is clearly
->> distinguishable from "mode 2", either by using a different product ID
->> or by setting a different class for the device or interface 0 (will
->> most likely be "8" for the install mode).
+> Can't comment these changes due to the lack of knowledge, just
+> a couple of minor nits.
+
+Thanks, Oleg.
+
+> > +static ssize_t p9auth_use_write(struct file *file, const char __user *buffer,
+> > +			       size_t count, loff_t *ppos)
+> > +{
+> > +	ssize_t retval = -ENOMEM;
+> > +	char *user_buf;
+> > +
+> > +	if (mutex_lock_interruptible(&cap_mutex))
+> > +		return -EINTR;
 > 
-> So it will be enough to change the USB device class for the zeroth
-> interface for udev to recognise the mass storage to be ejected?  Note
-> that I will use mass storage in the second mode as well.
+> EINTR doesn't look exactly right here, especially if TIF_SIGPENDING is
+> spurious. Probably ERESTARTNOINTR makes more sense. Or mutex_lock_killable().
 
-This is often the case with the common "zero-cd" devices, but 
-they have the storage on upper interface numbers after switching.
+Ashwin had had this as ERESTARTSYS I believe.  I'd read something about
+userspace should only see -EINTR so I changed it.  Sounds like I need
+to follow the caller chain some more and learn a thing or two, before
+I repost.
 
-The point is to enable udev or any other tool to distinguish 
-between "unswitched" and "switched"; otherwise the procedure 
-for switching will be executed on *both* modes which might 
-disturb the device or the system.
+> > +	user_buf = kzalloc(count+1, GFP_KERNEL);
+> 
+> Probably this is OK, but it looks a bit strange we do no check that
+> count is not too large.
 
-A change in one of the attributes like iProduct or iSerial 
-could be detected as well of course.
+Yes, I should check that, thanks!
 
-> Also, I think that it might be a good idea to make some "standardised"
-> mechanism for all such devices so that a generic udev code could be
-> written.  Adding things to the descriptors may be difficult in a way,
-> but maybe adding "[NoCD]" to the interface name would be enough.
+> > +	if (copy_from_user(user_buf, buffer, count)) {
+> > +		retval = -EFAULT;
+> > +		goto out;
+> > +	}
+> > +
+> > +	retval = use_setuid_capability(user_buf);
+> 
+> It seems that use_setuid_capability() pathes assume that user_buf is
+> null terminated? Say, parse_user_capability() does kstrdup(user_buf).
 
-That is up to the (countless) manufacturers of course; on the 
-other hand, the Windows drivers need to recognize the mode as 
-well so there should always be one way or the other to 
-accomplish that.
+I kzalloc()d to count+1 before, and only copy_from_user() count bytes,
+so the last byte should always be 0.
 
+Thanks again,
 
-Josua Dietze
+-serge
