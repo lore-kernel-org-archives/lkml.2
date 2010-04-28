@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab0D1PmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:42:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33717 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755186Ab0D1PmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:42:11 -0400
-Date: Wed, 28 Apr 2010 17:39:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ashwin Ganti <ashwin.ganti@gmail.com>,
-       David Howells <dhowells@redhat.com>, Greg KH <greg@kroah.com>,
-       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
-       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
-       Andrew Morgan <morgan@kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Eric Paris <eparis@redhat.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Michael Kerrisk <mtk.manpages@gmail.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Kyle Moffett <kyle@moffetthome.net>, Steve Grubb <sgrubb@redhat.com>
-Subject: Re: [PATCH 3/3] RFC: p9auth: add p9auth fs
-Message-ID: <20100428153933.GA6610@redhat.com>
-References: <20100427164139.GA7359@us.ibm.com> <20100427164517.GC7530@us.ibm.com> <20100428111749.GA27247@redhat.com> <20100428151015.GB4100@us.ibm.com>
+	id S1756115Ab0D1RqG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 13:46:06 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:53492 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755488Ab0D1RqC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 13:46:02 -0400
+Date: Wed, 28 Apr 2010 13:46:00 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Greg KH <gregkh@suse.de>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>,
+       stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [169/197] modules: fix incorrect percpu usage
+Message-ID: <20100428174600.GA4205@Krystal>
+References: <20100422191857.GA13268@kroah.com> <20100422190922.517802235@kvm.kroah.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100428151015.GB4100@us.ibm.com>
+In-Reply-To: <20100422190922.517802235@kvm.kroah.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:45:17 up 95 days, 20:22,  7 users,  load average: 0.04, 0.02,
+	0.00
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28, Serge E. Hallyn wrote:
->
-> Quoting Oleg Nesterov (oleg@redhat.com):
->
-> > > +static ssize_t p9auth_use_write(struct file *file, const char __user *buffer,
-> > > +			       size_t count, loff_t *ppos)
-> > > +{
-> > > +	ssize_t retval = -ENOMEM;
-> > > +	char *user_buf;
-> > > +
-> > > +	if (mutex_lock_interruptible(&cap_mutex))
-> > > +		return -EINTR;
-> >
-> > EINTR doesn't look exactly right here, especially if TIF_SIGPENDING is
-> > spurious. Probably ERESTARTNOINTR makes more sense. Or mutex_lock_killable().
->
-> Ashwin had had this as ERESTARTSYS I believe.  I'd read something about
-> userspace should only see -EINTR so I changed it.
+* Greg KH (gregkh@suse.de) wrote:
+> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+> 
+> ------------------
+> 
+> From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> 
+> Mainline does not need this fix, as commit
+> 259354deaaf03d49a02dbb9975d6ec2a54675672 fixed the problem by refactoring.
+> 
+> Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
+> for per cpu pointers).
+> 
+> Introduced by commit:
+> 
+> module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
+> 
+> This patch should be queued for the stable branch, for kernels 2.6.29.x to
+> 2.6.33.x.  (tested on 2.6.33.1 x86_64)
 
-Yes, ERESTARTxxx should not be visible to the user-space. But it is OK
-to return it from the syscall if signal_pending() is true, in this case
-it will be changed to EINTR or the system call will be restarted.
+Tejun, should this patch be applied to 2.6.32.x, or will it cause problems on
+ia64 ?
 
-ERESTARTNOINTR always restarts the syscall, perphaps after handling the
-signal if it is really pending.
+Thanks,
 
-> > > +	if (copy_from_user(user_buf, buffer, count)) {
-> > > +		retval = -EFAULT;
-> > > +		goto out;
-> > > +	}
-> > > +
-> > > +	retval = use_setuid_capability(user_buf);
-> >
-> > It seems that use_setuid_capability() pathes assume that user_buf is
-> > null terminated? Say, parse_user_capability() does kstrdup(user_buf).
->
-> I kzalloc()d to count+1 before, and only copy_from_user() count bytes,
-> so the last byte should always be 0.
+Mathieu
 
-Ah, indeed, thanks.
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> CC: Randy Dunlap <randy.dunlap@oracle.com>
+> CC: Eric Dumazet <dada1@cosmosbay.com>
+> CC: Rusty Russell <rusty@rustcorp.com.au>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Greg Kroah-Hartman <gregkh@suse.de>
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  kernel/module.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -555,7 +555,7 @@ static void percpu_modcopy(void *pcpudes
+>  	int cpu;
+>  
+>  	for_each_possible_cpu(cpu)
+> -		memcpy(pcpudest + per_cpu_offset(cpu), from, size);
+> +		memcpy(per_cpu_ptr(pcpudest, cpu), from, size);
+>  }
+>  
+>  #else /* ... !CONFIG_SMP */
+> 
+> 
 
-Oleg.
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
