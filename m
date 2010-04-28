@@ -1,51 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085Ab0D1VHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 17:07:52 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53457 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757075Ab0D1VHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 17:07:51 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 6/8] PM: Add suspend blocking work.
-Date: Wed, 28 Apr 2010 23:08:10 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Oleg Nesterov <oleg@redhat.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Pavel Machek <pavel@ucw.cz>,
-       Len Brown <len.brown@intel.com>
-References: <1272429119-12103-1-git-send-email-arve@android.com> <20100428194028.GA16389@redhat.com> <4BD89922.1040306@kernel.org>
-In-Reply-To: <4BD89922.1040306@kernel.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1757082Ab0D1VJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 17:09:09 -0400
+Received: from tomts13.bellnexxia.net ([209.226.175.34]:60346 "EHLO
+	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753655Ab0D1VJG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 17:09:06 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAAs92EtGGNqG/2dsb2JhbACce3K+MYUOBA
+Date: Wed, 28 Apr 2010 17:03:55 -0400
+From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 08/10][RFC] tracing: Move print functions into event
+	class
+Message-ID: <20100428210355.GI8591@Krystal>
+References: <20100426195024.256424113@goodmis.org> <20100426200243.335073270@goodmis.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004282308.10751.rjw@sisk.pl>
+Content-Disposition: inline
+In-Reply-To: <20100426200243.335073270@goodmis.org>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 17:03:43 up 21 days,  6:57,  4 users,  load average: 0.43, 0.28,
+	0.23
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 April 2010, Tejun Heo wrote:
-> On 04/28/2010 09:40 PM, Oleg Nesterov wrote:
-> >> +int schedule_suspend_blocking_work(struct suspend_blocking_work *work)
-> >> +{
-> >> ...
-> >> +	ret = schedule_work(&work->work);
-> > 
-> > Off-topic. We should probably export keventd_wq to avoid the duplications
-> > like this.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 > 
-> Yeah, had about the same thought.  cmwq exports it so I didn't suggest
-> it at this point but then again we don't really know whether or when
-> that series is going in
+> Currently, every event has its own trace_event structure. This is
+> fine since the structure is needed anyway. But the print function
+> structure (trace_event_functions) is now separate. Since the output
+> of the trace event is done by the class (with the exception of events
+> defined by DEFINE_EVENT_PRINT), it makes sense to have the class
+> define the print functions that all events in the class can use.
+> 
+> This makes a bigger deal with the syscall events since all syscall events
+> use the same class. The savings here is another 37K.
+> 
+>    text	   data	    bss	    dec	    hex	filename
+> 5788186	1337252	9351592	16477030	 fb6b66	vmlinux.orig
+> 5774574	1293204	9351592	16419370	 fa8a2a	vmlinux.init
+> 5761154	1268356	9351592	16381102	 f9f4ae	vmlinux.print
+> 
+> To accomplish this, and to let the class know what event is being
+> printed, the event structure is embedded in the ftrace_event_call
+> structure. This should not be an issues since the event structure
+> was created for each event anyway.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-As soon as there are no major objections.  At least to my tree.
 
-> so it might be a good idea to make that change now.  Hmm...
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-I'd rather like a follow-up patch changing that, if poss.
+> ---
+>  include/linux/ftrace_event.h  |    2 +-
+>  include/linux/syscalls.h      |   18 +++------------
+>  include/trace/ftrace.h        |   47 +++++++++++++++++-----------------------
+>  kernel/trace/trace_events.c   |    6 ++--
+>  kernel/trace/trace_kprobe.c   |   14 +++++-------
+>  kernel/trace/trace_syscalls.c |    8 +++++++
+>  6 files changed, 42 insertions(+), 53 deletions(-)
+> 
+> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> index 09c2ad7..aa3695a 100644
+> --- a/include/linux/ftrace_event.h
+> +++ b/include/linux/ftrace_event.h
+> @@ -146,7 +146,7 @@ struct ftrace_event_call {
+>  	struct ftrace_event_class *class;
+>  	char			*name;
+>  	struct dentry		*dir;
+> -	struct trace_event	*event;
+> +	struct trace_event	event;
+>  	int			enabled;
+>  	int			id;
+>  	const char		*print_fmt;
+> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+> index f3892e9..5d060b7 100644
+> --- a/include/linux/syscalls.h
+> +++ b/include/linux/syscalls.h
+> @@ -120,24 +120,20 @@ struct perf_event_attr;
+>  
+>  extern struct ftrace_event_class event_class_syscall_enter;
+>  extern struct ftrace_event_class event_class_syscall_exit;
+> +extern struct trace_event_functions enter_syscall_print_funcs;
+> +extern struct trace_event_functions exit_syscall_print_funcs;
+>  
+>  #define SYSCALL_TRACE_ENTER_EVENT(sname)				\
+>  	static struct syscall_metadata __syscall_meta_##sname;		\
+>  	static struct ftrace_event_call					\
+>  	__attribute__((__aligned__(4))) event_enter_##sname;		\
+> -	static struct trace_event_functions enter_syscall_print_funcs_##sname = { \
+> -		.trace                  = print_syscall_enter,		\
+> -	};								\
+> -	static struct trace_event enter_syscall_print_##sname = {	\
+> -		.funcs                  = &enter_syscall_print_funcs_##sname, \
+> -	};								\
+>  	static struct ftrace_event_call __used				\
+>  	  __attribute__((__aligned__(4)))				\
+>  	  __attribute__((section("_ftrace_events")))			\
+>  	  event_enter_##sname = {					\
+>  		.name                   = "sys_enter"#sname,		\
+>  		.class			= &event_class_syscall_enter,	\
+> -		.event                  = &enter_syscall_print_##sname,	\
+> +		.event.funcs            = &enter_syscall_print_funcs,	\
+>  		.data			= (void *)&__syscall_meta_##sname,\
+>  	}
+>  
+> @@ -145,19 +141,13 @@ extern struct ftrace_event_class event_class_syscall_exit;
+>  	static struct syscall_metadata __syscall_meta_##sname;		\
+>  	static struct ftrace_event_call					\
+>  	__attribute__((__aligned__(4))) event_exit_##sname;		\
+> -	static struct trace_event_functions exit_syscall_print_funcs_##sname = { \
+> -		.trace                  = print_syscall_exit,		\
+> -	};								\
+> -	static struct trace_event exit_syscall_print_##sname = {	\
+> -		.funcs                  = &exit_syscall_print_funcs_##sname, \
+> -	};								\
+>  	static struct ftrace_event_call __used				\
+>  	  __attribute__((__aligned__(4)))				\
+>  	  __attribute__((section("_ftrace_events")))			\
+>  	  event_exit_##sname = {					\
+>  		.name                   = "sys_exit"#sname,		\
+>  		.class			= &event_class_syscall_exit,	\
+> -		.event                  = &exit_syscall_print_##sname,	\
+> +		.event.funcs		= &exit_syscall_print_funcs,	\
+>  		.data			= (void *)&__syscall_meta_##sname,\
+>  	}
+>  
+> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+> index 2efb301..d7b3b56 100644
+> --- a/include/trace/ftrace.h
+> +++ b/include/trace/ftrace.h
+> @@ -206,18 +206,22 @@
+>  #undef DECLARE_EVENT_CLASS
+>  #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+>  static notrace enum print_line_t					\
+> -ftrace_raw_output_id_##call(int event_id, const char *name,		\
+> -			    struct trace_iterator *iter, int flags)	\
+> +ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
+> +			 struct trace_event *trace_event)		\
+>  {									\
+> +	struct ftrace_event_call *event;				\
+>  	struct trace_seq *s = &iter->seq;				\
+>  	struct ftrace_raw_##call *field;				\
+>  	struct trace_entry *entry;					\
+>  	struct trace_seq *p;						\
+>  	int ret;							\
+>  									\
+> +	event = container_of(trace_event, struct ftrace_event_call,	\
+> +			     event);					\
+> +									\
+>  	entry = iter->ent;						\
+>  									\
+> -	if (entry->type != event_id) {					\
+> +	if (entry->type != event->id) {					\
+>  		WARN_ON_ONCE(1);					\
+>  		return TRACE_TYPE_UNHANDLED;				\
+>  	}								\
+> @@ -226,7 +230,7 @@ ftrace_raw_output_id_##call(int event_id, const char *name,		\
+>  									\
+>  	p = &get_cpu_var(ftrace_event_seq);				\
+>  	trace_seq_init(p);						\
+> -	ret = trace_seq_printf(s, "%s: ", name);			\
+> +	ret = trace_seq_printf(s, "%s: ", event->name);			\
+>  	if (ret)							\
+>  		ret = trace_seq_printf(s, print);			\
+>  	put_cpu();							\
+> @@ -234,17 +238,10 @@ ftrace_raw_output_id_##call(int event_id, const char *name,		\
+>  		return TRACE_TYPE_PARTIAL_LINE;				\
+>  									\
+>  	return TRACE_TYPE_HANDLED;					\
+> -}
+> -
+> -#undef DEFINE_EVENT
+> -#define DEFINE_EVENT(template, name, proto, args)			\
+> -static notrace enum print_line_t					\
+> -ftrace_raw_output_##name(struct trace_iterator *iter, int flags,	\
+> -			 struct trace_event *event)			\
+> -{									\
+> -	return ftrace_raw_output_id_##template(event_##name.id,		\
+> -					       #name, iter, flags);	\
+> -}
+> +}									\
+> +static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
+> +	.trace			= ftrace_raw_output_##call,		\
+> +};
+>  
+>  #undef DEFINE_EVENT_PRINT
+>  #define DEFINE_EVENT_PRINT(template, call, proto, args, print)		\
+> @@ -277,7 +274,10 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
+>  		return TRACE_TYPE_PARTIAL_LINE;				\
+>  									\
+>  	return TRACE_TYPE_HANDLED;					\
+> -}
+> +}									\
+> +static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
+> +	.trace			= ftrace_raw_output_##call,		\
+> +};
+>  
+>  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+>  
+> @@ -526,17 +526,10 @@ ftrace_raw_event_##call(proto,						\
+>  }
+>  
+>  #undef DEFINE_EVENT
+> -#define DEFINE_EVENT(template, call, proto, args)			\
+> -static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
+> -	.trace			= ftrace_raw_output_##call,		\
+> -};									\
+> -static struct trace_event ftrace_event_type_##call = {			\
+> -	.funcs			= &ftrace_event_type_funcs_##call,	\
+> -};
+> +#define DEFINE_EVENT(template, call, proto, args)
+>  
+>  #undef DEFINE_EVENT_PRINT
+> -#define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+> -	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
+> +#define DEFINE_EVENT_PRINT(template, name, proto, args, print)
+>  
+>  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+>  
+> @@ -572,7 +565,7 @@ __attribute__((__aligned__(4)))						\
+>  __attribute__((section("_ftrace_events"))) event_##call = {		\
+>  	.name			= #call,				\
+>  	.class			= &event_class_##template,		\
+> -	.event			= &ftrace_event_type_##call,		\
+> +	.event.funcs		= &ftrace_event_type_funcs_##template,	\
+>  	.print_fmt		= print_fmt_##template,			\
+>  }
+>  
+> @@ -586,7 +579,7 @@ __attribute__((__aligned__(4)))						\
+>  __attribute__((section("_ftrace_events"))) event_##call = {		\
+>  	.name			= #call,				\
+>  	.class			= &event_class_##template,		\
+> -	.event			= &ftrace_event_type_##call,		\
+> +	.event.funcs		= &ftrace_event_type_funcs_##call,	\
+>  	.print_fmt		= print_fmt_##call,			\
+>  }
+>  
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index c34a9bd..9aa298e 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -129,7 +129,7 @@ int trace_event_raw_init(struct ftrace_event_call *call)
+>  {
+>  	int id;
+>  
+> -	id = register_ftrace_event(call->event);
+> +	id = register_ftrace_event(&call->event);
+>  	if (!id)
+>  		return -ENODEV;
+>  	call->id = id;
+> @@ -1077,8 +1077,8 @@ static void remove_subsystem_dir(const char *name)
+>  static void __trace_remove_event_call(struct ftrace_event_call *call)
+>  {
+>  	ftrace_event_enable_disable(call, 0);
+> -	if (call->event)
+> -		__unregister_ftrace_event(call->event);
+> +	if (call->event.funcs)
+> +		__unregister_ftrace_event(&call->event);
+>  	debugfs_remove_recursive(call->dir);
+>  	list_del(&call->list);
+>  	trace_destroy_fields(call);
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index b989ae2..d8061c3 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -204,7 +204,6 @@ struct trace_probe {
+>  	const char		*symbol;	/* symbol name */
+>  	struct ftrace_event_class	class;
+>  	struct ftrace_event_call	call;
+> -	struct trace_event		event;
+>  	unsigned int		nr_args;
+>  	struct probe_arg	args[];
+>  };
+> @@ -1020,7 +1019,7 @@ print_kprobe_event(struct trace_iterator *iter, int flags,
+>  	int i;
+>  
+>  	field = (struct kprobe_trace_entry *)iter->ent;
+> -	tp = container_of(event, struct trace_probe, event);
+> +	tp = container_of(event, struct trace_probe, call.event);
+>  
+>  	if (!trace_seq_printf(s, "%s: (", tp->call.name))
+>  		goto partial;
+> @@ -1054,7 +1053,7 @@ print_kretprobe_event(struct trace_iterator *iter, int flags,
+>  	int i;
+>  
+>  	field = (struct kretprobe_trace_entry *)iter->ent;
+> -	tp = container_of(event, struct trace_probe, event);
+> +	tp = container_of(event, struct trace_probe, call.event);
+>  
+>  	if (!trace_seq_printf(s, "%s: (", tp->call.name))
+>  		goto partial;
+> @@ -1364,20 +1363,19 @@ static int register_probe_event(struct trace_probe *tp)
+>  
+>  	/* Initialize ftrace_event_call */
+>  	if (probe_is_return(tp)) {
+> -		tp->event.funcs = &kretprobe_funcs;
+>  		INIT_LIST_HEAD(&call->class->fields);
+> +		call->event.funcs = &kretprobe_funcs;
+>  		call->class->raw_init = probe_event_raw_init;
+>  		call->class->define_fields = kretprobe_event_define_fields;
+>  	} else {
+>  		INIT_LIST_HEAD(&call->class->fields);
+> -		tp->event.funcs = &kprobe_funcs;
+> +		call->event.funcs = &kprobe_funcs;
+>  		call->class->raw_init = probe_event_raw_init;
+>  		call->class->define_fields = kprobe_event_define_fields;
+>  	}
+>  	if (set_print_fmt(tp) < 0)
+>  		return -ENOMEM;
+> -	call->event = &tp->event;
+> -	call->id = register_ftrace_event(&tp->event);
+> +	call->id = register_ftrace_event(&call->event);
+>  	if (!call->id) {
+>  		kfree(call->print_fmt);
+>  		return -ENODEV;
+> @@ -1389,7 +1387,7 @@ static int register_probe_event(struct trace_probe *tp)
+>  	if (ret) {
+>  		pr_info("Failed to register kprobe event: %s\n", call->name);
+>  		kfree(call->print_fmt);
+> -		unregister_ftrace_event(&tp->event);
+> +		unregister_ftrace_event(&call->event);
+>  	}
+>  	return ret;
+>  }
+> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+> index 0bcca08..a4bed39 100644
+> --- a/kernel/trace/trace_syscalls.c
+> +++ b/kernel/trace/trace_syscalls.c
+> @@ -30,6 +30,14 @@ syscall_get_fields(struct ftrace_event_call *call)
+>  	return &entry->fields;
+>  }
+>  
+> +struct trace_event_functions enter_syscall_print_funcs = {
+> +	.trace                  = print_syscall_enter,
+> +};
+> +
+> +struct trace_event_functions exit_syscall_print_funcs = {
+> +	.trace                  = print_syscall_exit,
+> +};
+> +
+>  struct ftrace_event_class event_class_syscall_enter = {
+>  	.system			= "syscalls",
+>  	.reg			= syscall_enter_register,
+> -- 
+> 1.7.0
+> 
+> 
 
-Thanks,
-Rafael
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
