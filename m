@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab0D1KZc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 06:25:32 -0400
-Received: from server78.greatnet.de ([83.133.96.102]:35024 "EHLO
-	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab0D1KZ0 (ORCPT
+	id S1756739Ab0D1TWJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 15:22:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40007 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827Ab0D1TWG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 06:25:26 -0400
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: linux-fbdev@vger.kernel.org
-Cc: ralf@linux-mips.org, arnaud.patard@rtp-net.org, jayakumar.lkml@gmail.com,
-       gregkh@suse.de, yuasa@linux-mips.org, lethal@linux-sh.org,
-       akpm@linux-foundation.org, adobriyan@gmail.com, support@simtec.co.uk,
-       ben@simtec.co.uk, linux@simtec.co.uk, jkosina@suse.cz,
-       pjones@redhat.com, linux-kernel@vger.kernel.org,
-       Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [PATCH 2/4] hitfb: correct sections
-Date: Wed, 28 Apr 2010 12:25:03 +0200
-Message-Id: <1272450305-7284-2-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1272450305-7284-1-git-send-email-henne@nachtwindheim.de>
-References: <1272450305-7284-1-git-send-email-henne@nachtwindheim.de>
+	Wed, 28 Apr 2010 15:22:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=kzQRzJLDMSsy7JPUj8mrfhIjC5sXJQISadEUd3ws9a0IhwLxdDaQ0PVzLBao/aa7ZU
+         YtU+hAZdagll0+Nlrdtc84FhqxP90XUn0/rfP7vl4JXKp/PAmHuvF8uETu36Vgpo9gQo
+         d0qXlVOHWyV1BFeUSobUu3raWfuT/X1mFGk2s=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1004272205380.2951@localhost.localdomain>
+References: <1272396342-12504-1-git-send-email-jkacur@redhat.com>
+	 <alpine.LFD.2.00.1004272205380.2951@localhost.localdomain>
+Date: Wed, 28 Apr 2010 21:22:02 +0200
+X-Google-Sender-Auth: 51cbe5430c47dd5a
+Message-ID: <z2o520f0cf11004281222h4c1cecb6mf41ab89d66ddfcbf@mail.gmail.com>
+Subject: Re: [PATCH:resend] rt: Remove CONFIG_STACK_TRACER from DEBUG_COUNT, 
+	and fix reminder block
+From: John Kacur <jkacur@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Clark Williams <williams@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       rt-users <linux-rt-users@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the drivers probe call was changed from .init.text
-to .devinit.text in commit c2e13037e6794bd0d9de3f9ecabf5615f15c160b
-the fb_fix_screeninfo and fb_var_screeninfo structures must be
-changed from .init.data to .devinit.data, too.
+On Tue, Apr 27, 2010 at 10:39 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 27 Apr 2010, John Kacur wrote:
+>
+>> This fix does two things.
+>
+> This changelog does suck in more than two ways.
+>
+>> 1. It reverts commit 3e39399ef4a742d994570488994be93ef17d4ef5.
+>> - The above commit added back a warning about CONFIG_STACK_TRACER
+>> NOT because the warning was necessary but to fix-up a problem where you could
+>> get an empty REMINDER block in the demg.
+>
+> The CONFIG_STACK_TRACER printk has been there before and got dropped
+> for whatever reason, but the DEBUG_COUNT accounting of
+> CONFIG_STACK_TRACER still remained.
+>
+> So the conclusion that the printk needs to be added back is _NOT_
+> completely unreasonable.
+>
+>> However, CONFIG_STACK_TRACER really should not be in the reminder block.
+>> Even when configured-in it is not enabled, and thus has neglible impact.
+>
+> That argument is bogus as it applies to most of the tracing related
+> config options.
 
-Also the drivers remove routine should be moved from
-.exit.text to .devexit.text
+Not quite. Some of the tracing options are believed to have an impact
+even when not enabled.
+In particular irqsoff and preemptoff still call a function. Not sure
+how minimal the impact is, but
+it isn't zero.
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
----
-It would be nice if someone with a SH gcc could test this patch and
-give me some feedback if it works the way it should, since atm I'm lacking
-a crosscompiler setup.
----
- drivers/video/hitfb.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+>
+>> 2. It removes CONFIG_STACK_TRACER from DEBUG_COUNT which is the proper fix
+>> for the empty REMINDER block problem.
+>
+> It's the proper fix if the warning is not justified, which is not
+> clear at all. At least not from your changelog.
+>
+> I do not mind the patch per se, but
+>
+> 1) the changelog should simply say:
+>
+>   rt: Remove CONFIG_STACK_TRACER from REMINDER block
+>
+>   Reason: It does not matter because ....
+>
+> 2) the patch should cover _all_ tracing options which have no
+>   considerable latency impact when just compiled in and not default
+>   enabled.
+>
 
-diff --git a/drivers/video/hitfb.c b/drivers/video/hitfb.c
-index 393f3f3..cfb8d64 100644
---- a/drivers/video/hitfb.c
-+++ b/drivers/video/hitfb.c
-@@ -30,14 +30,14 @@
- 
- #define	WIDTH 640
- 
--static struct fb_var_screeninfo hitfb_var __initdata = {
-+static struct fb_var_screeninfo hitfb_var __devinitdata = {
- 	.activate	= FB_ACTIVATE_NOW,
- 	.height		= -1,
- 	.width		= -1,
- 	.vmode		= FB_VMODE_NONINTERLACED,
- };
- 
--static struct fb_fix_screeninfo hitfb_fix __initdata = {
-+static struct fb_fix_screeninfo hitfb_fix __devinitdata = {
- 	.id		= "Hitachi HD64461",
- 	.type		= FB_TYPE_PACKED_PIXELS,
- 	.accel		= FB_ACCEL_NONE,
-@@ -417,7 +417,7 @@ err_fb:
- 	return ret;
- }
- 
--static int __exit hitfb_remove(struct platform_device *dev)
-+static int __devexit hitfb_remove(struct platform_device *dev)
- {
- 	struct fb_info *info = platform_get_drvdata(dev);
- 
-@@ -462,7 +462,7 @@ static const struct dev_pm_ops hitfb_dev_pm_ops = {
- 
- static struct platform_driver hitfb_driver = {
- 	.probe		= hitfb_probe,
--	.remove		= __exit_p(hitfb_remove),
-+	.remove		= __devexit_p(hitfb_remove),
- 	.driver		= {
- 		.name	= "hitfb",
- 		.owner	= THIS_MODULE,
--- 
-1.7.0
-
+Okay, you make some good points, although I'm having a hard time
+finding other CONFIGS to safely cut.
+Respinning the patch. Thanks for your reply.
