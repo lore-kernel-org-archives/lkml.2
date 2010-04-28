@@ -1,196 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab0D1TGY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 15:06:24 -0400
-Received: from fg-out-1718.google.com ([72.14.220.153]:60231 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756628Ab0D1TGW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 15:06:22 -0400
-From: Manfred Spraul <manfred@colorfullife.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Mason <chris.mason@oracle.com>, Zach Brown <zach.brown@oracle.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH 1/2] ipc/sem.c: Optimize update_queue() for bulk wakeup calls
-Date: Wed, 28 Apr 2010 21:06:26 +0200
-Message-Id: <1272481588-1941-2-git-send-email-manfred@colorfullife.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1272481588-1941-1-git-send-email-manfred@colorfullife.com>
-References: <1272481588-1941-1-git-send-email-manfred@colorfullife.com>
+	id S1756688Ab0D1TPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 15:15:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47183 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752953Ab0D1TPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 15:15:09 -0400
+Date: Wed, 28 Apr 2010 12:11:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: Joe Perches <joe@perches.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+       devel@driverdev.osuosl.org
+Subject: Re: [PATCH 09/13] drivers/staging/rtl8192su: Hoist assign from if
+Message-ID: <20100428191116.GA29828@suse.de>
+References: <cover.1269493047.git.joe@perches.com>
+ <c45ba099fc8f31f166c4067f2eff609c8eaf422f.1269493047.git.joe@perches.com>
+ <20100428182710.GD8509@kroah.com>
+ <1272481489.7831.24.camel@Joe-Laptop.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272481489.7831.24.camel@Joe-Laptop.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SysV semaphore code allows to perform multiple operations on all
-semaphores in the array as atomic operations.
-After a modification, update_queue() checks which of the waiting tasks
-can complete.
-The algorithm that is used to identify the tasks is O(N^2) in the worst case.
-For some cases, it is simple to avoid the O(N^2).
+On Wed, Apr 28, 2010 at 12:04:49PM -0700, Joe Perches wrote:
+> On Wed, 2010-04-28 at 11:27 -0700, Greg KH wrote:
+> > On Wed, Mar 24, 2010 at 10:17:03PM -0700, Joe Perches wrote:
+> > > --- a/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c
+> > > +++ b/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c
+> > > @@ -1690,7 +1690,8 @@ ieee80211_rx_auth_rq(struct ieee80211_device *ieee, struct sk_buff *skb)
+> > >  	//IEEE80211DMESG("Rx probe");
+> > >  	ieee->softmac_stats.rx_auth_rq++;
+> > >  
+> > > -	if ((status = auth_rq_parse(skb, dest))!= -1){
+> > > +	status = auth_rq_parse(skb, dest);
+> > > +	if (status!= -1) {
+> > 
+> > And again.  Did you do this with some tool and not by hand?
+> []
+> > Did you not run your patch through checkpatch after creating it and 
+> > before sending it to me?
+> 
+> >From the original 0/13 introduction:
+> http://lkml.org/lkml/2010/3/25/6
+> 
+>         Used scripts/cvt_kernel.style.pl:
+>         --convert-hoist_assigns_from_if
+>         and verified visually.
+>         
+>         checkpatch errors ignored
+> 
+> The script itself is:
+> http://lkml.org/lkml/2010/3/24/447
 
-The patch adds a detection logic for some cases, especially for the case of
-an array where all sleeping tasks are single sembuf operations and a
-multi-sembuf operation is used to wake up multiple tasks.
+And this points out why I hate scripts.
 
-A big database application uses that approach.
+It is _trivial_ to fix up the obvious formatting problem, on the same
+line that you are modifying, when doing so.
 
-The patch fixes wakeup due to semctl(,,SETALL,) - the initial version of the
-patch breaks that.
+Oh well, I did it by hand for you...
 
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
----
- ipc/sem.c |  110 +++++++++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 97 insertions(+), 13 deletions(-)
+thanks,
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index dbef95b..3f6d781 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -434,6 +434,69 @@ static void unlink_queue(struct sem_array *sma, struct sem_queue *q)
- 		sma->complex_count--;
- }
- 
-+/** check_restart(sma, q)
-+ * @sma: semaphore array
-+ * @q: the operation that just completed
-+ *
-+ * update_queue is O(N^2) when it restarts scanning the whole queue of
-+ * waiting operations. Therefore this function checks if the restart is
-+ * really necessary. It is called after a previously waiting operation
-+ * was completed.
-+ */
-+static int check_restart(struct sem_array *sma, struct sem_queue *q)
-+{
-+	struct sem *curr;
-+	struct sem_queue *h;
-+
-+	/* if the operation didn't modify the array, then no restart */
-+	if (q->alter == 0)
-+		return 0;
-+
-+	/* pending complex operations are too difficult to analyse */
-+	if (sma->complex_count)
-+		return 1;
-+
-+	/* we were a sleeping complex operation. Too difficult */
-+	if (q->nsops > 1)
-+		return 1;
-+
-+	curr = sma->sem_base + q->sops[0].sem_num;
-+
-+	/* No-one waits on this queue */
-+	if (list_empty(&curr->sem_pending))
-+		return 0;
-+
-+	/* the new semaphore value */
-+	if (curr->semval) {
-+		/* It is impossible that someone waits for the new value:
-+		 * - q is a previously sleeping simple operation that
-+		 *   altered the array. It must be a decrement, because
-+		 *   simple increments never sleep.
-+		 * - The value is not 0, thus wait-for-zero won't proceed.
-+		 * - If there are older (higher priority) decrements
-+		 *   in the queue, then they have observed the original
-+		 *   semval value and couldn't proceed. The operation
-+		 *   decremented to value - thus they won't proceed either.
-+		 */
-+		BUG_ON(q->sops[0].sem_op >= 0);
-+		return 0;
-+	}
-+	/*
-+	 * semval is 0. Check if there are wait-for-zero semops.
-+	 * They must be the first entries in the per-semaphore simple queue
-+	 */
-+	h = list_first_entry(&curr->sem_pending, struct sem_queue, simple_list);
-+	BUG_ON(h->nsops != 1);
-+	BUG_ON(h->sops[0].sem_num != q->sops[0].sem_num);
-+
-+	/* Yes, there is a wait-for-zero semop. Restart */
-+	if (h->sops[0].sem_op == 0)
-+		return 1;
-+
-+	/* Again - no-one is waiting for the new value. */
-+	return 0;
-+}
-+
- 
- /**
-  * update_queue(sma, semnum): Look for tasks that can be completed.
-@@ -469,7 +532,7 @@ static void update_queue(struct sem_array *sma, int semnum)
- again:
- 	walk = pending_list->next;
- 	while (walk != pending_list) {
--		int error, alter;
-+		int error, restart;
- 
- 		q = (struct sem_queue *)((char *)walk - offset);
- 		walk = walk->next;
-@@ -494,22 +557,43 @@ again:
- 
- 		unlink_queue(sma, q);
- 
--		/*
--		 * The next operation that must be checked depends on the type
--		 * of the completed operation:
--		 * - if the operation modified the array, then restart from the
--		 *   head of the queue and check for threads that might be
--		 *   waiting for the new semaphore values.
--		 * - if the operation didn't modify the array, then just
--		 *   continue.
--		 */
--		alter = q->alter;
-+		if (error)
-+			restart = 0;
-+		else
-+			restart = check_restart(sma, q);
-+
- 		wake_up_sem_queue(q, error);
--		if (alter && !error)
-+		if (restart)
- 			goto again;
- 	}
- }
- 
-+/** do_smart_update(sma, sops, nsops): Optimized update_queue
-+ * @sma: semaphore array
-+ * @sops: operations that were performed
-+ * @nsops: number of operations
-+ *
-+ * do_smart_update() does the required called to update_queue, based on the
-+ * actual changes that were performed on the semaphore array.
-+ */
-+void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsops)
-+{
-+	int i;
-+
-+	if (sma->complex_count || sops == NULL) {
-+		update_queue(sma, -1);
-+		return;
-+	}
-+
-+	for (i = 0; i < nsops; i++) {
-+		if (sops[i].sem_op > 0 ||
-+			(sops[i].sem_op < 0 &&
-+				sma->sem_base[sops[i].sem_num].semval == 0))
-+			update_queue(sma, sops[i].sem_num);
-+	}
-+}
-+
-+
- /* The following counts are associated to each semaphore:
-  *   semncnt        number of tasks waiting on semval being nonzero
-  *   semzcnt        number of tasks waiting on semval being zero
-@@ -1225,7 +1309,7 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 	error = try_atomic_semop (sma, sops, nsops, un, task_tgid_vnr(current));
- 	if (error <= 0) {
- 		if (alter && error == 0)
--			update_queue(sma, (nsops == 1) ? sops[0].sem_num : -1);
-+			do_smart_update(sma, sops, nsops);
- 
- 		goto out_unlock_free;
- 	}
--- 
-1.6.6.1
-
+greg k-h
