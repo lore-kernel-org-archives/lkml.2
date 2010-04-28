@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab0D1Mo6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 08:44:58 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:44942 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab0D1Mo5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 08:44:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:subject:cc:date:message-id:user-agent:mime-version
-         :content-type;
-        b=POrTUQJl7ipQVbSGUpzx+VPDFXP7mPwMLRqUS/SPp1/jS06FNFcQQHx/Ih0xVbHxak
-         qApKOm9l30bL8CNwfm5+AWyHV+enukaXuRJtCOudPEOAzQ/2D+3InrvjgCNoSKeaEHtL
-         JE8VXhSwRDfGnotf1Jkn9GfXt5AaHDkjvSvW8=
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Subject: CFQ is broken for CONFIG_BLK_CGROUP=y, CFQ_GROUP_IOSCHED=n
-CC: jens.axboe@oracle.com, Vivek Goyal <vgoyal@redhat.com>
-Date: Wed, 28 Apr 2010 16:44:51 +0400
-Message-ID: <877hnrg30c.fsf@openvz.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1755303Ab0D1PgI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 11:36:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005Ab0D1PgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 11:36:04 -0400
+Date: Wed, 28 Apr 2010 17:35:25 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/3] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+ the wrong VMA information
+Message-ID: <20100428153525.GR510@random.random>
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
+ <1272403852-10479-3-git-send-email-mel@csn.ul.ie>
+ <20100427231007.GA510@random.random>
+ <20100428091555.GB15815@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100428091555.GB15815@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 28, 2010 at 10:15:55AM +0100, Mel Gorman wrote:
+> It became unconditional because I wasn't sure of the optimisation versus the
+> new anon_vma changes (doesn't matter, should have been safe). At the time
 
-I've had an  oops on kernel boot due to NULL pointer deference
-linux-2.6-block/for-next HEAD:7eaed1226ab411ee5dc8c34fc0d8034e4c98e3c6
-I've enabled CONFIG_BLK_CGROUP, but not CFQ_GROUP_IOSCHED
-In this case cfq_ref_get_cfqg() defined as 
-static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
-{
-        return NULL;
-}
-So following call trace is simply NOOP
-cfq_set_request()
- rq->elevator_private3 = cfq_ref_get_cfqg(cfqq->cfqg);
+Changeset 287d97ac032136724143cde8d5964b414d562ee3 is meant to explain
+the removal of the lock but I don't get it from the comments. Or at
+least I don't get from that comment why we can't resurrect the plain
+old deleted code that looked fine to me. Like there is no reason to
+take the lock if start == vma->vm_start.
 
-Which later result in OOPS on bio insertion
-cfq_insert_request
- -> blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,...)
-    -> spin_lock_irqsave(&blkg->stats_lock, flags);
+> So, the VMA list does not appear to be messed up but there still needs
+> to be protection against modification of VMA details that are already on
+> the list. For that, the seq counter would have been enough and
+> lighter-weight than acquiring the anon_vma->lock every time in
+> vma_adjust().
+> 
+> I'll drop this patch again as the execve race looks the most important.
 
-Bad commit.
->From 7f1dc8a2d2f45fc557b27fd56115338b1d34fc24 Mon Sep 17 00:00:00 2001
-From: Vivek Goyal <vgoyal@redhat.com>
-Date: Wed, 21 Apr 2010 17:44:16 +0200
-Subject: [PATCH] blkio: Fix blkio crash during rq stat update
+You mean you're dropping patch 2 too? I agree dropping patch 1 but
+to me the having to take all the anon_vma locks for every
+vma->anon_vma->lock that we walk seems a must, otherwise
+expand_downwards and vma_adjust won't be ok, plus we need to re-add
+the anon_vma lock to vma_adjust, it can't be safe to alter vm_pgoff
+and vm_start outside of the anon_vma->lock. Or I am mistaken?
+
+Patch 2 wouldn't help the swapops crash we reproduced because at that
+point the anon_vma of the stack is the local one, it's just after
+execve.
+
+vma_adjust and expand_downards would alter vm_pgoff and vm_start while
+taking only the vma->anon_vma->lock where the vma->anon_vma is the
+_local_ one of the vma.  But a vma in mainline can be indexed in
+infinite anon_vmas, so to prevent breaking migration
+vma_adjust/expand_downards the rmap_walk would need to take _all_
+anon_vma->locks for every anon_vma that the vma is indexed into. Or
+alternatively like you implemented rmap_walk would need to check if
+the vma we found in the rmap_walk is different from the original
+anon_vma and to take the vma->anon_vma->lock (so taking the
+anon_vma->lock of the local anon_vma of every vma) before it can
+actually read the vma->vm_pgoff/vm_start inside vma_address.
+
+If the above is right it also means the new anon-vma changes also break
+the whole locking of transparent hugepage, see wait_split_huge_page,
+it does a spin_unlock_wait(&anon_vma->lock) thinking that waiting the
+"local" anon-vma is enough, when in fact the hugepage may be shared
+and belonging to the parent parent_vma->anon_vma and not to the local
+one of the last child that is waiting on the wrong lock. So I may have
+to rewrite this part of the thp locking to solve this. And for me it's
+not enough to just taking more locks inside the rmap walks inside
+split_huge_page as I used the anon_vma lock outside too.
