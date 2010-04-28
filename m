@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279Ab0D1WSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 18:18:25 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53672 "EHLO ogre.sisk.pl"
+	id S932300Ab0D1WSc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 18:18:32 -0400
+Received: from tex.lwn.net ([70.33.254.29]:48903 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756608Ab0D1WSV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 18:18:21 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [PATCH 6/8] PM: Add suspend blocking work.
-Date: Thu, 29 Apr 2010 00:19:26 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-       Tejun Heo <tj@kernel.org>, Pavel Machek <pavel@ucw.cz>,
-       Len Brown <len.brown@intel.com>
-References: <1272429119-12103-1-git-send-email-arve@android.com> <201004282309.42188.rjw@sisk.pl> <x2id6200be21004281509j84c29664m60068e7bfc86f64f@mail.gmail.com>
-In-Reply-To: <x2id6200be21004281509j84c29664m60068e7bfc86f64f@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201004290019.26381.rjw@sisk.pl>
+	id S932271Ab0D1WSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 18:18:25 -0400
+From: Jonathan Corbet <corbet@lwn.net>
+To: linux-kernel@vger.kernel.org
+Cc: Harald Welte <laforge@gnumonks.org>, linux-fbdev@vger.kernel.org,
+       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
+       Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH 23/30] viafb: Reserve framebuffer memory for the upcoming camera driver
+Date: Wed, 28 Apr 2010 16:17:24 -0600
+Message-Id: <1272493051-25380-24-git-send-email-corbet@lwn.net>
+X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <1272493051-25380-1-git-send-email-corbet@lwn.net>
+References: <1272493051-25380-1-git-send-email-corbet@lwn.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 April 2010, Arve Hjønnevåg wrote:
-> 2010/4/28 Rafael J. Wysocki <rjw@sisk.pl>:
-> > On Wednesday 28 April 2010, Oleg Nesterov wrote:
-> >> On 04/27, Arve Hjønnevåg wrote:
-> >> >
-> >> > Allow work to be queued that will block suspend while it is pending
-> >> > or executing. To get the same functionality in the calling code often
-> >> > requires a separate suspend_blocker for pending and executing work, or
-> >> > additional state and locking. This implementation does add additional
-> >> > state and locking, but this can be removed later if we add support for
-> >> > suspend blocking work to the core workqueue code.
-> >>
-> >> I think this patch is fine.
-> >>
-> >> Just one silly question,
-> >>
-> >> > +int queue_suspend_blocking_work(struct workqueue_struct *wq,
-> >> > +                           struct suspend_blocking_work *work)
-> >> > +{
-> >> > +   int ret;
-> >> > +   unsigned long flags;
-> >> > +
-> >> > +   spin_lock_irqsave(&work->lock, flags);
-> >> > +   suspend_block(&work->suspend_blocker);
-> >> > +   ret = queue_work(wq, &work->work);
-> >> > +   if (ret)
-> >> > +           work->active++;
-> >>
-> >> why not
-> >>
-> >>       ret = queue_work(wq, &work->work);
-> >>       if (ret) {
-> >>               suspend_block(&work->suspend_blocker);
-> >>               work->active++;
-> >>       }
-> >>
-> >> ?
-> >>
-> >> Afaics, we can't race with work->func() doing unblock, we hold work-lock.
-> >> And this way the code looks more clear.
-> >
-> > Agreed.  Arve, any objections to doing that?
-> >
-> 
-> I need to fix the race, but I can easily fix it in
-> cancel_suspend_blocking_work_sync instead. If the suspend blocker is
-> active for a long time, and DEBUG_SUSPEND_BLOCKER is enabled, we can
-> tell if the work is constantly re-queued or if the workqueue is stuck.
+The camera engine captures to framebuffer memory, so we need to set some
+aside for that purpose.  There is no proper memory allocator for fbmem;
+instead, accel.c just trims some space off the top.  Alas, without creating
+that proper memory allocator, the only way to make this work is to hack it
+into the same bit of code in accel.c.  The allocation must happen *after*
+the others (some code, including user-space XV stuff, makes assumptions on
+where the cursor space is), and before the rest of the framebuffer is set
+up.
 
-Well, perhaps that's worth adding a comment to the code.  The debug part is not
-immediately visible from the code itself.
+Signed-off-by: Jonathan Corbet <corbet@lwn.net>
+---
+ drivers/video/via/accel.c    |   16 ++++++++++++++++
+ drivers/video/via/via-core.h |   10 ++++++++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
 
-Rafael
+diff --git a/drivers/video/via/accel.c b/drivers/video/via/accel.c
+index e777468..189aba4 100644
+--- a/drivers/video/via/accel.c
++++ b/drivers/video/via/accel.c
+@@ -370,6 +370,22 @@ int viafb_init_engine(struct fb_info *info)
+ 	viapar->shared->vq_vram_addr = viapar->fbmem_free;
+ 	viapar->fbmem_used += VQ_SIZE;
+ 
++#if defined(CONFIG_FB_VIA_CAMERA) || defined(CONFIG_FB_VIA_CAMERA_MODULE)
++	/*
++	 * Set aside a chunk of framebuffer memory for the camera
++	 * driver.  Someday this driver probably needs a proper allocator
++	 * for fbmem; for now, we just have to do this before the
++	 * framebuffer initializes itself.
++	 *
++	 * As for the size: the engine can handle three frames,
++	 * 16 bits deep, up to VGA resolution.
++	 */
++	viapar->shared->vdev->camera_fbmem_size = 3*VGA_HEIGHT*VGA_WIDTH*2;
++	viapar->fbmem_free -= viapar->shared->vdev->camera_fbmem_size;
++	viapar->fbmem_used += viapar->shared->vdev->camera_fbmem_size;
++	viapar->shared->vdev->camera_fbmem_offset = viapar->fbmem_free;
++#endif
++
+ 	/* Init AGP and VQ regs */
+ 	switch (chip_name) {
+ 	case UNICHROME_K8M890:
+diff --git a/drivers/video/via/via-core.h b/drivers/video/via/via-core.h
+index 3d03141..087c562 100644
+--- a/drivers/video/via/via-core.h
++++ b/drivers/video/via/via-core.h
+@@ -78,6 +78,10 @@ struct viafb_dev {
+ 	unsigned long fbmem_start;
+ 	long fbmem_len;
+ 	void __iomem *fbmem;
++#if defined(CONFIG_FB_VIA_CAMERA) || defined(CONFIG_FB_VIA_CAMERA_MODULE)
++	long camera_fbmem_offset;
++	long camera_fbmem_size;
++#endif
+ 	/*
+ 	 * The MMIO region for device registers.
+ 	 */
+@@ -160,4 +164,10 @@ int viafb_dma_copy_out_sg(unsigned int offset, struct scatterlist *sg, int nsg);
+ #define VDMA_DPRH0	0xe38
+ #define VDMA_PMR0	(0xe00 + 0x134) /* Pitch mode */
+ 
++/*
++ * Useful stuff that probably belongs somewhere global.
++ */
++#define VGA_WIDTH	640
++#define VGA_HEIGHT	480
++
+ #endif /* __VIA_CORE_H__ */
+-- 
+1.7.0.1
+
