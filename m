@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab0D1Tnn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 15:43:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54661 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177Ab0D1Tnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 15:43:42 -0400
-Date: Wed, 28 Apr 2010 21:40:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 6/8] PM: Add suspend blocking work.
-Message-ID: <20100428194028.GA16389@redhat.com>
-References: <1272429119-12103-1-git-send-email-arve@android.com> <1272429119-12103-2-git-send-email-arve@android.com> <1272429119-12103-3-git-send-email-arve@android.com> <1272429119-12103-4-git-send-email-arve@android.com> <1272429119-12103-5-git-send-email-arve@android.com> <1272429119-12103-6-git-send-email-arve@android.com> <1272429119-12103-7-git-send-email-arve@android.com>
+	id S1754374Ab0D1Ndr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 09:33:47 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:54195 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab0D1Ndo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 09:33:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=DSwdpeZIld1RyJ4bpUWg+aMJtO+Dq2RKFXB9nVUwq1FXBNt3dSh5/Z8CcNEuCgY2XF
+         k+jWnX4cnpY9jbewv6QmOgcDPU3tqFHOmWDqAzXXvQlvq+WrW6Z2hSUMXWKtaB5XUgus
+         ul7MI+QTq1H0HjEI91DQZ8FoE7/ZPnzcbZLyk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1272429119-12103-7-git-send-email-arve@android.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201004271153.34972.sven.eckelmann@gmx.de>
+References: <1272361449-15416-1-git-send-email-reodge@gmail.com>
+	 <201004271153.34972.sven.eckelmann@gmx.de>
+Date: Wed, 28 Apr 2010 21:33:40 +0800
+Message-ID: <p2p90c96c971004280633t1188db65pd1bbe3679adf4d53@mail.gmail.com>
+Subject: Re: [PATCH] Staging: batman-adv: fixed comments to maintain 80 char 
+	limit
+From: Mark Rankilor <reodge@gmail.com>
+To: Sven Eckelmann <sven.eckelmann@gmx.de>
+Cc: gregkh@suse.de, andrew@lunn.ch, lindner_marek@yahoo.de,
+       siwu@hrz.tu-chemnitz.de, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27, Arve Hjønnevåg wrote:
->
-> Allow work to be queued that will block suspend while it is pending
-> or executing. To get the same functionality in the calling code often
-> requires a separate suspend_blocker for pending and executing work, or
-> additional state and locking. This implementation does add additional
-> state and locking, but this can be removed later if we add support for
-> suspend blocking work to the core workqueue code.
+On 27 April 2010 17:53, Sven Eckelmann <sven.eckelmann@gmx.de> wrote:
+> Your patch doesn't apply anymore. See
+> 1270341625-28764-1-git-send-email-luisbg@ubuntu.com and follow ups [1].
 
-I think this patch is fine.
+I had a look at the follow ups and saw this one:
 
-Just one silly question,
+https://lists.open-mesh.org/pipermail/b.a.t.m.a.n/2010-April/002483.html
 
-> +int queue_suspend_blocking_work(struct workqueue_struct *wq,
-> +				struct suspend_blocking_work *work)
-> +{
-> +	int ret;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&work->lock, flags);
-> +	suspend_block(&work->suspend_blocker);
-> +	ret = queue_work(wq, &work->work);
-> +	if (ret)
-> +		work->active++;
+So would it be best if I were to submit patches against the linux-next
+tree? Or is it necessary to work against the batman maint or master
+trees?
 
-why not
+I'd much prefer if I could work against linux-next since if I wanted
+to do some work on another staging driver, then I wouldn't have to go
+and check out their repository.
 
-	ret = queue_work(wq, &work->work);
-	if (ret) {
-		suspend_block(&work->suspend_blocker);
-		work->active++;
-	}
-
-?
-
-Afaics, we can't race with work->func() doing unblock, we hold work-lock.
-And this way the code looks more clear.
-
-Sorry, I had no chance to read the previous patches. After the quick look
-at 1/8 I think it is OK to call suspend_block() twice, but still...
-
-Or I missed something? Just curious.
-
-
-Hmm... actually, queue_work() can also fail if we race with cancel_ which
-temporary sets WORK_STRUCT_PENDING. In that case suspend_block() won't
-be paired by unblock ?
-
-
-> +int schedule_suspend_blocking_work(struct suspend_blocking_work *work)
-> +{
-> ...
-> +	ret = schedule_work(&work->work);
-
-Off-topic. We should probably export keventd_wq to avoid the duplications
-like this.
-
-Oleg.
-
+Regards,
+Mark
