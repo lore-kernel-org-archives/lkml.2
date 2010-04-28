@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab0D1KZy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 06:25:54 -0400
-Received: from server78.greatnet.de ([83.133.96.102]:35047 "EHLO
-	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab0D1KZb (ORCPT
+	id S1756391Ab0D1SqO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 14:46:14 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:34486 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755215Ab0D1SqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 06:25:31 -0400
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: linux-fbdev@vger.kernel.org
-Cc: ralf@linux-mips.org, arnaud.patard@rtp-net.org, jayakumar.lkml@gmail.com,
-       gregkh@suse.de, yuasa@linux-mips.org, lethal@linux-sh.org,
-       akpm@linux-foundation.org, adobriyan@gmail.com, support@simtec.co.uk,
-       ben@simtec.co.uk, linux@simtec.co.uk, jkosina@suse.cz,
-       pjones@redhat.com, linux-kernel@vger.kernel.org,
-       Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [PATCH 3/4] s3c2410fb: correct sections
-Date: Wed, 28 Apr 2010 12:25:04 +0200
-Message-Id: <1272450305-7284-3-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1272450305-7284-1-git-send-email-henne@nachtwindheim.de>
-References: <1272450305-7284-1-git-send-email-henne@nachtwindheim.de>
+	Wed, 28 Apr 2010 14:46:13 -0400
+X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Apr 2010 14:46:12 EDT
+Date: Wed, 28 Apr 2010 18:09:36 +0200
+From: Nico Schottelius <nico-linux-20100427@schottelius.org>
+To: Nico Schottelius <nico-linux-20100427@schottelius.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.33-2.6.34-rc5 suspend issues
+Message-ID: <20100428160935.GA4010@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20100427@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20100427074609.GA3261@ikn.schottelius.org>
+ <20100427083202.GA3143@ikn.schottelius.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
+Content-Disposition: inline
+In-Reply-To: <20100427083202.GA3143@ikn.schottelius.org>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.34-rc5-NS-00279-g1600f9d x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the drivers probe calls were changed from .init.text
-to .devinit.text in commit c2e13037e6794bd0d9de3f9ecabf5615f15c160b
-all the function from .init.text should be moved to .devinit.text, too.
 
-The drivers remove calls can also be move from .text to .devexit.text.
+--azLHFNyN32YCQGCU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
----
-It would be nice if someone with an ARM gcc could test this patch and give
-me some feedback if it works the way it should, since atm I'm lacking
-a crosscompiler setup.
----
- drivers/video/s3c2410fb.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+Nico Schottelius [Tue, Apr 27, 2010 at 10:32:02AM +0200]:
+>=20
+> Nico Schottelius [Tue, Apr 27, 2010 at 09:46:09AM +0200]:
+> > [..]=20
+> > - suspend & resume works once
+> > - second time system
+> >   b) suspends, but comes up with the bios screen after resume
+> >      and hangs there forever (2.6.34-*)
+>=20
+> Just tested on latest linux-2.6, the
+> same happens on 2.6.34-rc5-00211-gb91ce4d.
 
-diff --git a/drivers/video/s3c2410fb.c b/drivers/video/s3c2410fb.c
-index 2b094de..46b4309 100644
---- a/drivers/video/s3c2410fb.c
-+++ b/drivers/video/s3c2410fb.c
-@@ -631,7 +631,7 @@ static struct fb_ops s3c2410fb_ops = {
-  *	cache.  Once this area is remapped, all virtual memory
-  *	access to the video memory should occur at the new region.
-  */
--static int __init s3c2410fb_map_video_memory(struct fb_info *info)
-+static int __devinit s3c2410fb_map_video_memory(struct fb_info *info)
- {
- 	struct s3c2410fb_info *fbi = info->par;
- 	dma_addr_t map_dma;
-@@ -814,7 +814,7 @@ static inline void s3c2410fb_cpufreq_deregister(struct s3c2410fb_info *info)
- 
- static char driver_name[] = "s3c2410fb";
- 
--static int __init s3c24xxfb_probe(struct platform_device *pdev,
-+static int __devinit s3c24xxfb_probe(struct platform_device *pdev,
- 				  enum s3c_drv_type drv_type)
- {
- 	struct s3c2410fb_info *info;
-@@ -1018,7 +1018,7 @@ static int __devinit s3c2412fb_probe(struct platform_device *pdev)
- /*
-  *  Cleanup
-  */
--static int s3c2410fb_remove(struct platform_device *pdev)
-+static int __devexit s3c2410fb_remove(struct platform_device *pdev)
- {
- 	struct fb_info *fbinfo = platform_get_drvdata(pdev);
- 	struct s3c2410fb_info *info = fbinfo->par;
-@@ -1096,7 +1096,7 @@ static int s3c2410fb_resume(struct platform_device *dev)
- 
- static struct platform_driver s3c2410fb_driver = {
- 	.probe		= s3c2410fb_probe,
--	.remove		= s3c2410fb_remove,
-+	.remove		= __devexit_p(s3c2410fb_remove),
- 	.suspend	= s3c2410fb_suspend,
- 	.resume		= s3c2410fb_resume,
- 	.driver		= {
-@@ -1107,7 +1107,7 @@ static struct platform_driver s3c2410fb_driver = {
- 
- static struct platform_driver s3c2412fb_driver = {
- 	.probe		= s3c2412fb_probe,
--	.remove		= s3c2410fb_remove,
-+	.remove		= __devexit_p(s3c2410fb_remove),
- 	.suspend	= s3c2410fb_suspend,
- 	.resume		= s3c2410fb_resume,
- 	.driver		= {
--- 
-1.7.0
+Same happens on 2.6.34-rc5-00279-g1600f9d.
 
+Nico
+
+--=20
+New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+Please resign, if you signed 9885188C or 8D0E27A4.
+
+Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
+
+--azLHFNyN32YCQGCU
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvYXb8ACgkQ19zI5DGHffDIaQCg3zE/dxsRQZ/zr8iQhl2Ajr+L
+V0UAnRMJyxQ4OQ6CQTcgQ1zMWBr6bbHV
+=Vx7M
+-----END PGP SIGNATURE-----
+
+--azLHFNyN32YCQGCU--
