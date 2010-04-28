@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab0D1Sc0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 14:32:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51293 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755041Ab0D1ScZ (ORCPT
+	id S1756082Ab0D1Rq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 13:46:56 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:53505 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754850Ab0D1Rqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 14:32:25 -0400
-Date: Wed, 28 Apr 2010 11:31:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sergey Temerkhanov <temerkhanov@yandex.ru>
-Cc: "linux-aio" <linux-aio@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RFC] AIO: always reinitialize iocb->ki_run_list at the
- end of aio_run_iocb()
-Message-Id: <20100428113149.b912a3e8.akpm@linux-foundation.org>
-In-Reply-To: <201004280251.43430.temerkhanov@yandex.ru>
-References: <201004280251.43430.temerkhanov@yandex.ru>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Apr 2010 13:46:55 -0400
+Date: Wed, 28 Apr 2010 13:46:54 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Greg KH <gregkh@suse.de>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>,
+       stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [170/197] lockdep: fix incorrect percpu usage
+Message-ID: <20100428174653.GB4205@Krystal>
+References: <20100422191857.GA13268@kroah.com> <20100422190922.618832798@kvm.kroah.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100422190922.618832798@kvm.kroah.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:46:05 up 95 days, 20:23,  7 users,  load average: 0.02, 0.02,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Apr 2010 02:51:43 +0400
-Sergey Temerkhanov <temerkhanov@yandex.ru> wrote:
+* Greg KH (gregkh@suse.de) wrote:
+> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+> 
+> ------------------
+> 
+> From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> 
+> The mainline kernel as of 2.6.34-rc5 is not affected by this problem because
+> commit 10fad5e46f6c7bdfb01b1a012380a38e3c6ab346 fixed it by refactoring.
+> 
+> lockdep fix incorrect percpu usage
+> 
+> Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
+> for per cpu pointers).
+> 
+> git blame points to commit:
+> 
+> lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
+> 
+> But it's really just moving the code around. But it's enough to say that the
+> problems appeared before Jul 19 01:48:54 2007, which brings us back to 2.6.23.
+> 
+> It should be applied to stable 2.6.23.x to 2.6.33.x (or whichever of these
+> stable branches are still maintained).
 
-> This patch makes aio_run_iocb() to always reinitialize iocb->ki_run_list (not 
-> only when iocb->ki_retry() function returns -EIOCBRETRY) so that subsequent 
-> call of kick_iocb() will succeed.
+Tejun, (same as module.c patch) should this patch be applied to 2.6.32.x, or
+will it cause problems on ia64 ?
+
+Thanks,
+
+Mathieu
+
 > 
-> Regards, Sergey Temerkhanov,
-> Cifronic ZAO.
+> (tested on 2.6.33.1 x86_64)
 > 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> CC: Randy Dunlap <randy.dunlap@oracle.com>
+> CC: Eric Dumazet <dada1@cosmosbay.com>
+> CC: Rusty Russell <rusty@rustcorp.com.au>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Greg Kroah-Hartman <gregkh@suse.de>
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> [reinit-ki_run_list.patch  text/x-patch (657B)]
-> diff -r 97344a0f62c9 fs/aio.c
-> --- a/fs/aio.c	Tue Apr 27 21:18:14 2010 +0400
-> +++ b/fs/aio.c	Tue Apr 27 21:30:23 2010 +0400
-> @@ -748,6 +748,9 @@
->  out:
->  	spin_lock_irq(&ctx->ctx_lock);
+> ---
+>  kernel/lockdep.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -591,9 +591,9 @@ static int static_obj(void *obj)
+>  	 * percpu var?
+>  	 */
+>  	for_each_possible_cpu(i) {
+> -		start = (unsigned long) &__per_cpu_start + per_cpu_offset(i);
+> -		end   = (unsigned long) &__per_cpu_start + PERCPU_ENOUGH_ROOM
+> -					+ per_cpu_offset(i);
+> +		start = (unsigned long) per_cpu_ptr(&__per_cpu_start, i);
+> +		end   = (unsigned long) per_cpu_ptr(&__per_cpu_start
+> +						    + PERCPU_ENOUGH_ROOM, i);
 >  
-> +	/* will make __queue_kicked_iocb succeed from here on */
-> +	INIT_LIST_HEAD(&iocb->ki_run_list);
-> +
->  	if (-EIOCBRETRY == ret) {
->  		/*
->  		 * OK, now that we are done with this iteration
-> @@ -756,8 +759,6 @@
->  		 * "kick" can start the next iteration
->  		 */
->  
-> -		/* will make __queue_kicked_iocb succeed from here on */
-> -		INIT_LIST_HEAD(&iocb->ki_run_list);
->  		/* we must queue the next iteration ourselves, if it
->  		 * has already been kicked */
->  		if (kiocbIsKicked(iocb)) {
+>  		if ((addr >= start) && (addr < end))
+>  			return 1;
+> 
+> 
 
-I assume that this fixes some runtime problem which you observed?
-
-Can you please describe that problem?  This code is pretty old - what
-was your application doing that nobody else's application has thus far
-done?
-
-Also, please send your Signed-off-by: for this patch, as per
-Documentation/Submittingpatches, thanks.
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
