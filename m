@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab0D1BHU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 21:07:20 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53587 "EHLO smtps.tip.net.au"
+	id S1755140Ab0D1BHS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 21:07:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26863 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754277Ab0D1BHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 21:07:16 -0400
-Date: Wed, 28 Apr 2010 11:07:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-Message-Id: <20100428110710.cec8acdb.sfr@canb.auug.org.au>
-In-Reply-To: <20100412124041.4876c3f9.sfr@canb.auug.org.au>
-References: <20100412124041.4876c3f9.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__28_Apr_2010_11_07_10_+1000_lWsK8B=J/FImEYD8"
+	id S1751396Ab0D1BHO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 21:07:14 -0400
+Date: Wed, 28 Apr 2010 03:05:43 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/3] mm,migration: Remove straggling migration PTEs
+ when page tables are being moved after the VMA has already moved
+Message-ID: <20100428010543.GJ510@random.random>
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
+ <1272403852-10479-4-git-send-email-mel@csn.ul.ie>
+ <20100427223004.GF8860@random.random>
+ <20100427225852.GH8860@random.random>
+ <20100428093948.c4e6faa1.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100428093948.c4e6faa1.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Apr_2010_11_07_10_+1000_lWsK8B=J/FImEYD8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 28, 2010 at 09:39:48AM +0900, KAMEZAWA Hiroyuki wrote:
+> Seems nice.
 
-Hi Mauro,
+What did you mean with objrmap inconsistency? I think this is single
+threaded there, userland didn't run yet and I don't think page faults
+could run. Maybe it's safer to add a VM_BUG_ON(vma->anon_vma) just
+before vma->anon_vma = anon_vma to be sure nothing run in between.
 
-On Mon, 12 Apr 2010 12:40:41 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the v4l-dvb tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->=20
-> drivers/input/input.c: In function 'input_default_setkeycode':
-> drivers/input/input.c:691: error: 'keycode' undeclared (first use in this=
- function)
->=20
-> Caused by commit df7ad46fc171965103f02649f6c2f02c6ca8b331 ("Merge branch
-> 'master' of /home/v4l/bare_trees/v4l-dvb").  The merge resolution is not
-> quite right.
->=20
-> I have used the v4l-dvb tree from next-20100409 for today.
+> I'll test this but I think we need to take care of do_mremap(), too.
+> And it's more complicated....
 
-I am still getting this build failure ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+do_mremap has to be safe by:
 
---Signature=_Wed__28_Apr_2010_11_07_10_+1000_lWsK8B=J/FImEYD8
-Content-Type: application/pgp-signature
+1) adjusting page->index atomically with the pte updates inside pt
+   lock (while it moves from one pte to another)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+2) having both vmas src and dst (not overlapping) indexed in the
+   proper anon_vmas before move_page_table runs
 
-iEYEARECAAYFAkvXij4ACgkQjjKRsyhoI8xVSwCaAsOXXQciqAJ0/GFDUj0XZAQu
-jW8AoLNATvR+a+5ZFFa1uBgL+NsWFAN8
-=Hf7O
------END PGP SIGNATURE-----
+As long as it's not overlapping it shouldn't be difficult to enforce
+the above two invariants, exec.c is magic as it works on overlapping
+areas and src and dst are the same vma and it's indexed into just one
+anon-vma. So we've to stop the rmap_walks before we mangle over the
+vma with vma_adjust and move_page_tables and truncate the end of the
+vma with vma_adjust again, and finally we resume the rmap_walks.
 
---Signature=_Wed__28_Apr_2010_11_07_10_+1000_lWsK8B=J/FImEYD8--
+I'm not entirely sure of the above so review greatly appreciated ;)
