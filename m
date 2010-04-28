@@ -1,100 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab0D1TiX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 15:38:23 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:42631 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab0D1TiS (ORCPT
+	id S1752497Ab0D1Ie7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 04:34:59 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:41889 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab0D1Ie4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 15:38:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=qmf94yQdthLahARN7AlMnQr7TXggJSg+eMb1jjE3F1yn5+kFO51z+FMIMiceoF6dZ8
-         tacDIOoJ/b2gOBbQFvwWkclVBn5AuxCqdqpJYZwcD7LTeItB8BoZklkMxTbhalz7xt4A
-         dycH45rsP5Ai680HNifU2uGZgbf6lwEu7pGko=
-Subject: Re: 2.6.34-rc5-git7 (plus all patches) -- another suspicious
- rcu_dereference_check() usage.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Miles Lane <miles.lane@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       netdev@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>, shemminger@vyatta.com
-In-Reply-To: <20100428175426.GK2540@linux.vnet.ibm.com>
-References: <h2ya44ae5cd1004261751waa5cb65ei3d139cbcfa2cc5cf@mail.gmail.com>
-	 <20100428175426.GK2540@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Apr 2010 21:38:11 +0200
-Message-ID: <1272483491.2201.9.camel@edumazet-laptop>
+	Wed, 28 Apr 2010 04:34:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 28 Apr 2010 17:30:54 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/3] mm,migration: Remove straggling migration PTEs when
+ page tables are being moved after the VMA has already moved
+Message-Id: <20100428173054.7b6716cf.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1272403852-10479-4-git-send-email-mel@csn.ul.ie>
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
+	<1272403852-10479-4-git-send-email-mel@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 28 avril 2010 à 10:54 -0700, Paul E. McKenney a écrit :
-> On Mon, Apr 26, 2010 at 08:51:06PM -0400, Miles Lane wrote:
-> > This one occurred during the wakeup from suspend to RAM.
-> > 
-> > [  984.724697] [ INFO: suspicious rcu_dereference_check() usage. ]
-> > [  984.724700] ---------------------------------------------------
-> > [  984.724703] include/linux/fdtable.h:88 invoked
-> > rcu_dereference_check() without protection!
-> > [  984.724706]
-> > [  984.724707] other info that might help us debug this:
-> > [  984.724708]
-> > [  984.724711]
-> > [  984.724711] rcu_scheduler_active = 1, debug_locks = 1
-> > [  984.724714] no locks held by dbus-daemon/4680.
-> > [  984.724717]
-> > [  984.724717] stack backtrace:
-> > [  984.724721] Pid: 4680, comm: dbus-daemon Not tainted 2.6.34-rc5-git7 #33
-> > [  984.724724] Call Trace:
-> > [  984.724734]  [<ffffffff81074556>] lockdep_rcu_dereference+0x9d/0xa6
-> > [  984.724740]  [<ffffffff810fc785>] fcheck_files+0xb1/0xc9
-> > [  984.724745]  [<ffffffff810fc7f5>] fget_light+0x35/0xab
-> > [  984.724751]  [<ffffffff81433e1b>] ? sock_poll_wait+0x13/0x18
-> > [  984.724755]  [<ffffffff81433e39>] ? unix_poll+0x19/0x95
-> > [  984.724762]  [<ffffffff8110aa95>] do_sys_poll+0x1ff/0x3e5
-> > [  984.724766]  [<ffffffff8110a19e>] ? __pollwait+0x0/0xc7
-> > [  984.724771]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > [  984.724776]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > [  984.724780]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > [  984.724784]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > [  984.724788]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > [  984.724793]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > [  984.724797]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > [  984.724802]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > [  984.724806]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
-> > [  984.724812]  [<ffffffff8110ae0f>] sys_poll+0x50/0xbb
-> > [  984.724818]  [<ffffffff81009d82>] system_call_fastpath+0x16/0x1b
-> 
-> Hmmm...  I am not convinced that this is a false positive.  Couldn't
-> there be a multi-threaded process where one thread is invoking poll()
-> on a UNIX socket just as another thread is calling close() on it?
-> 
-> The current fcheck_files() logic requires that the caller either (1) be in
-> an RCU read-side critical section, (2) hold ->files_lock, or (3) passing
-> in a files_struct with ->count equal to 1 (initialization or cleanup).
-> 
-> So I don't feel comfortable just slapping an RCU read-side critical
-> section around this one, at least not unless someone who understands
-> the locking says that doing so is OK.
-> 
-> 		
+On Tue, 27 Apr 2010 22:30:52 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-Its a single threaded program.
+> During exec(), a temporary stack is setup and moved later to its final
+> location. There is a race between migration and exec whereby a migration
+> PTE can be placed in the temporary stack. When this VMA is moved under the
+> lock, migration no longer knows where the PTE is, fails to remove the PTE
+> and the migration PTE gets copied to the new location.  This later causes
+> a bug when the migration PTE is discovered but the page is not locked.
+> 
+> This patch handles the situation by removing the migration PTE when page
+> tables are being moved in case migration fails to find them. The alternative
+> would require significant modification to vma_adjust() and the locks taken
+> to ensure a VMA move and page table copy is atomic with respect to migration.
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 
-So fget_light() calls fcheck_files(files, fd); without rcu lock,
-but some /proc/pid/fd/... user temporarly raised files->count just
-before we perform the condition check.
+Here is my final proposal (before going vacation.)
 
+I think this is very simple. The biggest problem is when move_page_range
+fails, setup_arg_pages pass it all to exit() ;)
 
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+This is an band-aid patch for avoiding unmap->remap of stack pages
+while it's udner exec(). At exec, pages for stack is moved by
+setup_arg_pages(). Under this, (vma,page)<->address relationship
+can be in broken state.
+Moreover, if moving ptes fails, pages with not-valid-rmap remains
+in the page table and objrmap for the page is completely broken
+until exit() frees all up.
+
+This patch adds vma->broken_rmap. If broken_rmap != 0, vma_address()
+returns -EFAULT always and try_to_unmap() fails.
+(IOW, the pages for stack are pinned until setup_arg_pages() ends.)
+
+And this prevents page migration because the page's mapcount never
+goes to 0 until exec() fixes it up.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ fs/exec.c                |    4 +++-
+ include/linux/mm_types.h |    5 +++++
+ mm/rmap.c                |    5 +++++
+ 3 files changed, 13 insertions(+), 1 deletion(-)
+
+Index: mel-test/fs/exec.c
+===================================================================
+--- mel-test.orig/fs/exec.c
++++ mel-test/fs/exec.c
+@@ -250,7 +250,8 @@ static int __bprm_mm_init(struct linux_b
+ 	err = insert_vm_struct(mm, vma);
+ 	if (err)
+ 		goto err;
+-
++	/* prevent rmap_walk, try_to_unmap() etc..until we get fixed rmap */
++	vma->unstable_rmap = 1;
+ 	mm->stack_vm = mm->total_vm = 1;
+ 	up_write(&mm->mmap_sem);
+ 	bprm->p = vma->vm_end - sizeof(void *);
+@@ -653,6 +654,7 @@ int setup_arg_pages(struct linux_binprm 
+ 		ret = -EFAULT;
+ 
+ out_unlock:
++	vma->unstable_rmap = 0;
+ 	up_write(&mm->mmap_sem);
+ 	return ret;
+ }
+Index: mel-test/include/linux/mm_types.h
+===================================================================
+--- mel-test.orig/include/linux/mm_types.h
++++ mel-test/include/linux/mm_types.h
+@@ -183,6 +183,11 @@ struct vm_area_struct {
+ #ifdef CONFIG_NUMA
+ 	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
+ #endif
++	/*
++ 	 * updated only under down_write(mmap_sem). while this is not 0,
++ 	 * objrmap is not trustable.
++ 	 */
++	int unstable_rmap;
+ };
+ 
+ struct core_thread {
+Index: mel-test/mm/rmap.c
+===================================================================
+--- mel-test.orig/mm/rmap.c
++++ mel-test/mm/rmap.c
+@@ -332,6 +332,11 @@ vma_address(struct page *page, struct vm
+ {
+ 	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+ 	unsigned long address;
++#ifdef CONFIG_MIGRATION
++	/* While unstable_rmap is set, we cannot trust objrmap */
++	if (unlikely(vma->unstable_rmap))
++		return -EFAULT:
++#endif
+ 
+ 	address = vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
+ 	if (unlikely(address < vma->vm_start || address >= vma->vm_end)) {
 
