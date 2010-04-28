@@ -1,126 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab0D1P4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:56:18 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:36372 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754730Ab0D1P4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:56:17 -0400
-Date: Wed, 28 Apr 2010 16:55:58 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/3] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
-	the wrong VMA information
-Message-ID: <20100428155558.GI15815@csn.ul.ie>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie> <1272403852-10479-3-git-send-email-mel@csn.ul.ie> <20100427231007.GA510@random.random> <20100428091555.GB15815@csn.ul.ie> <20100428153525.GR510@random.random>
+	id S1755540Ab0D1QI6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 12:08:58 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:26642 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755445Ab0D1QIw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 12:08:52 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai <yinghai.lu@oracle.com>
+Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below    BIOS_END
+Date: Wed, 28 Apr 2010 10:07:36 -0600
+User-Agent: KMail/1.9.10
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       "H. Peter Anvin" <hpa@zytor.com>, Andy Isaacson <adi@hexapodia.org>,
+       "R. Andrew Bailey" <bailey@akamai.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       guenter.roeck@ericsson.com,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
+References: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com> <4BD640E3.1050101@oracle.com> <201004270911.12124.bjorn.helgaas@hp.com>
+In-Reply-To: <201004270911.12124.bjorn.helgaas@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100428153525.GR510@random.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Message-Id: <201004281007.37016.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 05:35:25PM +0200, Andrea Arcangeli wrote:
-> On Wed, Apr 28, 2010 at 10:15:55AM +0100, Mel Gorman wrote:
-> > It became unconditional because I wasn't sure of the optimisation versus the
-> > new anon_vma changes (doesn't matter, should have been safe). At the time
+Yinghai, ping, do you have any more information about this?
+
+On Tuesday 27 April 2010 09:11:10 am Bjorn Helgaas wrote:
+> On Monday 26 April 2010 07:41:55 pm Yinghai wrote:
+> But let's double-check this:
 > 
-> Changeset 287d97ac032136724143cde8d5964b414d562ee3 is meant to explain
-> the removal of the lock but I don't get it from the comments. Or at
-> least I don't get from that comment why we can't resurrect the plain
-> old deleted code that looked fine to me.
-
-Frankly, I don't understand why it was safe to drop the lock either.
-Maybe it was a mistake but I still haven't convinced myself I fully
-understand the subtleties of the anon_vma changes.
-
-> Like there is no reason to
-> take the lock if start == vma->vm_start.
+> > also find one AMD system:
+> > [    7.056011] pci_root PNP0A03:00: host bridge window [mem 0xfed20000-0xffffffff]
+> > ...
+> > pci assign unassign code could use range like [mem 0xfed20000-0xffffffff] wrongly.
 > 
-> > So, the VMA list does not appear to be messed up but there still needs
-> > to be protection against modification of VMA details that are already on
-> > the list. For that, the seq counter would have been enough and
-> > lighter-weight than acquiring the anon_vma->lock every time in
-> > vma_adjust().
-> > 
-> > I'll drop this patch again as the execve race looks the most important.
+> I agree, it's very unlikely that it's safe to put PCI devices all the
+> way up to 0xffffffff.  I suspect this might be fixed by d558b483d5a,
+> which computes the end of the bridge window using _MAX rather than _LEN.
 > 
-> You mean you're dropping patch 2 too?
-
-Temporarily at least until I figured out if execve was the only problem. The
-locking in vma_adjust didn't look like the prime reason for the crash
-but the lack of locking there is still very odd.
-
-> I agree dropping patch 1 but
-> to me the having to take all the anon_vma locks for every
-> vma->anon_vma->lock that we walk seems a must, otherwise
-> expand_downwards and vma_adjust won't be ok, plus we need to re-add
-> the anon_vma lock to vma_adjust, it can't be safe to alter vm_pgoff
-> and vm_start outside of the anon_vma->lock. Or I am mistaken?
+> See https://bugzilla.kernel.org/show_bug.cgi?id=15480#c15 for an example
+> similar to the one above: we originally thought the window was
+> [mem 0xcff00000-0xffffffff], but d558b483d5a changes that to
+> [mem 0xcff00000-0xfebfffff], which matches what Windows found.
+> 
+> Yinghai, can you take a look at your AMD system again with a kernel that
+> includes d558b483d5a, and see whether we still have a problem?  If we
+> *do* still have a problem, please open a bugzilla and attach a dmesg log
+> with ACPI resource info collected with the debug patch here:
+> https://bugzilla.kernel.org/show_bug.cgi?id=15533#c5
+> 
+> Bjorn
 > 
 
-No, you're not. If nothing else, vma_address can return the wrong value because
-the VMAs vm_start and vm_pgoff were in the process of being updated but not
-fully updated. It's hard to see how vma_address would return the wrong value
-and miss a migration PTE as a result but it's a possibility.  It's probably
-a lot more important for transparent hugepage support.
 
-> Patch 2 wouldn't help the swapops crash we reproduced because at that
-> point the anon_vma of the stack is the local one, it's just after
-> execve.
-> 
-> vma_adjust and expand_downards would alter vm_pgoff and vm_start while
-> taking only the vma->anon_vma->lock where the vma->anon_vma is the
-> _local_ one of the vma. 
-
-True, although in the case of expand_downwards, it's highly unlikely that
-there is also a migration PTE to be cleaned up. It's hard to see how a
-migration PTE would be left behind in that case but it still looks wrong to
-be updating the VMA fields without locking.
-
-> But a vma in mainline can be indexed in
-> infinite anon_vmas, so to prevent breaking migration
-> vma_adjust/expand_downards the rmap_walk would need to take _all_
-> anon_vma->locks for every anon_vma that the vma is indexed into.
-
-I felt this would be too heavy in the common case which is why I made
-rmap_walk() do the try-lock-or-back-off instead because rmap_walk is typically
-in far less critical paths.
-
-> Or
-> alternatively like you implemented rmap_walk would need to check if
-> the vma we found in the rmap_walk is different from the original
-> anon_vma and to take the vma->anon_vma->lock (so taking the
-> anon_vma->lock of the local anon_vma of every vma) before it can
-> actually read the vma->vm_pgoff/vm_start inside vma_address.
-> 
-
-To be absolutly sure, yes this is required. I don't think we've been hitting
-this exact problem in these tests but it still is a better plan than adjusting
-VMA details without locks.
-
-> If the above is right it also means the new anon-vma changes also break
-> the whole locking of transparent hugepage, see wait_split_huge_page,
-> it does a spin_unlock_wait(&anon_vma->lock) thinking that waiting the
-> "local" anon-vma is enough, when in fact the hugepage may be shared
-> and belonging to the parent parent_vma->anon_vma and not to the local
-> one of the last child that is waiting on the wrong lock. So I may have
-> to rewrite this part of the thp locking to solve this. And for me it's
-> not enough to just taking more locks inside the rmap walks inside
-> split_huge_page as I used the anon_vma lock outside too.
-> 
-
-No fun. That potentially could be a lot of locks to take to split the
-page.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
