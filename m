@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab0D1D6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 23:58:07 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59237 "EHLO song.cn.fujitsu.com"
+	id S1755325Ab0D1D6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 23:58:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63736 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755131Ab0D1D6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 23:58:04 -0400
-Message-ID: <4BD7B18F.3050900@cn.fujitsu.com>
-Date: Wed, 28 Apr 2010 11:54:55 +0800
+	id S1755133Ab0D1D6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 23:58:14 -0400
+Message-ID: <4BD7B19A.3020804@cn.fujitsu.com>
+Date: Wed, 28 Apr 2010 11:55:06 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 2/10] KVM MMU: convert mmu tracepoints
+Subject: [PATCH v3 3/10] KVM MMU: move unsync/sync tracpoints to proper place
 References: <4BD7AE34.5000408@cn.fujitsu.com>
 In-Reply-To: <4BD7AE34.5000408@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -23,137 +23,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert mmu tracepoints by using DECLARE_EVENT_CLASS
+Move unsync/sync tracepoints to the proper place, it's good
+for us to obtain unsync page live time
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmutrace.h |   69 +++++++++++++++++-----------------------------
- 1 files changed, 26 insertions(+), 43 deletions(-)
+ arch/x86/kvm/mmu.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index 40a1786..42f07b1 100644
---- a/arch/x86/kvm/mmutrace.h
-+++ b/arch/x86/kvm/mmutrace.h
-@@ -92,15 +92,15 @@ TRACE_EVENT(
- 	TP_printk("pte %llx level %u", __entry->pte, __entry->level)
- );
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 9696d65..e1ac325 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1189,6 +1189,7 @@ static struct kvm_mmu_page *kvm_mmu_lookup_page(struct kvm *kvm, gfn_t gfn)
+ static void kvm_unlink_unsync_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ {
+ 	WARN_ON(!sp->unsync);
++	trace_kvm_mmu_sync_page(sp);
+ 	sp->unsync = 0;
+ 	--kvm->stat.mmu_unsync;
+ }
+@@ -1202,7 +1203,6 @@ static int kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 		return 1;
+ 	}
  
--/* We set a pte accessed bit */
--TRACE_EVENT(
--	kvm_mmu_set_accessed_bit,
-+DECLARE_EVENT_CLASS(kvm_mmu_set_bit_class,
-+
- 	TP_PROTO(unsigned long table_gfn, unsigned index, unsigned size),
-+
- 	TP_ARGS(table_gfn, index, size),
+-	trace_kvm_mmu_sync_page(sp);
+ 	if (rmap_write_protect(vcpu->kvm, sp->gfn))
+ 		kvm_flush_remote_tlbs(vcpu->kvm);
+ 	kvm_unlink_unsync_page(vcpu->kvm, sp);
+@@ -1730,7 +1730,6 @@ static int kvm_unsync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 	struct kvm_mmu_page *s;
+ 	struct hlist_node *node, *n;
  
- 	TP_STRUCT__entry(
- 		__field(__u64, gpa)
--		),
-+	),
+-	trace_kvm_mmu_unsync_page(sp);
+ 	index = kvm_page_table_hashfn(sp->gfn);
+ 	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
+ 	/* don't unsync if pagetable is shadowed with multiple roles */
+@@ -1740,6 +1739,7 @@ static int kvm_unsync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 		if (s->role.word != sp->role.word)
+ 			return 1;
+ 	}
++	trace_kvm_mmu_unsync_page(sp);
+ 	++vcpu->kvm->stat.mmu_unsync;
+ 	sp->unsync = 1;
  
- 	TP_fast_assign(
- 		__entry->gpa = ((u64)table_gfn << PAGE_SHIFT)
-@@ -110,22 +110,20 @@ TRACE_EVENT(
- 	TP_printk("gpa %llx", __entry->gpa)
- );
- 
--/* We set a pte dirty bit */
--TRACE_EVENT(
--	kvm_mmu_set_dirty_bit,
-+/* We set a pte accessed bit */
-+DEFINE_EVENT(kvm_mmu_set_bit_class, kvm_mmu_set_accessed_bit,
-+
- 	TP_PROTO(unsigned long table_gfn, unsigned index, unsigned size),
--	TP_ARGS(table_gfn, index, size),
- 
--	TP_STRUCT__entry(
--		__field(__u64, gpa)
--		),
-+	TP_ARGS(table_gfn, index, size)
-+);
- 
--	TP_fast_assign(
--		__entry->gpa = ((u64)table_gfn << PAGE_SHIFT)
--				+ index * size;
--		),
-+/* We set a pte dirty bit */
-+DEFINE_EVENT(kvm_mmu_set_bit_class, kvm_mmu_set_dirty_bit,
- 
--	TP_printk("gpa %llx", __entry->gpa)
-+	TP_PROTO(unsigned long table_gfn, unsigned index, unsigned size),
-+
-+	TP_ARGS(table_gfn, index, size)
- );
- 
- TRACE_EVENT(
-@@ -164,54 +162,39 @@ TRACE_EVENT(
- 		  __entry->created ? "new" : "existing")
- );
- 
--TRACE_EVENT(
--	kvm_mmu_sync_page,
-+DECLARE_EVENT_CLASS(kvm_mmu_page_class,
-+
- 	TP_PROTO(struct kvm_mmu_page *sp),
- 	TP_ARGS(sp),
- 
- 	TP_STRUCT__entry(
- 		KVM_MMU_PAGE_FIELDS
--		),
-+	),
- 
- 	TP_fast_assign(
- 		KVM_MMU_PAGE_ASSIGN(sp)
--		),
-+	),
- 
- 	TP_printk("%s", KVM_MMU_PAGE_PRINTK())
- );
- 
--TRACE_EVENT(
--	kvm_mmu_unsync_page,
-+DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_sync_page,
- 	TP_PROTO(struct kvm_mmu_page *sp),
--	TP_ARGS(sp),
--
--	TP_STRUCT__entry(
--		KVM_MMU_PAGE_FIELDS
--		),
--
--	TP_fast_assign(
--		KVM_MMU_PAGE_ASSIGN(sp)
--		),
- 
--	TP_printk("%s", KVM_MMU_PAGE_PRINTK())
-+	TP_ARGS(sp)
- );
- 
--TRACE_EVENT(
--	kvm_mmu_zap_page,
-+DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_unsync_page,
- 	TP_PROTO(struct kvm_mmu_page *sp),
--	TP_ARGS(sp),
- 
--	TP_STRUCT__entry(
--		KVM_MMU_PAGE_FIELDS
--		),
-+	TP_ARGS(sp)
-+);
- 
--	TP_fast_assign(
--		KVM_MMU_PAGE_ASSIGN(sp)
--		),
-+DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_zap_page,
-+	TP_PROTO(struct kvm_mmu_page *sp),
- 
--	TP_printk("%s", KVM_MMU_PAGE_PRINTK())
-+	TP_ARGS(sp)
- );
--
- #endif /* _TRACE_KVMMMU_H */
- 
- #undef TRACE_INCLUDE_PATH
 -- 
 1.6.1.2
 
