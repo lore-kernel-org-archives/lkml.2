@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab0D1WSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 18:18:51 -0400
-Received: from tex.lwn.net ([70.33.254.29]:48897 "EHLO vena.lwn.net"
+	id S932331Ab0D1WTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 18:19:07 -0400
+Received: from tex.lwn.net ([70.33.254.29]:48922 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932287Ab0D1WSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 18:18:30 -0400
+	id S932286Ab0D1WS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 18:18:29 -0400
 From: Jonathan Corbet <corbet@lwn.net>
 To: linux-kernel@vger.kernel.org
 Cc: Harald Welte <laforge@gnumonks.org>, linux-fbdev@vger.kernel.org,
        JosephChan@via.com.tw, ScottFang@viatech.com.cn,
        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 30/30] viafb: make procfs entries optional
-Date: Wed, 28 Apr 2010 16:17:31 -0600
-Message-Id: <1272493051-25380-31-git-send-email-corbet@lwn.net>
+Subject: [PATCH 29/30] viafb: fix proc entry removal
+Date: Wed, 28 Apr 2010 16:17:30 -0600
+Message-Id: <1272493051-25380-30-git-send-email-corbet@lwn.net>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1272493051-25380-1-git-send-email-corbet@lwn.net>
 References: <1272493051-25380-1-git-send-email-corbet@lwn.net>
@@ -23,90 +23,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 
-viafb: make procfs entries optional
+viafb: fix proc entry removal
 
-This patch adds a config option to enable procfs entries for direct
-hardware access. This was the old behaviour but the option defaults
-to no as this is really ugly and should not be needed if the driver
-works correct (and if it doesn't, it needs to be fixed).
-That stuff is really something that should
-- not be needed at all (the driver should be capable of doing it)
-- not be there (debugfs would be better for such things)
-So add this option just for backwards compatiblity.
+Trying to remove unregistered proc entries became painful and is
+useless anyway. So remove the removal of an entry that was never
+registered and duplicate the logic for one which is added
+conditionally. Additionally move the removal above releasing fb_info
+as we still need the information.
+This prevents tainting the kernel by the procfs warn on and
+avoiding access to already freed memory is probably also a good idea.
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 ---
- drivers/video/Kconfig        |   14 ++++++++++++++
- drivers/video/via/viafbdev.c |    8 ++++++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
+ drivers/video/via/viafbdev.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index a969f76..f263564 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -1531,6 +1531,20 @@ config FB_VIA_CAMERA
- 	   Chrome9 chipsets.  Currently only tested on OLPC xo-1.5 systems
- 	   with ov7670 sensors.
- 
-+if FB_VIA
-+
-+config FB_VIA_DIRECT_PROCFS
-+	bool "direct hardware access via procfs (DEPRECATED)(DANGEROUS)"
-+	depends on FB_VIA
-+	default n
-+	help
-+	  Allow direct hardware access to some output registers via procfs.
-+	  This is dangerous but may provide the only chance to get the
-+	  correct output device configuration.
-+	  Its use is strongly discouraged.
-+
-+endif
-+
- config FB_NEOMAGIC
- 	tristate "NeoMagic display support"
- 	depends on FB && PCI
 diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-index 51e9106..3d03318 100644
+index e94f913..51e9106 100644
 --- a/drivers/video/via/viafbdev.c
 +++ b/drivers/video/via/viafbdev.c
-@@ -1326,6 +1326,8 @@ static void parse_dvi_port(void)
- 		  output_interface);
+@@ -1702,13 +1702,16 @@ static void viafb_init_proc(struct proc_dir_entry **viafb_entry)
  }
- 
-+#ifdef CONFIG_FB_VIA_DIRECT_PROCFS
+ static void viafb_remove_proc(struct proc_dir_entry *viafb_entry)
+ {
+-	/* no problem if it was not registered */
++	struct chip_information *chip_info = &viaparinfo->shared->chip_info;
 +
- /*
-  * The proc filesystem read/write function, a simple proc implement to
-  * get/set the value of DPA  DVP0,   DVP0DataDriving,  DVP0ClockDriving, DVP1,
-@@ -1715,6 +1717,8 @@ static void viafb_remove_proc(struct proc_dir_entry *viafb_entry)
+ 	remove_proc_entry("dvp0", viafb_entry);/* parent dir */
+ 	remove_proc_entry("dvp1", viafb_entry);
+ 	remove_proc_entry("dfph", viafb_entry);
+ 	remove_proc_entry("dfpl", viafb_entry);
+-	remove_proc_entry("vt1636", viafb_entry);
+-	remove_proc_entry("vt1625", viafb_entry);
++	if (chip_info->lvds_chip_info.lvds_chip_name == VT1636_LVDS
++		|| chip_info->lvds_chip_info2.lvds_chip_name == VT1636_LVDS)
++		remove_proc_entry("vt1636", viafb_entry);
++
  	remove_proc_entry("viafb", NULL);
  }
  
-+#endif /* CONFIG_FB_VIA_DIRECT_PROCFS */
-+
- static int parse_mode(const char *str, u32 *xres, u32 *yres)
- {
- 	char *ptr;
-@@ -1943,7 +1947,9 @@ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
- 		  viafbinfo->node, viafbinfo->fix.id, default_var.xres,
- 		  default_var.yres, default_var.bits_per_pixel);
- 
-+#ifdef CONFIG_FB_VIA_DIRECT_PROCFS
- 	viafb_init_proc(&viaparinfo->shared->proc_entry);
-+#endif
- 	viafb_init_dac(IGA2);
- 	return 0;
- 
-@@ -1970,7 +1976,9 @@ void __devexit via_fb_pci_remove(struct pci_dev *pdev)
+@@ -1967,12 +1970,10 @@ void __devexit via_fb_pci_remove(struct pci_dev *pdev)
  	unregister_framebuffer(viafbinfo);
  	if (viafb_dual_fb)
  		unregister_framebuffer(viafbinfo1);
-+#ifdef CONFIG_FB_VIA_DIRECT_PROCFS
- 	viafb_remove_proc(viaparinfo->shared->proc_entry);
-+#endif
+-
++	viafb_remove_proc(viaparinfo->shared->proc_entry);
  	framebuffer_release(viafbinfo);
  	if (viafb_dual_fb)
  		framebuffer_release(viafbinfo1);
+-
+-	viafb_remove_proc(viaparinfo->shared->proc_entry);
+ }
+ 
+ #ifndef MODULE
 -- 
 1.7.0.1
 
