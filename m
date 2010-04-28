@@ -1,44 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab0D1MMu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 08:12:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62602 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818Ab0D1MMt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 08:12:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Subject: Re: [PATCH] Topcliff UART: Add the UART driver [2/2]
-Date: Wed, 28 Apr 2010 14:12:38 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: "David Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       yong.y.wang@intel.com, qi.wang@intel.com, joel.clark@intel.com,
-       andrew.chih.howe.khor@intel.com
-References: <001f01cae5f9$157be920$66f8800a@maildom.okisemi.com> <20100427.093307.212682271.davem@davemloft.net> <001601cae67e$2b6900d0$66f8800a@maildom.okisemi.com>
-In-Reply-To: <001601cae67e$2b6900d0$66f8800a@maildom.okisemi.com>
+	id S1755873Ab0D1Qpi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 12:45:38 -0400
+Received: from www.tglx.de ([62.245.132.106]:41526 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754305Ab0D1Qpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 12:45:36 -0400
+Date: Wed, 28 Apr 2010 18:45:21 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+cc: "davem@davemloft.net" <davem@davemloft.net>,
+       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC: linux-next 1/2] irq: Add CPU mask affinity hint
+ callback framework
+In-Reply-To: <Pine.WNT.4.64.1004270856560.320@PPWASKIE-MOBL2.amr.corp.intel.com>
+Message-ID: <alpine.LFD.2.00.1004271809080.2951@localhost.localdomain>
+References: <20100419045741.30276.23233.stgit@ppwaskie-hc2.jf.intel.com> <alpine.LFD.2.00.1004271425140.2951@localhost.localdomain> <Pine.WNT.4.64.1004270856560.320@PPWASKIE-MOBL2.amr.corp.intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004281412.38632.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX197iXWaTnJDdXRze6eTl/gOj6EQqB5i4JKLdgB
- W8On+MzKEWVRxnXFYGFlnm+ZIjEtUVKfzS6gwXsUq8m4IrZtjh
- JJ4qBSXq89yqF5P/gU70A==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 April 2010, Masayuki Ohtake wrote:
-> Thank you for you reporting.
-> We will resubmit our patches with plain, unformatted, ASCII text.
+B1;2005;0cPeter,
 
-Please also take a look at the comments from Stephen and me on the
-network and packet hub drivers. Some of those also directly apply
-your new Topcliff patches, so you could fix them right away before the
-new submission.
+On Tue, 27 Apr 2010, Peter P Waskiewicz Jr wrote:
+> On Tue, 27 Apr 2010, Thomas Gleixner wrote:
+> > On Sun, 18 Apr 2010, Peter P Waskiewicz Jr wrote:
+> > > +/**
+> > > + * struct irqaffinityhint - per interrupt affinity helper
+> > > + * @callback:	device driver callback function
+> > > + * @dev:	reference for the affected device
+> > > + * @irq:	interrupt number
+> > > + */
+> > > +struct irqaffinityhint {
+> > > +	irq_affinity_hint_t callback;
+> > > +	void *dev;
+> > > +	int irq;
+> > > +};
+> > 
+> > Why do you need that extra data structure ? The device and the irq
+> > number are known, so all you need is the callback itself. So no need
+> > for allocating memory ....
+> 
+> When I register the function callback with the interrupt layer, I need to
+> know what device structures to reference back in the driver.  In other words,
+> if I call into an underlying driver with just an interrupt number, then I
+> have no way at getting at the dev structures (netdevice for me, plus my
+> private adapter structures), unless I declare them globally (yuck).
 
-In particular, see Documentation/email-clients.txt. It is unlikely
-that you will be successful with your current email client.
+Grr, I knew that I missed something. That'll teach me to review
+patches before the coffee has reached my brain cells :)
 
-	Arnd
+> I had a different approach before this one where I assumed the device from
+> the irq handler callback was safe to use for the device in this new callback.
+> I didn't feel really great about that, since it's an implicit assumption that
+> could cause things to go sideways really quickly.
+>
+> Let me know what you think either way.  I'm certainly willing to make a
+> change, I just don't know at this point what's the safest approach from what
+> I currently have.
+
+So you need a reference to your device, so what about the following:
+
+struct irq_affinity_hint;
+
+struct irq_affinity_hint {
+       unsigned int (*callback)(unsigned int irq, struct irq_affinity_hint *hint,
+				cpumask_var_t *mask);
+}
+
+Now you embed that struct into your device private data structure and
+you get the reference to it back in the callback function. No extra
+kmalloc/kfree, less code.
+
+One other thing I noticed, but forgot to comment on:
+
+> +static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
+> +{
+> +	struct irq_desc *desc = irq_to_desc((long)m->private);
+> +	struct cpumask mask;
+> +	unsigned int ret = 0;
+
+ Why do we return 0, when there is no callback and no hint available ?
+
+> +
+
+  We don't want to have cpumask enforced on stack. Please make that:
+
+     	cpumask_var_t mask;
+
+	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+	       return -ENOMEM;
+
+> +	if (desc->hint && desc->hint->callback) {
+
+  The access to desc-> needs to be protected with
+  desc->lock. Otherwise you might race with a callback unregister.
+
+> +		ret = desc->hint->callback(&mask, (long)m->private,
+> +		                           desc->hint->dev);
+> +		if (!ret)
+> +			seq_cpumask(m, &mask);
+> +	}
+> +
+> +	seq_putc(m, '\n');
+> +	return ret;
+> +}
+
+Thanks,
+
+	tglx
