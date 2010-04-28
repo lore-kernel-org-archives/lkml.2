@@ -1,106 +1,1141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab0D1FIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 01:08:07 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:44849 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751715Ab0D1FIF (ORCPT
+	id S1752205Ab0D1FNb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 01:13:31 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:54205 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab0D1FN3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 01:08:05 -0400
-Date: Wed, 28 Apr 2010 07:07:53 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Arve Hj??nnev??g <arve@android.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Len Brown <len.brown@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       Matt Helsley <matthltc@us.ibm.com>
-Subject: Re: [PATCH 3/8] PM: suspend_block: Abort task freezing if a
- suspend_blocker is active.
-Message-ID: <20100428050753.GA2527@ucw.cz>
-References: <1272429119-12103-1-git-send-email-arve@android.com>
- <1272429119-12103-2-git-send-email-arve@android.com>
- <1272429119-12103-3-git-send-email-arve@android.com>
- <1272429119-12103-4-git-send-email-arve@android.com>
+	Wed, 28 Apr 2010 01:13:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272429119-12103-4-git-send-email-arve@android.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1272421789.2877.21.camel@iscandar.digidescorp.com>
+References: <201004280206.38220.temerkhanov@yandex.ru> <1272421344.2877.6.camel@iscandar.digidescorp.com> 
+	<1272421789.2877.21.camel@iscandar.digidescorp.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 27 Apr 2010 23:13:06 -0600
+X-Google-Sender-Auth: e8058f4c76d55be5
+Message-ID: <n2vfa686aa41004272213wceeef998tadc483ec1de7b792@mail.gmail.com>
+Subject: Re: [microblaze-uclinux] [PATCHv2] [RFC] Xilinx MPMC SDMA subsystem
+To: steve@digidescorp.com, Sergey Temerkhanov <temerkhanov@yandex.ru>
+Cc: microblaze-uclinux@itee.uq.edu.au, linuxppc-dev@lists.ozlabs.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2010-04-27 21:31:54, Arve Hj??nnev??g wrote:
-> If a suspend_blocker is active, suspend will fail anyway. Since
-> try_to_freeze_tasks can take up to 20 seconds to complete or fail, aborting
-> as soon as someone blocks suspend (e.g. from an interrupt handler) improves
-> the worst case wakeup latency.
-> 
-> On an older kernel where task freezing could fail for processes attached
-> to a debugger, this fixed a problem where the device sometimes hung for
-> 20 seconds before the screen turned on.
-> 
-> Signed-off-by: Arve Hj??nnev??g <arve@android.com>
+Hi Sergey and Steven,
 
-ack.
+On Tue, Apr 27, 2010 at 8:29 PM, Steven J. Magnani
+<steve@digidescorp.com> wrote:
+> On Wed, 2010-04-28 at 02:06 +0400, Sergey Temerkhanov wrote:
+>> This is the 2nd version of Xilinx MPMC LocalLink SDMA subsystem
+>>
+>> Changelog v2:
+>> * Changed the functions and struct definition prefix from sdma_ to xllsdma_
+>> * Platform bus bindings and various changes by Steven J. Magnani.
+>> * Moved source files from arch/powerpc/sysdev to global locations and added
+>>   CONFIG_XLLSDMA option.
+>>
+>> Regards, Sergey Temerkhanov,
+>> Cifronic ZAO
+>>
+>> diff -r baced9e29ab5 drivers/dma/Kconfig
+>> --- a/drivers/dma/Kconfig     Tue Apr 27 20:48:50 2010 +0400
+>> +++ b/drivers/dma/Kconfig     Wed Apr 28 02:00:51 2010 +0400
+>> @@ -97,6 +97,14 @@
+>>         Support the TXx9 SoC internal DMA controller.  This can be
+>>         integrated in chips such as the Toshiba TX4927/38/39.
+>>
+>> +config XLLSDMA
 
-> ---
->  kernel/power/process.c |   12 ++++++++++--
->  1 files changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/power/process.c b/kernel/power/process.c
-> index 71ae290..d8ebd50 100644
-> --- a/kernel/power/process.c
-> +++ b/kernel/power/process.c
-> @@ -15,6 +15,7 @@
->  #include <linux/syscalls.h>
->  #include <linux/freezer.h>
->  #include <linux/delay.h>
-> +#include <linux/suspend_blocker.h>
->  
->  /* 
->   * Timeout for stopping processes
-> @@ -38,6 +39,7 @@ static int try_to_freeze_tasks(bool sig_only)
->  	struct timeval start, end;
->  	u64 elapsed_csecs64;
->  	unsigned int elapsed_csecs;
-> +	bool wakeup = false;
->  
->  	do_gettimeofday(&start);
->  
-> @@ -63,6 +65,10 @@ static int try_to_freeze_tasks(bool sig_only)
->  				todo++;
->  		} while_each_thread(g, p);
->  		read_unlock(&tasklist_lock);
-> +		if (todo && suspend_is_blocked()) {
-> +			wakeup = true;
-> +			break;
-> +		}
->  		if (!todo || time_after(jiffies, end_time))
->  			break;
->  
-> @@ -85,13 +91,15 @@ static int try_to_freeze_tasks(bool sig_only)
->  		 * but it cleans up leftover PF_FREEZE requests.
->  		 */
->  		printk("\n");
-> -		printk(KERN_ERR "Freezing of tasks failed after %d.%02d seconds "
-> +		printk(KERN_ERR "Freezing of tasks %s after %d.%02d seconds "
->  				"(%d tasks refusing to freeze):\n",
-> +				wakeup ? "aborted" : "failed",
->  				elapsed_csecs / 100, elapsed_csecs % 100, todo);
->  		read_lock(&tasklist_lock);
->  		do_each_thread(g, p) {
->  			task_lock(p);
-> -			if (freezing(p) && !freezer_should_skip(p))
-> +			if (freezing(p) && !freezer_should_skip(p)
-> +					&& elapsed_csecs > 100)
->  				sched_show_task(p);
->  			cancel_freezing(p);
->  			task_unlock(p);
+I'd prefer XILINX_LLSDMA.  XLLSDMA could be ambiguous in the global
+namespace (for a human reader), particularly as it is something that
+few people will actually see.
+
+>> +     bool "Xilinx MPMC DMA support"
+>> +     depends on XILINX_VIRTEX || MICROBLAZE
+>> +     select DMA_ENGINE
+>> +     help
+>> +       Support fot Xilinx MPMC LocalLink SDMA. Virtex FPGA family
+>> +       has it integrated or fabric-based.
+>> +
+>
+> fot --> for
+>
+> Since the xllsdma driver provides services to other drivers - not to userland -
+> I think this would be better as a "silent" option, selected automatically when
+> something like ll_temac or the forthcoming Xilinx DMA engine is selected.
+> If we do it that way, note that XLLSDMA is independent of DMA_ENGINE so
+> drivers/Makefile will need to be patched so that the dma subdirectory is
+> always "y".
+
+Agreed.  However, looking at this code, I don't see anything that
+actually uses DMA_ENGINE here.  Am I missing something?
+
+>> diff -r baced9e29ab5 drivers/dma/Makefile
+>> --- a/drivers/dma/Makefile    Tue Apr 27 20:48:50 2010 +0400
+>> +++ b/drivers/dma/Makefile    Wed Apr 28 02:00:51 2010 +0400
+>> @@ -10,3 +10,4 @@
+>>  obj-$(CONFIG_AT_HDMAC) += at_hdmac.o
+>>  obj-$(CONFIG_MX3_IPU) += ipu/
+>>  obj-$(CONFIG_TXX9_DMAC) += txx9dmac.o
+>> +obj-$(CONFIG_XLLSDMA) += xllsdma.o
+>> diff -r baced9e29ab5 drivers/dma/xllsdma.c
+>> --- /dev/null Thu Jan 01 00:00:00 1970 +0000
+>> +++ b/drivers/dma/xllsdma.c   Wed Apr 28 02:00:51 2010 +0400
+>> @@ -0,0 +1,887 @@
+>> +/*
+>> + * SDMA subsystem support for Xilinx MPMC.
+>> + *
+>> + * Author: Sergey Temerkhanov
+>> + * Platform Bus by Steven J. Magnani
+>> + *
+>> + * Copyright (c) 2008-2010 Cifronic ZAO
+>> + *
+>> + * This program is free software; you can redistribute  it and/or modify it
+>> + * under  the terms of  the GNU General  Public License as published by the
+>> + * Free Software Foundation; either version 2 of the License, or (at your
+>> + * option) any later version.
+>> + *
+>> + */
+>> +
+>> +#include <linux/delay.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/init.h>
+>> +#include <linux/module.h>
+>> +#include <linux/init.h>
+>> +#include <linux/errno.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/mutex.h>
+>> +#include <linux/wait.h>
+>> +#include <linux/list.h>
+>> +#include <linux/io.h>
+>> +#include <linux/xllsdma.h>
+>> +
+>> +#include <linux/of_device.h>
+>> +#include <linux/of_platform.h>
+>> +
+>> +#define DRV_VERSION "0.1.0"
+
+Irrelevant, can be dropped
+
+>> +#define DRV_NAME "sdma"
+
+Used only once, drop.
+
+>> +
+>> +MODULE_AUTHOR("Sergey Temerkhanov <temerkhanov@cifronik.ru>");
+>> +MODULE_DESCRIPTION("Xilinx SDMA driver");
+>> +MODULE_LICENSE("GPL");
+>> +MODULE_VERSION(DRV_VERSION);
+>> +
+>> +LIST_HEAD(mpmc_devs);
+>> +DEFINE_MUTEX(mpmc_devs_lock);
+>> +
+>> +void xllsdma_tx_irq_enable(struct xllsdma_device *sdma)
+>> +{
+>> +     u32 tx_cr;
+>> +     unsigned long flags;
+>> +
+>> +     BUG_ON(sdma->tx_irq == NO_IRQ);
+>> +
+>> +     spin_lock_irqsave(&sdma->lock, flags);
+>> +     tx_cr = xllsdma_tx_in32(sdma, XLLSDMA_CR);
+>> +     xllsdma_tx_out32(sdma, XLLSDMA_CR, tx_cr | XLLSDMA_CR_IRQ_EN);
+>> +     spin_unlock_irqrestore(&sdma->lock, flags);
+
+This pattern is used a lot.  Might be worth while to implement
+xllsdma_tx_* variants of setbits32, clrbits32 and clrsetbits32.
+
+Also, there are a lot of these little functions; really trivial and
+small.  Would it be better to have them as static inlines in the
+header file instead of exported globals?
+
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_tx_irq_enable);
+>> +
+>> +void xllsdma_rx_irq_enable(struct xllsdma_device *sdma)
+>> +{
+>> +     u32 rx_cr;
+>> +     unsigned long flags;
+>> +
+>> +     BUG_ON(sdma->rx_irq == NO_IRQ);
+>> +
+>> +     spin_lock_irqsave(&sdma->lock, flags);
+>> +     rx_cr = xllsdma_rx_in32(sdma, XLLSDMA_CR);
+>> +     xllsdma_rx_out32(sdma, XLLSDMA_CR, rx_cr | XLLSDMA_CR_IRQ_EN);
+>> +     spin_unlock_irqrestore(&sdma->lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_rx_irq_enable);
+>> +
+>> +void xllsdma_tx_irq_disable(struct xllsdma_device *sdma)
+>> +{
+>> +     u32 tx_cr;
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&sdma->lock, flags);
+>> +     tx_cr = xllsdma_tx_in32(sdma, XLLSDMA_CR);
+>> +     xllsdma_tx_out32(sdma, XLLSDMA_CR, tx_cr & ~XLLSDMA_CR_IRQ_EN);
+>> +     spin_unlock_irqrestore(&sdma->lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_tx_irq_disable);
+>> +
+>> +void xllsdma_rx_irq_disable(struct xllsdma_device *sdma)
+>> +{
+>> +     u32 rx_cr;
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&sdma->lock, flags);
+>> +     rx_cr = xllsdma_rx_in32(sdma, XLLSDMA_CR);
+>> +     xllsdma_rx_out32(sdma, XLLSDMA_CR, rx_cr & ~XLLSDMA_CR_IRQ_EN);
+>> +     spin_unlock_irqrestore(&sdma->lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_rx_irq_disable);
+>> +
+>> +void xllsdma_tx_irq_ack(struct xllsdma_device *sdma)
+>> +{
+>> +     u32 irq_stat;
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&sdma->lock, flags);
+>> +     irq_stat = xllsdma_tx_in32(sdma, XLLSDMA_IRQ);
+>> +     xllsdma_tx_out32(sdma, XLLSDMA_IRQ, irq_stat & XLLSDMA_IRQ_ALL_DONE);
+>> +     spin_unlock_irqrestore(&sdma->lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_tx_irq_ack);
+>> +
+>> +void xllsdma_rx_irq_ack(struct xllsdma_device *sdma)
+>> +{
+>> +     u32 irq_stat;
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&sdma->lock, flags);
+>> +     irq_stat = xllsdma_rx_in32(sdma, XLLSDMA_IRQ);
+>> +     xllsdma_rx_out32(sdma, XLLSDMA_IRQ, irq_stat & XLLSDMA_IRQ_ALL_DONE);
+>> +     spin_unlock_irqrestore(&sdma->lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_rx_irq_ack);
+>> +
+>> +void xllsdma_pause(struct xllsdma_device *sdma)
+>> +{
+>> +     u32 dmacr;
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&sdma->lock, flags);
+>> +     dmacr = xllsdma_read_cr(sdma);
+>> +     dmacr |= XLLSDMA_DMACR_TX_PAUSE | XLLSDMA_DMACR_RX_PAUSE;
+>> +     xllsdma_write_cr(sdma, dmacr);
+>> +     spin_unlock_irqrestore(&sdma->lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_pause);
+>> +
+>> +void xllsdma_resume(struct xllsdma_device *sdma)
+>> +{
+>> +     u32 dmacr;
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&sdma->lock, flags);
+>> +     dmacr = xllsdma_read_cr(sdma);
+>> +     dmacr &= ~(XLLSDMA_DMACR_TX_PAUSE | XLLSDMA_DMACR_RX_PAUSE);
+>> +     xllsdma_write_cr(sdma, dmacr);
+>> +     spin_unlock_irqrestore(&sdma->lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_resume);
+>> +
+>> +int xllsdma_set_coalesce(struct xllsdma_device *sdma, struct xllsdma_coalesce *coal)
+>> +{
+>> +     u32 tx_cr, rx_cr;
+>> +     unsigned long flags;
+>> +
+>> +     if (coal->tx_timeout > 255 ||
+>> +         coal->rx_timeout > 255 ||
+>> +         coal->tx_threshold > 255 ||
+>> +         coal->rx_threshold > 255)
+>> +             return -EINVAL;
+>> +
+>> +     spin_lock_irqsave(&sdma->lock, flags);
+>> +
+>> +     if (sdma->rx_irq != NO_IRQ) {
+>> +             rx_cr = xllsdma_rx_in32(sdma, XLLSDMA_CR);
+>> +
+>> +             if (coal->rx_timeout == 0) {
+>> +                     coal->rx_timeout = 1;
+>> +                     rx_cr &= ~XLLSDMA_CR_IRQ_TIMEOUT;
+>> +             } else {
+>> +                     rx_cr |= XLLSDMA_CR_IRQ_TIMEOUT;
+>> +             }
+>> +
+>> +             rx_cr &= ~(XLLSDMA_CR_IRQ_THRESHOLD_MSK | XLLSDMA_CR_IRQ_TIMEOUT_SH);
+>> +             rx_cr |= (coal->rx_threshold << XLLSDMA_CR_IRQ_THRESHOLD_SH)
+>> +                      & XLLSDMA_CR_IRQ_THRESHOLD_MSK;
+>> +             rx_cr |= (coal->rx_timeout << XLLSDMA_CR_IRQ_TIMEOUT_SH)
+>> +                      & XLLSDMA_CR_IRQ_TIMEOUT_MSK;
+>> +             rx_cr |= XLLSDMA_CR_LD_IRQ_CNT;
+>> +
+>> +             xllsdma_rx_out32(sdma, XLLSDMA_CR, rx_cr);
+>> +     }
+>> +
+>> +     if (sdma->tx_irq != NO_IRQ) {
+>> +             tx_cr = xllsdma_tx_in32(sdma, XLLSDMA_CR);
+>> +
+>> +             if (coal->tx_timeout == 0) {
+>> +                     coal->tx_timeout = 1;
+>> +                     tx_cr &= ~XLLSDMA_CR_IRQ_TIMEOUT;
+>> +             } else {
+>> +                     tx_cr |= XLLSDMA_CR_IRQ_TIMEOUT;
+>> +             }
+>> +
+>> +             tx_cr &= ~(XLLSDMA_CR_IRQ_THRESHOLD_MSK | XLLSDMA_CR_IRQ_TIMEOUT_SH);
+>> +             tx_cr |= (coal->tx_threshold << XLLSDMA_CR_IRQ_THRESHOLD_SH)
+>> +                      & XLLSDMA_CR_IRQ_THRESHOLD_MSK;
+>> +             tx_cr |= (coal->tx_timeout << XLLSDMA_CR_IRQ_TIMEOUT_SH)
+>> +                      & XLLSDMA_CR_IRQ_TIMEOUT_MSK;
+>> +             tx_cr |= XLLSDMA_CR_LD_IRQ_CNT;
+>> +
+>> +             xllsdma_tx_out32(sdma, XLLSDMA_CR, tx_cr);
+>> +     }
+>> +
+>> +     spin_unlock_irqrestore(&sdma->lock, flags);
+>> +
+>> +     return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_set_coalesce);
+>> +
+>> +int xllsdma_get_coalesce(struct xllsdma_device *sdma, struct xllsdma_coalesce *coal)
+>> +{
+>> +     u32 tx_cr, rx_cr;
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&sdma->lock, flags);
+>> +
+>> +     tx_cr = xllsdma_tx_in32(sdma, XLLSDMA_CR);
+>> +     rx_cr = xllsdma_rx_in32(sdma, XLLSDMA_CR);
+>> +
+>> +     coal->tx_threshold = (tx_cr & XLLSDMA_CR_IRQ_THRESHOLD_MSK)
+>> +                          >> XLLSDMA_CR_IRQ_THRESHOLD_SH;
+>> +     coal->tx_timeout = (tx_cr & XLLSDMA_CR_IRQ_TIMEOUT_MSK)
+>> +                        >> XLLSDMA_CR_IRQ_TIMEOUT_SH;
+>> +
+>> +     coal->rx_threshold = (rx_cr & XLLSDMA_CR_IRQ_THRESHOLD_MSK)
+>> +                          >> XLLSDMA_CR_IRQ_THRESHOLD_SH;
+>> +     coal->rx_timeout = (rx_cr & XLLSDMA_CR_IRQ_TIMEOUT_MSK)
+>> +                          >> XLLSDMA_CR_IRQ_TIMEOUT_SH;
+>> +
+>> +     if (!(tx_cr & XLLSDMA_CR_IRQ_TIMEOUT))
+>> +             coal->tx_timeout = 0;
+>> +
+>> +     if (!(rx_cr & XLLSDMA_CR_IRQ_TIMEOUT))
+>> +             coal->rx_timeout = 0;
+>> +
+>> +     spin_unlock_irqrestore(&sdma->lock, flags);
+>> +
+>> +     return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_get_coalesce);
+>> +
+>> +int xllsdma_tx_submit(struct xllsdma_device *sdma, dma_addr_t desc)
+>> +{
+>> +     xllsdma_tx_out32(sdma, XLLSDMA_TDESCR, desc);
+>> +     return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_tx_submit);
+>
+> Invariant return value can be dropped.
+
+Also are more tiny functions that could be considered for static inlines.
+
+>> +int xllsdma_rx_submit(struct xllsdma_device *sdma, dma_addr_t desc)
+>> +{
+>> +     xllsdma_rx_out32(sdma, XLLSDMA_TDESCR, desc);
+>> +     return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_rx_submit);
+>>
+> Invariant return value can be dropped.
+>
+>> +
+>> +void xllsdma_tx_init(struct xllsdma_device *sdma, dma_addr_t desc)
+>> +{
+>> +     xllsdma_tx_out32(sdma, XLLSDMA_CDESCR, desc);
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_tx_init);
+>> +
+>> +void xllsdma_rx_init(struct xllsdma_device *sdma, dma_addr_t desc)
+>> +{
+>> +     xllsdma_rx_out32(sdma, XLLSDMA_CDESCR, desc);
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_rx_init);
+>> +
+>> +struct xllsdma_device *xllsdma_find_device(int phandle)
+>> +{
+>> +     struct mpmc_device *mpmc;
+>> +     struct xllsdma_device *sdma = NULL;
+>> +     int found = 0;
+>> +     mutex_lock(&mpmc_devs_lock);
+>> +     list_for_each_entry(mpmc, &mpmc_devs, item) {
+>> +             mutex_lock(&mpmc->devs_lock);
+>> +             list_for_each_entry(sdma, &mpmc->xllsdma_devs, item) {
+>> +                     if (sdma->phandle == phandle) {
+>> +                             found = 1;
+>> +                             break;
+>> +                     }
+>> +             }
+>> +             mutex_unlock(&mpmc->devs_lock);
+>> +             if (found)
+>> +                     break;
+>> +             else
+>> +                     sdma = NULL;
+>> +     }
+>> +     mutex_unlock(&mpmc_devs_lock);
+
+Why is the lock getting dropped on each iteration of the loop?  It
+doesn't look necessary to me at all.
+
+>> +     return sdma;
+>> +}
+>> +EXPORT_SYMBOL_GPL(xllsdma_find_device);
+>
+> I'm still concerned that there is no concept of "allocating" or "reserving" a
+> channel. This seems to invite accidental concurrent use of a channel, if not in
+> the field, then during development.
+
+In the device tree use-case I doubt it will be a practical problem.
+To get multiple users would require multiple nodes to reference the
+same dma device node.
+
+However, I've got concerns about the device model used here.... need
+to read the rest of this driver first to figure out what is bothering
+me....
+
+>> +static void xllsdma_dev_register(struct mpmc_device *mpmc,
+>> +                           struct xllsdma_device *sdma)
+>> +{
+>> +     mutex_lock(&mpmc->devs_lock);
+>> +     list_add(&sdma->item, &mpmc->xllsdma_devs);
+>> +     mutex_unlock(&mpmc->devs_lock);
+>> +}
+
+This driver could use some documentation on what the data model is
+here.  Is it that the system can have one or more mpmc_devices, and
+each mpmc device can contain one or more xllsdma_device?
+
+How will the ll_temac driver plug into this model?
+
+>> +
+>> +static void xllsdma_dev_unregister(struct xllsdma_device *sdma)
+>> +{
+>> +     struct mpmc_device *mpmc = sdma->parent;
+>> +
+>> +     mutex_lock(&mpmc->devs_lock);
+>> +     list_del(&sdma->item);
+>> +     mutex_unlock(&mpmc->devs_lock);
+>> +}
+>> +
+>> +static void xllsdma_cleanup(struct device *dev)
+>> +{
+>> +     struct xllsdma_device *sdma = dev_get_drvdata(dev);
+>> +
+>> +     if (sdma->tx_irq)
+>> +             free_irq(sdma->tx_irq, sdma);
+>> +
+>> +     if (sdma->rx_irq)
+>> +             free_irq(sdma->rx_irq, sdma);
+>> +
+>> +     if (sdma->memregion.start)
+>> +             release_mem_region(sdma->memregion.start,
+>> +                     sdma->memregion.end - sdma->memregion.start + 1);
+>> +
+>> +     if (sdma->ioaddr)
+>> +             iounmap(sdma->ioaddr);
+>> +
+>> +     xllsdma_dev_unregister(sdma);
+>> +     kfree(sdma);
+>> +     dev_set_drvdata(dev, NULL);
+>> +}
+>> +
+>> +static void mpmc_dev_register(struct mpmc_device *mpmc)
+>> +{
+>> +     mutex_lock(&mpmc_devs_lock);
+>> +     list_add_tail(&mpmc->item, &mpmc_devs);
+>> +     mutex_unlock(&mpmc_devs_lock);
+>> +}
+>> +
+>> +static void mpmc_dev_unregister(struct mpmc_device *mpmc)
+>> +{
+>> +     mutex_lock(&mpmc_devs_lock);
+>> +     list_del(&mpmc->item);
+>> +     mutex_unlock(&mpmc_devs_lock);
+>> +}
+>> +
+>> +static void mpmc_cleanup(struct device *dev)
+>> +{
+>> +     struct mpmc_device *mpmc = dev_get_drvdata(dev);
+>> +
+>> +     if (mpmc->registered)
+>> +             mpmc_dev_unregister(mpmc);
+
+Under what condition would the mpmc not be registered when this
+function is called?  I don't see any code path where this would be the
+case, or any other users of the .registered data member.
+
+>> +
+>> +     kfree(mpmc);
+>> +     dev_set_drvdata(dev, NULL);
+>> +}
+>> +
+>> +static int __devinit xllsdma_init(struct device *dev, struct resource *rx_irq,
+>> +                            struct resource *tx_irq, struct resource *mem,
+>> +                            int phandle)
+>> +{
+>> +     struct xllsdma_device *sdma;
+>> +     struct mpmc_device *mpmc;
+>> +
+>> +     resource_size_t region_size;
+>> +     int res;
+>> +
+>> +     mpmc = dev_get_drvdata(dev->parent);
+>> +
+>> +     sdma = kzalloc(sizeof(struct xllsdma_device), GFP_KERNEL);
+>> +     if (!sdma) {
+>> +             dev_err(dev, "Cannot allocate SDMA device\n");
+>> +             return -ENOMEM;
+>> +     }
+>> +     dev_set_drvdata(dev, sdma);
+>> +     sdma->dev = dev;
+>> +
+>> +     spin_lock_init(&sdma->lock);
+>> +     INIT_LIST_HEAD(&sdma->clients);
+>> +     mutex_init(&sdma->clients_lock);
+>> +     sdma->parent = mpmc;
+>> +     sdma->phandle = phandle;
+>> +
+>> +     region_size = mem->end - mem->start + 1;
+>> +     if (!request_mem_region(mem->start, region_size, DRV_NAME)) {
+>> +             dev_err(dev, "I/O memory region at %p is busy\n",
+>> +                     (void *)mem->start);
+>> +             return -EBUSY;
+
+Error paths need to unwind allocations and setups.  ie. freeing
+memory, releasing irqs, etc.
+
+>> +     }
+>> +     sdma->memregion = *mem;
+>> +
+>> +     sdma->ioaddr = ioremap(mem->start, region_size);
+>> +     if (!sdma->ioaddr) {
+>> +             dev_err(dev, "Cannot ioremap() I/O memory %p\n",
+>> +                     (void *)mem->start);
+>> +             return -ENOMEM;
+>> +     }
+>> +
+>> +     xllsdma_reset(sdma);
+>> +
+>> +     sdma->rx_irq = NO_IRQ;
+>> +     if (rx_irq) {
+>> +             res = request_irq(rx_irq->start, xllsdma_rx_intr,
+>> +                             IRQF_SHARED, "SDMA RX", sdma);
+>> +             if (res) {
+>> +                     dev_err(dev, "Could not allocate RX interrupt %d.\n",
+>> +                             rx_irq->start);
+>> +                     return res;
+>> +             }
+>> +             sdma->rx_irq = rx_irq->start;
+>> +     }
+>> +
+>> +     sdma->tx_irq = NO_IRQ;
+>> +     if (tx_irq) {
+>> +             res = request_irq(tx_irq->start, xllsdma_tx_intr,
+>> +                             IRQF_SHARED, "SDMA TX", sdma);
+>> +             if (res) {
+>> +                     dev_err(dev, "Could not allocate TX interrupt %d.\n",
+>> +                             tx_irq->start);
+>> +                     return res;
+>> +             }
+>> +             sdma->tx_irq = tx_irq->start;
+>> +     }
+>> +
+>> +     sdma->rx_ack = 1;
+>> +     sdma->tx_ack = 1;
+>> +     xllsdma_dev_register(mpmc, sdma);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int __devinit mpmc_init(struct device *dev)
+>> +{
+>> +     struct mpmc_device *mpmc;
+>> +
+>> +     mpmc = kzalloc(sizeof(struct mpmc_device), GFP_KERNEL);
+>> +
+>> +     if (!mpmc) {
+>> +             dev_err(dev, "Cannot allocate MPMC device\n");
+>> +             return -ENOMEM;
+>> +     }
+>> +
+>> +     dev_set_drvdata(dev, mpmc);
+>> +
+>> +     INIT_LIST_HEAD(&mpmc->xllsdma_devs);
+>> +     mutex_init(&mpmc->devs_lock);
+>> +
+>> +     mpmc_dev_register(mpmc);
+>> +     mpmc->registered = 1;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +#ifdef CONFIG_OF
+>> +static int xllsdma_of_remove(struct of_device *op)
+
++static int __devexit xllsdma_of_remove(struct of_device *op)
+
+>> +{
+>> +     xllsdma_cleanup(&op->dev);
+>> +     return 0;
+>> +}
+>> +
+>> +/* Match table for of_platform binding */
+>> +static struct of_device_id xllsdma_of_match[] = {
+>> +     { .compatible = "xlnx,ll-dma-1.00.a" },
+>> +     {},
+>> +};
+>> +
+>> +static int __devinit xllsdma_of_probe(struct of_device *op,
+>> +                                const struct of_device_id *match)
+>> +{
+>> +     const int *prop;
+>> +     int phandle;
+>> +     struct resource rx_irq, tx_irq, mem;
+>> +     struct resource *tx_irq_res = NULL;
+>> +     struct resource *rx_irq_res = NULL;
+>> +     int res;
+>> +
+>> +     res = of_address_to_resource(op->node, 0, &mem);
+>> +     if (res) {
+>> +             dev_err(&op->dev, "invalid address\n");
+>> +             return res;
+>> +     }
+>> +
+>> +     /* IRQ */
+>> +     res = of_irq_to_resource(op->node, 0, &rx_irq);
+>> +     if (res != NO_IRQ)
+>> +             rx_irq_res = &rx_irq;
+>> +
+>> +     res = of_irq_to_resource(op->node, 1, &tx_irq);
+>> +     if (res != NO_IRQ)
+>> +             tx_irq_res = &tx_irq;
+>> +
+>> +     prop = of_get_property(op->node, "linux,phandle", NULL);
+>> +     phandle = (prop) ? *prop : -1;
+
+Don't use phandles here.  Just store the node pointer directly.  When
+looking up a phandle, first convert it to a node pointer, and then use
+the node pointer to search.
+
+>> +
+>> +     res = xllsdma_init(&op->dev, rx_irq_res, tx_irq_res, &mem, phandle);
+>> +     if (res)
+>> +             xllsdma_of_remove(op);
+
+This looks odd.  If init fails, there is nothing in this function that
+needs to be deallocated or unwound.  You can simply do:
+
++return xllsdma_init(&op->dev, rx_irq_res, tx_irq_res, &mem, phandle);
+
+>> +
+>> +     return res;
+>> +}
+>> +
+>> +static struct of_platform_driver xllsdma_of_driver = {
+>> +     .name           = "xilinx-sdma",
+>> +     .match_table    = xllsdma_of_match,
+>> +     .probe          = xllsdma_of_probe,
+>> +     .remove         = xllsdma_of_remove,
+>> +};
+
+Should be:
++static struct of_platform_driver xllsdma_of_driver = {
++     .driver = {
++             .name = "xilinx-sdma",
++             .owner = THIS_MODULE,
++     }
++     .match_table    = xllsdma_of_match,
++     .probe          = xllsdma_of_probe,
++     .remove         = __devexit_p(xllsdma_of_remove),
++};
+
+>> +
+>> +int __init xllsdma_of_init(void)
+>> +{
+>> +     int ret;
+>> +
+>> +     ret = of_register_platform_driver(&xllsdma_of_driver);
+>> +     if (ret) {
+>> +             of_unregister_platform_driver(&xllsdma_of_driver);
+>> +             printk(KERN_ERR "registering driver failed: err=%i", ret);
+>> +             return ret;
+>> +     }
+>> +
+>> +     return 0;
+>> +}
+
+If registering fails, unregistering is not needed.  This function
+should simply be:
+
++int __init xllsdma_of_init(void)
++{
++     return of_register_platform_driver(&xllsdma_of_driver);
++}
+
+>> +
+>> +void xllsdma_of_exit(void)
+>> +{
+>> +     of_unregister_platform_driver(&xllsdma_of_driver);
+>> +}
+>> +
+>> +static int mpmc_of_remove(struct of_device *op)
+
++static int __devexit mpmc_of_remove(struct of_device *op)
+
+>> +{
+>> +     struct device_node *node;
+>> +     struct of_device *ofdev;
+>> +
+>> +     for_each_child_of_node(op->node, node) {
+>> +             ofdev = of_find_device_by_node(node);
+>> +             of_device_unregister(ofdev);
+>> +             of_device_free(ofdev);
+>> +     }
+>> +
+>> +     mpmc_cleanup(&op->dev);
+>> +     return 0;
+>> +}
+>> +
+>> +static int __devinit mpmc_of_probe(struct of_device *op,
+>> +                     const struct of_device_id *match)
+>> +{
+>> +     int err = mpmc_init(&op->dev);
+>> +     if (err)
+>> +             return err;
+>> +
+>> +     of_platform_bus_probe(op->node, xllsdma_of_match, &op->dev);
+>> +     return 0;
+>> +}
+
+Okay, I think I've figured out what is bothering me....
+
+While this *does* work; it really is the long way to go about things.
+Doing it this way requires going back out to the driver model to tell
+it things and trigger a probe on things that *this* driver needs, and
+*this* driver already knows about.  It doesn't need to be this
+complex.
+
+Rather than register a bunch more of_platform devices, do something
+like this instead:
+
++static int __devinit mpmc_of_probe(struct of_device *op,
++                     const struct of_device_id *match)
++{
++     struct mpmc_device *mpmc;
++     struct device_node *node;
++
++     mpmc = mpmc_init(&op->dev);
++     if (!mpmc)
++             return -ENODEV;
++
++     for_each_child_of_node(op->node, node) {
++             xllsdma_of_init(mpmc, node);
++     }
++     return 0;
++}
+
+You do *not* need to register a separate struct device for each DMA
+channel sub node (at least with regard to the driver model; I don't
+know about the dma subsystem).  If you *want* a struct device, then
+xllsdma_of_init() is free to register one, but it does not need to be
+on the of_platform_bus, and this driver should not require a probe
+step for each DMA channel.
+
+>> +
+>> +static struct of_device_id  __devinitdata mpmc_of_match[] = {
+>> +     { .compatible = "xlnx,mpmc-4.01.a" },
+>> +     { .compatible = "xlnx,mpmc-4.03.a" },
+>> +     {},
+>> +};
+>> +
+>> +static struct of_platform_driver mpmc_of_driver = {
+>> +     .name = "xilinx-mpmc",
+>> +     .match_table = mpmc_of_match,
+>> +     .probe = mpmc_of_probe,
+>> +     .remove = mpmc_of_remove,
+>> +};
+>> +
+>> +int __init mpmc_of_init(void)
+>> +{
+>> +     return of_register_platform_driver(&mpmc_of_driver);
+>> +}
+>> +
+>> +void mpmc_of_exit(void)
+>> +{
+>> +     of_unregister_platform_driver(&mpmc_of_driver);
+>> +}
+
+Missing the module exit hook?
+
+>> +
+>> +subsys_initcall(mpmc_of_init);
+>> +subsys_initcall(xllsdma_of_init);
+
+Typically initcall statements are placed immediately after the init
+function they reference.
+
+>> +#else        /* CONFIG_OF */
+
+Why else?  It is perfectly valid to have both of_platform and platform
+bus bindings.  That being said, this split will become unnecessary in
+the very near future.  I've eliminated of_platform_bus_type, and
+automatically moved all users of it over to the platform bus (without
+driver changes).
+
+However, current powerpc and microblaze code makes CONFIG_OF
+manditory.  What condition will compile in the platform bus
+attachment?
+
+>> +/*---------------------------------------------------------------------------
+>> + * Platform bus attachment
+>> + */
+>> +
+>> +static __devexit int xllsdma_plat_remove(struct platform_device *pdev)
+>> +{
+>> +     xllsdma_cleanup(&pdev->dev);
+>> +     return 0;
+>> +}
+>> +
+>> +static int __devinit xllsdma_plat_probe(struct platform_device *pdev)
+>> +{
+>> +     struct resource *rx_irq, *tx_irq, *mem;
+>> +     int err = 0;
+>> +
+>> +     mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +     if (!mem) {
+>> +             dev_err(&pdev->dev, "invalid address\n");
+>> +             err = -EINVAL;
+>> +             goto fail;
+>> +     }
+>> +
+>> +     /* RX interrupt is optional, and first */
+>> +     rx_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+>> +
+>> +     /* TX interrupt is optional, and second */
+>> +     tx_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+>> +
+>
+> If it is impossible to create duplicate phandles in Device Tree,
+> there should be a check here that no device with pdev->id already exists
+> (i.e., it's NOT impossible with platform bus). It might be just as well to
+> put the check in xllsdma_init() since that's not a 'hot' code path.
+
+Question: microblaze and powerpc both use the device tree.  What is
+the use-case for the non-dts version?
+
+>
+>> +     err = xllsdma_init(&pdev->dev, rx_irq, tx_irq, mem, pdev->id);
+>> +     if (err)
+>> +             xllsdma_plat_remove(pdev);
+>> +fail:
+>> +     return err;
+>> +}
+>> +
+>> +static struct platform_driver xllsdma_plat_driver = {
+>> +     .probe = xllsdma_plat_probe,
+>> +     .remove = __devexit_p(xllsdma_plat_remove),
+>> +     .driver = {
+>> +             .owner = THIS_MODULE,
+>> +             .name  = "xilinx-sdma",
+>> +     },
+>> +};
+>> +
+>> +int __init xllsdma_plat_init(void)
+>> +{
+>> +     int err = platform_driver_register(&xllsdma_plat_driver);
+>> +     if (err) {
+>> +             platform_driver_unregister(&xllsdma_plat_driver);
+>> +             printk(KERN_ERR "registering driver failed: err=%i", err);
+>> +             return err;
+>> +     }
+>> +
+>> +     return 0;
+>> +}
+>> +subsys_initcall(xllsdma_plat_init);
+
+Again, if driver registration fails, then the driver doesn't need to
+be unregistered.  Same as with the of_platform_bus binding.
+
+>> +
+>> +void xllsdma_plat_exit(void)
+>> +{
+>> +     platform_driver_unregister(&xllsdma_plat_driver);
+>> +}
+>> +
+>> +static int mpmc_plat_probe(struct platform_device *pdev)
+>> +{
+>> +     return mpmc_init(&pdev->dev);
+>> +}
+>> +
+>> +static int __devexit mpmc_plat_remove(struct platform_device *pdev)
+>> +{
+>> +     mpmc_cleanup(&pdev->dev);
+>> +     return 0;
+>> +}
+>> +
+>> +static struct platform_driver mpmc_plat_driver = {
+>> +     .probe = mpmc_plat_probe,
+>> +     .remove = __devexit_p(mpmc_plat_remove),
+>> +     .driver = {
+>> +             .owner = THIS_MODULE,
+>> +             .name  = "xilinx-mpmc",
+>> +     },
+>> +};
+
+I'll make the same argument here.  The multiple registrations in this
+driver is weird.  This driver already knows about all of it's dma
+channels, so why depend on the core driver model to probe a driver
+instance for each?
+
+>> +
+>> +int __init mpmc_plat_init(void)
+>> +{
+>> +     return platform_driver_register(&mpmc_plat_driver);
+>> +}
+>> +subsys_initcall(mpmc_plat_init);
+>> +
+>> +void mpmc_plat_exit(void)
+>> +{
+>> +     platform_driver_unregister(&mpmc_plat_driver);
+>> +}
+>> +#endif       /* CONFIG_OF */
+>> diff -r baced9e29ab5 include/linux/xllsdma.h
+>> --- /dev/null Thu Jan 01 00:00:00 1970 +0000
+>> +++ b/include/linux/xllsdma.h Wed Apr 28 02:00:51 2010 +0400
+>> @@ -0,0 +1,187 @@
+>> +/*
+>> + * SDMA subsystem support for Xilinx MPMC.
+>> + *
+>> + * Author: Sergey Temerkhanov
+>> + *
+>> + * Copyright (c) 2008-2010 Cifronic ZAO
+>> + *
+>> + * This program is free software; you can redistribute  it and/or modify it
+>> + * under  the terms of  the GNU General  Public License as published by the
+>> + * Free Software Foundation;  either version 2 of the  License, or (at your
+>> + * option) any later version.
+>> + *
+>> + */
+>> +
+>> +#ifndef __XLLSDMA_H__
+>> +#define __XLLSDMA_H__
+>> +
+>> +#include <linux/types.h>
+>> +#include <linux/dma-mapping.h>
+>> +
+>> +#define XLLSDMA_ALIGNMENT    0x40
+>> +
+>> +struct xllsdma_desc {
+>> +     __be32 next;
+>> +     __be32 address;
+>> +     __be32 length;
+>> +     __be32 stat_ctl;
+>> +     __be32 app1;
+>> +     __be32 app2;
+>> +     __be32 app3;
+>> +     __be32 app4;
+>> +     void *virt;
+>> +     u32 flags;
+>> +} __attribute__((aligned(XLLSDMA_ALIGNMENT)));
+>
+> 'virt' and 'flags' are not used by this driver. Putting them in this structure,
+> and using this structure in the API, forces them on all clients, which can lead
+> to inefficiencies (this will certainly be true in the DMA engine driver, perhaps
+> others). I think a better choice would be to have the API use a structure without
+> these two fields. For the convenience of other clients you could define a
+> 'superstructure' _not_ used in the API, like:
+>
+> struct xllsdma_fancy_desc {
+>        struct xllsdma_desc  basic_desc;
+>        void *virt;
+>        u32 flags;
+> }
+>
+>> +
+>> +
+>> +enum {
+>> +     XLLSDMA_STSCTL_ERROR    = (1 << 31), /* DMA error */
+>> +     XLLSDMA_STSCTL_IOE              = (1 << 30), /* Interrupt on end */
+>> +     XLLSDMA_STSCTL_SOE              = (1 << 29), /* Stop on end */
+>> +     XLLSDMA_STSCTL_DONE     = (1 << 28), /* DMA completed */
+>> +     XLLSDMA_STSCTL_SOP              = (1 << 27), /* Start of packet */
+>> +     XLLSDMA_STSCTL_EOP              = (1 << 26), /* End of packet */
+>> +     XLLSDMA_STSCTL_BUSY     = (1 << 25), /* DMA busy */
+>> +     XLLSDMA_STSCTL_CSUM     = (1 << 0),  /* Checksum enable */
+>> +
+>> +     XLLSDMA_STSCTL_MSK              = (0xFF << 24), /*Status/control field */
+>> +};
+>
+> The search-and-replace messed up your nice alignment.
+>
+>> +
+>> +/* SDMA client operations */
+>> +struct xllsdma_client {
+>> +     void *data;
+>> +     void (*tx_complete) (void *data);
+>> +     void (*rx_complete) (void *data);
+>> +     void (*error) (void *data);
+>> +     void (*reset) (void *data);
+>> +     struct list_head item;
+>> +};
+>> +
+>> +struct xllsdma_coalesce {
+>> +     int tx_threshold;
+>> +     int tx_timeout;
+>> +
+>> +     int rx_threshold;
+>> +     int rx_timeout;
+>> +};
+>> +
+>> +#define DEFINE_XLLSDMA_COALESCE(x) struct xllsdma_coalesce x = { \
+>> +     .tx_timeout     = 0, \
+>> +     .tx_threshold   = 1, \
+>> +     .rx_timeout     = 0, \
+>> +     .rx_threshold   = 1, };
+>> +
+>> +struct mpmc_device {
+>> +     void __iomem            *ioaddr;
+>> +
+>> +     struct resource         memregion;
+>> +     int                     irq;
+>> +
+>> +     int                     registered;
+>> +     struct list_head        item;
+>> +
+>> +     struct mutex            devs_lock;
+>> +     struct list_head        xllsdma_devs;
+>> +};
+>> +
+>> +struct xllsdma_device {
+>> +     struct device           *dev;
+>> +     void __iomem            *ioaddr;
+>> +     wait_queue_head_t       wait;
+>> +
+>> +     spinlock_t              lock;
+>> +
+>> +     struct resource         memregion;
+>> +     int                     rx_irq;
+>> +     int                     tx_irq;
+>> +     int                     rx_ack;
+>> +     int                     tx_ack;
+>> +     int                     phandle;
+>> +
+>> +     int                     registered;
+>> +     struct mpmc_device      *parent;
+>> +
+>> +     struct xllsdma_coalesce coal;
+>> +     struct list_head        item;
+>> +
+>> +     struct mutex            clients_lock;
+>> +     struct list_head        clients;
+>> +};
+>> +
+>> +static inline void xllsdma_add_client(struct xllsdma_device *sdma,
+>> +                                struct xllsdma_client *client)
+>> +{
+>> +     mutex_lock(&sdma->clients_lock);
+>> +     list_add(&client->item, &sdma->clients);
+>> +     mutex_unlock(&sdma->clients_lock);
+>> +}
+>> +
+>> +static inline void xllsdma_del_client(struct xllsdma_device *sdma,
+>> +                                struct xllsdma_client *client)
+>> +{
+>> +     mutex_lock(&sdma->clients_lock);
+>> +     list_del(&client->item);
+>> +     mutex_unlock(&sdma->clients_lock);
+>> +}
+>> +
+>> +struct xllsdma_device *xllsdma_find_device(int phandle);
+>> +void xllsdma_pause(struct xllsdma_device *sdma);
+>> +void xllsdma_resume(struct xllsdma_device *sdma);
+>> +void xllsdma_reset(struct xllsdma_device *sdma);
+>> +void xllsdma_rx_init(struct xllsdma_device *sdma, dma_addr_t desc);
+>> +void xllsdma_tx_init(struct xllsdma_device *sdma, dma_addr_t desc);
+>> +
+>> +int xllsdma_tx_submit(struct xllsdma_device *sdma, dma_addr_t desc);
+>> +int xllsdma_rx_submit(struct xllsdma_device *sdma, dma_addr_t desc);
+>> +
+>> +void xllsdma_tx_irq_enable(struct xllsdma_device *sdma);
+>> +void xllsdma_rx_irq_enable(struct xllsdma_device *sdma);
+>> +void xllsdma_tx_irq_disable(struct xllsdma_device *sdma);
+>> +void xllsdma_rx_irq_disable(struct xllsdma_device *sdma);
+>> +void xllsdma_tx_irq_ack(struct xllsdma_device *sdma);
+>> +void xllsdma_rx_irq_ack(struct xllsdma_device *sdma);
+>> +
+>> +int xllsdma_set_coalesce(struct xllsdma_device *sdma, struct xllsdma_coalesce *coal);
+>> +int xllsdma_get_coalesce(struct xllsdma_device *sdma, struct xllsdma_coalesce *coal);
+>> +
+>> +static inline int xllsdma_has_tx_irq(struct xllsdma_device *sdma)
+>> +{
+>> +     return sdma->tx_irq != NO_IRQ;
+>> +}
+>> +
+>> +static inline int xllsdma_has_rx_irq(struct xllsdma_device *sdma)
+>> +{
+>> +     return sdma->rx_irq != NO_IRQ;
+>> +}
+>> +
+>> +static inline int xllsdma_desc_busy(struct xllsdma_desc *desc)
+>> +{
+>> +     return desc->stat_ctl & __constant_be32_to_cpu(XLLSDMA_STSCTL_BUSY);
+>> +}
+>> +
+>> +static inline int xllsdma_desc_done(struct xllsdma_desc *desc)
+>> +{
+>> +     return desc->stat_ctl & __constant_be32_to_cpu(XLLSDMA_STSCTL_DONE);
+>> +}
+>> +
+>> +static inline int xllsdma_desc_sop(struct xllsdma_desc *desc)
+>> +{
+>> +     return desc->stat_ctl & __constant_be32_to_cpu(XLLSDMA_STSCTL_SOP);
+>> +}
+>> +
+>> +static inline int xllsdma_desc_eop(struct xllsdma_desc *desc)
+>> +{
+>> +     return desc->stat_ctl & __constant_be32_to_cpu(XLLSDMA_STSCTL_EOP);
+>> +}
+>> +
+>> +static inline void xllsdma_set_ack(struct xllsdma_device *sdma, int rx_ack,
+>> +                             int tx_ack)
+>> +{
+>> +     unsigned long flags;
+>> +     spin_lock_irqsave(&sdma->lock, flags);
+>> +     sdma->rx_ack = rx_ack;
+>> +     sdma->tx_ack = tx_ack;
+>> +     spin_unlock_irqrestore(&sdma->lock, flags);
+>> +}
+>> +
+>> +#endif
+>
+> ------------------------------------------------------------------------
+>  Steven J. Magnani               "I claim this network for MARS!
+>  www.digidescorp.com              Earthling, return my space modulator!"
+>
+>  #include <standard.disclaimer>
+>
+>
+>
+>
+
+
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
