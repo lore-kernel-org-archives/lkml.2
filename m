@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab0D1Buk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 21:50:40 -0400
-Received: from tomts36.bellnexxia.net ([209.226.175.93]:35481 "EHLO
-	tomts36-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753480Ab0D1BuQ (ORCPT
+	id S1755511Ab0D1BvS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 21:51:18 -0400
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:46074 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751348Ab0D1BvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 21:50:16 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEALMs10tGGNqG/2dsb2JhbACcY3K/IYUOBA
-Date: Tue, 27 Apr 2010 21:49:41 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: David Miller <davem@davemloft.net>, jbaron@redhat.com,
-       linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
-       tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
-       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
-       fweisbec@gmail.com, avi@redhat.com, vgoyal@redhat.com, dank@kegel.com
-Subject: Re: [PATCH 00/11] jump label v7
-Message-ID: <20100428014941.GA8389@Krystal>
-References: <cover.1271427118.git.jbaron@redhat.com> <20100422.161700.191166551.davem@davemloft.net> <20100427.175858.134109609.davem@davemloft.net> <20100428013951.GM12389@ozlabs.org>
-Mime-Version: 1.0
+	Tue, 27 Apr 2010 21:51:16 -0400
+Date: Wed, 28 Apr 2010 11:50:35 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       Eric Sandeen <sandeen@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       Alex Elder <aelder@sgi.com>
+Subject: Re: [PATCH] XFS: Let the broken fiemap work in query mode.
+Message-ID: <20100428015035.GC9783@dastard>
+References: <1272349065-16383-1-git-send-email-tao.ma@oracle.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100428013951.GM12389@ozlabs.org>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 21:44:04 up 20 days, 11:37,  4 users,  load average: 0.07, 0.14,
-	0.10
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1272349065-16383-1-git-send-email-tao.ma@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Breeds (tony@bakeyournoodle.com) wrote:
-> On Tue, Apr 27, 2010 at 05:58:58PM -0700, David Miller wrote:
+On Tue, Apr 27, 2010 at 02:17:45PM +0800, Tao Ma wrote:
+> According to Documentation/filesystems/fiemap.txt, If fm_extent_count
+> is zero, then the fm_extents[] array is ignored (no extents will be
+> returned), and the fm_mapped_extents count will hold the number of
+> extents needed.
 > 
-> > The kernel stops compiling after the second patch because
-> > kernel/jump_label.c is compiled unconditionally, and this generates an
-> > attempt to include asm/alternatives.h which is an x86-only phenomenon.
-> > 
-> > Do you have access to a cross-compile environment or at least some
-> > non-x86 system you can test build on before submitting these patch
-> > sets?
+> But as the commit 97db39a1f6f69e906e98118392400de5217aa33a has changed
+> bmv_count to the caller's input buffer, this number query function can't
+> work any more. As this commit is written to change bmv_count from
+> MAXEXTNUM because of ENOMEM, we can't find a really suitable number to
+> set bmv_count now in xfs_vn_fiemap. Since we really have no idea of how
+> much extents the file has, a big number may cause ENOMEM, while a small
+> one will mask the real extent no.
 > 
-> I heard cross-compilers?
-> 
-> http://kernel.org/pub/tools/crosstool/files/bin/  i686 and x86_64 and 4.4.0
-> compilers suitable for kernel work.
-> 
-> I plan to build 4.4.$latest and 4.5.0 ASAP.
-> 
-> Yours Tony
+> So this patch try to resolve this problem by adding a temporary getbmapx
+> in xfs_getbmap. If the caller didn't give bmv_count, we don't allocate
+> the "out" either. Instead, every time we want to use 'out', use '&tmp'
+> instead.
+>
+> I know this solution is a bit ugly, but I can't find a way to resolve
+> this issue while not changing the codes too much. So any good suggestion
+> is welcomed.
 
-The crosstool package from Dan Kegel did a good job for this. Not sure
-it's currently maintained though. It was a very useful project, it's a
-shame if it does not live on. It would be good to have up-to-date and
-tested compilers for various architectures available on kernel.org,
-ideally with access to a package that helps building compilers for
-various architectures.
+I don't see a need to change xfs_getbmap() to fix this. We can limit
+the maximum allocation size to something realistic just by setting
+bm.bmv.count to something sane. e.g, in xfs_vn_fiemap:
 
-Thanks,
+-	bm.bmv_count = fieinfo->fi_extents_max + 1;
++	bm.bmv.count = !fieinfo->fi_extents_max ? MAXEXTNUM :
++					fieinfo->fi_extents_max - 1;
++	bm.bmv_count = MIN(bm.bmv_count,
+				(PAGE_SIZE * 16 / sizeof(struct getbmapx)));
 
-Mathieu
+Unless I'm missing something, that should also prevent the case of
+an application providing a really large fi_extents_max from
+triggering ENOMEM in most cases as well.
 
+FWIW, how did you find this? Is it possible for you to add a test
+for this regression into xfstests so that we don't break it again
+in future?
 
+Cheers,
+
+Dave.
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Dave Chinner
+david@fromorbit.com
