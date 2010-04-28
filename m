@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab0D1QR6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 12:17:58 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:40643 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755680Ab0D1QRY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 12:17:24 -0400
-Message-Id: <20100428161713.971813259@szeredi.hu>
-References: <20100428161636.272097923@szeredi.hu>
-User-Agent: quilt/0.46-1
-Date: Wed, 28 Apr 2010 18:16:40 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Cc: jens.axboe@oracle.com, akpm@linux-foundation.org,
-       torvalds@linux-foundation.org
-Subject: [RFC PATCH 4/6] fuse: get page reference for readpages
-Content-Disposition: inline; filename=fuse-get-page-ref-for-readpages.patch
+	id S1754836Ab0D1O7G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 10:59:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50640 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753940Ab0D1O7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 10:59:04 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <i2s19f34abd1004280504n5b0eec52h1452a29726841e53@mail.gmail.com>
+References: <i2s19f34abd1004280504n5b0eec52h1452a29726841e53@mail.gmail.com> <20100426145928.7855.70221.stgit@warthog.procyon.org.uk>
+To: Vegard Nossum <vegard.nossum@gmail.com>
+Cc: dhowells@redhat.com, torvalds@osdl.org, akpm@linux-foundation.org,
+       keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KEYS: The request_key() syscall should link an existing key to the dest keyring
+Date: Wed, 28 Apr 2010 15:58:49 +0100
+Message-ID: <14312.1272466729@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acquire a page ref on pages in ->readpages() and release them when the
-read has finished.  Not acquiring a reference didn't seem to cause any
-trouble since the page is locked and will not be kicked out of the
-page cache during the read.
+Vegard Nossum <vegard.nossum@gmail.com> wrote:
 
-However the following patches will want to remove the page from the
-cache so a separate ref is needed.  Making the reference in req->pages
-explicit also makes the code easier to understand.
+> 1. Is it correct to return -EINPROGRESS in this case?
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/fuse/file.c |    2 ++
- 1 file changed, 2 insertions(+)
+Yes - it prevents construct_key_and_link() from going on to call
+construct_key().  The key in question is returned in *_key.
 
-Index: linux-2.6/fs/fuse/file.c
-===================================================================
---- linux-2.6.orig/fs/fuse/file.c	2010-04-28 15:50:32.000000000 +0200
-+++ linux-2.6/fs/fuse/file.c	2010-04-28 15:50:35.000000000 +0200
-@@ -536,6 +536,7 @@ static void fuse_readpages_end(struct fu
- 		else
- 			SetPageError(page);
- 		unlock_page(page);
-+		page_cache_release(page);
- 	}
- 	if (req->ff)
- 		fuse_file_put(req->ff);
-@@ -589,6 +590,7 @@ static int fuse_readpages_fill(void *_da
- 			return PTR_ERR(req);
- 		}
- 	}
-+	page_cache_get(page);
- 	req->pages[req->num_pages] = page;
- 	req->num_pages++;
- 	return 0;
+However, I don't think I handle other errors coming back from
+construct_alloc_key() correctly.
 
--- 
+> 2. (Why) Shouldn't the return value of __key_link() be checked?
+
+It should.  In fact, I should probably precheck and preallocate the keyring to
+make sure I don't get errors after allocating the new key.
+
+> 3. In __key_link(), shouldn't rcu_dereference() be used when accessing
+> keyring->payload.subscriptions?
+
+No.  We have to hold a write lock on the keyring semaphore if we're going to
+call __key_link() to add something to it.
+
+We should, however, call rcu_dereference_protected().
+
+You should find a patch for this in your inbox.
+
+David
