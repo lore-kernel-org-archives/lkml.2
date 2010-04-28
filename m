@@ -1,162 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab0D1PEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:04:35 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:48629 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753438Ab0D1PEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:04:33 -0400
-Date: Wed, 28 Apr 2010 10:04:32 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] - Randomize node rotor used in
-	cpuset_mem_spread_node()
-Message-ID: <20100428150432.GA3137@sgi.com>
-References: <20100428131158.GA2648@sgi.com>
+	id S1756690Ab0D1TIJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 15:08:09 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:58288 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755701Ab0D1TIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 15:08:07 -0400
+Date: Wed, 28 Apr 2010 20:07:46 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH -v2] take all anon_vma locks in anon_vma_lock
+Message-ID: <20100428190746.GK15815@csn.ul.ie>
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie> <1272403852-10479-3-git-send-email-mel@csn.ul.ie> <20100427231007.GA510@random.random> <20100428091555.GB15815@csn.ul.ie> <20100428153525.GR510@random.random> <20100428155558.GI15815@csn.ul.ie> <20100428162305.GX510@random.random> <20100428134719.32e8011b@annuminas.surriel.com> <20100428142510.09984e15@annuminas.surriel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100428131158.GA2648@sgi.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100428142510.09984e15@annuminas.surriel.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some workloads that create a large number of small files tend to assign
-too many pages to node 0 (multi-node systems). Part of the reason is that
-the rotor (in cpuset_mem_spread_node()) used to assign nodes starts
-at node 0 for newly created tasks.
+On Wed, Apr 28, 2010 at 02:25:10PM -0400, Rik van Riel wrote:
+> Take all the locks for all the anon_vmas in anon_vma_lock, this properly
+> excludes migration and the transparent hugepage code from VMA changes done
+> by mmap/munmap/mprotect/expand_stack/etc...
+> 
+> Also document the locking rules for the same_vma list in the anon_vma_chain
+> and remove the anon_vma_lock call from expand_upwards, which does not need it.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> 
+> --- 
+> Posted quickly as an RFC patch, only compile tested so far.
+> Andrea, Mel, does this look like a reasonable approach?
+> 
 
-This patch changes the rotor to be initialized to a random node number
-of the cpuset.
+Well, it looks nice but I am wary of making much in the way of comment
+on its correctness. Every time I think I understand the new anon_vma
+changes, I find something else to make me doubt myself :)
 
-NOTE: this patch is on TOP of the previous patch:
-	[PATCH] - New round-robin rotor for SLAB allocations
-	http://marc.info/?l=linux-mm&m=127231565321947&w=2
+> v2:
+>  - also change anon_vma_unlock to walk the loop
+>  - add calls to anon_vma_lock & anon_vma_unlock to vma_adjust
+>  - introduce a new lock for the vma->anon_vma_chain list, to prevent
+>    the lock inversion that Andrea pointed out
+> 
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index b8bb9a6..a0679c6 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -239,6 +239,7 @@ struct mm_struct {
+>  	int map_count;				/* number of VMAs */
+>  	struct rw_semaphore mmap_sem;
+>  	spinlock_t page_table_lock;		/* Protects page tables and some counters */
+> +	spinlock_t anon_vma_chain_lock;		/* Protects vma->anon_vma_chain, with mmap_sem */
+>  
+>  	struct list_head mmlist;		/* List of maybe swapped mm's.	These are globally strung
+>  						 * together off init_mm.mmlist, and are protected
+> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> index d25bd22..492e7ca 100644
+> --- a/include/linux/rmap.h
+> +++ b/include/linux/rmap.h
+> @@ -52,11 +52,15 @@ struct anon_vma {
+>   * all the anon_vmas associated with this VMA.
+>   * The "same_anon_vma" list contains the anon_vma_chains
+>   * which link all the VMAs associated with this anon_vma.
+> + *
+> + * The "same_vma" list is locked by either having mm->mmap_sem
+> + * locked for writing, or having mm->mmap_sem locked for reading
+> + * AND holding the mm->anon_vma_chain_lock.
+>   */
+>  struct anon_vma_chain {
+>  	struct vm_area_struct *vma;
+>  	struct anon_vma *anon_vma;
+> -	struct list_head same_vma;   /* locked by mmap_sem & page_table_lock */
+> +	struct list_head same_vma;	/* see above */
+>  	struct list_head same_anon_vma;	/* locked by anon_vma->lock */
+>  };
+>  
+> @@ -90,18 +94,24 @@ static inline struct anon_vma *page_anon_vma(struct page *page)
+>  	return page_rmapping(page);
+>  }
+>  
+> -static inline void anon_vma_lock(struct vm_area_struct *vma)
+> +static inline void anon_vma_lock(struct vm_area_struct *vma, void *nest_lock)
+>  {
+>  	struct anon_vma *anon_vma = vma->anon_vma;
+> -	if (anon_vma)
+> -		spin_lock(&anon_vma->lock);
+> +	if (anon_vma) {
+> +		struct anon_vma_chain *avc;
+> +		list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
+> +			spin_lock_nest_lock(&avc->anon_vma->lock, nest_lock);
+> +	}
+>  }
 
-Signed-off-by: Jack Steiner <steiner@sgi.com>
+This doesn't build with LOCKDEP enabled. As we discussed on IRC, I
+changed nest_lock to spinlock_t * and always made it the
+anon_vma_chain_lock. That vaguely makes more sense than sometimes
+depending on the mmap_sem semaphore but I'm not 100% solid on it.
 
+Walking along like this and taking the necessary locks seems reasonable
+though and should be usable by transparent hugepage support where as my
+approach probably wasn't.
 
----
+>  
+>  static inline void anon_vma_unlock(struct vm_area_struct *vma)
+>  {
+>  	struct anon_vma *anon_vma = vma->anon_vma;
+> -	if (anon_vma)
+> -		spin_unlock(&anon_vma->lock);
+> +	if (anon_vma) {
+> +		struct anon_vma_chain *avc;
+> +		list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
+> +			spin_unlock(&avc->anon_vma->lock);
+> +	}
+>  }
+>  
+>  /*
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 44b0791..83b1ba2 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -468,6 +468,7 @@ static struct mm_struct * mm_init(struct mm_struct * mm, struct task_struct *p)
+>  	mm->nr_ptes = 0;
+>  	memset(&mm->rss_stat, 0, sizeof(mm->rss_stat));
+>  	spin_lock_init(&mm->page_table_lock);
+> +	spin_lock_init(&mm->anon_vma_chain_lock);
+>  	mm->free_area_cache = TASK_UNMAPPED_BASE;
+>  	mm->cached_hole_size = ~0UL;
+>  	mm_init_aio(mm);
+> diff --git a/mm/init-mm.c b/mm/init-mm.c
+> index 57aba0d..3ce8a1f 100644
+> --- a/mm/init-mm.c
+> +++ b/mm/init-mm.c
+> @@ -15,6 +15,7 @@ struct mm_struct init_mm = {
+>  	.mm_count	= ATOMIC_INIT(1),
+>  	.mmap_sem	= __RWSEM_INITIALIZER(init_mm.mmap_sem),
+>  	.page_table_lock =  __SPIN_LOCK_UNLOCKED(init_mm.page_table_lock),
+> +	.anon_vma_chain_lock =  __SPIN_LOCK_UNLOCKED(init_mm.anon_vma_chain_lock),
+>  	.mmlist		= LIST_HEAD_INIT(init_mm.mmlist),
+>  	.cpu_vm_mask	= CPU_MASK_ALL,
+>  };
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index f90ea92..4602358 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -452,7 +452,7 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		spin_lock(&mapping->i_mmap_lock);
+>  		vma->vm_truncate_count = mapping->truncate_count;
+>  	}
+> -	anon_vma_lock(vma);
+> +	anon_vma_lock(vma, &mm->mmap_sem);
+>  
 
-V2 - initial patch was generated against the wrong tree. This patch is based
-on linux-next.
+so I changed this and others like it to the anon_vma_chain_lock. I
+haven't actually tested yet.
 
+>  	__vma_link(mm, vma, prev, rb_link, rb_parent);
+>  	__vma_link_file(vma);
+> @@ -578,6 +578,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+>  		}
+>  	}
+>  
+> +	anon_vma_lock(vma, &mm->mmap_sem);
+>  	if (root) {
+>  		flush_dcache_mmap_lock(mapping);
+>  		vma_prio_tree_remove(vma, root);
+> @@ -599,6 +600,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+>  		vma_prio_tree_insert(vma, root);
+>  		flush_dcache_mmap_unlock(mapping);
+>  	}
+> +	anon_vma_unlock(vma);
+>  
+>  	if (remove_next) {
+>  		/*
+> @@ -1705,12 +1707,11 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+>  		return -EFAULT;
+>  
+>  	/*
+> -	 * We must make sure the anon_vma is allocated
+> -	 * so that the anon_vma locking is not a noop.
+> +	 * Unlike expand_downwards, we do not need to take the anon_vma lock,
+> +	 * because we leave vma->vm_start and vma->pgoff untouched. 
+> +	 * This means rmap lookups of pages inside this VMA stay valid
+> +	 * throughout the stack expansion.
+>  	 */
+> -	if (unlikely(anon_vma_prepare(vma)))
+> -		return -ENOMEM;
+> -	anon_vma_lock(vma);
+>  
+>  	/*
+>  	 * vma->vm_start/vm_end cannot change under us because the caller
+> @@ -1721,7 +1722,6 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+>  	if (address < PAGE_ALIGN(address+4))
+>  		address = PAGE_ALIGN(address+4);
+>  	else {
+> -		anon_vma_unlock(vma);
+>  		return -ENOMEM;
+>  	}
+>  	error = 0;
+> @@ -1737,7 +1737,6 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+>  		if (!error)
+>  			vma->vm_end = address;
+>  	}
+> -	anon_vma_unlock(vma);
+>  	return error;
+>  }
+>  #endif /* CONFIG_STACK_GROWSUP || CONFIG_IA64 */
+> @@ -1749,6 +1748,7 @@ static int expand_downwards(struct vm_area_struct *vma,
+>  				   unsigned long address)
+>  {
+>  	int error;
+> +	struct mm_struct *mm = vma->vm_mm;
+>  
+>  	/*
+>  	 * We must make sure the anon_vma is allocated
+> @@ -1762,7 +1762,8 @@ static int expand_downwards(struct vm_area_struct *vma,
+>  	if (error)
+>  		return error;
+>  
+> -	anon_vma_lock(vma);
+> +	spin_lock(&mm->anon_vma_chain_lock);
+> +	anon_vma_lock(vma, &mm->anon_vma_chain_lock);
+>  
+>  	/*
+>  	 * vma->vm_start/vm_end cannot change under us because the caller
+> @@ -1784,6 +1785,8 @@ static int expand_downwards(struct vm_area_struct *vma,
+>  		}
+>  	}
+>  	anon_vma_unlock(vma);
+> +	spin_unlock(&mm->anon_vma_chain_lock);
+> +
+>  	return error;
+>  }
+>  
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 526704e..aa27132 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -23,6 +23,7 @@
+>   * inode->i_mutex	(while writing or truncating, not reading or faulting)
+>   *   inode->i_alloc_sem (vmtruncate_range)
+>   *   mm->mmap_sem
+> + *   mm->anon_vma_chain_lock (mmap_sem for read, protects vma->anon_vma_chain)
+>   *     page->flags PG_locked (lock_page)
+>   *       mapping->i_mmap_lock
+>   *         anon_vma->lock
+> @@ -135,8 +136,8 @@ int anon_vma_prepare(struct vm_area_struct *vma)
+>  		}
+>  		spin_lock(&anon_vma->lock);
+>  
+> -		/* page_table_lock to protect against threads */
+> -		spin_lock(&mm->page_table_lock);
+> +		/* anon_vma_chain_lock to protect against threads */
+> +		spin_lock(&mm->anon_vma_chain_lock);
+>  		if (likely(!vma->anon_vma)) {
+>  			vma->anon_vma = anon_vma;
+>  			avc->anon_vma = anon_vma;
+> @@ -145,7 +146,7 @@ int anon_vma_prepare(struct vm_area_struct *vma)
+>  			list_add(&avc->same_anon_vma, &anon_vma->head);
+>  			allocated = NULL;
+>  		}
+> -		spin_unlock(&mm->page_table_lock);
+> +		spin_unlock(&mm->anon_vma_chain_lock);
+>  
+>  		spin_unlock(&anon_vma->lock);
+>  		if (unlikely(allocated)) {
+> 
 
-
- arch/x86/mm/numa.c       |   17 +++++++++++++++++
- include/linux/bitmap.h   |    1 +
- include/linux/nodemask.h |    5 +++++
- kernel/fork.c            |    4 ++++
- lib/bitmap.c             |   19 +++++++++++++++++++
- 5 files changed, 46 insertions(+)
-
-Index: linux/arch/x86/mm/numa.c
-===================================================================
---- linux.orig/arch/x86/mm/numa.c	2010-04-28 09:44:52.422898844 -0500
-+++ linux/arch/x86/mm/numa.c	2010-04-28 09:49:39.282899779 -0500
-@@ -2,6 +2,7 @@
- #include <linux/topology.h>
- #include <linux/module.h>
- #include <linux/bootmem.h>
-+#include <linux/random.h>
- 
- #ifdef CONFIG_DEBUG_PER_CPU_MAPS
- # define DBG(x...) printk(KERN_DEBUG x)
-@@ -65,3 +66,19 @@ const struct cpumask *cpumask_of_node(in
- }
- EXPORT_SYMBOL(cpumask_of_node);
- #endif
-+
-+/*
-+ * Return the bit number of a random bit set in the nodemask.
-+ *   (returns -1 if nodemask is empty)
-+ */
-+int __node_random(const nodemask_t *maskp)
-+{
-+	int w, bit = -1;
-+
-+	w = nodes_weight(*maskp);
-+	if (w)
-+		bit = bitmap_find_nth_bit(maskp->bits,
-+			get_random_int() % w, MAX_NUMNODES);
-+	return bit;
-+}
-+EXPORT_SYMBOL(__node_random);
-Index: linux/include/linux/bitmap.h
-===================================================================
---- linux.orig/include/linux/bitmap.h	2010-04-28 09:44:52.494903609 -0500
-+++ linux/include/linux/bitmap.h	2010-04-28 09:45:24.952154639 -0500
-@@ -141,6 +141,7 @@ extern int bitmap_find_free_region(unsig
- extern void bitmap_release_region(unsigned long *bitmap, int pos, int order);
- extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
- extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
-+extern int bitmap_find_nth_bit(const unsigned long *bitmap, int n, int bits);
- 
- #define BITMAP_LAST_WORD_MASK(nbits)					\
- (									\
-Index: linux/include/linux/nodemask.h
-===================================================================
---- linux.orig/include/linux/nodemask.h	2010-04-28 09:44:52.494903609 -0500
-+++ linux/include/linux/nodemask.h	2010-04-28 09:45:24.984152911 -0500
-@@ -66,6 +66,8 @@
-  * int num_online_nodes()		Number of online Nodes
-  * int num_possible_nodes()		Number of all possible Nodes
-  *
-+ * int node_random(mask)              Random node with set bit in mask
-+ *
-  * int node_online(node)		Is some node online?
-  * int node_possible(node)		Is some node possible?
-  *
-@@ -267,6 +269,9 @@ static inline int __first_unset_node(con
- 			find_first_zero_bit(maskp->bits, MAX_NUMNODES));
- }
- 
-+#define node_random(mask) __node_random(&(mask))
-+extern int __node_random(const nodemask_t *maskp);
-+
- #define NODE_MASK_LAST_WORD BITMAP_LAST_WORD_MASK(MAX_NUMNODES)
- 
- #if MAX_NUMNODES <= BITS_PER_LONG
-Index: linux/kernel/fork.c
-===================================================================
---- linux.orig/kernel/fork.c	2010-04-28 09:44:52.494903609 -0500
-+++ linux/kernel/fork.c	2010-04-28 09:49:39.282899779 -0500
-@@ -1079,6 +1079,10 @@ static struct task_struct *copy_process(
-  	}
- 	mpol_fix_fork_child_flag(p);
- #endif
-+#ifdef CONFIG_CPUSETS
-+	p->cpuset_mem_spread_rotor = node_random(p->mems_allowed);
-+	p->cpuset_slab_spread_rotor = node_random(p->mems_allowed);
-+#endif
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	p->irq_events = 0;
- #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-Index: linux/lib/bitmap.c
-===================================================================
---- linux.orig/lib/bitmap.c	2010-04-28 09:44:52.494903609 -0500
-+++ linux/lib/bitmap.c	2010-04-28 09:49:39.282899779 -0500
-@@ -1098,3 +1098,22 @@ void bitmap_copy_le(void *dst, const uns
- 	}
- }
- EXPORT_SYMBOL(bitmap_copy_le);
-+
-+/**
-+ * bitmap_find_nth_bit(buf, ord, bits)
-+ *	@buf: pointer to bitmap
-+ *	@n: ordinal bit position (n-th set bit, n >= 0)
-+ * @nbits: number of bits in the bitmap
-+ *
-+ * find the Nth bit that is set in the bitmap
-+ * Value of @n should be in range 0 <= @n < weight(buf), else
-+ * results are undefined.
-+ *
-+ * The bit positions 0 through @bits are valid positions in @buf.
-+ */
-+int bitmap_find_nth_bit(const unsigned long *bitmap, int n, int bits)
-+{
-+	return bitmap_ord_to_pos(bitmap, n, bits);
-+}
-+EXPORT_SYMBOL(bitmap_find_nth_bit);
-+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
