@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab0D1K7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 06:59:35 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:7442 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab0D1K7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 06:59:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:date:message-id:user-agent:mime-version:
-	content-type:content-transfer-encoding:x-system-of-record;
-	b=yZp/76vS/ZpFJRp1DXda+S4N7gv8Av3Y9rscU9obBz/qWsKAjC+GMn9ips8rZkAqQ
-	vFyD1RLtrx+pxbJ7pRSHQ==
-Subject: [PATCH v2 0/6] Series short description
-To: linux-kernel@vger.kernel.org
-From: Paul Turner <pjt@google.com>
-Date: Wed, 28 Apr 2010 03:59:10 -0700
-Message-ID: <20100428105907.5495.32844.stgit@kitami.corp.google.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1753482Ab0D1JlU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 05:41:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55486 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751450Ab0D1JlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 05:41:17 -0400
+References: <20100427154917.405e21df.sfr@canb.auug.org.au>
+Message-Id: <DB60B93C-DFAC-4D99-8E3C-364DAF433A07@suse.de>
+From: Alexander Graf <agraf@suse.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+In-Reply-To: <20100427154917.405e21df.sfr@canb.auug.org.au>
+Content-Type: text/plain;
+	charset=us-ascii;
+	format=flowed;
+	delsp=yes
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+X-Mailer: iPhone Mail (7E18)
+Mime-Version: 1.0 (iPhone Mail 7E18)
+Subject: Re: linux-next: build failure after merge of the final tree
+Date: Wed, 28 Apr 2010 10:41:38 +0100
+Cc: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following series implements...
 
----
+Am 27.04.2010 um 06:49 schrieb Stephen Rothwell <sfr@canb.auug.org.au>:
 
-Nikhil Rao (1):
-      sched: add exports tracking cfs bandwidth control statistics
+> Hi all,
+>
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+>
+> arch/powerpc/kvm/book3s.c: In function 'kvmppc_core_vcpu_create':
+> arch/powerpc/kvm/book3s.c:1241: error: implicit declaration of  
+> function 'kzalloc'
+> arch/powerpc/kvm/book3s.c:1241: warning: cast to pointer from  
+> integer of different size
+> arch/powerpc/kvm/book3s.c:1281: error: implicit declaration of  
+> function 'kfree'
+>
+> Caused by commit 046cdc052ffcbf1ee1c627ef811031d18654bafe ("KVM: PPC:
+> Improve indirect svcpu accessors") from the kvm tree.
+>
+> You have to include slab.h directly to use kzalloc/kfree ...
+>
+> I have applied the following patch for today.
 
-Paul Turner (5):
-      sched: introduce primitives to account for CFS bandwidth tracking
-      sched: accumulate per-cfs_rq cpu usage
-      sched: throttle cfs_rq entities which exceed their local quota
-      sched: unthrottle cfs_rq(s) who ran out of quota at period refresh
-      sched: hierarchical task accounting for FAIR_GROUP_SCHED
+Thank you. Is that behavior new? I didn't get any breakage when  
+compile testing myself.
+
+Will this commit automatically move back to kvm.git or is there any  
+intervention required from my side?
 
 
- include/linux/sched.h |    4 +
- init/Kconfig          |    9 +
- kernel/sched.c        |  347 +++++++++++++++++++++++++++++++++++++++++++++----
- kernel/sched_fair.c   |  240 +++++++++++++++++++++++++++++++++-
- kernel/sched_rt.c     |   24 +--
- kernel/sysctl.c       |   10 +
- 6 files changed, 585 insertions(+), 49 deletions(-)
+Alex
 
--- 
-Signature
+>
