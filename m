@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab0D1W2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 18:28:19 -0400
-Received: from kroah.org ([198.145.64.141]:34839 "EHLO coco.kroah.org"
+	id S932272Ab0D1W3h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 18:29:37 -0400
+Received: from www.tglx.de ([62.245.132.106]:57518 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754409Ab0D1W2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 18:28:17 -0400
-Date: Wed, 28 Apr 2010 15:09:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Roel Van Nyen <roel.vannyen@gmail.com>
-Cc: gregkh@suse.de, hjanssen@microsoft.com, haiyangz@microsoft.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: hv: Fix coding style errors in NetVsc.c
-Message-ID: <20100428220906.GA14160@kroah.com>
-References: <1272491748-12516-1-git-send-email-roel.vannyen@gmail.com>
+	id S1756337Ab0D1W3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 18:29:36 -0400
+Date: Thu, 29 Apr 2010 00:28:00 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Guillaume Knispel <gknispel@proformatique.com>
+cc: linux-kernel@vger.kernel.org, Linuxppc-dev@lists.ozlabs.org,
+       Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Haavard Skinnemoen <hskinnemoen@atmel.com>, Ingo Molnar <mingo@elte.hu>,
+       Lars-Peter Clausen <lars@metafoo.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Michael Buesch <mb@bu3sch.de>, Peter Zijlstra <peterz@infradead.org>,
+       Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 1/2] genirq: reliably replay pending edge-triggered irq
+In-Reply-To: <20100428235657.7120edd9.gknispel@proformatique.com>
+Message-ID: <alpine.LFD.2.00.1004290027090.2951@localhost.localdomain>
+References: <1271941798-9659-1-git-send-email-gknispel@proformatique.com> <1271941798-9659-2-git-send-email-gknispel@proformatique.com> <alpine.LFD.2.00.1004271537130.2951@localhost.localdomain> <20100428235657.7120edd9.gknispel@proformatique.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272491748-12516-1-git-send-email-roel.vannyen@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 11:55:48PM +0200, Roel Van Nyen wrote:
-> Fix coding style issues
+On Wed, 28 Apr 2010, Guillaume Knispel wrote:
+
+> On Tue, 27 Apr 2010 15:42:11 +0200 (CEST)
+> Thomas Gleixner <tglx@linutronix.de> wrote:
 > 
-> Signed-of-by: Roel Van Nyen <roel.vannyen@gmail.com>
-> ---
->  drivers/staging/hv/NetVsc.c |    4 ++--
+> > On Thu, 22 Apr 2010, Guillaume Knispel wrote:
+> [snip] 
+> > > acked and masked at controller level and IRQ_PENDING is set.
+> > > ---
+> > >  arch/arm/Kconfig                                   |    4 ----
+> > >  arch/arm/configs/acs5k_defconfig                   |    1 -
+> > >  arch/arm/configs/acs5k_tiny_defconfig              |    1 -
+> > 
+> >    Changing the defconfigs should be a separate patch and I'm not
+> >    going to push such a thing through the genirq tree. The stale
+> >    entries do not hurt.
+> 
+> Ok
+> In this separate patch, to I put "genirq" in the title?
+> Do I put it in the same series?
 
-This fix has already been made in the linux-next tree.  Can you make
-sure you work off of it, and not an older tree in the future?
+Just keep them out for now and send them to the arch maintainers once
+the change hits linus tree.
 
-thanks,
+Thanks,
 
-greg k-h
+	tglx
