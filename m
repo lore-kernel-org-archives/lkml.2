@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab0D1NVT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 09:21:19 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64137 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab0D1NVR (ORCPT
+	id S1754228Ab0D1N4y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 09:56:54 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:60933 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438Ab0D1N4w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 09:21:17 -0400
+	Wed, 28 Apr 2010 09:56:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TvPNiZpyGlPg5OxJuDbeDHuEd6JDu8f9IOCwfa/G8qesFS6F5HrPPPsMPmMuJBM7u4
-         AzsUilwpFrY4187g0HmcVwBiTP3Ug4tPA5rMoTrRjIDmyWQ1JbNyL3Is7aqZ2VXzhkTX
-         bTW9Zn+DznGXN5sNCg91K/4zUdkxTBCXDZXv4=
-Date: Wed, 28 Apr 2010 15:21:15 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Al Viro <viro@zeniv.linux.org.uk>,
-       Jan Blunck <jblunck@suse.de>, John Kacur <jkacur@redhat.com>
-Subject: Re: [GIT PULL v2] Preparation for BKL'ed ioctl removal
-Message-ID: <20100428132112.GC12017@nowhere>
-References: <1271390201-20431-1-git-send-regression-fweisbec@gmail.com> <20100425173912.GA5375@nowhere> <20100426072541.GA25961@elte.hu> <201004261329.28427.arnd@arndb.de> <20100427092530.GD11348@elte.hu>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hecs/ImhyGiG6xNaHMV4du2z15x4gAIePiGyR5fr/qGr+fcrXVR174dhqijqwrDPe7
+         w33zGNxsaZ0ATM+cAJqeF0GWlTBqzrPnRzlWqk2N+1nCVkVULAGueaBWSOxMl+U0sQLi
+         fYeQnTpInl2PPbPPFVPysPFPjvQya+3owRbiw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100427092530.GD11348@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <8526.1272447122@redhat.com>
+References: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> 
+	<8526.1272447122@redhat.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Wed, 28 Apr 2010 21:56:29 +0800
+Message-ID: <q2r412e6f7f1004280656t331e9120rc9eab069fb4d4de3@mail.gmail.com>
+Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
+To: David Howells <dhowells@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Roland Dreier <rolandd@cisco.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Takashi Iwai <tiwai@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 11:25:30AM +0200, Ingo Molnar wrote:
-> 
-> * Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > On Monday 26 April 2010, Ingo Molnar wrote:
-> > > This could be done all automated for a hundred old drivers if need to be. 
-> > > There would be no bkl_ioctl's left.
-> > 
-> > I don't think it can be fully automated. [...]
-> 
-> Corner cases are not a problem as long as the risk of them going unnoticed is 
-> lower than the risk of a manual conversion introducing bugs.
-> 
-> > [...] For the majority of the modules, your approach would work fine, but 
-> > there are still the well-known pitfalls in corner cases:
-> > 
-> > - recursive uses in functions outside of ioctl (possibly none left
-> >   after the TTY layer is done, but who knows)
-> 
-> Not a problem even if there's any such usage left: lockdep will sort those out 
-> very quickly.
-> 
-> > - lock-order problems with other mutexes (see DRM)
-> 
-> This too will be mapped out very quickly via lockdep.
+On Wed, Apr 28, 2010 at 5:32 PM, David Howells <dhowells@redhat.com> wrote:
+> Changli Gao <xiaosuo@gmail.com> wrote:
+>
+>> @@ -50,6 +48,7 @@ struct wait_bit_queue {
+>>  struct __wait_queue_head {
+>>       spinlock_t lock;
+>>       struct list_head task_list;
+>> +     struct list_head task_list_ex;
+>
+> It would be preferable it if you could avoid making struct __wait_queue_head
+> bigger.  That will increase the size of a lot of things.
+>
 
+I don't know how to do that, as maybe there are non-exclusive and
+exclusive wait queues in the same wait queue head. If we want to
+enqueue exclusive wait queues at the head of exclusive queues, we have
+to know where the head is, otherwise, we have to loop to find the head
+when enqueuing.
 
-And the hung task detector too which is the last resort to detect
-uncovered resource dependencies (was really useful for reiserfs).
-
-But the problem is among those people who may use such ancient drivers,
-I guess few of them will have those debug config enabled.
-
-And because there are almost no testers of these drivers, nobody/few will ever
-notice the problem.
-
- 
-> > - code that depends on autorelease to allow one ioctl while another
-> >   is sleeping. (a small number of drivers)
-> 
-> This is a real issue, and in fact it's an unknown: there may be an unknown 
-> number of random sleep points within BKL codepaths that is being relied on in 
-> creative ways.
-> 
-> Note that by introducing a mutex we (in most cases) make the locking 
-> _stricter_, so the biggest risk from that is a lockup - which will be 
-> debuggable via lockdep.
-
-
-So, as explained above, lockdep won't even help here.
-
-I mean, for callsites that are obvious, say when it is clear that
-the bkl is leaf lock or doesn't introduce uncovered resource dependencies due
-to non-release on sleep, we should do such conversion. And I guess most
-drivers that use the bkl follow this scheme.
-
-But for the others (rares I think), the operation looks unsafe to me.
-If we don't have the hardware to test the driver, then lockdep and hung
-task detectors are going to be useless.
-
-That said, once we reach that point with 4 users of bkl remaining, may
-be that will be time to buy such hardware for a symbolic $1 in obscure
-places and do the tests. Or just git-rm if we are too lazy.
-
+-- 
+Regards，
+Changli Gao(xiaosuo@gmail.com)
