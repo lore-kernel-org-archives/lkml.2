@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab0D1BWE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 21:22:04 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54765 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752486Ab0D1BWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 21:22:01 -0400
-Subject: Re: 2.6.33.3-rt16: WARNING: at fs/namespace.c:1197
- umount_tree+0x127/0x175()
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>, Dave Hansen <haveblue@us.ibm.com>
-In-Reply-To: <alpine.LFD.2.00.1004272252270.2951@localhost.localdomain>
-References: <20100427202750.GC2679@uudg.org>
-	 <alpine.LFD.2.00.1004272252270.2951@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 27 Apr 2010 18:21:55 -0700
-Message-ID: <1272417715.2255.95.camel@localhost>
+	id S1753917Ab0D1BW6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 21:22:58 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55548 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070Ab0D1BW5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 21:22:57 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 28 Apr 2010 10:18:58 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/3] mm,migration: Remove straggling migration PTEs when
+ page tables are being moved after the VMA has already moved
+Message-Id: <20100428101858.1da1d2ed.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100428010543.GJ510@random.random>
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
+	<1272403852-10479-4-git-send-email-mel@csn.ul.ie>
+	<20100427223004.GF8860@random.random>
+	<20100427225852.GH8860@random.random>
+	<20100428093948.c4e6faa1.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100428010543.GJ510@random.random>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-27 at 22:53 +0200, Thomas Gleixner wrote:
-> On Tue, 27 Apr 2010, Luis Claudio R. Goncalves wrote:
+On Wed, 28 Apr 2010 03:05:43 +0200
+Andrea Arcangeli <aarcange@redhat.com> wrote:
+
+> On Wed, Apr 28, 2010 at 09:39:48AM +0900, KAMEZAWA Hiroyuki wrote:
+> > Seems nice.
 > 
-> CC'ed John
+> What did you mean with objrmap inconsistency? I think this is single
+> threaded there, userland didn't run yet and I don't think page faults
+> could run. Maybe it's safer to add a VM_BUG_ON(vma->anon_vma) just
+> before vma->anon_vma = anon_vma to be sure nothing run in between.
+> 
+I mean following relationship.
 
-> > I see this warning during system boot and it hangs while loading X and even
-> > though I can change from one VT to another (ctrl+alt+F<num>) no keys
-> > pressed seem to have any effect.
-> > 
-> > ------------[ cut here ]------------
-> > WARNING: at fs/namespace.c:1197 umount_tree+0x127/0x175()
-> > Hardware name: KQ260AA-AC4 a6540br
-> > Modules linked in: i915 drm_kms_helper drm video output ipt_MASQUERADE iptable_nat nf_nat bridge stp llc vfat fat sunrpc ipv6 xt_physdev ipt_REJECT xt_tcpudp nf_conntrack_ipv4 nf_defrag_ipv4 xt_state iptable_filter ip_tables x_tables dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod kvm_intel kvm uinput tuner_simple tuner_types wm8775 tda9887 tda8290 tuner snd_hda_codec_realtek cx25840 snd_hda_intel snd_hda_codec snd_hwdep snd_seq usb_storage snd_seq_device ivtv snd_pcm i2c_algo_bit cx2341x v4l2_common videodev snd_timer firewire_ohci snd firewire_core v4l1_compat v4l2_compat_ioctl32 ir_common ir_core i2c_i801 soundcore crc_itu_t tveeprom i2c_core iTCO_wdt snd_page_alloc sr_mod intel_agp iTCO_vendor_support serio_raw pcspkr sg button r8169 mii cdrom ahci libata sd_mod scsi_mod crc_t10dif ext3 jbd mbcache uhci_hcd ohci_hcd ehci_hcd [last unloaded: microcode]
-> > Pid: 2267, comm: libvirtd Not tainted 2.6.33.3-rt16 #28
-> > Call Trace:
-> > [<ffffffff81040e3b>] warn_slowpath_common+0x7c/0x94
-> > [<ffffffff81040e67>] warn_slowpath_null+0x14/0x16
-> > [<ffffffff81115a7f>] umount_tree+0x127/0x175
-> > [<ffffffff81116d1d>] put_mnt_ns+0xc2/0xf0
-> > [<ffffffff81061a1d>] free_nsproxy+0x1f/0x86
-> > [<ffffffff81061abc>] switch_task_namespaces+0x38/0x3c
-> > [<ffffffff81061ad0>] exit_task_namespaces+0x10/0x12
-> > [<ffffffff81044ae3>] do_exit+0x595/0x738
-> > [<ffffffff81360626>] ? rt_mutex_unlock+0xe/0x10
-> > [<ffffffff81360db8>] ? lockdep_sys_exit_thunk+0x35/0x67
-> > [<ffffffff81044d10>] do_group_exit+0x8a/0xb9
-> > [<ffffffff81044d56>] sys_exit_group+0x17/0x1b
-> > [<ffffffff81002d32>] system_call_fastpath+0x16/0x1b
-> > ---[ end trace 348d259112b3e793 ]---
-> > 
-> > 
-> > The warning comes from:
-> > 
-> > 	WARN_ON(!(p->mnt_flags & MNT_MOUNTED));
+	vma_address(vma, page1) <-> address <-> pte <-> page2
+	
+	If page1 == page2, objrmap is consistent.
+	If page1 != page2, objrmap is inconsistent.
 
 
-Hmmm.. Ok. Looks like an issue with unshare. 
 
-Thanks to Dave Hansen, I managed to reproduce it.
 
-Still haven't narrowed down the exact cause but I'll send you a patch to
-test once I have something.
 
-thanks for the testing and the bug submission!
--john
+> > I'll test this but I think we need to take care of do_mremap(), too.
+> > And it's more complicated....
+> 
+> do_mremap has to be safe by:
+> 
+> 1) adjusting page->index atomically with the pte updates inside pt
+>    lock (while it moves from one pte to another)
+> 
+I reviewed do_mremap again and am thinking it's safe.
+
+
+	new_vma = copy_vma();
+	....                   ----------(*)
+	move_ptes().
+	munmap unnecessary range.
+
+At (*), if page1 != page2, rmap_walk will not run correctly.
+But it seems copy_vma() keeps page1==page2 
+
+As I reported, when there is a problem, vma_address() returns an address but
+that address doesn't contain migration_pte.
+
+BTW, page->index is not updated, we just keep [start_address, pgoff] to be
+sane value.
+
+Thanks,
+-Kame
 
 
