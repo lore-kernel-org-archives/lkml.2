@@ -1,162 +1,1087 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab0D1FGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 01:06:46 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51914 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752214Ab0D1FGj (ORCPT
+	id S1752178Ab0D1FGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 01:06:36 -0400
+Received: from mail.renesas.com ([202.234.163.13]:38730 "EHLO
+	mail02.idc.renesas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751452Ab0D1FGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 01:06:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=RKSgydDoKOHhnUyimf+kPEE01ojgFX1qe+jCsUMrJ61XPeF9ZC1UcGLpyzyKbDTm2S
-         6DcyLsXKZrPO4Uvj7jVCEukD+c0f0Ixiu0yjyqGP7f+jiOpw6vSmrHtZexsWy1hBMnp7
-         iRK848kBvm7al5gsiZPSHLkhi1VZ72N6wihHY=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1004272242050.9849@pobox.suse.cz>
-References: <t2g3711715e1004240718m8aacffc5o68fc9ccd1e66f212@mail.gmail.com>
-	 <w2l3711715e1004271145v133cd94ax971aa213eb60cfaa@mail.gmail.com>
-	 <alpine.LNX.2.00.1004272242050.9849@pobox.suse.cz>
-Date: Wed, 28 Apr 2010 07:06:37 +0200
-Message-ID: <y2u3711715e1004272206u4700fac7u744b2fb0cf203367@mail.gmail.com>
-Subject: Re: HID: expand hid-topseed driver to support BTC "Emprex 3009URF III 
-	Vista MCE Remote"
-From: Wayne Thomas <waynethomas69@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0016e6d9677e848ff1048544f9e3
+	Wed, 28 Apr 2010 01:06:33 -0400
+X-AuditID: ac140385-00000004000002de-ff-4bd7c241383f
+Date: Wed, 28 Apr 2010 14:06:08 +0900
+From: Yusuke Goda <yusuke.goda.sx@renesas.com>
+Subject: [PATCH 1/2 v2] MMC:Add support MMCIF for SuperH
+To: akpm@linux-foundation.org, ben@decadent.org.uk, linux-mmc@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Cc: linux-sh@vger.kernel.org
+Message-id: <4BD7C240.5050800@renesas.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-2022-JP
+Content-transfer-encoding: 7bit
+User-Agent: Thunderbird 2.0.0.9 (Windows/20071031)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6d9677e848ff1048544f9e3
-Content-Type: text/plain; charset=ISO-8859-1
 
-On Tue, Apr 27, 2010 at 10:43 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Tue, 27 Apr 2010, Wayne Thomas wrote:
->
->> OK, next attempt...
->
-> The patch is OK, but your mail client whitespace-damaged it. Could you
-> please fix up your client and resend? (or attach it separately as an
-> attachment, if your client can't be fixed).
->
-> Thanks,
->
-> --
-> Jiri Kosina
-> SUSE Labs, Novell Inc.
->
+ MMCIF is MMC Host Interface in SuperH.
 
-I thought it might have; sorry about that.
-Have attached patch as separate file as a precaution.
+Signed-off-by: Yusuke Goda <yusuke.goda.sx@renesas.com>
+---
+ drivers/mmc/host/Kconfig     |    8 +
+ drivers/mmc/host/Makefile    |    1 +
+ drivers/mmc/host/sh_mmcif.c  |  965 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mmc/sh_mmcif.h |   39 ++
+ 4 files changed, 1013 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mmc/host/sh_mmcif.c
+ create mode 100644 include/linux/mmc/sh_mmcif.h
 
-Cheers
-Wayne
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 2e13b94..aeecbc9 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -412,3 +412,11 @@ config SDH_BFIN_MISSING_CMD_PULLUP_WORKAROUND
+ 	depends on SDH_BFIN
+ 	help
+ 	  If you say yes here SD-Cards may work on the EZkit.
++
++config MMC_SH_MMCIF
++	tristate "SuperH Internal MMCIF support"
++	depends on MMC_BLOCK && (SUPERH || ARCH_SHMOBILE)
++	help
++	  This selects the MMC Host Interface controler (MMCIF).
++
++	  This driver supports MMCIF in sh7724/sh7757/sh7372.
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index f480397..2447b66 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -34,6 +34,7 @@ obj-$(CONFIG_MMC_TMIO)		+= tmio_mmc.o
+ obj-$(CONFIG_MMC_CB710)	+= cb710-mmc.o
+ obj-$(CONFIG_MMC_VIA_SDMMC)	+= via-sdmmc.o
+ obj-$(CONFIG_SDH_BFIN)		+= bfin_sdh.o
++obj-$(CONFIG_MMC_SH_MMCIF)	+= sh_mmcif.o
 
---0016e6d9677e848ff1048544f9e3
-Content-Type: application/octet-stream; name=btc_patch2
-Content-Disposition: attachment; filename=btc_patch2
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_g8joghzt0
+ obj-$(CONFIG_MMC_SDHCI_OF)	+= sdhci-of.o
+ sdhci-of-y				:= sdhci-of-core.o
+diff --git a/drivers/mmc/host/sh_mmcif.c b/drivers/mmc/host/sh_mmcif.c
+new file mode 100644
+index 0000000..eb97830
+--- /dev/null
++++ b/drivers/mmc/host/sh_mmcif.c
+@@ -0,0 +1,965 @@
++/*
++ * MMCIF eMMC driver.
++ *
++ * Copyright (C) 2010 Renesas Solutions Corp.
++ * Yusuke Goda <yusuke.goda.sx@renesas.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License.
++ *
++ *
++ * TODO
++ *  1. DMA
++ *  2. Power management
++ *  3. Handle MMC errors better
++ *
++ */
++
++#include <linux/dma-mapping.h>
++#include <linux/mmc/host.h>
++#include <linux/mmc/card.h>
++#include <linux/mmc/core.h>
++#include <linux/mmc/mmc.h>
++#include <linux/mmc/sdio.h>
++#include <linux/delay.h>
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/mmc/sh_mmcif.h>
++
++#define DRIVER_NAME	"sh_mmcif"
++#define DRIVER_VERSION	"2010-04-28"
++
++#define MMCIF_CE_CMD_SET	0x00000000
++#define MMCIF_CE_ARG		0x00000008
++#define MMCIF_CE_ARG_CMD12	0x0000000C
++#define MMCIF_CE_CMD_CTRL	0x00000010
++#define MMCIF_CE_BLOCK_SET	0x00000014
++#define MMCIF_CE_CLK_CTRL	0x00000018
++#define MMCIF_CE_BUF_ACC	0x0000001C
++#define MMCIF_CE_RESP3		0x00000020
++#define MMCIF_CE_RESP2		0x00000024
++#define MMCIF_CE_RESP1		0x00000028
++#define MMCIF_CE_RESP0		0x0000002C
++#define MMCIF_CE_RESP_CMD12	0x00000030
++#define MMCIF_CE_DATA		0x00000034
++#define MMCIF_CE_INT		0x00000040
++#define MMCIF_CE_INT_MASK	0x00000044
++#define MMCIF_CE_HOST_STS1	0x00000048
++#define MMCIF_CE_HOST_STS2	0x0000004C
++#define MMCIF_CE_VERSION	0x0000007C
++
++/* CE_CMD_SET */
++#define CMD_MASK		0x3f000000
++#define CMD_SET_RTYP_NO		((0 << 23) | (0 << 22))
++#define CMD_SET_RTYP_6B		((0 << 23) | (1 << 22)) /* R1/R1b/R3/R4/R5 */
++#define CMD_SET_RTYP_17B	((1 << 23) | (0 << 22)) /* R2 */
++#define CMD_SET_RBSY		(1 << 21) /* R1b */
++#define CMD_SET_CCSEN		(1 << 20)
++#define CMD_SET_WDAT		(1 << 19) /* 1: on data, 0: no data */
++#define CMD_SET_DWEN		(1 << 18) /* 1: write, 0: read */
++#define CMD_SET_CMLTE		(1 << 17) /* 1: multi block trans, 0: single */
++#define CMD_SET_CMD12EN		(1 << 16) /* 1: CMD12 auto issue */
++#define CMD_SET_RIDXC_INDEX	((0 << 15) | (0 << 14)) /* index check */
++#define CMD_SET_RIDXC_BITS	((0 << 15) | (1 << 14)) /* check bits check */
++#define CMD_SET_RIDXC_NO	((1 << 15) | (0 << 14)) /* no check */
++#define CMD_SET_CRC7C		((0 << 13) | (0 << 12)) /* CRC7 check*/
++#define CMD_SET_CRC7C_BITS	((0 << 13) | (1 << 12)) /* check bits check*/
++#define CMD_SET_CRC7C_INTERNAL	((1 << 13) | (0 << 12)) /* internal CRC7 check*/
++#define CMD_SET_CRC16C		(1 << 10) /* 0: CRC16 check*/
++#define CMD_SET_CRCSTE		(1 << 8) /* 1: not receive CRC status */
++#define CMD_SET_TBIT		(1 << 7) /* 1: tran mission bit "Low" */
++#define CMD_SET_OPDM		(1 << 6) /* 1: open/drain */
++#define CMD_SET_CCSH		(1 << 5)
++#define CMD_SET_DATW_1		((0 << 1) | (0 << 0)) /* 1bit */
++#define CMD_SET_DATW_4		((0 << 1) | (1 << 0)) /* 4bit */
++#define CMD_SET_DATW_8		((1 << 1) | (0 << 0)) /* 8bit */
++
++/* CE_CMD_CTRL */
++#define CMD_CTRL_BREAK		(1 << 0)
++
++/* CE_BLOCK_SET */
++#define BLOCK_SIZE_MASK		0x0000ffff
++
++/* CE_CLK_CTRL */
++#define CLK_ENABLE		(1 << 24) /* 1: output mmc clock */
++#define CLK_CLEAR		((1 << 19) | (1 << 18) | (1 << 17) | (1 << 16))
++#define CLK_SUP_PCLK		((1 << 19) | (1 << 18) | (1 << 17) | (1 << 16))
++#define SRSPTO_256		((1 << 13) | (0 << 12)) /* resp timeout */
++#define SRBSYTO_29		((1 << 11) | (1 << 10) |	\
++				 (1 << 9) | (1 << 8)) /* resp busy timeout */
++#define SRWDTO_29		((1 << 7) | (1 << 6) |		\
++				 (1 << 5) | (1 << 4)) /* read/write timeout */
++#define SCCSTO_29		((1 << 3) | (1 << 2) |		\
++				 (1 << 1) | (1 << 0)) /* ccs timeout */
++
++/* CE_BUF_ACC */
++#define BUF_ACC_DMAWEN		(1 << 25)
++#define BUF_ACC_DMAREN		(1 << 24)
++#define BUF_ACC_BUSW_32		(0 << 17)
++#define BUF_ACC_BUSW_16		(1 << 17)
++#define BUF_ACC_ATYP		(1 << 16)
++
++/* CE_INT */
++#define INT_CCSDE		(1 << 29)
++#define INT_CMD12DRE		(1 << 26)
++#define INT_CMD12RBE		(1 << 25)
++#define INT_CMD12CRE		(1 << 24)
++#define INT_DTRANE		(1 << 23)
++#define INT_BUFRE		(1 << 22)
++#define INT_BUFWEN		(1 << 21)
++#define INT_BUFREN		(1 << 20)
++#define INT_CCSRCV		(1 << 19)
++#define INT_RBSYE		(1 << 17)
++#define INT_CRSPE		(1 << 16)
++#define INT_CMDVIO		(1 << 15)
++#define INT_BUFVIO		(1 << 14)
++#define INT_WDATERR		(1 << 11)
++#define INT_RDATERR		(1 << 10)
++#define INT_RIDXERR		(1 << 9)
++#define INT_RSPERR		(1 << 8)
++#define INT_CCSTO		(1 << 5)
++#define INT_CRCSTO		(1 << 4)
++#define INT_WDATTO		(1 << 3)
++#define INT_RDATTO		(1 << 2)
++#define INT_RBSYTO		(1 << 1)
++#define INT_RSPTO		(1 << 0)
++#define INT_ERR_STS		(INT_CMDVIO | INT_BUFVIO | INT_WDATERR |  \
++				 INT_RDATERR | INT_RIDXERR | INT_RSPERR | \
++				 INT_CCSTO | INT_CRCSTO | INT_WDATTO |	  \
++				 INT_RDATTO | INT_RBSYTO | INT_RSPTO)
++
++/* CE_INT_MASK */
++#define MASK_ALL		0x00000000
++#define MASK_MCCSDE		(1 << 29)
++#define MASK_MCMD12DRE		(1 << 26)
++#define MASK_MCMD12RBE		(1 << 25)
++#define MASK_MCMD12CRE		(1 << 24)
++#define MASK_MDTRANE		(1 << 23)
++#define MASK_MBUFRE		(1 << 22)
++#define MASK_MBUFWEN		(1 << 21)
++#define MASK_MBUFREN		(1 << 20)
++#define MASK_MCCSRCV		(1 << 19)
++#define MASK_MRBSYE		(1 << 17)
++#define MASK_MCRSPE		(1 << 16)
++#define MASK_MCMDVIO		(1 << 15)
++#define MASK_MBUFVIO		(1 << 14)
++#define MASK_MWDATERR		(1 << 11)
++#define MASK_MRDATERR		(1 << 10)
++#define MASK_MRIDXERR		(1 << 9)
++#define MASK_MRSPERR		(1 << 8)
++#define MASK_MCCSTO		(1 << 5)
++#define MASK_MCRCSTO		(1 << 4)
++#define MASK_MWDATTO		(1 << 3)
++#define MASK_MRDATTO		(1 << 2)
++#define MASK_MRBSYTO		(1 << 1)
++#define MASK_MRSPTO		(1 << 0)
++
++/* CE_HOST_STS1 */
++#define STS1_CMDSEQ		(1 << 31)
++
++/* CE_HOST_STS2 */
++#define STS2_CRCSTE		(1 << 31)
++#define STS2_CRC16E		(1 << 30)
++#define STS2_AC12CRCE		(1 << 29)
++#define STS2_RSPCRC7E		(1 << 28)
++#define STS2_CRCSTEBE		(1 << 27)
++#define STS2_RDATEBE		(1 << 26)
++#define STS2_AC12REBE		(1 << 25)
++#define STS2_RSPEBE		(1 << 24)
++#define STS2_AC12IDXE		(1 << 23)
++#define STS2_RSPIDXE		(1 << 22)
++#define STS2_CCSTO		(1 << 15)
++#define STS2_RDATTO		(1 << 14)
++#define STS2_DATBSYTO		(1 << 13)
++#define STS2_CRCSTTO		(1 << 12)
++#define STS2_AC12BSYTO		(1 << 11)
++#define STS2_RSPBSYTO		(1 << 10)
++#define STS2_AC12RSPTO		(1 << 9)
++#define STS2_RSPTO		(1 << 8)
++#define STS2_CRC_ERR		(STS2_CRCSTE | STS2_CRC16E |		\
++				 STS2_AC12CRCE | STS2_RSPCRC7E | STS2_CRCSTEBE)
++#define STS2_TIMEOUT_ERR	(STS2_CCSTO | STS2_RDATTO |		\
++				 STS2_DATBSYTO | STS2_CRCSTTO |		\
++				 STS2_AC12BSYTO | STS2_RSPBSYTO |	\
++				 STS2_AC12RSPTO | STS2_RSPTO)
++
++/* CE_VERSION */
++#define SOFT_RST_ON		(1 << 31)
++#define SOFT_RST_OFF		(0 << 31)
++
++#define CLKDEV_EMMC_DATA	52000000 /* 52MHz */
++#define CLKDEV_MMC_DATA		20000000 /* 20MHz */
++#define CLKDEV_INIT		400000   /* 400 KHz */
++
++struct sh_mmcif_host {
++	struct mmc_host *mmc;
++	struct mmc_data *data;
++	struct mmc_command *cmd;
++	struct platform_device *pd;
++	struct clk *hclk;
++	unsigned int clk;
++	int bus_width;
++	u16 wait_int;
++	u16 sd_error;
++	long timeout;
++	void __iomem *addr;
++	wait_queue_head_t intr_wait;
++};
++
++static inline u32 sh_mmcif_readl(struct sh_mmcif_host *host, unsigned int reg)
++{
++	return readl(host->addr + reg);
++}
++
++static inline void sh_mmcif_writel(struct sh_mmcif_host *host,
++					unsigned int reg, u32 val)
++{
++	writel(val, host->addr + reg);
++}
++
++static inline void sh_mmcif_bitset(struct sh_mmcif_host *host,
++					unsigned int reg, u32 val)
++{
++	writel(val | sh_mmcif_readl(host, reg), host->addr + reg);
++}
++
++static inline void sh_mmcif_bitclr(struct sh_mmcif_host *host,
++					unsigned int reg, u32 val)
++{
++	writel(~val & sh_mmcif_readl(host, reg), host->addr + reg);
++}
++
++
++static void sh_mmcif_clock_control(struct sh_mmcif_host *host, unsigned int clk)
++{
++	struct sh_mmcif_plat_data *p = host->pd->dev.platform_data;
++
++	sh_mmcif_bitclr(host, MMCIF_CE_CLK_CTRL, CLK_ENABLE);
++	sh_mmcif_bitclr(host, MMCIF_CE_CLK_CTRL, CLK_CLEAR);
++
++	if (!clk)
++		return;
++	if (p->sup_pclk && clk == host->clk)
++		sh_mmcif_bitset(host, MMCIF_CE_CLK_CTRL, CLK_SUP_PCLK);
++	else
++		sh_mmcif_bitset(host, MMCIF_CE_CLK_CTRL, CLK_CLEAR &
++			(ilog2(__rounddown_pow_of_two(host->clk / clk)) << 16));
++
++	sh_mmcif_bitset(host, MMCIF_CE_CLK_CTRL, CLK_ENABLE);
++}
++
++static void sh_mmcif_sync_reset(struct sh_mmcif_host *host)
++{
++	u32 tmp;
++
++	tmp = 0x010f0000 & sh_mmcif_readl(host, MMCIF_CE_CLK_CTRL);
++
++	sh_mmcif_writel(host, MMCIF_CE_VERSION, SOFT_RST_ON);
++	sh_mmcif_writel(host, MMCIF_CE_VERSION, SOFT_RST_OFF);
++	sh_mmcif_bitset(host, MMCIF_CE_CLK_CTRL, tmp |
++		SRSPTO_256 | SRBSYTO_29 | SRWDTO_29 | SCCSTO_29);
++	/* byte swap on */
++	sh_mmcif_bitset(host, MMCIF_CE_BUF_ACC, BUF_ACC_ATYP);
++}
++
++static int sh_mmcif_error_manage(struct sh_mmcif_host *host)
++{
++	u32 state1, state2;
++	int ret, timeout = 10000000;
++
++	host->sd_error = 0;
++	host->wait_int = 0;
++
++	state1 = sh_mmcif_readl(host, MMCIF_CE_HOST_STS1);
++	state2 = sh_mmcif_readl(host, MMCIF_CE_HOST_STS2);
++	pr_debug("%s: ERR HOST_STS1 = %08x\n", \
++			DRIVER_NAME, sh_mmcif_readl(host, MMCIF_CE_HOST_STS1));
++	pr_debug("%s: ERR HOST_STS2 = %08x\n", \
++			DRIVER_NAME, sh_mmcif_readl(host, MMCIF_CE_HOST_STS2));
++
++	if (state1 & STS1_CMDSEQ) {
++		sh_mmcif_bitset(host, MMCIF_CE_CMD_CTRL, CMD_CTRL_BREAK);
++		sh_mmcif_bitset(host, MMCIF_CE_CMD_CTRL, ~CMD_CTRL_BREAK);
++		while (1) {
++			timeout--;
++			if (timeout < 0) {
++				pr_err(DRIVER_NAME": Forceed end of " \
++					"command sequence timeout err\n");
++				return -EIO;
++			}
++			if (!(sh_mmcif_readl(host, MMCIF_CE_HOST_STS1)
++								& STS1_CMDSEQ))
++				break;
++			mdelay(1);
++		}
++		sh_mmcif_sync_reset(host);
++		pr_debug(DRIVER_NAME": Forced end of command sequence\n");
++		return -EIO;
++	}
++
++	if (state2 & STS2_CRC_ERR) {
++		pr_debug(DRIVER_NAME": Happened CRC error\n");
++		ret = -EIO;
++	} else if (state2 & STS2_TIMEOUT_ERR) {
++		pr_debug(DRIVER_NAME": Happened Timeout error\n");
++		ret = -ETIMEDOUT;
++	} else {
++		pr_debug(DRIVER_NAME": Happened End/Index error\n");
++		ret = -EIO;
++	}
++	return ret;
++}
++
++static int sh_mmcif_single_read(struct sh_mmcif_host *host,
++					struct mmc_request *mrq)
++{
++	struct mmc_data *data = mrq->data;
++	long time;
++	u32 blocksize, i, *p = sg_virt(data->sg);
++
++	host->wait_int = 0;
++
++	/* buf read enable */
++	sh_mmcif_bitset(host, MMCIF_CE_INT_MASK, MASK_MBUFREN);
++	time = wait_event_interruptible_timeout(host->intr_wait,
++			host->wait_int == 1 ||
++			host->sd_error == 1, host->timeout);
++	if (host->wait_int != 1 && (time == 0 || host->sd_error != 0))
++		return sh_mmcif_error_manage(host);
++
++	host->wait_int = 0;
++	blocksize = (BLOCK_SIZE_MASK &
++			sh_mmcif_readl(host, MMCIF_CE_BLOCK_SET)) + 3;
++	for (i = 0; i < blocksize / 4; i++)
++		*p++ = sh_mmcif_readl(host, MMCIF_CE_DATA);
++
++	/* buffer read end */
++	sh_mmcif_bitset(host, MMCIF_CE_INT_MASK, MASK_MBUFRE);
++	time = wait_event_interruptible_timeout(host->intr_wait,
++			host->wait_int == 1 ||
++			host->sd_error == 1, host->timeout);
++	if (host->wait_int != 1 && (time == 0 || host->sd_error != 0))
++		return sh_mmcif_error_manage(host);
++
++	host->wait_int = 0;
++	return 0;
++}
++
++static int sh_mmcif_multi_read(struct sh_mmcif_host *host,
++					struct mmc_request *mrq)
++{
++	struct mmc_data *data = mrq->data;
++	long time;
++	u32 blocksize, i, j, sec, *p;
++
++	blocksize = BLOCK_SIZE_MASK & sh_mmcif_readl(host, MMCIF_CE_BLOCK_SET);
++	for (j = 0; j < data->sg_len; j++) {
++		p = sg_virt(data->sg);
++		host->wait_int = 0;
++		for (sec = 0; sec < data->sg->length / blocksize; sec++) {
++			sh_mmcif_bitset(host, MMCIF_CE_INT_MASK, MASK_MBUFREN);
++			/* buf read enable */
++			time = wait_event_interruptible_timeout(host->intr_wait,
++				host->wait_int == 1 ||
++				host->sd_error == 1, host->timeout);
++
++			if (host->wait_int != 1 &&
++			    (time == 0 || host->sd_error != 0))
++				return sh_mmcif_error_manage(host);
++
++			host->wait_int = 0;
++			for (i = 0; i < blocksize / 4; i++)
++				*p++ = sh_mmcif_readl(host, MMCIF_CE_DATA);
++		}
++		if (j < data->sg_len - 1)
++			data->sg++;
++	}
++	return 0;
++}
++
++static int sh_mmcif_single_write(struct sh_mmcif_host *host,
++					struct mmc_request *mrq)
++{
++	struct mmc_data *data = mrq->data;
++	long time;
++	u32 blocksize, i, *p = sg_virt(data->sg);
++
++	host->wait_int = 0;
++	sh_mmcif_bitset(host, MMCIF_CE_INT_MASK, MASK_MBUFWEN);
++
++	/* buf write enable */
++	time = wait_event_interruptible_timeout(host->intr_wait,
++			host->wait_int == 1 ||
++			host->sd_error == 1, host->timeout);
++	if (host->wait_int != 1 && (time == 0 || host->sd_error != 0))
++		return sh_mmcif_error_manage(host);
++
++	host->wait_int = 0;
++	blocksize = (BLOCK_SIZE_MASK &
++			sh_mmcif_readl(host, MMCIF_CE_BLOCK_SET)) + 3;
++	for (i = 0; i < blocksize / 4; i++)
++		sh_mmcif_writel(host, MMCIF_CE_DATA, *p++);
++
++	/* buffer write end */
++	sh_mmcif_bitset(host, MMCIF_CE_INT_MASK, MASK_MDTRANE);
++
++	time = wait_event_interruptible_timeout(host->intr_wait,
++			host->wait_int == 1 ||
++			host->sd_error == 1, host->timeout);
++	if (host->wait_int != 1 && (time == 0 || host->sd_error != 0))
++		return sh_mmcif_error_manage(host);
++
++	host->wait_int = 0;
++	return 0;
++}
++
++static int sh_mmcif_multi_write(struct sh_mmcif_host *host,
++						struct mmc_request *mrq)
++{
++	struct mmc_data *data = mrq->data;
++	long time;
++	u32 i, sec, j, blocksize, *p;
++
++	blocksize = BLOCK_SIZE_MASK & sh_mmcif_readl(host, MMCIF_CE_BLOCK_SET);
++
++	for (j = 0; j < data->sg_len; j++) {
++		p = sg_virt(data->sg);
++		host->wait_int = 0;
++		for (sec = 0; sec < data->sg->length / blocksize; sec++) {
++			sh_mmcif_bitset(host, MMCIF_CE_INT_MASK, MASK_MBUFWEN);
++			/* buf write enable*/
++			time = wait_event_interruptible_timeout(host->intr_wait,
++				host->wait_int == 1 ||
++				host->sd_error == 1, host->timeout);
++
++			if (host->wait_int != 1 &&
++			    (time == 0 || host->sd_error != 0))
++				return sh_mmcif_error_manage(host);
++
++			host->wait_int = 0;
++			for (i = 0; i < blocksize / 4; i++)
++				sh_mmcif_writel(host, MMCIF_CE_DATA, *p++);
++		}
++		if (j < data->sg_len - 1)
++			data->sg++;
++	}
++	return 0;
++}
++
++static void sh_mmcif_get_response(struct sh_mmcif_host *host,
++						struct mmc_command *cmd)
++{
++	if (cmd->flags & MMC_RSP_136) {
++		cmd->resp[0] = sh_mmcif_readl(host, MMCIF_CE_RESP3);
++		cmd->resp[1] = sh_mmcif_readl(host, MMCIF_CE_RESP2);
++		cmd->resp[2] = sh_mmcif_readl(host, MMCIF_CE_RESP1);
++		cmd->resp[3] = sh_mmcif_readl(host, MMCIF_CE_RESP0);
++	} else
++		cmd->resp[0] = sh_mmcif_readl(host, MMCIF_CE_RESP0);
++}
++
++static void sh_mmcif_get_cmd12response(struct sh_mmcif_host *host,
++						struct mmc_command *cmd)
++{
++	cmd->resp[0] = sh_mmcif_readl(host, MMCIF_CE_RESP_CMD12);
++}
++
++static u32 sh_mmcif_set_cmd(struct sh_mmcif_host *host,
++		struct mmc_request *mrq, struct mmc_command *cmd, u32 opc)
++{
++	u32 tmp = 0;
++
++	/* Response Type check */
++	switch (mmc_resp_type(cmd)) {
++	case MMC_RSP_NONE:
++		tmp |= CMD_SET_RTYP_NO;
++		break;
++	case MMC_RSP_R1:
++	case MMC_RSP_R1B:
++	case MMC_RSP_R3:
++		tmp |= CMD_SET_RTYP_6B;
++		break;
++	case MMC_RSP_R2:
++		tmp |= CMD_SET_RTYP_17B;
++		break;
++	default:
++		pr_err(DRIVER_NAME": Not support type response.\n");
++		break;
++	}
++	switch (opc) {
++	/* RBSY */
++	case MMC_SWITCH:
++	case MMC_STOP_TRANSMISSION:
++	case MMC_SET_WRITE_PROT:
++	case MMC_CLR_WRITE_PROT:
++	case MMC_ERASE:
++	case MMC_GEN_CMD:
++		tmp |= CMD_SET_RBSY;
++		break;
++	}
++	/* WDAT / DATW */
++	if (host->data) {
++		tmp |= CMD_SET_WDAT;
++		switch (host->bus_width) {
++		case MMC_BUS_WIDTH_1:
++			tmp |= CMD_SET_DATW_1;
++			break;
++		case MMC_BUS_WIDTH_4:
++			tmp |= CMD_SET_DATW_4;
++			break;
++		case MMC_BUS_WIDTH_8:
++			tmp |= CMD_SET_DATW_8;
++			break;
++		default:
++			pr_err(DRIVER_NAME": Not support bus width.\n");
++			break;
++		}
++	}
++	/* DWEN */
++	if (opc == MMC_WRITE_BLOCK || opc == MMC_WRITE_MULTIPLE_BLOCK)
++		tmp |= CMD_SET_DWEN;
++	/* CMLTE/CMD12EN */
++	if (opc == MMC_READ_MULTIPLE_BLOCK || opc == MMC_WRITE_MULTIPLE_BLOCK) {
++		tmp |= CMD_SET_CMLTE | CMD_SET_CMD12EN;
++		sh_mmcif_bitset(host, MMCIF_CE_BLOCK_SET,
++					mrq->data->blocks << 16);
++	}
++	/* RIDXC[1:0] check bits */
++	if (opc == MMC_SEND_OP_COND || opc == MMC_ALL_SEND_CID ||
++	    opc == MMC_SEND_CSD || opc == MMC_SEND_CID)
++		tmp |= CMD_SET_RIDXC_BITS;
++	/* RCRC7C[1:0] check bits */
++	if (opc == MMC_SEND_OP_COND)
++		tmp |= CMD_SET_CRC7C_BITS;
++	/* RCRC7C[1:0] internal CRC7 */
++	if (opc == MMC_ALL_SEND_CID ||
++		opc == MMC_SEND_CSD || opc == MMC_SEND_CID)
++		tmp |= CMD_SET_CRC7C_INTERNAL;
++
++	return opc = ((opc << 24) | tmp);
++}
++
++static u32 sh_mmcif_data_trans(struct sh_mmcif_host *host,
++				struct mmc_request *mrq, u32 opc)
++{
++	u32 ret;
++
++	switch (opc) {
++	case MMC_READ_MULTIPLE_BLOCK:
++		ret = sh_mmcif_multi_read(host, mrq);
++		break;
++	case MMC_WRITE_MULTIPLE_BLOCK:
++		ret = sh_mmcif_multi_write(host, mrq);
++		break;
++	case MMC_WRITE_BLOCK:
++		ret = sh_mmcif_single_write(host, mrq);
++		break;
++	case MMC_READ_SINGLE_BLOCK:
++	case MMC_SEND_EXT_CSD:
++		ret = sh_mmcif_single_read(host, mrq);
++		break;
++	default:
++		pr_err(DRIVER_NAME": NOT SUPPORT CMD = d'%08d\n", opc);
++		ret = -EINVAL;
++		break;
++	}
++	return ret;
++}
++
++static void sh_mmcif_start_cmd(struct sh_mmcif_host *host,
++			struct mmc_request *mrq, struct mmc_command *cmd)
++{
++	long time;
++	int ret = 0, mask = 0;
++	u32 opc = cmd->opcode;
++
++	host->cmd = cmd;
++
++	switch (opc) {
++	/* respons busy check */
++	case MMC_SWITCH:
++	case MMC_STOP_TRANSMISSION:
++	case MMC_SET_WRITE_PROT:
++	case MMC_CLR_WRITE_PROT:
++	case MMC_ERASE:
++	case MMC_GEN_CMD:
++		mask = MASK_MRBSYE;
++		break;
++	default:
++		mask = MASK_MCRSPE;
++		break;
++	}
++	mask |=	MASK_MCMDVIO | MASK_MBUFVIO | MASK_MWDATERR |
++		MASK_MRDATERR | MASK_MRIDXERR | MASK_MRSPERR |
++		MASK_MCCSTO | MASK_MCRCSTO | MASK_MWDATTO |
++		MASK_MRDATTO | MASK_MRBSYTO | MASK_MRSPTO;
++
++	if (host->data) {
++		sh_mmcif_writel(host, MMCIF_CE_BLOCK_SET, 0);
++		sh_mmcif_writel(host, MMCIF_CE_BLOCK_SET, mrq->data->blksz);
++	}
++	opc = sh_mmcif_set_cmd(host, mrq, cmd, opc);
++
++	sh_mmcif_writel(host, MMCIF_CE_INT, 0xD80430C0);
++	sh_mmcif_writel(host, MMCIF_CE_INT_MASK, mask);
++	/* set arg */
++	sh_mmcif_writel(host, MMCIF_CE_ARG, cmd->arg);
++	host->wait_int = 0;
++	/* set cmd */
++	sh_mmcif_writel(host, MMCIF_CE_CMD_SET, opc);
++
++	time = wait_event_interruptible_timeout(host->intr_wait,
++		host->wait_int == 1 || host->sd_error == 1, host->timeout);
++	if (host->wait_int != 1 && time == 0) {
++		cmd->error = sh_mmcif_error_manage(host);
++		return;
++	}
++	if (host->sd_error) {
++		switch (cmd->opcode) {
++		case MMC_ALL_SEND_CID:
++		case MMC_SELECT_CARD:
++		case MMC_APP_CMD:
++			cmd->error = -ETIMEDOUT;
++			break;
++		default:
++			pr_debug("%s: Cmd(d'%d) err\n",
++					DRIVER_NAME, cmd->opcode);
++			cmd->error = sh_mmcif_error_manage(host);
++			break;
++		}
++		host->sd_error = 0;
++		host->wait_int = 0;
++		return;
++	}
++	if (!(cmd->flags & MMC_RSP_PRESENT)) {
++		cmd->error = ret;
++		host->wait_int = 0;
++		return;
++	}
++	if (host->wait_int == 1) {
++		sh_mmcif_get_response(host, cmd);
++		host->wait_int = 0;
++	}
++	if (host->data) {
++		ret = sh_mmcif_data_trans(host, mrq, cmd->opcode);
++		if (ret < 0)
++			mrq->data->bytes_xfered = 0;
++		else
++			mrq->data->bytes_xfered =
++				mrq->data->blocks * mrq->data->blksz;
++	}
++	cmd->error = ret;
++}
++
++static void sh_mmcif_stop_cmd(struct sh_mmcif_host *host,
++		struct mmc_request *mrq, struct mmc_command *cmd)
++{
++	long time;
++
++	if (mrq->cmd->opcode == MMC_READ_MULTIPLE_BLOCK)
++		sh_mmcif_bitset(host, MMCIF_CE_INT_MASK, MASK_MCMD12DRE);
++	else if (mrq->cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK)
++		sh_mmcif_bitset(host, MMCIF_CE_INT_MASK, MASK_MCMD12RBE);
++	else {
++		pr_err(DRIVER_NAME": not support stop cmd\n");
++		cmd->error = sh_mmcif_error_manage(host);
++		return;
++	}
++
++	time = wait_event_interruptible_timeout(host->intr_wait,
++			host->wait_int == 1 ||
++			host->sd_error == 1, host->timeout);
++	if (host->wait_int != 1 && (time == 0 || host->sd_error != 0)) {
++		cmd->error = sh_mmcif_error_manage(host);
++		return;
++	}
++	sh_mmcif_get_cmd12response(host, cmd);
++	host->wait_int = 0;
++	cmd->error = 0;
++}
++
++static void sh_mmcif_request(struct mmc_host *mmc, struct mmc_request *mrq)
++{
++	struct sh_mmcif_host *host = mmc_priv(mmc);
++
++	switch (mrq->cmd->opcode) {
++	/* MMCIF does not support SD/SDIO command */
++	case SD_IO_SEND_OP_COND:
++	case MMC_APP_CMD:
++		mrq->cmd->error = -ETIMEDOUT;
++		mmc_request_done(mmc, mrq);
++		return;
++	case MMC_SEND_EXT_CSD: /* = SD_SEND_IF_COND (8) */
++		if (!mrq->data) {
++			/* send_if_cond cmd (not support) */
++			mrq->cmd->error = -ETIMEDOUT;
++			mmc_request_done(mmc, mrq);
++			return;
++		}
++		break;
++	default:
++		break;
++	}
++	host->data = mrq->data;
++	sh_mmcif_start_cmd(host, mrq, mrq->cmd);
++	host->data = NULL;
++
++	if (mrq->cmd->error != 0) {
++		mmc_request_done(mmc, mrq);
++		return;
++	}
++	if (mrq->stop)
++		sh_mmcif_stop_cmd(host, mrq, mrq->stop);
++	mmc_request_done(mmc, mrq);
++}
++
++static void sh_mmcif_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
++{
++	struct sh_mmcif_host *host = mmc_priv(mmc);
++	struct sh_mmcif_plat_data *p = host->pd->dev.platform_data;
++
++	if (ios->power_mode == MMC_POWER_OFF) {
++		/* clock stop */
++		sh_mmcif_clock_control(host, 0);
++		if (p->down_pwr)
++			p->down_pwr(host->pd);
++		return;
++	} else if (ios->power_mode == MMC_POWER_UP) {
++		if (p->set_pwr)
++			p->set_pwr(host->pd, ios->power_mode);
++	}
++
++	if (ios->clock)
++		sh_mmcif_clock_control(host, ios->clock);
++
++	host->bus_width = ios->bus_width;
++}
++
++static struct mmc_host_ops sh_mmcif_ops = {
++	.request	= sh_mmcif_request,
++	.set_ios	= sh_mmcif_set_ios,
++};
++
++static void sh_mmcif_detect(struct mmc_host *mmc)
++{
++	mmc_detect_change(mmc, 0);
++}
++
++static irqreturn_t sh_mmcif_intr(int irq, void *dev_id)
++{
++	struct sh_mmcif_host *host = dev_id;
++	u32 state = 0;
++	int err = 0;
++
++	state = sh_mmcif_readl(host, MMCIF_CE_INT);
++
++	if (state & INT_RBSYE) {
++		sh_mmcif_writel(host, MMCIF_CE_INT, ~(INT_RBSYE | INT_CRSPE));
++		sh_mmcif_bitclr(host, MMCIF_CE_INT_MASK, MASK_MRBSYE);
++	} else if (state & INT_CRSPE) {
++		sh_mmcif_writel(host, MMCIF_CE_INT, ~INT_CRSPE);
++		sh_mmcif_bitclr(host, MMCIF_CE_INT_MASK, MASK_MCRSPE);
++	} else if (state & INT_BUFREN) {
++		sh_mmcif_writel(host, MMCIF_CE_INT, ~INT_BUFREN);
++		sh_mmcif_bitclr(host, MMCIF_CE_INT_MASK, MASK_MBUFREN);
++	} else if (state & INT_BUFWEN) {
++		sh_mmcif_writel(host, MMCIF_CE_INT, ~INT_BUFWEN);
++		sh_mmcif_bitclr(host, MMCIF_CE_INT_MASK, MASK_MBUFWEN);
++	} else if (state & INT_CMD12DRE) {
++		sh_mmcif_writel(host, MMCIF_CE_INT,
++			~(INT_CMD12DRE | INT_CMD12RBE |
++			  INT_CMD12CRE | INT_BUFRE));
++		sh_mmcif_bitclr(host, MMCIF_CE_INT_MASK, MASK_MCMD12DRE);
++	} else if (state & INT_BUFRE) {
++		sh_mmcif_writel(host, MMCIF_CE_INT, ~INT_BUFRE);
++		sh_mmcif_bitclr(host, MMCIF_CE_INT_MASK, MASK_MBUFRE);
++	} else if (state & INT_DTRANE) {
++		sh_mmcif_writel(host, MMCIF_CE_INT, ~INT_DTRANE);
++		sh_mmcif_bitclr(host, MMCIF_CE_INT_MASK, MASK_MDTRANE);
++	} else if (state & INT_CMD12RBE) {
++		sh_mmcif_writel(host, MMCIF_CE_INT,
++				~(INT_CMD12RBE | INT_CMD12CRE));
++		sh_mmcif_bitclr(host, MMCIF_CE_INT_MASK, MASK_MCMD12RBE);
++	} else if (state & INT_ERR_STS) {
++		/* err interrupts */
++		sh_mmcif_writel(host, MMCIF_CE_INT, ~state);
++		sh_mmcif_bitclr(host, MMCIF_CE_INT_MASK, state);
++		err = 1;
++	} else {
++		pr_debug("%s: Not support int\n", DRIVER_NAME);
++		sh_mmcif_writel(host, MMCIF_CE_INT, ~state);
++		sh_mmcif_bitclr(host, MMCIF_CE_INT_MASK, state);
++		err = 1;
++	}
++	if (err) {
++		host->sd_error = 1;
++		pr_debug("%s: int err state = %08x\n", DRIVER_NAME, state);
++	}
++	host->wait_int = 1;
++	wake_up(&host->intr_wait);
++
++	return IRQ_HANDLED;
++}
++
++static int __devinit sh_mmcif_probe(struct platform_device *pdev)
++{
++	int ret = 0, irq[2];
++	struct mmc_host *mmc;
++	struct sh_mmcif_host *host = NULL;
++	struct sh_mmcif_plat_data *pd = NULL;
++	struct resource *res;
++	void __iomem *reg;
++	char clk_name[8];
++
++	irq[0] = platform_get_irq(pdev, 0);
++	irq[1] = platform_get_irq(pdev, 1);
++	if (irq[0] < 0 || irq[1] < 0) {
++		pr_err(DRIVER_NAME": Get irq error\n");
++		return -ENXIO;
++	}
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "platform_get_resource error.\n");
++		return -ENXIO;
++	}
++	reg = ioremap(res->start, resource_size(res));
++	if (!reg) {
++		dev_err(&pdev->dev, "ioremap error.\n");
++		return -ENOMEM;
++	}
++	pd = (struct sh_mmcif_plat_data *)(pdev->dev.platform_data);
++	if (!pd) {
++		dev_err(&pdev->dev, "sh_mmcif plat data error.\n");
++		ret = -ENXIO;
++		goto clean_up;
++	}
++	mmc = mmc_alloc_host(sizeof(struct sh_mmcif_host), &pdev->dev);
++	if (!mmc) {
++		ret = -ENOMEM;
++		goto clean_up;
++	}
++	host		= mmc_priv(mmc);
++	host->mmc	= mmc;
++	host->addr	= reg;
++	host->timeout	= 1000;
++
++	snprintf(clk_name, sizeof(clk_name), "mmc%d", pdev->id);
++	host->hclk = clk_get(&pdev->dev, clk_name);
++	if (IS_ERR(host->hclk)) {
++		dev_err(&pdev->dev, "cannot get clock \"%s\"\n", clk_name);
++		ret = PTR_ERR(host->hclk);
++		goto clean_up1;
++	}
++	clk_enable(host->hclk);
++	host->clk = clk_get_rate(host->hclk);
++	host->pd = pdev;
++
++	init_waitqueue_head(&host->intr_wait);
++
++	mmc->ops = &sh_mmcif_ops;
++	mmc->f_max = host->clk;
++	/* close to 400KHz */
++	if (mmc->f_max < 51200000)
++		mmc->f_min = mmc->f_max / 128;
++	else if (mmc->f_max < 102400000)
++		mmc->f_min = mmc->f_max / 256;
++	else
++		mmc->f_min = mmc->f_max / 512;
++	if (pd->ocr)
++		mmc->ocr_avail = pd->ocr;
++	mmc->caps = MMC_CAP_MMC_HIGHSPEED;
++	if (pd->caps)
++		mmc->caps |= pd->caps;
++	mmc->max_phys_segs = 128;
++	mmc->max_hw_segs = 128;
++	mmc->max_blk_size = 512;
++	mmc->max_blk_count = 65535;
++	mmc->max_req_size = mmc->max_blk_size * mmc->max_blk_count;
++	mmc->max_seg_size = mmc->max_req_size;
++
++	sh_mmcif_sync_reset(host);
++	platform_set_drvdata(pdev, host);
++	mmc_add_host(mmc);
++
++	ret = request_irq(irq[0], sh_mmcif_intr, 0, "sh_mmc:error", host);
++	if (ret) {
++		pr_err(DRIVER_NAME": request_irq error (sh_mmc:error)\n");
++		goto clean_up2;
++	}
++	ret = request_irq(irq[1], sh_mmcif_intr, 0, "sh_mmc:int", host);
++	if (ret) {
++		free_irq(irq[0], host);
++		pr_err(DRIVER_NAME": request_irq error (sh_mmc:int)\n");
++		goto clean_up2;
++	}
++
++	sh_mmcif_writel(host, MMCIF_CE_INT_MASK, MASK_ALL);
++	sh_mmcif_detect(host->mmc);
++
++	pr_info("%s: driver version %s\n", DRIVER_NAME, DRIVER_VERSION);
++	pr_debug("%s: chip ver H'%04x\n", DRIVER_NAME,
++			sh_mmcif_readl(host, MMCIF_CE_VERSION) & 0x0000ffff);
++	return ret;
++
++clean_up2:
++	clk_disable(host->hclk);
++clean_up1:
++	mmc_free_host(mmc);
++clean_up:
++	if (reg)
++		iounmap(reg);
++	return ret;
++}
++
++static int __devexit sh_mmcif_remove(struct platform_device *pdev)
++{
++	struct sh_mmcif_host *host = platform_get_drvdata(pdev);
++	int irq[2];
++
++	sh_mmcif_writel(host, MMCIF_CE_INT_MASK, MASK_ALL);
++
++	irq[0] = platform_get_irq(pdev, 0);
++	irq[1] = platform_get_irq(pdev, 1);
++
++	if (host->addr)
++		iounmap(host->addr);
++
++	platform_set_drvdata(pdev, NULL);
++	mmc_remove_host(host->mmc);
++
++	free_irq(irq[0], host);
++	free_irq(irq[1], host);
++
++	clk_disable(host->hclk);
++	mmc_free_host(host->mmc);
++
++	return 0;
++}
++
++static struct platform_driver sh_mmcif_driver = {
++	.probe		= sh_mmcif_probe,
++	.remove		= sh_mmcif_remove,
++	.driver		= {
++		.name	= DRIVER_NAME,
++	},
++};
++
++static int __init sh_mmcif_init(void)
++{
++	return platform_driver_register(&sh_mmcif_driver);
++}
++
++static void __exit sh_mmcif_exit(void)
++{
++	platform_driver_unregister(&sh_mmcif_driver);
++}
++
++module_init(sh_mmcif_init);
++module_exit(sh_mmcif_exit);
++
++
++MODULE_DESCRIPTION("SuperH on-chip MMC/eMMC interface driver");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS(DRIVER_NAME);
++MODULE_AUTHOR("Yusuke Goda <yusuke.goda.sx@renesas.com>");
+diff --git a/include/linux/mmc/sh_mmcif.h b/include/linux/mmc/sh_mmcif.h
+new file mode 100644
+index 0000000..aafe832
+--- /dev/null
++++ b/include/linux/mmc/sh_mmcif.h
+@@ -0,0 +1,39 @@
++/*
++ * include/linux/mmc/sh_mmcif.h
++ *
++ * platform data for eMMC driver
++ *
++ * Copyright (C) 2010 Renesas Solutions Corp.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License.
++ *
++ */
++
++#ifndef __SH_MMCIF_H__
++#define __SH_MMCIF_H__
++
++/*
++ * MMCIF : CE_CLK_CTRL [19:16]
++ * 1000 : Peripheral clock / 512
++ * 0111 : Peripheral clock / 256
++ * 0110 : Peripheral clock / 128
++ * 0101 : Peripheral clock / 64
++ * 0100 : Peripheral clock / 32
++ * 0011 : Peripheral clock / 16
++ * 0010 : Peripheral clock / 8
++ * 0001 : Peripheral clock / 4
++ * 0000 : Peripheral clock / 2
++ * 1111 : Peripheral clock (sup_pclk set '1')
++ */
++
++struct sh_mmcif_plat_data {
++	void (*set_pwr)(struct platform_device *pdev, int state);
++	void (*down_pwr)(struct platform_device *pdev);
++	u8	sup_pclk;	/* 1 :SH7757, 0: SH7724/SH7372 */
++	unsigned long caps;
++	u32	ocr;
++};
++
++#endif /* __SH_MMCIF_H__ */
+-- 
+1.7.0
 
-SElEOiBleHBhbmQgaGlkLXRvcHNlZWQgZHJpdmVyIHRvIHN1cHBvcnQgQlRDICJFbXByZXggMzAw
-OVVSRiBJSUkgVmlzdGEgTUNFIFJlbW90ZSIKClRoZSBCZWhhdmlvciBUZWNoLiBDb21wdXRlciBD
-b3JwLiAoQlRDKSByZW1vdGUgYnJhbmRlZCBhcyAiRW1wcmV4IDMwMDlVUkYgSUlJIFZpc3RhClJl
-bW90ZSBDb250cm9sbGVyIiB1c2VzIG5vbi1zdGFuZGFyZCBtYXBwaW5ncyBmb3IgYWxsIG9mIGl0
-cyAnc3BlY2lhbCBwdXJwb3NlJyBrZXlzCigweGZmYmMgdXNhZ2UgcGFnZSkuICBUaGlzIHBhdGNo
-IG1vZGlmaWVzIHRoZSBleGlzdGluZyBoaWQtdG9wc2VlZCBxdWlya3kgZHJpdmVyIHRvCnN1cHBv
-cnQgYm90aCByZW1vdGVzIGluIG9yZGVyIHRvIHByZXZlbnQgcHJvbGlmZXJhdGlvbiBvZiBpbi1r
-ZXJuZWwgcXVpcmt5IGRyaXZlcnMKdW50aWwgc3VjaCBhIHRpbWUgdGhhdCB1ZGV2IHJlbWFwcGlu
-ZyB3b3JrcyB3aXRoIHRoZXNlIGRldmljZXMuClRlc3RlZCBzdWNjZXNzZnVsbHkgd2l0aCBib3Ro
-IHRoZSAiRW1wcmV4IiByZW1vdGUgYW5kIHRoZSAiQ3liZXJMaW5rIiByZW1vdGUKb3JpZ2luYWxs
-eSBzdXBwb3J0ZWQgYnkgdGhlIGhpZC10b3BzZWVkIGRyaXZlci4KClNpZ25lZC1vZmYtYnk6IFdh
-eW5lIFRob21hcyA8d2F5bmV0aG9tYXM2OUBnbWFpbC5jb20+CgoKZGlmZiAtdXByTiBsaW51eC0y
-LjYuMzMtY2xlYW4vZHJpdmVycy9oaWQvaGlkLWNvcmUuYyBsaW51eC9kcml2ZXJzL2hpZC9oaWQt
-Y29yZS5jCi0tLSBsaW51eC0yLjYuMzMtY2xlYW4vZHJpdmVycy9oaWQvaGlkLWNvcmUuYwkyMDEw
-LTA0LTIyIDIxOjA0OjE3LjAwMDAwMDAwMCArMDIwMAorKysgbGludXgvZHJpdmVycy9oaWQvaGlk
-LWNvcmUuYwkyMDEwLTA0LTIzIDE5OjU1OjE3LjAwMDAwMDAwMCArMDIwMApAQCAtMTI5MSw2ICsx
-MjkxLDcgQEAgc3RhdGljIGNvbnN0IHN0cnVjdCBoaWRfZGV2aWNlX2lkIGhpZF9ibAogCXsgSElE
-X1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9GT1VO
-VEFJTl9UUF9PTkxZKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwg
-VVNCX0RFVklDRV9JRF9BUFBMRV9HRVlTRVIxX1RQX09OTFkpIH0sCiAJeyBISURfVVNCX0RFVklD
-RShVU0JfVkVORE9SX0lEX0JFTEtJTiwgVVNCX0RFVklDRV9JRF9GTElQX0tWTSkgfSwKKwl7IEhJ
-RF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQlRDLCBVU0JfREVWSUNFX0lEX0JUQ19FTVBSRVhf
-UkVNT1RFKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9DSEVSUlksIFVTQl9E
-RVZJQ0VfSURfQ0hFUlJZX0NZTU9USU9OKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRP
-Ul9JRF9DSElDT05ZLCBVU0JfREVWSUNFX0lEX0NISUNPTllfVEFDVElDQUxfUEFEKSB9LAogCXsg
-SElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9DWVBSRVNTLCBVU0JfREVWSUNFX0lEX0NZUFJF
-U1NfQkFSQ09ERV8xKSB9LApkaWZmIC11cHJOIGxpbnV4LTIuNi4zMy1jbGVhbi9kcml2ZXJzL2hp
-ZC9oaWQtaWRzLmggbGludXgvZHJpdmVycy9oaWQvaGlkLWlkcy5oCi0tLSBsaW51eC0yLjYuMzMt
-Y2xlYW4vZHJpdmVycy9oaWQvaGlkLWlkcy5oCTIwMTAtMDQtMjIgMjE6MDQ6MTcuMDAwMDAwMDAw
-ICswMjAwCisrKyBsaW51eC9kcml2ZXJzL2hpZC9oaWQtaWRzLmgJMjAxMC0wNC0yMyAwNzowOTo1
-OS4wMDAwMDAwMDAgKzAyMDAKQEAgLTExNiw2ICsxMTYsOSBAQAogI2RlZmluZSBVU0JfVkVORE9S
-X0lEX0JFUktTSElSRQkJMHgwYzk4CiAjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQkVSS1NISVJFX1BD
-V0QJMHgxMTQwCiAKKyNkZWZpbmUgVVNCX1ZFTkRPUl9JRF9CVEMJCTB4MDQ2ZQorI2RlZmluZSBV
-U0JfREVWSUNFX0lEX0JUQ19FTVBSRVhfUkVNT1RFCTB4NTU3OAorCiAjZGVmaW5lIFVTQl9WRU5E
-T1JfSURfQ0gJCTB4MDY4ZQogI2RlZmluZSBVU0JfREVWSUNFX0lEX0NIX1BST19QRURBTFMJMHgw
-MGYyCiAjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQ0hfQ09NQkFUU1RJQ0sJMHgwMGY0CmRpZmYgLXVw
-ck4gbGludXgtMi42LjMzLWNsZWFuL2RyaXZlcnMvaGlkL2hpZC10b3BzZWVkLmMgbGludXgvZHJp
-dmVycy9oaWQvaGlkLXRvcHNlZWQuYwotLS0gbGludXgtMi42LjMzLWNsZWFuL2RyaXZlcnMvaGlk
-L2hpZC10b3BzZWVkLmMJMjAxMC0wNC0yMiAyMDo0ODo0My4wMDAwMDAwMDAgKzAyMDAKKysrIGxp
-bnV4L2RyaXZlcnMvaGlkL2hpZC10b3BzZWVkLmMJMjAxMC0wNC0yMiAyMToyOToyMC4wMDAwMDAw
-MDAgKzAyMDAKQEAgLTMsNiArMyw5IEBACiAgKgogICogIENvcHlyaWdodCAoYykgMjAwOCBMZXYg
-QmFiaWV2CiAgKiAgYmFzZWQgb24gaGlkLWNoZXJyeSBkcml2ZXIKKyAqCisgKiAgTW9kaWZpZWQg
-dG8gYWxzbyBzdXBwb3J0IEJUQyAiRW1wcmV4IDMwMDlVUkYgSUlJIFZpc3RhIE1DRSBSZW1vdGUi
-IGJ5CisgKiAgV2F5bmUgVGhvbWFzIDIwMTAuCiAgKi8KIAogLyoKQEAgLTI0LDIzICsyNywyOSBA
-QCBzdGF0aWMgaW50IHRzX2lucHV0X21hcHBpbmcoc3RydWN0IGhpZF9kCiAJCXN0cnVjdCBoaWRf
-ZmllbGQgKmZpZWxkLCBzdHJ1Y3QgaGlkX3VzYWdlICp1c2FnZSwKIAkJdW5zaWduZWQgbG9uZyAq
-KmJpdCwgaW50ICptYXgpCiB7Ci0JaWYgKCh1c2FnZS0+aGlkICYgSElEX1VTQUdFX1BBR0UpICE9
-IDB4MGZmYmMwMDAwKQorCWlmICgodXNhZ2UtPmhpZCAmIEhJRF9VU0FHRV9QQUdFKSAhPSBISURf
-VVBfTE9HSVZFTkRPUikKIAkJcmV0dXJuIDA7CiAKIAlzd2l0Y2ggKHVzYWdlLT5oaWQgJiBISURf
-VVNBR0UpIHsKLSAgICAgICAgY2FzZSAweDAwZDogdHNfbWFwX2tleV9jbGVhcihLRVlfSE9NRSk7
-ICAgICAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDAyNDogdHNfbWFwX2tleV9jbGVhcihL
-RVlfTUVOVSk7ICAgICAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDAyNTogdHNfbWFwX2tl
-eV9jbGVhcihLRVlfVFYpOyAgICAgICAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDA0ODog
-dHNfbWFwX2tleV9jbGVhcihLRVlfUkVEKTsgICAgICAgICAgICBicmVhazsKLSAgICAgICAgY2Fz
-ZSAweDA0NzogdHNfbWFwX2tleV9jbGVhcihLRVlfR1JFRU4pOyAgICAgICAgICBicmVhazsKLSAg
-ICAgICAgY2FzZSAweDA0OTogdHNfbWFwX2tleV9jbGVhcihLRVlfWUVMTE9XKTsgICAgICAgICBi
-cmVhazsKLSAgICAgICAgY2FzZSAweDA0YTogdHNfbWFwX2tleV9jbGVhcihLRVlfQkxVRSk7ICAg
-ICAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDA0YjogdHNfbWFwX2tleV9jbGVhcihLRVlf
-QU5HTEUpOyAgICAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDA0YzogdHNfbWFwX2tleV9j
-bGVhcihLRVlfTEFOR1VBR0UpOyAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDA0ZDogdHNf
-bWFwX2tleV9jbGVhcihLRVlfU1VCVElUTEUpOyAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAw
-eDAzMTogdHNfbWFwX2tleV9jbGVhcihLRVlfQVVESU8pOyAgICAgICAgICBicmVhazsKLSAgICAg
-ICAgY2FzZSAweDAzMjogdHNfbWFwX2tleV9jbGVhcihLRVlfVEVYVCk7ICAgICAgICAgICBicmVh
-azsKLSAgICAgICAgY2FzZSAweDAzMzogdHNfbWFwX2tleV9jbGVhcihLRVlfQ0hBTk5FTCk7ICAg
-ICAgICBicmVhazsKKwljYXNlIDB4MDBkOiB0c19tYXBfa2V5X2NsZWFyKEtFWV9NRURJQSk7CWJy
-ZWFrOworCWNhc2UgMHgwMjQ6IHRzX21hcF9rZXlfY2xlYXIoS0VZX01FTlUpOwkJYnJlYWs7CisJ
-Y2FzZSAweDAyNTogdHNfbWFwX2tleV9jbGVhcihLRVlfVFYpOwkJYnJlYWs7CisJY2FzZSAweDAz
-MTogdHNfbWFwX2tleV9jbGVhcihLRVlfQVVESU8pOwlicmVhazsKKwljYXNlIDB4MDMyOiB0c19t
-YXBfa2V5X2NsZWFyKEtFWV9URVhUKTsJCWJyZWFrOworCWNhc2UgMHgwMzM6IHRzX21hcF9rZXlf
-Y2xlYXIoS0VZX0NIQU5ORUwpOwlicmVhazsKKwljYXNlIDB4MDQ3OiB0c19tYXBfa2V5X2NsZWFy
-KEtFWV9NUDMpOwkJYnJlYWs7CisJY2FzZSAweDA0ODogdHNfbWFwX2tleV9jbGVhcihLRVlfVFYy
-KTsJCWJyZWFrOworCWNhc2UgMHgwNDk6IHRzX21hcF9rZXlfY2xlYXIoS0VZX0NBTUVSQSk7CWJy
-ZWFrOworCWNhc2UgMHgwNGE6IHRzX21hcF9rZXlfY2xlYXIoS0VZX1ZJREVPKTsJYnJlYWs7CisJ
-Y2FzZSAweDA0YjogdHNfbWFwX2tleV9jbGVhcihLRVlfQU5HTEUpOwlicmVhazsKKwljYXNlIDB4
-MDRjOiB0c19tYXBfa2V5X2NsZWFyKEtFWV9MQU5HVUFHRSk7CWJyZWFrOworCWNhc2UgMHgwNGQ6
-IHRzX21hcF9rZXlfY2xlYXIoS0VZX1NVQlRJVExFKTsJYnJlYWs7CisJY2FzZSAweDA1MDogdHNf
-bWFwX2tleV9jbGVhcihLRVlfUkFESU8pOwlicmVhazsKKwljYXNlIDB4MDVhOiB0c19tYXBfa2V5
-X2NsZWFyKEtFWV9URVhUKTsJCWJyZWFrOworCWNhc2UgMHgwNWI6IHRzX21hcF9rZXlfY2xlYXIo
-S0VZX1JFRCk7CQlicmVhazsKKwljYXNlIDB4MDVjOiB0c19tYXBfa2V5X2NsZWFyKEtFWV9HUkVF
-Tik7CWJyZWFrOworCWNhc2UgMHgwNWQ6IHRzX21hcF9rZXlfY2xlYXIoS0VZX1lFTExPVyk7CWJy
-ZWFrOworCWNhc2UgMHgwNWU6IHRzX21hcF9rZXlfY2xlYXIoS0VZX0JMVUUpOwkJYnJlYWs7CiAJ
-ZGVmYXVsdDoKIAkJcmV0dXJuIDA7CiAJfQpAQCAtNTAsNiArNTksNyBAQCBzdGF0aWMgaW50IHRz
-X2lucHV0X21hcHBpbmcoc3RydWN0IGhpZF9kCiAKIHN0YXRpYyBjb25zdCBzdHJ1Y3QgaGlkX2Rl
-dmljZV9pZCB0c19kZXZpY2VzW10gPSB7CiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lE
-X1RPUFNFRUQsIFVTQl9ERVZJQ0VfSURfVE9QU0VFRF9DWUJFUkxJTkspIH0sCisJeyBISURfVVNC
-X0RFVklDRShVU0JfVkVORE9SX0lEX0JUQywgVVNCX0RFVklDRV9JRF9CVENfRU1QUkVYX1JFTU9U
-RSkgfSwKIAl7IH0KIH07CiBNT0RVTEVfREVWSUNFX1RBQkxFKGhpZCwgdHNfZGV2aWNlcyk7CmRp
-ZmYgLXVwck4gbGludXgtMi42LjMzLWNsZWFuL2RyaXZlcnMvaGlkL0tjb25maWcgbGludXgvZHJp
-dmVycy9oaWQvS2NvbmZpZwotLS0gbGludXgtMi42LjMzLWNsZWFuL2RyaXZlcnMvaGlkL0tjb25m
-aWcJMjAxMC0wNC0yMiAyMDo0ODo0My4wMDAwMDAwMDAgKzAyMDAKKysrIGxpbnV4L2RyaXZlcnMv
-aGlkL0tjb25maWcJMjAxMC0wNC0yNiAyMTowNjo0Ni4wMDAwMDAwMDAgKzAyMDAKQEAgLTI4NSw3
-ICsyODUsNyBAQCBjb25maWcgSElEX1RPUFNFRUQKIAlkZXBlbmRzIG9uIFVTQl9ISUQKIAlkZWZh
-dWx0ICFFTUJFRERFRAogCS0tLWhlbHAtLS0KLQlTYXkgWSBpZiB5b3UgaGF2ZSBhIFRvcFNlZWQg
-Q3liZXJsaW5rIHJlbW90ZSBjb250cm9sLgorCVNheSBZIGlmIHlvdSBoYXZlIGEgVG9wU2VlZCBD
-eWJlcmxpbmsgb3IgQlRDIEVtcHJleCByZW1vdGUgY29udHJvbC4KIAogY29uZmlnIEhJRF9USFJV
-U1RNQVNURVIKIAl0cmlzdGF0ZSAiVGhydXN0TWFzdGVyIGRldmljZXMgc3VwcG9ydCIgaWYgRU1C
-RURERUQK
---0016e6d9677e848ff1048544f9e3--
+
