@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab0D1BuR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 21:50:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15272 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751348Ab0D1BuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 21:50:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,285,1270450800"; 
-   d="scan'208";a="793398352"
-Subject: Re: [PATCH 1/2] mm, Make __get_user_pages return -EHWPOISON for
- HWPOISON page
-From: Huang Ying <ying.huang@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Andi Kleen <andi@firstfloor.org>, Avi Kivity <avi@redhat.com>
-In-Reply-To: <20100427144723.a8c3d997.akpm@linux-foundation.org>
-References: <1272351858.24125.14.camel@yhuang-dev.sh.intel.com>
-	 <20100427144723.a8c3d997.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Apr 2010 09:50:12 +0800
-Message-ID: <1272419412.24125.124.camel@yhuang-dev.sh.intel.com>
+	id S1756151Ab0D1Buk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 21:50:40 -0400
+Received: from tomts36.bellnexxia.net ([209.226.175.93]:35481 "EHLO
+	tomts36-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753480Ab0D1BuQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 21:50:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEALMs10tGGNqG/2dsb2JhbACcY3K/IYUOBA
+Date: Tue, 27 Apr 2010 21:49:41 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: David Miller <davem@davemloft.net>, jbaron@redhat.com,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
+       tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
+       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+       fweisbec@gmail.com, avi@redhat.com, vgoyal@redhat.com, dank@kegel.com
+Subject: Re: [PATCH 00/11] jump label v7
+Message-ID: <20100428014941.GA8389@Krystal>
+References: <cover.1271427118.git.jbaron@redhat.com> <20100422.161700.191166551.davem@davemloft.net> <20100427.175858.134109609.davem@davemloft.net> <20100428013951.GM12389@ozlabs.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100428013951.GM12389@ozlabs.org>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 21:44:04 up 20 days, 11:37,  4 users,  load average: 0.07, 0.14,
+	0.10
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-28 at 05:47 +0800, Andrew Morton wrote:
-> On Tue, 27 Apr 2010 15:04:18 +0800
-> Huang Ying <ying.huang@intel.com> wrote:
+* Tony Breeds (tony@bakeyournoodle.com) wrote:
+> On Tue, Apr 27, 2010 at 05:58:58PM -0700, David Miller wrote:
 > 
-> > With this patch, the caller of __get_user_pages can distinguish
-> > HWPOISON page from general FAULT page. This is needed by KVM, where
-> > UCR MCE should be relayed to guest for HWPOISON page, while
-> > instruction emulation and MMIO will be tried for general FAULT page.
+> > The kernel stops compiling after the second patch because
+> > kernel/jump_label.c is compiled unconditionally, and this generates an
+> > attempt to include asm/alternatives.h which is an x86-only phenomenon.
 > > 
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > ---
-> >  include/asm-generic/errno.h |    2 ++
-> >  mm/memory.c                 |    5 +++--
-> >  2 files changed, 5 insertions(+), 2 deletions(-)
-> > 
-> > --- a/include/asm-generic/errno.h
-> > +++ b/include/asm-generic/errno.h
-> > @@ -108,4 +108,6 @@
-> >  
-> >  #define ERFKILL		132	/* Operation not possible due to RF-kill */
-> >  
-> > +#define EHWPOISON	133	/* Memory page has hardware error */
-> > +
-> >  #endif
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> > @@ -1432,9 +1432,10 @@ int __get_user_pages(struct task_struct
-> >  				if (ret & VM_FAULT_ERROR) {
-> >  					if (ret & VM_FAULT_OOM)
-> >  						return i ? i : -ENOMEM;
-> > -					if (ret &
-> > -					    (VM_FAULT_HWPOISON|VM_FAULT_SIGBUS))
-> > +					if (ret & VM_FAULT_SIGBUS)
-> >  						return i ? i : -EFAULT;
-> > +					if (ret & VM_FAULT_HWPOISON)
-> > +						return i ? i : -EHWPOISON;
-> >  					BUG();
-> >  				}
-> >  				if (ret & VM_FAULT_MAJOR)
-> > 
+> > Do you have access to a cross-compile environment or at least some
+> > non-x86 system you can test build on before submitting these patch
+> > sets?
 > 
-> This will cause various code paths (eg: fs/direct-io.c) to return
-> -EHWPOISON to userspace, will it not?
+> I heard cross-compilers?
+> 
+> http://kernel.org/pub/tools/crosstool/files/bin/  i686 and x86_64 and 4.4.0
+> compilers suitable for kernel work.
+> 
+> I plan to build 4.4.$latest and 4.5.0 ASAP.
+> 
+> Yours Tony
 
-Yes. I think it may be returned to userspace. Do we need to keep the
-userspace errno interface like this?
+The crosstool package from Dan Kegel did a good job for this. Not sure
+it's currently maintained though. It was a very useful project, it's a
+shame if it does not live on. It would be good to have up-to-date and
+tested compilers for various architectures available on kernel.org,
+ideally with access to a package that helps building compilers for
+various architectures.
 
-If it is, we can check whether the virtual page is hwpoisoned via going
-through the page table because the hwpoisoned virtual page has a special
-swap entry in page table.
+Thanks,
 
-Best Regards,
-Huang Ying
+Mathieu
 
 
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
