@@ -1,194 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab0D1MTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 08:19:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5764 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859Ab0D1MTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 08:19:08 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip 1/2] [RESEND] kprobes: Move enable/disable_kprobe() out
-	from debugfs code
-To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
-Cc: systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
-Date: Tue, 27 Apr 2010 18:33:12 -0400
-Message-ID: <20100427223312.2322.60512.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753998Ab0D1TiX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 15:38:23 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:42631 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab0D1TiS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 15:38:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qmf94yQdthLahARN7AlMnQr7TXggJSg+eMb1jjE3F1yn5+kFO51z+FMIMiceoF6dZ8
+         tacDIOoJ/b2gOBbQFvwWkclVBn5AuxCqdqpJYZwcD7LTeItB8BoZklkMxTbhalz7xt4A
+         dycH45rsP5Ai680HNifU2uGZgbf6lwEu7pGko=
+Subject: Re: 2.6.34-rc5-git7 (plus all patches) -- another suspicious
+ rcu_dereference_check() usage.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Miles Lane <miles.lane@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
+       netdev@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       Johannes Berg <johannes@sipsolutions.net>, shemminger@vyatta.com
+In-Reply-To: <20100428175426.GK2540@linux.vnet.ibm.com>
+References: <h2ya44ae5cd1004261751waa5cb65ei3d139cbcfa2cc5cf@mail.gmail.com>
+	 <20100428175426.GK2540@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Apr 2010 21:38:11 +0200
+Message-ID: <1272483491.2201.9.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move enable/disable_kprobe() API out from debugfs related code,
-because these interfaces are not related to debugfs interface.
+Le mercredi 28 avril 2010 à 10:54 -0700, Paul E. McKenney a écrit :
+> On Mon, Apr 26, 2010 at 08:51:06PM -0400, Miles Lane wrote:
+> > This one occurred during the wakeup from suspend to RAM.
+> > 
+> > [  984.724697] [ INFO: suspicious rcu_dereference_check() usage. ]
+> > [  984.724700] ---------------------------------------------------
+> > [  984.724703] include/linux/fdtable.h:88 invoked
+> > rcu_dereference_check() without protection!
+> > [  984.724706]
+> > [  984.724707] other info that might help us debug this:
+> > [  984.724708]
+> > [  984.724711]
+> > [  984.724711] rcu_scheduler_active = 1, debug_locks = 1
+> > [  984.724714] no locks held by dbus-daemon/4680.
+> > [  984.724717]
+> > [  984.724717] stack backtrace:
+> > [  984.724721] Pid: 4680, comm: dbus-daemon Not tainted 2.6.34-rc5-git7 #33
+> > [  984.724724] Call Trace:
+> > [  984.724734]  [<ffffffff81074556>] lockdep_rcu_dereference+0x9d/0xa6
+> > [  984.724740]  [<ffffffff810fc785>] fcheck_files+0xb1/0xc9
+> > [  984.724745]  [<ffffffff810fc7f5>] fget_light+0x35/0xab
+> > [  984.724751]  [<ffffffff81433e1b>] ? sock_poll_wait+0x13/0x18
+> > [  984.724755]  [<ffffffff81433e39>] ? unix_poll+0x19/0x95
+> > [  984.724762]  [<ffffffff8110aa95>] do_sys_poll+0x1ff/0x3e5
+> > [  984.724766]  [<ffffffff8110a19e>] ? __pollwait+0x0/0xc7
+> > [  984.724771]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> > [  984.724776]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> > [  984.724780]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> > [  984.724784]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> > [  984.724788]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> > [  984.724793]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> > [  984.724797]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> > [  984.724802]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> > [  984.724806]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> > [  984.724812]  [<ffffffff8110ae0f>] sys_poll+0x50/0xbb
+> > [  984.724818]  [<ffffffff81009d82>] system_call_fastpath+0x16/0x1b
+> 
+> Hmmm...  I am not convinced that this is a false positive.  Couldn't
+> there be a multi-threaded process where one thread is invoking poll()
+> on a UNIX socket just as another thread is calling close() on it?
+> 
+> The current fcheck_files() logic requires that the caller either (1) be in
+> an RCU read-side critical section, (2) hold ->files_lock, or (3) passing
+> in a files_struct with ->count equal to 1 (initialization or cleanup).
+> 
+> So I don't feel comfortable just slapping an RCU read-side critical
+> section around this one, at least not unless someone who understands
+> the locking says that doing so is OK.
+> 
+> 		
 
-Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-Acked-by:  Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Acked-by: Tony Luck <tony.luck@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>
----
+Its a single threaded program.
 
- kernel/kprobes.c |  132 +++++++++++++++++++++++++++---------------------------
- 1 files changed, 66 insertions(+), 66 deletions(-)
-
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 0ed46f3..282035f 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1588,6 +1588,72 @@ static void __kprobes kill_kprobe(struct kprobe *p)
- 	arch_remove_kprobe(p);
- }
- 
-+/* Disable one kprobe */
-+int __kprobes disable_kprobe(struct kprobe *kp)
-+{
-+	int ret = 0;
-+	struct kprobe *p;
-+
-+	mutex_lock(&kprobe_mutex);
-+
-+	/* Check whether specified probe is valid. */
-+	p = __get_valid_kprobe(kp);
-+	if (unlikely(p == NULL)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* If the probe is already disabled (or gone), just return */
-+	if (kprobe_disabled(kp))
-+		goto out;
-+
-+	kp->flags |= KPROBE_FLAG_DISABLED;
-+	if (p != kp)
-+		/* When kp != p, p is always enabled. */
-+		try_to_disable_aggr_kprobe(p);
-+
-+	if (!kprobes_all_disarmed && kprobe_disabled(p))
-+		disarm_kprobe(p);
-+out:
-+	mutex_unlock(&kprobe_mutex);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(disable_kprobe);
-+
-+/* Enable one kprobe */
-+int __kprobes enable_kprobe(struct kprobe *kp)
-+{
-+	int ret = 0;
-+	struct kprobe *p;
-+
-+	mutex_lock(&kprobe_mutex);
-+
-+	/* Check whether specified probe is valid. */
-+	p = __get_valid_kprobe(kp);
-+	if (unlikely(p == NULL)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (kprobe_gone(kp)) {
-+		/* This kprobe has gone, we couldn't enable it. */
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (p != kp)
-+		kp->flags &= ~KPROBE_FLAG_DISABLED;
-+
-+	if (!kprobes_all_disarmed && kprobe_disabled(p)) {
-+		p->flags &= ~KPROBE_FLAG_DISABLED;
-+		arm_kprobe(p);
-+	}
-+out:
-+	mutex_unlock(&kprobe_mutex);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(enable_kprobe);
-+
- void __kprobes dump_kprobe(struct kprobe *kp)
- {
- 	printk(KERN_WARNING "Dumping kprobe:\n");
-@@ -1805,72 +1871,6 @@ static const struct file_operations debugfs_kprobes_operations = {
- 	.release        = seq_release,
- };
- 
--/* Disable one kprobe */
--int __kprobes disable_kprobe(struct kprobe *kp)
--{
--	int ret = 0;
--	struct kprobe *p;
--
--	mutex_lock(&kprobe_mutex);
--
--	/* Check whether specified probe is valid. */
--	p = __get_valid_kprobe(kp);
--	if (unlikely(p == NULL)) {
--		ret = -EINVAL;
--		goto out;
--	}
--
--	/* If the probe is already disabled (or gone), just return */
--	if (kprobe_disabled(kp))
--		goto out;
--
--	kp->flags |= KPROBE_FLAG_DISABLED;
--	if (p != kp)
--		/* When kp != p, p is always enabled. */
--		try_to_disable_aggr_kprobe(p);
--
--	if (!kprobes_all_disarmed && kprobe_disabled(p))
--		disarm_kprobe(p);
--out:
--	mutex_unlock(&kprobe_mutex);
--	return ret;
--}
--EXPORT_SYMBOL_GPL(disable_kprobe);
--
--/* Enable one kprobe */
--int __kprobes enable_kprobe(struct kprobe *kp)
--{
--	int ret = 0;
--	struct kprobe *p;
--
--	mutex_lock(&kprobe_mutex);
--
--	/* Check whether specified probe is valid. */
--	p = __get_valid_kprobe(kp);
--	if (unlikely(p == NULL)) {
--		ret = -EINVAL;
--		goto out;
--	}
--
--	if (kprobe_gone(kp)) {
--		/* This kprobe has gone, we couldn't enable it. */
--		ret = -EINVAL;
--		goto out;
--	}
--
--	if (p != kp)
--		kp->flags &= ~KPROBE_FLAG_DISABLED;
--
--	if (!kprobes_all_disarmed && kprobe_disabled(p)) {
--		p->flags &= ~KPROBE_FLAG_DISABLED;
--		arm_kprobe(p);
--	}
--out:
--	mutex_unlock(&kprobe_mutex);
--	return ret;
--}
--EXPORT_SYMBOL_GPL(enable_kprobe);
--
- static void __kprobes arm_all_kprobes(void)
- {
- 	struct hlist_head *head;
+So fget_light() calls fcheck_files(files, fd); without rcu lock,
+but some /proc/pid/fd/... user temporarly raised files->count just
+before we perform the condition check.
 
 
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+
