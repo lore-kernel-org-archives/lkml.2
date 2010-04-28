@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913Ab0D1PRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:17:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11957 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754282Ab0D1PRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:17:13 -0400
-Date: Wed, 28 Apr 2010 17:16:14 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/3] Fix migration races in rmap_walk() V2
-Message-ID: <20100428151614.GQ510@random.random>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
- <alpine.DEB.2.00.1004271723090.24133@router.home>
- <20100427223242.GG8860@random.random>
- <20100428091345.496ca4c4.kamezawa.hiroyu@jp.fujitsu.com>
- <20100428002056.GH510@random.random>
- <20100428142356.GF15815@csn.ul.ie>
- <20100428145737.GG15815@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100428145737.GG15815@csn.ul.ie>
+	id S1752703Ab0D1KvG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 06:51:06 -0400
+Received: from mail.gmx.net ([213.165.64.20]:52544 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752060Ab0D1KvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 06:51:04 -0400
+X-Authenticated: #15668376
+X-Provags-ID: V01U2FsdGVkX1+QdYZkA1WQRfbi/Z6kjr7hbdkLB0wdCC5dDrvKLi
+	GSYt+SGviQypZC
+From: Peter Fritzsche <peter.fritzsche@gmx.de>
+To: David Howells <dhowells@redhat.com>,
+       Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+       Ingo Molnar <mingo@elte.hu>,
+       Remis Lima Baima <remis.developer@googlemail.com>,
+       Arnd Bergmann <arnd@arndb.de>, linux-am33-list@redhat.com,
+       linux-kernel@vger.kernel.org,
+       Keith M Wesolowski <wesolows@foobazco.org>
+Cc: Peter Fritzsche <peter.fritzsche@gmx.de>
+Subject: [PATCH 1/2] mn10300: Don't warn that atomic_t is only 24 bit
+Date: Wed, 28 Apr 2010 12:50:37 +0200
+Message-Id: <1272451837-17961-1-git-send-email-peter.fritzsche@gmx.de>
+X-Mailer: git-send-email 1.7.1
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.55000000000000004
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 03:57:38PM +0100, Mel Gorman wrote:
-> On Wed, Apr 28, 2010 at 03:23:56PM +0100, Mel Gorman wrote:
-> > On Wed, Apr 28, 2010 at 02:20:56AM +0200, Andrea Arcangeli wrote:
-> > > On Wed, Apr 28, 2010 at 09:13:45AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > > Doing some check in move_ptes() after vma_adjust() is not safe.
-> > > > IOW, when vma's information and information in page-table is incosistent...objrmap
-> > > > is broken and migartion will cause panic.
-> > > > 
-> > > > Then...I think there are 2 ways.
-> > > >   1. use seqcounter in "mm_struct" as previous patch and lock it at mremap.
-> > > > or
-> > > >   2. get_user_pages_fast() when do remap.
-> > > 
-> > > 3 take the anon_vma->lock
-> > > 
-> > 
-> > <SNIP>
-> >
-> > Here is a different version of the same basic idea to skip temporary VMAs
-> > during migration. Maybe go with this?
-> > 
-> > +static bool is_vma_temporary_stack(struct vm_area_struct *vma)
-> > +{
-> > +	if (vma->vm_flags != VM_STACK_FLAGS)
-> > +		return false;
-> > +
-> > +	/*
-> > +	 * Only during exec will the total VM consumed by a process
-> > +	 * be exacly the same as the stack
-> > +	 */
-> > +	if (vma->vm_mm->stack_vm == 1 && vma->vm_mm->total_vm == 1)
-> > +		return true;
-> > +
-> > +	return false;
-> > +}
-> > +
-> 
-> The assumptions on the vm flags is of course totally wrong. VM_EXEC might
-> be applied as well as default flags from the mm.  The following is the same
-> basic idea, skip VMAs belonging to processes in exec rather than trying
-> to hold anon_vma->lock across move_page_tables(). Not tested yet.
+32-bit Sparc used to only allow usage of 24-bit of it's atomic_t type.
+This was corrected with linux 2.6.3 when Keith M Wesolowski changed the
+implementation to use the parisc approach of having an array of
+spinlocks to protect the atomic_t.
 
-This is better than the other, that made it look like people could set
-broken rmap at arbitrary times, at least this shows it's ok only
-during execve before anything run, but if we can't take the anon-vma
-lock really better than having to make these special checks inside
-every rmap_walk that has to be accurate, we should just delay the
-linkage of the stack vma into its anon-vma, until after the move_pages.
+These warnings were also removed from the sparc implementation when the
+new implementation was merged in BKrev:402e4949VThdc6D3iaosSFUgabMfvw,
+but the warning still remained in some other places without any
+24-bit-only atomic_t implementation inside the kernel.
+
+We should remove these warnings to allow users to rely on the full
+32-bit range of atomic_t.
+
+Signed-off-by: Peter Fritzsche <peter.fritzsche@gmx.de>
+---
+ This should correct the problem mentioned in http://lkml.org/lkml/2010/4/26/33
+
+ arch/mn10300/include/asm/atomic.h |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/arch/mn10300/include/asm/atomic.h b/arch/mn10300/include/asm/atomic.h
+index 5bf5be9..5b58ff8 100644
+--- a/arch/mn10300/include/asm/atomic.h
++++ b/arch/mn10300/include/asm/atomic.h
+@@ -28,8 +28,7 @@
+  * atomic_read - read atomic variable
+  * @v: pointer of type atomic_t
+  *
+- * Atomically reads the value of @v.  Note that the guaranteed
+- * useful range of an atomic_t is only 24 bits.
++ * Atomically reads the value of @v.
+  */
+ #define atomic_read(v)	((v)->counter)
+ 
+@@ -38,8 +37,7 @@
+  * @v: pointer of type atomic_t
+  * @i: required value
+  *
+- * Atomically sets the value of @v to @i.  Note that the guaranteed
+- * useful range of an atomic_t is only 24 bits.
++ * Atomically sets the value of @v to @i.
+  */
+ #define atomic_set(v, i) (((v)->counter) = (i))
+ 
+@@ -51,7 +49,6 @@
+  * @v: pointer of type atomic_t
+  *
+  * Atomically adds @i to @v and returns the result
+- * Note that the guaranteed useful range of an atomic_t is only 24 bits.
+  */
+ static inline int atomic_add_return(int i, atomic_t *v)
+ {
+@@ -73,7 +70,6 @@ static inline int atomic_add_return(int i, atomic_t *v)
+  * @v: pointer of type atomic_t
+  *
+  * Atomically subtracts @i from @v and returns the result
+- * Note that the guaranteed useful range of an atomic_t is only 24 bits.
+  */
+ static inline int atomic_sub_return(int i, atomic_t *v)
+ {
+-- 
+1.7.1
+
