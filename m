@@ -1,224 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab0D1P6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:58:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab0D1P6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:58:45 -0400
-Date: Wed, 28 Apr 2010 18:54:57 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-       netdev@vger.kernel.org
-Subject: Re: linux-next: manual merge of the rr tree with the net tree
-Message-ID: <20100428155457.GB7467@redhat.com>
-References: <20100427115852.9f4cbb0f.sfr@canb.auug.org.au> <20100427040913.GA19951@redhat.com>
+	id S932164Ab0D1UHB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 16:07:01 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45922 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932148Ab0D1UG7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 16:06:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wVj8DFyfknm4kD4HNNfbmJY+a6aWFB8qKLU7uhQ15um1Ypj7UNtRdaOWbI46/5D2Df
+         Dnv8QzYPdQNULv24FvI/RLngDY2MWzH1FuY1u42EGiOYgSXbKob6/5uKncIIRXq6dppl
+         nungwUwezOObNPBIpGALF+MqXS6lJAVImoQpQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100427040913.GA19951@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.LFD.2.00.1004282137330.2951@localhost.localdomain>
+References: <l2ye6bf505b1004271144ta6817962vec8167d813658648@mail.gmail.com>
+	 <alpine.LFD.2.00.1004272053130.2951@localhost.localdomain>
+	 <1272399798.2255.2.camel@localhost>
+	 <1272400246.2255.5.camel@localhost>
+	 <s2me6bf505b1004271354v128e0e89q6b506ce99af6d7fd@mail.gmail.com>
+	 <1272434481.1974.101.camel@work-vm>
+	 <w2ge6bf505b1004280821g70610cb7lc3821ee890345273@mail.gmail.com>
+	 <alpine.LFD.2.00.1004281833230.2951@localhost.localdomain>
+	 <y2ge6bf505b1004281054kfc44529fkf87dc5e9d564f9b3@mail.gmail.com>
+	 <alpine.LFD.2.00.1004282137330.2951@localhost.localdomain>
+Date: Wed, 28 Apr 2010 15:06:58 -0500
+Message-ID: <g2we6bf505b1004281306sa6ddb207p7a1b8853c3ab308f@mail.gmail.com>
+Subject: Re: 2.6.33.3-rt16 Oops caused by umount
+From: Xianghua Xiao <xiaoxianghua@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: john stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 07:09:13AM +0300, Michael S. Tsirkin wrote:
-> On Tue, Apr 27, 2010 at 11:58:52AM +1000, Stephen Rothwell wrote:
-> > Hi Rusty,
-> > 
-> > Today's linux-next merge of the rr tree got a conflict in
-> > drivers/net/virtio_net.c between commit
-> > 5e01d2f91df62be4d6f282149bc2a8858992ceca ("virtio-net: move sg off
-> > stack") from the net tree and commit
-> > 7f62a724a65f864d84f50857bbfd36c240155c8f ("virtio_net: use virtqueue_xxx
-> > wrappers") from the rr tree.
-> > 
-> > I fixed it up (see below) and can carry the fix as necessary.
-> 
-> Hmm, Rusty, do you intend for the patches to go through netdev this
-> time? If you do, it might be simplest to just ask Dave to merge
-> them in net-next-2.6 now. I can prepare and send them if you like.
+On Wed, Apr 28, 2010 at 2:38 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Wed, 28 Apr 2010, Xianghua Xiao wrote:
+>> Thomas,
+>> I patched it and re-run it however did not find any condition from
+>> your patch had a hit.
+>> In your patch I changed :
+>>
+>> if (!file->f_path) {
+>> to
+>> if(!(&(file->f_path))){
+>> Otherwise it won't compile as f_path is a not a pointer.
+>
+> True :)
+>
+>> # reboot
+>> # Oops: Kernel access of bad area, sig: 11 [#1]
+>
+> Ok. Can you please enable CONFIG_DEBUG_LIST ?
+>
+> Thanks,
+>
+>        tglx
+>
+I turned on that, could not find any difference from the oops log.
+If I try to remount it rw then ro, the remount ro will cause similar oops
+Thanks,
+Xianghua
 
-For whoever develops on top of -rr, the following backports
-virtio_net change from net-next. Hope this helps
-
-
-commit 77416b2a007b67f92d2f7b3b1edac7405c5890f7
-Author: Michael S. Tsirkin <mst@redhat.com>
-Date:   Wed Apr 28 18:48:27 2010 +0300
-
-    virtio-net: move sg off stack
-    
-    Move sg structure off stack and into virtnet_info structure.
-    This helps remove extra sg_init_table calls as well as reduce
-    stack usage.
-    
-    Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-    Tested-by: Michael S. Tsirkin <mst@redhat.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-    
-    Conflicts:
-    
-    	drivers/net/virtio_net.c
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index fca44b2..dc872ba 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -40,8 +40,7 @@ module_param(gso, bool, 0444);
- 
- #define VIRTNET_SEND_COMMAND_SG_MAX    2
- 
--struct virtnet_info
--{
-+struct virtnet_info {
- 	struct virtio_device *vdev;
- 	struct virtqueue *rvq, *svq, *cvq;
- 	struct net_device *dev;
-@@ -62,6 +61,10 @@ struct virtnet_info
- 
- 	/* Chain pages by the private ptr. */
- 	struct page *pages;
-+
-+	/* fragments + linear part + virtio header */
-+	struct scatterlist rx_sg[MAX_SKB_FRAGS + 2];
-+	struct scatterlist tx_sg[MAX_SKB_FRAGS + 2];
- };
- 
- struct skb_vnet_hdr {
-@@ -324,10 +327,8 @@ static int add_recvbuf_small(struct virtnet_info *vi, gfp_t gfp)
- {
- 	struct sk_buff *skb;
- 	struct skb_vnet_hdr *hdr;
--	struct scatterlist sg[2];
- 	int err;
- 
--	sg_init_table(sg, 2);
- 	skb = netdev_alloc_skb_ip_align(vi->dev, MAX_PACKET_LEN);
- 	if (unlikely(!skb))
- 		return -ENOMEM;
-@@ -335,11 +336,11 @@ static int add_recvbuf_small(struct virtnet_info *vi, gfp_t gfp)
- 	skb_put(skb, MAX_PACKET_LEN);
- 
- 	hdr = skb_vnet_hdr(skb);
--	sg_set_buf(sg, &hdr->hdr, sizeof hdr->hdr);
-+	sg_set_buf(vi->rx_sg, &hdr->hdr, sizeof hdr->hdr);
- 
--	skb_to_sgvec(skb, sg + 1, 0, skb->len);
-+	skb_to_sgvec(skb, vi->rx_sg + 1, 0, skb->len);
- 
--	err = virtqueue_add_buf_gfp(vi->rvq, sg, 0, 2, skb, gfp);
-+	err = virtqueue_add_buf_gfp(vi->rvq, vi->rx_sg, 0, 2, skb, gfp);
- 	if (err < 0)
- 		dev_kfree_skb(skb);
- 
-@@ -348,13 +349,11 @@ static int add_recvbuf_small(struct virtnet_info *vi, gfp_t gfp)
- 
- static int add_recvbuf_big(struct virtnet_info *vi, gfp_t gfp)
- {
--	struct scatterlist sg[MAX_SKB_FRAGS + 2];
- 	struct page *first, *list = NULL;
- 	char *p;
- 	int i, err, offset;
- 
--	sg_init_table(sg, MAX_SKB_FRAGS + 2);
--	/* page in sg[MAX_SKB_FRAGS + 1] is list tail */
-+	/* page in vi->rx_sg[MAX_SKB_FRAGS + 1] is list tail */
- 	for (i = MAX_SKB_FRAGS + 1; i > 1; --i) {
- 		first = get_a_page(vi, gfp);
- 		if (!first) {
-@@ -362,7 +361,7 @@ static int add_recvbuf_big(struct virtnet_info *vi, gfp_t gfp)
- 				give_pages(vi, list);
- 			return -ENOMEM;
- 		}
--		sg_set_buf(&sg[i], page_address(first), PAGE_SIZE);
-+		sg_set_buf(&vi->rx_sg[i], page_address(first), PAGE_SIZE);
- 
- 		/* chain new page in list head to match sg */
- 		first->private = (unsigned long)list;
-@@ -376,17 +375,17 @@ static int add_recvbuf_big(struct virtnet_info *vi, gfp_t gfp)
- 	}
- 	p = page_address(first);
- 
--	/* sg[0], sg[1] share the same page */
--	/* a separated sg[0] for  virtio_net_hdr only during to QEMU bug*/
--	sg_set_buf(&sg[0], p, sizeof(struct virtio_net_hdr));
-+	/* vi->rx_sg[0], vi->rx_sg[1] share the same page */
-+	/* a separated vi->rx_sg[0] for virtio_net_hdr only due to QEMU bug */
-+	sg_set_buf(&vi->rx_sg[0], p, sizeof(struct virtio_net_hdr));
- 
--	/* sg[1] for data packet, from offset */
-+	/* vi->rx_sg[1] for data packet, from offset */
- 	offset = sizeof(struct padded_vnet_hdr);
--	sg_set_buf(&sg[1], p + offset, PAGE_SIZE - offset);
-+	sg_set_buf(&vi->rx_sg[1], p + offset, PAGE_SIZE - offset);
- 
- 	/* chain first in list head */
- 	first->private = (unsigned long)list;
--	err = virtqueue_add_buf_gfp(vi->rvq, sg, 0, MAX_SKB_FRAGS + 2,
-+	err = virtqueue_add_buf_gfp(vi->rvq, vi->rx_sg, 0, MAX_SKB_FRAGS + 2,
- 				    first, gfp);
- 	if (err < 0)
- 		give_pages(vi, first);
-@@ -397,16 +396,15 @@ static int add_recvbuf_big(struct virtnet_info *vi, gfp_t gfp)
- static int add_recvbuf_mergeable(struct virtnet_info *vi, gfp_t gfp)
- {
- 	struct page *page;
--	struct scatterlist sg;
- 	int err;
- 
- 	page = get_a_page(vi, gfp);
- 	if (!page)
- 		return -ENOMEM;
- 
--	sg_init_one(&sg, page_address(page), PAGE_SIZE);
-+	sg_init_one(vi->rx_sg, page_address(page), PAGE_SIZE);
- 
--	err = virtqueue_add_buf_gfp(vi->rvq, &sg, 0, 1, page);
-+	err = virtqueue_add_buf_gfp(vi->rvq, &vi->rx_sg, 0, 1, page);
- 	if (err < 0)
- 		give_pages(vi, page);
- 
-@@ -515,12 +513,9 @@ static unsigned int free_old_xmit_skbs(struct virtnet_info *vi)
- 
- static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
- {
--	struct scatterlist sg[2+MAX_SKB_FRAGS];
- 	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
- 	const unsigned char *dest = ((struct ethhdr *)skb->data)->h_dest;
- 
--	sg_init_table(sg, 2+MAX_SKB_FRAGS);
--
- 	pr_debug("%s: xmit %p %pM\n", vi->dev->name, skb, dest);
- 
- 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
-@@ -554,12 +549,12 @@ static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
- 
- 	/* Encode metadata header at front. */
- 	if (vi->mergeable_rx_bufs)
--		sg_set_buf(sg, &hdr->mhdr, sizeof hdr->mhdr);
-+		sg_set_buf(vi->tx_sg, &hdr->mhdr, sizeof hdr->mhdr);
- 	else
--		sg_set_buf(sg, &hdr->hdr, sizeof hdr->hdr);
-+		sg_set_buf(vi->tx_sg, &hdr->hdr, sizeof hdr->hdr);
- 
--	hdr->num_sg = skb_to_sgvec(skb, sg+1, 0, skb->len) + 1;
--	return virtqueue_add_buf(vi->svq, sg, hdr->num_sg, 0, skb);
-+	hdr->num_sg = skb_to_sgvec(skb, vi->tx_sg + 1, 0, skb->len) + 1;
-+	return virtqueue_add_buf(vi->svq, vi->tx_sg, hdr->num_sg, 0, skb);
- }
- 
- static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
-@@ -942,6 +937,8 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	vdev->priv = vi;
- 	vi->pages = NULL;
- 	INIT_DELAYED_WORK(&vi->refill, refill_work);
-+	sg_init_table(vi->rx_sg, ARRAY_SIZE(vi->rx_sg));
-+	sg_init_table(vi->tx_sg, ARRAY_SIZE(vi->tx_sg));
- 
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
--- 
-MST
+# reboot
+# Oops: Kernel access of bad area, sig: 11 [#1]
+PREEMPT 834x SYS
+Modules linked in:
+NIP: c009ca1c LR: c009c9cc CTR: 00000000
+REGS: cde43dd0 TRAP: 0300   Not tainted  (2.6.33.3-rt16)
+MSR: 00009032 <EE,ME,IR,DR>  CR: 24000444  XER: 20000000
+DAR: 31c554a2, DSISR: 20000000
+TASK = ce9219d0[1396] 'umount' THREAD: cde42000
+GPR00: 0000001d cde43e80 ce9219d0 c0454910 000002ac 000002ac 00008000 00000000
+GPR08: 00007fff 31c5547a c0454910 cea82b78 44000442 100bbc1c 0fffd000 ffffffff
+GPR16: 00000001 00000000 007fff00 00000000 00000000 0fffa1a0 00000000 cde43ec8
+GPR24: 00000021 00000060 c045869c c04586b8 c050bd6c ce951488 00008000 cea82960
+NIP [c009ca1c] fs_may_remount_ro+0x88/0x150
+LR [c009c9cc] fs_may_remount_ro+0x38/0x150
+Call Trace:
+[cde43e80] [c009c9cc] fs_may_remount_ro+0x38/0x150 (unreliable)
+[cde43ea0] [c009da10] do_remount_sb+0x138/0x178
+[cde43ec0] [c00bc420] do_mount+0x54c/0x840
+[cde43f10] [c00bc7e4] sys_mount+0xd0/0xfc
+[cde43f40] [c00141e8] ret_from_syscall+0x0/0x38
+--- Exception: c01 at 0xfe5f8c4
+    LR = 0x10051b88
+Instruction dump:
+817f0000 2f8b0000 419e0008 7c005a2c 7f9fe800 419e0080 813f000c 2f890000
+419e00a8 81290024 2f890000 419e00b4 <80090028> 2f800000 419e0028 a009006e
+---[ end trace cd3eb2ed5361fbce ]---
+------------[ cut here ]------------
+kernel BUG at kernel/rtmutex.c:808!
+Oops: Exception in kernel mode, sig: 5 [#2]
+PREEMPT 834x SYS
+Modules linked in:
+NIP: c03aa79c LR: c03aa774 CTR: c011fbfc
+REGS: cde43b00 TRAP: 0700   Tainted: G      D     (2.6.33.3-rt16)
+MSR: 00021032 <ME,CE,IR,DR>  CR: 82004428  XER: 00000000
+TASK = ce9219d0[1396] 'umount' THREAD: cde42000
+GPR00: 00000001 cde43bb0 ce9219d0 00000001 000002ac 000002ac 00008000 00000000
+GPR08: 00000000 00000000 ce9219d0 cde42000 22004422 100bbc1c 0fffd000 ffffffff
+GPR16: 00000001 00000000 007fff00 00000000 00000000 0fffa1a0 00000000 c050bd74
+GPR24: 00000021 cf0231a0 cec19b34 c050bd6c cec1a9a8 00009032 cde52080 cde52080
+NIP [c03aa79c] rt_spin_lock_slowlock+0x84/0x318
+LR [c03aa774] rt_spin_lock_slowlock+0x5c/0x318
+Call Trace:
+[cde43bb0] [c03aa774] rt_spin_lock_slowlock+0x5c/0x318 (unreliable)
+[cde43c30] [c009c7e4] file_sb_list_del+0x34/0x6c
+[cde43c50] [c009cf6c] __fput+0x154/0x254
+[cde43c80] [c00843dc] remove_vma+0x64/0xd0
+[cde43c90] [c00845b0] exit_mmap+0x168/0x1c4
+[cde43cf0] [c0022f48] mmput+0x7c/0x124
+[cde43d10] [c0027ba8] exit_mm+0x148/0x170
+[cde43d40] [c0029d90] do_exit+0x500/0x60c
+[cde43d90] [c0011cc0] die+0x19c/0x1a4
+[cde43db0] [c00181e0] bad_page_fault+0x98/0xd0
+[cde43dc0] [c0014688] handle_page_fault+0x7c/0x80
+--- Exception: 300 at fs_may_remount_ro+0x88/0x150
+    LR = fs_may_remount_ro+0x38/0x150
+[cde43ea0] [c009da10] do_remount_sb+0x138/0x178
+[cde43ec0] [c00bc420] do_mount+0x54c/0x840
+[cde43f10] [c00bc7e4] sys_mount+0xd0/0xfc
+[cde43f40] [c00141e8] ret_from_syscall+0x0/0x38
+--- Exception: c01 at 0xfe5f8c4
+    LR = 0x10051b88
+Instruction dump:
+38600001 4bc74275 801b0004 3afb0008 2f800000 419e0270 801b0010 7c4a1378
+5400003a 7c400278 7c000034 5400d97e <0f000000> 83c20000 39200002 2f9e0002
+---[ end trace cd3eb2ed5361fbcf ]---
+Fixing recursive fault but reboot is needed!
+BUG: scheduling while atomic: umount/0x00000001/1396, CPU#0
+Modules linked in:
+Call Trace:
+[cde43900] [c0009d0c] show_stack+0x70/0x1b8 (unreliable)
+[cde43940] [c001e8c8] __schedule_bug+0x90/0x94
+[cde43960] [c03a9024] __schedule+0x2ac/0x390
+[cde43980] [c03a92ac] schedule+0x28/0x54
+[cde43990] [c0029d08] do_exit+0x478/0x60c
+[cde439e0] [c0011cc0] die+0x19c/0x1a4
+[cde43a00] [c0011f44] _exception+0x138/0x16c
+[cde43af0] [c0014834] ret_from_except_full+0x0/0x4c
+--- Exception: 700 at rt_spin_lock_slowlock+0x84/0x318
+    LR = rt_spin_lock_slowlock+0x5c/0x318
+[cde43c30] [c009c7e4] file_sb_list_del+0x34/0x6c
+[cde43c50] [c009cf6c] __fput+0x154/0x254
+[cde43c80] [c00843dc] remove_vma+0x64/0xd0
+[cde43c90] [c00845b0] exit_mmap+0x168/0x1c4
+[cde43cf0] [c0022f48] mmput+0x7c/0x124
+[cde43d10] [c0027ba8] exit_mm+0x148/0x170
+[cde43d40] [c0029d90] do_exit+0x500/0x60c
+[cde43d90] [c0011cc0] die+0x19c/0x1a4
+[cde43db0] [c00181e0] bad_page_fault+0x98/0xd0
+[cde43dc0] [c0014688] handle_page_fault+0x7c/0x80
+--- Exception: 300 at fs_may_remount_ro+0x88/0x150
+    LR = fs_may_remount_ro+0x38/0x150
+[cde43ea0] [c009da10] do_remount_sb+0x138/0x178
+[cde43ec0] [c00bc420] do_mount+0x54c/0x840
+[cde43f10] [c00bc7e4] sys_mount+0xd0/0xfc
+[cde43f40] [c00141e8] ret_from_syscall+0x0/0x38
+--- Exception: c01 at 0xfe5f8c4
+    LR = 0x10051b88
