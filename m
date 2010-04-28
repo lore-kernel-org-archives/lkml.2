@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab0D1Ppu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:45:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56554 "EHLO mx1.redhat.com"
+	id S1753995Ab0D1LlG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 07:41:06 -0400
+Received: from 007.netroom.de ([194.0.247.207]:19917 "EHLO 007.netroom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349Ab0D1Ppt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:45:49 -0400
-Date: Wed, 28 Apr 2010 17:45:08 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/3] Fix migration races in rmap_walk() V2
-Message-ID: <20100428154508.GT510@random.random>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
- <alpine.DEB.2.00.1004271723090.24133@router.home>
- <20100427223242.GG8860@random.random>
- <20100428091345.496ca4c4.kamezawa.hiroyu@jp.fujitsu.com>
- <20100428002056.GH510@random.random>
- <20100428142356.GF15815@csn.ul.ie>
- <20100428145737.GG15815@csn.ul.ie>
- <20100428151614.GQ510@random.random>
- <20100428152354.GH15815@csn.ul.ie>
+	id S1751346Ab0D1LlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 07:41:04 -0400
+Message-ID: <4BD81ED5.1050408@draisberghof.de>
+Date: Wed, 28 Apr 2010 13:41:09 +0200
+From: Josua Dietze <digidietze@draisberghof.de>
+Reply-To: digidietze@draisberghof.de
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100428152354.GH15815@csn.ul.ie>
+To: =?UTF-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, Daniel Mack <daniel@caiaq.de>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: USB gadget with drivers "on board"
+References: <Pine.LNX.4.44L0.1004261531480.1764-100000@iolanthe.rowland.org> <4BD5F43E.4090404@draisberghof.de> <op.vbu6nahq7p4s8u@pikus>
+In-Reply-To: <op.vbu6nahq7p4s8u@pikus>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 04:23:54PM +0100, Mel Gorman wrote:
-> Is it possible to delay the linkage like that? As arguments get copied into
-> the temporary stack before it gets moved, I'd have expected the normal fault
-> path to prepare and attach the anon_vma. We could special case it but
-> that isn't very palatable either.
+Michał Nazarewicz schrieb:
+> On Mon, 26 Apr 2010 22:14:54 +0200, Josua Dietze 
+> <digidietze@draisberghof.de> wrote:
+> 
+>> Important for the Linux handling is that "mode 1" is clearly
+>> distinguishable from "mode 2", either by using a different product ID
+>> or by setting a different class for the device or interface 0 (will
+>> most likely be "8" for the install mode).
+> 
+> So it will be enough to change the USB device class for the zeroth
+> interface for udev to recognise the mass storage to be ejected?  Note
+> that I will use mass storage in the second mode as well.
 
-I'm not sure what is more palatable, but I feel it should be fixed in
-execve.
+This is often the case with the common "zero-cd" devices, but 
+they have the storage on upper interface numbers after switching.
+
+The point is to enable udev or any other tool to distinguish 
+between "unswitched" and "switched"; otherwise the procedure 
+for switching will be executed on *both* modes which might 
+disturb the device or the system.
+
+A change in one of the attributes like iProduct or iSerial 
+could be detected as well of course.
+
+> Also, I think that it might be a good idea to make some "standardised"
+> mechanism for all such devices so that a generic udev code could be
+> written.  Adding things to the descriptors may be difficult in a way,
+> but maybe adding "[NoCD]" to the interface name would be enough.
+
+That is up to the (countless) manufacturers of course; on the 
+other hand, the Windows drivers need to recognize the mode as 
+well so there should always be one way or the other to 
+accomplish that.
+
+
+Josua Dietze
