@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab0D2AAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 20:00:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:62584 "EHLO
+	id S932363Ab0D2ACZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 20:02:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63912 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754666Ab0D2AAU (ORCPT
+	with ESMTP id S1755530Ab0D2ACY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 20:00:20 -0400
-X-Authority-Analysis: v=1.1 cv=2/WNtoURsBD4grC4Rqfj62/w1mAETqRJkFX1sgq41IM= c=1 sm=0 a=h2TIy-q3F9wA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=JSyt9FIkP4MeKdWGTe4A:9 a=OaziLe85vxB-zzQQFsoA:7 a=oIo1oG0cqIgdIpxXSWuTO9CBr0MA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+	Wed, 28 Apr 2010 20:02:24 -0400
+X-Authority-Analysis: v=1.1 cv=2/WNtoURsBD4grC4Rqfj62/w1mAETqRJkFX1sgq41IM= c=1 sm=0 a=khrRrPIfVHAA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=mgbnEd0IpD6ylQE4d5EA:9 a=gI8YRLMvH6J6JAFFuCEA:7 a=LvVJhPn1zesgmkuGBzTlTXr5kboA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 04/10][RFC] tracing: Remove per event trace registering
+Subject: Re: [PATCH 05/10][RFC] tracing: Move fields from event to class
+ structure
 From: Steven Rostedt <rostedt@goodmis.org>
 Reply-To: rostedt@goodmis.org
 To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
@@ -21,14 +22,16 @@ Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-In-Reply-To: <20100428204448.GE8591@Krystal>
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Tom Zanussi <tzanussi@gmail.com>
+In-Reply-To: <20100428205803.GF8591@Krystal>
 References: <20100426195024.256424113@goodmis.org>
-	 <20100426200242.214837703@goodmis.org>  <20100428204448.GE8591@Krystal>
+	 <20100426200242.470116062@goodmis.org>  <20100428205803.GF8591@Krystal>
 Content-Type: text/plain; charset="ISO-8859-15"
 Organization: Kihon Technologies Inc.
-Date: Wed, 28 Apr 2010 20:00:18 -0400
-Message-ID: <1272499218.9739.86.camel@gandalf.stny.rr.com>
+Date: Wed, 28 Apr 2010 20:02:22 -0400
+Message-ID: <1272499342.9739.88.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -36,50 +39,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-28 at 16:44 -0400, Mathieu Desnoyers wrote:
+On Wed, 2010-04-28 at 16:58 -0400, Mathieu Desnoyers wrote:
 > * Steven Rostedt (rostedt@goodmis.org) wrote:
 > > From: Steven Rostedt <srostedt@redhat.com>
 > > 
-> > This patch removes the register functions of TRACE_EVENT() to enable
-> > and disable tracepoints. The registering of a event is now down
-> > directly in the trace_events.c file. The tracepoint_probe_register()
-> > is now called directly.
+> > Move the defined fields from the event to the class structure.
+> > Since the fields of the event are defined by the class they belong
+> > to, it makes sense to have the class hold the information instead
+> > of the individual events. The events of the same class would just
+> > hold duplicate information.
 > > 
-> > The prototypes are no longer type checked, but this should not be
-> > an issue since the tracepoints are created automatically by the
-> > macros. If a prototype is incorrect in the TRACE_EVENT() macro, then
-> > other macros will catch it.
-> > 
-> > The trace_event_class structure now holds the probes to be called
-> > by the callbacks. This removes needing to have each event have
-> > a separate pointer for the probe.
-> > 
-> > To handle kprobes and syscalls, since they register probes in a
-> > different manner, a "reg" field is added to the ftrace_event_class
-> > structure. If the "reg" field is assigned, then it will be called for
-> > enabling and disabling of the probe for either ftrace or perf. To let
-> > the reg function know what is happening, a new enum (trace_reg) is
-> > created that has the type of control that is needed.
-> > 
-> > With this new rework, the 82 kernel events and 616 syscall events
-> > has their footprint dramatically lowered:
+> > After this change the size of the kernel dropped another 8K:
 > > 
 > >    text	   data	    bss	    dec	    hex	filename
 > > 5788186	1337252	9351592	16477030	 fb6b66	vmlinux.orig
-> > 5792282	1333796	9351592	16477670	 fb6de6	vmlinux.class
-> > 5793448	1333780	9351592	16478820	 fb7264	vmlinux.tracepoint
-> > 5796926	1337748	9351592	16486266	 fb8f7a	vmlinux.data
-> > 5774316	1306580	9351592	16432488	 fabd68	vmlinux.regs
+> > 5774316	1306580	9351592	16432488	 fabd68	vmlinux.reg
+> > 5774503	1297492	9351592	16423587	 fa9aa3	vmlinux.fields
 > > 
-> > The size went from 16477030 to 16432488, that's a total of 44K
-> > in savings. With tracepoints being continuously added, this is
-> > critical that the footprint becomes minimal.
+> > Although the text increased, this was mainly due to the C files
+> > having to adapt to the change. This is a constant increase, where
+> > new tracepoints will not increase the Text. But the big drop is
+> > in the data size (as well as needed allocations to hold the fields).
+> > This will give even more savings as more tracepoints are created.
+> > 
+> > Note, if just TRACE_EVENT()s are used and not DECLARE_EVENT_CLASS()
+> > with several DEFINE_EVENT()s, then the savings will be lost. But
+> > we are pushing developers to consolidate events with DEFINE_EVENT()
+> > so this should not be an issue.
+> > 
+> > The kprobes define a unique class to every new event, but are dynamic
+> > so it should not be a issue.
+> > 
+> > The syscalls however have a single class but the fields for the individual
+> > events are different. The syscalls use a metadata to define the
+> > fields. I moved the fields list from the event to the metadata and
+> > added a "get_fields()" function to the class. This function is used
+> > to find the fields. For normal events and kprobes, get_fields() just
+> > returns a pointer to the fields list_head in the class. For syscall
+> > events, it returns the fields list_head in the metadata for the event.
 > 
-> Have you tried doing a BUILD_BUG_ON() on __typeof__() mismatch between
-> the type of the callback generated by TRACE_EVENT() and the expected
-> type ?  This might help catching tricky preprocessor macro errors early.
+> So, playing catch-up here, why don't we simply put each syscall event in
+> their own class ? We could possibly share the class where it makes
+> sense (e.g. exact same fields).
 
-Well, we could, but if it is broken once, it is broken everywhere.
+Well, they have their own class. But I guess you are talking about a
+"meta-data class".
+
+> 
+> With the per-class sub-metadata, what's the limitations we have to
+> expect with these system call events ? Can we map to a field size
+> directly from the event ID, or do we have to somehow have the event size
+> encoded in the header to make sense of the payload ?
+
+That will be a lot of work. This is all generated automatically from the
+SYSCALL() macros. To group them, we need a way to know what syscalls
+have the same parameters, and manually add that. It may end up being a
+maintenance nightmare.
 
 -- Steve
 
