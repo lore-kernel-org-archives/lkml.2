@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab0D2BV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 21:21:57 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37938 "EHLO smtps.tip.net.au"
+	id S1754734Ab0D2BZJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 21:25:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51802 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924Ab0D2BVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 21:21:55 -0400
-Date: Thu, 29 Apr 2010 11:21:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Sripathi Kodi <sripathik@in.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Eric Van Hensbergen <ericvh@gmail.com>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: linux-next: manual merge of the v9fs tree with Linus' tree
-Message-Id: <20100429112153.6fe79961.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751989Ab0D2BZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 21:25:07 -0400
+Date: Thu, 29 Apr 2010 01:24:38 GMT
+From: tip-bot for Jan Beulich <JBeulich@novell.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de
+In-Reply-To: <4BCF33BD020000780003B3E4@vpn.id2.novell.com>
+References: <4BCF33BD020000780003B3E4@vpn.id2.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] x86-64: Don't export init_level4_pgt
+Message-ID: <tip-47f9fe26299ae022ac1e3fa12e7e73def62b7898@git.kernel.org>
+Git-Commit-ID: 47f9fe26299ae022ac1e3fa12e7e73def62b7898
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 29 Apr 2010 01:24:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+Commit-ID:  47f9fe26299ae022ac1e3fa12e7e73def62b7898
+Gitweb:     http://git.kernel.org/tip/47f9fe26299ae022ac1e3fa12e7e73def62b7898
+Author:     Jan Beulich <JBeulich@novell.com>
+AuthorDate: Wed, 21 Apr 2010 16:19:57 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Wed, 28 Apr 2010 17:25:47 -0700
 
-Today's linux-next merge of the v9fs tree got a conflict in
-fs/9p/vfs_super.c between commits 5a0e3ad6af8660be21ca98a971cd00f331318c05
-("include cleanup: Update gfp.h and slab.h includes to prepare for
-breaking implicit slab.h inclusion from percpu.h") and
-0ed07ddb56d1348e5ce33f3b8de20d730351983a ("9p: add bdi backing to mount
-session") from Linus' tree and commits
-0b2d973241f9bdbc8ed62caec42543e00ae6bd1e ("9p: VFS switches for 9p2000.L:
-VFS switches") and a61a60e387303575629706279b3b0018e96a758a ("9p: add
-9P2000.L statfs operation") from the v9fs tree.
+x86-64: Don't export init_level4_pgt
 
-I fixed it up (see below) and can carry the fix for a while.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+It's not used by any module, and i386 (as well as some other arches)
+also doesn't export its equivalent (swapper_pg_dir).
 
-diff --cc fs/9p/vfs_super.c
-index 806da5d,af2a620..0000000
---- a/fs/9p/vfs_super.c
-+++ b/fs/9p/vfs_super.c
-@@@ -37,7 -37,7 +37,8 @@@
-  #include <linux/mount.h>
-  #include <linux/idr.h>
-  #include <linux/sched.h>
- +#include <linux/slab.h>
-+ #include <linux/statfs.h>
-  #include <net/9p/9p.h>
-  #include <net/9p/client.h>
-  
-@@@ -76,8 -76,10 +77,11 @@@ v9fs_fill_super(struct super_block *sb
-  	sb->s_blocksize_bits = fls(v9ses->maxdata - 1);
-  	sb->s_blocksize = 1 << sb->s_blocksize_bits;
-  	sb->s_magic = V9FS_MAGIC;
-- 	sb->s_op = &v9fs_super_ops;
-+ 	if (v9fs_proto_dotl(v9ses))
-+ 		sb->s_op = &v9fs_super_ops_dotl;
-+ 	else
-+ 		sb->s_op = &v9fs_super_ops;
- +	sb->s_bdi = &v9ses->bdi;
-  
-  	sb->s_flags = flags | MS_ACTIVE | MS_SYNCHRONOUS | MS_DIRSYNC |
-  	    MS_NOATIME;
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <4BCF33BD020000780003B3E4@vpn.id2.novell.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/x8664_ksyms_64.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
+index 693920b..1b950d1 100644
+--- a/arch/x86/kernel/x8664_ksyms_64.c
++++ b/arch/x86/kernel/x8664_ksyms_64.c
+@@ -54,7 +54,6 @@ EXPORT_SYMBOL(memcpy);
+ EXPORT_SYMBOL(__memcpy);
+ 
+ EXPORT_SYMBOL(empty_zero_page);
+-EXPORT_SYMBOL(init_level4_pgt);
+ #ifndef CONFIG_PARAVIRT
+ EXPORT_SYMBOL(native_load_gs_index);
+ #endif
