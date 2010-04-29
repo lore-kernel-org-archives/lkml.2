@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759349Ab0D3SZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:25:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45305 "EHLO mx1.redhat.com"
+	id S933175Ab0D3SZi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:25:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63800 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933175Ab0D3RWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:22:24 -0400
-Date: Thu, 29 Apr 2010 21:44:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Pavel Machek <pavel@ucw.cz>,
-       Len Brown <len.brown@intel.com>
-Subject: [PATCH 0/2] workqueue fixlets (Was: PM: Add suspend blocking work.)
-Message-ID: <20100429194447.GA17280@redhat.com>
-References: <1272429119-12103-1-git-send-email-arve@android.com> <20100428194028.GA16389@redhat.com> <4BD89922.1040306@kernel.org> <201004282308.10751.rjw@sisk.pl> <20100429185851.GA13862@redhat.com>
+	id S933152Ab0D3RWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:22:20 -0400
+Message-ID: <4BD9D702.90209@redhat.com>
+Date: Thu, 29 Apr 2010 21:59:14 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100429185851.GA13862@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
+       ngupta@vflare.org, JBeulich@novell.com, chris.mason@oracle.com,
+       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
+       akpm@linux-foundation.org, riel@redhat.com
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default> <4BD3377E.6010303@redhat.com> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com> <ce808441-fae6-4a33-8335-f7702740097a@default 20100428055538.GA1730@ucw.cz> <c2744f69-5974-4017-ae33-4244ce0960e2@default>
+In-Reply-To: <c2744f69-5974-4017-ae33-4244ce0960e2@default>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29, Oleg Nesterov wrote:
->
-> I don't really care, this change is trivial. But to me it makes more
-> sense to push the trivial/simple changes ahead. Unless they really
-> complicate the maintainging of the pending cmwq changes.
->
-> Hmm... Speaking about keventd_wq, I just noticed flush_delayed_work()
-> needs the fix:
+On 04/29/2010 05:42 PM, Dan Magenheimer wrote:
+>>
+>> Yes, and that set of hooks is new API, right?
+>>      
+> Well, no, if you define API as "application programming interface"
+> this is NOT exposed to userland.  If you define API as a new
+> in-kernel function call, yes, these hooks are a new API, but that
+> is true of virtually any new code in the kernel.  If you define
+> API as some new interface between the kernel and a hypervisor,
+> yes, this is a new API, but it is "optional" at several levels
+> so that any hypervisor (e.g. KVM) can completely ignore it.
+>    
 
-So. I'd suggestd these 2 simple patches for now.
+The concern is not with the hypervisor, but with Linux.  More external 
+APIs reduce our flexibility to change things.
 
-Please note that 2/2 is really trivial, it only adds EXPORT_SYMBOL but
-avoids the possible cleanups to minimize the conflicts with the pending
-cmwq changes. However, please feel free to ignore this patch.
+> So please let's not argue about whether the code is a "new API"
+> or not, but instead consider whether the concept is useful or not
+> and if useful, if there is or is not a cleaner way to implement it.
+>    
 
-As for 1/2, imho it is always better to fix the bug asap, even if it is
-minor.
+I'm convinced it's useful.  The API is so close to a block device 
+(read/write with key/value vs read/write with sector/value) that we 
+should make the effort not to introduce a new API.
 
-Oleg.
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
