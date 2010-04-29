@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759828Ab0D3WYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 18:24:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56824 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756072Ab0D3WYk (ORCPT
+	id S1759902Ab0D3Why (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 18:37:54 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:35079 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759891Ab0D3Whl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 18:24:40 -0400
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-To: linux-mtd@lists.infradead.org
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-       Artem Bityutskiy <dedekind1@gmail.com>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Kevin Cernekee <kpc.mtd@gmail.com>,
-       Adrian Hunter <adrian.hunter@nokia.com>,
-       Dmitry Pervushin <dpervushin@embeddedalley.com>,
-       Roel Kluin <roel.kluin@gmail.com>, linux-kernel@vger.kernel.org
-Date: Thu, 29 Apr 2010 12:41:04 +0200
-Message-Id: <1272537664-21603-1-git-send-email-mkl@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-X-SA-Exim-Connect-IP: 92.198.50.58
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-Subject: [PATCH] ubi: init even if mtd device cannot be attached, if built into kernel
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 30 Apr 2010 18:37:41 -0400
+To: Valerie Aurora <vaurora@redhat.com>
+CC: miklos@szeredi.hu, viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+In-reply-to: <20100428201908.GC16691@shell> (message from Valerie Aurora on
+	Wed, 28 Apr 2010 16:19:09 -0400)
+Subject: Re: [PATCH 16/35] union-mount: Writable overlays/union mounts documentation
+References: <1271372682-21225-9-git-send-email-vaurora@redhat.com> <1271372682-21225-10-git-send-email-vaurora@redhat.com> <1271372682-21225-11-git-send-email-vaurora@redhat.com> <1271372682-21225-12-git-send-email-vaurora@redhat.com> <1271372682-21225-13-git-send-email-vaurora@redhat.com> <1271372682-21225-14-git-send-email-vaurora@redhat.com> <1271372682-21225-15-git-send-email-vaurora@redhat.com> <1271372682-21225-16-git-send-email-vaurora@redhat.com> <1271372682-21225-17-git-send-email-vaurora@redhat.com> <E1O4GKw-000257-Hh@pomaz-ex.szeredi.hu> <20100428201908.GC16691@shell>
+Message-Id: <E1O7Q7n-0002KC-Tm@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 29 Apr 2010 11:33:39 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ubi can be built into the kernel or be compiled as a kernel module.
-Further on the command line one can specify mtd devices to be attach to
-ubi while loading. In the current implementation the ubi driver refuses
-to load if one of the mtd devices cannot be attached.
+On Wed, 28 Apr 2010, Valerie Aurora wrote:
+> I'm sorry I have responded sooner, I've been trying to write a
+> detailed useful message and that turns out to be hard.  I'll just
+> include a few of the highlights; mainly I want to say that I'd
+> rather do it the way you describe but when I tried it ended up even
+> uglier than the VFS implementation.
+> 
+> I went down this road initially (do most of the unioning in a file
+> system) and spent a couple of months on it.  But I always ended up
+> having to do some level of copy-around and redirection similar to that
+> in unionfs.
 
-Consider:
-1) ubi compiled into the kernel and
-2) a mtd device specified on the command line and
-3) this mtd device contains bogus data (for whatever reason).
+I haven't looked at unionfs in a long time.  Can you say something
+more specific about what these problems were?
 
-During init ubi tries to attach the mtd device is this fails the whole
-ubi subsystem isn't initialized. Later the userspace cannot attach any
-mtd to ubi because ubi isn't loaded.
+> One of the major difficulties that arises even when doing unioning at
+> the VFS level is keeping around the parent's path in order to do the
+> copyup later on.  Take a look at the code pattern in the "union-mount:
+> Implement union-aware syscall()" series of patches.  That's the
+> prettiest and most efficient version I could come up with, after two
+> other implementations, and it's in the VFS, at the vfs_foo_syscall()
+> level.  I don't even know how I would start if I had to wait until the
+> file system op is called.
 
-This patch keeps the current behaviour: if ubi is compiled as a module
-and a mtd device cannot be attached the ubi module cannot be loaded,
-but changes it for the ubi-is-built-into-the-kernel usecase.
+On a high level I don't see a problem, the parent of every dentry can
+be found through ->d_parent.
 
-If ubi is builtin, a not attachable mtd device doen't stop ubi from
-initializing. This slightly modifies the behaviour if multiple mtd
-devices are specified on the command line. Now every mtd device is
-probed and, if possible, attached, i.e. a faulty mtd device doesn't
-stop the others from being attached.
+One issue is having to duplicate some locking and other stuff around
+vfs_whatever() calls.  But that could be fixed by exporting suitable
+helpers from the VFS.
 
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
----
- drivers/mtd/ubi/build.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+Other than that I don't see any fundamental issues with union
+filesystems (except that they seem to grow too many features to be
+maintainable).
 
-diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
-index 14cec04..2f6f09f 100644
---- a/drivers/mtd/ubi/build.c
-+++ b/drivers/mtd/ubi/build.c
-@@ -123,6 +123,12 @@ static struct device_attribute dev_bgt_enabled =
- static struct device_attribute dev_mtd_num =
- 	__ATTR(mtd_num, S_IRUGO, dev_attribute_show, NULL);
- 
-+#ifdef CONFIG_MTD_UBI_MODULE
-+static inline int ubi_is_module(void) { return 1; }
-+#else
-+static inline int ubi_is_module(void) { return 0; }
-+#endif
-+
- /**
-  * ubi_volume_notify - send a volume change notification.
-  * @ubi: UBI device description object
-@@ -1200,9 +1206,11 @@ static int __init ubi_init(void)
- 					 p->vid_hdr_offs);
- 		mutex_unlock(&ubi_devices_mutex);
- 		if (err < 0) {
--			put_mtd_device(mtd);
- 			ubi_err("cannot attach mtd%d", mtd->index);
--			goto out_detach;
-+			if (ubi_is_module()) {
-+				put_mtd_device(mtd);
-+				goto out_detach;
-+			}
- 		}
- 	}
- 
--- 
-1.7.1
-
+Thanks,
+Miklos
