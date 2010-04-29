@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933506Ab0D3Roa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:44:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50452 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933480Ab0D3Rnr (ORCPT
+	id S933512Ab0D3Ro6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:44:58 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:47146 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757647Ab0D3Ros (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:43:47 -0400
-Subject: Re: [PATCH 0/3] regulator: small fixes and cleanup
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Jani Nikula <ext-jani.1.nikula@nokia.com>
-Cc: broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-In-Reply-To: <cover.1272526450.git.ext-jani.1.nikula@nokia.com>
-References: <cover.1272526450.git.ext-jani.1.nikula@nokia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 29 Apr 2010 14:29:10 +0100
-Message-ID: <1272547750.4296.38.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Apr 2010 13:44:48 -0400
+Date: Thu, 29 Apr 2010 17:10:35 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: David Howells <dhowells@redhat.com>,
+       Peter Fritzsche <peter.fritzsche@gmx.de>
+Cc: Jamie Lokier <jamie@shareable.org>, Arnd Bergmann <arnd@arndb.de>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>, linux-arch@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       Keith M Wesolowski <wesolows@foobazco.org>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH 2/2] asm-generic: Don't warn that atomic_t is only 24
+	bit
+Message-ID: <20100429211035.GA16179@Krystal>
+References: <20100428162708.GB2846@Krystal> <1272451837-17961-1-git-send-email-peter.fritzsche@gmx.de> <1272453036-18670-1-git-send-email-peter.fritzsche@gmx.de> <201004281533.29327.arnd@arndb.de> <20100428135434.GA4662@Krystal> <20100428152815.GB25569@shareable.org> <22809.1272558128@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <22809.1272558128@redhat.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 17:09:38 up 96 days, 23:46,  9 users,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-29 at 10:55 +0300, Jani Nikula wrote:
-> Hi -
+* David Howells (dhowells@redhat.com) wrote:
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 > 
-> Here's a few small fixes to problems I think I found in the regulator
-> framework. Please give them some thought; I don't know the area very well.
+> > How about simply replacing arch/mn10300/include/asm/atomic.h by:
+> > 
+> > arch/mn10300/include/asm/atomic.h:
+> > #include <asm-generic/atomic.h>
+> > 
+> > ?
+> > 
+> > This should have been done a while ago. They are almost the same, except for
+> > added cmpxchg*_local() in the asm-generic version (which would benefit to
+> > mn10300).
 > 
-> BR,
-> Jani.
-> 
-> 
-> Jani Nikula (3):
->   regulator: prevent registration of matching regulator consumer
->     supplies
->   regulator: fix unset_regulator_supplies() to remove all matches
->   regulator: simplify regulator_register() error handling
-> 
->  drivers/regulator/core.c |   43 +++++++++++--------------------------------
->  1 files changed, 11 insertions(+), 32 deletions(-)
-> 
+> Fine by me.
 
-All applied.
+Then I'll let Peter Fritzsche deal with that. I don't want to conflict with his
+current patches.
 
-Thanks
+Thanks,
 
-Liam
+Mathieu
+
+> 
+> David
 
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
