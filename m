@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933238Ab0D3RXK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:23:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13490 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933117Ab0D3RWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:22:19 -0400
-Date: Thu, 29 Apr 2010 17:26:42 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-       "Michael S. Tsirkin" <mst@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-       Mark McLoughlin <markmc@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Eric Van Hensbergen <ericvh@gmail.com>, Shirley Ma <xma@us.ibm.com>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+	id S1758593Ab0D3RXW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:23:22 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:49286 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758525Ab0D3RWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:22:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:references:x-url:x-pgp-fp:x-pgp:date
+         :in-reply-to:message-id:user-agent:mime-version:content-type;
+        b=YS4ud9ixsYKZpWvR8lU2J56Y60E/8pN57vUQu7tKhNlAImHSrNd4g+nE48OFBxU5IR
+         y7CoqnpyOM1oKXzXwiEgvU6qPVvXVbvK00WJjw3SvdqG/CLFAy0zTPFNiHUI6xfE/Q/V
+         12b9oNwsL3NYsou+cLqs6+Q1kWgmpgvLfJGzM=
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Greg KH <greg@kroah.com>
+Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-usb@vger.kernel.org,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] virtio-net: pass gfp to add_buf
-Message-ID: <c84e32efa3a2ce67f8b416374af0f2ea2926e230.1272549642.git.mst@redhat.com>
-References: <cover.1272549641.git.mst@redhat.com>
+Subject: Re: [PATCHv2 3/8] USB: gadget: __init and __exit tags removed
+References: <cover.1270835924.git.mina86@mina86.com>
+	<3baf39971e1f49e98498f5d00e21df4302396252.1270835924.git.mina86@mina86.com>
+	<e6cbed26355492a8cde57973da56bccbb55b85a1.1270835924.git.mina86@mina86.com>
+	<aa83c43874f8aa490300d6bd03472646f2727eb1.1270835924.git.mina86@mina86.com>
+	<20100429221529.GA16465@kroah.com>
+X-Url: http://mina86.com/
+X-PGP-FP: 9134 06FA 7AD8 D134 9D0C  C33F 532C CB00 B7C6 DF1E
+X-PGP: B7C6DF1E
+Date: Thu, 29 Apr 2010 16:02:55 -0700 (PDT)
+In-Reply-To: <20100429221529.GA16465@kroah.com> (Greg KH's message of "Thu, 29
+	Apr 2010 15:15:29 -0700")
+Message-ID: <87hbmtq2ua.fsf@erwin.mina86.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0 (Slckware Linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1272549641.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio-net bounces buffer allocations off to
-a thread if it can't allocate buffers from the atomic
-pool. However, if posting buffers still requires atomic
-buffers, this is unlikely to succeed.
-Fix by passing in the proper gfp_t parameter.
+Greg KH <greg@kroah.com> writes:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/virtio_net.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+> On Fri, Apr 09, 2010 at 09:21:20PM +0200, Michal Nazarewicz wrote:
+>> __init, __initdata and __exit tags have have been removed from
+>> various files to make it possible for gadgets that do not use
+>> the __init/__exit tags to use those.
+>> 
+>> Files in question are related to:
+>> * the core composite framework,
+>> * the mass storage function (fixing a section mismatch) and
+>> * ethernet driver (ACM, ECM, RNDIS).
+>> 
+>> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+>> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+>> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+>> ---
+>>  drivers/usb/gadget/composite.c      |   21 ++++++++++-----------
+>>  drivers/usb/gadget/config.c         |    4 ++--
+>>  drivers/usb/gadget/epautoconf.c     |   12 ++++++------
+>>  drivers/usb/gadget/f_acm.c          |   32 ++++++++++++++++----------------
+>>  drivers/usb/gadget/f_ecm.c          |   33 +++++++++++++++++----------------
+>>  drivers/usb/gadget/f_mass_storage.c |    2 +-
+>>  drivers/usb/gadget/f_rndis.c        |   34 ++++++++++++++++++----------------
+>>  drivers/usb/gadget/u_ether.c        |    4 ++--
+>>  8 files changed, 72 insertions(+), 70 deletions(-)
+>> 
+>> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+>> index 09289bb..ff155ca 100644
+>> --- a/drivers/usb/gadget/composite.c
+>> +++ b/drivers/usb/gadget/composite.c
+>> @@ -85,7 +85,7 @@ MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
+>>   * This function returns the value of the function's bind(), which is
+>>   * zero for success else a negative errno value.
+>>   */
+>> -int __init usb_add_function(struct usb_configuration *config,
+>> +int __cold usb_add_function(struct usb_configuration *config,
+>
+> What is the "__cold" for?
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 91738d8..fca44b2 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -339,7 +339,7 @@ static int add_recvbuf_small(struct virtnet_info *vi, gfp_t gfp)
- 
- 	skb_to_sgvec(skb, sg + 1, 0, skb->len);
- 
--	err = virtqueue_add_buf(vi->rvq, sg, 0, 2, skb);
-+	err = virtqueue_add_buf_gfp(vi->rvq, sg, 0, 2, skb, gfp);
- 	if (err < 0)
- 		dev_kfree_skb(skb);
- 
-@@ -386,8 +386,8 @@ static int add_recvbuf_big(struct virtnet_info *vi, gfp_t gfp)
- 
- 	/* chain first in list head */
- 	first->private = (unsigned long)list;
--	err = virtqueue_add_buf(vi->rvq, sg, 0, MAX_SKB_FRAGS + 2,
--				       first);
-+	err = virtqueue_add_buf_gfp(vi->rvq, sg, 0, MAX_SKB_FRAGS + 2,
-+				    first, gfp);
- 	if (err < 0)
- 		give_pages(vi, first);
- 
-@@ -406,7 +406,7 @@ static int add_recvbuf_mergeable(struct virtnet_info *vi, gfp_t gfp)
- 
- 	sg_init_one(&sg, page_address(page), PAGE_SIZE);
- 
--	err = virtqueue_add_buf(vi->rvq, &sg, 0, 1, page);
-+	err = virtqueue_add_buf_gfp(vi->rvq, &sg, 0, 1, page, gfp);
- 	if (err < 0)
- 		give_pages(vi, page);
- 
+__init, among other things implies __cold:
+
+include/linux/init.h:43: #define __init   __section(.init.text) __cold notrace
+
+and so I left __cold leaving out __section.
+
 -- 
-1.7.1.rc1.22.g3163
+Pozdrawiam                                            _     _
+ .o. | Wasal Jasnie Oswieconej Pani Informatyki     o' \,=./ `o
+ ..o | Michal "mina86" Nazarewicz  <mina86*tlen.pl>    (o o)
+ ooo +---<jid:mina86-jabber.org>---<tlen:mina86>---ooO--(_)--Ooo--
