@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab0D1X6A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 19:58:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33321 "EHLO
+	id S1756779Ab0D2AAW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 20:00:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:62584 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756673Ab0D1X57 (ORCPT
+	with ESMTP id S1754666Ab0D2AAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 19:57:59 -0400
-X-Authority-Analysis: v=1.1 cv=elpKMhBbP+pQyLZqL930WohJ6E0KICKd8OrLrcMNK78= c=1 sm=0 a=WIZP6gBhYTAA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=BVTqTsO2fRvKcijHyJsA:9 a=MTRcYAG-H1nXlI_aM10vFI8_s7sA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+	Wed, 28 Apr 2010 20:00:20 -0400
+X-Authority-Analysis: v=1.1 cv=2/WNtoURsBD4grC4Rqfj62/w1mAETqRJkFX1sgq41IM= c=1 sm=0 a=h2TIy-q3F9wA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=JSyt9FIkP4MeKdWGTe4A:9 a=OaziLe85vxB-zzQQFsoA:7 a=oIo1oG0cqIgdIpxXSWuTO9CBr0MA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 03/10][RFC] tracing: Convert TRACE_EVENT() to use the
- DECLARE_TRACE_DATA()
+Subject: Re: [PATCH 04/10][RFC] tracing: Remove per event trace registering
 From: Steven Rostedt <rostedt@goodmis.org>
 Reply-To: rostedt@goodmis.org
 To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
@@ -23,13 +22,13 @@ Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
        Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-In-Reply-To: <20100428203939.GD8591@Krystal>
+In-Reply-To: <20100428204448.GE8591@Krystal>
 References: <20100426195024.256424113@goodmis.org>
-	 <20100426200241.938003192@goodmis.org>  <20100428203939.GD8591@Krystal>
+	 <20100426200242.214837703@goodmis.org>  <20100428204448.GE8591@Krystal>
 Content-Type: text/plain; charset="ISO-8859-15"
 Organization: Kihon Technologies Inc.
-Date: Wed, 28 Apr 2010 19:57:57 -0400
-Message-ID: <1272499077.9739.85.camel@gandalf.stny.rr.com>
+Date: Wed, 28 Apr 2010 20:00:18 -0400
+Message-ID: <1272499218.9739.86.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -37,29 +36,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-28 at 16:39 -0400, Mathieu Desnoyers wrote:
+On Wed, 2010-04-28 at 16:44 -0400, Mathieu Desnoyers wrote:
 > * Steven Rostedt (rostedt@goodmis.org) wrote:
 > > From: Steven Rostedt <srostedt@redhat.com>
 > > 
-> > Switch the TRACE_EVENT() macros to use DECLARE_TRACE_DATA(). This
-> > patch is done to prove that the DATA macros work. If any regressions
-> > were to surface, then this patch would help a git bisect to localize
-> > the area.
+> > This patch removes the register functions of TRACE_EVENT() to enable
+> > and disable tracepoints. The registering of a event is now down
+> > directly in the trace_events.c file. The tracepoint_probe_register()
+> > is now called directly.
 > > 
-> > Once again this patch increases the size of the kernel.
+> > The prototypes are no longer type checked, but this should not be
+> > an issue since the tracepoints are created automatically by the
+> > macros. If a prototype is incorrect in the TRACE_EVENT() macro, then
+> > other macros will catch it.
 > > 
+> > The trace_event_class structure now holds the probes to be called
+> > by the callbacks. This removes needing to have each event have
+> > a separate pointer for the probe.
+> > 
+> > To handle kprobes and syscalls, since they register probes in a
+> > different manner, a "reg" field is added to the ftrace_event_class
+> > structure. If the "reg" field is assigned, then it will be called for
+> > enabling and disabling of the probe for either ftrace or perf. To let
+> > the reg function know what is happening, a new enum (trace_reg) is
+> > created that has the type of control that is needed.
+> > 
+> > With this new rework, the 82 kernel events and 616 syscall events
+> > has their footprint dramatically lowered:
+> > 
+> >    text	   data	    bss	    dec	    hex	filename
+> > 5788186	1337252	9351592	16477030	 fb6b66	vmlinux.orig
+> > 5792282	1333796	9351592	16477670	 fb6de6	vmlinux.class
+> > 5793448	1333780	9351592	16478820	 fb7264	vmlinux.tracepoint
+> > 5796926	1337748	9351592	16486266	 fb8f7a	vmlinux.data
+> > 5774316	1306580	9351592	16432488	 fabd68	vmlinux.regs
+> > 
+> > The size went from 16477030 to 16432488, that's a total of 44K
+> > in savings. With tracepoints being continuously added, this is
+> > critical that the footprint becomes minimal.
 > 
-> As recommended in the earlier email:
-> 
-> It would make sense to just add the extra "callback_data" argument
-> directly to DECLARE_TRACE(), modify the user (TRACE_EVENT) accordingly.
-> And possibly create a TRACE_EVENT_NOARG() variant.
+> Have you tried doing a BUILD_BUG_ON() on __typeof__() mismatch between
+> the type of the callback generated by TRACE_EVENT() and the expected
+> type ?  This might help catching tricky preprocessor macro errors early.
 
-Are you suggesting to make DECLARE_TRACE() be...
-
-#define DECLARE_TRACE(name, proto, args, data)
-
-?
+Well, we could, but if it is broken once, it is broken everywhere.
 
 -- Steve
 
