@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758006Ab0D3Qxz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 12:53:55 -0400
-Received: from kroah.org ([198.145.64.141]:53028 "EHLO coco.kroah.org"
+	id S1758063Ab0D3Qze (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 12:55:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50812 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757577Ab0D3Qxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:53:39 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Ping Cheng <pingc@wacom.com>, stable <stable@kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 2/3] serial: 8250_pnp - add Fujitsu Wacom device
-Date: Fri, 30 Apr 2010 09:37:39 -0700
-Message-Id: <1272645460-16491-2-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20100430163654.GB16424@kroah.com>
-References: <20100430163654.GB16424@kroah.com>
+	id S1757992Ab0D3QzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 12:55:11 -0400
+Message-ID: <4BD9A84C.3050709@redhat.com>
+Date: Thu, 29 Apr 2010 11:39:56 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+MIME-Version: 1.0
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH -v3] take all anon_vma locks in anon_vma_lock
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>	 <20100428153525.GR510@random.random>	 <20100428155558.GI15815@csn.ul.ie>	 <20100428162305.GX510@random.random>	 <20100428134719.32e8011b@annuminas.surriel.com>	 <20100428142510.09984e15@annuminas.surriel.com>	 <20100428161711.5a815fa8@annuminas.surriel.com>	 <20100428165734.6541bab3@annuminas.surriel.com>	 <y2s28c262361004281728we31e3b9fsd2427aacdc76a9e7@mail.gmail.com>	 <4BD8EA85.2000209@redhat.com> <z2g28c262361004281955h29bc20edndb8da9c7cb5ff1db@mail.gmail.com>
+In-Reply-To: <z2g28c262361004281955h29bc20edndb8da9c7cb5ff1db@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ping Cheng <pingc@wacom.com>
+On 04/28/2010 10:55 PM, Minchan Kim wrote:
 
-Add Fujitsu Wacom 1FGT Tablet PC device
+> When you tried anon_vma_chain patches as I pointed out, what I have a
+> concern is parent's vma not child's one.
+> The vma of parent still has N anon_vma.
 
-Signed-off-by: Ping Cheng <pingc@wacom.com>
-Cc: stable <stable@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/serial/8250_pnp.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+No, it is the other way around.
 
-diff --git a/drivers/serial/8250_pnp.c b/drivers/serial/8250_pnp.c
-index 24485cc..4822cb5 100644
---- a/drivers/serial/8250_pnp.c
-+++ b/drivers/serial/8250_pnp.c
-@@ -348,6 +348,8 @@ static const struct pnp_device_id pnp_dev_table[] = {
- 	{	"FUJ02E6",		0	},
- 	/* Fujitsu Wacom 2FGT Tablet PC device */
- 	{	"FUJ02E7",		0	},
-+	/* Fujitsu Wacom 1FGT Tablet PC device */
-+	{	"FUJ02E9",		0	},
- 	/*
- 	 * LG C1 EXPRESS DUAL (C1-PB11A3) touch screen (actually a FUJ02E6 in
- 	 * disguise)
+The anon_vma of the parent is also present in all of the
+children, so the parent anon_vma is attached to N vmas.
+
+However, the parent vma only has 1 anon_vma attached to
+it, and each of the children will have 2 anon_vmas.
+
+That is what should keep any locking overhead with this
+patch minimal.
+
+Yes, a deep fork bomb can slow itself down.  Too bad,
+don't do that :)
+
 -- 
-1.7.0.4
-
+All rights reversed
