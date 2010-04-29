@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab0D2DMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 23:12:14 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:35436 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab0D2DMM (ORCPT
+	id S1752695Ab0D2DOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 23:14:18 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:40108 "HELO
+	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750838Ab0D2DOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 23:12:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Bq33c6DIySANZOxki32Y3IJ3uSJtQyW/wRHBotI60s2SuFDYI8+yQ552wXeARSTi9R
-         lMdpri8IqAdSoWNuOZmdfacRCNZMzntJPVBxINxzZHGrpZTcghQ53bY5WQs0bt93xX4a
-         wAD44nCvRZhJWFyBCI3dgAWn2kT/MoTbMVZNY=
-Message-ID: <4BD8F927.2070703@gmail.com>
-Date: Wed, 28 Apr 2010 20:12:39 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Alex Elsayed <eternaleye@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Very bad regression from 2.6.33 as of 1600f9def
-References: <loom.20100429T041908-663@post.gmane.org> <4BD8F457.10205@gmail.com> <loom.20100429T045742-593@post.gmane.org>
-In-Reply-To: <loom.20100429T045742-593@post.gmane.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 28 Apr 2010 23:14:16 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=jW5hu/w3w183ffsJ5niPJW5DLeUZs3Deg0tj81bFKzmgWf2U0YihJy4GCbb+HhP1FtP2a2v2I5lINiCp6M+WEJK9pAuZqWKgZ+FZ+OqINbY44zJKq0wpORbz7YJCbcPv;
+Date: Wed, 28 Apr 2010 20:14:23 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [git pull] PCI fixes
+Message-ID: <20100428201423.316d4761@virtuousgeek.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2010 08:05 PM, Alex Elsayed wrote:
-> Justin P. Mattock<justinmattock<at>  gmail.com>  writes:
->>
->> what is the last good kernel?
->> can you bisect this?
->>
->> Justin P. Mattock
->>
->
-> Last good kernel was 2.6.33 release, right after tagging.
-> I'll try and bisect. Probably be a while before I have anything,
-> since the CPU is rather slow. Hopefully last good will work in qemu.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+The following changes since commit
+b91ce4d14a21fc04d165be30319541e0f9204f15: Linus Torvalds (1):
+        Merge git://git.kernel.org/.../davem/net-2.6
 
-yep.. luckily 33 is not that far behind
-so it shouldn't take too long.
-As for the CPU patience my friend..
+are available in the git repository at:
 
-Justin P. Mattock
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 for-linus
+
+Two fixes from Bjorn for _CRS related stuff.  The "compute address
+space" one hasn't seen any soak time in -next, which I'm nervous about,
+but it seems like a good related change, so I'll leave it up to you.
+
+If you don't want it, just let me know and I'll drop it and resend just
+the BIOS_END patch, which definitely fixes real bugs.
+
+Bjorn Helgaas (2):
+      x86/PCI: never allocate PCI MMIO resources below BIOS_END
+      x86/PCI: compute Address Space length rather than using _LEN
+
+ arch/x86/pci/acpi.c |   40 ++--------------------------------------
+ arch/x86/pci/i386.c |    3 +++
+ 2 files changed, 5 insertions(+), 38 deletions(-)
+
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
