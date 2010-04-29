@@ -1,171 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785Ab0EAA7a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 20:59:30 -0400
-Received: from p01c12o148.mxlogic.net ([208.65.145.71]:59173 "EHLO
-	p01c12o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755957Ab0EAA70 (ORCPT
+	id S1758405Ab0EABDL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 21:03:11 -0400
+Received: from smtp-vbr18.xs4all.nl ([194.109.24.38]:2566 "EHLO
+	smtp-vbr18.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755825Ab0EABDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 20:59:26 -0400
-X-MXL-Hash: 4bdb7cee4f13796b-ffa0016d4513bfc42c61e7a88f2c745445b6c0a1
-X-MXL-Hash: 4bd9d19e217b8539-377f8aca4ad5779c50c82beba01c76395749fc80
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>,
-       "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-CC: "ryan@bluewatersys.com" <ryan@bluewatersys.com>,
-       "andre@bluewatersys.com" <andre@bluewatersys.com>,
-       David Woodhouse <dwmw2@infradead.org>,
-       "dedekind1@gmail.com" <dedekind1@gmail.com>
-Date: Thu, 29 Apr 2010 13:34:24 -0500
-Subject: [PATCH] sst25l.c: fix multi-part messages with broken spi masters
-Thread-Topic: [PATCH] sst25l.c: fix multi-part messages with broken spi
- masters
-Thread-Index: AcrnypfJPeCwvyWvRyqcxSV64zmhaw==
-Message-ID: <0D753D10438DA54287A00B0270842697636E305D4A@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Fri, 30 Apr 2010 21:03:07 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 0/5] Pushdown bkl from v4l ioctls
+Date: Thu, 29 Apr 2010 08:44:29 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.33-tschai; KDE/4.3.5; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+       Arnd Bergmann <arnd@arndb.de>, John Kacur <jkacur@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>, Greg KH <gregkh@suse.de>,
+       Linux Media Mailing List <linux-media@vger.kernel.org>
+References: <alpine.LFD.2.00.1004280750330.3739@i5.linux-foundation.org> <1272512564-14683-1-git-send-regression-fweisbec@gmail.com>
+In-Reply-To: <1272512564-14683-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010043001)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.72]
-X-AnalysisOut: [v=1.0 c=1 a=borFIQzli1YA:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
-X-AnalysisOut: [MA:10 a=jM3uHZP82BWpxjlUuN2t4A==:17 a=i00gxMtYAAAA:8 a=Jfr]
-X-AnalysisOut: [nYn6hAAAA:8 a=pGLkceISAAAA:8 a=rggnVFrEAAAA:8 a=nowIHpIveu]
-X-AnalysisOut: [VuGbkFGBMA:9 a=Hj9QbegMjyGHuiDSf8cA:7 a=vP3aldeonwbFo30t8E]
-X-AnalysisOut: [bzZHiF4tIA:4 a=QEXdDO2ut3YA:10 a=x1WnkoZAwusA:10 a=3Rfx1nU]
-X-AnalysisOut: [Sh_UA:10 a=MSl-tDqOz04A:10 a=ct-hs6iedJYA:10]
+Content-Type: Text/Plain;
+  charset="iso-8859-6"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004290844.29347.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o410xXmE012615
 
-Some SPI masters (ep93xx) have limitations when using the SFRMOUT
-signal for the spi device chip select.  The SFRMOUT signal is
-only asserted as long as the spi transmit fifo contains data.  As
-soon as the last bit is clocked into the receive fifo it gets
-deasserted.
+On Thursday 29 April 2010 05:42:39 Frederic Weisbecker wrote:
+> Hi,
+> 
+> Linus suggested to rename struct v4l2_file_operations::ioctl
+> into bkl_ioctl to eventually get something greppable and make
+> its background explicit.
+> 
+> While at it I thought it could be a good idea to just pushdown
+> the bkl to every v4l drivers that have an .ioctl, so that we
+> actually remove struct v4l2_file_operations::ioctl for good.
+> 
+> It passed make allyesconfig on sparc.
+> Please tell me what you think.
 
-The functions sst25l_status and sst25l_match_device use the API
-function spi_write_then_read to write a command to the flash then
-read the response back.  This API function creates a two part spi
-message for the write then read.  When this message is transferred
-the SFRMOUT signal ends up getting deasserted after the command
-phase.  This causes the command to get aborted by the device so
-the read phase returns invalid data.
+I much prefer to keep the bkl inside the v4l2 core. One reason is that I
+think that we can replace the bkl in the core with a mutex. Still not
+ideal of course, so the next step will be to implement proper locking in
+each driver. For this some additional v4l infrastructure work needs to be
+done. I couldn't proceed with that until the v4l events API patches went in,
+and that happened yesterday.
 
-By changing sst25l_status and sst25l_match_device to use a single
-transfer synchronous message, the SFRMOUT signal stays asserted
-during the entire message so the correct data always gets returned.
+So from my point of view the timeline is this:
 
-This change will have no effect on SPI masters which use a chip
-select mechanism (GPIO's, etc.) which does stay asserted correctly.
-As a bonus, the single transfer synchronous messages complete faster
-than multi-part messages.
+1) I do the infrastructure work this weekend. This will make it much easier to
+convert drivers to do proper locking. And it will also simplify v4l2_priority
+handling, so I'm killing two birds with one stone :-)
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Andre Renaud <andre@bluewatersys.com>
-Cc: Ryan Mallon <ryan@bluewatersys.com>
+2) Wait until Arnd's patch gets merged that pushes the bkl down to v4l2-dev.c
 
----
+3) Investigate what needs to be done to replace the bkl with a v4l2-dev.c
+global mutex. Those drivers that call the bkl themselves should probably be
+converted to do proper locking, but there are only about 14 drivers that do
+this. The other 60 or so drivers should work fine if a v4l2-dev global lock
+is used. At this point the bkl is effectively removed from the v4l subsystem.
 
-This driver is needed on the ep93xx based EDB93xx dev boards to
-access the SPI flash.
+4) Work on the remaining 60 drivers to do proper locking and get rid of the
+v4l2-dev global lock. This is probably less work than it sounds.
 
-This patch replaces "sst25l.c: simplify reading the device ManID/DevID"
-which was previously posted.
+Since your patch moves everything down to the driver level it will actually
+make this work harder rather than easier. And it touches almost all drivers
+as well.
 
-diff --git a/drivers/mtd/devices/sst25l.c b/drivers/mtd/devices/sst25l.c
-index fe17054..7de3bee 100644
---- a/drivers/mtd/devices/sst25l.c
-+++ b/drivers/mtd/devices/sst25l.c
-@@ -73,15 +73,25 @@ static struct flash_info __initdata sst25l_flash_info[] = {
- 
- static int sst25l_status(struct sst25l_flash *flash, int *status)
- {
--	unsigned char command, response;
-+	struct spi_message m;
-+	struct spi_transfer t;
-+	unsigned char cmd_resp[2];
- 	int err;
- 
--	command = SST25L_CMD_RDSR;
--	err = spi_write_then_read(flash->spi, &command, 1, &response, 1);
-+	spi_message_init(&m);
-+	memset(&t, 0, sizeof(struct spi_transfer));
-+
-+	cmd_resp[0] = SST25L_CMD_RDSR;
-+	cmd_resp[1] = 0xff;
-+	t.tx_buf = cmd_resp;
-+	t.rx_buf = cmd_resp;
-+	t.len = sizeof(cmd_resp);
-+	spi_message_add_tail(&t, &m);
-+	err = spi_sync(flash->spi, &m);
- 	if (err < 0)
- 		return err;
- 
--	*status = response;
-+	*status = cmd_resp[1];
- 	return 0;
- }
- 
-@@ -328,33 +338,32 @@ out:
- static struct flash_info *__init sst25l_match_device(struct spi_device *spi)
- {
- 	struct flash_info *flash_info = NULL;
--	unsigned char command[4], response;
-+	struct spi_message m;
-+	struct spi_transfer t;
-+	unsigned char cmd_resp[6];
- 	int i, err;
- 	uint16_t id;
- 
--	command[0] = SST25L_CMD_READ_ID;
--	command[1] = 0;
--	command[2] = 0;
--	command[3] = 0;
--	err = spi_write_then_read(spi, command, sizeof(command), &response, 1);
--	if (err < 0) {
--		dev_err(&spi->dev, "error reading device id msb\n");
--		return NULL;
--	}
--
--	id = response << 8;
--
--	command[0] = SST25L_CMD_READ_ID;
--	command[1] = 0;
--	command[2] = 0;
--	command[3] = 1;
--	err = spi_write_then_read(spi, command, sizeof(command), &response, 1);
-+	spi_message_init(&m);
-+	memset(&t, 0, sizeof(struct spi_transfer));
-+
-+	cmd_resp[0] = SST25L_CMD_READ_ID;
-+	cmd_resp[1] = 0;
-+	cmd_resp[2] = 0;
-+	cmd_resp[3] = 0;
-+	cmd_resp[4] = 0xff;
-+	cmd_resp[5] = 0xff;
-+	t.tx_buf = cmd_resp;
-+	t.rx_buf = cmd_resp;
-+	t.len = sizeof(cmd_resp);
-+	spi_message_add_tail(&t, &m);
-+	err = spi_sync(spi, &m);
- 	if (err < 0) {
--		dev_err(&spi->dev, "error reading device id lsb\n");
-+		dev_err(&spi->dev, "error reading device id\n");
- 		return NULL;
- 	}
- 
--	id |= response;
-+	id = (cmd_resp[4] << 8) | cmd_resp[5];
- 
- 	for (i = 0; i < ARRAY_SIZE(sst25l_flash_info); i++)
- 		if (sst25l_flash_info[i].device_id == id)
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Regards,
+
+	Hans
+
+> 
+> Thanks.
+> 
+> Frederic Weisbecker (5):
+>       v4l: Pushdown bkl into video_ioctl2
+>       v4l: Use video_ioctl2_unlocked from drivers that don't want the bkl
+>       v4l: Change users of video_ioctl2 to use unlocked_ioctl
+>       v4l: Pushdown bkl to drivers that implement their own ioctl
+>       v4l: Remove struct v4l2_file_operations::ioctl
+> 
+>  drivers/media/common/saa7146_fops.c              |    2 +-
+>  drivers/media/radio/dsbr100.c                    |    2 +-
+>  drivers/media/radio/radio-aimslab.c              |    2 +-
+>  drivers/media/radio/radio-aztech.c               |    2 +-
+>  drivers/media/radio/radio-cadet.c                |    2 +-
+>  drivers/media/radio/radio-gemtek-pci.c           |    2 +-
+>  drivers/media/radio/radio-gemtek.c               |    2 +-
+>  drivers/media/radio/radio-maestro.c              |    2 +-
+>  drivers/media/radio/radio-maxiradio.c            |    2 +-
+>  drivers/media/radio/radio-miropcm20.c            |    2 +-
+>  drivers/media/radio/radio-mr800.c                |    2 +-
+>  drivers/media/radio/radio-rtrack2.c              |    2 +-
+>  drivers/media/radio/radio-sf16fmi.c              |    2 +-
+>  drivers/media/radio/radio-sf16fmr2.c             |    2 +-
+>  drivers/media/radio/radio-si4713.c               |    2 +-
+>  drivers/media/radio/radio-tea5764.c              |    2 +-
+>  drivers/media/radio/radio-terratec.c             |    2 +-
+>  drivers/media/radio/radio-timb.c                 |    2 +-
+>  drivers/media/radio/radio-trust.c                |    2 +-
+>  drivers/media/radio/radio-typhoon.c              |    2 +-
+>  drivers/media/radio/radio-zoltrix.c              |    2 +-
+>  drivers/media/radio/si470x/radio-si470x-common.c |    2 +-
+>  drivers/media/video/arv.c                        |    2 +-
+>  drivers/media/video/au0828/au0828-video.c        |   14 ++++----
+>  drivers/media/video/bt8xx/bttv-driver.c          |   26 +++++++-------
+>  drivers/media/video/bw-qcam.c                    |   11 +++++-
+>  drivers/media/video/c-qcam.c                     |   11 +++++-
+>  drivers/media/video/cafe_ccic.c                  |   14 ++++----
+>  drivers/media/video/cpia.c                       |   11 +++++-
+>  drivers/media/video/cpia2/cpia2_v4l.c            |   11 +++++-
+>  drivers/media/video/cx18/cx18-streams.c          |   12 +++---
+>  drivers/media/video/cx231xx/cx231xx-video.c      |    4 +-
+>  drivers/media/video/cx23885/cx23885-417.c        |    2 +-
+>  drivers/media/video/cx23885/cx23885-video.c      |    4 +-
+>  drivers/media/video/cx88/cx88-blackbird.c        |    2 +-
+>  drivers/media/video/cx88/cx88-video.c            |    4 +-
+>  drivers/media/video/davinci/vpfe_capture.c       |    2 +-
+>  drivers/media/video/davinci/vpif_capture.c       |    2 +-
+>  drivers/media/video/davinci/vpif_display.c       |    2 +-
+>  drivers/media/video/em28xx/em28xx-video.c        |    4 +-
+>  drivers/media/video/et61x251/et61x251_core.c     |   27 +++++++++++----
+>  drivers/media/video/gspca/gspca.c                |    2 +-
+>  drivers/media/video/hdpvr/hdpvr-video.c          |    2 +-
+>  drivers/media/video/meye.c                       |    2 +-
+>  drivers/media/video/omap24xxcam.c                |   10 +++---
+>  drivers/media/video/ov511.c                      |   15 +++++---
+>  drivers/media/video/pms.c                        |    2 +-
+>  drivers/media/video/pvrusb2/pvrusb2-v4l2.c       |   20 +++++++----
+>  drivers/media/video/pwc/pwc-if.c                 |   19 ++++++----
+>  drivers/media/video/s2255drv.c                   |   12 +++---
+>  drivers/media/video/saa5246a.c                   |   11 ++++--
+>  drivers/media/video/saa5249.c                    |    6 +++-
+>  drivers/media/video/saa7134/saa7134-empress.c    |   14 ++++----
+>  drivers/media/video/saa7134/saa7134-video.c      |   26 +++++++-------
+>  drivers/media/video/se401.c                      |   20 +++++++----
+>  drivers/media/video/sn9c102/sn9c102_core.c       |   27 +++++++++++----
+>  drivers/media/video/soc_camera.c                 |    2 +-
+>  drivers/media/video/stk-webcam.c                 |   14 ++++----
+>  drivers/media/video/stradis.c                    |   26 +++++++++++----
+>  drivers/media/video/stv680.c                     |   20 +++++++----
+>  drivers/media/video/tlg2300/pd-radio.c           |    8 ++--
+>  drivers/media/video/tlg2300/pd-video.c           |    2 +-
+>  drivers/media/video/usbvideo/usbvideo.c          |   21 ++++++++----
+>  drivers/media/video/usbvideo/vicam.c             |   14 +++++++-
+>  drivers/media/video/usbvision/usbvision-video.c  |    4 +-
+>  drivers/media/video/uvc/uvc_v4l2.c               |   11 +++++-
+>  drivers/media/video/v4l2-dev.c                   |   38 ++-------------------
+>  drivers/media/video/v4l2-ioctl.c                 |   17 ++++++++-
+>  drivers/media/video/vivi.c                       |    2 +-
+>  drivers/media/video/w9966.c                      |    2 +-
+>  drivers/media/video/w9968cf.c                    |   25 +++++++++++---
+>  drivers/media/video/zc0301/zc0301_core.c         |   27 +++++++++++----
+>  drivers/media/video/zoran/zoran_driver.c         |   16 ++++----
+>  drivers/media/video/zr364xx.c                    |   14 ++++----
+>  drivers/staging/cx25821/cx25821-audups11.c       |   18 ++++++----
+>  drivers/staging/cx25821/cx25821-video0.c         |   14 ++++----
+>  drivers/staging/cx25821/cx25821-video1.c         |   14 ++++----
+>  drivers/staging/cx25821/cx25821-video2.c         |   14 ++++----
+>  drivers/staging/cx25821/cx25821-video3.c         |   14 ++++----
+>  drivers/staging/cx25821/cx25821-video4.c         |   14 ++++----
+>  drivers/staging/cx25821/cx25821-video5.c         |   14 ++++----
+>  drivers/staging/cx25821/cx25821-video6.c         |   14 ++++----
+>  drivers/staging/cx25821/cx25821-video7.c         |   14 ++++----
+>  drivers/staging/cx25821/cx25821-videoioctl.c     |   27 +++++++++++----
+>  drivers/staging/cx25821/cx25821-vidups10.c       |   19 +++++++----
+>  drivers/staging/cx25821/cx25821-vidups9.c        |   18 ++++++----
+>  drivers/staging/dream/camera/msm_v4l2.c          |   27 +++++++++++----
+>  drivers/staging/go7007/go7007-v4l2.c             |    2 +-
+>  drivers/staging/tm6000/tm6000-video.c            |    2 +-
+>  include/media/v4l2-dev.h                         |    1 -
+>  include/media/v4l2-ioctl.h                       |    2 +
+>  sound/i2c/other/tea575x-tuner.c                  |    2 +-
+>  92 files changed, 530 insertions(+), 360 deletions(-)
+> 
+
+-- 
+Hans Verkuil - video4linux developer - sponsored by TANDBERG, part of Cisco
