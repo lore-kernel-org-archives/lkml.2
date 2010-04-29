@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015Ab0D3RR7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:17:59 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44736 "EHLO smtps.tip.net.au"
+	id S933049Ab0D3RSV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:18:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51973 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932993Ab0D3RRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:17:40 -0400
-Date: Fri, 30 Apr 2010 10:01:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       David Woodhouse <dwmw2@infradead.org>,
-       Tomas Winkler <tomas.winkler@intel.com>
-Subject: Re: linux-next: build warning after merge of the
- driver-core.current tree
-Message-Id: <20100430100102.0f08c9ad.sfr@canb.auug.org.au>
-In-Reply-To: <20100429234525.GB16141@kroah.com>
-References: <20100430093534.9fc6ab8f.sfr@canb.auug.org.au>
-	<20100429234347.GA16141@kroah.com>
-	<20100429234525.GB16141@kroah.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__30_Apr_2010_10_01_02_+1000_oc5yBUf2UNTuEjN_"
+	id S933035Ab0D3RSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:18:10 -0400
+Date: Thu, 29 Apr 2010 14:15:09 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+       vgoyal@redhat.com
+Subject: Re: [PATCH 00/11] jump label v7
+Message-ID: <20100429181508.GE3960@redhat.com>
+References: <cover.1271427118.git.jbaron@redhat.com> <20100422.161700.191166551.davem@davemloft.net> <20100427.175858.134109609.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100427.175858.134109609.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__30_Apr_2010_10_01_02_+1000_oc5yBUf2UNTuEjN_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 27, 2010 at 05:58:58PM -0700, David Miller wrote:
+> > 
+> >> David, I re-worked the sparc64 to match the updated interfaces. The
+> >> code should hopefully compile now, although I did not test the sparc
+> >> bits.
+> > 
+> > Thanks for working on this Jason.  I'll take a close look at this
+> > some time today.
+> 
+> The kernel stops compiling after the second patch because
+> kernel/jump_label.c is compiled unconditionally, and this generates an
+> attempt to include asm/alternatives.h which is an x86-only phenomenon.
+> 
 
-Hi Greg,
+sorry. jump_label.c no longer requires asm/alternatives.h. It should
+have been removed in this patch series.
 
-On Thu, 29 Apr 2010 16:45:25 -0700 Greg KH <greg@kroah.com> wrote:
->
-> > Thanks, I've fixed this up, the release call should not have 'const'
-> > on it as it is going to touch the pointer passed to it :)
->=20
-> And it's now pushed out in my tree.
+> Do you have access to a cross-compile environment or at least some
+> non-x86 system you can test build on before submitting these patch
+> sets?
+> 
 
-Excellent, thanks.
+I'll make sure to test the next iteration on non-x86, with at least
+dummy funtions.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+thanks,
 
---Signature=_Fri__30_Apr_2010_10_01_02_+1000_oc5yBUf2UNTuEjN_
-Content-Type: application/pgp-signature
+-Jason
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvaHb4ACgkQjjKRsyhoI8xtOgCgvh2evjACoaxxT+9gtQb9bsdM
-PPAAnizzkQvx35ogbIp9YUIR9lwvfrmL
-=o2Ye
------END PGP SIGNATURE-----
-
---Signature=_Fri__30_Apr_2010_10_01_02_+1000_oc5yBUf2UNTuEjN_--
