@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab0D2AWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 20:22:31 -0400
-Received: from smtp01.one2one.net ([149.254.200.196]:38612 "EHLO
-	smtp01.one2one.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab0D2AWa (ORCPT
+	id S1756191Ab0D2AZU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 20:25:20 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:2024 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413Ab0D2AZR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 20:22:30 -0400
-X-Greylist: delayed 1743 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Apr 2010 20:22:30 EDT
-From: Christoffer Dall <christofferdall@christofferdall.dk>
-To: containers <containers@lists.linux-foundation.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Christoffer Dall <christofferdall@christofferdall.dk>
-Subject: [C/R ARM v2][PATCH 0/3] Linux Checkpoint-Restart - ARM port
-Date: Mon, 26 Apr 2010 17:43:40 -0400
-Message-Id: <1272318223-28438-1-git-send-email-christofferdall@christofferdall.dk>
-X-Mailer: git-send-email 1.5.6.5
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: christofferdall@christofferdall.dk
-X-SA-Exim-Scanned: No (on localhost); SAEximRunCond expanded to false
+	Wed, 28 Apr 2010 20:25:17 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Greg KH <greg@kroah.com>, Ky Srinivasan <ksrinivasan@novell.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+       "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+       "Haiyang Zhang" <haiyangz@microsoft.com>, Greg KH <gregkh@suse.de>
+Subject: RE: [PATCH 1/1] hv: Added new hv_utils driver to hyper-v
+Thread-Topic: [PATCH 1/1] hv: Added new hv_utils driver to hyper-v
+Thread-Index: AQHK5x+x0Gw11mS3JEm/g4+JrXB5vpI460MA//+qIzs=
+Date: Thu, 29 Apr 2010 00:20:51 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C5621AFEC88E@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <8AFC7968D54FB448A30D8F38F259C5621AFEC6F3@TK5EX14MBXC114.redmond.corp.microsoft.com>,<20100428222810.GA18247@kroah.com>
+In-Reply-To: <20100428222810.GA18247@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following there will be two preparatory patches for an ARM port of the
-checkpoint-restart code and finally a third patch implementing the
-architecture-specific parts of c/r.
 
-The preparatory patches consist of a partial syscall trace implementation
-for ARM and an eclone implementation for ARM. The syscall trace
-implementation provides only the needed functionality for c/r.
+> And Greg spoke these words......
+>>On Wed, Apr 28, 2010 at 10:11:02PM +0000, Hank Janssen wrote:
+>>
+>> Addition of new driver for Hyper-V called hv_utils.
+>> This driver is intended to support things like KVP, Timesync, Heartbeat etc.
+>
+>Does this duplicate functionality in KY's clocksource driver?  Or is it
+>a separate thing?
 
-There is a separate patch for the user space code, which supports
-cross-compilation, extracting headers for ARM and an eclone implementation
-for ARM.
+This is a separate thing, timesync registers itself with the vmbus so it receives
+a time sync message from Hyper-V on cold boot and restore from saved state. 
+With this we set the clock on the current VM. (Human readable time basically)
 
-The kernel patches presented here are based on the ckpt-v21-rc6 patch set.
+What KY submitted it a driver that connects to the Hyper-V stable timesource.
+There are no messages from Hyper-V for that, you have to read that directly 
+from the hypervisor page.
 
----
+>> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+>> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+>> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+>
+>I did not sign off on this, I've never even seen this patch before, why
+>would you add my name?  That is not ok at all!
 
-CHANGELOG:
+I got ahead of myself. Just trying to make your workload easier :)
 
-[2010-Apr-08] v2:
-	- Systrace implementation now inspects process state to get the
-	  system call number thereby avoiding extra work on system calls.
-	- Removed __user attribute on long type in eclone implementation
-	- Better check for architecture versions across C/R
-	- Improved checking of user space ABI settings across C/R
-	- Code simplifications
+I will resend right away with the line removed.
 
-[2010-Mar-22] v1:
-	- Initial version
-	- Systrace implementation modified the system call entry path to
-	  store the system call number globally in memory.
-	- ARM implementation lightly tested
+Hank.
+
