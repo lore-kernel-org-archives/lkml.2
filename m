@@ -1,73 +1,67 @@
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab0FADzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 23:55:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60159 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753119Ab0FADze (ORCPT
+	id S1751407Ab0EAHtQ (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sat, 1 May 2010 03:49:16 -0400
+Received: from mail.nafed.go.id ([203.130.242.156]:51658 "EHLO
+	mail.nafed.go.id" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab0EAHtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 23:55:34 -0400
-Date: Mon, 31 May 2010 20:51:06 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: =?ISO-8859-15?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Brandon Philips <brandon@ifup.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 1/2] Make the module 'usage' lists be two-way
-In-Reply-To: <20100601024439.GA5134@cr0.nay.redhat.com>
-Message-ID: <alpine.LFD.2.00.1005312041070.3637@i5.linux-foundation.org>
-References: <201005252300.07739.rjw@sisk.pl> <201005312130.17038.rusty@rustcorp.com.au> <201005312131.43238.rusty@rustcorp.com.au> <201005312132.28631.rusty@rustcorp.com.au> <20100531094834.c1a684d1.akpm@linux-foundation.org> <alpine.LFD.2.00.1005311100220.3986@i5.linux-foundation.org>
- <alpine.LFD.2.00.1005311311490.3637@i5.linux-foundation.org> <alpine.LFD.2.00.1005311315460.3637@i5.linux-foundation.org> <20100601024439.GA5134@cr0.nay.redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Sat, 1 May 2010 03:49:15 -0400
+Cc: recipient list not shown:;
+Message-ID: <1272503906.4bd8de627e366@mail.nafed.go.id>
+Date: Thu, 29 Apr 2010 08:18:26 +0700
+From: kap3watt@nafed.go.id
+Subject: Office of Tim Pullen Solicitors & Barristers
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) 3.2.1
+X-Originating-IP: 41.217.66.4
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On Tue, 1 Jun 2010, Américo Wang wrote:
-> >+	list_for_each_entry_safe(use, tmp, &mod->target_list, target_list) {
-> >+		struct module *i = use->target;
-> >+		DEBUGP("%s unusing %s\n", mod->name, i->name);
-> >+		module_put(i);
-> >+		list_del(&use->source_list);
-> >+		list_del(&use->target_list);
-> >+		kfree(use);
-> >+		sysfs_remove_link(i->holders_dir, mod->name);
-> 
-> I think it's nice to have a remove_module_usage() here, since we already
-> have add_module_usage().
+Good day Friend,
 
-I agree that those five lines could easily be a function of their own. It 
-would make sense and be symmetric. That said, I didn't do it because there 
-was just a single use place, and it was so simple.
+The issue I am presenting to You is about my client who WILL a fortune to 
+his Next-of-kin. It was most unfortunate that he And his next-of-kin died 
+on the same day in the sharja plane crash of Tuesday 10 February 2004.
 
-Also, if you do turn it into a function, it's a bit dubious what the 
-proper calling convention would be. The clean interface would be to just 
-pass in "use", since you can figure out both the source and target from 
-there. At the same time, it's a bit sad to re-load "mod" from 
-"use->source", when we had it explicitly and started from it.  But maybe 
-that doesn't really matter.
+I am now faced with confusion of who to pass the fortune to. According to 
+the English law, the Fortune is supposed to be bequeathed to the 
+government.However,i don't belong to that School of thought which 
+proposes that the Fortune of unlucky people be given to the Government. 
+My purpose of contacting you is to seek your Assistance to act as the 
+benefactor of the WILL, And lay claim to the legacy (12.4 million pounds 
+Sterling), which this my unfortunate client Bequeathed to his next-of-
+kin. For now, it is Only known to me, as my client has great Confident in 
+me. Everything will be left between You and I. The share would be 40% for 
+you and 60% for me. All I have to do is to amend the WILL stating you as 
+the beneficiary to the 12.4 million pounds sterling.
 
-One thing I react to now that I look at it again - I think we should also 
-move the "module_put(i)" to the end. In fact I thought I did it when I 
-moved the code around, but clearly I hadn't.
+As I am yet to get your consent on this issue, I Prefer not to divulge my 
+full identity so as not to risk being debarred. The English Bar Considers 
+it a breach of the oath of the English Bar Council. I need not emphasize 
+to you that The sensitivity of this issue need not be toyed With by 
+neglecting its confidentiality. Due to the Risk involve and also the 
+activities of fraudsters Now rampant on the Internet, and until I am sure 
+Of your consent, full cooperation and genuine Willingness to assist me 
+for our mutual benefit, I would prefer that we maintain correspondence By 
+email. At this point I want to assure you that Your true consent, full a 
+cooperation and Confidentiality is all that are required for us to Take 
+full advantage of this great opportunity.This is an opportunity that 
+people rarely have.
 
-It won't really matter as-is (we hold the module_mutex, so "i" isn't going 
-away), and it's what the old code used to do, but we should probably aim 
-for more of a ref-counted worldview where you don't put the module until 
-after it's not used again. And we clearly still use "i" after the 
-module_put() above in the sysfs_remove_link thing. So that's a bit ugly 
-too.
 
-I suspect the module code could do with quite a bit of a cleanup. The 
-primary target of that patch was a different issue, though.
+I look forward to hearing from you soon.You can reach me on my direct 
 
-		Linus
+Email ID: barr.timpullen@kelebek.gen.tr
+
+
+Office of Tim Pullen Solicitors & Barristers
+
+
+----------------------------------------------------------------------
+This mail sent through Horde-Toaster (http://qmailtoaster.clikka.com/)
