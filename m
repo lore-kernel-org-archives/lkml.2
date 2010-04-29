@@ -1,209 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759319Ab0D3SuK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:50:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46457 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758774Ab0D3Sti (ORCPT
+	id S933800Ab0D3Su7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:50:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47113 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932813Ab0D3RNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:49:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ByGsjyZPx0cKwP/jUN4N+HX0LyImdIpxVmZesHqRaTVqZ9WblBqz7mZ4fjtkKnJynI
-         aGPd4LNTXBkyYw3kOQW6Apei3YZx8ToF2YgbCyUTCKZtmGKbfRhtP193YJ1Rbld7sOWC
-         /ra6DsGWQRFHY0S31ykknon8kY9LgpX37Xr+o=
-Date: Fri, 30 Apr 2010 20:49:39 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: Re: [PATCH v2] perf lock: add "info" subcommand for dumping misc
-	information
-Message-ID: <20100430184937.GB5357@nowhere>
-References: <1272074742-3654-2-git-send-regression-fweisbec@gmail.com> <1272106001-10519-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+	Fri, 30 Apr 2010 13:13:06 -0400
+Message-ID: <4BD9F1FE.8010708@zytor.com>
+Date: Thu, 29 Apr 2010 13:54:22 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272106001-10519-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
+CC: linux-kernel@vger.kernel.org, Jacob Pan <jacob.jun.pan@intel.com>
+Subject: Re: 2.6.34-rc5-git10: oops on Atom N270/ i945GSE upon shutdown with
+ X86_MRST && APB_TIMER enabled
+References: <201004292143.29507.s.L-H@gmx.de>
+In-Reply-To: <201004292143.29507.s.L-H@gmx.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 07:46:41PM +0900, Hitoshi Mitake wrote:
-> Hi Frederic,
+Could you apply this patch and verify that it solves your problem:
+
+http://git.kernel.org/tip/ae7c9b70dcb4313ea3dbcc9a2f240dae6c2b50c0
+
+	-hpa
+
+On 04/29/2010 12:43 PM, Stefan Lippers-Hollmann wrote:
+> Hi
 > 
-> I added "info" subcommand to perf lock,
-> this can be used as dumping metadata like thread or address of lock instances.
-> "map" was removed because info should do the work of it.
+> While testing kernel 2.6.34-rc5-git10 on an Acer Aspire One 110L netbook 
+> (Atom N270, i945GSE chipset, hyperthreading enabled and not configurable, 
+> BIOS 3309), I reproducably encounter the following oops while shutting down
+> (manual transcription below):
 > 
-> This will be useful not only for debugging but also for ordinary analyzing.
+> Pid: 2253, comm: halt Not Tainted 2.6.34-rc5-sidux-686 #1        /AOA110
+> EIP: 0060:[<c0121232>] EFLAGS: 00010202 CPU: 0
+> EIP is at apbt_cpuhp_notify+0x32/0x60
+> EAX: c0562e80 EBX: 01ca0000 ECX: 0000001c EDX: 0000001c
+> ESI: 00000000 EDI: 00000000 EBP: ffffffdd ESP: f64cfe0c
+>  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+> Process halt (pid: 2253, ti=f64ce000 task=f69d9140 task.ti=f64ce000)
+> Stack:
+>  c0501740 c01515d4 00000017 00000001 00000010 00000001 00000000 c0502584
+>  <0> c0151687 ffffffff 00000000 c03e0dc9 ffffffff f64cfe60 f6802880 00000003
+>  <0> 00000002 c0149055 00000010 00000001 00000003 00000023 00000000 c0502584
+> Call Trace:
+>  [<c01515d4>] ? notifier_call_chain+0x44/0x60
+>  [<c0151687>] ? raw_notifier_call_chain+0x17/0x20
+>  [<c03e0dc9>] ? _cpu_down+0x109/0x290
+>  [<c0149055>] ? __create_workqueue_key+0x175/0x190
+>  [<c0138f2f>] ? disable_nonboot_cpus+0x8f/0x100
+>  [<c01513eb>] ? up+0xb/0x40
+>  [<c014791d>] ? kernel_power_off+0x1d/0x40
+>  [<c0147bcc>] ? sys_reboot+0xfc/0x1f0
+>  [<c01442d6>] ? send_signal+0x36/0x70
+>  [<c03efd3f>] ? preempt_schedule+0x2f/0x50
+>  [<c0144370>] ? do_send_sig_info+0x60/0x80
+>  [<c0144666>] ? group_send_sig_info+0x46/0x60
+>  [<c0182e16>] ? __rcu_read_unlock+0x1c6/0x1d0
+>  [<c0144901>] ? sys_kill+0x91/0x180
+>  [<c01d7e44>] ? dput+0x84/0x120
+>  [<c01de1f5>] ? mntput_no_expire+0x15/0xd0
+>  [<c01c55c7>] ? filp_close+0x47/0x80
+>  [<c01c566c>] ? sys_close+0x6d/0xc0
+>  [<c0103758>] ? sysenter_do_call+0x12/0x28
+> Code: c0 83 fa 07 53 8b 1c 8d 00 24 50 c0 74 0b b8 01 00 00 00 5b c3 8d 74 26 00 8d 14 89 8b 0d ec 86 57 c0 8d 14 95 08 00 00 00 01 d1 <8b> 09 83 c9 04 03 15 ec 86 57 c0 89 0a 83 3d 84 1f 50 c0 01 74
+> EIP: [<c0121232>] apbt_cpuhp_notify+0x32/0x60 SS:ESP 0068:f64cfe0c
+> CR2: 000000000000001c
+> ---[ end trace 7b640dfe756fbef1 ]---
 > 
-> I made this patch on perf/core of your tree, could you queue this?
+> I don't encounter this problem on 2.6.26-2.6.33(-stable), which didn't 
+> have Moorestown/ ABP_Timer support of course, and disabling X86_MRST (and 
+> subsequently APB_TIMER) avoids the problem as well; it does not happen
+> while rebooting, but only during a full system halt. With X86_MRST && 
+> APB_TIMER disabled, everything seems to work fine.
 > 
-> v2: adding example of usage
-> % sudo ./perf lock info -t
->  | Thread ID: comm
->  | 	 0: swapper
->  |         1: init
->  |        18: migration/5
->  |        29: events/2
->  |        32: events/5
->  |        33: events/6
-> ...
+> Tested on an up to date Debian unstable system:
+> ii  gcc-4.4   4.4.3-9   The GNU C compiler
+> ii  binutils  2.20.1-7  The GNU assembler, linker and binary utilities
 > 
-> % sudo ./perf lock info -m
-> | Address of instance: name of class
-> |  0xffff8800b95adae0: &(&sighand->siglock)->rlock
-> |  0xffff8800bbb41ae0: &(&sighand->siglock)->rlock
-> |  0xffff8800bf165ae0: &(&sighand->siglock)->rlock
-> |  0xffff8800b9576a98: &p->cred_guard_mutex
-> |  0xffff8800bb890a08: &(&p->alloc_lock)->rlock
-> |  0xffff8800b9522a08: &(&p->alloc_lock)->rlock
-> |  0xffff8800bb8aaa08: &(&p->alloc_lock)->rlock
-> |  0xffff8800bba72a08: &(&p->alloc_lock)->rlock
-> |  0xffff8800bf18ea08: &(&p->alloc_lock)->rlock
-> |  0xffff8800b8a0d8a0: &(&ip->i_lock)->mr_lock
-> |  0xffff88009bf818a0: &(&ip->i_lock)->mr_lock
-> |  0xffff88004c66b8a0: &(&ip->i_lock)->mr_lock
-> |  0xffff8800bb6478a0: &(shost->host_lock)->rlock
-> Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Jens Axboe <jens.axboe@oracle.com>
-> Cc: Jason Baron <jbaron@redhat.com>
-> Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-
-
-I've eventually not queued it because of some various
-problems, see below:
-
-
-
-> ---
->  tools/perf/builtin-lock.c |   68 +++++++++++++++++++++++++++++++++++++++++++--
->  1 files changed, 65 insertions(+), 3 deletions(-)
+> While I can test any potential patches, debugging is a little limited 
+> without serial access to the netbook and because a netconsole doesn't work 
+> at that shutdown stage anymore.
 > 
-> diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-> index ce27675..c54211e 100644
-> --- a/tools/perf/builtin-lock.c
-> +++ b/tools/perf/builtin-lock.c
-> @@ -778,18 +778,61 @@ static void print_result(void)
->  	}
->  }
->  
-> +static int			info_threads;
-> +static int			info_map;
-> +
-> +static void rec_dump_threads(struct rb_node *node)
-> +{
-> +	struct thread_stat *st;
-> +	struct thread *t;
-> +
-> +	if (!node)
-> +		return;
-> +
-> +	if (node->rb_left)
-> +		rec_dump_threads(node->rb_left);
+> Regards
+> 	Stefan Lippers-Hollmann
 
 
-That only walks the left nodes of the rbtree, imagine the following
-rbtree, W are visited nodes, U are the unvisited:
-
-                   Root
-                 /      \
-                W        U
-              /  \      / \
-             W    U    U   U
-
-
-Better iterate using rb_first() then rb_next() until it is NULL.
-
-
-
-> +
-> +	st = container_of(node, struct thread_stat, rb);
-> +	BUG_ON(!st);
-
-
-You won't ever have !st because container_of computes an address
-based on a struct type and a contained address inside this struct.
-
-struct thread_stat {
-	struct list_head	hash_entry;
-	struct rb_node		rb;
-	[...]
-} ts;
-
-If ts->rb == 1000, ts == 1000 - 16 or something like this.
-
-What matters is the "if (!node)" check you did before.
-
-
-
-> +	t = perf_session__findnew(session, st->tid);
-> +	BUG_ON(!t);
-> +
-> +	printf("%10d: %s\n", st->tid, t->comm);
-
-
-
-Please don't use printf anymore (I did the same mistakes lately),
-now that are using a TUI and we might use a GUI one day, we
-can't assume anymore we are dealing with a normal stdout.
-
-So better use pr_debug, pr_err, pr_warning, etc...
-
-
-
-> +
-> +	if (node->rb_right)
-> +		rec_dump_threads(node->rb_right);
-> +}
-> +
-> +static void dump_threads(void)
-> +{
-> +	printf("%10s: comm\n", "Thread ID");
-
-
-
-Same here and below.
-
-
-
-> +	rec_dump_threads(thread_stats.rb_node);
-> +}
-> +
->  static void dump_map(void)
->  {
->  	unsigned int i;
->  	struct lock_stat *st;
->  
-> +	printf("Address of instance: name of class\n");
->  	for (i = 0; i < LOCKHASH_SIZE; i++) {
->  		list_for_each_entry(st, &lockhash_table[i], hash_entry) {
-> -			printf("%p: %s\n", st->addr, st->name);
-> +			printf(" %p: %s\n", st->addr, st->name);
->  		}
->  	}
->  }
->  
-> +static void dump_info(void)
-> +{
-> +	/* ugly... */
-> +	if (info_threads)
-> +		dump_threads();
-
-
-No it's not ugly, it's ok, we do this everywhere in perf tools :)
-
-Thanks.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
