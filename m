@@ -1,28 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933378Ab0D3RzY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:55:24 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:60145 "EHLO ogre.sisk.pl"
+	id S933547Ab0D3Rzh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:55:37 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:60147 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758900Ab0D3Ryw convert rfc822-to-8bit (ORCPT
+	id S1758905Ab0D3Ryw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Apr 2010 13:54:52 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [PATCH 6/8] PM: Add suspend blocking work.
-Date: Thu, 29 Apr 2010 23:09:06 +0200
+Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend blockers from user-space
+Date: Thu, 29 Apr 2010 23:11:27 +0200
 User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-       Tejun Heo <tj@kernel.org>, Pavel Machek <pavel@ucw.cz>,
-       Len Brown <len.brown@intel.com>
-References: <1272429119-12103-1-git-send-email-arve@android.com> <201004290019.26381.rjw@sisk.pl> <s2rd6200be21004282047qc1b88ac5h1759f22f3c16ce85@mail.gmail.com>
-In-Reply-To: <s2rd6200be21004282047qc1b88ac5h1759f22f3c16ce85@mail.gmail.com>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Jim Collar <jim.collar@eqware.net>,
+       "Greg Kroah-Hartman" <gregkh@suse.de>, Avi Kivity <avi@redhat.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Magnus Damm <damm@igel.co.jp>, Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
+References: <1272429119-12103-1-git-send-email-arve@android.com> <201004290105.15707.rjw@sisk.pl> <h2jd6200be21004281638y6b751abesfcf6416707e6fee4@mail.gmail.com>
+In-Reply-To: <h2jd6200be21004281638y6b751abesfcf6416707e6fee4@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201004292309.06929.rjw@sisk.pl>
+Message-Id: <201004292311.27400.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,61 +37,37 @@ On Thursday 29 April 2010, Arve Hjønnevåg wrote:
 > 2010/4/28 Rafael J. Wysocki <rjw@sisk.pl>:
 > > On Thursday 29 April 2010, Arve Hjønnevåg wrote:
 > >> 2010/4/28 Rafael J. Wysocki <rjw@sisk.pl>:
-> >> > On Wednesday 28 April 2010, Oleg Nesterov wrote:
-> >> >> On 04/27, Arve Hjønnevåg wrote:
-> >> >> >
-> >> >> > Allow work to be queued that will block suspend while it is pending
-> >> >> > or executing. To get the same functionality in the calling code often
-> >> >> > requires a separate suspend_blocker for pending and executing work, or
-> >> >> > additional state and locking. This implementation does add additional
-> >> >> > state and locking, but this can be removed later if we add support for
-> >> >> > suspend blocking work to the core workqueue code.
+> >> > On Wednesday 28 April 2010, Arve Hjønnevåg wrote:
+> >> >> Add a misc device, "suspend_blocker", that allows user-space processes
+> >> >> to block auto suspend. The device has ioctls to create a suspend_blocker,
+> >> >> and to block and unblock suspend. To delete the suspend_blocker, close
+> >> >> the device.
 > >> >>
-> >> >> I think this patch is fine.
-> >> >>
-> >> >> Just one silly question,
-> >> >>
-> >> >> > +int queue_suspend_blocking_work(struct workqueue_struct *wq,
-> >> >> > +                           struct suspend_blocking_work *work)
-> >> >> > +{
-> >> >> > +   int ret;
-> >> >> > +   unsigned long flags;
-> >> >> > +
-> >> >> > +   spin_lock_irqsave(&work->lock, flags);
-> >> >> > +   suspend_block(&work->suspend_blocker);
-> >> >> > +   ret = queue_work(wq, &work->work);
-> >> >> > +   if (ret)
-> >> >> > +           work->active++;
-> >> >>
-> >> >> why not
-> >> >>
-> >> >>       ret = queue_work(wq, &work->work);
-> >> >>       if (ret) {
-> >> >>               suspend_block(&work->suspend_blocker);
-> >> >>               work->active++;
-> >> >>       }
-> >> >>
-> >> >> ?
-> >> >>
-> >> >> Afaics, we can't race with work->func() doing unblock, we hold work-lock.
-> >> >> And this way the code looks more clear.
+> >> >> Signed-off-by: Arve Hjønnevåg <arve@android.com>
+> >> > ...
+> >> >> +
+> >> >> +#include <linux/fs.h>
+> >> >> +#include <linux/miscdevice.h>
+> >> >> +#include <linux/module.h>
+> >> >> +#include <linux/uaccess.h>
+> >> >> +#include <linux/slab.h>
+> >> >> +#include <linux/suspend_blocker.h>
+> >> >> +#include <linux/suspend_block_dev.h>
+> >> >> +
+> >> >> +enum {
+> >> >> +     DEBUG_FAILURE   = BIT(0),
+> >> >> +};
+> >> >> +static int debug_mask = DEBUG_FAILURE;
 > >> >
-> >> > Agreed.  Arve, any objections to doing that?
-> >> >
+> >> > What's the exact purpose of this?
 > >>
-> >> I need to fix the race, but I can easily fix it in
-> >> cancel_suspend_blocking_work_sync instead. If the suspend blocker is
-> >> active for a long time, and DEBUG_SUSPEND_BLOCKER is enabled, we can
-> >> tell if the work is constantly re-queued or if the workqueue is stuck.
+> >> To show errors returned to user space. I can turn it off by default if you want.
 > >
-> > Well, perhaps that's worth adding a comment to the code.  The debug part is not
-> > immediately visible from the code itself.
+> > Not necessarily, but why is it a mask?  It looks like a 0/1 thing would be
+> > sufficient.
 > 
-> On second thought, this only makes a difference if both conditions are
-> true. If we are constantly re-queuing the work but it is not stuck,
-> either method will show the debug message, so I used Oleg's
-> suggestion.
+> I may want to add a bit to print all user-space block and unblock calls.
 
-OK, great.
+Alternatively, you can add a new parameter for that, which I think I would prefer.
 
 Rafael
