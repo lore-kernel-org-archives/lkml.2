@@ -1,126 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab0D2Ay7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 20:54:59 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50486 "EHLO hera.kernel.org"
+	id S1756983Ab0D2Azh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 20:55:37 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50503 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754313Ab0D2Ay5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 20:54:57 -0400
-Date: Thu, 29 Apr 2010 00:54:44 GMT
+	id S1755630Ab0D2AzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 20:55:10 -0400
+Date: Thu, 29 Apr 2010 00:55:01 GMT
 From: tip-bot for Jan Beulich <JBeulich@novell.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de
-In-Reply-To: <4BCF261F020000780003B33C@vpn.id2.novell.com>
-References: <4BCF261F020000780003B33C@vpn.id2.novell.com>
+In-Reply-To: <4BCF30FE020000780003B3B6@vpn.id2.novell.com>
+References: <4BCF30FE020000780003B3B6@vpn.id2.novell.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86, asm: Introduce and use percpu_inc()
-Message-ID: <tip-402af0d7c692ddcfa2333e93d3f275ebd0487926@git.kernel.org>
-Git-Commit-ID: 402af0d7c692ddcfa2333e93d3f275ebd0487926
+Subject: [tip:x86/asm] x86-64: Reduce SMP locks table size
+Message-ID: <tip-5967ed87ade85a421ef814296c3c7f182b08c225@git.kernel.org>
+Git-Commit-ID: 5967ed87ade85a421ef814296c3c7f182b08c225
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 29 Apr 2010 00:54:45 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 29 Apr 2010 00:55:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  402af0d7c692ddcfa2333e93d3f275ebd0487926
-Gitweb:     http://git.kernel.org/tip/402af0d7c692ddcfa2333e93d3f275ebd0487926
+Commit-ID:  5967ed87ade85a421ef814296c3c7f182b08c225
+Gitweb:     http://git.kernel.org/tip/5967ed87ade85a421ef814296c3c7f182b08c225
 Author:     Jan Beulich <JBeulich@novell.com>
-AuthorDate: Wed, 21 Apr 2010 15:21:51 +0100
+AuthorDate: Wed, 21 Apr 2010 16:08:14 +0100
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 28 Apr 2010 16:58:49 -0700
+CommitDate: Wed, 28 Apr 2010 17:15:47 -0700
 
-x86, asm: Introduce and use percpu_inc()
+x86-64: Reduce SMP locks table size
 
-... generating slightly smaller code.
+Reduce the SMP locks table size by using relative pointers instead of
+absolute ones, thus cutting the table size by half.
 
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
-LKML-Reference: <4BCF261F020000780003B33C@vpn.id2.novell.com>
+LKML-Reference: <4BCF30FE020000780003B3B6@vpn.id2.novell.com>
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/include/asm/hardirq.h   |    2 +-
- arch/x86/include/asm/percpu.h    |   24 ++++++++++++++++++++++++
- arch/x86/kernel/cpu/mcheck/mce.c |    4 ++--
- 3 files changed, 27 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/alternative-asm.h |    4 +-
+ arch/x86/include/asm/alternative.h     |    4 +-
+ arch/x86/kernel/alternative.c          |   45 +++++++++++++++++--------------
+ 3 files changed, 29 insertions(+), 24 deletions(-)
 
-diff --git a/arch/x86/include/asm/hardirq.h b/arch/x86/include/asm/hardirq.h
-index 0f85764..aeab29a 100644
---- a/arch/x86/include/asm/hardirq.h
-+++ b/arch/x86/include/asm/hardirq.h
-@@ -35,7 +35,7 @@ DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
+diff --git a/arch/x86/include/asm/alternative-asm.h b/arch/x86/include/asm/alternative-asm.h
+index b97f786..a63a68b 100644
+--- a/arch/x86/include/asm/alternative-asm.h
++++ b/arch/x86/include/asm/alternative-asm.h
+@@ -6,8 +6,8 @@
+ 	.macro LOCK_PREFIX
+ 1:	lock
+ 	.section .smp_locks,"a"
+-	_ASM_ALIGN
+-	_ASM_PTR 1b
++	.balign 4
++	.long 1b - .
+ 	.previous
+ 	.endm
+ #else
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index b09ec55..714bf24 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -30,8 +30,8 @@
+ #ifdef CONFIG_SMP
+ #define LOCK_PREFIX \
+ 		".section .smp_locks,\"a\"\n"	\
+-		_ASM_ALIGN "\n"			\
+-		_ASM_PTR "661f\n" /* address */	\
++		".balign 4\n"			\
++		".long 661f - .\n" /* offset */	\
+ 		".previous\n"			\
+ 		"661:\n\tlock; "
  
- #define __ARCH_IRQ_STAT
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index 1a160d5..9367384 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -194,7 +194,7 @@ static void __init_or_module add_nops(void *insns, unsigned int len)
+ }
  
--#define inc_irq_stat(member)	percpu_add(irq_stat.member, 1)
-+#define inc_irq_stat(member)	percpu_inc(irq_stat.member)
+ extern struct alt_instr __alt_instructions[], __alt_instructions_end[];
+-extern u8 *__smp_locks[], *__smp_locks_end[];
++extern s32 __smp_locks[], __smp_locks_end[];
+ static void *text_poke_early(void *addr, const void *opcode, size_t len);
  
- #define local_softirq_pending()	percpu_read(irq_stat.__softirq_pending)
+ /* Replace instructions with better alternatives for this CPU type.
+@@ -235,37 +235,39 @@ void __init_or_module apply_alternatives(struct alt_instr *start,
  
-diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
-index 66a272d..0ec6d12 100644
---- a/arch/x86/include/asm/percpu.h
-+++ b/arch/x86/include/asm/percpu.h
-@@ -190,6 +190,29 @@ do {									\
- 	pfo_ret__;					\
- })
+ #ifdef CONFIG_SMP
  
-+#define percpu_unary_op(op, var)			\
-+({							\
-+	switch (sizeof(var)) {				\
-+	case 1:						\
-+		asm(op "b "__percpu_arg(0)		\
-+		    : "+m" (var));			\
-+		break;					\
-+	case 2:						\
-+		asm(op "w "__percpu_arg(0)		\
-+		    : "+m" (var));			\
-+		break;					\
-+	case 4:						\
-+		asm(op "l "__percpu_arg(0)		\
-+		    : "+m" (var));			\
-+		break;					\
-+	case 8:						\
-+		asm(op "q "__percpu_arg(0)		\
-+		    : "+m" (var));			\
-+		break;					\
-+	default: __bad_percpu_size();			\
-+	}						\
-+})
+-static void alternatives_smp_lock(u8 **start, u8 **end, u8 *text, u8 *text_end)
++static void alternatives_smp_lock(const s32 *start, const s32 *end,
++				  u8 *text, u8 *text_end)
+ {
+-	u8 **ptr;
++	const s32 *poff;
+ 
+ 	mutex_lock(&text_mutex);
+-	for (ptr = start; ptr < end; ptr++) {
+-		if (*ptr < text)
+-			continue;
+-		if (*ptr > text_end)
++	for (poff = start; poff < end; poff++) {
++		u8 *ptr = (u8 *)poff + *poff;
 +
- /*
-  * percpu_read() makes gcc load the percpu variable every time it is
-  * accessed while percpu_read_stable() allows the value to be cached.
-@@ -207,6 +230,7 @@ do {									\
- #define percpu_and(var, val)		percpu_to_op("and", var, val)
- #define percpu_or(var, val)		percpu_to_op("or", var, val)
- #define percpu_xor(var, val)		percpu_to_op("xor", var, val)
-+#define percpu_inc(var)		percpu_unary_op("inc", var)
++		if (!*poff || ptr < text || ptr >= text_end)
+ 			continue;
+ 		/* turn DS segment override prefix into lock prefix */
+-		text_poke(*ptr, ((unsigned char []){0xf0}), 1);
++		text_poke(ptr, ((unsigned char []){0xf0}), 1);
+ 	};
+ 	mutex_unlock(&text_mutex);
+ }
  
- #define __this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
- #define __this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 8a6f0af..7a355dd 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -539,7 +539,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- 	struct mce m;
- 	int i;
+-static void alternatives_smp_unlock(u8 **start, u8 **end, u8 *text, u8 *text_end)
++static void alternatives_smp_unlock(const s32 *start, const s32 *end,
++				    u8 *text, u8 *text_end)
+ {
+-	u8 **ptr;
++	const s32 *poff;
  
--	__get_cpu_var(mce_poll_count)++;
-+	percpu_inc(mce_poll_count);
+ 	if (noreplace_smp)
+ 		return;
  
- 	mce_setup(&m);
+ 	mutex_lock(&text_mutex);
+-	for (ptr = start; ptr < end; ptr++) {
+-		if (*ptr < text)
+-			continue;
+-		if (*ptr > text_end)
++	for (poff = start; poff < end; poff++) {
++		u8 *ptr = (u8 *)poff + *poff;
++
++		if (!*poff || ptr < text || ptr >= text_end)
+ 			continue;
+ 		/* turn lock prefix into DS segment override prefix */
+-		text_poke(*ptr, ((unsigned char []){0x3E}), 1);
++		text_poke(ptr, ((unsigned char []){0x3E}), 1);
+ 	};
+ 	mutex_unlock(&text_mutex);
+ }
+@@ -276,8 +278,8 @@ struct smp_alt_module {
+ 	char		*name;
  
-@@ -934,7 +934,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 	/* ptrs to lock prefixes */
+-	u8		**locks;
+-	u8		**locks_end;
++	const s32	*locks;
++	const s32	*locks_end;
  
- 	atomic_inc(&mce_entry);
+ 	/* .text segment, needed to avoid patching init code ;) */
+ 	u8		*text;
+@@ -398,16 +400,19 @@ void alternatives_smp_switch(int smp)
+ int alternatives_text_reserved(void *start, void *end)
+ {
+ 	struct smp_alt_module *mod;
+-	u8 **ptr;
++	const s32 *poff;
+ 	u8 *text_start = start;
+ 	u8 *text_end = end;
  
--	__get_cpu_var(mce_exception_count)++;
-+	percpu_inc(mce_exception_count);
+ 	list_for_each_entry(mod, &smp_alt_modules, next) {
+ 		if (mod->text > text_end || mod->text_end < text_start)
+ 			continue;
+-		for (ptr = mod->locks; ptr < mod->locks_end; ptr++)
+-			if (text_start <= *ptr && text_end >= *ptr)
++		for (poff = mod->locks; poff < mod->locks_end; poff++) {
++			const u8 *ptr = (const u8 *)poff + *poff;
++
++			if (text_start <= ptr && text_end > ptr)
+ 				return 1;
++		}
+ 	}
  
- 	if (notify_die(DIE_NMI, "machine check", regs, error_code,
- 			   18, SIGKILL) == NOTIFY_STOP)
+ 	return 0;
