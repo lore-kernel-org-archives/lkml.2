@@ -1,167 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab0D2AqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 20:46:21 -0400
-Received: from smtp01.one2one.net ([149.254.200.196]:54828 "EHLO
-	smtp01.one2one.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab0D2AqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 20:46:20 -0400
-From: Christoffer Dall <christofferdall@christofferdall.dk>
-To: Roland McGrath <roland@redhat.com>
-Cc: containers <containers@lists.linux-foundation.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Christoffer Dall <christofferdall@christofferdall.dk>
-Subject: Re: [C/R ARM v2][PATCH] ARM: Rudimentary syscall interfaces
-Date: Mon, 26 Apr 2010 18:36:32 -0400
-Message-Id: <1272321392-5682-1-git-send-email-christofferdall@christofferdall.dk>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <20100429000808.CFFBD7154@magilla.sf.frob.com>
-References: <20100429000808.CFFBD7154@magilla.sf.frob.com>
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: christofferdall@christofferdall.dk
-X-SA-Exim-Scanned: No (on localhost); SAEximRunCond expanded to false
+	id S1755548Ab0D2Ay7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 20:54:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50486 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754313Ab0D2Ay5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 20:54:57 -0400
+Date: Thu, 29 Apr 2010 00:54:44 GMT
+From: tip-bot for Jan Beulich <JBeulich@novell.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de
+In-Reply-To: <4BCF261F020000780003B33C@vpn.id2.novell.com>
+References: <4BCF261F020000780003B33C@vpn.id2.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86, asm: Introduce and use percpu_inc()
+Message-ID: <tip-402af0d7c692ddcfa2333e93d3f275ebd0487926@git.kernel.org>
+Git-Commit-ID: 402af0d7c692ddcfa2333e93d3f275ebd0487926
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 29 Apr 2010 00:54:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roland.
+Commit-ID:  402af0d7c692ddcfa2333e93d3f275ebd0487926
+Gitweb:     http://git.kernel.org/tip/402af0d7c692ddcfa2333e93d3f275ebd0487926
+Author:     Jan Beulich <JBeulich@novell.com>
+AuthorDate: Wed, 21 Apr 2010 15:21:51 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Wed, 28 Apr 2010 16:58:49 -0700
 
-Thanks for your feedback. The changed patch below should address your
-concerns.
+x86, asm: Introduce and use percpu_inc()
 
-Best,
-Christoffer
+... generating slightly smaller code.
 
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <4BCF261F020000780003B33C@vpn.id2.novell.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/arm/include/asm/syscall.h |   32 ++++++++++++++++++
- arch/arm/kernel/ptrace.c       |   69 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 101 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/include/asm/syscall.h
+ arch/x86/include/asm/hardirq.h   |    2 +-
+ arch/x86/include/asm/percpu.h    |   24 ++++++++++++++++++++++++
+ arch/x86/kernel/cpu/mcheck/mce.c |    4 ++--
+ 3 files changed, 27 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
-new file mode 100644
-index 0000000..1a6ca68
---- /dev/null
-+++ b/arch/arm/include/asm/syscall.h
-@@ -0,0 +1,32 @@
-+/*
-+ * syscall.h - Linux syscall interfaces for ARM
-+ *
-+ * Copyright (c) 2010 Christoffer Dall
-+ *
-+ * This file is released under the GPLv2.
-+ * See the file COPYING for more details.
-+ */
-+
-+#ifndef _ASM_ARM_SYSCALLS_H
-+#define _ASM_ARM_SYSCALLS_H
-+
-+#include <linux/highmem.h>
-+#include <linux/pagemap.h>
-+#include <linux/memory.h>
-+#include <asm/unistd.h>
-+
-+int syscall_get_nr(struct task_struct *task, struct pt_regs *regs);
-+
-+static inline long syscall_get_return_value(struct task_struct *task,
-+					    struct pt_regs *regs)
-+{
-+	return regs->ARM_r0;
-+}
-+
-+static inline long syscall_get_error(struct task_struct *task,
-+				     struct pt_regs *regs)
-+{
-+	return regs->ARM_r0;
-+}
-+
-+#endif /* _ASM_ARM_SYSCALLS_H */
-diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
-index 3f562a7..acf9a39 100644
---- a/arch/arm/kernel/ptrace.c
-+++ b/arch/arm/kernel/ptrace.c
-@@ -23,6 +23,7 @@
- #include <asm/pgtable.h>
- #include <asm/system.h>
- #include <asm/traps.h>
-+#include <asm/syscall.h>
+diff --git a/arch/x86/include/asm/hardirq.h b/arch/x86/include/asm/hardirq.h
+index 0f85764..aeab29a 100644
+--- a/arch/x86/include/asm/hardirq.h
++++ b/arch/x86/include/asm/hardirq.h
+@@ -35,7 +35,7 @@ DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
  
- #include "ptrace.h"
+ #define __ARCH_IRQ_STAT
  
-@@ -863,3 +864,71 @@ asmlinkage int syscall_trace(int why, struct pt_regs *regs, int scno)
+-#define inc_irq_stat(member)	percpu_add(irq_stat.member, 1)
++#define inc_irq_stat(member)	percpu_inc(irq_stat.member)
  
- 	return current_thread_info()->syscall;
- }
+ #define local_softirq_pending()	percpu_read(irq_stat.__softirq_pending)
+ 
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index 66a272d..0ec6d12 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -190,6 +190,29 @@ do {									\
+ 	pfo_ret__;					\
+ })
+ 
++#define percpu_unary_op(op, var)			\
++({							\
++	switch (sizeof(var)) {				\
++	case 1:						\
++		asm(op "b "__percpu_arg(0)		\
++		    : "+m" (var));			\
++		break;					\
++	case 2:						\
++		asm(op "w "__percpu_arg(0)		\
++		    : "+m" (var));			\
++		break;					\
++	case 4:						\
++		asm(op "l "__percpu_arg(0)		\
++		    : "+m" (var));			\
++		break;					\
++	case 8:						\
++		asm(op "q "__percpu_arg(0)		\
++		    : "+m" (var));			\
++		break;					\
++	default: __bad_percpu_size();			\
++	}						\
++})
 +
-+/*
-+ * This function essentially duplicates the logic from vector_swi in
-+ * arch/arm/kernel/entry-common.S. However, that code is in the
-+ * critical path for system calls and is hard to factor out without
-+ * compromising performance. 
-+ */
-+int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
-+{
-+	int ret;
-+	int scno;
-+	unsigned long instr;
-+	bool config_oabi = false;
-+	bool config_aeabi = false;
-+	bool config_arm_thumb = false;
-+	bool config_cpu_endian_be8 = false;
-+
-+#ifdef CONFIG_OABI_COMPAT
-+	config_oabi = true;
-+#endif
-+#ifdef CONFIG_AEABI
-+	config_aeabi = true;
-+#endif
-+#ifdef CONFIG_ARM_THUMB
-+	config_arm_thumb = true;
-+#endif
-+#ifdef CONFIG_CPU_ENDIAN_BE8
-+	config_cpu_endian_be8 = true;
-+#endif
-+#ifdef CONFIG_CPU_ARM710
-+	return -1;
-+#endif
-+
-+	if (config_aeabi && !config_oabi) {
-+		/* Pure EABI */
-+		return regs->ARM_r7;
-+	} else if (config_oabi) {
-+		if (config_arm_thumb && (regs->ARM_cpsr & PSR_T_BIT))
-+			return -1;
-+
-+		ret = access_process_vm(task, regs->ARM_pc - 4, &instr,
-+					sizeof(unsigned long), 0);
-+		if (ret != sizeof(unsigned long))
-+			return -1;
-+
-+		if (config_cpu_endian_be8)
-+			asm ("rev %[out], %[in]": [out] "=r" (instr):
-+						  [in] "r" (instr));
-+
-+		if ((instr & 0x00ffffff) == 0)
-+			return regs->ARM_r7; /* EABI call */
-+		else
-+			return (instr & 0x00ffffff) | __NR_OABI_SYSCALL_BASE;
-+	} else {
-+		 /* Legacy ABI only */
-+		if (config_arm_thumb && (regs->ARM_cpsr & PSR_T_BIT)) {
-+			/* Thumb mode ABI */
-+			scno = regs->ARM_r7 + __NR_SYSCALL_BASE;
-+		} else {
-+			ret = access_process_vm(task, regs->ARM_pc - 4, &instr,
-+						sizeof(unsigned long), 0);
-+			if (ret != sizeof(unsigned long))
-+				return -1;
-+			scno = instr;
-+		}
-+		return scno & 0x00ffffff;
-+	}
-+}
--- 
-1.5.6.5
-
+ /*
+  * percpu_read() makes gcc load the percpu variable every time it is
+  * accessed while percpu_read_stable() allows the value to be cached.
+@@ -207,6 +230,7 @@ do {									\
+ #define percpu_and(var, val)		percpu_to_op("and", var, val)
+ #define percpu_or(var, val)		percpu_to_op("or", var, val)
+ #define percpu_xor(var, val)		percpu_to_op("xor", var, val)
++#define percpu_inc(var)		percpu_unary_op("inc", var)
+ 
+ #define __this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+ #define __this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 8a6f0af..7a355dd 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -539,7 +539,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 	struct mce m;
+ 	int i;
+ 
+-	__get_cpu_var(mce_poll_count)++;
++	percpu_inc(mce_poll_count);
+ 
+ 	mce_setup(&m);
+ 
+@@ -934,7 +934,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 
+ 	atomic_inc(&mce_entry);
+ 
+-	__get_cpu_var(mce_exception_count)++;
++	percpu_inc(mce_exception_count);
+ 
+ 	if (notify_die(DIE_NMI, "machine check", regs, error_code,
+ 			   18, SIGKILL) == NOTIFY_STOP)
