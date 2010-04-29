@@ -1,121 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758907Ab0D3UKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 16:10:46 -0400
-Received: from mail.windriver.com ([147.11.1.11]:65196 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932460Ab0D3UKm (ORCPT
+	id S1759490Ab0D3ULV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 16:11:21 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53948 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759316Ab0D3ULP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 16:10:42 -0400
-From: Liang Li <liang.li@windriver.com>
-To: linux-kernel@vger.kernel.org, mingo@elte.hu, akpm@linux-foundation.org
-Cc: wangchen@cn.fujitsu.com, tglx@linutronix.de, hpa@zytor.com,
-       yinghai@kernel.org, jeremy.fitzhardinge@citrix.com,
-       konrad.wilk@oracle.com
-Subject: [v3 PATCH] x86: let 'reservetop' functioning right
-Date: Fri, 30 Apr 2010 18:01:51 +0800
-Message-Id: <1272621711-8683-1-git-send-email-liang.li@windriver.com>
-X-Mailer: git-send-email 1.6.6
-X-OriginalArrivalTime: 30 Apr 2010 10:03:47.0599 (UTC) FILETIME=[6CEB29F0:01CAE84C]
+	Fri, 30 Apr 2010 16:11:15 -0400
+Date: Thu, 29 Apr 2010 12:16:24 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ondrej Zary <linux@rainbow-software.org>
+cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] [RFC] ehci: Disable wake on overcurrent (WKOC_E) and
+ disconnect (WKDISC_E)
+In-Reply-To: <201004281930.12293.linux@rainbow-software.org>
+Message-ID: <Pine.LNX.4.44L0.1004291041300.1697-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When specify 'reservetop=0xbadc0de' kernel parameter, the kernel will
-stop booting due to a early_ioremap bug that relate to commit 8827247ff.
+On Wed, 28 Apr 2010, Ondrej Zary wrote:
 
-The root cause of boot failure problem is the value of 'slot_virt[i]'
-was initialized in setup_arch->early_ioremap_init. But later in
-setup_arch, the function 'parse_early_param' will modify 'FIXADDR_TOP'
-when 'reservetop=0xbadc0de' being specified.
+> On Wednesday 28 April 2010 17:41:30 Alan Stern wrote:
+> > On Tue, 27 Apr 2010, Ondrej Zary wrote:
+> > > On Tuesday 27 April 2010 21:21:23 Alan Stern wrote:
+> > > > On Tue, 27 Apr 2010, Ondrej Zary wrote:
+> > > > > The previous patch was not enough as it worked only when there were
+> > > > > no USB devices connected. With a bus-powered device connected, power
+> > > > > loss causes disconnect which wakes up the machine immediately again.
+> > > >
+> > > > You said earlier that the host controller was disabled for remote
+> > > > wakeup ("/sys/devices/pci0000:00/0000:00:1d.7/power/wakeup is disabled
+> > > > by default").  So even though the root hub might issue a wakeup
+> > > > request, the controller hardware should not forward that request to the
+> > > > PCI bus and it should not cause the system to wake up.
+> > >
+> > > Maybe it should not - but it wakes up this board and probably also
+> > > P4P800, P4P800-E and P4C800-E at least:
+> > > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/75497
+> >
+> > Okay, evidently the hardware or firmware on these boards is buggy.
+> > Other systems do not have the same problem, as far as I know.
 
-The simplest fix might be use __fix_to_virt(idx0) to get updated value
-of 'FIXADDR_TOP' in '__early_ioremap' instead of reference old value
-from slot_virt[slot] directly.
+I take this back.  The same thing happens on my machine (Intel ICH5
+chipset).  I'd guess there is a bug in the PCI or ACPI subsystem, but
+more testing is needed before I can be sure.  Somehow the PCI or
+platform wakeup mechanism gets activated even when it is supposed to be
+disabled.
 
-Changelog since v0:
+> It works fine in Windows.
 
--v1: When reservetop being handled then FIXADDR_TOP get adjusted, Hence
-check prev_map then re-initialize slot_virt and PMD based on new
-FIXADDR_TOP.
+How can you tell?  How do you know what values Windows writes into the 
+EHCI port control registers?
 
--v2: place fixup_early_ioremap hence call early_ioremap_init in
-reserve_top_address  to re-initialize slot_virt and corresponding PMD
-when parse_reservertop
+> > Regardless, I don't think a kernel patch is the way to solve your
+> > problem.  Changing the wakeup setting for the root hub will do what you
+> > want, and that setting is explicitly intended to be controlled by
+> > userspace (after all, that's why it is exposed in sysfs).  The initial
+> > value is only a reasonable default; you can certainly add scripts or
+> > udev rules to disable wakeup on your EHCI root hub.
+> 
+> Yes, I can work around that. But many users can't. This is an attempt to make 
+> it "just work".
 
--v3: move fixup_early_ioremap out of reserve_top_address to make sure
-other clients of reserve_top_address like xen/lguest won't broken
+It should "just work" already.  The fact that it doesn't means there is 
+a bug.  At the moment I can't be sure where the bug is -- but even if 
+it is in ehci-hcd, your suggested patch isn't the right fix.
 
-Signed-off-by: Liang Li <liang.li@windriver.com>
-Cc: Wang Chen <wangchen@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
-Hi all,
+> I'm trying to say that the "wakeup on everything" is not a good thing (if not 
+> a bug). Who needs it?
 
-Just resend the patch according to Ingo's demand.
-Thanks.
+I don't know, and neither do you.  But the USB spec requires this
+behavior from external hubs, so evidently _somebody_ thought it was a
+good idea.
 
- arch/x86/include/asm/io.h |    1 +
- arch/x86/mm/ioremap.c     |   15 +++++++++++++++
- arch/x86/mm/pgtable_32.c  |    1 +
- 3 files changed, 17 insertions(+), 0 deletions(-)
+> I can't imagine any real use for it. It clearly breaks 
+> suspend on some systems and is annoying on other.
 
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index a1dcfa3..30a3e97 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -347,6 +347,7 @@ extern void __iomem *early_ioremap(resource_size_t phys_addr,
- extern void __iomem *early_memremap(resource_size_t phys_addr,
- 				    unsigned long size);
- extern void early_iounmap(void __iomem *addr, unsigned long size);
-+extern void fixup_early_ioremap(void);
- 
- #define IO_SPACE_LIMIT 0xffff
- 
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index 5eb1ba7..e4ab706 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -448,6 +448,21 @@ static inline void __init early_clear_fixmap(enum fixed_addresses idx)
- static void __iomem *prev_map[FIX_BTMAPS_SLOTS] __initdata;
- static unsigned long prev_size[FIX_BTMAPS_SLOTS] __initdata;
- 
-+void __init fixup_early_ioremap(void)
-+{
-+	int i;
-+	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
-+		if (prev_map[i])
-+			break;
-+	}
-+
-+	if (i < FIX_BTMAPS_SLOTS)
-+		BUG_ON(1);
-+
-+	early_ioremap_init();
-+	return;
-+}
-+
- static int __init check_early_ioremap_leak(void)
- {
- 	int count = 0;
-diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
-index 1a8faf0..26eadaa 100644
---- a/arch/x86/mm/pgtable_32.c
-+++ b/arch/x86/mm/pgtable_32.c
-@@ -128,6 +128,7 @@ static int __init parse_reservetop(char *arg)
- 
- 	address = memparse(arg, &arg);
- 	reserve_top_address(address);
-+	fixup_early_ioremap();
- 	return 0;
- }
- early_param("reservetop", parse_reservetop);
--- 
-1.6.6
+If everything was working properly, the machine wouldn't wake up when a
+disconnect occurred.
+
+>  Who expects that 
+> disconnecting a device should wake up sleeping machine?
+
+Perhaps the same people who expect that plugging in a device should
+wake up a sleeping machine?
+
+> When all these three wakeups (overcurrent, connect, disconnect) are disabled, 
+> we lose nothing. Connect/disconnect detection works fine after wakeup. Wakeup 
+> by USB devices (not by connect/disconnect but by the device itself signaling 
+> a resume) is completely independent of this (according to EHCI 
+> specification).
+
+What about UHCI or OHCI?  What about external hubs?
+
+In short, why should EHCI behave differently from everything else?
+
+Alan Stern
 
