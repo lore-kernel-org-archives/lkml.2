@@ -1,73 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758703Ab0D3R1x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:27:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34014 "EHLO smtps.tip.net.au"
+	id S932935Ab0D3R2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:28:49 -0400
+Received: from ozlabs.org ([203.10.76.45]:59555 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757525Ab0D3R1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:27:40 -0400
-Date: Fri, 30 Apr 2010 15:51:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Ping Cheng <pingc@wacom.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: linux-next: manual merge of the usb tree with the input tree
-Message-Id: <20100430155122.db4d0b54.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758670Ab0D3R2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:28:35 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
+       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Gautham R Shenoy <ego@in.ibm.com>
+Subject: Re: [PATCH 1/5] sched: fix capacity calculations for SMT4
+In-reply-to: <1271426308.1674.429.camel@laptop>
+References: <20100409062118.D4096CBB6C@localhost.localdomain> <1271161766.4807.1280.camel@twins> <2906.1271219317@neuling.org> <1271426308.1674.429.camel@laptop>
+Comments: In-reply-to Peter Zijlstra <peterz@infradead.org>
+   message dated "Fri, 16 Apr 2010 15:58:28 +0200."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
+Date: Thu, 29 Apr 2010 16:55:58 +1000
+Message-ID: <31281.1272524158@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+In message <1271426308.1674.429.camel@laptop> you wrote:
+> On Wed, 2010-04-14 at 14:28 +1000, Michael Neuling wrote:
+> 
+> > > Right, so I suspect this will indeed break some things.
+> > > 
+> > > We initially allowed 0 capacity for when a cpu is consumed by an RT task
+> > > and there simply isn't much capacity left, in that case you really want
+> > > to try and move load to your sibling cpus if possible.
+> > 
+> > Changing the CPU power based on what tasks are running on them seems a
+> > bit wrong to me.  Shouldn't we keep those concepts separate?
+> 
+> Well the thing cpu_power represents is a ratio of compute capacity
+> available to this cpu as compared to other cpus. By normalizing the
+> runqueue weights with this we end up with a fair balance.
+> 
+> The thing to realize here is that this is solely about SCHED_NORMAL
+> tasks, SCHED_FIFO/RR (or the proposed DEADLINE) tasks do not care about
+> fairness and available compute capacity.
+> 
+> So if we were to ignore RT tasks, you'd end up with a situation where,
+> assuming 2 cpus and 4 equally weighted NORMAL tasks, and 1 RT task, the
+> load-balancer would give each cpu 2 NORMAL tasks, but the tasks that
+> would end up on the cpu the RT tasks would be running on would not run
+> as fast -- is that fair?
+> 
+> Since RT tasks do not have a weight (FIFO/RR have no limit at all,
+> DEADLINE would have something equivalent to a max weight), it is
+> impossible to account them in the normal weight sense.
+> 
+> Therefore the current model takes them into account by lowering the
+> compute capacity according to their (avg) cpu usage. So if the RT task
+> would consume 66% cputime, we'd end up with a situation where the cpu
+> running the RT task would get 1 NORMAL task, and other cpu would have
+> the remaining 3, that way they'd all get 33% cpu.
+> 
+> > > However you're right that this goes awry in your case.
+> > > 
+> > > One thing to look at is if that 15% increase is indeed representative
+> > > for the power7 cpu, it having 4 SMT threads seems to suggest there was
+> > > significant gains, otherwise they'd not have wasted the silicon.
+> > 
+> > There are certainly, for most workloads, per core gains for SMT4 over
+> > SMT2 on P7.  My kernels certainly compile faster and that's the only
+> > workload anyone who matters cares about.... ;-)
+> 
+> For sure ;-)
+> 
+> Are there any numbers available on how much they gain? It might be worth
+> to stick in real numbers instead of this alleged 15%.
+> 
+> > > One thing we could look at is using the cpu base power to compute
+> > > capacity from. We'd have to add another field to sched_group and store
+> > > power before we do the scale_rt_power() stuff.
+> > 
+> > Separating capacity from what RT tasks are running seems like a good
+> > idea to me.
+> 
+> Well, per the above we cannot fully separate them.
+> 
+> > This would fix the RT issue, but it's not clear to me how you are
+> > suggesting fixing the rounding down to 0 SMT4 issue.  Are you suggesting
+> > we bump smt_gain to say 2048 + 15%?  Or are you suggesting we separate
+> > the RT tasks out from capacity and keep the max(1, capacity) that I've
+> > added?  Or something else?
+> 
+> I would think that 4 SMT threads are still slower than two full cores,
+> right? So cpu_power=2048 would not be appropriate.
+> 
+> > Would another possibility be changing capacity a scaled value (like
+> > cpu_power is now) rather than a small integer as it is now.  For
+> > example, a scaled capacity of 1024 would be equivalent to a capacity of
+> > 1 now.  This might enable us to handle partial capacities better?  We'd
+> > probably have to scale a bunch of nr_running too.  
+> 
+> Right, so my proposal was to scale down the capacity divider (currently
+> 1024) to whatever would be the base capacity for that cpu. Trouble seems
+> to be that that makes group capacity a lot more complex, as you would
+> end up needing to average all the cpu's their base capacity.
+> 
+> 
+> Hrmm, my brain seems muddled but I might have another solution, let me
+> ponder this for a bit..
+> 
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/input/tablet/wacom_sys.c between commits
-4492efffffeb88d87e7aa74765f3c53b3a7dd40f ("Input: wacom - share pen info
-with touch of the same ID") and 51269fe86c263ec4fafbafe82970e6d7f6f79102
-("Input: wacom - do not allocate wacom_wac separately") from the input
-tree and commit 3cc96f50329227fbf34de2459491901b6ee1c98c ("USB: rename
-usb_buffer_alloc() and usb_buffer_free() users") from the usb tree.
+Peter,
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Did you manage to get anywhere on this capacity issue?
 
-diff --cc drivers/input/tablet/wacom_sys.c
-index d90f4e0,191197c..0000000
---- a/drivers/input/tablet/wacom_sys.c
-+++ b/drivers/input/tablet/wacom_sys.c
-@@@ -534,11 -632,11 +534,11 @@@ static int wacom_probe(struct usb_inter
-  	usb_set_intfdata(intf, wacom);
-  	return 0;
-  
- + fail4:	wacom_remove_shared_data(wacom_wac);
-   fail3:	usb_free_urb(wacom->irq);
--  fail2:	usb_buffer_free(dev, WACOM_PKGLEN_MAX, wacom_wac->data, wacom->data_dma);
-+  fail2:	usb_free_coherent(dev, WACOM_PKGLEN_MAX, wacom_wac->data, wacom->data_dma);
-   fail1:	input_free_device(input_dev);
-  	kfree(wacom);
- -	kfree(wacom_wac);
-  	return error;
-  }
-  
-@@@ -549,11 -647,11 +549,11 @@@ static void wacom_disconnect(struct usb
-  	usb_set_intfdata(intf, NULL);
-  
-  	usb_kill_urb(wacom->irq);
- -	input_unregister_device(wacom->dev);
- +	input_unregister_device(wacom->wacom_wac.input);
-  	usb_free_urb(wacom->irq);
-- 	usb_buffer_free(interface_to_usbdev(intf), WACOM_PKGLEN_MAX,
-+ 	usb_free_coherent(interface_to_usbdev(intf), WACOM_PKGLEN_MAX,
- -			  wacom->wacom_wac->data, wacom->data_dma);
- -	kfree(wacom->wacom_wac);
- +			wacom->wacom_wac.data, wacom->data_dma);
- +	wacom_remove_shared_data(&wacom->wacom_wac);
-  	kfree(wacom);
-  }
-  
+Mikey
