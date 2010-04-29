@@ -1,153 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934291Ab0D3TLL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:11:11 -0400
+	id S934306Ab0D3TLd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:11:33 -0400
 Received: from mga11.intel.com ([192.55.52.93]:3401 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757836Ab0D3Q7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:59:34 -0400
+	id S1758173Ab0D3Q71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 12:59:27 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,296,1270450800"; 
-   d="scan'208";a="794060136"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-       Kay Sievers <kay.sievers@vrfy.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Ming Lei <tom.leiming@gmail.com>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Kay Sievers <kay.sievers@vrfy.org>,
-       Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH v2] firmware_class: fix memory leak - free allocated pages
-Date: Thu, 29 Apr 2010 21:26:17 +0300
-Message-Id: <1272565577-26587-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.6.6.1
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset="us-ascii"
+X-IronPort-AV: E=Sophos;i="4.52,294,1270450800"; 
+   d="scan'208";a="793893292"
+From: Shane Wang <shane.wang@intel.com>
+To: avi@redhat.com, hpa@zytor.com, mingo@elte.hu, joseph.cihula@intel.com
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: [PATCH] intel_txt: enable VMXON check with SMX in KVM
+Date: Thu, 29 Apr 2010 12:09:01 -0400
+Message-Id: <1272557341-3777-1-git-send-email-shane.wang@intel.com>
+X-Mailer: git-send-email 1.6.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Woodhouse <dwmw2@infradead.org>
+Per document, for feature control MSR
+Bit 1 enables VMXON in SMX operation. If the bit is clear, execution of VMXON in SMX operation causes a general-protection exception.
+Bit 2 enables VMXON outside SMX operation. If the bit is clear, execution of VMXON outside SMX operation causes a general-protection exception.
 
-fix memory leak introduced by the patch 6e03a201bbe:
-firmware: speed up request_firmware()
+This patch is to enable this kind of check with SMX for VMXON in KVM.
 
-1. vfree won't release pages there were allocated explicitly and mapped
-using vmap. The memory has to be vunmap-ed and the pages needs
-to be freed explicitly
-
-2. page array is moved into the 'struct
-firmware' so that we can free it from release_firmware()
-and not only in fw_dev_release()
-
-The fix doesn't break the firmware load speed.
-
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Ming Lei <tom.leiming@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: David Woodhouse <dwmw2@infradead.org>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Shane Wang <shane.wang@intel.com>
 ---
-V2: fix authorship of the patch
+ arch/x86/include/asm/msr-index.h |    5 ++--
+ arch/x86/kernel/tboot.c          |    1
+ arch/x86/kvm/vmx.c               |   32 +++++++++++++++++++----------
+ include/linux/tboot.h            |    1
+ 4 files changed, 26 insertions(+), 13 deletions(-)
 
- drivers/base/firmware_class.c |   28 ++++++++++++++++++++++------
- include/linux/firmware.h      |    1 +
- 2 files changed, 23 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 985da11..8200adc 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -130,6 +130,20 @@ static ssize_t firmware_loading_show(struct device *dev,
- 	return sprintf(buf, "%d\n", loading);
+diff -r a96602743dbd arch/x86/include/asm/msr-index.h
+--- a/arch/x86/include/asm/msr-index.h	Thu Apr 29 11:49:08 2010 -0400
++++ b/arch/x86/include/asm/msr-index.h	Thu Apr 29 11:49:40 2010 -0400
+@@ -202,8 +202,9 @@
+ #define MSR_IA32_EBL_CR_POWERON		0x0000002a
+ #define MSR_IA32_FEATURE_CONTROL        0x0000003a
+ 
+-#define FEATURE_CONTROL_LOCKED		(1<<0)
+-#define FEATURE_CONTROL_VMXON_ENABLED	(1<<2)
++#define FEATURE_CONTROL_LOCKED				(1<<0)
++#define FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX	(1<<1)
++#define FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX	(1<<2)
+ 
+ #define MSR_IA32_APICBASE		0x0000001b
+ #define MSR_IA32_APICBASE_BSP		(1<<8)
+diff -r a96602743dbd arch/x86/kernel/tboot.c
+--- a/arch/x86/kernel/tboot.c	Thu Apr 29 11:49:08 2010 -0400
++++ b/arch/x86/kernel/tboot.c	Thu Apr 29 11:49:40 2010 -0400
+@@ -46,6 +46,7 @@
+ 
+ /* Global pointer to shared data; NULL means no measured launch. */
+ struct tboot *tboot __read_mostly;
++EXPORT_SYMBOL(tboot);
+ 
+ /* timeout for APs (in secs) to enter wait-for-SIPI state during shutdown */
+ #define AP_WAIT_TIMEOUT		1
+diff -r a96602743dbd arch/x86/kvm/vmx.c
+--- a/arch/x86/kvm/vmx.c	Thu Apr 29 11:49:08 2010 -0400
++++ b/arch/x86/kvm/vmx.c	Thu Apr 29 11:49:40 2010 -0400
+@@ -27,6 +27,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/ftrace_event.h>
+ #include <linux/slab.h>
++#include <linux/tboot.h>
+ #include "kvm_cache_regs.h"
+ #include "x86.h"
+ 
+@@ -1176,9 +1177,16 @@ static __init int vmx_disabled_by_bios(v
+ 	u64 msr;
+ 
+ 	rdmsrl(MSR_IA32_FEATURE_CONTROL, msr);
+-	return (msr & (FEATURE_CONTROL_LOCKED |
+-		       FEATURE_CONTROL_VMXON_ENABLED))
+-	    == FEATURE_CONTROL_LOCKED;
++	if (!!(msr & FEATURE_CONTROL_LOCKED)) {
++		if (!(msr & FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX)
++			&& tboot_enabled())
++			return 1;
++		if (!(msr & FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX)
++			&& !tboot_enabled())
++			return 1;
++	}
++
++	return 0;
+ 	/* locked but not enabled */
  }
  
-+static void firmware_free_data(struct firmware *fw)
-+{
-+	int i;
-+	vunmap(fw->data);
-+	fw->data = NULL;
-+	if (fw->pages) {
-+		for (i = 0; i < PFN_UP(fw->size); i++)
-+			__free_page(fw->pages[i]);
-+		kfree(fw->pages);
-+	}
-+	fw->pages = NULL;
-+	fw->size = 0;
-+}
-+
- /* Some architectures don't have PAGE_KERNEL_RO */
- #ifndef PAGE_KERNEL_RO
- #define PAGE_KERNEL_RO PAGE_KERNEL
-@@ -162,21 +176,20 @@ static ssize_t firmware_loading_store(struct device *dev,
- 			mutex_unlock(&fw_lock);
- 			break;
- 		}
--		vfree(fw_priv->fw->data);
--		fw_priv->fw->data = NULL;
-+		firmware_free_data(fw_priv->fw);
-+		/* If the pages are not owned by 'struct firmware' */
- 		for (i = 0; i < fw_priv->nr_pages; i++)
- 			__free_page(fw_priv->pages[i]);
- 		kfree(fw_priv->pages);
- 		fw_priv->pages = NULL;
- 		fw_priv->page_array_size = 0;
- 		fw_priv->nr_pages = 0;
--		fw_priv->fw->size = 0;
- 		set_bit(FW_STATUS_LOADING, &fw_priv->status);
- 		mutex_unlock(&fw_lock);
- 		break;
- 	case 0:
- 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
--			vfree(fw_priv->fw->data);
-+			vunmap(fw_priv->fw->data);
- 			fw_priv->fw->data = vmap(fw_priv->pages,
- 						 fw_priv->nr_pages,
- 						 0, PAGE_KERNEL_RO);
-@@ -184,7 +197,10 @@ static ssize_t firmware_loading_store(struct device *dev,
- 				dev_err(dev, "%s: vmap() failed\n", __func__);
- 				goto err;
- 			}
--			/* Pages will be freed by vfree() */
-+			/* Pages are now owned by 'struct firmware' */
-+			fw_priv->fw->pages = fw_priv->pages;
-+			fw_priv->pages = NULL;
-+
- 			fw_priv->page_array_size = 0;
- 			fw_priv->nr_pages = 0;
- 			complete(&fw_priv->completion);
-@@ -578,7 +594,7 @@ release_firmware(const struct firmware *fw)
- 			if (fw->data == builtin->data)
- 				goto free_fw;
- 		}
--		vfree(fw->data);
-+		firmware_free_data(fw);
- 	free_fw:
- 		kfree(fw);
- 	}
-diff --git a/include/linux/firmware.h b/include/linux/firmware.h
-index 043811f..53d1e6c 100644
---- a/include/linux/firmware.h
-+++ b/include/linux/firmware.h
-@@ -12,6 +12,7 @@
- struct firmware {
- 	size_t size;
- 	const u8 *data;
-+	struct page **pages;
- };
+@@ -1186,21 +1194,23 @@ static int hardware_enable(void *garbage
+ {
+ 	int cpu = raw_smp_processor_id();
+ 	u64 phys_addr = __pa(per_cpu(vmxarea, cpu));
+-	u64 old;
++	u64 old, test_bits;
  
- struct device;
--- 
-1.6.6.1
-
----------------------------------------------------------------------
-Intel Israel (74) Limited
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
+ 	if (read_cr4() & X86_CR4_VMXE)
+ 		return -EBUSY;
+ 
+ 	INIT_LIST_HEAD(&per_cpu(vcpus_on_cpu, cpu));
+ 	rdmsrl(MSR_IA32_FEATURE_CONTROL, old);
+-	if ((old & (FEATURE_CONTROL_LOCKED |
+-		    FEATURE_CONTROL_VMXON_ENABLED))
+-	    != (FEATURE_CONTROL_LOCKED |
+-		FEATURE_CONTROL_VMXON_ENABLED))
++
++	test_bits = FEATURE_CONTROL_LOCKED;
++	test_bits |= FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX;
++	if (tboot_enabled())
++		test_bits |= FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX;
++
++	if ((old & test_bits) != test_bits) {
+ 		/* enable and lock */
+-		wrmsrl(MSR_IA32_FEATURE_CONTROL, old |
+-		       FEATURE_CONTROL_LOCKED |
+-		       FEATURE_CONTROL_VMXON_ENABLED);
++		wrmsrl(MSR_IA32_FEATURE_CONTROL, old | test_bits);
++	}
+ 	write_cr4(read_cr4() | X86_CR4_VMXE); /* FIXME: not cpu hotplug safe */
+ 	asm volatile (ASM_VMX_VMXON_RAX
+ 		      : : "a"(&phys_addr), "m"(phys_addr)
+diff -r a96602743dbd include/linux/tboot.h
+--- a/include/linux/tboot.h	Thu Apr 29 11:49:08 2010 -0400
++++ b/include/linux/tboot.h	Thu Apr 29 11:49:40 2010 -0400
+@@ -150,6 +150,7 @@ extern int tboot_force_iommu(void);
+ 
+ #else
+ 
++#define tboot_enabled()			0
+ #define tboot_probe()			do { } while (0)
+ #define tboot_shutdown(shutdown_type)	do { } while (0)
+ #define tboot_sleep(sleep_state, pm1a_control, pm1b_control)	\
