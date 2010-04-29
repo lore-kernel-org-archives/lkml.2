@@ -1,153 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757752Ab0D3QvN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 12:51:13 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:38854 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757637Ab0D3QvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:51:02 -0400
-Date: Thu, 29 Apr 2010 15:09:51 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] - Randomize node rotor used in
-	cpuset_mem_spread_node()
-Message-ID: <20100429200950.GB8929@sgi.com>
-References: <20100428131158.GA2648@sgi.com> <20100428150432.GA3137@sgi.com> <20100428154034.fb823484.akpm@linux-foundation.org>
-MIME-Version: 1.0
+	id S1757051Ab0D3QvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 12:51:19 -0400
+Received: from toq10-srv.bellnexxia.net ([209.226.175.117]:48912 "EHLO
+	toq10-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757620Ab0D3Qt6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 12:49:58 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAKM62UtGGNqG/2dsb2JhbACdDXK+X4UQBA
+Date: Thu, 29 Apr 2010 10:55:59 -0400
+From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 04/10][RFC] tracing: Remove per event trace registering
+Message-ID: <20100429145559.GB24819@Krystal>
+References: <20100426195024.256424113@goodmis.org> <20100426200242.214837703@goodmis.org> <20100428204448.GE8591@Krystal> <1272499218.9739.86.camel@gandalf.stny.rr.com> <20100429000528.GB30353@Krystal> <1272500422.9739.98.camel@gandalf.stny.rr.com> <20100429133649.GC14617@Krystal> <1272550009.9739.136.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100428154034.fb823484.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1272550009.9739.136.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 10:46:34 up 22 days, 40 min,  4 users,  load average: 0.25, 0.22,
+	0.20
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Thu, 2010-04-29 at 09:36 -0400, Mathieu Desnoyers wrote:
+> 
+> > > Instead of calling register_trace_##name that is created for each
+> > > tracepoint, we now call the tracepoint_probe_register() directly in the
+> > > C file with the generated probe.
+> > > 
+> > > Both the probe and the tracepoint are created from the same data. I'm
+> > > not seeing where you want to add this check.
+> > 
+> > So if they are created from the same data, we can expect this test to
+> > always pass, which is good (and expected).
+> > 
+> > I'd add this extra check before casting the callback to (void *) before
+> > it is passed to tracepoint_probe_register(). Let's just call this
+> > internal preprocessing macro integrity check. As long as it does not add
+> > a runtime cost, there is no reason not to put this extra check.
+> 
+> The problem is, the cast is now performed in a C file for all events.
+> There's no way to know what to cast it to there. This is out of the
+> automation of the macro.
+> 
+> We use to have the cast check by creating code that would create the
+> "register_trace_##call", and the typecheck was doing by passing the data
+> to this function. But we removed this code out of the per event, it was
+> adding lots of text footprint, and moved it to one single function that
+> handles all events. It is just expected that the callback created
+> matches the function it was done.
+> 
+> If you are overly paranoid, we could create a special function that
+> tests that the callback format that is created matches the tracepoint
+> that is created, and make it so GCC sees that nothing calls it and
+> removes it at final link. But I still see this as a waste.
+> 
+> 
+> The tracepoint is created in include/linux/tracepoint.h:
+> 
+> #define TRACE_EVENT(name, proto, args, struct, assign, print)	\
+> 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
 
-Some workloads that create a large number of small files tend to assign
-too many pages to node 0 (multi-node systems). Part of the reason is that
-the rotor (in cpuset_mem_spread_node()) used to assign nodes starts
-at node 0 for newly created tasks.
+Can we add something like this to DECLARE_TRACE ? (not convinced it is
+valid though)
 
-This patch changes the rotor to be initialized to a random node number
-of the cpuset.
+static inline void check_trace_##name(cb_type)
+{
+	BUILD_BUG_ON(!__same_type(void (*probe)(TP_PROTO(proto), void *data),
+				  cb_type));
+}
 
-NOTE: this patch is on TOP of the previous patch:
-	[PATCH] - New round-robin rotor for SLAB allocations
-	http://marc.info/?l=linux-mm&m=127231565321947&w=2
+> 
+> The callback is created in include/trace/ftrace.h:
+> 
+> #undef TRACE_EVENT
+> #define TRACE_EVENT(name, proto, args, tstuct, assign, print)	\
+> 	DECLARE_EVENT_CLASS(name,				\
+> 				PARAMS(proto),			\
+> 				PARAMS(args),			\
+> 				PARAMS(tstruct),		\
+> 				PARAMS(assign),			\
+> 				PARAMS(print));			\
+> 	DEFINE_EVENT(name, name, PARAMS(proto), PARAMS(args));
+> 
+> #undef DECLARE_EVENT_CLASS
+> #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+> 									\
+> static notrace void							\
+> ftrace_raw_event_##call(proto,						\
+> 			struct ftrace_event_call *event_call)		\
+> [...]
+> 
 
-Signed-off-by: Jack Steiner <steiner@sgi.com>
+Either within this callback, or in a dummy static function after, we
+could add:
 
+check_trace_##call(ftrace_raw_event_##call);
 
----
+So.. you are the preprocessor expert, do you think this could fly ? ;)
 
-V2 - initial patch was generated against the wrong tree. This patch is based
-on linux-next.
+Thanks,
 
-V3 - Eliminate new function bitmap_find_nth_bit(). Rename bitmap_ord_to_pos()
-and export it.
+Mathieu
 
+> 
+> Thus the "proto" field of the TRACE_EVENT() is used to make both the
+> tracepoint and the callback. We add the struct ftrace_event_call
+> *event_call which is the data we pass to the callback.
+> 
+> Now, where this gets called is in kernel/trace/trace_events.c:
+> 
+> 	tracepoint_probe_register(call->name,
+> 				  call->class->probe,
+> 				  call);
+> 
+> This is where we lose the typecheck. So my question is... where do you
+> want to put in a check?
+> 
+> -- Steve
+> 
+> 	
+> 
+> 
 
-
- arch/x86/mm/numa.c       |   17 +++++++++++++++++
- include/linux/bitmap.h   |    1 +
- include/linux/nodemask.h |    5 +++++
- kernel/fork.c            |    4 ++++
- lib/bitmap.c             |    2 +-
- 5 files changed, 28 insertions(+), 1 deletion(-)
-
-Index: linux/arch/x86/mm/numa.c
-===================================================================
---- linux.orig/arch/x86/mm/numa.c	2010-04-28 09:59:10.158899192 -0500
-+++ linux/arch/x86/mm/numa.c	2010-04-29 13:53:48.531783017 -0500
-@@ -2,6 +2,7 @@
- #include <linux/topology.h>
- #include <linux/module.h>
- #include <linux/bootmem.h>
-+#include <linux/random.h>
- 
- #ifdef CONFIG_DEBUG_PER_CPU_MAPS
- # define DBG(x...) printk(KERN_DEBUG x)
-@@ -65,3 +66,19 @@ const struct cpumask *cpumask_of_node(in
- }
- EXPORT_SYMBOL(cpumask_of_node);
- #endif
-+
-+/*
-+ * Return the bit number of a random bit set in the nodemask.
-+ *   (returns -1 if nodemask is empty)
-+ */
-+int __node_random(const nodemask_t *maskp)
-+{
-+	int w, bit = -1;
-+
-+	w = nodes_weight(*maskp);
-+	if (w)
-+		bit = bitmap_ord_to_pos(maskp->bits,
-+			get_random_int() % w, MAX_NUMNODES);
-+	return bit;
-+}
-+EXPORT_SYMBOL(__node_random);
-Index: linux/include/linux/bitmap.h
-===================================================================
---- linux.orig/include/linux/bitmap.h	2010-04-28 09:59:10.158899192 -0500
-+++ linux/include/linux/bitmap.h	2010-04-29 13:54:04.639408240 -0500
-@@ -141,6 +141,7 @@ extern int bitmap_find_free_region(unsig
- extern void bitmap_release_region(unsigned long *bitmap, int pos, int order);
- extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
- extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
-+extern int bitmap_ord_to_pos(const unsigned long *bitmap, int n, int bits);
- 
- #define BITMAP_LAST_WORD_MASK(nbits)					\
- (									\
-Index: linux/include/linux/nodemask.h
-===================================================================
---- linux.orig/include/linux/nodemask.h	2010-04-28 09:59:10.158899192 -0500
-+++ linux/include/linux/nodemask.h	2010-04-28 10:01:42.878971800 -0500
-@@ -66,6 +66,8 @@
-  * int num_online_nodes()		Number of online Nodes
-  * int num_possible_nodes()		Number of all possible Nodes
-  *
-+ * int node_random(mask)              Random node with set bit in mask
-+ *
-  * int node_online(node)		Is some node online?
-  * int node_possible(node)		Is some node possible?
-  *
-@@ -267,6 +269,9 @@ static inline int __first_unset_node(con
- 			find_first_zero_bit(maskp->bits, MAX_NUMNODES));
- }
- 
-+#define node_random(mask) __node_random(&(mask))
-+extern int __node_random(const nodemask_t *maskp);
-+
- #define NODE_MASK_LAST_WORD BITMAP_LAST_WORD_MASK(MAX_NUMNODES)
- 
- #if MAX_NUMNODES <= BITS_PER_LONG
-Index: linux/kernel/fork.c
-===================================================================
---- linux.orig/kernel/fork.c	2010-04-28 09:59:10.158899192 -0500
-+++ linux/kernel/fork.c	2010-04-28 10:03:11.580014823 -0500
-@@ -1079,6 +1079,10 @@ static struct task_struct *copy_process(
-  	}
- 	mpol_fix_fork_child_flag(p);
- #endif
-+#ifdef CONFIG_CPUSETS
-+	p->cpuset_mem_spread_rotor = node_random(p->mems_allowed);
-+	p->cpuset_slab_spread_rotor = node_random(p->mems_allowed);
-+#endif
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	p->irq_events = 0;
- #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-Index: linux/lib/bitmap.c
-===================================================================
---- linux.orig/lib/bitmap.c	2010-04-28 09:59:10.158899192 -0500
-+++ linux/lib/bitmap.c	2010-04-29 13:53:28.270906295 -0500
-@@ -672,7 +672,7 @@ static int bitmap_pos_to_ord(const unsig
-  *
-  * The bit positions 0 through @bits are valid positions in @buf.
-  */
--static int bitmap_ord_to_pos(const unsigned long *buf, int ord, int bits)
-+int bitmap_ord_to_pos(const unsigned long *buf, int ord, int bits)
- {
- 	int pos = 0;
- 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
