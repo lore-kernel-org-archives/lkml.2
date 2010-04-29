@@ -1,134 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758729Ab0D3TY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:24:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35467 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759088Ab0D3TYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 15:24:11 -0400
-Date: Fri, 30 Apr 2010 21:22:35 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
- and rmap_walk() during migration by not migrating temporary stacks
-Message-ID: <20100430192235.GL22108@random.random>
-References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie>
- <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
- <20100429162120.GC22108@random.random>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100429162120.GC22108@random.random>
+	id S1759440Ab0D3TZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:25:01 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37406 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759367Ab0D3TYp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 15:24:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=T4elB/2vqYe2b5i/R+ix053N8VH8iTN4HOgB6lkRkj9krD628wD2O3mgvKnwNLG8EH
+         y3cXpGAOfS7ePCBG8KfFWjEHOsQDqcz6Zf/UcAtNqR/EW5WEDdg+5kweGFg46Dbvrqic
+         JwgJ49pjXvrx3g0SfBkxAqEJRuovUg81iY7VI=
+From: Chihau Chau <chihau@gmail.com>
+To: gregkh@suse.de
+Cc: chihau@gmail.com, pavel@ucw.cz, jochen.maes@sejo.be,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: dream: pmem: code style fixes
+Date: Thu, 29 Apr 2010 17:37:34 -0400
+Message-Id: <1272577054-4656-1-git-send-email-chihau@gmail.com>
+X-Mailer: git-send-email 1.5.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm building a mergeable THP+memory compaction tree ready for mainline
-merging based on new anon-vma code, so I'm integrating your patch1 and
-this below should be the port of my alternate fix to your patch2 to
-fix the longstanding crash in migrate (not a bug in new anon-vma code
-but longstanding). patch1 is instead about the bugs introduced by the
-new anon-vma code that might crash migrate (even without memory
-compaction and/or THP) the same way as the bug fixed by the below.
+From: Chihau Chau <chihau@gmail.com>
 
-==
-Subject: fix race between shift_arg_pages and rmap_walk
+This patch include <linux/io.h> instead of <asm/io.h> and
+<linux/uaccess.h> instead of <asm/uaccess.h>.
 
-From: Andrea Arcangeli <aarcange@redhat.com>
-
-migrate.c requires rmap to be able to find all ptes mapping a page at
-all times, otherwise the migration entry can be instantiated, but it
-can't be removed if the second rmap_walk fails to find the page.
-
-And split_huge_page() will have the same requirements as migrate.c
-already has.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Chihau Chau <chihau@gmail.com>
 ---
+ drivers/staging/dream/pmem.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -55,6 +55,7 @@
- #include <linux/fsnotify.h>
- #include <linux/fs_struct.h>
- #include <linux/pipe_fs_i.h>
-+#include <linux/rmap.h>
+diff --git a/drivers/staging/dream/pmem.c b/drivers/staging/dream/pmem.c
+index 3e4dd21..d5f3e72 100644
+--- a/drivers/staging/dream/pmem.c
++++ b/drivers/staging/dream/pmem.c
+@@ -23,8 +23,8 @@
+ #include <linux/android_pmem.h>
+ #include <linux/mempolicy.h>
+ #include <linux/sched.h>
+-#include <asm/io.h>
+-#include <asm/uaccess.h>
++#include <linux/io.h>
++#include <linux/uaccess.h>
+ #include <asm/cacheflush.h>
  
- #include <asm/uaccess.h>
- #include <asm/mmu_context.h>
-@@ -503,7 +504,9 @@ static int shift_arg_pages(struct vm_are
- 	unsigned long length = old_end - old_start;
- 	unsigned long new_start = old_start - shift;
- 	unsigned long new_end = old_end - shift;
-+	unsigned long moved_length;
- 	struct mmu_gather *tlb;
-+	struct vm_area_struct *tmp_vma;
- 
- 	BUG_ON(new_start > new_end);
- 
-@@ -515,17 +518,46 @@ static int shift_arg_pages(struct vm_are
- 		return -EFAULT;
- 
- 	/*
-+	 * We need to create a fake temporary vma and index it in the
-+	 * anon_vma list in order to allow the pages to be reachable
-+	 * at all times by the rmap walk for migrate, while
-+	 * move_page_tables() is running.
-+	 */
-+	tmp_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
-+	if (!tmp_vma)
-+		return -ENOMEM;
-+	*tmp_vma = *vma;
-+
-+	if (unlikely(anon_vma_clone(tmp_vma, vma))) {
-+		kmem_cache_free(vm_area_cachep, tmp_vma);
-+		return -ENOMEM;
-+	}
-+
-+	/*
- 	 * cover the whole range: [new_start, old_end)
-+	 *
-+	 * The vma is attached only to vma->anon_vma so one lock is
-+	 * enough. Even this lock might be removed and we could run it
-+	 * out of order but it's nicer to make atomic updates to
-+	 * vm_start and so we won't need a smb_wmb() before calling
-+	 * move_page_tables.
- 	 */
--	if (vma_adjust(vma, new_start, old_end, vma->vm_pgoff, NULL))
--		return -ENOMEM;
-+	spin_lock(&vma->anon_vma->lock);
-+	vma->vm_start = new_start;
-+	spin_unlock(&vma->anon_vma->lock);
- 
- 	/*
- 	 * move the page tables downwards, on failure we rely on
- 	 * process cleanup to remove whatever mess we made.
- 	 */
--	if (length != move_page_tables(vma, old_start,
--				       vma, new_start, length))
-+	moved_length = move_page_tables(vma, old_start,
-+					vma, new_start, length);
-+
-+	/* rmap walk will already find all pages using the new_start */
-+	unlink_anon_vmas(tmp_vma);
-+	kmem_cache_free(vm_area_cachep, tmp_vma);
-+
-+	if (length != moved_length) 
- 		return -ENOMEM;
- 
- 	lru_add_drain();
-@@ -551,7 +583,7 @@ static int shift_arg_pages(struct vm_are
- 	/*
- 	 * Shrink the vma to just the new range.  Always succeeds.
- 	 */
--	vma_adjust(vma, new_start, new_end, vma->vm_pgoff, NULL);
-+	vma->vm_end = new_end;
- 
- 	return 0;
- }
+ #define PMEM_MAX_DEVICES 10
+-- 
+1.5.6.3
+
