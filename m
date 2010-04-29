@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758206Ab0D3Rhz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:37:55 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57711 "EHLO smtps.tip.net.au"
+	id S1758628Ab0D3Rio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:38:44 -0400
+Received: from ozlabs.org ([203.10.76.45]:52366 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758691Ab0D3Rhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:37:33 -0400
-Date: Fri, 30 Apr 2010 15:51:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Axel Lin <axel.lin@gmail.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: linux-next: manual merge of the usb tree with the input tree
-Message-Id: <20100430155115.fbc54b24.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753030Ab0D3Rib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:38:31 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: linux-next: manual merge of the rr tree with the net tree
+Date: Thu, 29 Apr 2010 22:23:36 +0930
+User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; i686; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+       netdev@vger.kernel.org
+References: <20100427115852.9f4cbb0f.sfr@canb.auug.org.au> <20100427040913.GA19951@redhat.com> <20100428155457.GB7467@redhat.com>
+In-Reply-To: <20100428155457.GB7467@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004292223.36270.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Thu, 29 Apr 2010 01:24:57 am Michael S. Tsirkin wrote:
+> On Tue, Apr 27, 2010 at 07:09:13AM +0300, Michael S. Tsirkin wrote:
+> > On Tue, Apr 27, 2010 at 11:58:52AM +1000, Stephen Rothwell wrote:
+> > > Hi Rusty,
+> > > 
+> > > Today's linux-next merge of the rr tree got a conflict in
+> > > drivers/net/virtio_net.c between commit
+> > > 5e01d2f91df62be4d6f282149bc2a8858992ceca ("virtio-net: move sg off
+> > > stack") from the net tree and commit
+> > > 7f62a724a65f864d84f50857bbfd36c240155c8f ("virtio_net: use virtqueue_xxx
+> > > wrappers") from the rr tree.
+> > > 
+> > > I fixed it up (see below) and can carry the fix as necessary.
+> > 
+> > Hmm, Rusty, do you intend for the patches to go through netdev this
+> > time? If you do, it might be simplest to just ask Dave to merge
+> > them in net-next-2.6 now. I can prepare and send them if you like.
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/input/tablet/kbtab.c between commits
-ee7aa6ce41e08c68f72b5ca8f14fb61286dc2418 ("Input: kbtab - fix incorrect
-size parameter in usb_buffer_free") and
-331cb022d3ac1f85f7842a51495c33c629e947bc ("Input: kbtab - simplify
-kbtab_disconnect()") from the input tree and commit
-3cc96f50329227fbf34de2459491901b6ee1c98c ("USB: rename usb_buffer_alloc()
-and usb_buffer_free() users") from the usb tree.
+Naah, they hit too many random virtio drivers.  It's pretty simple to keep
+them separate, and once the new API is in place I'll send to Dave to merge.
+It could take two cycles, but there's no huge rush.
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/input/tablet/kbtab.c
-index b9969f1,d31b9c7..0000000
---- a/drivers/input/tablet/kbtab.c
-+++ b/drivers/input/tablet/kbtab.c
-@@@ -173,7 -182,7 +173,7 @@@ static int kbtab_probe(struct usb_inter
-  	return 0;
-  
-   fail3:	usb_free_urb(kbtab->irq);
--  fail2:	usb_buffer_free(dev, 8, kbtab->data, kbtab->data_dma);
- - fail2:	usb_free_coherent(dev, 10, kbtab->data, kbtab->data_dma);
-++ fail2:	usb_free_coherent(dev, 8, kbtab->data, kbtab->data_dma);
-   fail1:	input_free_device(input_dev);
-  	kfree(kbtab);
-  	return error;
-@@@ -184,11 -193,13 +184,11 @@@ static void kbtab_disconnect(struct usb
-  	struct kbtab *kbtab = usb_get_intfdata(intf);
-  
-  	usb_set_intfdata(intf, NULL);
- -	if (kbtab) {
- -		usb_kill_urb(kbtab->irq);
- -		input_unregister_device(kbtab->dev);
- -		usb_free_urb(kbtab->irq);
- -		usb_free_coherent(interface_to_usbdev(intf), 10, kbtab->data, kbtab->data_dma);
- -		kfree(kbtab);
- -	}
- +
- +	input_unregister_device(kbtab->dev);
- +	usb_free_urb(kbtab->irq);
-- 	usb_buffer_free(kbtab->usbdev, 8, kbtab->data, kbtab->data_dma);
-++	usb_free_coherent(kbtab->usbdev, 8, kbtab->data, kbtab->data_dma);
- +	kfree(kbtab);
-  }
-  
-  static struct usb_driver kbtab_driver = {
+Rusty.
