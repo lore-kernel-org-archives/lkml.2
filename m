@@ -1,124 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759372Ab0D3S1X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:27:23 -0400
-Received: from mail-yw0-f198.google.com ([209.85.211.198]:41485 "EHLO
-	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759347Ab0D3SZL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:25:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Fl82jQfqo6V3RyxfSBFlumgzhbKYzpIzM4wnlE4nWVteIWhjA0MZDCKGiStOw70BVc
-         O6Sx8o1d/eNJBRZlACxCHeL2xhp24RmYLEBUDtziaDpD0XpXd0p4HJoO1UOzB4w446pe
-         9uf/oGbqTSgpONUHYydbjmF+Su3HsRmFKnQlU=
+	id S933170Ab0D3S1v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:27:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45305 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933087Ab0D3RWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:22:09 -0400
+Message-ID: <4BD9D35C.5090403@redhat.com>
+Date: Thu, 29 Apr 2010 21:43:40 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <z2g28c262361004281955h29bc20edndb8da9c7cb5ff1db@mail.gmail.com>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
-	 <20100428155558.GI15815@csn.ul.ie>
-	 <20100428162305.GX510@random.random>
-	 <20100428134719.32e8011b@annuminas.surriel.com>
-	 <20100428142510.09984e15@annuminas.surriel.com>
-	 <20100428161711.5a815fa8@annuminas.surriel.com>
-	 <20100428165734.6541bab3@annuminas.surriel.com>
-	 <y2s28c262361004281728we31e3b9fsd2427aacdc76a9e7@mail.gmail.com>
-	 <4BD8EA85.2000209@redhat.com>
-	 <z2g28c262361004281955h29bc20edndb8da9c7cb5ff1db@mail.gmail.com>
-Date: Thu, 29 Apr 2010 15:42:37 +0900
-Message-ID: <j2q28c262361004282342h324e83e7qeeaf823de860b8b8@mail.gmail.com>
-Subject: Re: [RFC PATCH -v3] take all anon_vma locks in anon_vma_lock
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+       kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm mmu: reduce 50% memory usage
+References: <4BD8228D.7090708@cn.fujitsu.com> <20100429180955.GA17909@amt.cnet>
+In-Reply-To: <20100429180955.GA17909@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 29, 2010 at 11:55 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> On Thu, Apr 29, 2010 at 11:10 AM, Rik van Riel <riel@redhat.com> wrote:
->> On 04/28/2010 08:28 PM, Minchan Kim wrote:
->>>
->>> On Thu, Apr 29, 2010 at 5:57 AM, Rik van Riel<riel@redhat.com>  wrote:
->>>>
->>>> Take all the locks for all the anon_vmas in anon_vma_lock, this properly
->>>> excludes migration and the transparent hugepage code from VMA changes
->>>> done
->>>> by mmap/munmap/mprotect/expand_stack/etc...
->>>>
->>>> Unfortunately, this requires adding a new lock (mm->anon_vma_chain_lock),
->>>> otherwise we have an unavoidable lock ordering conflict.  This changes
->>>> the
->>>> locking rules for the "same_vma" list to be either mm->mmap_sem for
->>>> write,
->>>> or mm->mmap_sem for read plus the new mm->anon_vma_chain lock.  This
->>>> limits
->>>> the place where the new lock is taken to 2 locations - anon_vma_prepare
->>>> and
->>>> expand_downwards.
->>>>
->>>> Document the locking rules for the same_vma list in the anon_vma_chain
->>>> and
->>>> remove the anon_vma_lock call from expand_upwards, which does not need
->>>> it.
->>>>
->>>> Signed-off-by: Rik van Riel<riel@redhat.com>
->>>
->>> This patch makes things simple. So I like this.
->>> Actually, I wanted this all-at-once locks approach.
->>> But I was worried about that how the patch affects AIM 7 workload
->>> which is cause of anon_vma_chain about scalability by Rik.
->>> But now Rik himself is sending the patch. So I assume the patch
->>> couldn't decrease scalability of the workload heavily.
->>
->> The thing is, the number of anon_vmas attached to a VMA is
->> small (depth of the tree, so for apache or aim the typical
->> depth is 2). This N is between 1 and 3.
->>
->> The problem we had originally is the _width_ of the tree,
->> where every sibling process was attached to the same anon_vma
->> and the rmap code had to walk the page tables of all the
->> processes, for every privately owned page in each child process.
->> For large server workloads, this N is between a few hundred and
->> a few thousand.
->>
->> What matters most at this point is correctness - we need to be
->> able to exclude rmap walks when messing with a VMA in any way
->> that breaks lookups, because rmap walks for page migration and
->> hugepage conversion have to be 100% reliable.
->>
->> That is not a constraint I had in mind with the original
->> anon_vma changes, so the code needs to be fixed up now...
+On 04/29/2010 09:09 PM, Marcelo Tosatti wrote:
 >
-> Yes. I understand it.
+> You missed quadrant on 4mb large page emulation with shadow (see updated
+> patch below).
+
+Good catch.
+
+> Also for some reason i can't understand the assumption
+> does not hold for large sptes with TDP, so reverted for now.
+>    
+
+It's unrelated to TDP, same issue with shadow.  I think the calculation 
+is correct.  For example the 4th spte for a level=2 page will yield 
+gfn=4*512.
+
+> @@ -393,6 +393,27 @@ static void mmu_free_rmap_desc(struct kvm_rmap_desc *rd)
+>   	kfree(rd);
+>   }
 >
-> When you tried anon_vma_chain patches as I pointed out, what I have a
-> concern is parent's vma not child's one.
-> The vma of parent still has N anon_vma.
-> AFAIR, you said it's trade-off and would be good than old at least.
-> I agreed.  But I just want to remind you because this makes worse.  :)
-> The corner case is that we have to hold locks of N.
+> +static gfn_t kvm_mmu_page_get_gfn(struct kvm_mmu_page *sp, int index)
+> +{
+> +	gfn_t gfn;
+> +
+> +	if (!sp->role.direct)
+> +		return sp->gfns[index];
+> +
+> +	gfn = sp->gfn + index * (1<<  (sp->role.level - 1) * PT64_LEVEL_BITS);
+> +	gfn += sp->role.quadrant<<  PT64_LEVEL_BITS;
+>    
+
+PT64_LEVEL_BITS * level
+
+> +
+> +	return gfn;
+> +}
+> +
 >
-> Do I miss something?
-> Really, Can't we ignore that case latency although this happen infrequently?
-> I am not against this patch. I just want to listen your opinion.
+>    
 
-me/ slaps self.
-
-It's about height of tree and I can't imagine high height of
-scenario.(fork->fork->fork->...->fork)
-So as Rik pointed out, It's a not big overhead about latency latency,
-at least. I think.
-
-I supports this approach.
 
 -- 
-Kind regards,
-Minchan Kim
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
