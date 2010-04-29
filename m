@@ -1,39 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab0D3VsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 17:48:16 -0400
-Received: from www.tglx.de ([62.245.132.106]:60002 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755234Ab0D3VsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 17:48:14 -0400
-Date: Fri, 30 Apr 2010 23:47:59 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-cc: davem@davemloft.net, arjan@linux.jf.intel.com, bhutchings@solarflare.com,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH linux-next v4 2/2] ixgbe: Example usage of the new IRQ
- affinity_hint callback
-In-Reply-To: <20100430214517.3992.92545.stgit@ppwaskie-hc2.jf.intel.com>
-Message-ID: <alpine.LFD.2.00.1004302346030.2951@localhost.localdomain>
-References: <20100430214445.3992.41647.stgit@ppwaskie-hc2.jf.intel.com> <20100430214517.3992.92545.stgit@ppwaskie-hc2.jf.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932431Ab0D3Vs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 17:48:26 -0400
+Received: from aeryn.fluff.org.uk ([87.194.8.8]:27351 "EHLO
+	kira.home.fluff.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932311Ab0D3VsT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 17:48:19 -0400
+Message-Id: <20100429231739.749602911@fluff.org.uk>
+User-Agent: quilt/0.48-1
+Date: Fri, 30 Apr 2010 00:16:24 +0100
+From: Ben Dooks <ben@simtec.co.uk>
+To: netdev@vger.kernel.org
+Cc: tristram.ha@micrel.com, support@tincantools.com,
+       Wolfram Sang <w.sang@pengutronix.de>, Jean Delvare <khali@linux-fr.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [patch 03/13] eeprom_93cx6: Add data direction control.
+References: <20100429231621.015936077@fluff.org.uk>
+Content-Disposition: inline; filename=93c-eeprom-add-direction.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010, Peter P Waskiewicz Jr wrote:
-> +	for (i = 0; i < num_q_vectors; i++) {
-> +		struct ixgbe_q_vector *q_vector = adapter->q_vector[i];
-> +		/* release the CPU mask memory */
-> +		free_cpumask_var(q_vector->affinity_mask);
-> +		/* clear the affinity_mask in the IRQ descriptor */
-> +		irq_set_affinity_hint(adapter->msix_entries[i].vector, NULL);
+Some devices need to know if the data is to be output or read, so add a
+data direction into the eeprom structure to tell the driver whether the
+data line should be driven.
 
-Freeing the mask _AFTER_ clearing the hint might be a worthwhile
-exercise :)
+The user in this case is the Micrel KS8851 which has a direction
+control for the EEPROM data line and thus needs to know whether
+to drive it (writing) or to tristate it for receiving.
 
-Thanks,
+Signed-off-by: Ben Dooks <ben@simtec.co.uk>
+Cc: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
 
-	tglx
+--
+ drivers/misc/eeprom/eeprom_93cx6.c |    3 +++
+ include/linux/eeprom_93cx6.h       |    2 ++
+ 2 files changed, 5 insertions(+)
+
+Index: b/drivers/misc/eeprom/eeprom_93cx6.c
+===================================================================
+--- a/drivers/misc/eeprom/eeprom_93cx6.c	2009-10-06 15:35:38.000000000 +0100
++++ b/drivers/misc/eeprom/eeprom_93cx6.c	2009-10-06 15:51:18.000000000 +0100
+@@ -70,6 +70,7 @@ static void eeprom_93cx6_startup(struct 
+ 	eeprom->reg_data_out = 0;
+ 	eeprom->reg_data_clock = 0;
+ 	eeprom->reg_chip_select = 1;
++	eeprom->drive_data = 1;
+ 	eeprom->register_write(eeprom);
+ 
+ 	/*
+@@ -108,6 +109,7 @@ static void eeprom_93cx6_write_bits(stru
+ 	 */
+ 	eeprom->reg_data_in = 0;
+ 	eeprom->reg_data_out = 0;
++	eeprom->drive_data = 1;
+ 
+ 	/*
+ 	 * Start writing all bits.
+@@ -147,6 +149,7 @@ static void eeprom_93cx6_read_bits(struc
+ 	 */
+ 	eeprom->reg_data_in = 0;
+ 	eeprom->reg_data_out = 0;
++	eeprom->drive_data = 0;
+ 
+ 	/*
+ 	 * Start reading all bits.
+Index: b/include/linux/eeprom_93cx6.h
+===================================================================
+--- a/include/linux/eeprom_93cx6.h	2009-10-06 15:35:38.000000000 +0100
++++ b/include/linux/eeprom_93cx6.h	2009-10-06 15:51:18.000000000 +0100
+@@ -45,6 +45,7 @@
+  * @register_write(struct eeprom_93cx6 *eeprom): handler to
+  * write to the eeprom register by using all reg_* fields.
+  * @width: eeprom width, should be one of the PCI_EEPROM_WIDTH_* defines
++ * @drive_data: Set if we're driving the data line.
+  * @reg_data_in: register field to indicate data input
+  * @reg_data_out: register field to indicate data output
+  * @reg_data_clock: register field to set the data clock
+@@ -61,6 +62,7 @@ struct eeprom_93cx6 {
+ 
+ 	int width;
+ 
++	char drive_data;
+ 	char reg_data_in;
+ 	char reg_data_out;
+ 	char reg_data_clock;
+
