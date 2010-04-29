@@ -1,57 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933049Ab0D3RSV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:18:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51973 "EHLO mx1.redhat.com"
+	id S933058Ab0D3RSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:18:50 -0400
+Received: from kroah.org ([198.145.64.141]:39645 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933035Ab0D3RSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:18:10 -0400
-Date: Thu, 29 Apr 2010 14:15:09 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-       vgoyal@redhat.com
-Subject: Re: [PATCH 00/11] jump label v7
-Message-ID: <20100429181508.GE3960@redhat.com>
-References: <cover.1271427118.git.jbaron@redhat.com> <20100422.161700.191166551.davem@davemloft.net> <20100427.175858.134109609.davem@davemloft.net>
+	id S932609Ab0D3RSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:18:33 -0400
+Date: Thu, 29 Apr 2010 10:35:55 -0700
+From: Greg KH <greg@kroah.com>
+To: Lars Lindley <lindley@coyote.org>
+Cc: gregkh@suse.de, alan@linux.intel.com, o.hartmann@telovital.com,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: et131x: et1310_address_map.h Brace and space
+ fix.
+Message-ID: <20100429173555.GA13082@kroah.com>
+References: <1270882537-16252-1-git-send-email-lindley@coyote.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100427.175858.134109609.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1270882537-16252-1-git-send-email-lindley@coyote.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 05:58:58PM -0700, David Miller wrote:
-> > 
-> >> David, I re-worked the sparc64 to match the updated interfaces. The
-> >> code should hopefully compile now, although I did not test the sparc
-> >> bits.
-> > 
-> > Thanks for working on this Jason.  I'll take a close look at this
-> > some time today.
+On Sat, Apr 10, 2010 at 08:55:37AM +0200, Lars Lindley wrote:
+> I fixed a space and a brace found by checkpatch.pl.
 > 
-> The kernel stops compiling after the second patch because
-> kernel/jump_label.c is compiled unconditionally, and this generates an
-> attempt to include asm/alternatives.h which is an x86-only phenomenon.
-> 
+> Signed-off-by: Lars Lindley <lindley@coyote.org>
+> ---
+>  drivers/staging/et131x/et1310_address_map.h |    5 ++---
 
-sorry. jump_label.c no longer requires asm/alternatives.h. It should
-have been removed in this patch series.
+This was already done by someone else, sorry :(
 
-> Do you have access to a cross-compile environment or at least some
-> non-x86 system you can test build on before submitting these patch
-> sets?
-> 
-
-I'll make sure to test the next iteration on non-x86, with at least
-dummy funtions.
-
-thanks,
-
--Jason
-
+greg k-h
