@@ -1,217 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828Ab0D3RWQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:22:16 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59886 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933104Ab0D3RVc convert rfc822-to-8bit (ORCPT
+	id S1759372Ab0D3S1X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:27:23 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:41485 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759347Ab0D3SZL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:21:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [PATCH 1/8] PM: Add suspend block api.
-Date: Thu, 29 Apr 2010 23:16:14 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
-References: <1272429119-12103-1-git-send-email-arve@android.com> <201004282250.44200.rjw@sisk.pl> <l2yd6200be21004282037rc063266by91db7f732ceaa529@mail.gmail.com>
-In-Reply-To: <l2yd6200be21004282037rc063266by91db7f732ceaa529@mail.gmail.com>
+	Fri, 30 Apr 2010 14:25:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Fl82jQfqo6V3RyxfSBFlumgzhbKYzpIzM4wnlE4nWVteIWhjA0MZDCKGiStOw70BVc
+         O6Sx8o1d/eNJBRZlACxCHeL2xhp24RmYLEBUDtziaDpD0XpXd0p4HJoO1UOzB4w446pe
+         9uf/oGbqTSgpONUHYydbjmF+Su3HsRmFKnQlU=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+In-Reply-To: <z2g28c262361004281955h29bc20edndb8da9c7cb5ff1db@mail.gmail.com>
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
+	 <20100428155558.GI15815@csn.ul.ie>
+	 <20100428162305.GX510@random.random>
+	 <20100428134719.32e8011b@annuminas.surriel.com>
+	 <20100428142510.09984e15@annuminas.surriel.com>
+	 <20100428161711.5a815fa8@annuminas.surriel.com>
+	 <20100428165734.6541bab3@annuminas.surriel.com>
+	 <y2s28c262361004281728we31e3b9fsd2427aacdc76a9e7@mail.gmail.com>
+	 <4BD8EA85.2000209@redhat.com>
+	 <z2g28c262361004281955h29bc20edndb8da9c7cb5ff1db@mail.gmail.com>
+Date: Thu, 29 Apr 2010 15:42:37 +0900
+Message-ID: <j2q28c262361004282342h324e83e7qeeaf823de860b8b8@mail.gmail.com>
+Subject: Re: [RFC PATCH -v3] take all anon_vma locks in anon_vma_lock
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201004292316.14524.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 April 2010, Arve Hj�nnev�g wrote:
-> 2010/4/28 Rafael J. Wysocki <rjw@sisk.pl>:
-> ...
-> >>
-> >> +/**
-> >> + *   policy - set policy for state
-> >> + */
-> >> +
-> >> +static ssize_t policy_show(struct kobject *kobj,
-> >> +                        struct kobj_attribute *attr, char *buf)
-> >> +{
-> >> +     char *s = buf;
-> >> +     int i;
-> >> +
-> >> +     for (i = 0; i < ARRAY_SIZE(policies); i++) {
-> >> +             if (i == policy)
-> >> +                     s += sprintf(s, "[%s] ", policies[i].name);
-> >> +             else
-> >> +                     s += sprintf(s, "%s ", policies[i].name);
-> >> +     }
-> >> +     if (s != buf)
-> >> +             /* convert the last space to a newline */
-> >> +             *(s-1) = '\n';
-> >> +     return (s - buf);
-> >> +}
-> >> +
-> >> +static ssize_t policy_store(struct kobject *kobj,
-> >> +                         struct kobj_attribute *attr,
-> >> +                         const char *buf, size_t n)
-> >> +{
-> >> +     const char *s;
-> >> +     char *p;
-> >> +     int len;
-> >> +     int i;
-> >> +
-> >> +     p = memchr(buf, '\n', n);
-> >> +     len = p ? p - buf : n;
-> >> +
-> >> +     for (i = 0; i < ARRAY_SIZE(policies); i++) {
-> >> +             s = policies[i].name;
-> >> +             if (s && len == strlen(s) && !strncmp(buf, s, len)) {
-> >> +                     mutex_lock(&pm_mutex);
-> >> +                     policies[policy].set_state(PM_SUSPEND_ON);
-> >> +                     policy = i;
-> >> +                     mutex_unlock(&pm_mutex);
-> >> +                     return n;
-> >> +             }
-> >> +     }
-> >> +     return -EINVAL;
-> >> +}
-> >> +
-> >> +power_attr(policy);
-> >> +
-> >>  #ifdef CONFIG_PM_TRACE
-> >>  int pm_trace_enabled;
-> >>
-> >
-> > Would you mind if I changed the above so that "policy" doesn't even show up
-> > if CONFIG_OPPORTUNISTIC_SUSPEND is unset?
-> >
-> I don't mind, but It did not seem worth the trouble to hide it. It
-> will only list the supported policies, and it is easy to add or remove
-> policies this way.
-> 
-> > ...
-> >> +static void suspend_worker(struct work_struct *work)
-> >> +{
-> >> +     int ret;
-> >> +     int entry_event_num;
-> >> +
-> >> +     enable_suspend_blockers = true;
-> >> +     while (!suspend_is_blocked()) {
-> >> +             entry_event_num = current_event_num;
-> >> +
-> >> +             if (debug_mask & DEBUG_SUSPEND)
-> >> +                     pr_info("suspend: enter suspend\n");
-> >> +
-> >> +             ret = pm_suspend(requested_suspend_state);
-> >> +
-> >> +             if (debug_mask & DEBUG_EXIT_SUSPEND)
-> >> +                     pr_info_time("suspend: exit suspend, ret = %d ", ret);
-> >> +
-> >> +             if (current_event_num == entry_event_num)
-> >> +                     pr_info("suspend: pm_suspend returned with no event\n");
-> >
-> > Hmm, what exactly is this for?  It looks like a debug thing to me.  I'd use
-> > pr_debug() here and in both debug printk()s above.  Would you agree?
-> >
-> 
-> If the driver that caused the wakeup does not use suspend blockers, we
-> the only choice is to try to suspend again. I want to know if this
-> happened. The stats patch disable this printk by default since it will
-> show up in the stats, and the timeout patch (not included here) delays
-> the retry.
-> 
-> ...
-> >> +EXPORT_SYMBOL(suspend_blocker_init);
-> >
-> > Is there a strong objection to changing that (and the other instances below) to
-> > EXPORT_SYMBOL_GPL?
-> >
-> 
-> I don't know if it is a strong objection, but I prefer that this api
-> is available to all drivers. I don't want to prevent a user from using
-> opportunistic suspend because a non-gpl driver could not use suspend
-> blockers. I changed the suspend blocking work functions to be gpl only
-> though, since they are not required, and the workqueue api is
-> available to gpl code anyway.
-> 
-> ...
-> >> +bool request_suspend_valid_state(suspend_state_t state)
-> >> +{
-> >> +     return (state == PM_SUSPEND_ON) || valid_state(state);
-> >> +}
-> >> +
-> >> +int request_suspend_state(suspend_state_t state)
-> >> +{
-> >> +     unsigned long irqflags;
-> >> +
-> >> +     if (!request_suspend_valid_state(state))
-> >> +             return -ENODEV;
-> >> +
-> >> +     spin_lock_irqsave(&state_lock, irqflags);
-> >> +
-> >> +     if (debug_mask & DEBUG_USER_STATE)
-> >> +             pr_info_time("request_suspend_state: %s (%d->%d) at %lld ",
-> >> +                          state != PM_SUSPEND_ON ? "sleep" : "wakeup",
-> >> +                          requested_suspend_state, state,
-> >> +                          ktime_to_ns(ktime_get()));
-> >> +
-> >> +     requested_suspend_state = state;
-> >> +     if (state == PM_SUSPEND_ON)
-> >> +             suspend_block(&main_suspend_blocker);
-> >> +     else
-> >> +             suspend_unblock(&main_suspend_blocker);
-> >> +     spin_unlock_irqrestore(&state_lock, irqflags);
-> >> +     return 0;
-> >> +}
-> >
-> > I think the two functions above should be static, shouldn't they?
-> 
-> No, they are used from main.c.
-> 
-> >
-> >> +static int __init suspend_block_init(void)
-> >> +{
-> >> +     suspend_work_queue = create_singlethread_workqueue("suspend");
-> >> +     if (!suspend_work_queue)
-> >> +             return -ENOMEM;
-> >> +
-> >> +     suspend_blocker_init(&main_suspend_blocker, "main");
-> >> +     suspend_block(&main_suspend_blocker);
-> >> +     return 0;
-> >> +}
-> >> +
-> >> +core_initcall(suspend_block_init);
-> >
-> > Hmm.  Why don't you want to put that initialization into pm_init() (in
-> > kernel/power/main.c)?
-> 
-> It was not needed before, but I changed pm_init to call
-> suspend_block_init after creating pm_wq.
-> 
-> >
-> > Also, we already have one PM workqueue.  It is used for runtime PM, but I guess
-> > it may be used just as well for the opportunistic suspend.  It is freezable,
-> > but would it hurt?
-> 
-> No, it works, the freezable flag is just ignored when I call
-> pm_suspend and I don't run anything else on the workqueue while
-> threads are frozen. It does need to be a single threaded workqueue
-> though, so make sure you don't just change that.
+On Thu, Apr 29, 2010 at 11:55 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Thu, Apr 29, 2010 at 11:10 AM, Rik van Riel <riel@redhat.com> wrote:
+>> On 04/28/2010 08:28 PM, Minchan Kim wrote:
+>>>
+>>> On Thu, Apr 29, 2010 at 5:57 AM, Rik van Riel<riel@redhat.com>  wrote:
+>>>>
+>>>> Take all the locks for all the anon_vmas in anon_vma_lock, this properly
+>>>> excludes migration and the transparent hugepage code from VMA changes
+>>>> done
+>>>> by mmap/munmap/mprotect/expand_stack/etc...
+>>>>
+>>>> Unfortunately, this requires adding a new lock (mm->anon_vma_chain_lock),
+>>>> otherwise we have an unavoidable lock ordering conflict.  This changes
+>>>> the
+>>>> locking rules for the "same_vma" list to be either mm->mmap_sem for
+>>>> write,
+>>>> or mm->mmap_sem for read plus the new mm->anon_vma_chain lock.  This
+>>>> limits
+>>>> the place where the new lock is taken to 2 locations - anon_vma_prepare
+>>>> and
+>>>> expand_downwards.
+>>>>
+>>>> Document the locking rules for the same_vma list in the anon_vma_chain
+>>>> and
+>>>> remove the anon_vma_lock call from expand_upwards, which does not need
+>>>> it.
+>>>>
+>>>> Signed-off-by: Rik van Riel<riel@redhat.com>
+>>>
+>>> This patch makes things simple. So I like this.
+>>> Actually, I wanted this all-at-once locks approach.
+>>> But I was worried about that how the patch affects AIM 7 workload
+>>> which is cause of anon_vma_chain about scalability by Rik.
+>>> But now Rik himself is sending the patch. So I assume the patch
+>>> couldn't decrease scalability of the workload heavily.
+>>
+>> The thing is, the number of anon_vmas attached to a VMA is
+>> small (depth of the tree, so for apache or aim the typical
+>> depth is 2). This N is between 1 and 3.
+>>
+>> The problem we had originally is the _width_ of the tree,
+>> where every sibling process was attached to the same anon_vma
+>> and the rmap code had to walk the page tables of all the
+>> processes, for every privately owned page in each child process.
+>> For large server workloads, this N is between a few hundred and
+>> a few thousand.
+>>
+>> What matters most at this point is correctness - we need to be
+>> able to exclude rmap walks when messing with a VMA in any way
+>> that breaks lookups, because rmap walks for page migration and
+>> hugepage conversion have to be 100% reliable.
+>>
+>> That is not a constraint I had in mind with the original
+>> anon_vma changes, so the code needs to be fixed up now...
+>
+> Yes. I understand it.
+>
+> When you tried anon_vma_chain patches as I pointed out, what I have a
+> concern is parent's vma not child's one.
+> The vma of parent still has N anon_vma.
+> AFAIR, you said it's trade-off and would be good than old at least.
+> I agreed.  But I just want to remind you because this makes worse.  :)
+> The corner case is that we have to hold locks of N.
+>
+> Do I miss something?
+> Really, Can't we ignore that case latency although this happen infrequently?
+> I am not against this patch. I just want to listen your opinion.
 
-Freezable workqueues have to be singlethread or else there will be unfixable
-races, so you can safely assume things will stay as they are in this respect.
+me/ slaps self.
 
-Rafael
+It's about height of tree and I can't imagine high height of
+scenario.(fork->fork->fork->...->fork)
+So as Rik pointed out, It's a not big overhead about latency latency,
+at least. I think.
 
+I supports this approach.
 
-> 
-> 
-
+-- 
+Kind regards,
+Minchan Kim
