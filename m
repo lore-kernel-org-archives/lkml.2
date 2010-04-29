@@ -1,92 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593Ab0D3RXW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:23:22 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:49286 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758525Ab0D3RWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:22:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:references:x-url:x-pgp-fp:x-pgp:date
-         :in-reply-to:message-id:user-agent:mime-version:content-type;
-        b=YS4ud9ixsYKZpWvR8lU2J56Y60E/8pN57vUQu7tKhNlAImHSrNd4g+nE48OFBxU5IR
-         y7CoqnpyOM1oKXzXwiEgvU6qPVvXVbvK00WJjw3SvdqG/CLFAy0zTPFNiHUI6xfE/Q/V
-         12b9oNwsL3NYsou+cLqs6+Q1kWgmpgvLfJGzM=
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Greg KH <greg@kroah.com>
-Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-usb@vger.kernel.org,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 3/8] USB: gadget: __init and __exit tags removed
-References: <cover.1270835924.git.mina86@mina86.com>
-	<3baf39971e1f49e98498f5d00e21df4302396252.1270835924.git.mina86@mina86.com>
-	<e6cbed26355492a8cde57973da56bccbb55b85a1.1270835924.git.mina86@mina86.com>
-	<aa83c43874f8aa490300d6bd03472646f2727eb1.1270835924.git.mina86@mina86.com>
-	<20100429221529.GA16465@kroah.com>
-X-Url: http://mina86.com/
-X-PGP-FP: 9134 06FA 7AD8 D134 9D0C  C33F 532C CB00 B7C6 DF1E
-X-PGP: B7C6DF1E
-Date: Thu, 29 Apr 2010 16:02:55 -0700 (PDT)
-In-Reply-To: <20100429221529.GA16465@kroah.com> (Greg KH's message of "Thu, 29
-	Apr 2010 15:15:29 -0700")
-Message-ID: <87hbmtq2ua.fsf@erwin.mina86.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0 (Slckware Linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1759313Ab0D3SVU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:21:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38826 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757664Ab0D3RXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:23:15 -0400
+Subject: Re: vmalloc performance
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Nick Piggin <npiggin@suse.de>
+In-Reply-To: <h2g28c262361004190712v131bf7a3q2a82fd1168faeefe@mail.gmail.com>
+References: <1271089672.7196.63.camel@localhost.localdomain>
+	 <1271249354.7196.66.camel@localhost.localdomain>
+	 <m2g28c262361004140813j5d70a80fy1882d01436d136a6@mail.gmail.com>
+	 <1271262948.2233.14.camel@barrios-desktop>
+	 <1271320388.2537.30.camel@localhost>
+	 <1271350270.2013.29.camel@barrios-desktop>
+	 <1271427056.7196.163.camel@localhost.localdomain>
+	 <1271603649.2100.122.camel@barrios-desktop>
+	 <1271681929.7196.175.camel@localhost.localdomain>
+	 <h2g28c262361004190712v131bf7a3q2a82fd1168faeefe@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat (UK) Ltd (Registered in England and Wales, No.
+ 3798903) Registered office: Red Hat UK Ltd, Amberley Place, 107-111 Peascod
+ Street, Windsor, Berkshire, SL4 ITE
+Date: Thu, 29 Apr 2010 14:43:22 +0100
+Message-Id: <1272548602.7196.371.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <greg@kroah.com> writes:
+Hi,
 
-> On Fri, Apr 09, 2010 at 09:21:20PM +0200, Michal Nazarewicz wrote:
->> __init, __initdata and __exit tags have have been removed from
->> various files to make it possible for gadgets that do not use
->> the __init/__exit tags to use those.
->> 
->> Files in question are related to:
->> * the core composite framework,
->> * the mass storage function (fixing a section mismatch) and
->> * ethernet driver (ACM, ECM, RNDIS).
->> 
->> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
->> Cc: Kyungmin Park <kyungmin.park@samsung.com>
->> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
->> ---
->>  drivers/usb/gadget/composite.c      |   21 ++++++++++-----------
->>  drivers/usb/gadget/config.c         |    4 ++--
->>  drivers/usb/gadget/epautoconf.c     |   12 ++++++------
->>  drivers/usb/gadget/f_acm.c          |   32 ++++++++++++++++----------------
->>  drivers/usb/gadget/f_ecm.c          |   33 +++++++++++++++++----------------
->>  drivers/usb/gadget/f_mass_storage.c |    2 +-
->>  drivers/usb/gadget/f_rndis.c        |   34 ++++++++++++++++++----------------
->>  drivers/usb/gadget/u_ether.c        |    4 ++--
->>  8 files changed, 72 insertions(+), 70 deletions(-)
->> 
->> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
->> index 09289bb..ff155ca 100644
->> --- a/drivers/usb/gadget/composite.c
->> +++ b/drivers/usb/gadget/composite.c
->> @@ -85,7 +85,7 @@ MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
->>   * This function returns the value of the function's bind(), which is
->>   * zero for success else a negative errno value.
->>   */
->> -int __init usb_add_function(struct usb_configuration *config,
->> +int __cold usb_add_function(struct usb_configuration *config,
->
-> What is the "__cold" for?
+On Mon, 2010-04-19 at 23:12 +0900, Minchan Kim wrote:
+> On Mon, Apr 19, 2010 at 9:58 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
+> > Hi,
+> >
+> > On Mon, 2010-04-19 at 00:14 +0900, Minchan Kim wrote:
+> >> On Fri, 2010-04-16 at 15:10 +0100, Steven Whitehouse wrote:
+> >> > Hi,
+> >> >
+> >> > On Fri, 2010-04-16 at 01:51 +0900, Minchan Kim wrote:
+> >> > [snip]
+> >> > > Thanks for the explanation. It seems to be real issue.
+> >> > >
+> >> > > I tested to see effect with flush during rb tree search.
+> >> > >
+> >> > > Before I applied your patch, the time is 50300661 us.
+> >> > > After your patch, 11569357 us.
+> >> > > After my debug patch, 6104875 us.
+> >> > >
+> >> > > I tested it as changing threshold value.
+> >> > >
+> >> > > threshold time
+> >> > > 1000              13892809
+> >> > > 500               9062110
+> >> > > 200               6714172
+> >> > > 100               6104875
+> >> > > 50                6758316
+> >> > >
+> >> > My results show:
+> >> >
+> >> > threshold        time
+> >> > 100000           139309948
+> >> > 1000             13555878
+> >> > 500              10069801
+> >> > 200              7813667
+> >> > 100              18523172
+> >> > 50               18546256
+> >> >
+> >> > > And perf shows smp_call_function is very low percentage.
+> >> > >
+> >> > > In my cases, 100 is best.
+> >> > >
+> >> > Looks like 200 for me.
+> >> >
+> >> > I think you meant to use the non _minmax version of proc_dointvec too?
+> >>
+> >> Yes. My fault :)
+> >>
+> >> > Although it doesn't make any difference for this basic test.
+> >> >
+> >> > The original reporter also has 8 cpu cores I've discovered. In his case
+> >> > divided by 4 cpus where as mine are divided by 2 cpus, but I think that
+> >> > makes no real difference in this case.
+> >> >
+> >> > I'll try and get some further test results ready shortly. Many thanks
+> >> > for all your efforts in tracking this down,
+> >> >
+> >> > Steve.
+> >>
+> >> I voted "free area cache".
+> > My results with this patch are:
+> >
+> > vmalloc took 5419238 us
+> > vmalloc took 5432874 us
+> > vmalloc took 5425568 us
+> > vmalloc took 5423867 us
+> >
+> > So thats about a third of the time it took with my original patch, so
+> > very much going in the right direction :-)
+> 
+> Good. :)
+> 
+> >
+> > I did get a compile warning:
+> >  CC      mm/vmalloc.o
+> > mm/vmalloc.c: In function ‘__free_vmap_area’:
+> > mm/vmalloc.c:454: warning: unused variable ‘prev’
+> >
+> > ....harmless, but it should be fixed before the final version,
+> 
+> Of course. It's not formal patch but for showing concept  . :)
+> 
+> Thanks for consuming precious your time. :)
+> As Nick comments, I have to do further work.
+> Maybe Nick could do it faster than me.
+> Anyway, I hope it can solve your problem.
+> 
+> Thanks, Steven.
+> 
+> >
+> > Steve.
+> >
+> >
 
-__init, among other things implies __cold:
+Your latest patch has now been run though the GFS2 tests which
+originally triggered my investigation. It seems to solve the problem
+completely. Maybe thanks for your efforts in helping us find and fix the
+problem. The next question is what remains to be done in order to get
+the patch into a form suitable for upstream merge?
 
-include/linux/init.h:43: #define __init   __section(.init.text) __cold notrace
+Steve.
 
-and so I left __cold leaving out __section.
 
--- 
-Pozdrawiam                                            _     _
- .o. | Wasal Jasnie Oswieconej Pani Informatyki     o' \,=./ `o
- ..o | Michal "mina86" Nazarewicz  <mina86*tlen.pl>    (o o)
- ooo +---<jid:mina86-jabber.org>---<tlen:mina86>---ooO--(_)--Ooo--
