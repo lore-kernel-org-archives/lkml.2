@@ -1,77 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933995Ab0D3Scm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:32:42 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:55822 "EHLO e5.ny.us.ibm.com"
+	id S934026Ab0D3SdU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:33:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30982 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934006Ab0D3Scd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:32:33 -0400
-Date: Fri, 30 Apr 2010 11:32:26 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Valdis.Kletnieks@vt.edu, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH tip/core/urgent] fix several lockdep splats, allow
- multiple splats
-Message-ID: <20100430183226.GB2482@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100421200150.GA3818@linux.vnet.ibm.com>
- <20100430100749.GC14202@elte.hu>
- <20100430153334.GA19672@Krystal>
- <10035.1272644205@localhost>
- <20100430180247.GA2482@linux.vnet.ibm.com>
- <20100430181201.GB1704@Krystal>
+	id S933154Ab0D3RV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:21:58 -0400
+Date: Thu, 29 Apr 2010 16:51:58 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+       Sridhar Samudrala <sri@us.ibm.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, David Stevens <dlstevens@us.ibm.com>
+Subject: [PATCH] macvtap: add ioctl to modify vnet header size
+Message-ID: <20100429135158.GA26303@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100430181201.GB1704@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 30, 2010 at 02:12:01PM -0400, Mathieu Desnoyers wrote:
-> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > On Fri, Apr 30, 2010 at 12:16:45PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> > > On Fri, 30 Apr 2010 11:33:34 EDT, Mathieu Desnoyers said:
-> > > 
-> > > > I recommend creating a kernel command line parameter that would tweak
-> > > > the number of messages printed by lockdep. The default would indeed by 1
-> > > > message, but people in a debugging marathon can specify a larger value
-> > > > so they won't have to reboot between each individual lockdep error.
-> > > 
-> > > Yeah, that would rock for development kernels - playing whack-a-mole with
-> > > a half-dozen new lockdep whinges can easily stretch out for quite some time.
-> > 
-> > The RCU-lockdep splats are a bit different in nature than the
-> > deadlock-related splats that lockdep normally prints.  The RCU-lockdep
-> > splats are transient in nature, and it is easy to apply WARN_ON_ONCE().
-> > In contrast, if you permit multiple deadlock-related lockdep splats,
-> > you tend to get lots of warnings about the same deadlock cycle.
-> > 
-> > So how about an additional kernel configuration variable, default
-> > disabled, perhaps named CONFIG_PROVE_RCU_MULTIPLE, that allows a
-> > single boot to see multiple messages?  Unlike the dyntick-idle
-> > WARN_ON()s that generated multi-gigabyte console logs in a great
-> > hurry, I haven't yet seen excessive quantities of RCU-lockdep splats,
-> > so I don't see the need for an integer limit.
-> > 
-> > Thoughts?
-> 
-> Ideally we don't want to flood the console with thousands of instances
-> of the same RCU-lockdep splat (think of a missing read lock on a common
-> code path). Therefore I think keeping an integer limit is relevant here.
-> I agree that this integer limit could be selected by a CONFIG_ option
-> rather than by a kernel parameter, as it will typically only be used on
-> development kernels with "kernel hacking" enabled anyway. There is not
-> much point in bloating the kernel code with an extra debug-only kernel
-> parameter parsing.
+This adds TUNSETVNETHDRSZ/TUNGETVNETHDRSZ support
+to macvtap.
 
-We already limit via WARN_ON_ONCE(), and there are fewer than 500 lines
-of code in the kernel that can give RCU lockdep splats, so I really believe
-that we are OK without an overall limit for the foreseeable future.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-							Thanx, Paul
+This just mirrors the support in tun,
+http://lkml.org/lkml/2010/3/17/221
+so that we can make vhost mergeable buffers work with macvtap as well.
+
+I plan to merge both patches through vhost tree together
+with mergeable buffer support. Comments?
+
+ drivers/net/macvtap.c |   31 +++++++++++++++++++++++++++----
+ 1 files changed, 27 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index d97e1fd..6451c4b 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -37,6 +37,7 @@
+ struct macvtap_queue {
+ 	struct sock sk;
+ 	struct socket sock;
++	int vnet_hdr_sz;
+ 	struct macvlan_dev *vlan;
+ 	struct file *file;
+ 	unsigned int flags;
+@@ -280,6 +281,7 @@ static int macvtap_open(struct inode *inode, struct file *file)
+ 	sock_init_data(&q->sock, &q->sk);
+ 	q->sk.sk_write_space = macvtap_sock_write_space;
+ 	q->flags = IFF_VNET_HDR | IFF_NO_PI | IFF_TAP;
++	q->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
+ 
+ 	err = macvtap_set_queue(dev, file, q);
+ 	if (err)
+@@ -440,14 +442,14 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q,
+ 	int vnet_hdr_len = 0;
+ 
+ 	if (q->flags & IFF_VNET_HDR) {
+-		vnet_hdr_len = sizeof(vnet_hdr);
++		vnet_hdr_len = q->vnet_hdr_sz;
+ 
+ 		err = -EINVAL;
+ 		if ((len -= vnet_hdr_len) < 0)
+ 			goto err;
+ 
+ 		err = memcpy_fromiovecend((void *)&vnet_hdr, iv, 0,
+-					   vnet_hdr_len);
++					   sizeof(vnet_hdr));
+ 		if (err < 0)
+ 			goto err;
+ 		if ((vnet_hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) &&
+@@ -529,7 +531,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 
+ 	if (q->flags & IFF_VNET_HDR) {
+ 		struct virtio_net_hdr vnet_hdr;
+-		vnet_hdr_len = sizeof (vnet_hdr);
++		vnet_hdr_len = q->vnet_hdr_sz;
+ 		if ((len -= vnet_hdr_len) < 0)
+ 			return -EINVAL;
+ 
+@@ -537,7 +539,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 		if (ret)
+ 			return ret;
+ 
+-		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, vnet_hdr_len))
++		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
+ 			return -EFAULT;
+ 	}
+ 
+@@ -622,6 +624,8 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+ 	struct ifreq __user *ifr = argp;
+ 	unsigned int __user *up = argp;
+ 	unsigned int u;
++	int __user *sp = argp;
++	int s;
+ 	int ret;
+ 
+ 	switch (cmd) {
+@@ -667,6 +671,25 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+ 		q->sk.sk_sndbuf = u;
+ 		return 0;
+ 
++	case TUNGETVNETHDRSZ:
++		s = q->vnet_hdr_sz;
++		if (put_user(s, sp))
++			ret = -EFAULT;
++		break;
++
++	case TUNSETVNETHDRSZ:
++		if (get_user(s, sp)) {
++			ret = -EFAULT;
++			break;
++		}
++		if (s < (int)sizeof(struct virtio_net_hdr)) {
++			ret = -EINVAL;
++			break;
++		}
++
++		q->vnet_hdr_sz = s;
++		break;
++
+ 	case TUNSETOFFLOAD:
+ 		/* let the user check for future flags */
+ 		if (arg & ~(TUN_F_CSUM | TUN_F_TSO4 | TUN_F_TSO6 |
+-- 
+1.7.1.rc1.22.g3163
