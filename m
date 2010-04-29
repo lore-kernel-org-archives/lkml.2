@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933804Ab0D3SZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:25:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63800 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933084Ab0D3RWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:22:19 -0400
-Date: Thu, 29 Apr 2010 20:58:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Tejun Heo <tj@kernel.org>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Pavel Machek <pavel@ucw.cz>,
-       Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 6/8] PM: Add suspend blocking work.
-Message-ID: <20100429185851.GA13862@redhat.com>
-References: <1272429119-12103-1-git-send-email-arve@android.com> <20100428194028.GA16389@redhat.com> <4BD89922.1040306@kernel.org> <201004282308.10751.rjw@sisk.pl>
+	id S1758511Ab0D3S0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:26:31 -0400
+Received: from mail.gmx.net ([213.165.64.20]:37854 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S933191Ab0D3SZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 14:25:34 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/oPRla8UfoVTSZPw4OzROwuatbfzsI3MHuJPV247
+	cgUDsB0UNgoD/Z
+From: Peter =?utf-8?q?H=C3=BCwe?= <PeterHuewe@gmx.de>
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH] arch/arm: Fix missing define for ARM_PMU_DEVICE_CPU
+Date: Thu, 29 Apr 2010 12:18:46 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
+Cc: Jamie Iles <jamie.iles@picochip.com>,
+       Russell King <linux@arm.linux.org.uk>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+References: <201004290231.03440.PeterHuewe@gmx.de> <20100429081218.GA14783@wear.picochip.com> <1272529580.24662.10.camel@e102144-lin.cambridge.arm.com>
+In-Reply-To: <1272529580.24662.10.camel@e102144-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004282308.10751.rjw@sisk.pl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004291218.46341.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.64000000000000001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28, Rafael J. Wysocki wrote:
->
-> On Wednesday 28 April 2010, Tejun Heo wrote:
-> > On 04/28/2010 09:40 PM, Oleg Nesterov wrote:
-> > >> +int schedule_suspend_blocking_work(struct suspend_blocking_work *work)
-> > >> +{
-> > >> ...
-> > >> +	ret = schedule_work(&work->work);
-> > >
-> > > Off-topic. We should probably export keventd_wq to avoid the duplications
-> > > like this.
-> >
-> > Yeah, had about the same thought.  cmwq exports it so I didn't suggest
-> > it at this point but then again we don't really know whether or when
-> > that series is going in
->
-> As soon as there are no major objections.  At least to my tree.
->
-> > so it might be a good idea to make that change now.  Hmm...
->
-> I'd rather like a follow-up patch changing that, if poss.
+Am Donnerstag 29 April 2010 10:26:20 schrieb Will Deacon:
+> > This build error is due to the core patch of Will's "ARM: pmu: provide
+> > a registration mechanism for IRQs" patch series not being merged yet.
+> I submitted the series to Russell's patch system on 9 April.
+> However, as you know, he's currently without an internet connection and
+> the patch system has gone offline. 
 
-Confused. Rafael, do you mean you dislike this change now?
+Ah, didn't know about this - then sorry to 'bug' you with my patch :)
+ 
+> Peter: if you're interested, the patch series I sent to the ARM
+> Linux list is archived here:
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2010-March/012113.html
 
-I don't really care, this change is trivial. But to me it makes more
-sense to push the trivial/simple changes ahead. Unless they really
-complicate the maintainging of the pending cmwq changes.
+Thanks for the Link - I'll have a look at it.
 
-Hmm... Speaking about keventd_wq, I just noticed flush_delayed_work()
-needs the fix:
 
-	--- a/kernel/workqueue.c
-	+++ b/kernel/workqueue.c
-	@@ -774,7 +774,7 @@ void flush_delayed_work(struct delayed_w
-	 {
-		if (del_timer_sync(&dwork->timer)) {
-			struct cpu_workqueue_struct *cwq;
-	-		cwq = wq_per_cpu(keventd_wq, get_cpu());
-	+		cwq = wq_per_cpu(get_wq_data(&dwork->work)->wq, get_cpu());
-			__queue_work(cwq, &dwork->work);
-			put_cpu();
-		}
-
-Oleg.
+Thanks,
+Peter
 
