@@ -1,83 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759531Ab0D3TZl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:25:41 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:58032 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502Ab0D3QsH (ORCPT
+	id S934246Ab0D3T1B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:27:01 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:63735 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757413Ab0D3Qrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:48:07 -0400
-From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+	Fri, 30 Apr 2010 12:47:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=rPWnHw8BKw+1U6HbNLgTNsAipvT7QEJ+1Yvy6czCQIjCzKKzeSV+YzNbfiOV8COz9v
+         CIeUvpdgOkD0wVXAA4BTc/79DrNvkNGhIKaKiGaZcGOLlT0fEtlXalzhQ8Unlk5X0OKY
+         Ccrl2hpJYIAzjsYNep718Hh1PG3GHeCqELpks=
+Subject: Re: [RFC PATCH -v3] take all anon_vma locks in anon_vma_lock
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 01/10] lib: introduce common method to convert hex digits
-Date: Fri, 30 Apr 2010 12:34:00 +0300
-Message-Id: <d5c4e26cc74458dd77102c4274d3260149717328.1272617852.git.ext-andriy.shevchenko@nokia.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
-References: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
-In-Reply-To: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
-References: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
-X-OriginalArrivalTime: 30 Apr 2010 09:34:09.0474 (UTC) FILETIME=[4912D220:01CAE848]
-X-Nokia-AV: Clean
+In-Reply-To: <20100429081521.GM15815@csn.ul.ie>
+References: <1272403852-10479-3-git-send-email-mel@csn.ul.ie>
+	 <20100427231007.GA510@random.random> <20100428091555.GB15815@csn.ul.ie>
+	 <20100428153525.GR510@random.random> <20100428155558.GI15815@csn.ul.ie>
+	 <20100428162305.GX510@random.random>
+	 <20100428134719.32e8011b@annuminas.surriel.com>
+	 <20100428142510.09984e15@annuminas.surriel.com>
+	 <20100428161711.5a815fa8@annuminas.surriel.com>
+	 <20100428165734.6541bab3@annuminas.surriel.com>
+	 <20100429081521.GM15815@csn.ul.ie>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 29 Apr 2010 17:32:17 +0900
+Message-ID: <1272529937.2100.219.camel@barrios-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hex_to_bin() is a little method which converts hex digit to its actual value.
-There are plenty of places where such functionality is needed.
+On Thu, 2010-04-29 at 09:15 +0100, Mel Gorman wrote:
+> On Wed, Apr 28, 2010 at 04:57:34PM -0400, Rik van Riel wrote:
+> > Take all the locks for all the anon_vmas in anon_vma_lock, this properly
+> > excludes migration and the transparent hugepage code from VMA changes done
+> > by mmap/munmap/mprotect/expand_stack/etc...
+> > 
+> 
+> In vma_adjust(), what prevents something like rmap_map seeing partial
+> updates while the following lines execute?
+> 
+>         vma->vm_start = start;
+>         vma->vm_end = end;
+>         vma->vm_pgoff = pgoff;
+>         if (adjust_next) {
+>                 next->vm_start += adjust_next << PAGE_SHIFT;
+>                 next->vm_pgoff += adjust_next;
+>         }
+> They would appear to happen outside the lock, even with this patch. The
+> update happened within the lock in 2.6.33.
+> 
+> 
+> 
+This part does it. :)
 
-Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+----
+@@ -578,6 +578,7 @@ again:                      remove_next = 1 + (end >
+next->vm_end);
+                }   
+        }   
+ 
++       anon_vma_lock(vma, &mm->mmap_sem);
+        if (root) {
+                flush_dcache_mmap_lock(mapping);
+                vma_prio_tree_remove(vma, root);
+@@ -599,6 +600,7 @@ again:                      remove_next = 1 + (end >
+next->vm_end);
+                vma_prio_tree_insert(vma, root);
+                flush_dcache_mmap_unlock(mapping);
+        }   
++       anon_vma_unlock(vma);
 ---
- include/linux/kernel.h |    2 ++
- lib/hexdump.c          |   19 +++++++++++++++++++
- 2 files changed, 21 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 9365227..2077cd1 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -372,6 +372,8 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
- 	return buf;
- }
- 
-+extern int hex_to_bin(char ch);
-+
- #ifndef pr_fmt
- #define pr_fmt(fmt) fmt
- #endif
-diff --git a/lib/hexdump.c b/lib/hexdump.c
-index 39af256..d79b166 100644
---- a/lib/hexdump.c
-+++ b/lib/hexdump.c
-@@ -16,6 +16,25 @@ const char hex_asc[] = "0123456789abcdef";
- EXPORT_SYMBOL(hex_asc);
- 
- /**
-+ * hex_to_bin - convert a hex digit to its real value
-+ * @ch: ascii character represents hex digit
-+ *
-+ * hex_to_bin() converts one hex digit to its actual value or -1 in case of bad
-+ * input.
-+ */
-+int hex_to_bin(char ch)
-+{
-+	if ((ch >= 'a') && (ch <= 'f'))
-+		return ch - 'a' + 10;
-+	if ((ch >= '0') && (ch <= '9'))
-+		return ch - '0';
-+	if ((ch >= 'A') && (ch <= 'F'))
-+		return ch - 'A' + 10;
-+	return -1;
-+}
-+EXPORT_SYMBOL(hex_to_bin);
-+
-+/**
-  * hex_dump_to_buffer - convert a blob of data to "hex ASCII" in memory
-  * @buf: data blob to dump
-  * @len: number of bytes in the @buf
+
+But we still need patch about shift_arg_pages.
+
+
+
 -- 
-1.6.3.3
+Kind regards,
+Minchan Kim
+
 
