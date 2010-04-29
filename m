@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933669Ab0D3SMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:12:05 -0400
-Received: from fallback.mail.elte.hu ([157.181.151.13]:44970 "EHLO
-	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932551Ab0D3SJB (ORCPT
+	id S933877Ab0D3SNH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:13:07 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:56737 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933875Ab0D3SMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:09:01 -0400
-Date: Fri, 30 Apr 2010 09:57:49 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL] perf: Initial regression testing command
-Message-ID: <20100430075749.GB20342@elte.hu>
-References: <1272579244-3981-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272579244-3981-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	Fri, 30 Apr 2010 14:12:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=t9aTioWZ3KFnovCWOmWeX6oHICXI9VFMEukDXRvPP8rGmR/+osMA9umZJSfrOb2IJf
+         o+64Tnmm6rFTPuMvqnLiAbDwyfCDSQfKNUcnWxsKGpYr4nQK3QyvJ0PN2tJSLLBWxtmp
+         MXYzUUEDjt098eKWAz5JcBr+SX39+TSry/TdY=
+From: Mark <reodge@gmail.com>
+To: gregkh@suse.de, shawn.bohrer@gmail.com, fmhess@users.sourceforge.net,
+       andrea.gelmini@gelma.net, eparis@redhat.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Mark <reodge@gmail.com>
+Subject: [PATCH] Staging: comedi: added log level to printk's in comedi_fops.c
+Date: Thu, 29 Apr 2010 18:17:16 +0800
+Message-Id: <1272536236-19879-1-git-send-email-reodge@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patches comedi_fops.c to add kernel log level to some printk calls
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Signed-off-by: Mark Rankilor <reodge@gmail.com>
+---
+ drivers/staging/comedi/comedi_fops.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-> From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> Hi Ingo,
-> 
-> 	Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
-> 
-> 	Now there are 7 patches in that repo.
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (2):
->   perf symbols: Add machine helper routines
->   perf test: Initial regression testing command
-> 
->  tools/perf/Documentation/perf-test.txt |   22 +++
->  tools/perf/Makefile                    |    1 +
->  tools/perf/builtin-kmem.c              |    2 +-
->  tools/perf/builtin-test.c              |  281 ++++++++++++++++++++++++++++++++
->  tools/perf/builtin.h                   |    1 +
->  tools/perf/command-list.txt            |    1 +
->  tools/perf/perf.c                      |    1 +
->  tools/perf/util/map.h                  |   25 +++-
->  tools/perf/util/symbol.c               |   77 +++++++---
->  tools/perf/util/symbol.h               |    7 +
->  10 files changed, 393 insertions(+), 25 deletions(-)
->  create mode 100644 tools/perf/Documentation/perf-test.txt
->  create mode 100644 tools/perf/builtin-test.c
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index 287a1af..1b3aed4 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -736,7 +736,8 @@ static int check_insn_config_length(struct comedi_insn *insn,
+ 		/* by default we allow the insn since we don't have checks for
+ 		 * all possible cases yet */
+ 	default:
+-		printk("comedi: no check for data length of config insn id "
++		printk(KERN_WARNING
++		       "comedi: no check for data length of config insn id "
+ 		       "%i is implemented.\n"
+ 		       " Add a check to %s in %s.\n"
+ 		       " Assuming n=%i is correct.\n", data[0], __func__,
+@@ -1925,7 +1926,7 @@ static int __init comedi_init(void)
+ 	}
+ 	comedi_class = class_create(THIS_MODULE, "comedi");
+ 	if (IS_ERR(comedi_class)) {
+-		printk("comedi: failed to create class");
++		printk(KERN_ERR "comedi: failed to create class");
+ 		cdev_del(&comedi_cdev);
+ 		unregister_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
+ 					 COMEDI_NUM_MINORS);
+@@ -1971,7 +1972,8 @@ module_exit(comedi_cleanup);
+ 
+ void comedi_error(const struct comedi_device *dev, const char *s)
+ {
+-	printk("comedi%d: %s: %s\n", dev->minor, dev->driver->driver_name, s);
++	printk(KERN_ERR "comedi%d: %s: %s\n", dev->minor,
++	       dev->driver->driver_name, s);
+ }
+ 
+ void comedi_event(struct comedi_device *dev, struct comedi_subdevice *s)
+-- 
+1.7.0.5
 
-Pulled, thanks a lot Arnaldo!
-
-	Ingo
