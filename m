@@ -1,147 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757051Ab0D3QvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 12:51:19 -0400
-Received: from toq10-srv.bellnexxia.net ([209.226.175.117]:48912 "EHLO
-	toq10-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757620Ab0D3Qt6 (ORCPT
+	id S1757777Ab0D3QvV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 12:51:21 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:52645 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757733Ab0D3QvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:49:58 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAKM62UtGGNqG/2dsb2JhbACdDXK+X4UQBA
-Date: Thu, 29 Apr 2010 10:55:59 -0400
-From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 04/10][RFC] tracing: Remove per event trace registering
-Message-ID: <20100429145559.GB24819@Krystal>
-References: <20100426195024.256424113@goodmis.org> <20100426200242.214837703@goodmis.org> <20100428204448.GE8591@Krystal> <1272499218.9739.86.camel@gandalf.stny.rr.com> <20100429000528.GB30353@Krystal> <1272500422.9739.98.camel@gandalf.stny.rr.com> <20100429133649.GC14617@Krystal> <1272550009.9739.136.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1272550009.9739.136.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 10:46:34 up 22 days, 40 min,  4 users,  load average: 0.25, 0.22,
-	0.20
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 30 Apr 2010 12:51:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=pwJztwdMGCUktO82DfTLZO+fTJ2cnWZRRyXdkqP8OcMxRqFHxZCE/G8XepfWrl+f01
+         Muvt/UsrdLZSKpxyAQ912ft8r3ew3j+Q0kllnmqzDFQIQhBCVqG9Ngf/8Kfwj8O6SF3h
+         bn7QyWcEa83YNe9LUA7Wza/7vSfelLAg0rEBE=
+MIME-Version: 1.0
+In-Reply-To: <20100429151555.GM17639@pcarmody-desktop>
+References: <l2ye6bf505b1004271144ta6817962vec8167d813658648@mail.gmail.com>
+	 <alpine.LFD.2.00.1004272053130.2951@localhost.localdomain>
+	 <1272399798.2255.2.camel@localhost>
+	 <1272400246.2255.5.camel@localhost>
+	 <y2ge6bf505b1004281054kfc44529fkf87dc5e9d564f9b3@mail.gmail.com>
+	 <20100429151555.GM17639@pcarmody-desktop>
+Date: Thu, 29 Apr 2010 10:52:45 -0500
+Message-ID: <y2xe6bf505b1004290852xa079969k3316c5bb7233de13@mail.gmail.com>
+Subject: Re: 2.6.33.3-rt16 Oops caused by umount
+From: Xianghua Xiao <xiaoxianghua@gmail.com>
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, john stultz <johnstul@us.ibm.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Thu, 2010-04-29 at 09:36 -0400, Mathieu Desnoyers wrote:
-> 
-> > > Instead of calling register_trace_##name that is created for each
-> > > tracepoint, we now call the tracepoint_probe_register() directly in the
-> > > C file with the generated probe.
-> > > 
-> > > Both the probe and the tracepoint are created from the same data. I'm
-> > > not seeing where you want to add this check.
-> > 
-> > So if they are created from the same data, we can expect this test to
-> > always pass, which is good (and expected).
-> > 
-> > I'd add this extra check before casting the callback to (void *) before
-> > it is passed to tracepoint_probe_register(). Let's just call this
-> > internal preprocessing macro integrity check. As long as it does not add
-> > a runtime cost, there is no reason not to put this extra check.
-> 
-> The problem is, the cast is now performed in a C file for all events.
-> There's no way to know what to cast it to there. This is out of the
-> automation of the macro.
-> 
-> We use to have the cast check by creating code that would create the
-> "register_trace_##call", and the typecheck was doing by passing the data
-> to this function. But we removed this code out of the per event, it was
-> adding lots of text footprint, and moved it to one single function that
-> handles all events. It is just expected that the callback created
-> matches the function it was done.
-> 
-> If you are overly paranoid, we could create a special function that
-> tests that the callback format that is created matches the tracepoint
-> that is created, and make it so GCC sees that nothing calls it and
-> removes it at final link. But I still see this as a waste.
-> 
-> 
-> The tracepoint is created in include/linux/tracepoint.h:
-> 
-> #define TRACE_EVENT(name, proto, args, struct, assign, print)	\
-> 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+On Thu, Apr 29, 2010 at 10:15 AM, Phil Carmody
+<ext-phil.2.carmody@nokia.com> wrote:
+> On 28/04/10 19:54 +0200, ext Xianghua Xiao wrote:
+>> On Wed, Apr 28, 2010 at 11:34 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> ...
+>> Thomas,
+>> I patched it and re-run it however did not find any condition from
+>> your patch had a hit.
+>> In your patch I changed :
+>>
+>> if (!file->f_path) {
+>> to
+>> if(!(&(file->f_path))){
+>> Otherwise it won't compile as f_path is a not a pointer.
+>
+> That check is completely bogus. The address of _anything_ (whose address
+> can be taken) is _always_ non-null.
+>
+> Phil
+>
 
-Can we add something like this to DECLARE_TRACE ? (not convinced it is
-valid though)
+Thomas,
 
-static inline void check_trace_##name(cb_type)
-{
-	BUILD_BUG_ON(!__same_type(void (*probe)(TP_PROTO(proto), void *data),
-				  cb_type));
-}
-
-> 
-> The callback is created in include/trace/ftrace.h:
-> 
-> #undef TRACE_EVENT
-> #define TRACE_EVENT(name, proto, args, tstuct, assign, print)	\
-> 	DECLARE_EVENT_CLASS(name,				\
-> 				PARAMS(proto),			\
-> 				PARAMS(args),			\
-> 				PARAMS(tstruct),		\
-> 				PARAMS(assign),			\
-> 				PARAMS(print));			\
-> 	DEFINE_EVENT(name, name, PARAMS(proto), PARAMS(args));
-> 
-> #undef DECLARE_EVENT_CLASS
-> #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
-> 									\
-> static notrace void							\
-> ftrace_raw_event_##call(proto,						\
-> 			struct ftrace_event_call *event_call)		\
-> [...]
-> 
-
-Either within this callback, or in a dummy static function after, we
-could add:
-
-check_trace_##call(ftrace_raw_event_##call);
-
-So.. you are the preprocessor expert, do you think this could fly ? ;)
+I confirm that 2.6.33.3-rt15 worked fine, reboot/umount will not oops.
 
 Thanks,
-
-Mathieu
-
-> 
-> Thus the "proto" field of the TRACE_EVENT() is used to make both the
-> tracepoint and the callback. We add the struct ftrace_event_call
-> *event_call which is the data we pass to the callback.
-> 
-> Now, where this gets called is in kernel/trace/trace_events.c:
-> 
-> 	tracepoint_probe_register(call->name,
-> 				  call->class->probe,
-> 				  call);
-> 
-> This is where we lose the typecheck. So my question is... where do you
-> want to put in a check?
-> 
-> -- Steve
-> 
-> 	
-> 
-> 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Xianghua
