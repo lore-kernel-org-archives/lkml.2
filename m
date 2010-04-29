@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab0D3S7W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:59:22 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:60858 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758400Ab0D3S7H (ORCPT
+	id S1759404Ab0D3TBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:01:22 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:32899 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759379Ab0D3TBA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:59:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=xHMmNiNmmbhDSUFFkVmGJ7pU9KBwVYCDAHU23U8UmYEpSJAjMIVnmq18/Y0HfCzSJB
-         VaplYl25tOrvQFQBl5LDvUeMJ6dqQIu+15Y4E7VPsptv1QBPai1t5ies7UsB60dWEaYe
-         ZhzE2je4/v8t6ARbcuqVq9U6/M9wiVHZN6mwA=
-Message-ID: <4BD999C8.7090602@gmail.com>
-Date: Thu, 29 Apr 2010 07:38:00 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Fri, 30 Apr 2010 15:01:00 -0400
 MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Alexey Starikovskiy <astarikovskiy@suse.de>
-Subject: Re: MacBookPro2,2 unable too boot with the latest HEAD
-References: <i2vdd18b0c31004140812i6a0e9430u68ab49b24273fe9b@mail.gmail.com> <20100419142804.3cd53666.akpm@linux-foundation.org> <4BCCCCDF.4010605@gmail.com> <20100419145741.95688467.akpm@linux-foundation.org> <alpine.LFD.2.00.1004201011050.2402@sony>
-In-Reply-To: <alpine.LFD.2.00.1004201011050.2402@sony>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201004292311.27400.rjw@sisk.pl>
+References: <1272429119-12103-1-git-send-email-arve@android.com>
+	 <201004290105.15707.rjw@sisk.pl>
+	 <h2jd6200be21004281638y6b751abesfcf6416707e6fee4@mail.gmail.com>
+	 <201004292311.27400.rjw@sisk.pl>
+Date: Thu, 29 Apr 2010 16:41:57 -0700
+Message-ID: <t2jd6200be21004291641x7fcaab37t5f4c2d66a730bf09@mail.gmail.com>
+Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend 
+	blockers from user-space
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Jim Collar <jim.collar@eqware.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Avi Kivity <avi@redhat.com>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Magnus Damm <damm@igel.co.jp>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2010 07:17 AM, Len Brown wrote:
->
->>> the patch here fixes it for me:ACPI: EC: Limit burst to 64 bit
->>> https://bugzilla.kernel.org/attachment.cgi?id=25962
+2010/4/29 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Thursday 29 April 2010, Arve Hjønnevåg wrote:
+>> 2010/4/28 Rafael J. Wysocki <rjw@sisk.pl>:
+>> > On Thursday 29 April 2010, Arve Hjønnevåg wrote:
+>> >> 2010/4/28 Rafael J. Wysocki <rjw@sisk.pl>:
+>> >> > On Wednesday 28 April 2010, Arve Hjønnevåg wrote:
+>> >> >> Add a misc device, "suspend_blocker", that allows user-space processes
+>> >> >> to block auto suspend. The device has ioctls to create a suspend_blocker,
+>> >> >> and to block and unblock suspend. To delete the suspend_blocker, close
+>> >> >> the device.
+>> >> >>
+>> >> >> Signed-off-by: Arve Hjønnevåg <arve@android.com>
+>> >> > ...
+>> >> >> +
+>> >> >> +#include <linux/fs.h>
+>> >> >> +#include <linux/miscdevice.h>
+>> >> >> +#include <linux/module.h>
+>> >> >> +#include <linux/uaccess.h>
+>> >> >> +#include <linux/slab.h>
+>> >> >> +#include <linux/suspend_blocker.h>
+>> >> >> +#include <linux/suspend_block_dev.h>
+>> >> >> +
+>> >> >> +enum {
+>> >> >> +     DEBUG_FAILURE   = BIT(0),
+>> >> >> +};
+>> >> >> +static int debug_mask = DEBUG_FAILURE;
+>> >> >
+>> >> > What's the exact purpose of this?
+>> >>
+>> >> To show errors returned to user space. I can turn it off by default if you want.
+>> >
+>> > Not necessarily, but why is it a mask?  It looks like a 0/1 thing would be
+>> > sufficient.
 >>
->> hm.  I wonder how you go from a bugzilla attachment back up tot he bug
->> to which it is attached?
+>> I may want to add a bit to print all user-space block and unblock calls.
 >
-> Use "A comment contains this string" in bugzilla's advanced search
-> and plug in "attachment.cgi?id=25962" for this case.
->
-> you'll find the patch in this comment:
-> https://bugzilla.kernel.org/show_bug.cgi?id=15749#c7
->
-> It is a bit more user friendly to supply the
-> URL of the commment containing the patch rather than
-> the direct URL of the attachment itself.
->
->> Oh well.  Alexey, I trust that patch is in the 2.6.34 queue?
->
-> it shipped in 2.6.34-rc5 in commit
-> 2060c44576c79086ff24718878d7edaa7384a985
->
-> thanks,
-> Len Brown, Intel Open Source Technology Center
->
+> Alternatively, you can add a new parameter for that, which I think I would prefer.
 >
 
+I use a bit-mask in the main suspend blocker code. This makes it easy
+to turn on or off all the messages.
 
-ahh... o.k. so I just have to add
-#(then a comment number) i.g.
-#7 at the end of the bug URL.
-
-make sense...
-
-off topic of this bug, I've another
-issue over here with the iMac9,1
-(that I've been slowly working on)
-
-basically long story short there is
-no entry for the AC adapter in it's
-dsdt(ACPI0003)
-ac.c:
-static const struct acpi_device_id ac_device_ids[] = {
-          {"ACPI0003", 0},
-          {"", 0},
-  };
-
-causing no entries in /proc/acpi/*
-and /sys/class/power_supply
-
-This doesn't seem to be a big issue
-it's just one machine defaults to ac
-and then another machine defaults to battery
-(keep in mind both machines are iMac9,1's
-just different gpu's).
-
-is there some boot param to tell the kernel
-to simply go to ac?
-
-Justin P. Mattock
+-- 
+Arve Hjønnevåg
