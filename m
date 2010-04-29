@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759483Ab0D3Ucl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 16:32:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:65054 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758336Ab0D3Ucj (ORCPT
+	id S1759553Ab0D3UhS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 16:37:18 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:59004 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759194Ab0D3UhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 16:32:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH 0/5] Pushdown bkl from v4l ioctls
-Date: Thu, 29 Apr 2010 09:38:09 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
-Cc: Hans Verkuil <hverkuil@xs4all.nl>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, John Kacur <jkacur@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>, Greg KH <gregkh@suse.de>,
-       Linux Media Mailing List <linux-media@vger.kernel.org>
-References: <alpine.LFD.2.00.1004280750330.3739@i5.linux-foundation.org> <201004290844.29347.hverkuil@xs4all.nl> <201004290910.43412.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201004290910.43412.laurent.pinchart@ideasonboard.com>
+	Fri, 30 Apr 2010 16:37:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=O0omdxPLyFpQie1LoQsHnD61oZMlQ5reIAWmyM35ljbk2Fz0zKBeCwpazmsv74sJYG
+         XgZaH3phBvWxIo19iAXSQkKZhoanL/SRnFre2p/a7DmlrDb5+K8PAA28Kp3pUplEOkF6
+         NOCESFqk5y54b0DocjfsHWRARjXGaJq1v0PlA=
+Message-ID: <4BD9ADE2.3090208@gmail.com>
+Date: Thu, 29 Apr 2010 09:03:46 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-6"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004290938.09573.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+JQtjzX6F8ndixqirDlCZcrWKgI2vGOQ3XNAE
- 6UBS81xszAnuTtNhzjUvilzUoimfGSoY1FSi3gIpe2PdjcT6+C
- BSvfRljcMwy3ATKBWZyzQ==
+To: Alexey Starikovskiy <astarikovskiy@suse.de>
+CC: Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: MacBookPro2,2 unable too boot with the latest HEAD
+References: <i2vdd18b0c31004140812i6a0e9430u68ab49b24273fe9b@mail.gmail.com> <20100419142804.3cd53666.akpm@linux-foundation.org> <4BCCCCDF.4010605@gmail.com> <20100419145741.95688467.akpm@linux-foundation.org> <alpine.LFD.2.00.1004201011050.2402@sony> <4BD999C8.7090602@gmail.com> <4BD9A150.6060402@suse.de>
+In-Reply-To: <4BD9A150.6060402@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 April 2010 09:10:42 Laurent Pinchart wrote:
-> On Thursday 29 April 2010 08:44:29 Hans Verkuil wrote:
-> >
-> > 3) Investigate what needs to be done to replace the bkl with a v4l2-dev.c
-> > global mutex. Those drivers that call the bkl themselves should probably be
-> > converted to do proper locking, but there are only about 14 drivers that do
-> > this. The other 60 or so drivers should work fine if a v4l2-dev global lock
-> > is used. At this point the bkl is effectively removed from the v4l
-> > subsystem.
-> > 
-> > 4) Work on the remaining 60 drivers to do proper locking and get rid of the
-> > v4l2-dev global lock. This is probably less work than it sounds.
-> > 
-> > Since your patch moves everything down to the driver level it will actually
-> > make this work harder rather than easier. And it touches almost all drivers
-> > as well.
-> 
-> Every driver will need to be carefully checked to make sure the BKL can be 
-> replaced by a v4l2-dev global mutex. Why would it be more difficult to do so 
-> if the BKL is pushed down to the drivers ?
+On 04/29/2010 08:10 AM, Alexey Starikovskiy wrote:
+> 29.04.2010 18:38, Justin P. Mattock пишет:
+>> On 04/20/2010 07:17 AM, Len Brown wrote:
+>>>
+>>>>> the patch here fixes it for me:ACPI: EC: Limit burst to 64 bit
+>>>>> https://bugzilla.kernel.org/attachment.cgi?id=25962
+>>>>
+>>>> hm. I wonder how you go from a bugzilla attachment back up tot he bug
+>>>> to which it is attached?
+>>>
+>>> Use "A comment contains this string" in bugzilla's advanced search
+>>> and plug in "attachment.cgi?id=25962" for this case.
+>>>
+>>> you'll find the patch in this comment:
+>>> https://bugzilla.kernel.org/show_bug.cgi?id=15749#c7
+>>>
+>>> It is a bit more user friendly to supply the
+>>> URL of the commment containing the patch rather than
+>>> the direct URL of the attachment itself.
+>>>
+>>>> Oh well. Alexey, I trust that patch is in the 2.6.34 queue?
+>>>
+>>> it shipped in 2.6.34-rc5 in commit
+>>> 2060c44576c79086ff24718878d7edaa7384a985
+>>>
+>>> thanks,
+>>> Len Brown, Intel Open Source Technology Center
+>>>
+>>>
+>>
+>>
+>> ahh... o.k. so I just have to add
+>> #(then a comment number) i.g.
+>> #7 at the end of the bug URL.
+>>
+>> make sense...
+>>
+>> off topic of this bug, I've another
+>> issue over here with the iMac9,1
+>> (that I've been slowly working on)
+>>
+>> basically long story short there is
+>> no entry for the AC adapter in it's
+>> dsdt(ACPI0003)
+>> ac.c:
+>> static const struct acpi_device_id ac_device_ids[] = {
+>> {"ACPI0003", 0},
+>> {"", 0},
+>> };
+>>
+>> causing no entries in /proc/acpi/*
+>> and /sys/class/power_supply
+>>
+>> This doesn't seem to be a big issue
+>> it's just one machine defaults to ac
+>> and then another machine defaults to battery
+>> (keep in mind both machines are iMac9,1's
+>> just different gpu's).
+>>
+>> is there some boot param to tell the kernel
+>> to simply go to ac?
+>>
+>> Justin P. Mattock
+> There is no external AC switch. You may try to blacklist ac driver, so
+> kernel might be fulled into being run on a desktop...
+> You might also open a bug report for this issue, so we could give a more
+> meaningful answer...
+>
+> Regards,
+> Alex.
+>
 
-Note that you can completely skip the step of a v4l2-dev global mutex with
-Frederic's patch. This is the only use of the BKL in the common v4l2
-code as far as I can tell, so instead of introducing yet another global
-lock, you can go straight to stage 4 and look at each driver separately,
-possibly introducing a per driver lock.
+your right!!
+(I've been putting off filling a bug
+only to really see if I can do this,but the more
+I look into it the more daunting it becomes).
 
-	Arnd
+as for the issue, I was thinking in the area of a dmi blacklist
+or something to where proc_mkdir etc..
+will just make the file "online" to trick
+the kernel and any other mechanism reading
+those files.
+
+but first things first, I'll file a bug.
+
+Justin P. Mattock
