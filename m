@@ -1,124 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933235Ab0D3Sik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:38:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30982 "EHLO mx1.redhat.com"
+	id S1759200Ab0D3SiK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:38:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13490 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933118Ab0D3RVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:21:38 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 3/7] KEYS: Use RCU dereference wrappers in keyring key type
-	code
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-       linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Fri, 30 Apr 2010 14:32:18 +0100
-Message-ID: <20100430133218.2126.28129.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
-References: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S933125Ab0D3RVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:21:45 -0400
+Date: Thu, 29 Apr 2010 22:40:56 +0200 (CEST)
+From: John Kacur <jkacur@redhat.com>
+X-X-Sender: jkacur@localhost.localdomain
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: =?ISO-8859-15?Q?=22Fr=E9d=E9ric_Weisbecker=22?= 
+	<fweisbec@gmail.com>,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Arnd Bergmann <arnd@arndb.de>
+Subject: Re: linux-next: build failure after merge of the bkl-ioctl tree
+In-Reply-To: <20100429154947.fbacee1f.sfr@canb.auug.org.au>
+Message-ID: <alpine.LFD.2.00.1004292239320.8472@localhost.localdomain>
+References: <20100429154947.fbacee1f.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-318342147-1272573660=:8472"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The keyring key type code should use RCU dereference wrappers, even when it
-holds the keyring's key semaphore.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Reported-by: Vegard Nossum <vegard.nossum@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+--8323328-318342147-1272573660=:8472
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+
+
+On Thu, 29 Apr 2010, Stephen Rothwell wrote:
+
+> Hi Frédéric,
+> 
+> After merging the bkl-ioctl tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/scsi/3w-xxxx.c: In function 'tw_chrdev_ioctl':
+> drivers/scsi/3w-xxxx.c:896: error: 'inode' undeclared (first use in this function)
+> 
+> Caused by commit 5c9af160f830a68734f600fc0f90cba35e26727b ("scsi: Push
+> down BKL into ioctl functions").
+> 
+> I have used the version of the blk-ioctl tree from next-20100428 for
+> today.
+
+Frederic: did you miss one of my patches to fix the scsi compile problems?
+
+The following should have fixed the above:
+
+>From 3605ca2d1b29511fe1c95b47c4c596f392797585 Mon Sep 17 00:00:00 2001
+From: John Kacur <jkacur@redhat.com>
+Date: Tue, 27 Apr 2010 10:47:43 +0200
+Subject: [PATCH 04/10] bkl: Fix missing inode tw_chrdev_ioctl due to bkl pushdown
+Cc: Arnd Bergmann <arnd@arndb.de>,
+    Linus Torvalds <torvalds@linux-foundation.org>,
+    Frederic Weisbecker <fweisbec@gmail.com>,
+    Jan Blunck <jblunck@gmail.com>,
+    Thomas Gleixner <tglx@linutronix.de>
+
+Signed-off-by: John Kacur <jkacur@redhat.com>
 ---
+ drivers/scsi/3w-xxxx.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
- security/keys/keyring.c |   23 +++++++++++++----------
- 1 files changed, 13 insertions(+), 10 deletions(-)
+diff --git a/drivers/scsi/3w-xxxx.c b/drivers/scsi/3w-xxxx.c
+index 45a737c..2957691 100644
+--- a/drivers/scsi/3w-xxxx.c
++++ b/drivers/scsi/3w-xxxx.c
+@@ -890,6 +890,7 @@ static long tw_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long a
+ 	unsigned long data_buffer_length_adjusted = 0;
+ 	unsigned long *cpu_addr;
+ 	long timeout;
++	struct inode *inode = file->f_dentry->d_inode;
+ 	TW_New_Ioctl *tw_ioctl;
+ 	TW_Passthru *passthru;
+ 	TW_Device_Extension *tw_dev = tw_device_extension_list[iminor(inode)];
+-- 
+1.6.6.1
 
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index d570824..63385af 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -20,6 +20,11 @@
- #include <linux/uaccess.h>
- #include "internal.h"
- 
-+#define rcu_dereference_locked_keyring(keyring)				\
-+	(rcu_dereference_protected(					\
-+		(keyring)->payload.subscriptions,			\
-+		rwsem_is_locked((struct rw_semaphore *)&(keyring)->sem)))
-+
- /*
-  * when plumbing the depths of the key tree, this sets a hard limit set on how
-  * deep we're willing to go
-@@ -201,8 +206,7 @@ static long keyring_read(const struct key *keyring,
- 	int loop, ret;
- 
- 	ret = 0;
--	klist = keyring->payload.subscriptions;
--
-+	klist = rcu_dereference_locked_keyring(keyring);
- 	if (klist) {
- 		/* calculate how much data we could return */
- 		qty = klist->nkeys * sizeof(key_serial_t);
-@@ -720,8 +724,7 @@ int __key_link(struct key *keyring, struct key *key)
- 	}
- 
- 	/* see if there's a matching key we can displace */
--	klist = keyring->payload.subscriptions;
--
-+	klist = rcu_dereference_locked_keyring(keyring);
- 	if (klist && klist->nkeys > 0) {
- 		struct key_type *type = key->type;
- 
-@@ -765,8 +768,6 @@ int __key_link(struct key *keyring, struct key *key)
- 	if (ret < 0)
- 		goto error2;
- 
--	klist = keyring->payload.subscriptions;
--
- 	if (klist && klist->nkeys < klist->maxkeys) {
- 		/* there's sufficient slack space to add directly */
- 		atomic_inc(&key->usage);
-@@ -867,7 +868,7 @@ int key_unlink(struct key *keyring, struct key *key)
- 
- 	down_write(&keyring->sem);
- 
--	klist = keyring->payload.subscriptions;
-+	klist = rcu_dereference_locked_keyring(keyring);
- 	if (klist) {
- 		/* search the keyring for the key */
- 		for (loop = 0; loop < klist->nkeys; loop++)
-@@ -958,7 +959,7 @@ int keyring_clear(struct key *keyring)
- 		/* detach the pointer block with the locks held */
- 		down_write(&keyring->sem);
- 
--		klist = keyring->payload.subscriptions;
-+		klist = rcu_dereference_locked_keyring(keyring);
- 		if (klist) {
- 			/* adjust the quota */
- 			key_payload_reserve(keyring,
-@@ -990,7 +991,9 @@ EXPORT_SYMBOL(keyring_clear);
-  */
- static void keyring_revoke(struct key *keyring)
- {
--	struct keyring_list *klist = keyring->payload.subscriptions;
-+	struct keyring_list *klist;
-+
-+	klist = rcu_dereference_locked_keyring(keyring);
- 
- 	/* adjust the quota */
- 	key_payload_reserve(keyring, 0);
-@@ -1024,7 +1027,7 @@ void keyring_gc(struct key *keyring, time_t limit)
- 
- 	down_write(&keyring->sem);
- 
--	klist = keyring->payload.subscriptions;
-+	klist = rcu_dereference_locked_keyring(keyring);
- 	if (!klist)
- 		goto no_klist;
- 
-
+--8323328-318342147-1272573660=:8472--
