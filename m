@@ -1,107 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602Ab0D3StA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:49:00 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:35328 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933971Ab0D3Ssd (ORCPT
+	id S932636Ab0D3Sso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:48:44 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:21300 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932820Ab0D3RNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:48:33 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2010-04-28-16-53 uploaded
-In-Reply-To: Your message of "Fri, 30 Apr 2010 14:02:27 EDT."
-             <1272650547.10027.97.camel@useless.americas.hpqcorp.net>
-From: Valdis.Kletnieks@vt.edu
-References: <201004290021.o3T0L04Y028017@imap1.linux-foundation.org> <18962.1272576730@localhost>
-            <1272650547.10027.97.camel@useless.americas.hpqcorp.net>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1272653269_4026P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 30 Apr 2010 14:47:49 -0400
-Message-ID: <21637.1272653269@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020205.4BDB25D5.023B,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	Fri, 30 Apr 2010 13:13:13 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=B1Vrul2VUNy5tFCC0bsenQPJ81rzOZk4+Yf8FTRBQMHeJSZyn4hlXiggiAVqGWV9R
+	o4ceTvcQeyjJzP/ul5KOg==
+Date: Thu, 29 Apr 2010 11:03:21 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Miao Xie <miaox@cn.fujitsu.com>
+cc: Lee Schermerhorn <lee.schermerhorn@hp.com>, Nick Piggin <npiggin@suse.de>,
+       Paul Menage <menage@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>,
+       Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] mm: fix bugs of mpol_rebind_nodemask()
+In-Reply-To: <4BD90529.3090401@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1004291054010.24062@chino.kir.corp.google.com>
+References: <4BD05929.8040900@cn.fujitsu.com> <alpine.DEB.2.00.1004221415090.25350@chino.kir.corp.google.com> <4BD0F797.6020704@cn.fujitsu.com> <alpine.DEB.2.00.1004230141400.2190@chino.kir.corp.google.com> <4BD90529.3090401@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1272653269_4026P
-Content-Type: text/plain; charset=us-ascii
+On Thu, 29 Apr 2010, Miao Xie wrote:
 
-On Fri, 30 Apr 2010 14:02:27 EDT, Lee Schermerhorn said:
+> > That's been the behavior for at least three years so changing it from 
+> > under the applications isn't acceptable, see 
+> > Documentation/vm/numa_memory_policy.txt regarding mempolicy rebinds and 
+> > the two flags that are defined that can be used to adjust the behavior.
+> 
+> Is the flags what you said MPOL_F_STATIC_NODES and MPOL_F_RELATIVE_NODES? 
+> But the codes that I changed isn't under MPOL_F_STATIC_NODES or MPOL_F_RELATIVE_NODES.
+> The documentation doesn't say what we should do if either of these two flags is not set. 
+> 
 
-> Would you have time to try a few patches?  I've been doing some rework
-> of the generic percpu numa_node/numa_mem patches.  This rework should
-> solve the build problem you encountered.
+MPOL_F_STATIC_NODES and MPOL_F_RELATIVE_NODES allow you to adjust the 
+behavior of the rebind: the former requires specific nodes to be assigned 
+to the mempolicy and could suppress the rebind completely, if necessary; 
+the latter ensures the mempolicy nodemask has a certain weight as nodes 
+are assigned in a round-robin manner.  The behavior that you're referring 
+to is provided via MPOL_F_RELATIVE_NODES, which guarantees whatever weight 
+is passed via set_mempolicy() will be preserved when mems are added to a 
+cpuset.
 
-Not sure if I bollixed up adding the patches to the series file, that
-section now looks like:
+Regardless of whether the behavior is documented when either flag is 
+passed, we can't change the long-standing default behavior that people use 
+when their cpuset mems are rebound: we can only extend the functionality 
+and the behavior you're seeking is already available with a 
+MPOL_F_RELATIVE_NODES flag modifier.
 
-% grep -n ^numa series
-1465:numa-add-generic-percpu-var-numa_node_id-implementation.patch
-1466:numa-add-generic-percpu-var-numa_node_id-implementation-fix1.patch
-1467:numa-add-generic-percpu-var-numa_node_id-implementation-fix2.patch
-1468:numa-x86_64-use-generic-percpu-var-numa_node_id-implementation.patch
-1469:numa-x86_64-use-generic-percpu-var-numa_node_id-implementation-fix1.patch
-1470:numa-x86_64-use-generic-percpu-var-numa_node_id-implementation-fix2.patch
-1471:numa-ia64-use-generic-percpu-var-numa_node_id-implementation.patch
-1473:numa-introduce-numa_mem_id-effective-local-memory-node-id.patch
-1474:numa-introduce-numa_mem_id-effective-local-memory-node-id-fix.patch
-1475:numa-introduce-numa_mem_id-effective-local-memory-node-id-fix2.patch
-1476:numa-introduce-numa_mem_id-effective-local-memory-node-id-fix3.patch
-1477:numa-ia64-support-numa_mem_id-for-memoryless-nodes.patch
-1478:numa-slab-use-numa_mem_id-for-slab-local-memory-node.patch
-1479:numa-in-kernel-profiling-use-cpu_to_mem-for-per-cpu-allocations.patch
-1480:numa-update-documentation-vm-numa-add-memoryless-node-info.patch
-1481:numa-update-documentation-vm-numa-add-memoryless-node-info-fix1.patch
+> Furthermore, in order to fix no node to alloc memory, when we want to update mempolicy
+> and mems_allowed, we expand the set of nodes first (set all the newly nodes) and
+> shrink the set of nodes lazily(clean disallowed nodes).
 
-and it dies with:
+That's a cpuset implementation choice, not a mempolicy one; mempolicies 
+have nothing to do with an empty current->mems_allowed.
 
- LANG=C make
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CC      arch/x86/kernel/asm-offsets.s
-In file included from include/linux/gfp.h:7,
-                 from include/linux/kmod.h:22,
-                 from include/linux/module.h:13,
-                 from include/linux/crypto.h:21,
-                 from arch/x86/kernel/asm-offsets_64.c:8,
-                 from arch/x86/kernel/asm-offsets.c:4:
-include/linux/topology.h:246: error: redefinition of 'numa_node_id'
-/usr/src/linux-2.6.34-rc5-mmotm0428/arch/x86/include/asm/topology.h:163: note: previous definition of 'numa_node_id' was here
-make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
-make: *** [prepare0] Error 2
+> But remap() breaks the expanding, so if we don't remove remap(), the problem can't be
+> fixed. Otherwise, cpuset has to do the rebinding by itself and the code is ugly.
+> Like this:
+> 
+> static void cpuset_change_task_nodemask(struct task_struct *tsk, nodemask_t *newmems)
+> {
+> 	nodemask_t tmp;
+> 	...
+> 	/* expand the set of nodes */
+> 	if (!mpol_store_user_nodemask(tsk->mempolicy)) {
+> 		nodes_remap(tmp, ...);
+> 		nodes_or(tsk->mempolicy->v.nodes, tsk->mempolicy->v.nodes, tmp);
+> 	}
+> 	...
+> 
+> 	/* shrink the set of nodes */
+> 	if (!mpol_store_user_nodemask(tsk->mempolicy))
+> 		tsk->mempolicy->v.nodes = tmp;
+> }
+> 
 
-X86_64 build, CONFIG_NUMA=n - looks like include/linux/topology.h doesn't
-play nice in the !CONFIG_USE_PERCPU_NUMA_NODE_ID case...
+I don't see why this is even necessary, the mempolicy code could simply 
+return numa_node_id() when nodes_empty(current->mempolicy->v.nodes) to 
+close the race.
 
-
---==_Exmh_1272653269_4026P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFL2yXVcC3lWbTT17ARAlLhAKDuNfRj6bwGJNUkZwHrJmXyxOgbSwCgp7hu
-U9lN7RIQzlpv5XHAVFXPX5U=
-=ZAyx
------END PGP SIGNATURE-----
-
---==_Exmh_1272653269_4026P--
-
+ [ Your pseudo-code is also lacking task_lock(tsk), which is required to 
+   safely dereference tsk->mempolicy, and this is only available so far in 
+   -mm since the oom killer rewrite. ]
