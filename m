@@ -1,274 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757103Ab0D3QsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 12:48:01 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49308 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932161Ab0D3QrG (ORCPT
+	id S1757578Ab0D3Qsx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 12:48:53 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:52317 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757558Ab0D3Qsn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:47:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=tEXAxg8c+8ixqE7suq98cb0VLwDutHap1Oi9195NwGgDiWA0pCMJyC1m7WtMsvWJ/r
-         ZHGfPbnW+h3PZgH0r7/tm8DJ77nE+O446EmY+T/Sy678uFa5shtd1mq090j5xNeT0oUV
-         21BRh+2rRDBtg2DLT7tOzamOzNMsEI+/YVaj0=
-Date: Fri, 30 Apr 2010 11:03:51 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
-Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-       Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: i2c-i801 retries on lost arbitration
-Message-ID: <20100430080351.GA3553@swordfish.minsk.epam.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 30 Apr 2010 12:48:43 -0400
+X-IronPort-AV: E=Sophos;i="4.52,296,1270450800"; 
+   d="scan'208";a="352129124"
+Subject: [GIT PULL] Please pull NFS client bugfixes
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Thu, 29 Apr 2010 12:48:41 -0400
+Message-ID: <1272559721.3844.7.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-OriginalArrivalTime: 29 Apr 2010 16:48:41.0980 (UTC) FILETIME=[D315C3C0:01CAE7BB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---BOKacYhQ+x31HxR3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Please pull from the "bugfixes" branch of the repository at
 
-Hello,
+   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
 
-Both i2c spec and ICH7 datasheet requires to restart transaction in
-case of lost arbitration.
+This will update the following files through the appended changesets.
 
-"No information is lost during the arbitration process. A master that
-loses the arbitration can generate clock pulses until the end of the
-byte in which it loses the arbitration and must restart its transaction
-when the bus is idle."
+  Cheers,
+    Trond
 
-Please see the following patch. Is it correct?
+----
+ fs/nfs/client.c        |    2 +
+ fs/nfs/dir.c           |    2 +-
+ fs/nfs/nfs4proc.c      |    5 +++-
+ fs/nfs/super.c         |    3 +-
+ fs/nfs/write.c         |   55 +++++++++++++++++++++++++++++++----------------
+ include/linux/nfs_fs.h |    1 +
+ net/sunrpc/auth.c      |    2 +-
+ 7 files changed, 47 insertions(+), 23 deletions(-)
 
----
+commit 9699eda6bc1f708a28acb716e1477aa351362fe2
+Author: Xiaotian Feng <dfeng@redhat.com>
+Date:   Thu Apr 22 18:56:17 2010 +0800
 
-diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-index 299b918..b7c21ee 100644
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -446,100 +446,111 @@ static s32 i801_access(struct i2c_adapter * adap, u=
-16 addr,
- {
- 	int hwpec;
- 	int block =3D 0;
--	int ret, xact =3D 0;
--
-+	int ret, xact =3D 0, i =3D 0;
-+=09
- 	hwpec =3D (i801_features & FEATURE_SMBUS_PEC) && (flags & I2C_CLIENT_PEC)
- 		&& size !=3D I2C_SMBUS_QUICK
- 		&& size !=3D I2C_SMBUS_I2C_BLOCK_DATA;
-=20
--	switch (size) {
--	case I2C_SMBUS_QUICK:
--		outb_p(((addr & 0x7f) << 1) | (read_write & 0x01),
--		       SMBHSTADD);
--		xact =3D I801_QUICK;
--		break;
--	case I2C_SMBUS_BYTE:
--		outb_p(((addr & 0x7f) << 1) | (read_write & 0x01),
--		       SMBHSTADD);
--		if (read_write =3D=3D I2C_SMBUS_WRITE)
-+	for (i =3D adap->retries; i >=3D 0; i--) {
-+		switch (size) {
-+		case I2C_SMBUS_QUICK:
-+			outb_p(((addr & 0x7f) << 1) | (read_write & 0x01),
-+				   SMBHSTADD);
-+			xact =3D I801_QUICK;
-+			break;
-+		case I2C_SMBUS_BYTE:
-+			outb_p(((addr & 0x7f) << 1) | (read_write & 0x01),
-+				   SMBHSTADD);
-+			if (read_write =3D=3D I2C_SMBUS_WRITE)
-+				outb_p(command, SMBHSTCMD);
-+			xact =3D I801_BYTE;
-+			break;
-+		case I2C_SMBUS_BYTE_DATA:
-+			outb_p(((addr & 0x7f) << 1) | (read_write & 0x01),
-+				   SMBHSTADD);
- 			outb_p(command, SMBHSTCMD);
--		xact =3D I801_BYTE;
--		break;
--	case I2C_SMBUS_BYTE_DATA:
--		outb_p(((addr & 0x7f) << 1) | (read_write & 0x01),
--		       SMBHSTADD);
--		outb_p(command, SMBHSTCMD);
--		if (read_write =3D=3D I2C_SMBUS_WRITE)
--			outb_p(data->byte, SMBHSTDAT0);
--		xact =3D I801_BYTE_DATA;
--		break;
--	case I2C_SMBUS_WORD_DATA:
--		outb_p(((addr & 0x7f) << 1) | (read_write & 0x01),
--		       SMBHSTADD);
--		outb_p(command, SMBHSTCMD);
--		if (read_write =3D=3D I2C_SMBUS_WRITE) {
--			outb_p(data->word & 0xff, SMBHSTDAT0);
--			outb_p((data->word & 0xff00) >> 8, SMBHSTDAT1);
--		}
--		xact =3D I801_WORD_DATA;
--		break;
--	case I2C_SMBUS_BLOCK_DATA:
--		outb_p(((addr & 0x7f) << 1) | (read_write & 0x01),
--		       SMBHSTADD);
--		outb_p(command, SMBHSTCMD);
--		block =3D 1;
--		break;
--	case I2C_SMBUS_I2C_BLOCK_DATA:
--		/* NB: page 240 of ICH5 datasheet shows that the R/#W
--		 * bit should be cleared here, even when reading */
--		outb_p((addr & 0x7f) << 1, SMBHSTADD);
--		if (read_write =3D=3D I2C_SMBUS_READ) {
--			/* NB: page 240 of ICH5 datasheet also shows
--			 * that DATA1 is the cmd field when reading */
--			outb_p(command, SMBHSTDAT1);
--		} else
-+			if (read_write =3D=3D I2C_SMBUS_WRITE)
-+				outb_p(data->byte, SMBHSTDAT0);
-+			xact =3D I801_BYTE_DATA;
-+			break;
-+		case I2C_SMBUS_WORD_DATA:
-+			outb_p(((addr & 0x7f) << 1) | (read_write & 0x01),
-+				   SMBHSTADD);
- 			outb_p(command, SMBHSTCMD);
--		block =3D 1;
--		break;
--	default:
--		dev_err(&I801_dev->dev, "Unsupported transaction %d\n", size);
--		return -EOPNOTSUPP;
--	}
--
--	if (hwpec)	/* enable/disable hardware PEC */
--		outb_p(inb_p(SMBAUXCTL) | SMBAUXCTL_CRC, SMBAUXCTL);
--	else
--		outb_p(inb_p(SMBAUXCTL) & (~SMBAUXCTL_CRC), SMBAUXCTL);
--
--	if(block)
--		ret =3D i801_block_transaction(data, read_write, size, hwpec);
--	else
--		ret =3D i801_transaction(xact | ENABLE_INT9);
--
--	/* Some BIOSes don't like it when PEC is enabled at reboot or resume
--	   time, so we forcibly disable it after every transaction. Turn off
--	   E32B for the same reason. */
--	if (hwpec || block)
--		outb_p(inb_p(SMBAUXCTL) & ~(SMBAUXCTL_CRC | SMBAUXCTL_E32B),
--		       SMBAUXCTL);
-+			if (read_write =3D=3D I2C_SMBUS_WRITE) {
-+				outb_p(data->word & 0xff, SMBHSTDAT0);
-+				outb_p((data->word & 0xff00) >> 8, SMBHSTDAT1);
-+			}
-+			xact =3D I801_WORD_DATA;
-+			break;
-+		case I2C_SMBUS_BLOCK_DATA:
-+			outb_p(((addr & 0x7f) << 1) | (read_write & 0x01),
-+				   SMBHSTADD);
-+			outb_p(command, SMBHSTCMD);
-+			block =3D 1;
-+			break;
-+		case I2C_SMBUS_I2C_BLOCK_DATA:
-+			/* NB: page 240 of ICH5 datasheet shows that the R/#W
-+			 * bit should be cleared here, even when reading */
-+			outb_p((addr & 0x7f) << 1, SMBHSTADD);
-+			if (read_write =3D=3D I2C_SMBUS_READ) {
-+				/* NB: page 240 of ICH5 datasheet also shows
-+				 * that DATA1 is the cmd field when reading */
-+				outb_p(command, SMBHSTDAT1);
-+			} else
-+				outb_p(command, SMBHSTCMD);
-+			block =3D 1;
-+			break;
-+		default:
-+			dev_err(&I801_dev->dev, "Unsupported transaction %d\n", size);
-+			return -EOPNOTSUPP;
-+		}
-+	=09
-+		if (hwpec)	/* enable/disable hardware PEC */
-+			outb_p(inb_p(SMBAUXCTL) | SMBAUXCTL_CRC, SMBAUXCTL);
-+		else
-+			outb_p(inb_p(SMBAUXCTL) & (~SMBAUXCTL_CRC), SMBAUXCTL);
-+	=09
-+		if(block)
-+			ret =3D i801_block_transaction(data, read_write, size, hwpec);
-+		else
-+			ret =3D i801_transaction(xact | ENABLE_INT9);
-+	=09
-+		/* Some BIOSes don't like it when PEC is enabled at reboot or resume
-+		   time, so we forcibly disable it after every transaction. Turn off
-+		   E32B for the same reason. */
-+		if (hwpec || block)
-+			outb_p(inb_p(SMBAUXCTL) & ~(SMBAUXCTL_CRC | SMBAUXCTL_E32B),
-+				   SMBAUXCTL);
-+
-+		if (ret =3D=3D -EAGAIN) {
-+			dev_dbg(&I801_dev->dev, "Restarting transaction (probably due to lost a=
-rbitration)");
-+			continue;
-+		}
-+	=09
-+		if(block)
-+			return ret;
-+		if(ret)
-+			return ret;
-+		if ((read_write =3D=3D I2C_SMBUS_WRITE) || (xact =3D=3D I801_QUICK))
-+			return 0;
-+
-+		switch (xact & 0x7f) {
-+		case I801_BYTE:	/* Result put in SMBHSTDAT0 */
-+		case I801_BYTE_DATA:
-+			data->byte =3D inb_p(SMBHSTDAT0);
-+			break;
-+		case I801_WORD_DATA:
-+			data->word =3D inb_p(SMBHSTDAT0) + (inb_p(SMBHSTDAT1) << 8);
-+			break;
-+		}
-=20
--	if(block)
--		return ret;
--	if(ret)
--		return ret;
--	if ((read_write =3D=3D I2C_SMBUS_WRITE) || (xact =3D=3D I801_QUICK))
- 		return 0;
--
--	switch (xact & 0x7f) {
--	case I801_BYTE:	/* Result put in SMBHSTDAT0 */
--	case I801_BYTE_DATA:
--		data->byte =3D inb_p(SMBHSTDAT0);
--		break;
--	case I801_WORD_DATA:
--		data->word =3D inb_p(SMBHSTDAT0) + (inb_p(SMBHSTDAT1) << 8);
--		break;
- 	}
--	return 0;
-+
-+	ret =3D -EREMOTEIO;
-+	return ret;
- }
-=20
-=20
+    nfs: fix memory leak in nfs_get_sb with CONFIG_NFS_V4
+    
+    With CONFIG_NFS_V4 and data version 4, nfs_get_sb will allocate memory for
+    export_path in nfs4_validate_text_mount_data, so we need to free it then.
+    This is addressed in following kmemleak report:
+    
+    unreferenced object 0xffff88016bf48a50 (size 16):
+      comm "mount.nfs", pid 22567, jiffies 4651574704 (age 175471.200s)
+      hex dump (first 16 bytes):
+        2f 6f 70 74 2f 77 6f 72 6b 00 6b 6b 6b 6b 6b a5  /opt/work.kkkkk.
+      backtrace:
+        [<ffffffff814b34f9>] kmemleak_alloc+0x60/0xa7
+        [<ffffffff81102c76>] kmemleak_alloc_recursive.clone.5+0x1b/0x1d
+        [<ffffffff811046b3>] __kmalloc_track_caller+0x18f/0x1b7
+        [<ffffffff810e1b08>] kstrndup+0x37/0x54
+        [<ffffffffa0336971>] nfs_parse_devname+0x152/0x204 [nfs]
+        [<ffffffffa0336af3>] nfs4_validate_text_mount_data+0xd0/0xdc [nfs]
+        [<ffffffffa0338deb>] nfs_get_sb+0x325/0x736 [nfs]
+        [<ffffffff81113671>] vfs_kern_mount+0xbd/0x17c
+        [<ffffffff81113798>] do_kern_mount+0x4d/0xed
+        [<ffffffff81129a87>] do_mount+0x787/0x7fe
+        [<ffffffff81129b86>] sys_mount+0x88/0xc2
+        [<ffffffff81009b42>] system_call_fastpath+0x16/0x1b
+    
+    Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+    Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: Chuck Lever <chuck.lever@oracle.com>
+    Cc: Benny Halevy <bhalevy@panasas.com>
+    Cc: Al Viro <viro@ZenIV.linux.org.uk>
+    Cc: Andy Adamson <andros@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit acf82b85a70f39786e3cbb1ffed8655bcc972424
+Author: Dan Carpenter <error27@gmail.com>
+Date:   Thu Apr 22 11:28:39 2010 +0200
+
+    nfs: fix some issues in nfs41_proc_reclaim_complete()
+    
+    The original code passed an ERR_PTR() to rpc_put_task() and instead of
+    returning zero on success it returned -ENOMEM.
+    
+    Signed-off-by: Dan Carpenter <error27@gmail.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit ba8b06e67ed7a560b0e7c80091bcadda4f4727a5
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Tue Apr 27 18:33:54 2010 -0400
+
+    NFS: Ensure that nfs_wb_page() waits for Pg_writeback to clear
+    
+    Neil Brown reports that he is seeing the BUG_ON(ret == 0) trigger in
+    nfs_page_async_flush. According to the trace in
+         https://bugzilla.novell.com/show_bug.cgi?id=599628
+    the problem appears to be due to nfs_wb_page() not waiting for the
+    PG_writeback flag to clear.
+    
+    There is a ditto problem in nfs_wb_page_cancel()
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 71d0a6112a363e703e383ae5b12c492485c39701
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Thu Apr 22 15:35:57 2010 -0400
+
+    NFS: Fix an unstable write data integrity race
+    
+    Commit 2c61be0a9478258f77b66208a0c4b1f5f8161c3c (NFS: Ensure that the WRITE
+    and COMMIT RPC calls are always uninterruptible) exposed a race on file
+    close. In order to ensure correct close-to-open behaviour, we want to wait
+    for all outstanding background commit operations to complete.
+    
+    This patch adds an inode flag that indicates if a commit operation is under
+    way, and provides a mechanism to allow ->write_inode() to wait for its
+    completion if this is a data integrity flush.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit cdd29ecfcb9554132cd94b82ae8b69ba37adb3b5
+Author: Dan Carpenter <error27@gmail.com>
+Date:   Thu Apr 22 15:35:56 2010 -0400
+
+    nfs: testing for null instead of ERR_PTR()
+    
+    nfs_path() returns an ERR_PTR(), it doesn't return null.
+    
+    Signed-off-by: Dan Carpenter <error27@gmail.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 356e76b855bdbfd8d1c5e75bcf0c6bf0dfe83496
+Author: Chuck Lever <chuck.lever@oracle.com>
+Date:   Thu Apr 22 15:35:56 2010 -0400
+
+    NFS: rsize and wsize settings ignored on v4 mounts
+    
+    NFSv4 mounts ignore the rsize and wsize mount options, and always use
+    the default transfer size for both.  This seems to be because all
+    NFSv4 mounts are now cloned, and the cloning logic doesn't copy the
+    rsize and wsize settings from the parent nfs_server.
+    
+    I tested Fedora's 2.6.32.11-99 and it seems to have this problem as
+    well, so I'm guessing that .33, .32, and perhaps older kernels have
+    this issue as well.
+    
+    Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+    Cc: Stable <stable@kernel.org>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 1f063d2cdf332a8a5722006b1345d15d16007c6e
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Thu Apr 22 15:35:55 2010 -0400
+
+    NFSv4: Don't attempt an atomic open if the file is a mountpoint
+    
+    Fix https://bugzilla.kernel.org/show_bug.cgi?id=15789
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 3d7b08945e54a3a5358d5890240619a013cb7388
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Thu Apr 22 15:35:55 2010 -0400
+
+    SUNRPC: Fix a bug in rpcauth_prune_expired
+    
+    Don't want to evict a credential if cred->cr_expire == jiffies, since that
+    means that it was just placed on the cred_unused list. We therefore need to
+    use time_in_range() rather than time_in_range_open().
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 
 
-
---BOKacYhQ+x31HxR3
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkvajucACgkQfKHnntdSXjQAlAP9GwhI+pPcJKpi1JVhYnIgFN19
-v29fg8+qnK2gHCn3WVVXuNdqBi/zo4w0V+30/rx6Cj5mjc95OVNEjRiz/+8cfT1L
-xiJxuhaYEhooAVjW7lNRlUukgJ3SXJK/HoeZzu26SJFWLBviTRFi+QEGOipH1Q9V
-pKsZ1Gr0KXZyDo+ZWIU=
-=iFs6
------END PGP SIGNATURE-----
-
---BOKacYhQ+x31HxR3--
