@@ -1,100 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933270Ab0D3RYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:24:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40993 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758645Ab0D3RXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:23:49 -0400
-Message-ID: <4BDAA85F.3020501@redhat.com>
-Date: Fri, 30 Apr 2010 12:52:31 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] KVM MMU: fix race in invlpg code
-References: <4BDA9C37.9070602@cn.fujitsu.com>
-In-Reply-To: <4BDA9C37.9070602@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S933027Ab0D3R0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:26:22 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:47990 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758638Ab0D3RZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:25:23 -0400
+Date: Thu, 29 Apr 2010 20:19:02 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
+       linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
+       ScottFang@viatech.com.cn,
+       Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: Re: [PATCH 13/30] viafb: Separate global and fb-specific data
+Message-ID: <20100429201902.6379f8d3@neptune.home>
+In-Reply-To: <1272493051-25380-14-git-send-email-corbet@lwn.net>
+References: <1272493051-25380-1-git-send-email-corbet@lwn.net>
+	<1272493051-25380-14-git-send-email-corbet@lwn.net>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2010 12:00 PM, Xiao Guangrong wrote:
-> It has race in invlpg code, like below sequences:
->
-> A: hold mmu_lock and get 'sp'
-> B: release mmu_lock and do other things
-> C: hold mmu_lock and continue use 'sp'
->
-> if other path freed 'sp' in stage B, then kernel will crash
->
-> This patch checks 'sp' whether lived before use 'sp' in stage C
->    
+On Wed, 28 April 2010 Jonathan Corbet <corbet@lwn.net> wrote:
+> diff --git a/drivers/video/via/via-core.c b/drivers/video/via/via-core.c
+> index cda4de4..6f8f8e2 100644
+> --- a/drivers/video/via/via-core.c
+> +++ b/drivers/video/via/via-core.c
 
-> Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
-> ---
->   arch/x86/kvm/paging_tmpl.h |   18 +++++++++++++++++-
->   1 files changed, 17 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index 624b38f..641d844 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -462,11 +462,15 @@ out_unlock:
->
->   static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
->   {
-> -	struct kvm_mmu_page *sp = NULL;
-> +	struct kvm_mmu_page *sp = NULL, *s;
->   	struct kvm_shadow_walk_iterator iterator;
-> +	struct hlist_head *bucket;
-> +	struct hlist_node *node, *tmp;
->   	gfn_t gfn = -1;
->   	u64 *sptep = NULL, gentry;
->   	int invlpg_counter, level, offset = 0, need_flush = 0;
-> +	unsigned index;
-> +	bool live = false;
->
->   	spin_lock(&vcpu->kvm->mmu_lock);
->
-> @@ -519,10 +523,22 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
->
->   	mmu_guess_page_from_pte_write(vcpu, gfn_to_gpa(gfn) + offset, gentry);
->   	spin_lock(&vcpu->kvm->mmu_lock);
-> +	index = kvm_page_table_hashfn(gfn);
-> +	bucket =&vcpu->kvm->arch.mmu_page_hash[index];
-> +	hlist_for_each_entry_safe(s, node, tmp, bucket, hash_link)
-> +		if (s == sp) {
->    
+<snip>
 
-At this point, sp might have been freed and re-allocated, now pointing 
-at something completely different.  So need to check role etc.
+> +/*
+> + * Figure out and map our MMIO regions.
+> + */
+> +static int __devinit via_pci_setup_mmio(struct viafb_dev *vdev)
+> +{
+> +	/*
+> +	 * Hook up to the device registers.
+> +	 */
+> +	vdev->engine_start = pci_resource_start(vdev->pdev, 1);
+> +	vdev->engine_len = pci_resource_len(vdev->pdev, 1);
+> +	/* If this fails, others will notice later */
+> +	vdev->engine_mmio = ioremap_nocache(vdev->engine_start,
+> +			vdev->engine_len);
 
-Alternatively, increase root_count.  Then sp is guaranteed to be live 
-(though it may have role.invalid set).
+Shouldn't this ioremap_nocache() have error-checking
+as the one below (instead of relying on later code to bail out)?
 
-> +			live = true;
-> +			break;
-> +		}
 > +
-> +	if (!live)
-> +		goto unlock_exit;
+> +	/*
+> +	 * Likewise with I/O memory.
+> +	 */
+> +	vdev->fbmem_start = pci_resource_start(vdev->pdev, 0);
+> +	vdev->fbmem_len = viafb_get_fb_size_from_pci(vdev->chip_type);
+> +	if (vdev->fbmem_len < 0)
+> +		return vdev->fbmem_len;
+> +	vdev->fbmem = ioremap_nocache(vdev->fbmem_start, vdev->fbmem_len);
+> +	if (vdev->fbmem == NULL)
+> +		return -ENOMEM;
+
+IMHO it would be better to iounmap(vdev->engine_mmio) here
+instead of letting our caller run via_pci_teardown_mmio()
+
+> +	return 0;
+> +}
 > +
->   	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) == invlpg_counter) {
->   		++vcpu->kvm->stat.mmu_pte_updated;
->   		FNAME(update_pte)(vcpu, sp, sptep,&gentry);
->   	}
-> +unlock_exit:
->   	spin_unlock(&vcpu->kvm->mmu_lock);
->   	mmu_release_page_from_pte_write(vcpu);
->   }
->    
+> +static void __devexit via_pci_teardown_mmio(struct viafb_dev *vdev)
+> +{
+> +	iounmap(vdev->fbmem);
+> +	iounmap(vdev->engine_mmio);
+> +}
+> +
+> 
+> static int __devinit via_pci_probe(struct pci_dev *pdev,
+> 		const struct pci_device_id *ent)
+> @@ -33,9 +199,19 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
+>  	if (ret)
+>  		return ret;
+>  	/*
+> +	 * Global device initialization.
+> +	 */
+> +	memset(&global_dev, 0, sizeof(global_dev));
+> +	global_dev.pdev = pdev;
+> +	global_dev.chip_type = ent->driver_data;
+> +	spin_lock_init(&global_dev.reg_lock);
+> +	ret = via_pci_setup_mmio(&global_dev);
+> +	if (ret)
+> +		goto out_teardown;
 
+Why goto out_teardown here?
+If via_pci_setup_mmio() failed it should undo its successful
+actions itself... (see also above)
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+> +	/*
+>  	 * Set up subsidiary devices
+>  	 */
+> -	ret = via_fb_pci_probe(pdev, ent);
+> +	ret = via_fb_pci_probe(&global_dev);
+>  	if (ret)
+>  		return ret;
 
+In this case we should goto out_teardown so the mmio setup earlier gets
+undone.
+
+>  	/*
+> @@ -48,12 +224,17 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
+>  		return ret;
+>  	}
+>  	return 0;
+> +
+> +out_teardown:
+> +	via_pci_teardown_mmio(&global_dev);
+> +	return ret;
+>  }
+
+Thanks,
+Bruno
