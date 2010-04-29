@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933386Ab0D3Rek (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:34:40 -0400
-Received: from kroah.org ([198.145.64.141]:40643 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758843Ab0D3Rdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:33:33 -0400
-Date: Thu, 29 Apr 2010 16:45:25 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       David Woodhouse <dwmw2@infradead.org>,
-       Tomas Winkler <tomas.winkler@intel.com>
-Subject: Re: linux-next: build warning after merge of the
- driver-core.current tree
-Message-ID: <20100429234525.GB16141@kroah.com>
-References: <20100430093534.9fc6ab8f.sfr@canb.auug.org.au>
- <20100429234347.GA16141@kroah.com>
+	id S933402Ab0D3Rex (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:34:53 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:33110 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933382Ab0D3Rei (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:34:38 -0400
+Date: Thu, 29 Apr 2010 23:30:18 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Peter Huewe <PeterHuewe@gmx.de>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+       Matt Fleming <matt@console-pimps.org>, Mike Travis <travis@sgi.com>,
+       linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] arch/sh: Fix wrong function prototype for native_cpu_disable
+Message-ID: <20100429143018.GC9621@linux-sh.org>
+References: <201004290256.10506.PeterHuewe@gmx.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100429234347.GA16141@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201004290256.10506.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 29, 2010 at 04:43:47PM -0700, Greg KH wrote:
-> On Fri, Apr 30, 2010 at 09:35:34AM +1000, Stephen Rothwell wrote:
-> > Hi Grant,
-> > 
-> > After merging the driver-core.current tree, today's linux-next build
-> > (x86_64 allmodconfig) produced this warning:
-> > 
-> > drivers/base/firmware_class.c: In function 'release_firmware':
-> > drivers/base/firmware_class.c:597: warning: passing argument 1 of 'firmware_free_data' discards qualifiers from pointer target type
-> > drivers/base/firmware_class.c:133: note: expected 'struct firmware *' but argument is of type 'const struct firmware *'
-> > 
-> > Introduced by commit 6454d23dedf4019fcae868818ae63c755dd42be0
-> > ("firmware_class: fix memory leak - free allocated pages").
+On Thu, Apr 29, 2010 at 02:56:10AM +0200, Peter Huewe wrote:
+> From: Peter Huewe <peterhuewe@gmx.de>
 > 
-> Thanks, I've fixed this up, the release call should not have 'const'
-> on it as it is going to touch the pointer passed to it :)
+> This patch fixes the prototype of native_cpu_disable if
+> CONFIG_HOTPLUG_CPU is not set, and thus fixes a build failure[1]
+> 
+> References:
+> [1] http://kisskb.ellerman.id.au/kisskb/buildresult/2536296/
+> 
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 
-And it's now pushed out in my tree.
-
-thanks,
-
-greg k-h
+I've already applied Matt's patch for the same issue, thanks anyways!
