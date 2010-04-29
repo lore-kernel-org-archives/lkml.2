@@ -1,93 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933653Ab0D3Rwg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:52:36 -0400
-Received: from claw.goop.org ([74.207.240.146]:42475 "EHLO claw.goop.org"
+	id S933430Ab0D3Rx5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:53:57 -0400
+Received: from kroah.org ([198.145.64.141]:54082 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933644Ab0D3RwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:52:17 -0400
-Message-ID: <4BDB18CE.2090608@goop.org>
-Date: Fri, 30 Apr 2010 10:52:14 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S933510Ab0D3Rxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:53:34 -0400
+Date: Thu, 29 Apr 2010 09:21:08 -0700
+From: Greg KH <greg@kroah.com>
+To: candyguitar@googlemail.com
+Cc: gregkh@suse.de, jmm@debian.org, mithlesh@linsyssoft.com, svenne@krap.dk,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Staging: wlan-ng: Fixed 80-character line coding
+ style issues in p80211req.c
+Message-ID: <20100429162108.GB30057@kroah.com>
+References: <1268999858-17323-1-git-send-email-candyguitar@googlemail.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com>> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>> <4BD1A74A.2050003@redhat.com>> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com>> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>> <4BD3377E.6010303@redhat.com>> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>> <ce808441-fae6-4a33-8335-f7702740097a@default>> <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz 4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default> <4BDB026E.1030605@redhat.com>
-In-Reply-To: <4BDB026E.1030605@redhat.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268999858-17323-1-git-send-email-candyguitar@googlemail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2010 09:16 AM, Avi Kivity wrote:
-> Given that whenever frontswap fails you need to swap anyway, it is
-> better for the host to never fail a frontswap request and instead back
-> it with disk storage if needed.  This way you avoid a pointless vmexit
-> when you're out of memory.  Since it's disk backed it needs to be
-> asynchronous and batched.
+On Fri, Mar 19, 2010 at 11:57:38AM +0000, candyguitar@googlemail.com wrote:
+> From: Candyguitar <candyguitar@candyguitar-laptop.(none)>
+> 
+> This is a patch for p80211req.c. An 'if' statement that spanned 80
+> characters has been split onto 2 lines and one of the tabs preceding
+> a comment has been removed.
+> 
+> Signed-off-by: Patrick Rooney <candyguitar@googlemail.com>
+> ---
+>  drivers/staging/wlan-ng/p80211req.c |    5 +++--
 
-I'd argue the opposite.  There's no point in having the host do swapping
-on behalf of guests if guests can do it themselves; it's just a
-duplication of functionality.  You end up having two IO paths for each
-guest, and the resulting problems in trying to account for the IO,
-rate-limit it, etc.  If you can simply say "all guest disk IO happens
-via this single interface", its much easier to manage.
+You already submitted this patch, and it's in the tree now, right?
 
-If frontswap has value, it's because its providing a new facility to
-guests that doesn't already exist and can't be easily emulated with
-existing interfaces.
+thanks,
 
-It seems to me the great strengths of the synchronous interface are:
-
-    * it matches the needs of an existing implementation (tmem in Xen)
-    * it is simple to understand within the context of the kernel code
-      it's used in
-
-Simplicity is important, because it allows the mm code to be understood
-and maintained without having to have a deep understanding of
-virtualization.  One of the problems with CMM2 was that it puts a lot of
-intricate constraints on the mm code which can be easily broken, which
-would only become apparent in subtle edge cases in a CMM2-using
-environment.  An addition async frontswap-like interface - while not as
-complex as CMM2 - still makes things harder for mm maintainers.
-
-The downside is that it may not match some implementation in which the
-get/put operations could take a long time (ie, physical IO to a slow
-mechanical device).  But a general Linux principle is not to overdesign
-interfaces for hypothetical users, only for real needs.
-
-Do you think that you would be able to use frontswap in kvm if it were
-an async interface, but not otherwise?  Or are you arguing a hypothetical?
-
-> At this point we're back with the ordinary swap API.  Simply have your
-> host expose a device which is write cached by host memory, you'll have
-> all the benefits of frontswap with none of the disadvantages, and with
-> no changes to guest code.
-
-Yes, that's comfortably within the "guests page themselves" model. 
-Setting up a block device for the domain which is backed by pagecache
-(something we usually try hard to avoid) is pretty straightforward.  But
-it doesn't work well for Xen unless the blkback domain is sized so that
-it has all of Xen's free memory in its pagecache.
-
-That said, it does concern me that the host/hypervisor is left holding
-the bag on frontswapped pages.  A evil/uncooperative/lazy can just pump
-a whole lot of pages into the frontswap pool and leave them there.   I
-guess this is mitigated by the fact that the API is designed such that
-they can't update or read the data without also allowing the hypervisor
-to drop the page (updates can fail destructively, and reads are also
-destructive), so the guest can't use it as a clumsy extension of their
-normal dedicated memory.
-
-    J
-
+greg k-h
