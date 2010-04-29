@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934126Ab0D3SkS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:40:18 -0400
-Received: from mga03.intel.com ([143.182.124.21]:22676 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933085Ab0D3RV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:21:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,296,1270450800"; 
-   d="scan'208";a="271612799"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: David Woodhouse <dwmw2@infradead.org>, Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Ming Lei <tom.leiming@gmail.com>,
-       Catalin Marinas <catalin.marinas@arm.com>
-Date: Thu, 29 Apr 2010 21:03:25 +0300
-Subject: RE: [PATCH] firmware_class: fix memory leak - free allocated pages
-Thread-Topic: [PATCH] firmware_class: fix memory leak - free allocated pages
-Thread-Index: AcrnxPDw19njp1VAT+WKHWevD81M2wAARQsg
-Message-ID: <6F5C1D715B2DA5498A628E6B9C124F04016E6B6959@hasmsx504.ger.corp.intel.com>
-References: <1272544821-22466-1-git-send-email-tomas.winkler@intel.com>
-	 <20100429145425.GA3703@suse.de>
- <1272563622.3367.4116.camel@macbook.infradead.org>
-In-Reply-To: <1272563622.3367.4116.camel@macbook.infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S932805Ab0D3RVU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:21:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:54132 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647Ab0D3RUk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:20:40 -0400
+X-Authority-Analysis: v=1.1 cv=2/WNtoURsBD4grC4Rqfj62/w1mAETqRJkFX1sgq41IM= c=1 sm=0 a=h2TIy-q3F9wA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=h9dnMnpQQzdQQcJ08mwA:9 a=D8nthtIxD_e4LRTE_cEA:7 a=R2wwljC2oqZ0T7gqO4gq4phoHboA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 04/10][RFC] tracing: Remove per event trace registering
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
+In-Reply-To: <20100429133649.GC14617@Krystal>
+References: <20100426195024.256424113@goodmis.org>
+	 <20100426200242.214837703@goodmis.org> <20100428204448.GE8591@Krystal>
+	 <1272499218.9739.86.camel@gandalf.stny.rr.com>
+	 <20100429000528.GB30353@Krystal>
+	 <1272500422.9739.98.camel@gandalf.stny.rr.com>
+	 <20100429133649.GC14617@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 29 Apr 2010 10:06:49 -0400
+Message-ID: <1272550009.9739.136.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o3UIeomE008957
 
+On Thu, 2010-04-29 at 09:36 -0400, Mathieu Desnoyers wrote:
 
-
-> -----Original Message-----
-> From: David Woodhouse [mailto:dwmw2@infradead.org]
-> Sent: Thursday, April 29, 2010 8:54 PM
-> To: Greg KH
-> Cc: Winkler, Tomas; linux-kernel@vger.kernel.org; Johannes Berg; Ming Lei;
-> Catalin Marinas
-> Subject: Re: [PATCH] firmware_class: fix memory leak - free allocated pages
+> > Instead of calling register_trace_##name that is created for each
+> > tracepoint, we now call the tracepoint_probe_register() directly in the
+> > C file with the generated probe.
+> > 
+> > Both the probe and the tracepoint are created from the same data. I'm
+> > not seeing where you want to add this check.
 > 
-> On Thu, 2010-04-29 at 15:54 +0100, Greg KH wrote:
-> > On Thu, Apr 29, 2010 at 03:40:21PM +0300, Tomas Winkler wrote:
-> > > fix memory leak introduced by 6e03a201bbe patch:
-> > >  firmware: speed up request_firmware()
-> >
-> > Who originally wrote this patch, Kay?
+> So if they are created from the same data, we can expect this test to
+> always pass, which is good (and expected).
 > 
-> It's kind of a joint effort. I think it's probably mine by a fairly
-> narrow majority.
-> 
-> >  If so, Tomas, please put a "From:" line at the top of the patch with
-> > the author's name so we get it right when commiting it.
-> 
-> And don't make up Signed-off-by lines. Although you can have that one of
-> mine now you've got it (since you've actually tested it).
+> I'd add this extra check before casting the callback to (void *) before
+> it is passed to tracepoint_probe_register(). Let's just call this
+> internal preprocessing macro integrity check. As long as it does not add
+> a runtime cost, there is no reason not to put this extra check.
 
-I added firmware_free_data function to the original patch, would you mind to review it, please.
+The problem is, the cast is now performed in a C file for all events.
+There's no way to know what to cast it to there. This is out of the
+automation of the macro.
 
-Thanks
-Tomas
-> 
-> --
-> David Woodhouse                            Open Source Technology Centre
-> David.Woodhouse@intel.com                              Intel Corporation
+We use to have the cast check by creating code that would create the
+"register_trace_##call", and the typecheck was doing by passing the data
+to this function. But we removed this code out of the per event, it was
+adding lots of text footprint, and moved it to one single function that
+handles all events. It is just expected that the callback created
+matches the function it was done.
 
----------------------------------------------------------------------Intel Israel (74) Limited
-This e-mail and any attachments may contain confidential material forthe sole use of the intended recipient(s). Any review or distributionby others is strictly prohibited. If you are not the intendedrecipient, please contact the sender and delete all copies.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+If you are overly paranoid, we could create a special function that
+tests that the callback format that is created matches the tracepoint
+that is created, and make it so GCC sees that nothing calls it and
+removes it at final link. But I still see this as a waste.
+
+
+The tracepoint is created in include/linux/tracepoint.h:
+
+#define TRACE_EVENT(name, proto, args, struct, assign, print)	\
+	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+
+The callback is created in include/trace/ftrace.h:
+
+#undef TRACE_EVENT
+#define TRACE_EVENT(name, proto, args, tstuct, assign, print)	\
+	DECLARE_EVENT_CLASS(name,				\
+				PARAMS(proto),			\
+				PARAMS(args),			\
+				PARAMS(tstruct),		\
+				PARAMS(assign),			\
+				PARAMS(print));			\
+	DEFINE_EVENT(name, name, PARAMS(proto), PARAMS(args));
+
+#undef DECLARE_EVENT_CLASS
+#define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+									\
+static notrace void							\
+ftrace_raw_event_##call(proto,						\
+			struct ftrace_event_call *event_call)		\
+[...]
+
+
+Thus the "proto" field of the TRACE_EVENT() is used to make both the
+tracepoint and the callback. We add the struct ftrace_event_call
+*event_call which is the data we pass to the callback.
+
+Now, where this gets called is in kernel/trace/trace_events.c:
+
+	tracepoint_probe_register(call->name,
+				  call->class->probe,
+				  call);
+
+This is where we lose the typecheck. So my question is... where do you
+want to put in a check?
+
+-- Steve
+
+	
+
+
