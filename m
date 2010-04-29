@@ -1,104 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758699Ab0D3R23 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:28:29 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42702 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758670Ab0D3R1k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:27:40 -0400
-Message-ID: <4BDB12FB.5060806@in.ibm.com>
-Date: Fri, 30 Apr 2010 22:57:23 +0530
-From: Sachin Sant <sachinp@in.ibm.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+	id S933303Ab0D3R3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:29:21 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:42492 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933289Ab0D3R3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:29:13 -0400
+Date: Thu, 29 Apr 2010 14:45:22 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 8/8] padata: Add some code comments
+Message-ID: <20100429124522.GL5275@secunet.com>
+References: <20100429123636.GD5275@secunet.com>
 MIME-Version: 1.0
-To: Linux/PPC Development <linuxppc-dev@ozlabs.org>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       grant.likely@secretlab.ca, Greg Kroah-Hartman <gregkh@suse.de>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: -next Apr 30: OOPS during eHEA driver initialization
-References: <4BDAF376.4030005@in.ibm.com>
-In-Reply-To: <4BDAF376.4030005@in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100429123636.GD5275@secunet.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 29 Apr 2010 12:40:19.0092 (UTC) FILETIME=[20458540:01CAE799]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sachin Sant wrote:
-> With today's next eHEA drivers fails to initialize.
-If i revert the following patch eHEA network interface is initialized
-properly.
 
-commit cebfe0b6709abdab997c1a00499d67efa32ee1f0
-drivercore: Add of_match_table to the common device drivers
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+---
+ include/linux/padata.h |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/padata.c        |   46 +++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 97 insertions(+), 2 deletions(-)
 
-Thanks
--Sachin
-
->
-> IBM eHEA ethernet device driver (Release EHEA_0103)
-> Unable to handle kernel paging request for data at address 0x00000000
-> Faulting instruction address: 0xc0000000004e8d7c
-> Oops: Kernel access of bad area, sig: 11 [#1]
-> SMP NR_CPUS=1024 NUMA pSeries
-> last sysfs file: /sys/devices/vio/30000007/host0/target0:0:2/0:0:2:0/type
-> Modules linked in: ehea(+) sr_mod cdrom sg sd_mod crc_t10dif ibmvscsic 
-> scsi_transport_srp scsi_tgt scsi_mod
-> NIP: c0000000004e8d7c LR: c00000000002614c CTR: c000000000026314
-> REGS: c00000000c517810 TRAP: 0300   Not tainted  
-> (2.6.34-rc5-autotest-next-20100430)
-> MSR: 8000000000009032 <EE,ME,IR,DR>  CR: 24222228  XER: 20000005
-> DAR: 0000000000000000, DSISR: 0000000040000000
-> TASK = c00000000cf3ced0[730] 'modprobe' THREAD: c00000000c514000 CPU: 0
-> GPR00: c00000000002614c c00000000c517a90 c000000000c96358 
-> 0000000000000000
-> GPR04: c0000000ffff7858 c0000000004e973c c00000000cf3d9c8 
-> 0000000000000000
-> GPR08: c000000000e4f8a0 0000000000001eed 0000000000000000 
-> 00000000000002e7
-> GPR12: d000000001bfb0d0 c000000007440000 0000000000000000 
-> 0000000000000000
-> GPR16: 0000000000000000 0000000000000000 000000001002c598 
-> 0000000000000000
-> GPR20: 0000000000000000 0000000000000004 0000000000000000 
-> 0000000010030218
-> GPR24: 0000000010030160 00000fffb7b00000 0000000010030200 
-> 0000000000000000
-> GPR28: c0000000ffff7858 0000000000000000 c000000000bfd528 
-> 0000000000000000
-> NIP [c0000000004e8d7c] .of_match_node+0xc0/0x10c
-> LR [c00000000002614c] .ibmebus_create_devices+0x48/0x104
-> Call Trace:
-> [c00000000c517a90] [c0000000004e973c] .of_get_next_child+0x74/0x98 
-> (unreliable)
-> [c00000000c517b20] [c00000000002614c] .ibmebus_create_devices+0x48/0x104
-> [c00000000c517bc0] [c000000000026338] .ibmebus_register_driver+0x24/0x4c
-> [c00000000c517c50] [d000000001bfa1bc] .ehea_module_init+0x1d4/0x22b8 
-> [ehea]
-> [c00000000c517ce0] [c0000000000097a4] .do_one_initcall+0x88/0x1bc
-> [c00000000c517d90] [c0000000000cbdf4] .SyS_init_module+0x11c/0x2b0
-> [c00000000c517e30] [c0000000000085b4] syscall_exit+0x0/0x40
-> Instruction dump:
-> 7c7de838 881f0040 2f800000 419e0018 7f83e378 389f0040 4bfffdbd 7c63e838
-> 7c7d07b4 2fbd0000 409e0030 3bff00c8 <881f0000> 2f800000 409eff60 881f0020
-> ---[ end trace cb522a034d760fb8 ]---
->
-> next-20100428 was OK. Will try to bisect.
->
-> Thanks
-> -Sachin
->
->
-
-
+diff --git a/include/linux/padata.h b/include/linux/padata.h
+index 64836a6..e8aac0f 100644
+--- a/include/linux/padata.h
++++ b/include/linux/padata.h
+@@ -26,6 +26,17 @@
+ #include <linux/list.h>
+ #include <linux/timer.h>
+ 
++/*
++ * struct padata_priv -  Embedded to the users data structure.
++ *
++ * @list: List entry, to attach to the padata lists.
++ * @pd: Pointer to the internal control structure.
++ * @cb_cpu: Callback cpu for serializatioon.
++ * @seq_nr: Sequence number of the parallelized data object.
++ * @info: Used to pass information from the parallel to the serial function.
++ * @parallel: Parallel execution function.
++ * @serial: Serial complete function.
++ */
+ struct padata_priv {
+ 	struct list_head	list;
+ 	struct parallel_data	*pd;
+@@ -36,11 +47,29 @@ struct padata_priv {
+ 	void                    (*serial)(struct padata_priv *padata);
+ };
+ 
++/*
++ * struct padata_list
++ *
++ * @list: List head.
++ * @lock: List lock.
++ */
+ struct padata_list {
+ 	struct list_head        list;
+ 	spinlock_t              lock;
+ };
+ 
++/*
++ * struct padata_queue - The percpu padata queues.
++ *
++ * @parallel: List to wait for parallelization.
++ * @reorder: List to wait for reordering after parallel processing.
++ * @serial: List to wait for serialization after reordering.
++ * @pwork: work struct for parallelization.
++ * @swork: work struct for serialization.
++ * @pd: Backpointer to the internal control structure.
++ * @num_obj: Number of objects that are processed by this cpu.
++ * @cpu_index: Index of the cpu.
++ */
+ struct padata_queue {
+ 	struct padata_list	parallel;
+ 	struct padata_list	reorder;
+@@ -52,6 +81,20 @@ struct padata_queue {
+ 	int			cpu_index;
+ };
+ 
++/*
++ * struct parallel_data - Internal control structure, covers everything
++ * that depends on the cpumask in use.
++ *
++ * @pinst: padata instance.
++ * @queue: percpu padata queues.
++ * @seq_nr: The sequence number that will be attached to the next object.
++ * @reorder_objects: Number of objects waiting in the reorder queues.
++ * @refcnt: Number of objects holding a reference on this parallel_data.
++ * @max_seq_nr:  Maximal used sequence number.
++ * @cpumask: cpumask in use.
++ * @lock: Reorder lock.
++ * @timer: Reorder timer.
++ */
+ struct parallel_data {
+ 	struct padata_instance	*pinst;
+ 	struct padata_queue	*queue;
+@@ -64,6 +107,16 @@ struct parallel_data {
+ 	struct timer_list       timer;
+ };
+ 
++/*
++ * struct padata_instance - The overall control structure.
++ *
++ * @cpu_notifier: cpu hotplug notifier.
++ * @wq: The workqueue in use.
++ * @pd: The internal control structure.
++ * @cpumask: User supplied cpumask.
++ * @lock: padata instance lock.
++ * @flags: padata flags.
++ */
+ struct padata_instance {
+ 	struct notifier_block   cpu_notifier;
+ 	struct workqueue_struct *wq;
+diff --git a/kernel/padata.c b/kernel/padata.c
+index ec6b8b7..fd09ea1 100644
+--- a/kernel/padata.c
++++ b/kernel/padata.c
+@@ -152,6 +152,23 @@ out:
+ }
+ EXPORT_SYMBOL(padata_do_parallel);
+ 
++/*
++ * padata_get_next - Get the next object that needs serialization.
++ *
++ * Return values are:
++ *
++ * A pointer to the control struct of the next object that needs
++ * serialization, if present in one of the percpu reorder queues.
++ *
++ * NULL, if all percpu reorder queues are empty.
++ *
++ * -EINPROGRESS, if the next object that needs serialization will
++ *  be parallel processed by another cpu and is not yet present in
++ *  the cpu's reorder queue.
++ *
++ * -ENODATA, if this cpu has to do the parallel processing for
++ *  the next object.
++ */
+ static struct padata_priv *padata_get_next(struct parallel_data *pd)
+ {
+ 	int cpu, num_cpus, empty, calc_seq_nr;
+@@ -173,7 +190,7 @@ static struct padata_priv *padata_get_next(struct parallel_data *pd)
+ 
+ 		/*
+ 		 * Calculate the seq_nr of the object that should be
+-		 * next in this queue.
++		 * next in this reorder queue.
+ 		 */
+ 		overrun = 0;
+ 		calc_seq_nr = (atomic_read(&queue->num_obj) * num_cpus)
+@@ -248,15 +265,32 @@ static void padata_reorder(struct parallel_data *pd)
+ 	struct padata_queue *queue;
+ 	struct padata_instance *pinst = pd->pinst;
+ 
++	/*
++	 * The cpu that takes the trylock cares for all objects that
++	 * are enqueued to the percpu reorder queues during the lock is held.
++	 * So if a cpu can't get the trylock we exit, because the holder
++	 * of the lock does the work for us if processing is needed.
++	 */
+ 	if (!spin_trylock_bh(&pd->lock))
+ 		return;
+ 
+ 	while (1) {
+ 		padata = padata_get_next(pd);
+ 
++		/*
++		 * All reorder queues are empty, or the next object that needs
++		 * serialization is parallel processed by another cpu and is
++		 * still on it's way to the cpu's reorder queue, nothing to
++		 * do for now.
++		 */
+ 		if (!padata || PTR_ERR(padata) == -EINPROGRESS)
+ 			break;
+ 
++		/*
++		 * This cpu has to do the parallel processing of the next
++		 * object. It's waiting in the cpu's parallelization queue,
++		 * so exit imediately.
++		 */
+ 		if (PTR_ERR(padata) == -ENODATA) {
+ 			del_timer(&pd->timer);
+ 			spin_unlock_bh(&pd->lock);
+@@ -274,6 +308,11 @@ static void padata_reorder(struct parallel_data *pd)
+ 
+ 	spin_unlock_bh(&pd->lock);
+ 
++	/*
++	 * The next object that needs serialization might have arrived to
++	 * the reorder queues in the meantime, we will be called again
++	 * from the timer function if noone else cares for it.
++	 */
+ 	if (atomic_read(&pd->reorder_objects)
+ 			&& !(pinst->flags & PADATA_RESET))
+ 		mod_timer(&pd->timer, jiffies + HZ);
+@@ -348,6 +387,7 @@ void padata_do_serial(struct padata_priv *padata)
+ }
+ EXPORT_SYMBOL(padata_do_serial);
+ 
++/* Allocate and initialize the internal cpumask dependend resources. */
+ static struct parallel_data *padata_alloc_pd(struct padata_instance *pinst,
+ 					     const struct cpumask *cpumask)
+ {
+@@ -417,6 +457,7 @@ static void padata_free_pd(struct parallel_data *pd)
+ 	kfree(pd);
+ }
+ 
++/* Flush all objects out of the padata queues. */
+ static void padata_flush_queues(struct parallel_data *pd)
+ {
+ 	int cpu;
+@@ -440,6 +481,7 @@ static void padata_flush_queues(struct parallel_data *pd)
+ 	BUG_ON(atomic_read(&pd->refcnt) != 0);
+ }
+ 
++/* Replace the internal control stucture with a new one. */
+ static void padata_replace(struct padata_instance *pinst,
+ 			   struct parallel_data *pd_new)
+ {
+@@ -706,7 +748,7 @@ EXPORT_SYMBOL(padata_alloc);
+ /*
+  * padata_free - free a padata instance
+  *
+- * @ padata_inst: padata instance to free
++ * @padata_inst: padata instance to free
+  */
+ void padata_free(struct padata_instance *pinst)
+ {
 -- 
-
----------------------------------
-Sachin Sant
-IBM Linux Technology Center
-India Systems and Technology Labs
-Bangalore, India
----------------------------------
+1.5.6.5
 
