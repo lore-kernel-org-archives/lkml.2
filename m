@@ -1,142 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759368Ab0D3S0p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:26:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28878 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758607Ab0D3S01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:26:27 -0400
-Message-ID: <4BDB2069.4000507@redhat.com>
-Date: Fri, 30 Apr 2010 21:24:41 +0300
-From: Avi Kivity <avi@redhat.com>
+	id S933405Ab0D3S1B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:27:01 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:43466 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759354Ab0D3S02 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 14:26:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=hfTkilboQVzB0BtOxzu+zwmw0MA9IIvEwoyabRU+GS00Oc6WZ6ZJYFyPZ3Jcr8A4vQ
+         ctxsYW6JqkjUpaiUEnrIdxR6efo5UDskxO3Nrr/YLvcRwcfVAvkwP94s0Rmmz5UkKeiB
+         SnsHIp8VXjcbaHqwj1tQR+25mqfmHjT6Ce94E=
+Message-ID: <4BD95E7A.90402@panasas.com>
+Date: Thu, 29 Apr 2010 13:24:58 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com>> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>> <4BD1A74A.2050003@redhat.com>> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com>> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>> <4BD3377E.6010303@redhat.com>> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>> <ce808441-fae6-4a33-8335-f7702740097a@default>> <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz 4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default> <4BDB026E.1030605@redhat.com> <4BDB18CE.2090608@goop.org>
-In-Reply-To: <4BDB18CE.2090608@goop.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Jens Axboe <Jens.Axboe@oracle.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: exofs: add bdi backing to mount session
+References: <201004282059.o3SKx7hG029846@hera.kernel.org>
+In-Reply-To: <201004282059.o3SKx7hG029846@hera.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2010 08:52 PM, Jeremy Fitzhardinge wrote:
-> On 04/30/2010 09:16 AM, Avi Kivity wrote:
->    
->> Given that whenever frontswap fails you need to swap anyway, it is
->> better for the host to never fail a frontswap request and instead back
->> it with disk storage if needed.  This way you avoid a pointless vmexit
->> when you're out of memory.  Since it's disk backed it needs to be
->> asynchronous and batched.
->>      
-> I'd argue the opposite.  There's no point in having the host do swapping
-> on behalf of guests if guests can do it themselves; it's just a
-> duplication of functionality.
+On 04/28/2010 11:59 PM, Linux Kernel Mailing List wrote:
+> Gitweb:     http://git.kernel.org/linus/b3d0ab7e60d1865bb6f6a79a77aaba22f2543236
+> Commit:     b3d0ab7e60d1865bb6f6a79a77aaba22f2543236
+> Parent:     9df9c8b930156a2f9ce2b2ae66acb14bee2663f5
+> Author:     Jens Axboe <jens.axboe@oracle.com>
+> AuthorDate: Thu Apr 22 12:26:04 2010 +0200
+> Committer:  Jens Axboe <jens.axboe@oracle.com>
+> CommitDate: Thu Apr 22 12:26:04 2010 +0200
+> 
+>     exofs: add bdi backing to mount session
+>     
+>     This ensures that dirty data gets flushed properly.
+>     
+>     Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
 
-The problem with relying on the guest to swap is that it's voluntary.  
-The guest may not be able to do it.  When the hypervisor needs memory 
-and guests don't cooperate, it has to swap.
+This patch introduced a bug (together with a fix). I'm sorry that
+my "Linux Kernel Mailing List" filtering techniques are lacking and
+I missed it completely. Searching on google I can see it was hiding
+under "[GIT PULL] block/writeback bits for 2.6.34-rc". I have only
+seen it now, in git-commits-head ml.
 
-But I'm not suggesting that the host swap on behalf on the guest.  
-Rather, the guest swaps to (what it sees as) a device with a large 
-write-back cache; the host simply manages that cache.
+I wish filesystem related patches where CC to linux-fsdevel, and/or
+posted as individual patches, sigh.
 
-> You end up having two IO paths for each
-> guest, and the resulting problems in trying to account for the IO,
-> rate-limit it, etc.  If you can simply say "all guest disk IO happens
-> via this single interface", its much easier to manage.
->    
+I'll post a fix as reply to this mail. Linus please submit.
 
-With tmem you have to account for that memory, make sure it's 
-distributed fairly, claim it back when you need it (requiring guest 
-cooperation), live migrate and save/restore it.  It's a much larger 
-change than introducing a write-back device for swapping (which has the 
-benefit of working with unmodified guests).
-
-> If frontswap has value, it's because its providing a new facility to
-> guests that doesn't already exist and can't be easily emulated with
-> existing interfaces.
->
-> It seems to me the great strengths of the synchronous interface are:
->
->      * it matches the needs of an existing implementation (tmem in Xen)
->      * it is simple to understand within the context of the kernel code
->        it's used in
->
-> Simplicity is important, because it allows the mm code to be understood
-> and maintained without having to have a deep understanding of
-> virtualization.
-
-If we use the existing paths, things are even simpler, and we match more 
-needs (hypervisors with dma engines, the ability to reclaim memory 
-without guest cooperation).
-
-> One of the problems with CMM2 was that it puts a lot of
-> intricate constraints on the mm code which can be easily broken, which
-> would only become apparent in subtle edge cases in a CMM2-using
-> environment.  An addition async frontswap-like interface - while not as
-> complex as CMM2 - still makes things harder for mm maintainers.
->    
-
-No doubt CMM2 is hard to swallow.
-
-> The downside is that it may not match some implementation in which the
-> get/put operations could take a long time (ie, physical IO to a slow
-> mechanical device).  But a general Linux principle is not to overdesign
-> interfaces for hypothetical users, only for real needs.
->    
-
-> Do you think that you would be able to use frontswap in kvm if it were
-> an async interface, but not otherwise?  Or are you arguing a hypothetical?
->    
-
-For kvm (or Xen, with some modifications) all of the benefits of 
-frontswap/tmem can be achieved with the ordinary swap.  It would need 
-trim/discard support to avoid writing back freed data, but that's good 
-for flash as well.
-
-The advantages are:
-- just works
-- old guests
-- <1 exit/page (since it's batched)
-- no extra overhead if no free memory
-- can use dma engine (since it's asynchronous)
-
->> At this point we're back with the ordinary swap API.  Simply have your
->> host expose a device which is write cached by host memory, you'll have
->> all the benefits of frontswap with none of the disadvantages, and with
->> no changes to guest code.
->>      
-> Yes, that's comfortably within the "guests page themselves" model.
-> Setting up a block device for the domain which is backed by pagecache
-> (something we usually try hard to avoid) is pretty straightforward.  But
-> it doesn't work well for Xen unless the blkback domain is sized so that
-> it has all of Xen's free memory in its pagecache.
->    
-
-Could be easily achieved with ballooning?
-
-> That said, it does concern me that the host/hypervisor is left holding
-> the bag on frontswapped pages.  A evil/uncooperative/lazy can just pump
-> a whole lot of pages into the frontswap pool and leave them there.   I
-> guess this is mitigated by the fact that the API is designed such that
-> they can't update or read the data without also allowing the hypervisor
-> to drop the page (updates can fail destructively, and reads are also
-> destructive), so the guest can't use it as a clumsy extension of their
-> normal dedicated memory.
->    
-
-Eventually you'll have to swap frontswap pages, or kill uncooperative 
-guests.  At which point all of the simplicity is gone.
-
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+Boaz
+> ---
+>  fs/exofs/exofs.h |    2 ++
+>  fs/exofs/super.c |    8 ++++++++
+>  2 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/exofs/exofs.h b/fs/exofs/exofs.h
+> index 8442e35..5437327 100644
+> --- a/fs/exofs/exofs.h
+> +++ b/fs/exofs/exofs.h
+> @@ -35,6 +35,7 @@
+>  
+>  #include <linux/fs.h>
+>  #include <linux/time.h>
+> +#include <linux/backing-dev.h>
+>  #include "common.h"
+>  
+>  /* FIXME: Remove once pnfs hits mainline
+> @@ -92,6 +93,7 @@ struct exofs_sb_info {
+>  	struct exofs_layout	layout;		/* Default files layout,
+>  						 * contains the variable osd_dev
+>  						 * array. Keep last */
+> +	struct backing_dev_info bdi;
+>  	struct osd_dev	*_min_one_dev[1];	/* Place holder for one dev   */
+>  };
+>  
+> diff --git a/fs/exofs/super.c b/fs/exofs/super.c
+> index 18e57ea..03149b9 100644
+> --- a/fs/exofs/super.c
+> +++ b/fs/exofs/super.c
+> @@ -302,6 +302,7 @@ static void exofs_put_super(struct super_block *sb)
+>  	_exofs_print_device("Unmounting", NULL, sbi->layout.s_ods[0],
+>  			    sbi->layout.s_pid);
+>  
+> +	bdi_destroy(&sbi->bdi);
+>  	exofs_free_sbi(sbi);
+>  	sb->s_fs_info = NULL;
+>  }
+> @@ -546,6 +547,10 @@ static int exofs_fill_super(struct super_block *sb, void *data, int silent)
+>  	if (!sbi)
+>  		return -ENOMEM;
+>  
+> +	ret = bdi_setup_and_register(&sbi->bdi, "exofs", BDI_CAP_MAP_COPY);
+> +	if (ret)
+> +		goto free_bdi;
+> +
+>  	/* use mount options to fill superblock */
+>  	od = osduld_path_lookup(opts->dev_name);
+>  	if (IS_ERR(od)) {
+> @@ -612,6 +617,7 @@ static int exofs_fill_super(struct super_block *sb, void *data, int silent)
+>  	}
+>  
+>  	/* set up operation vectors */
+> +	sb->s_bdi = &sbi->bdi;
+>  	sb->s_fs_info = sbi;
+>  	sb->s_op = &exofs_sops;
+>  	sb->s_export_op = &exofs_export_ops;
+> @@ -643,6 +649,8 @@ static int exofs_fill_super(struct super_block *sb, void *data, int silent)
+>  	return 0;
+>  
+>  free_sbi:
+> +	bdi_destroy(&sbi->bdi);
+> +free_bdi:
+>  	EXOFS_ERR("Unable to mount exofs on %s pid=0x%llx err=%d\n",
+>  		  opts->dev_name, sbi->layout.s_pid, ret);
+>  	exofs_free_sbi(sbi);
+> --
+> To unsubscribe from this list: send the line "unsubscribe git-commits-head" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
