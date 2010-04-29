@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933547Ab0D3Rzh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:55:37 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:60147 "EHLO ogre.sisk.pl"
+	id S1758927Ab0D3Rzl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:55:41 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:60146 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758905Ab0D3Ryw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758904Ab0D3Ryw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Apr 2010 13:54:52 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend blockers from user-space
-Date: Thu, 29 Apr 2010 23:11:27 +0200
+To: Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH] acpi: Fall back to manually changing SCI_EN
+Date: Thu, 29 Apr 2010 23:05:11 +0200
 User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-       Jim Collar <jim.collar@eqware.net>,
-       "Greg Kroah-Hartman" <gregkh@suse.de>, Avi Kivity <avi@redhat.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Magnus Damm <damm@igel.co.jp>, Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
-References: <1272429119-12103-1-git-send-email-arve@android.com> <201004290105.15707.rjw@sisk.pl> <h2jd6200be21004281638y6b751abesfcf6416707e6fee4@mail.gmail.com>
-In-Reply-To: <h2jd6200be21004281638y6b751abesfcf6416707e6fee4@mail.gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-acpi@vger.kernel.org,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       Len Brown <len.brown@intel.com>
+References: <1271711614-15527-1-git-send-email-mjg@redhat.com> <201004282058.20910.rjw@sisk.pl> <alpine.LFD.2.00.1004282019240.2598@sony>
+In-Reply-To: <alpine.LFD.2.00.1004282019240.2598@sony>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201004292311.27400.rjw@sisk.pl>
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004292305.11493.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 April 2010, Arve Hjønnevåg wrote:
-> 2010/4/28 Rafael J. Wysocki <rjw@sisk.pl>:
-> > On Thursday 29 April 2010, Arve Hjønnevåg wrote:
-> >> 2010/4/28 Rafael J. Wysocki <rjw@sisk.pl>:
-> >> > On Wednesday 28 April 2010, Arve Hjønnevåg wrote:
-> >> >> Add a misc device, "suspend_blocker", that allows user-space processes
-> >> >> to block auto suspend. The device has ioctls to create a suspend_blocker,
-> >> >> and to block and unblock suspend. To delete the suspend_blocker, close
-> >> >> the device.
-> >> >>
-> >> >> Signed-off-by: Arve Hjønnevåg <arve@android.com>
-> >> > ...
-> >> >> +
-> >> >> +#include <linux/fs.h>
-> >> >> +#include <linux/miscdevice.h>
-> >> >> +#include <linux/module.h>
-> >> >> +#include <linux/uaccess.h>
-> >> >> +#include <linux/slab.h>
-> >> >> +#include <linux/suspend_blocker.h>
-> >> >> +#include <linux/suspend_block_dev.h>
-> >> >> +
-> >> >> +enum {
-> >> >> +     DEBUG_FAILURE   = BIT(0),
-> >> >> +};
-> >> >> +static int debug_mask = DEBUG_FAILURE;
-> >> >
-> >> > What's the exact purpose of this?
-> >>
-> >> To show errors returned to user space. I can turn it off by default if you want.
-> >
-> > Not necessarily, but why is it a mask?  It looks like a 0/1 thing would be
-> > sufficient.
+On Thursday 29 April 2010, Len Brown wrote:
 > 
-> I may want to add a bit to print all user-space block and unblock calls.
+> On Wed, 28 Apr 2010, Rafael J. Wysocki wrote:
+> 
+> > On Monday 19 April 2010, Matthew Garrett wrote:
+> > > The ACPI spec tells us that the ACPI SCI_EN bit is under hardware control
+> > > and shouldn't be touched by the OS. It seems that the Leading Other OS
+> > > ignores this and some machines expect this behaviour. We have a blacklist
+> > > for these, but given that we're able to detect the failure case and the
+> > > alternative to breaking the spec is letting the machine crash and burn,
+> > > let's try falling back when we know the alternative is a mostly-dead
+> > > machine.
+> > > 
+> > > Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> > 
+> > I guess we can try that, but I'd prefer it if that went into .35.
+> > 
+> > It _should_ be safe, but ...
+> > 
+> > Anyway, Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> 
+> I'd like to push this patch in .34,
+> and in .35 remove the DMI list and the boot option.
+> 
+> One thing that has bothered me about the boot option
+> is that it writes SCI_EN instead of callin acpi_enable()
+> as opposed to in-addition-to acpi_enable().
+> If all acpi_enable() did was set SCI_EN, then it would
+> not make a difference.  However, acpi_enable() writes
+> SMI_CMD and we really have no idea what other stuff
+> the BIOS may do in SMM on this transition.
+> 
+> So if we don't end up reverting this one,
+> I'd really like to see the boot option gone in .35.
 
-Alternatively, you can add a new parameter for that, which I think I would prefer.
+There are some suspend changes in .34 that may cause problems to happen for
+people, so I'm not sure if it's actually a good idea to introduce one more of
+them after -rc5.
+
+Also removing the boot option can easily wait until .36 IMHO.
 
 Rafael
