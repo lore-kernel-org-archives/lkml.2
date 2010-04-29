@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab0D2AEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 20:04:05 -0400
-Received: from tomts13-srv.bellnexxia.net ([209.226.175.34]:36656 "EHLO
-	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755530Ab0D2AEC (ORCPT
+	id S932424Ab0D2AEQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 20:04:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53702 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756762Ab0D2AEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 20:04:02 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAEZn2EtGGNqG/2dsb2JhbACdA3K9foUOBA
-Date: Wed, 28 Apr 2010 20:03:57 -0400
-From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-To: Steven Rostedt <rostedt@goodmis.org>
+	Wed, 28 Apr 2010 20:04:13 -0400
+X-Authority-Analysis: v=1.1 cv=m27xf9DC4olkrNDaWzGlhfWN1WyLlD0+t5Z5YaFh7bA= c=1 sm=0 a=dt1ycumTCpsA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=KIDW1aQ4dO4FNOyOasUA:9 a=DTguLQ6NoU2-_tYj_6bTxt5FlA4A:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 09/10][RFC] tracing: Remove duplicate id information in
+ event structure
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
 Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
        Andrew Morton <akpm@linux-foundation.org>,
        Thomas Gleixner <tglx@linutronix.de>,
@@ -20,64 +23,41 @@ Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
        Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 03/10][RFC] tracing: Convert TRACE_EVENT() to use the
-	DECLARE_TRACE_DATA()
-Message-ID: <20100429000357.GA30353@Krystal>
-References: <20100426195024.256424113@goodmis.org> <20100426200241.938003192@goodmis.org> <20100428203939.GD8591@Krystal> <1272499077.9739.85.camel@gandalf.stny.rr.com>
+In-Reply-To: <20100428210642.GJ8591@Krystal>
+References: <20100426195024.256424113@goodmis.org>
+	 <20100426200243.649349066@goodmis.org>  <20100428210642.GJ8591@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 28 Apr 2010 20:04:11 -0400
+Message-ID: <1272499451.9739.90.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1272499077.9739.85.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 20:00:05 up 21 days,  9:53,  4 users,  load average: 0.28, 0.21,
-	0.18
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Wed, 2010-04-28 at 16:39 -0400, Mathieu Desnoyers wrote:
-> > * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > > From: Steven Rostedt <srostedt@redhat.com>
-> > > 
-> > > Switch the TRACE_EVENT() macros to use DECLARE_TRACE_DATA(). This
-> > > patch is done to prove that the DATA macros work. If any regressions
-> > > were to surface, then this patch would help a git bisect to localize
-> > > the area.
-> > > 
-> > > Once again this patch increases the size of the kernel.
-> > > 
+On Wed, 2010-04-28 at 17:06 -0400, Mathieu Desnoyers wrote:
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > From: Steven Rostedt <srostedt@redhat.com>
 > > 
-> > As recommended in the earlier email:
+> > Now that the trace_event structure is embedded in the ftrace_event_call
+> > structure, there is no need for the ftrace_event_call id field.
+> > The id field is the same as the trace_event type field.
 > > 
-> > It would make sense to just add the extra "callback_data" argument
-> > directly to DECLARE_TRACE(), modify the user (TRACE_EVENT) accordingly.
-> > And possibly create a TRACE_EVENT_NOARG() variant.
+> > Removing the id and re-arranging the structure brings down the tracepoint
+> > footprint by another 5K.
 > 
-> Are you suggesting to make DECLARE_TRACE() be...
-> 
-> #define DECLARE_TRACE(name, proto, args, data)
-> 
-> ?
+> I might have missed it, but how exactly is the event type allocated
+> uniquely ? Is it barely a duplicate of the call "id" field ?
 
-err.. forget about that. We only need to modify the callback to take the
-extra argument into acount, not DECLARE_TRACE().
+It is allocated in kernel/trace/trace_events.c.
 
-Thanks,
+The code there scans the "_ftrace_events" section to find all the events
+that are created, and it assigns the events a unique id. Currently the
+id is just copied from the trace_event field to the ftrace_event_call
+data. The two are the same.
 
-Mathieu
+-- Steve
 
-> 
-> -- Steve
-> 
-> 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
