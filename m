@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758939Ab0D3R4U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:56:20 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:51101 "EHLO gir.skynet.ie"
+	id S933577Ab0D3R42 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:56:28 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:51102 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933023Ab0D3R4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932997Ab0D3R4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Apr 2010 13:56:03 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -13,9 +13,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>,
        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages() and rmap_walk() during migration by not migrating temporary stacks
-Date: Thu, 29 Apr 2010 09:32:10 +0100
-Message-Id: <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 1/2] mm: Take all anon_vma locks in anon_vma_lock
+Date: Thu, 29 Apr 2010 09:32:09 +0100
+Message-Id: <1272529930-29505-2-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1272529930-29505-1-git-send-email-mel@csn.ul.ie>
 References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie>
@@ -23,127 +23,249 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page migration requires rmap to be able to find all ptes mapping a page
-at all times, otherwise the migration entry can be instantiated, but it
-is possible to leave one behind if the second rmap_walk fails to find
-the page.  If this page is later faulted, migration_entry_to_page() will
-call BUG because the page is locked indicating the page was migrated by
-the migration PTE not cleaned up. For example
+From: Rik van Riel <riel@redhat.com>
 
-[  511.201534] kernel BUG at include/linux/swapops.h:105!
-[  511.201534] invalid opcode: 0000 [#1] PREEMPT SMP
-[  511.201534] last sysfs file: /sys/block/sde/size
-[  511.201534] CPU 0
-[  511.201534] Modules linked in: kvm_amd kvm dm_crypt loop i2c_piix4 serio_raw tpm_tis shpchp evdev tpm i2c_core pci_hotplug tpm_bios wmi processor button ext3 jbd mbcache dm_mirror dm_region_hash dm_log dm_snapshot dm_mod raid10 raid456 async_raid6_recov async_pq raid6_pq async_xor xor async_memcpy async_tx raid1 raid0 multipath linear md_mod sg sr_mod cdrom sd_mod ata_generic ahci libahci libata ide_pci_generic ehci_hcd ide_core r8169 mii ohci_hcd scsi_mod floppy thermal fan thermal_sys
-[  511.888526]
-[  511.888526] Pid: 20431, comm: date Not tainted 2.6.34-rc4-mm1-fix-swapops #6 GA-MA790GP-UD4H/GA-MA790GP-UD4H
-[  511.888526] RIP: 0010:[<ffffffff811094ff>]  [<ffffffff811094ff>] migration_entry_wait+0xc1/0x129
-[  512.173545] RSP: 0018:ffff880037b979d8  EFLAGS: 00010246
-[  512.198503] RAX: ffffea0000000000 RBX: ffffea0001a2ba10 RCX: 0000000000029830
-[  512.329617] RDX: 0000000001a2ba10 RSI: ffffffff818264b8 RDI: 000000000ef45c3e
-[  512.380001] RBP: ffff880037b97a08 R08: ffff880078003f00 R09: ffff880037b979e8
-[  512.380001] R10: ffffffff8114ddaa R11: 0000000000000246 R12: 0000000037304000
-[  512.380001] R13: ffff88007a9ed5c8 R14: f800000000077a2e R15: 000000000ef45c3e
-[  512.380001] FS:  00007f3d346866e0(0000) GS:ffff880002200000(0000) knlGS:0000000000000000
-[  512.380001] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  512.380001] CR2: 00007fff6abec9c1 CR3: 0000000037a15000 CR4: 00000000000006f0
-[  512.380001] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  513.004775] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  513.068415] Process date (pid: 20431, threadinfo ffff880037b96000, task ffff880078003f00)
-[  513.068415] Stack:
-[  513.068415]  ffff880037b97b98 ffff880037b97a18 ffff880037b97be8 0000000000000c00
-[  513.228068] <0> ffff880037304f60 00007fff6abec9c1 ffff880037b97aa8 ffffffff810e951a
-[  513.228068] <0> ffff880037b97a88 0000000000000246 0000000000000000 ffffffff8130c5c2
-[  513.228068] Call Trace:
-[  513.228068]  [<ffffffff810e951a>] handle_mm_fault+0x3f8/0x76a
-[  513.228068]  [<ffffffff8130c5c2>] ? do_page_fault+0x26a/0x46e
-[  513.228068]  [<ffffffff8130c7a2>] do_page_fault+0x44a/0x46e
-[  513.720755]  [<ffffffff8130875d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-[  513.789278]  [<ffffffff8114ddaa>] ? load_elf_binary+0x14a1/0x192b
-[  513.851506]  [<ffffffff813099b5>] page_fault+0x25/0x30
-[  513.851506]  [<ffffffff8114ddaa>] ? load_elf_binary+0x14a1/0x192b
-[  513.851506]  [<ffffffff811c1e27>] ? strnlen_user+0x3f/0x57
-[  513.851506]  [<ffffffff8114de33>] load_elf_binary+0x152a/0x192b
-[  513.851506]  [<ffffffff8111329b>] search_binary_handler+0x173/0x313
-[  513.851506]  [<ffffffff8114c909>] ? load_elf_binary+0x0/0x192b
-[  513.851506]  [<ffffffff81114896>] do_execve+0x219/0x30a
-[  513.851506]  [<ffffffff8111887f>] ? getname+0x14d/0x1b3
-[  513.851506]  [<ffffffff8100a5c6>] sys_execve+0x43/0x5e
-[  514.483501]  [<ffffffff8100320a>] stub_execve+0x6a/0xc0
-[  514.548357] Code: 74 05 83 f8 1f 75 68 48 b8 ff ff ff ff ff ff ff 07 48 21 c2 48 b8 00 00 00 00 00 ea ff ff 48 6b d2 38 48 8d 1c 02 f6 03 01 75 04 <0f> 0b eb fe 8b 4b 08 48 8d 73 08 85 c9 74 35 8d 41 01 89 4d e0
-[  514.704292] RIP  [<ffffffff811094ff>] migration_entry_wait+0xc1/0x129
-[  514.808221]  RSP <ffff880037b979d8>
-[  514.906179] ---[ end trace 4f88495edc224d6b ]---
+Take all the locks for all the anon_vmas in anon_vma_lock, this properly
+excludes migration and the transparent hugepage code from VMA changes done
+by mmap/munmap/mprotect/expand_stack/etc...
 
-There is a race between shift_arg_pages and migration that triggers this bug.
-A temporary stack is setup during exec and later moved. If migration moves
-a page in the temporary stack and the VMA is then removed before migration
-completes, the migration PTE may not be found leading to a BUG when the
-stack is faulted.
+Unfortunately, this requires adding a new lock (mm->anon_vma_chain_lock),
+otherwise we have an unavoidable lock ordering conflict.  This changes the
+locking rules for the "same_vma" list to be either mm->mmap_sem for write,
+or mm->mmap_sem for read plus the new mm->anon_vma_chain lock.  This limits
+the place where the new lock is taken to 2 locations - anon_vma_prepare and
+expand_downwards.
 
-Ideally, shift_arg_pages must run atomically with respect of rmap_walk
-by holding the anon_vma lock but this is problematic as pages must be
-allocated for page tables which cannot happen with a spinlock held. Instead,
-this patch skips processes in exec by making an assumption that a VMA with
-stack-flags set and a map_count == 1 is in exec that hasn't finalised the
-temporary stack yet so don't migrate the pages. Memory hot-remove will try
-again, sys_move_pages() wouldn't be operating during exec() time and memory
-compaction will just continue to another page without concern.
+Document the locking rules for the same_vma list in the anon_vma_chain and
+remove the anon_vma_lock call from expand_upwards, which does not need it.
 
-[kamezawa.hiroyu@jp.fujitsu.com: Idea for having migration skip temporary stacks]
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- mm/rmap.c |   30 +++++++++++++++++++++++++++++-
- 1 files changed, 29 insertions(+), 1 deletions(-)
+ include/linux/mm_types.h |    1 +
+ include/linux/rmap.h     |   28 +++++++++++++++++++---------
+ kernel/fork.c            |    1 +
+ mm/init-mm.c             |    1 +
+ mm/mmap.c                |   21 ++++++++++++---------
+ mm/rmap.c                |   10 ++++++----
+ 6 files changed, 40 insertions(+), 22 deletions(-)
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index f95b66d..3bb6c9e 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1143,6 +1143,20 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
- 	return ret;
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index b8bb9a6..a0679c6 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -239,6 +239,7 @@ struct mm_struct {
+ 	int map_count;				/* number of VMAs */
+ 	struct rw_semaphore mmap_sem;
+ 	spinlock_t page_table_lock;		/* Protects page tables and some counters */
++	spinlock_t anon_vma_chain_lock;		/* Protects vma->anon_vma_chain, with mmap_sem */
+ 
+ 	struct list_head mmlist;		/* List of maybe swapped mm's.	These are globally strung
+ 						 * together off init_mm.mmlist, and are protected
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 7721674..e8d480d 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -61,11 +61,15 @@ struct anon_vma {
+  * all the anon_vmas associated with this VMA.
+  * The "same_anon_vma" list contains the anon_vma_chains
+  * which link all the VMAs associated with this anon_vma.
++ *
++ * The "same_vma" list is locked by either having mm->mmap_sem
++ * locked for writing, or having mm->mmap_sem locked for reading
++ * AND holding the mm->anon_vma_chain_lock.
+  */
+ struct anon_vma_chain {
+ 	struct vm_area_struct *vma;
+ 	struct anon_vma *anon_vma;
+-	struct list_head same_vma;   /* locked by mmap_sem & page_table_lock */
++	struct list_head same_vma;	/* see above */
+ 	struct list_head same_anon_vma;	/* locked by anon_vma->lock */
+ };
+ 
+@@ -99,18 +103,24 @@ static inline struct anon_vma *page_anon_vma(struct page *page)
+ 	return page_rmapping(page);
  }
  
-+static bool is_vma_temporary_stack(struct vm_area_struct *vma)
-+{
-+	int maybe_stack = vma->vm_flags & (VM_GROWSDOWN | VM_GROWSUP);
-+
-+	if (!maybe_stack)
-+		return false;
-+
-+	/* If only the stack is mapped, assume exec is in progress */
-+	if (vma->vm_mm->map_count == 1)
-+		return true;
-+
-+	return false;
-+}
-+
- /**
-  * try_to_unmap_anon - unmap or unlock anonymous page using the object-based
-  * rmap method
-@@ -1171,7 +1185,21 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
+-static inline void anon_vma_lock(struct vm_area_struct *vma)
+-{
+-	struct anon_vma *anon_vma = vma->anon_vma;
+-	if (anon_vma)
+-		spin_lock(&anon_vma->lock);
+-}
++#define anon_vma_lock(vma, nest_lock)					\
++({									\
++	struct anon_vma *anon_vma = vma->anon_vma;			\
++	if (anon_vma) {							\
++		struct anon_vma_chain *avc;				\
++		list_for_each_entry(avc, &vma->anon_vma_chain, same_vma) \
++			spin_lock_nest_lock(&avc->anon_vma->lock, nest_lock); \
++	}								\
++})
  
- 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
- 		struct vm_area_struct *vma = avc->vma;
--		unsigned long address = vma_address(page, vma);
-+		unsigned long address;
+ static inline void anon_vma_unlock(struct vm_area_struct *vma)
+ {
+ 	struct anon_vma *anon_vma = vma->anon_vma;
+-	if (anon_vma)
+-		spin_unlock(&anon_vma->lock);
++	if (anon_vma) {
++		struct anon_vma_chain *avc;
++		list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
++			spin_unlock(&avc->anon_vma->lock);
++	}
+ }
+ 
+ /*
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 7f4c6fe..98adcdf 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -481,6 +481,7 @@ static struct mm_struct * mm_init(struct mm_struct * mm, struct task_struct *p)
+ 	mm->nr_ptes = 0;
+ 	memset(&mm->rss_stat, 0, sizeof(mm->rss_stat));
+ 	spin_lock_init(&mm->page_table_lock);
++	spin_lock_init(&mm->anon_vma_chain_lock);
+ 	mm->free_area_cache = TASK_UNMAPPED_BASE;
+ 	mm->cached_hole_size = ~0UL;
+ 	mm_init_aio(mm);
+diff --git a/mm/init-mm.c b/mm/init-mm.c
+index 57aba0d..3ce8a1f 100644
+--- a/mm/init-mm.c
++++ b/mm/init-mm.c
+@@ -15,6 +15,7 @@ struct mm_struct init_mm = {
+ 	.mm_count	= ATOMIC_INIT(1),
+ 	.mmap_sem	= __RWSEM_INITIALIZER(init_mm.mmap_sem),
+ 	.page_table_lock =  __SPIN_LOCK_UNLOCKED(init_mm.page_table_lock),
++	.anon_vma_chain_lock =  __SPIN_LOCK_UNLOCKED(init_mm.anon_vma_chain_lock),
+ 	.mmlist		= LIST_HEAD_INIT(init_mm.mmlist),
+ 	.cpu_vm_mask	= CPU_MASK_ALL,
+ };
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f90ea92..4602358 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -452,7 +452,7 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		spin_lock(&mapping->i_mmap_lock);
+ 		vma->vm_truncate_count = mapping->truncate_count;
+ 	}
+-	anon_vma_lock(vma);
++	anon_vma_lock(vma, &mm->mmap_sem);
+ 
+ 	__vma_link(mm, vma, prev, rb_link, rb_parent);
+ 	__vma_link_file(vma);
+@@ -578,6 +578,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		}
+ 	}
+ 
++	anon_vma_lock(vma, &mm->mmap_sem);
+ 	if (root) {
+ 		flush_dcache_mmap_lock(mapping);
+ 		vma_prio_tree_remove(vma, root);
+@@ -599,6 +600,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		vma_prio_tree_insert(vma, root);
+ 		flush_dcache_mmap_unlock(mapping);
+ 	}
++	anon_vma_unlock(vma);
+ 
+ 	if (remove_next) {
+ 		/*
+@@ -1705,12 +1707,11 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ 		return -EFAULT;
+ 
+ 	/*
+-	 * We must make sure the anon_vma is allocated
+-	 * so that the anon_vma locking is not a noop.
++	 * Unlike expand_downwards, we do not need to take the anon_vma lock,
++	 * because we leave vma->vm_start and vma->pgoff untouched. 
++	 * This means rmap lookups of pages inside this VMA stay valid
++	 * throughout the stack expansion.
+ 	 */
+-	if (unlikely(anon_vma_prepare(vma)))
+-		return -ENOMEM;
+-	anon_vma_lock(vma);
+ 
+ 	/*
+ 	 * vma->vm_start/vm_end cannot change under us because the caller
+@@ -1721,7 +1722,6 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ 	if (address < PAGE_ALIGN(address+4))
+ 		address = PAGE_ALIGN(address+4);
+ 	else {
+-		anon_vma_unlock(vma);
+ 		return -ENOMEM;
+ 	}
+ 	error = 0;
+@@ -1737,7 +1737,6 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ 		if (!error)
+ 			vma->vm_end = address;
+ 	}
+-	anon_vma_unlock(vma);
+ 	return error;
+ }
+ #endif /* CONFIG_STACK_GROWSUP || CONFIG_IA64 */
+@@ -1749,6 +1748,7 @@ static int expand_downwards(struct vm_area_struct *vma,
+ 				   unsigned long address)
+ {
+ 	int error;
++	struct mm_struct *mm = vma->vm_mm;
+ 
+ 	/*
+ 	 * We must make sure the anon_vma is allocated
+@@ -1762,7 +1762,8 @@ static int expand_downwards(struct vm_area_struct *vma,
+ 	if (error)
+ 		return error;
+ 
+-	anon_vma_lock(vma);
++	spin_lock(&mm->anon_vma_chain_lock);
++	anon_vma_lock(vma, &mm->anon_vma_chain_lock);
+ 
+ 	/*
+ 	 * vma->vm_start/vm_end cannot change under us because the caller
+@@ -1784,6 +1785,8 @@ static int expand_downwards(struct vm_area_struct *vma,
+ 		}
+ 	}
+ 	anon_vma_unlock(vma);
++	spin_unlock(&mm->anon_vma_chain_lock);
 +
-+		/*
-+		 * During exec, a temporary VMA is setup and later moved.
-+		 * The VMA is moved under the anon_vma lock but not the
-+		 * page tables leading to a race where migration cannot
-+		 * find the migration ptes. Rather than increasing the
-+		 * locking requirements of exec(), migration skips
-+		 * temporary VMAs until after exec() completes.
-+		 */
-+		if (PAGE_MIGRATION && (flags & TTU_MIGRATION) &&
-+				is_vma_temporary_stack(vma))
-+			continue;
+ 	return error;
+ }
+ 
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 85f203e..f95b66d 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -23,6 +23,7 @@
+  * inode->i_mutex	(while writing or truncating, not reading or faulting)
+  *   inode->i_alloc_sem (vmtruncate_range)
+  *   mm->mmap_sem
++ *   mm->anon_vma_chain_lock (mmap_sem for read, protects vma->anon_vma_chain)
+  *     page->flags PG_locked (lock_page)
+  *       mapping->i_mmap_lock
+  *         anon_vma->lock
+@@ -133,10 +134,11 @@ int anon_vma_prepare(struct vm_area_struct *vma)
+ 				goto out_enomem_free_avc;
+ 			allocated = anon_vma;
+ 		}
 +
-+		address = vma_address(page, vma);
- 		if (address == -EFAULT)
- 			continue;
- 		ret = try_to_unmap_one(page, vma, address, flags);
++		/* anon_vma_chain_lock to protect against threads */
++		spin_lock(&mm->anon_vma_chain_lock);
+ 		spin_lock(&anon_vma->lock);
+ 
+-		/* page_table_lock to protect against threads */
+-		spin_lock(&mm->page_table_lock);
+ 		if (likely(!vma->anon_vma)) {
+ 			vma->anon_vma = anon_vma;
+ 			avc->anon_vma = anon_vma;
+@@ -145,9 +147,9 @@ int anon_vma_prepare(struct vm_area_struct *vma)
+ 			list_add(&avc->same_anon_vma, &anon_vma->head);
+ 			allocated = NULL;
+ 		}
+-		spin_unlock(&mm->page_table_lock);
+-
+ 		spin_unlock(&anon_vma->lock);
++		spin_unlock(&mm->anon_vma_chain_lock);
++
+ 		if (unlikely(allocated)) {
+ 			anon_vma_free(allocated);
+ 			anon_vma_chain_free(avc);
 -- 
 1.6.5
 
