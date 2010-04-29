@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab0D3RE3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:04:29 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60359 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757268Ab0D3REY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:04:24 -0400
-Message-ID: <4BDA67C1.7050709@kernel.org>
-Date: Fri, 30 Apr 2010 07:16:49 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1758123Ab0D3RF1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:05:27 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:17894 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932652Ab0D3RFM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:05:12 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:date:message-id:subject:from:to:cc:
+	content-type:x-system-of-record;
+	b=TylHQ9lc8tmgJvP+EhLYHx0uvhRS5eoJ+NFgqVc9+nj8M+zf5ymLxAx9Q+PY4OdBr
+	v/J3JCoJa+yzZ1RE6AtTg==
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5?= =?ISO-8859-1?Q?g?= 
-	<arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Pavel Machek <pavel@ucw.cz>,
-       Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 2/2] workqueues: export keventd_wq
-References: <1272429119-12103-1-git-send-email-arve@android.com> <20100428194028.GA16389@redhat.com> <4BD89922.1040306@kernel.org> <201004282308.10751.rjw@sisk.pl> <20100429185851.GA13862@redhat.com> <20100429194447.GA17280@redhat.com> <20100429194545.GC17280@redhat.com>
-In-Reply-To: <20100429194545.GC17280@redhat.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 30 Apr 2010 05:16:51 +0000 (UTC)
+Date: Thu, 29 Apr 2010 14:28:02 +0200
+Message-ID: <v2mbd4cb8901004290528jb13ced31j7f8b0231019bbbcb@mail.gmail.com>
+Subject: [BUG] perf: perf trace does not work anymore
+From: Stephane Eranian <eranian@google.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+       paulus@samba.org, davem@davemloft.net, robert.richter@amd.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-On 04/29/2010 09:45 PM, Oleg Nesterov wrote:
-> -static struct workqueue_struct *keventd_wq __read_mostly;
-> +struct workqueue_struct *keventd_wq __read_mostly;
-> +EXPORT_SYMBOL(keventd_wq);
+I am trying to use perf trace to dump the raw samples.
 
-Umm... does it have to be EXPORTed?  Suspend block API can't be built
-as a module, right?
+$ perf record -R noploop 5
+noploop for 5 seconds
+[ perf record: Woken up 3 times to write data ]
+[ perf record: Captured and wrote 0.269 MB perf.data (~11759 samples) ]
 
--- 
-tejun
+$ perf trace
+  Fatal: reading input file (size expected=3 received=-1)
+
+Seems like trace does not understand the format of the perf.data file anymore.
+This used to work. Did you change the purpose of perf trace?
