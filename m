@@ -1,137 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065Ab0D3RVA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:21:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:54132 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932873Ab0D3RUi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:20:38 -0400
-X-Authority-Analysis: v=1.1 cv=m27xf9DC4olkrNDaWzGlhfWN1WyLlD0+t5Z5YaFh7bA= c=1 sm=0 a=khrRrPIfVHAA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=Vf2hoa83DMIxToDjmyoA:9 a=nsuG50dEblcvOlq5_6Rz9BDF7qwA:4 a=PUjeQqilurYA:10 a=WMe4tq3x45HqZ2jx:21 a=RxJ6P11oiNK1KP8X:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 05/10][RFC] tracing: Move fields from event to class
- structure
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Tom Zanussi <tzanussi@gmail.com>
-In-Reply-To: <20100429133213.GA14617@Krystal>
-References: <20100426195024.256424113@goodmis.org>
-	 <20100426200242.470116062@goodmis.org> <20100428205803.GF8591@Krystal>
-	 <1272499342.9739.88.camel@gandalf.stny.rr.com>
-	 <20100429133213.GA14617@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 29 Apr 2010 09:50:32 -0400
-Message-ID: <1272549033.9739.120.camel@gandalf.stny.rr.com>
+	id S933109Ab0D3RVd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:21:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2297 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933084Ab0D3RVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:21:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,296,1270450800"; 
+   d="scan'208";a="513698692"
+Subject: Re: [PATCH RFC: linux-next 1/2] irq: Add CPU mask affinity hint
+ callback framework
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "davem@davemloft.net" <davem@davemloft.net>,
+       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1004271809080.2951@localhost.localdomain>
+References: <20100419045741.30276.23233.stgit@ppwaskie-hc2.jf.intel.com>
+	 <alpine.LFD.2.00.1004271425140.2951@localhost.localdomain>
+	 <Pine.WNT.4.64.1004270856560.320@PPWASKIE-MOBL2.amr.corp.intel.com>
+	 <alpine.LFD.2.00.1004271809080.2951@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 29 Apr 2010 10:59:06 -0700
+Message-ID: <1272563946.9614.1.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-29 at 09:32 -0400, Mathieu Desnoyers wrote:
-
-> OK, just to make sure I understand what we currently have and how I
-> could deal with it:
+On Wed, 2010-04-28 at 09:45 -0700, Thomas Gleixner wrote:
+> B1;2005;0cPeter,
 > 
-> Let's say syscall_entry has ID 17 in the event header. Let's suppose its
-> first field is the system call number (an unsigned short). This system
-> call number will determine the following binary format (how many fields
-> recorded in the event) and the metadata telling how to print these
-> fields as well.
+> On Tue, 27 Apr 2010, Peter P Waskiewicz Jr wrote:
+> > On Tue, 27 Apr 2010, Thomas Gleixner wrote:
+> > > On Sun, 18 Apr 2010, Peter P Waskiewicz Jr wrote:
+> > > > +/**
+> > > > + * struct irqaffinityhint - per interrupt affinity helper
+> > > > + * @callback:	device driver callback function
+> > > > + * @dev:	reference for the affected device
+> > > > + * @irq:	interrupt number
+> > > > + */
+> > > > +struct irqaffinityhint {
+> > > > +	irq_affinity_hint_t callback;
+> > > > +	void *dev;
+> > > > +	int irq;
+> > > > +};
+> > > 
+> > > Why do you need that extra data structure ? The device and the irq
+> > > number are known, so all you need is the callback itself. So no need
+> > > for allocating memory ....
+> > 
+> > When I register the function callback with the interrupt layer, I need to
+> > know what device structures to reference back in the driver.  In other words,
+> > if I call into an underlying driver with just an interrupt number, then I
+> > have no way at getting at the dev structures (netdevice for me, plus my
+> > private adapter structures), unless I declare them globally (yuck).
 > 
-> So for a syscall_entry event, we could have metadata describing it
-> (I'm doing an ad-hoc metadata format here, don't mind about the exact
-> formulation for now). The first field value would determine the type
-> cast of the following fields:
+> Grr, I knew that I missed something. That'll teach me to review
+> patches before the coffee has reached my brain cells :)
 > 
-> event {
->   name: syscall_entry;
->   id: 17;
->   field {
->     name: syscall_id;
->     type: unsigned short;
->     typecast: syscall_entry_params;
->   }
->   typecast {
->     name: syscall_entry_params;
->     map {
->       value: 0;  /* sys_read on x86_64 */
->       field {
->         type: unsigned int;
->         name: fd;
->       }
->       field {
->         type: char __user *;
->         name: buf;
->       }
->       field {
->         type: size_t;
->         name: count;
->       }
->     }
->    map {
->      value: 1;	/* sys_write on x86_64 */
->      ....
->   }
->   and so on for all other ......
+> > I had a different approach before this one where I assumed the device from
+> > the irq handler callback was safe to use for the device in this new callback.
+> > I didn't feel really great about that, since it's an implicit assumption that
+> > could cause things to go sideways really quickly.
+> >
+> > Let me know what you think either way.  I'm certainly willing to make a
+> > change, I just don't know at this point what's the safest approach from what
+> > I currently have.
+> 
+> So you need a reference to your device, so what about the following:
+> 
+> struct irq_affinity_hint;
+> 
+> struct irq_affinity_hint {
+>        unsigned int (*callback)(unsigned int irq, struct irq_affinity_hint *hint,
+> 				cpumask_var_t *mask);
 > }
 > 
-> Does that look correct ? Maybe I'm just re-doing something already
-> existing, so I prefer to ask first.
+> Now you embed that struct into your device private data structure and
+> you get the reference to it back in the callback function. No extra
+> kmalloc/kfree, less code.
 
-I'm a little confused by your example, but perhaps you are describing
-what we already have.
+Good idea!  I'll roll that into my new version.
 
-All syscall_entrys have the same class, and all syscall_exits have their
-own too.
+> One other thing I noticed, but forgot to comment on:
+> 
+> > +static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
+> > +{
+> > +	struct irq_desc *desc = irq_to_desc((long)m->private);
+> > +	struct cpumask mask;
+> > +	unsigned int ret = 0;
+> 
+>  Why do we return 0, when there is no callback and no hint available ?
 
-What each syscall has separate is a meta-data, which is unique to
-syscalls, and normal TRACE_EVENT()s do not have them. It is put in the
-call->private field.
+I initialized it to 0 to remove a compiler warning; I can put more
+thought into it and assign a more appropriate return value.
 
-So what we have is:
+> > +
+> 
+>   We don't want to have cpumask enforced on stack. Please make that:
+> 
+>      	cpumask_var_t mask;
+> 
+> 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+> 	       return -ENOMEM;
 
-struct ftrace_event_class event_class_syscall_enter;
+I'll roll this into my next version.
 
+> > +	if (desc->hint && desc->hint->callback) {
+> 
+>   The access to desc-> needs to be protected with
+>   desc->lock. Otherwise you might race with a callback unregister.
 
-This handles the printing of most of the data. What it does not cover is
-how to print the parameters of the syscall itself. The meta-data is
-created per syscall that specifies the syscalls parameters.
+Good point.  I'll fix this.
 
-And the same metadata is used by both the syscall enter and exit events.
-The meta data is described in include/trace/syscalls.h
+> > +		ret = desc->hint->callback(&mask, (long)m->private,
+> > +		                           desc->hint->dev);
+> > +		if (!ret)
+> > +			seq_cpumask(m, &mask);
+> > +	}
+> > +
+> > +	seq_putc(m, '\n');
+> > +	return ret;
+> > +}
+> 
+> Thanks,
+> 
 
-struct syscall_metadata {
-	cost char	*name;
-	int		syscall_nr;
-	int		nb_args;
-	const char	**types;
-	const char	**args;
+Thanks for the feedback.  I'll have the updated patches for review soon.
 
-	struct ftrace_event_call *enter_event;
-	struct ftrace_event_call *exit_event;
-};
-
-
-Here the description is how to print the syscall parameters.
-
-I don't see how we can group it any better, without manually doing it.
-
-Hope this explains things better.
-
--- Steve
-
+-PJ
 
