@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759414Ab0D3TEX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:04:23 -0400
-Received: from emh02.mail.saunalahti.fi ([62.142.5.108]:34566 "EHLO
-	emh02.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934244Ab0D3TEB (ORCPT
+	id S1757786Ab0D3TFL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:05:11 -0400
+Received: from rcsinet14.oracle.com ([148.87.113.126]:36322 "EHLO
+	rcsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934044Ab0D3TDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 15:04:01 -0400
-Date: Fri, 30 Apr 2010 22:03:34 +0300 (EEST)
-From: Kai Makisara <Kai.Makisara@kolumbus.fi>
-X-X-Sender: makisara@kai.makisara.local
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Arnd Bergmann <arnd@arndb.de>, dgilbert@interlog.com,
-       Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-       Tejun Heo <tj@kernel.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       John Kacur <jkacur@redhat.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [PATCH] scsi/st: remove BKL from open
-In-Reply-To: <20100430021855.GA21078@nowhere>
-Message-ID: <alpine.LNX.2.00.1004302201200.6758@kai.makisara.local>
-References: <1271277384-7627-1-git-send-email-arnd@arndb.de> <201004151629.45029.arnd@arndb.de> <alpine.LNX.2.00.1004152244160.5127@kai.makisara.local> <201004152251.39636.arnd@arndb.de> <20100430021855.GA21078@nowhere>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Antivirus: VAMS
+	Fri, 30 Apr 2010 15:03:49 -0400
+Date: Thu, 29 Apr 2010 10:57:13 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Eric Van Hensbergen <ericvh@gmail.com>
+Subject: [PATCH] virtio_9p.h: include linux/types.h
+Message-Id: <20100429105713.07bcf2f9.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090209.4BD9C88E.0135:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010, Frederic Weisbecker wrote:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-> On Thu, Apr 15, 2010 at 10:51:38PM +0200, Arnd Bergmann wrote:
-> > The st_open function is serialized through the st_dev_arr_lock
-> > and the STp->in_use flag, so there is no race that the BKL
-> > can protect against in the driver itself, and the function
-> > does not access any global state outside of the driver that
-> > might be protected with the BKL.
-> > 
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > ---
-> 
-> 
-> 
-> Kai, can we get your ack on this?
-> 
-I am sorry, I have forgotten to send it.
+Add <linux/types.h> to <linux/virtio_9p.h> so that types are explicitly
+defined:
+linux/virtio_9p.h:15: found __[us]{8,16,32,64} type without #include <linux/types.h>
 
-Acked-by: Kai Makisara <kai.makisara@kolumbus.fi>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>
+---
+ include/linux/virtio_9p.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-Thanks,
-Kai
+--- lnx-2634-rc5.orig/include/linux/virtio_9p.h
++++ lnx-2634-rc5/include/linux/virtio_9p.h
+@@ -2,6 +2,7 @@
+ #define _LINUX_VIRTIO_9P_H
+ /* This header is BSD licensed so anyone can use the definitions to implement
+  * compatible drivers/servers. */
++#include <linux/types.h>
+ #include <linux/virtio_ids.h>
+ #include <linux/virtio_config.h>
+ 
