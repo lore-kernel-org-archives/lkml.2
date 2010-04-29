@@ -1,104 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab0D2AFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 20:05:32 -0400
-Received: from tomts16.bellnexxia.net ([209.226.175.4]:49279 "EHLO
-	tomts16-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755530Ab0D2AFb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 20:05:31 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAEZn2EtGGNqG/2dsb2JhbACdA3K9foUOBA
-Date: Wed, 28 Apr 2010 20:05:28 -0400
-From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 04/10][RFC] tracing: Remove per event trace registering
-Message-ID: <20100429000528.GB30353@Krystal>
-References: <20100426195024.256424113@goodmis.org> <20100426200242.214837703@goodmis.org> <20100428204448.GE8591@Krystal> <1272499218.9739.86.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	id S1757178Ab0D2AIx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 20:08:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55675 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754666Ab0D2AIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 20:08:52 -0400
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1272499218.9739.86.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 20:04:23 up 21 days,  9:58,  5 users,  load average: 0.19, 0.30,
-	0.23
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Roland McGrath <roland@redhat.com>
+To: Christoffer Dall <christofferdall@christofferdall.dk>
+X-Fcc: ~/Mail/linus
+Cc: containers <containers@lists.linux-foundation.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [C/R ARM v2][PATCH 1/3] ARM: Rudimentary syscall interfaces
+In-Reply-To: Christoffer Dall's message of  Monday, 26 April 2010 17:43:41 -0400 <1272318223-28438-2-git-send-email-christofferdall@christofferdall.dk>
+References: <1272318223-28438-1-git-send-email-christofferdall@christofferdall.dk>
+	<1272318223-28438-2-git-send-email-christofferdall@christofferdall.dk>
+X-Antipastobozoticataclysm: When George Bush projectile vomits antipasto on the Japanese.
+Message-Id: <20100429000808.CFFBD7154@magilla.sf.frob.com>
+Date: Wed, 28 Apr 2010 17:08:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Wed, 2010-04-28 at 16:44 -0400, Mathieu Desnoyers wrote:
-> > * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > > From: Steven Rostedt <srostedt@redhat.com>
-> > > 
-> > > This patch removes the register functions of TRACE_EVENT() to enable
-> > > and disable tracepoints. The registering of a event is now down
-> > > directly in the trace_events.c file. The tracepoint_probe_register()
-> > > is now called directly.
-> > > 
-> > > The prototypes are no longer type checked, but this should not be
-> > > an issue since the tracepoints are created automatically by the
-> > > macros. If a prototype is incorrect in the TRACE_EVENT() macro, then
-> > > other macros will catch it.
-> > > 
-> > > The trace_event_class structure now holds the probes to be called
-> > > by the callbacks. This removes needing to have each event have
-> > > a separate pointer for the probe.
-> > > 
-> > > To handle kprobes and syscalls, since they register probes in a
-> > > different manner, a "reg" field is added to the ftrace_event_class
-> > > structure. If the "reg" field is assigned, then it will be called for
-> > > enabling and disabling of the probe for either ftrace or perf. To let
-> > > the reg function know what is happening, a new enum (trace_reg) is
-> > > created that has the type of control that is needed.
-> > > 
-> > > With this new rework, the 82 kernel events and 616 syscall events
-> > > has their footprint dramatically lowered:
-> > > 
-> > >    text	   data	    bss	    dec	    hex	filename
-> > > 5788186	1337252	9351592	16477030	 fb6b66	vmlinux.orig
-> > > 5792282	1333796	9351592	16477670	 fb6de6	vmlinux.class
-> > > 5793448	1333780	9351592	16478820	 fb7264	vmlinux.tracepoint
-> > > 5796926	1337748	9351592	16486266	 fb8f7a	vmlinux.data
-> > > 5774316	1306580	9351592	16432488	 fabd68	vmlinux.regs
-> > > 
-> > > The size went from 16477030 to 16432488, that's a total of 44K
-> > > in savings. With tracepoints being continuously added, this is
-> > > critical that the footprint becomes minimal.
-> > 
-> > Have you tried doing a BUILD_BUG_ON() on __typeof__() mismatch between
-> > the type of the callback generated by TRACE_EVENT() and the expected
-> > type ?  This might help catching tricky preprocessor macro errors early.
-> 
-> Well, we could, but if it is broken once, it is broken everywhere.
+> + * syscalls.h - Linux syscall interfaces for ARM
 
-I fear about "subtly" broken things, where trace data could end up being
-incorrectly typed and/or corrupted. I think this BUILD_BUG_ON() will
-become very useful.
+s/syscalls/syscall/
+
+> +static inline int get_swi_instruction(struct task_struct *task,
+> +				      struct pt_regs *regs,
+> +				      unsigned long *instr)
+> +{
+
+Why doesn't this just use access_process_vm?
+
+> +/*
+> + * This function essentially duplicates the logic from vector_swi in
+> + * arch/arm/kernel/entry-common.S. However, that code is in the
+> + * critical path for system calls and is hard to factor out without
+> + * compromising performance. 
+> + */
+
+No clue about the ARM details, not reviewing that.  I think this is too big
+to be an inline and should be in some arch/arm/kernel/*.c place instead.
+Of course, if (config_aeabi && !config_oabi) is true at compile time, it's
+not large at all.  So perhaps just move the compelx cases to a function
+and leave the "Pure EABI" fork in the inline.
+
 
 Thanks,
-
-Mathieu
-
-> 
-> -- Steve
-> 
-> 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Roland
