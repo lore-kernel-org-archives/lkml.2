@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab0D3Qs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 12:48:28 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57481 "EHLO smtps.tip.net.au"
+	id S1757032Ab0D3Qsn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 12:48:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57480 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932442Ab0D3Qre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932435Ab0D3Qre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Apr 2010 12:47:34 -0400
-Date: Thu, 29 Apr 2010 13:52:11 +1000
+Date: Thu, 29 Apr 2010 16:14:42 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Jens Axboe <jens.axboe@oracle.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Dmitry Monakhov <dmonakhov@openvz.org>, Jiro SEKIBA <jir@unicus.jp>,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: linux-next: build failure after merge of the block tree
-Message-Id: <20100429135211.3ef89aa3.sfr@canb.auug.org.au>
+       Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: linux-next: build warning after merge of the block tree
+Message-Id: <20100429161442.7a0a4285.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__29_Apr_2010_16_14_42_+1000_c+CzC06X+zni7a3I"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+--Signature=_Thu__29_Apr_2010_16_14_42_+1000_c+CzC06X+zni7a3I
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-After merging the block tree, today's linux-next build (powerpc ppc64_defconfig)
-failed like this:
+Hi James,
 
-fs/nilfs2/the_nilfs.c: In function 'nilfs_discard_segments':
-fs/nilfs2/the_nilfs.c:673: error: 'DISCARD_FL_BARRIER' undeclared (first use in this function)
+After merging the block tree, today's linux-next build (powerpc
+ppc44x_defconfig) produced this warning:
 
-Caused by commit fbd9b09a177a481eda256447c881f014f29034fe ("blkdev:
-generalize flags for blkdev_issue_fn functions") interacting with commit
-e902ec9906e844f4613fa6190c6fa65f162dc86e ("nilfs2: issue discard request
-after cleaning segments") (which netered Linus' tree on about March 4 -
-before v2.6.34-rc1).
+block/blk-lib.c: In function 'blkdev_issue_zeroout':
+block/blk-lib.c:190: warning: comparison of distinct pointer types lacks a =
+cast
 
-I applied the following patch for today (but have no way to test it).
+Introduced by commit 3f14d792f9a8fede64ce918dbb517f934497a4f8 ("blkdev:
+add blkdev_issue_zeroout helper function").
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 29 Apr 2010 13:35:14 +1000
-Subject: [PATCH] nilfs: fix for block layer API change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- fs/nilfs2/the_nilfs.c |    4 +-
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/nilfs2/the_nilfs.c b/fs/nilfs2/the_nilfs.c
-index 33871f7..7081588 100644
---- a/fs/nilfs2/the_nilfs.c
-+++ b/fs/nilfs2/the_nilfs.c
-@@ -670,7 +670,7 @@ int nilfs_discard_segments(struct the_nilfs *nilfs, __u64 *segnump,
- 						   start * sects_per_block,
- 						   nblocks * sects_per_block,
- 						   GFP_NOFS,
--						   DISCARD_FL_BARRIER);
-+						   BLKDEV_IFL_BARRIER);
- 			if (ret < 0)
- 				return ret;
- 			nblocks = 0;
-@@ -680,7 +680,7 @@ int nilfs_discard_segments(struct the_nilfs *nilfs, __u64 *segnump,
- 		ret = blkdev_issue_discard(nilfs->ns_bdev,
- 					   start * sects_per_block,
- 					   nblocks * sects_per_block,
--					   GFP_NOFS, DISCARD_FL_BARRIER);
-+					   GFP_NOFS, BLKDEV_IFL_BARRIER);
- 	return ret;
- }
- 
--- 
-1.7.1
-
--- 
+--=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__29_Apr_2010_16_14_42_+1000_c+CzC06X+zni7a3I
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvZI9IACgkQjjKRsyhoI8xjfgCcCmxyUkDIkgHcrPsFRdsr67Fr
+FWsAoK7j+21OeC/eT51YzGZZ7g7AXMn3
+=AXII
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__29_Apr_2010_16_14_42_+1000_c+CzC06X+zni7a3I--
