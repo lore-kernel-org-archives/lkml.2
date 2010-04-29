@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759440Ab0D3TZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:25:01 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37406 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759367Ab0D3TYp (ORCPT
+	id S932890Ab0D3TZr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:25:47 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:60860 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757504Ab0D3QsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 15:24:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=T4elB/2vqYe2b5i/R+ix053N8VH8iTN4HOgB6lkRkj9krD628wD2O3mgvKnwNLG8EH
-         y3cXpGAOfS7ePCBG8KfFWjEHOsQDqcz6Zf/UcAtNqR/EW5WEDdg+5kweGFg46Dbvrqic
-         JwgJ49pjXvrx3g0SfBkxAqEJRuovUg81iY7VI=
-From: Chihau Chau <chihau@gmail.com>
-To: gregkh@suse.de
-Cc: chihau@gmail.com, pavel@ucw.cz, jochen.maes@sejo.be,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: dream: pmem: code style fixes
-Date: Thu, 29 Apr 2010 17:37:34 -0400
-Message-Id: <1272577054-4656-1-git-send-email-chihau@gmail.com>
-X-Mailer: git-send-email 1.5.6.3
+	Fri, 30 Apr 2010 12:48:07 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AloJAN9Y2UurR7Hu/2dsb2JhbACdD3EEoxaZeIUQBIM8
+X-IronPort-AV: E=Sophos;i="4.52,296,1270425600"; 
+   d="scan'208";a="522611032"
+From: Roland Dreier <rdreier@cisco.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Nicolas Palix <npalix@diku.dk>, Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
+       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
+       linux-kbuild@vger.kernel.org, cocci@diku.dk
+Subject: Re: [PATCH 1/4] Add targets to use the Coccinelle checker
+References: <1272316279-12042-1-git-send-email-npalix@diku.dk>
+	<1272316279-12042-2-git-send-email-npalix@diku.dk>
+	<1272317821.15953.107.camel@Joe-Laptop.home>
+	<201004270020.09447.npalix@diku.dk> <4BD61266.5020905@xenotime.net>
+X-Message-Flag: Warning: May contain useful information
+Date: Thu, 29 Apr 2010 10:01:54 -0700
+In-Reply-To: <4BD61266.5020905@xenotime.net> (Randy Dunlap's message of "Mon,
+	26 Apr 2010 15:23:34 -0700")
+Message-ID: <adaaasmyyyl.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chihau Chau <chihau@gmail.com>
+ > > +		"Take particularly attention when using the \"patch\" mode\n"\
+ > 
+ > 		      particular
 
-This patch include <linux/io.h> instead of <asm/io.h> and
-<linux/uaccess.h> instead of <asm/uaccess.h>.
+Actually, "take particular attention" is not particularly grammatical.
+I might phrase this as
 
-Signed-off-by: Chihau Chau <chihau@gmail.com>
----
- drivers/staging/dream/pmem.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+  Be especially careful when using the "patch" mode to review the patch
+  you are about to submit.
 
-diff --git a/drivers/staging/dream/pmem.c b/drivers/staging/dream/pmem.c
-index 3e4dd21..d5f3e72 100644
---- a/drivers/staging/dream/pmem.c
-+++ b/drivers/staging/dream/pmem.c
-@@ -23,8 +23,8 @@
- #include <linux/android_pmem.h>
- #include <linux/mempolicy.h>
- #include <linux/sched.h>
--#include <asm/io.h>
--#include <asm/uaccess.h>
-+#include <linux/io.h>
-+#include <linux/uaccess.h>
- #include <asm/cacheflush.h>
- 
- #define PMEM_MAX_DEVICES 10
+ - R.
 -- 
-1.5.6.3
-
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
