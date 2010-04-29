@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933792Ab0D3SXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:23:51 -0400
+	id S1758996Ab0D3SYF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:24:05 -0400
 Received: from mx1.redhat.com ([209.132.183.28]:45305 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933191Ab0D3RWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:22:31 -0400
-Message-ID: <4BD9D7A5.1070003@redhat.com>
-Date: Thu, 29 Apr 2010 22:01:57 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S933187Ab0D3RWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:22:30 -0400
+Date: Thu, 29 Apr 2010 18:21:20 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
+ and rmap_walk() during migration by not migrating temporary stacks
+Message-ID: <20100429162120.GC22108@random.random>
+References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie>
+ <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
-       ngupta@vflare.org, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default> <4BD3377E.6010303@redhat.com> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com> <ce808441-fae6-4a33-8335-f7702740097a@default 20100428055538.GA1730@ucw.cz> <c2744f69-5974-4017-ae33-4244ce0960e2@default> <4BD9D702.90209@redhat.com>
-In-Reply-To: <4BD9D702.90209@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2010 09:59 PM, Avi Kivity wrote:
->
-> I'm convinced it's useful.  The API is so close to a block device 
-> (read/write with key/value vs read/write with sector/value) that we 
-> should make the effort not to introduce a new API.
->
+Hi Mel,
 
-Plus of course the asynchronity and batching of the block layer.  Even 
-if you don't use a dma engine, you improve performance by exiting one 
-per several dozen pages instead of for every page, perhaps enough to 
-allow the hypervisor to justify copying the memory with non-temporal moves.
+did you see my proposed fix? I'm running with it applied, I'd be
+interested if you can test it. Surely it will also work for new
+anon-vma code in upstream, because at that point there's just 1
+anon-vma and nothing else attached to the vma.
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commit;h=6efa1dfa5152ef8d7f26beb188d6877525a9dd03
 
+I think it's wrong to try to handle the race in rmap walk by making
+magic checks on vm_flags VM_GROWSDOWN|GROWSUP and
+vma->vm_mm->map_count == 1, when we can fix it fully and simply in
+exec.c by indexing two vmas in the same anon-vma with a different
+vm_start so the pages will be found at all times by the rmap_walk.
