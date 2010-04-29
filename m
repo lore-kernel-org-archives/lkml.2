@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758499Ab0D3Rca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:32:30 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34090 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933330Ab0D3RcD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:32:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=uL0LHwP9FEfMYJeQnHvK1v4kX/u2Hfu7SJRF9s1GgeXn1dh7RVAe9DkObutV/3SDfT
-         2WyAkM/QQF/yJa8w9x890PZw3o9c9lvtghm1QPykv/1idEz4sKhJNe1Md4Ef/SImvgkL
-         +E14UeOwCve1eHD582jnwnsKRzEANO3PA6ol8=
-Date: Thu, 29 Apr 2010 11:29:57 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Zhu Yi <yi.zhu@intel.com>
-Cc: "Ortiz, Samuel" <samuel.ortiz@intel.com>,
-       Intel Linux Wireless <ilw@linux.intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: Re: [patch] iwl: cleanup: remove unneeded error handling
-Message-ID: <20100429092956.GH29093@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Zhu Yi <yi.zhu@intel.com>, "Ortiz, Samuel" <samuel.ortiz@intel.com>,
-	Intel Linux Wireless <ilw@linux.intel.com>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Alexey Dobriyan <adobriyan@gmail.com>,
-	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-References: <20100428090115.GF29093@bicker> <1272507134.14773.4339.camel@debian>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272507134.14773.4339.camel@debian>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758803Ab0D3Rcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:32:54 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36096 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758555Ab0D3Rcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:32:36 -0400
+Date: Thu, 29 Apr 2010 15:49:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: =?UTF-8?B?IkZyw6lkw6lyaWMgV2Vpc2JlY2tlciI=?= <fweisbec@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Arnd Bergmann <arnd@arndb.de>
+Subject: linux-next: manual merge of the bkl-ioctl tree with the bkl-procfs
+ tree
+Message-Id: <20100429154954.84966e61.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__29_Apr_2010_15_49_54_+1000_RF0jtTdhfiSd5FrH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 29, 2010 at 10:12:14AM +0800, Zhu Yi wrote:
-> 
-> Thanks. But looks like you missed the one in if_sdio_debugfs_init().
-> 
+--Signature=_Thu__29_Apr_2010_15_49_54_+1000_RF0jtTdhfiSd5FrH
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yup.
+Hi Fr=C3=A9d=C3=A9ric,
 
-> I don't think we even need to check -ENODEV ourselves because if
-> DEBUG_FS is not compiled in, all the debugfs utility functions will
-> become no-op.
-> 
+Today's linux-next merge of the bkl-ioctl tree got a conflict in
+drivers/char/i8k.c between commit
+64ef834551d7696f54553d7608eba80a5a800e77 ("procfs: Push down the bkl from
+ioctl") from the bkl-procfs tree and commit
+59ce88717d9d8af8cb14af3a0a505cafb692b482 ("drivers: Push down BKL into
+various drivers") from the bkl-ioctl tree.
 
-Good point.
+I used the version from the bkl-procfs tree for today.
 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
+Can you guys please sort out these various bkl removal trees, please.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Probably this could get changed to just "Reported-by" but I'm happy to
-take credit for other peoples work.  :)
+--Signature=_Thu__29_Apr_2010_15_49_54_+1000_RF0jtTdhfiSd5FrH
+Content-Type: application/pgp-signature
 
-> Signed-off-by: Zhu Yi <yi.zhu@intel.com>
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Acked-by: Dan Carpenter <error27@gmail.com>
+iEYEARECAAYFAkvZHgMACgkQjjKRsyhoI8x/XQCePei03lEkFKKn9oBbisG8epUB
+Xq0An3mV45lfwl66q0bNW4u7ALnLKwkB
+=02In
+-----END PGP SIGNATURE-----
 
-regards,
-dan carpenter
-
+--Signature=_Thu__29_Apr_2010_15_49_54_+1000_RF0jtTdhfiSd5FrH--
