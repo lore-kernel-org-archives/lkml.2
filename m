@@ -1,109 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759409Ab0D3UPr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 16:15:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54999 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759466Ab0D3UPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 16:15:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,304,1270450800"; 
-   d="scan'208";a="272063406"
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: [PATCH linux-next v3 2/2] ixgbe: Example usage of the new IRQ
-	affinity_hint callback
-To: tglx@linutronix.de, davem@davemloft.net, arjan@linux.jf.intel.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 30 Apr 2010 13:24:10 -0700
-Message-ID: <20100430202410.4591.47026.stgit@ppwaskie-hc2.jf.intel.com>
-In-Reply-To: <20100430202343.4591.66240.stgit@ppwaskie-hc2.jf.intel.com>
-References: <20100430202343.4591.66240.stgit@ppwaskie-hc2.jf.intel.com>
-User-Agent: StGIT/0.14.3
+	id S932681Ab0D3UTT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 16:19:19 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:60009 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758294Ab0D3UTN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 16:19:13 -0400
+Date: Thu, 29 Apr 2010 11:41:50 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 1/8] PM: Add suspend block api.
+In-Reply-To: <h2wd6200be21004281635x9740a6abl2664a1eef8be061d@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1004291124580.1697-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses the new IRQ affinity_hint callback mechanism.
-It serves purely as an example of how a low-level driver can
-utilize this new interface.
+On Wed, 28 Apr 2010, Arve Hjønnevåg wrote:
 
-An official ixgbe patch will be pushed through netdev once the
-IRQ patches have been accepted and merged.
+> >> >  suspend blockers can be used to allow
+> >> > +user-space to decide whether a keystroke received while the system is suspended
+> >> > +should cause the screen to be turned back on or allow the system to go back into
+> >> > +suspend.
+> >>
+> >> That's not right.  Handling the screen doesn't need suspend blockers:
+> >> The program decides what to do and then either turns on the screen or
+> >> else writes "mem" to /sys/power/state.
+> 
+> That does not work though. Unless every key turns the screen on you
+> will have a race every time the user presses a key you want to ignore.
 
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
----
+Of course.  You are confirming what I wrote immediately below: Suspend
+blockers help resolve races.  Note that this race has nothing to do
+with the _screen_ in particular -- exactly the same race occurs if you
+decide to turn on the audio speaker or some other piece of hardware.
 
- drivers/net/ixgbe/ixgbe.h      |    2 ++
- drivers/net/ixgbe/ixgbe_main.c |   21 ++++++++++++++++++++-
- 2 files changed, 22 insertions(+), 1 deletions(-)
+> >>  What suspend blockers add is
+> >> the ability to resolve races and satisfy multiple constraints when
+> >> going into suspend -- which has nothing to do with operating the
+> >> screen.
+> 
+> I'm not sure I agree with this. You cannot reliably turn the screen on
+> from user space when the user presses a wakeup-key without suspend
+> blockers.
 
-diff --git a/drivers/net/ixgbe/ixgbe.h b/drivers/net/ixgbe/ixgbe.h
-index 79c35ae..c220b9f 100644
---- a/drivers/net/ixgbe/ixgbe.h
-+++ b/drivers/net/ixgbe/ixgbe.h
-@@ -32,6 +32,7 @@
- #include <linux/pci.h>
- #include <linux/netdevice.h>
- #include <linux/aer.h>
-+#include <linux/cpumask.h>
- 
- #include "ixgbe_type.h"
- #include "ixgbe_common.h"
-@@ -236,6 +237,7 @@ struct ixgbe_q_vector {
- 	u8 tx_itr;
- 	u8 rx_itr;
- 	u32 eitr;
-+	cpumask_var_t affinity_mask;
- };
- 
- /* Helper macros to switch between ints/sec and what the register uses.
-diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
-index 1b1419c..8f84bb8 100644
---- a/drivers/net/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ixgbe/ixgbe_main.c
-@@ -1083,6 +1083,16 @@ static void ixgbe_configure_msix(struct ixgbe_adapter *adapter)
- 			q_vector->eitr = adapter->rx_eitr_param;
- 
- 		ixgbe_write_eitr(q_vector);
-+
-+		/*
-+		 * Allocate the affinity_hint cpumask, assign the mask for
-+		 * this vector, and register our affinity_hint for this irq.
-+		 */
-+		if (!alloc_cpumask_var(&q_vector->affinity_mask, GFP_KERNEL))
-+			return;
-+		cpumask_set_cpu(v_idx, q_vector->affinity_mask);
-+		irq_register_affinity_hint(adapter->msix_entries[v_idx].vector,
-+		                           q_vector->affinity_mask);
- 	}
- 
- 	if (adapter->hw.mac.type == ixgbe_mac_82598EB)
-@@ -3218,7 +3228,7 @@ void ixgbe_down(struct ixgbe_adapter *adapter)
- 	struct ixgbe_hw *hw = &adapter->hw;
- 	u32 rxctrl;
- 	u32 txdctl;
--	int i, j;
-+	int i, j, num_q_vectors = adapter->num_msix_vectors - NON_Q_VECTORS;
- 
- 	/* signal that we are down to the interrupt handler */
- 	set_bit(__IXGBE_DOWN, &adapter->state);
-@@ -3251,6 +3261,15 @@ void ixgbe_down(struct ixgbe_adapter *adapter)
- 
- 	ixgbe_napi_disable_all(adapter);
- 
-+	for (i = 0; i < num_q_vectors; i++) {
-+		struct ixgbe_q_vector *q_vector = adapter->q_vector[i];
-+		/* release the CPU mask memory */
-+		free_cpumask_var(q_vector->affinity_mask);
-+		/* clear the affinity_mask in the IRQ descriptor */
-+		irq_register_affinity_hint(adapter->msix_entries[i].vector,
-+		                           NULL);
-+	}
-+
- 	clear_bit(__IXGBE_SFP_MODULE_NOT_FOUND, &adapter->state);
- 	del_timer_sync(&adapter->sfp_timer);
- 	del_timer_sync(&adapter->watchdog_timer);
+Let's say that it has nothing to do _specifically_ with the screen.  
+_Any_ action you want to take in userspace is difficult to coordinate 
+with system suspends if you don't have suspend blockers.
+
+> >>
+> >> I _think_ what you're trying to get at can be expressed this way:
+> >>
+> >>       Here's an example showing how a cell phone or other embedded
+> >>       system can handle keystrokes (or other input events) in the
+> >>       presence of suspend blockers.  Use set_irq_wake...
+> 
+> OK, but the last version was what you (Alan) suggested last year.
+
+So at least my mental processes have remained consistent over the span
+of a year.  Nice to know I haven't undergone a complete personality 
+change...  :-)
+
+> >>       ...
+> >>
+> >>       - The user-space input-event thread returns from read.  It
+> >>       carries out whatever activities are appropriate (for example,
+> >>       powering up the display screen, running other programs, and so
+> >>       on).  When it is finished, it calls suspend_unblock on the
+> >>       process_input_events suspend_blocker and then calls select or
+> >>       poll.  The system will automatically suspend again when it is
+> >>       idle and no suspend blockers remain active.
+> >
+> > Yeah, that sounds better.  Arve, what do you think?
+> >
+> 
+> Idle is irrelevant and needs to be removed. This new last step is also
+> no longer a concrete example, but if you really think is it better I
+> can change it.
+
+Perhaps you would prefer to change this completely.  Write up a 
+description of what can go wrong when suspend blockers _aren't_ used, 
+and show how suspend blockers can prevent the problem from occurring.
+
+But whatever you do, don't make it appear that suspend blockers allow
+user programs to make decisions (which is what you wrote before).  They 
+don't -- programs can make whatever decisions they want.  Suspend 
+blockers merely help them carry out the actions they have decided upon 
+in a safe manner.
+
+And don't make it appear that suspend blockers can only be used for
+solving screen-related problems.
+
+Alan Stern
 
