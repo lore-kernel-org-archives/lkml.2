@@ -1,145 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759399Ab0D3TQX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:16:23 -0400
+	id S1759362Ab0D3TQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:16:58 -0400
 Received: from mx1.redhat.com ([209.132.183.28]:50812 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758049Ab0D3QzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:55:18 -0400
-Date: Thu, 29 Apr 2010 17:26:37 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-       "Michael S. Tsirkin" <mst@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-       Mark McLoughlin <markmc@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Eric Van Hensbergen <ericvh@gmail.com>, Shirley Ma <xma@us.ibm.com>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] virtio: add_buf_gfp
-Message-ID: <a64fe25ad86b0850dba9485241e39c3c2b8d175f.1272549642.git.mst@redhat.com>
-References: <cover.1272549641.git.mst@redhat.com>
+	id S1757998Ab0D3QzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 12:55:10 -0400
+Message-ID: <4BD9D5BE.4010000@redhat.com>
+Date: Thu, 29 Apr 2010 21:53:50 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1272549641.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Pavel Machek <pavel@ucw.cz>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
+       ngupta@vflare.org, JBeulich@novell.com, chris.mason@oracle.com,
+       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
+       akpm@linux-foundation.org, riel@redhat.com
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default> <4BD3377E.6010303@redhat.com> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com> <ce808441-fae6-4a33-8335-f7702740097a@default> <20100428055538.GA1730@ucw.cz>
+In-Reply-To: <20100428055538.GA1730@ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an add_buf variant that gets gfp parameter. Use that
-to allocate indirect buffers.
+On 04/28/2010 08:55 AM, Pavel Machek wrote:
+>
+>> That's a reasonable analogy.  Frontswap serves nicely as an
+>> emergency safety valve when a guest has given up (too) much of
+>> its memory via ballooning but unexpectedly has an urgent need
+>> that can't be serviced quickly enough by the balloon driver.
+>>      
+> wtf? So lets fix the ballooning driver instead?
+>    
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/virtio/virtio_ring.c |   20 +++++++++++---------
- include/linux/virtio.h       |   22 +++++++++++++++++-----
- 2 files changed, 28 insertions(+), 14 deletions(-)
+You can't have a negative balloon size.  The two models are not equivalent.
 
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 0717b5b..1ca8890 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -110,13 +110,14 @@ struct vring_virtqueue
- static int vring_add_indirect(struct vring_virtqueue *vq,
- 			      struct scatterlist sg[],
- 			      unsigned int out,
--			      unsigned int in)
-+			      unsigned int in,
-+			      gfp_t gfp)
- {
- 	struct vring_desc *desc;
- 	unsigned head;
- 	int i;
- 
--	desc = kmalloc((out + in) * sizeof(struct vring_desc), GFP_ATOMIC);
-+	desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
- 	if (!desc)
- 		return vq->vring.num;
- 
-@@ -155,11 +156,12 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
- 	return head;
- }
- 
--int virtqueue_add_buf(struct virtqueue *_vq,
--		  struct scatterlist sg[],
--		  unsigned int out,
--		  unsigned int in,
--		  void *data)
-+int virtqueue_add_buf_gfp(struct virtqueue *_vq,
-+			  struct scatterlist sg[],
-+			  unsigned int out,
-+			  unsigned int in,
-+			  void *data,
-+			  gfp_t gfp)
- {
- 	struct vring_virtqueue *vq = to_vvq(_vq);
- 	unsigned int i, avail, head, uninitialized_var(prev);
-@@ -171,7 +173,7 @@ int virtqueue_add_buf(struct virtqueue *_vq,
- 	/* If the host supports indirect descriptor tables, and we have multiple
- 	 * buffers, then go indirect. FIXME: tune this threshold */
- 	if (vq->indirect && (out + in) > 1 && vq->num_free) {
--		head = vring_add_indirect(vq, sg, out, in);
-+		head = vring_add_indirect(vq, sg, out, in, gfp);
- 		if (head != vq->vring.num)
- 			goto add_head;
- 	}
-@@ -232,7 +234,7 @@ add_head:
- 		return vq->num_free ? vq->vring.num : 0;
- 	return vq->num_free;
- }
--EXPORT_SYMBOL_GPL(virtqueue_add_buf);
-+EXPORT_SYMBOL_GPL(virtqueue_add_buf_gfp);
- 
- void virtqueue_kick(struct virtqueue *_vq)
- {
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index 5b0fce0..aff5b4f 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -7,6 +7,7 @@
- #include <linux/spinlock.h>
- #include <linux/device.h>
- #include <linux/mod_devicetable.h>
-+#include <linux/gfp.h>
- 
- /**
-  * virtqueue - a queue to register buffers for sending or receiving.
-@@ -32,6 +33,7 @@ struct virtqueue {
-  *	out_num: the number of sg readable by other side
-  *	in_num: the number of sg which are writable (after readable ones)
-  *	data: the token identifying the buffer.
-+ *	gfp: how to do memory allocations (if necessary).
-  *      Returns remaining capacity of queue (sg segments) or a negative error.
-  * virtqueue_kick: update after add_buf
-  *	vq: the struct virtqueue
-@@ -60,11 +62,21 @@ struct virtqueue {
-  * All operations can be called in any context.
-  */
- 
--int virtqueue_add_buf(struct virtqueue *vq,
--		      struct scatterlist sg[],
--		      unsigned int out_num,
--		      unsigned int in_num,
--		      void *data);
-+int virtqueue_add_buf_gfp(struct virtqueue *vq,
-+			  struct scatterlist sg[],
-+			  unsigned int out_num,
-+			  unsigned int in_num,
-+			  void *data,
-+			  gfp_t gfp);
-+
-+static inline int virtqueue_add_buf(struct virtqueue *vq,
-+				    struct scatterlist sg[],
-+				    unsigned int out_num,
-+				    unsigned int in_num,
-+				    void *data)
-+{
-+	return virtqueue_add_buf_gfp(vq, sg, out_num, in_num, data, GFP_ATOMIC);
-+}
- 
- void virtqueue_kick(struct virtqueue *vq);
- 
+Balloon allows you to give up a page for which you have a struct page.  
+Frontswap (and swap) allows you to gain a page for which you don't have 
+a struct page, but you can't access it directly.  The similarity is that 
+in both cases the host may want the guest to give up a page, but cannot 
+force it.
+
+> There's no reason it could not be as fast as frontswap, right?
+> Actually I'd expect it to be faster -- it can deal with big chunks.
+>    
+
+There's no reason for swapping and ballooning to behave differently when 
+swap backing storage is RAM (they probably do now since swap was tuned 
+for disks, not flash, but that's a bug if it's true).
+
 -- 
-1.7.1.rc1.22.g3163
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
