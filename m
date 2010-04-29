@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab0D2Bd1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 21:33:27 -0400
-Received: from mga03.intel.com ([143.182.124.21]:39321 "EHLO mga03.intel.com"
+	id S1756243Ab0D2BhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 21:37:05 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50938 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752941Ab0D2BdZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 21:33:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,292,1270450800"; 
-   d="scan'208";a="271318015"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>, David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>
-Date: Thu, 29 Apr 2010 09:33:02 +0800
-Subject: RE: [RFC][PATCH v4 00/18] Provide a zero-copy method on KVM
-	virtio-net.
-Thread-Topic: [RFC][PATCH v4 00/18] Provide a zero-copy method on KVM
-	virtio-net.
-Thread-Index: AcrkZRSdtn4eaNmyR3uIOyeYsqShJQCPHRnA
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D7902DF999649@shsmsx502.ccr.corp.intel.com>
-References: <1272187206-18534-17-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-18-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-19-git-send-email-xiaohui.xin@intel.com>
- <20100425.025529.123989625.davem@davemloft.net>
- <20100425104604.GA10238@redhat.com>
-In-Reply-To: <20100425104604.GA10238@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755534Ab0D2BhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 21:37:03 -0400
+Date: Thu, 29 Apr 2010 01:36:39 GMT
+From: tip-bot for Jan Beulich <JBeulich@novell.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de
+In-Reply-To: <4BCF3230020000780003B3CA@vpn.id2.novell.com>
+References: <4BCF3230020000780003B3CA@vpn.id2.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86-64: Combine SRAT regions when possible
+Message-ID: <tip-2e61878698781d6a9a8bfbaa4ea9c5ddb5a178c3@git.kernel.org>
+Git-Commit-ID: 2e61878698781d6a9a8bfbaa4ea9c5ddb5a178c3
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 29 Apr 2010 01:36:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The idea is simple, just to pin the guest VM user space and then let
-> > host NIC driver has the chance to directly DMA to it.
-> >
-> >Isn't it much easier to map the RX ring of the network device into the
-> >guest's address space, have DMA map calls translate guest addresses to
-> >physical/DMA addresses as well as do all of this crazy page pinning
-> >stuff, and provide the translations and protections via the IOMMU?
+Commit-ID:  2e61878698781d6a9a8bfbaa4ea9c5ddb5a178c3
+Gitweb:     http://git.kernel.org/tip/2e61878698781d6a9a8bfbaa4ea9c5ddb5a178c3
+Author:     Jan Beulich <JBeulich@novell.com>
+AuthorDate: Wed, 21 Apr 2010 16:13:20 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Wed, 28 Apr 2010 17:14:11 -0700
 
->This means we need guest know how the specific network device works.
->So we won't be able to, for example, move guest between different hosts.
->There are other problems: many physical systems do not have an iommu,
->some guest OS-es do not support DMA map calls, doing VM exit
->on each DMA map call might turn out to be very slow. And so on.
+x86-64: Combine SRAT regions when possible
 
-This solution is what now we can think of to implement zero-copy. Some
-modifications are made to net core to try to avoid network device driver
-changes.  The major change is to __alloc_skb(), in which we added a dev
-parameter to indicate whether the device will DMA to/from guest/user buffer
-which is pointed by host skb->data. We also modify skb_release_data() and
-skb_reserve(). We made it now works with ixgbe driver with PS mode disabled,
-and got some performance data with it.
-  
-	using netperf with GSO/TSO disabled, 10G NIC, 
-	disabled packet split mode, with raw socket case compared to vhost.
+... i.e. when the hole between two regions isn't occupied by memory on
+another node. This reduces the memory->node table size, thus reducing
+cache footprint of lookups, which got increased significantly some
+time ago, and things go back to how they were before that change on
+the systems I looked at.
 
-	bindwidth will be from 1.1Gbps to 1.7Gbps
-	CPU % from 120%-140% to 140%-160%
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <4BCF3230020000780003B3CA@vpn.id2.novell.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/mm/srat_64.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 48 insertions(+), 0 deletions(-)
 
-We are now trying to get decent performance data with advanced features.
-Do you have any other concerns with this solution? 
-
->> What's being proposed here looks a bit over-engineered.
-
->This is an attempt to reduce overhead for virtio (paravirtualization).
->'Don't use PV' is kind of an alternative, but I do not
->think it's a simpler one.
-
--- 
-MST
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index 28c6876..3ebe651 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -363,6 +363,54 @@ int __init acpi_scan_nodes(unsigned long start, unsigned long end)
+ 	for (i = 0; i < MAX_NUMNODES; i++)
+ 		cutoff_node(i, start, end);
+ 
++	/*
++	 * Join together blocks on the same node, holes between
++	 * which don't overlap with memory on other nodes.
++	 */
++	for (i = 0; i < num_node_memblks; ++i) {
++		int j, k;
++
++		for (j = i + 1; j < num_node_memblks; ++j) {
++			unsigned long start, end;
++
++			if (memblk_nodeid[i] != memblk_nodeid[j])
++				continue;
++			start = min(node_memblk_range[i].end,
++			            node_memblk_range[j].end);
++			end = max(node_memblk_range[i].start,
++			          node_memblk_range[j].start);
++			for (k = 0; k < num_node_memblks; ++k) {
++				if (memblk_nodeid[i] == memblk_nodeid[k])
++					continue;
++				if (start < node_memblk_range[k].end &&
++				    end > node_memblk_range[k].start)
++					break;
++			}
++			if (k < num_node_memblks)
++				continue;
++			start = min(node_memblk_range[i].start,
++			            node_memblk_range[j].start);
++			end = max(node_memblk_range[i].end,
++			          node_memblk_range[j].end);
++			printk(KERN_INFO "SRAT: Node %d "
++			       "[%Lx,%Lx) + [%Lx,%Lx) -> [%lx,%lx)\n",
++			       memblk_nodeid[i],
++			       node_memblk_range[i].start,
++			       node_memblk_range[i].end,
++			       node_memblk_range[j].start,
++			       node_memblk_range[j].end,
++			       start, end);
++			node_memblk_range[i].start = start;
++			node_memblk_range[i].end = end;
++			k = --num_node_memblks - j;
++			memmove(memblk_nodeid + j, memblk_nodeid + j+1,
++				k * sizeof(*memblk_nodeid));
++			memmove(node_memblk_range + j, node_memblk_range + j+1,
++				k * sizeof(*node_memblk_range));
++			--j;
++		}
++	}
++
+ 	memnode_shift = compute_hash_shift(node_memblk_range, num_node_memblks,
+ 					   memblk_nodeid);
+ 	if (memnode_shift < 0) {
