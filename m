@@ -1,122 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610Ab0D3Qts (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 12:49:48 -0400
-Received: from forward8.mail.yandex.net ([77.88.61.38]:58792 "EHLO
-	forward8.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757570Ab0D3Qto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:49:44 -0400
-From: Sergey Temerkhanov <temerkhanov@yandex.ru>
+	id S1757752Ab0D3QvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 12:51:13 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:38854 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757637Ab0D3QvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 12:51:02 -0400
+Date: Thu, 29 Apr 2010 15:09:51 -0500
+From: Jack Steiner <steiner@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][RFC] AIO: always reinitialize iocb->ki_run_list at the end of aio_run_iocb()
-Date: Fri, 30 Apr 2010 02:56:58 +0400
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-desktop; KDE/4.3.5; x86_64; ; )
-Cc: Sergey Temerkhanov <temerkhanov@yandex.ru>,
-       "linux-aio" <linux-aio@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-References: <201004280251.43430.temerkhanov@yandex.ru> <20100428113149.b912a3e8.akpm@linux-foundation.org>
-In-Reply-To: <20100428113149.b912a3e8.akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] - Randomize node rotor used in
+	cpuset_mem_spread_node()
+Message-ID: <20100429200950.GB8929@sgi.com>
+References: <20100428131158.GA2648@sgi.com> <20100428150432.GA3137@sgi.com> <20100428154034.fb823484.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004300256.58207.temerkhanov@yandex.ru>
-X-Yandex-TimeMark: 1272581839
-X-Yandex-Spam: 1
-X-Yandex-Front: smtp8.mail.yandex.net
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100428154034.fb823484.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 April 2010 22:31:49 Andrew Morton wrote:
-> On Wed, 28 Apr 2010 02:51:43 +0400
-> 
-> Sergey Temerkhanov <temerkhanov@yandex.ru> wrote:
-> > This patch makes aio_run_iocb() to always reinitialize iocb->ki_run_list
-> > (not only when iocb->ki_retry() function returns -EIOCBRETRY) so that
-> > subsequent call of kick_iocb() will succeed.
-> >
-> > Regards, Sergey Temerkhanov,
-> > Cifronic ZAO.
-> >
-> >
-> > [reinit-ki_run_list.patch  text/x-patch (657B)]
-> > diff -r 97344a0f62c9 fs/aio.c
-> > --- a/fs/aio.c	Tue Apr 27 21:18:14 2010 +0400
-> > +++ b/fs/aio.c	Tue Apr 27 21:30:23 2010 +0400
-> > @@ -748,6 +748,9 @@
-> >  out:
-> >  	spin_lock_irq(&ctx->ctx_lock);
-> >
-> > +	/* will make __queue_kicked_iocb succeed from here on */
-> > +	INIT_LIST_HEAD(&iocb->ki_run_list);
-> > +
-> >  	if (-EIOCBRETRY == ret) {
-> >  		/*
-> >  		 * OK, now that we are done with this iteration
-> > @@ -756,8 +759,6 @@
-> >  		 * "kick" can start the next iteration
-> >  		 */
-> >
-> > -		/* will make __queue_kicked_iocb succeed from here on */
-> > -		INIT_LIST_HEAD(&iocb->ki_run_list);
-> >  		/* we must queue the next iteration ourselves, if it
-> >  		 * has already been kicked */
-> >  		if (kiocbIsKicked(iocb)) {
-> 
-> I assume that this fixes some runtime problem which you observed?
-> 
-> Can you please describe that problem?  This code is pretty old - what
-> was your application doing that nobody else's application has thus far
-> done?
 
-I've written the driver code which implements a zero-copy DMA char device. It 
-has aio_read() and aio_write() methods which return -EIOCBQUEUED after the 
-successful preparation of the buffers described by kiocb and posting it to the 
-descriptor chain. When the descriptors are processed, the DMA engine raises 
-the interrupt and the cleanup work is done in the handler, including 
-aio_complete() for the completed kiocbs.
+Some workloads that create a large number of small files tend to assign
+too many pages to node 0 (multi-node systems). Part of the reason is that
+the rotor (in cpuset_mem_spread_node()) used to assign nodes starts
+at node 0 for newly created tasks.
 
-This works fine, however, there is a problem with canceling the queued 
-requests, espesially on io_destroy() syscall. Since there is no simple way to 
-remove single kiocb from the descriptor chain, I'm removing all of them from 
-the queue using aio_complete() or aio_put_req() in the ki_cancel() callback 
-routine of my driver. The main problem is the reference counting in 
-aio_cancel_all():
+This patch changes the rotor to be initialized to a random node number
+of the cpuset.
 
-		if (cancel) {
-			iocb->ki_users++;
-			spin_unlock_irq(&ctx->ctx_lock);
-			cancel(iocb, &res);
-			spin_lock_irq(&ctx->ctx_lock);
-		}
+NOTE: this patch is on TOP of the previous patch:
+	[PATCH] - New round-robin rotor for SLAB allocations
+	http://marc.info/?l=linux-mm&m=127231565321947&w=2
 
-Here the iocb->ki_users gets incremented which already has the value 1 at this 
-point (after the io_submit_one() completion) and it's never released (). So I 
-have to call aio_put_req() twice for the given kiocb (this seems to be the 
-hack to me) or I'll end up with the unkillable process stuck in 
-wait_for_all_aios() at the io_schedule(). I've posted the patches where I've 
-added aio_put_req() but I think it needs more testing. So, I've tried another 
-approach (hack) - requeue the kiocb with kick_iocb() before calling 
-aio_put_req() in the ki_cancel() callback (that's because aio_run_iocb() takes 
-some special actions for the canceled kiocbs). And I've found out that 
-kick_iocb() fails because aio_run_iocb() does this:
-	iocb->ki_run_list.next = iocb->ki_run_list.prev = NULL;
-and only reinitializes iocb->ki_run_list when iocb->ki_retry() returns 
--EIOCBRETRY but kick_iocb() is exported and looks like intended for usage 
-(though not recommended).
+Signed-off-by: Jack Steiner <steiner@sgi.com>
 
-The only place where I've found the similar approach to AIO in the device 
-driver is drivers/usb/gadget/inode.c.
 
-> 
-> Also, please send your Signed-off-by: for this patch, as per
-> Documentation/Submittingpatches, thanks.
-> 
+---
 
-Sorry, I've forgotten this.
+V2 - initial patch was generated against the wrong tree. This patch is based
+on linux-next.
 
-Signed-off-by: Sergey Temerkhanov <temerkhanov@cifronik.ru>
+V3 - Eliminate new function bitmap_find_nth_bit(). Rename bitmap_ord_to_pos()
+and export it.
 
-Regards, Sergey Temerkhanov,
-Cifronic ZAO
+
+
+ arch/x86/mm/numa.c       |   17 +++++++++++++++++
+ include/linux/bitmap.h   |    1 +
+ include/linux/nodemask.h |    5 +++++
+ kernel/fork.c            |    4 ++++
+ lib/bitmap.c             |    2 +-
+ 5 files changed, 28 insertions(+), 1 deletion(-)
+
+Index: linux/arch/x86/mm/numa.c
+===================================================================
+--- linux.orig/arch/x86/mm/numa.c	2010-04-28 09:59:10.158899192 -0500
++++ linux/arch/x86/mm/numa.c	2010-04-29 13:53:48.531783017 -0500
+@@ -2,6 +2,7 @@
+ #include <linux/topology.h>
+ #include <linux/module.h>
+ #include <linux/bootmem.h>
++#include <linux/random.h>
+ 
+ #ifdef CONFIG_DEBUG_PER_CPU_MAPS
+ # define DBG(x...) printk(KERN_DEBUG x)
+@@ -65,3 +66,19 @@ const struct cpumask *cpumask_of_node(in
+ }
+ EXPORT_SYMBOL(cpumask_of_node);
+ #endif
++
++/*
++ * Return the bit number of a random bit set in the nodemask.
++ *   (returns -1 if nodemask is empty)
++ */
++int __node_random(const nodemask_t *maskp)
++{
++	int w, bit = -1;
++
++	w = nodes_weight(*maskp);
++	if (w)
++		bit = bitmap_ord_to_pos(maskp->bits,
++			get_random_int() % w, MAX_NUMNODES);
++	return bit;
++}
++EXPORT_SYMBOL(__node_random);
+Index: linux/include/linux/bitmap.h
+===================================================================
+--- linux.orig/include/linux/bitmap.h	2010-04-28 09:59:10.158899192 -0500
++++ linux/include/linux/bitmap.h	2010-04-29 13:54:04.639408240 -0500
+@@ -141,6 +141,7 @@ extern int bitmap_find_free_region(unsig
+ extern void bitmap_release_region(unsigned long *bitmap, int pos, int order);
+ extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
+ extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
++extern int bitmap_ord_to_pos(const unsigned long *bitmap, int n, int bits);
+ 
+ #define BITMAP_LAST_WORD_MASK(nbits)					\
+ (									\
+Index: linux/include/linux/nodemask.h
+===================================================================
+--- linux.orig/include/linux/nodemask.h	2010-04-28 09:59:10.158899192 -0500
++++ linux/include/linux/nodemask.h	2010-04-28 10:01:42.878971800 -0500
+@@ -66,6 +66,8 @@
+  * int num_online_nodes()		Number of online Nodes
+  * int num_possible_nodes()		Number of all possible Nodes
+  *
++ * int node_random(mask)              Random node with set bit in mask
++ *
+  * int node_online(node)		Is some node online?
+  * int node_possible(node)		Is some node possible?
+  *
+@@ -267,6 +269,9 @@ static inline int __first_unset_node(con
+ 			find_first_zero_bit(maskp->bits, MAX_NUMNODES));
+ }
+ 
++#define node_random(mask) __node_random(&(mask))
++extern int __node_random(const nodemask_t *maskp);
++
+ #define NODE_MASK_LAST_WORD BITMAP_LAST_WORD_MASK(MAX_NUMNODES)
+ 
+ #if MAX_NUMNODES <= BITS_PER_LONG
+Index: linux/kernel/fork.c
+===================================================================
+--- linux.orig/kernel/fork.c	2010-04-28 09:59:10.158899192 -0500
++++ linux/kernel/fork.c	2010-04-28 10:03:11.580014823 -0500
+@@ -1079,6 +1079,10 @@ static struct task_struct *copy_process(
+  	}
+ 	mpol_fix_fork_child_flag(p);
+ #endif
++#ifdef CONFIG_CPUSETS
++	p->cpuset_mem_spread_rotor = node_random(p->mems_allowed);
++	p->cpuset_slab_spread_rotor = node_random(p->mems_allowed);
++#endif
+ #ifdef CONFIG_TRACE_IRQFLAGS
+ 	p->irq_events = 0;
+ #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+Index: linux/lib/bitmap.c
+===================================================================
+--- linux.orig/lib/bitmap.c	2010-04-28 09:59:10.158899192 -0500
++++ linux/lib/bitmap.c	2010-04-29 13:53:28.270906295 -0500
+@@ -672,7 +672,7 @@ static int bitmap_pos_to_ord(const unsig
+  *
+  * The bit positions 0 through @bits are valid positions in @buf.
+  */
+-static int bitmap_ord_to_pos(const unsigned long *buf, int ord, int bits)
++int bitmap_ord_to_pos(const unsigned long *buf, int ord, int bits)
+ {
+ 	int pos = 0;
+ 
