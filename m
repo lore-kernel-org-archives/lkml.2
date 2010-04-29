@@ -1,118 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933725Ab0D3R5Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:57:16 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:45479 "EHLO e6.ny.us.ibm.com"
+	id S933682Ab0D3Rxp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:53:45 -0400
+Received: from kroah.org ([198.145.64.141]:54080 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933504Ab0D3R4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:56:33 -0400
-Date: Thu, 29 Apr 2010 16:51:02 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-ext4 <linux-ext4@vger.kernel.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: [RFC] ext4: Don't send extra barrier during fsync if there are no
-	dirty pages.
-Message-ID: <20100429235102.GC15607@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
+	id S933668Ab0D3Rxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:53:33 -0400
+Date: Thu, 29 Apr 2010 09:38:24 -0700
+From: Greg KH <greg@kroah.com>
+To: Kenji Toyama <kenji.toyama@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] Staging: wlags49_h2: Fix coding style issues
+Message-ID: <20100429163824.GB5257@kroah.com>
+References: <1269836398-13657-1-git-send-email-kenji.toyama@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1269836398-13657-1-git-send-email-kenji.toyama@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm.  A while ago I was complaining that an evil program that calls fsync() in
-a loop will send a continuous stream of write barriers to the hard disk.  Ted
-theorized that it might be possible to set a flag in ext4_writepage and clear
-it in ext4_sync_file; if we happen to enter ext4_sync_file and the flag isn't
-set (meaning that nothing has been dirtied since the last fsync()) then we
-could skip issuing the barrier.
+On Mon, Mar 29, 2010 at 03:19:58PM +1100, Kenji Toyama wrote:
+> Fixed lots of coding style issues. There is one left warning about
+> CVS markers, but I think it's better to leave as the original author
+> wanted.
+> Signed-off-by: Daniel Kenji Toyama <kenji.toyama@gmail.com>
+> ---
+>  drivers/staging/wlags49_h2/dhf.c |  372 +++++++++++++++++++++-----------------
 
-Here's an experimental patch to do something sort of like that.  From a quick
-run with blktrace, it seems to skip the redundant barriers and improves the ffsb
-mail server scores.  However, I haven't done extensive power failure testing to
-see how much data it can destroy.  For that matter I'm not even 100% sure it's
-correct at what it aims to do.
+This no longer applies cleanly against the linux-next tree.  Can you
+respin it and resend it?
 
-Just throwing this out there, though.  Nothing's blown up ... yet. :P
----
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
+thanks,
 
- fs/ext4/ext4.h  |    2 ++
- fs/ext4/fsync.c |    7 +++++--
- fs/ext4/inode.c |    5 +++++
- 3 files changed, 12 insertions(+), 2 deletions(-)
-
-
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index bf938cf..3b70195 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1025,6 +1025,8 @@ struct ext4_sb_info {
- 
- 	/* workqueue for dio unwritten */
- 	struct workqueue_struct *dio_unwritten_wq;
-+
-+	atomic_t unflushed_writes;
- };
- 
- static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
-diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
-index 0d0c323..441f872 100644
---- a/fs/ext4/fsync.c
-+++ b/fs/ext4/fsync.c
-@@ -52,7 +52,8 @@ int ext4_sync_file(struct file *file, struct dentry *dentry, int datasync)
- {
- 	struct inode *inode = dentry->d_inode;
- 	struct ext4_inode_info *ei = EXT4_I(inode);
--	journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
-+	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+	journal_t *journal = sbi->s_journal;
- 	int ret;
- 	tid_t commit_tid;
- 
-@@ -102,7 +103,9 @@ int ext4_sync_file(struct file *file, struct dentry *dentry, int datasync)
- 		    (journal->j_flags & JBD2_BARRIER))
- 			blkdev_issue_flush(inode->i_sb->s_bdev, NULL);
- 		jbd2_log_wait_commit(journal, commit_tid);
--	} else if (journal->j_flags & JBD2_BARRIER)
-+	} else if (journal->j_flags & JBD2_BARRIER && atomic_read(&sbi->unflushed_writes)) {
-+		atomic_set(&sbi->unflushed_writes, 0);
- 		blkdev_issue_flush(inode->i_sb->s_bdev, NULL);
-+	}
- 	return ret;
- }
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 5381802..e501abd 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2718,6 +2718,7 @@ static int ext4_writepage(struct page *page,
- 	unsigned int len;
- 	struct buffer_head *page_bufs = NULL;
- 	struct inode *inode = page->mapping->host;
-+	struct ext4_sb_info *sbi = EXT4_SB(page->mapping->host->i_sb);
- 
- 	trace_ext4_writepage(inode, page);
- 	size = i_size_read(inode);
-@@ -2726,6 +2727,8 @@ static int ext4_writepage(struct page *page,
- 	else
- 		len = PAGE_CACHE_SIZE;
- 
-+	atomic_set(&sbi->unflushed_writes, 1);
-+
- 	if (page_has_buffers(page)) {
- 		page_bufs = page_buffers(page);
- 		if (walk_page_buffers(NULL, page_bufs, 0, len, NULL,
-@@ -2872,6 +2875,8 @@ static int ext4_da_writepages(struct address_space *mapping,
- 	if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
- 		range_whole = 1;
- 
-+	atomic_set(&sbi->unflushed_writes, 1);
-+
- 	range_cyclic = wbc->range_cyclic;
- 	if (wbc->range_cyclic) {
- 		index = mapping->writeback_index;
+greg k-h
