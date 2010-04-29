@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933480Ab0D3SCc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:02:32 -0400
-Received: from kroah.org ([198.145.64.141]:51961 "EHLO coco.kroah.org"
+	id S933568Ab0D3SCj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:02:39 -0400
+Received: from kroah.org ([198.145.64.141]:40640 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933361Ab0D3Rnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:43:32 -0400
-Date: Fri, 30 Apr 2010 07:41:28 -0700
+	id S1758841Ab0D3Rdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:33:32 -0400
+Date: Thu, 29 Apr 2010 09:55:38 -0700
 From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: linux-next: build failure after merge of the staging-next tree
-Message-ID: <20100430144128.GC1824@kroah.com>
-References: <20100430155224.ab570260.sfr@canb.auug.org.au>
+To: Imtiaz Rahi <imtiaz.rahi@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8192su: fix various coding style issues in
+ r8180_93cx6.c
+Message-ID: <20100429165538.GB18228@kroah.com>
+References: <1268966823-15418-1-git-send-email-imtiaz.rahi@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100430155224.ab570260.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1268966823-15418-1-git-send-email-imtiaz.rahi@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 30, 2010 at 03:52:24PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On Fri, Mar 19, 2010 at 08:47:03AM +0600, Imtiaz Rahi wrote:
+> This is patch to the r8180_93cx6.c file that fixes various coding style
+> warnings and errors found by checkpatch.pl
 > 
-> After merging the staging-next tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/media/video/tlg2300/pd-main.c: In function 'poseidon_probe':
-> drivers/media/video/tlg2300/pd-main.c:457: error: 'struct usb_device' has no member named 'autosuspend_disabled'
-> drivers/net/wimax/i2400m/usb.c: In function 'i2400mu_probe':
-> drivers/net/wimax/i2400m/usb.c:508: error: 'struct usb_device' has no member named 'autosuspend_disabled'
-> 
-> Caused by commit 3a03bb2443e8fb3b35666dc598e7f626519c544a ("USB: use PM
-> core routines to enable/disable autosuspend") from the usb tree.  I have
-> reverted that commit for today.
+> Signed-off-by: Imtiaz Rahi <imtiaz.rahi@gmail.com>
 
-It would be good to get that back into the tree.  Alan, care to fix this
-up?
+This no longer applies due to other changes to the driver in the
+linux-next tree.  Can you redo it against the linux-next tree of
+tomorrow?
 
 thanks,
 
