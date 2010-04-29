@@ -1,131 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759245Ab0D3SSG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:18:06 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:42497 "EHLO a.mx.secunet.com"
+	id S1759253Ab0D3SSg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:18:36 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:42494 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758529Ab0D3R3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:29:18 -0400
-Date: Thu, 29 Apr 2010 14:43:37 +0200
+	id S933293Ab0D3R3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:29:17 -0400
+Date: Thu, 29 Apr 2010 14:42:30 +0200
 From: Steffen Klassert <steffen.klassert@secunet.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
        Herbert Xu <herbert@gondor.hengli.com.au>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] padata: Use a timer to handle the reorder queues
-Message-ID: <20100429124337.GJ5275@secunet.com>
+Subject: [PATCH 5/8] padata: Use get_online_cpus/put_online_cpus
+Message-ID: <20100429124230.GI5275@secunet.com>
 References: <20100429123636.GD5275@secunet.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20100429123636.GD5275@secunet.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 29 Apr 2010 12:38:33.0774 (UTC) FILETIME=[E17F44E0:01CAE798]
+X-OriginalArrivalTime: 29 Apr 2010 12:37:27.0193 (UTC) FILETIME=[B9CFD090:01CAE798]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-padata_get_next had a bogus check that returned always true,
-so the try_again loop in padata_reorder was never taken.
-This can lead to object leaks in some rare cases. This patch
-implements a timer that processes the reorder queues if noone
-else does it in appropriate time.
+This patch puts get_online_cpus/put_online_cpus around the places
+we modify the padata cpumask to ensure that no cpu goes offline
+during this operation.
 
 Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 ---
- include/linux/padata.h |    2 ++
- kernel/padata.c        |   25 ++++++++++++++++++-------
- 2 files changed, 20 insertions(+), 7 deletions(-)
+ kernel/padata.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/padata.h b/include/linux/padata.h
-index 51611da..64836a6 100644
---- a/include/linux/padata.h
-+++ b/include/linux/padata.h
-@@ -24,6 +24,7 @@
- #include <linux/workqueue.h>
- #include <linux/spinlock.h>
- #include <linux/list.h>
-+#include <linux/timer.h>
- 
- struct padata_priv {
- 	struct list_head	list;
-@@ -60,6 +61,7 @@ struct parallel_data {
- 	unsigned int		max_seq_nr;
- 	cpumask_var_t		cpumask;
- 	spinlock_t              lock;
-+	struct timer_list       timer;
- };
- 
- struct padata_instance {
 diff --git a/kernel/padata.c b/kernel/padata.c
-index 82958e0..6d7ea48 100644
+index fc9f19a..82958e0 100644
 --- a/kernel/padata.c
 +++ b/kernel/padata.c
-@@ -231,7 +231,8 @@ static struct padata_priv *padata_get_next(struct parallel_data *pd)
- 		goto out;
- 	}
+@@ -441,6 +441,8 @@ int padata_set_cpumask(struct padata_instance *pinst,
  
--	if (next_nr % num_cpus == next_queue->cpu_index) {
-+	queue = per_cpu_ptr(pd->queue, smp_processor_id());
-+	if (queue->cpu_index == next_queue->cpu_index) {
- 		padata = ERR_PTR(-ENODATA);
- 		goto out;
- 	}
-@@ -247,9 +248,8 @@ static void padata_reorder(struct parallel_data *pd)
- 	struct padata_queue *queue;
- 	struct padata_instance *pinst = pd->pinst;
+ 	mutex_lock(&pinst->lock);
  
--try_again:
- 	if (!spin_trylock_bh(&pd->lock))
--		goto out;
-+		return;
++	get_online_cpus();
++
+ 	pd = padata_alloc_pd(pinst, cpumask);
+ 	if (!pd) {
+ 		err = -ENOMEM;
+@@ -452,6 +454,8 @@ int padata_set_cpumask(struct padata_instance *pinst,
+ 	padata_replace(pinst, pd);
  
- 	while (1) {
- 		padata = padata_get_next(pd);
-@@ -258,8 +258,9 @@ try_again:
- 			break;
+ out:
++	put_online_cpus();
++
+ 	mutex_unlock(&pinst->lock);
  
- 		if (PTR_ERR(padata) == -ENODATA) {
-+			del_timer(&pd->timer);
- 			spin_unlock_bh(&pd->lock);
--			goto out;
-+			return;
- 		}
+ 	return err;
+@@ -485,8 +489,10 @@ int padata_add_cpu(struct padata_instance *pinst, int cpu)
  
- 		queue = per_cpu_ptr(pd->queue, padata->cb_cpu);
-@@ -273,13 +274,22 @@ try_again:
+ 	mutex_lock(&pinst->lock);
  
- 	spin_unlock_bh(&pd->lock);
++	get_online_cpus();
+ 	cpumask_set_cpu(cpu, pinst->cpumask);
+ 	err = __padata_add_cpu(pinst, cpu);
++	put_online_cpus();
  
--	if (atomic_read(&pd->reorder_objects))
--		goto try_again;
-+	if (atomic_read(&pd->reorder_objects)
-+			&& !(pinst->flags & PADATA_RESET))
-+		mod_timer(&pd->timer, jiffies + HZ);
-+	else
-+		del_timer(&pd->timer);
+ 	mutex_unlock(&pinst->lock);
  
--out:
- 	return;
+@@ -521,8 +527,10 @@ int padata_remove_cpu(struct padata_instance *pinst, int cpu)
+ 
+ 	mutex_lock(&pinst->lock);
+ 
++	get_online_cpus();
+ 	cpumask_clear_cpu(cpu, pinst->cpumask);
+ 	err = __padata_remove_cpu(pinst, cpu);
++	put_online_cpus();
+ 
+ 	mutex_unlock(&pinst->lock);
+ 
+@@ -626,6 +634,8 @@ struct padata_instance *padata_alloc(const struct cpumask *cpumask,
+ 	if (!pinst)
+ 		goto err;
+ 
++	get_online_cpus();
++
+ 	pd = padata_alloc_pd(pinst, cpumask);
+ 	if (!pd)
+ 		goto err_free_inst;
+@@ -647,6 +657,8 @@ struct padata_instance *padata_alloc(const struct cpumask *cpumask,
+ 	register_hotcpu_notifier(&pinst->cpu_notifier);
+ #endif
+ 
++	put_online_cpus();
++
+ 	mutex_init(&pinst->lock);
+ 
+ 	return pinst;
+@@ -655,6 +667,7 @@ err_free_pd:
+ 	padata_free_pd(pd);
+ err_free_inst:
+ 	kfree(pinst);
++	put_online_cpus();
+ err:
+ 	return NULL;
  }
- 
-+static void padata_reorder_timer(unsigned long arg)
-+{
-+	struct parallel_data *pd = (struct parallel_data *)arg;
-+
-+	padata_reorder(pd);
-+}
-+
- static void padata_serial_worker(struct work_struct *work)
- {
- 	struct padata_queue *queue;
-@@ -383,6 +393,7 @@ static struct parallel_data *padata_alloc_pd(struct padata_instance *pinst,
- 	num_cpus = cpumask_weight(pd->cpumask);
- 	pd->max_seq_nr = (MAX_SEQ_NR / num_cpus) * num_cpus - 1;
- 
-+	setup_timer(&pd->timer, padata_reorder_timer, (unsigned long)pd);
- 	atomic_set(&pd->seq_nr, -1);
- 	atomic_set(&pd->reorder_objects, 0);
- 	atomic_set(&pd->refcnt, 0);
 -- 
 1.5.6.5
 
