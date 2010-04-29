@@ -1,143 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934228Ab0D3TTk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:19:40 -0400
-Received: from kroah.org ([198.145.64.141]:53021 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757946Ab0D3Qxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:53:34 -0400
-Date: Fri, 30 Apr 2010 09:36:47 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB fixes for 2.6.34-git
-Message-ID: <20100430163647.GA16424@kroah.com>
+	id S934235Ab0D3TUe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:20:34 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:40803 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755131Ab0D3Qxa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 12:53:30 -0400
+Date: Thu, 29 Apr 2010 14:57:09 +1000
+From: Paul Mackerras <paulus@au1.ibm.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] trivial: use (C) instead of \251
+Message-ID: <20100429045709.GA27842@drongo>
+References: <4BD80037.9060704@kernel.org>
+ <alpine.LNX.2.00.1004290040510.9849@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1004290040510.9849@pobox.suse.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are a number of USB bugfixes and new device ids for your 2.6.34-git
-tree.
+On Thu, Apr 29, 2010 at 12:41:33AM +0200, Jiri Kosina wrote:
 
-The majority are musb bugfixes, and a variety of other fixes for
-problems reported by people, and a few new device ids.
+> On Wed, 28 Apr 2010, Tejun Heo wrote:
+> 
+> > The latin-1 copyright character \251 is invalid in ASCII or UTF-8 and
+> > causes annoying problems with some editors and tools.  Use (C)
+> > instead.
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Cc: Paul Mackerras <paulus@au1.ibm.com>
+> > ---
+> > I'm not really sure this would survive transport over mail in
+> > appliable form, attaching the patch too just in case.
+> 
+> It didn't survive :) But it was easy enough to fix by hand. Applied, 
+> thanks Tejun.
 
-I also added a wrapper for an api call that we are renaming, so as to
-make the merge with linux-next easier (the other kernel trees can now
-take those patches.)  The bigger rename will happen in .35, but this is
-here now to make everyone's lives easier.
+I tried to reply to this earlier but I think my reply vanished due to
+a mail problem.
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/
+I don't want "(C)" in there because our lawyers tell me that it is
+legally meaningless, but "Copyright" on its own is good enough.
+So I would prefer that you either remove the (C) entirely or convert
+the copyright symbol to proper UTF-8 (0xc2 0xa9).
 
-All of these patches have been in the linux-next and mm trees.
-
-The full patches will be sent to the linux-usb mailing list, if anyone
-wants to see them.
-
-thanks,
-
-greg k-h
-
-------------
-
- arch/arm/plat-omap/include/plat/usb.h |    2 +-
- drivers/usb/class/cdc-acm.c           |    3 +
- drivers/usb/core/Kconfig              |    2 +-
- drivers/usb/core/generic.c            |    2 +-
- drivers/usb/core/inode.c              |    4 +-
- drivers/usb/core/usb.c                |   20 ++++----
- drivers/usb/gadget/s3c-hsotg.c        |    7 ++-
- drivers/usb/host/ohci-at91.c          |    2 +
- drivers/usb/host/ohci-hub.c           |    2 +-
- drivers/usb/host/oxu210hp-hcd.c       |    6 +-
- drivers/usb/host/sl811-hcd.c          |    6 +-
- drivers/usb/host/xhci-mem.c           |   65 +++++++++++++++++++++++++++
- drivers/usb/host/xhci.h               |    4 ++
- drivers/usb/musb/Kconfig              |    2 +-
- drivers/usb/musb/Makefile             |    2 +-
- drivers/usb/musb/blackfin.c           |    8 +---
- drivers/usb/musb/davinci.c            |    2 +
- drivers/usb/musb/musb_core.c          |   77 ++++++++++++++++++--------------
- drivers/usb/musb/musb_core.h          |    2 +-
- drivers/usb/musb/musb_host.c          |    1 +
- drivers/usb/musb/omap2430.c           |    3 -
- drivers/usb/musb/tusb6010.c           |   13 ++++++
- drivers/usb/musb/tusb6010_omap.c      |   22 ++++++---
- drivers/usb/serial/option.c           |   10 ++++
- drivers/usb/serial/pl2303.c           |    1 +
- drivers/usb/serial/pl2303.h           |    1 +
- drivers/usb/serial/ti_usb_3410_5052.c |    2 +-
- include/linux/usb.h                   |   18 ++++++-
- 28 files changed, 206 insertions(+), 83 deletions(-)
-
----------------
-
-Ajay Kumar Gupta (2):
-      musb: fix power field to hold all possible values
-      musb: save and restore missing bus control register
-
-Alan Stern (2):
-      USB: don't choose configs with no interfaces
-      USB: OHCI: don't look at the root hub to get the number of ports
-
-Anand Gadiyar (1):
-      USB: fix build on OMAPs if CONFIG_PM_RUNTIME is not set
-
-Dan Carpenter (3):
-      musb: potential use after free
-      USB: fix testing the wrong variable in fs_create_by_name()
-      USB: oxu210hp: release spinlock on error path
-
-Daniel Mack (1):
-      USB: rename usb_buffer_alloc() and usb_buffer_free()
-
-Dominik Brodowski (1):
-      USB: option: add ID for ZTE MF 330
-
-Greg Kroah-Hartman (1):
-      USB: serial: option: add cinterion device id
-
-Julia Lawall (1):
-      USB: gadget: s3c-hsotg: Add missing unlock
-
-Mahesh Kuruganti (1):
-      USB: serial: option: ZTEAC8710 Support with Device ID 0xffff
-
-Michael Hennerich (1):
-      USB: sl811-hcd: Fix device disconnect
-
-Patrice Vilchez (1):
-      USB: ohci-at91: fix power management hanging
-
-Randy Dunlap (1):
-      USB: ti_usb: fix printk format warning
-
-Russ Nelson (1):
-      USB: cdc-acm: add another device quirk
-
-Sarah Sharp (2):
-      USB: xhci: properly set the "Mult" field of the endpoint context.
-      USB: xhci: properly set endpoint context fields for periodic eps.
-
-Sergei Shtylyov (8):
-      MUSB: Blackfin: don't fake blackfin_interrupt() result
-      musb_core: don't touch 'musb->clock' in musb_free()
-      musb_core: don't prevent disabling clock on driver unload
-      MUSB: DaVinci: fix musb_platform_init() error cleanup path
-      MUSB: OMAP: don't call clk_put()
-      musb_core: don't call musb_platform_exit() twice
-      MUSB: fix DaVinci glue layer dependency
-      musb_core: fix musb_init_controller() error cleanup path
-
-Simone Contini (1):
-      USB: serial: pl2303: Hybrid reader Uniform HCR331
-
-Tony Lindgren (1):
-      usb: Fix tusb6010 for DMA API
-
+Thanks,
+Paul.
