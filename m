@@ -1,190 +1,582 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933857Ab0D3S1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:27:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63800 "EHLO mx1.redhat.com"
+	id S933859Ab0D3S2o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:28:44 -0400
+Received: from lo.gmane.org ([80.91.229.12]:49044 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933165Ab0D3RWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:22:09 -0400
-Date: Thu, 29 Apr 2010 15:09:55 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm mmu: reduce 50% memory usage
-Message-ID: <20100429180955.GA17909@amt.cnet>
-References: <4BD8228D.7090708@cn.fujitsu.com>
-MIME-Version: 1.0
+	id S933822Ab0D3S1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 14:27:39 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+connect(): No such file or directory
+From: Alex Elsayed <eternaleye@gmail.com>
+Subject: Re: Very bad regression from 2.6.33 as of 1600f9def
+Date: Thu, 29 Apr 2010 04:50:21 +0000 (UTC)
+Message-ID: <loom.20100429T064708-269@post.gmane.org>
+References: <loom.20100429T041908-663@post.gmane.org> <4BD8F457.10205@gmail.com> <loom.20100429T045742-593@post.gmane.org> <4BD8F927.2070703@gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BD8228D.7090708@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 98.117.134.248 (Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.3) Gecko/20100409 Firefox/3.6.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 07:57:01PM +0800, Lai Jiangshan wrote:
+Justin P. Mattock <justinmattock <at> gmail.com> writes:
+>
+> yep.. luckily 33 is not that far behind
+> so it shouldn't take too long.
+> As for the CPU patience my friend..
 > 
-> I think users will enable tdp when their hardwares support ept or npt.
-> This patch can reduce about 50% kvm mmu memory usage for they.
+> Justin P. Mattock
 > 
-> This simple patch use the fact that:
-> 
-> When sp->role.direct is set, sp->gfns does not contain any essential
-> information, leaf sptes reachable from this sp are for a continuate
-> guest physical memory range(a linear range).
-> So sp->gfns[i](if it was set) equals to sp->gfn + i. (PT_PAGE_TABLE_LEVEL)
-> Obviously, it is not essential information, we can calculate it when need.
-> 
-> It means we don't need sp->gfns when sp->role.direct=1,
-> Thus we can save one page usage for every kvm_mmu_page.
-> 
-> Note:
-> Access to sp->gfns must be wrapped by kvm_mmu_page_get_gfn()
-> or kvm_mmu_page_set_gfn().
-> It is only exposed in FNAME(sync_page).
 
-Lai,
 
-You missed quadrant on 4mb large page emulation with shadow (see updated
-patch below). Also for some reason i can't understand the assumption
-does not hold for large sptes with TDP, so reverted for now.
+Argh, the default resume partition thing was a red herring.
+Here's the text of the diff, if it's useful to anyone, working kernel is
+zen-sources:
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 3266d73..a9edfdb 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -393,6 +393,27 @@ static void mmu_free_rmap_desc(struct kvm_rmap_desc *rd)
- 	kfree(rd);
- }
+--- working_but_nonstandard_kernel	2010-04-28 21:35:02.321863681 -0700
++++ .config	2010-04-28 20:18:36.192271752 -0700
+@@ -1,7 +1,7 @@
+ #
+ # Automatically generated make config: don't edit
+-# Linux kernel version: 2.6.33-zen0 "Eat It Raw"
+-# Wed Feb 24 20:40:05 2010
++# Linux kernel version: 2.6.33
++# Wed Apr 28 20:18:36 2010
+ #
+ CONFIG_64BIT=y
+ # CONFIG_X86_32 is not set
+@@ -61,7 +61,6 @@
+ #
+ # General setup
+ #
+-# CONFIG_SCHED_BFS is not set
+ CONFIG_EXPERIMENTAL=y
+ CONFIG_LOCK_KERNEL=y
+ CONFIG_INIT_ENV_ARG_LIMIT=32
+@@ -107,8 +106,8 @@
+ CONFIG_GROUP_SCHED=y
+ CONFIG_FAIR_GROUP_SCHED=y
+ CONFIG_RT_GROUP_SCHED=y
+-CONFIG_USER_SCHED=y
+-# CONFIG_CGROUP_SCHED is not set
++# CONFIG_USER_SCHED is not set
++CONFIG_CGROUP_SCHED=y
+ CONFIG_CGROUPS=y
+ # CONFIG_CGROUP_DEBUG is not set
+ CONFIG_CGROUP_NS=y
+@@ -143,12 +142,6 @@
+ CONFIG_INITRAMFS_COMPRESSION_LZMA=y
+ # CONFIG_INITRAMFS_COMPRESSION_LZO is not set
+ CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+-
+-#
+-# Custom Build Flags
+-#
+-CONFIG_CUSTOM_CFLAGS=""
+-CONFIG_CUSTOM_MAKEFLAGS=""
+ CONFIG_SYSCTL=y
+ CONFIG_ANON_INODES=y
+ # CONFIG_EMBEDDED is not set
+@@ -185,7 +178,6 @@
+ CONFIG_COMPAT_BRK=y
+ # CONFIG_SLAB is not set
+ CONFIG_SLUB=y
+-# CONFIG_SLQB is not set
+ # CONFIG_SLOB is not set
+ CONFIG_PROFILING=y
+ CONFIG_TRACEPOINTS=y
+@@ -238,10 +230,8 @@
+ CONFIG_IOSCHED_CFQ=y
+ CONFIG_CFQ_GROUP_IOSCHED=y
+ # CONFIG_DEBUG_CFQ_IOSCHED is not set
+-CONFIG_IOSCHED_SIO=m
+ # CONFIG_DEFAULT_DEADLINE is not set
+ CONFIG_DEFAULT_CFQ=y
+-# CONFIG_DEFAULT_SIO is not set
+ # CONFIG_DEFAULT_NOOP is not set
+ CONFIG_DEFAULT_IOSCHED="cfq"
+ CONFIG_PREEMPT_NOTIFIERS=y
+@@ -315,7 +305,6 @@
+ # CONFIG_MK6 is not set
+ # CONFIG_MK7 is not set
+ # CONFIG_MK8 is not set
+-# CONFIG_MK10 is not set
+ # CONFIG_MCRUSOE is not set
+ # CONFIG_MEFFICEON is not set
+ # CONFIG_MWINCHIPC6 is not set
+@@ -329,10 +318,8 @@
+ CONFIG_MCORE2=y
+ # CONFIG_MATOM is not set
+ # CONFIG_GENERIC_CPU is not set
+-CONFIG_X86_MARCH_NATIVE=y
+ CONFIG_X86_CPU=y
+ CONFIG_X86_INTERNODE_CACHE_SHIFT=7
+-CONFIG_X86_INTERNODE_CACHE_BYTES=X86_L1_CACHE_BYTES
+ CONFIG_X86_CMPXCHG=y
+ CONFIG_X86_L1_CACHE_SHIFT=6
+ CONFIG_X86_WP_WORKS_OK=y
+@@ -344,7 +331,6 @@
+ CONFIG_X86_CMOV=y
+ CONFIG_X86_MINIMUM_CPU_FAMILY=64
+ CONFIG_X86_DEBUGCTLMSR=y
+-# CONFIG_PROCESSOR_SELECT is not set
+ CONFIG_CPU_SUP_INTEL=y
+ CONFIG_CPU_SUP_AMD=y
+ CONFIG_CPU_SUP_CENTAUR=y
+@@ -435,16 +421,9 @@
+ CONFIG_SECCOMP=y
+ CONFIG_CC_STACKPROTECTOR=y
+ # CONFIG_HZ_100 is not set
+-# CONFIG_HZ_250_NODEFAULT is not set
++# CONFIG_HZ_250 is not set
+ # CONFIG_HZ_300 is not set
+ CONFIG_HZ_1000=y
+-# CONFIG_HZ_1500 is not set
+-# CONFIG_HZ_2000 is not set
+-# CONFIG_HZ_3000 is not set
+-# CONFIG_HZ_4000 is not set
+-# CONFIG_HZ_5000 is not set
+-# CONFIG_HZ_7500 is not set
+-# CONFIG_HZ_10000 is not set
+ CONFIG_HZ=1000
+ CONFIG_SCHED_HRTICK=y
+ CONFIG_KEXEC=y
+@@ -468,7 +447,6 @@
+ CONFIG_PM_DEBUG=y
+ CONFIG_PM_VERBOSE=y
+ CONFIG_CAN_PM_TRACE=y
+-CONFIG_FS_FREEZER_DEBUG=y
+ CONFIG_PM_TRACE=y
+ CONFIG_PM_TRACE_RTC=y
+ CONFIG_PM_SLEEP_SMP=y
+@@ -478,28 +456,7 @@
+ CONFIG_SUSPEND_FREEZER=y
+ CONFIG_HIBERNATION_NVS=y
+ CONFIG_HIBERNATION=y
+-CONFIG_PM_STD_PARTITION=""
+-CONFIG_TOI_CORE=y
+-
+-#
+-# Image Storage (you need at least one allocator)
+-#
+-CONFIG_TOI_FILE=y
+-CONFIG_TOI_SWAP=y
+-
+-#
+-# General Options
+-#
+-CONFIG_TOI_CRYPTO=y
+-CONFIG_TOI_USERUI=y
+-CONFIG_TOI_USERUI_DEFAULT_PATH="/usr/local/sbin/tuxoniceui_text"
+-CONFIG_TOI_KEEP_IMAGE=y
+-CONFIG_TOI_REPLACE_SWSUSP=y
+-CONFIG_TOI_IGNORE_LATE_INITCALL=y
+-CONFIG_TOI_DEFAULT_WAIT=25
+-CONFIG_TOI_DEFAULT_EXTRA_PAGES_ALLOWANCE=2000
+-CONFIG_TOI_CHECKSUM=y
+-CONFIG_TOI=y
++CONFIG_PM_STD_PARTITION="/dev/Arkadios/Hibernate"
+ CONFIG_PM_RUNTIME=y
+ CONFIG_ACPI=y
+ CONFIG_ACPI_SLEEP=y
+@@ -669,7 +626,7 @@
+ CONFIG_IP_PNP_BOOTP=y
+ CONFIG_IP_PNP_RARP=y
+ CONFIG_NET_IPIP=y
+-CONFIG_NET_IPGRE=m
++CONFIG_NET_IPGRE=y
+ CONFIG_NET_IPGRE_BROADCAST=y
+ CONFIG_IP_MROUTE=y
+ CONFIG_IP_PIMSM_V1=y
+@@ -811,8 +768,6 @@
+ CONFIG_NETFILTER_XT_MATCH_SCTP=y
+ CONFIG_NETFILTER_XT_MATCH_SOCKET=y
+ CONFIG_NETFILTER_XT_MATCH_STATE=y
+-CONFIG_NETFILTER_XT_MATCH_LAYER7=y
+-# CONFIG_NETFILTER_XT_MATCH_LAYER7_DEBUG is not set
+ CONFIG_NETFILTER_XT_MATCH_STATISTIC=y
+ CONFIG_NETFILTER_XT_MATCH_STRING=y
+ CONFIG_NETFILTER_XT_MATCH_TCPMSS=y
+@@ -1220,7 +1175,7 @@
+ # CONFIG_CFG80211_REG_DEBUG is not set
+ CONFIG_CFG80211_DEFAULT_PS=y
+ CONFIG_CFG80211_DEBUGFS=y
+-CONFIG_WIRELESS_OLD_REGULATORY=y
++# CONFIG_WIRELESS_OLD_REGULATORY is not set
+ CONFIG_CFG80211_WEXT=y
+ CONFIG_WIRELESS_EXT_SYSFS=y
+ CONFIG_LIB80211=y
+@@ -1428,10 +1383,10 @@
+ #
+ # Additional UBI debugging messages
+ #
+-CONFIG_MTD_UBI_DEBUG_MSG_BLD=y
+-CONFIG_MTD_UBI_DEBUG_MSG_EBA=y
+-CONFIG_MTD_UBI_DEBUG_MSG_WL=y
+-CONFIG_MTD_UBI_DEBUG_MSG_IO=y
++# CONFIG_MTD_UBI_DEBUG_MSG_BLD is not set
++# CONFIG_MTD_UBI_DEBUG_MSG_EBA is not set
++# CONFIG_MTD_UBI_DEBUG_MSG_WL is not set
++# CONFIG_MTD_UBI_DEBUG_MSG_IO is not set
+ CONFIG_PARPORT=m
+ CONFIG_PARPORT_PC=m
+ CONFIG_PARPORT_SERIAL=m
+@@ -1487,9 +1442,7 @@
+ CONFIG_BLK_DEV_UMEM=m
+ # CONFIG_BLK_DEV_COW_COMMON is not set
+ CONFIG_BLK_DEV_LOOP=y
+-CONFIG_BLK_DEV_LOOP_AES=y
+-CONFIG_BLK_DEV_LOOP_KEYSCRUB=y
+-CONFIG_BLK_DEV_LOOP_PADLOCK=y
++CONFIG_BLK_DEV_CRYPTOLOOP=m
+ CONFIG_BLK_DEV_DRBD=m
+ # CONFIG_DRBD_FAULT_INJECTION is not set
+ CONFIG_BLK_DEV_NBD=m
+@@ -1534,13 +1487,11 @@
+ CONFIG_EEPROM_MAX6875=m
+ CONFIG_EEPROM_93CX6=m
+ CONFIG_CB710_CORE=m
+-CONFIG_CB710_DEBUG=y
++# CONFIG_CB710_DEBUG is not set
+ CONFIG_CB710_DEBUG_ASSUMPTIONS=y
+ CONFIG_IWMC3200TOP=m
+ # CONFIG_IWMC3200TOP_DEBUG is not set
+ CONFIG_IWMC3200TOP_DEBUGFS=y
+-CONFIG_THINKPAD_EC=m
+-CONFIG_TP_SMAPI=m
+ CONFIG_HAVE_IDE=y
+ CONFIG_IDE=m
  
-+static gfn_t kvm_mmu_page_get_gfn(struct kvm_mmu_page *sp, int index)
-+{
-+	gfn_t gfn;
-+
-+	if (!sp->role.direct)
-+		return sp->gfns[index];
-+
-+	gfn = sp->gfn + index * (1 << (sp->role.level - 1) * PT64_LEVEL_BITS);
-+	gfn += sp->role.quadrant << PT64_LEVEL_BITS;
-+
-+	return gfn;
-+}
-+
-+static void kvm_mmu_page_set_gfn(struct kvm_mmu_page *sp, int index, gfn_t gfn)
-+{
-+	if (sp->role.direct)
-+		BUG_ON(gfn != kvm_mmu_page_get_gfn(sp, index));
-+	else
-+		sp->gfns[index] = gfn;
-+}
-+
- /*
-  * Return the pointer to the largepage write count for a given
-  * gfn, handling slots that are not large page aligned.
-@@ -543,7 +564,7 @@ static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
- 		return count;
- 	gfn = unalias_gfn(vcpu->kvm, gfn);
- 	sp = page_header(__pa(spte));
--	sp->gfns[spte - sp->spt] = gfn;
-+	kvm_mmu_page_set_gfn(sp, spte - sp->spt, gfn);
- 	rmapp = gfn_to_rmap(vcpu->kvm, gfn, sp->role.level);
- 	if (!*rmapp) {
- 		rmap_printk("rmap_add: %p %llx 0->1\n", spte, *spte);
-@@ -601,6 +622,7 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
- 	struct kvm_rmap_desc *prev_desc;
- 	struct kvm_mmu_page *sp;
- 	pfn_t pfn;
-+	gfn_t gfn;
- 	unsigned long *rmapp;
- 	int i;
+@@ -1887,7 +1838,7 @@
+ CONFIG_IFB=m
+ CONFIG_DUMMY=m
+ CONFIG_BONDING=m
+-CONFIG_MACVLAN=m
++CONFIG_MACVLAN=y
+ CONFIG_EQUALIZER=m
+ CONFIG_TUN=y
+ CONFIG_VETH=m
+@@ -2131,7 +2082,7 @@
+ CONFIG_IWL4965=y
+ CONFIG_IWL5000=y
+ CONFIG_IWL3945=m
+-CONFIG_IWL3945_SPECTRUM_MEASUREMENT=y
++# CONFIG_IWL3945_SPECTRUM_MEASUREMENT is not set
+ CONFIG_IWM=m
+ # CONFIG_IWM_DEBUG is not set
+ CONFIG_LIBERTAS=m
+@@ -2450,8 +2401,8 @@
+ CONFIG_ISDN_DIVAS_USERIDI=m
+ CONFIG_ISDN_DIVAS_MAINT=m
+ CONFIG_ISDN_DRV_GIGASET=m
+-# CONFIG_GIGASET_CAPI is not set
+-CONFIG_GIGASET_I4L=y
++CONFIG_GIGASET_CAPI=y
++# CONFIG_GIGASET_I4L is not set
+ # CONFIG_GIGASET_DUMMYLL is not set
+ CONFIG_GIGASET_BASE=m
+ CONFIG_GIGASET_M105=m
+@@ -2596,22 +2547,6 @@
+ CONFIG_TOUCHSCREEN_TOUCHIT213=m
+ CONFIG_TOUCHSCREEN_TSC2007=m
+ CONFIG_TOUCHSCREEN_PCAP=m
+-CONFIG_INPUT_LIRC=y
+-CONFIG_LIRC_BT829=m
+-CONFIG_LIRC_ENE0100=m
+-CONFIG_LIRC_I2C=m
+-CONFIG_LIRC_IGORPLUGUSB=m
+-CONFIG_LIRC_IMON=m
+-CONFIG_LIRC_IT87=m
+-CONFIG_LIRC_ITE8709=m
+-CONFIG_LIRC_MCEUSB=m
+-CONFIG_LIRC_SASEM=m
+-CONFIG_LIRC_SERIAL=m
+-CONFIG_LIRC_SERIAL_TRANSMITTER=y
+-CONFIG_LIRC_SIR=m
+-CONFIG_LIRC_STREAMZAP=m
+-CONFIG_LIRC_TTUSBIR=m
+-CONFIG_LIRC_ZILOG=m
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_PCSPKR=m
+ CONFIG_INPUT_APANEL=m
+@@ -2654,16 +2589,6 @@
+ CONFIG_VT=y
+ CONFIG_CONSOLE_TRANSLATIONS=y
+ CONFIG_VT_CONSOLE=y
+-CONFIG_NR_TTY_DEVICES=63
+-CONFIG_VT_CKO=y
+-CONFIG_VT_PRINTK_EMERG_COLOR=0x41
+-CONFIG_VT_PRINTK_ALERT_COLOR=0x47
+-CONFIG_VT_PRINTK_CRIT_COLOR=0x40
+-CONFIG_VT_PRINTK_ERR_COLOR=0x74
+-CONFIG_VT_PRINTK_WARNING_COLOR=0x71
+-CONFIG_VT_PRINTK_NOTICE_COLOR=0x04
+-CONFIG_VT_PRINTK_INFO_COLOR=0x01
+-CONFIG_VT_PRINTK_DEBUG_COLOR=0x06
+ CONFIG_HW_CONSOLE=y
+ CONFIG_VT_HW_CONSOLE_BINDING=y
+ CONFIG_DEVKMEM=y
+@@ -2939,7 +2864,7 @@
+ CONFIG_SENSORS_ADM9240=m
+ CONFIG_SENSORS_ADT7462=m
+ CONFIG_SENSORS_ADT7470=m
+-CONFIG_SENSORS_ADT7473=m
++# CONFIG_SENSORS_ADT7473 is not set
+ CONFIG_SENSORS_ADT7475=m
+ CONFIG_SENSORS_K8TEMP=m
+ CONFIG_SENSORS_K10TEMP=m
+@@ -2954,7 +2879,6 @@
+ CONFIG_SENSORS_G760A=m
+ CONFIG_SENSORS_GL518SM=m
+ CONFIG_SENSORS_GL520SM=m
+-CONFIG_SENSORS_IPMI=m
+ CONFIG_SENSORS_CORETEMP=y
+ CONFIG_SENSORS_IBMAEM=m
+ CONFIG_SENSORS_IBMPEX=m
+@@ -3111,7 +3035,7 @@
+ CONFIG_MFD_MC13783=m
+ CONFIG_PCF50633_ADC=m
+ CONFIG_PCF50633_GPIO=m
+-CONFIG_AB3100_CORE=m
++CONFIG_AB3100_CORE=y
+ CONFIG_AB3100_OTP=m
+ CONFIG_EZX_PCAP=y
+ CONFIG_MFD_88PM8607=y
+@@ -3775,7 +3699,7 @@
+ #
+ CONFIG_VGA_CONSOLE=y
+ CONFIG_VGACON_SOFT_SCROLLBACK=y
+-CONFIG_VGACON_SOFT_SCROLLBACK_SIZE=2048
++CONFIG_VGACON_SOFT_SCROLLBACK_SIZE=64
+ CONFIG_DUMMY_CONSOLE=y
+ CONFIG_FRAMEBUFFER_CONSOLE=y
+ CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+@@ -3799,7 +3723,7 @@
+ CONFIG_SND_TIMER=y
+ CONFIG_SND_PCM=y
+ CONFIG_SND_HWDEP=y
+-CONFIG_SND_RAWMIDI=y
++CONFIG_SND_RAWMIDI=m
+ CONFIG_SND_JACK=y
+ CONFIG_SND_SEQUENCER=m
+ CONFIG_SND_SEQ_DUMMY=m
+@@ -3821,10 +3745,10 @@
+ # CONFIG_SND_OPL4_LIB_SEQ is not set
+ # CONFIG_SND_SBAWE_SEQ is not set
+ CONFIG_SND_EMU10K1_SEQ=m
+-CONFIG_SND_MPU401_UART=y
+-CONFIG_SND_OPL3_LIB=y
++CONFIG_SND_MPU401_UART=m
++CONFIG_SND_OPL3_LIB=m
+ CONFIG_SND_VX_LIB=m
+-CONFIG_SND_AC97_CODEC=y
++CONFIG_SND_AC97_CODEC=m
+ CONFIG_SND_DRIVERS=y
+ CONFIG_SND_PCSP=m
+ CONFIG_SND_DUMMY=m
+@@ -3889,7 +3813,7 @@
+ CONFIG_SND_HDA_HWDEP=y
+ CONFIG_SND_HDA_RECONFIG=y
+ CONFIG_SND_HDA_INPUT_BEEP=y
+-CONFIG_SND_HDA_INPUT_BEEP_MODE=1
++CONFIG_SND_HDA_INPUT_BEEP_MODE=2
+ CONFIG_SND_HDA_INPUT_JACK=y
+ CONFIG_SND_HDA_PATCH_LOADER=y
+ CONFIG_SND_HDA_CODEC_REALTEK=y
+@@ -3921,7 +3845,7 @@
+ CONFIG_SND_MIXART=m
+ CONFIG_SND_NM256=m
+ CONFIG_SND_PCXHR=m
+-CONFIG_SND_RIPTIDE=y
++CONFIG_SND_RIPTIDE=m
+ CONFIG_SND_RME32=m
+ CONFIG_SND_RME96=m
+ CONFIG_SND_RME9652=m
+@@ -3992,7 +3916,7 @@
+ CONFIG_SND_SOC_MAX9877=m
+ CONFIG_SND_SOC_TPA6130A2=m
+ # CONFIG_SOUND_PRIME is not set
+-CONFIG_AC97_BUS=y
++CONFIG_AC97_BUS=m
+ CONFIG_HID_SUPPORT=y
+ CONFIG_HID=y
+ CONFIG_HIDRAW=y
+@@ -4001,8 +3925,6 @@
+ # USB Input Devices
+ #
+ CONFIG_USB_HID=y
+-CONFIG_USB_HID_MOUSE_POLLING=y
+-CONFIG_USB_HID_MOUSE_POLLING_INTERVAL=10
+ CONFIG_HID_PID=y
+ CONFIG_USB_HIDDEV=y
  
-@@ -612,7 +634,8 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
- 		kvm_set_pfn_accessed(pfn);
- 	if (is_writable_pte(*spte))
- 		kvm_set_pfn_dirty(pfn);
--	rmapp = gfn_to_rmap(kvm, sp->gfns[spte - sp->spt], sp->role.level);
-+	gfn = kvm_mmu_page_get_gfn(sp, spte - sp->spt);
-+	rmapp = gfn_to_rmap(kvm, gfn, sp->role.level);
- 	if (!*rmapp) {
- 		printk(KERN_ERR "rmap_remove: %p %llx 0->BUG\n", spte, *spte);
- 		BUG();
-@@ -896,7 +919,8 @@ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
- 	ASSERT(is_empty_shadow_page(sp->spt));
- 	list_del(&sp->link);
- 	__free_page(virt_to_page(sp->spt));
--	__free_page(virt_to_page(sp->gfns));
-+	if (!sp->role.direct)
-+		__free_page(virt_to_page(sp->gfns));
- 	kfree(sp);
- 	++kvm->arch.n_free_mmu_pages;
- }
-@@ -907,13 +931,15 @@ static unsigned kvm_page_table_hashfn(gfn_t gfn)
- }
+@@ -4203,7 +4125,7 @@
+ CONFIG_USB_RIO500=m
+ CONFIG_USB_LEGOTOWER=m
+ CONFIG_USB_LCD=m
+-CONFIG_USB_BERRY_CHARGE=m
++CONFIG_USB_BERRY_CHARGE=y
+ CONFIG_USB_LED=m
+ CONFIG_USB_CYPRESS_CY7C63=m
+ CONFIG_USB_CYTHERM=m
+@@ -4217,7 +4139,7 @@
+ CONFIG_USB_IOWARRIOR=m
+ CONFIG_USB_TEST=m
+ CONFIG_USB_ISIGHTFW=m
+-CONFIG_USB_VST=m
++CONFIG_USB_VST=y
+ CONFIG_USB_ATM=m
+ CONFIG_USB_SPEEDTOUCH=m
+ CONFIG_USB_CXACRU=m
+@@ -4327,7 +4249,7 @@
+ #
+ # LED drivers
+ #
+-CONFIG_LEDS_ALIX2=y
++CONFIG_LEDS_ALIX2=m
+ CONFIG_LEDS_PCA9532=y
+ CONFIG_LEDS_GPIO=y
+ CONFIG_LEDS_GPIO_PLATFORM=y
+@@ -4499,7 +4421,7 @@
+ CONFIG_UIO_CIF=m
+ CONFIG_UIO_PDRV=m
+ CONFIG_UIO_PDRV_GENIRQ=m
+-CONFIG_UIO_SMX=m
++# CONFIG_UIO_SMX is not set
+ CONFIG_UIO_AEC=m
+ CONFIG_UIO_SERCOS3=m
+ CONFIG_UIO_PCI_GENERIC=m
+@@ -4529,7 +4451,9 @@
+ CONFIG_VIDEO_GO7007_TW2804=m
+ CONFIG_VIDEO_CX25821=m
+ CONFIG_VIDEO_CX25821_ALSA=m
+-# CONFIG_USB_IP_COMMON is not set
++CONFIG_USB_IP_COMMON=m
++CONFIG_USB_IP_VHCI_HCD=m
++CONFIG_USB_IP_HOST=m
+ # CONFIG_W35UND is not set
+ # CONFIG_PRISM2_USB is not set
+ # CONFIG_ECHO is not set
+@@ -4561,7 +4485,7 @@
+ CONFIG_POHMELFS_CRYPTO=y
+ # CONFIG_B3DFG is not set
+ # CONFIG_IDE_PHISON is not set
+-CONFIG_PLAN9AUTH=m
++CONFIG_PLAN9AUTH=y
+ CONFIG_LINE6_USB=m
+ CONFIG_DRM_VMWGFX=m
+ # CONFIG_DRM_NOUVEAU is not set
+@@ -4570,7 +4494,7 @@
+ # I2C encoder or helper chips
+ #
+ CONFIG_DRM_I2C_CH7006=m
+-# CONFIG_USB_SERIAL_QUATECH2 is not set
++CONFIG_USB_SERIAL_QUATECH2=m
+ CONFIG_USB_SERIAL_QUATECH_USB2=m
+ # CONFIG_VT6655 is not set
+ # CONFIG_VT6656 is not set
+@@ -4595,7 +4519,8 @@
+ #
+ # RAR Register Driver
+ #
+-# CONFIG_RAR_REGISTER is not set
++CONFIG_RAR_REGISTER=m
++CONFIG_DX_SEP=m
+ # CONFIG_IIO is not set
+ CONFIG_RAMZSWAP=y
+ CONFIG_RAMZSWAP_STATS=y
+@@ -4627,7 +4552,6 @@
+ # CONFIG_THINKPAD_ACPI_UNSAFE_LEDS is not set
+ CONFIG_THINKPAD_ACPI_VIDEO=y
+ CONFIG_THINKPAD_ACPI_HOTKEY_POLL=y
+-CONFIG_LENOVO_SL_LAPTOP=m
+ CONFIG_INTEL_MENLOW=m
+ CONFIG_EEEPC_LAPTOP=m
+ CONFIG_ACPI_WMI=y
+@@ -4681,8 +4605,6 @@
+ CONFIG_REISERFS_FS_XATTR=y
+ CONFIG_REISERFS_FS_POSIX_ACL=y
+ CONFIG_REISERFS_FS_SECURITY=y
+-CONFIG_REISER4_FS=m
+-# CONFIG_REISER4_DEBUG is not set
+ CONFIG_JFS_FS=m
+ CONFIG_JFS_POSIX_ACL=y
+ CONFIG_JFS_SECURITY=y
+@@ -4704,6 +4626,7 @@
+ # CONFIG_OCFS2_DEBUG_FS is not set
+ CONFIG_BTRFS_FS=y
+ CONFIG_BTRFS_FS_POSIX_ACL=y
++CONFIG_NILFS2_FS=m
+ CONFIG_FILE_LOCKING=y
+ CONFIG_FSNOTIFY=y
+ CONFIG_DNOTIFY=y
+@@ -4764,8 +4687,6 @@
+ CONFIG_SYSFS=y
+ CONFIG_TMPFS=y
+ CONFIG_TMPFS_POSIX_ACL=y
+-CONFIG_TMPFS_ROOT=y
+-CONFIG_RAMFS=y
+ CONFIG_HUGETLBFS=y
+ CONFIG_HUGETLB_PAGE=y
+ CONFIG_CONFIGFS_FS=y
+@@ -4774,7 +4695,6 @@
+ # CONFIG_ADFS_FS_RW is not set
+ CONFIG_AFFS_FS=m
+ CONFIG_ECRYPT_FS=y
+-CONFIG_DAZUKOFS_FS=m
+ CONFIG_HFS_FS=m
+ CONFIG_HFSPLUS_FS=m
+ CONFIG_BEFS_FS=m
+@@ -4825,24 +4745,6 @@
+ # CONFIG_UFS_DEBUG is not set
+ CONFIG_EXOFS_FS=m
+ # CONFIG_EXOFS_DEBUG is not set
+-CONFIG_NILFS2_FS=m
+-CONFIG_PRAMFS=m
+-CONFIG_PRAMFS_WRITE_PROTECT=y
+-# CONFIG_TEST_MODULE is not set
+-CONFIG_AUFS_FS=y
+-# CONFIG_AUFS_BRANCH_MAX_127 is not set
+-# CONFIG_AUFS_BRANCH_MAX_511 is not set
+-# CONFIG_AUFS_BRANCH_MAX_1023 is not set
+-CONFIG_AUFS_BRANCH_MAX_32767=y
+-CONFIG_AUFS_HINOTIFY=y
+-# CONFIG_AUFS_RDU is not set
+-# CONFIG_AUFS_SP_IATTR is not set
+-CONFIG_AUFS_SHWH=y
+-# CONFIG_AUFS_BR_RAMFS is not set
+-CONFIG_AUFS_BR_FUSE=y
+-CONFIG_AUFS_POLL=y
+-CONFIG_AUFS_BDEV_LOOP=y
+-# CONFIG_AUFS_DEBUG is not set
+ CONFIG_NETWORK_FILESYSTEMS=y
+ CONFIG_NFS_FS=m
+ CONFIG_NFS_V3=y
+@@ -5132,9 +5034,9 @@
+ CONFIG_IMA_LSM_RULES=y
+ # CONFIG_DEFAULT_SECURITY_SELINUX is not set
+ # CONFIG_DEFAULT_SECURITY_SMACK is not set
+-# CONFIG_DEFAULT_SECURITY_TOMOYO is not set
+-CONFIG_DEFAULT_SECURITY_DAC=y
+-CONFIG_DEFAULT_SECURITY=""
++CONFIG_DEFAULT_SECURITY_TOMOYO=y
++# CONFIG_DEFAULT_SECURITY_DAC is not set
++CONFIG_DEFAULT_SECURITY="tomoyo"
+ CONFIG_XOR_BLOCKS=m
+ CONFIG_ASYNC_CORE=m
+ CONFIG_ASYNC_MEMCPY=m
+@@ -5245,7 +5147,6 @@
+ CONFIG_CRYPTO_DEFLATE=y
+ CONFIG_CRYPTO_ZLIB=y
+ CONFIG_CRYPTO_LZO=y
+-CONFIG_CRYPTO_LZF=y
  
- static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
--					       u64 *parent_pte)
-+					       u64 *parent_pte, int direct)
- {
- 	struct kvm_mmu_page *sp;
- 
- 	sp = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_header_cache, sizeof *sp);
- 	sp->spt = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_cache, PAGE_SIZE);
--	sp->gfns = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_cache, PAGE_SIZE);
-+	if (!direct)
-+		sp->gfns = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_cache,
-+						  PAGE_SIZE);
- 	set_page_private(virt_to_page(sp->spt), (unsigned long)sp);
- 	list_add(&sp->link, &vcpu->kvm->arch.active_mmu_pages);
- 	bitmap_zero(sp->slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
-@@ -1352,7 +1378,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 	if (role.direct)
- 		role.cr4_pae = 0;
- 	role.access = access;
--	if (vcpu->arch.mmu.root_level <= PT32_ROOT_LEVEL) {
-+	if (vcpu->arch.mmu.root_level == PT32_ROOT_LEVEL) {
- 		quadrant = gaddr >> (PAGE_SHIFT + (PT64_PT_BITS * level));
- 		quadrant &= (1 << ((PT32_PT_BITS - PT64_PT_BITS) * level)) - 1;
- 		role.quadrant = quadrant;
-@@ -1379,7 +1405,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 			return sp;
- 		}
- 	++vcpu->kvm->stat.mmu_cache_miss;
--	sp = kvm_mmu_alloc_page(vcpu, parent_pte);
-+	sp = kvm_mmu_alloc_page(vcpu, parent_pte, direct);
- 	if (!sp)
- 		return sp;
- 	sp->gfn = gfn;
-@@ -3371,7 +3399,7 @@ void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
- 
- 	if (*sptep & PT_WRITABLE_MASK) {
- 		rev_sp = page_header(__pa(sptep));
--		gfn = rev_sp->gfns[sptep - rev_sp->spt];
-+		gfn = kvm_mmu_page_get_gfn(rev_sp, sptep - rev_sp->spt);
- 
- 		if (!gfn_to_memslot(kvm, gfn)) {
- 			if (!printk_ratelimit())
-@@ -3385,8 +3413,7 @@ void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
- 			return;
- 		}
- 
--		rmapp = gfn_to_rmap(kvm, rev_sp->gfns[sptep - rev_sp->spt],
--				    rev_sp->role.level);
-+		rmapp = gfn_to_rmap(kvm, gfn, rev_sp->role.level);
- 		if (!*rmapp) {
- 			if (!printk_ratelimit())
- 				return;
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 624b38f..2091590 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -592,6 +592,9 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- 
- 	offset = nr_present = 0;
- 
-+	/* direct kvm_mmu_page can not be unsync. */
-+	BUG_ON(sp->role.direct);
-+
- 	if (PTTYPE == 32)
- 		offset = sp->role.quadrant << PT64_LEVEL_BITS;
- 
+ #
+ # Random Number Generation
+
