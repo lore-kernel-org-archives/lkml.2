@@ -1,84 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759968Ab0D3XfP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 19:35:15 -0400
-Received: from p01c12o149.mxlogic.net ([208.65.145.72]:51031 "EHLO
-	p01c12o149.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759949Ab0D3XfJ (ORCPT
+	id S1757387Ab0EAAAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 20:00:21 -0400
+Received: from fgwmail9.fujitsu.co.jp ([192.51.44.39]:48672 "EHLO
+	fgwmail9.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab0EAAAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 19:35:09 -0400
-X-MXL-Hash: 4bdb692d316e21cc-d33de790f02b809ffa418bc6506f2610ab7f0eee
-X-MXL-Hash: 4bd9bdc5020042f3-86f98af4cb2d827aac24f9458eedacaf6b77196c
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "dedekind1@gmail.com" <dedekind1@gmail.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-       "ryan@bluewatersys.com" <ryan@bluewatersys.com>,
-       "andre@bluewatersys.com" <andre@bluewatersys.com>,
-       "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 29 Apr 2010 12:11:05 -0500
-Subject: RE: [PATCH] sst25l.c: simplify reading the device ManID/DevID
-Thread-Topic: [PATCH] sst25l.c: simplify reading the device ManID/DevID
-Thread-Index: AcrnX2bTS6vtTKVvRkG5/kSBnk57DAAXj34g
-Message-ID: <0D753D10438DA54287A00B0270842697636E305B2F@AUSP01VMBX24.collaborationhost.net>
-References: <0D753D10438DA54287A00B0270842697636D85BD7C@AUSP01VMBX24.collaborationhost.net>
- <1272519398.7750.67.camel@localhost>
-In-Reply-To: <1272519398.7750.67.camel@localhost>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010043001)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.32]
-X-AnalysisOut: [v=1.0 c=1 a=Kt63NVUFlrcA:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
-X-AnalysisOut: [MA:10 a=zbe46bahRtDx8aUBN1lPzQ==:17 a=i00gxMtYAAAA:8 a=Jfr]
-X-AnalysisOut: [nYn6hAAAA:8 a=rggnVFrEAAAA:8 a=bO_dZOUzwfqVMNHDz18A:9 a=yO]
-X-AnalysisOut: [HZW6iAMyZ8uWC6am4A:7 a=WiJ4p5_hzLD7M6RLvsqzZfzTyFUA:4 a=QE]
-X-AnalysisOut: [XdDO2ut3YA:10 a=x1WnkoZAwusA:10 a=3Rfx1nUSh_UA:10 a=ct-hs6]
-X-AnalysisOut: [iedJYA:10]
+	Fri, 30 Apr 2010 20:00:12 -0400
+X-Greylist: delayed 14681 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Apr 2010 20:00:11 EDT
+Date: Thu, 29 Apr 2010 20:23:19 +0900
+From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@linux-nfs.org, security@kernel.org,
+       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Subject: Re: [PATCH 1/1][BUG][TAKE2] KEYRINGS: find_keyring_by_name() can
+ gain the freed keyring
+Message-Id: <20100429202319.ff16222b.toshi.okajima@jp.fujitsu.com>
+In-Reply-To: <20100426234242.31099b1b.toshi.okajima@jp.fujitsu.com>
+References: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com>
+	<20100423195127.48095127.toshi.okajima@jp.fujitsu.com>
+	<20100422163755.355794e3.toshi.okajima@jp.fujitsu.com>
+	<7894.1271931370@redhat.com>
+	<20100423194547.3135efb8.toshi.okajima@jp.fujitsu.com>
+	<10934.1272022437@redhat.com>
+	<26383.1272279456@redhat.com>
+	<20100426234242.31099b1b.toshi.okajima@jp.fujitsu.com>
+Organization: Fujitsu co.,ltd.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.12.8; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="Multipart=_Thu__29_Apr_2010_20_23_19_+0900_QJXrlW_=6xkK2CYr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o3UNZRmE012066
 
-On Wednesday, April 28, 2010 10:37 PM, Artem Bityutskiy wrote:
-> On Tue, 2010-04-20 at 18:17 -0500, H Hartley Sweeten wrote:
->> The Read-ID command will continuously output the Manufacture ID and Device ID
->> until the command is terminated by a low to high transition on the CE# pin.
->> We can take advantage of this in the sst25l_match_device routine by reading
->> both bytes in one spi_write_then_read transaction.
->> 
->> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
->> Cc: David Woodhouse <dwmw2@infradead.org>
->> Cc: Andre Renaud <andre@bluewatersys.com>
->> Cc: Ryan Mallon <ryan@bluewatersys.com>
->
-> Pushed to l2-mtd-2.6.git / dunno.
+This is a multi-part message in MIME format.
 
-Artem,
+--Multipart=_Thu__29_Apr_2010_20_23_19_+0900_QJXrlW_=6xkK2CYr
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 
-I have discovered that the Read-Status-Register command has the same problem.
-With the SST25L SPI flash chips, if the chip enable is deasserted after sending
-a command that command will get aborted.
+Hi, David.
 
-I ran across this while testing a new spi master driver for the ep93xx on an
-EDB9307A dev board.  That board uses the processors SFRMOUT signal as part of
-the chip select logic.  Unfortunately the ep93xx only asserts the SFRMOUT
-signal as long as the spi transmit fifo contains data.  As soon as the last
-bit is clocked into the receive fifo it gets deasserted.  Many of the other
-ep93xx based boards have that same issue.
+> Note that the vertical lines in the right-hand column of your timeline don't
+> seem to line up correctly.  Are you editing it in an editor with a
+> proportional font?
+I thought that this problem (the right-hand column seemed not to be correct)
+ had been already fixed.
+But I couldn't find out this reason. So, I attach the fixed patch on this mail.
+--
+Best Regards,
+Toshiyuki Okajima
 
-I have an updated patch that changes both of these into one synchronous message
-which fixes the sst25l_status and sst25l_match_device functions.  These changes
-should be transparent to any users of this driver.
+--Multipart=_Thu__29_Apr_2010_20_23_19_+0900_QJXrlW_=6xkK2CYr
+Content-Type: text/plain;
+ name="your_patch.txt"
+Content-Disposition: attachment;
+ filename="your_patch.txt"
+Content-Transfer-Encoding: 7bit
 
-Could you drop the current patch and I will submit the updated one for review?
+From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Subject: [PATCH] KEYS: find_keyring_by_name() can gain access to a freed keyring
 
-Regards,
-Hartley
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+find_keyring_by_name() can gain access to a keyring that has had its reference
+count reduced to zero, and is thus ready to be freed.  This then allows the
+dead keyring to be brought back into use whilst it is being destroyed.
+
+The following timeline illustrates the process:
+
+|(cleaner)                           (user)                                    #
+|                                                                              #
+| free_user(user)                    sys_keyctl()                              #
+|  |                                  |                                        #
+|  key_put(user->session_keyring)     keyctl_get_keyring_ID()                  #
+|  ||	//=> keyring->usage = 0        |                                       #
+|  |schedule_work(&key_cleanup_task)   lookup_user_key()                       #
+|  ||                                   |                                      #
+|  kmem_cache_free(,user)               |                                      #
+|  .                                    |[KEY_SPEC_USER_KEYRING]               #
+|  .                                    install_user_keyrings()                #
+|  .                                    ||                                     #
+| key_cleanup() [<= worker_thread()]    ||                                     #
+|  |                                    ||                                     #
+|  [spin_lock(&key_serial_lock)]        |[mutex_lock(&key_user_keyr..mutex)]   #
+|  |                                    ||                                     #
+|  atomic_read() == 0                   ||                                     #
+|  |{ rb_ease(&key->serial_node,) }     ||                                     #
+|  |                                    ||                                     #
+|  [spin_unlock(&key_serial_lock)]      |find_keyring_by_name()                #
+|  |                                    |||                                    #
+|  keyring_destroy(keyring)             ||[read_lock(&keyring_name_lock)]      #
+|  ||                                   |||                                    #
+|  |[write_lock(&keyring_name_lock)]    ||atomic_inc(&keyring->usage)          #
+|  |.                                   ||| *** GET freeing keyring ***        #
+|  |.                                   ||[read_unlock(&keyring_name_lock)]    #
+|  ||                                   ||                                     #
+|  |list_del()                          |[mutex_unlock(&key_user_k..mutex)]    #
+|  ||                                   |                                      #
+|  |[write_unlock(&keyring_name_lock)]  ** INVALID keyring is returned **      #
+|  |                                    .                                      #
+|  kmem_cache_free(,keyring)            .                                      #
+|                                       .                                      #
+|                                       atomic_dec(&keyring->usage)            #
+v                                         *** DESTROYED ***                    #
+TIME                                                                           #
+
+If CONFIG_SLUB_DEBUG=y then we may see the following message generated:
+
+	=============================================================================
+	BUG key_jar: Poison overwritten
+	-----------------------------------------------------------------------------
+
+	INFO: 0xffff880197a7e200-0xffff880197a7e200. First byte 0x6a instead of 0x6b
+	INFO: Allocated in key_alloc+0x10b/0x35f age=25 cpu=1 pid=5086
+	INFO: Freed in key_cleanup+0xd0/0xd5 age=12 cpu=1 pid=10
+	INFO: Slab 0xffffea000592cb90 objects=16 used=2 fp=0xffff880197a7e200 flags=0x200000000000c3
+	INFO: Object 0xffff880197a7e200 @offset=512 fp=0xffff880197a7e300
+
+	Bytes b4 0xffff880197a7e1f0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+	  Object 0xffff880197a7e200:  6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b jkkkkkkkkkkkkkkk
+
+
+Alternatively, we may see a system panic happen, such as:
+
+	BUG: unable to handle kernel NULL pointer dereference at 0000000000000001
+	IP: [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+	PGD 6b2b4067 PUD 6a80d067 PMD 0
+	Oops: 0000 [#1] SMP
+	last sysfs file: /sys/kernel/kexec_crash_loaded
+	CPU 1
+	...
+	Pid: 31245, comm: su Not tainted 2.6.34-rc5-nofixed-nodebug #2 D2089/PRIMERGY
+	RIP: 0010:[<ffffffff810e61a3>]  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+	RSP: 0018:ffff88006af3bd98  EFLAGS: 00010002
+	RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88007d19900b
+	RDX: 0000000100000000 RSI: 00000000000080d0 RDI: ffffffff81828430
+	RBP: ffffffff81828430 R08: ffff88000a293750 R09: 0000000000000000
+	R10: 0000000000000001 R11: 0000000000100000 R12: 00000000000080d0
+	R13: 00000000000080d0 R14: 0000000000000296 R15: ffffffff810f20ce
+	FS:  00007f97116bc700(0000) GS:ffff88000a280000(0000) knlGS:0000000000000000
+	CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+	CR2: 0000000000000001 CR3: 000000006a91c000 CR4: 00000000000006e0
+	DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+	DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+	Process su (pid: 31245, threadinfo ffff88006af3a000, task ffff8800374414c0)
+	Stack:
+	 0000000512e0958e 0000000000008000 ffff880037f8d180 0000000000000001
+	 0000000000000000 0000000000008001 ffff88007d199000 ffffffff810f20ce
+	 0000000000008000 ffff88006af3be48 0000000000000024 ffffffff810face3
+	Call Trace:
+	 [<ffffffff810f20ce>] ? get_empty_filp+0x70/0x12f
+	 [<ffffffff810face3>] ? do_filp_open+0x145/0x590
+	 [<ffffffff810ce208>] ? tlb_finish_mmu+0x2a/0x33
+	 [<ffffffff810ce43c>] ? unmap_region+0xd3/0xe2
+	 [<ffffffff810e4393>] ? virt_to_head_page+0x9/0x2d
+	 [<ffffffff81103916>] ? alloc_fd+0x69/0x10e
+	 [<ffffffff810ef4ed>] ? do_sys_open+0x56/0xfc
+	 [<ffffffff81008a02>] ? system_call_fastpath+0x16/0x1b
+	Code: 0f 1f 44 00 00 49 89 c6 fa 66 0f 1f 44 00 00 65 4c 8b 04 25 60 e8 00 00 48 8b 45 00 49 01 c0 49 8b 18 48 85 db 74 0d 48 63 45 18 <48> 8b 04 03 49 89 00 eb 14 4c 89 f9 83 ca ff 44 89 e6 48 89 ef
+	RIP  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+
+
+This problem is that find_keyring_by_name does not confirm that the keyring is
+valid before accepting it.
+
+Skipping keyrings that have been reduced to a zero count seems the way to go.
+To this end, use atomic_inc_not_zero() to increment the usage count and skip
+the candidate keyring if that returns false.
+
+The following script _may_ cause the bug to happen, but there's no guarantee
+as the window of opportunity is small:
+
+	#!/bin/sh
+	LOOP=100000
+	USER=dummy_user
+	/bin/su -c "exit;" $USER || { /usr/sbin/adduser -m $USER; add=1; }
+	for ((i=0; i<LOOP; i++))
+	do
+		/bin/su -c "echo '$i' > /dev/null" $USER
+	done
+	(( add == 1 )) && /usr/sbin/userdel -r $USER
+	exit
+
+Note that the nominated user must not be in use.
+
+An alternative way of testing this may be:
+
+	for ((i=0; i<100000; i++))
+	do
+		keyctl session foo /bin/true || break
+	done >&/dev/null
+
+as that uses a keyring named "foo" rather than relying on the user and
+user-session named keyrings.
+
+Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Reported-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ security/keys/keyring.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
+
+
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 8fa2df0..d570824 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -526,9 +526,8 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
+ 	struct key *keyring;
+ 	int bucket;
+ 
+-	keyring = ERR_PTR(-EINVAL);
+ 	if (!name)
+-		goto error;
++		return ERR_PTR(-EINVAL);
+ 
+ 	bucket = keyring_hash(name);
+ 
+@@ -555,17 +554,18 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
+ 					   KEY_SEARCH) < 0)
+ 				continue;
+ 
+-			/* we've got a match */
+-			atomic_inc(&keyring->usage);
+-			read_unlock(&keyring_name_lock);
+-			goto error;
++			/* we've got a match but we might end up racing with
++			 * key_cleanup() if the keyring is currently 'dead'
++			 * (ie. it has a zero usage count) */
++			if (!atomic_inc_not_zero(&keyring->usage))
++				continue;
++			goto out;
+ 		}
+ 	}
+ 
+-	read_unlock(&keyring_name_lock);
+ 	keyring = ERR_PTR(-ENOKEY);
+-
+- error:
++out:
++	read_unlock(&keyring_name_lock);
+ 	return keyring;
+ 
+ } /* end find_keyring_by_name() */
+
+
+
+--Multipart=_Thu__29_Apr_2010_20_23_19_+0900_QJXrlW_=6xkK2CYr--
