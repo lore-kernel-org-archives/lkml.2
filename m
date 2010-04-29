@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758547Ab0D3RK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:10:58 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:59618 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758387Ab0D3RKs (ORCPT
+	id S932246Ab0D3RI7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:08:59 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53812 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932725Ab0D3RIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:10:48 -0400
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Avi Kivity <avi@redhat.com>, Pavel Machek <pavel@ucw.cz>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-In-Reply-To: <10e6761a-fb7a-421d-97fc-1f3b6cd94622@default>
-References: <4BD16D09.2030803@redhat.com> >
-	 <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> >
-	 <4BD1A74A.2050003@redhat.com> >
-	 <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> >
-	 <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com> >
-	 <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default> >
-	 <4BD3377E.6010303@redhat.com> >
-	 <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com> >
-	 <ce808441-fae6-4a33-8335-f7702740097a@default> >
-	 <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz>
-	 <4BDA8324.7090409@redhat.com>
-	 <084f72bf-21fd-4721-8844-9d10cccef316@default 4BDB026E.1030605@redhat.com>
-	 <10e6761a-fb7a-421d-97fc-1f3b6cd94622@default>
-Content-Type: text/plain
-Date: Fri, 30 Apr 2010 10:10:36 -0700
-Message-Id: <1272647436.23895.2625.camel@nimitz>
+	Fri, 30 Apr 2010 13:08:49 -0400
+Date: Thu, 29 Apr 2010 15:11:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+       Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+       Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 01/11] lib: introduce common method to convert hex
+ digits
+Message-Id: <20100429151125.dec82ee1.akpm@linux-foundation.org>
+In-Reply-To: <r2q5ec8ebd51004220139m2df20715y259c9fdd65373b11@mail.gmail.com>
+References: <cover.1266861291.git.ext-andriy.shevchenko@nokia.com>
+	<d8c224af14aa936dcd692c70656559fe9726d997.1266861291.git.ext-andriy.shevchenko@nokia.com>
+	<5ec8ebd51003081703r76fd2ba7pa850f7568a580181@mail.gmail.com>
+	<20100309115743.48cc125b.akpm@linux-foundation.org>
+	<r2q5ec8ebd51004220139m2df20715y259c9fdd65373b11@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-30 at 09:43 -0700, Dan Magenheimer wrote:
-> And, importantly, "have your host expose a device which is write
-> cached by host memory"... you are implying that all guest swapping
-> should be done to a device managed/controlled by the host?  That
-> eliminates guest swapping to directIO/SRIOV devices doesn't it?
+On Thu, 22 Apr 2010 11:39:51 +0300
+Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
 
-If you have a single swap device, sure.  But, I can also see a case
-where you have a "fast" swap and "slow" swap.
+> On Tue, Mar 9, 2010 at 10:57 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > This patch series turned up two days before the 2.6.33 release, which
+> > is fairly exactly the time when non-bugfixes won't get looked at! __I
+> > stored it all away for consideration after we've finished the
+> > 2.6.34-rc1 merge scramble.
+>
+> Any news here?
 
-The part of the argument about frontswap is that I like is the lack
-sizing exposed to the guest.  When you're dealing with swap-only, you
-are stuck adding or removing swap devices if you want to "grow/shrink"
-the memory footprint.  If the host (or whatever is backing the
-frontswap) wants to change the sizes, they're fairly free to.
+Ancient history ;)
 
-The part that bothers me it is that it just pushes the problem
-elsewhere.  For KVM, we still have to figure out _somewhere_ what to do
-with all those pages.  It's nice that the host would have the freedom to
-either swap or keep them around, but it doesn't really fix the problem.
+> Should I resubmit series?
 
-I do see the lack of sizing exposed to the guest as being a bad thing,
-too.  Let's say we saved 25% of system RAM to back a frontswap-type
-device on a KVM host.  The first time a user boots up their set of VMs
-and 25% of their RAM is gone, they're going to start complaining,
-despite the fact that their 25% smaller systems may end up being faster.
-
-I think I'd be more convinced if we saw this thing actually get used
-somehow.  How is a ram-backed frontswap better than a /dev/ramX-backed
-swap file in practice?
-
--- Dave
-
+Yes please.
