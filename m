@@ -1,151 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab0D3QyA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 12:54:00 -0400
-Received: from kroah.org ([198.145.64.141]:53028 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757970Ab0D3Qxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:53:42 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@linux.intel.com>, Jiri Slaby <jirislaby@gmail.com>,
-       Dan Carpenter <error27@gmail.com>, Andreas Pretzsch <apr@cn-eng.de>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 1/3] tty: Fix regressions in the char driver conversion
-Date: Fri, 30 Apr 2010 09:37:38 -0700
-Message-Id: <1272645460-16491-1-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20100430163654.GB16424@kroah.com>
-References: <20100430163654.GB16424@kroah.com>
+	id S1758029Ab0D3QyY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 12:54:24 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:37298 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757630Ab0D3QyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 12:54:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=KMZeVfbTqITc0s+xcp/IIk1oJYfwDn7fVD8FjikFE4rZMUbi2mZ6LJJeoHdw20qdrc
+         uolLWArh4LcDxM8VhAq4tUxmg8pooPkTu4V5dPAdG+HyATbV/AYTM5h0W+Iq4stFM6eV
+         D36Q9dMwrZMU9XhJHKIhsixap+9cxpxQAx1kQ=
+Message-ID: <4BD9866E.4050101@gmail.com>
+Date: Thu, 29 Apr 2010 23:15:26 +1000
+From: Graeme Russ <graeme.russ@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Mike Rapoport <mike@compulab.co.il>,
+       Alexander Clouter <alex@digriz.org.uk>
+Subject: Re: Request For Help - Embedded x86, Kernel 2.6.33 boots, Mounts
+ 	JFFS2 rootfs, Stops at init
+References: <4BD8415C.9060409@gmail.com> <s91ma7-76h.ln1@chipmunk.wormnet.eu> <y2zd66caabb1004281614qe5af7fa7i6d9d5ac957ea6520@mail.gmail.com>
+In-Reply-To: <y2zd66caabb1004281614qe5af7fa7i6d9d5ac957ea6520@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+Graeme Russ wrote:
+> On Thu, Apr 29, 2010 at 1:37 AM, Alexander Clouter <alex@digriz.org.uk> wrote:
+>> Graeme Russ <graeme.russ@gmail.com> wrote:
+>>> I've been working for a while now getting the x86 U-Boot port up to speed
+>>> to boot a linux kernel
+>>>
+>> ...ewww x86.
+> 
+>>>
+>> What does you /dev directory look like?  You need to have at least the
+>> following:
+>> ----
+>> mknod console c 5 1
+>> mknod null c 1 3
+>> mknod ttyS0 c 4 64
+>> ----
+>>
+> 
+> tick, tick, tick
+> 
 
-This forgot to update a field in the old char drivers. The fact nobody
-has basically noticed (except one mxser user) rather suggests most of these
-drivers could go into the bitbucket.
+Success!!!
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>
-Cc: Dan Carpenter <error27@gmail.com>
-Cc: Andreas Pretzsch <apr@cn-eng.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/char/isicom.c    |    9 +++++++--
- drivers/char/istallion.c |    2 ++
- drivers/char/mxser.c     |    3 ++-
- drivers/char/riscom8.c   |    1 +
- drivers/char/stallion.c  |    7 ++++---
- 5 files changed, 16 insertions(+), 6 deletions(-)
+I feel _really_ stupid about the cause of the problem.... I hadn't set up
+the interrupt mapping of the serial ports in my board initialisation
+routines in U-Boot. Once I mapped IRQ4 to UART0 it all sprang to life ;)
 
-diff --git a/drivers/char/isicom.c b/drivers/char/isicom.c
-index 0fa2e4a..c1ab303 100644
---- a/drivers/char/isicom.c
-+++ b/drivers/char/isicom.c
-@@ -879,8 +879,8 @@ static int isicom_open(struct tty_struct *tty, struct file *filp)
- 	if (tport == NULL)
- 		return -ENODEV;
- 	port = container_of(tport, struct isi_port, port);
--	card = &isi_card[BOARD(tty->index)];
- 
-+	tty->driver_data = port;
- 	return tty_port_open(tport, tty, filp);
- }
- 
-@@ -936,7 +936,12 @@ static void isicom_shutdown(struct tty_port *port)
- static void isicom_close(struct tty_struct *tty, struct file *filp)
- {
- 	struct isi_port *ip = tty->driver_data;
--	struct tty_port *port = &ip->port;
-+	struct tty_port *port;
-+
-+	if (ip == NULL)
-+		return;
-+
-+	port = &ip->port;
- 	if (isicom_paranoia_check(ip, tty->name, "isicom_close"))
- 		return;
- 	tty_port_close(port, tty, filp);
-diff --git a/drivers/char/istallion.c b/drivers/char/istallion.c
-index 4cd6c52..4e395c9 100644
---- a/drivers/char/istallion.c
-+++ b/drivers/char/istallion.c
-@@ -827,6 +827,8 @@ static int stli_open(struct tty_struct *tty, struct file *filp)
- 		return -ENODEV;
- 	if (portp->devnr < 1)
- 		return -ENODEV;
-+
-+	tty->driver_data = portp;
- 	return tty_port_open(&portp->port, tty, filp);
- }
- 
-diff --git a/drivers/char/mxser.c b/drivers/char/mxser.c
-index 4702305..d2692d4 100644
---- a/drivers/char/mxser.c
-+++ b/drivers/char/mxser.c
-@@ -1011,6 +1011,7 @@ static int mxser_open(struct tty_struct *tty, struct file *filp)
- 	if (!info->ioaddr)
- 		return -ENODEV;
- 
-+	tty->driver_data = info;
- 	return tty_port_open(&info->port, tty, filp);
- }
- 
-@@ -1074,7 +1075,7 @@ static void mxser_close(struct tty_struct *tty, struct file *filp)
- 	struct mxser_port *info = tty->driver_data;
- 	struct tty_port *port = &info->port;
- 
--	if (tty->index == MXSER_PORTS)
-+	if (tty->index == MXSER_PORTS || info == NULL)
- 		return;
- 	if (tty_port_close_start(port, tty, filp) == 0)
- 		return;
-diff --git a/drivers/char/riscom8.c b/drivers/char/riscom8.c
-index 0a8d1e5..b02332a 100644
---- a/drivers/char/riscom8.c
-+++ b/drivers/char/riscom8.c
-@@ -909,6 +909,7 @@ static int rc_open(struct tty_struct *tty, struct file *filp)
- 	if (error)
- 		return error;
- 
-+	tty->driver_data = port;
- 	return tty_port_open(&port->port, tty, filp);
- }
- 
-diff --git a/drivers/char/stallion.c b/drivers/char/stallion.c
-index 0e511d6..6049fd7 100644
---- a/drivers/char/stallion.c
-+++ b/drivers/char/stallion.c
-@@ -724,7 +724,6 @@ static int stl_open(struct tty_struct *tty, struct file *filp)
- {
- 	struct stlport	*portp;
- 	struct stlbrd	*brdp;
--	struct tty_port *port;
- 	unsigned int	minordev, brdnr, panelnr;
- 	int		portnr;
- 
-@@ -754,7 +753,8 @@ static int stl_open(struct tty_struct *tty, struct file *filp)
- 	portp = brdp->panels[panelnr]->ports[portnr];
- 	if (portp == NULL)
- 		return -ENODEV;
--	port = &portp->port;
-+
-+	tty->driver_data = portp;
- 	return tty_port_open(&portp->port, tty, filp);
- 
- }
-@@ -841,7 +841,8 @@ static void stl_close(struct tty_struct *tty, struct file *filp)
- 	pr_debug("stl_close(tty=%p,filp=%p)\n", tty, filp);
- 
- 	portp = tty->driver_data;
--	BUG_ON(portp == NULL);
-+	if(portp == NULL)
-+		return;
- 	tty_port_close(&portp->port, tty, filp);
- }
- 
--- 
-1.7.0.4
+Big thanks to everyone for helping and a big thanks to all the linux and
+GNU developers for creating such a wonderful 'toy' ;)
 
+Graeme
