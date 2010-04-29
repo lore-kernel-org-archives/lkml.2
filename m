@@ -1,132 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933958Ab0D3S7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:59:55 -0400
-Received: from claw.goop.org ([74.207.240.146]:56580 "EHLO claw.goop.org"
+	id S1759201Ab0D3TAg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:00:36 -0400
+Received: from kroah.org ([198.145.64.141]:49559 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932927Ab0D3S7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:59:18 -0400
-Message-ID: <4BDB2883.8070606@goop.org>
-Date: Fri, 30 Apr 2010 11:59:15 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S932576Ab0D3RDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:03:33 -0400
+Date: Thu, 29 Apr 2010 12:17:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Roel Van Nyen <roel.vannyen@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       sdietrich@novell.com, sonic.adi@gmail.com, jic23@cam.ac.uk,
+       akpm@linux-foundation.org, lindner_marek@yahoo.de
+Subject: Re: Staging: iio: Fix remaining code style issues
+Message-ID: <20100429191734.GA21615@kroah.com>
+References: <1272562051-2098-1-git-send-email-roel.vannyen@gmail.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com>> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>> <4BD1A74A.2050003@redhat.com>> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com>> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>> <4BD3377E.6010303@redhat.com>> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>> <ce808441-fae6-4a33-8335-f7702740097a@default>> <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz 4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default> <4BDB026E.1030605@redhat.com> <4BDB18CE.2090608@goop.org> <4BDB2069.4000507@redhat.com>
-In-Reply-To: <4BDB2069.4000507@redhat.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272562051-2098-1-git-send-email-roel.vannyen@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2010 11:24 AM, Avi Kivity wrote:
->> I'd argue the opposite.  There's no point in having the host do swapping
->> on behalf of guests if guests can do it themselves; it's just a
->> duplication of functionality.
->   
-> The problem with relying on the guest to swap is that it's voluntary. 
-> The guest may not be able to do it.  When the hypervisor needs memory
-> and guests don't cooperate, it has to swap.
+On Thu, Apr 29, 2010 at 07:27:31PM +0200, Roel Van Nyen wrote:
+> fix code style issues
+> 
+> Signed-of-by: Roel Van Nyen <roel.vannyen@gmail.com>
+> Cc: Jonathan Cameron <jic23@cam.ac.uk>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> --- a/drivers/staging/iio/industrialio-core.c
+> +++ b/drivers/staging/iio/industrialio-core.c
+> @@ -810,7 +810,7 @@ int iio_device_register(struct iio_dev *dev_info)
+>  	ret = iio_device_register_eventset(dev_info);
+>  	if (ret) {
+>  		dev_err(dev_info->dev.parent,
+> -			"Failed to register event set \n");
+> +			"Failed to register event set\n");
+>  		goto error_free_sysfs;
+>  	}
+>  	if (dev_info->modes & INDIO_RING_TRIGGERED)
+> diff --git a/drivers/staging/iio/ring_sw.c b/drivers/staging/iio/ring_sw.c
+> index e95b6a4..4981803 100644
+> --- a/drivers/staging/iio/ring_sw.c
+> +++ b/drivers/staging/iio/ring_sw.c
+> @@ -126,8 +126,7 @@ int iio_store_to_sw_ring(struct iio_sw_ring_buffer *ring,
+>  		spin_lock(&ring->buf.shared_ev_pointer.lock);
+>  
+>  		ret = iio_push_or_escallate_ring_event(&ring->buf,
+> -						       IIO_EVENT_CODE_RING_100_FULL,
+> -						       timestamp);
+> +			       IIO_EVENT_CODE_RING_100_FUL, timestamp);
 
-Or fail whatever operation its trying to do.  You can only use
-overcommit to fake unlimited resources for so long before you need a
-government bailout.
+You never tested this fix :(
 
->> You end up having two IO paths for each
->> guest, and the resulting problems in trying to account for the IO,
->> rate-limit it, etc.  If you can simply say "all guest disk IO happens
->> via this single interface", its much easier to manage.
->>    
->
-> With tmem you have to account for that memory, make sure it's
-> distributed fairly, claim it back when you need it (requiring guest
-> cooperation), live migrate and save/restore it.  It's a much larger
-> change than introducing a write-back device for swapping (which has
-> the benefit of working with unmodified guests).
+It breaks the build, please be more careful next time.  I've fixed it
+up...
 
-Well, with caveats.  To be useful with migration the backing store needs
-to be shared like other storage, so you can't use a specific host-local
-fast (ssd) swap device.  And because the device is backed by pagecache
-with delayed writes, it has much weaker integrity guarantees than a
-normal device, so you need to be sure that the guests are only going to
-use it for swap.  Sure, these are deployment issues rather than code
-ones, but they're still issues.
+thanks,
 
->> If frontswap has value, it's because its providing a new facility to
->> guests that doesn't already exist and can't be easily emulated with
->> existing interfaces.
->>
->> It seems to me the great strengths of the synchronous interface are:
->>
->>      * it matches the needs of an existing implementation (tmem in Xen)
->>      * it is simple to understand within the context of the kernel code
->>        it's used in
->>
->> Simplicity is important, because it allows the mm code to be understood
->> and maintained without having to have a deep understanding of
->> virtualization.
->
-> If we use the existing paths, things are even simpler, and we match
-> more needs (hypervisors with dma engines, the ability to reclaim
-> memory without guest cooperation).
-
-Well, you still can't reclaim memory; you can write it out to storage. 
-It may be cheaper/byte, but it's still a resource dedicated to the
-guest.  But that's just a consequence of allowing overcommit, and to
-what extent you're happy to allow it.
-
-What kind of DMA engine do you have in mind?  Are there practical
-memory->memory DMA engines that would be useful in this context?
-
->>> At this point we're back with the ordinary swap API.  Simply have your
->>> host expose a device which is write cached by host memory, you'll have
->>> all the benefits of frontswap with none of the disadvantages, and with
->>> no changes to guest code.
->>>      
->> Yes, that's comfortably within the "guests page themselves" model.
->> Setting up a block device for the domain which is backed by pagecache
->> (something we usually try hard to avoid) is pretty straightforward.  But
->> it doesn't work well for Xen unless the blkback domain is sized so that
->> it has all of Xen's free memory in its pagecache.
->>    
->
-> Could be easily achieved with ballooning?
-
-It could be achieved with ballooning, but it isn't completely trivial. 
-It wouldn't work terribly well with a driver domain setup, unless all
-the swap-devices turned out to be backed by the same domain (which in
-turn would need to know how to balloon in response to overall system
-demand).  The partitioning of the pagecache among the guests would be at
-the mercy of the mm subsystem rather than subject to any specific QoS or
-other per-domain policies you might want to put in place (maybe fiddling
-around with [fm]advise could get you some control over that).
-
->
->> That said, it does concern me that the host/hypervisor is left holding
->> the bag on frontswapped pages.  A evil/uncooperative/lazy can just pump
->> a whole lot of pages into the frontswap pool and leave them there.   I
->> guess this is mitigated by the fact that the API is designed such that
->> they can't update or read the data without also allowing the hypervisor
->> to drop the page (updates can fail destructively, and reads are also
->> destructive), so the guest can't use it as a clumsy extension of their
->> normal dedicated memory.
->>    
->
-> Eventually you'll have to swap frontswap pages, or kill uncooperative
-> guests.  At which point all of the simplicity is gone.
-
-Killing guests is pretty simple.  Presumably the oom killer will get kvm
-processes like anything else?
-
-    J
-
+greg k-h
