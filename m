@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933438Ab0D3SM1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:12:27 -0400
-Received: from tomts10.bellnexxia.net ([209.226.175.54]:44298 "EHLO
-	tomts10-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933787Ab0D3SMF (ORCPT
+	id S933862Ab0D3SMS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:12:18 -0400
+Received: from ey-out-2122.google.com ([74.125.78.24]:29065 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933336Ab0D3SI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:12:05 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEANu12ktGGNqG/2dsb2JhbACdIXK+doJmgiwE
-Date: Fri, 30 Apr 2010 14:12:01 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Valdis.Kletnieks@vt.edu, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH tip/core/urgent] fix several lockdep splats, allow
-	multiple splats
-Message-ID: <20100430181201.GB1704@Krystal>
-References: <20100421200150.GA3818@linux.vnet.ibm.com> <20100430100749.GC14202@elte.hu> <20100430153334.GA19672@Krystal> <10035.1272644205@localhost> <20100430180247.GA2482@linux.vnet.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <20100430180247.GA2482@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 14:07:38 up 23 days,  4:01,  3 users,  load average: 0.05, 0.08,
-	0.08
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 30 Apr 2010 14:08:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=G8U559ChF1vo273Z816EgQZtvpsLDjDYzYYk8TYe1kZB8YL8fGGhzCgHt6/BDWtG/j
+         QeBrV/uVrL3gbp5EqKSbac8AksOVLTffpyYrUVbjmivNLP66QBS34z3ELNC8G3Szbl/H
+         FDwnx/mXsHNQSi37zRgP7ncnebphwyWYvC/Xc=
+From: Roel Van Nyen <roel.vannyen@gmail.com>
+To: gregkh@suse.de
+Cc: jic23@cam.ac.uk, roel.vannyen@gmail.com, akpm@linux-foundation.org,
+       sonic.adi@gmail.com, lindner_marek@yahoo.de, sdietrich@novell.com,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: iio: Fix remaining code style issues
+Date: Thu, 29 Apr 2010 19:27:31 +0200
+Message-Id: <1272562051-2098-1-git-send-email-roel.vannyen@gmail.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Fri, Apr 30, 2010 at 12:16:45PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> > On Fri, 30 Apr 2010 11:33:34 EDT, Mathieu Desnoyers said:
-> > 
-> > > I recommend creating a kernel command line parameter that would tweak
-> > > the number of messages printed by lockdep. The default would indeed by 1
-> > > message, but people in a debugging marathon can specify a larger value
-> > > so they won't have to reboot between each individual lockdep error.
-> > 
-> > Yeah, that would rock for development kernels - playing whack-a-mole with
-> > a half-dozen new lockdep whinges can easily stretch out for quite some time.
-> 
-> The RCU-lockdep splats are a bit different in nature than the
-> deadlock-related splats that lockdep normally prints.  The RCU-lockdep
-> splats are transient in nature, and it is easy to apply WARN_ON_ONCE().
-> In contrast, if you permit multiple deadlock-related lockdep splats,
-> you tend to get lots of warnings about the same deadlock cycle.
-> 
-> So how about an additional kernel configuration variable, default
-> disabled, perhaps named CONFIG_PROVE_RCU_MULTIPLE, that allows a
-> single boot to see multiple messages?  Unlike the dyntick-idle
-> WARN_ON()s that generated multi-gigabyte console logs in a great
-> hurry, I haven't yet seen excessive quantities of RCU-lockdep splats,
-> so I don't see the need for an integer limit.
-> 
-> Thoughts?
+fix code style issues
 
-Ideally we don't want to flood the console with thousands of instances
-of the same RCU-lockdep splat (think of a missing read lock on a common
-code path). Therefore I think keeping an integer limit is relevant here.
-I agree that this integer limit could be selected by a CONFIG_ option
-rather than by a kernel parameter, as it will typically only be used on
-development kernels with "kernel hacking" enabled anyway. There is not
-much point in bloating the kernel code with an extra debug-only kernel
-parameter parsing.
+Signed-of-by: Roel Van Nyen <roel.vannyen@gmail.com>
+---
+ drivers/staging/iio/industrialio-core.c |    2 +-
+ drivers/staging/iio/ring_sw.c           |    3 +--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-Thanks,
-
-Mathieu
-
-> 
-> 							Thanx, Paul
-
+diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
+index 1d77082..dce8dcc 100644
+--- a/drivers/staging/iio/industrialio-core.c
++++ b/drivers/staging/iio/industrialio-core.c
+@@ -810,7 +810,7 @@ int iio_device_register(struct iio_dev *dev_info)
+ 	ret = iio_device_register_eventset(dev_info);
+ 	if (ret) {
+ 		dev_err(dev_info->dev.parent,
+-			"Failed to register event set \n");
++			"Failed to register event set\n");
+ 		goto error_free_sysfs;
+ 	}
+ 	if (dev_info->modes & INDIO_RING_TRIGGERED)
+diff --git a/drivers/staging/iio/ring_sw.c b/drivers/staging/iio/ring_sw.c
+index e95b6a4..4981803 100644
+--- a/drivers/staging/iio/ring_sw.c
++++ b/drivers/staging/iio/ring_sw.c
+@@ -126,8 +126,7 @@ int iio_store_to_sw_ring(struct iio_sw_ring_buffer *ring,
+ 		spin_lock(&ring->buf.shared_ev_pointer.lock);
+ 
+ 		ret = iio_push_or_escallate_ring_event(&ring->buf,
+-						       IIO_EVENT_CODE_RING_100_FULL,
+-						       timestamp);
++			       IIO_EVENT_CODE_RING_100_FUL, timestamp);
+ 		spin_unlock(&ring->buf.shared_ev_pointer.lock);
+ 		if (ret)
+ 			goto error_ret;
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.6.3.3
+
