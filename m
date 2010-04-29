@@ -1,69 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab0D2DXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 23:23:31 -0400
-Received: from n11-vm0.bullet.mail.in.yahoo.com ([202.86.4.227]:29390 "HELO
-	n11-vm0.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751345Ab0D2DXa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 23:23:30 -0400
-X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Apr 2010 23:23:29 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 64569.42492.bm@omp109.mail.in2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:References:Date:From:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=0L9IbKaTUVghqR0G5dfnrqQs9u1UmhZl+0Rhrht9Q4yemAd4xkVYBNUJ5rru4ZsEwVjAfYD69/hiOu4tiRV8EqN7Je/ufzhoLRFtwTpTgCe59k6FZ8rooGgYB8l0/QxuHOT1W15qiTo3yHFTDBto1Q9ZuALK1pYZ4B9g3VSu31c=;
-Message-ID: <774168.91484.qm@web95616.mail.in.yahoo.com>
-X-YMail-OSG: A53zGzMVM1lY2BbcZnjYJ_ceYinu49uFD_Wggpwaop1avjr
- FAS7sRnMJ_sNV2EORKO.NfmoSUnhzgdGQteY5AnF1AzGYoNHCTguK1iCAkrV
- O8DzRmRNtqydOIu9vZeIDJz2cuhXgFO9ucgpMgircS62Oz7uOqmy7w60uEwC
- 2TtSDgTUgK0vcmo0uH0Qw5QmaJPK4MpUyS.9.OtuMzSwUUanUiuz3kO5m2GK
- oHRabIkM-
-X-Mailer: YahooMailRC/348.5 YahooMailWebService/0.8.103.269680
-References: <994542.25479.qm@web95602.mail.in.yahoo.com>
-Date: Thu, 29 Apr 2010 08:41:11 +0530 (IST)
-From: Oza Oza <ozaoza1982@yahoo.com>
-Subject: NMI & register handling infrastructure - x86 (my first post)
-To: linux-kernel@vger.kernel.org
-In-Reply-To: <994542.25479.qm@web95602.mail.in.yahoo.com>
+	id S1755270Ab0D2DaW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 23:30:22 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:59208 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272Ab0D2DaT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 23:30:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=rE6LQeppZulnPhLlFXTkK4BSDmyBrA8eKAaB7CQG3zEw4gN219ZuFUFEM7K6uDuebX
+         jmUXMJsYiQZWB9EWrGjNNfId4GtLxttqAjBrXSMlEmeSqvajyRpdG14xL04ch7qdnNlD
+         sWnFfY7Xj7Vw0qhkZquEnNNYz4qBPgdCuzoWg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20100427120516.c18b3bbb.akpm@linux-foundation.org>
+References: <90b950fc1003252024i5ba8989bg95f0a81e8e5e708e@mail.gmail.com>
+	 <20100330160257.e5f978a9.akpm@linux-foundation.org>
+	 <90b950fc1003301941r69dc5ce1ida64b590646049a7@mail.gmail.com>
+	 <20100330195501.747515e9.akpm@linux-foundation.org>
+	 <20100427120516.c18b3bbb.akpm@linux-foundation.org>
+Date: Thu, 29 Apr 2010 12:30:17 +0900
+Message-ID: <l2n90b950fc1004282030j173e7c47ua21b92a56881f559@mail.gmail.com>
+Subject: Re: [PATCH] added S6E63M0 AMOLED LCD Panel driver.
+From: InKi Dae <daeinki@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-fbdev-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org, kyungmin.park@samsung.com
+Content-Type: multipart/mixed; boundary=000e0cd1a588e2847b048557be7d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--000e0cd1a588e2847b048557be7d
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-This is my first post to the group, please excuse me, If I unknowingly miss to follow writing ethics.
+I'm sorry for being late.
 
-Proposal/Need: 
+this is second patch that your concern is solved.
 
-I was working on providing accurate process usage support, and writing a kernel module, 
-I configured cpu-core-unhalted-event and configured LVT (local vector table) with NMI (non-maskable interrupt), and surprisingly Oprofile stopped working, 
-Then I realized, that set_nmi_call back just overwrites nmi_callback function pointer. 
+Please review this patch.
 
-My proposal/idea/thinking is; 
-have a kernel module which accepts NMI registration from any kernel component, and providing support to the the any kernel service which basically need to service NMI.
-It may not only supports this, but also can provide central infrastructure which has capabilities such as granting MSR (model specific register) access to the the modules, which may avoid potential clash of MSRs (e.g. two modules are trying to configure same MSR), control NMI registration-unregisteration events etc..
+Thank you.
 
-I am not sure, whether this is a good idea or bad idea, but I thought it adds flexibility and some value addition in kernel, 
-and I find this place precisely right to post this idea. 
+Best Regards,
+InKi Dae.
 
-Any feedback/suggestions/additions would be appreciated. 
+2010/4/28 Andrew Morton <akpm@linux-foundation.org>:
+> On Tue, 30 Mar 2010 19:55:01 -0400
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+>
+>> On Wed, 31 Mar 2010 11:41:54 +0900 InKi Dae <daeinki@gmail.com> wrote:
+>>
+>> > Hi Andrew,
+>> >
+>> > all the calls to s6e63m0_panel_send_sequence() would return -EINVAL.
+>> > by api_async() of driver/spi/spi.c
+>>
+>> No, spi_async() does
+>>
+>> =A0 =A0 =A0 master->transfer(spi, message);
+>>
+>> which can return at least EIO, EINPROGRESS, EINVAL or ETIMEDOUT.
+>>
+>> > so I think that those return values aren't changed to other.
+>> >
+>> > and final step is to check only whether the return value is 0 or not.
+>> > if you still think that this code has minor problem or you want it to
+>> > be corrected
+>> > then I will patch this code to be corrected anytime.
+>>
+>> It's a bug.
+>>
+>> Also s6e63m0_power_on() is sloppy. =A0It again or's together disparate
+>> errnos. =A0Then if _anything_ failed it returns hardwired -EIO, but it
+>> should instead propagate the callee's errno back up to the caller.
+>>
+>> And s6e63m0_power_on() can return -EFAULT in several places, which is
+>> nonsensical.
+>>
+>> None of this is very critical, just ... sloppy.
+>>
+>
+> ping?
+>
 
-Regards,
-Oza.
+--000e0cd1a588e2847b048557be7d
+Content-Type: application/octet-stream; name="s6e63m0_second.patch"
+Content-Disposition: attachment; filename="s6e63m0_second.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_g8l0m1m60
 
-
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
-
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvdmlkZW8vYmFja2xpZ2h0L3M2ZTYzbTAuYyBiL2RyaXZlcnMv
+dmlkZW8vYmFja2xpZ2h0L3M2ZTYzbTAuYwppbmRleCBlNDc5M2RmLi4yNTRhMDk5IDEwMDY0NAot
+LS0gYS9kcml2ZXJzL3ZpZGVvL2JhY2tsaWdodC9zNmU2M20wLmMKKysrIGIvZHJpdmVycy92aWRl
+by9iYWNrbGlnaHQvczZlNjNtMC5jCkBAIC00MjAsMTMgKzQyMCwyNSBAQCBzdGF0aWMgaW50IF9z
+NmU2M20wX2dhbW1hX2N0bChzdHJ1Y3QgczZlNjNtMCAqbGNkLCBjb25zdCB1bnNpZ25lZCBpbnQg
+KmdhbW1hKQogCiAJLyogZGlzYWJsZSBnYW1tYSB0YWJsZSB1cGRhdGluZy4gKi8KIAlyZXQgPSBz
+NmU2M20wX3NwaV93cml0ZShsY2QsIDB4ZmEsIDB4MDApOworCWlmIChyZXQpIHsKKwkJZGV2X2Vy
+cihsY2QtPmRldiwgImZhaWxlZCB0byBkaXNhYmxlIGdhbW1hIHRhYmxlIHVwZGF0aW5nLlxuIik7
+CisJCWdvdG8gZ2FtbWFfZXJyOworCX0KIAotCWZvciAoaSA9IDAgOyBpIDwgR0FNTUFfVEFCTEVf
+Q09VTlQ7IGkrKykKLQkJcmV0IHw9IHM2ZTYzbTBfc3BpX3dyaXRlKGxjZCwgREFUQV9PTkxZLCBn
+YW1tYVtpXSk7CisJZm9yIChpID0gMCA7IGkgPCBHQU1NQV9UQUJMRV9DT1VOVDsgaSsrKSB7CisJ
+CXJldCA9IHM2ZTYzbTBfc3BpX3dyaXRlKGxjZCwgREFUQV9PTkxZLCBnYW1tYVtpXSk7CisJCWlm
+IChyZXQpIHsKKwkJCWRldl9lcnIobGNkLT5kZXYsICJmYWlsZWQgdG8gc2V0IGdhbW1hIHRhYmxl
+LlxuIik7CisJCQlnb3RvIGdhbW1hX2VycjsKKwkJfQorCX0KIAogCS8qIHVwZGF0ZSBnYW1tYSB0
+YWJsZS4gKi8KLQlyZXQgfD0gczZlNjNtMF9zcGlfd3JpdGUobGNkLCAweGZhLCAweDAxKTsKKwly
+ZXQgPSBzNmU2M20wX3NwaV93cml0ZShsY2QsIDB4ZmEsIDB4MDEpOworCWlmIChyZXQpCisJCWRl
+dl9lcnIobGNkLT5kZXYsICJmYWlsZWQgdG8gdXBkYXRlIGdhbW1hIHRhYmxlLlxuIik7CiAKK2dh
+bW1hX2VycjoKIAlyZXR1cm4gcmV0OwogfQogCkBAIC00NDIsMjQgKzQ1NCwzOCBAQCBzdGF0aWMg
+aW50IHM2ZTYzbTBfZ2FtbWFfY3RsKHN0cnVjdCBzNmU2M20wICpsY2QsIGludCBnYW1tYSkKIAog
+c3RhdGljIGludCBzNmU2M20wX2xkaV9pbml0KHN0cnVjdCBzNmU2M20wICpsY2QpCiB7Ci0JaW50
+IHJldDsKKwlpbnQgcmV0LCBpOworCWNvbnN0IHVuc2lnbmVkIHNob3J0ICppbml0X3NlcVtdID0g
+eworCQlTRVFfUEFORUxfQ09ORElUSU9OX1NFVCwKKwkJU0VRX0RJU1BMQVlfQ09ORElUSU9OX1NF
+VCwKKwkJU0VRX0dBTU1BX1NFVFRJTkcsCisJCVNFUV9FVENfQ09ORElUSU9OX1NFVCwKKwkJU0VR
+X0FDTF9PTiwKKwkJU0VRX0VMVlNTX09OLAorCX07CiAKLQlyZXQgPSBzNmU2M20wX3BhbmVsX3Nl
+bmRfc2VxdWVuY2UobGNkLCBTRVFfUEFORUxfQ09ORElUSU9OX1NFVCk7Ci0JcmV0IHw9IHM2ZTYz
+bTBfcGFuZWxfc2VuZF9zZXF1ZW5jZShsY2QsIFNFUV9ESVNQTEFZX0NPTkRJVElPTl9TRVQpOwot
+CXJldCB8PSBzNmU2M20wX3BhbmVsX3NlbmRfc2VxdWVuY2UobGNkLCBTRVFfR0FNTUFfU0VUVElO
+Ryk7Ci0JcmV0IHw9IHM2ZTYzbTBfcGFuZWxfc2VuZF9zZXF1ZW5jZShsY2QsIFNFUV9FVENfQ09O
+RElUSU9OX1NFVCk7Ci0JcmV0IHw9IHM2ZTYzbTBfcGFuZWxfc2VuZF9zZXF1ZW5jZShsY2QsIFNF
+UV9BQ0xfT04pOwotCXJldCB8PSBzNmU2M20wX3BhbmVsX3NlbmRfc2VxdWVuY2UobGNkLCBTRVFf
+RUxWU1NfT04pOworCWZvciAoaSA9IDA7IGkgPCBBUlJBWV9TSVpFKGluaXRfc2VxKTsgaSsrKSB7
+CisJCXJldCA9IHM2ZTYzbTBfcGFuZWxfc2VuZF9zZXF1ZW5jZShsY2QsIGluaXRfc2VxW2ldKTsK
+KwkJaWYgKHJldCkKKwkJCWJyZWFrOworCX0KIAogCXJldHVybiByZXQ7CiB9CiAKIHN0YXRpYyBp
+bnQgczZlNjNtMF9sZGlfZW5hYmxlKHN0cnVjdCBzNmU2M20wICpsY2QpCiB7Ci0JaW50IHJldCA9
+IDA7CisJaW50IHJldCA9IDAsIGk7CisJY29uc3QgdW5zaWduZWQgc2hvcnQgKmVuYWJsZV9zZXFb
+XSA9IHsKKwkJU0VRX1NUQU5EX0JZX09GRiwKKwkJU0VRX0RJU1BMQVlfT04sCisJfTsKIAotCXJl
+dCA9IHM2ZTYzbTBfcGFuZWxfc2VuZF9zZXF1ZW5jZShsY2QsIFNFUV9TVEFORF9CWV9PRkYpOwot
+CXJldCA9IHM2ZTYzbTBfcGFuZWxfc2VuZF9zZXF1ZW5jZShsY2QsIFNFUV9ESVNQTEFZX09OKTsK
+Kwlmb3IgKGkgPSAwOyBpIDwgQVJSQVlfU0laRShlbmFibGVfc2VxKTsgaSsrKSB7CisJCXJldCA9
+IHM2ZTYzbTBfcGFuZWxfc2VuZF9zZXF1ZW5jZShsY2QsIGVuYWJsZV9zZXFbaV0pOworCQlpZiAo
+cmV0KQorCQkJYnJlYWs7CisJfQogCiAJcmV0dXJuIHJldDsKIH0KQEAgLTUwOCwxMiArNTM0LDIy
+IEBAIHN0YXRpYyBpbnQgczZlNjNtMF9wb3dlcl9vbihzdHJ1Y3QgczZlNjNtMCAqbGNkKQogCX0K
+IAogCXJldCA9IHM2ZTYzbTBfbGRpX2luaXQobGNkKTsKLQlyZXQgfD0gczZlNjNtMF9sZGlfZW5h
+YmxlKGxjZCk7CisJaWYgKHJldCkgeworCQlkZXZfZXJyKGxjZC0+ZGV2LCAiZmFpbGVkIHRvIGlu
+aXRpYWxpemUgbGRpLlxuIik7CisJCXJldHVybiByZXQ7CisJfQorCisJcmV0ID0gczZlNjNtMF9s
+ZGlfZW5hYmxlKGxjZCk7CisJaWYgKHJldCkgeworCQlkZXZfZXJyKGxjZC0+ZGV2LCAiZmFpbGVk
+IHRvIGVuYWJsZSBsZGkuXG4iKTsKKwkJcmV0dXJuIHJldDsKKwl9CisKIAkvKiBzZXQgYnJpZ2h0
+bmVzcyB0byBjdXJyZW50IHZhbHVlIGFmdGVyIHBvd2VyIG9uIG9yIHJlc3VtZS4gKi8KLQlyZXQg
+fD0gczZlNjNtMF9nYW1tYV9jdGwobGNkLCBiZC0+cHJvcHMuYnJpZ2h0bmVzcyk7CisJcmV0ID0g
+czZlNjNtMF9nYW1tYV9jdGwobGNkLCBiZC0+cHJvcHMuYnJpZ2h0bmVzcyk7CiAJaWYgKHJldCkg
+ewogCQlkZXZfZXJyKGxjZC0+ZGV2LCAibGNkIGdhbW1hIHNldHRpbmcgZmFpbGVkLlxuIik7Ci0J
+CXJldHVybiAtRUlPOworCQlyZXR1cm4gcmV0OwogCX0KIAogCXJldHVybiAwOwo=
+--000e0cd1a588e2847b048557be7d--
