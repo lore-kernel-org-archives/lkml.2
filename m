@@ -1,79 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759256Ab0D3Stq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:49:46 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:61905 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932817Ab0D3RNN (ORCPT
+	id S1759319Ab0D3SuK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:50:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46457 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758774Ab0D3Sti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:13:13 -0400
-From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 06/10] sysctl: don't use own implementation of hex_to_bin()
-Date: Fri, 30 Apr 2010 12:34:05 +0300
-Message-Id: <7cd86c01ad4a376fb8a48ffe307ce7c0510cecc0.1272617852.git.ext-andriy.shevchenko@nokia.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <2eb558b7b0b20dfea0b61223db6146cb8fdbe52d.1272617852.git.ext-andriy.shevchenko@nokia.com>
-References: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
- <d5c4e26cc74458dd77102c4274d3260149717328.1272617852.git.ext-andriy.shevchenko@nokia.com>
- <1a326db89859eec030859e4905c515e0817bd2ea.1272617852.git.ext-andriy.shevchenko@nokia.com>
- <d4a1df27bf2c83ee84c3d74bcff0f2768146eb7e.1272617852.git.ext-andriy.shevchenko@nokia.com>
- <c1ca828fb308042aa32428b345abcb43ccb02c39.1272617852.git.ext-andriy.shevchenko@nokia.com>
- <2eb558b7b0b20dfea0b61223db6146cb8fdbe52d.1272617852.git.ext-andriy.shevchenko@nokia.com>
-In-Reply-To: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
-References: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
-X-OriginalArrivalTime: 30 Apr 2010 09:34:06.0773 (UTC) FILETIME=[4776AE50:01CAE848]
-X-Nokia-AV: Clean
+	Fri, 30 Apr 2010 14:49:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ByGsjyZPx0cKwP/jUN4N+HX0LyImdIpxVmZesHqRaTVqZ9WblBqz7mZ4fjtkKnJynI
+         aGPd4LNTXBkyYw3kOQW6Apei3YZx8ToF2YgbCyUTCKZtmGKbfRhtP193YJ1Rbld7sOWC
+         /ra6DsGWQRFHY0S31ykknon8kY9LgpX37Xr+o=
+Date: Fri, 30 Apr 2010 20:49:39 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Subject: Re: [PATCH v2] perf lock: add "info" subcommand for dumping misc
+	information
+Message-ID: <20100430184937.GB5357@nowhere>
+References: <1272074742-3654-2-git-send-regression-fweisbec@gmail.com> <1272106001-10519-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272106001-10519-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of own implementation of hex_to_bin().
+On Sat, Apr 24, 2010 at 07:46:41PM +0900, Hitoshi Mitake wrote:
+> Hi Frederic,
+> 
+> I added "info" subcommand to perf lock,
+> this can be used as dumping metadata like thread or address of lock instances.
+> "map" was removed because info should do the work of it.
+> 
+> This will be useful not only for debugging but also for ordinary analyzing.
+> 
+> I made this patch on perf/core of your tree, could you queue this?
+> 
+> v2: adding example of usage
+> % sudo ./perf lock info -t
+>  | Thread ID: comm
+>  | 	 0: swapper
+>  |         1: init
+>  |        18: migration/5
+>  |        29: events/2
+>  |        32: events/5
+>  |        33: events/6
+> ...
+> 
+> % sudo ./perf lock info -m
+> | Address of instance: name of class
+> |  0xffff8800b95adae0: &(&sighand->siglock)->rlock
+> |  0xffff8800bbb41ae0: &(&sighand->siglock)->rlock
+> |  0xffff8800bf165ae0: &(&sighand->siglock)->rlock
+> |  0xffff8800b9576a98: &p->cred_guard_mutex
+> |  0xffff8800bb890a08: &(&p->alloc_lock)->rlock
+> |  0xffff8800b9522a08: &(&p->alloc_lock)->rlock
+> |  0xffff8800bb8aaa08: &(&p->alloc_lock)->rlock
+> |  0xffff8800bba72a08: &(&p->alloc_lock)->rlock
+> |  0xffff8800bf18ea08: &(&p->alloc_lock)->rlock
+> |  0xffff8800b8a0d8a0: &(&ip->i_lock)->mr_lock
+> |  0xffff88009bf818a0: &(&ip->i_lock)->mr_lock
+> |  0xffff88004c66b8a0: &(&ip->i_lock)->mr_lock
+> |  0xffff8800bb6478a0: &(shost->host_lock)->rlock
+> Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Jens Axboe <jens.axboe@oracle.com>
+> Cc: Jason Baron <jbaron@redhat.com>
+> Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 
-Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- kernel/sysctl_binary.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
-index 5903057..f4789ed 100644
---- a/kernel/sysctl_binary.c
-+++ b/kernel/sysctl_binary.c
-@@ -13,6 +13,7 @@
- #include <linux/file.h>
- #include <linux/ctype.h>
- #include <linux/netdevice.h>
-+#include <linux/kernel.h>
- #include <linux/slab.h>
- 
- #ifdef CONFIG_SYSCTL_SYSCALL
-@@ -1125,11 +1126,6 @@ out:
- 	return result;
- }
- 
--static unsigned hex_value(int ch)
--{
--	return isdigit(ch) ? ch - '0' : ((ch | 0x20) - 'a') + 10;
--}
--
- static ssize_t bin_uuid(struct file *file,
- 	void __user *oldval, size_t oldlen, void __user *newval, size_t newlen)
- {
-@@ -1157,7 +1153,8 @@ static ssize_t bin_uuid(struct file *file,
- 			if (!isxdigit(str[0]) || !isxdigit(str[1]))
- 				goto out;
- 
--			uuid[i] = (hex_value(str[0]) << 4) | hex_value(str[1]);
-+			uuid[i] = (hex_to_bin(str[0]) << 4) |
-+					hex_to_bin(str[1]);
- 			str += 2;
- 			if (*str == '-')
- 				str++;
--- 
-1.6.3.3
+I've eventually not queued it because of some various
+problems, see below:
+
+
+
+> ---
+>  tools/perf/builtin-lock.c |   68 +++++++++++++++++++++++++++++++++++++++++++--
+>  1 files changed, 65 insertions(+), 3 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+> index ce27675..c54211e 100644
+> --- a/tools/perf/builtin-lock.c
+> +++ b/tools/perf/builtin-lock.c
+> @@ -778,18 +778,61 @@ static void print_result(void)
+>  	}
+>  }
+>  
+> +static int			info_threads;
+> +static int			info_map;
+> +
+> +static void rec_dump_threads(struct rb_node *node)
+> +{
+> +	struct thread_stat *st;
+> +	struct thread *t;
+> +
+> +	if (!node)
+> +		return;
+> +
+> +	if (node->rb_left)
+> +		rec_dump_threads(node->rb_left);
+
+
+That only walks the left nodes of the rbtree, imagine the following
+rbtree, W are visited nodes, U are the unvisited:
+
+                   Root
+                 /      \
+                W        U
+              /  \      / \
+             W    U    U   U
+
+
+Better iterate using rb_first() then rb_next() until it is NULL.
+
+
+
+> +
+> +	st = container_of(node, struct thread_stat, rb);
+> +	BUG_ON(!st);
+
+
+You won't ever have !st because container_of computes an address
+based on a struct type and a contained address inside this struct.
+
+struct thread_stat {
+	struct list_head	hash_entry;
+	struct rb_node		rb;
+	[...]
+} ts;
+
+If ts->rb == 1000, ts == 1000 - 16 or something like this.
+
+What matters is the "if (!node)" check you did before.
+
+
+
+> +	t = perf_session__findnew(session, st->tid);
+> +	BUG_ON(!t);
+> +
+> +	printf("%10d: %s\n", st->tid, t->comm);
+
+
+
+Please don't use printf anymore (I did the same mistakes lately),
+now that are using a TUI and we might use a GUI one day, we
+can't assume anymore we are dealing with a normal stdout.
+
+So better use pr_debug, pr_err, pr_warning, etc...
+
+
+
+> +
+> +	if (node->rb_right)
+> +		rec_dump_threads(node->rb_right);
+> +}
+> +
+> +static void dump_threads(void)
+> +{
+> +	printf("%10s: comm\n", "Thread ID");
+
+
+
+Same here and below.
+
+
+
+> +	rec_dump_threads(thread_stats.rb_node);
+> +}
+> +
+>  static void dump_map(void)
+>  {
+>  	unsigned int i;
+>  	struct lock_stat *st;
+>  
+> +	printf("Address of instance: name of class\n");
+>  	for (i = 0; i < LOCKHASH_SIZE; i++) {
+>  		list_for_each_entry(st, &lockhash_table[i], hash_entry) {
+> -			printf("%p: %s\n", st->addr, st->name);
+> +			printf(" %p: %s\n", st->addr, st->name);
+>  		}
+>  	}
+>  }
+>  
+> +static void dump_info(void)
+> +{
+> +	/* ugly... */
+> +	if (info_threads)
+> +		dump_threads();
+
+
+No it's not ugly, it's ok, we do this everywhere in perf tools :)
+
+Thanks.
 
