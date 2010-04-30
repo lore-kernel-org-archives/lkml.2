@@ -1,223 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759573Ab0D3Uth (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 16:49:37 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:37662 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756383Ab0D3Utd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 16:49:33 -0400
-From: Dinh.Nguyen@freescale.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-       grant.likely@secretlab.ca, bryan.wu@canonical.com,
-       amit.kucheria@canonical.com, r.herring@freescale.com,
-       Jun.Li@freescale.com, xiao-lizhang@freescale.com,
-       Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv10 2.6.34-rc6 4/5] mxc: Add generic USB HW initialization for MX51
-Date: Fri, 30 Apr 2010 15:48:26 -0500
-Message-Id: <1272660507-5917-4-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1272660507-5917-3-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1272660507-5917-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1272660507-5917-2-git-send-email-Dinh.Nguyen@freescale.com>
- <1272660507-5917-3-git-send-email-Dinh.Nguyen@freescale.com>
+	id S1757161Ab0D3UtZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 16:49:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754654Ab0D3UtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 16:49:08 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: linux-aio@kvack.org
+Cc: linux-kernel@vger.kernel.org, mjt@tls.msk.ru,
+       Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH 1/2] compat: factor out compat_rw_copy_check_uvector from compat_do_readv_writev
+Date: Fri, 30 Apr 2010 16:48:59 -0400
+Message-Id: <1272660540-6567-2-git-send-email-jmoyer@redhat.com>
+In-Reply-To: <1272660540-6567-1-git-send-email-jmoyer@redhat.com>
+References: <1272660540-6567-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+This patch factors out code that will be used by both compat_do_readv_writev
+and the compat aio submission code paths.
 
-This patch adds USB HW initializiation code to /plat-mxc/ehci.c.
-	-Sets some specific PHY settings
-Renames mxc_set_usbcontrol to mxc_initialize_usb_hw.
-Adds new register bit defines for the USB HW on Freescale
-SoCs.
-
-This patch applies to 2.6.34-rc6.
-
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Reviewed-by: Daniel Mack <daniel@caiaq.de>
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
 ---
- arch/arm/plat-mxc/ehci.c                  |  100 ++++++++++++++++++++++++++++-
- arch/arm/plat-mxc/include/mach/mxc_ehci.h |   14 ++++-
- drivers/usb/host/ehci-mxc.c               |    4 +-
- 3 files changed, 113 insertions(+), 5 deletions(-)
+ fs/compat.c            |  130 ++++++++++++++++++++++++++++-------------------
+ include/linux/compat.h |    4 ++
+ 2 files changed, 81 insertions(+), 53 deletions(-)
 
-diff --git a/arch/arm/plat-mxc/ehci.c b/arch/arm/plat-mxc/ehci.c
-index cb0b638..2a86461 100644
---- a/arch/arm/plat-mxc/ehci.c
-+++ b/arch/arm/plat-mxc/ehci.c
-@@ -1,5 +1,6 @@
- /*
-  * Copyright (c) 2009 Daniel Mack <daniel@caiaq.de>
-+ * Copyright (C) 2010 Freescale Semiconductor, Inc.
-  *
-  * This program is free software; you can redistribute it and/or modify it
-  * under the terms of the GNU General Public License as published by the
-@@ -50,7 +51,26 @@
- #define MX35_H1_TLL_BIT		(1 << 5)
- #define MX35_H1_USBTE_BIT	(1 << 4)
- 
--int mxc_set_usbcontrol(int port, unsigned int flags)
-+#define MXC_OTG_OFFSET		0
-+#define MXC_H1_OFFSET		0x200
-+
-+/* USB_CTRL */
-+#define MXC_OTG_UCTRL_OWIE_BIT		(1 << 27)	/* OTG wakeup intr enable */
-+#define MXC_OTG_UCTRL_OPM_BIT		(1 << 24)	/* OTG power mask */
-+#define MXC_H1_UCTRL_H1UIE_BIT		(1 << 12)	/* Host1 ULPI interrupt enable */
-+#define MXC_H1_UCTRL_H1WIE_BIT		(1 << 11)	/* HOST1 wakeup intr enable */
-+#define MXC_H1_UCTRL_H1PM_BIT		(1 <<  8)		/* HOST1 power mask */
-+
-+/* USB_PHY_CTRL_FUNC */
-+#define MXC_OTG_PHYCTRL_OC_DIS_BIT	(1 << 8)	/* OTG Disable Overcurrent Event */
-+#define MXC_H1_OC_DIS_BIT			(1 << 5)	/* UH1 Disable Overcurrent Event */
-+
-+#define MXC_USBCMD_OFFSET			0x140
-+
-+/* USBCMD */
-+#define MXC_UCMD_ITC_NO_THRESHOLD_MASK	(~(0xff << 16))	/* Interrupt Threshold Control */
-+
-+int mxc_initialize_usb_hw(int port, unsigned int flags)
- {
- 	unsigned int v;
- #ifdef CONFIG_ARCH_MX3
-@@ -186,9 +206,85 @@ int mxc_set_usbcontrol(int port, unsigned int flags)
- 		return 0;
- 	}
- #endif /* CONFIG_MACH_MX27 */
-+#ifdef CONFIG_ARCH_MX51
-+	if (cpu_is_mx51()) {
-+		void __iomem *usb_base;
-+		u32 usbotg_base;
-+		u32 usbother_base;
-+		int ret = 0;
-+
-+		usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
-+
-+		switch (port) {
-+		case 0:	/* OTG port */
-+			usbotg_base = usb_base + MXC_OTG_OFFSET;
-+			break;
-+		case 1:	/* Host 1 port */
-+			usbotg_base = usb_base + MXC_H1_OFFSET;
-+			break;
-+		default:
-+			printk(KERN_ERR"%s no such port %d\n", __func__, port);
-+			ret = -ENOENT;
-+			goto error;
-+		}
-+		usbother_base = usb_base + MX5_USBOTHER_REGS_OFFSET;
-+
-+		switch (port) {
-+		case 0:	/*OTG port */
-+			if (flags & MXC_EHCI_INTERNAL_PHY) {
-+				v = __raw_readl(usbother_base + MXC_USB_PHY_CTR_FUNC_OFFSET);
-+
-+				if (flags & MXC_EHCI_POWER_PINS_ENABLED)
-+					v |= (MXC_OTG_PHYCTRL_OC_DIS_BIT | MXC_OTG_UCTRL_OPM_BIT); /* OC/USBPWR is not used */
-+				else
-+					v &= ~(MXC_OTG_PHYCTRL_OC_DIS_BIT | MXC_OTG_UCTRL_OPM_BIT); /* OC/USBPWR is used */
-+				__raw_writel(v, usbother_base + MXC_USB_PHY_CTR_FUNC_OFFSET);
-+
-+				v = __raw_readl(usbother_base + MXC_USBCTRL_OFFSET);
-+				if (flags & MXC_EHCI_WAKEUP_ENABLED)
-+					v |= MXC_OTG_UCTRL_OWIE_BIT;/* OTG wakeup enable */
-+				else
-+					v &= ~MXC_OTG_UCTRL_OWIE_BIT;/* OTG wakeup disable */
-+				__raw_writel(v, usbother_base + MXC_USBCTRL_OFFSET);
-+			}
-+			break;
-+		case 1:	/* Host 1 */
-+			/*Host ULPI */
-+			v = __raw_readl(usbother_base + MXC_USBCTRL_OFFSET);
-+			if (flags & MXC_EHCI_WAKEUP_ENABLED)
-+				v &= ~(MXC_H1_UCTRL_H1WIE_BIT | MXC_H1_UCTRL_H1UIE_BIT);/* HOST1 wakeup/ULPI intr disable */
-+			else
-+				v &= ~(MXC_H1_UCTRL_H1WIE_BIT | MXC_H1_UCTRL_H1UIE_BIT);/* HOST1 wakeup/ULPI intr disable */
-+
-+			if (flags & MXC_EHCI_POWER_PINS_ENABLED)
-+				v &= ~MXC_H1_UCTRL_H1PM_BIT; /* HOST1 power mask used*/
-+			else
-+				v |= MXC_H1_UCTRL_H1PM_BIT; /* HOST1 power mask used*/
-+			__raw_writel(v, usbother_base + MXC_USBCTRL_OFFSET);
-+
-+			v = __raw_readl(usbother_base + MXC_USB_PHY_CTR_FUNC_OFFSET);
-+			if (flags & MXC_EHCI_POWER_PINS_ENABLED)
-+				v &= ~MXC_H1_OC_DIS_BIT; /* OC is used */
-+			else
-+				v |= MXC_H1_OC_DIS_BIT; /* OC is not used */
-+			__raw_writel(v, usbother_base + MXC_USB_PHY_CTR_FUNC_OFFSET);
-+
-+			v = __raw_readl(usbotg_base + MXC_USBCMD_OFFSET);
-+			if (flags & MXC_EHCI_ITC_NO_THRESHOLD)
-+				/* Interrupt Threshold Control:Immediate (no threshold) */
-+				v &= MXC_UCMD_ITC_NO_THRESHOLD_MASK;
-+			__raw_writel(v, usbotg_base + MXC_USBCMD_OFFSET);
-+			break;
-+		}
-+
-+error:
-+		iounmap(usb_base);
-+		return ret;
-+	}
-+#endif
- 	printk(KERN_WARNING
- 		"%s() unable to setup USBCONTROL for this CPU\n", __func__);
- 	return -EINVAL;
+diff --git a/fs/compat.c b/fs/compat.c
+index 4b6ed03..ae0066d 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -568,6 +568,79 @@ out:
+ 	return ret;
  }
--EXPORT_SYMBOL(mxc_set_usbcontrol);
-+EXPORT_SYMBOL(mxc_initialize_usb_hw);
  
-diff --git a/arch/arm/plat-mxc/include/mach/mxc_ehci.h b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-index 4b9b836..7fc5f99 100644
---- a/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-+++ b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-@@ -25,6 +25,18 @@
- #define MXC_EHCI_INTERNAL_PHY		(1 << 7)
- #define MXC_EHCI_IPPUE_DOWN		(1 << 8)
- #define MXC_EHCI_IPPUE_UP		(1 << 9)
-+#define MXC_EHCI_WAKEUP_ENABLED	(1 << 10)
-+#define MXC_EHCI_ITC_NO_THRESHOLD	(1 << 11)
++/* A write operation does a read from user space and vice versa */
++#define vrfy_dir(type) ((type) == READ ? VERIFY_WRITE : VERIFY_READ)
 +
-+#define MXC_USBCTRL_OFFSET		0
-+#define MXC_USB_PHY_CTR_FUNC_OFFSET	0x8
-+#define MXC_USB_PHY_CTR_FUNC2_OFFSET	0xc
++ssize_t compat_rw_copy_check_uvector(int type,
++		const struct compat_iovec __user *uvector, unsigned long nr_segs,
++		unsigned long fast_segs, struct iovec *fast_pointer,
++		struct iovec **ret_pointer)
++{
++	compat_ssize_t tot_len;
++	struct iovec *iov = *ret_pointer = fast_pointer;
++	ssize_t ret = 0;
++	int seg;
 +
-+#define MX5_USBOTHER_REGS_OFFSET	0x800
++	/*
++	 * SuS says "The readv() function *may* fail if the iovcnt argument
++	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
++	 * traditionally returned zero for zero segments, so...
++	 */
++	if (nr_segs == 0)
++		goto out;
 +
-+/* USB_PHY_CTRL_FUNC2*/
-+#define MX5_USB_UTMI_PHYCTRL1_PLLDIV_MASK		0x3
-+#define MX5_USB_UTMI_PHYCTRL1_PLLDIV_SHIFT		0
++	ret = -EINVAL;
++	if (nr_segs > UIO_MAXIOV || nr_segs < 0)
++		goto out;
++	if (nr_segs > fast_segs) {
++		ret = -ENOMEM;
++		iov = kmalloc(nr_segs*sizeof(struct iovec), GFP_KERNEL);
++		if (iov == NULL) {
++			*ret_pointer = fast_pointer;
++			goto out;
++		}
++	}
++	*ret_pointer = iov;
++
++	/*
++	 * Single unix specification:
++	 * We should -EINVAL if an element length is not >= 0 and fitting an
++	 * ssize_t.  The total length is fitting an ssize_t
++	 *
++	 * Be careful here because iov_len is a size_t not an ssize_t
++	 */
++	tot_len = 0;
++	ret = -EINVAL;
++	for (seg = 0; seg < nr_segs; seg++) {
++		compat_ssize_t tmp = tot_len;
++		compat_uptr_t buf;
++		compat_ssize_t len;
++
++		if (__get_user(len, &uvector->iov_len) ||
++		   __get_user(buf, &uvector->iov_base)) {
++			ret = -EFAULT;
++			goto out;
++		}
++		if (len < 0)	/* size_t not fitting in compat_ssize_t .. */
++			goto out;
++		tot_len += len;
++		if (tot_len < tmp) /* maths overflow on the compat_ssize_t */
++			goto out;
++		if (!access_ok(vrfy_dir(type), buf, len)) {
++			ret = -EFAULT;
++			goto out;
++		}
++		iov->iov_base = compat_ptr(buf);
++		iov->iov_len = (compat_size_t) len;
++		uvector++;
++		iov++;
++	}
++	ret = tot_len;
++
++out:
++	return ret;
++}
++
+ static inline long
+ copy_iocb(long nr, u32 __user *ptr32, struct iocb __user * __user *ptr64)
+ {
+@@ -1077,70 +1150,21 @@ static ssize_t compat_do_readv_writev(int type, struct file *file,
+ {
+ 	compat_ssize_t tot_len;
+ 	struct iovec iovstack[UIO_FASTIOV];
+-	struct iovec *iov=iovstack, *vector;
++	struct iovec *iov;
+ 	ssize_t ret;
+-	int seg;
+ 	io_fn_t fn;
+ 	iov_fn_t fnv;
  
- struct mxc_usbh_platform_data {
- 	int (*init)(struct platform_device *pdev);
-@@ -35,7 +47,7 @@ struct mxc_usbh_platform_data {
- 	struct otg_transceiver	*otg;
- };
+-	/*
+-	 * SuS says "The readv() function *may* fail if the iovcnt argument
+-	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
+-	 * traditionally returned zero for zero segments, so...
+-	 */
+-	ret = 0;
+-	if (nr_segs == 0)
+-		goto out;
+-
+-	/*
+-	 * First get the "struct iovec" from user memory and
+-	 * verify all the pointers
+-	 */
+ 	ret = -EINVAL;
+-	if ((nr_segs > UIO_MAXIOV) || (nr_segs <= 0))
+-		goto out;
+ 	if (!file->f_op)
+ 		goto out;
+-	if (nr_segs > UIO_FASTIOV) {
+-		ret = -ENOMEM;
+-		iov = kmalloc(nr_segs*sizeof(struct iovec), GFP_KERNEL);
+-		if (!iov)
+-			goto out;
+-	}
++
+ 	ret = -EFAULT;
+ 	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
+ 		goto out;
  
--int mxc_set_usbcontrol(int port, unsigned int flags);
-+int mxc_initialize_usb_hw(int port, unsigned int flags);
+-	/*
+-	 * Single unix specification:
+-	 * We should -EINVAL if an element length is not >= 0 and fitting an
+-	 * ssize_t.  The total length is fitting an ssize_t
+-	 *
+-	 * Be careful here because iov_len is a size_t not an ssize_t
+-	 */
+-	tot_len = 0;
+-	vector = iov;
+-	ret = -EINVAL;
+-	for (seg = 0 ; seg < nr_segs; seg++) {
+-		compat_ssize_t tmp = tot_len;
+-		compat_ssize_t len;
+-		compat_uptr_t buf;
+-
+-		if (__get_user(len, &uvector->iov_len) ||
+-		    __get_user(buf, &uvector->iov_base)) {
+-			ret = -EFAULT;
+-			goto out;
+-		}
+-		if (len < 0)	/* size_t not fitting an compat_ssize_t .. */
+-			goto out;
+-		tot_len += len;
+-		if (tot_len < tmp) /* maths overflow on the compat_ssize_t */
+-			goto out;
+-		vector->iov_base = compat_ptr(buf);
+-		vector->iov_len = (compat_size_t) len;
+-		uvector++;
+-		vector++;
+-	}
++	tot_len = compat_rw_copy_check_uvector(type, uvector, nr_segs,
++					       UIO_FASTIOV, iovstack, &iov);
+ 	if (tot_len == 0) {
+ 		ret = 0;
+ 		goto out;
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index 717c691..168f7da 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -356,5 +356,9 @@ asmlinkage long compat_sys_newfstatat(unsigned int dfd, char __user * filename,
+ asmlinkage long compat_sys_openat(unsigned int dfd, const char __user *filename,
+ 				  int flags, int mode);
  
- #endif /* __INCLUDE_ASM_ARCH_MXC_EHCI_H */
- 
-diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
-index ead59f4..544ccfd 100644
---- a/drivers/usb/host/ehci-mxc.c
-+++ b/drivers/usb/host/ehci-mxc.c
-@@ -199,8 +199,8 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
- 	writel(pdata->portsc, hcd->regs + PORTSC_OFFSET);
- 	mdelay(10);
- 
--	/* setup USBCONTROL. */
--	ret = mxc_set_usbcontrol(pdev->id, pdata->flags);
-+	/* setup specific usb hw */
-+	ret = mxc_initialize_usb_hw(pdev->id, pdata->flags);
- 	if (ret < 0)
- 		goto err_init;
- 
++extern ssize_t compat_rw_copy_check_uvector(int type,
++		const struct compat_iovec __user *uvector, unsigned long nr_segs,
++		unsigned long fast_segs, struct iovec *fast_pointer,
++		struct iovec **ret_pointer);
+ #endif /* CONFIG_COMPAT */
+ #endif /* _LINUX_COMPAT_H */
 -- 
-1.6.0.4
+1.6.2.5
 
