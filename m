@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758407Ab0D3RGJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:06:09 -0400
+	id S1758385Ab0D3RF4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:05:56 -0400
 Received: from hera.kernel.org ([140.211.167.34]:60359 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758356Ab0D3RF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:05:57 -0400
-Date: Thu, 29 Apr 2010 23:24:43 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       luca@luca-barbieri.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       luca@luca-barbieri.com, tglx@linutronix.de
-In-Reply-To: <1267005265-27958-2-git-send-email-luca@luca-barbieri.com>
-References: <1267005265-27958-2-git-send-email-luca@luca-barbieri.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/atomic] x86: Fix LOCK_PREFIX_HERE for uniprocessor build
-Message-ID: <tip-b701a47ba48b698976fb2fe05fb285b0edc1d26a@git.kernel.org>
-Git-Commit-ID: b701a47ba48b698976fb2fe05fb285b0edc1d26a
-X-Mailer: tip-git-log-daemon
+	id S1758356Ab0D3RFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:05:47 -0400
+Message-ID: <4BDA5B8B.50004@kernel.org>
+Date: Fri, 30 Apr 2010 06:24:43 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 29 Apr 2010 23:24:44 +0000 (UTC)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Oleg Nesterov <oleg@redhat.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/8] PM: Add suspend block api.
+References: <1272429119-12103-1-git-send-email-arve@android.com> <201004282250.44200.rjw@sisk.pl> <l2yd6200be21004282037rc063266by91db7f732ceaa529@mail.gmail.com> <201004292316.14524.rjw@sisk.pl>
+In-Reply-To: <201004292316.14524.rjw@sisk.pl>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 30 Apr 2010 04:24:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b701a47ba48b698976fb2fe05fb285b0edc1d26a
-Gitweb:     http://git.kernel.org/tip/b701a47ba48b698976fb2fe05fb285b0edc1d26a
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Thu, 29 Apr 2010 16:03:57 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 29 Apr 2010 16:08:54 -0700
+Hello,
 
-x86: Fix LOCK_PREFIX_HERE for uniprocessor build
+On 04/29/2010 11:16 PM, Rafael J. Wysocki wrote:
+>>> Also, we already have one PM workqueue.  It is used for runtime PM, but I guess
+>>> it may be used just as well for the opportunistic suspend.  It is freezable,
+>>> but would it hurt?
+>>
+>> No, it works, the freezable flag is just ignored when I call
+>> pm_suspend and I don't run anything else on the workqueue while
+>> threads are frozen. It does need to be a single threaded workqueue
+>> though, so make sure you don't just change that.
+> 
+> Freezable workqueues have to be singlethread or else there will be unfixable
+> races, so you can safely assume things will stay as they are in this respect.
 
-Checkin b3ac891b67bd4b1fc728d1c784cad1212dea433d:
-x86: Add support for lock prefix in alternatives
+Rafael, can you elaborate a bit more on this?  Just in case I missed
+something while doing cmwq as it currently doesn't have such limit.
 
-... did not define LOCK_PREFIX_HERE in the case of a uniprocessor
-build.  As a result, it would cause any of the usages of this macro to
-fail on a uniprocessor build.  Fix this by defining LOCK_PREFIX_HERE
-as a null string.
+Thanks.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Luca Barbieri <luca@luca-barbieri.com>
-LKML-Reference: <1267005265-27958-2-git-send-email-luca@luca-barbieri.com>
----
- arch/x86/include/asm/alternative.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index 55fee12..e29a6c9 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -38,6 +38,7 @@
- #define LOCK_PREFIX LOCK_PREFIX_HERE "\n\tlock; "
- 
- #else /* ! CONFIG_SMP */
-+#define LOCK_PREFIX_HERE ""
- #define LOCK_PREFIX ""
- #endif
- 
+-- 
+tejun
