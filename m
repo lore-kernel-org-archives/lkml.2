@@ -1,65 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758789Ab0D3TYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:24:06 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:57193 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757520Ab0D3QsT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:48:19 -0400
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Dan Magenheimer <dan.magenheimer@oracle.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-In-Reply-To: <4BDA8324.7090409@redhat.com>
-References: <4BD16D09.2030803@redhat.com>
-	 <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>
-	 <4BD1A74A.2050003@redhat.com>
-	 <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
-	 <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com>
-	 <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>
-	 <4BD3377E.6010303@redhat.com>
-	 <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>
-	 <ce808441-fae6-4a33-8335-f7702740097a@default>
-	 <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz>
-	 <4BDA8324.7090409@redhat.com>
-Content-Type: text/plain
-Date: Fri, 30 Apr 2010 09:04:26 -0700
-Message-Id: <1272643466.23895.2529.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
-Content-Transfer-Encoding: 7bit
+	id S1758729Ab0D3TY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:24:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35467 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759088Ab0D3TYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 15:24:11 -0400
+Date: Fri, 30 Apr 2010 21:22:35 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
+ and rmap_walk() during migration by not migrating temporary stacks
+Message-ID: <20100430192235.GL22108@random.random>
+References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie>
+ <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
+ <20100429162120.GC22108@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100429162120.GC22108@random.random>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-30 at 10:13 +0300, Avi Kivity wrote:
-> On 04/30/2010 04:45 AM, Dave Hansen wrote:
-> >
-> > A large portion of CMM2's gain came from the fact that you could take
-> > memory away from guests without _them_ doing any work.  If the system is
-> > experiencing a load spike, you increase load even more by making the
-> > guests swap.  If you can just take some of their memory away, you can
-> > smooth that spike out.  CMM2 and frontswap do that.  The guests
-> > explicitly give up page contents that the hypervisor does not have to
-> > first consult with the guest before discarding.
-> >    
-> 
-> Frontswap does not do this.  Once a page has been frontswapped, the host 
-> is committed to retaining it until the guest releases it.  It's really 
-> not very different from a synchronous swap device.
-> 
-> I think cleancache allows the hypervisor to drop pages without the 
-> guest's immediate knowledge, but I'm not sure.
+I'm building a mergeable THP+memory compaction tree ready for mainline
+merging based on new anon-vma code, so I'm integrating your patch1 and
+this below should be the port of my alternate fix to your patch2 to
+fix the longstanding crash in migrate (not a bug in new anon-vma code
+but longstanding). patch1 is instead about the bugs introduced by the
+new anon-vma code that might crash migrate (even without memory
+compaction and/or THP) the same way as the bug fixed by the below.
 
-Gah.  You're right.  I'm  reading the two threads and confusing the
-concepts.  I'm a bit less mystified why the discussion is revolving
-around the swap device so much. :)
+==
+Subject: fix race between shift_arg_pages and rmap_walk
 
--- Dave
+From: Andrea Arcangeli <aarcange@redhat.com>
 
+migrate.c requires rmap to be able to find all ptes mapping a page at
+all times, otherwise the migration entry can be instantiated, but it
+can't be removed if the second rmap_walk fails to find the page.
+
+And split_huge_page() will have the same requirements as migrate.c
+already has.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+
+diff --git a/fs/exec.c b/fs/exec.c
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -55,6 +55,7 @@
+ #include <linux/fsnotify.h>
+ #include <linux/fs_struct.h>
+ #include <linux/pipe_fs_i.h>
++#include <linux/rmap.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+@@ -503,7 +504,9 @@ static int shift_arg_pages(struct vm_are
+ 	unsigned long length = old_end - old_start;
+ 	unsigned long new_start = old_start - shift;
+ 	unsigned long new_end = old_end - shift;
++	unsigned long moved_length;
+ 	struct mmu_gather *tlb;
++	struct vm_area_struct *tmp_vma;
+ 
+ 	BUG_ON(new_start > new_end);
+ 
+@@ -515,17 +518,46 @@ static int shift_arg_pages(struct vm_are
+ 		return -EFAULT;
+ 
+ 	/*
++	 * We need to create a fake temporary vma and index it in the
++	 * anon_vma list in order to allow the pages to be reachable
++	 * at all times by the rmap walk for migrate, while
++	 * move_page_tables() is running.
++	 */
++	tmp_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
++	if (!tmp_vma)
++		return -ENOMEM;
++	*tmp_vma = *vma;
++
++	if (unlikely(anon_vma_clone(tmp_vma, vma))) {
++		kmem_cache_free(vm_area_cachep, tmp_vma);
++		return -ENOMEM;
++	}
++
++	/*
+ 	 * cover the whole range: [new_start, old_end)
++	 *
++	 * The vma is attached only to vma->anon_vma so one lock is
++	 * enough. Even this lock might be removed and we could run it
++	 * out of order but it's nicer to make atomic updates to
++	 * vm_start and so we won't need a smb_wmb() before calling
++	 * move_page_tables.
+ 	 */
+-	if (vma_adjust(vma, new_start, old_end, vma->vm_pgoff, NULL))
+-		return -ENOMEM;
++	spin_lock(&vma->anon_vma->lock);
++	vma->vm_start = new_start;
++	spin_unlock(&vma->anon_vma->lock);
+ 
+ 	/*
+ 	 * move the page tables downwards, on failure we rely on
+ 	 * process cleanup to remove whatever mess we made.
+ 	 */
+-	if (length != move_page_tables(vma, old_start,
+-				       vma, new_start, length))
++	moved_length = move_page_tables(vma, old_start,
++					vma, new_start, length);
++
++	/* rmap walk will already find all pages using the new_start */
++	unlink_anon_vmas(tmp_vma);
++	kmem_cache_free(vm_area_cachep, tmp_vma);
++
++	if (length != moved_length) 
+ 		return -ENOMEM;
+ 
+ 	lru_add_drain();
+@@ -551,7 +583,7 @@ static int shift_arg_pages(struct vm_are
+ 	/*
+ 	 * Shrink the vma to just the new range.  Always succeeds.
+ 	 */
+-	vma_adjust(vma, new_start, new_end, vma->vm_pgoff, NULL);
++	vma->vm_end = new_end;
+ 
+ 	return 0;
+ }
