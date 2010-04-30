@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934105Ab0D3Sxe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:53:34 -0400
-Received: from www.tglx.de ([62.245.132.106]:36196 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932593Ab0D3RMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:12:46 -0400
-Date: Thu, 29 Apr 2010 22:39:45 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-cc: "davem@davemloft.net" <davem@davemloft.net>,
-       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC: linux-next 1/2] irq: Add CPU mask affinity hint
- callback framework
-In-Reply-To: <1272572930.9614.3.camel@localhost>
-Message-ID: <alpine.LFD.2.00.1004292237280.2951@localhost.localdomain>
-References: <20100419045741.30276.23233.stgit@ppwaskie-hc2.jf.intel.com>  <alpine.LFD.2.00.1004271425140.2951@localhost.localdomain>  <Pine.WNT.4.64.1004270856560.320@PPWASKIE-MOBL2.amr.corp.intel.com>  <alpine.LFD.2.00.1004271809080.2951@localhost.localdomain>
-  <1272563946.9614.1.camel@localhost>  <alpine.LFD.2.00.1004292121310.2951@localhost.localdomain> <1272572930.9614.3.camel@localhost>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S934181Ab0D3SyQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:54:16 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:56306 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934047Ab0D3Sx4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 14:53:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=meIgaTDTyHur+jMcmwCRO+sIG5oSvUr3eiorfSnd5XNn3qYJ0Rzyw6VR9dml49EeId
+         l7AqntgEJTdQ7dsQKFYOXVF0lpNV14e0T7l46ZY/sq8zvn09PMPYSEgSsdiaufrUJHsW
+         JgbkzfOSlnO2qwORl3ulA9IVSDqLrSjpBku2A=
+Date: Fri, 30 Apr 2010 04:18:58 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>, Kai Makisara <Kai.Makisara@kolumbus.fi>
+Cc: dgilbert@interlog.com, Jens Axboe <axboe@kernel.dk>,
+       Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       John Kacur <jkacur@redhat.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, James Bottomley <James.Bottomley@suse.de>
+Subject: Re: [PATCH] scsi/st: remove BKL from open
+Message-ID: <20100430021855.GA21078@nowhere>
+References: <1271277384-7627-1-git-send-email-arnd@arndb.de> <201004151629.45029.arnd@arndb.de> <alpine.LNX.2.00.1004152244160.5127@kai.makisara.local> <201004152251.39636.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004152251.39636.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Apr 2010, Peter P Waskiewicz Jr wrote:
-> On Thu, 2010-04-29 at 12:48 -0700, Thomas Gleixner wrote:
-> > Thinking more about it, I wonder whether you have a cpu_mask in your
-> > driver/device private data anyway. I bet you have :)
+On Thu, Apr 15, 2010 at 10:51:38PM +0200, Arnd Bergmann wrote:
+> The st_open function is serialized through the st_dev_arr_lock
+> and the STp->in_use flag, so there is no race that the BKL
+> can protect against in the driver itself, and the function
+> does not access any global state outside of the driver that
+> might be protected with the BKL.
 > 
-> Well, at this point we don't, but nothing says we can't.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
 
-Somewhere you need to store that information in your driver, right ?
 
-> > So it should be sufficient to set a pointer to that cpu_mask in
-> > irq_desc and get rid of the callback completely.
-> 
-> So "register" would just assign the pointer, and "unregister" would make
-> sure to NULL the mask pointer out.  I like it.  It'll sure clean things
-> up too.
 
-Yep, that'd be like the set_irq_chip() function. Just assign the
-pointer under desc->lock.
+Kai, can we get your ack on this?
 
-Thanks,
+Thanks.
 
-	tglx
