@@ -1,33 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064Ab0D3Vdf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 17:33:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40973 "EHLO mail.zytor.com"
+	id S1758482Ab0D3VgR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 17:36:17 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37354 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757510Ab0D3Vde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 17:33:34 -0400
-Message-ID: <4BDB4C9E.7060806@zytor.com>
-Date: Fri, 30 Apr 2010 14:33:18 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1754480Ab0D3VgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 17:36:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,305,1270450800"; 
+   d="scan'208";a="563130431"
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: [PATCH linux-next v4 1/2] irq: Add CPU mask affinity hint
+To: tglx@linutronix.de, davem@davemloft.net, arjan@linux.jf.intel.com,
+       bhutchings@solarflare.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 30 Apr 2010 14:44:50 -0700
+Message-ID: <20100430214445.3992.41647.stgit@ppwaskie-hc2.jf.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com, x86@kernel.org,
-       clalance@redhat.com, drjones@redhat.com
-Subject: Re: [PATCH] Fix NULL pointer for Xen guests
-References: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com> <4BDB43CD.3040505@zytor.com>
-In-Reply-To: <4BDB43CD.3040505@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2010 01:55 PM, H. Peter Anvin wrote:
-> This looks like it should be tagged stable for 2.6.33.  Is that correct?
-> 
-> 	-hpa
+This patch adds a cpumask affinity hint to the irq_desc
+structure, along with a registration function and a read-only
+proc entry for each interrupt.
 
-Nevermind... see it has already been discussed.
+This affinity_hint handle for each interrupt can be used by
+underlying drivers that need a better mechanism to control
+interrupt affinity.  The underlying driver can register a
+cpumask for the interrupt, which will allow the driver to
+provide the CPU mask for the interrupt to anything that
+requests it.  The intent is to extend the userspace daemon,
+irqbalance, to help hint to it a preferred CPU mask to balance
+the interrupt into.
 
-	-hpa
+Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+---
+
+ include/linux/interrupt.h |    6 ++++++
+ include/linux/irq.h       |    1 +
+ kernel/irq/manage.c       |   19 +++++++++++++++++++
+ kernel/irq/proc.c         |   39 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 65 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 75f3f00..4ae3b2d 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -209,6 +209,7 @@ extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
+ extern int irq_can_set_affinity(unsigned int irq);
+ extern int irq_select_affinity(unsigned int irq);
+ 
++extern int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m);
+ #else /* CONFIG_SMP */
+ 
+ static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
+@@ -223,6 +224,11 @@ static inline int irq_can_set_affinity(unsigned int irq)
+ 
+ static inline int irq_select_affinity(unsigned int irq)  { return 0; }
+ 
++static inline int irq_set_affinity_hint(unsigned int irq,
++                                        const struct cpumask *m)
++{
++	return -EINVAL;
++}
+ #endif /* CONFIG_SMP && CONFIG_GENERIC_HARDIRQS */
+ 
+ #ifdef CONFIG_GENERIC_HARDIRQS
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 707ab12..83b16d7 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -206,6 +206,7 @@ struct irq_desc {
+ 	struct proc_dir_entry	*dir;
+ #endif
+ 	const char		*name;
++	struct cpumask		*affinity_hint;
+ } ____cacheline_internodealigned_in_smp;
+ 
+ extern void arch_init_copy_chip_data(struct irq_desc *old_desc,
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 704e488..1451c38 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -138,6 +138,22 @@ int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
+ 	return 0;
+ }
+ 
++int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	unsigned long flags;
++
++	if (!desc)
++		return -EINVAL;
++
++	raw_spin_lock_irqsave(&desc->lock, flags);
++	desc->affinity_hint = m;
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(irq_set_affinity_hint);
++
+ #ifndef CONFIG_AUTO_IRQ_AFFINITY
+ /*
+  * Generic version of the affinity autoselector.
+@@ -916,6 +932,9 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
+ 			desc->chip->disable(irq);
+ 	}
+ 
++	/* make sure affinity_hint is cleaned up */
++	desc->affinity_hint = NULL;
++
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 
+ 	unregister_handler_proc(irq, action);
+diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
+index 7a6eb04..e1e7408 100644
+--- a/kernel/irq/proc.c
++++ b/kernel/irq/proc.c
+@@ -32,6 +32,29 @@ static int irq_affinity_proc_show(struct seq_file *m, void *v)
+ 	return 0;
+ }
+ 
++static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
++{
++	struct irq_desc *desc = irq_to_desc((long)m->private);
++	unsigned long flags;
++	cpumask_var_t mask;
++
++	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
++		return -ENOMEM;
++
++	raw_spin_lock_irqsave(&desc->lock, flags);
++	if (desc->affinity_hint)
++		cpumask_copy(mask, desc->affinity_hint);
++	else
++		cpumask_setall(mask);
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
++
++	seq_cpumask(m, mask);
++	seq_putc(m, '\n');
++	free_cpumask_var(mask);
++
++	return 0;
++}
++
+ #ifndef is_affinity_mask_valid
+ #define is_affinity_mask_valid(val) 1
+ #endif
+@@ -84,6 +107,11 @@ static int irq_affinity_proc_open(struct inode *inode, struct file *file)
+ 	return single_open(file, irq_affinity_proc_show, PDE(inode)->data);
+ }
+ 
++static int irq_affinity_hint_proc_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, irq_affinity_hint_proc_show, PDE(inode)->data);
++}
++
+ static const struct file_operations irq_affinity_proc_fops = {
+ 	.open		= irq_affinity_proc_open,
+ 	.read		= seq_read,
+@@ -92,6 +120,13 @@ static const struct file_operations irq_affinity_proc_fops = {
+ 	.write		= irq_affinity_proc_write,
+ };
+ 
++static const struct file_operations irq_affinity_hint_proc_fops = {
++	.open		= irq_affinity_hint_proc_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
+ static int default_affinity_show(struct seq_file *m, void *v)
+ {
+ 	seq_cpumask(m, irq_default_affinity);
+@@ -231,6 +266,10 @@ void register_irq_proc(unsigned int irq, struct irq_desc *desc)
+ 	/* create /proc/irq/<irq>/smp_affinity */
+ 	proc_create_data("smp_affinity", 0600, desc->dir,
+ 			 &irq_affinity_proc_fops, (void *)(long)irq);
++
++	/* create /proc/irq/<irq>/affinity_hint */
++	proc_create_data("affinity_hint", 0400, desc->dir,
++			 &irq_affinity_hint_proc_fops, (void *)(long)irq);
+ #endif
+ 
+ 	proc_create_data("spurious", 0444, desc->dir,
+
