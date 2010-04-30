@@ -1,50 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584Ab0D3RMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:12:34 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45599 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932698Ab0D3RIe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:08:34 -0400
-Date: Fri, 30 Apr 2010 10:07:12 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, Bob Beers <bob.beers@gmail.com>,
-       gregkh@suse.de
-Subject: [PATCH -next] staging/cxt1e1: use netdev_priv to fix build
-Message-Id: <20100430100712.041f6fcc.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758562Ab0D3RNU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:13:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29506 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932708Ab0D3RMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:12:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,301,1270450800"; 
+   d="scan'208";a="513910540"
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: [PATCH linux-next v2 2/2] ixgbe: Example usage of the new IRQ
+	affinity_hint callback
+To: tglx@linutronix.de, davem@davemloft.net, arjan@linux.jf.intel.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 30 Apr 2010 01:52:21 -0700
+Message-ID: <20100430085220.4630.14124.stgit@ppwaskie-hc2.jf.intel.com>
+In-Reply-To: <20100430085150.4630.46790.stgit@ppwaskie-hc2.jf.intel.com>
+References: <20100430085150.4630.46790.stgit@ppwaskie-hc2.jf.intel.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090207.4BDB0E8A.007D:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+This patch uses the new IRQ affinity_hint callback mechanism.
+It serves purely as an example of how a low-level driver can
+utilize this new interface.
 
-Fix cxt1e1 build error:
-drivers/staging/cxt1e1/linux.c:1195: error: 'struct net_device' has no member named 'priv'
+An official ixgbe patch will be pushed through netdev once the
+IRQ patches have been accepted and merged.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Bob Beers <bob.beers@gmail.com>
+Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 ---
- drivers/staging/cxt1e1/linux.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- linux-next-20100430.orig/drivers/staging/cxt1e1/linux.c
-+++ linux-next-20100430/drivers/staging/cxt1e1/linux.c
-@@ -1192,7 +1192,7 @@ c4_add_dev (hdw_info_t * hi, int brdno, 
-                 hi->devname, irq1);
-         unregister_netdev (ndev);
-         free_irq (irq0, ndev);
--        OS_kfree (ndev->priv);
-+        OS_kfree (netdev_priv(ndev));
-         OS_kfree (ndev);
-         error_flag = EIO;
-         return 0;
+ drivers/net/ixgbe/ixgbe.h      |    2 ++
+ drivers/net/ixgbe/ixgbe_main.c |   20 +++++++++++++++++++-
+ 2 files changed, 21 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ixgbe/ixgbe.h b/drivers/net/ixgbe/ixgbe.h
+index 79c35ae..c220b9f 100644
+--- a/drivers/net/ixgbe/ixgbe.h
++++ b/drivers/net/ixgbe/ixgbe.h
+@@ -32,6 +32,7 @@
+ #include <linux/pci.h>
+ #include <linux/netdevice.h>
+ #include <linux/aer.h>
++#include <linux/cpumask.h>
+ 
+ #include "ixgbe_type.h"
+ #include "ixgbe_common.h"
+@@ -236,6 +237,7 @@ struct ixgbe_q_vector {
+ 	u8 tx_itr;
+ 	u8 rx_itr;
+ 	u32 eitr;
++	cpumask_var_t affinity_mask;
+ };
+ 
+ /* Helper macros to switch between ints/sec and what the register uses.
+diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
+index 1b1419c..28f9d6b 100644
+--- a/drivers/net/ixgbe/ixgbe_main.c
++++ b/drivers/net/ixgbe/ixgbe_main.c
+@@ -1083,6 +1083,16 @@ static void ixgbe_configure_msix(struct ixgbe_adapter *adapter)
+ 			q_vector->eitr = adapter->rx_eitr_param;
+ 
+ 		ixgbe_write_eitr(q_vector);
++
++		/*
++		 * Allocate the affinity_hint cpumask, assign the mask for
++		 * this vector, and register our affinity_hint for this irq.
++		 */
++		if (!alloc_cpumask_var(&q_vector->affinity_mask, GFP_KERNEL))
++			return;
++		cpumask_set_cpu(v_idx, q_vector->affinity_mask);
++		irq_register_affinity_hint(adapter->msix_entries[v_idx].vector,
++		                           q_vector->affinity_mask);
+ 	}
+ 
+ 	if (adapter->hw.mac.type == ixgbe_mac_82598EB)
+@@ -3218,7 +3228,7 @@ void ixgbe_down(struct ixgbe_adapter *adapter)
+ 	struct ixgbe_hw *hw = &adapter->hw;
+ 	u32 rxctrl;
+ 	u32 txdctl;
+-	int i, j;
++	int i, j, num_q_vectors = adapter->num_msix_vectors - NON_Q_VECTORS;
+ 
+ 	/* signal that we are down to the interrupt handler */
+ 	set_bit(__IXGBE_DOWN, &adapter->state);
+@@ -3251,6 +3261,14 @@ void ixgbe_down(struct ixgbe_adapter *adapter)
+ 
+ 	ixgbe_napi_disable_all(adapter);
+ 
++	for (i = 0; i < num_q_vectors; i++) {
++		struct ixgbe_q_vector *q_vector = adapter->q_vector[i];
++		/* unregister the affinity_hint */
++		irq_unregister_affinity_hint(adapter->msix_entries[i].vector);
++		/* release the CPU mask memory */
++		free_cpumask_var(q_vector->affinity_mask);
++	}
++
+ 	clear_bit(__IXGBE_SFP_MODULE_NOT_FOUND, &adapter->state);
+ 	del_timer_sync(&adapter->sfp_timer);
+ 	del_timer_sync(&adapter->watchdog_timer);
+
