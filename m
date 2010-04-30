@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759025Ab0D3SKO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:10:14 -0400
-Received: from fallback.mail.elte.hu ([157.181.151.13]:40957 "EHLO
-	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933726Ab0D3SJm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:09:42 -0400
-Date: Fri, 30 Apr 2010 09:55:10 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       Paul Mackerras <paulus@au1.ibm.com>
-Subject: Re: [PATCH] trivial: use (C) instead of \251
-Message-ID: <20100430075510.GA21105@elte.hu>
-References: <4BD80037.9060704@kernel.org>
- <alpine.LNX.2.00.1004290040510.9849@pobox.suse.cz>
+	id S932952Ab0D3SLR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:11:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42444 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758809Ab0D3SJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 14:09:19 -0400
+Message-ID: <4BDB1CA1.1000006@redhat.com>
+Date: Fri, 30 Apr 2010 21:08:33 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1004290040510.9849@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <4BD16D09.2030803@redhat.com>> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>> <4BD1A74A.2050003@redhat.com>> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com>> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>> <4BD3377E.6010303@redhat.com>> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>> <ce808441-fae6-4a33-8335-f7702740097a@default>> <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz> <4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default 4BDB026E.1030605@redhat.com> <10e6761a-fb7a-421d-97fc-1f3b6cd94622@default>
+In-Reply-To: <10e6761a-fb7a-421d-97fc-1f3b6cd94622@default>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/30/2010 07:43 PM, Dan Magenheimer wrote:
+>> Given that whenever frontswap fails you need to swap anyway, it is
+>> better for the host to never fail a frontswap request and instead back
+>> it with disk storage if needed.  This way you avoid a pointless vmexit
+>> when you're out of memory.  Since it's disk backed it needs to be
+>> asynchronous and batched.
+>>
+>> At this point we're back with the ordinary swap API.  Simply have your
+>> host expose a device which is write cached by host memory, you'll have
+>> all the benefits of frontswap with none of the disadvantages, and with
+>> no changes to guest .
+>>      
+> I think you are making a number of possibly false assumptions here:
+> 1) The host [the frontswap backend may not even be a hypervisor]
+>    
 
-* Jiri Kosina <jkosina@suse.cz> wrote:
+True.  My remarks only apply to frontswap-to-hypervisor, for internally 
+consumed frontswap the situation is different.
 
-> On Wed, 28 Apr 2010, Tejun Heo wrote:
-> 
-> > The latin-1 copyright character \251 is invalid in ASCII or UTF-8 and
-> > causes annoying problems with some editors and tools.  Use (C)
-> > instead.
-> > 
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Cc: Paul Mackerras <paulus@au1.ibm.com>
-> > ---
-> > I'm not really sure this would survive transport over mail in
-> > appliable form, attaching the patch too just in case.
-> 
-> It didn't survive :) But it was easy enough to fix by hand. Applied, 
-> thanks Tejun.
+> 2) can back it with disk storage [not if it is a bare-metal hypervisor]
+>    
 
-NAK.
+So it seems a bare-metal hypervisor has less access to the bare metal 
+than a non-bare-metal hypervisor?
 
-A similar patch was sent a few weeks ago, it was objected to and rejected - 
-the copyright character was used for legal reasons.
+Seriously, leave the bare-metal FUD to Simon.  People on this list know 
+that kvm and Xen have exactly the same access to the hardware (well 
+actually Xen needs to use privileged guests to access some of its hardware).
 
-Jiri, in the future please dont apply 'trivial' patches that involve 
-subsystems that i co-maintain and which is not acked by any of the subsystem 
-maintainers.
+> 3) avoid a pointless vmexit [no vmexit for a non-VMX (e.g. PV) guest]
+>    
 
-Thanks,
+There's still an exit.  It's much faster than a vmx/svm vmexit but still 
+nontrivial.
 
-	Ingo
+But why are we optimizing for 5 year old hardware?
+
+> 4) when you're out of memory [how can this be determined outside of
+>     the hypervisor?]
+>    
+
+It's determined by the hypervisor, same as with tmem.  The guest swaps 
+to a virtual disk, the hypervisor places the data in RAM if it's 
+available, or on disk if it isn't.  Write-back caching in all its glory.
+
+> And, importantly, "have your host expose a device which is write
+> cached by host memory"... you are implying that all guest swapping
+> should be done to a device managed/controlled by the host?  That
+> eliminates guest swapping to directIO/SRIOV devices doesn't it?
+>    
+
+You can have multiple swap devices.
+
+wrt SR/IOV, you'll see synchronous frontswap reduce throughput.  SR/IOV 
+will swap with <1 exit/page and DMA guest pages, while frontswap/tmem 
+will carry a 1 exit/page hit (even if no swap actually happens) and the 
+copy cost (if it does).
+
+The API really, really wants to be asynchronous.
+
+> Anyway, I think we can see now why frontswap might not be a good
+> match for a hosted hypervisor (KVM), but that doesn't make it
+> any less useful for a bare-metal hypervisor (or TBD for in-kernel
+> compressed swap and TBD for possible future pseudo-RAM technologies).
+>    
+
+In-kernel compressed swap does seem to be a good match for a synchronous 
+API.  For future memory devices, or even bare-metal buzzword-compliant 
+hypervisors, I disagree.  An asynchronous API is required for 
+efficiency, and they'll all have swap capability sooner or later (kvm, 
+vmware, and I believe xen 4 already do).
+
+-- 
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+
