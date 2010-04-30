@@ -1,80 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759564Ab0D3Uk7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 16:40:59 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:60512 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759547Ab0D3Uk4 convert rfc822-to-8bit (ORCPT
+	id S1759561Ab0D3Ut2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 16:49:28 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:37630 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756033Ab0D3UtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 16:40:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jfT8gRREUwvm/aGjThatH+cKt+PWkZesiDnxOFpgGqnnrcGBglm4LTLe9bPtRfd4wx
-         j6AmK1FglxpIXm3T7KwhkzXnkhBWaYPi6foCgRga8C8CZcGkjZYrgsIrf0UGf5raBEwI
-         aBuMfwHjfjZ3Bcx/NbMMwRLYhkX0BDmeFYQMw=
-MIME-Version: 1.0
-In-Reply-To: <20100430181349.GA1015@oksana.dev.rtsoft.ru>
-References: <1272374302-9506-1-git-send-email-dbaryshkov@gmail.com>
-	 <20100427154835.27bdc233.akpm@linux-foundation.org>
-	 <20100430181349.GA1015@oksana.dev.rtsoft.ru>
-Date: Sat, 1 May 2010 00:40:54 +0400
-Message-ID: <g2qbc64b4641004301340h3c942f3cn40de735b419b8535@mail.gmail.com>
-Subject: Re: [PATCH] Remove tosa_battery driver (was: Re: [PATCH] 
-	tosa_battery: fix FTBFS bug due to driver_data access)
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Marek Vasut <marek.vasut@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 30 Apr 2010 16:49:18 -0400
+From: Dinh.Nguyen@freescale.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, r.herring@freescale.com,
+       Jun.Li@freescale.com, xiao-lizhang@freescale.com,
+       Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv10 2.6.34-rc6 2/5] mx5: Add USB device definitions for Freescale MX51 Babbage HW
+Date: Fri, 30 Apr 2010 15:48:24 -0500
+Message-Id: <1272660507-5917-2-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1272660507-5917-1-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1272660507-5917-1-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-On Fri, Apr 30, 2010 at 10:13 PM, Anton Vorontsov
-<cbouatmailru@gmail.com> wrote:
-> On Tue, Apr 27, 2010 at 03:48:35PM -0700, Andrew Morton wrote:
->> On Tue, 27 Apr 2010 17:18:22 +0400
->> Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> wrote:
->>
->> > Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
->> > ---
->> >  drivers/power/tosa_battery.c |    4 ++--
->> >  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> Please don't send unchangelogged patches.
->>
->> Please don't send patches which require recipients to go googling
->> acronyms to work out wtf you're up to.
->>
->> <googles the acronym>
->>
->> Ah, it appears to be a build fix.
->
-> It seems that the driver isn't buildable since 2.6.32
-> (i.e. commit b4028437 "Driver core: move dev_get/set_drvdata to
-> drivers/base/dd.c").
->
-> Also, IIRC it was deprecated in favor of wm97xx_battery.c
-> driver.
->
-> So, I'm not picking this patch for 2.6.34, it's not a
-> new regression, and the driver is probably needs to be
-> removed.
->
-> Any objections on the patch down below?
+This patch is part of enabling USB for Freescale MX51 Babbage HW. This
+patch adds device structures for USB Host1 and OTG port, and adds
+clocking information for USB HW.
 
-Yes. wm97xx_battery handles only one battery, while tosa uses 3
-different batterires.
-So, wm97xx_battery needs to be adapted/enhanced.
+This patch applies to 2.6.34-rc6.
 
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/clock-mx51.c |    8 ++++++
+ arch/arm/mach-mx5/devices.c    |   49 ++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-mx5/devices.h    |    2 +
+ 3 files changed, 59 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
+index 8f85f73..dcca330 100644
+--- a/arch/arm/mach-mx5/clock-mx51.c
++++ b/arch/arm/mach-mx5/clock-mx51.c
+@@ -761,6 +761,10 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG9_OFFSET,
+ DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
+ 	NULL,  NULL, &ipg_clk, NULL);
+ 
++/* USB */
++DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
++	NULL, NULL, &pll3_sw_clk, NULL);
++
+ /* FEC */
+ DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
+ 	NULL,  NULL, &ipg_clk, NULL);
+@@ -778,6 +782,10 @@ static struct clk_lookup lookups[] = {
+ 	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
+ 	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
+ 	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
++	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
++	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
++	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
++	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
+ };
+ 
+ static void clk_tree_init(void)
+diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
+index 5070ae1..e6262f3 100644
+--- a/arch/arm/mach-mx5/devices.c
++++ b/arch/arm/mach-mx5/devices.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/platform_device.h>
++#include <linux/dma-mapping.h>
+ #include <linux/gpio.h>
+ #include <mach/hardware.h>
+ #include <mach/imx-uart.h>
+@@ -92,6 +93,54 @@ struct platform_device mxc_fec_device = {
+ 	.resource = mxc_fec_resources,
+ };
+ 
++static u64 usb_dma_mask = DMA_BIT_MASK(32);
++
++static struct resource usbotg_resources[] = {
++	{
++		.start = MX51_OTG_BASE_ADDR,
++		.end = MX51_OTG_BASE_ADDR + 0x1ff,
++		.flags = IORESOURCE_MEM,
++	},
++	{
++		.start = MX51_MXC_INT_USB_OTG,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++struct platform_device mxc_usbdr_host_device = {
++	.name = "mxc-ehci",
++	.id = 0,
++	.num_resources = ARRAY_SIZE(usbotg_resources),
++	.resource = usbotg_resources,
++	.dev = {
++		.dma_mask = &usb_dma_mask,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
++	},
++};
++
++static struct resource usbh1_resources[] = {
++	{
++		.start = MX51_OTG_BASE_ADDR + 0x200,
++		.end = MX51_OTG_BASE_ADDR + 0x200 + 0x1ff,
++		.flags = IORESOURCE_MEM,
++	},
++	{
++		.start = MX51_MXC_INT_USB_H1,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++struct platform_device mxc_usbh1_device = {
++	.name = "mxc-ehci",
++	.id = 1,
++	.num_resources = ARRAY_SIZE(usbh1_resources),
++	.resource = usbh1_resources,
++	.dev = {
++		.dma_mask = &usb_dma_mask,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
++	},
++};
++
+ static struct mxc_gpio_port mxc_gpio_ports[] = {
+ 	{
+ 		.chip.label = "gpio-0",
+diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
+index f339ab8..95c45f9 100644
+--- a/arch/arm/mach-mx5/devices.h
++++ b/arch/arm/mach-mx5/devices.h
+@@ -2,3 +2,5 @@ extern struct platform_device mxc_uart_device0;
+ extern struct platform_device mxc_uart_device1;
+ extern struct platform_device mxc_uart_device2;
+ extern struct platform_device mxc_fec_device;
++extern struct platform_device mxc_usbdr_host_device;
++extern struct platform_device mxc_usbh1_device;
 -- 
-With best wishes
-Dmitry
+1.6.0.4
+
