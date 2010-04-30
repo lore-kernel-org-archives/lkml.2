@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759733Ab0D3VkO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 17:40:14 -0400
-Received: from tex.lwn.net ([70.33.254.29]:36241 "EHLO vena.lwn.net"
+	id S932326Ab0D3VkY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 17:40:24 -0400
+Received: from tex.lwn.net ([70.33.254.29]:36264 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758734Ab0D3VkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 17:40:08 -0400
+	id S1759697Ab0D3VkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 17:40:09 -0400
 From: Jonathan Corbet <corbet@lwn.net>
 To: linux-kernel@vger.kernel.org
 Cc: Harald Welte <laforge@gnumonks.org>, linux-fbdev@vger.kernel.org,
        JosephChan@via.com.tw, ScottFang@viatech.com.cn,
        =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [RFC] Second OLPC Viafb series, v2.1
-Date: Fri, 30 Apr 2010 15:39:46 -0600
-Message-Id: <1272663589-4950-1-git-send-email-corbet@lwn.net>
+Subject: [PATCH 3/3] viafb: Don't build in camera-specific code without the camera
+Date: Fri, 30 Apr 2010 15:39:49 -0600
+Message-Id: <1272663589-4950-4-git-send-email-corbet@lwn.net>
 X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <1272663589-4950-1-git-send-email-corbet@lwn.net>
+References: <1272663589-4950-1-git-send-email-corbet@lwn.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -23,66 +25,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's a small update to the second posting of the second OLPC viafb
-series.  It contains three new patches, all fixing issues pointed out by
-Bruno Prémont.  I'm not going to spam everybody with the whole set again;
-it can be pulled from:
+Bruno noted that the camera subdev was being created even in the absence of
+the camera module; stop that.  While I was at it, I also put an #ifdef
+guard around the DMA code.  Viafb users have gotten along just fine without
+that functionality so far, and only the camera uses it, so there is no
+point in bloating the driver if the camera is not being built.
 
-	git://git.lwn.net/linux-2.6.git viafb-posted
+Reported-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Jonathan Corbet <corbet@lwn.net>
+---
+ drivers/video/via/via-core.c |   12 ++++++++++--
+ drivers/video/via/via-core.h |    3 ++-
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
-Only the new patches will appear here.
-
-The review so far is much appreciated - any other comments?  Is there
-anything arguing against moving everything (except the camera driver) into
-viafb-next, from which it will flow into linux-next?
-
-As a reminder, here's what's in the full series:
-
-Chris Ball (1):
-      viafb: Add 1200x900 DCON/LCD panel modes for OLPC XO-1.5
-
-Florian Tobias Schandinat (7):
-      viafb: package often used basic io functions
-      viafb: unify modesetting functions
-      viafb: move some modesetting functions to a seperate file
-      viafb: replace inb/outb
-      viafb: improve misc register handling
-      viafb: fix proc entry removal
-      viafb: make procfs entries optional
-
-Harald Welte (4):
-      viafb: Fix various resource leaks during module_init()
-      viafb: use proper pci config API
-      viafb: Determine type of 2D engine and store it in chip_info
-      viafb: rework the I2C support in the VIA framebuffer driver
-
-Jonathan Corbet (20):
-      viafb: Unmap the frame buffer on initialization error
-      viafb: Retain GEMODE reserved bits
-      viafb: Unify duplicated set_bpp() code
-      viafb: complete support for VX800/VX855 accelerated framebuffer
-      viafb: Only establish i2c busses on ports that always had them
-      viafb: Move core stuff into via-core.c
-      viafb: Separate global and fb-specific data
-      viafb: add a driver for GPIO lines
-      viafb: Convert GPIO and i2c to the new indexed port ops
-      viafb: Turn GPIO and i2c into proper platform devices
-      via: Do not attempt I/O on inactive I2C adapters
-      viafb: Introduce viafb_find_i2c_adapter()
-      via: Rationalize vt1636 detection
-      viafb: Add a simple interrupt management infrastructure
-      viafb: Add a simple VX855 DMA engine driver
-      viafb: Reserve framebuffer memory for the upcoming camera driver
-      viafb: Add a driver for the video capture engine
-      viafb: Do not remove gpiochip under spinlock
-      viafb: Fix initialization error paths
-      viafb: Don't build in camera-specific code without the camera
-
-Paul Fox (1):
-      suppress verbose debug messages: change printk() to DEBUG_MSG()
-
-Thanks,
-
-jon
-
+diff --git a/drivers/video/via/via-core.c b/drivers/video/via/via-core.c
+index 1c6835e..a084363 100644
+--- a/drivers/video/via/via-core.c
++++ b/drivers/video/via/via-core.c
+@@ -34,7 +34,6 @@ static struct via_port_cfg adap_configs[] = {
+  */
+ static struct viafb_dev global_dev;
+ 
+-
+ /*
+  * Basic register access; spinlock required.
+  */
+@@ -95,6 +94,13 @@ EXPORT_SYMBOL_GPL(viafb_irq_disable);
+ 
+ /* ---------------------------------------------------------------------- */
+ /*
++ * Currently, the camera driver is the only user of the DMA code, so we
++ * only compile it in if the camera driver is being built.  Chances are,
++ * most viafb systems will not need to have this extra code for a while.
++ * As soon as another user comes long, the ifdef can be removed.
++ */
++#if defined(CONFIG_FB_VIA_CAMERA) || defined(CONFIG_FB_VIA_CAMERA_MODULE)
++/*
+  * Access to the DMA engine.  This currently provides what the camera
+  * driver needs (i.e. outgoing only) but is easily expandable if need
+  * be.
+@@ -322,7 +328,7 @@ int viafb_dma_copy_out_sg(unsigned int offset, struct scatterlist *sg, int nsg)
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(viafb_dma_copy_out_sg);
+-
++#endif /* CONFIG_FB_VIA_CAMERA */
+ 
+ /* ---------------------------------------------------------------------- */
+ /*
+@@ -508,9 +514,11 @@ static struct viafb_subdev_info {
+ 	{
+ 		.name = "viafb-i2c",
+ 	},
++#if defined(CONFIG_FB_VIA_CAMERA) || defined(CONFIG_FB_VIA_CAMERA_MODULE)
+ 	{
+ 		.name = "viafb-camera",
+ 	},
++#endif
+ };
+ #define N_SUBDEVS ARRAY_SIZE(viafb_subdevs)
+ 
+diff --git a/drivers/video/via/via-core.h b/drivers/video/via/via-core.h
+index 087c562..ca52dfe 100644
+--- a/drivers/video/via/via-core.h
++++ b/drivers/video/via/via-core.h
+@@ -94,7 +94,6 @@ struct viafb_dev {
+ /*
+  * Interrupt management.
+  */
+-
+ void viafb_irq_enable(u32 mask);
+ void viafb_irq_disable(u32 mask);
+ 
+@@ -135,6 +134,7 @@ void viafb_irq_disable(u32 mask);
+ #define   VDE_I_LVDSSIEN  0x40000000  /* LVDS Sense enable */
+ #define   VDE_I_ENABLE	  0x80000000  /* Global interrupt enable */
+ 
++#if defined(CONFIG_FB_VIA_CAMERA) || defined(CONFIG_FB_VIA_CAMERA_MODULE)
+ /*
+  * DMA management.
+  */
+@@ -169,5 +169,6 @@ int viafb_dma_copy_out_sg(unsigned int offset, struct scatterlist *sg, int nsg);
+  */
+ #define VGA_WIDTH	640
+ #define VGA_HEIGHT	480
++#endif /* CONFIG_FB_VIA_CAMERA */
+ 
+ #endif /* __VIA_CORE_H__ */
+-- 
+1.7.0.1
 
