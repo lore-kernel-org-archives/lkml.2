@@ -1,31 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759880Ab0D3Wha (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 18:37:30 -0400
-Received: from mail-yx0-f171.google.com ([209.85.210.171]:41056 "EHLO
-	mail-yx0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759851Ab0D3WhS (ORCPT
+	id S1759888Ab0D3Whe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 18:37:34 -0400
+Received: from mail-iw0-f182.google.com ([209.85.223.182]:43528 "EHLO
+	mail-iw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759861Ab0D3WhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 18:37:18 -0400
+	Fri, 30 Apr 2010 18:37:20 -0400
 From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
 To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
        Randy Dunlap <rdunlap@xenotime.net>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
-Subject: [PATCH 1/8] PM: Add suspend block api.
-Date: Fri, 30 Apr 2010 15:36:54 -0700
-Message-Id: <1272667021-21312-2-git-send-email-arve@android.com>
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Jim Collar <jim.collar@eqware.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Avi Kivity <avi@redhat.com>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Magnus Damm <damm@igel.co.jp>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
+Subject: [PATCH 2/8] PM: suspend_block: Add driver to access suspend blockers from user-space
+Date: Fri, 30 Apr 2010 15:36:55 -0700
+Message-Id: <1272667021-21312-3-git-send-email-arve@android.com>
 X-Mailer: git-send-email 1.6.5.1
-In-Reply-To: <1272667021-21312-1-git-send-email-arve@android.com>
+In-Reply-To: <1272667021-21312-2-git-send-email-arve@android.com>
 References: <1272667021-21312-1-git-send-email-arve@android.com>
+ <1272667021-21312-2-git-send-email-arve@android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -33,161 +34,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds /sys/power/policy that selects the behaviour of /sys/power/state.
-After setting the policy to opportunistic, writes to /sys/power/state
-become non-blocking requests that specify which suspend state to enter
-when no suspend blockers are active. A special state, "on", stops the
-process by activating the "main" suspend blocker.
+Add a misc device, "suspend_blocker", that allows user-space processes
+to block auto suspend. The device has ioctls to create a suspend_blocker,
+and to block and unblock suspend. To delete the suspend_blocker, close
+the device.
 
 Signed-off-by: Arve Hjønnevåg <arve@android.com>
 ---
- Documentation/power/opportunistic-suspend.txt |  119 +++++++++++
- include/linux/suspend_blocker.h               |   64 ++++++
- kernel/power/Kconfig                          |   16 ++
+ Documentation/ioctl/ioctl-number.txt          |    3 +-
+ Documentation/power/opportunistic-suspend.txt |   17 ++++
+ include/linux/suspend_block_dev.h             |   25 +++++
+ kernel/power/Kconfig                          |    9 ++
  kernel/power/Makefile                         |    1 +
- kernel/power/main.c                           |   92 ++++++++-
- kernel/power/power.h                          |    9 +
- kernel/power/suspend.c                        |    4 +-
- kernel/power/suspend_blocker.c                |  261 +++++++++++++++++++++++++
- 8 files changed, 559 insertions(+), 7 deletions(-)
- create mode 100644 Documentation/power/opportunistic-suspend.txt
- create mode 100755 include/linux/suspend_blocker.h
- create mode 100644 kernel/power/suspend_blocker.c
+ kernel/power/user_suspend_blocker.c           |  128 +++++++++++++++++++++++++
+ 6 files changed, 182 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/suspend_block_dev.h
+ create mode 100644 kernel/power/user_suspend_blocker.c
 
+diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
+index dd5806f..e2458f7 100644
+--- a/Documentation/ioctl/ioctl-number.txt
++++ b/Documentation/ioctl/ioctl-number.txt
+@@ -254,7 +254,8 @@ Code  Seq#(hex)	Include File		Comments
+ 'q'	80-FF	linux/telephony.h	Internet PhoneJACK, Internet LineJACK
+ 		linux/ixjuser.h		<http://www.quicknet.net>
+ 'r'	00-1F	linux/msdos_fs.h and fs/fat/dir.c
+-'s'	all	linux/cdk.h
++'s'	all	linux/cdk.h	conflict!
++'s'	all	linux/suspend_block_dev.h	conflict!
+ 't'	00-7F	linux/if_ppp.h
+ 't'	80-8F	linux/isdn_ppp.h
+ 't'	90	linux/toshiba.h
 diff --git a/Documentation/power/opportunistic-suspend.txt b/Documentation/power/opportunistic-suspend.txt
-new file mode 100644
-index 0000000..3d060e8
---- /dev/null
+index 3d060e8..f2b145e 100644
+--- a/Documentation/power/opportunistic-suspend.txt
 +++ b/Documentation/power/opportunistic-suspend.txt
-@@ -0,0 +1,119 @@
-+Opportunistic Suspend
-+=====================
+@@ -117,3 +117,20 @@ if (list_empty(&state->pending_work))
+ else
+ 	suspend_block(&state->suspend_blocker);
+ 
++User-space API
++==============
 +
-+Opportunistic suspend is a feature allowing the system to be suspended (ie. put
-+into one of the available sleep states) automatically whenever it is regarded
-+as idle.  The suspend blockers framework described below is used to determine
-+when that happens.
++To create a suspend_blocker from user-space, open the suspend_blocker device:
++    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
++then call:
++    ioctl(fd, SUSPEND_BLOCKER_IOCTL_INIT(strlen(name)), name);
 +
-+The /sys/power/policy sysfs attribute is used to switch the system between the
-+opportunistic and "forced" suspend behavior, where in the latter case the
-+system is only suspended if a specific value, corresponding to one of the
-+available system sleep states, is written into /sys/power/state.  However, in
-+the former, opportunistic, case the system is put into the sleep state
-+corresponding to the value written to /sys/power/state whenever there are no
-+active suspend blockers. The default policy is "forced". Also, suspend blockers
-+do not affect sleep states entered from idle.
++To activate a suspend_blocker call:
++    ioctl(fd, SUSPEND_BLOCKER_IOCTL_BLOCK);
 +
-+When the policy is "opportunisic", there is a special value, "on", that can be
-+written to /sys/power/state. This will block the automatic sleep request, as if
-+a suspend blocker was used by a device driver. This way the opportunistic
-+suspend may be blocked by user space whithout switching back to the "forced"
-+mode.
++To unblock call:
++    ioctl(fd, SUSPEND_BLOCKER_IOCTL_UNBLOCK);
 +
-+A suspend blocker is an object used to inform the PM subsystem when the system
-+can or cannot be suspended in the "opportunistic" mode (the "forced" mode
-+ignores suspend blockers).  To use it, a device driver creates a struct
-+suspend_blocker that must be initialized with suspend_blocker_init(). Before
-+freeing the suspend_blocker structure or its name, suspend_blocker_destroy()
-+must be called on it.
++To destroy the suspend_blocker, close the device:
++    close(fd);
 +
-+A suspend blocker is activated using suspend_block(), which prevents the PM
-+subsystem from putting the system into the requested sleep state in the
-+"opportunistic" mode until the suspend blocker is deactivated with
-+suspend_unblock(). Multiple suspend blockers may be active simultaneously, and
-+the system will not suspend as long as at least one of them is active.
-+
-+If opportunistic suspend is already in progress when suspend_block() is called,
-+it will abort the suspend, unless suspend_ops->enter has already been
-+executed. If suspend is aborted this way, the system is usually not fully
-+operational at that point. The suspend callbacks of some drivers may still be
-+running and it usually takes time to restore the system to the fully operational
-+state.
-+
-+Here's an example showing how a cell phone or other embedded system can handle
-+keystrokes (or other input events) in the presence of suspend blockers. Use
-+set_irq_wake or a platform specific api to make sure the keypad interrupt wakes
-+up the cpu. Once the keypad driver has resumed, the sequence of events can look
-+like this:
-+
-+- The Keypad driver gets an interrupt. It then calls suspend_block on the
-+  keypad-scan suspend_blocker and starts scanning the keypad matrix.
-+- The keypad-scan code detects a key change and reports it to the input-event
-+  driver.
-+- The input-event driver sees the key change, enqueues an event, and calls
-+  suspend_block on the input-event-queue suspend_blocker.
-+- The keypad-scan code detects that no keys are held and calls suspend_unblock
-+  on the keypad-scan suspend_blocker.
-+- The user-space input-event thread returns from select/poll, calls
-+  suspend_block on the process-input-events suspend_blocker and then calls read
-+  on the input-event device.
-+- The input-event driver dequeues the key-event and, since the queue is now
-+  empty, it calls suspend_unblock on the input-event-queue suspend_blocker.
-+- The user-space input-event thread returns from read. If it determines that
-+  the key should be ignored, it calls suspend_unblock on the
-+  process_input_events suspend_blocker and then calls select or poll. The
-+  system will automatically suspend again, since now no suspend blockers are
-+  active.
-+
-+If the key that was pressed instead should preform a simple action (for example,
-+adjusting the volume), this action can be performed right before calling
-+suspend_unblock on the process_input_events suspend_blocker. However, if the key
-+triggers a longer-running action, that action needs its own suspend_blocker and
-+suspend_block must be called on that suspend blocker before calling
-+suspend_unblock on the process_input_events suspend_blocker.
-+
-+                 Key pressed   Key released
-+                     |             |
-+keypad-scan          ++++++++++++++++++
-+input-event-queue        +++          +++
-+process-input-events       +++          +++
-+
-+
-+Driver API
-+==========
-+
-+A driver can use the suspend block api by adding a suspend_blocker variable to
-+its state and calling suspend_blocker_init. For instance:
-+struct state {
-+	struct suspend_blocker suspend_blocker;
-+}
-+
-+init() {
-+	suspend_blocker_init(&state->suspend_blocker, "suspend-blocker-name");
-+}
-+
-+Before freeing the memory, suspend_blocker_destroy must be called:
-+
-+uninit() {
-+	suspend_blocker_destroy(&state->suspend_blocker);
-+}
-+
-+When the driver determines that it needs to run (usually in an interrupt
-+handler) it calls suspend_block:
-+	suspend_block(&state->suspend_blocker);
-+
-+When it no longer needs to run it calls suspend_unblock:
-+	suspend_unblock(&state->suspend_blocker);
-+
-+Calling suspend_block when the suspend blocker is active or suspend_unblock when
-+it is not active has no effect (i.e., these functions don't nest). This allows
-+drivers to update their state and call suspend suspend_block or suspend_unblock
-+based on the result.
-+For instance:
-+
-+if (list_empty(&state->pending_work))
-+	suspend_unblock(&state->suspend_blocker);
-+else
-+	suspend_block(&state->suspend_blocker);
-+
-diff --git a/include/linux/suspend_blocker.h b/include/linux/suspend_blocker.h
-new file mode 100755
-index 0000000..f9928cc
+diff --git a/include/linux/suspend_block_dev.h b/include/linux/suspend_block_dev.h
+new file mode 100644
+index 0000000..24bc5c7
 --- /dev/null
-+++ b/include/linux/suspend_blocker.h
-@@ -0,0 +1,64 @@
-+/* include/linux/suspend_blocker.h
++++ b/include/linux/suspend_block_dev.h
+@@ -0,0 +1,25 @@
++/* include/linux/suspend_block_dev.h
 + *
-+ * Copyright (C) 2007-2009 Google, Inc.
++ * Copyright (C) 2009 Google, Inc.
 + *
 + * This software is licensed under the terms of the GNU General Public
 + * License version 2, as published by the Free Software Foundation, and
@@ -200,323 +111,57 @@ index 0000000..f9928cc
 + *
 + */
 +
-+#ifndef _LINUX_SUSPEND_BLOCKER_H
-+#define _LINUX_SUSPEND_BLOCKER_H
++#ifndef _LINUX_SUSPEND_BLOCK_DEV_H
++#define _LINUX_SUSPEND_BLOCK_DEV_H
 +
-+#include <linux/list.h>
++#include <linux/ioctl.h>
 +
-+/**
-+ * struct suspend_blocker - the basic suspend_blocker structure
-+ * @link:	List entry for active or inactive list.
-+ * @flags:	Tracks initialized and active state.
-+ * @name:	Name used for debugging.
-+ *
-+ * When a suspend_blocker is active it prevents the system from entering
-+ * opportunistic suspend.
-+ *
-+ * The suspend_blocker structure must be initialized by suspend_blocker_init()
-+ */
-+
-+struct suspend_blocker {
-+#ifdef CONFIG_OPPORTUNISTIC_SUSPEND
-+	struct list_head    link;
-+	int                 flags;
-+	const char         *name;
-+#endif
-+};
-+
-+#ifdef CONFIG_OPPORTUNISTIC_SUSPEND
-+
-+void suspend_blocker_init(struct suspend_blocker *blocker, const char *name);
-+void suspend_blocker_destroy(struct suspend_blocker *blocker);
-+void suspend_block(struct suspend_blocker *blocker);
-+void suspend_unblock(struct suspend_blocker *blocker);
-+bool suspend_blocker_is_active(struct suspend_blocker *blocker);
-+bool suspend_is_blocked(void);
-+
-+#else
-+
-+static inline void suspend_blocker_init(struct suspend_blocker *blocker,
-+					const char *name) {}
-+static inline void suspend_blocker_destroy(struct suspend_blocker *blocker) {}
-+static inline void suspend_block(struct suspend_blocker *blocker) {}
-+static inline void suspend_unblock(struct suspend_blocker *blocker) {}
-+static inline bool suspend_blocker_is_active(struct suspend_blocker *bl)
-+								{ return 0; }
-+static inline bool suspend_is_blocked(void) { return 0; }
++#define SUSPEND_BLOCKER_IOCTL_INIT(len)		_IOC(_IOC_WRITE, 's', 0, len)
++#define SUSPEND_BLOCKER_IOCTL_BLOCK		_IO('s', 1)
++#define SUSPEND_BLOCKER_IOCTL_UNBLOCK		_IO('s', 2)
 +
 +#endif
-+
-+#endif
-+
 diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index 5c36ea9..55a06a1 100644
+index 55a06a1..fe5a2f2 100644
 --- a/kernel/power/Kconfig
 +++ b/kernel/power/Kconfig
-@@ -130,6 +130,22 @@ config SUSPEND_FREEZER
+@@ -146,6 +146,15 @@ config OPPORTUNISTIC_SUSPEND
+ 	  determines the sleep state the system will be put into when there are
+ 	  no active suspend blockers.
  
- 	  Turning OFF this setting is NOT recommended! If in doubt, say Y.
- 
-+config OPPORTUNISTIC_SUSPEND
-+	bool "Suspend blockers"
-+	depends on PM_SLEEP
-+	select RTC_LIB
-+	default n
++config USER_SUSPEND_BLOCKERS
++	bool "Userspace suspend blockers"
++	depends on OPPORTUNISTIC_SUSPEND
++	default y
 +	---help---
-+	  Opportunistic sleep support.  Allows the system to be put into a sleep
-+	  state opportunistically, if it doesn't do any useful work at the
-+	  moment. The PM subsystem is switched into this mode of operation by
-+	  writing "opportunistic" into /sys/power/policy, while writing
-+	  "forced" to this file turns the opportunistic suspend feature off.
-+	  In the "opportunistic" mode suspend blockers are used to determine
-+	  when to suspend the system and the value written to /sys/power/state
-+	  determines the sleep state the system will be put into when there are
-+	  no active suspend blockers.
++	  User-space suspend block api. Creates a misc device with ioctls
++	  to create, block and unblock a suspend_blocker. The suspend_blocker
++	  will be deleted when the device is closed.
 +
  config HIBERNATION_NVS
  	bool
  
 diff --git a/kernel/power/Makefile b/kernel/power/Makefile
-index 4319181..ee5276d 100644
+index ee5276d..78f703b 100644
 --- a/kernel/power/Makefile
 +++ b/kernel/power/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_PM)		+= main.o
- obj-$(CONFIG_PM_SLEEP)		+= console.o
+@@ -8,6 +8,7 @@ obj-$(CONFIG_PM_SLEEP)		+= console.o
  obj-$(CONFIG_FREEZER)		+= process.o
  obj-$(CONFIG_SUSPEND)		+= suspend.o
-+obj-$(CONFIG_OPPORTUNISTIC_SUSPEND)	+= suspend_blocker.o
+ obj-$(CONFIG_OPPORTUNISTIC_SUSPEND)	+= suspend_blocker.o
++obj-$(CONFIG_USER_SUSPEND_BLOCKERS)	+= user_suspend_blocker.o
  obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
  obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o
  obj-$(CONFIG_HIBERNATION_NVS)	+= hibernate_nvs.o
-diff --git a/kernel/power/main.c b/kernel/power/main.c
-index b58800b..030ecdc 100644
---- a/kernel/power/main.c
-+++ b/kernel/power/main.c
-@@ -12,6 +12,7 @@
- #include <linux/string.h>
- #include <linux/resume-trace.h>
- #include <linux/workqueue.h>
-+#include <linux/suspend_blocker.h>
- 
- #include "power.h"
- 
-@@ -20,6 +21,27 @@ DEFINE_MUTEX(pm_mutex);
- unsigned int pm_flags;
- EXPORT_SYMBOL(pm_flags);
- 
-+struct policy {
-+	const char *name;
-+	bool (*valid_state)(suspend_state_t state);
-+	int (*set_state)(suspend_state_t state);
-+};
-+static struct policy policies[] = {
-+	{
-+		.name		= "forced",
-+		.valid_state	= valid_state,
-+		.set_state	= enter_state,
-+	},
-+#ifdef CONFIG_OPPORTUNISTIC_SUSPEND
-+	{
-+		.name		= "opportunistic",
-+		.valid_state	= request_suspend_valid_state,
-+		.set_state	= request_suspend_state,
-+	},
-+#endif
-+};
-+static int policy;
-+
- #ifdef CONFIG_PM_SLEEP
- 
- /* Routines for PM-transition notifications */
-@@ -146,6 +168,12 @@ struct kobject *power_kobj;
-  *
-  *	store() accepts one of those strings, translates it into the 
-  *	proper enumerated value, and initiates a suspend transition.
-+ *
-+ *	If policy is set to opportunistic, store() does not block until the
-+ *	system resumes, and it will try to re-enter the state until another
-+ *	state is requested. Suspend blockers are respected and the requested
-+ *	state will only be entered when no suspend blockers are active.
-+ *	Write "on" to cancel.
-  */
- static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
- 			  char *buf)
-@@ -155,12 +183,13 @@ static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
- 	int i;
- 
- 	for (i = 0; i < PM_SUSPEND_MAX; i++) {
--		if (pm_states[i] && valid_state(i))
-+		if (pm_states[i] && policies[policy].valid_state(i))
- 			s += sprintf(s,"%s ", pm_states[i]);
- 	}
- #endif
- #ifdef CONFIG_HIBERNATION
--	s += sprintf(s, "%s\n", "disk");
-+	if (!policy)
-+		s += sprintf(s, "%s\n", "disk");
- #else
- 	if (s != buf)
- 		/* convert the last space to a newline */
-@@ -173,7 +202,7 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
- 			   const char *buf, size_t n)
- {
- #ifdef CONFIG_SUSPEND
--	suspend_state_t state = PM_SUSPEND_STANDBY;
-+	suspend_state_t state = PM_SUSPEND_ON;
- 	const char * const *s;
- #endif
- 	char *p;
-@@ -184,7 +213,7 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
- 	len = p ? p - buf : n;
- 
- 	/* First, check if we are requested to hibernate */
--	if (len == 4 && !strncmp(buf, "disk", len)) {
-+	if (len == 4 && !strncmp(buf, "disk", len) && !policy) {
- 		error = hibernate();
-   goto Exit;
- 	}
-@@ -195,7 +224,7 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
- 			break;
- 	}
- 	if (state < PM_SUSPEND_MAX && *s)
--		error = enter_state(state);
-+		error = policies[policy].set_state(state);
- #endif
- 
-  Exit:
-@@ -204,6 +233,55 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
- 
- power_attr(state);
- 
-+/**
-+ *	policy - set policy for state
-+ */
-+
-+static ssize_t policy_show(struct kobject *kobj,
-+			   struct kobj_attribute *attr, char *buf)
-+{
-+	char *s = buf;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(policies); i++) {
-+		if (i == policy)
-+			s += sprintf(s, "[%s] ", policies[i].name);
-+		else
-+			s += sprintf(s, "%s ", policies[i].name);
-+	}
-+	if (s != buf)
-+		/* convert the last space to a newline */
-+		*(s-1) = '\n';
-+	return (s - buf);
-+}
-+
-+static ssize_t policy_store(struct kobject *kobj,
-+			    struct kobj_attribute *attr,
-+			    const char *buf, size_t n)
-+{
-+	const char *s;
-+	char *p;
-+	int len;
-+	int i;
-+
-+	p = memchr(buf, '\n', n);
-+	len = p ? p - buf : n;
-+
-+	for (i = 0; i < ARRAY_SIZE(policies); i++) {
-+		s = policies[i].name;
-+		if (s && len == strlen(s) && !strncmp(buf, s, len)) {
-+			mutex_lock(&pm_mutex);
-+			policies[policy].set_state(PM_SUSPEND_ON);
-+			policy = i;
-+			mutex_unlock(&pm_mutex);
-+			return n;
-+		}
-+	}
-+	return -EINVAL;
-+}
-+
-+power_attr(policy);
-+
- #ifdef CONFIG_PM_TRACE
- int pm_trace_enabled;
- 
-@@ -231,6 +309,7 @@ power_attr(pm_trace);
- 
- static struct attribute * g[] = {
- 	&state_attr.attr,
-+	&policy_attr.attr,
- #ifdef CONFIG_PM_TRACE
- 	&pm_trace_attr.attr,
- #endif
-@@ -247,7 +326,7 @@ static struct attribute_group attr_group = {
- 	.attrs = g,
- };
- 
--#ifdef CONFIG_PM_RUNTIME
-+#if defined(CONFIG_PM_RUNTIME) || defined(CONFIG_OPPORTUNISTIC_SUSPEND)
- struct workqueue_struct *pm_wq;
- EXPORT_SYMBOL_GPL(pm_wq);
- 
-@@ -266,6 +345,7 @@ static int __init pm_init(void)
- 	int error = pm_start_workqueue();
- 	if (error)
- 		return error;
-+	suspend_block_init();
- 	power_kobj = kobject_create_and_add("power", NULL);
- 	if (!power_kobj)
- 		return -ENOMEM;
-diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 46c5a26..67d10fd 100644
---- a/kernel/power/power.h
-+++ b/kernel/power/power.h
-@@ -236,3 +236,12 @@ static inline void suspend_thaw_processes(void)
- {
- }
- #endif
-+
-+/* kernel/power/suspend_block.c */
-+extern int request_suspend_state(suspend_state_t state);
-+extern bool request_suspend_valid_state(suspend_state_t state);
-+#ifdef CONFIG_OPPORTUNISTIC_SUSPEND
-+extern void __init suspend_block_init(void);
-+#else
-+static inline void suspend_block_init(void) {}
-+#endif
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index 56e7dbb..dc42006 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -16,10 +16,12 @@
- #include <linux/cpu.h>
- #include <linux/syscalls.h>
- #include <linux/gfp.h>
-+#include <linux/suspend_blocker.h>
- 
- #include "power.h"
- 
- const char *const pm_states[PM_SUSPEND_MAX] = {
-+	[PM_SUSPEND_ON]		= "on",
- 	[PM_SUSPEND_STANDBY]	= "standby",
- 	[PM_SUSPEND_MEM]	= "mem",
- };
-@@ -157,7 +159,7 @@ static int suspend_enter(suspend_state_t state)
- 
- 	error = sysdev_suspend(PMSG_SUSPEND);
- 	if (!error) {
--		if (!suspend_test(TEST_CORE))
-+		if (!suspend_is_blocked() && !suspend_test(TEST_CORE))
- 			error = suspend_ops->enter(state);
- 		sysdev_resume();
- 	}
-diff --git a/kernel/power/suspend_blocker.c b/kernel/power/suspend_blocker.c
+diff --git a/kernel/power/user_suspend_blocker.c b/kernel/power/user_suspend_blocker.c
 new file mode 100644
-index 0000000..2c58b21
+index 0000000..dc1d06f
 --- /dev/null
-+++ b/kernel/power/suspend_blocker.c
-@@ -0,0 +1,261 @@
-+/* kernel/power/suspend_blocker.c
++++ b/kernel/power/user_suspend_blocker.c
+@@ -0,0 +1,128 @@
++/* kernel/power/user_suspend_block.c
 + *
-+ * Copyright (C) 2005-2010 Google, Inc.
++ * Copyright (C) 2009-2010 Google, Inc.
 + *
 + * This software is licensed under the terms of the GNU General Public
 + * License version 2, as published by the Free Software Foundation, and
@@ -529,252 +174,119 @@ index 0000000..2c58b21
 + *
 + */
 +
++#include <linux/fs.h>
++#include <linux/miscdevice.h>
 +#include <linux/module.h>
-+#include <linux/rtc.h>
-+#include <linux/suspend.h>
++#include <linux/uaccess.h>
++#include <linux/slab.h>
 +#include <linux/suspend_blocker.h>
-+#include "power.h"
-+
-+extern struct workqueue_struct *pm_wq;
++#include <linux/suspend_block_dev.h>
 +
 +enum {
-+	DEBUG_EXIT_SUSPEND = 1U << 0,
-+	DEBUG_WAKEUP = 1U << 1,
-+	DEBUG_USER_STATE = 1U << 2,
-+	DEBUG_SUSPEND = 1U << 3,
-+	DEBUG_SUSPEND_BLOCKER = 1U << 4,
++	DEBUG_FAILURE	= BIT(0),
 +};
-+static int debug_mask = DEBUG_EXIT_SUSPEND | DEBUG_WAKEUP | DEBUG_USER_STATE;
++static int debug_mask = DEBUG_FAILURE;
 +module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 +
-+#define SB_INITIALIZED            (1U << 8)
-+#define SB_ACTIVE                 (1U << 9)
++static DEFINE_MUTEX(ioctl_lock);
 +
-+static DEFINE_SPINLOCK(list_lock);
-+static DEFINE_SPINLOCK(state_lock);
-+static LIST_HEAD(inactive_blockers);
-+static LIST_HEAD(active_blockers);
-+static int current_event_num;
-+struct suspend_blocker main_suspend_blocker;
-+static suspend_state_t requested_suspend_state = PM_SUSPEND_MEM;
-+static bool enable_suspend_blockers;
++struct user_suspend_blocker {
++	struct suspend_blocker	blocker;
++	char			name[0];
++};
 +
-+#define pr_info_time(fmt, args...) \
-+	do { \
-+		struct timespec ts; \
-+		struct rtc_time tm; \
-+		getnstimeofday(&ts); \
-+		rtc_time_to_tm(ts.tv_sec, &tm); \
-+		pr_info(fmt "(%d-%02d-%02d %02d:%02d:%02d.%09lu UTC)\n" , \
-+			args, \
-+			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, \
-+			tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec); \
-+	} while (0);
-+
-+static void print_active_blockers_locked(void)
++static int create_user_suspend_blocker(struct file *file, void __user *name,
++				 size_t name_len)
 +{
-+	struct suspend_blocker *blocker;
++	struct user_suspend_blocker *bl;
++	if (file->private_data)
++		return -EBUSY;
++	if (name_len > NAME_MAX)
++		return -ENAMETOOLONG;
++	bl = kzalloc(sizeof(*bl) + name_len + 1, GFP_KERNEL);
++	if (!bl)
++		return -ENOMEM;
++	if (copy_from_user(bl->name, name, name_len))
++		goto err_fault;
++	suspend_blocker_init(&bl->blocker, bl->name);
++	file->private_data = bl;
++	return 0;
 +
-+	list_for_each_entry(blocker, &active_blockers, link)
-+		pr_info("active suspend blocker %s\n", blocker->name);
++err_fault:
++	kfree(bl);
++	return -EFAULT;
 +}
 +
-+/**
-+ * suspend_is_blocked() - Check if suspend should be blocked
-+ *
-+ * suspend_is_blocked can be used by generic power management code to abort
-+ * suspend.
-+ *
-+ * To preserve backward compatibility suspend_is_blocked returns 0 unless it
-+ * is called during suspend initiated from the suspend_block code.
-+ */
-+bool suspend_is_blocked(void)
++static long user_suspend_blocker_ioctl(struct file *file, unsigned int cmd,
++				unsigned long _arg)
 +{
-+	if (!enable_suspend_blockers)
++	void __user *arg = (void __user *)_arg;
++	struct user_suspend_blocker *bl;
++	long ret;
++
++	mutex_lock(&ioctl_lock);
++	if ((cmd & ~IOCSIZE_MASK) == SUSPEND_BLOCKER_IOCTL_INIT(0)) {
++		ret = create_user_suspend_blocker(file, arg, _IOC_SIZE(cmd));
++		goto done;
++	}
++	bl = file->private_data;
++	if (!bl) {
++		ret = -ENOENT;
++		goto done;
++	}
++	switch (cmd) {
++	case SUSPEND_BLOCKER_IOCTL_BLOCK:
++		suspend_block(&bl->blocker);
++		ret = 0;
++		break;
++	case SUSPEND_BLOCKER_IOCTL_UNBLOCK:
++		suspend_unblock(&bl->blocker);
++		ret = 0;
++		break;
++	default:
++		ret = -ENOTSUPP;
++	}
++done:
++	if (ret && (debug_mask & DEBUG_FAILURE))
++		pr_err("user_suspend_blocker_ioctl: cmd %x failed, %ld\n",
++			cmd, ret);
++	mutex_unlock(&ioctl_lock);
++	return ret;
++}
++
++static int user_suspend_blocker_release(struct inode *inode, struct file *file)
++{
++	struct user_suspend_blocker *bl = file->private_data;
++	if (!bl)
 +		return 0;
-+	return !list_empty(&active_blockers);
-+}
-+
-+static void suspend_worker(struct work_struct *work)
-+{
-+	int ret;
-+	int entry_event_num;
-+
-+	enable_suspend_blockers = true;
-+	while (!suspend_is_blocked()) {
-+		entry_event_num = current_event_num;
-+
-+		if (debug_mask & DEBUG_SUSPEND)
-+			pr_info("suspend: enter suspend\n");
-+
-+		ret = pm_suspend(requested_suspend_state);
-+
-+		if (debug_mask & DEBUG_EXIT_SUSPEND)
-+			pr_info_time("suspend: exit suspend, ret = %d ", ret);
-+
-+		if (current_event_num == entry_event_num)
-+			pr_info("suspend: pm_suspend returned with no event\n");
-+	}
-+	enable_suspend_blockers = false;
-+}
-+static DECLARE_WORK(suspend_work, suspend_worker);
-+
-+/**
-+ * suspend_blocker_init() - Initialize a suspend blocker
-+ * @blocker:	The suspend blocker to initialize.
-+ * @name:	The name of the suspend blocker to show in debug messages.
-+ *
-+ * The suspend blocker struct and name must not be freed before calling
-+ * suspend_blocker_destroy.
-+ */
-+void suspend_blocker_init(struct suspend_blocker *blocker, const char *name)
-+{
-+	unsigned long irqflags = 0;
-+
-+	WARN_ON(!name);
-+
-+	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
-+		pr_info("suspend_blocker_init name=%s\n", name);
-+
-+	blocker->name = name;
-+	blocker->flags = SB_INITIALIZED;
-+	INIT_LIST_HEAD(&blocker->link);
-+
-+	spin_lock_irqsave(&list_lock, irqflags);
-+	list_add(&blocker->link, &inactive_blockers);
-+	spin_unlock_irqrestore(&list_lock, irqflags);
-+}
-+EXPORT_SYMBOL(suspend_blocker_init);
-+
-+/**
-+ * suspend_blocker_destroy() - Destroy a suspend blocker
-+ * @blocker:	The suspend blocker to destroy.
-+ */
-+void suspend_blocker_destroy(struct suspend_blocker *blocker)
-+{
-+	unsigned long irqflags;
-+	if (WARN_ON(!(blocker->flags & SB_INITIALIZED)))
-+		return;
-+
-+	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
-+		pr_info("suspend_blocker_destroy name=%s\n", blocker->name);
-+
-+	spin_lock_irqsave(&list_lock, irqflags);
-+	blocker->flags &= ~SB_INITIALIZED;
-+	list_del(&blocker->link);
-+	if ((blocker->flags & SB_ACTIVE) && list_empty(&active_blockers))
-+		queue_work(pm_wq, &suspend_work);
-+	spin_unlock_irqrestore(&list_lock, irqflags);
-+}
-+EXPORT_SYMBOL(suspend_blocker_destroy);
-+
-+/**
-+ * suspend_block() - Block suspend
-+ * @blocker:	The suspend blocker to use
-+ *
-+ * It is safe to call this function from interrupt context.
-+ */
-+void suspend_block(struct suspend_blocker *blocker)
-+{
-+	unsigned long irqflags;
-+
-+	if (WARN_ON(!(blocker->flags & SB_INITIALIZED)))
-+		return;
-+
-+	spin_lock_irqsave(&list_lock, irqflags);
-+
-+	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
-+		pr_info("suspend_block: %s\n", blocker->name);
-+
-+	blocker->flags |= SB_ACTIVE;
-+	list_move(&blocker->link, &active_blockers);
-+	current_event_num++;
-+
-+	spin_unlock_irqrestore(&list_lock, irqflags);
-+}
-+EXPORT_SYMBOL(suspend_block);
-+
-+/**
-+ * suspend_unblock() - Unblock suspend
-+ * @blocker:	The suspend blocker to unblock.
-+ *
-+ * If no other suspend blockers block suspend, the system will suspend.
-+ *
-+ * It is safe to call this function from interrupt context.
-+ */
-+void suspend_unblock(struct suspend_blocker *blocker)
-+{
-+	unsigned long irqflags;
-+
-+	if (WARN_ON(!(blocker->flags & SB_INITIALIZED)))
-+		return;
-+
-+	spin_lock_irqsave(&list_lock, irqflags);
-+
-+	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
-+		pr_info("suspend_unblock: %s\n", blocker->name);
-+
-+	list_move(&blocker->link, &inactive_blockers);
-+
-+	if ((blocker->flags & SB_ACTIVE) && list_empty(&active_blockers))
-+		queue_work(pm_wq, &suspend_work);
-+	blocker->flags &= ~(SB_ACTIVE);
-+	if (blocker == &main_suspend_blocker) {
-+		if (debug_mask & DEBUG_SUSPEND)
-+			print_active_blockers_locked();
-+	}
-+	spin_unlock_irqrestore(&list_lock, irqflags);
-+}
-+EXPORT_SYMBOL(suspend_unblock);
-+
-+/**
-+ * suspend_blocker_is_active() - Test if a suspend blocker is blocking suspend
-+ * @blocker:	The suspend blocker to check.
-+ *
-+ * Returns true if the suspend_blocker is currently active.
-+ */
-+bool suspend_blocker_is_active(struct suspend_blocker *blocker)
-+{
-+	WARN_ON(!(blocker->flags & SB_INITIALIZED));
-+
-+	return !!(blocker->flags & SB_ACTIVE);
-+}
-+EXPORT_SYMBOL(suspend_blocker_is_active);
-+
-+bool request_suspend_valid_state(suspend_state_t state)
-+{
-+	return (state == PM_SUSPEND_ON) || valid_state(state);
-+}
-+
-+int request_suspend_state(suspend_state_t state)
-+{
-+	unsigned long irqflags;
-+
-+	if (!request_suspend_valid_state(state))
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&state_lock, irqflags);
-+
-+	if (debug_mask & DEBUG_USER_STATE)
-+		pr_info_time("request_suspend_state: %s (%d->%d) at %lld ",
-+			     state != PM_SUSPEND_ON ? "sleep" : "wakeup",
-+			     requested_suspend_state, state,
-+			     ktime_to_ns(ktime_get()));
-+
-+	requested_suspend_state = state;
-+	if (state == PM_SUSPEND_ON)
-+		suspend_block(&main_suspend_blocker);
-+	else
-+		suspend_unblock(&main_suspend_blocker);
-+	spin_unlock_irqrestore(&state_lock, irqflags);
++	suspend_blocker_destroy(&bl->blocker);
++	kfree(bl);
 +	return 0;
 +}
 +
-+void __init suspend_block_init(void)
++const struct file_operations user_suspend_blocker_fops = {
++	.release = user_suspend_blocker_release,
++	.unlocked_ioctl = user_suspend_blocker_ioctl,
++};
++
++struct miscdevice user_suspend_blocker_device = {
++	.minor = MISC_DYNAMIC_MINOR,
++	.name = "suspend_blocker",
++	.fops = &user_suspend_blocker_fops,
++};
++
++static int __init user_suspend_blocker_init(void)
 +{
-+	suspend_blocker_init(&main_suspend_blocker, "main");
-+	suspend_block(&main_suspend_blocker);
++	return misc_register(&user_suspend_blocker_device);
 +}
++
++static void __exit user_suspend_blocker_exit(void)
++{
++	misc_deregister(&user_suspend_blocker_device);
++}
++
++module_init(user_suspend_blocker_init);
++module_exit(user_suspend_blocker_exit);
 -- 
 1.6.5.1
 
