@@ -1,136 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934306Ab0D3TLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:11:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3401 "EHLO mga11.intel.com"
+	id S1758160Ab0D3Q7E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 12:59:04 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60359 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758173Ab0D3Q71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:59:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,294,1270450800"; 
-   d="scan'208";a="793893292"
-From: Shane Wang <shane.wang@intel.com>
-To: avi@redhat.com, hpa@zytor.com, mingo@elte.hu, joseph.cihula@intel.com
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: [PATCH] intel_txt: enable VMXON check with SMX in KVM
-Date: Thu, 29 Apr 2010 12:09:01 -0400
-Message-Id: <1272557341-3777-1-git-send-email-shane.wang@intel.com>
-X-Mailer: git-send-email 1.6.0
+	id S1758018Ab0D3Q6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 12:58:37 -0400
+Date: Fri, 30 Apr 2010 10:52:11 GMT
+From: tip-bot for Liang Li <liang.li@windriver.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       yinghai@kernel.org, konrad.wilk@oracle.com, liang.li@windriver.com,
+       wangchen@cn.fujitsu.com, jeremy.fitzhardinge@citrix.com,
+       akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       liang.li@windriver.com, konrad.wilk@oracle.com, yinghai@kernel.org,
+       wangchen@cn.fujitsu.com, jeremy.fitzhardinge@citrix.com,
+       akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1272621711-8683-1-git-send-email-liang.li@windriver.com>
+References: <1272621711-8683-1-git-send-email-liang.li@windriver.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Fix 'reservetop=' functionality
+Message-ID: <tip-e67a807f3d9a82fa91817871f1c0e2e04da993b8@git.kernel.org>
+Git-Commit-ID: e67a807f3d9a82fa91817871f1c0e2e04da993b8
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 30 Apr 2010 10:52:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per document, for feature control MSR
-Bit 1 enables VMXON in SMX operation. If the bit is clear, execution of VMXON in SMX operation causes a general-protection exception.
-Bit 2 enables VMXON outside SMX operation. If the bit is clear, execution of VMXON outside SMX operation causes a general-protection exception.
+Commit-ID:  e67a807f3d9a82fa91817871f1c0e2e04da993b8
+Gitweb:     http://git.kernel.org/tip/e67a807f3d9a82fa91817871f1c0e2e04da993b8
+Author:     Liang Li <liang.li@windriver.com>
+AuthorDate: Fri, 30 Apr 2010 18:01:51 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 30 Apr 2010 12:19:53 +0200
 
-This patch is to enable this kind of check with SMX for VMXON in KVM.
+x86: Fix 'reservetop=' functionality
 
-Signed-off-by: Shane Wang <shane.wang@intel.com>
+When specifying the 'reservetop=0xbadc0de' kernel parameter,
+the kernel will stop booting due to a early_ioremap bug that
+relates to commit 8827247ff.
+
+The root cause of boot failure problem is the value of
+'slot_virt[i]' was initialized in setup_arch->early_ioremap_init().
+But later in setup_arch, the function 'parse_early_param' will
+modify 'FIXADDR_TOP' when 'reservetop=0xbadc0de' being specified.
+
+The simplest fix might be use __fix_to_virt(idx0) to get updated
+value of 'FIXADDR_TOP' in '__early_ioremap' instead of reference
+old value from slot_virt[slot] directly.
+
+Changelog since v0:
+
+-v1: When reservetop being handled then FIXADDR_TOP get
+     adjusted, Hence check prev_map then re-initialize slot_virt and
+     PMD based on new FIXADDR_TOP.
+
+-v2: place fixup_early_ioremap hence call early_ioremap_init in
+     reserve_top_address  to re-initialize slot_virt and
+     corresponding PMD when parse_reservertop
+
+-v3: move fixup_early_ioremap out of reserve_top_address to make
+     sure other clients of reserve_top_address like xen/lguest won't
+     broken
+
+Signed-off-by: Liang Li <liang.li@windriver.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: Wang Chen <wangchen@cn.fujitsu.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+LKML-Reference: <1272621711-8683-1-git-send-email-liang.li@windriver.com>
+[ fixed three small cleanliness details in fixup_early_ioremap() ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/msr-index.h |    5 ++--
- arch/x86/kernel/tboot.c          |    1
- arch/x86/kvm/vmx.c               |   32 +++++++++++++++++++----------
- include/linux/tboot.h            |    1
- 4 files changed, 26 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/io.h |    1 +
+ arch/x86/mm/ioremap.c     |   14 ++++++++++++++
+ arch/x86/mm/pgtable_32.c  |    1 +
+ 3 files changed, 16 insertions(+), 0 deletions(-)
 
-diff -r a96602743dbd arch/x86/include/asm/msr-index.h
---- a/arch/x86/include/asm/msr-index.h	Thu Apr 29 11:49:08 2010 -0400
-+++ b/arch/x86/include/asm/msr-index.h	Thu Apr 29 11:49:40 2010 -0400
-@@ -202,8 +202,9 @@
- #define MSR_IA32_EBL_CR_POWERON		0x0000002a
- #define MSR_IA32_FEATURE_CONTROL        0x0000003a
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index a1dcfa3..30a3e97 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -347,6 +347,7 @@ extern void __iomem *early_ioremap(resource_size_t phys_addr,
+ extern void __iomem *early_memremap(resource_size_t phys_addr,
+ 				    unsigned long size);
+ extern void early_iounmap(void __iomem *addr, unsigned long size);
++extern void fixup_early_ioremap(void);
  
--#define FEATURE_CONTROL_LOCKED		(1<<0)
--#define FEATURE_CONTROL_VMXON_ENABLED	(1<<2)
-+#define FEATURE_CONTROL_LOCKED				(1<<0)
-+#define FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX	(1<<1)
-+#define FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX	(1<<2)
+ #define IO_SPACE_LIMIT 0xffff
  
- #define MSR_IA32_APICBASE		0x0000001b
- #define MSR_IA32_APICBASE_BSP		(1<<8)
-diff -r a96602743dbd arch/x86/kernel/tboot.c
---- a/arch/x86/kernel/tboot.c	Thu Apr 29 11:49:08 2010 -0400
-+++ b/arch/x86/kernel/tboot.c	Thu Apr 29 11:49:40 2010 -0400
-@@ -46,6 +46,7 @@
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 5eb1ba7..12e4d2d 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -448,6 +448,20 @@ static inline void __init early_clear_fixmap(enum fixed_addresses idx)
+ static void __iomem *prev_map[FIX_BTMAPS_SLOTS] __initdata;
+ static unsigned long prev_size[FIX_BTMAPS_SLOTS] __initdata;
  
- /* Global pointer to shared data; NULL means no measured launch. */
- struct tboot *tboot __read_mostly;
-+EXPORT_SYMBOL(tboot);
- 
- /* timeout for APs (in secs) to enter wait-for-SIPI state during shutdown */
- #define AP_WAIT_TIMEOUT		1
-diff -r a96602743dbd arch/x86/kvm/vmx.c
---- a/arch/x86/kvm/vmx.c	Thu Apr 29 11:49:08 2010 -0400
-+++ b/arch/x86/kvm/vmx.c	Thu Apr 29 11:49:40 2010 -0400
-@@ -27,6 +27,7 @@
- #include <linux/moduleparam.h>
- #include <linux/ftrace_event.h>
- #include <linux/slab.h>
-+#include <linux/tboot.h>
- #include "kvm_cache_regs.h"
- #include "x86.h"
- 
-@@ -1176,9 +1177,16 @@ static __init int vmx_disabled_by_bios(v
- 	u64 msr;
- 
- 	rdmsrl(MSR_IA32_FEATURE_CONTROL, msr);
--	return (msr & (FEATURE_CONTROL_LOCKED |
--		       FEATURE_CONTROL_VMXON_ENABLED))
--	    == FEATURE_CONTROL_LOCKED;
-+	if (!!(msr & FEATURE_CONTROL_LOCKED)) {
-+		if (!(msr & FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX)
-+			&& tboot_enabled())
-+			return 1;
-+		if (!(msr & FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX)
-+			&& !tboot_enabled())
-+			return 1;
++void __init fixup_early_ioremap(void)
++{
++	int i;
++
++	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
++		if (prev_map[i]) {
++			WARN_ON(1);
++			break;
++		}
 +	}
 +
-+	return 0;
- 	/* locked but not enabled */
- }
- 
-@@ -1186,21 +1194,23 @@ static int hardware_enable(void *garbage
++	early_ioremap_init();
++}
++
+ static int __init check_early_ioremap_leak(void)
  {
- 	int cpu = raw_smp_processor_id();
- 	u64 phys_addr = __pa(per_cpu(vmxarea, cpu));
--	u64 old;
-+	u64 old, test_bits;
+ 	int count = 0;
+diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
+index 1a8faf0..26eadaa 100644
+--- a/arch/x86/mm/pgtable_32.c
++++ b/arch/x86/mm/pgtable_32.c
+@@ -128,6 +128,7 @@ static int __init parse_reservetop(char *arg)
  
- 	if (read_cr4() & X86_CR4_VMXE)
- 		return -EBUSY;
- 
- 	INIT_LIST_HEAD(&per_cpu(vcpus_on_cpu, cpu));
- 	rdmsrl(MSR_IA32_FEATURE_CONTROL, old);
--	if ((old & (FEATURE_CONTROL_LOCKED |
--		    FEATURE_CONTROL_VMXON_ENABLED))
--	    != (FEATURE_CONTROL_LOCKED |
--		FEATURE_CONTROL_VMXON_ENABLED))
-+
-+	test_bits = FEATURE_CONTROL_LOCKED;
-+	test_bits |= FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX;
-+	if (tboot_enabled())
-+		test_bits |= FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX;
-+
-+	if ((old & test_bits) != test_bits) {
- 		/* enable and lock */
--		wrmsrl(MSR_IA32_FEATURE_CONTROL, old |
--		       FEATURE_CONTROL_LOCKED |
--		       FEATURE_CONTROL_VMXON_ENABLED);
-+		wrmsrl(MSR_IA32_FEATURE_CONTROL, old | test_bits);
-+	}
- 	write_cr4(read_cr4() | X86_CR4_VMXE); /* FIXME: not cpu hotplug safe */
- 	asm volatile (ASM_VMX_VMXON_RAX
- 		      : : "a"(&phys_addr), "m"(phys_addr)
-diff -r a96602743dbd include/linux/tboot.h
---- a/include/linux/tboot.h	Thu Apr 29 11:49:08 2010 -0400
-+++ b/include/linux/tboot.h	Thu Apr 29 11:49:40 2010 -0400
-@@ -150,6 +150,7 @@ extern int tboot_force_iommu(void);
- 
- #else
- 
-+#define tboot_enabled()			0
- #define tboot_probe()			do { } while (0)
- #define tboot_shutdown(shutdown_type)	do { } while (0)
- #define tboot_sleep(sleep_state, pm1a_control, pm1b_control)	\
+ 	address = memparse(arg, &arg);
+ 	reserve_top_address(address);
++	fixup_early_ioremap();
+ 	return 0;
+ }
+ early_param("reservetop", parse_reservetop);
