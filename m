@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab0D3RVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:21:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30982 "EHLO mx1.redhat.com"
+	id S934083Ab0D3SfS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:35:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23313 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933087Ab0D3RVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:21:22 -0400
+	id S933139Ab0D3RVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:21:54 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/7] KEYS: Fix an RCU warning in the reading of user keys
+Subject: [PATCH 6/7] KEYS: Better handling of errors from construct_alloc_key()
 To: torvalds@osdl.org, akpm@linux-foundation.org
 Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Fri, 30 Apr 2010 14:32:08 +0100
-Message-ID: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
+Date: Fri, 30 Apr 2010 14:32:34 +0100
+Message-ID: <20100430133234.2126.63891.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
+References: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -25,47 +27,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix an RCU warning in the reading of user keys:
+Errors from construct_alloc_key() shouldn't just be ignored in the way they are
+by construct_key_and_link().  The only error that can be ignored so is
+EINPROGRESS as that is used to indicate that we've found a key and don't need
+to construct one.
 
-===================================================
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-security/keys/user_defined.c:202 invoked rcu_dereference_check() without protection!
+We don't, however, handle ENOMEM, EDQUOT or EACCES to indicate allocation
+failures of one sort or another.
 
-other info that might help us debug this:
-
-
-rcu_scheduler_active = 1, debug_locks = 0
-1 lock held by keyctl/3637:
- #0:  (&key->sem){+++++.}, at: [<ffffffff811a80ae>] keyctl_read_key+0x9c/0xcf
-
-stack backtrace:
-Pid: 3637, comm: keyctl Not tainted 2.6.34-rc5-cachefs #18
-Call Trace:
- [<ffffffff81051f6c>] lockdep_rcu_dereference+0xaa/0xb2
- [<ffffffff811aa55f>] user_read+0x47/0x91
- [<ffffffff811a80be>] keyctl_read_key+0xac/0xcf
- [<ffffffff811a8a06>] sys_keyctl+0x75/0xb7
- [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
-
+Reported-by: Vegard Nossum <vegard.nossum@gmail.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- security/keys/user_defined.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ security/keys/request_key.c |   24 ++++++++++++++++++++++--
+ 1 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
-index 7c687d5..e9aa079 100644
---- a/security/keys/user_defined.c
-+++ b/security/keys/user_defined.c
-@@ -199,7 +199,8 @@ long user_read(const struct key *key, char __user *buffer, size_t buflen)
- 	struct user_key_payload *upayload;
- 	long ret;
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index d8c1a6a..ac49c8a 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -302,6 +302,7 @@ static int construct_alloc_key(struct key_type *type,
+ 	const struct cred *cred = current_cred();
+ 	struct key *key;
+ 	key_ref_t key_ref;
++	int ret;
  
--	upayload = rcu_dereference(key->payload.data);
-+	upayload = rcu_dereference_protected(
-+		key->payload.data, rwsem_is_locked(&((struct key *)key)->sem));
- 	ret = upayload->datalen;
+ 	kenter("%s,%s,,,", type->name, description);
  
- 	/* we can return the data as is */
+@@ -337,14 +338,23 @@ static int construct_alloc_key(struct key_type *type,
+ 	kleave(" = 0 [%d]", key_serial(key));
+ 	return 0;
+ 
++	/* the key is now present - we tell the caller that we found it by
++	 * returning -EINPROGRESS  */
+ key_already_present:
+ 	mutex_unlock(&key_construction_mutex);
++	ret = 0;
+ 	if (dest_keyring) {
+-		__key_link(dest_keyring, key_ref_to_ptr(key_ref));
++		ret = __key_link(dest_keyring, key_ref_to_ptr(key_ref));
+ 		up_write(&dest_keyring->sem);
+ 	}
+ 	mutex_unlock(&user->cons_lock);
+ 	key_put(key);
++	if (ret < 0) {
++		key_ref_put(key_ref);
++		*_key = NULL;
++		kleave(" = %d [link]", ret);
++		return ret;
++	}
+ 	*_key = key = key_ref_to_ptr(key_ref);
+ 	kleave(" = -EINPROGRESS [%d]", key_serial(key));
+ 	return -EINPROGRESS;
+@@ -390,6 +400,10 @@ static struct key *construct_key_and_link(struct key_type *type,
+ 			kdebug("cons failed");
+ 			goto construction_failed;
+ 		}
++	} else if (ret == -EINPROGRESS) {
++		ret = 0;
++	} else {
++		key = ERR_PTR(ret);
+ 	}
+ 
+ 	key_put(dest_keyring);
+@@ -422,6 +436,7 @@ struct key *request_key_and_link(struct key_type *type,
+ 	const struct cred *cred = current_cred();
+ 	struct key *key;
+ 	key_ref_t key_ref;
++	int ret;
+ 
+ 	kenter("%s,%s,%p,%zu,%p,%p,%lx",
+ 	       type->name, description, callout_info, callout_len, aux,
+@@ -435,8 +450,13 @@ struct key *request_key_and_link(struct key_type *type,
+ 		key = key_ref_to_ptr(key_ref);
+ 		if (dest_keyring) {
+ 			construct_get_dest_keyring(&dest_keyring);
+-			key_link(dest_keyring, key);
++			ret = key_link(dest_keyring, key);
+ 			key_put(dest_keyring);
++			if (ret < 0) {
++				key_put(key);
++				key = ERR_PTR(ret);
++				goto error;
++			}
+ 		}
+ 	} else if (PTR_ERR(key_ref) != -EAGAIN) {
+ 		key = ERR_CAST(key_ref);
 
