@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933862Ab0D3SMS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:12:18 -0400
-Received: from ey-out-2122.google.com ([74.125.78.24]:29065 "EHLO
-	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933336Ab0D3SI7 (ORCPT
+	id S933669Ab0D3SMF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:12:05 -0400
+Received: from fallback.mail.elte.hu ([157.181.151.13]:44970 "EHLO
+	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932551Ab0D3SJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:08:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=G8U559ChF1vo273Z816EgQZtvpsLDjDYzYYk8TYe1kZB8YL8fGGhzCgHt6/BDWtG/j
-         QeBrV/uVrL3gbp5EqKSbac8AksOVLTffpyYrUVbjmivNLP66QBS34z3ELNC8G3Szbl/H
-         FDwnx/mXsHNQSi37zRgP7ncnebphwyWYvC/Xc=
-From: Roel Van Nyen <roel.vannyen@gmail.com>
-To: gregkh@suse.de
-Cc: jic23@cam.ac.uk, roel.vannyen@gmail.com, akpm@linux-foundation.org,
-       sonic.adi@gmail.com, lindner_marek@yahoo.de, sdietrich@novell.com,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: iio: Fix remaining code style issues
-Date: Thu, 29 Apr 2010 19:27:31 +0200
-Message-Id: <1272562051-2098-1-git-send-email-roel.vannyen@gmail.com>
-X-Mailer: git-send-email 1.6.3.3
+	Fri, 30 Apr 2010 14:09:01 -0400
+Date: Fri, 30 Apr 2010 09:57:49 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL] perf: Initial regression testing command
+Message-ID: <20100430075749.GB20342@elte.hu>
+References: <1272579244-3981-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272579244-3981-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix code style issues
 
-Signed-of-by: Roel Van Nyen <roel.vannyen@gmail.com>
----
- drivers/staging/iio/industrialio-core.c |    2 +-
- drivers/staging/iio/ring_sw.c           |    3 +--
- 2 files changed, 2 insertions(+), 3 deletions(-)
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
-index 1d77082..dce8dcc 100644
---- a/drivers/staging/iio/industrialio-core.c
-+++ b/drivers/staging/iio/industrialio-core.c
-@@ -810,7 +810,7 @@ int iio_device_register(struct iio_dev *dev_info)
- 	ret = iio_device_register_eventset(dev_info);
- 	if (ret) {
- 		dev_err(dev_info->dev.parent,
--			"Failed to register event set \n");
-+			"Failed to register event set\n");
- 		goto error_free_sysfs;
- 	}
- 	if (dev_info->modes & INDIO_RING_TRIGGERED)
-diff --git a/drivers/staging/iio/ring_sw.c b/drivers/staging/iio/ring_sw.c
-index e95b6a4..4981803 100644
---- a/drivers/staging/iio/ring_sw.c
-+++ b/drivers/staging/iio/ring_sw.c
-@@ -126,8 +126,7 @@ int iio_store_to_sw_ring(struct iio_sw_ring_buffer *ring,
- 		spin_lock(&ring->buf.shared_ev_pointer.lock);
- 
- 		ret = iio_push_or_escallate_ring_event(&ring->buf,
--						       IIO_EVENT_CODE_RING_100_FULL,
--						       timestamp);
-+			       IIO_EVENT_CODE_RING_100_FUL, timestamp);
- 		spin_unlock(&ring->buf.shared_ev_pointer.lock);
- 		if (ret)
- 			goto error_ret;
--- 
-1.6.3.3
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
+> 
+> 	Now there are 7 patches in that repo.
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (2):
+>   perf symbols: Add machine helper routines
+>   perf test: Initial regression testing command
+> 
+>  tools/perf/Documentation/perf-test.txt |   22 +++
+>  tools/perf/Makefile                    |    1 +
+>  tools/perf/builtin-kmem.c              |    2 +-
+>  tools/perf/builtin-test.c              |  281 ++++++++++++++++++++++++++++++++
+>  tools/perf/builtin.h                   |    1 +
+>  tools/perf/command-list.txt            |    1 +
+>  tools/perf/perf.c                      |    1 +
+>  tools/perf/util/map.h                  |   25 +++-
+>  tools/perf/util/symbol.c               |   77 +++++++---
+>  tools/perf/util/symbol.h               |    7 +
+>  10 files changed, 393 insertions(+), 25 deletions(-)
+>  create mode 100644 tools/perf/Documentation/perf-test.txt
+>  create mode 100644 tools/perf/builtin-test.c
 
+Pulled, thanks a lot Arnaldo!
+
+	Ingo
