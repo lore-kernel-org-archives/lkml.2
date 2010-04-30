@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759493Ab0D3TN3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:13:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:54671 "EHLO mga01.intel.com"
+	id S1759513Ab0D3TOZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:14:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60359 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759469Ab0D3TNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 15:13:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,304,1270450800"; 
-   d="scan'208";a="794404677"
-Date: Fri, 30 Apr 2010 12:13:01 -0700 (Pacific Daylight Time)
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: "davem@davemloft.net" <davem@davemloft.net>,
-       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH linux-next v2 1/2] irq: Add CPU mask affinity hint
-In-Reply-To: <alpine.LFD.2.00.1004302038140.2951@localhost.localdomain>
-Message-ID: <Pine.WNT.4.64.1004301212060.6636@PPWASKIE-MOBL2.amr.corp.intel.com>
-References: <20100430085150.4630.46790.stgit@ppwaskie-hc2.jf.intel.com>
- <alpine.LFD.2.00.1004301249540.2951@localhost.localdomain>
- <Pine.WNT.4.64.1004301059230.6264@PPWASKIE-MOBL2.amr.corp.intel.com>
- <alpine.LFD.2.00.1004302038140.2951@localhost.localdomain>
-X-X-Sender: ppwaskie@imapmail.glb.intel.com
+	id S1758153Ab0D3Q6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 12:58:40 -0400
+Message-ID: <4BDA8DCA.9010401@kernel.org>
+Date: Fri, 30 Apr 2010 09:59:06 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Ingo Molnar <mingo@elte.hu>
+CC: Jiri Kosina <jkosina@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
+       Paul Mackerras <paulus@au1.ibm.com>
+Subject: Re: [PATCH] trivial: use (C) instead of \251
+References: <4BD80037.9060704@kernel.org> <alpine.LNX.2.00.1004290040510.9849@pobox.suse.cz> <20100430075510.GA21105@elte.hu>
+In-Reply-To: <20100430075510.GA21105@elte.hu>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 30 Apr 2010 07:59:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010, Thomas Gleixner wrote:
+Hello,
 
-> On Fri, 30 Apr 2010, Peter P Waskiewicz Jr wrote:
->> On Fri, 30 Apr 2010, Thomas Gleixner wrote:
->>>> +extern int irq_register_affinity_hint(unsigned int irq,
->>>> +                                      const struct cpumask *m);
->>>
->>> I think we can do with a single funtion irq_set_affinity_hint() and
->>> let the caller set the pointer to NULL.
->>
->> Ok, I've been running into some issues.  If CONFIG_CPUMASK_OFFSTACK is not
->> set, then cpumask_var_t structs are single-element arrays that cannot be
->> NULL'd out.  I'm pretty sure I need to keep the unregister part of the API.
->> Thoughts?
->
-> extern int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m);
->
-> So why should calling irq_set_affinity_hint(irqnr, NULL) not work ?
+On 04/30/2010 09:55 AM, Ingo Molnar wrote:
+> A similar patch was sent a few weeks ago, it was objected to and rejected - 
+> the copyright character was used for legal reasons.
 
-What was that you said about coffee and brain cells?  :-)
+Paul says that "Copyright" is enough, so what are the legal reasons?
 
->
->> I just looked at the original show_affinity function, and it does not grab
->> desc->lock before copying mask out of desc.  Should I follow that model, or
->> should I fix that function to honor desc->lock?
->
-> desc->affinity can only race against something changing the affinity
-> bits, so that just might return some random data.
->
-> In the hint case the irq could be shut down and the affinity hint
-> could be freed while you are accessing it. Not a good idea :)
+Also, if the copyright designator absolutely has to be there, then can
+it be in UTF-8 at least?
 
-Good point.
+Thanks.
 
-Latest spin coming shortly.  Thanks for the quick feedback!
-
--PJ
+-- 
+tejun
