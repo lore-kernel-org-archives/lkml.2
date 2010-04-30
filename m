@@ -1,137 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933109Ab0D3RVd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:21:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2297 "EHLO mga02.intel.com"
+	id S1757680Ab0D3RTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:19:12 -0400
+Received: from kroah.org ([198.145.64.141]:39649 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933084Ab0D3RVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:21:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,296,1270450800"; 
-   d="scan'208";a="513698692"
-Subject: Re: [PATCH RFC: linux-next 1/2] irq: Add CPU mask affinity hint
- callback framework
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "davem@davemloft.net" <davem@davemloft.net>,
-       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.00.1004271809080.2951@localhost.localdomain>
-References: <20100419045741.30276.23233.stgit@ppwaskie-hc2.jf.intel.com>
-	 <alpine.LFD.2.00.1004271425140.2951@localhost.localdomain>
-	 <Pine.WNT.4.64.1004270856560.320@PPWASKIE-MOBL2.amr.corp.intel.com>
-	 <alpine.LFD.2.00.1004271809080.2951@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 29 Apr 2010 10:59:06 -0700
-Message-ID: <1272563946.9614.1.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S933000Ab0D3RSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:18:33 -0400
+Date: Fri, 30 Apr 2010 09:01:53 -0700
+From: Greg KH <greg@kroah.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Ming Lei <tom.leiming@gmail.com>,
+       Catalin Marinas <catalin.marinas@arm.com>,
+       Tomas Winkler <tomas.winkler@intel.com>
+Subject: Re: firmware_class: fix memory leak - free allocated pages
+Message-ID: <20100430160153.GA11967@kroah.com>
+References: <1272565577-26587-1-git-send-email-tomas.winkler@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272565577-26587-1-git-send-email-tomas.winkler@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-28 at 09:45 -0700, Thomas Gleixner wrote:
-> B1;2005;0cPeter,
+On Thu, Apr 29, 2010 at 09:26:17PM +0300, David Woodhouse wrote:
 > 
-> On Tue, 27 Apr 2010, Peter P Waskiewicz Jr wrote:
-> > On Tue, 27 Apr 2010, Thomas Gleixner wrote:
-> > > On Sun, 18 Apr 2010, Peter P Waskiewicz Jr wrote:
-> > > > +/**
-> > > > + * struct irqaffinityhint - per interrupt affinity helper
-> > > > + * @callback:	device driver callback function
-> > > > + * @dev:	reference for the affected device
-> > > > + * @irq:	interrupt number
-> > > > + */
-> > > > +struct irqaffinityhint {
-> > > > +	irq_affinity_hint_t callback;
-> > > > +	void *dev;
-> > > > +	int irq;
-> > > > +};
-> > > 
-> > > Why do you need that extra data structure ? The device and the irq
-> > > number are known, so all you need is the callback itself. So no need
-> > > for allocating memory ....
-> > 
-> > When I register the function callback with the interrupt layer, I need to
-> > know what device structures to reference back in the driver.  In other words,
-> > if I call into an underlying driver with just an interrupt number, then I
-> > have no way at getting at the dev structures (netdevice for me, plus my
-> > private adapter structures), unless I declare them globally (yuck).
+> From: David Woodhouse <dwmw2@infradead.org>
 > 
-> Grr, I knew that I missed something. That'll teach me to review
-> patches before the coffee has reached my brain cells :)
+> fix memory leak introduced by the patch 6e03a201bbe:
+> firmware: speed up request_firmware()
 > 
-> > I had a different approach before this one where I assumed the device from
-> > the irq handler callback was safe to use for the device in this new callback.
-> > I didn't feel really great about that, since it's an implicit assumption that
-> > could cause things to go sideways really quickly.
-> >
-> > Let me know what you think either way.  I'm certainly willing to make a
-> > change, I just don't know at this point what's the safest approach from what
-> > I currently have.
+> 1. vfree won't release pages there were allocated explicitly and mapped
+> using vmap. The memory has to be vunmap-ed and the pages needs
+> to be freed explicitly
 > 
-> So you need a reference to your device, so what about the following:
+> 2. page array is moved into the 'struct
+> firmware' so that we can free it from release_firmware()
+> and not only in fw_dev_release()
 > 
-> struct irq_affinity_hint;
-> 
-> struct irq_affinity_hint {
->        unsigned int (*callback)(unsigned int irq, struct irq_affinity_hint *hint,
-> 				cpumask_var_t *mask);
-> }
-> 
-> Now you embed that struct into your device private data structure and
-> you get the reference to it back in the callback function. No extra
-> kmalloc/kfree, less code.
+> The fix doesn't break the firmware load speed.
 
-Good idea!  I'll roll that into my new version.
+But it does create a ton of compiler warnings due the const * change.  I
+had to fix up the patch to get the firmware.c file to build cleanly, but
+that then causes a bunch of warnings all over the tree.
 
-> One other thing I noticed, but forgot to comment on:
+So can someone please fix the patch up properly so it doesn't have these
+problems and resend it to me?
+
+thanks,
+
+greg k-h
+
 > 
-> > +static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
-> > +{
-> > +	struct irq_desc *desc = irq_to_desc((long)m->private);
-> > +	struct cpumask mask;
-> > +	unsigned int ret = 0;
+> Cc: Johannes Berg <johannes@sipsolutions.net>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Ming Lei <tom.leiming@gmail.com>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Signed-off-by: David Woodhouse <dwmw2@infradead.org>
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 > 
->  Why do we return 0, when there is no callback and no hint available ?
-
-I initialized it to 0 to remove a compiler warning; I can put more
-thought into it and assign a more appropriate return value.
-
-> > +
+> ---
+>  drivers/base/firmware_class.c |   30 +++++++++++++++++++++++-------
+>  include/linux/firmware.h      |    5 +++--
+>  2 files changed, 26 insertions(+), 9 deletions(-)
 > 
->   We don't want to have cpumask enforced on stack. Please make that:
-> 
->      	cpumask_var_t mask;
-> 
-> 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-> 	       return -ENOMEM;
-
-I'll roll this into my next version.
-
-> > +	if (desc->hint && desc->hint->callback) {
-> 
->   The access to desc-> needs to be protected with
->   desc->lock. Otherwise you might race with a callback unregister.
-
-Good point.  I'll fix this.
-
-> > +		ret = desc->hint->callback(&mask, (long)m->private,
-> > +		                           desc->hint->dev);
-> > +		if (!ret)
-> > +			seq_cpumask(m, &mask);
-> > +	}
-> > +
-> > +	seq_putc(m, '\n');
-> > +	return ret;
-> > +}
-> 
-> Thanks,
-> 
-
-Thanks for the feedback.  I'll have the updated patches for review soon.
-
--PJ
-
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -130,6 +130,20 @@ static ssize_t firmware_loading_show(str
+>  	return sprintf(buf, "%d\n", loading);
+>  }
+>  
+> +static void firmware_free_data(struct firmware *fw)
+> +{
+> +	int i;
+> +	vunmap(fw->data);
+> +	fw->data = NULL;
+> +	if (fw->pages) {
+> +		for (i = 0; i < PFN_UP(fw->size); i++)
+> +			__free_page(fw->pages[i]);
+> +		kfree(fw->pages);
+> +	}
+> +	fw->pages = NULL;
+> +	fw->size = 0;
+> +}
+> +
+>  /* Some architectures don't have PAGE_KERNEL_RO */
+>  #ifndef PAGE_KERNEL_RO
+>  #define PAGE_KERNEL_RO PAGE_KERNEL
+> @@ -162,21 +176,20 @@ static ssize_t firmware_loading_store(st
+>  			mutex_unlock(&fw_lock);
+>  			break;
+>  		}
+> -		vfree(fw_priv->fw->data);
+> -		fw_priv->fw->data = NULL;
+> +		firmware_free_data(fw_priv->fw);
+> +		/* If the pages are not owned by 'struct firmware' */
+>  		for (i = 0; i < fw_priv->nr_pages; i++)
+>  			__free_page(fw_priv->pages[i]);
+>  		kfree(fw_priv->pages);
+>  		fw_priv->pages = NULL;
+>  		fw_priv->page_array_size = 0;
+>  		fw_priv->nr_pages = 0;
+> -		fw_priv->fw->size = 0;
+>  		set_bit(FW_STATUS_LOADING, &fw_priv->status);
+>  		mutex_unlock(&fw_lock);
+>  		break;
+>  	case 0:
+>  		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
+> -			vfree(fw_priv->fw->data);
+> +			vunmap(fw_priv->fw->data);
+>  			fw_priv->fw->data = vmap(fw_priv->pages,
+>  						 fw_priv->nr_pages,
+>  						 0, PAGE_KERNEL_RO);
+> @@ -184,7 +197,10 @@ static ssize_t firmware_loading_store(st
+>  				dev_err(dev, "%s: vmap() failed\n", __func__);
+>  				goto err;
+>  			}
+> -			/* Pages will be freed by vfree() */
+> +			/* Pages are now owned by 'struct firmware' */
+> +			fw_priv->fw->pages = fw_priv->pages;
+> +			fw_priv->pages = NULL;
+> +
+>  			fw_priv->page_array_size = 0;
+>  			fw_priv->nr_pages = 0;
+>  			complete(&fw_priv->completion);
+> @@ -568,7 +584,7 @@ request_firmware(const struct firmware *
+>   * @fw: firmware resource to release
+>   **/
+>  void
+> -release_firmware(const struct firmware *fw)
+> +release_firmware(struct firmware *fw)
+>  {
+>  	struct builtin_fw *builtin;
+>  
+> @@ -578,7 +594,7 @@ release_firmware(const struct firmware *
+>  			if (fw->data == builtin->data)
+>  				goto free_fw;
+>  		}
+> -		vfree(fw->data);
+> +		firmware_free_data(fw);
+>  	free_fw:
+>  		kfree(fw);
+>  	}
+> --- a/include/linux/firmware.h
+> +++ b/include/linux/firmware.h
+> @@ -12,6 +12,7 @@
+>  struct firmware {
+>  	size_t size;
+>  	const u8 *data;
+> +	struct page **pages;
+>  };
+>  
+>  struct device;
+> @@ -42,7 +43,7 @@ int request_firmware_nowait(
+>  	const char *name, struct device *device, gfp_t gfp, void *context,
+>  	void (*cont)(const struct firmware *fw, void *context));
+>  
+> -void release_firmware(const struct firmware *fw);
+> +void release_firmware(struct firmware *fw);
+>  #else
+>  static inline int request_firmware(const struct firmware **fw,
+>  				   const char *name,
+> @@ -58,7 +59,7 @@ static inline int request_firmware_nowai
+>  	return -EINVAL;
+>  }
+>  
+> -static inline void release_firmware(const struct firmware *fw)
+> +static inline void release_firmware(struct firmware *fw)
+>  {
+>  }
+>  #endif
