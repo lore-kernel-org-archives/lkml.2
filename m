@@ -1,108 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758562Ab0D3RNU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:13:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29506 "EHLO mga09.intel.com"
+	id S1757686Ab0D3RN2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:13:28 -0400
+Received: from www.tglx.de ([62.245.132.106]:36196 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932708Ab0D3RMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:12:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,301,1270450800"; 
-   d="scan'208";a="513910540"
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: [PATCH linux-next v2 2/2] ixgbe: Example usage of the new IRQ
-	affinity_hint callback
-To: tglx@linutronix.de, davem@davemloft.net, arjan@linux.jf.intel.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 30 Apr 2010 01:52:21 -0700
-Message-ID: <20100430085220.4630.14124.stgit@ppwaskie-hc2.jf.intel.com>
+	id S932747Ab0D3RMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:12:42 -0400
+Date: Fri, 30 Apr 2010 12:53:11 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+cc: davem@davemloft.net, arjan@linux.jf.intel.com, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH linux-next v2 1/2] irq: Add CPU mask affinity hint
 In-Reply-To: <20100430085150.4630.46790.stgit@ppwaskie-hc2.jf.intel.com>
+Message-ID: <alpine.LFD.2.00.1004301249540.2951@localhost.localdomain>
 References: <20100430085150.4630.46790.stgit@ppwaskie-hc2.jf.intel.com>
-User-Agent: StGIT/0.14.3
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses the new IRQ affinity_hint callback mechanism.
-It serves purely as an example of how a low-level driver can
-utilize this new interface.
+On Fri, 30 Apr 2010, Peter P Waskiewicz Jr wrote:
 
-An official ixgbe patch will be pushed through netdev once the
-IRQ patches have been accepted and merged.
+> This patch adds a cpumask affinity hint to the irq_desc
+> structure, along with a registration function and a read-only
+> proc entry for each interrupt.
+> 
+> This affinity_hint handle for each interrupt can be used by
+> underlying drivers that need a better mechanism to control
+> interrupt affinity.  The underlying driver can register a
+> cpumask for the interrupt, which will allow the driver to
+> provide the CPU mask for the interrupt to anything that
+> requests it.  The intent is to extend the userspace daemon,
+> irqbalance, to help hint to it a preferred CPU mask to balance
+> the interrupt into.
+> 
+> Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+> ---
+> 
+>  include/linux/interrupt.h |   13 +++++++++++++
+>  include/linux/irq.h       |    1 +
+>  kernel/irq/manage.c       |   28 ++++++++++++++++++++++++++++
+>  kernel/irq/proc.c         |   33 +++++++++++++++++++++++++++++++++
+>  4 files changed, 75 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index 75f3f00..9c9ea2a 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -209,6 +209,9 @@ extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
+>  extern int irq_can_set_affinity(unsigned int irq);
+>  extern int irq_select_affinity(unsigned int irq);
+>  
+> +extern int irq_register_affinity_hint(unsigned int irq,
+> +                                      const struct cpumask *m);
 
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
----
+I think we can do with a single funtion irq_set_affinity_hint() and
+let the caller set the pointer to NULL.
 
- drivers/net/ixgbe/ixgbe.h      |    2 ++
- drivers/net/ixgbe/ixgbe_main.c |   20 +++++++++++++++++++-
- 2 files changed, 21 insertions(+), 1 deletions(-)
+>  
+> +int irq_register_affinity_hint(unsigned int irq, const struct cpumask *m)
+> +{
+> +	struct irq_desc *desc = irq_to_desc(irq);
+> +	unsigned long flags;
 
-diff --git a/drivers/net/ixgbe/ixgbe.h b/drivers/net/ixgbe/ixgbe.h
-index 79c35ae..c220b9f 100644
---- a/drivers/net/ixgbe/ixgbe.h
-+++ b/drivers/net/ixgbe/ixgbe.h
-@@ -32,6 +32,7 @@
- #include <linux/pci.h>
- #include <linux/netdevice.h>
- #include <linux/aer.h>
-+#include <linux/cpumask.h>
- 
- #include "ixgbe_type.h"
- #include "ixgbe_common.h"
-@@ -236,6 +237,7 @@ struct ixgbe_q_vector {
- 	u8 tx_itr;
- 	u8 rx_itr;
- 	u32 eitr;
-+	cpumask_var_t affinity_mask;
- };
- 
- /* Helper macros to switch between ints/sec and what the register uses.
-diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
-index 1b1419c..28f9d6b 100644
---- a/drivers/net/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ixgbe/ixgbe_main.c
-@@ -1083,6 +1083,16 @@ static void ixgbe_configure_msix(struct ixgbe_adapter *adapter)
- 			q_vector->eitr = adapter->rx_eitr_param;
- 
- 		ixgbe_write_eitr(q_vector);
-+
-+		/*
-+		 * Allocate the affinity_hint cpumask, assign the mask for
-+		 * this vector, and register our affinity_hint for this irq.
-+		 */
-+		if (!alloc_cpumask_var(&q_vector->affinity_mask, GFP_KERNEL))
-+			return;
-+		cpumask_set_cpu(v_idx, q_vector->affinity_mask);
-+		irq_register_affinity_hint(adapter->msix_entries[v_idx].vector,
-+		                           q_vector->affinity_mask);
- 	}
- 
- 	if (adapter->hw.mac.type == ixgbe_mac_82598EB)
-@@ -3218,7 +3228,7 @@ void ixgbe_down(struct ixgbe_adapter *adapter)
- 	struct ixgbe_hw *hw = &adapter->hw;
- 	u32 rxctrl;
- 	u32 txdctl;
--	int i, j;
-+	int i, j, num_q_vectors = adapter->num_msix_vectors - NON_Q_VECTORS;
- 
- 	/* signal that we are down to the interrupt handler */
- 	set_bit(__IXGBE_DOWN, &adapter->state);
-@@ -3251,6 +3261,14 @@ void ixgbe_down(struct ixgbe_adapter *adapter)
- 
- 	ixgbe_napi_disable_all(adapter);
- 
-+	for (i = 0; i < num_q_vectors; i++) {
-+		struct ixgbe_q_vector *q_vector = adapter->q_vector[i];
-+		/* unregister the affinity_hint */
-+		irq_unregister_affinity_hint(adapter->msix_entries[i].vector);
-+		/* release the CPU mask memory */
-+		free_cpumask_var(q_vector->affinity_mask);
-+	}
-+
- 	clear_bit(__IXGBE_SFP_MODULE_NOT_FOUND, &adapter->state);
- 	del_timer_sync(&adapter->sfp_timer);
- 	del_timer_sync(&adapter->watchdog_timer);
+  desc needs to be checked. It might be NULL !
 
+> +
+> +	raw_spin_lock_irqsave(&desc->lock, flags);
+> +	desc->affinity_hint = m;
+> +	raw_spin_unlock_irqrestore(&desc->lock, flags);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(irq_register_affinity_hint);
+
+  EXPORT_SYMBOL_GPL please
+
+> +static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
+> +{
+> +	struct irq_desc *desc = irq_to_desc((long)m->private);
+> +	unsigned long flags;
+> +	int ret = -EINVAL;
+> +
+> +	raw_spin_lock_irqsave(&desc->lock, flags);
+> +	if (desc->affinity_hint) {
+> +		seq_cpumask(m, desc->affinity_hint);
+
+  Please make a local copy under desc->mask and do the seq_cpumask()
+  stuff on the local copy outside of desc->lock
+
+Thanks,
+
+	tglx
