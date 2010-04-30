@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934322Ab0D3TWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:22:43 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:34958 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932606Ab0D3TWP (ORCPT
+	id S1758789Ab0D3TYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:24:06 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:57193 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757520Ab0D3QsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 15:22:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:references:x-url:x-pgp-fp:x-pgp:date
-         :in-reply-to:message-id:user-agent:mime-version:content-type;
-        b=mOafYTusp3/UYR3YBSHqCQlTbH6og2At3njr5NyNN575hDov9I0HKn8hXMjhy2Gxl0
-         Oxovt/2WB3jfTImoqnWXtjO0VPyCNKCuYqMBCzKvs2nsF201NH4wwpnR1i4iJ8f5b4lI
-         7j0SFPKUBVMCpHOGgSBFnQjbIHQ0sBM3LHuY8=
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Greg KH <greg@kroah.com>
-Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-usb@vger.kernel.org,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 3/8] USB: gadget: __init and __exit tags removed
-References: <cover.1270835924.git.mina86@mina86.com>
-	<3baf39971e1f49e98498f5d00e21df4302396252.1270835924.git.mina86@mina86.com>
-	<e6cbed26355492a8cde57973da56bccbb55b85a1.1270835924.git.mina86@mina86.com>
-	<aa83c43874f8aa490300d6bd03472646f2727eb1.1270835924.git.mina86@mina86.com>
-	<20100429221529.GA16465@kroah.com> <87hbmtq2ua.fsf@erwin.mina86.com>
-	<20100429232245.GA3227@kroah.com>
-X-Url: http://mina86.com/
-X-PGP-FP: 9134 06FA 7AD8 D134 9D0C  C33F 532C CB00 B7C6 DF1E
-X-PGP: B7C6DF1E
-Date: Thu, 29 Apr 2010 22:41:48 -0700 (PDT)
-In-Reply-To: <20100429232245.GA3227@kroah.com> (Greg KH's message of "Thu, 29
-	Apr 2010 16:22:45 -0700")
-Message-ID: <87d3xhpkdi.fsf@erwin.mina86.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0 (Slckware Linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 30 Apr 2010 12:48:19 -0400
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Dan Magenheimer <dan.magenheimer@oracle.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+In-Reply-To: <4BDA8324.7090409@redhat.com>
+References: <4BD16D09.2030803@redhat.com>
+	 <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>
+	 <4BD1A74A.2050003@redhat.com>
+	 <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
+	 <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com>
+	 <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>
+	 <4BD3377E.6010303@redhat.com>
+	 <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>
+	 <ce808441-fae6-4a33-8335-f7702740097a@default>
+	 <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz>
+	 <4BDA8324.7090409@redhat.com>
+Content-Type: text/plain
+Date: Fri, 30 Apr 2010 09:04:26 -0700
+Message-Id: <1272643466.23895.2529.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On Fri, Apr 09, 2010 at 09:21:20PM +0200, Michal Nazarewicz wrote:
->>>> @@ -85,7 +85,7 @@ MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
->>>>   * This function returns the value of the function's bind(), which is
->>>>   * zero for success else a negative errno value.
->>>>   */
->>>> -int __init usb_add_function(struct usb_configuration *config,
->>>> +int __cold usb_add_function(struct usb_configuration *config,
+On Fri, 2010-04-30 at 10:13 +0300, Avi Kivity wrote:
+> On 04/30/2010 04:45 AM, Dave Hansen wrote:
+> >
+> > A large portion of CMM2's gain came from the fact that you could take
+> > memory away from guests without _them_ doing any work.  If the system is
+> > experiencing a load spike, you increase load even more by making the
+> > guests swap.  If you can just take some of their memory away, you can
+> > smooth that spike out.  CMM2 and frontswap do that.  The guests
+> > explicitly give up page contents that the hypervisor does not have to
+> > first consult with the guest before discarding.
+> >    
+> 
+> Frontswap does not do this.  Once a page has been frontswapped, the host 
+> is committed to retaining it until the guest releases it.  It's really 
+> not very different from a synchronous swap device.
+> 
+> I think cleancache allows the hypervisor to drop pages without the 
+> guest's immediate knowledge, but I'm not sure.
 
->> Greg KH <greg@kroah.com> writes:
->>> What is the "__cold" for?
- 
-> On Thu, Apr 29, 2010 at 04:02:55PM -0700, Michal Nazarewicz wrote:
->> __init, among other things implies __cold so I left __cold leaving
->> out __section.
+Gah.  You're right.  I'm  reading the two threads and confusing the
+concepts.  I'm a bit less mystified why the discussion is revolving
+around the swap device so much. :)
 
-Greg KH <greg@kroah.com> writes:
-> Hm, how about just dropping everything?  I don't think we need the
-> __cold here then, right?
+-- Dave
 
-As you wish.  I'm about to resend the whole patchset (probably today or
-Monday) with some new code so I'll include this change as well.
-
--- 
-Best regards,                                         _     _
- .o. | Liege of Serenly Enlightened Majesty of      o' \,=./ `o
- ..o | Computer Science,  Michal "mina86" Nazarewicz   (o o)
- ooo +--<mina86-tlen.pl>--<jid:mina86-jabber.org>--ooO--(_)--Ooo--
