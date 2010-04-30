@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758311Ab0D3RKm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:10:42 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:33528 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757530Ab0D3RK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:10:28 -0400
-Date: Thu, 29 Apr 2010 12:43:44 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] exofs: Fix "add bdi backing to mount session" fall out
-Message-ID: <20100429104344.GH27497@kernel.dk>
-References: <201004282059.o3SKx7hG029846@hera.kernel.org> <4BD95E7A.90402@panasas.com> <4BD96188.2030507@panasas.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BD96188.2030507@panasas.com>
+	id S1758547Ab0D3RK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:10:58 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:59618 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758387Ab0D3RKs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:10:48 -0400
+Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Avi Kivity <avi@redhat.com>, Pavel Machek <pavel@ucw.cz>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+In-Reply-To: <10e6761a-fb7a-421d-97fc-1f3b6cd94622@default>
+References: <4BD16D09.2030803@redhat.com> >
+	 <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> >
+	 <4BD1A74A.2050003@redhat.com> >
+	 <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> >
+	 <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com> >
+	 <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default> >
+	 <4BD3377E.6010303@redhat.com> >
+	 <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com> >
+	 <ce808441-fae6-4a33-8335-f7702740097a@default> >
+	 <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz>
+	 <4BDA8324.7090409@redhat.com>
+	 <084f72bf-21fd-4721-8844-9d10cccef316@default 4BDB026E.1030605@redhat.com>
+	 <10e6761a-fb7a-421d-97fc-1f3b6cd94622@default>
+Content-Type: text/plain
+Date: Fri, 30 Apr 2010 10:10:36 -0700
+Message-Id: <1272647436.23895.2625.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 29 2010, Boaz Harrosh wrote:
-> 
-> The patch: add bdi backing to mount session
-> 	(b3d0ab7e60d1865bb6f6a79a77aaba22f2543236)
-> 
-> Has a bug in the placement of the bdi member at
-> struct exofs_sb_info. The layout member must be kept
-> last.
-> 
-> Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-> ---
->  fs/exofs/exofs.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/exofs/exofs.h b/fs/exofs/exofs.h
-> index 5437327..22721b2 100644
-> --- a/fs/exofs/exofs.h
-> +++ b/fs/exofs/exofs.h
-> @@ -85,6 +85,7 @@ struct exofs_sb_info {
->  	u32		s_next_generation;	/* next gen # to use          */
->  	atomic_t	s_curr_pending;		/* number of pending commands */
->  	uint8_t		s_cred[OSD_CAP_LEN];	/* credential for the fscb    */
-> +	struct 		backing_dev_info bdi;	/* register our bdi with VFS  */
->  
->  	struct pnfs_osd_data_map data_map;	/* Default raid to use
->  						 * FIXME: Needed ?
-> @@ -93,7 +94,6 @@ struct exofs_sb_info {
->  	struct exofs_layout	layout;		/* Default files layout,
->  						 * contains the variable osd_dev
->  						 * array. Keep last */
-> -	struct backing_dev_info bdi;
->  	struct osd_dev	*_min_one_dev[1];	/* Place holder for one dev   */
->  };
+On Fri, 2010-04-30 at 09:43 -0700, Dan Magenheimer wrote:
+> And, importantly, "have your host expose a device which is write
+> cached by host memory"... you are implying that all guest swapping
+> should be done to a device managed/controlled by the host?  That
+> eliminates guest swapping to directIO/SRIOV devices doesn't it?
 
-Irk, silly mistake. Apparently I missed the comment, and I did move it
-prior to _min_one_dev[] but didn't think enough about it.
+If you have a single swap device, sure.  But, I can also see a case
+where you have a "fast" swap and "slow" swap.
 
-Acked-by: Jens Axboe <jens.axboe@oracle.com>
+The part of the argument about frontswap is that I like is the lack
+sizing exposed to the guest.  When you're dealing with swap-only, you
+are stuck adding or removing swap devices if you want to "grow/shrink"
+the memory footprint.  If the host (or whatever is backing the
+frontswap) wants to change the sizes, they're fairly free to.
 
--- 
-Jens Axboe
+The part that bothers me it is that it just pushes the problem
+elsewhere.  For KVM, we still have to figure out _somewhere_ what to do
+with all those pages.  It's nice that the host would have the freedom to
+either swap or keep them around, but it doesn't really fix the problem.
+
+I do see the lack of sizing exposed to the guest as being a bad thing,
+too.  Let's say we saved 25% of system RAM to back a frontswap-type
+device on a KVM host.  The first time a user boots up their set of VMs
+and 25% of their RAM is gone, they're going to start complaining,
+despite the fact that their 25% smaller systems may end up being faster.
+
+I think I'd be more convinced if we saw this thing actually get used
+somehow.  How is a ram-backed frontswap better than a /dev/ramX-backed
+swap file in practice?
+
+-- Dave
 
