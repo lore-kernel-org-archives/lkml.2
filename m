@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab0DOI5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 04:57:54 -0400
-Received: from mga05.intel.com ([192.55.52.89]:42126 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757449Ab0DOI5w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 04:57:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,211,1270450800"; 
-   d="scan'208";a="558173466"
-Subject: Re: [PATCH V3] perf & kvm: Enhance perf to collect KVM guest os
- statistics from host side
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       zhiteng.huang@intel.com, tim.c.chen@intel.com,
-       Arnaldo Carvalho de Melo <acme@infradead.org>
-In-Reply-To: <4BC6C8CD.1020801@redhat.com>
-References: <1902387910.2078.435.camel@ymzhang.sh.intel.com>
-	 <4BC588CF.5010507@redhat.com>
-	 <1902445479.2078.458.camel@ymzhang.sh.intel.com>
-	 <4BC6C8CD.1020801@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 15 Apr 2030 16:57:38 +0800
-Message-Id: <1902473858.2078.481.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+	id S1759752Ab0D3WCd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 18:02:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43936 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759030Ab0D3WCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 18:02:31 -0400
+Message-ID: <4BDB534A.2000301@redhat.com>
+Date: Fri, 30 Apr 2010 18:01:46 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.5) Gecko/20091210 Fedora/3.0-4.el6 Thunderbird/3.0
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com, x86@kernel.org,
+       clalance@redhat.com, drjones@redhat.com
+Subject: Re: [PATCH] Fix NULL pointer for Xen guests
+References: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com> <4BDB43CD.3040505@zytor.com>
+In-Reply-To: <4BDB43CD.3040505@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-15 at 11:05 +0300, Avi Kivity wrote:
-> On 04/15/2030 04:04 AM, Zhang, Yanmin wrote:
-> >
-> >> An even more accurate way to determine this is to check whether the
-> >> interrupt frame points back at the 'int $2' instruction.  However we
-> >> plan to switch to a self-IPI method to inject the NMI, and I'm not sure
-> >> wether APIC NMIs are accepted on an instruction boundary or whether
-> >> there's some latency involved.
-> >>      
-> > Yes. But the frame pointer checking seems a little complicated.
-> >    
-> 
-> An even bigger disadvantage is that it won't work with Sheng's patch, 
-> self-NMIs are not synchronous.
-> 
-> >>>    	trace_kvm_entry(vcpu->vcpu_id);
-> >>> +
-> >>> +	percpu_write(current_vcpu, vcpu);
-> >>>    	kvm_x86_ops->run(vcpu);
-> >>> +	percpu_write(current_vcpu, NULL);
-> >>>
-> >>>        
-> >> If you move this around the 'int $2' instructions you will close the
-> >> race, as a stray NMI won't catch us updating the rip cache.  But that
-> >> depends on whether self-IPI is accepted on the next instruction or not.
-> >>      
-> > Right. The kernel part has dependency on the self-IPI implementation.
-> > I will move above percpu_write(current_vcpu, vcpu) (or a new wrapper function)
-> > just around 'int $2'.
-> >
-> >    
-> 
-> Or create a new function to inject the interrupt in x86.c.  That will 
-> reduce duplication between svm.c and vmx.c.
-I checked svm.c and it seems svm.c doesn't trigger a NMI to host if the NMI
-happens in guest os. In addition, svm_complete_interrupts is called after
-interrupt is enabled.
 
 
+On 04/30/2010 04:55 PM, H. Peter Anvin wrote:
+> This looks like it should be tagged stable for 2.6.33.  Is that correct?
+>
+>    
+
+Yes.
+
+P.
+
+> 	-hpa
+>
+> On 04/27/2010 08:24 AM, Prarit Bhargava wrote:
+>    
+>> Upstream PV guests fail to boot because of a NULL pointer.  It is possible that
+>> xen guests have irq_desc->chip_data = NULL.
+>>
+>> Test for NULL chip_data pointer before attempting to complete an irq move.
+>>
+>> Signed-off-by: Prarit Bhargava<prarit@redhat.com>
+>> Acked-by: Suresh Siddha<suresh.b.siddha@intel.com>
+>>
+>> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+>> index 127b871..eb2789c 100644
+>> --- a/arch/x86/kernel/apic/io_apic.c
+>> +++ b/arch/x86/kernel/apic/io_apic.c
+>> @@ -2545,6 +2545,9 @@ void irq_force_complete_move(int irq)
+>>   	struct irq_desc *desc = irq_to_desc(irq);
+>>   	struct irq_cfg *cfg = desc->chip_data;
+>>
+>> +	if (!cfg)
+>> +		return;
+>> +
+>>   	__irq_complete_move(&desc, cfg->vector);
+>>   }
+>>   #else
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>      
+>    
