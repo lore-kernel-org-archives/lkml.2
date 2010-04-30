@@ -1,120 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759553Ab0D3UhS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 16:37:18 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:59004 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759194Ab0D3UhN (ORCPT
+	id S1759564Ab0D3Uk7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 16:40:59 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:60512 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759547Ab0D3Uk4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 16:37:13 -0400
+	Fri, 30 Apr 2010 16:40:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=O0omdxPLyFpQie1LoQsHnD61oZMlQ5reIAWmyM35ljbk2Fz0zKBeCwpazmsv74sJYG
-         XgZaH3phBvWxIo19iAXSQkKZhoanL/SRnFre2p/a7DmlrDb5+K8PAA28Kp3pUplEOkF6
-         NOCESFqk5y54b0DocjfsHWRARjXGaJq1v0PlA=
-Message-ID: <4BD9ADE2.3090208@gmail.com>
-Date: Thu, 29 Apr 2010 09:03:46 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=jfT8gRREUwvm/aGjThatH+cKt+PWkZesiDnxOFpgGqnnrcGBglm4LTLe9bPtRfd4wx
+         j6AmK1FglxpIXm3T7KwhkzXnkhBWaYPi6foCgRga8C8CZcGkjZYrgsIrf0UGf5raBEwI
+         aBuMfwHjfjZ3Bcx/NbMMwRLYhkX0BDmeFYQMw=
 MIME-Version: 1.0
-To: Alexey Starikovskiy <astarikovskiy@suse.de>
-CC: Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: MacBookPro2,2 unable too boot with the latest HEAD
-References: <i2vdd18b0c31004140812i6a0e9430u68ab49b24273fe9b@mail.gmail.com> <20100419142804.3cd53666.akpm@linux-foundation.org> <4BCCCCDF.4010605@gmail.com> <20100419145741.95688467.akpm@linux-foundation.org> <alpine.LFD.2.00.1004201011050.2402@sony> <4BD999C8.7090602@gmail.com> <4BD9A150.6060402@suse.de>
-In-Reply-To: <4BD9A150.6060402@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100430181349.GA1015@oksana.dev.rtsoft.ru>
+References: <1272374302-9506-1-git-send-email-dbaryshkov@gmail.com>
+	 <20100427154835.27bdc233.akpm@linux-foundation.org>
+	 <20100430181349.GA1015@oksana.dev.rtsoft.ru>
+Date: Sat, 1 May 2010 00:40:54 +0400
+Message-ID: <g2qbc64b4641004301340h3c942f3cn40de735b419b8535@mail.gmail.com>
+Subject: Re: [PATCH] Remove tosa_battery driver (was: Re: [PATCH] 
+	tosa_battery: fix FTBFS bug due to driver_data access)
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Marek Vasut <marek.vasut@gmail.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2010 08:10 AM, Alexey Starikovskiy wrote:
-> 29.04.2010 18:38, Justin P. Mattock Ð¿Ð¸ÑˆÐµÑ‚:
->> On 04/20/2010 07:17 AM, Len Brown wrote:
->>>
->>>>> the patch here fixes it for me:ACPI: EC: Limit burst to 64 bit
->>>>> https://bugzilla.kernel.org/attachment.cgi?id=25962
->>>>
->>>> hm. I wonder how you go from a bugzilla attachment back up tot he bug
->>>> to which it is attached?
->>>
->>> Use "A comment contains this string" in bugzilla's advanced search
->>> and plug in "attachment.cgi?id=25962" for this case.
->>>
->>> you'll find the patch in this comment:
->>> https://bugzilla.kernel.org/show_bug.cgi?id=15749#c7
->>>
->>> It is a bit more user friendly to supply the
->>> URL of the commment containing the patch rather than
->>> the direct URL of the attachment itself.
->>>
->>>> Oh well. Alexey, I trust that patch is in the 2.6.34 queue?
->>>
->>> it shipped in 2.6.34-rc5 in commit
->>> 2060c44576c79086ff24718878d7edaa7384a985
->>>
->>> thanks,
->>> Len Brown, Intel Open Source Technology Center
->>>
->>>
+Hello,
+
+On Fri, Apr 30, 2010 at 10:13 PM, Anton Vorontsov
+<cbouatmailru@gmail.com> wrote:
+> On Tue, Apr 27, 2010 at 03:48:35PM -0700, Andrew Morton wrote:
+>> On Tue, 27 Apr 2010 17:18:22 +0400
+>> Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> wrote:
 >>
+>> > Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>> > ---
+>> >  drivers/power/tosa_battery.c |    4 ++--
+>> >  1 files changed, 2 insertions(+), 2 deletions(-)
 >>
->> ahh... o.k. so I just have to add
->> #(then a comment number) i.g.
->> #7 at the end of the bug URL.
+>> Please don't send unchangelogged patches.
 >>
->> make sense...
+>> Please don't send patches which require recipients to go googling
+>> acronyms to work out wtf you're up to.
 >>
->> off topic of this bug, I've another
->> issue over here with the iMac9,1
->> (that I've been slowly working on)
+>> <googles the acronym>
 >>
->> basically long story short there is
->> no entry for the AC adapter in it's
->> dsdt(ACPI0003)
->> ac.c:
->> static const struct acpi_device_id ac_device_ids[] = {
->> {"ACPI0003", 0},
->> {"", 0},
->> };
->>
->> causing no entries in /proc/acpi/*
->> and /sys/class/power_supply
->>
->> This doesn't seem to be a big issue
->> it's just one machine defaults to ac
->> and then another machine defaults to battery
->> (keep in mind both machines are iMac9,1's
->> just different gpu's).
->>
->> is there some boot param to tell the kernel
->> to simply go to ac?
->>
->> Justin P. Mattock
-> There is no external AC switch. You may try to blacklist ac driver, so
-> kernel might be fulled into being run on a desktop...
-> You might also open a bug report for this issue, so we could give a more
-> meaningful answer...
+>> Ah, it appears to be a build fix.
 >
-> Regards,
-> Alex.
+> It seems that the driver isn't buildable since 2.6.32
+> (i.e. commit b4028437 "Driver core: move dev_get/set_drvdata to
+> drivers/base/dd.c").
 >
+> Also, IIRC it was deprecated in favor of wm97xx_battery.c
+> driver.
+>
+> So, I'm not picking this patch for 2.6.34, it's not a
+> new regression, and the driver is probably needs to be
+> removed.
+>
+> Any objections on the patch down below?
 
-your right!!
-(I've been putting off filling a bug
-only to really see if I can do this,but the more
-I look into it the more daunting it becomes).
+Yes. wm97xx_battery handles only one battery, while tosa uses 3
+different batterires.
+So, wm97xx_battery needs to be adapted/enhanced.
 
-as for the issue, I was thinking in the area of a dmi blacklist
-or something to where proc_mkdir etc..
-will just make the file "online" to trick
-the kernel and any other mechanism reading
-those files.
-
-but first things first, I'll file a bug.
-
-Justin P. Mattock
+-- 
+With best wishes
+Dmitry
