@@ -1,42 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933661Ab0D3Rxb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:53:31 -0400
-Received: from mail.tpi.com ([70.99.223.143]:3910 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933510Ab0D3RxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:53:17 -0400
-Message-ID: <4BD98002.6030308@canonical.com>
-Date: Thu, 29 Apr 2010 13:48:02 +0100
-From: Tim Gardner <tim.gardner@canonical.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1759032Ab0D3SC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:02:26 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43396 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933636Ab0D3SAr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 14:00:47 -0400
+Date: Fri, 30 Apr 2010 12:14:04 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Greg KH <greg@kroah.com>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       USB list <linux-usb@vger.kernel.org>, <linux-next@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] USB: remove leftover references to udev->autosuspend_disabled
+In-Reply-To: <20100430144128.GC1824@kroah.com>
+Message-ID: <Pine.LNX.4.44L0.1004301211040.1535-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: romieu@fr.zoreil.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "stable@kernel.org" <stable@kernel.org>
-Subject: r8169 stable updates
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Francois,
+This patch (as1373) fixes a couple of drivers outside the USB
+subtree.  Devices are now disabled or enabled for autosuspend by
+calling a core function instead of setting a flag.
 
-If not already proposed, I think these commits are appropriate for 
-stable updates. Do you agree? They apply cleanly to 2.6.32 and will 
-likely fix the symptoms of this bug: 
-http://bugs.launchpad.net/bugs/562742 (still in test).
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 
-4c020a961a812ffae9846b917304cea504c3a733 r8169: use correct barrier 
-between cacheable and non-cacheable memory
+---
 
-78f1cd02457252e1ffbc6caa44a17424a45286b8 r8169: fix broken register writes
+On Fri, 30 Apr 2010, Greg KH wrote:
 
-908ba2bfd22253f26fa910cd855e4ccffb1467d0 r8169: more broken register 
-writes workaround
+> On Fri, Apr 30, 2010 at 03:52:24PM +1000, Stephen Rothwell wrote:
+> > Hi Greg,
+> > 
+> > After merging the staging-next tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> > 
+> > drivers/media/video/tlg2300/pd-main.c: In function 'poseidon_probe':
+> > drivers/media/video/tlg2300/pd-main.c:457: error: 'struct usb_device' has no member named 'autosuspend_disabled'
+> > drivers/net/wimax/i2400m/usb.c: In function 'i2400mu_probe':
+> > drivers/net/wimax/i2400m/usb.c:508: error: 'struct usb_device' has no member named 'autosuspend_disabled'
+> > 
+> > Caused by commit 3a03bb2443e8fb3b35666dc598e7f626519c544a ("USB: use PM
+> > core routines to enable/disable autosuspend") from the usb tree.  I have
+> > reverted that commit for today.
+> 
+> It would be good to get that back into the tree.  Alan, care to fix this
+> up?
+> 
+> thanks,
+> 
+> greg k-h
 
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
+Here's the fix.  I haven't compile-tested it, but the changes are
+pretty simple.
+
+Alan Stern
+
+
+Index: usb-2.6/drivers/media/video/tlg2300/pd-main.c
+===================================================================
+--- usb-2.6.orig/drivers/media/video/tlg2300/pd-main.c
++++ usb-2.6/drivers/media/video/tlg2300/pd-main.c
+@@ -455,8 +455,8 @@ static int poseidon_probe(struct usb_int
+ 
+ 	device_init_wakeup(&udev->dev, 1);
+ #ifdef CONFIG_PM
+-	pd->udev->autosuspend_disabled = 0;
+ 	pd->udev->autosuspend_delay = HZ * PM_SUSPEND_DELAY;
++	usb_enable_autosuspend(pd->udev);
+ 
+ 	if (in_hibernation(pd)) {
+ 		INIT_WORK(&pd->pm_work, hibernation_resume);
+Index: usb-2.6/drivers/net/wimax/i2400m/usb.c
+===================================================================
+--- usb-2.6.orig/drivers/net/wimax/i2400m/usb.c
++++ usb-2.6/drivers/net/wimax/i2400m/usb.c
+@@ -505,7 +505,7 @@ int i2400mu_probe(struct usb_interface *
+ 	iface->needs_remote_wakeup = 1;		/* autosuspend (15s delay) */
+ 	device_init_wakeup(dev, 1);
+ 	usb_dev->autosuspend_delay = 15 * HZ;
+-	usb_dev->autosuspend_disabled = 0;
++	usb_enable_autosuspend(usb_dev);
+ #endif
+ 
+ 	result = i2400m_setup(i2400m, I2400M_BRI_MAC_REINIT);
+
