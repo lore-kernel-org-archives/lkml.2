@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889Ab0D3RGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:06:39 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:48812 "EHLO h5.dl5rb.org.uk"
+	id S1758535Ab0D3RHl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:07:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60716 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932650Ab0D3RFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:05:09 -0400
-Date: Fri, 30 Apr 2010 18:04:31 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Inotify: Fix build failure in inotify user support
-Message-ID: <20100430170431.GA948@linux-mips.org>
-References: <20100308195103.GA9228@linux-mips.org>
+	id S932520Ab0D3RH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:07:26 -0400
+Date: Fri, 30 Apr 2010 11:04:46 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       Paul Mackerras <paulus@au1.ibm.com>
+Subject: Re: [PATCH] trivial: use (C) instead of \251
+In-Reply-To: <20100430083720.GA3318@elte.hu>
+Message-ID: <alpine.LNX.2.00.1004301103280.9849@pobox.suse.cz>
+References: <4BD80037.9060704@kernel.org> <alpine.LNX.2.00.1004290040510.9849@pobox.suse.cz> <20100430075510.GA21105@elte.hu> <alpine.LNX.2.00.1004300957130.9849@pobox.suse.cz> <20100430083720.GA3318@elte.hu>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100308195103.GA9228@linux-mips.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 08, 2010 at 08:51:03PM +0100, Ralf Baechle wrote:
+On Fri, 30 Apr 2010, Ingo Molnar wrote:
 
-> CONFIG_INOTIFY_USER defined but CONFIG_ANON_INODES undefined will result
-> in the following build failure:
+> > Well, Paul himself stated that according to their lawyer department, 
+> > "Copyright" (which is there) is enough. So it made sense to remove invalid 
+> > (at least in some sense) character.
+> > 
+> > Also zillion of other files copyrighted by Paul contain "Copyright (C)".
+> > 
+> > If we really want this character there then, why not rather in UTF-8, so 
+> > that it works flawlessly?
 > 
->   LD      vmlinux
-> fs/built-in.o: In function 'sys_inotify_init1':
-> (.text.sys_inotify_init1+0x22c): undefined reference to 'anon_inode_getfd'
-> fs/built-in.o: In function `sys_inotify_init1':
-> (.text.sys_inotify_init1+0x22c): relocation truncated to fit: R_MIPS_26 against 'anon_inode_getfd'
-> make[2]: *** [vmlinux] Error 1
-> make[1]: *** [sub-make] Error 2
-> make: *** [all] Error 2
+> It might be fine but i havent seen Paul reply to this thread - and this is my 
+> point: _you_ should have waited for an ack from Paul (who is co-maintaining 
+> that file) before applying it. The commit doesnt have it:
 
-Ping.  The problem still exists in rc6.
+I got Pauls reply as "as soon as there is `Copyright', it's fine". If I 
+misunderstood it, sorry for that, and I'll drop the patch.
 
-  Ralf
+Paul, could you please send explicit Acked-by: or Naked-by:, so that 
+everything is in line?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
