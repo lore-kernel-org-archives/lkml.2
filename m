@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab0D3Ryb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:54:31 -0400
-Received: from kroah.org ([198.145.64.141]:54078 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933670Ab0D3Rxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:53:33 -0400
-Date: Thu, 29 Apr 2010 09:20:22 -0700
-From: Greg KH <greg@kroah.com>
-To: Alessandro Ghedini <al3xbio@gmail.com>
-Cc: gregkh@suse.de, Andrew.Elwell@gmail.com, mithlesh@linsyssoft.com,
-       svenne@krap.dk, jkosina@suse.cz, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: wlan-ng: fix many style issues in
- hfa384x_usb.c
-Message-ID: <20100429162022.GA30057@kroah.com>
-References: <1272041290-11977-1-git-send-email-al3xbio@gmail.com>
+	id S1758884Ab0D3Rym (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:54:42 -0400
+Received: from mail-qy0-f183.google.com ([209.85.221.183]:44732 "EHLO
+	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933678Ab0D3Rxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:53:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272041290-11977-1-git-send-email-al3xbio@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 30 Apr 2010 09:07:27 -0600
+X-Google-Sender-Auth: 8e1b545c4eaf3f90
+Message-ID: <q2qfa686aa41004300807wb5afdaf3s1f53980b39232119@mail.gmail.com>
+Subject: [git pull] spi & OF fixes and documentation cleanup.
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: "hector.palacios" <hector.palacios@digi.com>,
+       Roman Tereshonkov <roman.tereshonkov@nokia.com>,
+       Wolfram Sang <w.sang@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 06:48:10PM +0200, Alessandro Ghedini wrote:
-> This patch fixes all the errors and most of the checkpatch.pl warnings
-> and other style issues in the hfa384x_usb.c file
+Hi Linus,
 
-You sent 3 copies of this, right?  What made them different from each
-other?
+Here are the bug fixes and cleanups I've collected for 2.6.34.  All
+pretty minor stuff.
 
-Anyway, someone else already made these changes before you, sorry.
+g.
 
-thanks,
+The following changes since commit 01bf0b64579ead8a82e7cfc32ae44bc667e7ad0f:
+  Linus Torvalds (1):
+        Linux 2.6.34-rc5
 
-greg k-h
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 merge
+
+Dan Carpenter (2):
+      gpio: potential null dereference
+      of: check for IS_ERR()
+
+Hector Palacios (1):
+      spi: spidev_test gives error upon 1-byte transfer
+
+Roman Tereshonkov (4):
+      spi: release device claimed by bus_find_device_by_name
+      spi: spi_device memory should be released instead of device.
+      omap2_mcspi: Flush posted writes
+      omap2_mcspi: small fixes of output data format
+
+Wolfram Sang (1):
+      serial/mpc52xx_uart: Drop outdated comments
+
+ Documentation/spi/spidev_test.c |    2 +-
+ drivers/gpio/gpiolib.c          |    3 ++-
+ drivers/of/of_mdio.c            |    2 +-
+ drivers/serial/mpc52xx_uart.c   |   33 ---------------------------------
+ drivers/spi/omap2_mcspi.c       |    5 +++--
+ drivers/spi/spi.c               |    8 +++++---
+ 6 files changed, 12 insertions(+), 41 deletions(-)
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
