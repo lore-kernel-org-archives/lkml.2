@@ -1,202 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759458Ab0D3TKU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:10:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27998 "EHLO mga11.intel.com"
+	id S1757770Ab0D3Q7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 12:59:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60359 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757890Ab0D3Q7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:59:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,301,1270450800"; 
-   d="scan'208";a="562950565"
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: [PATCH linux-next v2 1/2] irq: Add CPU mask affinity hint
-To: tglx@linutronix.de, davem@davemloft.net, arjan@linux.jf.intel.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 30 Apr 2010 01:51:54 -0700
-Message-ID: <20100430085150.4630.46790.stgit@ppwaskie-hc2.jf.intel.com>
-User-Agent: StGIT/0.14.3
+	id S932519Ab0D3Q6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 12:58:44 -0400
+Date: Fri, 30 Apr 2010 10:51:35 GMT
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       a.p.zijlstra@chello.nl, peterz@infradead.org, eparis@parisplace.org,
+       paulmck@linux.vnet.ibm.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: paulmck@linux.vnet.ibm.com, mingo@redhat.com, hpa@zytor.com,
+       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+       peterz@infradead.org, eparis@parisplace.org, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <1271880131-3951-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <1271880131-3951-1-git-send-email-paulmck@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] rcu: Fix RCU lockdep splat in set_task_cpu on fork path
+Message-ID: <tip-8b08ca52f5942c21564bbb90ccfb61053f2c26a1@git.kernel.org>
+Git-Commit-ID: 8b08ca52f5942c21564bbb90ccfb61053f2c26a1
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 30 Apr 2010 10:51:38 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a cpumask affinity hint to the irq_desc
-structure, along with a registration function and a read-only
-proc entry for each interrupt.
+Commit-ID:  8b08ca52f5942c21564bbb90ccfb61053f2c26a1
+Gitweb:     http://git.kernel.org/tip/8b08ca52f5942c21564bbb90ccfb61053f2c26a1
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Wed, 21 Apr 2010 13:02:07 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 30 Apr 2010 12:03:17 +0200
 
-This affinity_hint handle for each interrupt can be used by
-underlying drivers that need a better mechanism to control
-interrupt affinity.  The underlying driver can register a
-cpumask for the interrupt, which will allow the driver to
-provide the CPU mask for the interrupt to anything that
-requests it.  The intent is to extend the userspace daemon,
-irqbalance, to help hint to it a preferred CPU mask to balance
-the interrupt into.
+rcu: Fix RCU lockdep splat in set_task_cpu on fork path
 
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Add an RCU read-side critical section to suppress this false
+positive.
+
+Located-by: Eric Paris <eparis@parisplace.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: laijs@cn.fujitsu.com
+Cc: dipankar@in.ibm.com
+Cc: mathieu.desnoyers@polymtl.ca
+Cc: josh@joshtriplett.org
+Cc: dvhltc@us.ibm.com
+Cc: niv@us.ibm.com
+Cc: peterz@infradead.org
+Cc: rostedt@goodmis.org
+Cc: Valdis.Kletnieks@vt.edu
+Cc: dhowells@redhat.com
+Cc: eric.dumazet@gmail.com
+LKML-Reference: <1271880131-3951-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
+ kernel/sched.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
- include/linux/interrupt.h |   13 +++++++++++++
- include/linux/irq.h       |    1 +
- kernel/irq/manage.c       |   28 ++++++++++++++++++++++++++++
- kernel/irq/proc.c         |   33 +++++++++++++++++++++++++++++++++
- 4 files changed, 75 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 75f3f00..9c9ea2a 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -209,6 +209,9 @@ extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
- extern int irq_can_set_affinity(unsigned int irq);
- extern int irq_select_affinity(unsigned int irq);
- 
-+extern int irq_register_affinity_hint(unsigned int irq,
-+                                      const struct cpumask *m);
-+extern int irq_unregister_affinity_hint(unsigned int irq);
- #else /* CONFIG_SMP */
- 
- static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
-@@ -223,6 +226,16 @@ static inline int irq_can_set_affinity(unsigned int irq)
- 
- static inline int irq_select_affinity(unsigned int irq)  { return 0; }
- 
-+static inline int irq_register_affinity_hint(unsigned int irq,
-+                                             const struct cpumask *m)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline int irq_unregister_affinity_hint(unsigned int irq);
-+{
-+	return -EINVAL;
-+}
- #endif /* CONFIG_SMP && CONFIG_GENERIC_HARDIRQS */
- 
- #ifdef CONFIG_GENERIC_HARDIRQS
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 707ab12..83b16d7 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -206,6 +206,7 @@ struct irq_desc {
- 	struct proc_dir_entry	*dir;
- #endif
- 	const char		*name;
-+	struct cpumask		*affinity_hint;
- } ____cacheline_internodealigned_in_smp;
- 
- extern void arch_init_copy_chip_data(struct irq_desc *old_desc,
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 704e488..bce7e38 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -138,6 +138,31 @@ int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
- 	return 0;
- }
- 
-+int irq_register_affinity_hint(unsigned int irq, const struct cpumask *m)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&desc->lock, flags);
-+	desc->affinity_hint = m;
-+	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(irq_register_affinity_hint);
-+
-+int irq_unregister_affinity_hint(unsigned int irq)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&desc->lock, flags);
-+	desc->affinity_hint = NULL;
-+	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(irq_unregister_affinity_hint);
- #ifndef CONFIG_AUTO_IRQ_AFFINITY
- /*
-  * Generic version of the affinity autoselector.
-@@ -916,6 +941,9 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
- 			desc->chip->disable(irq);
- 	}
- 
-+	/* make sure affinity_hint is cleaned up */
-+	desc->affinity_hint = NULL;
-+
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
- 
- 	unregister_handler_proc(irq, action);
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index 7a6eb04..8b85f77 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -32,6 +32,23 @@ static int irq_affinity_proc_show(struct seq_file *m, void *v)
- 	return 0;
- }
- 
-+static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
-+{
-+	struct irq_desc *desc = irq_to_desc((long)m->private);
-+	unsigned long flags;
-+	int ret = -EINVAL;
-+
-+	raw_spin_lock_irqsave(&desc->lock, flags);
-+	if (desc->affinity_hint) {
-+		seq_cpumask(m, desc->affinity_hint);
-+		seq_putc(m, '\n');
-+		ret = 0;
-+	}
-+	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+
-+	return ret;
-+}
-+
- #ifndef is_affinity_mask_valid
- #define is_affinity_mask_valid(val) 1
- #endif
-@@ -84,6 +101,11 @@ static int irq_affinity_proc_open(struct inode *inode, struct file *file)
- 	return single_open(file, irq_affinity_proc_show, PDE(inode)->data);
- }
- 
-+static int irq_affinity_hint_proc_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, irq_affinity_hint_proc_show, PDE(inode)->data);
-+}
-+
- static const struct file_operations irq_affinity_proc_fops = {
- 	.open		= irq_affinity_proc_open,
- 	.read		= seq_read,
-@@ -92,6 +114,13 @@ static const struct file_operations irq_affinity_proc_fops = {
- 	.write		= irq_affinity_proc_write,
- };
- 
-+static const struct file_operations irq_affinity_hint_proc_fops = {
-+	.open		= irq_affinity_hint_proc_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
- static int default_affinity_show(struct seq_file *m, void *v)
+diff --git a/kernel/sched.c b/kernel/sched.c
+index de0bd26..3c2a54f 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -323,6 +323,15 @@ static inline struct task_group *task_group(struct task_struct *p)
+ /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
+ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
  {
- 	seq_cpumask(m, irq_default_affinity);
-@@ -231,6 +260,10 @@ void register_irq_proc(unsigned int irq, struct irq_desc *desc)
- 	/* create /proc/irq/<irq>/smp_affinity */
- 	proc_create_data("smp_affinity", 0600, desc->dir,
- 			 &irq_affinity_proc_fops, (void *)(long)irq);
-+
-+	/* create /proc/irq/<irq>/affinity_hint */
-+	proc_create_data("affinity_hint", 0400, desc->dir,
-+			 &irq_affinity_hint_proc_fops, (void *)(long)irq);
++	/*
++	 * Strictly speaking this rcu_read_lock() is not needed since the
++	 * task_group is tied to the cgroup, which in turn can never go away
++	 * as long as there are tasks attached to it.
++	 *
++	 * However since task_group() uses task_subsys_state() which is an
++	 * rcu_dereference() user, this quiets CONFIG_PROVE_RCU.
++	 */
++	rcu_read_lock();
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
+ 	p->se.parent = task_group(p)->se[cpu];
+@@ -332,6 +341,7 @@ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
+ 	p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
+ 	p->rt.parent = task_group(p)->rt_se[cpu];
  #endif
++	rcu_read_unlock();
+ }
  
- 	proc_create_data("spurious", 0444, desc->dir,
-
+ #else
