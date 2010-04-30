@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932636Ab0D3Sso (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:48:44 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:21300 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932820Ab0D3RNN (ORCPT
+	id S934037Ab0D3Sth (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:49:37 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:61923 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932810Ab0D3RNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Apr 2010 13:13:13 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=B1Vrul2VUNy5tFCC0bsenQPJ81rzOZk4+Yf8FTRBQMHeJSZyn4hlXiggiAVqGWV9R
-	o4ceTvcQeyjJzP/ul5KOg==
-Date: Thu, 29 Apr 2010 11:03:21 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Miao Xie <miaox@cn.fujitsu.com>
-cc: Lee Schermerhorn <lee.schermerhorn@hp.com>, Nick Piggin <npiggin@suse.de>,
-       Paul Menage <menage@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] mm: fix bugs of mpol_rebind_nodemask()
-In-Reply-To: <4BD90529.3090401@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1004291054010.24062@chino.kir.corp.google.com>
-References: <4BD05929.8040900@cn.fujitsu.com> <alpine.DEB.2.00.1004221415090.25350@chino.kir.corp.google.com> <4BD0F797.6020704@cn.fujitsu.com> <alpine.DEB.2.00.1004230141400.2190@chino.kir.corp.google.com> <4BD90529.3090401@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+       "Richard Russon (FlatCap)" <ldm@flatcap.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 08/10] fs: ldm: don't use own implementation of hex_to_bin()
+Date: Fri, 30 Apr 2010 12:34:07 +0300
+Message-Id: <ce5ee38b2d01568cd56ffc9598d7ceaa24738e65.1272617852.git.ext-andriy.shevchenko@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <d6886a8b94bf8726d7bde807b3ca19f65739ce4d.1272617852.git.ext-andriy.shevchenko@nokia.com>
+References: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <d5c4e26cc74458dd77102c4274d3260149717328.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <1a326db89859eec030859e4905c515e0817bd2ea.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <d4a1df27bf2c83ee84c3d74bcff0f2768146eb7e.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <c1ca828fb308042aa32428b345abcb43ccb02c39.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <2eb558b7b0b20dfea0b61223db6146cb8fdbe52d.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <7cd86c01ad4a376fb8a48ffe307ce7c0510cecc0.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <d6886a8b94bf8726d7bde807b3ca19f65739ce4d.1272617852.git.ext-andriy.shevchenko@nokia.com>
+In-Reply-To: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
+References: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
+X-OriginalArrivalTime: 30 Apr 2010 09:34:10.0161 (UTC) FILETIME=[497BA610:01CAE848]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Apr 2010, Miao Xie wrote:
+Get rid of own implementation of hex_to_bin().
 
-> > That's been the behavior for at least three years so changing it from 
-> > under the applications isn't acceptable, see 
-> > Documentation/vm/numa_memory_policy.txt regarding mempolicy rebinds and 
-> > the two flags that are defined that can be used to adjust the behavior.
-> 
-> Is the flags what you said MPOL_F_STATIC_NODES and MPOL_F_RELATIVE_NODES? 
-> But the codes that I changed isn't under MPOL_F_STATIC_NODES or MPOL_F_RELATIVE_NODES.
-> The documentation doesn't say what we should do if either of these two flags is not set. 
-> 
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Cc: "Richard Russon (FlatCap)" <ldm@flatcap.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ fs/partitions/ldm.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-MPOL_F_STATIC_NODES and MPOL_F_RELATIVE_NODES allow you to adjust the 
-behavior of the rebind: the former requires specific nodes to be assigned 
-to the mempolicy and could suppress the rebind completely, if necessary; 
-the latter ensures the mempolicy nodemask has a certain weight as nodes 
-are assigned in a round-robin manner.  The behavior that you're referring 
-to is provided via MPOL_F_RELATIVE_NODES, which guarantees whatever weight 
-is passed via set_mempolicy() will be preserved when mems are added to a 
-cpuset.
+diff --git a/fs/partitions/ldm.c b/fs/partitions/ldm.c
+index 8652fb9..cb445fb 100644
+--- a/fs/partitions/ldm.c
++++ b/fs/partitions/ldm.c
+@@ -26,6 +26,7 @@
+ #include <linux/slab.h>
+ #include <linux/pagemap.h>
+ #include <linux/stringify.h>
++#include <linux/kernel.h>
+ #include "ldm.h"
+ #include "check.h"
+ #include "msdos.h"
+@@ -77,17 +78,16 @@ static int ldm_parse_hexbyte (const u8 *src)
+ 	int h;
+ 
+ 	/* high part */
+-	if      ((x = src[0] - '0') <= '9'-'0') h = x;
+-	else if ((x = src[0] - 'a') <= 'f'-'a') h = x+10;
+-	else if ((x = src[0] - 'A') <= 'F'-'A') h = x+10;
+-	else return -1;
+-	h <<= 4;
++	x = h = hex_to_bin(src[0]);
++	if (h < 0)
++		return -1;
+ 
+ 	/* low part */
+-	if ((x = src[1] - '0') <= '9'-'0') return h | x;
+-	if ((x = src[1] - 'a') <= 'f'-'a') return h | (x+10);
+-	if ((x = src[1] - 'A') <= 'F'-'A') return h | (x+10);
+-	return -1;
++	h = hex_to_bin(src[1]);
++	if (h < 0)
++		return -1;
++
++	return (x << 4) + h;
+ }
+ 
+ /**
+-- 
+1.6.3.3
 
-Regardless of whether the behavior is documented when either flag is 
-passed, we can't change the long-standing default behavior that people use 
-when their cpuset mems are rebound: we can only extend the functionality 
-and the behavior you're seeking is already available with a 
-MPOL_F_RELATIVE_NODES flag modifier.
-
-> Furthermore, in order to fix no node to alloc memory, when we want to update mempolicy
-> and mems_allowed, we expand the set of nodes first (set all the newly nodes) and
-> shrink the set of nodes lazily(clean disallowed nodes).
-
-That's a cpuset implementation choice, not a mempolicy one; mempolicies 
-have nothing to do with an empty current->mems_allowed.
-
-> But remap() breaks the expanding, so if we don't remove remap(), the problem can't be
-> fixed. Otherwise, cpuset has to do the rebinding by itself and the code is ugly.
-> Like this:
-> 
-> static void cpuset_change_task_nodemask(struct task_struct *tsk, nodemask_t *newmems)
-> {
-> 	nodemask_t tmp;
-> 	...
-> 	/* expand the set of nodes */
-> 	if (!mpol_store_user_nodemask(tsk->mempolicy)) {
-> 		nodes_remap(tmp, ...);
-> 		nodes_or(tsk->mempolicy->v.nodes, tsk->mempolicy->v.nodes, tmp);
-> 	}
-> 	...
-> 
-> 	/* shrink the set of nodes */
-> 	if (!mpol_store_user_nodemask(tsk->mempolicy))
-> 		tsk->mempolicy->v.nodes = tmp;
-> }
-> 
-
-I don't see why this is even necessary, the mempolicy code could simply 
-return numa_node_id() when nodes_empty(current->mempolicy->v.nodes) to 
-close the race.
-
- [ Your pseudo-code is also lacking task_lock(tsk), which is required to 
-   safely dereference tsk->mempolicy, and this is only available so far in 
-   -mm since the oom killer rewrite. ]
