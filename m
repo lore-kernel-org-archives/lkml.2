@@ -1,38 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933568Ab0D3SCj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:02:39 -0400
-Received: from kroah.org ([198.145.64.141]:40640 "EHLO coco.kroah.org"
+	id S1759110Ab0D3SDv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:03:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44113 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758841Ab0D3Rdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:33:32 -0400
-Date: Thu, 29 Apr 2010 09:55:38 -0700
-From: Greg KH <greg@kroah.com>
-To: Imtiaz Rahi <imtiaz.rahi@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8192su: fix various coding style issues in
- r8180_93cx6.c
-Message-ID: <20100429165538.GB18228@kroah.com>
-References: <1268966823-15418-1-git-send-email-imtiaz.rahi@gmail.com>
+	id S933565Ab0D3SCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 14:02:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,303,1270450800"; 
+   d="scan'208";a="794386566"
+Date: Fri, 30 Apr 2010 11:02:36 -0700 (Pacific Daylight Time)
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: "davem@davemloft.net" <davem@davemloft.net>,
+       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH linux-next v2 1/2] irq: Add CPU mask affinity hint
+In-Reply-To: <alpine.LFD.2.00.1004301249540.2951@localhost.localdomain>
+Message-ID: <Pine.WNT.4.64.1004301059230.6264@PPWASKIE-MOBL2.amr.corp.intel.com>
+References: <20100430085150.4630.46790.stgit@ppwaskie-hc2.jf.intel.com>
+ <alpine.LFD.2.00.1004301249540.2951@localhost.localdomain>
+X-X-Sender: ppwaskie@imapmail.glb.intel.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268966823-15418-1-git-send-email-imtiaz.rahi@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 08:47:03AM +0600, Imtiaz Rahi wrote:
-> This is patch to the r8180_93cx6.c file that fixes various coding style
-> warnings and errors found by checkpatch.pl
-> 
-> Signed-off-by: Imtiaz Rahi <imtiaz.rahi@gmail.com>
+On Fri, 30 Apr 2010, Thomas Gleixner wrote:
 
-This no longer applies due to other changes to the driver in the
-linux-next tree.  Can you redo it against the linux-next tree of
-tomorrow?
+> On Fri, 30 Apr 2010, Peter P Waskiewicz Jr wrote:
+>
+>> This patch adds a cpumask affinity hint to the irq_desc
+>> structure, along with a registration function and a read-only
+>> proc entry for each interrupt.
+>>
+>> This affinity_hint handle for each interrupt can be used by
+>> underlying drivers that need a better mechanism to control
+>> interrupt affinity.  The underlying driver can register a
+>> cpumask for the interrupt, which will allow the driver to
+>> provide the CPU mask for the interrupt to anything that
+>> requests it.  The intent is to extend the userspace daemon,
+>> irqbalance, to help hint to it a preferred CPU mask to balance
+>> the interrupt into.
+>>
+>> Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+>> ---
+>>
+>>  include/linux/interrupt.h |   13 +++++++++++++
+>>  include/linux/irq.h       |    1 +
+>>  kernel/irq/manage.c       |   28 ++++++++++++++++++++++++++++
+>>  kernel/irq/proc.c         |   33 +++++++++++++++++++++++++++++++++
+>>  4 files changed, 75 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+>> index 75f3f00..9c9ea2a 100644
+>> --- a/include/linux/interrupt.h
+>> +++ b/include/linux/interrupt.h
+>> @@ -209,6 +209,9 @@ extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
+>>  extern int irq_can_set_affinity(unsigned int irq);
+>>  extern int irq_select_affinity(unsigned int irq);
+>>
+>> +extern int irq_register_affinity_hint(unsigned int irq,
+>> +                                      const struct cpumask *m);
+>
+> I think we can do with a single funtion irq_set_affinity_hint() and
+> let the caller set the pointer to NULL.
 
-thanks,
+Ok, I've been running into some issues.  If CONFIG_CPUMASK_OFFSTACK is not 
+set, then cpumask_var_t structs are single-element arrays that cannot be 
+NULL'd out.  I'm pretty sure I need to keep the unregister part of the 
+API.  Thoughts?
 
-greg k-h
+>> +	raw_spin_lock_irqsave(&desc->lock, flags);
+>> +	if (desc->affinity_hint) {
+>> +		seq_cpumask(m, desc->affinity_hint);
+>
+>  Please make a local copy under desc->mask and do the seq_cpumask()
+>  stuff on the local copy outside of desc->lock
+
+I just looked at the original show_affinity function, and it does not grab 
+desc->lock before copying mask out of desc.  Should I follow that model, 
+or should I fix that function to honor desc->lock?
+
+-PJ
