@@ -1,57 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab0D3Tlu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:41:50 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:39123 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757968Ab0D3Tle (ORCPT
+	id S1758058Ab0D3ToN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:44:13 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47683 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755362Ab0D3ToD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 15:41:34 -0400
-Message-ID: <4BDA7122.6080509@monstr.eu>
-Date: Fri, 30 Apr 2010 07:56:50 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: "Steven J. Magnani" <steve@digidescorp.com>
-CC: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][NOMMU] microblaze: re-enable interrupts before calling
- schedule
-References: <1272391223-32012-1-git-send-email-steve@digidescorp.com>
-In-Reply-To: <1272391223-32012-1-git-send-email-steve@digidescorp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 30 Apr 2010 15:44:03 -0400
+Date: Fri, 30 Apr 2010 12:43:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH 3/4] writeback: pay attention to wbc->nr_to_write in
+ write_cache_pages
+Message-Id: <20100430124329.10a4c02b.akpm@linux-foundation.org>
+In-Reply-To: <87sk6dwka6.fsf@linux.vnet.ibm.com>
+References: <1271731314-5893-1-git-send-email-david@fromorbit.com>
+	<1271731314-5893-4-git-send-email-david@fromorbit.com>
+	<20100429143931.331c2bab.akpm@linux-foundation.org>
+	<87sk6dwka6.fsf@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven J. Magnani wrote:
-> schedule() should not be called with interrupts disabled.
+On Fri, 30 Apr 2010 11:31:53 +0530
+"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+
+> On Thu, 29 Apr 2010 14:39:31 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Tue, 20 Apr 2010 12:41:53 +1000
+> > Dave Chinner <david@fromorbit.com> wrote:
+> > 
+> > > If a filesystem writes more than one page in ->writepage, write_cache_pages
+> > > fails to notice this and continues to attempt writeback when wbc->nr_to_write
+> > > has gone negative - this trace was captured from XFS:
+> > > 
+> > > 
+> > >     wbc_writeback_start: towrt=1024
+> > >     wbc_writepage: towrt=1024
+> > >     wbc_writepage: towrt=0
+> > >     wbc_writepage: towrt=-1
+> > >     wbc_writepage: towrt=-5
+> > >     wbc_writepage: towrt=-21
+> > >     wbc_writepage: towrt=-85
+> > > 
+> > 
+> > Bug.
+> > 
+> > AFAIT it's a regression introduced by
+> > 
+> > : commit 17bc6c30cf6bfffd816bdc53682dd46fc34a2cf4
+> > : Author:     Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> > : AuthorDate: Thu Oct 16 10:09:17 2008 -0400
+> > : Commit:     Theodore Ts'o <tytso@mit.edu>
+> > : CommitDate: Thu Oct 16 10:09:17 2008 -0400
+> > : 
+> > :     vfs: Add no_nrwrite_index_update writeback control flag
+> > 
+> > I suggest that what you do here is remove the local `nr_to_write' from
+> > write_cache_pages() and go back to directly using wbc->nr_to_write
+> > within the loop.
+> > 
+> > And thus we restore the convention that if the fs writes back more than
+> > a single page, it subtracts (nr_written - 1) from wbc->nr_to_write.
+> > 
 > 
-> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
-> ---
-> diff -uprN a/arch/microblaze/kernel/entry-nommu.S b/arch/microblaze/kernel/entry-nommu.S
-> --- a/arch/microblaze/kernel/entry-nommu.S	2010-04-27 10:14:33.000000000 -0500
-> +++ b/arch/microblaze/kernel/entry-nommu.S	2010-04-27 12:53:04.000000000 -0500
-> @@ -476,6 +476,8 @@ ENTRY(ret_from_fork)
->  	nop
->  
->  work_pending:
-> +	enable_irq
-> +
->  	andi	r11, r19, _TIF_NEED_RESCHED
->  	beqi	r11, 1f
->  	bralid	r15, schedule
+> My mistake i never expected writepage to write more than one page.
+
+The writeback code is tricky and easy to break in subtle ways.
+
+> The
+> interface said 'writepage' so it was natural to expect that it writes only
+> one page. BTW the reason for the change is to give file system which
+> accumulate dirty pages using write_cache_pages and attempt to write
+> them out later a chance to properly manage nr_to_write. Something like
 > 
+> ext4_da_writepages
+> -- write_cache_pages
+> ---- collect dirty page
+> ---- return
+> --return
+> --now try to writeout all the collected dirty pages ( say 100)
+> ----Only able to allocate blocks for 50 pages
+>     so update nr_to_write -= 50 and mark rest of 50 pages as dirty
+>     again
+> 
+> So we want wbc->nr_to_write updated only by ext4_da_writepages. 
 
-Applied
+So you want a ->writepage() implementation which doesn't actually write
+a page at all - it just remembers that page for later.
 
-Thanks,
-Michal
+Maybe that fs shouldn't be calling write_cache_pages() at all.  After
+all, write_cache_pages() is a wrapper which emits a sequence of calls
+to ->writepage(), and ->writepage() writes a page.
+
+Rather than hacking around, subverting things and breaking core kernel
+code, let's step back and more clearly think about what to do?
+
+One option would be to implement a new address_space_operation which
+provides the new semantics in a well-understood fashion.  Let's call it
+writepage_prepare(?).  Then reimplement write_cache_pages() so that if
+->writepage_prepare() is available, it handles it in a sensible fashion
+and doesn't break traditional filesystems.
+
+Or simply implement a new, different version of write_cache_pages() for
+filesystems which wish to buffer in this fashion.  The new
+write_cache_pages_prepare()(?) would call ->writepage_prepare(). 
+Internally it might share implementation with write_cache_pages().
+
+There are lots of options.  But the way in which write_cache_pages()
+was extended to handle this ext4 requirement was rather unclean,
+non-obvious and, umm, broken!
 
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
