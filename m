@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932937Ab0D3Uaa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 16:30:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57119 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756384Ab0D3Ua2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 16:30:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 04/14] vc: Locking clean up
-Date: Fri, 30 Apr 2010 22:30:22 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <20100401155513.8882.54006.stgit@localhost.localdomain> <20100401160451.8882.30559.stgit@localhost.localdomain>
-In-Reply-To: <20100401160451.8882.30559.stgit@localhost.localdomain>
+	id S933017Ab0D3UbA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 16:31:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21930 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753951Ab0D3Uax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 16:30:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,304,1270450800"; 
+   d="scan'208";a="617947672"
+Date: Fri, 30 Apr 2010 13:30:52 -0700 (Pacific Daylight Time)
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: "davem@davemloft.net" <davem@davemloft.net>,
+       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH linux-next v3 1/2] irq: Add CPU mask affinity hint
+In-Reply-To: <alpine.LFD.2.00.1004302220270.2951@localhost.localdomain>
+Message-ID: <Pine.WNT.4.64.1004301329390.6532@PPWASKIE-MOBL2.amr.corp.intel.com>
+References: <20100430202343.4591.66240.stgit@ppwaskie-hc2.jf.intel.com>
+ <alpine.LFD.2.00.1004302220270.2951@localhost.localdomain>
+X-X-Sender: ppwaskie@imapmail.glb.intel.com
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004302230.22358.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19kLfeFwmTiohzlVNMyJssh8eFAcoTtPTqYT5t
- wlr4F1fBzco8BLBheQTuyyEcQgsmSD3qqD99B7bKPR/tyzVJp4
- lgMi8QBl7wsyxOoOh/UNQ==
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 April 2010 18:04:59 Alan Cox wrote:
-> @@ -282,7 +282,12 @@ static inline unsigned short *screenpos(struct vc_data *vc, int offset, int view
->  
->  static inline void scrolldelta(int lines)
->  {
-> +       lock_kernel();
-> +       /* FIXME */
-> +       /* scrolldelta needs some kind of consistency lock, but the BKL was
-> +          and still is not protecting versus the scheduled back end */
->         scrollback_delta += lines;
-> +       unlock_kernel();
->         schedule_console_callback();
->  }
->  
+On Fri, 30 Apr 2010, Thomas Gleixner wrote:
 
-This one triggered a might_sleep() warning in _lock_kernel(), because
-it's called from the keyboard interrupt.
+> Peter,
+>
+> On Fri, 30 Apr 2010, Peter P Waskiewicz Jr wrote:
+>>
+>> +extern int irq_register_affinity_hint(unsigned int irq,
+>> +                                      const struct cpumask *m);
+>
+> One last nitpick.
+>
+> Can you please rename to irq_set_affinity_hint() ?
 
-	Arnd
+Not a problem.  It's a better name anyways now that we've dropped the 
+callback function.  Patch update incoming.
+
+>
+> Otherwise, I'm happy with the outcome. Thanks for your patience!
+
+Thanks for your help getting this pulled together.  This is a big step for 
+our performance tuning goals.
+
+Cheers,
+-PJ
