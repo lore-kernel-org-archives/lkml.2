@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933298Ab0D3R3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:29:11 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:60712 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758706Ab0D3R2o (ORCPT
+	id S1759228Ab0D3SRn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:17:43 -0400
+Received: from rcsinet14.oracle.com ([148.87.113.126]:47999 "EHLO
+	rcsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933326Ab0D3SRI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:28:44 -0400
-Date: Thu, 29 Apr 2010 15:02:31 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
-       ngupta@vflare.org, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-Message-ID: <20100429130231.GA1661@ucw.cz>
-References: <4BD1A74A.2050003@redhat.com>
- <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
- <4BD1B427.9010905@redhat.com>
- <b559c57a-0acb-4338-af21-dbfc3b3c0de5@default>
- <4BD336CF.1000103@redhat.com>
- <d1bb78ca-5ef6-4a8d-af79-a265f2d4339c@default>
- <4BD43182.1040508@redhat.com>
- <c5062f3a-3232-4b21-b032-2ee1f2485ff0@default4BD44E74.2020506@redhat.com>
- <7264e3c0-15fe-4b70-a3d8-2c36a2b934df@default20100427125624.GB3681@ucw.cz>
- <36b23d5c-ca25-44b5-be9f-b7ceaab0dd2e@default>
+	Fri, 30 Apr 2010 14:17:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <36b23d5c-ca25-44b5-be9f-b7ceaab0dd2e@default>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <10e6761a-fb7a-421d-97fc-1f3b6cd94622@default>
+Date: Fri, 30 Apr 2010 09:43:55 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <4BD16D09.2030803@redhat.com>>
+ <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>>
+ <4BD1A74A.2050003@redhat.com>>
+ <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com>
+ <4BD1B626.7020702@redhat.com>>
+ <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>>
+ <4BD3377E.6010303@redhat.com>>
+ <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>>
+ <ce808441-fae6-4a33-8335-f7702740097a@default>>
+ <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz>
+ <4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default
+ 4BDB026E.1030605@redhat.com>
+In-Reply-To: <4BDB026E.1030605@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090201.4BDB0912.00F3:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+(I'll back down on the CMM2 comparisons until I can go
+back and read the paper :-)
 
-> > Stop right here. Instead of improving existing swap api, you just
-> > create one because it is less work.
-> > 
-> > We do not want apis to cummulate; please just fix the existing one.
+> >> [frontswap is] really
+> >> not very different from a synchronous swap device.
+> >>
+> > Not to beat a dead horse, but there is a very key difference:
+> > The size and availability of frontswap is entirely dynamic;
+> > any page-to-be-swapped can be rejected at any time even if
+> > a page was previously successfully swapped to the same index.
+> > Every other swap device is much more static so the swap code
+> > assumes a static device.  Existing swap code can account for
+> > "bad blocks" on a static device, but this is far from sufficient
+> > to handle the dynamicity needed by frontswap.
 > 
-> > If we added all the apis that worked when proposed, we'd have
-> > unmaintanable mess by about 1996.
-> > 
-> > Why can't frontswap just use existing swap api?
+> Given that whenever frontswap fails you need to swap anyway, it is
+> better for the host to never fail a frontswap request and instead back
+> it with disk storage if needed.  This way you avoid a pointless vmexit
+> when you're out of memory.  Since it's disk backed it needs to be
+> asynchronous and batched.
 > 
-> Hi Pavel!
-> 
-> The existing swap API as it stands is inadequate for an efficient
-> synchronous interface (e.g. for swapping to RAM).  Both Nitin
-> and I independently have found this to be true.  But swap-to-RAM
+> At this point we're back with the ordinary swap API.  Simply have your
+> host expose a device which is write cached by host memory, you'll have
+> all the benefits of frontswap with none of the disadvantages, and with
+> no changes to guest .
 
-So... how much slower is swapping to RAM over current interface when
-compared to proposed interface, and how much is that slower than just
-using the memory directly?
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I think you are making a number of possibly false assumptions here:
+1) The host [the frontswap backend may not even be a hypervisor]
+2) can back it with disk storage [not if it is a bare-metal hypervisor]
+3) avoid a pointless vmexit [no vmexit for a non-VMX (e.g. PV) guest]
+4) when you're out of memory [how can this be determined outside of
+   the hypervisor?]
+
+And, importantly, "have your host expose a device which is write
+cached by host memory"... you are implying that all guest swapping
+should be done to a device managed/controlled by the host?  That
+eliminates guest swapping to directIO/SRIOV devices doesn't it?
+
+Anyway, I think we can see now why frontswap might not be a good
+match for a hosted hypervisor (KVM), but that doesn't make it
+any less useful for a bare-metal hypervisor (or TBD for in-kernel
+compressed swap and TBD for possible future pseudo-RAM technologies).
+
+Dan
