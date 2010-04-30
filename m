@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758633Ab0D3VhM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 17:37:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47558 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758150Ab0D3VhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 17:37:01 -0400
-Date: Fri, 30 Apr 2010 21:36:42 GMT
-From: tip-bot for Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       suresh.b.siddha@intel.com, tglx@linutronix.de, prarit@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       suresh.b.siddha@intel.com, tglx@linutronix.de, prarit@redhat.com
-In-Reply-To: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com>
-References: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Fix NULL pointer access in irq_force_complete_move() for Xen guests
-Message-ID: <tip-bbd391a15d82e14efe9d69ba64cadb855b061dba@git.kernel.org>
-Git-Commit-ID: bbd391a15d82e14efe9d69ba64cadb855b061dba
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 30 Apr 2010 21:36:42 +0000 (UTC)
+	id S1759670Ab0D3Vik (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 17:38:40 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:55115 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756034Ab0D3Vij (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 17:38:39 -0400
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+       Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 1/3] hwmon: applesmc: Add support for MacBook Pro 5,3 and 5,4
+Date: Fri, 30 Apr 2010 23:38:04 +0200
+Message-Id: <1272663486-16945-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.6.3.3
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1O7xuc-0000p9-CI.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1O7xuc-0000p9-CI 364930e5b3690a4eea40991d2c5e7011
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bbd391a15d82e14efe9d69ba64cadb855b061dba
-Gitweb:     http://git.kernel.org/tip/bbd391a15d82e14efe9d69ba64cadb855b061dba
-Author:     Prarit Bhargava <prarit@redhat.com>
-AuthorDate: Tue, 27 Apr 2010 11:24:42 -0400
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 30 Apr 2010 14:31:38 -0700
+The MacBookPro 5,3 model has two fans, whereas the 5,4 model has
+only one. This patch adds explicit support for the 5,3 and 5,4 models.
 
-x86: Fix NULL pointer access in irq_force_complete_move() for Xen guests
-
-Upstream PV guests fail to boot because of a NULL pointer in
-irq_force_complete_move().  It is possible that xen guests have
-irq_desc->chip_data = NULL.
-
-Test for NULL chip_data pointer before attempting to complete an irq move.
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-LKML-Reference: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: <stable@kernel.org> [2.6.33]
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- arch/x86/kernel/apic/io_apic.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/hwmon/applesmc.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 127b871..eb2789c 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2545,6 +2545,9 @@ void irq_force_complete_move(int irq)
- 	struct irq_desc *desc = irq_to_desc(irq);
- 	struct irq_cfg *cfg = desc->chip_data;
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 0f28d91..67626c1 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -148,6 +148,13 @@ static const char *temperature_sensors_sets[][41] = {
+ /* Set 18: MacBook Pro 2,2 */
+ 	{ "TB0T", "TC0D", "TC0P", "TG0H", "TG0P", "TG0T", "TM0P", "TTF0",
+ 	  "Th0H", "Th1H", "Tm0P", "Ts0P", NULL },
++/* Set 19: Macbook Pro 5,3 */
++	{ "TB0T", "TB1T", "TB2T", "TB3T", "TC0D", "TC0F", "TC0P", "TG0D",
++	  "TG0F", "TG0H", "TG0P", "TG0T", "TN0D", "TN0P", "TTF0", "Th2H",
++	  "Tm0P", "Ts0P", "Ts0S", NULL },
++/* Set 20: MacBook Pro 5,4 */
++	{ "TB0T", "TB1T", "TB2T", "TB3T", "TC0D", "TC0F", "TC0P", "TN0D",
++	  "TN0P", "TTF0", "Th2H", "Ts0P", "Ts0S", NULL },
+ };
  
-+	if (!cfg)
-+		return;
-+
- 	__irq_complete_move(&desc, cfg->vector);
- }
- #else
+ /* List of keys used to read/write fan speeds */
+@@ -1360,6 +1367,10 @@ static __initdata struct dmi_match_data applesmc_dmi_data[] = {
+ 	{ .accelerometer = 0, .light = 0, .temperature_set = 17 },
+ /* MacBook Pro 2,2: accelerometer, backlight and temperature set 18 */
+ 	{ .accelerometer = 1, .light = 1, .temperature_set = 18 },
++/* MacBook Pro 5,3: accelerometer, backlight and temperature set 19 */
++	{ .accelerometer = 1, .light = 1, .temperature_set = 19 },
++/* MacBook Pro 5,4: accelerometer, backlight and temperature set 20 */
++	{ .accelerometer = 1, .light = 1, .temperature_set = 20 },
+ };
+ 
+ /* Note that DMI_MATCH(...,"MacBook") will match "MacBookPro1,1".
+@@ -1373,6 +1384,14 @@ static __initdata struct dmi_system_id applesmc_whitelist[] = {
+ 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+ 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir") },
+ 		&applesmc_dmi_data[7]},
++	{ applesmc_dmi_match, "Apple MacBook Pro 5,4", {
++	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
++	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5,4") },
++		&applesmc_dmi_data[20]},
++	{ applesmc_dmi_match, "Apple MacBook Pro 5,3", {
++	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
++	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5,3") },
++		&applesmc_dmi_data[19]},
+ 	{ applesmc_dmi_match, "Apple MacBook Pro 5", {
+ 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+ 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5") },
+-- 
+1.6.3.3
+
