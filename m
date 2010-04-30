@@ -1,219 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab0D3UtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 16:49:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64902 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796Ab0D3UtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 16:49:07 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-aio@kvack.org
-Cc: linux-kernel@vger.kernel.org, mjt@tls.msk.ru,
-       Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH 2/2] aio: fix the compat vectored operations
-Date: Fri, 30 Apr 2010 16:49:00 -0400
-Message-Id: <1272660540-6567-3-git-send-email-jmoyer@redhat.com>
-In-Reply-To: <1272660540-6567-1-git-send-email-jmoyer@redhat.com>
-References: <1272660540-6567-1-git-send-email-jmoyer@redhat.com>
+	id S1756383Ab0D3UvA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 16:51:00 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:37634 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756148Ab0D3UtU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 16:49:20 -0400
+From: Dinh.Nguyen@freescale.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, r.herring@freescale.com,
+       Jun.Li@freescale.com, xiao-lizhang@freescale.com,
+       Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv10 2.6.34-rc6 1/5] mxc: Update GPIO for USB support on Freescale MX51 Babbage HW
+Date: Fri, 30 Apr 2010 15:48:23 -0500
+Message-Id: <1272660507-5917-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The aio compat code was not converting the struct iovecs from 32bit to
-64bit pointers, causing either EINVAL to be returned from io_getevents,
-or EFAULT as the result of the I/O.  This patch passes a compat flag to
-io_submit to signal that pointer conversion is necessary for a given iocb
-array.
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-A variant of this was tested by Michael Tokarev.  I have also updated
-the libaio test harness to exercise this code path with good success.
-Further, I grabbed a copy of ltp and ran the testcases/kernel/syscall/readv
-and writev tests there (compiled with -m32 on my 64bit system).  All
-seems happy, but extra eyes on this would be welcome.
+This patch is part of enabling USB for Freescale MX51 Babbage HW. This
+patch updates the iomux pins for USB, and gpio line for reset the
+USB hub on the MX51 Babbage HW.
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+This patch applies to 2.6.34-rc6.
+
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- fs/aio.c            |   63 +++++++++++++++++++++++++++++++-------------------
- fs/compat.c         |    2 +-
- include/linux/aio.h |    5 ++++
- 3 files changed, 45 insertions(+), 25 deletions(-)
+ arch/arm/plat-mxc/include/mach/iomux-mx51.h |   33 ++++++++++++++++----------
+ 1 files changed, 20 insertions(+), 13 deletions(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 1cf12b3..5a38805 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -36,6 +36,7 @@
- #include <linux/blkdev.h>
- #include <linux/mempool.h>
- #include <linux/hash.h>
-+#include <linux/compat.h>
+diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+index b4f975e..80528cc 100644
+--- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
++++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+@@ -1,5 +1,6 @@
+ /*
+  * Copyright (C) 2009-2010 Amit Kucheria <amit.kucheria@canonical.com>
++ * Copyright (C) 2010 Freescale Semiconductor, Inc.
+  *
+  * The code contained herein is licensed under the GNU General Public
+  * License. You may obtain a copy of the GNU General Public License
+@@ -37,6 +38,11 @@ typedef enum iomux_config {
+ 				PAD_CTL_SRE_FAST)
+ #define MX51_UART3_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_DSE_HIGH | \
+ 				PAD_CTL_SRE_FAST)
++#define MX51_USBH1_PAD_CTRL	(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH | \
++				PAD_CTL_PUS_100K_UP | PAD_CTL_PUE | \
++				PAD_CTL_PKE | PAD_CTL_HYS)
++#define MX51_GPIO_PAD_CTRL		(PAD_CTL_DSE_HIGH | PAD_CTL_PKE | \
++				PAD_CTL_SRE_FAST)
  
- #include <asm/kmap_types.h>
- #include <asm/uaccess.h>
-@@ -1384,13 +1385,20 @@ static ssize_t aio_fsync(struct kiocb *iocb)
- 	return ret;
- }
- 
--static ssize_t aio_setup_vectored_rw(int type, struct kiocb *kiocb)
-+static ssize_t aio_setup_vectored_rw(int type, struct kiocb *kiocb, bool compat)
- {
- 	ssize_t ret;
- 
--	ret = rw_copy_check_uvector(type, (struct iovec __user *)kiocb->ki_buf,
--				    kiocb->ki_nbytes, 1,
--				    &kiocb->ki_inline_vec, &kiocb->ki_iovec);
-+	if (compat)
-+		ret = compat_rw_copy_check_uvector(type,
-+				(struct compat_iovec __user *)kiocb->ki_buf,
-+				kiocb->ki_nbytes, 1, &kiocb->ki_inline_vec,
-+				&kiocb->ki_iovec);
-+	else
-+		ret = rw_copy_check_uvector(type,
-+				(struct iovec __user *)kiocb->ki_buf,
-+				kiocb->ki_nbytes, 1, &kiocb->ki_inline_vec,
-+				&kiocb->ki_iovec);
- 	if (ret < 0)
- 		goto out;
- 
-@@ -1420,7 +1428,7 @@ static ssize_t aio_setup_single_vector(struct kiocb *kiocb)
-  *	Performs the initial checks and aio retry method
-  *	setup for the kiocb at the time of io submission.
-  */
--static ssize_t aio_setup_iocb(struct kiocb *kiocb)
-+static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- {
- 	struct file *file = kiocb->ki_filp;
- 	ssize_t ret = 0;
-@@ -1469,7 +1477,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb)
- 		ret = security_file_permission(file, MAY_READ);
- 		if (unlikely(ret))
- 			break;
--		ret = aio_setup_vectored_rw(READ, kiocb);
-+		ret = aio_setup_vectored_rw(READ, kiocb, compat);
- 		if (ret)
- 			break;
- 		ret = -EINVAL;
-@@ -1483,7 +1491,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb)
- 		ret = security_file_permission(file, MAY_WRITE);
- 		if (unlikely(ret))
- 			break;
--		ret = aio_setup_vectored_rw(WRITE, kiocb);
-+		ret = aio_setup_vectored_rw(WRITE, kiocb, compat);
- 		if (ret)
- 			break;
- 		ret = -EINVAL;
-@@ -1548,7 +1556,8 @@ static void aio_batch_free(struct hlist_head *batch_hash)
- }
- 
- static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
--			 struct iocb *iocb, struct hlist_head *batch_hash)
-+			 struct iocb *iocb, struct hlist_head *batch_hash,
-+			 bool compat)
- {
- 	struct kiocb *req;
- 	struct file *file;
-@@ -1609,7 +1618,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 	req->ki_left = req->ki_nbytes = iocb->aio_nbytes;
- 	req->ki_opcode = iocb->aio_lio_opcode;
- 
--	ret = aio_setup_iocb(req);
-+	ret = aio_setup_iocb(req, compat);
- 
- 	if (ret)
- 		goto out_put_req;
-@@ -1637,20 +1646,8 @@ out_put_req:
- 	return ret;
- }
- 
--/* sys_io_submit:
-- *	Queue the nr iocbs pointed to by iocbpp for processing.  Returns
-- *	the number of iocbs queued.  May return -EINVAL if the aio_context
-- *	specified by ctx_id is invalid, if nr is < 0, if the iocb at
-- *	*iocbpp[0] is not properly initialized, if the operation specified
-- *	is invalid for the file descriptor in the iocb.  May fail with
-- *	-EFAULT if any of the data structures point to invalid data.  May
-- *	fail with -EBADF if the file descriptor specified in the first
-- *	iocb is invalid.  May fail with -EAGAIN if insufficient resources
-- *	are available to queue any iocbs.  Will return 0 if nr is 0.  Will
-- *	fail with -ENOSYS if not implemented.
-- */
--SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
--		struct iocb __user * __user *, iocbpp)
-+long do_io_submit(aio_context_t ctx_id, long nr,
-+		  struct iocb __user *__user * iocbpp, bool compat)
- {
- 	struct kioctx *ctx;
- 	long ret = 0;
-@@ -1687,7 +1684,7 @@ SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
- 			break;
- 		}
- 
--		ret = io_submit_one(ctx, user_iocb, &tmp, batch_hash);
-+		ret = io_submit_one(ctx, user_iocb, &tmp, batch_hash, compat);
- 		if (ret)
- 			break;
- 	}
-@@ -1696,6 +1693,24 @@ SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
- 	put_ioctx(ctx);
- 	return i ? i : ret;
- }
-+		  
-+/* sys_io_submit:
-+ *	Queue the nr iocbs pointed to by iocbpp for processing.  Returns
-+ *	the number of iocbs queued.  May return -EINVAL if the aio_context
-+ *	specified by ctx_id is invalid, if nr is < 0, if the iocb at
-+ *	*iocbpp[0] is not properly initialized, if the operation specified
-+ *	is invalid for the file descriptor in the iocb.  May fail with
-+ *	-EFAULT if any of the data structures point to invalid data.  May
-+ *	fail with -EBADF if the file descriptor specified in the first
-+ *	iocb is invalid.  May fail with -EAGAIN if insufficient resources
-+ *	are available to queue any iocbs.  Will return 0 if nr is 0.  Will
-+ *	fail with -ENOSYS if not implemented.
-+ */
-+SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
-+		struct iocb __user * __user *, iocbpp)
-+{
-+	return do_io_submit(ctx_id, nr, iocbpp, 0);
-+}
- 
- /* lookup_kiocb
-  *	Finds a given iocb for cancellation.
-diff --git a/fs/compat.c b/fs/compat.c
-index ae0066d..7dd8952 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -673,7 +673,7 @@ compat_sys_io_submit(aio_context_t ctx_id, int nr, u32 __user *iocb)
- 	iocb64 = compat_alloc_user_space(nr * sizeof(*iocb64));
- 	ret = copy_iocb(nr, iocb, iocb64);
- 	if (!ret)
--		ret = sys_io_submit(ctx_id, nr, iocb64);
-+		ret = do_io_submit(ctx_id, nr, iocb64, 1);
- 	return ret;
- }
- 
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 811dbb3..54b6ef8 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -212,6 +212,8 @@ extern void kick_iocb(struct kiocb *iocb);
- extern int aio_complete(struct kiocb *iocb, long res, long res2);
- struct mm_struct;
- extern void exit_aio(struct mm_struct *mm);
-+extern long do_io_submit(aio_context_t ctx_id, long nr,
-+			 struct iocb __user *__user * iocbpp, bool compat);
- #else
- static inline ssize_t wait_on_sync_kiocb(struct kiocb *iocb) { return 0; }
- static inline int aio_put_req(struct kiocb *iocb) { return 0; }
-@@ -219,6 +221,9 @@ static inline void kick_iocb(struct kiocb *iocb) { }
- static inline int aio_complete(struct kiocb *iocb, long res, long res2) { return 0; }
- struct mm_struct;
- static inline void exit_aio(struct mm_struct *mm) { }
-+static inline long do_io_submit(aio_context_t ctx_id, long nr,
-+				struct iocb __user * __user * iocbpp,
-+				bool compat) { }
- #endif /* CONFIG_AIO */
- 
- static inline struct kiocb *list_kiocb(struct list_head *h)
+ /*
+  * The naming convention for the pad modes is MX51_PAD_<padname>__<padmode>
+@@ -208,18 +214,19 @@ typedef enum iomux_config {
+ #define MX51_PAD_KEY_COL3__KEY_COL3	IOMUX_PAD(0x658, 0x268, 0, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_KEY_COL4__KEY_COL4	IOMUX_PAD(0x65C, 0x26C, 0, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_KEY_COL5__KEY_COL5	IOMUX_PAD(0x660, 0x270, 0, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_25__USBH1_CLK	IOMUX_PAD(0x678, 0x278, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_26__USBH1_DIR	IOMUX_PAD(0x67C, 0x27C, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_27__USBH1_STP	IOMUX_PAD(0x680, 0x280, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_28__USBH1_NXT	IOMUX_PAD(0x684, 0x284, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_11__USBH1_DATA0	IOMUX_PAD(0x688, 0x288, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_12__USBH1_DATA1	IOMUX_PAD(0x68C, 0x28C, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_13__USBH1_DATA2	IOMUX_PAD(0x690, 0x290, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_14__USBH1_DATA3	IOMUX_PAD(0x694, 0x294, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_15__USBH1_DATA4	IOMUX_PAD(0x698, 0x298, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_16__USBH1_DATA5	IOMUX_PAD(0x69C, 0x29C, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_17__USBH1_DATA6	IOMUX_PAD(0x6A0, 0x2A0, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_18__USBH1_DATA7	IOMUX_PAD(0x6A4, 0x2A4, 2, 0x0, 0, NO_PAD_CTRL)
++#define MX51_PAD_USBH1_CLK__USBH1_CLK	IOMUX_PAD(0x678, 0x278, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DIR__USBH1_DIR	IOMUX_PAD(0x67C, 0x27C, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_STP__USBH1_STP	IOMUX_PAD(0x680, 0x280, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_STP__GPIO_1_27	IOMUX_PAD(0x680, 0x280, IOMUX_CONFIG_GPIO, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_NXT__USBH1_NXT	IOMUX_PAD(0x684, 0x284, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA0__USBH1_DATA0	IOMUX_PAD(0x688, 0x288, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA1__USBH1_DATA1	IOMUX_PAD(0x68C, 0x28C, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA2__USBH1_DATA2	IOMUX_PAD(0x690, 0x290, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA3__USBH1_DATA3	IOMUX_PAD(0x694, 0x294, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA4__USBH1_DATA4	IOMUX_PAD(0x698, 0x298, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA5__USBH1_DATA5	IOMUX_PAD(0x69C, 0x29C, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA6__USBH1_DATA6	IOMUX_PAD(0x6A0, 0x2A0, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA7__USBH1_DATA7	IOMUX_PAD(0x6A4, 0x2A4, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
+ #define MX51_PAD_GPIO_3_0__DI1_PIN11	IOMUX_PAD(0x6A8, 0x2A8, 4, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_3_1__DI1_PIN12	IOMUX_PAD(0x6AC, 0x2AC, 4, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_3_2__DI1_PIN13	IOMUX_PAD(0x6B0, 0x2B0, 4, 0x0, 0, NO_PAD_CTRL)
+@@ -299,7 +306,7 @@ typedef enum iomux_config {
+ #define MX51_PAD_GPIO_1_4__GPIO1_4	IOMUX_PAD(0x804, 0x3D8, 0, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_1_5__GPIO1_5	IOMUX_PAD(0x808, 0x3DC, 0, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_1_6__GPIO1_6	IOMUX_PAD(0x80C, 0x3E0, 0, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_7__GPIO1_7	IOMUX_PAD(0x810, 0x3E4, 0, 0x0, 0, NO_PAD_CTRL)
++#define MX51_PAD_GPIO_1_7__GPIO1_7	IOMUX_PAD(0x810, 0x3E4, 0, 0x0, 0, MX51_GPIO_PAD_CTRL)
+ #define MX51_PAD_GPIO_1_8__GPIO1_8	IOMUX_PAD(0x814, 0x3E8, 0, 0x0, 1, \
+ 						(PAD_CTL_SRE_SLOW | PAD_CTL_DSE_MED | PAD_CTL_PUS_100K_UP |  PAD_CTL_HYS))
+ #define MX51_PAD_GPIO_1_9__GPIO1_9	IOMUX_PAD(0x818, 0x3EC, 0, 0x0, 0, NO_PAD_CTRL)
 -- 
-1.6.2.5
+1.6.0.4
 
