@@ -1,45 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab0D3Uun (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 16:50:43 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59468 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755024Ab0D3UtY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 16:49:24 -0400
-Date: Fri, 30 Apr 2010 21:49:13 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Alexey Starikovskiy <astarikovskiy@suse.de>
-Subject: Re: MacBookPro2,2 unable too boot with the latest HEAD
-Message-ID: <20100430204912.GA21240@srcf.ucam.org>
-References: <i2vdd18b0c31004140812i6a0e9430u68ab49b24273fe9b@mail.gmail.com> <20100419142804.3cd53666.akpm@linux-foundation.org> <4BCCCCDF.4010605@gmail.com> <20100419145741.95688467.akpm@linux-foundation.org> <alpine.LFD.2.00.1004201011050.2402@sony> <4BD999C8.7090602@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BD999C8.7090602@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1755836Ab0D3UtR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 16:49:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64902 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751796Ab0D3UtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 16:49:07 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: linux-aio@kvack.org
+Cc: linux-kernel@vger.kernel.org, mjt@tls.msk.ru,
+       Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH 2/2] aio: fix the compat vectored operations
+Date: Fri, 30 Apr 2010 16:49:00 -0400
+Message-Id: <1272660540-6567-3-git-send-email-jmoyer@redhat.com>
+In-Reply-To: <1272660540-6567-1-git-send-email-jmoyer@redhat.com>
+References: <1272660540-6567-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 29, 2010 at 07:38:00AM -0700, Justin P. Mattock wrote:
+The aio compat code was not converting the struct iovecs from 32bit to
+64bit pointers, causing either EINVAL to be returned from io_getevents,
+or EFAULT as the result of the I/O.  This patch passes a compat flag to
+io_submit to signal that pointer conversion is necessary for a given iocb
+array.
 
-> This doesn't seem to be a big issue
-> it's just one machine defaults to ac
-> and then another machine defaults to battery
-> (keep in mind both machines are iMac9,1's
-> just different gpu's).
+A variant of this was tested by Michael Tokarev.  I have also updated
+the libaio test harness to exercise this code path with good success.
+Further, I grabbed a copy of ltp and ran the testcases/kernel/syscall/readv
+and writev tests there (compiled with -m32 on my 64bit system).  All
+seems happy, but extra eyes on this would be welcome.
 
-What do you mean, "Defaults to battery"? The iMac is a desktop machine, 
-isn't it? There typically isn't an AC adapter present in the ACPI 
-description.
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+---
+ fs/aio.c            |   63 +++++++++++++++++++++++++++++++-------------------
+ fs/compat.c         |    2 +-
+ include/linux/aio.h |    5 ++++
+ 3 files changed, 45 insertions(+), 25 deletions(-)
 
+diff --git a/fs/aio.c b/fs/aio.c
+index 1cf12b3..5a38805 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -36,6 +36,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/mempool.h>
+ #include <linux/hash.h>
++#include <linux/compat.h>
+ 
+ #include <asm/kmap_types.h>
+ #include <asm/uaccess.h>
+@@ -1384,13 +1385,20 @@ static ssize_t aio_fsync(struct kiocb *iocb)
+ 	return ret;
+ }
+ 
+-static ssize_t aio_setup_vectored_rw(int type, struct kiocb *kiocb)
++static ssize_t aio_setup_vectored_rw(int type, struct kiocb *kiocb, bool compat)
+ {
+ 	ssize_t ret;
+ 
+-	ret = rw_copy_check_uvector(type, (struct iovec __user *)kiocb->ki_buf,
+-				    kiocb->ki_nbytes, 1,
+-				    &kiocb->ki_inline_vec, &kiocb->ki_iovec);
++	if (compat)
++		ret = compat_rw_copy_check_uvector(type,
++				(struct compat_iovec __user *)kiocb->ki_buf,
++				kiocb->ki_nbytes, 1, &kiocb->ki_inline_vec,
++				&kiocb->ki_iovec);
++	else
++		ret = rw_copy_check_uvector(type,
++				(struct iovec __user *)kiocb->ki_buf,
++				kiocb->ki_nbytes, 1, &kiocb->ki_inline_vec,
++				&kiocb->ki_iovec);
+ 	if (ret < 0)
+ 		goto out;
+ 
+@@ -1420,7 +1428,7 @@ static ssize_t aio_setup_single_vector(struct kiocb *kiocb)
+  *	Performs the initial checks and aio retry method
+  *	setup for the kiocb at the time of io submission.
+  */
+-static ssize_t aio_setup_iocb(struct kiocb *kiocb)
++static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
+ {
+ 	struct file *file = kiocb->ki_filp;
+ 	ssize_t ret = 0;
+@@ -1469,7 +1477,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb)
+ 		ret = security_file_permission(file, MAY_READ);
+ 		if (unlikely(ret))
+ 			break;
+-		ret = aio_setup_vectored_rw(READ, kiocb);
++		ret = aio_setup_vectored_rw(READ, kiocb, compat);
+ 		if (ret)
+ 			break;
+ 		ret = -EINVAL;
+@@ -1483,7 +1491,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb)
+ 		ret = security_file_permission(file, MAY_WRITE);
+ 		if (unlikely(ret))
+ 			break;
+-		ret = aio_setup_vectored_rw(WRITE, kiocb);
++		ret = aio_setup_vectored_rw(WRITE, kiocb, compat);
+ 		if (ret)
+ 			break;
+ 		ret = -EINVAL;
+@@ -1548,7 +1556,8 @@ static void aio_batch_free(struct hlist_head *batch_hash)
+ }
+ 
+ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+-			 struct iocb *iocb, struct hlist_head *batch_hash)
++			 struct iocb *iocb, struct hlist_head *batch_hash,
++			 bool compat)
+ {
+ 	struct kiocb *req;
+ 	struct file *file;
+@@ -1609,7 +1618,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 	req->ki_left = req->ki_nbytes = iocb->aio_nbytes;
+ 	req->ki_opcode = iocb->aio_lio_opcode;
+ 
+-	ret = aio_setup_iocb(req);
++	ret = aio_setup_iocb(req, compat);
+ 
+ 	if (ret)
+ 		goto out_put_req;
+@@ -1637,20 +1646,8 @@ out_put_req:
+ 	return ret;
+ }
+ 
+-/* sys_io_submit:
+- *	Queue the nr iocbs pointed to by iocbpp for processing.  Returns
+- *	the number of iocbs queued.  May return -EINVAL if the aio_context
+- *	specified by ctx_id is invalid, if nr is < 0, if the iocb at
+- *	*iocbpp[0] is not properly initialized, if the operation specified
+- *	is invalid for the file descriptor in the iocb.  May fail with
+- *	-EFAULT if any of the data structures point to invalid data.  May
+- *	fail with -EBADF if the file descriptor specified in the first
+- *	iocb is invalid.  May fail with -EAGAIN if insufficient resources
+- *	are available to queue any iocbs.  Will return 0 if nr is 0.  Will
+- *	fail with -ENOSYS if not implemented.
+- */
+-SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
+-		struct iocb __user * __user *, iocbpp)
++long do_io_submit(aio_context_t ctx_id, long nr,
++		  struct iocb __user *__user * iocbpp, bool compat)
+ {
+ 	struct kioctx *ctx;
+ 	long ret = 0;
+@@ -1687,7 +1684,7 @@ SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
+ 			break;
+ 		}
+ 
+-		ret = io_submit_one(ctx, user_iocb, &tmp, batch_hash);
++		ret = io_submit_one(ctx, user_iocb, &tmp, batch_hash, compat);
+ 		if (ret)
+ 			break;
+ 	}
+@@ -1696,6 +1693,24 @@ SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
+ 	put_ioctx(ctx);
+ 	return i ? i : ret;
+ }
++		  
++/* sys_io_submit:
++ *	Queue the nr iocbs pointed to by iocbpp for processing.  Returns
++ *	the number of iocbs queued.  May return -EINVAL if the aio_context
++ *	specified by ctx_id is invalid, if nr is < 0, if the iocb at
++ *	*iocbpp[0] is not properly initialized, if the operation specified
++ *	is invalid for the file descriptor in the iocb.  May fail with
++ *	-EFAULT if any of the data structures point to invalid data.  May
++ *	fail with -EBADF if the file descriptor specified in the first
++ *	iocb is invalid.  May fail with -EAGAIN if insufficient resources
++ *	are available to queue any iocbs.  Will return 0 if nr is 0.  Will
++ *	fail with -ENOSYS if not implemented.
++ */
++SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
++		struct iocb __user * __user *, iocbpp)
++{
++	return do_io_submit(ctx_id, nr, iocbpp, 0);
++}
+ 
+ /* lookup_kiocb
+  *	Finds a given iocb for cancellation.
+diff --git a/fs/compat.c b/fs/compat.c
+index ae0066d..7dd8952 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -673,7 +673,7 @@ compat_sys_io_submit(aio_context_t ctx_id, int nr, u32 __user *iocb)
+ 	iocb64 = compat_alloc_user_space(nr * sizeof(*iocb64));
+ 	ret = copy_iocb(nr, iocb, iocb64);
+ 	if (!ret)
+-		ret = sys_io_submit(ctx_id, nr, iocb64);
++		ret = do_io_submit(ctx_id, nr, iocb64, 1);
+ 	return ret;
+ }
+ 
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 811dbb3..54b6ef8 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -212,6 +212,8 @@ extern void kick_iocb(struct kiocb *iocb);
+ extern int aio_complete(struct kiocb *iocb, long res, long res2);
+ struct mm_struct;
+ extern void exit_aio(struct mm_struct *mm);
++extern long do_io_submit(aio_context_t ctx_id, long nr,
++			 struct iocb __user *__user * iocbpp, bool compat);
+ #else
+ static inline ssize_t wait_on_sync_kiocb(struct kiocb *iocb) { return 0; }
+ static inline int aio_put_req(struct kiocb *iocb) { return 0; }
+@@ -219,6 +221,9 @@ static inline void kick_iocb(struct kiocb *iocb) { }
+ static inline int aio_complete(struct kiocb *iocb, long res, long res2) { return 0; }
+ struct mm_struct;
+ static inline void exit_aio(struct mm_struct *mm) { }
++static inline long do_io_submit(aio_context_t ctx_id, long nr,
++				struct iocb __user * __user * iocbpp,
++				bool compat) { }
+ #endif /* CONFIG_AIO */
+ 
+ static inline struct kiocb *list_kiocb(struct list_head *h)
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.6.2.5
+
