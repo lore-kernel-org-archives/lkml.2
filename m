@@ -1,116 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935Ab0D3R2t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:28:49 -0400
-Received: from ozlabs.org ([203.10.76.45]:59555 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758670Ab0D3R2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:28:35 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
-       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Gautham R Shenoy <ego@in.ibm.com>
-Subject: Re: [PATCH 1/5] sched: fix capacity calculations for SMT4
-In-reply-to: <1271426308.1674.429.camel@laptop>
-References: <20100409062118.D4096CBB6C@localhost.localdomain> <1271161766.4807.1280.camel@twins> <2906.1271219317@neuling.org> <1271426308.1674.429.camel@laptop>
-Comments: In-reply-to Peter Zijlstra <peterz@infradead.org>
-   message dated "Fri, 16 Apr 2010 15:58:28 +0200."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
-Date: Thu, 29 Apr 2010 16:55:58 +1000
-Message-ID: <31281.1272524158@neuling.org>
+	id S1758699Ab0D3R23 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:28:29 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42702 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758670Ab0D3R1k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:27:40 -0400
+Message-ID: <4BDB12FB.5060806@in.ibm.com>
+Date: Fri, 30 Apr 2010 22:57:23 +0530
+From: Sachin Sant <sachinp@in.ibm.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+MIME-Version: 1.0
+To: Linux/PPC Development <linuxppc-dev@ozlabs.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       grant.likely@secretlab.ca, Greg Kroah-Hartman <gregkh@suse.de>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: -next Apr 30: OOPS during eHEA driver initialization
+References: <4BDAF376.4030005@in.ibm.com>
+In-Reply-To: <4BDAF376.4030005@in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In message <1271426308.1674.429.camel@laptop> you wrote:
-> On Wed, 2010-04-14 at 14:28 +1000, Michael Neuling wrote:
-> 
-> > > Right, so I suspect this will indeed break some things.
-> > > 
-> > > We initially allowed 0 capacity for when a cpu is consumed by an RT task
-> > > and there simply isn't much capacity left, in that case you really want
-> > > to try and move load to your sibling cpus if possible.
-> > 
-> > Changing the CPU power based on what tasks are running on them seems a
-> > bit wrong to me.  Shouldn't we keep those concepts separate?
-> 
-> Well the thing cpu_power represents is a ratio of compute capacity
-> available to this cpu as compared to other cpus. By normalizing the
-> runqueue weights with this we end up with a fair balance.
-> 
-> The thing to realize here is that this is solely about SCHED_NORMAL
-> tasks, SCHED_FIFO/RR (or the proposed DEADLINE) tasks do not care about
-> fairness and available compute capacity.
-> 
-> So if we were to ignore RT tasks, you'd end up with a situation where,
-> assuming 2 cpus and 4 equally weighted NORMAL tasks, and 1 RT task, the
-> load-balancer would give each cpu 2 NORMAL tasks, but the tasks that
-> would end up on the cpu the RT tasks would be running on would not run
-> as fast -- is that fair?
-> 
-> Since RT tasks do not have a weight (FIFO/RR have no limit at all,
-> DEADLINE would have something equivalent to a max weight), it is
-> impossible to account them in the normal weight sense.
-> 
-> Therefore the current model takes them into account by lowering the
-> compute capacity according to their (avg) cpu usage. So if the RT task
-> would consume 66% cputime, we'd end up with a situation where the cpu
-> running the RT task would get 1 NORMAL task, and other cpu would have
-> the remaining 3, that way they'd all get 33% cpu.
-> 
-> > > However you're right that this goes awry in your case.
-> > > 
-> > > One thing to look at is if that 15% increase is indeed representative
-> > > for the power7 cpu, it having 4 SMT threads seems to suggest there was
-> > > significant gains, otherwise they'd not have wasted the silicon.
-> > 
-> > There are certainly, for most workloads, per core gains for SMT4 over
-> > SMT2 on P7.  My kernels certainly compile faster and that's the only
-> > workload anyone who matters cares about.... ;-)
-> 
-> For sure ;-)
-> 
-> Are there any numbers available on how much they gain? It might be worth
-> to stick in real numbers instead of this alleged 15%.
-> 
-> > > One thing we could look at is using the cpu base power to compute
-> > > capacity from. We'd have to add another field to sched_group and store
-> > > power before we do the scale_rt_power() stuff.
-> > 
-> > Separating capacity from what RT tasks are running seems like a good
-> > idea to me.
-> 
-> Well, per the above we cannot fully separate them.
-> 
-> > This would fix the RT issue, but it's not clear to me how you are
-> > suggesting fixing the rounding down to 0 SMT4 issue.  Are you suggesting
-> > we bump smt_gain to say 2048 + 15%?  Or are you suggesting we separate
-> > the RT tasks out from capacity and keep the max(1, capacity) that I've
-> > added?  Or something else?
-> 
-> I would think that 4 SMT threads are still slower than two full cores,
-> right? So cpu_power=2048 would not be appropriate.
-> 
-> > Would another possibility be changing capacity a scaled value (like
-> > cpu_power is now) rather than a small integer as it is now.  For
-> > example, a scaled capacity of 1024 would be equivalent to a capacity of
-> > 1 now.  This might enable us to handle partial capacities better?  We'd
-> > probably have to scale a bunch of nr_running too.  
-> 
-> Right, so my proposal was to scale down the capacity divider (currently
-> 1024) to whatever would be the base capacity for that cpu. Trouble seems
-> to be that that makes group capacity a lot more complex, as you would
-> end up needing to average all the cpu's their base capacity.
-> 
-> 
-> Hrmm, my brain seems muddled but I might have another solution, let me
-> ponder this for a bit..
-> 
+Sachin Sant wrote:
+> With today's next eHEA drivers fails to initialize.
+If i revert the following patch eHEA network interface is initialized
+properly.
 
-Peter,
+commit cebfe0b6709abdab997c1a00499d67efa32ee1f0
+drivercore: Add of_match_table to the common device drivers
 
-Did you manage to get anywhere on this capacity issue?
+Thanks
+-Sachin
 
-Mikey
+>
+> IBM eHEA ethernet device driver (Release EHEA_0103)
+> Unable to handle kernel paging request for data at address 0x00000000
+> Faulting instruction address: 0xc0000000004e8d7c
+> Oops: Kernel access of bad area, sig: 11 [#1]
+> SMP NR_CPUS=1024 NUMA pSeries
+> last sysfs file: /sys/devices/vio/30000007/host0/target0:0:2/0:0:2:0/type
+> Modules linked in: ehea(+) sr_mod cdrom sg sd_mod crc_t10dif ibmvscsic 
+> scsi_transport_srp scsi_tgt scsi_mod
+> NIP: c0000000004e8d7c LR: c00000000002614c CTR: c000000000026314
+> REGS: c00000000c517810 TRAP: 0300   Not tainted  
+> (2.6.34-rc5-autotest-next-20100430)
+> MSR: 8000000000009032 <EE,ME,IR,DR>  CR: 24222228  XER: 20000005
+> DAR: 0000000000000000, DSISR: 0000000040000000
+> TASK = c00000000cf3ced0[730] 'modprobe' THREAD: c00000000c514000 CPU: 0
+> GPR00: c00000000002614c c00000000c517a90 c000000000c96358 
+> 0000000000000000
+> GPR04: c0000000ffff7858 c0000000004e973c c00000000cf3d9c8 
+> 0000000000000000
+> GPR08: c000000000e4f8a0 0000000000001eed 0000000000000000 
+> 00000000000002e7
+> GPR12: d000000001bfb0d0 c000000007440000 0000000000000000 
+> 0000000000000000
+> GPR16: 0000000000000000 0000000000000000 000000001002c598 
+> 0000000000000000
+> GPR20: 0000000000000000 0000000000000004 0000000000000000 
+> 0000000010030218
+> GPR24: 0000000010030160 00000fffb7b00000 0000000010030200 
+> 0000000000000000
+> GPR28: c0000000ffff7858 0000000000000000 c000000000bfd528 
+> 0000000000000000
+> NIP [c0000000004e8d7c] .of_match_node+0xc0/0x10c
+> LR [c00000000002614c] .ibmebus_create_devices+0x48/0x104
+> Call Trace:
+> [c00000000c517a90] [c0000000004e973c] .of_get_next_child+0x74/0x98 
+> (unreliable)
+> [c00000000c517b20] [c00000000002614c] .ibmebus_create_devices+0x48/0x104
+> [c00000000c517bc0] [c000000000026338] .ibmebus_register_driver+0x24/0x4c
+> [c00000000c517c50] [d000000001bfa1bc] .ehea_module_init+0x1d4/0x22b8 
+> [ehea]
+> [c00000000c517ce0] [c0000000000097a4] .do_one_initcall+0x88/0x1bc
+> [c00000000c517d90] [c0000000000cbdf4] .SyS_init_module+0x11c/0x2b0
+> [c00000000c517e30] [c0000000000085b4] syscall_exit+0x0/0x40
+> Instruction dump:
+> 7c7de838 881f0040 2f800000 419e0018 7f83e378 389f0040 4bfffdbd 7c63e838
+> 7c7d07b4 2fbd0000 409e0030 3bff00c8 <881f0000> 2f800000 409eff60 881f0020
+> ---[ end trace cb522a034d760fb8 ]---
+>
+> next-20100428 was OK. Will try to bisect.
+>
+> Thanks
+> -Sachin
+>
+>
+
+
+-- 
+
+---------------------------------
+Sachin Sant
+IBM Linux Technology Center
+India Systems and Technology Labs
+Bangalore, India
+---------------------------------
+
