@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934250Ab0D3TG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:06:56 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:50984 "EHLO gir.skynet.ie"
+	id S934258Ab0D3THb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:07:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60359 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758249Ab0D3RBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758058Ab0D3RBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Apr 2010 13:01:06 -0400
-Date: Thu, 29 Apr 2010 08:37:26 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH -v3] take all anon_vma locks in anon_vma_lock
-Message-ID: <20100429073726.GL15815@csn.ul.ie>
-References: <20100427231007.GA510@random.random> <20100428091555.GB15815@csn.ul.ie> <20100428153525.GR510@random.random> <20100428155558.GI15815@csn.ul.ie> <20100428162305.GX510@random.random> <20100428134719.32e8011b@annuminas.surriel.com> <20100428142510.09984e15@annuminas.surriel.com> <20100428161711.5a815fa8@annuminas.surriel.com> <20100428165734.6541bab3@annuminas.surriel.com> <y2s28c262361004281728we31e3b9fsd2427aacdc76a9e7@mail.gmail.com>
+Date: Fri, 30 Apr 2010 08:47:02 GMT
+From: tip-bot for Chase Douglas <chase.douglas@canonical.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       rostedt@goodmis.org, chase.douglas@canonical.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       rostedt@goodmis.org, tglx@linutronix.de, chase.douglas@canonical.com
+In-Reply-To: <1272045759-32018-1-git-send-email-chase.douglas@canonical.com>
+References: <1272045759-32018-1-git-send-email-chase.douglas@canonical.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:tracing/core] tracing: Add documentation for trace commands mod, traceon/traceoff
+Message-ID: <tip-07271aa42d13378e67ebd79ea9ca1c4a5e2ad46f@git.kernel.org>
+Git-Commit-ID: 07271aa42d13378e67ebd79ea9ca1c4a5e2ad46f
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <y2s28c262361004281728we31e3b9fsd2427aacdc76a9e7@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 30 Apr 2010 08:47:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 29, 2010 at 09:28:25AM +0900, Minchan Kim wrote:
-> On Thu, Apr 29, 2010 at 5:57 AM, Rik van Riel <riel@redhat.com> wrote:
-> > Take all the locks for all the anon_vmas in anon_vma_lock, this properly
-> > excludes migration and the transparent hugepage code from VMA changes done
-> > by mmap/munmap/mprotect/expand_stack/etc...
-> >
-> > Unfortunately, this requires adding a new lock (mm->anon_vma_chain_lock),
-> > otherwise we have an unavoidable lock ordering conflict.  This changes the
-> > locking rules for the "same_vma" list to be either mm->mmap_sem for write,
-> > or mm->mmap_sem for read plus the new mm->anon_vma_chain lock.  This limits
-> > the place where the new lock is taken to 2 locations - anon_vma_prepare and
-> > expand_downwards.
-> >
-> > Document the locking rules for the same_vma list in the anon_vma_chain and
-> > remove the anon_vma_lock call from expand_upwards, which does not need it.
-> >
-> > Signed-off-by: Rik van Riel <riel@redhat.com>
-> 
-> This patch makes things simple. So I like this.
+Commit-ID:  07271aa42d13378e67ebd79ea9ca1c4a5e2ad46f
+Gitweb:     http://git.kernel.org/tip/07271aa42d13378e67ebd79ea9ca1c4a5e2ad46f
+Author:     Chase Douglas <chase.douglas@canonical.com>
+AuthorDate: Fri, 23 Apr 2010 14:02:39 -0400
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Tue, 27 Apr 2010 16:51:49 -0400
 
-Agreed.
+tracing: Add documentation for trace commands mod, traceon/traceoff
 
-> Actually, I wanted this all-at-once locks approach.
-> But I was worried about that how the patch affects AIM 7 workload
-> which is cause of anon_vma_chain about scalability by Rik.
+The mod command went in as commit
+64e7c440618998fd69eee6ab490b042d12248021
 
-I had similar concerns. I'm surprised how it worked out.
+The traceon/traceoff commands went in as commit
+23b4ff3aa479c9e3bb23cb6b2d0a97878399784a
 
-> But now Rik himself is sending the patch. So I assume the patch
-> couldn't decrease scalability of the workload heavily.
-> 
-> Let's wait result of test if Rik doesn't have a problem of AIM7.
-> 
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+LKML-Reference: <1272045759-32018-1-git-send-email-chase.douglas@canonical.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ Documentation/trace/ftrace.txt |   44 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+index 5201181..557c1ed 100644
+--- a/Documentation/trace/ftrace.txt
++++ b/Documentation/trace/ftrace.txt
+@@ -155,6 +155,9 @@ of ftrace. Here is a list of some of the key files:
+ 	to be traced. Echoing names of functions into this file
+ 	will limit the trace to only those functions.
+ 
++	This interface also allows for commands to be used. See the
++	"Filter commands" section for more details.
++
+   set_ftrace_notrace:
+ 
+ 	This has an effect opposite to that of
+@@ -1824,6 +1827,47 @@ this special filter via:
+  echo > set_graph_function
+ 
+ 
++Filter commands
++---------------
++
++A few commands are supported by the set_ftrace_filter interface.
++Trace commands have the following format:
++
++<function>:<command>:<parameter>
++
++The following commands are supported:
++
++- mod
++  This command enables function filtering per module. The
++  parameter defines the module. For example, if only the write*
++  functions in the ext3 module are desired, run:
++
++   echo 'write*:mod:ext3' > set_ftrace_filter
++
++  This command interacts with the filter in the same way as
++  filtering based on function names. Thus, adding more functions
++  in a different module is accomplished by appending (>>) to the
++  filter file. Remove specific module functions by prepending
++  '!':
++
++   echo '!writeback*:mod:ext3' >> set_ftrace_filter
++
++- traceon/traceoff
++  These commands turn tracing on and off when the specified
++  functions are hit. The parameter determines how many times the
++  tracing system is turned on and off. If unspecified, there is
++  no limit. For example, to disable tracing when a schedule bug
++  is hit the first 5 times, run:
++
++   echo '__schedule_bug:traceoff:5' > set_ftrace_filter
++
++  These commands are cumulative whether or not they are appended
++  to set_ftrace_filter. To remove a command, prepend it by '!'
++  and drop the parameter:
++
++   echo '!__schedule_bug:traceoff' > set_ftrace_filter
++
++
+ trace_pipe
+ ----------
+ 
