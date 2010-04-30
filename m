@@ -1,49 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab0D3RI7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:08:59 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53812 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932725Ab0D3RIt (ORCPT
+	id S932749Ab0D3RJW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:09:22 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:61176 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932718Ab0D3RIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:08:49 -0400
-Date: Thu, 29 Apr 2010 15:11:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-       Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-       Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 01/11] lib: introduce common method to convert hex
- digits
-Message-Id: <20100429151125.dec82ee1.akpm@linux-foundation.org>
-In-Reply-To: <r2q5ec8ebd51004220139m2df20715y259c9fdd65373b11@mail.gmail.com>
-References: <cover.1266861291.git.ext-andriy.shevchenko@nokia.com>
-	<d8c224af14aa936dcd692c70656559fe9726d997.1266861291.git.ext-andriy.shevchenko@nokia.com>
-	<5ec8ebd51003081703r76fd2ba7pa850f7568a580181@mail.gmail.com>
-	<20100309115743.48cc125b.akpm@linux-foundation.org>
-	<r2q5ec8ebd51004220139m2df20715y259c9fdd65373b11@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Apr 2010 13:08:42 -0400
+From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 07/10] staging: rt2860: use new hex_to_bin() method
+Date: Fri, 30 Apr 2010 12:34:06 +0300
+Message-Id: <d6886a8b94bf8726d7bde807b3ca19f65739ce4d.1272617852.git.ext-andriy.shevchenko@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <7cd86c01ad4a376fb8a48ffe307ce7c0510cecc0.1272617852.git.ext-andriy.shevchenko@nokia.com>
+References: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <d5c4e26cc74458dd77102c4274d3260149717328.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <1a326db89859eec030859e4905c515e0817bd2ea.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <d4a1df27bf2c83ee84c3d74bcff0f2768146eb7e.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <c1ca828fb308042aa32428b345abcb43ccb02c39.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <2eb558b7b0b20dfea0b61223db6146cb8fdbe52d.1272617852.git.ext-andriy.shevchenko@nokia.com>
+ <7cd86c01ad4a376fb8a48ffe307ce7c0510cecc0.1272617852.git.ext-andriy.shevchenko@nokia.com>
+In-Reply-To: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
+References: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
+X-OriginalArrivalTime: 30 Apr 2010 09:34:05.0679 (UTC) FILETIME=[46CFBFF0:01CAE848]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Apr 2010 11:39:51 +0300
-Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+Instead of using own implementation involve hex_to_bin() function.
 
-> On Tue, Mar 9, 2010 at 10:57 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > This patch series turned up two days before the 2.6.33 release, which
-> > is fairly exactly the time when non-bugfixes won't get looked at! __I
-> > stored it all away for consideration after we've finished the
-> > 2.6.34-rc1 merge scramble.
->
-> Any news here?
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ drivers/staging/rt2860/common/rtmp_init.c |   15 ++-------------
+ drivers/staging/rt2860/rtmp.h             |    2 --
+ 2 files changed, 2 insertions(+), 15 deletions(-)
 
-Ancient history ;)
+diff --git a/drivers/staging/rt2860/common/rtmp_init.c b/drivers/staging/rt2860/common/rtmp_init.c
+index 21a95ff..a090385 100644
+--- a/drivers/staging/rt2860/common/rtmp_init.c
++++ b/drivers/staging/rt2860/common/rtmp_init.c
+@@ -2810,17 +2810,6 @@ void UserCfgInit(struct rt_rtmp_adapter *pAd)
+ }
+ 
+ /* IRQL = PASSIVE_LEVEL */
+-u8 BtoH(char ch)
+-{
+-	if (ch >= '0' && ch <= '9')
+-		return (ch - '0');	/* Handle numerals */
+-	if (ch >= 'A' && ch <= 'F')
+-		return (ch - 'A' + 0xA);	/* Handle capitol hex digits */
+-	if (ch >= 'a' && ch <= 'f')
+-		return (ch - 'a' + 0xA);	/* Handle small hex digits */
+-	return (255);
+-}
+-
+ /* */
+ /*  FUNCTION: AtoH(char *, u8 *, int) */
+ /* */
+@@ -2847,8 +2836,8 @@ void AtoH(char *src, u8 *dest, int destlen)
+ 	destTemp = (u8 *)dest;
+ 
+ 	while (destlen--) {
+-		*destTemp = BtoH(*srcptr++) << 4;	/* Put 1st ascii byte in upper nibble. */
+-		*destTemp += BtoH(*srcptr++);	/* Add 2nd ascii byte to above. */
++		*destTemp = hex_to_bin(*srcptr++) << 4;	/* Put 1st ascii byte in upper nibble. */
++		*destTemp += hex_to_bin(*srcptr++);	/* Add 2nd ascii byte to above. */
+ 		destTemp++;
+ 	}
+ }
+diff --git a/drivers/staging/rt2860/rtmp.h b/drivers/staging/rt2860/rtmp.h
+index 4401a55..73bf325 100644
+--- a/drivers/staging/rt2860/rtmp.h
++++ b/drivers/staging/rt2860/rtmp.h
+@@ -2367,8 +2367,6 @@ void RTMPMoveMemory(void *pDest, void *pSrc, unsigned long Length);
+ 
+ void AtoH(char *src, u8 *dest, int destlen);
+ 
+-u8 BtoH(char ch);
+-
+ void RTMPPatchMacBbpBug(struct rt_rtmp_adapter *pAd);
+ 
+ void RTMPInitTimer(struct rt_rtmp_adapter *pAd,
+-- 
+1.6.3.3
 
-> Should I resubmit series?
-
-Yes please.
