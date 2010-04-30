@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933144Ab0D3TJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:09:33 -0400
-Received: from tomts13-srv.bellnexxia.net ([209.226.175.34]:53372 "EHLO
-	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933985Ab0D3TJU (ORCPT
+	id S1759449Ab0D3TKI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:10:08 -0400
+Received: from tomts36.bellnexxia.net ([209.226.175.93]:34178 "EHLO
+	tomts36-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757660Ab0D3RAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 15:09:20 -0400
+	Fri, 30 Apr 2010 13:00:02 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEACbE2ktGGNqG/2dsb2JhbACdI3K+X4JmgiwE
-Date: Fri, 30 Apr 2010 15:09:17 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Valdis.Kletnieks@vt.edu, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH tip/core/urgent] fix several lockdep splats, allow
-	multiple splats
-Message-ID: <20100430190917.GB6926@Krystal>
-References: <20100421200150.GA3818@linux.vnet.ibm.com> <20100430100749.GC14202@elte.hu> <20100430153334.GA19672@Krystal> <10035.1272644205@localhost> <20100430180247.GA2482@linux.vnet.ibm.com> <20100430181201.GB1704@Krystal> <20100430183226.GB2482@linux.vnet.ibm.com>
+X-IronPort-Anti-Spam-Result: AvsEAMyn2ktGGNqG/2dsb2JhbACdH3K+e4USBA
+Date: Fri, 30 Apr 2010 12:59:59 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH] tracepoints: add check trace callback type
+Message-ID: <20100430165959.GA25605@Krystal>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100430183226.GB2482@linux.vnet.ibm.com>
 X-Editor: vi
 X-Info: http://krystal.dyndns.org:8080
 X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 15:08:58 up 23 days,  5:02,  3 users,  load average: 0.06, 0.08,
-	0.05
+X-Uptime: 12:50:15 up 23 days,  2:43,  4 users,  load average: 0.13, 0.11,
+	0.09
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Fri, Apr 30, 2010 at 02:12:01PM -0400, Mathieu Desnoyers wrote:
-> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > > On Fri, Apr 30, 2010 at 12:16:45PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> > > > On Fri, 30 Apr 2010 11:33:34 EDT, Mathieu Desnoyers said:
-> > > > 
-> > > > > I recommend creating a kernel command line parameter that would tweak
-> > > > > the number of messages printed by lockdep. The default would indeed by 1
-> > > > > message, but people in a debugging marathon can specify a larger value
-> > > > > so they won't have to reboot between each individual lockdep error.
-> > > > 
-> > > > Yeah, that would rock for development kernels - playing whack-a-mole with
-> > > > a half-dozen new lockdep whinges can easily stretch out for quite some time.
-> > > 
-> > > The RCU-lockdep splats are a bit different in nature than the
-> > > deadlock-related splats that lockdep normally prints.  The RCU-lockdep
-> > > splats are transient in nature, and it is easy to apply WARN_ON_ONCE().
-> > > In contrast, if you permit multiple deadlock-related lockdep splats,
-> > > you tend to get lots of warnings about the same deadlock cycle.
-> > > 
-> > > So how about an additional kernel configuration variable, default
-> > > disabled, perhaps named CONFIG_PROVE_RCU_MULTIPLE, that allows a
-> > > single boot to see multiple messages?  Unlike the dyntick-idle
-> > > WARN_ON()s that generated multi-gigabyte console logs in a great
-> > > hurry, I haven't yet seen excessive quantities of RCU-lockdep splats,
-> > > so I don't see the need for an integer limit.
-> > > 
-> > > Thoughts?
-> > 
-> > Ideally we don't want to flood the console with thousands of instances
-> > of the same RCU-lockdep splat (think of a missing read lock on a common
-> > code path). Therefore I think keeping an integer limit is relevant here.
-> > I agree that this integer limit could be selected by a CONFIG_ option
-> > rather than by a kernel parameter, as it will typically only be used on
-> > development kernels with "kernel hacking" enabled anyway. There is not
-> > much point in bloating the kernel code with an extra debug-only kernel
-> > parameter parsing.
-> 
-> We already limit via WARN_ON_ONCE(), and there are fewer than 500 lines
-> of code in the kernel that can give RCU lockdep splats, so I really believe
-> that we are OK without an overall limit for the foreseeable future.
+This check is meant to be used by tracepoint users which do a direct cast of
+callbacks to (void *) for direct registration, thus bypassing the
+register_trace_##name and unregister_trace_##name checks.
 
-Your idea makes sense then.
+This permits to ensure that the callback type matches the function type at the
+call site, but without generating any code.
 
-Thanks,
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@elte.hu> 
+CC: Andrew Morton <akpm@linux-foundation.org> 
+CC: Thomas Gleixner <tglx@linutronix.de> 
+CC: Peter Zijlstra <peterz@infradead.org> 
+CC: Frederic Weisbecker <fweisbec@gmail.com> 
+CC: Arnaldo Carvalho de Melo <acme@redhat.com> 
+CC: Lai Jiangshan <laijs@cn.fujitsu.com> 
+CC: Li Zefan <lizf@cn.fujitsu.com> 
+CC: Masami Hiramatsu <mhiramat@redhat.com> 
+CC: Christoph Hellwig <hch@lst.de>
+---
+ include/linux/tracepoint.h |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Mathieu
-
-> 
-> 							Thanx, Paul
+Index: linux.trees.git/include/linux/tracepoint.h
+===================================================================
+--- linux.trees.git.orig/include/linux/tracepoint.h	2010-04-30 12:32:39.000000000 -0400
++++ linux.trees.git/include/linux/tracepoint.h	2010-04-30 12:57:55.000000000 -0400
+@@ -78,9 +78,11 @@ struct tracepoint {
+ 	static inline int unregister_trace_##name(void (*probe)(proto))	\
+ 	{								\
+ 		return tracepoint_probe_unregister(#name, (void *)probe);\
++	}								\
++	static inline void check_trace_callback_type_##name(void (*cb)(proto)) \
++	{								\
+ 	}
+ 
+-
+ #define DEFINE_TRACE_FN(name, reg, unreg)				\
+ 	static const char __tpstrtab_##name[]				\
+ 	__attribute__((section("__tracepoints_strings"))) = #name;	\
+@@ -112,6 +114,9 @@ extern void tracepoint_update_probe_rang
+ 	static inline int unregister_trace_##name(void (*probe)(proto))	\
+ 	{								\
+ 		return -ENOSYS;						\
++	}								\
++	static inline void check_trace_callback_type_##name(void (*cb)(proto)) \
++	{								\
+ 	}
+ 
+ #define DEFINE_TRACE_FN(name, reg, unreg)
 
 -- 
 Mathieu Desnoyers
