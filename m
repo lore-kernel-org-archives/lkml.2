@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933726Ab0D3SqF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:46:05 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:4523 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932916Ab0D3RQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:16:32 -0400
-From: Frans Pop <elendil@planet.nl>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [regression,bisected] Missing boot messages with VESAFB after VT initialization
-Date: Thu, 29 Apr 2010 06:14:23 +0200
-User-Agent: KMail/1.9.9
-Cc: x86@kernel.org, Alan Cox <alan@linux.intel.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Ari Entlich <atrigent@ccs.neu.edu>
-References: <201004171718.55867.elendil@planet.nl>
-In-Reply-To: <201004171718.55867.elendil@planet.nl>
+	id S932901Ab0D3RQV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:16:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30759 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932524Ab0D3RQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:16:00 -0400
+Message-ID: <4BDAA8B8.9030103@redhat.com>
+Date: Fri, 30 Apr 2010 12:54:00 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] KVM MMU: allow shadow page become unsync at creating
+ time
+References: <4BDA9C37.9070602@cn.fujitsu.com> <4BDA9C86.8080204@cn.fujitsu.com> <4BDA9CD0.6070501@cn.fujitsu.com>
+In-Reply-To: <4BDA9CD0.6070501@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004290614.24016.elendil@planet.nl>
-X-Length: 2723
-X-OriginalArrivalTime: 30 Apr 2010 17:16:28.0549 (UTC) FILETIME=[DED9C350:01CAE888]
-X-RecipientDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 17 April 2010, Frans Pop wrote:
-> Initially all messages from init scripts are displayed correctly, but
-> after the init script to set up the VT1-VT6 is run, messages from init
-> scripts are no longer displayed. Instead the display is blank with only
-> a cursor.
+On 04/30/2010 12:03 PM, Xiao Guangrong wrote:
+> Allow new shadow page become unsync when is created, then we no need
+> write-protect the 'sp->gfn', this idea is from Avi:
 >
-> However, if I switch back to VT1 from X.Org after the boot has
-> completed, the missing messages are visible.
+> |Another interesting case is to create new shadow pages in the unsync
+> |state. That can help when the guest starts a short lived process: we
+> |can avoid write protecting its pagetables completely
 >
-> System is x86_64 running Debian stable ("Lenny"). I'm using VESAFB
-> (vga=791) and no KMS.
+>    
 
-I've done a new bisection for this issue (with cold boots instead of 
-reboots) and now end up in the following merge:
-   commit 94468080220162f74dc6ce5c3e95e5fec8022902
-   Merge: fb7b096 137ee2f
-   Author: Linus Torvalds <torvalds@linux-foundation.org>
-      Merge git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty-2.6
+Any idea how this improves performance?  A kernel build has a lot of 
+short lived processes, might see an improvement there.
 
-Unfortunately I cannot bisect into that merge as I get a NULL pointer bug 
-after typing the passphrase for my encrypted partition.
+-- 
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
 
-I suspect one of the following commits from that merge:
- * commit 638b9648ab51c9c549ff5735d3de519ef6199df3
-   Author: Alan Cox <alan@linux.intel.com>
-      tty: Fix the ldisc hangup race
- * commit 4165fe4ef7305609a96c7f248cefb9c414d0ede5
-   Author: Alan Cox <alan@linux.intel.com>
-      tty: Fix up char drivers request_room usage
- * commit d9661adfb8e53a7647360140af3b92284cbe52d4
-   Author: Alan Cox <alan@linux.intel.com>
-      tty: Keep the default buffering to sub-page units
- * commit eec9fe7d1ab4a0dfac4cb43047a7657fffd0002f
-   Author: Ari Entlich <atrigent@ccs.neu.edu>
-      tty: Add a new VT mode which is like VT_PROCESS but doesn't require a
-           VT_RELDISP
-
-The last one is probably the most likely as the issue occurs after an init 
-script loops over all VTs to run 'consolechars' and/or 'charset'.
-
-See http://lkml.org/lkml/2010/4/17/48 for my original mail with some 
-additional details.
-
-Cheers,
-FJP
