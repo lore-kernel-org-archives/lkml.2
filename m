@@ -1,99 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759916Ab0D3Wji (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 18:39:38 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:46779 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759864Ab0D3WhX (ORCPT
+	id S1759873Ab0D3Wlm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 18:41:42 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:58601 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756620Ab0D3Wlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 18:37:23 -0400
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-       Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       Matt Helsley <matthltc@us.ibm.com>
-Subject: [PATCH 3/8] PM: suspend_block: Abort task freezing if a suspend_blocker is active.
-Date: Fri, 30 Apr 2010 15:36:56 -0700
-Message-Id: <1272667021-21312-4-git-send-email-arve@android.com>
-X-Mailer: git-send-email 1.6.5.1
-In-Reply-To: <1272667021-21312-3-git-send-email-arve@android.com>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
- <1272667021-21312-2-git-send-email-arve@android.com>
- <1272667021-21312-3-git-send-email-arve@android.com>
+	Fri, 30 Apr 2010 18:41:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=tY5X+Iv353I5lp1K6TnduK4LYR3EqaZn/KG4t40b4jtSMIxZzu7ladtbLF6seq36Bp
+         YuJJJUbRP8DseZTfvelOlCp9qcdCrLYGxikB3m4MKdLqLj+aEEKV1CDD22Ga4YhQmt4n
+         PUcide5JGmRXB1rj+dr3GBJ5fB7tK5Dc2edWc=
 MIME-Version: 1.0
+In-Reply-To: <20100430082936.5630.67682.sendpatchset@localhost.localdomain>
+References: <20100430082912.5630.82405.sendpatchset@localhost.localdomain> 
+	<20100430082936.5630.67682.sendpatchset@localhost.localdomain>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Sat, 1 May 2010 06:41:18 +0800
+Message-ID: <v2y412e6f7f1004301541yb1ede589t8c446966743ca138@mail.gmail.com>
+Subject: Re: [Patch 2/3] sysctl: add proc_do_large_bitmap
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Octavian Purdila <opurdila@ixiacom.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       penguin-kernel@i-love.sakura.ne.jp, netdev@vger.kernel.org,
+       Neil Horman <nhorman@tuxdriver.com>, ebiederm@xmission.com,
+       adobriyan@gmail.com, David Miller <davem@davemloft.net>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o3UMftmE011581
 
-If a suspend_blocker is active, suspend will fail anyway. Since
-try_to_freeze_tasks can take up to 20 seconds to complete or fail, aborting
-as soon as someone blocks suspend (e.g. from an interrupt handler) improves
-the worst case wakeup latency.
+On Fri, Apr 30, 2010 at 4:25 PM, Amerigo Wang <amwang@redhat.com> wrote:> From: Octavian Purdila <opurdila@ixiacom.com>>> The new function can be used to read/write large bitmaps via /proc. A> comma separated range format is used for compact output and input> (e.g. 1,3-4,10-10).>> Writing into the file will first reset the bitmap then update it> based on the given input.>> Signed-off-by: Octavian Purdila <opurdila@ixiacom.com>> Signed-off-by: WANG Cong <amwang@redhat.com>> Cc: Eric W. Biederman <ebiederm@xmission.com>> --->> Index: linux-2.6/include/linux/sysctl.h> ===================================================================> --- linux-2.6.orig/include/linux/sysctl.h> +++ linux-2.6/include/linux/sysctl.h> @@ -980,6 +980,8 @@ extern int proc_doulongvec_minmax(struct>                                  void __user *, size_t *, loff_t *);>  extern int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int,>                                      void __user *, size_t *, loff_t *);> +extern int proc_do_large_bitmap(struct ctl_table *, int,> +                               void __user *, size_t *, loff_t *);>>  /*>  * Register a set of sysctl names by calling register_sysctl_table> Index: linux-2.6/kernel/sysctl.c> ===================================================================> --- linux-2.6.orig/kernel/sysctl.c> +++ linux-2.6/kernel/sysctl.c> @@ -2049,6 +2049,16 @@ static size_t proc_skip_spaces(char **bu>        return ret;>  }>> +static void proc_skip_char(char **buf, size_t *size, const char v)> +{> +       while (*size) {> +               if (**buf != v)> +                       break;> +               (*size)--;> +               (*buf)++;> +       }> +}> +>  #define TMPBUFLEN 22>  /**>  * proc_get_long - reads an ASCII formated integer from a user buffer> @@ -2675,6 +2685,153 @@ static int proc_do_cad_pid(struct ctl_ta>        return 0;>  }>> +/**> + * proc_do_large_bitmap - read/write from/to a large bitmap> + * @table: the sysctl table> + * @write: %TRUE if this is a write to the sysctl file> + * @buffer: the user buffer> + * @lenp: the size of the user buffer> + * @ppos: file position> + *> + * The bitmap is stored at table->data and the bitmap length (in bits)> + * in table->maxlen.> + *> + * We use a range comma separated format (e.g. 1,3-4,10-10) so that> + * large bitmaps may be represented in a compact manner. Writing into> + * the file will clear the bitmap then update it with the given input.> + *> + * Returns 0 on success.> + */> +int proc_do_large_bitmap(struct ctl_table *table, int write,> +                        void __user *buffer, size_t *lenp, loff_t *ppos)> +{> +       int err = 0;> +       bool first = 1;> +       size_t left = *lenp;> +       unsigned long bitmap_len = table->maxlen;> +       unsigned long *bitmap = (unsigned long *) table->data;> +       unsigned long *tmp_bitmap = NULL;> +       char tr_a[] = { '-', ',', '\n' }, tr_b[] = { ',', '\n', 0 }, c;> +> +       if (!bitmap_len || !left || (*ppos && !write)) {> +               *lenp = 0;> +               return 0;> +       }> +> +       if (write) {> +               unsigned long page = 0;> +               char *kbuf;> +> +               if (left > PAGE_SIZE - 1)> +                       left = PAGE_SIZE - 1;> +> +               page = __get_free_page(GFP_TEMPORARY);> +               kbuf = (char *) page;> +               if (!kbuf)> +                       return -ENOMEM;> +               if (copy_from_user(kbuf, buffer, left)) {> +                       free_page(page);> +                       return -EFAULT;> +                }> +               kbuf[left] = 0;> +> +               tmp_bitmap = kzalloc(BITS_TO_LONGS(bitmap_len) * sizeof(unsigned long),> +                                    GFP_KERNEL);> +               if (!tmp_bitmap) {> +                       free_page(page);> +                       return -ENOMEM;> +               }> +               proc_skip_char(&kbuf, &left, '\n');> +               while (!err && left) {> +                       unsigned long val_a, val_b;> +                       bool neg;> +> +                       err = proc_get_long(&kbuf, &left, &val_a, &neg, tr_a,> +                                            sizeof(tr_a), &c);> +                       if (err)> +                               break;> +                       if (val_a >= bitmap_len || neg) {> +                               err = -EINVAL;> +                               break;> +                       }> +> +                       val_b = val_a;> +                       if (left) {> +                               kbuf++;> +                               left--;> +                       }> +> +                       if (c == '-') {> +                               err = proc_get_long(&kbuf, &left, &val_b,> +                                                    &neg, tr_b, sizeof(tr_b),> +                                                    &c);> +                               if (err)> +                                       break;> +                               if (val_b >= bitmap_len || neg ||> +                                   val_a > val_b) {> +                                       err = -EINVAL;> +                                       break;> +                               }> +                               if (left) {> +                                       kbuf++;> +                                       left--;> +                               }> +                       }> +> +                       while (val_a <= val_b)> +                               set_bit(val_a++, tmp_bitmap);> +> +                       first = 0;> +                       proc_skip_char(&kbuf, &left, '\n');> +               }> +               free_page(page);> +       } else {> +               unsigned long bit_a, bit_b = 0;> +> +               while (left) {> +                       bit_a = find_next_bit(bitmap, bitmap_len, bit_b);> +                       if (bit_a >= bitmap_len)> +                               break;> +                       bit_b = find_next_zero_bit(bitmap, bitmap_len,> +                                                  bit_a + 1) - 1;> +> +                       if (!first) {> +                               err = proc_put_char(&buffer, &left, ',');> +                               if (err)> +                                       break;> +                       }> +                       err = proc_put_long(&buffer, &left, bit_a, false);> +                       if (err)> +                               break;> +                       if (bit_a != bit_b) {> +                               err = proc_put_char(&buffer, &left, '-');> +                               if (err)> +                                       break;> +                               err = proc_put_long(&buffer, &left, bit_b, false);> +                               if (err)> +                                       break;> +                       }> +> +                       first = 0; bit_b++;> +               }> +               if (!err)> +                       err = proc_put_char(&buffer, &left, '\n');> +       }> +> +       if (!err) {                     add the following lines to let "echo 1-10 >>/proc/..." work as normal.                     if (write && *ppos)                           bimap_or(bitmap, bitmap, tmp_bitmap,....)                     else
+> +               if (write)> +                       memcpy(bitmap, tmp_bitmap,> +                              BITS_TO_LONGS(bitmap_len) * sizeof(unsigned long));> +               kfree(tmp_bitmap);> +               *lenp -= left;> +               *ppos += *lenp;> +               return 0;
 
-On an older kernel where task freezing could fail for processes attached
-to a debugger, this fixed a problem where the device sometimes hung for
-20 seconds before the screen turned on.
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
----
- kernel/power/process.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 71ae290..d8ebd50 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -15,6 +15,7 @@
- #include <linux/syscalls.h>
- #include <linux/freezer.h>
- #include <linux/delay.h>
-+#include <linux/suspend_blocker.h>
- 
- /* 
-  * Timeout for stopping processes
-@@ -38,6 +39,7 @@ static int try_to_freeze_tasks(bool sig_only)
- 	struct timeval start, end;
- 	u64 elapsed_csecs64;
- 	unsigned int elapsed_csecs;
-+	bool wakeup = false;
- 
- 	do_gettimeofday(&start);
- 
-@@ -63,6 +65,10 @@ static int try_to_freeze_tasks(bool sig_only)
- 				todo++;
- 		} while_each_thread(g, p);
- 		read_unlock(&tasklist_lock);
-+		if (todo && suspend_is_blocked()) {
-+			wakeup = true;
-+			break;
-+		}
- 		if (!todo || time_after(jiffies, end_time))
- 			break;
- 
-@@ -85,13 +91,15 @@ static int try_to_freeze_tasks(bool sig_only)
- 		 * but it cleans up leftover PF_FREEZE requests.
- 		 */
- 		printk("\n");
--		printk(KERN_ERR "Freezing of tasks failed after %d.%02d seconds "
-+		printk(KERN_ERR "Freezing of tasks %s after %d.%02d seconds "
- 				"(%d tasks refusing to freeze):\n",
-+				wakeup ? "aborted" : "failed",
- 				elapsed_csecs / 100, elapsed_csecs % 100, todo);
- 		read_lock(&tasklist_lock);
- 		do_each_thread(g, p) {
- 			task_lock(p);
--			if (freezing(p) && !freezer_should_skip(p))
-+			if (freezing(p) && !freezer_should_skip(p)
-+					&& elapsed_csecs > 100)
- 				sched_show_task(p);
- 			cancel_freezing(p);
- 			task_unlock(p);
--- 
-1.6.5.1
 
+-- Regards，Changli Gao(xiaosuo@gmail.com)���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
