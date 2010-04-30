@@ -1,241 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933303Ab0D3R3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:29:21 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:42492 "EHLO a.mx.secunet.com"
+	id S932940Ab0D3R2M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:28:12 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34015 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933289Ab0D3R3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:29:13 -0400
-Date: Thu, 29 Apr 2010 14:45:22 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8] padata: Add some code comments
-Message-ID: <20100429124522.GL5275@secunet.com>
-References: <20100429123636.GD5275@secunet.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100429123636.GD5275@secunet.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 29 Apr 2010 12:40:19.0092 (UTC) FILETIME=[20458540:01CAE799]
+	id S1758486Ab0D3R1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:27:40 -0400
+Date: Fri, 30 Apr 2010 15:51:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Axel Lin <axel.lin@gmail.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: linux-next: manual merge of the usb tree with the input tree
+Message-Id: <20100430155108.6847891f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Greg,
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
----
- include/linux/padata.h |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
- kernel/padata.c        |   46 +++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 97 insertions(+), 2 deletions(-)
+Today's linux-next merge of the usb tree got a conflict in
+drivers/input/tablet/acecad.c between commits
+2ef2ed597669f5e120d0c51c295f00e34b2f0801 ("Input: acecad - fix incorrect
+size parameter in usb_buffer_free") and
+5492f6f801c81c9663417cd8e48e759775977c83 ("Input: acecad - simplify
+usb_acecad_disconnect()") from the input tree and commit
+3cc96f50329227fbf34de2459491901b6ee1c98c ("USB: rename usb_buffer_alloc()
+and usb_buffer_free() users") from the usb tree.
 
-diff --git a/include/linux/padata.h b/include/linux/padata.h
-index 64836a6..e8aac0f 100644
---- a/include/linux/padata.h
-+++ b/include/linux/padata.h
-@@ -26,6 +26,17 @@
- #include <linux/list.h>
- #include <linux/timer.h>
- 
-+/*
-+ * struct padata_priv -  Embedded to the users data structure.
-+ *
-+ * @list: List entry, to attach to the padata lists.
-+ * @pd: Pointer to the internal control structure.
-+ * @cb_cpu: Callback cpu for serializatioon.
-+ * @seq_nr: Sequence number of the parallelized data object.
-+ * @info: Used to pass information from the parallel to the serial function.
-+ * @parallel: Parallel execution function.
-+ * @serial: Serial complete function.
-+ */
- struct padata_priv {
- 	struct list_head	list;
- 	struct parallel_data	*pd;
-@@ -36,11 +47,29 @@ struct padata_priv {
- 	void                    (*serial)(struct padata_priv *padata);
- };
- 
-+/*
-+ * struct padata_list
-+ *
-+ * @list: List head.
-+ * @lock: List lock.
-+ */
- struct padata_list {
- 	struct list_head        list;
- 	spinlock_t              lock;
- };
- 
-+/*
-+ * struct padata_queue - The percpu padata queues.
-+ *
-+ * @parallel: List to wait for parallelization.
-+ * @reorder: List to wait for reordering after parallel processing.
-+ * @serial: List to wait for serialization after reordering.
-+ * @pwork: work struct for parallelization.
-+ * @swork: work struct for serialization.
-+ * @pd: Backpointer to the internal control structure.
-+ * @num_obj: Number of objects that are processed by this cpu.
-+ * @cpu_index: Index of the cpu.
-+ */
- struct padata_queue {
- 	struct padata_list	parallel;
- 	struct padata_list	reorder;
-@@ -52,6 +81,20 @@ struct padata_queue {
- 	int			cpu_index;
- };
- 
-+/*
-+ * struct parallel_data - Internal control structure, covers everything
-+ * that depends on the cpumask in use.
-+ *
-+ * @pinst: padata instance.
-+ * @queue: percpu padata queues.
-+ * @seq_nr: The sequence number that will be attached to the next object.
-+ * @reorder_objects: Number of objects waiting in the reorder queues.
-+ * @refcnt: Number of objects holding a reference on this parallel_data.
-+ * @max_seq_nr:  Maximal used sequence number.
-+ * @cpumask: cpumask in use.
-+ * @lock: Reorder lock.
-+ * @timer: Reorder timer.
-+ */
- struct parallel_data {
- 	struct padata_instance	*pinst;
- 	struct padata_queue	*queue;
-@@ -64,6 +107,16 @@ struct parallel_data {
- 	struct timer_list       timer;
- };
- 
-+/*
-+ * struct padata_instance - The overall control structure.
-+ *
-+ * @cpu_notifier: cpu hotplug notifier.
-+ * @wq: The workqueue in use.
-+ * @pd: The internal control structure.
-+ * @cpumask: User supplied cpumask.
-+ * @lock: padata instance lock.
-+ * @flags: padata flags.
-+ */
- struct padata_instance {
- 	struct notifier_block   cpu_notifier;
- 	struct workqueue_struct *wq;
-diff --git a/kernel/padata.c b/kernel/padata.c
-index ec6b8b7..fd09ea1 100644
---- a/kernel/padata.c
-+++ b/kernel/padata.c
-@@ -152,6 +152,23 @@ out:
- }
- EXPORT_SYMBOL(padata_do_parallel);
- 
-+/*
-+ * padata_get_next - Get the next object that needs serialization.
-+ *
-+ * Return values are:
-+ *
-+ * A pointer to the control struct of the next object that needs
-+ * serialization, if present in one of the percpu reorder queues.
-+ *
-+ * NULL, if all percpu reorder queues are empty.
-+ *
-+ * -EINPROGRESS, if the next object that needs serialization will
-+ *  be parallel processed by another cpu and is not yet present in
-+ *  the cpu's reorder queue.
-+ *
-+ * -ENODATA, if this cpu has to do the parallel processing for
-+ *  the next object.
-+ */
- static struct padata_priv *padata_get_next(struct parallel_data *pd)
- {
- 	int cpu, num_cpus, empty, calc_seq_nr;
-@@ -173,7 +190,7 @@ static struct padata_priv *padata_get_next(struct parallel_data *pd)
- 
- 		/*
- 		 * Calculate the seq_nr of the object that should be
--		 * next in this queue.
-+		 * next in this reorder queue.
- 		 */
- 		overrun = 0;
- 		calc_seq_nr = (atomic_read(&queue->num_obj) * num_cpus)
-@@ -248,15 +265,32 @@ static void padata_reorder(struct parallel_data *pd)
- 	struct padata_queue *queue;
- 	struct padata_instance *pinst = pd->pinst;
- 
-+	/*
-+	 * The cpu that takes the trylock cares for all objects that
-+	 * are enqueued to the percpu reorder queues during the lock is held.
-+	 * So if a cpu can't get the trylock we exit, because the holder
-+	 * of the lock does the work for us if processing is needed.
-+	 */
- 	if (!spin_trylock_bh(&pd->lock))
- 		return;
- 
- 	while (1) {
- 		padata = padata_get_next(pd);
- 
-+		/*
-+		 * All reorder queues are empty, or the next object that needs
-+		 * serialization is parallel processed by another cpu and is
-+		 * still on it's way to the cpu's reorder queue, nothing to
-+		 * do for now.
-+		 */
- 		if (!padata || PTR_ERR(padata) == -EINPROGRESS)
- 			break;
- 
-+		/*
-+		 * This cpu has to do the parallel processing of the next
-+		 * object. It's waiting in the cpu's parallelization queue,
-+		 * so exit imediately.
-+		 */
- 		if (PTR_ERR(padata) == -ENODATA) {
- 			del_timer(&pd->timer);
- 			spin_unlock_bh(&pd->lock);
-@@ -274,6 +308,11 @@ static void padata_reorder(struct parallel_data *pd)
- 
- 	spin_unlock_bh(&pd->lock);
- 
-+	/*
-+	 * The next object that needs serialization might have arrived to
-+	 * the reorder queues in the meantime, we will be called again
-+	 * from the timer function if noone else cares for it.
-+	 */
- 	if (atomic_read(&pd->reorder_objects)
- 			&& !(pinst->flags & PADATA_RESET))
- 		mod_timer(&pd->timer, jiffies + HZ);
-@@ -348,6 +387,7 @@ void padata_do_serial(struct padata_priv *padata)
- }
- EXPORT_SYMBOL(padata_do_serial);
- 
-+/* Allocate and initialize the internal cpumask dependend resources. */
- static struct parallel_data *padata_alloc_pd(struct padata_instance *pinst,
- 					     const struct cpumask *cpumask)
- {
-@@ -417,6 +457,7 @@ static void padata_free_pd(struct parallel_data *pd)
- 	kfree(pd);
- }
- 
-+/* Flush all objects out of the padata queues. */
- static void padata_flush_queues(struct parallel_data *pd)
- {
- 	int cpu;
-@@ -440,6 +481,7 @@ static void padata_flush_queues(struct parallel_data *pd)
- 	BUG_ON(atomic_read(&pd->refcnt) != 0);
- }
- 
-+/* Replace the internal control stucture with a new one. */
- static void padata_replace(struct padata_instance *pinst,
- 			   struct parallel_data *pd_new)
- {
-@@ -706,7 +748,7 @@ EXPORT_SYMBOL(padata_alloc);
- /*
-  * padata_free - free a padata instance
-  *
-- * @ padata_inst: padata instance to free
-+ * @padata_inst: padata instance to free
-  */
- void padata_free(struct padata_instance *pinst)
- {
+I fixed it up (see below) and can carry the fix as necessary.
 -- 
-1.5.6.5
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/input/tablet/acecad.c
+index 37d0539,c047016..0000000
+--- a/drivers/input/tablet/acecad.c
++++ b/drivers/input/tablet/acecad.c
+@@@ -246,11 -252,13 +246,11 @@@ static void usb_acecad_disconnect(struc
+  	struct usb_acecad *acecad = usb_get_intfdata(intf);
+  
+  	usb_set_intfdata(intf, NULL);
+ -	if (acecad) {
+ -		usb_kill_urb(acecad->irq);
+ -		input_unregister_device(acecad->input);
+ -		usb_free_urb(acecad->irq);
+ -		usb_free_coherent(interface_to_usbdev(intf), 10, acecad->data, acecad->data_dma);
+ -		kfree(acecad);
+ -	}
+ +
+ +	input_unregister_device(acecad->input);
+ +	usb_free_urb(acecad->irq);
+- 	usb_buffer_free(acecad->usbdev, 8, acecad->data, acecad->data_dma);
+++	usb_free_coherent(acecad->usbdev, 8, acecad->data, acecad->data_dma);
+ +	kfree(acecad);
+  }
+  
+  static struct usb_device_id usb_acecad_id_table [] = {
