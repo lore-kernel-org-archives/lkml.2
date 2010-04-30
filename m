@@ -1,120 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758058Ab0D3ToN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:44:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47683 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755362Ab0D3ToD (ORCPT
+	id S1757885Ab0D3TsP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:48:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:54955 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510Ab0D3TsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 15:44:03 -0400
-Date: Fri, 30 Apr 2010 12:43:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-       "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH 3/4] writeback: pay attention to wbc->nr_to_write in
- write_cache_pages
-Message-Id: <20100430124329.10a4c02b.akpm@linux-foundation.org>
-In-Reply-To: <87sk6dwka6.fsf@linux.vnet.ibm.com>
-References: <1271731314-5893-1-git-send-email-david@fromorbit.com>
-	<1271731314-5893-4-git-send-email-david@fromorbit.com>
-	<20100429143931.331c2bab.akpm@linux-foundation.org>
-	<87sk6dwka6.fsf@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Fri, 30 Apr 2010 15:48:10 -0400
+X-Authority-Analysis: v=1.1 cv=elpKMhBbP+pQyLZqL930WohJ6E0KICKd8OrLrcMNK78= c=1 sm=0 a=h2TIy-q3F9wA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=q8EurDk91oM0GgLG4O4A:9 a=PvSgU0-j3x2r7p3AEnIA:7 a=KpqD8B0C1lL7nSlZpYwsW6dnJx4A:4 a=PUjeQqilurYA:10 a=-CS-33gaMAb-YFA1:21 a=aXAltwu9ngDyjcnW:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 04/10][RFC] tracing: Remove per event trace registering
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
+In-Reply-To: <20100430190613.GA6926@Krystal>
+References: <20100428204448.GE8591@Krystal>
+	 <1272499218.9739.86.camel@gandalf.stny.rr.com>
+	 <20100429000528.GB30353@Krystal>
+	 <1272500422.9739.98.camel@gandalf.stny.rr.com>
+	 <20100429133649.GC14617@Krystal>
+	 <1272550009.9739.136.camel@gandalf.stny.rr.com>
+	 <20100429145559.GB24819@Krystal>
+	 <1272557188.9739.147.camel@gandalf.stny.rr.com>
+	 <20100430170938.GB25605@Krystal>
+	 <1272651414.9739.184.camel@gandalf.stny.rr.com>
+	 <20100430190613.GA6926@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Fri, 30 Apr 2010 15:48:05 -0400
+Message-ID: <1272656885.9739.198.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010 11:31:53 +0530
-"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+On Fri, 2010-04-30 at 15:06 -0400, Mathieu Desnoyers wrote:
 
-> On Thu, 29 Apr 2010 14:39:31 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Tue, 20 Apr 2010 12:41:53 +1000
-> > Dave Chinner <david@fromorbit.com> wrote:
-> > 
-> > > If a filesystem writes more than one page in ->writepage, write_cache_pages
-> > > fails to notice this and continues to attempt writeback when wbc->nr_to_write
-> > > has gone negative - this trace was captured from XFS:
-> > > 
-> > > 
-> > >     wbc_writeback_start: towrt=1024
-> > >     wbc_writepage: towrt=1024
-> > >     wbc_writepage: towrt=0
-> > >     wbc_writepage: towrt=-1
-> > >     wbc_writepage: towrt=-5
-> > >     wbc_writepage: towrt=-21
-> > >     wbc_writepage: towrt=-85
-> > > 
-> > 
-> > Bug.
-> > 
-> > AFAIT it's a regression introduced by
-> > 
-> > : commit 17bc6c30cf6bfffd816bdc53682dd46fc34a2cf4
-> > : Author:     Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> > : AuthorDate: Thu Oct 16 10:09:17 2008 -0400
-> > : Commit:     Theodore Ts'o <tytso@mit.edu>
-> > : CommitDate: Thu Oct 16 10:09:17 2008 -0400
-> > : 
-> > :     vfs: Add no_nrwrite_index_update writeback control flag
-> > 
-> > I suggest that what you do here is remove the local `nr_to_write' from
-> > write_cache_pages() and go back to directly using wbc->nr_to_write
-> > within the loop.
-> > 
-> > And thus we restore the convention that if the fs writes back more than
-> > a single page, it subtracts (nr_written - 1) from wbc->nr_to_write.
-> > 
+> > If it is possible sure, but that's the point. Where do you add the
+> > check? The typecast is in the C code that is constant for all trace
+> > events.
 > 
-> My mistake i never expected writepage to write more than one page.
+> You can add the call to the static inline type check directly within the
+> generated probe function, right after the local variable declarations.
 
-The writeback code is tricky and easy to break in subtle ways.
+Well, one thing, the callback is not going to be the same as the
+DECLARE_TRACE() because the prototype ends with "void *data", and the
+function being called actually uses the type of that data.
 
-> The
-> interface said 'writepage' so it was natural to expect that it writes only
-> one page. BTW the reason for the change is to give file system which
-> accumulate dirty pages using write_cache_pages and attempt to write
-> them out later a chance to properly manage nr_to_write. Something like
+We now will have:
+
+	DEFINE_TRACE(mytracepoint, int myarg, myarg);
+
+	void mycallback(int myarg, struct mystuct *mydata);
+
+	register_trace_mytracepoint_data(mycallback, mydata)
+
+There's no place in DEFINE_TRACE to be able to test the type of data
+that is being passed back. I could make the calling function be:
+
+	void mycallback(int myarg, void *data)
+	{
+		struct mystruct *mydata = data;
+	[...]
+
+Because the data is defined uniquely by the caller that registers a
+callback. Each function can register its own data type.
+
 > 
-> ext4_da_writepages
-> -- write_cache_pages
-> ---- collect dirty page
-> ---- return
-> --return
-> --now try to writeout all the collected dirty pages ( say 100)
-> ----Only able to allocate blocks for 50 pages
->     so update nr_to_write -= 50 and mark rest of 50 pages as dirty
->     again
+> > 
+> > > 
+> > > I also don't trust that these complex TRACE_EVENT() preprocessor macros
+> > 
+> > Thanks for your vote of confidence.
 > 
-> So we want wbc->nr_to_write updated only by ext4_da_writepages. 
+> Please don't take this personally. As I said above, I include myself in
+> the list of people I don't trust to write entirely bug-free code. I'm
+> just saying that we should not overlook a possibility to detect more
+> bugs automatically when we have one, especially if this results in no
+> object code change.
 
-So you want a ->writepage() implementation which doesn't actually write
-a page at all - it just remembers that page for later.
+The point being is that this is not about buggy code, but the fact that
+the same data is being used in two places, you want to test to make sure
+it is the same. I don't see how this helps.
 
-Maybe that fs shouldn't be calling write_cache_pages() at all.  After
-all, write_cache_pages() is a wrapper which emits a sequence of calls
-to ->writepage(), and ->writepage() writes a page.
 
-Rather than hacking around, subverting things and breaking core kernel
-code, let's step back and more clearly think about what to do?
 
-One option would be to implement a new address_space_operation which
-provides the new semantics in a well-understood fashion.  Let's call it
-writepage_prepare(?).  Then reimplement write_cache_pages() so that if
-->writepage_prepare() is available, it handles it in a sensible fashion
-and doesn't break traditional filesystems.
+> 
+> > 
+> > > will never ever have bugs. That's just doomed to happen one day or
+> > > another. Again, call me paranoid if you like, but I think adding this
+> > > type checking is justified.
+> > 
+> > Where do you add the typecheck?? As I said before, if the TRACE_EVENT()
+> > macros are broken, then so will the typecheck, and it will not catch the
+> > errors.
+> > 
+> > Sure the event macros can have bugs, but if it does then it will have
+> > bugs for all. Because it is automated. If there is a bug, it wont be
+> > because of a missed type being passed in, it would be because of one of
+> > the extra macros we have that processes the same type incorrectly.
+> > 
+> > > 
+> > > I am providing the type check implementation in a separate email. It
+> > > will need to be extended to support the extra data parameter you plan to
+> > > add.
+> > 
+> > I saw the patch, but how does it help?
+> > 
+> > I use "proto" to make the tracepoint and the callback, so I can add
+> > somewhere this "check_trace_callback_type_##name(proto)", but if the
+> > macros break somehow, that means proto changed between two references of
+> > it, but what keeps proto from breaking at both callback creation and the
+> > typecheck.
+> > 
+> > Basically, you are saying that somehow the argument "proto" can change
+> > between two uses of it. I don't really see that happening, and I'm not
+> > paranoid enough to think that's an issue. Adding checks that don't
+> > really check anything, honestly I find a waste, and just more confusion
+> > in the macros.
+> 
+> In the TRACE_EVENT() case, without the extra "void *data" argument,
+> it is indeed checking that the "proto" of the callback you create is
+> that same as the "proto" expected by the tracepoint call. However, given
+> that you plan on adding other parameters besides "proto", then the added
+> type-checking makes more and more sense.
 
-Or simply implement a new, different version of write_cache_pages() for
-filesystems which wish to buffer in this fashion.  The new
-write_cache_pages_prepare()(?) would call ->writepage_prepare(). 
-Internally it might share implementation with write_cache_pages().
+But you can not test it! That's my point.
 
-There are lots of options.  But the way in which write_cache_pages()
-was extended to handle this ext4 requirement was rather unclean,
-non-obvious and, umm, broken!
+The first part of proto will be the same, and that's all we can test.
+But the data parameter that the DECLARE_TRACE() is going to create will
+be void *. Which means we can't test it. This is something that C lacks,
+and we could test it in C++ if we did this with templates. The only way
+to test it is at runtime with a magic number in the data field.
+
+This is the same as the file->private data. You can't test it at build
+time.
+
+Let me explain this again:
+
+	DECLARE_TRACE(name, proto, args);
+
+Will call the function like:
+
+	callback(args, data);
+
+The callback will be at best:
+
+	int callback(proto, void *data);
+
+
+because the data being passed in is not defined yet. It is defined at
+the point of the registering of the callback. You can have two callbacks
+registered to the same tracepoint with two different types as the data
+field.
+
+So what is it that this check is testing?
+
+-- Steve
 
 
