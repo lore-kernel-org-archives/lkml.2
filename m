@@ -1,115 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934134Ab0D3Sl2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:41:28 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38031 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758698Ab0D3SlO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:41:14 -0400
-Date: Fri, 30 Apr 2010 10:41:12 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/8] PM: Add suspend block api.
-In-Reply-To: <p2qd6200be21004291639qd65002a8l4cfbf635962615ba@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1004301017170.1535-100000@iolanthe.rowland.org>
+	id S1758834Ab0D3SlP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:41:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16535 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933089Ab0D3RVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:21:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,303,1270450800"; 
+   d="scan'208";a="514015003"
+Date: Fri, 30 Apr 2010 09:41:23 -0700 (Pacific Daylight Time)
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: "davem@davemloft.net" <davem@davemloft.net>,
+       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH linux-next v2 1/2] irq: Add CPU mask affinity hint
+In-Reply-To: <alpine.LFD.2.00.1004301249540.2951@localhost.localdomain>
+Message-ID: <Pine.WNT.4.64.1004300939510.1892@PPWASKIE-MOBL2.amr.corp.intel.com>
+References: <20100430085150.4630.46790.stgit@ppwaskie-hc2.jf.intel.com>
+ <alpine.LFD.2.00.1004301249540.2951@localhost.localdomain>
+X-X-Sender: ppwaskie@imapmail.glb.intel.com
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Apr 2010, Arve Hjønnevåg wrote:
+On Fri, 30 Apr 2010, Thomas Gleixner wrote:
 
-> >> That does not work though. Unless every key turns the screen on you
-> >> will have a race every time the user presses a key you want to ignore.
-> >
-> > Of course.  You are confirming what I wrote immediately below: Suspend
-> Yet you offered it as an example of why "Handling the screen doesn't
-> need suspend blockers".
+> On Fri, 30 Apr 2010, Peter P Waskiewicz Jr wrote:
+>
+>> This patch adds a cpumask affinity hint to the irq_desc
+>> structure, along with a registration function and a read-only
+>> proc entry for each interrupt.
+>>
+>> This affinity_hint handle for each interrupt can be used by
+>> underlying drivers that need a better mechanism to control
+>> interrupt affinity.  The underlying driver can register a
+>> cpumask for the interrupt, which will allow the driver to
+>> provide the CPU mask for the interrupt to anything that
+>> requests it.  The intent is to extend the userspace daemon,
+>> irqbalance, to help hint to it a preferred CPU mask to balance
+>> the interrupt into.
+>>
+>> Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+>> ---
+>>
+>>  include/linux/interrupt.h |   13 +++++++++++++
+>>  include/linux/irq.h       |    1 +
+>>  kernel/irq/manage.c       |   28 ++++++++++++++++++++++++++++
+>>  kernel/irq/proc.c         |   33 +++++++++++++++++++++++++++++++++
+>>  4 files changed, 75 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+>> index 75f3f00..9c9ea2a 100644
+>> --- a/include/linux/interrupt.h
+>> +++ b/include/linux/interrupt.h
+>> @@ -209,6 +209,9 @@ extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
+>>  extern int irq_can_set_affinity(unsigned int irq);
+>>  extern int irq_select_affinity(unsigned int irq);
+>>
+>> +extern int irq_register_affinity_hint(unsigned int irq,
+>> +                                      const struct cpumask *m);
+>
+> I think we can do with a single funtion irq_set_affinity_hint() and
+> let the caller set the pointer to NULL.
 
-What I meant was this: Without suspend blockers you can still turn the
-screen on and off, but you can't avoid races.  Therefore: You don't
-need suspend blockers to handle the screen, but you do need them to
-handle races.
+That works too.  I like it.  :-)
 
-> > blockers help resolve races.  Note that this race has nothing to do
-> > with the _screen_ in particular -- exactly the same race occurs if you
-> > decide to turn on the audio speaker or some other piece of hardware.
-> >
-> I agree with this, but that does not mean that describing how you can
-> handle the screen with suspend blockers is a bad example.
+>
+>>
+>> +int irq_register_affinity_hint(unsigned int irq, const struct cpumask *m)
+>> +{
+>> +	struct irq_desc *desc = irq_to_desc(irq);
+>> +	unsigned long flags;
+>
+>  desc needs to be checked. It might be NULL !
 
-Agreed; it's not a bad example.  My objection is to the way the example
-is presented.
+Doh, good point!
 
-> I think suspend blockers do allow user programs to make decisions.
-> Without suspend blockers some decisions can only be safely be made in
-> the kernel/drivers.
+>
+>> +
+>> +	raw_spin_lock_irqsave(&desc->lock, flags);
+>> +	desc->affinity_hint = m;
+>> +	raw_spin_unlock_irqrestore(&desc->lock, flags);
+>> +
+>> +	return 0;
+>> +}
+>> +EXPORT_SYMBOL(irq_register_affinity_hint);
+>
+>  EXPORT_SYMBOL_GPL please
 
-This is our real disagreement -- it's mainly a question of the meaning
-of words.  When one says "A allows B to make a decision", this means
-that without A, B would literally be unable to decide what to do.  It
-wouldn't be able to "make up its mind" (like the donkey that starves
-while stuck halfway between two piles of hay because it can't decide 
-which pile to eat).
+Will do.
 
-That's not what you mean to say.  In your case there's no difficulty in
-making the choice -- the program knows exactly what it wants to do.  
-The problem is that without suspend blockers, it can't _carry out_ the
-chosen action.  To put it another way, the suspend blockers don't help
-with deciding which action to take; rather they help with taking the
-action after it has been decided upon.
+>
+>> +static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
+>> +{
+>> +	struct irq_desc *desc = irq_to_desc((long)m->private);
+>> +	unsigned long flags;
+>> +	int ret = -EINVAL;
+>> +
+>> +	raw_spin_lock_irqsave(&desc->lock, flags);
+>> +	if (desc->affinity_hint) {
+>> +		seq_cpumask(m, desc->affinity_hint);
+>
+>  Please make a local copy under desc->mask and do the seq_cpumask()
+>  stuff on the local copy outside of desc->lock
 
-Or put this way: Suppose suspend blockers were not available.  Then the
-desired action would not be safe, so the program wouldn't be able to
-take it.  The decision would thus be even simpler, since one of the
-choices would be eliminated.  In this way, lack of suspend blockers
-makes the decision easier, not harder.  So you shouldn't say that
-suspend blockers allow the program to make the decision.
+Will do.
 
-What your example _really_ shows is how a program can carry out a 
-prolonged action that requires the system to be awake for an extended 
-period of time.  Even with suspend blockers, the right way to do this 
-safely isn't necessarily obvious.  That's how the example helps.
+Cheers,
 
-> How about:
-> 
-> - The user-space input-event thread returns from read. If it
-> determines that the key should be ignored, it calls suspend_unblock on
-> the process_input_events suspend_blocker and then calls select or
-> poll. The system will automatically suspend again, since now no
-> suspend blockers are active.
-
-Do you want to mention here that everything will work correctly even if 
-the system suspends before the thread can call select or poll?
-
-> If the key that was pressed instead should preform a simple action
-> (for example, adjusting the volume), this action can be performed
-> right before calling suspend_unblock on the process_input_events
-> suspend_blocker. However, if the key triggers a longer-running action,
-> that action needs its own suspend_blocker and suspend_block must be
-> called on that suspend blocker before calling suspend_unblock on the
-> process_input_events suspend_blocker.
-
-That's good!  I like it.  Now if you can change the beginning of the
-example, to say that it shows how programs should use suspend blockers
-instead of showing that suspend blockers allow programs to make
-decisions.
-
-Alan Stern
-
+-PJ
