@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab0D3REn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:04:43 -0400
-Received: from mail-yw0-f194.google.com ([209.85.211.194]:38971 "EHLO
-	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758007Ab0D3RE2 convert rfc822-to-8bit (ORCPT
+	id S932615Ab0D3RD5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:03:57 -0400
+Received: from toq9-srv.bellnexxia.net ([209.226.175.116]:33522 "EHLO
+	toq9-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932583Ab0D3RDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:04:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vPWTiHzt/lIX2zsmwKqezSRy3z1inqbYV9zQbmMvjkWrkmqM1BiKJjLifyIIt4KpYE
-         5wfupRQo20a2Imb6ZJI9y6biUMtqVEk4IB3Hzohj6wBoiF1DX0R8oVIs6hhFaQONsnoM
-         Z7ucTwnADN/kt6AJjqAXDve8Pf8+99uoDngJg=
-MIME-Version: 1.0
-In-Reply-To: <20100427221705.1628375b.akpm@linux-foundation.org>
-References: <4BD7C240.5050800@renesas.com>
-	 <20100427221705.1628375b.akpm@linux-foundation.org>
-Date: Fri, 30 Apr 2010 12:51:37 +0900
-Message-ID: <o2uaec7e5c31004292051yff981cebg3bd05e2684036ae4@mail.gmail.com>
-Subject: Re: [PATCH 1/2 v2] MMC:Add support MMCIF for SuperH
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Yusuke Goda <yusuke.goda.sx@renesas.com>, ben@decadent.org.uk,
-       linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-sh@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 30 Apr 2010 13:03:39 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAO+S2ktGGNqG/2dsb2JhbACdH3K+fYJmgiwE
+Date: Fri, 30 Apr 2010 11:33:34 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/core/urgent] fix several lockdep splats, allow
+	multiple splats
+Message-ID: <20100430153334.GA19672@Krystal>
+References: <20100421200150.GA3818@linux.vnet.ibm.com> <20100430100749.GC14202@elte.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100430100749.GC14202@elte.hu>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 11:31:55 up 23 days,  1:25,  3 users,  load average: 0.51, 0.33,
+	0.21
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+* Ingo Molnar (mingo@elte.hu) wrote:
+> 
+> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > Hello!
+> > 
+> > This patchset contains four RCU lockdep splat fixes, courtesy of David 
+> > Howells, Peter Zijlstra, and Trond Myklebust, [...]
+> 
+> I've applied #1 and #2 - but shouldnt #4 and #5 go via the NFS tree?
+> 
+> > [...] as well as an enhancement by Lai Jiangshan that permits collecting 
+> > more than one RCU lockdep splat per boot.
+> 
+> Hm, this #3 patch i disagree with quite fundamentally: one of the big virtues 
+> of lockdep is that it complains only once and then shuts up and lets the 
+> system work. It allows distro debug kernels to have lockdep enabled, etc.
+> 
+> One bugreport per bootup per user is the most we can expect really. Not 
+> disabling it risks getting a stream of repeat messages, annoyed testers and 
+> gives us _less_ bugreports in the end.
+> 
+> Also, often the _first_ warning is the most reliable one - sometimes there's 
+> interactions, and the first bug causing a second warning as well, etc. So 
+> reporting just the highest-quality (i.e. first) issue we detect is the best 
+> approach.
 
-Thanks for your review!
-
-On Wed, Apr 28, 2010 at 11:17 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 28 Apr 2010 14:06:08 +0900 Yusuke Goda <yusuke.goda.sx@renesas.com> wrote:
->
->> +     time = wait_event_interruptible_timeout(host->intr_wait,
->> +                     host->wait_int == 1 ||
->> +                     host->sd_error == 1, host->timeout);
->> +     if (host->wait_int != 1 && (time == 0 || host->sd_error != 0))
->> +             return sh_mmcif_error_manage(host);
->
-> wait_event_interruptible_timeout() will return early with -ERESTARTSYS
-> if the calling process gets signalled (eg, ^C was hit).
->
-> The driver uses wait_event_interruptible_timeout() rather a lot and the
-> two sites I looked at seem to handle the signal_pending() case
-> correctly.
->
-> But incorrectly handling signals with interruptible waits is a
-> frequently-occurring error in drivers.  Did you deliberately cater for
-> this case, and have you runtime tested it?
-
-My plan is to use this driver on SH-Mobile ARM (sh7372), and I'd be
-happy to fix up the driver to become a bit less non-standard wrt
-blocking compared to the other MMC host drivers. Is it possible that
-Goda-san fixes up whatever minor bits that need rework and that you
-pick up at that point?
-
-I'd like to rework the MMCIF blocking code and perhaps also add
-dmaengine support as feature patches on top of Goda-sans work if
-that's ok with you. Better PM is also on the TODO. Not sure if any of
-these features will make it in time for the 2.6.35 merge window
-though.
-
-It would be very useful to have the MMCIF driver as-is in 2.6.35
-mainline to begin with if possible. Or do you think the driver needs
-to be reworked more before that can happen?
+I recommend creating a kernel command line parameter that would tweak
+the number of messages printed by lockdep. The default would indeed by 1
+message, but people in a debugging marathon can specify a larger value
+so they won't have to reboot between each individual lockdep error.
 
 Thanks,
 
-/ magnus
+Mathieu
+
+> 
+> Thanks,
+> 
+> 	Ingo
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
