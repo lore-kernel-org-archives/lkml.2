@@ -1,214 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934055Ab0D3Sdq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:33:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23313 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933144Ab0D3RVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:21:55 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 2/7] KEYS: find_keyring_by_name() can gain access to a freed
-	keyring
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-       linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Fri, 30 Apr 2010 14:32:13 +0100
-Message-ID: <20100430133213.2126.63908.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
-References: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S934050Ab0D3See (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:34:34 -0400
+Received: from fallback.mail.elte.hu ([157.181.151.13]:46256 "EHLO
+	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890Ab0D3Sdf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 14:33:35 -0400
+Date: Fri, 30 Apr 2010 12:22:05 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Liang Li <liang.li@windriver.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       wangchen@cn.fujitsu.com, tglx@linutronix.de, hpa@zytor.com,
+       yinghai@kernel.org, jeremy.fitzhardinge@citrix.com,
+       konrad.wilk@oracle.com
+Subject: Re: [v3 PATCH] x86: let 'reservetop' functioning right
+Message-ID: <20100430102205.GE14202@elte.hu>
+References: <1272621711-8683-1-git-send-email-liang.li@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272621711-8683-1-git-send-email-liang.li@windriver.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
 
-find_keyring_by_name() can gain access to a keyring that has had its reference
-count reduced to zero, and is thus ready to be freed.  This then allows the
-dead keyring to be brought back into use whilst it is being destroyed.
+* Liang Li <liang.li@windriver.com> wrote:
 
-The following timeline illustrates the process:
+> When specify 'reservetop=0xbadc0de' kernel parameter, the kernel will
+> stop booting due to a early_ioremap bug that relate to commit 8827247ff.
+> 
+> The root cause of boot failure problem is the value of 'slot_virt[i]'
+> was initialized in setup_arch->early_ioremap_init. But later in
+> setup_arch, the function 'parse_early_param' will modify 'FIXADDR_TOP'
+> when 'reservetop=0xbadc0de' being specified.
+> 
+> The simplest fix might be use __fix_to_virt(idx0) to get updated value
+> of 'FIXADDR_TOP' in '__early_ioremap' instead of reference old value
+> from slot_virt[slot] directly.
+> 
+> Changelog since v0:
+> 
+> -v1: When reservetop being handled then FIXADDR_TOP get adjusted, Hence
+> check prev_map then re-initialize slot_virt and PMD based on new
+> FIXADDR_TOP.
+> 
+> -v2: place fixup_early_ioremap hence call early_ioremap_init in
+> reserve_top_address  to re-initialize slot_virt and corresponding PMD
+> when parse_reservertop
+> 
+> -v3: move fixup_early_ioremap out of reserve_top_address to make sure
+> other clients of reserve_top_address like xen/lguest won't broken
+> 
+> Signed-off-by: Liang Li <liang.li@windriver.com>
+> Cc: Wang Chen <wangchen@cn.fujitsu.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Acked-by: Yinghai Lu <yinghai@kernel.org>
+> Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+> Hi all,
+> 
+> Just resend the patch according to Ingo's demand.
+> Thanks.
+> 
+>  arch/x86/include/asm/io.h |    1 +
+>  arch/x86/mm/ioremap.c     |   15 +++++++++++++++
+>  arch/x86/mm/pgtable_32.c  |    1 +
+>  3 files changed, 17 insertions(+), 0 deletions(-)
 
-|(cleaner)                           (user)
-|
-| free_user(user)                    sys_keyctl()
-|  |                                  |
-|  key_put(user->session_keyring)     keyctl_get_keyring_ID()
-|  ||	//=> keyring->usage = 0        |
-|  |schedule_work(&key_cleanup_task)   lookup_user_key()
-|  ||                                   |
-|  kmem_cache_free(,user)               |
-|  .                                    |[KEY_SPEC_USER_KEYRING]
-|  .                                    install_user_keyrings()
-|  .                                    ||
-| key_cleanup() [<= worker_thread()]    ||
-|  |                                    ||
-|  [spin_lock(&key_serial_lock)]        |[mutex_lock(&key_user_keyr..mutex)]
-|  |                                    ||
-|  atomic_read() == 0                   ||
-|  |{ rb_ease(&key->serial_node,) }     ||
-|  |                                    ||
-|  [spin_unlock(&key_serial_lock)]      |find_keyring_by_name()
-|  |                                    |||
-|  keyring_destroy(keyring)             ||[read_lock(&keyring_name_lock)]
-|  ||                                   |||
-|  |[write_lock(&keyring_name_lock)]    ||atomic_inc(&keyring->usage)
-|  |.                                   ||| *** GET freeing keyring ***
-|  |.                                   ||[read_unlock(&keyring_name_lock)]
-|  ||                                   ||
-|  |list_del()                          |[mutex_unlock(&key_user_k..mutex)]
-|  ||                                   |
-|  |[write_unlock(&keyring_name_lock)]  ** INVALID keyring is returned **
-|  |                                    .
-|  kmem_cache_free(,keyring)            .
-|                                       .
-|                                       atomic_dec(&keyring->usage)
-v                                         *** DESTROYED ***
-TIME
+Applied, thanks. Note, i cleaned up the fixup_early_ioremap() code (and 
+changed the BUG_ON to WARN_ON - we dont want to crash the box), mind double 
+checking the end result? See the commit below.
 
-If CONFIG_SLUB_DEBUG=y then we may see the following message generated:
+	Ingo
 
-	=============================================================================
-	BUG key_jar: Poison overwritten
-	-----------------------------------------------------------------------------
+----------------->
+>From e67a807f3d9a82fa91817871f1c0e2e04da993b8 Mon Sep 17 00:00:00 2001
+From: Liang Li <liang.li@windriver.com>
+Date: Fri, 30 Apr 2010 18:01:51 +0800
+Subject: [PATCH] x86: Fix 'reservetop=' functionality
 
-	INFO: 0xffff880197a7e200-0xffff880197a7e200. First byte 0x6a instead of 0x6b
-	INFO: Allocated in key_alloc+0x10b/0x35f age=25 cpu=1 pid=5086
-	INFO: Freed in key_cleanup+0xd0/0xd5 age=12 cpu=1 pid=10
-	INFO: Slab 0xffffea000592cb90 objects=16 used=2 fp=0xffff880197a7e200 flags=0x200000000000c3
-	INFO: Object 0xffff880197a7e200 @offset=512 fp=0xffff880197a7e300
+When specifying the 'reservetop=0xbadc0de' kernel parameter,
+the kernel will stop booting due to a early_ioremap bug that
+relates to commit 8827247ff.
 
-	Bytes b4 0xffff880197a7e1f0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-	  Object 0xffff880197a7e200:  6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b jkkkkkkkkkkkkkkk
+The root cause of boot failure problem is the value of
+'slot_virt[i]' was initialized in setup_arch->early_ioremap_init().
+But later in setup_arch, the function 'parse_early_param' will
+modify 'FIXADDR_TOP' when 'reservetop=0xbadc0de' being specified.
 
+The simplest fix might be use __fix_to_virt(idx0) to get updated
+value of 'FIXADDR_TOP' in '__early_ioremap' instead of reference
+old value from slot_virt[slot] directly.
 
-Alternatively, we may see a system panic happen, such as:
+Changelog since v0:
 
-	BUG: unable to handle kernel NULL pointer dereference at 0000000000000001
-	IP: [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
-	PGD 6b2b4067 PUD 6a80d067 PMD 0
-	Oops: 0000 [#1] SMP
-	last sysfs file: /sys/kernel/kexec_crash_loaded
-	CPU 1
-	...
-	Pid: 31245, comm: su Not tainted 2.6.34-rc5-nofixed-nodebug #2 D2089/PRIMERGY
-	RIP: 0010:[<ffffffff810e61a3>]  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
-	RSP: 0018:ffff88006af3bd98  EFLAGS: 00010002
-	RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88007d19900b
-	RDX: 0000000100000000 RSI: 00000000000080d0 RDI: ffffffff81828430
-	RBP: ffffffff81828430 R08: ffff88000a293750 R09: 0000000000000000
-	R10: 0000000000000001 R11: 0000000000100000 R12: 00000000000080d0
-	R13: 00000000000080d0 R14: 0000000000000296 R15: ffffffff810f20ce
-	FS:  00007f97116bc700(0000) GS:ffff88000a280000(0000) knlGS:0000000000000000
-	CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-	CR2: 0000000000000001 CR3: 000000006a91c000 CR4: 00000000000006e0
-	DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-	DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-	Process su (pid: 31245, threadinfo ffff88006af3a000, task ffff8800374414c0)
-	Stack:
-	 0000000512e0958e 0000000000008000 ffff880037f8d180 0000000000000001
-	 0000000000000000 0000000000008001 ffff88007d199000 ffffffff810f20ce
-	 0000000000008000 ffff88006af3be48 0000000000000024 ffffffff810face3
-	Call Trace:
-	 [<ffffffff810f20ce>] ? get_empty_filp+0x70/0x12f
-	 [<ffffffff810face3>] ? do_filp_open+0x145/0x590
-	 [<ffffffff810ce208>] ? tlb_finish_mmu+0x2a/0x33
-	 [<ffffffff810ce43c>] ? unmap_region+0xd3/0xe2
-	 [<ffffffff810e4393>] ? virt_to_head_page+0x9/0x2d
-	 [<ffffffff81103916>] ? alloc_fd+0x69/0x10e
-	 [<ffffffff810ef4ed>] ? do_sys_open+0x56/0xfc
-	 [<ffffffff81008a02>] ? system_call_fastpath+0x16/0x1b
-	Code: 0f 1f 44 00 00 49 89 c6 fa 66 0f 1f 44 00 00 65 4c 8b 04 25 60 e8 00 00 48 8b 45 00 49 01 c0 49 8b 18 48 85 db 74 0d 48 63 45 18 <48> 8b 04 03 49 89 00 eb 14 4c 89 f9 83 ca ff 44 89 e6 48 89 ef
-	RIP  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+-v1: When reservetop being handled then FIXADDR_TOP get
+     adjusted, Hence check prev_map then re-initialize slot_virt and
+     PMD based on new FIXADDR_TOP.
 
+-v2: place fixup_early_ioremap hence call early_ioremap_init in
+     reserve_top_address  to re-initialize slot_virt and
+     corresponding PMD when parse_reservertop
 
-This problem is that find_keyring_by_name does not confirm that the keyring is
-valid before accepting it.
+-v3: move fixup_early_ioremap out of reserve_top_address to make
+     sure other clients of reserve_top_address like xen/lguest won't
+     broken
 
-Skipping keyrings that have been reduced to a zero count seems the way to go.
-To this end, use atomic_inc_not_zero() to increment the usage count and skip
-the candidate keyring if that returns false.
-
-The following script _may_ cause the bug to happen, but there's no guarantee
-as the window of opportunity is small:
-
-	#!/bin/sh
-	LOOP=100000
-	USER=dummy_user
-	/bin/su -c "exit;" $USER || { /usr/sbin/adduser -m $USER; add=1; }
-	for ((i=0; i<LOOP; i++))
-	do
-		/bin/su -c "echo '$i' > /dev/null" $USER
-	done
-	(( add == 1 )) && /usr/sbin/userdel -r $USER
-	exit
-
-Note that the nominated user must not be in use.
-
-An alternative way of testing this may be:
-
-	for ((i=0; i<100000; i++))
-	do
-		keyctl session foo /bin/true || break
-	done >&/dev/null
-
-as that uses a keyring named "foo" rather than relying on the user and
-user-session named keyrings.
-
-Reported-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Signed-off-by: Liang Li <liang.li@windriver.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: Wang Chen <wangchen@cn.fujitsu.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+LKML-Reference: <1272621711-8683-1-git-send-email-liang.li@windriver.com>
+[ fixed three small cleanliness details in fixup_early_ioremap() ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
+ arch/x86/include/asm/io.h |    1 +
+ arch/x86/mm/ioremap.c     |   14 ++++++++++++++
+ arch/x86/mm/pgtable_32.c  |    1 +
+ 3 files changed, 16 insertions(+), 0 deletions(-)
 
- security/keys/keyring.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 8fa2df0..d570824 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -526,9 +526,8 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
- 	struct key *keyring;
- 	int bucket;
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index a1dcfa3..30a3e97 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -347,6 +347,7 @@ extern void __iomem *early_ioremap(resource_size_t phys_addr,
+ extern void __iomem *early_memremap(resource_size_t phys_addr,
+ 				    unsigned long size);
+ extern void early_iounmap(void __iomem *addr, unsigned long size);
++extern void fixup_early_ioremap(void);
  
--	keyring = ERR_PTR(-EINVAL);
- 	if (!name)
--		goto error;
-+		return ERR_PTR(-EINVAL);
+ #define IO_SPACE_LIMIT 0xffff
  
- 	bucket = keyring_hash(name);
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 5eb1ba7..12e4d2d 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -448,6 +448,20 @@ static inline void __init early_clear_fixmap(enum fixed_addresses idx)
+ static void __iomem *prev_map[FIX_BTMAPS_SLOTS] __initdata;
+ static unsigned long prev_size[FIX_BTMAPS_SLOTS] __initdata;
  
-@@ -555,17 +554,18 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
- 					   KEY_SEARCH) < 0)
- 				continue;
++void __init fixup_early_ioremap(void)
++{
++	int i;
++
++	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
++		if (prev_map[i]) {
++			WARN_ON(1);
++			break;
++		}
++	}
++
++	early_ioremap_init();
++}
++
+ static int __init check_early_ioremap_leak(void)
+ {
+ 	int count = 0;
+diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
+index 1a8faf0..26eadaa 100644
+--- a/arch/x86/mm/pgtable_32.c
++++ b/arch/x86/mm/pgtable_32.c
+@@ -128,6 +128,7 @@ static int __init parse_reservetop(char *arg)
  
--			/* we've got a match */
--			atomic_inc(&keyring->usage);
--			read_unlock(&keyring_name_lock);
--			goto error;
-+			/* we've got a match but we might end up racing with
-+			 * key_cleanup() if the keyring is currently 'dead'
-+			 * (ie. it has a zero usage count) */
-+			if (!atomic_inc_not_zero(&keyring->usage))
-+				continue;
-+			goto out;
- 		}
- 	}
- 
--	read_unlock(&keyring_name_lock);
- 	keyring = ERR_PTR(-ENOKEY);
--
-- error:
-+out:
-+	read_unlock(&keyring_name_lock);
- 	return keyring;
- 
- } /* end find_keyring_by_name() */
-
+ 	address = memparse(arg, &arg);
+ 	reserve_top_address(address);
++	fixup_early_ioremap();
+ 	return 0;
+ }
+ early_param("reservetop", parse_reservetop);
