@@ -1,153 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab0D3Vs7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 17:48:59 -0400
-Received: from aeryn.fluff.org.uk ([87.194.8.8]:27351 "EHLO
-	kira.home.fluff.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932420Ab0D3Vse (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 17:48:34 -0400
-Message-Id: <20100429231739.870565798@fluff.org.uk>
-User-Agent: quilt/0.48-1
-Date: Fri, 30 Apr 2010 00:16:25 +0100
-From: Ben Dooks <ben@simtec.co.uk>
-To: netdev@vger.kernel.org
-Cc: tristram.ha@micrel.com, support@tincantools.com,
-       Wolfram Sang <w.sang@pengutronix.de>, Jean Delvare <khali@linux-fr.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [patch 04/13] eeprom_93cx6: Add write support
-References: <20100429231621.015936077@fluff.org.uk>
-Content-Disposition: inline; filename=93c-eeprom-add-write.patch
+	id S1759728Ab0D3Vvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 17:51:39 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36706 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753293Ab0D3Vvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 17:51:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,305,1270450800"; 
+   d="scan'208";a="617964841"
+Date: Fri, 30 Apr 2010 14:51:34 -0700 (Pacific Daylight Time)
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: "davem@davemloft.net" <davem@davemloft.net>,
+       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
+       "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH linux-next v4 2/2] ixgbe: Example usage of the new IRQ
+ affinity_hint callback
+In-Reply-To: <alpine.LFD.2.00.1004302346030.2951@localhost.localdomain>
+Message-ID: <Pine.WNT.4.64.1004301449440.6512@PPWASKIE-MOBL2.amr.corp.intel.com>
+References: <20100430214445.3992.41647.stgit@ppwaskie-hc2.jf.intel.com>
+ <20100430214517.3992.92545.stgit@ppwaskie-hc2.jf.intel.com>
+ <alpine.LFD.2.00.1004302346030.2951@localhost.localdomain>
+X-X-Sender: ppwaskie@imapmail.glb.intel.com
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for writing data to EEPROM.
+On Fri, 30 Apr 2010, Thomas Gleixner wrote:
 
-Signed-off-by: Ben Dooks <ben@simtec.co.uk>
-Cc: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+> On Fri, 30 Apr 2010, Peter P Waskiewicz Jr wrote:
+>> +	for (i = 0; i < num_q_vectors; i++) {
+>> +		struct ixgbe_q_vector *q_vector = adapter->q_vector[i];
+>> +		/* release the CPU mask memory */
+>> +		free_cpumask_var(q_vector->affinity_mask);
+>> +		/* clear the affinity_mask in the IRQ descriptor */
+>> +		irq_set_affinity_hint(adapter->msix_entries[i].vector, NULL);
+>
+> Freeing the mask _AFTER_ clearing the hint might be a worthwhile
+> exercise :)
 
----
- drivers/misc/eeprom/eeprom_93cx6.c |   86 +++++++++++++++++++++++++++++++++++++
- include/linux/eeprom_93cx6.h       |    7 +++
- 2 files changed, 93 insertions(+)
+Crap.  I had it reversed before, then when I dropped the unregister call 
+it got swapped.  I'll fix it on the official submission for this one.
 
-Index: b/drivers/misc/eeprom/eeprom_93cx6.c
-===================================================================
---- a/drivers/misc/eeprom/eeprom_93cx6.c	2009-10-06 15:51:18.000000000 +0100
-+++ b/drivers/misc/eeprom/eeprom_93cx6.c	2009-10-06 15:54:36.000000000 +0100
-@@ -241,3 +241,89 @@ void eeprom_93cx6_multiread(struct eepro
- }
- EXPORT_SYMBOL_GPL(eeprom_93cx6_multiread);
- 
-+
-+/**
-+ * eeprom_93cx6_wren - set the write enable state
-+ * @eeprom: Pointer to eeprom structure
-+ * @enable: true to enable writes, otherwise disable writes
-+ *
-+ * Set the EEPROM write enable state to either allow or deny
-+ * writes depending on the @enable value.
-+ */
-+void eeprom_93cx6_wren(struct eeprom_93cx6 *eeprom, bool enable)
-+{
-+	u16 command;
-+
-+	/* start the command */
-+	eeprom_93cx6_startup(eeprom);
-+
-+	/* create command to enable/disable */
-+
-+	command = enable ? PCI_EEPROM_EWEN_OPCODE : PCI_EEPROM_EWDS_OPCODE;
-+	command <<= (eeprom->width - 2);
-+
-+	eeprom_93cx6_write_bits(eeprom, command,
-+				PCI_EEPROM_WIDTH_OPCODE + eeprom->width);
-+
-+	eeprom_93cx6_cleanup(eeprom);
-+}
-+EXPORT_SYMBOL_GPL(eeprom_93cx6_wren);
-+
-+/**
-+ * eeprom_93cx6_write - write data to the EEPROM
-+ * @eeprom: Pointer to eeprom structure
-+ * @addr: Address to write data to.
-+ * @data: The data to write to address @addr.
-+ *
-+ * Write the @data to the specified @addr in the EEPROM and
-+ * waiting for the device to finish writing.
-+ *
-+ * Note, since we do not expect large number of write operations
-+ * we use msleep() to delay in between parts of the operation to
-+ * avoid using excessive amounts of CPU time busy waiting.
-+ */
-+void eeprom_93cx6_write(struct eeprom_93cx6 *eeprom, u8 addr, u16 data)
-+{
-+	int timeout = 100;
-+	u16 command;
-+
-+	/* start the command */
-+	eeprom_93cx6_startup(eeprom);
-+
-+	command = PCI_EEPROM_WRITE_OPCODE << eeprom->width;
-+	command |= addr;
-+
-+	/* send write command */
-+	eeprom_93cx6_write_bits(eeprom, command,
-+				PCI_EEPROM_WIDTH_OPCODE + eeprom->width);
-+
-+	/* send data */
-+	eeprom_93cx6_write_bits(eeprom, data, 16);
-+
-+	/* get ready to check for busy */
-+	eeprom->drive_data = 0;
-+	eeprom->reg_chip_select = 1;
-+	eeprom->register_write(eeprom);
-+
-+	/* wait at-least 250ns to get DO to be the busy signal */
-+	msleep(1);
-+
-+	/* wait for DO to go high to signify finish */
-+
-+	while (true) {
-+		eeprom->register_read(eeprom);
-+
-+		if (eeprom->reg_data_out)
-+			break;
-+
-+		msleep(1);
-+
-+		if (--timeout <= 0) {
-+			printk(KERN_ERR "%s: timeout\n", __func__);
-+			break;
-+		}			
-+	}
-+
-+	eeprom_93cx6_cleanup(eeprom);
-+}
-+EXPORT_SYMBOL_GPL(eeprom_93cx6_write);
-Index: b/include/linux/eeprom_93cx6.h
-===================================================================
---- a/include/linux/eeprom_93cx6.h	2009-10-06 15:51:18.000000000 +0100
-+++ b/include/linux/eeprom_93cx6.h	2009-10-06 15:53:16.000000000 +0100
-@@ -32,6 +32,7 @@
- #define PCI_EEPROM_WIDTH_93C66	8
- #define PCI_EEPROM_WIDTH_OPCODE	3
- #define PCI_EEPROM_WRITE_OPCODE	0x05
-+#define PCI_EEPROM_ERASE_OPCODE 0x07
- #define PCI_EEPROM_READ_OPCODE	0x06
- #define PCI_EEPROM_EWDS_OPCODE	0x10
- #define PCI_EEPROM_EWEN_OPCODE	0x13
-@@ -73,3 +74,9 @@ extern void eeprom_93cx6_read(struct eep
- 	const u8 word, u16 *data);
- extern void eeprom_93cx6_multiread(struct eeprom_93cx6 *eeprom,
- 	const u8 word, __le16 *data, const u16 words);
-+
-+extern void eeprom_93cx6_wren(struct eeprom_93cx6 *eeprom, bool enable);
-+
-+extern void eeprom_93cx6_write(struct eeprom_93cx6 *eeprom,
-+			       u8 addr, u16 data);
-+
+This patch is just an example patch, not to be merged just now.  Once the 
+IRQ side is merged, and DaveM has that pulled into a tree, I'll send an 
+official ixgbe patch using the API.  But I'll be sure to have this fixed 
+before sending. :-)
 
+-PJ
