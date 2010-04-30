@@ -1,206 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757161Ab0D3UtZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 16:49:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654Ab0D3UtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 16:49:08 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-aio@kvack.org
-Cc: linux-kernel@vger.kernel.org, mjt@tls.msk.ru,
-       Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH 1/2] compat: factor out compat_rw_copy_check_uvector from compat_do_readv_writev
-Date: Fri, 30 Apr 2010 16:48:59 -0400
-Message-Id: <1272660540-6567-2-git-send-email-jmoyer@redhat.com>
-In-Reply-To: <1272660540-6567-1-git-send-email-jmoyer@redhat.com>
-References: <1272660540-6567-1-git-send-email-jmoyer@redhat.com>
+	id S1759584Ab0D3Utp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 16:49:45 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:37670 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759568Ab0D3Utg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 16:49:36 -0400
+From: Dinh.Nguyen@freescale.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, r.herring@freescale.com,
+       Jun.Li@freescale.com, xiao-lizhang@freescale.com,
+       Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv10 2.6.34-rc6 3/5] mx5: Enable board specific functions for enabling USB host on Babbage
+Date: Fri, 30 Apr 2010 15:48:25 -0500
+Message-Id: <1272660507-5917-3-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1272660507-5917-2-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1272660507-5917-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1272660507-5917-2-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch factors out code that will be used by both compat_do_readv_writev
-and the compat aio submission code paths.
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+This patch enables USB host functionality for Host1 and OTG port on
+Freescale MX51 Babbage HW. This patch contains the board specific
+HW initialization of the USB HW.
+
+This patch applies to 2.6.34-rc6.
+
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Reviewed-by: Daniel Mack <daniel@caiaq.de>
 ---
- fs/compat.c            |  130 ++++++++++++++++++++++++++++-------------------
- include/linux/compat.h |    4 ++
- 2 files changed, 81 insertions(+), 53 deletions(-)
+ arch/arm/mach-mx5/board-mx51_babbage.c |  129 ++++++++++++++++++++++++++++++++
+ 1 files changed, 129 insertions(+), 0 deletions(-)
 
-diff --git a/fs/compat.c b/fs/compat.c
-index 4b6ed03..ae0066d 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -568,6 +568,79 @@ out:
- 	return ret;
- }
+diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
+index ee67a71..99f7ea9 100644
+--- a/arch/arm/mach-mx5/board-mx51_babbage.c
++++ b/arch/arm/mach-mx5/board-mx51_babbage.c
+@@ -12,11 +12,15 @@
  
-+/* A write operation does a read from user space and vice versa */
-+#define vrfy_dir(type) ((type) == READ ? VERIFY_WRITE : VERIFY_READ)
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/delay.h>
++#include <linux/io.h>
+ 
+ #include <mach/common.h>
+ #include <mach/hardware.h>
+ #include <mach/imx-uart.h>
+ #include <mach/iomux-mx51.h>
++#include <mach/mxc_ehci.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/setup.h>
+@@ -26,6 +30,17 @@
+ 
+ #include "devices.h"
+ 
++#define BABBAGE_USB_HUB_RESET	(0*32 + 7)	/* GPIO_1_7 */
++#define BABBAGE_USBH1_STP	(0*32 + 27)	/* GPIO_1_27 */
 +
-+ssize_t compat_rw_copy_check_uvector(int type,
-+		const struct compat_iovec __user *uvector, unsigned long nr_segs,
-+		unsigned long fast_segs, struct iovec *fast_pointer,
-+		struct iovec **ret_pointer)
++/* USB_CTRL_1 */
++#define MX51_USB_CTRL_1_OFFSET			0x10
++#define MX51_USB_CTRL_UH1_EXT_CLK_EN		(1 << 25)
++
++#define	MX51_USB_PLLDIV_12_MHZ		0x00
++#define	MX51_USB_PLL_DIV_19_2_MHZ	0x01
++#define	MX51_USB_PLL_DIV_24_MHZ	0x02
++
+ static struct platform_device *devices[] __initdata = {
+ 	&mxc_fec_device,
+ };
+@@ -46,6 +61,22 @@ static struct pad_desc mx51babbage_pads[] = {
+ 	MX51_PAD_EIM_D26__UART3_TXD,
+ 	MX51_PAD_EIM_D27__UART3_RTS,
+ 	MX51_PAD_EIM_D24__UART3_CTS,
++
++	/* USB HOST1 */
++	MX51_PAD_USBH1_CLK__USBH1_CLK,
++	MX51_PAD_USBH1_DIR__USBH1_DIR,
++	MX51_PAD_USBH1_NXT__USBH1_NXT,
++	MX51_PAD_USBH1_DATA0__USBH1_DATA0,
++	MX51_PAD_USBH1_DATA1__USBH1_DATA1,
++	MX51_PAD_USBH1_DATA2__USBH1_DATA2,
++	MX51_PAD_USBH1_DATA3__USBH1_DATA3,
++	MX51_PAD_USBH1_DATA4__USBH1_DATA4,
++	MX51_PAD_USBH1_DATA5__USBH1_DATA5,
++	MX51_PAD_USBH1_DATA6__USBH1_DATA6,
++	MX51_PAD_USBH1_DATA7__USBH1_DATA7,
++
++	/* USB HUB reset line*/
++	MX51_PAD_GPIO_1_7__GPIO1_7,
+ };
+ 
+ /* Serial ports */
+@@ -66,15 +97,113 @@ static inline void mxc_init_imx_uart(void)
+ }
+ #endif /* SERIAL_IMX */
+ 
++static int gpio_usbh1_active(void)
 +{
-+	compat_ssize_t tot_len;
-+	struct iovec *iov = *ret_pointer = fast_pointer;
-+	ssize_t ret = 0;
-+	int seg;
++	struct pad_desc usbh1stp_gpio = MX51_PAD_USBH1_STP__GPIO_1_27;
++	int ret;
 +
-+	/*
-+	 * SuS says "The readv() function *may* fail if the iovcnt argument
-+	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
-+	 * traditionally returned zero for zero segments, so...
-+	 */
-+	if (nr_segs == 0)
-+		goto out;
++	/* Set USBH1_STP to GPIO and toggle it */
++	mxc_iomux_v3_setup_pad(&usbh1stp_gpio);
++	ret = gpio_request(BABBAGE_USBH1_STP, "usbh1_stp");
 +
-+	ret = -EINVAL;
-+	if (nr_segs > UIO_MAXIOV || nr_segs < 0)
-+		goto out;
-+	if (nr_segs > fast_segs) {
-+		ret = -ENOMEM;
-+		iov = kmalloc(nr_segs*sizeof(struct iovec), GFP_KERNEL);
-+		if (iov == NULL) {
-+			*ret_pointer = fast_pointer;
-+			goto out;
-+		}
++	if (ret) {
++		pr_debug("failed to get MX51_PAD_USBH1_STP__GPIO_1_27: %d\n", ret);
++		return ret;
 +	}
-+	*ret_pointer = iov;
-+
-+	/*
-+	 * Single unix specification:
-+	 * We should -EINVAL if an element length is not >= 0 and fitting an
-+	 * ssize_t.  The total length is fitting an ssize_t
-+	 *
-+	 * Be careful here because iov_len is a size_t not an ssize_t
-+	 */
-+	tot_len = 0;
-+	ret = -EINVAL;
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		compat_ssize_t tmp = tot_len;
-+		compat_uptr_t buf;
-+		compat_ssize_t len;
-+
-+		if (__get_user(len, &uvector->iov_len) ||
-+		   __get_user(buf, &uvector->iov_base)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+		if (len < 0)	/* size_t not fitting in compat_ssize_t .. */
-+			goto out;
-+		tot_len += len;
-+		if (tot_len < tmp) /* maths overflow on the compat_ssize_t */
-+			goto out;
-+		if (!access_ok(vrfy_dir(type), buf, len)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+		iov->iov_base = compat_ptr(buf);
-+		iov->iov_len = (compat_size_t) len;
-+		uvector++;
-+		iov++;
-+	}
-+	ret = tot_len;
-+
-+out:
-+	return ret;
++	gpio_direction_output(BABBAGE_USBH1_STP, 0);
++	gpio_set_value(BABBAGE_USBH1_STP, 1);
++	msleep(100);
++	gpio_free(BABBAGE_USBH1_STP);
++	return 0;
 +}
 +
- static inline long
- copy_iocb(long nr, u32 __user *ptr32, struct iocb __user * __user *ptr64)
- {
-@@ -1077,70 +1150,21 @@ static ssize_t compat_do_readv_writev(int type, struct file *file,
- {
- 	compat_ssize_t tot_len;
- 	struct iovec iovstack[UIO_FASTIOV];
--	struct iovec *iov=iovstack, *vector;
-+	struct iovec *iov;
- 	ssize_t ret;
--	int seg;
- 	io_fn_t fn;
- 	iov_fn_t fnv;
- 
--	/*
--	 * SuS says "The readv() function *may* fail if the iovcnt argument
--	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
--	 * traditionally returned zero for zero segments, so...
--	 */
--	ret = 0;
--	if (nr_segs == 0)
--		goto out;
--
--	/*
--	 * First get the "struct iovec" from user memory and
--	 * verify all the pointers
--	 */
- 	ret = -EINVAL;
--	if ((nr_segs > UIO_MAXIOV) || (nr_segs <= 0))
--		goto out;
- 	if (!file->f_op)
- 		goto out;
--	if (nr_segs > UIO_FASTIOV) {
--		ret = -ENOMEM;
--		iov = kmalloc(nr_segs*sizeof(struct iovec), GFP_KERNEL);
--		if (!iov)
--			goto out;
--	}
++static inline void babbage_usbhub_reset(void)
++{
++	int ret;
 +
- 	ret = -EFAULT;
- 	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
- 		goto out;
++	/* Bring USB hub out of reset */
++	ret = gpio_request(BABBAGE_USB_HUB_RESET, "GPIO1_7");
++	if (ret) {
++		printk(KERN_ERR"failed to get GPIO_USB_HUB_RESET: %d\n", ret);
++		return;
++	}
++	gpio_direction_output(BABBAGE_USB_HUB_RESET, 0);
++
++	/* USB HUB RESET - De-assert USB HUB RESET_N */
++	msleep(1);
++	gpio_set_value(BABBAGE_USB_HUB_RESET, 0);
++	msleep(1);
++	gpio_set_value(BABBAGE_USB_HUB_RESET, 1);
++}
++
++/* This function is board specific as the bit mask for the plldiv will also
++be different for other Freescale SoCs, thus a common bitmask is not
++possible and cannot get place in /plat-mxc/ehci.c.*/
++static int initialize_otg_port(struct platform_device *pdev)
++{
++	u32 v;
++	void __iomem *usb_base;
++	u32 usbother_base;
++
++	usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
++	usbother_base = usb_base + MX5_USBOTHER_REGS_OFFSET;
++
++	/* Set the PHY clock to 19.2MHz */
++	v = __raw_readl(usbother_base + MXC_USB_PHY_CTR_FUNC2_OFFSET);
++	v &= ~MX5_USB_UTMI_PHYCTRL1_PLLDIV_MASK;
++	v |= MX51_USB_PLL_DIV_19_2_MHZ;
++	__raw_writel(v, usbother_base + MXC_USB_PHY_CTR_FUNC2_OFFSET);
++	iounmap(usb_base);
++	return 0;
++}
++
++static int initialize_usbh1_port(struct platform_device *pdev)
++{
++	u32 v;
++	void __iomem *usb_base;
++	u32 usbother_base;
++
++	usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
++	usbother_base = usb_base + MX5_USBOTHER_REGS_OFFSET;
++
++	/* The clock for the USBH1 ULPI port will come externally from the PHY. */
++	v = __raw_readl(usbother_base + MX51_USB_CTRL_1_OFFSET);
++	__raw_writel(v | MX51_USB_CTRL_UH1_EXT_CLK_EN, usbother_base + MX51_USB_CTRL_1_OFFSET);
++	iounmap(usb_base);
++	return 0;
++}
++
++static struct mxc_usbh_platform_data dr_utmi_config = {
++	.init		= initialize_otg_port,
++	.portsc	= MXC_EHCI_UTMI_16BIT,
++	.flags	= MXC_EHCI_INTERNAL_PHY,
++};
++
++static struct mxc_usbh_platform_data usbh1_config = {
++	.init		= initialize_usbh1_port,
++	.portsc	= MXC_EHCI_MODE_ULPI,
++	.flags	= (MXC_EHCI_POWER_PINS_ENABLED | MXC_EHCI_ITC_NO_THRESHOLD),
++};
++
+ /*
+  * Board specific initialization.
+  */
+ static void __init mxc_board_init(void)
+ {
++	struct pad_desc usbh1stp = MX51_PAD_USBH1_STP__USBH1_STP;
++
+ 	mxc_iomux_v3_setup_multiple_pads(mx51babbage_pads,
+ 					ARRAY_SIZE(mx51babbage_pads));
+ 	mxc_init_imx_uart();
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
++
++	mxc_register_device(&mxc_usbdr_host_device, &dr_utmi_config);
++
++	gpio_usbh1_active();
++	mxc_register_device(&mxc_usbh1_device, &usbh1_config);
++	/* setback USBH1_STP to be function */
++	mxc_iomux_v3_setup_pad(&usbh1stp);
++	babbage_usbhub_reset();
+ }
  
--	/*
--	 * Single unix specification:
--	 * We should -EINVAL if an element length is not >= 0 and fitting an
--	 * ssize_t.  The total length is fitting an ssize_t
--	 *
--	 * Be careful here because iov_len is a size_t not an ssize_t
--	 */
--	tot_len = 0;
--	vector = iov;
--	ret = -EINVAL;
--	for (seg = 0 ; seg < nr_segs; seg++) {
--		compat_ssize_t tmp = tot_len;
--		compat_ssize_t len;
--		compat_uptr_t buf;
--
--		if (__get_user(len, &uvector->iov_len) ||
--		    __get_user(buf, &uvector->iov_base)) {
--			ret = -EFAULT;
--			goto out;
--		}
--		if (len < 0)	/* size_t not fitting an compat_ssize_t .. */
--			goto out;
--		tot_len += len;
--		if (tot_len < tmp) /* maths overflow on the compat_ssize_t */
--			goto out;
--		vector->iov_base = compat_ptr(buf);
--		vector->iov_len = (compat_size_t) len;
--		uvector++;
--		vector++;
--	}
-+	tot_len = compat_rw_copy_check_uvector(type, uvector, nr_segs,
-+					       UIO_FASTIOV, iovstack, &iov);
- 	if (tot_len == 0) {
- 		ret = 0;
- 		goto out;
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index 717c691..168f7da 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -356,5 +356,9 @@ asmlinkage long compat_sys_newfstatat(unsigned int dfd, char __user * filename,
- asmlinkage long compat_sys_openat(unsigned int dfd, const char __user *filename,
- 				  int flags, int mode);
- 
-+extern ssize_t compat_rw_copy_check_uvector(int type,
-+		const struct compat_iovec __user *uvector, unsigned long nr_segs,
-+		unsigned long fast_segs, struct iovec *fast_pointer,
-+		struct iovec **ret_pointer);
- #endif /* CONFIG_COMPAT */
- #endif /* _LINUX_COMPAT_H */
+ static void __init mx51_babbage_timer_init(void)
 -- 
-1.6.2.5
+1.6.0.4
 
