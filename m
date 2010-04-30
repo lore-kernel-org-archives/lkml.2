@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932788Ab0D3RJy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:09:54 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53812 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932747Ab0D3RJV (ORCPT
+	id S932584Ab0D3RMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:12:34 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45599 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932698Ab0D3RIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:09:21 -0400
-Date: Thu, 29 Apr 2010 14:39:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       xfs@oss.sgi.com, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-       "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH 3/4] writeback: pay attention to wbc->nr_to_write in
- write_cache_pages
-Message-Id: <20100429143931.331c2bab.akpm@linux-foundation.org>
-In-Reply-To: <1271731314-5893-4-git-send-email-david@fromorbit.com>
-References: <1271731314-5893-1-git-send-email-david@fromorbit.com>
-	<1271731314-5893-4-git-send-email-david@fromorbit.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Fri, 30 Apr 2010 13:08:34 -0400
+Date: Fri, 30 Apr 2010 10:07:12 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, Bob Beers <bob.beers@gmail.com>,
+       gregkh@suse.de
+Subject: [PATCH -next] staging/cxt1e1: use netdev_priv to fix build
+Message-Id: <20100430100712.041f6fcc.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090207.4BDB0E8A.007D:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Apr 2010 12:41:53 +1000
-Dave Chinner <david@fromorbit.com> wrote:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-> If a filesystem writes more than one page in ->writepage, write_cache_pages
-> fails to notice this and continues to attempt writeback when wbc->nr_to_write
-> has gone negative - this trace was captured from XFS:
-> 
-> 
->     wbc_writeback_start: towrt=1024
->     wbc_writepage: towrt=1024
->     wbc_writepage: towrt=0
->     wbc_writepage: towrt=-1
->     wbc_writepage: towrt=-5
->     wbc_writepage: towrt=-21
->     wbc_writepage: towrt=-85
-> 
+Fix cxt1e1 build error:
+drivers/staging/cxt1e1/linux.c:1195: error: 'struct net_device' has no member named 'priv'
 
-Bug.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Bob Beers <bob.beers@gmail.com>
+---
+ drivers/staging/cxt1e1/linux.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-AFAIT it's a regression introduced by
-
-: commit 17bc6c30cf6bfffd816bdc53682dd46fc34a2cf4
-: Author:     Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-: AuthorDate: Thu Oct 16 10:09:17 2008 -0400
-: Commit:     Theodore Ts'o <tytso@mit.edu>
-: CommitDate: Thu Oct 16 10:09:17 2008 -0400
-: 
-:     vfs: Add no_nrwrite_index_update writeback control flag
-
-I suggest that what you do here is remove the local `nr_to_write' from
-write_cache_pages() and go back to directly using wbc->nr_to_write
-within the loop.
-
-And thus we restore the convention that if the fs writes back more than
-a single page, it subtracts (nr_written - 1) from wbc->nr_to_write.
-
+--- linux-next-20100430.orig/drivers/staging/cxt1e1/linux.c
++++ linux-next-20100430/drivers/staging/cxt1e1/linux.c
+@@ -1192,7 +1192,7 @@ c4_add_dev (hdw_info_t * hi, int brdno, 
+                 hi->devname, irq1);
+         unregister_netdev (ndev);
+         free_irq (irq0, ndev);
+-        OS_kfree (ndev->priv);
++        OS_kfree (netdev_priv(ndev));
+         OS_kfree (ndev);
+         error_flag = EIO;
+         return 0;
