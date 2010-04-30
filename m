@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759219Ab0D3Shs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:37:48 -0400
-Received: from fallback.mail.elte.hu ([157.181.151.13]:38673 "EHLO
-	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759099Ab0D3ShV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:37:21 -0400
-X-Greylist: delayed 4114 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Apr 2010 14:37:11 EDT
-Date: Fri, 30 Apr 2010 11:08:14 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Renninger <trenn@suse.de>
-Cc: x86@kernel.org, linux-trace-users@vger.kernel.org,
-       linux-perf-users@vger.kernel.org, robert.schoene@tu-dresden.de,
-       cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com,
-       arjan@infradead.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 2/2] x86 cpufreq: Make trace_power_frequency cpufreq
- driver independent
-Message-ID: <20100430090814.GF11032@elte.hu>
-References: <1272380262-23671-1-git-send-email-trenn@suse.de>
- <1272380262-23671-3-git-send-email-trenn@suse.de>
+	id S1759310Ab0D3SiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:38:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933034Ab0D3RVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:21:42 -0400
+Date: Fri, 30 Apr 2010 12:44:27 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+       kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm mmu: reduce 50% memory usage
+Message-ID: <20100430154427.GA32340@amt.cnet>
+References: <4BD8228D.7090708@cn.fujitsu.com>
+ <20100429180955.GA17909@amt.cnet>
+ <4BD9D35C.5090403@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1272380262-23671-3-git-send-email-trenn@suse.de>
+In-Reply-To: <4BD9D35C.5090403@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 29, 2010 at 09:43:40PM +0300, Avi Kivity wrote:
+> On 04/29/2010 09:09 PM, Marcelo Tosatti wrote:
+> >
+> >You missed quadrant on 4mb large page emulation with shadow (see updated
+> >patch below).
+> 
+> Good catch.
+> 
+> >Also for some reason i can't understand the assumption
+> >does not hold for large sptes with TDP, so reverted for now.
+> 
+> It's unrelated to TDP, same issue with shadow.  I think the
+> calculation is correct.  For example the 4th spte for a level=2 page
+> will yield gfn=4*512.
 
-* Thomas Renninger <trenn@suse.de> wrote:
+Under testing i see sp at level 2, with sp->gfn == 4096, mmu_set_spte
+setting index 8 to gfn 4096 (whereas kvm_mmu_page_get_gfn returns 4096 +
+8*512).
 
-> +		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
-> +	trace_power_start(POWER_CSTATE, (ax>>4)+1, smp_processor_id());
-> +		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
-> +	trace_power_start(POWER_CSTATE, 0, smp_processor_id());
-> +                trace_power_frequency(POWER_PSTATE, freqs->new, freqs->cpu);
-> +	trace_power_end(smp_processor_id());
+Lai, can you please take a look at it? You should see the
+kvm_mmu_page_set_gfn BUG_ON by using -mem-path on hugetlbfs.
 
-Extending power tracing to all cpufreq modules is obviously a good thing.
-
-But why is trace_power_start() adding a CPU ID argument? CPU ids are already 
-available and can be sampled via PERF_SAMPLE_CPU if needed. AFAICS only 
-power_frequency needs a new 'target_cpu_id' field.
-
-> diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-> index 0d4d8ff..7809bef 100644
-> --- a/tools/perf/builtin-timechart.c
-> +++ b/tools/perf/builtin-timechart.c
-
-Timechart is maintained by Arjan so we need an ack from him as well. I've seen 
-some back and forth in the discussions - what's the technical resolution of 
-that?
-
-(Also, there's some whitespace noise in the patch.)
-
-Thanks,
-
-	Ingo
+> >@@ -393,6 +393,27 @@ static void mmu_free_rmap_desc(struct kvm_rmap_desc *rd)
+> >  	kfree(rd);
+> >  }
+> >
+> >+static gfn_t kvm_mmu_page_get_gfn(struct kvm_mmu_page *sp, int index)
+> >+{
+> >+	gfn_t gfn;
+> >+
+> >+	if (!sp->role.direct)
+> >+		return sp->gfns[index];
+> >+
+> >+	gfn = sp->gfn + index * (1<<  (sp->role.level - 1) * PT64_LEVEL_BITS);
+> >+	gfn += sp->role.quadrant<<  PT64_LEVEL_BITS;
+> 
+> PT64_LEVEL_BITS * level
+> 
+> >+
+> >+	return gfn;
+> >+}
+> >+
+> >
+> 
+> 
+> -- 
+> I have a truly marvellous patch that fixes the bug which this
+> signature is too narrow to contain.
