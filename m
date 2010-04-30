@@ -1,87 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759110Ab0D3SDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:03:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:44113 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933565Ab0D3SCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:02:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,303,1270450800"; 
-   d="scan'208";a="794386566"
-Date: Fri, 30 Apr 2010 11:02:36 -0700 (Pacific Daylight Time)
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: "davem@davemloft.net" <davem@davemloft.net>,
-       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH linux-next v2 1/2] irq: Add CPU mask affinity hint
-In-Reply-To: <alpine.LFD.2.00.1004301249540.2951@localhost.localdomain>
-Message-ID: <Pine.WNT.4.64.1004301059230.6264@PPWASKIE-MOBL2.amr.corp.intel.com>
-References: <20100430085150.4630.46790.stgit@ppwaskie-hc2.jf.intel.com>
- <alpine.LFD.2.00.1004301249540.2951@localhost.localdomain>
-X-X-Sender: ppwaskie@imapmail.glb.intel.com
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S933640Ab0D3SEb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 14:04:31 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:33823 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933174Ab0D3SCb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 14:02:31 -0400
+Subject: Re: mmotm 2010-04-28-16-53 uploaded
+From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <18962.1272576730@localhost>
+References: <201004290021.o3T0L04Y028017@imap1.linux-foundation.org>
+	 <18962.1272576730@localhost>
+Content-Type: multipart/mixed; boundary="=-k5AWDxRikWKrRHK48p4R"
+Organization: HP/LKTT
+Date: Fri, 30 Apr 2010 14:02:27 -0400
+Message-Id: <1272650547.10027.97.camel@useless.americas.hpqcorp.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010, Thomas Gleixner wrote:
 
-> On Fri, 30 Apr 2010, Peter P Waskiewicz Jr wrote:
->
->> This patch adds a cpumask affinity hint to the irq_desc
->> structure, along with a registration function and a read-only
->> proc entry for each interrupt.
->>
->> This affinity_hint handle for each interrupt can be used by
->> underlying drivers that need a better mechanism to control
->> interrupt affinity.  The underlying driver can register a
->> cpumask for the interrupt, which will allow the driver to
->> provide the CPU mask for the interrupt to anything that
->> requests it.  The intent is to extend the userspace daemon,
->> irqbalance, to help hint to it a preferred CPU mask to balance
->> the interrupt into.
->>
->> Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
->> ---
->>
->>  include/linux/interrupt.h |   13 +++++++++++++
->>  include/linux/irq.h       |    1 +
->>  kernel/irq/manage.c       |   28 ++++++++++++++++++++++++++++
->>  kernel/irq/proc.c         |   33 +++++++++++++++++++++++++++++++++
->>  4 files changed, 75 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
->> index 75f3f00..9c9ea2a 100644
->> --- a/include/linux/interrupt.h
->> +++ b/include/linux/interrupt.h
->> @@ -209,6 +209,9 @@ extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
->>  extern int irq_can_set_affinity(unsigned int irq);
->>  extern int irq_select_affinity(unsigned int irq);
->>
->> +extern int irq_register_affinity_hint(unsigned int irq,
->> +                                      const struct cpumask *m);
->
-> I think we can do with a single funtion irq_set_affinity_hint() and
-> let the caller set the pointer to NULL.
+--=-k5AWDxRikWKrRHK48p4R
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 
-Ok, I've been running into some issues.  If CONFIG_CPUMASK_OFFSTACK is not 
-set, then cpumask_var_t structs are single-element arrays that cannot be 
-NULL'd out.  I'm pretty sure I need to keep the unregister part of the 
-API.  Thoughts?
+On Thu, 2010-04-29 at 17:32 -0400, Valdis.Kletnieks@vt.edu wrote: 
+> On Wed, 28 Apr 2010 16:53:32 PDT, akpm@linux-foundation.org said:
+> > The mm-of-the-moment snapshot 2010-04-28-16-53 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
+> 
+> Dies trying to compile mm/slab.c because something screwed the pooch with
+> the definition of numa_mem_id(). My bets are on
+> numa-slab-use-numa_mem_id-for-slab-local-memory-node.patch
+> 
 
->> +	raw_spin_lock_irqsave(&desc->lock, flags);
->> +	if (desc->affinity_hint) {
->> +		seq_cpumask(m, desc->affinity_hint);
->
->  Please make a local copy under desc->mask and do the seq_cpumask()
->  stuff on the local copy outside of desc->lock
+Vlad:
 
-I just looked at the original show_affinity function, and it does not grab 
-desc->lock before copying mask out of desc.  Should I follow that model, 
-or should I fix that function to honor desc->lock?
+Would you have time to try a few patches?  I've been doing some rework
+of the generic percpu numa_node/numa_mem patches.  This rework should
+solve the build problem you encountered.
 
--PJ
+The patch you cite:
+numa-slab-use-numa_mem_id-for-slab-local-memory-node.patch
+is the immediate cause of the build failure, but it's really the earlier
+patches--definitions of numa_node_id() and numa_mem_id()--that are
+causing it. 
+
+I have attached a tarball containing a number of incremental patches to
+the numa-* patches in 22apr or 28apr mmotm.  Should be fairly obvious
+from the name where they fit into the series.  The tarball includes
+Andrew's fix to the previous build problem you encountered [missing
+paren].  That fix is already in the 28apr mmotm.
+
+These patches build, boot and run on x86_64 and ia64.  I also built
+x86-64 mm/slab.o with !NUMA and an i386 kernel cross-compile with the
+config that Andrew sent out.
+
+I hope to post the individual patches to the mailing lists for review
+later today.  The tarball should give you a head start if you're
+interested.
+
+Lee
+
+--=-k5AWDxRikWKrRHK48p4R
+Content-Disposition: attachment; filename="nid_rework-2.6.34-rc5-mmotm-100428-1653-100430.tar.gz"
+Content-Type: application/x-compressed-tar; name="nid_rework-2.6.34-rc5-mmotm-100428-1653-100430.tar.gz"
+Content-Transfer-Encoding: base64
+
+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
+IAiC9ku/NBerQACgAAA=
+
+
+--=-k5AWDxRikWKrRHK48p4R--
+
