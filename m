@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758849Ab0D3RvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:51:06 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41714 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758519Ab0D3Ruh (ORCPT
+	id S1757573Ab0D3RvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:51:19 -0400
+Received: from viridian.itc.Virginia.EDU ([128.143.12.139]:55744 "EHLO
+	viridian.itc.virginia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933416Ab0D3RvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:50:37 -0400
-Date: Fri, 30 Apr 2010 10:50:16 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Eric Biederman <ebiederm@xmission.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       gregkh@suse.de
-Subject: Re: linux-next: Tree for April 30 (CONFIG_SYSFS=n)
-Message-Id: <20100430105016.40b51636.randy.dunlap@oracle.com>
-In-Reply-To: <20100430163538.7253a9e0.sfr@canb.auug.org.au>
-References: <20100430163538.7253a9e0.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090203.4BDB1860.017C:SCFMA922111,ss=1,fgs=0
+	Fri, 30 Apr 2010 13:51:00 -0400
+From: Bill Pemberton <wfp5p@virginia.edu>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 10/11] printk: remove duplicate const
+Date: Fri, 30 Apr 2010 09:34:37 -0400
+Message-Id: <1272634478-4127-11-git-send-email-wfp5p@virginia.edu>
+X-Mailer: git-send-email 1.7.0.6
+In-Reply-To: <1272634478-4127-1-git-send-email-wfp5p@virginia.edu>
+References: <1272634478-4127-1-git-send-email-wfp5p@virginia.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010 16:35:38 +1000 Stephen Rothwell wrote:
+Fix sparse warnings:
 
-> Hi all,
-> 
-> Changes since 20100429:
+kernel/printk.c:1485:25: warning: duplicate const
 
-
-When CONFIG_SYSFS is disabled:
-
-include/linux/sysfs.h:330: error: parameter 1 ('type') has incomplete type
-
+Signed-off-by: Bill Pemberton <wfp5p@virginia.edu>
+CC: linux-kernel@vger.kernel.org
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ kernel/printk.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 444b770..c3b14c9 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1482,7 +1482,7 @@ int kmsg_dump_unregister(struct kmsg_dumper *dumper)
+ }
+ EXPORT_SYMBOL_GPL(kmsg_dump_unregister);
+ 
+-static const char const *kmsg_reasons[] = {
++static const char *kmsg_reasons[] = {
+ 	[KMSG_DUMP_OOPS]	= "oops",
+ 	[KMSG_DUMP_PANIC]	= "panic",
+ 	[KMSG_DUMP_KEXEC]	= "kexec",
+-- 
+1.7.0.6
+
