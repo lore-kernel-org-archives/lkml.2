@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab0D3Rio (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:38:44 -0400
-Received: from ozlabs.org ([203.10.76.45]:52366 "EHLO ozlabs.org"
+	id S1758840Ab0D3Rjc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:39:32 -0400
+Received: from kroah.org ([198.145.64.141]:37864 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753030Ab0D3Rib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:38:31 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: linux-next: manual merge of the rr tree with the net tree
-Date: Thu, 29 Apr 2010 22:23:36 +0930
-User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; i686; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-       netdev@vger.kernel.org
-References: <20100427115852.9f4cbb0f.sfr@canb.auug.org.au> <20100427040913.GA19951@redhat.com> <20100428155457.GB7467@redhat.com>
-In-Reply-To: <20100428155457.GB7467@redhat.com>
+	id S1756257Ab0D3Rid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:38:33 -0400
+Date: Thu, 29 Apr 2010 18:41:59 -0700
+From: Greg KH <greg@kroah.com>
+To: Yoichi Yuasa <yuasa@linux-mips.org>
+Cc: Naren Sankar <nsankar@broadcom.com>, Jarod Wilson <jarod@wilsonet.com>,
+       Scott Davilla <davilla@4pi.com>, Manu Abraham <abraham.manu@gmail.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/11] staging: crystalhd: remove unused bc_dts_types.h
+Message-ID: <20100430014159.GA10862@kroah.com>
+References: <20100425221851.223dc284.yuasa@linux-mips.org> <20100429191043.GF21799@kroah.com> <20100430094036.2dc10a8f.yuasa@linux-mips.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004292223.36270.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100430094036.2dc10a8f.yuasa@linux-mips.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Apr 2010 01:24:57 am Michael S. Tsirkin wrote:
-> On Tue, Apr 27, 2010 at 07:09:13AM +0300, Michael S. Tsirkin wrote:
-> > On Tue, Apr 27, 2010 at 11:58:52AM +1000, Stephen Rothwell wrote:
-> > > Hi Rusty,
-> > > 
-> > > Today's linux-next merge of the rr tree got a conflict in
-> > > drivers/net/virtio_net.c between commit
-> > > 5e01d2f91df62be4d6f282149bc2a8858992ceca ("virtio-net: move sg off
-> > > stack") from the net tree and commit
-> > > 7f62a724a65f864d84f50857bbfd36c240155c8f ("virtio_net: use virtqueue_xxx
-> > > wrappers") from the rr tree.
-> > > 
-> > > I fixed it up (see below) and can carry the fix as necessary.
+On Fri, Apr 30, 2010 at 09:40:36AM +0900, Yoichi Yuasa wrote:
+> On Thu, 29 Apr 2010 12:10:43 -0700
+> Greg KH <greg@kroah.com> wrote:
+> 
+> > On Sun, Apr 25, 2010 at 10:18:51PM +0900, Yoichi Yuasa wrote:
+> > > Signed-off-by: Yoichi Yuasa <yuasa@linux-mips.org>
+> > > ---
+> > >  drivers/staging/crystalhd/bc_dts_defs.h  |    2 -
+> > >  drivers/staging/crystalhd/bc_dts_types.h |  121 ------------------------------
 > > 
-> > Hmm, Rusty, do you intend for the patches to go through netdev this
-> > time? If you do, it might be simplest to just ask Dave to merge
-> > them in net-next-2.6 now. I can prepare and send them if you like.
+> > Wait, all crystalhd patches should go through Ralf's tree, can you send
+> > these to him instead?
+> 
+> These patches are not related to MIPS.
+> I just sent to you.
 
-Naah, they hit too many random virtio drivers.  It's pretty simple to keep
-them separate, and once the new API is in place I'll send to Dave to merge.
-It could take two cycles, but there's no huge rush.
+I understand, but for this driver, Ralf takes the changes through his
+tree for a variety of different reasons.  So please, resend them to him.
 
-Cheers,
-Rusty.
+thanks,
+
+greg k-h
