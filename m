@@ -1,74 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab0D3RNk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:13:40 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:45002 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932800Ab0D3RMo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:12:44 -0400
-Date: Wed, 28 Apr 2010 07:52:44 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: rjw@sisk.pl, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-       Nigel Cunningham <ncunningham@crca.org.au>
-Subject: Re: [PATCH 3/5] PM / Hibernate: separate block_io
-Message-ID: <20100428055244.GA3501@ucw.cz>
-References: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
- <1272356118-10012-3-git-send-email-jslaby@suse.cz>
+	id S1752965Ab0D3RN5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:13:57 -0400
+Received: from www.tglx.de ([62.245.132.106]:36196 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932796Ab0D3RMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:12:43 -0400
+Date: Fri, 30 Apr 2010 12:02:51 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Xianghua Xiao <xiaoxianghua@gmail.com>
+cc: Phil Carmody <ext-phil.2.carmody@nokia.com>,
+       john stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.33.3-rt16 Oops caused by umount
+In-Reply-To: <y2xe6bf505b1004290852xa079969k3316c5bb7233de13@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1004301201450.2951@localhost.localdomain>
+References: <l2ye6bf505b1004271144ta6817962vec8167d813658648@mail.gmail.com>  <alpine.LFD.2.00.1004272053130.2951@localhost.localdomain>  <1272399798.2255.2.camel@localhost>  <1272400246.2255.5.camel@localhost>  <y2ge6bf505b1004281054kfc44529fkf87dc5e9d564f9b3@mail.gmail.com>
+  <20100429151555.GM17639@pcarmody-desktop> <y2xe6bf505b1004290852xa079969k3316c5bb7233de13@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272356118-10012-3-git-send-email-jslaby@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, 29 Apr 2010, Xianghua Xiao wrote:
+> I confirm that 2.6.33.3-rt15 worked fine, reboot/umount will not oops.
 
-> Move block I/O operations to a separate file. It is because it will
-> be used later not only by the swap writer.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Nigel Cunningham <ncunningham@crca.org.au>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Just pushed out 2.6.33.3-rt17 which has the problem fixed. Can you
+please verify that it works for you as well ?
 
-> +++ b/kernel/power/block_io.c
-> @@ -0,0 +1,103 @@
-> +/*
-> + * This file provides functions for block I/O operations on swap/file.
-> + *
-> + * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@suse.cz>
+Thanks,
 
-That address no longer works, but keeps popping up....
-
-> diff --git a/kernel/power/power.h b/kernel/power/power.h
-> index b1e207d..006270f 100644
-> --- a/kernel/power/power.h
-> +++ b/kernel/power/power.h
-> @@ -142,6 +142,15 @@ extern int swsusp_read(unsigned int *flags_p);
->  extern int swsusp_write(unsigned int flags);
->  extern void swsusp_close(fmode_t);
->  
-> +/* kernel/power/block_io.c */
-> +extern struct block_device *hib_resume_bdev;
-
-It is slightly sad that this is now not only static, but also
-cross-module...
-
-
-> +extern int hib_bio_read_page(pgoff_t page_off, void *addr,
-> +		struct bio **bio_chain);
-> +extern int hib_bio_write_page(pgoff_t page_off, void *addr,
-> +		struct bio **bio_chain);
-> +extern int hib_wait_on_bio_chain(struct bio **bio_chain);
-> +
-
-Does the documentation usually go to the header in these cases?
-
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+	tglx
