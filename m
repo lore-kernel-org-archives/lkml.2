@@ -1,58 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759362Ab0D3TQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:16:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50812 "EHLO mx1.redhat.com"
+	id S1759517Ab0D3TR2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:17:28 -0400
+Received: from kroah.org ([198.145.64.141]:53026 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757998Ab0D3QzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:55:10 -0400
-Message-ID: <4BD9D5BE.4010000@redhat.com>
-Date: Thu, 29 Apr 2010 21:53:50 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1757990Ab0D3Qxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 12:53:48 -0400
+Date: Fri, 30 Apr 2010 09:37:03 -0700
+From: Greg KH <greg@kroah.com>
+To: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [GIT PATCH] STAGING fixes for 2.6.34-git
+Message-ID: <20100430163703.GC16424@kroah.com>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
-       ngupta@vflare.org, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default> <4BD3377E.6010303@redhat.com> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com> <ce808441-fae6-4a33-8335-f7702740097a@default> <20100428055538.GA1730@ucw.cz>
-In-Reply-To: <20100428055538.GA1730@ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2010 08:55 AM, Pavel Machek wrote:
->
->> That's a reasonable analogy.  Frontswap serves nicely as an
->> emergency safety valve when a guest has given up (too) much of
->> its memory via ballooning but unexpectedly has an urgent need
->> that can't be serviced quickly enough by the balloon driver.
->>      
-> wtf? So lets fix the ballooning driver instead?
->    
+Here are a bunch of tiny staging bugfixes and a few new device ids for
+your 2.6.34-git tree.
 
-You can't have a negative balloon size.  The two models are not equivalent.
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/staging-2.6.git/
 
-Balloon allows you to give up a page for which you have a struct page.  
-Frontswap (and swap) allows you to gain a page for which you don't have 
-a struct page, but you can't access it directly.  The similarity is that 
-in both cases the host may want the guest to give up a page, but cannot 
-force it.
+All of these patches have been in the linux-next and mm trees.
 
-> There's no reason it could not be as fast as frontswap, right?
-> Actually I'd expect it to be faster -- it can deal with big chunks.
->    
+The patches will be sent as a follow-on to this message to the
+driver-devel list for people to see.
 
-There's no reason for swapping and ballooning to behave differently when 
-swap backing storage is RAM (they probably do now since swap was tuned 
-for disks, not flash, but that's a bug if it's true).
+thanks,
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+greg k-h
+
+--------------
+
+ drivers/staging/dt3155/dt3155_drv.c        |    4 ++--
+ drivers/staging/hv/Hv.c                    |    2 +-
+ drivers/staging/hv/RndisFilter.c           |    1 +
+ drivers/staging/hv/netvsc_drv.c            |    3 +--
+ drivers/staging/iio/accel/lis3l02dq_core.c |    2 +-
+ drivers/staging/iio/accel/lis3l02dq_ring.c |    3 +++
+ drivers/staging/iio/adc/max1363_core.c     |    2 ++
+ drivers/staging/iio/industrialio-core.c    |    3 ++-
+ drivers/staging/iio/light/tsl2563.c        |    2 ++
+ drivers/staging/iio/ring_sw.c              |    2 +-
+ drivers/staging/rt2860/usb_main_dev.c      |    1 +
+ drivers/staging/rtl8192su/r8192U_core.c    |    3 +++
+ drivers/staging/usbip/usbip_event.c        |    3 +++
+ drivers/staging/vme/bridges/vme_tsi148.c   |    3 ++-
+ 14 files changed, 25 insertions(+), 9 deletions(-)
+
+---------------
+
+Andrew Morton (1):
+      Staging: iio: fix up the iio_get_new_idr_val comment
+
+Chris Largret (1):
+      Staging: rt2860: add Belkin F5D8055 Wireless-N USB Dongle device id
+
+Cyrill Gorcunov (1):
+      Staging: hv: Fix up memory leak on HvCleanup
+
+Dan Carpenter (1):
+      Staging: iio: test for failed allocation
+
+Eric Lescouet (1):
+      staging: usbip: Fix deadlock
+
+H Hartley Sweeten (1):
+      Staging: dt3155: fix 50Hz configuration
+
+Haiyang Zhang (1):
+      Staging: hv: Fix a bug affecting IPv6
+
+Jonathan Cameron (2):
+      staging: iio: lis3l02dq - incorrect ws used in container of call.
+      staging: iio: ring_sw: Fix incorrect test on successful read of last value, causes infinite loop
+
+Martyn Welch (1):
+      Staging: vme: Re-introduce necessary brackets
+
+Pavel Roskin (1):
+      Staging: rtl8192su: add USB ID for 0bda:8171
+
+Richard Airlie (1):
+      staging: rtl8192su: add Support for Belkin F5D8053 v6
+
+Rodrigo Linfati (1):
+      Staging: add Add Sitecom WL-349 to rtl8192su
+
+Sonic Zhang (1):
+      staging: iio: Function iio_get_new_idr_val() return negative value if fails.
+
+Stephen Hemminger (1):
+      Staging: hv: name network device ethX rather than sethX
+
+Wolfram Sang (2):
+      Staging: iio: light: fix dangling pointers
+      Staging: iio: adc: fix dangling pointers
 
