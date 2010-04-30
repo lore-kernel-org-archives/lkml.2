@@ -1,133 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759869Ab0D3Wp1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 18:45:27 -0400
-Received: from xenotime.net ([72.52.115.56]:58644 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756620Ab0D3Wp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 18:45:26 -0400
-Date: Fri, 30 Apr 2010 15:45:22 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Samo Pogacnik <samo_pogacnik@t-2.net>
-Cc: linux-embedded <linux-embedded@vger.kernel.org>,
-       linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] console logging detour via printk
-Message-Id: <20100430154522.489df8bc.rdunlap@xenotime.net>
-In-Reply-To: <1272664980.10241.77.camel@itpsd6lap>
-References: <1272664980.10241.77.camel@itpsd6lap>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759913Ab0D3Wsq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 18:48:46 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:42013 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757956Ab0D3Wsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 18:48:43 -0400
+Date: Fri, 30 Apr 2010 15:48:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
+       eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: 2.6.34-rc5-git7 (plus all patches) -- another suspicious
+ rcu_dereference_check() usage.
+Message-ID: <20100430224839.GA15238@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <h2ya44ae5cd1004261751waa5cb65ei3d139cbcfa2cc5cf@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <h2ya44ae5cd1004261751waa5cb65ei3d139cbcfa2cc5cf@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 01 May 2010 00:03:00 +0200 Samo Pogacnik wrote:
+On Mon, Apr 26, 2010 at 08:51:06PM -0400, Miles Lane wrote:
+> This one occurred during the wakeup from suspend to RAM.
+> 
+> [  984.724697] [ INFO: suspicious rcu_dereference_check() usage. ]
+> [  984.724700] ---------------------------------------------------
+> [  984.724703] include/linux/fdtable.h:88 invoked
+> rcu_dereference_check() without protection!
+> [  984.724706]
+> [  984.724707] other info that might help us debug this:
+> [  984.724708]
+> [  984.724711]
+> [  984.724711] rcu_scheduler_active = 1, debug_locks = 1
+> [  984.724714] no locks held by dbus-daemon/4680.
+> [  984.724717]
+> [  984.724717] stack backtrace:
+> [  984.724721] Pid: 4680, comm: dbus-daemon Not tainted 2.6.34-rc5-git7 #33
+> [  984.724724] Call Trace:
+> [  984.724734]  [<ffffffff81074556>] lockdep_rcu_dereference+0x9d/0xa6
+> [  984.724740]  [<ffffffff810fc785>] fcheck_files+0xb1/0xc9
+> [  984.724745]  [<ffffffff810fc7f5>] fget_light+0x35/0xab
+> [  984.724751]  [<ffffffff81433e1b>] ? sock_poll_wait+0x13/0x18
+> [  984.724755]  [<ffffffff81433e39>] ? unix_poll+0x19/0x95
+> [  984.724762]  [<ffffffff8110aa95>] do_sys_poll+0x1ff/0x3e5
+> [  984.724766]  [<ffffffff8110a19e>] ? __pollwait+0x0/0xc7
+> [  984.724771]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> [  984.724776]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> [  984.724780]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> [  984.724784]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> [  984.724788]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> [  984.724793]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> [  984.724797]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> [  984.724802]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> [  984.724806]  [<ffffffff8110a265>] ? pollwake+0x0/0x4f
+> [  984.724812]  [<ffffffff8110ae0f>] sys_poll+0x50/0xbb
+> [  984.724818]  [<ffffffff81009d82>] system_call_fastpath+0x16/0x1b
 
-> Hi,
+And here, at long last, is the relevant patch.
 
-> diff --git a_linux-2.6.33.3/drivers/char/Kconfig b_linux-2.6.33.3/drivers/char/Kconfig
-> index e023682..b5d0909 100644
-> --- a_linux-2.6.33.3/drivers/char/Kconfig
-> +++ b_linux-2.6.33.3/drivers/char/Kconfig
-> @@ -66,6 +66,23 @@ config VT_CONSOLE
->  
->  	  If unsure, say Y.
->  
-> +config VT_CONSOLE_DETOUR
-> +	bool "Support for VT console detour via printk"
-> +	depends on VT_CONSOLE
-> +	default n
-> +	---help---
-> +	  If you do say Y here, the support for writing console messages via
+							Thanx, Paul
 
-	  If you say Y here,
+------------------------------------------------------------------------
 
-> +	  printk is included into VT console code.
-> +
-> +	  The feature is usefull to catch all console log. In order to use this
+commit dced7789910f0b1b4e9b94fe74d79f2c2f788399
+Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date:   Fri Apr 30 15:24:24 2010 -0700
 
-	                 useful                       log messages.
+    vfs: fix RCU-lockdep false positive due to /proc access
+    
+    If a single-threaded process does a file-descriptor operation, and
+    some other process accesses that same file descriptor via /proc,
+    the current rcu_dereference_check_fdtable() can give a false-positive
+    RCU-lockdep splat due to the reference count being increased by the
+    /proc access after the reference-count check in fget_light() but before
+    the check in rcu_dereference_check_fdtable().
+    
+    This commit prevents this false positive by checking for a single-threaded
+    process.
+    
+    Located-by: Miles Lane <miles.lane@gmail.com>
+    Located-by: Eric Dumazet <eric.dumazet@gmail.com>
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> +	  feature, you should specify kernel command line option "detour" or write a
-> +	  positive number into /proc/sys/kernel/console_detour. You can disable
-> +	  the feature on-line by writing zero into the proc file. By writing a
-> +	  negative value into the proc file, the feature is disabled permanently
-> +	  (until next boot).
-> +
-> +	  If unsure, say N.
-> +
->  config HW_CONSOLE
->  	bool
->  	depends on VT && !S390 && !UML
-
-> diff --git a_linux-2.6.33.3/drivers/serial/Kconfig b_linux-2.6.33.3/drivers/serial/Kconfig
-> index 9ff47db..20acfab 100644
-> --- a_linux-2.6.33.3/drivers/serial/Kconfig
-> +++ b_linux-2.6.33.3/drivers/serial/Kconfig
-> @@ -1031,6 +1031,23 @@ config SERIAL_CORE
->  config SERIAL_CORE_CONSOLE
->  	bool
->  
-> +config SERIAL_CORE_CONSOLE_DETOUR
-> +	bool "Support for serial console detour via printk"
-> +	depends on SERIAL_CORE_CONSOLE
-> +	default n
-> +	---help---
-> +	  If you do say Y here, the support for writing console messages via
-
-	  If you say Y here,
-
-> +	  printk is included into serial console code. 
-> +
-> +	  The feature is usefull to catch all console log. In order to use this
-
-	                 useful                       log messages.
-
-> +	  feature, you should specify kernel command line option "detour" or write a
-> +	  positive number into /proc/sys/kernel/console_detour. You can disable
-> +	  the feature on-line by writing zero into the proc file. By writing a
-> +	  negative value into the proc file, the feature is disabled permanently
-> +	  (until next boot).
-> +
-> +	  If unsure, say N.
-> +
-
-The kernel command line option needs to be added to Documentation/kernel-parameters.txt
-also, please.
-
->  config CONSOLE_POLL
->  	bool
->  
-> diff --git a_linux-2.6.33.3/include/linux/console.h b_linux-2.6.33.3/include/linux/console.h
-> index dcca533..bc88030 100644
-> --- a_linux-2.6.33.3/include/linux/console.h
-> +++ b_linux-2.6.33.3/include/linux/console.h
-> @@ -108,6 +108,12 @@ struct console {
->  	struct	 console *next;
->  };
->  
-> +extern int console_detour;
-> +extern void console_printk_detour(const unsigned char *, int);
-
-Please include parameter names in function prototype(s).
-
-> +
-> +struct ctl_table;
-> +int detour_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
-
-ditto
-
-> +
->  extern int console_set_on_cmdline;
->  
->  extern int add_preferred_console(char *name, int idx, char *options);
-
-
-Looks interesting/useful to me.  Thanks.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+diff --git a/include/linux/fdtable.h b/include/linux/fdtable.h
+index 013dc52..e4a6d31 100644
+--- a/include/linux/fdtable.h
++++ b/include/linux/fdtable.h
+@@ -61,7 +61,8 @@ struct files_struct {
+ 	(rcu_dereference_check((fdtfd), \
+ 			       rcu_read_lock_held() || \
+ 			       lockdep_is_held(&(files)->file_lock) || \
+-			       atomic_read(&(files)->count) == 1))
++			       atomic_read(&(files)->count) == 1 || \
++			       thread_group_empty(current)))
+ 
+ #define files_fdtable(files) \
+ 		(rcu_dereference_check_fdtable((files), (files)->fdt))
