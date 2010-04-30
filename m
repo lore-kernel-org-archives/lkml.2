@@ -1,137 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758616Ab0D3Rvr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:51:47 -0400
-Received: from rcsinet14.oracle.com ([148.87.113.126]:28187 "EHLO
-	rcsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933635Ab0D3RvQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:51:16 -0400
-X-Greylist: delayed 3849 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Apr 2010 13:51:09 EDT
+	id S933653Ab0D3Rwg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:52:36 -0400
+Received: from claw.goop.org ([74.207.240.146]:42475 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933644Ab0D3RwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:52:17 -0400
+Message-ID: <4BDB18CE.2090608@goop.org>
+Date: Fri, 30 Apr 2010 10:52:14 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Message-ID: <c2744f69-5974-4017-ae33-4244ce0960e2@default>
-Date: Thu, 29 Apr 2010 07:42:44 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
-       ngupta@vflare.org, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com>
- <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> <4BD1A74A.2050003@redhat.com>
- <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com>
- <4BD1B626.7020702@redhat.com> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>
- <4BD3377E.6010303@redhat.com>
- <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>
- <ce808441-fae6-4a33-8335-f7702740097a@default 20100428055538.GA1730@ucw.cz>
-In-Reply-To: <20100428055538.GA1730@ucw.cz>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090206.4BD99B28.0050:SCFMA922111,ss=1,fgs=0
+To: Avi Kivity <avi@redhat.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+       Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <4BD16D09.2030803@redhat.com>> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>> <4BD1A74A.2050003@redhat.com>> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com>> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>> <4BD3377E.6010303@redhat.com>> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>> <ce808441-fae6-4a33-8335-f7702740097a@default>> <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz 4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default> <4BDB026E.1030605@redhat.com>
+In-Reply-To: <4BDB026E.1030605@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel --
+On 04/30/2010 09:16 AM, Avi Kivity wrote:
+> Given that whenever frontswap fails you need to swap anyway, it is
+> better for the host to never fail a frontswap request and instead back
+> it with disk storage if needed.  This way you avoid a pointless vmexit
+> when you're out of memory.  Since it's disk backed it needs to be
+> asynchronous and batched.
 
-The whole concept of RAM that _might_ be available to the
-kernel and is _not_ directly addressable by the kernel takes
-some thinking to wrap your mind around, but I assure you
-there are very good use cases for it.  RAM owned and managed
-by a hypervisor (using controls unknowable to the kernel)
-is one example; this is Transcendent Memory.  RAM which
-has been compressed is another example; Nitin is working
-on this using the frontswap approach because of some
-issues that arise with ramzswap (see elsewhere on this
-thread).  There are likely more use cases.
+I'd argue the opposite.  There's no point in having the host do swapping
+on behalf of guests if guests can do it themselves; it's just a
+duplication of functionality.  You end up having two IO paths for each
+guest, and the resulting problems in trying to account for the IO,
+rate-limit it, etc.  If you can simply say "all guest disk IO happens
+via this single interface", its much easier to manage.
 
-So in that context, let me answer your questions, combined
-into a single reply.
+If frontswap has value, it's because its providing a new facility to
+guests that doesn't already exist and can't be easily emulated with
+existing interfaces.
 
-> > That's a reasonable analogy.  Frontswap serves nicely as an
-> > emergency safety valve when a guest has given up (too) much of
-> > its memory via ballooning but unexpectedly has an urgent need
-> > that can't be serviced quickly enough by the balloon driver.
-> 
-> wtf? So lets fix the ballooning driver instead?
-> 
-> There's no reason it could not be as fast as frontswap, right?
-> Actually I'd expect it to be faster -- it can deal with big chunks.
+It seems to me the great strengths of the synchronous interface are:
 
-If this was possible by fixing the balloon driver, VMware would
-have done it years ago.  The problem is that the balloon driver
-is acting on very limited information, namely ONLY what THIS
-kernel wants; every kernel is selfish and (eventually) uses every
-bit of RAM it can get.  This is especially true when swapping
-is required (under memory pressure).
+    * it matches the needs of an existing implementation (tmem in Xen)
+    * it is simple to understand within the context of the kernel code
+      it's used in
 
-So, in general, ballooning is NOT faster because a balloon
-request to "get" RAM must wait for some other balloon driver
-in some other kernel to "give" RAM.  OR some other entity
-must periodically scan every kernels memory and guess at which
-kernels are using memory inefficiently and steal it away before
-a "needy" kernel asks for it.
+Simplicity is important, because it allows the mm code to be understood
+and maintained without having to have a deep understanding of
+virtualization.  One of the problems with CMM2 was that it puts a lot of
+intricate constraints on the mm code which can be easily broken, which
+would only become apparent in subtle edge cases in a CMM2-using
+environment.  An addition async frontswap-like interface - while not as
+complex as CMM2 - still makes things harder for mm maintainers.
 
-While this does indeed "work" today in VMware, if you talk to
-VMware customers that use it, many are very unhappy with the
-anomalous performance problems that occur.
+The downside is that it may not match some implementation in which the
+get/put operations could take a long time (ie, physical IO to a slow
+mechanical device).  But a general Linux principle is not to overdesign
+interfaces for hypothetical users, only for real needs.
 
-> > The existing swap API as it stands is inadequate for an efficient
-> > synchronous interface (e.g. for swapping to RAM).  Both Nitin
-> > and I independently have found this to be true.  But swap-to-RAM
-> 
-> So... how much slower is swapping to RAM over current interface when
-> compared to proposed interface, and how much is that slower than just
-> using the memory directly?
+Do you think that you would be able to use frontswap in kvm if it were
+an async interface, but not otherwise?  Or are you arguing a hypothetical?
 
-Simply copying RAM from one page owned by the kernel to another
-page owned by the kernel is pretty pointless as far as swapping
-is concerned because it does nothing to reduce memory pressure,
-so the comparison is a bit irrelevant.  But...
+> At this point we're back with the ordinary swap API.  Simply have your
+> host expose a device which is write cached by host memory, you'll have
+> all the benefits of frontswap with none of the disadvantages, and with
+> no changes to guest code.
 
-In my measurements, the overhead of managing "pseudo-RAM" pages
-is in the same ballpark as copying the page.  Compression or
-deduplication of course has additional costs.  See the
-performance results at the end of the following two presentations
-for some performance information when "pseudo-RAM" is Transcendent
-Memory.
+Yes, that's comfortably within the "guests page themselves" model. 
+Setting up a block device for the domain which is backed by pagecache
+(something we usually try hard to avoid) is pretty straightforward.  But
+it doesn't work well for Xen unless the blkback domain is sized so that
+it has all of Xen's free memory in its pagecache.
 
-http://oss.oracle.com/projects/tmem/dist/documentation/presentations/TranscendentMemoryLinuxConfAu2010.pdf 
+That said, it does concern me that the host/hypervisor is left holding
+the bag on frontswapped pages.  A evil/uncooperative/lazy can just pump
+a whole lot of pages into the frontswap pool and leave them there.   I
+guess this is mitigated by the fact that the API is designed such that
+they can't update or read the data without also allowing the hypervisor
+to drop the page (updates can fail destructively, and reads are also
+destructive), so the guest can't use it as a clumsy extension of their
+normal dedicated memory.
 
-http://oss.oracle.com/projects/tmem/dist/documentation/presentations/TranscendentMemoryXenSummit2010.pdf 
-
-(the latter will be presented later today)
-
-> > I'm a bit confused: What do you mean by 'existing swap API'?
-> > Frontswap simply hooks in swap_readpage() and swap_writepage() to
-> > call frontswap_{get,put}_page() respectively. Now to avoid a
-> hardcoded
-> > implementation of these function, it introduces struct frontswap_ops
-> > so that custom implementations fronswap get/put/etc. functions can be
-> > provided. This allows easy implementation of swap-to-hypervisor,
-> > in-memory-compressed-swapping etc. with common set of hooks.
-> 
-> Yes, and that set of hooks is new API, right?
-
-Well, no, if you define API as "application programming interface"
-this is NOT exposed to userland.  If you define API as a new
-in-kernel function call, yes, these hooks are a new API, but that
-is true of virtually any new code in the kernel.  If you define
-API as some new interface between the kernel and a hypervisor,
-yes, this is a new API, but it is "optional" at several levels
-so that any hypervisor (e.g. KVM) can completely ignore it.
-
-So please let's not argue about whether the code is a "new API"
-or not, but instead consider whether the concept is useful or not
-and if useful, if there is or is not a cleaner way to implement it.
-
-Thanks,
-Dan
+    J
 
