@@ -1,674 +1,431 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861Ab0D3QxU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 12:53:20 -0400
-Received: from maila.microsoft.com ([131.107.115.212]:23189 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757900Ab0D3Qwu convert rfc822-to-8bit (ORCPT
+	id S932544Ab0D3TU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:20:57 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:39776 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757920Ab0D3QxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:52:50 -0400
-From: Hank Janssen <hjanssen@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-       "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-       Greg KH <gregkh@suse.de>, Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] hv: Added new hv_utils driver to hyper-v - RE-CREATED
-Thread-Topic: [PATCH 1/1] hv: Added new hv_utils driver to hyper-v -
- RE-CREATED
-Thread-Index: AQHK6IWJOKH51OSTiEaNGLs/SJNOUA==
-Date: Fri, 30 Apr 2010 16:52:34 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C5621AFF0EC8@TK5EX14MBXC114.redmond.corp.microsoft.com>
-References: <8AFC7968D54FB448A30D8F38F259C5621AFEC8AD@TK5EX14MBXC114.redmond.corp.microsoft.com>
- <20100429191434.GH21799@kroah.com>
-In-Reply-To: <20100429191434.GH21799@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 30 Apr 2010 12:53:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Jycl74K/sMYUFMRKWk/28V1yGcBesIp6WGlNlpYDgwOA2/GAO5BMDfZi+dCsJHcX2x
+         7Pcwe0/4/Z55ZRPXCOjZx5B0r+Spk6Qr548I9Hyz0Tz8d/ig9QLrwS5U/hVUTxUSPx4P
+         l7VMuovwfQTmRxuN2PLeGu2qj6jqTj3j0PZJY=
+From: "Prashant P. Shah" <pshah.mumbai@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       "Prashant P. Shah" <pshah.mumbai@gmail.com>
+Subject: [PATCH] Staging: arlan: fixed miscellaneous style issue in arlan-main.c
+Date: Fri, 30 Apr 2010 21:59:07 +0530
+Message-Id: <1272644947-8168-1-git-send-email-pshah.mumbai@gmail.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a patch to the arlan-main.c file that fixes many miscellaneous
+style issues found by the checkpatch.pl tool.
 
-Greg,
-
-As requested, here is the patch, it was created against a fresh
-clone of kernel.org:/pub/scm/linux/kernel/git/gregkh/staging-next-2.6.git
-of this morning using the origin/staging-next branch. It was created with
-the help of the git format-patch command.
-
-But when I do a diff from this patch and the one I send earlier this
-Week, I do not see anything different in my patch.
-
-Let me know if there is still an issue with this.
-
-Thanks,
-
-Hank.
-
----------------------
-From: Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 1/1] hv: Added new hv_utils driver with shutdown as first functionality
-
-Addition of new driver for Hyper-V called hv_utils.
-This driver is intended to support things like KVP, Timesync, Heartbeat etc.
-
-This first release has support for graceful shutdown.
-e.g. Select shutdown from the Hyper-V main admin screen and the Linux VM will do a graceful shutdown.
-
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-
+Signed-off-by: Prashant P. Shah <pshah.mumbai@gmail.com>
 ---
- drivers/staging/hv/Channel.c           |   34 ++++++-
- drivers/staging/hv/ChannelMgmt.c       |  148 +++++++++++++++++++++++++++++++-
- drivers/staging/hv/Kconfig             |    6 ++
- drivers/staging/hv/Makefile            |    2 +
- drivers/staging/hv/VmbusPacketFormat.h |    1 +
- drivers/staging/hv/ext_utils.c         |   27 ++++++
- drivers/staging/hv/hyperv_utils.c      |  134 +++++++++++++++++++++++++++++
- drivers/staging/hv/utils.h             |   94 ++++++++++++++++++++
- 8 files changed, 438 insertions(+), 8 deletions(-)
- create mode 100644 drivers/staging/hv/ext_utils.c
- create mode 100644 drivers/staging/hv/hyperv_utils.c
- create mode 100644 drivers/staging/hv/utils.h
+ drivers/staging/arlan/arlan-main.c |  131 +++++++++++++++++-------------------
+ 1 files changed, 61 insertions(+), 70 deletions(-)
 
-diff --git a/drivers/staging/hv/Channel.c b/drivers/staging/hv/Channel.c
-index 328d3a0..de2ccb1 100644
---- a/drivers/staging/hv/Channel.c
-+++ b/drivers/staging/hv/Channel.c
-@@ -21,6 +21,7 @@
- #include <linux/kernel.h>
- #include <linux/mm.h>
- #include <linux/slab.h>
-+#include <linux/module.h>
- #include "osd.h"
- #include "logging.h"
- #include "VmbusPrivate.h"
-@@ -666,8 +667,19 @@ void VmbusChannelClose(struct vmbus_channel *Channel)
-        DPRINT_EXIT(VMBUS);
- }
-
--/*
-- * VmbusChannelSendPacket - Send the specified buffer on the given channel
-+/**
-+ * VmbusChannelSendPacket() - Send the specified buffer on the given channel
-+ * @Channel: Pointer to vmbus_channel structure.
-+ * @Buffer: Pointer to the buffer you want to receive the data into.
-+ * @BufferLen: Maximum size of what the the buffer will hold
-+ * @RequestId: Identifier of the request
-+ * @vmbus_packet_type: Type of packet that is being send e.g. negotiate, time
-+ * packet etc.
-+ *
-+ * Sends data in @Buffer directly to hyper-v via the vmbus
-+ * This will send the data unparsed to hyper-v.
-+ *
-+ * Mainly used by Hyper-V drivers.
-  */
- int VmbusChannelSendPacket(struct vmbus_channel *Channel, const void *Buffer,
-                           u32 BufferLen, u64 RequestId,
-@@ -711,6 +723,7 @@ int VmbusChannelSendPacket(struct vmbus_channel *Channel, const void *Buffer,
-
-        return ret;
- }
-+EXPORT_SYMBOL(VmbusChannelSendPacket);
-
- /*
-  * VmbusChannelSendPacketPageBuffer - Send a range of single-page buffer
-@@ -848,10 +861,20 @@ int VmbusChannelSendPacketMultiPageBuffer(struct vmbus_channel *Channel,
-        return ret;
- }
-
--/*
-- * VmbusChannelRecvPacket - Retrieve the user packet on the specified channel
-+
-+/**
-+ * VmbusChannelRecvPacket() - Retrieve the user packet on the specified channel
-+ * @Channel: Pointer to vmbus_channel structure.
-+ * @Buffer: Pointer to the buffer you want to receive the data into.
-+ * @BufferLen: Maximum size of what the the buffer will hold
-+ * @BufferActualLen: The actual size of the data after it was received
-+ * @RequestId: Identifier of the request
-+ *
-+ * Receives directly from the hyper-v vmbus and puts the data it received
-+ * into Buffer. This will receive the data unparsed from hyper-v.
-+ *
-+ * Mainly used by Hyper-V drivers.
-  */
--/* TODO: Do we ever receive a gpa direct packet other than the ones we send ? */
- int VmbusChannelRecvPacket(struct vmbus_channel *Channel, void *Buffer,
-                           u32 BufferLen, u32 *BufferActualLen, u64 *RequestId)
+diff --git a/drivers/staging/arlan/arlan-main.c b/drivers/staging/arlan/arlan-main.c
+index 2b39768..5174988 100644
+--- a/drivers/staging/arlan/arlan-main.c
++++ b/drivers/staging/arlan/arlan-main.c
+@@ -83,11 +83,11 @@ static int	arlan_close(struct net_device *dev);
+ static struct net_device_stats *
+ 		arlan_statistics(struct net_device *dev);
+ static void	arlan_set_multicast(struct net_device *dev);
+-static int	arlan_hw_tx(struct net_device* dev, char *buf, int length);
+-static int	arlan_hw_config(struct net_device * dev);
+-static void	arlan_tx_done_interrupt(struct net_device * dev, int status);
+-static void	arlan_rx_interrupt(struct net_device * dev, u_char rxStatus, u_short, u_short);
+-static void	arlan_process_interrupt(struct net_device * dev);
++static int	arlan_hw_tx(struct net_device *dev, char *buf, int length);
++static int	arlan_hw_config(struct net_device *dev);
++static void	arlan_tx_done_interrupt(struct net_device *dev, int status);
++static void	arlan_rx_interrupt(struct net_device *dev, u_char rxStatus, u_short, u_short);
++static void	arlan_process_interrupt(struct net_device *dev);
+ static void	arlan_tx_timeout(struct net_device *dev);
+ 
+ static inline long us2ticks(int us)
+@@ -102,14 +102,14 @@ static inline long us2ticks(int us)
+ 	struct timeval timev;\
+ 	do_gettimeofday(&timev);\
+ 		if (arlan_entry_debug || arlan_entry_and_exit_debug)\
+-			printk("--->>>" name " %ld " "\n",((long int) timev.tv_sec * 1000000 + timev.tv_usec));\
++			printk("--->>>" name " %ld " "\n", ((long int) timev.tv_sec * 1000000 + timev.tv_usec));\
+ 	}
+ #define ARLAN_DEBUG_EXIT(name) \
+ 	{\
+ 	struct timeval timev;\
+ 	do_gettimeofday(&timev);\
+ 		if (arlan_exit_debug || arlan_entry_and_exit_debug)\
+-			printk("<<<---" name " %ld " "\n",((long int) timev.tv_sec * 1000000 + timev.tv_usec));\
++			printk("<<<---" name " %ld " "\n", ((long int) timev.tv_sec * 1000000 + timev.tv_usec));\
+ 	}
+ #else
+ #define ARLAN_DEBUG_ENTRY(name)
+@@ -118,8 +118,8 @@ static inline long us2ticks(int us)
+ 
+ 
+ #define arlan_interrupt_ack(dev)\
+-        clearClearInterrupt(dev);\
+-        setClearInterrupt(dev);
++	clearClearInterrupt(dev);\
++	setClearInterrupt(dev);
+ 
+ static inline int arlan_drop_tx(struct net_device *dev)
  {
-@@ -913,6 +936,7 @@ int VmbusChannelRecvPacket(struct vmbus_channel *Channel, void *Buffer,
-
-        return 0;
+@@ -227,7 +227,7 @@ int arlan_command(struct net_device *dev, int command_p)
+ 	/* Issuing command */
+ 	arlan_lock_card_access(dev);
+ 	if (priv->waiting_command_mask & ARLAN_COMMAND_POWERUP) {
+-	//     if (readControlRegister(dev) & (ARLAN_ACCESS && ARLAN_POWER))
++		//if (readControlRegister(dev) & (ARLAN_ACCESS && ARLAN_POWER))
+ 		setPowerOn(dev);
+ 		arlan_interrupt_lancpu(dev);
+ 		priv->waiting_command_mask &= ~ARLAN_COMMAND_POWERUP;
+@@ -259,9 +259,8 @@ int arlan_command(struct net_device *dev, int command_p)
+ 		netif_stop_queue(dev);
+ 
+ 		arlan_drop_tx(dev);
+-		if (priv->tx_command_given || priv->rx_command_given) {
++		if (priv->tx_command_given || priv->rx_command_given)
+ 			printk(KERN_ERR "%s: Reset under tx or rx command\n", dev->name);
+-		}
+ 		netif_stop_queue(dev);
+ 		if (arlan_debug & ARLAN_DEBUG_RESET)
+ 			printk(KERN_ERR "%s: Doing chip reset\n", dev->name);
+@@ -291,9 +290,8 @@ int arlan_command(struct net_device *dev, int command_p)
+ 		setInterruptEnable(dev);
+ 		priv->waiting_command_mask &= ~ARLAN_COMMAND_INT_RENABLE;
+ 	} else if (priv->waiting_command_mask & ARLAN_COMMAND_CONF) {
+-		if (priv->tx_command_given || priv->rx_command_given) {
++		if (priv->tx_command_given || priv->rx_command_given)
+ 			printk(KERN_ERR "%s: Reset under tx or rx command\n", dev->name);
+-		}
+ 		arlan_drop_tx(dev);
+ 		setInterruptEnable(dev);
+ 		arlan_hw_config(dev);
+@@ -330,7 +328,7 @@ int arlan_command(struct net_device *dev, int command_p)
+ 		} else
+ 			priv->card_polling_interval = 2;
+ 	} else if (priv->waiting_command_mask & ARLAN_COMMAND_TBUSY_CLEAR) {
+-		if ( !registrationBad(dev) &&
++		if (!registrationBad(dev) &&
+ 		     (netif_queue_stopped(dev) || !netif_running(dev))) {
+ 				priv->waiting_command_mask &= ~ARLAN_COMMAND_TBUSY_CLEAR;
+ 				netif_wake_queue(dev);
+@@ -474,9 +472,8 @@ static void arlan_registration_timer(unsigned long data)
+ 
+ 	if (registrationBad(dev)) {
+ 		priv->registrationLostCount++;
+-		if (lostTime > 7000 && lostTime < 7200) {
++		if (lostTime > 7000 && lostTime < 7200)
+ 			printk(KERN_NOTICE "%s registration Lost\n", dev->name);
+-		}
+ 		if (lostTime / priv->reRegisterExp > 2000)
+ 			arlan_command(dev, ARLAN_COMMAND_CLEAN_AND_CONF);
+ 		if (lostTime / (priv->reRegisterExp) > 3500)
+@@ -498,7 +495,7 @@ static void arlan_registration_timer(unsigned long data)
+ 		priv->reRegisterExp = 1;
+ 		if (!netif_running(dev))
+ 			netif_wake_queue(dev);
+-		if (time_after(priv->tx_last_sent,priv->tx_last_cleared) &&
++		if (time_after(priv->tx_last_sent, priv->tx_last_cleared) &&
+ 		    time_after(jiffies, priv->tx_last_sent * 5*HZ)) {
+ 			arlan_command(dev, ARLAN_COMMAND_CLEAN_AND_RESET);
+ 			priv->tx_last_cleared = jiffies;
+@@ -524,15 +521,13 @@ static void arlan_registration_timer(unsigned long data)
+ 			arlan_retransmit_now(dev);
+ 			dev->trans_start = jiffies;
+ 		}
+-		if (!(TXHEAD(dev).offset && TXTAIL(dev).offset)) {
++		if (!(TXHEAD(dev).offset && TXTAIL(dev).offset))
+ 			netif_wake_queue(dev);
+-		}
+ 		priv->tx_done_delayed = 0;
+ 		bh_mark_needed = 1;
+ 	}
+-	if (bh_mark_needed) {
++	if (bh_mark_needed)
+ 		netif_wake_queue(dev);
+-	}
+ 	arlan_process_interrupt(dev);
+ 
+ 	if (next_tick < priv->card_polling_interval)
+@@ -644,8 +639,7 @@ static int arlan_hw_tx(struct net_device *dev, char *buf, int length)
+ 	if (TXHEAD(dev).offset && TXTAIL(dev).offset) {
+ 		netif_stop_queue(dev);
+ 		return 0;
+-	}
+-	else
++	} else
+ 		netif_start_queue(dev);
+ 
+ 
+@@ -731,8 +725,8 @@ static int arlan_hw_config(struct net_device *dev)
+ 	memset_io(arlan->commandParameter, 0, 0xf);	/* 0xf */
+ 	memset_io(arlan->commandParameter + 1, 0, 2);
+ 	if (conf->writeEEPROM) {
+-		  memset_io(arlan->commandParameter, conf->writeEEPROM, 1);
+-//		conf->writeEEPROM=0;
++		memset_io(arlan->commandParameter, conf->writeEEPROM, 1);
++		//conf->writeEEPROM=0;
+ 	}
+ 	if (conf->registrationMode && conf->registrationInterrupts)
+ 		memset_io(arlan->commandParameter + 3, 1, 1);
+@@ -759,38 +753,37 @@ static int arlan_read_card_configuration(struct net_device *dev)
+ 
+ 	ARLAN_DEBUG_ENTRY("arlan_read_card_configuration");
+ 
+-	if (radioNodeId == radioNodeIdUNKNOWN) {
++	if (radioNodeId == radioNodeIdUNKNOWN)
+ 		READSHM(conf->radioNodeId, arlan->radioNodeId, u_short);
+-	}
+ 	else
+ 		conf->radioNodeId = radioNodeId;
+ 
+-	if (SID == SIDUNKNOWN) {
++	if (SID == SIDUNKNOWN)
+ 		READSHM(conf->SID, arlan->SID, u_int);
+-	} else
++	else
+ 		conf->SID = SID;
+ 
+-	if (spreadingCode == spreadingCodeUNKNOWN) {
+-		  READSHM(conf->spreadingCode, arlan->spreadingCode, u_char);
+-	} else
++	if (spreadingCode == spreadingCodeUNKNOWN)
++		READSHM(conf->spreadingCode, arlan->spreadingCode, u_char);
++	else
+ 		conf->spreadingCode = spreadingCode;
+ 
+-	if (channelSet == channelSetUNKNOWN) {
++	if (channelSet == channelSetUNKNOWN)
+ 		READSHM(conf->channelSet, arlan->channelSet, u_char);
+-	} else
++	else
+ 		conf->channelSet = channelSet;
+ 
+-	if (channelNumber == channelNumberUNKNOWN) {
++	if (channelNumber == channelNumberUNKNOWN)
+ 		READSHM(conf->channelNumber, arlan->channelNumber, u_char);
+-	} else
++	else
+ 		conf->channelNumber = channelNumber;
+ 
+ 	READSHM(conf->scramblingDisable, arlan->scramblingDisable, u_char);
+ 	READSHM(conf->txAttenuation, arlan->txAttenuation, u_char);
+ 
+-	if (systemId == systemIdUNKNOWN) {
++	if (systemId == systemIdUNKNOWN)
+ 		READSHM(conf->systemId, arlan->systemId, u_int);
+-	} else
++	else
+ 		conf->systemId = systemId;
+ 
+ 	READSHM(conf->maxDatagramSize, arlan->maxDatagramSize, u_short);
+@@ -800,14 +793,14 @@ static int arlan_read_card_configuration(struct net_device *dev)
+ 	READSHM(conf->priority, arlan->priority, u_char);
+ 	READSHM(conf->rootOrRepeater, arlan->rootOrRepeater, u_char);
+ 
+-	if (SID == SIDUNKNOWN) {
+-		  READSHM(conf->SID, arlan->SID, u_int);
+-	} else
++	if (SID == SIDUNKNOWN)
++		READSHM(conf->SID, arlan->SID, u_int);
++	else
+ 		conf->SID = SID;
+ 
+-	if (registrationMode == registrationModeUNKNOWN) {
+-		  READSHM(conf->registrationMode, arlan->registrationMode, u_char);
+-	} else
++	if (registrationMode == registrationModeUNKNOWN)
++		READSHM(conf->registrationMode, arlan->registrationMode, u_char);
++	else
+ 		conf->registrationMode = registrationMode;
+ 
+ 	READSHM(conf->registrationFill, arlan->registrationFill, u_char);
+@@ -995,9 +988,9 @@ static int __init arlan_probe_here(struct net_device *dev,
+ 	dev->mem_start = memaddr;
+ 	dev->mem_end = memaddr + ARLAN_SHMEM_SIZE-1;
+ 
+-	if (dev->irq < 2) {
++	if (dev->irq < 2)
+ 		READSHM(dev->irq, ap->card->irqLevel, u_char);
+-	} else if (dev->irq == 2)
++	else if (dev->irq == 2)
+ 		dev->irq = 9;
+ 
+ 	arlan_read_card_configuration(dev);
+@@ -1129,9 +1122,9 @@ static inline void arlan_queue_retransmit(struct net_device *dev)
+ 
+ 	ARLAN_DEBUG_ENTRY("arlan_queue_retransmit");
+ 
+-	if (DoNotWaitReTransmitCrap(dev)) {
+-		  arlan_drop_tx(dev);
+-	} else
++	if (DoNotWaitReTransmitCrap(dev))
++		arlan_drop_tx(dev);
++	else
+ 		priv->ReTransmitRequested++;
+ 
+ 	ARLAN_DEBUG_EXIT("arlan_queue_retransmit");
+@@ -1146,8 +1139,7 @@ static inline void RetryOrFail(struct net_device *dev)
+ 	if (priv->retransmissions > priv->Conf->retries ||
+ 	    DoNotReTransmitCrap(dev)) {
+ 		arlan_drop_tx(dev);
+-	}
+-	else if (priv->bad <= priv->Conf->fastReTransCount) {
++	} else if (priv->bad <= priv->Conf->fastReTransCount) {
+ 		arlan_retransmit_now(dev);
+ 	} else
+ 		arlan_queue_retransmit(dev);
+@@ -1165,7 +1157,7 @@ static void arlan_tx_done_interrupt(struct net_device *dev, int status)
+ 	priv->tx_last_cleared = jiffies;
+ 	priv->tx_command_given = 0;
+ 	switch (status) {
+-		case 1:
++	case 1:
+ 		{
+ 			IFDEBUG(ARLAN_DEBUG_TX_CHAIN)
+ 				printk("arlan intr: transmit OK\n");
+@@ -1185,14 +1177,13 @@ static void arlan_tx_done_interrupt(struct net_device *dev, int status)
+ 					arlan_retransmit_now(dev);
+ 					dev->trans_start = jiffies;
+ 				}
+-				if (!TXHEAD(dev).offset || !TXTAIL(dev).offset) {
++				if (!TXHEAD(dev).offset || !TXTAIL(dev).offset)
+ 					netif_wake_queue(dev);
+-				}
+ 			}
+ 		}
+ 		break;
+ 
+-		case 2:
++	case 2:
+ 		{
+ 			IFDEBUG(ARLAN_DEBUG_TX_CHAIN)
+ 				printk("arlan intr: transmit timed out\n");
+@@ -1202,7 +1193,7 @@ static void arlan_tx_done_interrupt(struct net_device *dev, int status)
+ 		}
+ 		break;
+ 
+-		case 3:
++	case 3:
+ 		{
+ 			IFDEBUG(ARLAN_DEBUG_TX_CHAIN)
+ 				printk("arlan intr: transmit max retries\n");
+@@ -1213,7 +1204,7 @@ static void arlan_tx_done_interrupt(struct net_device *dev, int status)
+ 		}
+ 		break;
+ 
+-		case 4:
++	case 4:
+ 		{
+ 			IFDEBUG(ARLAN_DEBUG_TX_CHAIN)
+ 				printk("arlan intr: transmit aborted\n");
+@@ -1223,7 +1214,7 @@ static void arlan_tx_done_interrupt(struct net_device *dev, int status)
+ 		}
+ 		break;
+ 
+-		case 5:
++	case 5:
+ 		{
+ 			IFDEBUG(ARLAN_DEBUG_TX_CHAIN)
+ 				printk("arlan intr: transmit not registered\n");
+@@ -1233,7 +1224,7 @@ static void arlan_tx_done_interrupt(struct net_device *dev, int status)
+ 		}
+ 		break;
+ 
+-		case 6:
++	case 6:
+ 		{
+ 			IFDEBUG(ARLAN_DEBUG_TX_CHAIN)
+ 				printk("arlan intr: transmit destination full\n");
+@@ -1244,7 +1235,7 @@ static void arlan_tx_done_interrupt(struct net_device *dev, int status)
+ 		}
+ 		break;
+ 
+-		case 7:
++	case 7:
+ 		{
+ 			IFDEBUG(ARLAN_DEBUG_TX_CHAIN)
+ 				printk("arlan intr: transmit unknown ack\n");
+@@ -1254,7 +1245,7 @@ static void arlan_tx_done_interrupt(struct net_device *dev, int status)
+ 		}
+ 		break;
+ 
+-		case 8:
++	case 8:
+ 		{
+ 			IFDEBUG(ARLAN_DEBUG_TX_CHAIN)
+ 				printk("arlan intr: transmit dest mail box full\n");
+@@ -1265,7 +1256,7 @@ static void arlan_tx_done_interrupt(struct net_device *dev, int status)
+ 		}
+ 		break;
+ 
+-		case 9:
++	case 9:
+ 		{
+ 			IFDEBUG(ARLAN_DEBUG_TX_CHAIN)
+ 				printk("arlan intr: transmit root dest not reg.\n");
+@@ -1276,7 +1267,7 @@ static void arlan_tx_done_interrupt(struct net_device *dev, int status)
+ 		}
+ 		break;
+ 
+-		default:
++	default:
+ 		{
+ 			printk(KERN_ERR "arlan intr: transmit status unknown\n");
+ 			priv->bad += 1;
+@@ -1327,9 +1318,9 @@ static void arlan_rx_interrupt(struct net_device *dev, u_char rxStatus, u_short
+ 	}
+ 	DEBUGSHM(1, "arlan rcv pkt rxStatus= %d ", arlan->rxStatus, u_char);
+ 	switch (rxStatus) {
+-		case 1:
+-		case 2:
+-		case 3:
++	case 1:
++	case 2:
++	case 3:
+ 		{
+ 			/* Malloc up new buffer. */
+ 			struct sk_buff *skb;
+@@ -1415,7 +1406,7 @@ static void arlan_rx_interrupt(struct net_device *dev, u_char rxStatus, u_short
+ 		}
+ 		break;
+ 
+-		default:
++	default:
+ 			printk(KERN_ERR "arlan intr: received unknown status\n");
+ 			dev->stats.rx_crc_errors++;
+ 			break;
+@@ -1562,7 +1553,7 @@ static int arlan_close(struct net_device *dev)
  }
-+EXPORT_SYMBOL(VmbusChannelRecvPacket);
-
- /*
-  * VmbusChannelRecvPacketRaw - Retrieve the raw packet on the specified channel
-diff --git a/drivers/staging/hv/ChannelMgmt.c b/drivers/staging/hv/ChannelMgmt.c
-index 43f28f2..9c3069f 100644
---- a/drivers/staging/hv/ChannelMgmt.c
-+++ b/drivers/staging/hv/ChannelMgmt.c
-@@ -22,18 +22,22 @@
- #include <linux/mm.h>
- #include <linux/slab.h>
- #include <linux/list.h>
-+#include <linux/module.h>
- #include "osd.h"
- #include "logging.h"
- #include "VmbusPrivate.h"
-+#include "utils.h"
-
- struct vmbus_channel_message_table_entry {
-        enum vmbus_channel_message_type messageType;
-        void (*messageHandler)(struct vmbus_channel_message_header *msg);
- };
-
--#define MAX_NUM_DEVICE_CLASSES_SUPPORTED 4
-+#define MAX_MSG_TYPES                    1
-+#define MAX_NUM_DEVICE_CLASSES_SUPPORTED 5
-+
- static const struct hv_guid
--               gSupportedDeviceClasses[MAX_NUM_DEVICE_CLASSES_SUPPORTED] = {
-+       gSupportedDeviceClasses[MAX_NUM_DEVICE_CLASSES_SUPPORTED] = {
-        /* {ba6163d9-04a1-4d29-b605-72e2ffb1dc7f} */
-        /* Storage - SCSI */
-        {
-@@ -69,8 +73,127 @@ static const struct hv_guid
-                        0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5
-                }
-        },
-+       /* 0E0B6031-5213-4934-818B-38D90CED39DB */
-+       /* Shutdown */
-+       {
-+               .data = {
-+                       0x31, 0x60, 0x0B, 0X0E, 0x13, 0x52, 0x34, 0x49,
-+                       0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB
-+               }
-+       },
- };
-
-+
-+/**
-+ * prep_negotiate_resp() - Create default response for Hyper-V Negotiate message
-+ * @icmsghdrp: Pointer to msg header structure
-+ * @icmsg_negotiate: Pointer to negotiate message structure
-+ * @buf: Raw buffer channel data
-+ *
-+ * @icmsghdrp is of type &struct icmsg_hdr.
-+ * @negop is of type &struct icmsg_negotiate.
-+ * Set up and fill in default negotiate response message. This response can
-+ * come from both the vmbus driver and the hv_utils driver. The current api
-+ * will respond properly to both Windows 2008 and Windows 2008-R2 operating
-+ * systems.
-+ *
-+ * Mainly used by Hyper-V drivers.
-+ */
-+void prep_negotiate_resp(struct icmsg_hdr *icmsghdrp,
-+                            struct icmsg_negotiate *negop,
-+                            u8 *buf)
-+{
-+       if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
-+               icmsghdrp->icmsgsize = 0x10;
-+
-+               negop = (struct icmsg_negotiate *)&buf[
-+                       sizeof(struct vmbuspipe_hdr) +
-+                       sizeof(struct icmsg_hdr)];
-+
-+               if (negop->icframe_vercnt == 2 &&
-+                  negop->icversion_data[1].major == 3) {
-+                       negop->icversion_data[0].major = 3;
-+                       negop->icversion_data[0].minor = 0;
-+                       negop->icversion_data[1].major = 3;
-+                       negop->icversion_data[1].minor = 0;
-+               } else {
-+                       negop->icversion_data[0].major = 1;
-+                       negop->icversion_data[0].minor = 0;
-+                       negop->icversion_data[1].major = 1;
-+                       negop->icversion_data[1].minor = 0;
-+               }
-+
-+               negop->icframe_vercnt = 1;
-+               negop->icmsg_vercnt = 1;
-+       }
-+}
-+EXPORT_SYMBOL(prep_negotiate_resp);
-+
-+/**
-+ * chn_cb_negotiate() - Default handler for non IDE/SCSI/NETWORK
-+ * Hyper-V requests
-+ * @context: Pointer to argument structure.
-+ *
-+ * Set up the default handler for non device driver specific requests
-+ * from Hyper-V. This stub responds to the default negotiate messages
-+ * that come in for every non IDE/SCSI/Network request.
-+ * This behavior is normally overwritten in the hv_utils driver. That
-+ * driver handles requests like gracefull shutdown, heartbeats etc.
-+ *
-+ * Mainly used by Hyper-V drivers.
-+ */
-+void chn_cb_negotiate(void *context)
-+{
-+       struct vmbus_channel *channel = context;
-+       u8 *buf;
-+       u32 buflen, recvlen;
-+       u64 requestid;
-+
-+       struct icmsg_hdr *icmsghdrp;
-+       struct icmsg_negotiate *negop = NULL;
-+
-+       buflen = PAGE_SIZE;
-+       buf = kmalloc(buflen, GFP_ATOMIC);
-+
-+       VmbusChannelRecvPacket(channel, buf, buflen, &recvlen, &requestid);
-+
-+       if (recvlen > 0) {
-+               icmsghdrp = (struct icmsg_hdr *)&buf[
-+                       sizeof(struct vmbuspipe_hdr)];
-+
-+               prep_negotiate_resp(icmsghdrp, negop, buf);
-+
-+               icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION
-+                       | ICMSGHDRFLAG_RESPONSE;
-+
-+               VmbusChannelSendPacket(channel, buf,
-+                                      recvlen, requestid,
-+                                      VmbusPacketTypeDataInBand, 0);
-+       }
-+
-+       kfree(buf);
-+}
-+EXPORT_SYMBOL(chn_cb_negotiate);
-+
-+/*
-+ * Function table used for message responses for non IDE/SCSI/Network type
-+ * messages. (Such as KVP/Shutdown etc)
-+ */
-+struct hyperv_service_callback hv_cb_utils[MAX_MSG_TYPES] = {
-+       /* 0E0B6031-5213-4934-818B-38D90CED39DB */
-+       /* Shutdown */
-+       {
-+               .msg_type = HV_SHUTDOWN_MSG,
-+               .data = {
-+                       0x31, 0x60, 0x0B, 0X0E, 0x13, 0x52, 0x34, 0x49,
-+                       0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB
-+               },
-+               .callback = chn_cb_negotiate,
-+               .log_msg = "Shutdown channel functionality initialized"
-+       },
-+};
-+EXPORT_SYMBOL(hv_cb_utils);
-+
- /*
-  * AllocVmbusChannel - Allocate and initialize a vmbus channel object
-  */
-@@ -132,7 +255,8 @@ void FreeVmbusChannel(struct vmbus_channel *Channel)
- }
-
- /*
-- * VmbusChannelProcessOffer - Process the offer by creating a channel/device associated with this offer
-+ * VmbusChannelProcessOffer - Process the offer by creating a channel/device
-+ * associated with this offer
-  */
- static void VmbusChannelProcessOffer(void *context)
+ 
+ #ifdef ARLAN_DEBUGGING
+-static long alignLong(volatile u_char * ptr)
++static long alignLong(volatile u_char *ptr)
  {
-@@ -140,6 +264,7 @@ static void VmbusChannelProcessOffer(void *context)
-        struct vmbus_channel *channel;
-        bool fNew = true;
-        int ret;
-+       int cnt;
-        unsigned long flags;
-
-        DPRINT_ENTER(VMBUS);
-@@ -209,6 +334,23 @@ static void VmbusChannelProcessOffer(void *context)
-                 * can cleanup properly
-                 */
-                newChannel->State = CHANNEL_OPEN_STATE;
-+               cnt = 0;
-+
-+               while (cnt != MAX_MSG_TYPES) {
-+                       if (memcmp(&newChannel->OfferMsg.Offer.InterfaceType,
-+                                  &hv_cb_utils[cnt].data,
-+                                  sizeof(struct hv_guid)) == 0) {
-+                               DPRINT_INFO(VMBUS, "%s",
-+                                           hv_cb_utils[cnt].log_msg);
-+
-+                               if (VmbusChannelOpen(newChannel, 2 * PAGE_SIZE,
-+                                                   2 * PAGE_SIZE, NULL, 0,
-+                                                   hv_cb_utils[cnt].callback,
-+                                                   newChannel) == 0)
-+                                       hv_cb_utils[cnt].channel = newChannel;
-+                       }
-+                       cnt++;
-+               }
-        }
-        DPRINT_EXIT(VMBUS);
+ 	long ret;
+ 	memcpy_fromio(&ret, (void *) ptr, 4);
+@@ -1695,7 +1686,7 @@ struct net_device * __init arlan_probe(int unit)
+ 	return dev;
  }
-diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
-index 4044702..79afb1e 100644
---- a/drivers/staging/hv/Kconfig
-+++ b/drivers/staging/hv/Kconfig
-@@ -29,4 +29,10 @@ config HYPERV_NET
-        help
-          Select this option to enable the Hyper-V virtual network driver.
-
-+config HYPERV_UTILS
-+       tristate "Microsoft Hyper-V Utilities driver"
-+       default HYPERV
-+       help
-+         Select this option to enable the Hyper-V Utilities.
-+
- endif
-diff --git a/drivers/staging/hv/Makefile b/drivers/staging/hv/Makefile
-index 27ebae8..d2977ab 100644
---- a/drivers/staging/hv/Makefile
-+++ b/drivers/staging/hv/Makefile
-@@ -2,6 +2,7 @@ obj-$(CONFIG_HYPERV)            += hv_vmbus.o
- obj-$(CONFIG_HYPERV_STORAGE)   += hv_storvsc.o
- obj-$(CONFIG_HYPERV_BLOCK)     += hv_blkvsc.o
- obj-$(CONFIG_HYPERV_NET)       += hv_netvsc.o
-+obj-$(CONFIG_HYPERV_UTILS)     += hv_utils.o
-
- hv_vmbus-objs := vmbus_drv.o osd.o \
-                 Vmbus.o Hv.o Connection.o Channel.o \
-@@ -9,3 +10,4 @@ hv_vmbus-objs := vmbus_drv.o osd.o \
- hv_storvsc-objs := storvsc_drv.o StorVsc.o
- hv_blkvsc-objs := blkvsc_drv.o BlkVsc.o
- hv_netvsc-objs := netvsc_drv.o NetVsc.o RndisFilter.o
-+hv_utils-objs := hyperv_utils.o ext_utils.o
-diff --git a/drivers/staging/hv/VmbusPacketFormat.h b/drivers/staging/hv/VmbusPacketFormat.h
-index 79120bc..f9f6b4b 100644
---- a/drivers/staging/hv/VmbusPacketFormat.h
-+++ b/drivers/staging/hv/VmbusPacketFormat.h
-@@ -22,6 +22,7 @@
-  */
-
- #ifndef _VMBUSPACKETFORMAT_H_
-+#define _VMBUSPACKETFORMAT_H_
-
- struct vmpacket_descriptor {
-        u16 Type;
-diff --git a/drivers/staging/hv/ext_utils.c b/drivers/staging/hv/ext_utils.c
-new file mode 100644
-index 0000000..a44cd1b
---- /dev/null
-+++ b/drivers/staging/hv/ext_utils.c
-@@ -0,0 +1,27 @@
-+/*
-+ * Copyright (c) 2010, Microsoft Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-+ * Place - Suite 330, Boston, MA 02111-1307 USA.
-+ *
-+ * Authors:
-+ *   Haiyang Zhang <haiyangz@microsoft.com>
-+ *   Hank Janssen  <hjanssen@microsoft.com>
-+ */
-+#include <linux/reboot.h>
-+#include "utils.h"
-+
-+void shutdown_linux_system()
-+{
-+       orderly_poweroff(false);
-+}
-diff --git a/drivers/staging/hv/hyperv_utils.c b/drivers/staging/hv/hyperv_utils.c
-new file mode 100644
-index 0000000..2a48647
---- /dev/null
-+++ b/drivers/staging/hv/hyperv_utils.c
-@@ -0,0 +1,134 @@
-+/*
-+ * Copyright (c) 2010, Microsoft Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-+ * Place - Suite 330, Boston, MA 02111-1307 USA.
-+ *
-+ * Authors:
-+ *   Haiyang Zhang <haiyangz@microsoft.com>
-+ *   Hank Janssen  <hjanssen@microsoft.com>
-+ */
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/sysctl.h>
-+#include <linux/version.h>
-+
-+#include "logging.h"
-+#include "osd.h"
-+#include "vmbus.h"
-+#include "VmbusPacketFormat.h"
-+#include "VmbusChannelInterface.h"
-+#include "VersionInfo.h"
-+#include "Channel.h"
-+#include "VmbusPrivate.h"
-+#include "VmbusApi.h"
-+#include "utils.h"
-+
-+
-+void shutdown_onchannelcallback(void *context)
-+{
-+       struct vmbus_channel *channel = context;
-+       u8 *buf;
-+       u32 buflen, recvlen;
-+       u64 requestid;
-+       u8  execute_shutdown = false;
-+
-+       struct shutdown_msg_data *shutdown_msg;
-+
-+       struct icmsg_hdr *icmsghdrp;
-+       struct icmsg_negotiate *negop = NULL;
-+
-+       DPRINT_ENTER(VMBUS);
-+
-+       buflen = PAGE_SIZE;
-+       buf = kmalloc(buflen, GFP_ATOMIC);
-+
-+       VmbusChannelRecvPacket(channel, buf, buflen, &recvlen, &requestid);
-+
-+       if (recvlen > 0) {
-+               DPRINT_DBG(VMBUS, "shutdown packet: len=%d, requestid=%lld",
-+                          recvlen, requestid);
-+
-+               icmsghdrp = (struct icmsg_hdr *)&buf[
-+                       sizeof(struct vmbuspipe_hdr)];
-+
-+               if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
-+                       prep_negotiate_resp(icmsghdrp, negop, buf);
-+               } else {
-+                       shutdown_msg = (struct shutdown_msg_data *)&buf[
-+                               sizeof(struct vmbuspipe_hdr) +
-+                               sizeof(struct icmsg_hdr)];
-+
-+                       switch (shutdown_msg->flags) {
-+                       case 0:
-+                       case 1:
-+                               icmsghdrp->status = HV_S_OK;
-+                               execute_shutdown = true;
-+
-+                               DPRINT_INFO(VMBUS, "Shutdown request received -"
-+                                           " gracefull shutdown initiated");
-+                               break;
-+                       default:
-+                               icmsghdrp->status = HV_E_FAIL;
-+                               execute_shutdown = false;
-+
-+                               DPRINT_INFO(VMBUS, "Shutdown request received -"
-+                                           " Invalid request");
-+                               break;
-+                       };
-+               }
-+
-+               icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION
-+                       | ICMSGHDRFLAG_RESPONSE;
-+
-+               VmbusChannelSendPacket(channel, buf,
-+                                      recvlen, requestid,
-+                                      VmbusPacketTypeDataInBand, 0);
-+       }
-+
-+       kfree(buf);
-+
-+       DPRINT_EXIT(VMBUS);
-+
-+       if (execute_shutdown == true)
-+               shutdown_linux_system();
-+}
-+
-+static int __init init_hyperv_utils(void)
-+{
-+       printk(KERN_INFO "Registering HyperV Utility Driver\n");
-+
-+       hv_cb_utils[HV_SHUTDOWN_MSG].channel->OnChannelCallback =
-+               &shutdown_onchannelcallback;
-+       hv_cb_utils[HV_SHUTDOWN_MSG].callback = &shutdown_onchannelcallback;
-+
-+       return 0;
-+}
-+
-+static void exit_hyperv_utils(void)
-+{
-+       printk(KERN_INFO "De-Registered HyperV Utility Driver\n");
-+
-+       hv_cb_utils[HV_SHUTDOWN_MSG].channel->OnChannelCallback =
-+               &chn_cb_negotiate;
-+       hv_cb_utils[HV_SHUTDOWN_MSG].callback = &chn_cb_negotiate;
-+}
-+
-+module_init(init_hyperv_utils);
-+module_exit(exit_hyperv_utils);
-+
-+MODULE_DESCRIPTION("Hyper-V Utilities");
-+MODULE_VERSION(HV_DRV_VERSION);
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/staging/hv/utils.h b/drivers/staging/hv/utils.h
-new file mode 100644
-index 0000000..4e09804
---- /dev/null
-+++ b/drivers/staging/hv/utils.h
-@@ -0,0 +1,94 @@
-+/*
-+ * Copyright (c) 2009, Microsoft Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-+ * Place - Suite 330, Boston, MA 02111-1307 USA.
-+ *
-+ * Authors:
-+ *   Haiyang Zhang <haiyangz@microsoft.com>
-+ *   Hank Janssen  <hjanssen@microsoft.com>
-+ */
-+#ifndef _UTILS_H_
-+#define _UTILS_H_
-+
-+/*
-+ * Common header for Hyper-V ICs
-+ */
-+#define ICMSGTYPE_NEGOTIATE   0
-+#define ICMSGTYPE_HEARTBEAT   1
-+#define ICMSGTYPE_KVPEXCHANGE 2
-+#define ICMSGTYPE_SHUTDOWN    3
-+#define ICMSGTYPE_TIMESYNC    4
-+#define ICMSGTYPE_VSS         5
-+
-+#define ICMSGHDRFLAG_TRANSACTION 1
-+#define ICMSGHDRFLAG_REQUEST     2
-+#define ICMSGHDRFLAG_RESPONSE    4
-+
-+#define HV_S_OK                   0x00000000
-+#define HV_E_FAIL                 0x80004005
-+#define HV_ERROR_NOT_SUPPORTED    0x80070032
-+#define HV_ERROR_MACHINE_LOCKED   0x800704F7
-+
-+struct vmbuspipe_hdr {
-+    u32 flags;
-+    u32 msgsize;
-+} __attribute__((packed));
-+
-+struct ic_version {
-+    u16 major;
-+    u16 minor;
-+} __attribute__((packed));
-+
-+struct icmsg_hdr {
-+    struct ic_version icverframe;
-+    u16 icmsgtype;
-+    struct ic_version icvermsg;
-+    u16 icmsgsize;
-+    u32 status;
-+    u8 ictransaction_id;
-+    u8 icflags;
-+    u8 reserved[2];
-+} __attribute__((packed));
-+
-+struct icmsg_negotiate {
-+    u16 icframe_vercnt;
-+    u16 icmsg_vercnt;
-+    u32 reserved;
-+    struct ic_version icversion_data[1]; /* any size array */
-+} __attribute__((packed));
-+
-+struct shutdown_msg_data {
-+       u32 reason_code;
-+       u32 timeout_seconds;
-+       u32 flags;
-+       u8  display_message[2048];
-+} __attribute__((packed));
-+
-+#define HV_SHUTDOWN_MSG             0
-+
-+struct hyperv_service_callback {
-+       u8 msg_type;
-+       char *log_msg;
-+       unsigned char data[16];
-+       struct vmbus_channel *channel;
-+       void (*callback) (void *context);
-+};
-+
-+extern void prep_negotiate_resp(struct icmsg_hdr *,
-+                                   struct icmsg_negotiate *, u8 *);
-+extern void shutdown_linux_system(void);
-+extern void chn_cb_negotiate(void *);
-+extern struct hyperv_service_callback hv_cb_utils[];
-+
-+#endif /* _UTILS_H_ */
---
-1.6.0.2
-
-
+ 
+-#ifdef  MODULE
++#ifdef MODULE
+ int __init init_module(void)
+ {
+ 	int i = 0;
+-- 
+1.6.0.4
 
