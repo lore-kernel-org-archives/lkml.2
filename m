@@ -1,33 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934267Ab0D3THv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:07:51 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:39723 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932701Ab0D3THM (ORCPT
+	id S934257Ab0D3TIV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:08:21 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53250 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932701Ab0D3TH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 15:07:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:in-reply-to:references
-         :x-mailer:mime-version:content-type:content-transfer-encoding;
-        b=PqyjIIFWK/OK2R2R5k6EELe7v+w2DwYj1/w5qxwxhHbzCIKrx+5qr6jx4NrVxVC4CB
-         4Mdeg4wRs7jm4cmLNoz1fvDIxidNjkDtBsyPX+i6e7lc7WlfSh6Yoqc6VQaUKLs8b5oF
-         yMrKU7n8WcTmKhtiZFtxvDh9mLam2dC5qM9dI=
-Date: Fri, 30 Apr 2010 14:14:24 +0900
-From: Yoichi Yuasa <yuasa@linux-mips.org>
-To: Greg KH <greg@kroah.com>
-Cc: yuasa@linux-mips.org, Naren Sankar <nsankar@broadcom.com>,
-       Jarod Wilson <jarod@wilsonet.com>, Scott Davilla <davilla@4pi.com>,
-       Manu Abraham <abraham.manu@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/11] staging: crystalhd: remove unused bc_dts_types.h
-Message-Id: <20100430141424.60cf62ea.yuasa@linux-mips.org>
-In-Reply-To: <20100430014159.GA10862@kroah.com>
-References: <20100425221851.223dc284.yuasa@linux-mips.org>
-	<20100429191043.GF21799@kroah.com>
-	<20100430094036.2dc10a8f.yuasa@linux-mips.org>
-	<20100430014159.GA10862@kroah.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Fri, 30 Apr 2010 15:07:59 -0400
+Date: Fri, 30 Apr 2010 12:07:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/10] lib: introduce common method to convert hex
+ digits
+Message-Id: <20100430120703.ffab0258.akpm@linux-foundation.org>
+In-Reply-To: <d5c4e26cc74458dd77102c4274d3260149717328.1272617852.git.ext-andriy.shevchenko@nokia.com>
+References: <cover.1272617852.git.ext-andriy.shevchenko@nokia.com>
+	<d5c4e26cc74458dd77102c4274d3260149717328.1272617852.git.ext-andriy.shevchenko@nokia.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -35,30 +25,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Apr 2010 18:41:59 -0700
-Greg KH <greg@kroah.com> wrote:
+On Fri, 30 Apr 2010 12:34:00 +0300
+Andy Shevchenko <ext-andriy.shevchenko@nokia.com> wrote:
 
-> On Fri, Apr 30, 2010 at 09:40:36AM +0900, Yoichi Yuasa wrote:
-> > On Thu, 29 Apr 2010 12:10:43 -0700
-> > Greg KH <greg@kroah.com> wrote:
-> > 
-> > > On Sun, Apr 25, 2010 at 10:18:51PM +0900, Yoichi Yuasa wrote:
-> > > > Signed-off-by: Yoichi Yuasa <yuasa@linux-mips.org>
-> > > > ---
-> > > >  drivers/staging/crystalhd/bc_dts_defs.h  |    2 -
-> > > >  drivers/staging/crystalhd/bc_dts_types.h |  121 ------------------------------
-> > > 
-> > > Wait, all crystalhd patches should go through Ralf's tree, can you send
-> > > these to him instead?
-> > 
-> > These patches are not related to MIPS.
-> > I just sent to you.
-> 
-> I understand, but for this driver, Ralf takes the changes through his
-> tree for a variety of different reasons.  So please, resend them to him.
+>  /**
+> + * hex_to_bin - convert a hex digit to its real value
+> + * @ch: ascii character represents hex digit
+> + *
+> + * hex_to_bin() converts one hex digit to its actual value or -1 in case of bad
+> + * input.
+> + */
+> +int hex_to_bin(char ch)
+> +{
+> +	if ((ch >= 'a') && (ch <= 'f'))
+> +		return ch - 'a' + 10;
+> +	if ((ch >= '0') && (ch <= '9'))
+> +		return ch - '0';
+> +	if ((ch >= 'A') && (ch <= 'F'))
+> +		return ch - 'A' + 10;
+> +	return -1;
+> +}
+> +EXPORT_SYMBOL(hex_to_bin);
 
-OK, I'll resend them to Ralf.
+I had to fiddle with it:
 
-Thanks,
+- use tolower(), saving 3 bytes!
 
-Yoichi
+- test the more common case first - it's quicker.
+
+diff -puN lib/hexdump.c~lib-introduce-common-method-to-convert-hex-digits-fix lib/hexdump.c
+--- a/lib/hexdump.c~lib-introduce-common-method-to-convert-hex-digits-fix
++++ a/lib/hexdump.c
+@@ -24,12 +24,11 @@ EXPORT_SYMBOL(hex_asc);
+  */
+ int hex_to_bin(char ch)
+ {
+-	if ((ch >= 'a') && (ch <= 'f'))
+-		return ch - 'a' + 10;
++	ch = tolower(ch);
+ 	if ((ch >= '0') && (ch <= '9'))
+ 		return ch - '0';
+-	if ((ch >= 'A') && (ch <= 'F'))
+-		return ch - 'A' + 10;
++	if ((ch >= 'a') && (ch <= 'f'))
++		return ch - 'a' + 10;
+ 	return -1;
+ }
+ EXPORT_SYMBOL(hex_to_bin);
+_
+
+
+Yielding
+
+int hex_to_bin(char ch)
+{
+	ch = tolower(ch);
+	if ((ch >= '0') && (ch <= '9'))
+		return ch - '0';
+	if ((ch >= 'a') && (ch <= 'f'))
+		return ch - 'a' + 10;
+	return -1;
+}
+
