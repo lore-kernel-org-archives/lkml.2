@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933327Ab0D3STq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 14:19:46 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41528 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759284Ab0D3STL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 14:19:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jFbo7hrDNr4Lz2g7RaaRpUnJh42uL/3ZIYPPZHia7wa7Yyl0BDcrhab9RHZMTUUPmu
-         8nY4ujd8VwKZgKHVc5OLrnwzAKZQ9zw92WXzQJ9pO8MK8IeONLfPO7G+hOsEMFQwP7WG
-         WbysR9ffeNPXdLtnqa4jgbJ8GgII/2Q9ufbaU=
-MIME-Version: 1.0
-In-Reply-To: <20100430100712.041f6fcc.randy.dunlap@oracle.com>
-References: <20100430100712.041f6fcc.randy.dunlap@oracle.com>
-Date: Fri, 30 Apr 2010 14:19:07 -0400
-Message-ID: <s2o4f6ba3b1004301119hd275af8r6bd4fdd98b14168a@mail.gmail.com>
-Subject: Re: [PATCH -next] staging/cxt1e1: use netdev_priv to fix build
-From: Bob Beers <bob.beers@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-       gregkh@suse.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933224Ab0D3RW5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:22:57 -0400
+Received: from mail.atmel.fr ([81.80.104.162]:53996 "EHLO atmel-es2.atmel.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933167Ab0D3RWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:22:18 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: haavard.skinnemoen@atmel.com, linux-arm-kernel@lists.infradead.org,
+       akpm@linux-foundation.org, linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, kernel@avr32linux.org,
+       Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] MMC: atmel-mci: fix in debugfs: response value printing
+Date: Fri, 30 Apr 2010 16:32:02 +0200
+Message-Id: <1272637922-31418-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <12c815b6060bc044238d63a686de517e43e90184.1272378853.git.nicolas.ferre@atmel.com>
+References: <12c815b6060bc044238d63a686de517e43e90184.1272378853.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 30, 2010 at 1:07 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
->
-> Fix cxt1e1 build error:
-> drivers/staging/cxt1e1/linux.c:1195: error: 'struct net_device' has no member named 'priv'
->
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc: Bob Beers <bob.beers@gmail.com>
+In debugfs, printing of command response reports resp[2]
+twice: fix it to resp[3].
 
-This is correct of course. If you need it ...
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/mmc/host/atmel-mci.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Acked-by: Bob Beers <bob.beers@gmail.com>
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index fd96ab9..1f0f30f 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -268,7 +268,7 @@ static int atmci_req_show(struct seq_file *s, void *v)
+ 				"CMD%u(0x%x) flg %x rsp %x %x %x %x err %d\n",
+ 				cmd->opcode, cmd->arg, cmd->flags,
+ 				cmd->resp[0], cmd->resp[1], cmd->resp[2],
+-				cmd->resp[2], cmd->error);
++				cmd->resp[3], cmd->error);
+ 		if (data)
+ 			seq_printf(s, "DATA %u / %u * %u flg %x err %d\n",
+ 				data->bytes_xfered, data->blocks,
+@@ -278,7 +278,7 @@ static int atmci_req_show(struct seq_file *s, void *v)
+ 				"CMD%u(0x%x) flg %x rsp %x %x %x %x err %d\n",
+ 				stop->opcode, stop->arg, stop->flags,
+ 				stop->resp[0], stop->resp[1], stop->resp[2],
+-				stop->resp[2], stop->error);
++				stop->resp[3], stop->error);
+ 	}
+ 
+ 	spin_unlock_bh(&slot->host->lock);
+-- 
+1.5.6.5
 
-> ---
->  drivers/staging/cxt1e1/linux.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- linux-next-20100430.orig/drivers/staging/cxt1e1/linux.c
-> +++ linux-next-20100430/drivers/staging/cxt1e1/linux.c
-> @@ -1192,7 +1192,7 @@ c4_add_dev (hdw_info_t * hi, int brdno,
->                 hi->devname, irq1);
->         unregister_netdev (ndev);
->         free_irq (irq0, ndev);
-> -        OS_kfree (ndev->priv);
-> +        OS_kfree (netdev_priv(ndev));
->         OS_kfree (ndev);
->         error_flag = EIO;
->         return 0;
->
