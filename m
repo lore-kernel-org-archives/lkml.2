@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab0D3Tj1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 15:39:27 -0400
-Received: from rcsinet14.oracle.com ([148.87.113.126]:26289 "EHLO
-	rcsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab0D3TjS convert rfc822-to-8bit (ORCPT
+	id S1757951Ab0D3Tlb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 15:41:31 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56723 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754695Ab0D3TlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 15:39:18 -0400
-MIME-Version: 1.0
-Message-ID: <084f72bf-21fd-4721-8844-9d10cccef316@default>
-Date: Fri, 30 Apr 2010 08:59:55 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Avi Kivity <avi@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
-       ngupta@vflare.org, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com>>
- <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>>
- <4BD1A74A.2050003@redhat.com>>
- <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com>
- <4BD1B626.7020702@redhat.com>>
- <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>>
- <4BD3377E.6010303@redhat.com>>
- <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>>
- <ce808441-fae6-4a33-8335-f7702740097a@default>>
- <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz
- 4BDA8324.7090409@redhat.com>
-In-Reply-To: <4BDA8324.7090409@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090203.4BDAFE8F.00DC:SCFMA922111,ss=1,fgs=0
+	Fri, 30 Apr 2010 15:41:24 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Ingo Molnar <mingo@elte.hu>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/core/urgent] fix several lockdep splats, allow multiple splats
+In-Reply-To: Your message of "Fri, 30 Apr 2010 11:33:34 EDT."
+             <20100430153334.GA19672@Krystal>
+From: Valdis.Kletnieks@vt.edu
+References: <20100421200150.GA3818@linux.vnet.ibm.com> <20100430100749.GC14202@elte.hu>
+            <20100430153334.GA19672@Krystal>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1272644205_4026P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 30 Apr 2010 12:16:45 -0400
+Message-ID: <10035.1272644205@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020209.4BDB026E.01C0,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > A large portion of CMM2's gain came from the fact that you could take
-> > memory away from guests without _them_ doing any work.  If the system
-> is
-> > experiencing a load spike, you increase load even more by making the
-> > guests swap.  If you can just take some of their memory away, you can
-> > smooth that spike out.  CMM2 and frontswap do that.  The guests
-> > explicitly give up page contents that the hypervisor does not have to
-> > first consult with the guest before discarding.
-> 
-> Frontswap does not do this.  Once a page has been frontswapped, the
-> host
-> is committed to retaining it until the guest releases it.
+--==_Exmh_1272644205_4026P
+Content-Type: text/plain; charset=us-ascii
 
-Dave or others can correct me if I am wrong, but I think CMM2 also
-handles dirty pages that must be retained by the hypervisor.  The
-difference between CMM2 (for dirty pages) and frontswap is that
-CMM2 sets hints that can be handled asynchronously while frontswap
-provides explicit hooks that synchronously succeed/fail.
+On Fri, 30 Apr 2010 11:33:34 EDT, Mathieu Desnoyers said:
 
-In fact, Avi, CMM2 is probably a fairly good approximation of what
-the asynchronous interface you are suggesting might look like.
-In other words, feasible but much much more complex than frontswap.
+> I recommend creating a kernel command line parameter that would tweak
+> the number of messages printed by lockdep. The default would indeed by 1
+> message, but people in a debugging marathon can specify a larger value
+> so they won't have to reboot between each individual lockdep error.
 
-> [frontswap is] really
-> not very different from a synchronous swap device.
+Yeah, that would rock for development kernels - playing whack-a-mole with
+a half-dozen new lockdep whinges can easily stretch out for quite some time.
 
-Not to beat a dead horse, but there is a very key difference:
-The size and availability of frontswap is entirely dynamic;
-any page-to-be-swapped can be rejected at any time even if
-a page was previously successfully swapped to the same index.
-Every other swap device is much more static so the swap code
-assumes a static device.  Existing swap code can account for
-"bad blocks" on a static device, but this is far from sufficient
-to handle the dynamicity needed by frontswap.
+--==_Exmh_1272644205_4026P
+Content-Type: application/pgp-signature
 
-> I think cleancache allows the hypervisor to drop pages without the
-> guest's immediate knowledge, but I'm not sure.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-Yes, cleancache can drop pages at any time because (as the
-name implies) only clean pages can be put into cleancache.
+iD8DBQFL2wJtcC3lWbTT17ARAtgTAKCvJWe4IdjfLjp1nzQDe+S15USUOwCdGi/8
+9q+05y+OVOYMTqf9Yo9jqEA=
+=vFvr
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1272644205_4026P--
 
