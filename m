@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab0D3QuX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 12:50:23 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:31605 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757639Ab0D3QuJ (ORCPT
+	id S1757790Ab0D3QvX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 12:51:23 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:49527 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757760Ab0D3QvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 12:50:09 -0400
-Message-ID: <4BD96188.2030507@panasas.com>
-Date: Thu, 29 Apr 2010 13:38:00 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Jens Axboe <Jens.Axboe@oracle.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] exofs: Fix "add bdi backing to mount session" fall out
-References: <201004282059.o3SKx7hG029846@hera.kernel.org> <4BD95E7A.90402@panasas.com>
-In-Reply-To: <4BD95E7A.90402@panasas.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 30 Apr 2010 12:51:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:in-reply-to:references
+         :x-mailer:mime-version:content-type:content-transfer-encoding;
+        b=d+YT/eg5YsanJHiAoaTudGmvIcX6O1BH0yxwDrrAq4Y6y3cAI5Jdv8IbusQ0ToJog2
+         g6LbL+bwPA5NdBGpTVXghGg++9AoE+Jge2S6cmcLAbI11Td6Ibs6sNTkYl5KWMrX1w7K
+         q6IvWr76Kit6vCbBhn9BCqp/PeEUQZdz93Jcs=
+Date: Fri, 30 Apr 2010 09:40:36 +0900
+From: Yoichi Yuasa <yuasa@linux-mips.org>
+To: Greg KH <greg@kroah.com>
+Cc: yuasa@linux-mips.org, Naren Sankar <nsankar@broadcom.com>,
+       Jarod Wilson <jarod@wilsonet.com>, Scott Davilla <davilla@4pi.com>,
+       Manu Abraham <abraham.manu@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/11] staging: crystalhd: remove unused bc_dts_types.h
+Message-Id: <20100430094036.2dc10a8f.yuasa@linux-mips.org>
+In-Reply-To: <20100429191043.GF21799@kroah.com>
+References: <20100425221851.223dc284.yuasa@linux-mips.org>
+	<20100429191043.GF21799@kroah.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Apr 2010 10:38:02.0480 (UTC) FILETIME=[0B4F5F00:01CAE788]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 29 Apr 2010 12:10:43 -0700
+Greg KH <greg@kroah.com> wrote:
 
-The patch: add bdi backing to mount session
-	(b3d0ab7e60d1865bb6f6a79a77aaba22f2543236)
+> On Sun, Apr 25, 2010 at 10:18:51PM +0900, Yoichi Yuasa wrote:
+> > Signed-off-by: Yoichi Yuasa <yuasa@linux-mips.org>
+> > ---
+> >  drivers/staging/crystalhd/bc_dts_defs.h  |    2 -
+> >  drivers/staging/crystalhd/bc_dts_types.h |  121 ------------------------------
+> 
+> Wait, all crystalhd patches should go through Ralf's tree, can you send
+> these to him instead?
 
-Has a bug in the placement of the bdi member at
-struct exofs_sb_info. The layout member must be kept
-last.
+These patches are not related to MIPS.
+I just sent to you.
 
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
----
- fs/exofs/exofs.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks,
 
-diff --git a/fs/exofs/exofs.h b/fs/exofs/exofs.h
-index 5437327..22721b2 100644
---- a/fs/exofs/exofs.h
-+++ b/fs/exofs/exofs.h
-@@ -85,6 +85,7 @@ struct exofs_sb_info {
- 	u32		s_next_generation;	/* next gen # to use          */
- 	atomic_t	s_curr_pending;		/* number of pending commands */
- 	uint8_t		s_cred[OSD_CAP_LEN];	/* credential for the fscb    */
-+	struct 		backing_dev_info bdi;	/* register our bdi with VFS  */
- 
- 	struct pnfs_osd_data_map data_map;	/* Default raid to use
- 						 * FIXME: Needed ?
-@@ -93,7 +94,6 @@ struct exofs_sb_info {
- 	struct exofs_layout	layout;		/* Default files layout,
- 						 * contains the variable osd_dev
- 						 * array. Keep last */
--	struct backing_dev_info bdi;
- 	struct osd_dev	*_min_one_dev[1];	/* Place holder for one dev   */
- };
- 
--- 
-1.6.6.1
-
-
+Yoichi
