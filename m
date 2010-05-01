@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab0EAOgq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:36:46 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:64022 "EHLO
+	id S933287Ab0EAOpp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:45:45 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:64112 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754866Ab0EAOf4 (ORCPT
+	with ESMTP id S1754866Ab0EAOgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:35:56 -0400
+	Sat, 1 May 2010 10:36:55 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
        Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
-       Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>
-Subject: [PATCH v21 066/100] c/r: [signal 2/4] checkpoint/restart of rlimit
-Date: Sat,  1 May 2010 10:15:48 -0400
-Message-Id: <1272723382-19470-67-git-send-email-orenl@cs.columbia.edu>
+       netdev@vger.kernel.org
+Subject: [PATCH v21 072/100] c/r: introduce checkpoint/restore methods to struct proto_ops
+Date: Sat,  1 May 2010 10:15:54 -0400
+Message-Id: <1272723382-19470-73-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -24,255 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds checkpoint and restart of rlimit information
-that is part of shared signal_struct.
+This adds new 'proto_ops' function for checkpointing and restoring
+sockets. This allows the checkpoint/restart code to compile nicely
+when, e.g., AF_UNIX sockets are selected as a module.
 
-Changelog[v21]:
-  - [Matt Helsley] Move the signal c/r changes to kernel/signal.c
-      Remove the "out" label in restore_signal(). It won't be
-      used until a subsequent patch.
+It also adds a function 'collecting' a socket for leak-detection
+during full-container checkpoint. This is useful for those sockets
+that hold references to other "collectable" objects. Two examples are
+AF_UNIX buffers which reference the socket of origin, and sockets that
+have file descriptors in-transit.
 
-Changelog[v19-rc3]:
-  - Rebase to kernel 2.6.33
-
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>
+Cc: netdev@vger.kernel.org
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Louis Rilling <Louis.Rilling@kerlabs.com>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- include/linux/checkpoint_hdr.h |   17 +++++++++++++++++
- include/linux/resource.h       |    1 +
- kernel/checkpoint/checkpoint.c |    2 ++
- kernel/checkpoint/restart.c    |    3 +++
- kernel/signal.c                |   28 +++++++++++++++++++++++-----
- kernel/sys.c                   |   36 +++++++++++++++++++++++-------------
- 6 files changed, 69 insertions(+), 18 deletions(-)
+ include/linux/net.h |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 19c778b..0320bfa 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -217,6 +217,8 @@ struct ckpt_const {
- 	__u16 uts_version_len;
- 	__u16 uts_machine_len;
- 	__u16 uts_domainname_len;
-+	/* rlimit */
-+	__u16 rlimit_nlimits;
- } __attribute__((aligned(8)));
+diff --git a/include/linux/net.h b/include/linux/net.h
+index 4157b5d..1f32c70 100644
+--- a/include/linux/net.h
++++ b/include/linux/net.h
+@@ -153,6 +153,9 @@ struct sockaddr;
+ struct msghdr;
+ struct module;
  
- /* checkpoint image header */
-@@ -543,8 +545,23 @@ struct ckpt_hdr_sighand {
- 	struct ckpt_sigaction action[0];
- } __attribute__((aligned(8)));
- 
-+struct ckpt_rlimit {
-+	__u64 rlim_cur;
-+	__u64 rlim_max;
-+} __attribute__((aligned(8)));
++struct ckpt_ctx;
++struct ckpt_hdr_socket;
 +
-+/* cannot include <linux/resource.h> from userspace, so define: */
-+#define CKPT_RLIM_NLIMITS  16
-+#ifdef __KERNEL__
-+#include <linux/resource.h>
-+#if CKPT_RLIM_NLIMITS != RLIM_NLIMITS
-+#error CKPT_RLIM_NLIMIT size is wrong per asm-generic/resource.h
-+#endif
-+#endif
-+
- struct ckpt_hdr_signal {
- 	struct ckpt_hdr h;
-+	struct ckpt_rlimit rlim[CKPT_RLIM_NLIMITS];
- } __attribute__((aligned(8)));
+ struct proto_ops {
+ 	int		family;
+ 	struct module	*owner;
+@@ -201,6 +204,12 @@ struct proto_ops {
+ 				      int offset, size_t size, int flags);
+ 	ssize_t 	(*splice_read)(struct socket *sock,  loff_t *ppos,
+ 				       struct pipe_inode_info *pipe, size_t len, unsigned int flags);
++	int		(*checkpoint)(struct ckpt_ctx *ctx,
++				      struct socket *sock);
++	int		(*collect)(struct ckpt_ctx *ctx,
++				   struct socket *sock);
++	int		(*restore)(struct ckpt_ctx *ctx, struct socket *sock,
++				   struct ckpt_hdr_socket *h);
+ };
  
- struct ckpt_hdr_signal_task {
-diff --git a/include/linux/resource.h b/include/linux/resource.h
-index f1e914e..35f6163 100644
---- a/include/linux/resource.h
-+++ b/include/linux/resource.h
-@@ -73,6 +73,7 @@ struct rlimit {
- struct task_struct;
- 
- int getrusage(struct task_struct *p, int who, struct rusage __user *ru);
-+int do_setrlimit(unsigned int resource, struct rlimit *rlim);
- 
- #endif /* __KERNEL__ */
- 
-diff --git a/kernel/checkpoint/checkpoint.c b/kernel/checkpoint/checkpoint.c
-index d75f753..f72458d 100644
---- a/kernel/checkpoint/checkpoint.c
-+++ b/kernel/checkpoint/checkpoint.c
-@@ -123,6 +123,8 @@ static void fill_kernel_const(struct ckpt_const *h)
- 	h->uts_version_len = sizeof(uts->version);
- 	h->uts_machine_len = sizeof(uts->machine);
- 	h->uts_domainname_len = sizeof(uts->domainname);
-+	/* rlimit */
-+	h->rlimit_nlimits = RLIM_NLIMITS;
- }
- 
- /* write the checkpoint header */
-diff --git a/kernel/checkpoint/restart.c b/kernel/checkpoint/restart.c
-index 92d3e00..3b2593d 100644
---- a/kernel/checkpoint/restart.c
-+++ b/kernel/checkpoint/restart.c
-@@ -585,6 +585,9 @@ static int check_kernel_const(struct ckpt_const *h)
- 		return -EINVAL;
- 	if (h->uts_domainname_len != sizeof(uts->domainname))
- 		return -EINVAL;
-+	/* rlimit */
-+	if (h->rlimit_nlimits != RLIM_NLIMITS)
-+		return -EINVAL;
- 
- 	return 0;
- }
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 0e71eee..aae1f73 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -32,6 +32,7 @@
- #include <trace/events/signal.h>
- #define CKPT_DFLAG  CKPT_DSYS
- #include <linux/errno.h>
-+#include <linux/resource.h>
- #include <linux/checkpoint.h>
- 
- #include <asm/param.h>
-@@ -2913,13 +2914,22 @@ static const struct ckpt_obj_ops ckpt_obj_sighand_ops = {
- static int checkpoint_signal(struct ckpt_ctx *ctx, struct task_struct *t)
- {
- 	struct ckpt_hdr_signal *h;
--	int ret;
-+	struct signal_struct *signal;
-+	struct rlimit *rlim;
-+	int i, ret;
- 
- 	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_SIGNAL);
- 	if (!h)
- 		return -ENOMEM;
- 
--	/* fill in later */
-+	signal = t->signal;
-+	rlim = signal->rlim;
-+
-+	/* rlimit */
-+	for (i = 0; i < RLIM_NLIMITS; i++) {
-+		h->rlim[i].rlim_cur = rlim[i].rlim_cur;
-+		h->rlim[i].rlim_max = rlim[i].rlim_max;
-+	}
- 
- 	ret = ckpt_write_obj(ctx, &h->h);
- 	ckpt_hdr_put(ctx, h);
-@@ -2935,15 +2945,23 @@ int checkpoint_obj_signal(struct ckpt_ctx *ctx, struct task_struct *t)
- static int restore_signal(struct ckpt_ctx *ctx)
- {
- 	struct ckpt_hdr_signal *h;
-+	struct rlimit rlim;
-+	int i, ret;
- 
- 	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_SIGNAL);
- 	if (IS_ERR(h))
- 		return PTR_ERR(h);
- 
--	/* fill in later */
--
-+	/* rlimit */
-+	for (i = 0; i < RLIM_NLIMITS; i++) {
-+		rlim.rlim_cur = h->rlim[i].rlim_cur;
-+		rlim.rlim_max = h->rlim[i].rlim_max;
-+		ret = do_setrlimit(i, &rlim);
-+		if (ret < 0)
-+			break;
-+	}
- 	ckpt_hdr_put(ctx, h);
--	return 0;
-+	return ret;
- }
- 
- int restore_obj_signal(struct ckpt_ctx *ctx, int signal_objref)
-diff --git a/kernel/sys.c b/kernel/sys.c
-index ec11a3f..9a98d05 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1211,40 +1211,39 @@ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
- 
- #endif
- 
--SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
-+int do_setrlimit(unsigned int resource, struct rlimit *new_rlim)
- {
--	struct rlimit new_rlim, *old_rlim;
-+	struct rlimit *old_rlim;
- 	int retval;
- 
- 	if (resource >= RLIM_NLIMITS)
- 		return -EINVAL;
--	if (copy_from_user(&new_rlim, rlim, sizeof(*rlim)))
--		return -EFAULT;
--	if (new_rlim.rlim_cur > new_rlim.rlim_max)
-+	if (new_rlim->rlim_cur > new_rlim->rlim_max)
- 		return -EINVAL;
-+
- 	old_rlim = current->signal->rlim + resource;
--	if ((new_rlim.rlim_max > old_rlim->rlim_max) &&
-+	if ((new_rlim->rlim_max > old_rlim->rlim_max) &&
- 	    !capable(CAP_SYS_RESOURCE))
- 		return -EPERM;
--	if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > sysctl_nr_open)
-+	if (resource == RLIMIT_NOFILE && new_rlim->rlim_max > sysctl_nr_open)
- 		return -EPERM;
- 
--	retval = security_task_setrlimit(resource, &new_rlim);
-+	retval = security_task_setrlimit(resource, new_rlim);
- 	if (retval)
- 		return retval;
- 
--	if (resource == RLIMIT_CPU && new_rlim.rlim_cur == 0) {
-+	if (resource == RLIMIT_CPU && new_rlim->rlim_cur == 0) {
- 		/*
- 		 * The caller is asking for an immediate RLIMIT_CPU
- 		 * expiry.  But we use the zero value to mean "it was
- 		 * never set".  So let's cheat and make it one second
- 		 * instead
- 		 */
--		new_rlim.rlim_cur = 1;
-+		new_rlim->rlim_cur = 1;
- 	}
- 
- 	task_lock(current->group_leader);
--	*old_rlim = new_rlim;
-+	*old_rlim = *new_rlim;
- 	task_unlock(current->group_leader);
- 
- 	if (resource != RLIMIT_CPU)
-@@ -1256,14 +1255,25 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
- 	 * very long-standing error, and fixing it now risks breakage of
- 	 * applications, so we live with it
- 	 */
--	if (new_rlim.rlim_cur == RLIM_INFINITY)
-+	if (new_rlim->rlim_cur == RLIM_INFINITY)
- 		goto out;
- 
--	update_rlimit_cpu(new_rlim.rlim_cur);
-+	update_rlimit_cpu(new_rlim->rlim_cur);
- out:
- 	return 0;
- }
- 
-+SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
-+{
-+	struct rlimit new_rlim;
-+
-+	if (resource >= RLIM_NLIMITS)
-+		return -EINVAL;
-+	if (copy_from_user(&new_rlim, rlim, sizeof(*rlim)))
-+		return -EFAULT;
-+	return do_setrlimit(resource, &new_rlim);
-+}
-+
- /*
-  * It would make sense to put struct rusage in the task_struct,
-  * except that would make the task_struct be *really big*.  After
+ #define DECLARE_SOCKADDR(type, dst, src)	\
 -- 
 1.6.3.3
 
