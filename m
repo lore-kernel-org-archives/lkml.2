@@ -1,117 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab0EAVuO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 17:50:14 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59012 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244Ab0EAVuL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 17:50:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=EgWQoRz2tGIblqFAL7qcY8WYa4sM/GbdzgA3TSmyW+R5vcpbgWuuN0C/hKX+whBlD4
-         qmYPJedytlwfq6IVEd6giCM4y74VqgQpJLMcVeY1n0hnoGGKlpcS4deKToHsMfbHj2jr
-         UcApN6kmFIHtjSnAFFkaHkYp5o83XjtU5Xb7Q=
-Date: Sat, 1 May 2010 16:58:50 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-       LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-       John Kacur <jkacur@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>, Greg KH <gregkh@suse.de>,
-       Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Pushdown bkl from v4l ioctls
-Message-ID: <20100501145848.GA5353@nowhere>
-References: <alpine.LFD.2.00.1004280750330.3739@i5.linux-foundation.org> <201004290844.29347.hverkuil@xs4all.nl> <201004290910.43412.laurent.pinchart@ideasonboard.com> <201005011155.37057.hverkuil@xs4all.nl>
+	id S1755347Ab0EAVzJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 17:55:09 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52212 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752647Ab0EAVzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 May 2010 17:55:06 -0400
+Date: Sat, 1 May 2010 14:55:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
+ rcu_dereference_check() usage
+Message-ID: <20100501215502.GA2474@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1271242058.32749.19.camel@laptop>
+ <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com>
+ <20100419230136.GA16856@linux.vnet.ibm.com>
+ <1271726729.2972.13.camel@dhcp231-113.rdu.redhat.com>
+ <20100420030452.GB2905@linux.vnet.ibm.com>
+ <4BCD646B.1080206@cn.fujitsu.com>
+ <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com>
+ <j2ya44ae5cd1004200545q6be4ec82o18ae99d93e8c29c7@mail.gmail.com>
+ <20100420135227.GC2628@linux.vnet.ibm.com>
+ <t2pa44ae5cd1005011026lab3a2440tb9fa351f172abf75@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <201005011155.37057.hverkuil@xs4all.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <t2pa44ae5cd1005011026lab3a2440tb9fa351f172abf75@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 01, 2010 at 11:55:37AM +0200, Hans Verkuil wrote:
-> On Thursday 29 April 2010 09:10:42 Laurent Pinchart wrote:
-> > Hi Hans,
-> > 
-> > On Thursday 29 April 2010 08:44:29 Hans Verkuil wrote:
-> > > On Thursday 29 April 2010 05:42:39 Frederic Weisbecker wrote:
-> > > > Hi,
-> > > > 
-> > > > Linus suggested to rename struct v4l2_file_operations::ioctl
-> > > > into bkl_ioctl to eventually get something greppable and make
-> > > > its background explicit.
-> > > > 
-> > > > While at it I thought it could be a good idea to just pushdown
-> > > > the bkl to every v4l drivers that have an .ioctl, so that we
-> > > > actually remove struct v4l2_file_operations::ioctl for good.
-> > > > 
-> > > > It passed make allyesconfig on sparc.
-> > > > Please tell me what you think.
-> > > 
-> > > I much prefer to keep the bkl inside the v4l2 core. One reason is that I
-> > > think that we can replace the bkl in the core with a mutex. Still not
-> > > ideal of course, so the next step will be to implement proper locking in
-> > > each driver. For this some additional v4l infrastructure work needs to be
-> > > done. I couldn't proceed with that until the v4l events API patches went
-> > > in, and that happened yesterday.
-> > > 
-> > > So from my point of view the timeline is this:
-> > > 
-> > > 1) I do the infrastructure work this weekend. This will make it much easier
-> > > to convert drivers to do proper locking. And it will also simplify
-> > > v4l2_priority handling, so I'm killing two birds with one stone :-)
-> > > 
-> > > 2) Wait until Arnd's patch gets merged that pushes the bkl down to
-> > > v4l2-dev.c
-> > > 
-> > > 3) Investigate what needs to be done to replace the bkl with a v4l2-dev.c
-> > > global mutex. Those drivers that call the bkl themselves should probably be
-> > > converted to do proper locking, but there are only about 14 drivers that do
-> > > this. The other 60 or so drivers should work fine if a v4l2-dev global lock
-> > > is used. At this point the bkl is effectively removed from the v4l
-> > > subsystem.
-> > > 
-> > > 4) Work on the remaining 60 drivers to do proper locking and get rid of the
-> > > v4l2-dev global lock. This is probably less work than it sounds.
-> > > 
-> > > Since your patch moves everything down to the driver level it will actually
-> > > make this work harder rather than easier. And it touches almost all drivers
-> > > as well.
-> > 
-> > Every driver will need to be carefully checked to make sure the BKL can be 
-> > replaced by a v4l2-dev global mutex. Why would it be more difficult to do so 
-> > if the BKL is pushed down to the drivers ?
+On Sat, May 01, 2010 at 01:26:15PM -0400, Miles Lane wrote:
+> On Tue, Apr 20, 2010 at 9:52 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Tue, Apr 20, 2010 at 08:45:28AM -0400, Miles Lane wrote:
+> >> Is there a patch set for 2.6.34-rc5 I can test?
+> >
+> > I will be sending a patchset out later today after testing, but
+> > please see below for a sneak preview collapsed into a single patch.
+> >
+> >                                                        Thanx, Paul
+> >
+> >> On Tue, Apr 20, 2010 at 8:31 AM, Eric Paris <eparis@redhat.com> wrote:
+> >>
+> >> > On Tue, 2010-04-20 at 16:23 +0800, Lai Jiangshan wrote:
+> >> >
+> >> > > [PATCH] RCU: don't turn off lockdep when find suspicious
+> >> > rcu_dereference_check() usage
+> >> > >
+> >> > > When suspicious rcu_dereference_check() usage is detected, lockdep is
+> >> > still
+> >> > > available actually, so we should not call debug_locks_off() in
+> >> > > lockdep_rcu_dereference().
+> >> > >
+> >> > > For get rid of too much "suspicious rcu_dereference_check() usage"
+> >> > > output when the "if(!debug_locks_off())" statement is removed. This patch
+> >> > uses
+> >> > > static variable '__warned's for very usage of "rcu_dereference*()".
+> >> > >
+> >> > > One variable per usage, so, Now, we can get multiple complaint
+> >> > > when we detect multiple different suspicious rcu_dereference_check()
+> >> > usage.
+> >> > >
+> >> > > Requested-by: Eric Paris <eparis@redhat.com>
+> >> > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> >> >
+> >> > Although mine was a linux-next kernel and it doesn't appear that I have
+> >> > rcu_dereference_protected() at all, so I dropped that bit of the patch,
+> >> > it worked great!  I got 4 more complaints to harass people with.  Feel
+> >> > free to add my tested by if you care to.
+> >> >
+> >> > Tested-by: Eric Paris <eparis@redhat.com>
+> >
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 07db2fe..ec9ab49 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -190,6 +190,15 @@ static inline int rcu_read_lock_sched_held(void)
+> >
+> >  #ifdef CONFIG_PROVE_RCU
+> >
+> > +#define __do_rcu_dereference_check(c)                                  \
+> > +       do {                                                            \
+> > +               static bool __warned;                                   \
+> > +               if (debug_lockdep_rcu_enabled() && !__warned && !(c)) { \
+> > +                       __warned = true;                                \
+> > +                       lockdep_rcu_dereference(__FILE__, __LINE__);    \
+> > +               }                                                       \
+> > +       } while (0)
+> > +
+> >  /**
+> >  * rcu_dereference_check - rcu_dereference with debug checking
+> >  * @p: The pointer to read, prior to dereferencing
+> > @@ -219,8 +228,7 @@ static inline int rcu_read_lock_sched_held(void)
+> >  */
+> >  #define rcu_dereference_check(p, c) \
+> >        ({ \
+> > -               if (debug_lockdep_rcu_enabled() && !(c)) \
+> > -                       lockdep_rcu_dereference(__FILE__, __LINE__); \
+> > +               __do_rcu_dereference_check(c); \
+> >                rcu_dereference_raw(p); \
+> >        })
+> >
+> > @@ -237,8 +245,7 @@ static inline int rcu_read_lock_sched_held(void)
+> >  */
+> >  #define rcu_dereference_protected(p, c) \
+> >        ({ \
+> > -               if (debug_lockdep_rcu_enabled() && !(c)) \
+> > -                       lockdep_rcu_dereference(__FILE__, __LINE__); \
+> > +               __do_rcu_dereference_check(c); \
+> >                (p); \
+> >        })
+> >
+> > diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+> > index da5e139..e5c0244 100644
+> > --- a/kernel/cgroup_freezer.c
+> > +++ b/kernel/cgroup_freezer.c
+> > @@ -205,9 +205,12 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
+> >         * No lock is needed, since the task isn't on tasklist yet,
+> >         * so it can't be moved to another cgroup, which means the
+> >         * freezer won't be removed and will be valid during this
+> > -        * function call.
+> > +        * function call.  Nevertheless, apply RCU read-side critical
+> > +        * section to suppress RCU lockdep false positives.
+> >         */
+> > +       rcu_read_lock();
+> >        freezer = task_freezer(task);
+> > +       rcu_read_unlock();
+> >
+> >        /*
+> >         * The root cgroup is non-freezable, so we can skip the
+> > diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> > index 2594e1c..03dd1fa 100644
+> > --- a/kernel/lockdep.c
+> > +++ b/kernel/lockdep.c
+> > @@ -3801,8 +3801,6 @@ void lockdep_rcu_dereference(const char *file, const int line)
+> >  {
+> >        struct task_struct *curr = current;
+> >
+> > -       if (!debug_locks_off())
+> > -               return;
+> >        printk("\n===================================================\n");
+> >        printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
+> >        printk(  "---------------------------------------------------\n");
+> > diff --git a/kernel/sched.c b/kernel/sched.c
+> > index 6af210a..14c44ec 100644
+> > --- a/kernel/sched.c
+> > +++ b/kernel/sched.c
+> > @@ -323,6 +323,15 @@ static inline struct task_group *task_group(struct task_struct *p)
+> >  /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
+> >  static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
+> >  {
+> > +       /*
+> > +        * Strictly speaking this rcu_read_lock() is not needed since the
+> > +        * task_group is tied to the cgroup, which in turn can never go away
+> > +        * as long as there are tasks attached to it.
+> > +        *
+> > +        * However since task_group() uses task_subsys_state() which is an
+> > +        * rcu_dereference() user, this quiets CONFIG_PROVE_RCU.
+> > +        */
+> > +       rcu_read_lock();
+> >  #ifdef CONFIG_FAIR_GROUP_SCHED
+> >        p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
+> >        p->se.parent = task_group(p)->se[cpu];
+> > @@ -332,6 +341,7 @@ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
+> >        p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
+> >        p->rt.parent = task_group(p)->rt_se[cpu];
+> >  #endif
+> > +       rcu_read_unlock();
+> >  }
+> >
+> >  #else
+> >
 > 
-> The main reason is really that pushing the bkl into the v4l core makes it
-> easier to review. I noticed for example that this patch series forgot to change
-> the video_ioctl2 call in ivtv-ioctl.c to video_ioctl2_unlocked. And there may
-> be other places as well that were missed. Having so many drivers changed also
-> means a lot of careful reviewing.
-
-
-Indeed, that's because I did it in a half automated way and my script
-didn't took the direct calls to video_ioctl2() into account, so I had
-to check them manually and probably missed a few, I will fix this one and
-double check.
-
-
+> Hi Paul.
 > 
-> But I will not block this change. However, I do think it would be better to
-> create a video_ioctl2_bkl rather than add a video_ioctl2_unlocked. The current
-> video_ioctl2 function *is* already unlocked. So you are subtle changing the
-> behavior of video_ioctl2. Not a good idea IMHO. And yes, grepping for
-> video_ioctl2_bkl is also easy to do and makes it more obvious that the BKL is
-> used in drivers that call this.
+> Has this patch made it into the Linus tree?
+> Thanks!
 
+Hello, Miles,
 
-Totally agreed, will respin with this rename.
+Not yet -- working with Ingo to get a variant of it into -tip on
+its way to Linus's tree.  The latest patch stack may be found at
+http://lkml.org/lkml/2010/4/30/500.
 
-Thanks.
-
+						Thanx, Paul
