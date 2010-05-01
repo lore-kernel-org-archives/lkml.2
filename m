@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932614Ab0EAOeA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:34:00 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63390 "EHLO
+	id S932533Ab0EAOdY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:33:24 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63470 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab0EAOaZ (ORCPT
+	with ESMTP id S932242Ab0EAObA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:30:25 -0400
+	Sat, 1 May 2010 10:31:00 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
-       x86@kernel.org
-Subject: [PATCH v21 023/100] c/r: x86_32 support for checkpoint/restart
-Date: Sat,  1 May 2010 10:15:05 -0400
-Message-Id: <1272723382-19470-24-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>, linux-fsdevel@vger.kernel.org
+Subject: [PATCH v21 044/100] c/r: add checkpoint operation for opened files of generic filesystems
+Date: Sat,  1 May 2010 10:15:26 -0400
+Message-Id: <1272723382-19470-45-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -24,1086 +23,1040 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add logic to save and restore architecture specific state, including
-thread-specific state, CPU registers and FPU state.
+From: Matt Helsley <matthltc@us.ibm.com>
 
-In addition, architecture capabilities are saved in an architecure
-specific extension of the header (ckpt_hdr_head_arch); Currently this
-includes only FPU capabilities.
+These patches extend the use of the generic file checkpoint operation to
+non-extX filesystems which have lseek operations that ensure we can save
+and restore the files for later use. Note that this does not include
+things like FUSE, network filesystems, or pseudo-filesystem kernel
+interfaces.
 
-Currently only x86-32 is supported.
+Only compile and boot tested (on x86-32).
+
+[Oren Laadan] Folded patch series into a single patch; original post
+included 36 separate patches for individual filesystems:
+
+  [PATCH 01/36] Add the checkpoint operation for affs files and directories.
+  [PATCH 02/36] Add the checkpoint operation for befs directories.
+  [PATCH 03/36] Add the checkpoint operation for bfs files and directories.
+  [PATCH 04/36] Add the checkpoint operation for btrfs files and directories.
+  [PATCH 05/36] Add the checkpoint operation for cramfs directories.
+  [PATCH 06/36] Add the checkpoint operation for ecryptfs files and directories.
+  [PATCH 07/36] Add the checkpoint operation for fat files and directories.
+  [PATCH 08/36] Add the checkpoint operation for freevxfs directories.
+  [PATCH 09/36] Add the checkpoint operation for hfs files and directories.
+  [PATCH 10/36] Add the checkpoint operation for hfsplus files and directories.
+  [PATCH 11/36] Add the checkpoint operation for hpfs files and directories.
+  [PATCH 12/36] Add the checkpoint operation for hppfs files and directories.
+  [PATCH 13/36] Add the checkpoint operation for iso directories.
+  [PATCH 14/36] Add the checkpoint operation for jffs2 files and directories.
+  [PATCH 15/36] Add the checkpoint operation for jfs files and directories.
+  [PATCH 16/36] Add the checkpoint operation for regular nfs files and directories. Skip the various /proc files for now.
+  [PATCH 17/36] Add the checkpoint operation for ntfs directories.
+  [PATCH 18/36] Add the checkpoint operation for openromfs directories. Explicitly skip the properties for now.
+  [PATCH 19/36] Add the checkpoint operation for qnx4 files and directories.
+  [PATCH 20/36] Add the checkpoint operation for reiserfs files and directories.
+  [PATCH 21/36] Add the checkpoint operation for romfs directories.
+  [PATCH 22/36] Add the checkpoint operation for squashfs directories.
+  [PATCH 23/36] Add the checkpoint operation for sysv filesystem files and directories.
+  [PATCH 24/36] Add the checkpoint operation for ubifs files and directories.
+  [PATCH 25/36] Add the checkpoint operation for udf filesystem files and directories.
+  [PATCH 26/36] Add the checkpoint operation for xfs files and directories.
+  [PATCH 27/36] Add checkpoint operation for efs directories.
+  [PATCH 28/36] Add the checkpoint operation for generic, read-only files. At present, some/all files of the following filesystems use this generic definition:
+  [PATCH 29/36] Add checkpoint operation for minix filesystem files and directories.
+  [PATCH 30/36] Add checkpoint operations for omfs files and directories.
+  [PATCH 31/36] Add checkpoint operations for ufs files and directories.
+  [PATCH 32/36] Add checkpoint operations for ramfs files. NOTE: since simple_dir_operations are shared between multiple filesystems including ramfs, it's not currently possible to checkpoint open ramfs directories.
+  [PATCH 33/36] Add the checkpoint operation for adfs files and directories.
+  [PATCH 34/36] Add the checkpoint operation to exofs files and directories.
+  [PATCH 35/36] Add the checkpoint operation to nilfs2 files and directories.
+  [PATCH 36/36] Add checkpoint operations for UML host filesystem files and directories.
 
 Changelog[v21]:
-  - [Nathan Lynch] Use task_user_gs to checkpoint gs
-  - Do not include checkpoint_hdr.h explicitly
-Changelog[v19]:
-  - [Serge Hallyn] Use ckpt_err() for arch incompatbilities
+  - Put file_ops->checkpoint under CONFIG_CHECKPOINT
 Changelog[v19-rc3]:
-  - Rebase to kernel 2.6.33:
-    * Use PTREGSCALL4 for sys_{checkpoint,restart}
-    * Remove debug-reg support (need to redo with perf_events)
-  - [Serge Hallyn] Support for ia32 (checkpoint, restart)
-  - Split arch/x86/checkpoint.c to generic and 32bit specific parts
-  - sys_{checkpoint,restore} to use ptregs
-Changelog[v19-rc1]:
-  - Fix up headers so we can munge them for use by userspace
-  - [Matt Helsley] Add cpp definitions for enums
-  - Allow X86_EFLAGS_RF on restart
-Changelog[v17]:
-  - Fix compilation for architectures that don't support checkpoint
-  - Validate cpu registers and TLS descriptors on restart
-  - Validate debug registers on restart
-  - Export asm/checkpoint_hdr.h to userspace
-Changelog[v16]:
-  - All objects are preceded by ckpt_hdr (TLS and xstate_buf)
-  - Add architecture identifier to main header
-Changelog[v14]:
-  - Use new interface ckpt_hdr_get/put()
-  - Embed struct ckpt_hdr in struct ckpt_hdr...
-  - Remove preempt_disable/enable() around init_fpu() and fix leak
-  - Revert change to pr_debug(), back to ckpt_debug()
-  - Move code related to task_struct to checkpoint/process.c
-Changelog[v12]:
-  - A couple of missed calls to ckpt_hbuf_put()
-  - Replace obsolete ckpt_debug() with pr_debug()
-Changelog[v9]:
-  - Add arch-specific header that details architecture capabilities;
-    split FPU restore to send capabilities only once.
-  - Test for zero TLS entries in ckpt_write_thread()
-  - Fix asm/checkpoint_hdr.h so it can be included from user-space
-Changelog[v7]:
-  - Fix save/restore state of FPU
-Changelog[v5]:
-  - Remove preempt_disable() when restoring debug registers
-Changelog[v4]:
-  - Fix header structure alignment
-Changelog[v2]:
-  - Pad header structures to 64 bits to ensure compatibility
-  - Follow Dave Hansen's refactoring of the original post
+  - [Suka] Enable C/R while executing over NFS
 
-Cc: x86@kernel.org
-Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
+Cc: linux-fsdevel@vger.kernel.org
+Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
+Acked-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- arch/x86/ia32/ia32entry.S             |    9 +
- arch/x86/include/asm/Kbuild           |    1 +
- arch/x86/include/asm/checkpoint_hdr.h |  112 +++++++++
- arch/x86/include/asm/syscalls.h       |    6 +
- arch/x86/include/asm/unistd_32.h      |    2 +
- arch/x86/kernel/Makefile              |    8 +
- arch/x86/kernel/checkpoint.c          |  418 +++++++++++++++++++++++++++++++++
- arch/x86/kernel/checkpoint_32.c       |  171 ++++++++++++++
- arch/x86/kernel/entry_32.S            |    8 +
- arch/x86/kernel/syscall_table_32.S    |    2 +
- include/linux/checkpoint.h            |    9 +
- include/linux/checkpoint_hdr.h        |   20 ++-
- kernel/checkpoint/checkpoint.c        |    7 +-
- kernel/checkpoint/process.c           |   20 ++-
- kernel/checkpoint/restart.c           |    8 +
- 15 files changed, 797 insertions(+), 4 deletions(-)
- create mode 100644 arch/x86/include/asm/checkpoint_hdr.h
- create mode 100644 arch/x86/kernel/checkpoint.c
- create mode 100644 arch/x86/kernel/checkpoint_32.c
+ fs/adfs/dir.c               |    3 +++
+ fs/adfs/file.c              |    3 +++
+ fs/affs/dir.c               |    3 +++
+ fs/affs/file.c              |    3 +++
+ fs/befs/linuxvfs.c          |    3 +++
+ fs/bfs/dir.c                |    3 +++
+ fs/bfs/file.c               |    3 +++
+ fs/btrfs/file.c             |    3 +++
+ fs/btrfs/inode.c            |    3 +++
+ fs/btrfs/super.c            |    3 +++
+ fs/cramfs/inode.c           |    3 +++
+ fs/ecryptfs/file.c          |    6 ++++++
+ fs/ecryptfs/miscdev.c       |    3 +++
+ fs/efs/dir.c                |    3 +++
+ fs/exofs/dir.c              |    3 +++
+ fs/exofs/file.c             |    3 +++
+ fs/fat/dir.c                |    3 +++
+ fs/fat/file.c               |    3 +++
+ fs/freevxfs/vxfs_lookup.c   |    3 +++
+ fs/hfs/dir.c                |    3 +++
+ fs/hfs/inode.c              |    3 +++
+ fs/hfsplus/dir.c            |    3 +++
+ fs/hfsplus/inode.c          |    3 +++
+ fs/hostfs/hostfs_kern.c     |    6 ++++++
+ fs/hpfs/dir.c               |    3 +++
+ fs/hpfs/file.c              |    3 +++
+ fs/hppfs/hppfs.c            |    6 ++++++
+ fs/isofs/dir.c              |    3 +++
+ fs/jffs2/dir.c              |    3 +++
+ fs/jffs2/file.c             |    3 +++
+ fs/jfs/file.c               |    3 +++
+ fs/jfs/namei.c              |    3 +++
+ fs/minix/dir.c              |    3 +++
+ fs/minix/file.c             |    3 +++
+ fs/nfs/dir.c                |    3 +++
+ fs/nfs/file.c               |    6 ++++++
+ fs/nilfs2/dir.c             |    4 +++-
+ fs/nilfs2/file.c            |    3 +++
+ fs/ntfs/dir.c               |    3 +++
+ fs/ntfs/file.c              |    5 ++++-
+ fs/omfs/dir.c               |    3 +++
+ fs/omfs/file.c              |    3 +++
+ fs/openpromfs/inode.c       |    6 ++++++
+ fs/qnx4/dir.c               |    3 +++
+ fs/ramfs/file-mmu.c         |    3 +++
+ fs/ramfs/file-nommu.c       |    3 +++
+ fs/read_write.c             |    3 +++
+ fs/reiserfs/dir.c           |    3 +++
+ fs/reiserfs/file.c          |    3 +++
+ fs/romfs/mmap-nommu.c       |    3 +++
+ fs/romfs/super.c            |    3 +++
+ fs/squashfs/dir.c           |    5 ++++-
+ fs/sysv/dir.c               |    3 +++
+ fs/sysv/file.c              |    3 +++
+ fs/ubifs/debug.c            |    3 +++
+ fs/ubifs/dir.c              |    3 +++
+ fs/ubifs/file.c             |    3 +++
+ fs/udf/dir.c                |    3 +++
+ fs/udf/file.c               |    3 +++
+ fs/ufs/dir.c                |    3 +++
+ fs/ufs/file.c               |    3 +++
+ fs/xfs/linux-2.6/xfs_file.c |    6 ++++++
+ 62 files changed, 206 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index b7f3f34..2efc4db 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -478,6 +478,13 @@ quiet_ni_syscall:
- 	PTREGSCALL stub32_vfork, sys_vfork, %rdi
- 	PTREGSCALL stub32_iopl, sys_iopl, %rsi
- 	PTREGSCALL stub32_eclone, sys_eclone, %r8
+diff --git a/fs/adfs/dir.c b/fs/adfs/dir.c
+index 23aa52f..c205b40 100644
+--- a/fs/adfs/dir.c
++++ b/fs/adfs/dir.c
+@@ -198,6 +198,9 @@ const struct file_operations adfs_dir_operations = {
+ 	.llseek		= generic_file_llseek,
+ 	.readdir	= adfs_readdir,
+ 	.fsync		= simple_fsync,
 +#ifdef CONFIG_CHECKPOINT
-+	PTREGSCALL stub32_checkpoint, sys_checkpoint, %r8
-+	PTREGSCALL stub32_restart, sys_restart, %r8
-+#else
-+	PTREGSCALL stub32_checkpoint, sys_ni_syscall, %r8
-+	PTREGSCALL stub32_restart, sys_ni_syscall, %r8
++	.checkpoint	= generic_file_checkpoint,
 +#endif
- 
- ENTRY(ia32_ptregs_common)
- 	popq %r11
-@@ -844,4 +851,6 @@ ia32_sys_call_table:
- 	.quad sys_perf_event_open
- 	.quad compat_sys_recvmmsg
- 	.quad stub32_eclone
-+	.quad stub32_checkpoint
-+	.quad stub32_restart			/* 340 */
- ia32_syscall_end:
-diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
-index 493092e..0893cfa 100644
---- a/arch/x86/include/asm/Kbuild
-+++ b/arch/x86/include/asm/Kbuild
-@@ -2,6 +2,7 @@ include include/asm-generic/Kbuild.asm
- 
- header-y += boot.h
- header-y += bootparam.h
-+header-y += checkpoint_hdr.h
- header-y += debugreg.h
- header-y += ldt.h
- header-y += msr-index.h
-diff --git a/arch/x86/include/asm/checkpoint_hdr.h b/arch/x86/include/asm/checkpoint_hdr.h
-new file mode 100644
-index 0000000..e6cfc99
---- /dev/null
-+++ b/arch/x86/include/asm/checkpoint_hdr.h
-@@ -0,0 +1,112 @@
-+#ifndef __ASM_X86_CKPT_HDR_H
-+#define __ASM_X86_CKPT_HDR_H
-+/*
-+ *  Checkpoint/restart - architecture specific headers x86
-+ *
-+ *  Copyright (C) 2008-2009 Oren Laadan
-+ *
-+ *  This file is subject to the terms and conditions of the GNU General Public
-+ *  License.  See the file COPYING in the main directory of the Linux
-+ *  distribution for more details.
-+ */
-+
-+#ifndef _CHECKPOINT_CKPT_HDR_H_
-+#error asm/checkpoint_hdr.h included directly
-+#endif
-+
-+#include <linux/types.h>
-+
-+/*
-+ * To maintain compatibility between 32-bit and 64-bit architecture flavors,
-+ * keep data 64-bit aligned: use padding for structure members, and use
-+ * __attribute__((aligned (8))) for the entire structure.
-+ *
-+ * Quoting Arnd Bergmann:
-+ *   "This structure has an odd multiple of 32-bit members, which means
-+ *   that if you put it into a larger structure that also contains 64-bit
-+ *   members, the larger structure may get different alignment on x86-32
-+ *   and x86-64, which you might want to avoid. I can't tell if this is
-+ *   an actual problem here. ... In this case, I'm pretty sure that
-+ *   sizeof(ckpt_hdr_task) on x86-32 is different from x86-64, since it
-+ *   will be 32-bit aligned on x86-32."
-+ */
-+
-+/* i387 structure seen from kernel/userspace */
-+#ifdef __KERNEL__
-+#include <asm/processor.h>
-+#endif
-+
-+#ifdef CONFIG_X86_32
-+#define CKPT_ARCH_ID	CKPT_ARCH_X86_32
-+#endif
-+
-+/* arch dependent header types */
-+enum {
-+	CKPT_HDR_CPU_FPU = 201,
-+#define CKPT_HDR_CPU_FPU CKPT_HDR_CPU_FPU
-+};
-+
-+struct ckpt_hdr_header_arch {
-+	struct ckpt_hdr h;
-+	/* FIXME: add HAVE_HWFP */
-+	__u16 has_fxsr;
-+	__u16 has_xsave;
-+	__u16 xstate_size;
-+	__u16 _pading;
-+} __attribute__((aligned(8)));
-+
-+struct ckpt_hdr_thread {
-+	struct ckpt_hdr h;
-+	__u32 thread_info_flags;
-+	__u16 gdt_entry_tls_entries;
-+	__u16 sizeof_tls_array;
-+} __attribute__((aligned(8)));
-+
-+/* designed to work for both x86_32 and x86_64 */
-+struct ckpt_hdr_cpu {
-+	struct ckpt_hdr h;
-+	/* see struct pt_regs (x86_64) */
-+	__u64 r15;
-+	__u64 r14;
-+	__u64 r13;
-+	__u64 r12;
-+	__u64 bp;
-+	__u64 bx;
-+	__u64 r11;
-+	__u64 r10;
-+	__u64 r9;
-+	__u64 r8;
-+	__u64 ax;
-+	__u64 cx;
-+	__u64 dx;
-+	__u64 si;
-+	__u64 di;
-+	__u64 orig_ax;
-+	__u64 ip;
-+	__u64 sp;
-+
-+	__u64 flags;
-+
-+	/* segment registers */
-+	__u64 fs;
-+	__u64 gs;
-+
-+	__u16 fsindex;
-+	__u16 gsindex;
-+	__u16 cs;
-+	__u16 ss;
-+	__u16 ds;
-+	__u16 es;
-+
-+	__u32 used_math;
-+
-+	/* thread_xstate contents follow (if used_math) */
-+} __attribute__((aligned(8)));
-+
-+#define CKPT_X86_SEG_NULL	0
-+#define CKPT_X86_SEG_USER32_CS	1
-+#define CKPT_X86_SEG_USER32_DS	2
-+#define CKPT_X86_SEG_TLS	0x4000	/* 0100 0000 0000 00xx */
-+#define CKPT_X86_SEG_LDT	0x8000	/* 100x xxxx xxxx xxxx */
-+
-+#endif /* __ASM_X86_CKPT_HDR__H */
-diff --git a/arch/x86/include/asm/syscalls.h b/arch/x86/include/asm/syscalls.h
-index d525677..538a1ef 100644
---- a/arch/x86/include/asm/syscalls.h
-+++ b/arch/x86/include/asm/syscalls.h
-@@ -29,6 +29,12 @@ long sys_clone(unsigned long, unsigned long, void __user *,
- 	       void __user *, struct pt_regs *);
- long sys_eclone(unsigned flags_low, struct clone_args __user *uca,
- 		int args_size, pid_t __user *pids, struct pt_regs *regs);
-+#ifdef CONFIG_CHECKPOINT
-+long sys_checkpoint(pid_t pid, int fd, unsigned long flags,
-+		    int logfd, struct pt_regs *regs);
-+long sys_restart(pid_t pid, int fd, unsigned long flags,
-+		 int logfd, struct pt_regs *regs);
-+#endif
- 
- /* kernel/ldt.c */
- asmlinkage int sys_modify_ldt(int, void __user *, unsigned long);
-diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
-index cb67842..007d7cd 100644
---- a/arch/x86/include/asm/unistd_32.h
-+++ b/arch/x86/include/asm/unistd_32.h
-@@ -344,6 +344,8 @@
- #define __NR_perf_event_open	336
- #define __NR_recvmmsg		337
- #define __NR_eclone		338
-+#define __NR_checkpoint		339
-+#define __NR_restart		340
- 
- #ifdef __KERNEL__
- 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 4c58352..2078d1b 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -117,6 +117,14 @@ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
- 
- obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
- 
-+obj-$(CONFIG_CHECKPOINT)	+= checkpoint.o
-+
-+###
-+# 32 bit specific files
-+ifeq ($(CONFIG_X86_32),y)
-+	obj-$(CONFIG_CHECKPOINT)	+= checkpoint_32.o
-+endif
-+
- ###
- # 64 bit specific files
- ifeq ($(CONFIG_X86_64),y)
-diff --git a/arch/x86/kernel/checkpoint.c b/arch/x86/kernel/checkpoint.c
-new file mode 100644
-index 0000000..015401a
---- /dev/null
-+++ b/arch/x86/kernel/checkpoint.c
-@@ -0,0 +1,418 @@
-+/*
-+ *  Checkpoint/restart - architecture specific support for x86
-+ *
-+ *  Copyright (C) 2008-2009 Oren Laadan
-+ *
-+ *  This file is subject to the terms and conditions of the GNU General Public
-+ *  License.  See the file COPYING in the main directory of the Linux
-+ *  distribution for more details.
-+ */
-+
-+/* default debug level for output */
-+#define CKPT_DFLAG  CKPT_DSYS
-+
-+#include <asm/desc.h>
-+#include <asm/i387.h>
-+
-+#include <linux/checkpoint.h>
-+
-+/*
-+ * sys_checkpoint needs to be a ptregscall to match sys_restart
-+ * so self-checkpoint images can be restarted.
-+ */
-+long sys_checkpoint(pid_t pid, int fd, unsigned long flags, int logfd,
-+		    struct pt_regs *regs)
-+{
-+	return do_sys_checkpoint(pid, fd, flags, logfd);
-+}
-+
-+/*
-+ * sys_restart needs to access and modify the pt_regs structure to
-+ * restore the original state from the time of the checkpoint.
-+ */
-+long sys_restart(pid_t pid, int fd, unsigned long flags, int logfd,
-+		 struct pt_regs *regs)
-+{
-+	return do_sys_restart(pid, fd, flags, logfd);
-+}
-+
-+
-+extern int check_segment(__u16 seg);
-+extern __u16 encode_segment(unsigned short seg);
-+extern unsigned short decode_segment(__u16 seg);
-+extern void save_cpu_regs(struct ckpt_hdr_cpu *h, struct task_struct *t);
-+extern int load_cpu_regs(struct ckpt_hdr_cpu *h, struct task_struct *t);
-+
-+static int check_tls(struct desc_struct *desc)
-+{
-+	if (!desc->a && !desc->b)
-+		return 1;
-+	if (desc->l != 0 || desc->s != 1 || desc->dpl != 3)
-+		return 0;
-+	return 1;
-+}
-+
-+#define CKPT_X86_TIF_UNSUPPORTED   (_TIF_SECCOMP | _TIF_IO_BITMAP)
-+
-+/**************************************************************************
-+ * Checkpoint
-+ */
-+
-+static int may_checkpoint_thread(struct ckpt_ctx *ctx, struct task_struct *t)
-+{
-+#ifdef CONFIG_X86_32
-+	if (t->thread.vm86_info) {
-+		ckpt_err(ctx, -EBUSY, "%(T)Task in VM86 mode\n");
-+		return -EBUSY;
-+	}
-+#endif
-+
-+	/* debugregs not (yet) supported */
-+	if (test_tsk_thread_flag(t, TIF_DEBUG)) {
-+		ckpt_err(ctx, -EBUSY, "%(T)Task with debugreg set\n");
-+		return -EBUSY;
-+	}
-+
-+	if (task_thread_info(t)->flags & CKPT_X86_TIF_UNSUPPORTED) {
-+		ckpt_err(ctx, -EBUSY, "%(T)Bad thread info flags %#lx\n",
-+			 task_thread_info(t)->flags);
-+		return -EBUSY;
-+	}
-+	return 0;
-+}
-+
-+/* dump the thread_struct of a given task */
-+int checkpoint_thread(struct ckpt_ctx *ctx, struct task_struct *t)
-+{
-+	struct ckpt_hdr_thread *h;
-+	int tls_size;
-+	int ret;
-+
-+	ret = may_checkpoint_thread(ctx, t);
-+	if (ret < 0)
-+		return ret;
-+
-+	tls_size = sizeof(t->thread.tls_array);
-+
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h) + tls_size, CKPT_HDR_THREAD);
-+	if (!h)
-+		return -ENOMEM;
-+
-+	h->thread_info_flags =
-+		task_thread_info(t)->flags & ~CKPT_X86_TIF_UNSUPPORTED;
-+	h->gdt_entry_tls_entries = GDT_ENTRY_TLS_ENTRIES;
-+	h->sizeof_tls_array = tls_size;
-+
-+	/* For simplicity dump the entire array */
-+	memcpy(h + 1, t->thread.tls_array, tls_size);
-+
-+	ret = ckpt_write_obj(ctx, &h->h);
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-+
-+static void save_cpu_debug(struct ckpt_hdr_cpu *h, struct task_struct *t)
-+{
-+	/*
-+	 * FIXME: as of kernel 2.6.33 debug registers are handled via
-+	 * perf_event interface. For neither, neither is supported.
-+	 */
-+}
-+
-+static void save_cpu_fpu(struct ckpt_hdr_cpu *h, struct task_struct *t)
-+{
-+	h->used_math = tsk_used_math(t) ? 1 : 0;
-+}
-+
-+static int checkpoint_cpu_fpu(struct ckpt_ctx *ctx, struct task_struct *t)
-+{
-+	struct ckpt_hdr *h;
-+	int ret;
-+
-+	h = ckpt_hdr_get_type(ctx, xstate_size + sizeof(*h),
-+			      CKPT_HDR_CPU_FPU);
-+	if (!h)
-+		return -ENOMEM;
-+
-+	/* i387 + MMU + SSE logic */
-+	preempt_disable();	/* needed it (t == current) */
-+
-+	/*
-+	 * normally, no need to unlazy_fpu(), since TS_USEDFPU flag
-+	 * was cleared when task was context-switched out...
-+	 * except if we are in process context, in which case we do
-+	 */
-+	if (t == current && (task_thread_info(t)->status & TS_USEDFPU))
-+		unlazy_fpu(current);
-+
-+	/*
-+	 * For simplicity dump the entire structure.
-+	 * FIX: need to be deliberate about what registers we are
-+	 * dumping for traceability and compatibility.
-+	 */
-+	memcpy(h + 1, t->thread.xstate, xstate_size);
-+	preempt_enable();	/* needed if (t == current) */
-+
-+	ret = ckpt_write_obj(ctx, h);
-+	ckpt_hdr_put(ctx, h);
-+
-+	return ret;
-+}
-+
-+/* dump the cpu state and registers of a given task */
-+int checkpoint_cpu(struct ckpt_ctx *ctx, struct task_struct *t)
-+{
-+	struct ckpt_hdr_cpu *h;
-+	int ret;
-+
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_CPU);
-+	if (!h)
-+		return -ENOMEM;
-+
-+	save_cpu_regs(h, t);
-+	save_cpu_debug(h, t);
-+	save_cpu_fpu(h, t);
-+
-+	ckpt_debug("math %d\n", h->used_math);
-+
-+	ret = ckpt_write_obj(ctx, &h->h);
-+	if (ret < 0)
-+		goto out;
-+
-+	if (h->used_math)
-+		ret = checkpoint_cpu_fpu(ctx, t);
-+ out:
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-+
-+int checkpoint_write_header_arch(struct ckpt_ctx *ctx)
-+{
-+	struct ckpt_hdr_header_arch *h;
-+	int ret;
-+
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_HEADER_ARCH);
-+	if (!h)
-+		return -ENOMEM;
-+
-+	/* FPU capabilities */
-+	h->has_fxsr = cpu_has_fxsr;
-+	h->has_xsave = cpu_has_xsave;
-+	h->xstate_size = xstate_size;
-+
-+	ret = ckpt_write_obj(ctx, &h->h);
-+	ckpt_hdr_put(ctx, h);
-+
-+	return ret;
-+}
-+
-+/**************************************************************************
-+ * Restart
-+ */
-+
-+/* read the thread_struct into the current task */
-+int restore_thread(struct ckpt_ctx *ctx)
-+{
-+	struct ckpt_hdr_thread *h;
-+	struct thread_struct *thread = &current->thread;
-+	struct desc_struct *desc;
-+	int tls_size;
-+	int i, cpu, ret;
-+
-+	tls_size = sizeof(thread->tls_array);
-+
-+	h = ckpt_read_obj_type(ctx, sizeof(*h) + tls_size, CKPT_HDR_THREAD);
-+	if (IS_ERR(h))
-+		return PTR_ERR(h);
-+
-+	ret = -EINVAL;
-+	if (h->thread_info_flags & CKPT_X86_TIF_UNSUPPORTED)
-+		goto out;
-+	if (h->gdt_entry_tls_entries != GDT_ENTRY_TLS_ENTRIES)
-+		goto out;
-+	if (h->sizeof_tls_array != tls_size)
-+		goto out;
-+
-+	/*
-+	 * restore TLS by hand: why convert to struct user_desc if
-+	 * sys_set_thread_entry() will convert it back ?
-+	 */
-+	desc = (struct desc_struct *) (h + 1);
-+
-+	for (i = 0; i < GDT_ENTRY_TLS_ENTRIES; i++) {
-+		if (!check_tls(&desc[i]))
-+			goto out;
-+	}
-+
-+	cpu = get_cpu();
-+	memcpy(thread->tls_array, desc, tls_size);
-+	load_TLS(thread, cpu);
-+	put_cpu();
-+
-+	/* TODO: restore TIF flags as necessary (e.g. TIF_NOTSC) */
-+
-+	ret = 0;
-+ out:
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-+
-+static int load_cpu_debug(struct ckpt_hdr_cpu *h, struct task_struct *t)
-+{
-+	/*
-+	 * FIXME: as of kernel 2.6.33 debug registers are handled via
-+	 * perf_event interface. For neither, neither is supported.
-+	 */
-+
-+	return 0;
-+}
-+
-+static int load_cpu_fpu(struct ckpt_hdr_cpu *h, struct task_struct *t)
-+{
-+	preempt_disable();
-+
-+	__clear_fpu(t);		/* in case we used FPU in user mode */
-+
-+	if (!h->used_math)
-+		clear_used_math();
-+
-+	preempt_enable();
-+	return 0;
-+}
-+
-+static int restore_cpu_fpu(struct ckpt_ctx *ctx, struct task_struct *t)
-+{
-+	struct ckpt_hdr *h;
-+	int ret;
-+
-+	/* init_fpu() eventually also calls set_used_math() */
-+	ret = init_fpu(current);
-+	if (ret < 0)
-+		return ret;
-+
-+	h = ckpt_read_obj_type(ctx, xstate_size + sizeof(*h),
-+			       CKPT_HDR_CPU_FPU);
-+	if (IS_ERR(h))
-+		return PTR_ERR(h);
-+
-+	memcpy(t->thread.xstate, h + 1, xstate_size);
-+
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-+
-+static int check_eflags(__u32 eflags)
-+{
-+#define X86_EFLAGS_CKPT_MASK  \
-+	(X86_EFLAGS_CF | X86_EFLAGS_PF | X86_EFLAGS_AF | X86_EFLAGS_ZF | \
-+	 X86_EFLAGS_SF | X86_EFLAGS_TF | X86_EFLAGS_DF | X86_EFLAGS_OF | \
-+	 X86_EFLAGS_NT | X86_EFLAGS_AC | X86_EFLAGS_ID | X86_EFLAGS_RF)
-+
-+	if ((eflags & ~X86_EFLAGS_CKPT_MASK) != (X86_EFLAGS_IF | 0x2))
-+		return 0;
-+	return 1;
-+}
-+
-+static void restore_eflags(struct pt_regs *regs, __u32 eflags)
-+{
-+	/*
-+	 * A task may have had X86_EFLAGS_RF set at checkpoint, .e.g:
-+	 * 1) It ran in a KVM guest, and the guest was being debugged,
-+	 * 2) The kernel was debugged using kgbd,
-+	 * 3) From Intel's manual: "When calling an event handler,
-+	 *    Intel 64 and IA-32 processors establish the value of the
-+	 *    RF flag in the EFLAGS image pushed on the stack:
-+	 *  - For any fault-class exception except a debug exception
-+	 *    generated in response to an instruction breakpoint, the
-+	 *    value pushed for RF is 1.
-+	 *  - For any interrupt arriving after any iteration of a
-+	 *    repeated string instruction but the last iteration, the
-+	 *    value pushed for RF is 1.
-+	 *  - For any trap-class exception generated by any iteration
-+	 *    of a repeated string instruction but the last iteration,
-+	 *    the value pushed for RF is 1.
-+	 *  - For other cases, the value pushed for RF is the value
-+	 *    that was in EFLAG.RF at the time the event handler was
-+	 *    called.
-+	 *  [from: http://www.intel.com/Assets/PDF/manual/253668.pdf]
-+	 *
-+	 * The RF flag may be set in EFLAGS by the hardware, or by
-+	 * kvm/kgdb, or even by the user with ptrace or by setting a
-+	 * suitable context when returning from a signal handler.
-+	 *
-+	 * Therefore, on restart we (1) prserve X86_EFLAGS_RF from
-+	 * checkpoint time, and (2) preserve a X86_EFLAGS_RF of the
-+	 * restarting process if it already exists on saved EFLAGS.
-+	 * Disable preemption to protect EFLAG test-and-change.
-+	 */
-+	preempt_disable();
-+	eflags |= (regs->flags & X86_EFLAGS_RF);
-+	regs->flags = eflags;
-+	preempt_enable();
-+}
-+
-+static int load_cpu_eflags(struct ckpt_hdr_cpu *h, struct task_struct *t)
-+{
-+	struct pt_regs *regs = task_pt_regs(t);
-+
-+	if (!check_eflags(h->flags))
-+		return -EINVAL;
-+	restore_eflags(regs, h->flags);
-+	return 0;
-+}
-+
-+/* read the cpu state and registers for the current task */
-+int restore_cpu(struct ckpt_ctx *ctx)
-+{
-+	struct ckpt_hdr_cpu *h;
-+	struct task_struct *t = current;
-+	int ret;
-+
-+	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_CPU);
-+	if (IS_ERR(h))
-+		return PTR_ERR(h);
-+
-+	ckpt_debug("math %d\n", h->used_math);
-+
-+	ret = load_cpu_regs(h, t);
-+	if (ret < 0)
-+		goto out;
-+	ret = load_cpu_eflags(h, t);
-+	if (ret < 0)
-+		goto out;
-+	ret = load_cpu_debug(h, t);
-+	if (ret < 0)
-+		goto out;
-+	ret = load_cpu_fpu(h, t);
-+	if (ret < 0)
-+		goto out;
-+
-+	if (h->used_math)
-+		ret = restore_cpu_fpu(ctx, t);
-+ out:
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-+
-+int restore_read_header_arch(struct ckpt_ctx *ctx)
-+{
-+	struct ckpt_hdr_header_arch *h;
-+	int ret = 0;
-+
-+	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_HEADER_ARCH);
-+	if (IS_ERR(h))
-+		return PTR_ERR(h);
-+
-+	/* FIX: verify compatibility of architecture features */
-+
-+	/* verify FPU capabilities */
-+	if (h->has_fxsr != cpu_has_fxsr ||
-+	    h->has_xsave != cpu_has_xsave ||
-+	    h->xstate_size != xstate_size) {
-+		ret = -EINVAL;
-+		ckpt_err(ctx, ret, "incompatible FPU capabilities");
-+	}
-+
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-diff --git a/arch/x86/kernel/checkpoint_32.c b/arch/x86/kernel/checkpoint_32.c
-new file mode 100644
-index 0000000..8b9a16c
---- /dev/null
-+++ b/arch/x86/kernel/checkpoint_32.c
-@@ -0,0 +1,171 @@
-+/*
-+ *  Checkpoint/restart - architecture specific support for x86_32
-+ *
-+ *  Copyright (C) 2008-2009 Oren Laadan
-+ *
-+ *  This file is subject to the terms and conditions of the GNU General Public
-+ *  License.  See the file COPYING in the main directory of the Linux
-+ *  distribution for more details.
-+ */
-+
-+/* default debug level for output */
-+#define CKPT_DFLAG  CKPT_DSYS
-+
-+#include <asm/desc.h>
-+#include <asm/i387.h>
-+#include <asm/elf.h>
-+
-+#include <linux/checkpoint.h>
-+
-+/* helpers to encode/decode/validate segments */
-+
-+static int check_segment(__u16 seg)
-+{
-+	int ret = 0;
-+
-+	switch (seg) {
-+	case CKPT_X86_SEG_NULL:
-+	case CKPT_X86_SEG_USER32_CS:
-+	case CKPT_X86_SEG_USER32_DS:
-+		return 1;
-+	}
-+	if (seg & CKPT_X86_SEG_TLS) {
-+		seg &= ~CKPT_X86_SEG_TLS;
-+		if (seg <= GDT_ENTRY_TLS_MAX - GDT_ENTRY_TLS_MIN)
-+			ret = 1;
-+	} else if (seg & CKPT_X86_SEG_LDT) {
-+		seg &= ~CKPT_X86_SEG_LDT;
-+		if (seg <= 0x1fff)
-+			ret = 1;
-+	}
-+	return ret;
-+}
-+
-+static __u16 encode_segment(unsigned short seg)
-+{
-+	if (seg == 0)
-+		return CKPT_X86_SEG_NULL;
-+	BUG_ON((seg & 3) != 3);
-+
-+	if (seg == __USER_CS)
-+		return CKPT_X86_SEG_USER32_CS;
-+	if (seg == __USER_DS)
-+		return CKPT_X86_SEG_USER32_DS;
-+
-+	if (seg & 4)
-+		return CKPT_X86_SEG_LDT | (seg >> 3);
-+
-+	seg >>= 3;
-+	if (GDT_ENTRY_TLS_MIN <= seg && seg <= GDT_ENTRY_TLS_MAX)
-+		return CKPT_X86_SEG_TLS | (seg - GDT_ENTRY_TLS_MIN);
-+
-+	printk(KERN_ERR "c/r: (decode) bad segment %#hx\n", seg);
-+	BUG();
-+}
-+
-+static unsigned short decode_segment(__u16 seg)
-+{
-+	if (seg == CKPT_X86_SEG_NULL)
-+		return 0;
-+	if (seg == CKPT_X86_SEG_USER32_CS)
-+		return __USER_CS;
-+	if (seg == CKPT_X86_SEG_USER32_DS)
-+		return __USER_DS;
-+
-+	if (seg & CKPT_X86_SEG_TLS) {
-+		seg &= ~CKPT_X86_SEG_TLS;
-+		return ((GDT_ENTRY_TLS_MIN + seg) << 3) | 3;
-+	}
-+	if (seg & CKPT_X86_SEG_LDT) {
-+		seg &= ~CKPT_X86_SEG_LDT;
-+		return (seg << 3) | 7;
-+	}
-+	BUG();
-+}
-+
-+void save_cpu_regs(struct ckpt_hdr_cpu *h, struct task_struct *t)
-+{
-+	struct pt_regs *regs = task_pt_regs(t);
-+	unsigned long _gs;
-+
-+	h->bp = regs->bp;
-+	h->bx = regs->bx;
-+	h->ax = regs->ax;
-+	h->cx = regs->cx;
-+	h->dx = regs->dx;
-+	h->si = regs->si;
-+	h->di = regs->di;
-+	h->orig_ax = regs->orig_ax;
-+	h->ip = regs->ip;
-+
-+	h->flags = regs->flags;
-+	h->sp = regs->sp;
-+
-+	h->cs = encode_segment(regs->cs);
-+	h->ss = encode_segment(regs->ss);
-+	h->ds = encode_segment(regs->ds);
-+	h->es = encode_segment(regs->es);
-+
-+	/*
-+	 * for checkpoint in process context (from within a container)
-+	 * the GS segment register should be saved from the hardware;
-+	 * otherwise use the standard way of accessing a task's GS
-+	 */
-+	if (t == current)
-+		_gs = get_user_gs(regs);
-+	else
-+		_gs = task_user_gs(t);
-+
-+	h->fsindex = encode_segment(regs->fs);
-+	h->gsindex = encode_segment(_gs);
-+
-+	/*
-+	 * for checkpoint in process context (from within a container),
-+	 * the actual syscall is taking place at this very moment; so
-+	 * we (optimistically) subtitute the future return value (0) of
-+	 * this syscall into the orig_eax, so that upon restart it will
-+	 * succeed (or it will endlessly retry checkpoint...)
-+	 */
-+	if (t == current) {
-+		BUG_ON(h->orig_ax < 0);
-+		h->ax = 0;
-+	}
-+}
-+
-+int load_cpu_regs(struct ckpt_hdr_cpu *h, struct task_struct *t)
-+{
-+	struct thread_struct *thread = &t->thread;
-+	struct pt_regs *regs = task_pt_regs(t);
-+
-+	if (h->cs == CKPT_X86_SEG_NULL)
-+		return -EINVAL;
-+	if (!check_segment(h->cs) || !check_segment(h->ds) ||
-+	    !check_segment(h->es) || !check_segment(h->ss) ||
-+	    !check_segment(h->fsindex) || !check_segment(h->gsindex))
-+		return -EINVAL;
-+
-+	regs->bp = h->bp;
-+	regs->bx = h->bx;
-+	regs->ax = h->ax;
-+	regs->cx = h->cx;
-+	regs->dx = h->dx;
-+	regs->si = h->si;
-+	regs->di = h->di;
-+	regs->orig_ax = h->orig_ax;
-+	regs->ip = h->ip;
-+
-+	regs->sp = h->sp;
-+
-+	regs->ds = decode_segment(h->ds);
-+	regs->es = decode_segment(h->es);
-+	regs->cs = decode_segment(h->cs);
-+	regs->ss = decode_segment(h->ss);
-+
-+	regs->fs = decode_segment(h->fsindex);
-+	regs->gs = decode_segment(h->gsindex);
-+
-+	thread->gs = regs->gs;
-+	lazy_load_gs(regs->gs);
-+
-+	return 0;
-+}
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 65e1735..49d6628 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -781,6 +781,14 @@ PTREGSCALL0(rt_sigreturn)
- PTREGSCALL2(vm86)
- PTREGSCALL1(vm86old)
- PTREGSCALL4(eclone)
-+#ifdef CONFIG_CHECKPOINT
-+PTREGSCALL4(checkpoint)
-+PTREGSCALL4(restart)
-+#else
-+/* Use the weak defs in kernel/sys_ni.c */
-+#define ptregs_checkpoint  sys_checkpoint
-+#define ptregs_restart  sys_restart
-+#endif
- 
- /* Clone is an oddball.  The 4th arg is in %edi */
- 	ALIGN;
-diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
-index 0c92570..2485482 100644
---- a/arch/x86/kernel/syscall_table_32.S
-+++ b/arch/x86/kernel/syscall_table_32.S
-@@ -338,3 +338,5 @@ ENTRY(sys_call_table)
- 	.long sys_perf_event_open
- 	.long sys_recvmmsg
- 	.long ptregs_eclone
-+	.long ptregs_checkpoint
-+	.long ptregs_restart		/* 340 */
-diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
-index 4bb5b8d..077bbcd 100644
---- a/include/linux/checkpoint.h
-+++ b/include/linux/checkpoint.h
-@@ -70,6 +70,15 @@ extern long do_restart(struct ckpt_ctx *ctx, pid_t pid);
- extern int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t);
- extern int restore_task(struct ckpt_ctx *ctx);
- 
-+/* arch hooks */
-+extern int checkpoint_write_header_arch(struct ckpt_ctx *ctx);
-+extern int checkpoint_thread(struct ckpt_ctx *ctx, struct task_struct *t);
-+extern int checkpoint_cpu(struct ckpt_ctx *ctx, struct task_struct *t);
-+
-+extern int restore_read_header_arch(struct ckpt_ctx *ctx);
-+extern int restore_thread(struct ckpt_ctx *ctx);
-+extern int restore_cpu(struct ckpt_ctx *ctx);
-+
- static inline int ckpt_validate_errno(int errno)
- {
- 	return (errno >= 0) && (errno < MAX_ERRNO);
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 7ccebc7..a0189de 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -53,10 +53,16 @@ struct ckpt_hdr {
- 	__u32 len;
- } __attribute__((aligned(8)));
- 
-+
-+#include <asm/checkpoint_hdr.h>
-+
-+
- /* header types */
- enum {
- 	CKPT_HDR_HEADER = 1,
- #define CKPT_HDR_HEADER CKPT_HDR_HEADER
-+	CKPT_HDR_HEADER_ARCH,
-+#define CKPT_HDR_HEADER_ARCH CKPT_HDR_HEADER_ARCH
- 	CKPT_HDR_CONTAINER,
- #define CKPT_HDR_CONTAINER CKPT_HDR_CONTAINER
- 	CKPT_HDR_BUFFER,
-@@ -66,6 +72,12 @@ enum {
- 
- 	CKPT_HDR_TASK = 101,
- #define CKPT_HDR_TASK CKPT_HDR_TASK
-+	CKPT_HDR_THREAD,
-+#define CKPT_HDR_THREAD CKPT_HDR_THREAD
-+	CKPT_HDR_CPU,
-+#define CKPT_HDR_CPU CKPT_HDR_CPU
-+
-+	/* 201-299: reserved for arch-dependent */
- 
- 	CKPT_HDR_TAIL = 9001,
- #define CKPT_HDR_TAIL CKPT_HDR_TAIL
-@@ -74,6 +86,12 @@ enum {
- #define CKPT_HDR_ERROR CKPT_HDR_ERROR
  };
  
-+/* architecture */
-+enum {
-+	CKPT_ARCH_X86_32 = 1,
-+#define CKPT_ARCH_X86_32 CKPT_ARCH_X86_32
-+};
-+
- /* kernel constants */
- struct ckpt_const {
- 	/* task */
-@@ -89,7 +107,7 @@ struct ckpt_hdr_header {
- 	struct ckpt_hdr h;
- 	__u64 magic;
+ static int
+diff --git a/fs/adfs/file.c b/fs/adfs/file.c
+index 005ea34..09ce6c7 100644
+--- a/fs/adfs/file.c
++++ b/fs/adfs/file.c
+@@ -30,6 +30,9 @@ const struct file_operations adfs_file_operations = {
+ 	.write		= do_sync_write,
+ 	.aio_write	= generic_file_aio_write,
+ 	.splice_read	= generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
  
--	__u16 _padding;
-+	__u16 arch_id;
+ const struct inode_operations adfs_file_inode_operations = {
+diff --git a/fs/affs/dir.c b/fs/affs/dir.c
+index 8ca8f3a..02511bf 100644
+--- a/fs/affs/dir.c
++++ b/fs/affs/dir.c
+@@ -22,6 +22,9 @@ const struct file_operations affs_dir_operations = {
+ 	.llseek		= generic_file_llseek,
+ 	.readdir	= affs_readdir,
+ 	.fsync		= affs_file_fsync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
  
- 	__u16 major;
- 	__u16 minor;
-diff --git a/kernel/checkpoint/checkpoint.c b/kernel/checkpoint/checkpoint.c
-index 75b43e6..0f55d37 100644
---- a/kernel/checkpoint/checkpoint.c
-+++ b/kernel/checkpoint/checkpoint.c
-@@ -126,6 +126,8 @@ static int checkpoint_write_header(struct ckpt_ctx *ctx)
- 	do_gettimeofday(&ktv);
- 	uts = utsname();
+ /*
+diff --git a/fs/affs/file.c b/fs/affs/file.c
+index 184e55c..22577fa 100644
+--- a/fs/affs/file.c
++++ b/fs/affs/file.c
+@@ -36,6 +36,9 @@ const struct file_operations affs_file_operations = {
+ 	.release	= affs_file_release,
+ 	.fsync		= affs_file_fsync,
+ 	.splice_read	= generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
  
-+	h->arch_id = cpu_to_le16(CKPT_ARCH_ID);  /* see asm/checkpoitn.h */
-+
- 	h->magic = CHECKPOINT_MAGIC_HEAD;
- 	h->major = (LINUX_VERSION_CODE >> 16) & 0xff;
- 	h->minor = (LINUX_VERSION_CODE >> 8) & 0xff;
-@@ -153,7 +155,10 @@ static int checkpoint_write_header(struct ckpt_ctx *ctx)
- 	ret = ckpt_write_buffer(ctx, uts->machine, sizeof(uts->machine));
-  up:
- 	up_read(&uts_sem);
--	return ret;
-+	if (ret < 0)
-+		return ret;
-+
-+	return checkpoint_write_header_arch(ctx);
- }
+ const struct inode_operations affs_file_inode_operations = {
+diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
+index 34ddda8..71488ba 100644
+--- a/fs/befs/linuxvfs.c
++++ b/fs/befs/linuxvfs.c
+@@ -67,6 +67,9 @@ static const struct file_operations befs_dir_operations = {
+ 	.read		= generic_read_dir,
+ 	.readdir	= befs_readdir,
+ 	.llseek		= generic_file_llseek,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
  
- /* write the container configuration section */
-diff --git a/kernel/checkpoint/process.c b/kernel/checkpoint/process.c
-index abd9025..e78b29b 100644
---- a/kernel/checkpoint/process.c
-+++ b/kernel/checkpoint/process.c
-@@ -55,7 +55,15 @@ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
+ static const struct inode_operations befs_dir_inode_operations = {
+diff --git a/fs/bfs/dir.c b/fs/bfs/dir.c
+index 1e41aad..18bea30 100644
+--- a/fs/bfs/dir.c
++++ b/fs/bfs/dir.c
+@@ -80,6 +80,9 @@ const struct file_operations bfs_dir_operations = {
+ 	.readdir	= bfs_readdir,
+ 	.fsync		= simple_fsync,
+ 	.llseek		= generic_file_llseek,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
  
- 	ret = checkpoint_task_struct(ctx, t);
- 	ckpt_debug("task %d\n", ret);
+ extern void dump_imap(const char *, struct super_block *);
+diff --git a/fs/bfs/file.c b/fs/bfs/file.c
+index 88b9a3f..844ff41 100644
+--- a/fs/bfs/file.c
++++ b/fs/bfs/file.c
+@@ -29,6 +29,9 @@ const struct file_operations bfs_file_operations = {
+ 	.aio_write	= generic_file_aio_write,
+ 	.mmap		= generic_file_mmap,
+ 	.splice_read	= generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static int bfs_move_block(unsigned long from, unsigned long to,
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index 29ff749..be325e1 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -1170,4 +1170,7 @@ const struct file_operations btrfs_file_operations = {
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl	= btrfs_ioctl,
+ #endif
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 2bfdc64..7ee1a98 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -5954,6 +5954,9 @@ static const struct file_operations btrfs_dir_file_operations = {
+ #endif
+ 	.release        = btrfs_release_file,
+ 	.fsync		= btrfs_sync_file,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static struct extent_io_ops btrfs_extent_io_ops = {
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 1866dff..2e31e14 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -829,6 +829,9 @@ static const struct file_operations btrfs_ctl_fops = {
+ 	.unlocked_ioctl	 = btrfs_control_ioctl,
+ 	.compat_ioctl = btrfs_control_ioctl,
+ 	.owner	 = THIS_MODULE,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+ 
+ static struct miscdevice btrfs_misc = {
+diff --git a/fs/cramfs/inode.c b/fs/cramfs/inode.c
+index dd3634e..01ee36d 100644
+--- a/fs/cramfs/inode.c
++++ b/fs/cramfs/inode.c
+@@ -532,6 +532,9 @@ static const struct file_operations cramfs_directory_operations = {
+ 	.llseek		= generic_file_llseek,
+ 	.read		= generic_read_dir,
+ 	.readdir	= cramfs_readdir,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static const struct inode_operations cramfs_dir_inode_operations = {
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index e7440a6..e34e59a 100644
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -306,6 +306,9 @@ const struct file_operations ecryptfs_dir_fops = {
+ 	.fsync = ecryptfs_fsync,
+ 	.fasync = ecryptfs_fasync,
+ 	.splice_read = generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct file_operations ecryptfs_main_fops = {
+@@ -323,6 +326,9 @@ const struct file_operations ecryptfs_main_fops = {
+ 	.fsync = ecryptfs_fsync,
+ 	.fasync = ecryptfs_fasync,
+ 	.splice_read = generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+ 
+ static int
+diff --git a/fs/ecryptfs/miscdev.c b/fs/ecryptfs/miscdev.c
+index 3745f61..9aa5d8b 100644
+--- a/fs/ecryptfs/miscdev.c
++++ b/fs/ecryptfs/miscdev.c
+@@ -482,6 +482,9 @@ static const struct file_operations ecryptfs_miscdev_fops = {
+ 	.read    = ecryptfs_miscdev_read,
+ 	.write   = ecryptfs_miscdev_write,
+ 	.release = ecryptfs_miscdev_release,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+ 
+ static struct miscdevice ecryptfs_miscdev = {
+diff --git a/fs/efs/dir.c b/fs/efs/dir.c
+index 7ee6f7e..ff08a3b 100644
+--- a/fs/efs/dir.c
++++ b/fs/efs/dir.c
+@@ -13,6 +13,9 @@ const struct file_operations efs_dir_operations = {
+ 	.llseek		= generic_file_llseek,
+ 	.read		= generic_read_dir,
+ 	.readdir	= efs_readdir,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations efs_dir_inode_operations = {
+diff --git a/fs/exofs/dir.c b/fs/exofs/dir.c
+index 4cfab1c..62347ff 100644
+--- a/fs/exofs/dir.c
++++ b/fs/exofs/dir.c
+@@ -667,4 +667,7 @@ const struct file_operations exofs_dir_operations = {
+ 	.llseek		= generic_file_llseek,
+ 	.read		= generic_read_dir,
+ 	.readdir	= exofs_readdir,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/exofs/file.c b/fs/exofs/file.c
+index 839b9dc..ec7e15a 100644
+--- a/fs/exofs/file.c
++++ b/fs/exofs/file.c
+@@ -84,6 +84,9 @@ const struct file_operations exofs_file_operations = {
+ 	.flush		= exofs_flush,
+ 	.splice_read	= generic_file_splice_read,
+ 	.splice_write	= generic_file_splice_write,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations exofs_file_inode_operations = {
+diff --git a/fs/fat/dir.c b/fs/fat/dir.c
+index 530b4ca..4a4c7bb 100644
+--- a/fs/fat/dir.c
++++ b/fs/fat/dir.c
+@@ -841,6 +841,9 @@ const struct file_operations fat_dir_operations = {
+ 	.compat_ioctl	= fat_compat_dir_ioctl,
+ #endif
+ 	.fsync		= fat_file_fsync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static int fat_get_short_entry(struct inode *dir, loff_t *pos,
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index e8c159d..38132c2 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -162,6 +162,9 @@ const struct file_operations fat_file_operations = {
+ 	.ioctl		= fat_generic_ioctl,
+ 	.fsync		= fat_file_fsync,
+ 	.splice_read	= generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static int fat_cont_expand(struct inode *inode, loff_t size)
+diff --git a/fs/freevxfs/vxfs_lookup.c b/fs/freevxfs/vxfs_lookup.c
+index aee049c..41dfea9 100644
+--- a/fs/freevxfs/vxfs_lookup.c
++++ b/fs/freevxfs/vxfs_lookup.c
+@@ -58,6 +58,9 @@ const struct inode_operations vxfs_dir_inode_ops = {
+ 
+ const struct file_operations vxfs_dir_operations = {
+ 	.readdir =		vxfs_readdir,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint =		generic_file_checkpoint,
++#endif
+ };
+ 
+  
+diff --git a/fs/hfs/dir.c b/fs/hfs/dir.c
+index 2b3b861..f4dafc5 100644
+--- a/fs/hfs/dir.c
++++ b/fs/hfs/dir.c
+@@ -329,6 +329,9 @@ const struct file_operations hfs_dir_operations = {
+ 	.readdir	= hfs_readdir,
+ 	.llseek		= generic_file_llseek,
+ 	.release	= hfs_dir_release,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations hfs_dir_inode_operations = {
+diff --git a/fs/hfs/inode.c b/fs/hfs/inode.c
+index 14f5cb1..3b10d84 100644
+--- a/fs/hfs/inode.c
++++ b/fs/hfs/inode.c
+@@ -607,6 +607,9 @@ static const struct file_operations hfs_file_operations = {
+ 	.fsync		= file_fsync,
+ 	.open		= hfs_file_open,
+ 	.release	= hfs_file_release,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static const struct inode_operations hfs_file_inode_operations = {
+diff --git a/fs/hfsplus/dir.c b/fs/hfsplus/dir.c
+index 5f40236..7656143 100644
+--- a/fs/hfsplus/dir.c
++++ b/fs/hfsplus/dir.c
+@@ -497,4 +497,7 @@ const struct file_operations hfsplus_dir_operations = {
+ 	.ioctl          = hfsplus_ioctl,
+ 	.llseek		= generic_file_llseek,
+ 	.release	= hfsplus_dir_release,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/hfsplus/inode.c b/fs/hfsplus/inode.c
+index 1bcf597..43a6da2 100644
+--- a/fs/hfsplus/inode.c
++++ b/fs/hfsplus/inode.c
+@@ -286,6 +286,9 @@ static const struct file_operations hfsplus_file_operations = {
+ 	.open		= hfsplus_file_open,
+ 	.release	= hfsplus_file_release,
+ 	.ioctl          = hfsplus_ioctl,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ struct inode *hfsplus_new_inode(struct super_block *sb, int mode)
+diff --git a/fs/hostfs/hostfs_kern.c b/fs/hostfs/hostfs_kern.c
+index 3a029d8..1514aee 100644
+--- a/fs/hostfs/hostfs_kern.c
++++ b/fs/hostfs/hostfs_kern.c
+@@ -427,12 +427,18 @@ static const struct file_operations hostfs_file_fops = {
+ 	.open		= hostfs_file_open,
+ 	.release	= NULL,
+ 	.fsync		= hostfs_fsync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static const struct file_operations hostfs_dir_fops = {
+ 	.llseek		= generic_file_llseek,
+ 	.readdir	= hostfs_readdir,
+ 	.read		= generic_read_dir,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ int hostfs_writepage(struct page *page, struct writeback_control *wbc)
+diff --git a/fs/hpfs/dir.c b/fs/hpfs/dir.c
+index 2338130..a2e95fe 100644
+--- a/fs/hpfs/dir.c
++++ b/fs/hpfs/dir.c
+@@ -323,4 +323,7 @@ const struct file_operations hpfs_dir_ops =
+ 	.readdir	= hpfs_readdir,
+ 	.release	= hpfs_dir_release,
+ 	.fsync		= hpfs_file_fsync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/hpfs/file.c b/fs/hpfs/file.c
+index 3efabff..7a78261 100644
+--- a/fs/hpfs/file.c
++++ b/fs/hpfs/file.c
+@@ -139,6 +139,9 @@ const struct file_operations hpfs_file_ops =
+ 	.release	= hpfs_file_release,
+ 	.fsync		= hpfs_file_fsync,
+ 	.splice_read	= generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations hpfs_file_iops =
+diff --git a/fs/hppfs/hppfs.c b/fs/hppfs/hppfs.c
+index 2e4dfa8..d059b38 100644
+--- a/fs/hppfs/hppfs.c
++++ b/fs/hppfs/hppfs.c
+@@ -546,6 +546,9 @@ static const struct file_operations hppfs_file_fops = {
+ 	.read		= hppfs_read,
+ 	.write		= hppfs_write,
+ 	.open		= hppfs_open,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ struct hppfs_dirent {
+@@ -597,6 +600,9 @@ static const struct file_operations hppfs_dir_fops = {
+ 	.readdir	= hppfs_readdir,
+ 	.open		= hppfs_dir_open,
+ 	.fsync		= hppfs_fsync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static int hppfs_statfs(struct dentry *dentry, struct kstatfs *sf)
+diff --git a/fs/isofs/dir.c b/fs/isofs/dir.c
+index b9ab69b..fe41d7f 100644
+--- a/fs/isofs/dir.c
++++ b/fs/isofs/dir.c
+@@ -274,6 +274,9 @@ const struct file_operations isofs_dir_operations =
+ {
+ 	.read = generic_read_dir,
+ 	.readdir = isofs_readdir,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+ 
+ /*
+diff --git a/fs/jffs2/dir.c b/fs/jffs2/dir.c
+index 7aa4417..482e34a 100644
+--- a/fs/jffs2/dir.c
++++ b/fs/jffs2/dir.c
+@@ -41,6 +41,9 @@ const struct file_operations jffs2_dir_operations =
+ 	.unlocked_ioctl=jffs2_ioctl,
+ 	.fsync =	jffs2_fsync,
+ 	.llseek =	generic_file_llseek,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint =	generic_file_checkpoint,
++#endif
+ };
+ 
+ 
+diff --git a/fs/jffs2/file.c b/fs/jffs2/file.c
+index e7291c1..c2bcb4d 100644
+--- a/fs/jffs2/file.c
++++ b/fs/jffs2/file.c
+@@ -49,6 +49,9 @@ const struct file_operations jffs2_file_operations =
+ 	.mmap =		generic_file_readonly_mmap,
+ 	.fsync =	jffs2_fsync,
+ 	.splice_read =	generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint =	generic_file_checkpoint,
++#endif
+ };
+ 
+ /* jffs2_file_inode_operations */
+diff --git a/fs/jfs/file.c b/fs/jfs/file.c
+index 14ba982..cda38cb 100644
+--- a/fs/jfs/file.c
++++ b/fs/jfs/file.c
+@@ -143,4 +143,7 @@ const struct file_operations jfs_file_operations = {
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl	= jfs_compat_ioctl,
+ #endif
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/jfs/namei.c b/fs/jfs/namei.c
+index 4a3e9f3..83f2490 100644
+--- a/fs/jfs/namei.c
++++ b/fs/jfs/namei.c
+@@ -1571,6 +1571,9 @@ const struct file_operations jfs_dir_operations = {
+ 	.compat_ioctl	= jfs_compat_ioctl,
+ #endif
+ 	.llseek		= generic_file_llseek,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static int jfs_ci_hash(struct dentry *dir, struct qstr *this)
+diff --git a/fs/minix/dir.c b/fs/minix/dir.c
+index 6198731..715dd03 100644
+--- a/fs/minix/dir.c
++++ b/fs/minix/dir.c
+@@ -23,6 +23,9 @@ const struct file_operations minix_dir_operations = {
+ 	.read		= generic_read_dir,
+ 	.readdir	= minix_readdir,
+ 	.fsync		= simple_fsync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static inline void dir_put_page(struct page *page)
+diff --git a/fs/minix/file.c b/fs/minix/file.c
+index 3eec3e6..8e8f6a9 100644
+--- a/fs/minix/file.c
++++ b/fs/minix/file.c
+@@ -21,6 +21,9 @@ const struct file_operations minix_file_operations = {
+ 	.mmap		= generic_file_mmap,
+ 	.fsync		= simple_fsync,
+ 	.splice_read	= generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations minix_file_inode_operations = {
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index be46f26..ac4c291 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -63,6 +63,9 @@ const struct file_operations nfs_dir_operations = {
+ 	.open		= nfs_opendir,
+ 	.release	= nfs_release,
+ 	.fsync		= nfs_fsync_dir,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations nfs_dir_inode_operations = {
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index 8d965bd..456e861 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -78,6 +78,9 @@ const struct file_operations nfs_file_operations = {
+ 	.splice_write	= nfs_file_splice_write,
+ 	.check_flags	= nfs_check_flags,
+ 	.setlease	= nfs_setlease,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations nfs_file_inode_operations = {
+@@ -583,6 +586,9 @@ out_unlock:
+ static const struct vm_operations_struct nfs_file_vm_ops = {
+ 	.fault = filemap_fault,
+ 	.page_mkwrite = nfs_vm_page_mkwrite,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = filemap_checkpoint,
++#endif
+ };
+ 
+ static int nfs_need_sync_write(struct file *filp, struct inode *inode)
+diff --git a/fs/nilfs2/dir.c b/fs/nilfs2/dir.c
+index 85c89df..d677449 100644
+--- a/fs/nilfs2/dir.c
++++ b/fs/nilfs2/dir.c
+@@ -702,5 +702,7 @@ const struct file_operations nilfs_dir_operations = {
+ 	.compat_ioctl	= nilfs_ioctl,
+ #endif	/* CONFIG_COMPAT */
+ 	.fsync		= nilfs_sync_file,
 -
-+	if (ret < 0)
-+		goto out;
-+	ret = checkpoint_thread(ctx, t);
-+	ckpt_debug("thread %d\n", ret);
-+	if (ret < 0)
-+		goto out;
-+	ret = checkpoint_cpu(ctx, t);
-+	ckpt_debug("cpu %d\n", ret);
-+ out:
- 	ctx->tsk = NULL;
- 	return ret;
- }
-@@ -96,6 +104,14 @@ int restore_task(struct ckpt_ctx *ctx)
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
+index 30292df..9306d6f 100644
+--- a/fs/nilfs2/file.c
++++ b/fs/nilfs2/file.c
+@@ -149,6 +149,9 @@ const struct file_operations nilfs_file_operations = {
+ 	/* .release	= nilfs_release_file, */
+ 	.fsync		= nilfs_sync_file,
+ 	.splice_read	= generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
  
- 	ret = restore_task_struct(ctx);
- 	ckpt_debug("task %d\n", ret);
--
-+	if (ret < 0)
-+		goto out;
-+	ret = restore_thread(ctx);
-+	ckpt_debug("thread %d\n", ret);
-+	if (ret < 0)
-+		goto out;
-+	ret = restore_cpu(ctx);
-+	ckpt_debug("cpu %d\n", ret);
-+ out:
- 	return ret;
- }
-diff --git a/kernel/checkpoint/restart.c b/kernel/checkpoint/restart.c
-index cd9945c..f2b8575 100644
---- a/kernel/checkpoint/restart.c
-+++ b/kernel/checkpoint/restart.c
-@@ -369,6 +369,10 @@ static int restore_read_header(struct ckpt_ctx *ctx)
- 		return PTR_ERR(h);
+ const struct inode_operations nilfs_file_inode_operations = {
+diff --git a/fs/ntfs/dir.c b/fs/ntfs/dir.c
+index fe44d3f..229d00b 100644
+--- a/fs/ntfs/dir.c
++++ b/fs/ntfs/dir.c
+@@ -1573,4 +1573,7 @@ const struct file_operations ntfs_dir_ops = {
+ 	/*.ioctl	= ,*/			/* Perform function on the
+ 						   mounted filesystem. */
+ 	.open		= ntfs_dir_open,	/* Open directory. */
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
+index 8804f09..303ee8e 100644
+--- a/fs/ntfs/file.c
++++ b/fs/ntfs/file.c
+@@ -2225,7 +2225,7 @@ const struct file_operations ntfs_file_ops = {
+ 						    mounted filesystem. */
+ 	.mmap		= generic_file_mmap,	 /* Mmap file. */
+ 	.open		= ntfs_file_open,	 /* Open file. */
+-	.splice_read	= generic_file_splice_read /* Zero-copy data send with
++	.splice_read	= generic_file_splice_read, /* Zero-copy data send with
+ 						    the data source being on
+ 						    the ntfs partition.  We do
+ 						    not need to care about the
+@@ -2235,6 +2235,9 @@ const struct file_operations ntfs_file_ops = {
+ 						    on the ntfs partition.  We
+ 						    do not need to care about
+ 						    the data source. */
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
  
- 	ret = -EINVAL;
-+	if (le16_to_cpu(h->arch_id) != CKPT_ARCH_ID) {
-+		ckpt_err(ctx, ret, "incompatible architecture id");
-+		goto out;
-+	}
- 	if (h->magic != CHECKPOINT_MAGIC_HEAD ||
- 	    h->rev != CHECKPOINT_VERSION ||
- 	    h->major != ((LINUX_VERSION_CODE >> 16) & 0xff) ||
-@@ -403,6 +407,10 @@ static int restore_read_header(struct ckpt_ctx *ctx)
- 	if (ret < 0)
- 		goto out;
- 	ret = _ckpt_read_buffer(ctx, uts->machine, sizeof(uts->machine));
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = restore_read_header_arch(ctx);
-  out:
- 	kfree(uts);
- 	ckpt_hdr_put(ctx, h);
+ const struct inode_operations ntfs_file_inode_ops = {
+diff --git a/fs/omfs/dir.c b/fs/omfs/dir.c
+index b42d624..3b08c84 100644
+--- a/fs/omfs/dir.c
++++ b/fs/omfs/dir.c
+@@ -502,4 +502,7 @@ const struct file_operations omfs_dir_operations = {
+ 	.read = generic_read_dir,
+ 	.readdir = omfs_readdir,
+ 	.llseek = generic_file_llseek,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/omfs/file.c b/fs/omfs/file.c
+index 399487c..fb5fa02 100644
+--- a/fs/omfs/file.c
++++ b/fs/omfs/file.c
+@@ -331,6 +331,9 @@ const struct file_operations omfs_file_operations = {
+ 	.mmap = generic_file_mmap,
+ 	.fsync = simple_fsync,
+ 	.splice_read = generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations omfs_file_inops = {
+diff --git a/fs/openpromfs/inode.c b/fs/openpromfs/inode.c
+index ffcd04f..f5e4649 100644
+--- a/fs/openpromfs/inode.c
++++ b/fs/openpromfs/inode.c
+@@ -160,6 +160,9 @@ static const struct file_operations openpromfs_prop_ops = {
+ 	.read		= seq_read,
+ 	.llseek		= seq_lseek,
+ 	.release	= seq_release,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= NULL,
++#endif
+ };
+ 
+ static int openpromfs_readdir(struct file *, void *, filldir_t);
+@@ -168,6 +171,9 @@ static const struct file_operations openprom_operations = {
+ 	.read		= generic_read_dir,
+ 	.readdir	= openpromfs_readdir,
+ 	.llseek		= generic_file_llseek,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static struct dentry *openpromfs_lookup(struct inode *, struct dentry *, struct nameidata *);
+diff --git a/fs/qnx4/dir.c b/fs/qnx4/dir.c
+index 6f30c3d..3414bf8 100644
+--- a/fs/qnx4/dir.c
++++ b/fs/qnx4/dir.c
+@@ -80,6 +80,9 @@ const struct file_operations qnx4_dir_operations =
+ 	.read		= generic_read_dir,
+ 	.readdir	= qnx4_readdir,
+ 	.fsync		= simple_fsync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations qnx4_dir_inode_operations =
+diff --git a/fs/ramfs/file-mmu.c b/fs/ramfs/file-mmu.c
+index 78f613c..34dc7f2 100644
+--- a/fs/ramfs/file-mmu.c
++++ b/fs/ramfs/file-mmu.c
+@@ -47,6 +47,9 @@ const struct file_operations ramfs_file_operations = {
+ 	.splice_read	= generic_file_splice_read,
+ 	.splice_write	= generic_file_splice_write,
+ 	.llseek		= generic_file_llseek,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations ramfs_file_inode_operations = {
+diff --git a/fs/ramfs/file-nommu.c b/fs/ramfs/file-nommu.c
+index 5ea4ad8..7aa0d43 100644
+--- a/fs/ramfs/file-nommu.c
++++ b/fs/ramfs/file-nommu.c
+@@ -46,6 +46,9 @@ const struct file_operations ramfs_file_operations = {
+ 	.splice_read		= generic_file_splice_read,
+ 	.splice_write		= generic_file_splice_write,
+ 	.llseek			= generic_file_llseek,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint		= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations ramfs_file_inode_operations = {
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 67b7d83..d566214 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -27,6 +27,9 @@ const struct file_operations generic_ro_fops = {
+ 	.aio_read	= generic_file_aio_read,
+ 	.mmap		= generic_file_readonly_mmap,
+ 	.splice_read	= generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ EXPORT_SYMBOL(generic_ro_fops);
+diff --git a/fs/reiserfs/dir.c b/fs/reiserfs/dir.c
+index f8a6075..1fb4ce6 100644
+--- a/fs/reiserfs/dir.c
++++ b/fs/reiserfs/dir.c
+@@ -25,6 +25,9 @@ const struct file_operations reiserfs_dir_operations = {
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = reiserfs_compat_ioctl,
+ #endif
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+ 
+ static int reiserfs_dir_fsync(struct file *filp, struct dentry *dentry,
+diff --git a/fs/reiserfs/file.c b/fs/reiserfs/file.c
+index 1d9c127..5b2d720 100644
+--- a/fs/reiserfs/file.c
++++ b/fs/reiserfs/file.c
+@@ -297,6 +297,9 @@ const struct file_operations reiserfs_file_operations = {
+ 	.splice_read = generic_file_splice_read,
+ 	.splice_write = generic_file_splice_write,
+ 	.llseek = generic_file_llseek,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations reiserfs_file_inode_operations = {
+diff --git a/fs/romfs/mmap-nommu.c b/fs/romfs/mmap-nommu.c
+index f0511e8..f488a8a 100644
+--- a/fs/romfs/mmap-nommu.c
++++ b/fs/romfs/mmap-nommu.c
+@@ -72,4 +72,7 @@ const struct file_operations romfs_ro_fops = {
+ 	.splice_read		= generic_file_splice_read,
+ 	.mmap			= romfs_mmap,
+ 	.get_unmapped_area	= romfs_get_unmapped_area,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint		= generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/romfs/super.c b/fs/romfs/super.c
+index 42d2135..6a07e29 100644
+--- a/fs/romfs/super.c
++++ b/fs/romfs/super.c
+@@ -282,6 +282,9 @@ error:
+ static const struct file_operations romfs_dir_operations = {
+ 	.read		= generic_read_dir,
+ 	.readdir	= romfs_readdir,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static const struct inode_operations romfs_dir_inode_operations = {
+diff --git a/fs/squashfs/dir.c b/fs/squashfs/dir.c
+index 12b933a..1bc7cc0 100644
+--- a/fs/squashfs/dir.c
++++ b/fs/squashfs/dir.c
+@@ -230,5 +230,8 @@ failed_read:
+ 
+ const struct file_operations squashfs_dir_ops = {
+ 	.read = generic_read_dir,
+-	.readdir = squashfs_readdir
++	.readdir = squashfs_readdir,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/sysv/dir.c b/fs/sysv/dir.c
+index 4e50286..e1030d4 100644
+--- a/fs/sysv/dir.c
++++ b/fs/sysv/dir.c
+@@ -25,6 +25,9 @@ const struct file_operations sysv_dir_operations = {
+ 	.read		= generic_read_dir,
+ 	.readdir	= sysv_readdir,
+ 	.fsync		= simple_fsync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static inline void dir_put_page(struct page *page)
+diff --git a/fs/sysv/file.c b/fs/sysv/file.c
+index 96340c0..78b7e65 100644
+--- a/fs/sysv/file.c
++++ b/fs/sysv/file.c
+@@ -28,6 +28,9 @@ const struct file_operations sysv_file_operations = {
+ 	.mmap		= generic_file_mmap,
+ 	.fsync		= simple_fsync,
+ 	.splice_read	= generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct inode_operations sysv_file_inode_operations = {
+diff --git a/fs/ubifs/debug.c b/fs/ubifs/debug.c
+index c2a68ba..b357ca3 100644
+--- a/fs/ubifs/debug.c
++++ b/fs/ubifs/debug.c
+@@ -2625,6 +2625,9 @@ static const struct file_operations dfs_fops = {
+ 	.open = open_debugfs_file,
+ 	.write = write_debugfs_file,
+ 	.owner = THIS_MODULE,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+ 
+ /**
+diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+index 401e503..a72070e 100644
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -1228,4 +1228,7 @@ const struct file_operations ubifs_dir_operations = {
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ubifs_compat_ioctl,
+ #endif
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint     = generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index 5692cf7..566e172 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1583,4 +1583,7 @@ const struct file_operations ubifs_file_operations = {
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ubifs_compat_ioctl,
+ #endif
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint     = generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/udf/dir.c b/fs/udf/dir.c
+index f0f2a43..43bf889 100644
+--- a/fs/udf/dir.c
++++ b/fs/udf/dir.c
+@@ -211,4 +211,7 @@ const struct file_operations udf_dir_operations = {
+ 	.readdir		= udf_readdir,
+ 	.ioctl			= udf_ioctl,
+ 	.fsync			= simple_fsync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint		= generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/udf/file.c b/fs/udf/file.c
+index 4b6a46c..0c73a47 100644
+--- a/fs/udf/file.c
++++ b/fs/udf/file.c
+@@ -216,6 +216,9 @@ const struct file_operations udf_file_operations = {
+ 	.fsync			= simple_fsync,
+ 	.splice_read		= generic_file_splice_read,
+ 	.llseek			= generic_file_llseek,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint		= generic_file_checkpoint,
++#endif
+ };
+ 
+ int udf_setattr(struct dentry *dentry, struct iattr *iattr)
+diff --git a/fs/ufs/dir.c b/fs/ufs/dir.c
+index 317a0d4..9841034 100644
+--- a/fs/ufs/dir.c
++++ b/fs/ufs/dir.c
+@@ -668,4 +668,7 @@ const struct file_operations ufs_dir_operations = {
+ 	.readdir	= ufs_readdir,
+ 	.fsync		= simple_fsync,
+ 	.llseek		= generic_file_llseek,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/ufs/file.c b/fs/ufs/file.c
+index a8962ce..f180014 100644
+--- a/fs/ufs/file.c
++++ b/fs/ufs/file.c
+@@ -44,4 +44,7 @@ const struct file_operations ufs_file_operations = {
+ 	.open           = dquot_file_open,
+ 	.fsync		= simple_fsync,
+ 	.splice_read	= generic_file_splice_read,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+diff --git a/fs/xfs/linux-2.6/xfs_file.c b/fs/xfs/linux-2.6/xfs_file.c
+index 42dd3bc..8aea381 100644
+--- a/fs/xfs/linux-2.6/xfs_file.c
++++ b/fs/xfs/linux-2.6/xfs_file.c
+@@ -1015,6 +1015,9 @@ const struct file_operations xfs_file_operations = {
+ #ifdef HAVE_FOP_OPEN_EXEC
+ 	.open_exec	= xfs_file_open_exec,
+ #endif
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct file_operations xfs_dir_file_operations = {
+@@ -1027,6 +1030,9 @@ const struct file_operations xfs_dir_file_operations = {
+ 	.compat_ioctl	= xfs_file_compat_ioctl,
+ #endif
+ 	.fsync		= xfs_file_fsync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ static const struct vm_operations_struct xfs_file_vm_ops = {
 -- 
 1.6.3.3
 
