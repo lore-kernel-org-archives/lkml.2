@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563Ab0EAObO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:31:14 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63460 "EHLO
+	id S932629Ab0EAObX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:31:23 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63521 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab0EAOaz (ORCPT
+	with ESMTP id S932092Ab0EAObQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:30:55 -0400
+	Sat, 1 May 2010 10:31:16 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, linux-ext4@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Oren Laadan <orenl@cs.columbia.edu>
-Subject: [PATCH v21 042/100] c/r: add generic '->checkpoint' f_op to ext fses
-Date: Sat,  1 May 2010 10:15:24 -0400
-Message-Id: <1272723382-19470-43-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
+       linux-fsdevel@vger.kernel.org
+Subject: [PATCH v21 036/100] c/r: introduce vfs_fcntl()
+Date: Sat,  1 May 2010 10:15:18 -0400
+Message-Id: <1272723382-19470-37-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -25,135 +24,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+This patch introduces vfs_fcntl() so that it can be called from
+restart (see patch adding restart of files).
 
-This marks ext[234] as being checkpointable.  There will be many
-more to do this to, but this is a start.
-
-Changelog[ckpt-v21]:
-  - Put file_ops->checkpoint under CONFIG_CHECKPOINT
-Changelog[ckpt-v19-rc3]:
-  - Rebase to kernel 2.6.33 (ext2)
-Changelog[v1]:
-  - [Serge Hallyn] Use filemap_checkpoint() in ext4_file_vm_ops
-
-Cc: linux-ext4@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- fs/ext2/dir.c  |    3 +++
- fs/ext2/file.c |    6 ++++++
- fs/ext3/dir.c  |    3 +++
- fs/ext3/file.c |    3 +++
- fs/ext4/dir.c  |    3 +++
- fs/ext4/file.c |    6 ++++++
- 6 files changed, 24 insertions(+), 0 deletions(-)
+ fs/fcntl.c         |   21 +++++++++++++--------
+ include/linux/fs.h |    2 ++
+ 2 files changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
-index 7516957..cdcb065 100644
---- a/fs/ext2/dir.c
-+++ b/fs/ext2/dir.c
-@@ -722,4 +722,7 @@ const struct file_operations ext2_dir_operations = {
- 	.compat_ioctl	= ext2_compat_ioctl,
- #endif
- 	.fsync		= ext2_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/ext2/file.c b/fs/ext2/file.c
-index 5d198d0..975ea9c 100644
---- a/fs/ext2/file.c
-+++ b/fs/ext2/file.c
-@@ -76,6 +76,9 @@ const struct file_operations ext2_file_operations = {
- 	.fsync		= ext2_fsync,
- 	.splice_read	= generic_file_splice_read,
- 	.splice_write	= generic_file_splice_write,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif /* CONFIG_CHECKPOINT */
- };
+diff --git a/fs/fcntl.c b/fs/fcntl.c
+index 452d02f..2079af0 100644
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -418,6 +418,18 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
+ 	return err;
+ }
  
- #ifdef CONFIG_EXT2_FS_XIP
-@@ -91,6 +94,9 @@ const struct file_operations ext2_xip_file_operations = {
- 	.open		= dquot_file_open,
- 	.release	= ext2_release_file,
- 	.fsync		= ext2_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif /* CONFIG_CHECKPOINT */
- };
- #endif
++int vfs_fcntl(int fd, unsigned int cmd, unsigned long arg, struct file *filp)
++{
++	int err;
++
++	err = security_file_fcntl(filp, cmd, arg);
++	if (err)
++		goto out;
++	err = do_fcntl(fd, cmd, arg, filp);
++ out:
++	return err;
++}
++
+ SYSCALL_DEFINE3(fcntl, unsigned int, fd, unsigned int, cmd, unsigned long, arg)
+ {	
+ 	struct file *filp;
+@@ -427,14 +439,7 @@ SYSCALL_DEFINE3(fcntl, unsigned int, fd, unsigned int, cmd, unsigned long, arg)
+ 	if (!filp)
+ 		goto out;
  
-diff --git a/fs/ext3/dir.c b/fs/ext3/dir.c
-index 373fa90..a4ef201 100644
---- a/fs/ext3/dir.c
-+++ b/fs/ext3/dir.c
-@@ -48,6 +48,9 @@ const struct file_operations ext3_dir_operations = {
- #endif
- 	.fsync		= ext3_sync_file,	/* BKL held */
- 	.release	= ext3_release_dir,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+-	err = security_file_fcntl(filp, cmd, arg);
+-	if (err) {
+-		fput(filp);
+-		return err;
+-	}
+-
+-	err = do_fcntl(fd, cmd, arg, filp);
+-
++	err = vfs_fcntl(fd, cmd, arg, filp);
+  	fput(filp);
+ out:
+ 	return err;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 9e8b171..65ffe9c 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1096,6 +1096,8 @@ struct file_lock {
  
+ #include <linux/fcntl.h>
  
-diff --git a/fs/ext3/file.c b/fs/ext3/file.c
-index f55df0e..2cf4ef2 100644
---- a/fs/ext3/file.c
-+++ b/fs/ext3/file.c
-@@ -68,6 +68,9 @@ const struct file_operations ext3_file_operations = {
- 	.fsync		= ext3_sync_file,
- 	.splice_read	= generic_file_splice_read,
- 	.splice_write	= generic_file_splice_write,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
++extern int vfs_fcntl(int fd, unsigned cmd, unsigned long arg, struct file *fp);
++
+ extern void send_sigio(struct fown_struct *fown, int fd, int band);
  
- const struct inode_operations ext3_file_inode_operations = {
-diff --git a/fs/ext4/dir.c b/fs/ext4/dir.c
-index 86cb6d8..9681c2f 100644
---- a/fs/ext4/dir.c
-+++ b/fs/ext4/dir.c
-@@ -48,6 +48,9 @@ const struct file_operations ext4_dir_operations = {
- #endif
- 	.fsync		= ext4_sync_file,
- 	.release	= ext4_release_dir,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- 
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index d0776e4..7c7e120 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -85,6 +85,9 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
- static const struct vm_operations_struct ext4_file_vm_ops = {
- 	.fault		= filemap_fault,
- 	.page_mkwrite   = ext4_page_mkwrite,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= filemap_checkpoint,
-+#endif
- };
- 
- static int ext4_file_mmap(struct file *file, struct vm_area_struct *vma)
-@@ -145,6 +148,9 @@ const struct file_operations ext4_file_operations = {
- 	.fsync		= ext4_sync_file,
- 	.splice_read	= generic_file_splice_read,
- 	.splice_write	= generic_file_splice_write,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- const struct inode_operations ext4_file_inode_operations = {
+ #ifdef CONFIG_FILE_LOCKING
 -- 
 1.6.3.3
 
