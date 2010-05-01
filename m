@@ -1,149 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab0EAOus (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:50:48 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:62812 "EHLO
-	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880Ab0EAOY5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:24:57 -0400
-From: Oren Laadan <orenl@cs.columbia.edu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-       linux-api@vger.kernel.org, x86@kernel.org, linux-s390@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, Sukadev Bhattiprolu <sukadev@us.ibm.com>
-Subject: [PATCH v21 003/100] eclone (3/11): Define set_pidmap() function
-Date: Sat,  1 May 2010 10:14:45 -0400
-Message-Id: <1272723382-19470-4-git-send-email-orenl@cs.columbia.edu>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
-References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
-X-No-Spam-Score: Local
+	id S1753251Ab0EAPCl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 11:02:41 -0400
+Received: from mail.gmx.net ([213.165.64.20]:42557 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752938Ab0EAPCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 May 2010 11:02:39 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1932dFxkMF3CTPZfk4++1BviRNrujmOOdUCnwg+0T
+	xuzcNEbIPwONwe
+Message-ID: <4BDC4286.4070703@gmx.de>
+Date: Sat, 01 May 2010 17:02:30 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+MIME-Version: 1.0
+To: Jonathan Corbet <corbet@lwn.net>
+CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
+       linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
+       ScottFang@viatech.com.cn
+Subject: Re: [PATCH 12/30] viafb: Move core stuff into via-core.c
+References: <1272493051-25380-1-git-send-email-corbet@lwn.net> <1272493051-25380-13-git-send-email-corbet@lwn.net>
+In-Reply-To: <1272493051-25380-13-git-send-email-corbet@lwn.net>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.52000000000000002
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Jonathan Corbet schrieb:
+> The first step toward turning viafb into a multifunction driver.  This
+> patch creates a new via-core.c file which serves as the main PCI driver;
+> everything else comes below that.  Some work has been done to rationalize
+> the i2c drivers in this new scheme.
+> 
+> Signed-off-by: Jonathan Corbet <corbet@lwn.net>
+> ---
 
-Define a set_pidmap() interface which is like alloc_pidmap() only that
-caller specifies the pid number to be assigned.
+> -obj-$(CONFIG_FB_VIA) += viafb.o
+> +obj-$(CONFIG_FB_VIA) += viafb.o 
 
-Changelog[v13]:
-	- Don't let do_alloc_pidmap return 0 if it failed to find a pid.
-Changelog[v9]:
-	- Completely rewrote this patch based on Eric Biederman's code.
-Changelog[v7]:
-        - [Eric Biederman] Generalize alloc_pidmap() to take a range of pids.
-Changelog[v6]:
-        - Separate target_pid > 0 case to minimize the number of checks needed.
-Changelog[v3]:
-        - (Eric Biederman): Avoid set_pidmap() function. Added couple of
-          checks for target_pid in alloc_pidmap() itself.
-Changelog[v2]:
-        - (Serge Hallyn) Check for 'pid < 0' in set_pidmap().(Code
-          actually checks for 'pid <= 0' for completeness).
+Huh? (the space is not really a problem)
 
-Cc: linux-api@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-s390@vger.kernel.org
-Cc: linuxppc-dev@ozlabs.org
-Signed-off-by: Sukadev Bhattiprolu <sukadev@us.ibm.com>
-Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
-Reviewed-by: Oren Laadan <orenl@cs.columbia.edu>
----
- kernel/pid.c |   41 +++++++++++++++++++++++++++++++++--------
- 1 files changed, 33 insertions(+), 8 deletions(-)
+>  struct fb_info *viafbinfo;
+> +EXPORT_SYMBOL_GPL(viafbinfo);
+>  struct fb_info *viafbinfo1;
+>  struct viafb_par *viaparinfo;
+> +EXPORT_SYMBOL_GPL(viaparinfo);
+>  struct viafb_par *viaparinfo1;
 
-diff --git a/kernel/pid.c b/kernel/pid.c
-index 8330488..4eaf975 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -146,17 +146,18 @@ static int alloc_pidmap_page(struct pidmap *map)
- 	return 0;
- }
- 
--static int alloc_pidmap(struct pid_namespace *pid_ns)
-+static int do_alloc_pidmap(struct pid_namespace *pid_ns, int last, int min,
-+		int max)
- {
--	int i, offset, max_scan, pid, last = pid_ns->last_pid;
-+	int i, offset, max_scan, pid;
- 	struct pidmap *map;
- 
- 	pid = last + 1;
- 	if (pid >= pid_max)
--		pid = RESERVED_PIDS;
-+		pid = min;
- 	offset = pid & BITS_PER_PAGE_MASK;
- 	map = &pid_ns->pidmap[pid/BITS_PER_PAGE];
--	max_scan = (pid_max + BITS_PER_PAGE - 1)/BITS_PER_PAGE - !offset;
-+	max_scan = (max + BITS_PER_PAGE - 1)/BITS_PER_PAGE - !offset;
- 	for (i = 0; i <= max_scan; ++i) {
- 		if (unlikely(!map->page))
- 			if (alloc_pidmap_page(map) < 0)
-@@ -165,7 +166,6 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
- 			do {
- 				if (!test_and_set_bit(offset, map->page)) {
- 					atomic_dec(&map->nr_free);
--					pid_ns->last_pid = pid;
- 					return pid;
- 				}
- 				offset = find_next_offset(map, offset);
-@@ -176,16 +176,16 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
- 			 * bitmap block and the final block was the same
- 			 * as the starting point, pid is before last_pid.
- 			 */
--			} while (offset < BITS_PER_PAGE && pid < pid_max &&
-+			} while (offset < BITS_PER_PAGE && pid < max &&
- 					(i != max_scan || pid < last ||
- 					    !((last+1) & BITS_PER_PAGE_MASK)));
- 		}
--		if (map < &pid_ns->pidmap[(pid_max-1)/BITS_PER_PAGE]) {
-+		if (map < &pid_ns->pidmap[(max-1)/BITS_PER_PAGE]) {
- 			++map;
- 			offset = 0;
- 		} else {
- 			map = &pid_ns->pidmap[0];
--			offset = RESERVED_PIDS;
-+			offset = min;
- 			if (unlikely(last == offset))
- 				break;
- 		}
-@@ -194,6 +194,31 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
- 	return -EBUSY;
- }
- 
-+static int alloc_pidmap(struct pid_namespace *pid_ns)
-+{
-+	int nr;
-+
-+	nr = do_alloc_pidmap(pid_ns, pid_ns->last_pid, RESERVED_PIDS, pid_max);
-+	if (nr >= 0)
-+		pid_ns->last_pid = nr;
-+	return nr;
-+}
-+
-+static int set_pidmap(struct pid_namespace *pid_ns, int target)
-+{
-+	if (!target)
-+		return alloc_pidmap(pid_ns);
-+
-+	if (target >= pid_max)
-+		return -EINVAL;
-+
-+	if ((target < 0) || (target < RESERVED_PIDS &&
-+				pid_ns->last_pid >= RESERVED_PIDS))
-+		return -EINVAL;
-+
-+	return do_alloc_pidmap(pid_ns, target - 1, target, target + 1);
-+}
-+
- int next_pidmap(struct pid_namespace *pid_ns, int last)
- {
- 	int offset;
--- 
-1.6.3.3
+Ugh, I really hope you introduce those only as temporary exports until 
+the split is finished. It's ugly enough that viafb uses these internally 
+as global variables which will vanish in some time but for a 
+multifunction driver having those sounds even more ridiculous. If we 
+agree that it's only a temporary solution I'll take this bitter pill.
 
+> @@ -1764,6 +1765,7 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
+>  		&viaparinfo->shared->lvds_setting_info2;
+>  	viaparinfo->crt_setting_info = &viaparinfo->shared->crt_setting_info;
+>  	viaparinfo->chip_info = &viaparinfo->shared->chip_info;
+> +	spin_lock_init(&viaparinfo->reg_lock);
+
+I think the initialization of the lock that is made for synchronization 
+of hardware access should be in the via-core.c you just introduce. (and 
+  the lock itself in a structure or something outside the framebuffer 
+flow). Just saw that you did so in your next patch, so there is no 
+reason to needlessly introduce the spinlock now.
+
+
+Thanks,
+
+Florian Tobias Schandinat
