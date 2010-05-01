@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312Ab0EAOoZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:44:25 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:64250 "EHLO
+	id S1753643Ab0EAOoR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:44:17 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:64262 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932912Ab0EAOiJ (ORCPT
+	with ESMTP id S932915Ab0EAOiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:38:09 -0400
+	Sat, 1 May 2010 10:38:10 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
        Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
-Subject: [PATCH v21 082/100] c/r: preliminary support mounts namespace
-Date: Sat,  1 May 2010 10:16:04 -0400
-Message-Id: <1272723382-19470-83-git-send-email-orenl@cs.columbia.edu>
+Subject: [PATCH v21 081/100] c/r: restore task fs_root and pwd (v3)
+Date: Sat,  1 May 2010 10:16:03 -0400
+Message-Id: <1272723382-19470-82-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -24,195 +24,609 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We only allow c/r when all processes shared a single mounts ns.
+Checkpoint and restore task->fs.  Tasks sharing task->fs will
+share them again after restart.
 
-We do intend to implement c/r of mounts and mounts namespaces in the
-kernel.  It shouldn't be ugly or complicate locking to do so.  Just
-haven't gotten around to it. A more complete solution is more than we
-want to take on now for v19.
+Original patch by Serge Hallyn <serue@us.ibm.com>
 
-But we'd like as much as possible for everything which we don't
-support, to not be checkpointable, since not doing so has in the past
-invited slanderous accusations of being a toy implementation :)
-
-Meanwhile, we get the following:
-1) Checkpoint bails if not all tasks share the same mnt-ns
-2) Leak detection works for full container checkpoint
-
-On restart, all tasks inherit the same mnt-ns of the coordinator, by
-default. A follow-up patch to user-cr will add a new switch to the
-'restart' to request a CLONE_NEWMNT flag when creating the root-task
-of the restart.
+Changelog:
+  Jan 25: [orenl] Addressed comments by .. myself:
+    - add leak detection
+    - change order of save/restore of chroot and cwd
+    - save/restore fs only after file-table and mm
+    - rename functions to adapt existing conventions
+  Dec 28: [serge] Addressed comments by Oren (and Dave)
+    - define and use {get,put}_fs_struct helpers
+    - fix locking comment
+    - define ckpt_read_fname() and use in checkpoint/files.c
 
 Cc: Al Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org
-Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
-Acked-by: Oren Laadan <orenl@cs.columbia.edu>
+Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
+Signed-off-by: Serge Hallyn <serue@us.ibm.com>
 ---
- fs/namespace.c                 |   63 +++++++++++++++++++++++++++++----------
- include/linux/checkpoint.h     |    2 +-
- include/linux/checkpoint_hdr.h |    4 ++
- kernel/nsproxy.c               |   16 ++++++++--
- 4 files changed, 65 insertions(+), 20 deletions(-)
+ fs/checkpoint.c                |  232 +++++++++++++++++++++++++++++++++++++++-
+ fs/fs_struct.c                 |   21 ++++
+ fs/open.c                      |   58 ++++++----
+ include/linux/checkpoint.h     |    6 +-
+ include/linux/checkpoint_hdr.h |   12 ++
+ include/linux/fs.h             |    5 +
+ include/linux/fs_struct.h      |    2 +
+ kernel/checkpoint/process.c    |   17 +++
+ 8 files changed, 325 insertions(+), 28 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 8174c8a..e335285 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -29,6 +29,7 @@
- #include <linux/log2.h>
- #include <linux/idr.h>
- #include <linux/fs_struct.h>
-+#include <linux/checkpoint.h>
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
- #include "pnode.h"
-@@ -2318,6 +2319,49 @@ static void __init init_mount_tree(void)
- 	set_fs_root(current->fs, &root);
+diff --git a/fs/checkpoint.c b/fs/checkpoint.c
+index e0f8a15..61b68da 100644
+--- a/fs/checkpoint.c
++++ b/fs/checkpoint.c
+@@ -15,6 +15,9 @@
+ #include <linux/module.h>
+ #include <linux/sched.h>
+ #include <linux/file.h>
++#include <linux/namei.h>
++#include <linux/fs_struct.h>
++#include <linux/fs.h>
+ #include <linux/fdtable.h>
+ #include <linux/fsnotify.h>
+ #include <linux/pipe_fs_i.h>
+@@ -369,6 +372,58 @@ int checkpoint_obj_file_table(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	return objref;
  }
  
-+void put_mnt_ns(struct mnt_namespace *ns)
++int checkpoint_obj_fs(struct ckpt_ctx *ctx, struct task_struct *t)
 +{
-+	LIST_HEAD(umount_list);
++	struct fs_struct *fs;
++	int fs_objref;
 +
-+	if (!atomic_dec_and_test(&ns->count))
-+		return;
-+	down_write(&namespace_sem);
-+	spin_lock(&vfsmount_lock);
-+	umount_tree(ns->root, 0, &umount_list);
-+	spin_unlock(&vfsmount_lock);
-+	up_write(&namespace_sem);
-+	release_mounts(&umount_list);
-+	kfree(ns);
++	task_lock(current);
++	fs = t->fs;
++	get_fs_struct(fs);
++	task_unlock(current);
++
++	fs_objref = checkpoint_obj(ctx, fs, CKPT_OBJ_FS);
++	put_fs_struct(fs);
++
++	return fs_objref;
 +}
-+EXPORT_SYMBOL(put_mnt_ns);
 +
-+#ifdef CONFIG_CHECKPOINT
-+static int obj_mnt_ns_grab(void *ptr)
++/* called with fs refcount bumped so it won't disappear */
++static int checkpoint_fs(struct ckpt_ctx *ctx, void *ptr)
 +{
-+	get_mnt_ns((struct mnt_namespace *) ptr);
++	struct fs_struct *fs = ptr;
++	struct ckpt_hdr_fs *h;
++	struct fs_struct *fscopy;
++	int ret;
++
++	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_FS);
++	if (!h)
++		return -ENOMEM;
++	ret = ckpt_write_obj(ctx, &h->h);
++	ckpt_hdr_put(ctx, h);
++	if (ret)
++		return ret;
++
++	fscopy = copy_fs_struct(fs);
++	if (!fs)
++		return -ENOMEM;
++
++	ret = checkpoint_fname(ctx, &fscopy->pwd, &ctx->root_fs_path);
++	if (ret < 0) {
++		ckpt_err(ctx, ret, "%(T)writing path of cwd");
++		goto out;
++	}
++	ret = checkpoint_fname(ctx, &fscopy->root, &ctx->root_fs_path);
++	if (ret < 0) {
++		ckpt_err(ctx, ret, "%(T)writing path of fs root");
++		goto out;
++	}
++	ret = 0;
++ out:
++	free_fs_struct(fscopy);
++	return ret;
++}
++
+ /***********************************************************************
+  * Collect
+  */
+@@ -455,10 +510,41 @@ int ckpt_collect_file_table(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	return ret;
+ }
+ 
++int ckpt_collect_fs(struct ckpt_ctx *ctx, struct task_struct *t)
++{
++	struct fs_struct *fs;
++	int ret;
++
++	task_lock(t);
++	fs = t->fs;
++	get_fs_struct(fs);
++	task_unlock(t);
++
++	ret = ckpt_obj_collect(ctx, fs, CKPT_OBJ_FS);
++
++	put_fs_struct(fs);
++	return ret;
++}
++
+ /**************************************************************************
+  * Restart
+  */
+ 
++static int ckpt_read_fname(struct ckpt_ctx *ctx, char **fname)
++{
++	int len;
++
++	len = ckpt_read_payload(ctx, (void **) fname,
++				PATH_MAX, CKPT_HDR_FILE_NAME);
++	if (len < 0)
++		return len;
++
++	(*fname)[len - 1] = '\0';	/* always play if safe */
++	ckpt_debug("read filename '%s'\n", *fname);
++
++	return len;
++}
++
+ /**
+  * restore_open_fname - read a file name and open a file
+  * @ctx: checkpoint context
+@@ -474,11 +560,9 @@ struct file *restore_open_fname(struct ckpt_ctx *ctx, int flags)
+ 	if (flags & (O_CREAT | O_EXCL | O_NOCTTY | O_TRUNC))
+ 		return ERR_PTR(-EINVAL);
+ 
+-	len = ckpt_read_payload(ctx, (void **) &fname,
+-				PATH_MAX, CKPT_HDR_FILE_NAME);
++	len = ckpt_read_fname(ctx, &fname);
+ 	if (len < 0)
+ 		return ERR_PTR(len);
+-	fname[len - 1] = '\0';	/* always play if safe */
+ 	ckpt_debug("fname '%s' flags %#x\n", fname, flags);
+ 
+ 	file = filp_open(fname, flags, 0);
+@@ -805,8 +889,136 @@ int restore_obj_file_table(struct ckpt_ctx *ctx, int files_objref)
+ }
+ 
+ /*
++ * Called by task restore code to set the restarted task's
++ * current->fs to an entry on the hash
++ */
++int restore_obj_fs(struct ckpt_ctx *ctx, int fs_objref)
++{
++	struct fs_struct *newfs, *oldfs;
++
++	newfs = ckpt_obj_fetch(ctx, fs_objref, CKPT_OBJ_FS);
++	if (IS_ERR(newfs))
++		return PTR_ERR(newfs);
++
++	task_lock(current);
++	get_fs_struct(newfs);
++	oldfs = current->fs;
++	current->fs = newfs;
++	task_unlock(current);
++	put_fs_struct(oldfs);
++
 +	return 0;
 +}
 +
-+static void obj_mnt_ns_drop(void *ptr, int lastref)
++static int restore_chroot(struct ckpt_ctx *ctx, struct fs_struct *fs, char *name)
 +{
-+	put_mnt_ns((struct mnt_namespace *) ptr);
++	struct nameidata nd;
++	int ret;
++
++	ckpt_debug("attempting chroot to %s\n", name);
++	ret = path_lookup(name, LOOKUP_FOLLOW | LOOKUP_DIRECTORY, &nd);
++	if (ret) {
++		ckpt_err(ctx, ret, "%(T)Opening chroot dir %s", name);
++		return ret;
++	}
++	ret = do_chroot(fs, &nd.path);
++	path_put(&nd.path);
++	if (ret) {
++		ckpt_err(ctx, ret, "%(T)Setting chroot %s", name);
++		return ret;
++	}
++	return 0;
 +}
 +
-+static int obj_mnt_ns_users(void *ptr)
++static int restore_cwd(struct ckpt_ctx *ctx, struct fs_struct *fs, char *name)
 +{
-+	return atomic_read(&((struct mnt_namespace *) ptr)->count);
++	struct nameidata nd;
++	int ret;
++
++	ckpt_debug("attempting chdir to %s\n", name);
++	ret = path_lookup(name, LOOKUP_FOLLOW | LOOKUP_DIRECTORY, &nd);
++	if (ret) {
++		ckpt_err(ctx, ret, "%(T)Opening cwd %s", name);
++		return ret;
++	}
++	ret = do_chdir(fs, &nd.path);
++	path_put(&nd.path);
++	if (ret) {
++		ckpt_err(ctx, ret, "%(T)Setting cwd %s", name);
++		return ret;
++	}
++	return 0;
 +}
 +
-+/* mnt_ns object */
-+static const struct ckpt_obj_ops ckpt_obj_mntns_ops = {
-+	.obj_name = "MOUNTS NS",
-+	.obj_type = CKPT_OBJ_MNT_NS,
-+	.ref_grab = obj_mnt_ns_grab,
-+	.ref_drop = obj_mnt_ns_drop,
-+	.ref_users = obj_mnt_ns_users,
-+};
-+#endif /* CONFIG_CHECKPOINT */
++/*
++ * Called by objhash when it runs into a CKPT_OBJ_FS entry. Creates
++ * an fs_struct with desired chroot/cwd and places it in the hash.
++ */
++static void *restore_fs(struct ckpt_ctx *ctx)
++{
++	struct ckpt_hdr_fs *h;
++	struct fs_struct *fs;
++	char *path;
++	int ret = 0;
 +
- void __init mnt_init(void)
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_FS);
++	if (IS_ERR(h))
++		return ERR_PTR(PTR_ERR(h));
++	ckpt_hdr_put(ctx, h);
++
++	fs = copy_fs_struct(current->fs);
++	if (!fs)
++		return ERR_PTR(-ENOMEM);
++
++	ret = ckpt_read_fname(ctx, &path);
++	if (ret < 0)
++		goto out;
++	ret = restore_cwd(ctx, fs, path);
++	kfree(path);
++	if (ret)
++		goto out;
++
++	ret = ckpt_read_fname(ctx, &path);
++	if (ret < 0)
++		goto out;
++	ret = restore_chroot(ctx, fs, path);
++	kfree(path);
++
++out:
++	if (ret) {
++		free_fs_struct(fs);
++		return ERR_PTR(ret);
++	}
++	return fs;
++}
++
++/*
+  * fs-related checkpoint objects
+  */
++
++static int obj_fs_grab(void *ptr)
++{
++	get_fs_struct((struct fs_struct *) ptr);
++	return 0;
++}
++
++static void obj_fs_drop(void *ptr, int lastref)
++{
++	put_fs_struct((struct fs_struct *) ptr);
++}
++
++static int obj_fs_users(void *ptr)
++{
++	/*
++	 * It's safe to not use fs->lock because the fs referenced.
++	 * It's also sufficient for leak detection: with no leak the
++	 * count can't change; with a leak it will be too big already
++	 * (even if it's about to grow), and if it's about to shrink
++	 * then it's as if we sampled the count a bit earlier.
++	 */
++	return ((struct fs_struct *) ptr)->users;
++}
++
+ static int obj_file_table_grab(void *ptr)
  {
- 	unsigned u;
-@@ -2347,20 +2391,7 @@ void __init mnt_init(void)
- 		printk(KERN_WARNING "%s: kobj create error\n", __func__);
- 	init_rootfs();
- 	init_mount_tree();
-+#ifdef CONFIG_CHECKPOINT
-+	register_checkpoint_obj(&ckpt_obj_mntns_ops);
-+#endif
+ 	atomic_inc(&((struct files_struct *) ptr)->count);
+@@ -839,6 +1051,17 @@ static int obj_file_users(void *ptr)
+ 	return atomic_long_read(&((struct file *) ptr)->f_count);
  }
+ 
++/* fs object */
++static const struct ckpt_obj_ops ckpt_obj_fs_ops = {
++	.obj_name = "FS",
++	.obj_type = CKPT_OBJ_FS,
++	.ref_drop = obj_fs_drop,
++	.ref_grab = obj_fs_grab,
++	.ref_users = obj_fs_users,
++	.checkpoint = checkpoint_fs,
++	.restore = restore_fs,
++};
++
+ /* files_struct object */
+ static const struct ckpt_obj_ops ckpt_obj_files_struct_ops = {
+ 	.obj_name = "FILE_TABLE",
+@@ -865,6 +1088,9 @@ static __init int checkpoint_register_fs(void)
+ {
+ 	int ret;
+ 
++	ret = register_checkpoint_obj(&ckpt_obj_fs_ops);
++	if (ret < 0)
++		return ret;
+ 	ret = register_checkpoint_obj(&ckpt_obj_files_struct_ops);
+ 	if (ret < 0)
+ 		return ret;
+diff --git a/fs/fs_struct.c b/fs/fs_struct.c
+index eee0590..2a4c6f5 100644
+--- a/fs/fs_struct.c
++++ b/fs/fs_struct.c
+@@ -6,6 +6,27 @@
+ #include <linux/fs_struct.h>
+ 
+ /*
++ * call with owning task locked
++ */
++void get_fs_struct(struct fs_struct *fs)
++{
++	write_lock(&fs->lock);
++	fs->users++;
++	write_unlock(&fs->lock);
++}
++
++void put_fs_struct(struct fs_struct *fs)
++{
++	int kill;
++
++	write_lock(&fs->lock);
++	kill = !--fs->users;
++	write_unlock(&fs->lock);
++	if (kill)
++		free_fs_struct(fs);
++}
++
++/*
+  * Replace the fs->{rootmnt,root} with {mnt,dentry}. Put the old values.
+  * It can block.
+  */
+diff --git a/fs/open.c b/fs/open.c
+index 74e5cd9..e9d5626 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -524,6 +524,18 @@ SYSCALL_DEFINE2(access, const char __user *, filename, int, mode)
+ 	return sys_faccessat(AT_FDCWD, filename, mode);
+ }
+ 
++int do_chdir(struct fs_struct *fs, struct path *path)
++{
++	int error;
++
++	error = inode_permission(path->dentry->d_inode, MAY_EXEC | MAY_ACCESS);
++	if (error)
++		return error;
++
++	set_fs_pwd(fs, path);
++	return 0;
++}
++
+ SYSCALL_DEFINE1(chdir, const char __user *, filename)
+ {
+ 	struct path path;
+@@ -531,17 +543,10 @@ SYSCALL_DEFINE1(chdir, const char __user *, filename)
+ 
+ 	error = user_path_dir(filename, &path);
+ 	if (error)
+-		goto out;
 -
--void put_mnt_ns(struct mnt_namespace *ns)
--{
--	LIST_HEAD(umount_list);
+-	error = inode_permission(path.dentry->d_inode, MAY_EXEC | MAY_ACCESS);
+-	if (error)
+-		goto dput_and_out;
 -
--	if (!atomic_dec_and_test(&ns->count))
--		return;
--	down_write(&namespace_sem);
--	spin_lock(&vfsmount_lock);
--	umount_tree(ns->root, 0, &umount_list);
--	spin_unlock(&vfsmount_lock);
--	up_write(&namespace_sem);
--	release_mounts(&umount_list);
--	kfree(ns);
--}
--EXPORT_SYMBOL(put_mnt_ns);
+-	set_fs_pwd(current->fs, &path);
++		return error;
+ 
+-dput_and_out:
++	error = do_chdir(current->fs, &path);
+ 	path_put(&path);
+-out:
+ 	return error;
+ }
+ 
+@@ -571,31 +576,36 @@ out:
+ 	return error;
+ }
+ 
+-SYSCALL_DEFINE1(chroot, const char __user *, filename)
++int do_chroot(struct fs_struct *fs, struct path *path)
+ {
+-	struct path path;
+ 	int error;
+ 
+-	error = user_path_dir(filename, &path);
++	error = inode_permission(path->dentry->d_inode, MAY_EXEC | MAY_ACCESS);
+ 	if (error)
+-		goto out;
++		return error;
++
++	if (!capable(CAP_SYS_CHROOT))
++		return -EPERM;
+ 
+-	error = inode_permission(path.dentry->d_inode, MAY_EXEC | MAY_ACCESS);
++	error = security_path_chroot(path);
+ 	if (error)
+-		goto dput_and_out;
++		return error;
+ 
+-	error = -EPERM;
+-	if (!capable(CAP_SYS_CHROOT))
+-		goto dput_and_out;
+-	error = security_path_chroot(&path);
++	set_fs_root(fs, path);
++	return 0;
++}
++
++SYSCALL_DEFINE1(chroot, const char __user *, filename)
++{
++	struct path path;
++	int error;
++
++	error = user_path_dir(filename, &path);
+ 	if (error)
+-		goto dput_and_out;
++		return error;
+ 
+-	set_fs_root(current->fs, &path);
+-	error = 0;
+-dput_and_out:
++	error = do_chroot(current->fs, &path);
+ 	path_put(&path);
+-out:
+ 	return error;
+ }
+ 
 diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
-index c1079b7..6560f63 100644
+index 09fbb59..c1079b7 100644
 --- a/include/linux/checkpoint.h
 +++ b/include/linux/checkpoint.h
 @@ -10,7 +10,7 @@
   *  distribution for more details.
   */
  
--#define CHECKPOINT_VERSION  4
-+#define CHECKPOINT_VERSION  5
+-#define CHECKPOINT_VERSION  3
++#define CHECKPOINT_VERSION  4
  
  /* checkpoint user flags */
  #define CHECKPOINT_SUBTREE	0x1
+@@ -224,6 +224,10 @@ extern int checkpoint_file_common(struct ckpt_ctx *ctx, struct file *file,
+ extern int restore_file_common(struct ckpt_ctx *ctx, struct file *file,
+ 			       struct ckpt_hdr_file *h);
+ 
++extern int ckpt_collect_fs(struct ckpt_ctx *ctx, struct task_struct *t);
++extern int checkpoint_obj_fs(struct ckpt_ctx *ctx, struct task_struct *t);
++extern int restore_obj_fs(struct ckpt_ctx *ctx, int fs_objref);
++
+ /* memory */
+ extern void ckpt_pgarr_free(struct ckpt_ctx *ctx);
+ 
 diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 8dbd6e9..e74d668 100644
+index e89fbf9..8dbd6e9 100644
 --- a/include/linux/checkpoint_hdr.h
 +++ b/include/linux/checkpoint_hdr.h
-@@ -98,6 +98,8 @@ enum {
- #define CKPT_HDR_UTS_NS CKPT_HDR_UTS_NS
- 	CKPT_HDR_IPC_NS,
- #define CKPT_HDR_IPC_NS CKPT_HDR_IPC_NS
-+	CKPT_HDR_MNT_NS,
-+#define CKPT_HDR_MNT_NS CKPT_HDR_MNT_NS
- 	CKPT_HDR_CAPABILITIES,
- #define CKPT_HDR_CAPABILITIES CKPT_HDR_CAPABILITIES
- 	CKPT_HDR_USER_NS,
-@@ -224,6 +226,8 @@ enum obj_type {
- #define CKPT_OBJ_UTS_NS CKPT_OBJ_UTS_NS
- 	CKPT_OBJ_IPC_NS,
- #define CKPT_OBJ_IPC_NS CKPT_OBJ_IPC_NS
-+	CKPT_OBJ_MNT_NS,
-+#define CKPT_OBJ_MNT_NS CKPT_OBJ_MNT_NS
- 	CKPT_OBJ_USER_NS,
- #define CKPT_OBJ_USER_NS CKPT_OBJ_USER_NS
- 	CKPT_OBJ_CRED,
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 67a1456..5bdce9e 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -268,11 +268,18 @@ int ckpt_collect_ns(struct ckpt_ctx *ctx, struct task_struct *t)
- 	 * ipc_ns (shm) may keep references to files: if this is the
- 	 * first time we see this ipc_ns (ret > 0), proceed inside.
- 	 */
--	if (ret)
-+	if (ret) {
- 		ret = ckpt_collect_ipc_ns(ctx, nsproxy->ipc_ns);
-+		if (ret < 0)
-+			goto out;
-+	}
- #endif
+@@ -139,6 +139,9 @@ enum {
+ 	CKPT_HDR_MM_CONTEXT,
+ #define CKPT_HDR_MM_CONTEXT CKPT_HDR_MM_CONTEXT
  
--	/* TODO: collect other namespaces here */
-+	ret = ckpt_obj_collect(ctx, nsproxy->mnt_ns, CKPT_OBJ_MNT_NS);
-+	if (ret < 0)
-+		goto out;
++	CKPT_HDR_FS = 451,  /* must be after file-table, mm */
++#define CKPT_HDR_FS CKPT_HDR_FS
 +
-+	ret = 0;
-  out:
- 	put_nsproxy(nsproxy);
- 	return ret;
-@@ -301,7 +308,10 @@ static int checkpoint_ns(struct ckpt_ctx *ctx, void *ptr)
- #endif	/* CONFIG_IPC_NS */
- 	h->ipc_objref = ret;
+ 	CKPT_HDR_IPC = 501,
+ #define CKPT_HDR_IPC CKPT_HDR_IPC
+ 	CKPT_HDR_IPC_SHM,
+@@ -209,6 +212,8 @@ enum obj_type {
+ #define CKPT_OBJ_FILE CKPT_OBJ_FILE
+ 	CKPT_OBJ_MM,
+ #define CKPT_OBJ_MM CKPT_OBJ_MM
++	CKPT_OBJ_FS,
++#define CKPT_OBJ_FS CKPT_OBJ_FS
+ 	CKPT_OBJ_SIGHAND,
+ #define CKPT_OBJ_SIGHAND CKPT_OBJ_SIGHAND
+ 	CKPT_OBJ_SIGNAL,
+@@ -424,6 +429,7 @@ struct ckpt_hdr_task_objs {
  
--	/* TODO: Write other namespaces here */
-+	/* FIXME: for now, only marked visited to pacify leaks */
-+	ret = ckpt_obj_visit(ctx, nsproxy->mnt_ns, CKPT_OBJ_MNT_NS);
-+	if (ret < 0)
-+		goto out;
+ 	__s32 files_objref;
+ 	__s32 mm_objref;
++	__s32 fs_objref;
+ 	__s32 sighand_objref;
+ 	__s32 signal_objref;
+ } __attribute__((aligned(8)));
+@@ -461,6 +467,12 @@ enum restart_block_type {
+ };
  
+ /* file system */
++struct ckpt_hdr_fs {
++	struct ckpt_hdr h;
++	/* char *fs_root */
++	/* char *fs_pwd */
++} __attribute__((aligned(8)));
++
+ struct ckpt_hdr_file_table {
+ 	struct ckpt_hdr h;
+ 	__s32 fdt_nfds;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index c0a59ea..ee725ff 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1826,6 +1826,11 @@ extern int iterate_mounts(int (*)(struct vfsmount *, void *), void *,
+ 			  struct vfsmount *);
+ extern int vfs_statfs(struct dentry *, struct kstatfs *);
+ 
++struct fs_struct;
++extern int do_chdir(struct fs_struct *fs, struct path *path);
++extern int do_chroot(struct fs_struct *fs, struct path *path);
++
++
+ extern int current_umask(void);
+ 
+ /* /sys/fs */
+diff --git a/include/linux/fs_struct.h b/include/linux/fs_struct.h
+index 78a05bf..a73cbcb 100644
+--- a/include/linux/fs_struct.h
++++ b/include/linux/fs_struct.h
+@@ -20,5 +20,7 @@ extern struct fs_struct *copy_fs_struct(struct fs_struct *);
+ extern void free_fs_struct(struct fs_struct *);
+ extern void daemonize_fs_struct(void);
+ extern int unshare_fs_struct(void);
++extern void get_fs_struct(struct fs_struct *);
++extern void put_fs_struct(struct fs_struct *);
+ 
+ #endif /* _LINUX_FS_STRUCT_H */
+diff --git a/kernel/checkpoint/process.c b/kernel/checkpoint/process.c
+index fa08616..922287b 100644
+--- a/kernel/checkpoint/process.c
++++ b/kernel/checkpoint/process.c
+@@ -232,6 +232,7 @@ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	struct ckpt_hdr_task_objs *h;
+ 	int files_objref;
+ 	int mm_objref;
++	int fs_objref;
+ 	int sighand_objref;
+ 	int signal_objref;
+ 	int first, ret;
+@@ -272,6 +273,13 @@ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
+ 		return mm_objref;
+ 	}
+ 
++	/* note: this must come *after* file-table and mm */
++	fs_objref = checkpoint_obj_fs(ctx, t);
++	if (fs_objref < 0) {
++		ckpt_err(ctx, fs_objref, "%(T)process fs\n");
++		return fs_objref;
++	}
++
+ 	sighand_objref = checkpoint_obj_sighand(ctx, t);
+ 	ckpt_debug("sighand: objref %d\n", sighand_objref);
+ 	if (sighand_objref < 0) {
+@@ -299,6 +307,7 @@ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
+ 		return -ENOMEM;
+ 	h->files_objref = files_objref;
+ 	h->mm_objref = mm_objref;
++	h->fs_objref = fs_objref;
+ 	h->sighand_objref = sighand_objref;
+ 	h->signal_objref = signal_objref;
  	ret = ckpt_write_obj(ctx, &h->h);
-  out:
+@@ -477,6 +486,9 @@ int ckpt_collect_task(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	ret = ckpt_collect_mm(ctx, t);
+ 	if (ret < 0)
+ 		return ret;
++	ret = ckpt_collect_fs(ctx, t);
++	if (ret < 0)
++		return ret;
+ 	ret = ckpt_collect_sighand(ctx, t);
+ 
+ 	return ret;
+@@ -645,6 +657,11 @@ static int restore_task_objs(struct ckpt_ctx *ctx)
+ 	if (ret < 0)
+ 		goto out;
+ 
++	ret = restore_obj_fs(ctx, h->fs_objref);
++	ckpt_debug("fs: ret %d (%p)\n", ret, current->fs);
++	if (ret < 0)
++		return ret;
++
+ 	ret = restore_obj_sighand(ctx, h->sighand_objref);
+ 	ckpt_debug("sighand: ret %d (%p)\n", ret, current->sighand);
+ 	if (ret < 0)
 -- 
 1.6.3.3
 
