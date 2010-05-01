@@ -1,94 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab0EARMg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 13:12:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21584 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab0EARMa convert rfc822-to-8bit (ORCPT
+	id S1754158Ab0EAReM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 13:34:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50984 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130Ab0EAReI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 13:12:30 -0400
+	Sat, 1 May 2010 13:34:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=J73gcCoJSs9e4ckuyF2FnLb+nTeePaOK7UQzS6AXsQ+Vv/3VCVDa+6ki2NXlcPngCl
+         T5wuHr6X5M1sAxAsQ7VEtzTDspG+4swmiSGmVrQ1kok3OwYT7iVZqiohPU0Fihcgy4nW
+         AcflqbZqk2plyJM743bDwWgbZH7xHXQaV8paU=
 MIME-Version: 1.0
-Message-ID: <3a62a058-7976-48d7-acd2-8c6a8312f10f@default>
-Date: Sat, 1 May 2010 10:10:45 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com>>
- <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>>
- <4BD1A74A.2050003@redhat.com>>
- <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com>
- <4BD1B626.7020702@redhat.com>>
- <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>>
- <4BD3377E.6010303@redhat.com>>
- <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>>
- <ce808441-fae6-4a33-8335-f7702740097a@default>>
- <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz>
- <4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default>
- <4BDB026E.1030605@redhat.com> <4BDB18CE.2090608@goop.org
- 4BDB2069.4000507@redhat.com>
-In-Reply-To: <4BDB2069.4000507@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <20100420135227.GC2628@linux.vnet.ibm.com>
+References: <q2x7e0fb38c1004121144rb097e521hd2a7d8cea77c54b7@mail.gmail.com>
+	 <1271242058.32749.19.camel@laptop>
+	 <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com>
+	 <20100419230136.GA16856@linux.vnet.ibm.com>
+	 <1271726729.2972.13.camel@dhcp231-113.rdu.redhat.com>
+	 <20100420030452.GB2905@linux.vnet.ibm.com>
+	 <4BCD646B.1080206@cn.fujitsu.com>
+	 <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com>
+	 <j2ya44ae5cd1004200545q6be4ec82o18ae99d93e8c29c7@mail.gmail.com>
+	 <20100420135227.GC2628@linux.vnet.ibm.com>
+Date: Sat, 1 May 2010 13:26:15 -0400
+Message-ID: <t2pa44ae5cd1005011026lab3a2440tb9fa351f172abf75@mail.gmail.com>
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious 
+	rcu_dereference_check() usage
+From: Miles Lane <miles.lane@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090208.4BDC60C3.00F8:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Eventually you'll have to swap frontswap pages, or kill uncooperative
-> guests.  At which point all of the simplicity is gone.
+On Tue, Apr 20, 2010 at 9:52 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Tue, Apr 20, 2010 at 08:45:28AM -0400, Miles Lane wrote:
+>> Is there a patch set for 2.6.34-rc5 I can test?
+>
+> I will be sending a patchset out later today after testing, but
+> please see below for a sneak preview collapsed into a single patch.
+>
+>                                                        Thanx, Paul
+>
+>> On Tue, Apr 20, 2010 at 8:31 AM, Eric Paris <eparis@redhat.com> wrote:
+>>
+>> > On Tue, 2010-04-20 at 16:23 +0800, Lai Jiangshan wrote:
+>> >
+>> > > [PATCH] RCU: don't turn off lockdep when find suspicious
+>> > rcu_dereference_check() usage
+>> > >
+>> > > When suspicious rcu_dereference_check() usage is detected, lockdep is
+>> > still
+>> > > available actually, so we should not call debug_locks_off() in
+>> > > lockdep_rcu_dereference().
+>> > >
+>> > > For get rid of too much "suspicious rcu_dereference_check() usage"
+>> > > output when the "if(!debug_locks_off())" statement is removed. This patch
+>> > uses
+>> > > static variable '__warned's for very usage of "rcu_dereference*()".
+>> > >
+>> > > One variable per usage, so, Now, we can get multiple complaint
+>> > > when we detect multiple different suspicious rcu_dereference_check()
+>> > usage.
+>> > >
+>> > > Requested-by: Eric Paris <eparis@redhat.com>
+>> > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>> >
+>> > Although mine was a linux-next kernel and it doesn't appear that I have
+>> > rcu_dereference_protected() at all, so I dropped that bit of the patch,
+>> > it worked great!  I got 4 more complaints to harass people with.  Feel
+>> > free to add my tested by if you care to.
+>> >
+>> > Tested-by: Eric Paris <eparis@redhat.com>
+>
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 07db2fe..ec9ab49 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -190,6 +190,15 @@ static inline int rcu_read_lock_sched_held(void)
+>
+>  #ifdef CONFIG_PROVE_RCU
+>
+> +#define __do_rcu_dereference_check(c)                                  \
+> +       do {                                                            \
+> +               static bool __warned;                                   \
+> +               if (debug_lockdep_rcu_enabled() && !__warned && !(c)) { \
+> +                       __warned = true;                                \
+> +                       lockdep_rcu_dereference(__FILE__, __LINE__);    \
+> +               }                                                       \
+> +       } while (0)
+> +
+>  /**
+>  * rcu_dereference_check - rcu_dereference with debug checking
+>  * @p: The pointer to read, prior to dereferencing
+> @@ -219,8 +228,7 @@ static inline int rcu_read_lock_sched_held(void)
+>  */
+>  #define rcu_dereference_check(p, c) \
+>        ({ \
+> -               if (debug_lockdep_rcu_enabled() && !(c)) \
+> -                       lockdep_rcu_dereference(__FILE__, __LINE__); \
+> +               __do_rcu_dereference_check(c); \
+>                rcu_dereference_raw(p); \
+>        })
+>
+> @@ -237,8 +245,7 @@ static inline int rcu_read_lock_sched_held(void)
+>  */
+>  #define rcu_dereference_protected(p, c) \
+>        ({ \
+> -               if (debug_lockdep_rcu_enabled() && !(c)) \
+> -                       lockdep_rcu_dereference(__FILE__, __LINE__); \
+> +               __do_rcu_dereference_check(c); \
+>                (p); \
+>        })
+>
+> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+> index da5e139..e5c0244 100644
+> --- a/kernel/cgroup_freezer.c
+> +++ b/kernel/cgroup_freezer.c
+> @@ -205,9 +205,12 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
+>         * No lock is needed, since the task isn't on tasklist yet,
+>         * so it can't be moved to another cgroup, which means the
+>         * freezer won't be removed and will be valid during this
+> -        * function call.
+> +        * function call.  Nevertheless, apply RCU read-side critical
+> +        * section to suppress RCU lockdep false positives.
+>         */
+> +       rcu_read_lock();
+>        freezer = task_freezer(task);
+> +       rcu_read_unlock();
+>
+>        /*
+>         * The root cgroup is non-freezable, so we can skip the
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index 2594e1c..03dd1fa 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -3801,8 +3801,6 @@ void lockdep_rcu_dereference(const char *file, const int line)
+>  {
+>        struct task_struct *curr = current;
+>
+> -       if (!debug_locks_off())
+> -               return;
+>        printk("\n===================================================\n");
+>        printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
+>        printk(  "---------------------------------------------------\n");
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 6af210a..14c44ec 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -323,6 +323,15 @@ static inline struct task_group *task_group(struct task_struct *p)
+>  /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
+>  static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
+>  {
+> +       /*
+> +        * Strictly speaking this rcu_read_lock() is not needed since the
+> +        * task_group is tied to the cgroup, which in turn can never go away
+> +        * as long as there are tasks attached to it.
+> +        *
+> +        * However since task_group() uses task_subsys_state() which is an
+> +        * rcu_dereference() user, this quiets CONFIG_PROVE_RCU.
+> +        */
+> +       rcu_read_lock();
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>        p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
+>        p->se.parent = task_group(p)->se[cpu];
+> @@ -332,6 +341,7 @@ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
+>        p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
+>        p->rt.parent = task_group(p)->rt_se[cpu];
+>  #endif
+> +       rcu_read_unlock();
+>  }
+>
+>  #else
+>
 
-OK, now I think I see the crux of the disagreement.
+Hi Paul.
 
-NO!  Frontswap on Xen+tmem never *never* _never_ NEVER results
-in host swapping.  Host swapping is evil.  Host swapping is
-the root of most of the bad reputation that memory overcommit
-has gotten from VMware customers.  Host swapping can't be
-avoided with some memory overcommit technologies (such as page
-sharing), but frontswap on Xen+tmem CAN and DOES avoid it.
+Has this patch made it into the Linus tree?
+Thanks!
 
-So, to summarize:
-
-1) You agreed that a synchronous interface for frontswap makes
-   sense for swap-to-in-kernel-compressed-RAM because it is
-   truly swapping to RAM.
-2) You have pointed out that an asynchronous interface for
-   frontswap makes more sense for KVM than a synchronous
-   interface, because KVM does host swapping.  Then you said
-   if you have an asynchronous interface anyway, the existing
-   swap code works just fine with no changes so frontswap
-   is not needed at all... for KVM.
-3) You have suggested that if Xen were more like KVM and required
-   host-swapping, then Xen doesn't need frontswap either.
-
-BUT frontswap on Xen+tmem always truly swaps to RAM.
-
-So there are two users of frontswap for which the synchronous
-interface makes sense.  I believe there may be more in the
-future and you disagree but, as Jeremy said, "a general Linux
-principle is not to overdesign interfaces for hypothetical users,
-only for real needs."  We have demonstrated there is a need
-with at least two users so the debate is only whether the
-number of users is two or more than two.
-
-Frontswap is a very non-invasive patch and is very cleanly
-layered so that if it is not in the presence of either of 
-the intended "users", it can be turned off in many different
-ways with zero overhead (CONFIG'ed off) or extremely small overhead
-(frontswap_ops is never set; or frontswap_ops is set but the
-underlying hypervisor doesn't support it so frontswap_poolid
-never gets set).
-
-So... KVM doesn't need it and won't use it.  Do you, Avi, have
-any other objections as to why the frontswap patch shouldn't be
-accepted as is for the users that DO need it and WILL use it?
+          Miles
