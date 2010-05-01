@@ -1,193 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab0EAVzJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 17:55:09 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:52212 "EHLO e9.ny.us.ibm.com"
+	id S1755988Ab0EAWAQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 18:00:16 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34676 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752647Ab0EAVzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 17:55:06 -0400
-Date: Sat, 1 May 2010 14:55:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
- rcu_dereference_check() usage
-Message-ID: <20100501215502.GA2474@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1271242058.32749.19.camel@laptop>
- <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com>
- <20100419230136.GA16856@linux.vnet.ibm.com>
- <1271726729.2972.13.camel@dhcp231-113.rdu.redhat.com>
- <20100420030452.GB2905@linux.vnet.ibm.com>
- <4BCD646B.1080206@cn.fujitsu.com>
- <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com>
- <j2ya44ae5cd1004200545q6be4ec82o18ae99d93e8c29c7@mail.gmail.com>
- <20100420135227.GC2628@linux.vnet.ibm.com>
- <t2pa44ae5cd1005011026lab3a2440tb9fa351f172abf75@mail.gmail.com>
+	id S1753451Ab0EAWAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 May 2010 18:00:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 1/5] FS: libfs, implement simple_write_to_buffer
+Date: Sun, 2 May 2010 00:00:36 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+       Nigel Cunningham <ncunningham@crca.org.au>,
+       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
+References: <1272356118-10012-1-git-send-email-jslaby@suse.cz> <201004272358.36175.rjw@sisk.pl> <201004290016.40469.rjw@sisk.pl>
+In-Reply-To: <201004290016.40469.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <t2pa44ae5cd1005011026lab3a2440tb9fa351f172abf75@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005020000.37013.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 01, 2010 at 01:26:15PM -0400, Miles Lane wrote:
-> On Tue, Apr 20, 2010 at 9:52 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Tue, Apr 20, 2010 at 08:45:28AM -0400, Miles Lane wrote:
-> >> Is there a patch set for 2.6.34-rc5 I can test?
-> >
-> > I will be sending a patchset out later today after testing, but
-> > please see below for a sneak preview collapsed into a single patch.
-> >
-> >                                                        Thanx, Paul
-> >
-> >> On Tue, Apr 20, 2010 at 8:31 AM, Eric Paris <eparis@redhat.com> wrote:
-> >>
-> >> > On Tue, 2010-04-20 at 16:23 +0800, Lai Jiangshan wrote:
-> >> >
-> >> > > [PATCH] RCU: don't turn off lockdep when find suspicious
-> >> > rcu_dereference_check() usage
-> >> > >
-> >> > > When suspicious rcu_dereference_check() usage is detected, lockdep is
-> >> > still
-> >> > > available actually, so we should not call debug_locks_off() in
-> >> > > lockdep_rcu_dereference().
-> >> > >
-> >> > > For get rid of too much "suspicious rcu_dereference_check() usage"
-> >> > > output when the "if(!debug_locks_off())" statement is removed. This patch
-> >> > uses
-> >> > > static variable '__warned's for very usage of "rcu_dereference*()".
-> >> > >
-> >> > > One variable per usage, so, Now, we can get multiple complaint
-> >> > > when we detect multiple different suspicious rcu_dereference_check()
-> >> > usage.
-> >> > >
-> >> > > Requested-by: Eric Paris <eparis@redhat.com>
-> >> > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> >> >
-> >> > Although mine was a linux-next kernel and it doesn't appear that I have
-> >> > rcu_dereference_protected() at all, so I dropped that bit of the patch,
-> >> > it worked great!  I got 4 more complaints to harass people with.  Feel
-> >> > free to add my tested by if you care to.
-> >> >
-> >> > Tested-by: Eric Paris <eparis@redhat.com>
-> >
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 07db2fe..ec9ab49 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -190,6 +190,15 @@ static inline int rcu_read_lock_sched_held(void)
-> >
-> >  #ifdef CONFIG_PROVE_RCU
-> >
-> > +#define __do_rcu_dereference_check(c)                                  \
-> > +       do {                                                            \
-> > +               static bool __warned;                                   \
-> > +               if (debug_lockdep_rcu_enabled() && !__warned && !(c)) { \
-> > +                       __warned = true;                                \
-> > +                       lockdep_rcu_dereference(__FILE__, __LINE__);    \
-> > +               }                                                       \
-> > +       } while (0)
-> > +
-> >  /**
-> >  * rcu_dereference_check - rcu_dereference with debug checking
-> >  * @p: The pointer to read, prior to dereferencing
-> > @@ -219,8 +228,7 @@ static inline int rcu_read_lock_sched_held(void)
-> >  */
-> >  #define rcu_dereference_check(p, c) \
-> >        ({ \
-> > -               if (debug_lockdep_rcu_enabled() && !(c)) \
-> > -                       lockdep_rcu_dereference(__FILE__, __LINE__); \
-> > +               __do_rcu_dereference_check(c); \
-> >                rcu_dereference_raw(p); \
-> >        })
-> >
-> > @@ -237,8 +245,7 @@ static inline int rcu_read_lock_sched_held(void)
-> >  */
-> >  #define rcu_dereference_protected(p, c) \
-> >        ({ \
-> > -               if (debug_lockdep_rcu_enabled() && !(c)) \
-> > -                       lockdep_rcu_dereference(__FILE__, __LINE__); \
-> > +               __do_rcu_dereference_check(c); \
-> >                (p); \
-> >        })
-> >
-> > diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> > index da5e139..e5c0244 100644
-> > --- a/kernel/cgroup_freezer.c
-> > +++ b/kernel/cgroup_freezer.c
-> > @@ -205,9 +205,12 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
-> >         * No lock is needed, since the task isn't on tasklist yet,
-> >         * so it can't be moved to another cgroup, which means the
-> >         * freezer won't be removed and will be valid during this
-> > -        * function call.
-> > +        * function call.  Nevertheless, apply RCU read-side critical
-> > +        * section to suppress RCU lockdep false positives.
-> >         */
-> > +       rcu_read_lock();
-> >        freezer = task_freezer(task);
-> > +       rcu_read_unlock();
-> >
-> >        /*
-> >         * The root cgroup is non-freezable, so we can skip the
-> > diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> > index 2594e1c..03dd1fa 100644
-> > --- a/kernel/lockdep.c
-> > +++ b/kernel/lockdep.c
-> > @@ -3801,8 +3801,6 @@ void lockdep_rcu_dereference(const char *file, const int line)
-> >  {
-> >        struct task_struct *curr = current;
-> >
-> > -       if (!debug_locks_off())
-> > -               return;
-> >        printk("\n===================================================\n");
-> >        printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
-> >        printk(  "---------------------------------------------------\n");
-> > diff --git a/kernel/sched.c b/kernel/sched.c
-> > index 6af210a..14c44ec 100644
-> > --- a/kernel/sched.c
-> > +++ b/kernel/sched.c
-> > @@ -323,6 +323,15 @@ static inline struct task_group *task_group(struct task_struct *p)
-> >  /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
-> >  static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
-> >  {
-> > +       /*
-> > +        * Strictly speaking this rcu_read_lock() is not needed since the
-> > +        * task_group is tied to the cgroup, which in turn can never go away
-> > +        * as long as there are tasks attached to it.
-> > +        *
-> > +        * However since task_group() uses task_subsys_state() which is an
-> > +        * rcu_dereference() user, this quiets CONFIG_PROVE_RCU.
-> > +        */
-> > +       rcu_read_lock();
-> >  #ifdef CONFIG_FAIR_GROUP_SCHED
-> >        p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
-> >        p->se.parent = task_group(p)->se[cpu];
-> > @@ -332,6 +341,7 @@ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
-> >        p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
-> >        p->rt.parent = task_group(p)->rt_se[cpu];
-> >  #endif
-> > +       rcu_read_unlock();
-> >  }
-> >
-> >  #else
-> >
+On Thursday 29 April 2010, Rafael J. Wysocki wrote:
+> On Tuesday 27 April 2010, Rafael J. Wysocki wrote:
+> > On Tuesday 27 April 2010, Jiri Slaby wrote:
+> > > It will be used in suspend code and serves as an easy wrap around
+> > > copy_from_user. Similar to simple_read_from_buffer, it takes care
+> > > of transfers with proper lengths depending on available and count
+> > > parameters and advances ppos appropriately.
+> > > 
+> > > Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> > > Cc: Nigel Cunningham <ncunningham@crca.org.au>
+> > > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> > > Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> > > Cc: linux-fsdevel@vger.kernel.org
+> > 
+> > Thanks for the patches, I'll review them as soon as I can.
 > 
-> Hi Paul.
-> 
-> Has this patch made it into the Linus tree?
-> Thanks!
+> They look good.  If there are no objections from the other people, I'll add
+> them to suspend-2.6/linux-next in the next few days.
 
-Hello, Miles,
+All patches in this series applied to suspend-2.6/linux-next.
 
-Not yet -- working with Ingo to get a variant of it into -tip on
-its way to Linus's tree.  The latest patch stack may be found at
-http://lkml.org/lkml/2010/4/30/500.
+I fixed up the Pavel's address in the copyright notice in kernel/power/block_io.c.
 
-						Thanx, Paul
+Thanks,
+Rafael
