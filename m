@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab0EAOdY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:33:24 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63470 "EHLO
+	id S1754486Ab0EAOex (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:34:53 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63826 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242Ab0EAObA (ORCPT
+	with ESMTP id S1754400Ab0EAOeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:31:00 -0400
+	Sat, 1 May 2010 10:34:50 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, linux-fsdevel@vger.kernel.org
-Subject: [PATCH v21 044/100] c/r: add checkpoint operation for opened files of generic filesystems
-Date: Sat,  1 May 2010 10:15:26 -0400
-Message-Id: <1272723382-19470-45-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH v21 046/100] c/r: dump anonymous- and file-mapped- shared memory
+Date: Sat,  1 May 2010 10:15:28 -0400
+Message-Id: <1272723382-19470-47-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -23,1040 +24,834 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Helsley <matthltc@us.ibm.com>
+We now handle anonymous and file-mapped shared memory. Support for IPC
+shared memory requires support for IPC first. We extend ckpt_write_vma()
+to detect shared memory VMAs and handle it separately than private
+memory.
 
-These patches extend the use of the generic file checkpoint operation to
-non-extX filesystems which have lseek operations that ensure we can save
-and restore the files for later use. Note that this does not include
-things like FUSE, network filesystems, or pseudo-filesystem kernel
-interfaces.
+There is not much to do for file-mapped shared memory, except to force
+msync() on the region to ensure that the file system is consistent
+with the checkpoint image. Use our internal type CKPT_VMA_SHM_FILE.
 
-Only compile and boot tested (on x86-32).
+Anonymous shared memory is always backed by inode in shmem filesystem.
+We use that inode to look up the VMA in the objhash and register it if
+not found (on first encounter). In this case, the type of the VMA is
+CKPT_VMA_SHM_ANON, and we dump the contents. On the other hand, if it is
+found there, we must have already saved it before, so we change the
+type to CKPT_VMA_SHM_ANON_SKIP and skip it.
 
-[Oren Laadan] Folded patch series into a single patch; original post
-included 36 separate patches for individual filesystems:
+To dump the contents of a shmem VMA, we loop through the pages of the
+inode in the shmem filesystem, and dump the contents of each dirty
+(allocated) page - unallocated pages must be clean.
 
-  [PATCH 01/36] Add the checkpoint operation for affs files and directories.
-  [PATCH 02/36] Add the checkpoint operation for befs directories.
-  [PATCH 03/36] Add the checkpoint operation for bfs files and directories.
-  [PATCH 04/36] Add the checkpoint operation for btrfs files and directories.
-  [PATCH 05/36] Add the checkpoint operation for cramfs directories.
-  [PATCH 06/36] Add the checkpoint operation for ecryptfs files and directories.
-  [PATCH 07/36] Add the checkpoint operation for fat files and directories.
-  [PATCH 08/36] Add the checkpoint operation for freevxfs directories.
-  [PATCH 09/36] Add the checkpoint operation for hfs files and directories.
-  [PATCH 10/36] Add the checkpoint operation for hfsplus files and directories.
-  [PATCH 11/36] Add the checkpoint operation for hpfs files and directories.
-  [PATCH 12/36] Add the checkpoint operation for hppfs files and directories.
-  [PATCH 13/36] Add the checkpoint operation for iso directories.
-  [PATCH 14/36] Add the checkpoint operation for jffs2 files and directories.
-  [PATCH 15/36] Add the checkpoint operation for jfs files and directories.
-  [PATCH 16/36] Add the checkpoint operation for regular nfs files and directories. Skip the various /proc files for now.
-  [PATCH 17/36] Add the checkpoint operation for ntfs directories.
-  [PATCH 18/36] Add the checkpoint operation for openromfs directories. Explicitly skip the properties for now.
-  [PATCH 19/36] Add the checkpoint operation for qnx4 files and directories.
-  [PATCH 20/36] Add the checkpoint operation for reiserfs files and directories.
-  [PATCH 21/36] Add the checkpoint operation for romfs directories.
-  [PATCH 22/36] Add the checkpoint operation for squashfs directories.
-  [PATCH 23/36] Add the checkpoint operation for sysv filesystem files and directories.
-  [PATCH 24/36] Add the checkpoint operation for ubifs files and directories.
-  [PATCH 25/36] Add the checkpoint operation for udf filesystem files and directories.
-  [PATCH 26/36] Add the checkpoint operation for xfs files and directories.
-  [PATCH 27/36] Add checkpoint operation for efs directories.
-  [PATCH 28/36] Add the checkpoint operation for generic, read-only files. At present, some/all files of the following filesystems use this generic definition:
-  [PATCH 29/36] Add checkpoint operation for minix filesystem files and directories.
-  [PATCH 30/36] Add checkpoint operations for omfs files and directories.
-  [PATCH 31/36] Add checkpoint operations for ufs files and directories.
-  [PATCH 32/36] Add checkpoint operations for ramfs files. NOTE: since simple_dir_operations are shared between multiple filesystems including ramfs, it's not currently possible to checkpoint open ramfs directories.
-  [PATCH 33/36] Add the checkpoint operation for adfs files and directories.
-  [PATCH 34/36] Add the checkpoint operation to exofs files and directories.
-  [PATCH 35/36] Add the checkpoint operation to nilfs2 files and directories.
-  [PATCH 36/36] Add checkpoint operations for UML host filesystem files and directories.
+Note that we save the original size of a shmem VMA because it may have
+been re-mapped partially. The format itself remains like with private
+VMAs, except that instead of addresses we record _indices_ (page nr)
+into the backing inode.
+
+During restore, the bulk of the work is in ckpt_read_vma(), which has
+been refactored: the part that create the suitable 'struct file *' for
+the mapping is now larger and moved to a separate function. What's
+left is to read the VMA description, get the file pointer, create the
+mapping, and proceed to read the contents in.
+
+Both anonymous shared VMAs that have been read earlier (as indicated
+by a look up to objhash) and file-mapped shared VMAs are skipped.
+Anonymous shared VMAs seen for the first time have their contents read
+in directly to the backing inode, as indexed by the page numbers (as
+opposed to virtual addresses).
 
 Changelog[v21]:
-  - Put file_ops->checkpoint under CONFIG_CHECKPOINT
+  - Replace __initcall() with late_initcall()
+  - Merge shmem dump/restore into a single patch
+  - [Serge Hallyn] s390: Register inode checkpoint ops in a separate
+	__initcall since we don't need to be in the early init paths.
+	Also fixes a bug on s390 where CKPT_OBJ_INODE wouldn't get
+	registered because of early return predicated on hashdist.
 Changelog[v19-rc3]:
-  - [Suka] Enable C/R while executing over NFS
+  - Rebase to kernel 2.6.33
+Changelog[v19-rc1]:
+  - [Matt Helsley] Add cpp definitions for enums
+Changelog[v18]:
+  - Mark the backing file as visited at chekcpoint
 
+Cc: linux-mm@kvack.org
 Cc: linux-fsdevel@vger.kernel.org
-Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-Acked-by: Oren Laadan <orenl@cs.columbia.edu>
+Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- fs/adfs/dir.c               |    3 +++
- fs/adfs/file.c              |    3 +++
- fs/affs/dir.c               |    3 +++
- fs/affs/file.c              |    3 +++
- fs/befs/linuxvfs.c          |    3 +++
- fs/bfs/dir.c                |    3 +++
- fs/bfs/file.c               |    3 +++
- fs/btrfs/file.c             |    3 +++
- fs/btrfs/inode.c            |    3 +++
- fs/btrfs/super.c            |    3 +++
- fs/cramfs/inode.c           |    3 +++
- fs/ecryptfs/file.c          |    6 ++++++
- fs/ecryptfs/miscdev.c       |    3 +++
- fs/efs/dir.c                |    3 +++
- fs/exofs/dir.c              |    3 +++
- fs/exofs/file.c             |    3 +++
- fs/fat/dir.c                |    3 +++
- fs/fat/file.c               |    3 +++
- fs/freevxfs/vxfs_lookup.c   |    3 +++
- fs/hfs/dir.c                |    3 +++
- fs/hfs/inode.c              |    3 +++
- fs/hfsplus/dir.c            |    3 +++
- fs/hfsplus/inode.c          |    3 +++
- fs/hostfs/hostfs_kern.c     |    6 ++++++
- fs/hpfs/dir.c               |    3 +++
- fs/hpfs/file.c              |    3 +++
- fs/hppfs/hppfs.c            |    6 ++++++
- fs/isofs/dir.c              |    3 +++
- fs/jffs2/dir.c              |    3 +++
- fs/jffs2/file.c             |    3 +++
- fs/jfs/file.c               |    3 +++
- fs/jfs/namei.c              |    3 +++
- fs/minix/dir.c              |    3 +++
- fs/minix/file.c             |    3 +++
- fs/nfs/dir.c                |    3 +++
- fs/nfs/file.c               |    6 ++++++
- fs/nilfs2/dir.c             |    4 +++-
- fs/nilfs2/file.c            |    3 +++
- fs/ntfs/dir.c               |    3 +++
- fs/ntfs/file.c              |    5 ++++-
- fs/omfs/dir.c               |    3 +++
- fs/omfs/file.c              |    3 +++
- fs/openpromfs/inode.c       |    6 ++++++
- fs/qnx4/dir.c               |    3 +++
- fs/ramfs/file-mmu.c         |    3 +++
- fs/ramfs/file-nommu.c       |    3 +++
- fs/read_write.c             |    3 +++
- fs/reiserfs/dir.c           |    3 +++
- fs/reiserfs/file.c          |    3 +++
- fs/romfs/mmap-nommu.c       |    3 +++
- fs/romfs/super.c            |    3 +++
- fs/squashfs/dir.c           |    5 ++++-
- fs/sysv/dir.c               |    3 +++
- fs/sysv/file.c              |    3 +++
- fs/ubifs/debug.c            |    3 +++
- fs/ubifs/dir.c              |    3 +++
- fs/ubifs/file.c             |    3 +++
- fs/udf/dir.c                |    3 +++
- fs/udf/file.c               |    3 +++
- fs/ufs/dir.c                |    3 +++
- fs/ufs/file.c               |    3 +++
- fs/xfs/linux-2.6/xfs_file.c |    6 ++++++
- 62 files changed, 206 insertions(+), 3 deletions(-)
+ fs/inode.c                     |   26 +++++
+ include/linux/checkpoint.h     |   21 +++-
+ include/linux/checkpoint_hdr.h |   12 +++
+ include/linux/mm.h             |    2 +
+ kernel/checkpoint/objhash.c    |    2 +
+ mm/checkpoint.c                |  209 +++++++++++++++++++++++++++++++++-------
+ mm/filemap.c                   |   52 ++++++++++-
+ mm/mmap.c                      |    2 +-
+ mm/shmem.c                     |   84 ++++++++++++++++
+ 9 files changed, 368 insertions(+), 42 deletions(-)
 
-diff --git a/fs/adfs/dir.c b/fs/adfs/dir.c
-index 23aa52f..c205b40 100644
---- a/fs/adfs/dir.c
-+++ b/fs/adfs/dir.c
-@@ -198,6 +198,9 @@ const struct file_operations adfs_dir_operations = {
- 	.llseek		= generic_file_llseek,
- 	.readdir	= adfs_readdir,
- 	.fsync		= simple_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static int
-diff --git a/fs/adfs/file.c b/fs/adfs/file.c
-index 005ea34..09ce6c7 100644
---- a/fs/adfs/file.c
-+++ b/fs/adfs/file.c
-@@ -30,6 +30,9 @@ const struct file_operations adfs_file_operations = {
- 	.write		= do_sync_write,
- 	.aio_write	= generic_file_aio_write,
- 	.splice_read	= generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- const struct inode_operations adfs_file_inode_operations = {
-diff --git a/fs/affs/dir.c b/fs/affs/dir.c
-index 8ca8f3a..02511bf 100644
---- a/fs/affs/dir.c
-+++ b/fs/affs/dir.c
-@@ -22,6 +22,9 @@ const struct file_operations affs_dir_operations = {
- 	.llseek		= generic_file_llseek,
- 	.readdir	= affs_readdir,
- 	.fsync		= affs_file_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+diff --git a/fs/inode.c b/fs/inode.c
+index 407bf39..3496c51 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -25,6 +25,7 @@
+ #include <linux/mount.h>
+ #include <linux/async.h>
+ #include <linux/posix_acl.h>
++#include <linux/checkpoint.h>
  
  /*
-diff --git a/fs/affs/file.c b/fs/affs/file.c
-index 184e55c..22577fa 100644
---- a/fs/affs/file.c
-+++ b/fs/affs/file.c
-@@ -36,6 +36,9 @@ const struct file_operations affs_file_operations = {
- 	.release	= affs_file_release,
- 	.fsync		= affs_file_fsync,
- 	.splice_read	= generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+  * This is needed for the following functions:
+@@ -1560,6 +1561,31 @@ void __init inode_init_early(void)
+ 		INIT_HLIST_HEAD(&inode_hashtable[loop]);
+ }
  
- const struct inode_operations affs_file_inode_operations = {
-diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
-index 34ddda8..71488ba 100644
---- a/fs/befs/linuxvfs.c
-+++ b/fs/befs/linuxvfs.c
-@@ -67,6 +67,9 @@ static const struct file_operations befs_dir_operations = {
- 	.read		= generic_read_dir,
- 	.readdir	= befs_readdir,
- 	.llseek		= generic_file_llseek,
 +#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
++static int obj_inode_grab(void *ptr)
++{
++	return igrab((struct inode *) ptr) ? 0 : -EBADF;
++}
++
++static void obj_inode_drop(void *ptr, int lastref)
++{
++	iput((struct inode *) ptr);
++}
++
++static const struct ckpt_obj_ops ckpt_obj_inode_ops = {
++	.obj_name = "INODE",
++	.obj_type = CKPT_OBJ_INODE,
++	.ref_drop = obj_inode_drop,
++	.ref_grab = obj_inode_grab,
++};
++
++static int __init inode_checkpoint_init(void)
++{
++	return register_checkpoint_obj(&ckpt_obj_inode_ops);
++}
++late_initcall(inode_checkpoint_init);
 +#endif
- };
- 
- static const struct inode_operations befs_dir_inode_operations = {
-diff --git a/fs/bfs/dir.c b/fs/bfs/dir.c
-index 1e41aad..18bea30 100644
---- a/fs/bfs/dir.c
-+++ b/fs/bfs/dir.c
-@@ -80,6 +80,9 @@ const struct file_operations bfs_dir_operations = {
- 	.readdir	= bfs_readdir,
- 	.fsync		= simple_fsync,
- 	.llseek		= generic_file_llseek,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- extern void dump_imap(const char *, struct super_block *);
-diff --git a/fs/bfs/file.c b/fs/bfs/file.c
-index 88b9a3f..844ff41 100644
---- a/fs/bfs/file.c
-+++ b/fs/bfs/file.c
-@@ -29,6 +29,9 @@ const struct file_operations bfs_file_operations = {
- 	.aio_write	= generic_file_aio_write,
- 	.mmap		= generic_file_mmap,
- 	.splice_read	= generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static int bfs_move_block(unsigned long from, unsigned long to,
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index 29ff749..be325e1 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -1170,4 +1170,7 @@ const struct file_operations btrfs_file_operations = {
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= btrfs_ioctl,
- #endif
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 2bfdc64..7ee1a98 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -5954,6 +5954,9 @@ static const struct file_operations btrfs_dir_file_operations = {
- #endif
- 	.release        = btrfs_release_file,
- 	.fsync		= btrfs_sync_file,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static struct extent_io_ops btrfs_extent_io_ops = {
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index 1866dff..2e31e14 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -829,6 +829,9 @@ static const struct file_operations btrfs_ctl_fops = {
- 	.unlocked_ioctl	 = btrfs_control_ioctl,
- 	.compat_ioctl = btrfs_control_ioctl,
- 	.owner	 = THIS_MODULE,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = generic_file_checkpoint,
-+#endif
- };
- 
- static struct miscdevice btrfs_misc = {
-diff --git a/fs/cramfs/inode.c b/fs/cramfs/inode.c
-index dd3634e..01ee36d 100644
---- a/fs/cramfs/inode.c
-+++ b/fs/cramfs/inode.c
-@@ -532,6 +532,9 @@ static const struct file_operations cramfs_directory_operations = {
- 	.llseek		= generic_file_llseek,
- 	.read		= generic_read_dir,
- 	.readdir	= cramfs_readdir,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static const struct inode_operations cramfs_dir_inode_operations = {
-diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-index e7440a6..e34e59a 100644
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -306,6 +306,9 @@ const struct file_operations ecryptfs_dir_fops = {
- 	.fsync = ecryptfs_fsync,
- 	.fasync = ecryptfs_fasync,
- 	.splice_read = generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = generic_file_checkpoint,
-+#endif
- };
- 
- const struct file_operations ecryptfs_main_fops = {
-@@ -323,6 +326,9 @@ const struct file_operations ecryptfs_main_fops = {
- 	.fsync = ecryptfs_fsync,
- 	.fasync = ecryptfs_fasync,
- 	.splice_read = generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = generic_file_checkpoint,
-+#endif
- };
- 
- static int
-diff --git a/fs/ecryptfs/miscdev.c b/fs/ecryptfs/miscdev.c
-index 3745f61..9aa5d8b 100644
---- a/fs/ecryptfs/miscdev.c
-+++ b/fs/ecryptfs/miscdev.c
-@@ -482,6 +482,9 @@ static const struct file_operations ecryptfs_miscdev_fops = {
- 	.read    = ecryptfs_miscdev_read,
- 	.write   = ecryptfs_miscdev_write,
- 	.release = ecryptfs_miscdev_release,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = generic_file_checkpoint,
-+#endif
- };
- 
- static struct miscdevice ecryptfs_miscdev = {
-diff --git a/fs/efs/dir.c b/fs/efs/dir.c
-index 7ee6f7e..ff08a3b 100644
---- a/fs/efs/dir.c
-+++ b/fs/efs/dir.c
-@@ -13,6 +13,9 @@ const struct file_operations efs_dir_operations = {
- 	.llseek		= generic_file_llseek,
- 	.read		= generic_read_dir,
- 	.readdir	= efs_readdir,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- const struct inode_operations efs_dir_inode_operations = {
-diff --git a/fs/exofs/dir.c b/fs/exofs/dir.c
-index 4cfab1c..62347ff 100644
---- a/fs/exofs/dir.c
-+++ b/fs/exofs/dir.c
-@@ -667,4 +667,7 @@ const struct file_operations exofs_dir_operations = {
- 	.llseek		= generic_file_llseek,
- 	.read		= generic_read_dir,
- 	.readdir	= exofs_readdir,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/exofs/file.c b/fs/exofs/file.c
-index 839b9dc..ec7e15a 100644
---- a/fs/exofs/file.c
-+++ b/fs/exofs/file.c
-@@ -84,6 +84,9 @@ const struct file_operations exofs_file_operations = {
- 	.flush		= exofs_flush,
- 	.splice_read	= generic_file_splice_read,
- 	.splice_write	= generic_file_splice_write,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- const struct inode_operations exofs_file_inode_operations = {
-diff --git a/fs/fat/dir.c b/fs/fat/dir.c
-index 530b4ca..4a4c7bb 100644
---- a/fs/fat/dir.c
-+++ b/fs/fat/dir.c
-@@ -841,6 +841,9 @@ const struct file_operations fat_dir_operations = {
- 	.compat_ioctl	= fat_compat_dir_ioctl,
- #endif
- 	.fsync		= fat_file_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static int fat_get_short_entry(struct inode *dir, loff_t *pos,
-diff --git a/fs/fat/file.c b/fs/fat/file.c
-index e8c159d..38132c2 100644
---- a/fs/fat/file.c
-+++ b/fs/fat/file.c
-@@ -162,6 +162,9 @@ const struct file_operations fat_file_operations = {
- 	.ioctl		= fat_generic_ioctl,
- 	.fsync		= fat_file_fsync,
- 	.splice_read	= generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static int fat_cont_expand(struct inode *inode, loff_t size)
-diff --git a/fs/freevxfs/vxfs_lookup.c b/fs/freevxfs/vxfs_lookup.c
-index aee049c..41dfea9 100644
---- a/fs/freevxfs/vxfs_lookup.c
-+++ b/fs/freevxfs/vxfs_lookup.c
-@@ -58,6 +58,9 @@ const struct inode_operations vxfs_dir_inode_ops = {
- 
- const struct file_operations vxfs_dir_operations = {
- 	.readdir =		vxfs_readdir,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint =		generic_file_checkpoint,
-+#endif
- };
- 
-  
-diff --git a/fs/hfs/dir.c b/fs/hfs/dir.c
-index 2b3b861..f4dafc5 100644
---- a/fs/hfs/dir.c
-+++ b/fs/hfs/dir.c
-@@ -329,6 +329,9 @@ const struct file_operations hfs_dir_operations = {
- 	.readdir	= hfs_readdir,
- 	.llseek		= generic_file_llseek,
- 	.release	= hfs_dir_release,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- const struct inode_operations hfs_dir_inode_operations = {
-diff --git a/fs/hfs/inode.c b/fs/hfs/inode.c
-index 14f5cb1..3b10d84 100644
---- a/fs/hfs/inode.c
-+++ b/fs/hfs/inode.c
-@@ -607,6 +607,9 @@ static const struct file_operations hfs_file_operations = {
- 	.fsync		= file_fsync,
- 	.open		= hfs_file_open,
- 	.release	= hfs_file_release,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static const struct inode_operations hfs_file_inode_operations = {
-diff --git a/fs/hfsplus/dir.c b/fs/hfsplus/dir.c
-index 5f40236..7656143 100644
---- a/fs/hfsplus/dir.c
-+++ b/fs/hfsplus/dir.c
-@@ -497,4 +497,7 @@ const struct file_operations hfsplus_dir_operations = {
- 	.ioctl          = hfsplus_ioctl,
- 	.llseek		= generic_file_llseek,
- 	.release	= hfsplus_dir_release,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/hfsplus/inode.c b/fs/hfsplus/inode.c
-index 1bcf597..43a6da2 100644
---- a/fs/hfsplus/inode.c
-+++ b/fs/hfsplus/inode.c
-@@ -286,6 +286,9 @@ static const struct file_operations hfsplus_file_operations = {
- 	.open		= hfsplus_file_open,
- 	.release	= hfsplus_file_release,
- 	.ioctl          = hfsplus_ioctl,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- struct inode *hfsplus_new_inode(struct super_block *sb, int mode)
-diff --git a/fs/hostfs/hostfs_kern.c b/fs/hostfs/hostfs_kern.c
-index 3a029d8..1514aee 100644
---- a/fs/hostfs/hostfs_kern.c
-+++ b/fs/hostfs/hostfs_kern.c
-@@ -427,12 +427,18 @@ static const struct file_operations hostfs_file_fops = {
- 	.open		= hostfs_file_open,
- 	.release	= NULL,
- 	.fsync		= hostfs_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static const struct file_operations hostfs_dir_fops = {
- 	.llseek		= generic_file_llseek,
- 	.readdir	= hostfs_readdir,
- 	.read		= generic_read_dir,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- int hostfs_writepage(struct page *page, struct writeback_control *wbc)
-diff --git a/fs/hpfs/dir.c b/fs/hpfs/dir.c
-index 2338130..a2e95fe 100644
---- a/fs/hpfs/dir.c
-+++ b/fs/hpfs/dir.c
-@@ -323,4 +323,7 @@ const struct file_operations hpfs_dir_ops =
- 	.readdir	= hpfs_readdir,
- 	.release	= hpfs_dir_release,
- 	.fsync		= hpfs_file_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/hpfs/file.c b/fs/hpfs/file.c
-index 3efabff..7a78261 100644
---- a/fs/hpfs/file.c
-+++ b/fs/hpfs/file.c
-@@ -139,6 +139,9 @@ const struct file_operations hpfs_file_ops =
- 	.release	= hpfs_file_release,
- 	.fsync		= hpfs_file_fsync,
- 	.splice_read	= generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- const struct inode_operations hpfs_file_iops =
-diff --git a/fs/hppfs/hppfs.c b/fs/hppfs/hppfs.c
-index 2e4dfa8..d059b38 100644
---- a/fs/hppfs/hppfs.c
-+++ b/fs/hppfs/hppfs.c
-@@ -546,6 +546,9 @@ static const struct file_operations hppfs_file_fops = {
- 	.read		= hppfs_read,
- 	.write		= hppfs_write,
- 	.open		= hppfs_open,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- struct hppfs_dirent {
-@@ -597,6 +600,9 @@ static const struct file_operations hppfs_dir_fops = {
- 	.readdir	= hppfs_readdir,
- 	.open		= hppfs_dir_open,
- 	.fsync		= hppfs_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static int hppfs_statfs(struct dentry *dentry, struct kstatfs *sf)
-diff --git a/fs/isofs/dir.c b/fs/isofs/dir.c
-index b9ab69b..fe41d7f 100644
---- a/fs/isofs/dir.c
-+++ b/fs/isofs/dir.c
-@@ -274,6 +274,9 @@ const struct file_operations isofs_dir_operations =
++
+ void __init inode_init(void)
  {
- 	.read = generic_read_dir,
- 	.readdir = isofs_readdir,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = generic_file_checkpoint,
-+#endif
+ 	int loop;
+diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
+index c9efeb3..24ad717 100644
+--- a/include/linux/checkpoint.h
++++ b/include/linux/checkpoint.h
+@@ -190,26 +190,35 @@ extern void ckpt_pgarr_free(struct ckpt_ctx *ctx);
+ extern int generic_vma_checkpoint(struct ckpt_ctx *ctx,
+ 				  struct vm_area_struct *vma,
+ 				  enum vma_type type,
+-				  int vma_objref);
++				  int vma_objref, int ino_objref);
+ extern int private_vma_checkpoint(struct ckpt_ctx *ctx,
+ 				  struct vm_area_struct *vma,
+ 				  enum vma_type type,
+ 				  int vma_objref);
++extern int shmem_vma_checkpoint(struct ckpt_ctx *ctx,
++				struct vm_area_struct *vma,
++				enum vma_type type,
++				int ino_objref);
+ 
+ extern int checkpoint_obj_mm(struct ckpt_ctx *ctx, struct task_struct *t);
+ extern int restore_obj_mm(struct ckpt_ctx *ctx, int mm_objref);
+ 
+ extern int ckpt_collect_mm(struct ckpt_ctx *ctx, struct task_struct *t);
+ 
++extern unsigned long generic_vma_restore(struct mm_struct *mm,
++					 struct file *file,
++					 struct ckpt_hdr_vma *h);
++
+ extern int private_vma_restore(struct ckpt_ctx *ctx, struct mm_struct *mm,
+ 			       struct file *file, struct ckpt_hdr_vma *h);
+ 
++extern int restore_memory_contents(struct ckpt_ctx *ctx, struct inode *inode);
++
+ 
+-#define CKPT_VMA_NOT_SUPPORTED					\
+-	(VM_SHARED | VM_MAYSHARE | VM_IO | VM_HUGETLB |		\
+-	 VM_NONLINEAR | VM_PFNMAP | VM_RESERVED | VM_NORESERVE	\
+-	 | VM_HUGETLB | VM_NONLINEAR | VM_MAPPED_COPY |		\
+-	 VM_INSERTPAGE | VM_MIXEDMAP | VM_SAO)
++#define CKPT_VMA_NOT_SUPPORTED						\
++	(VM_IO | VM_HUGETLB | VM_NONLINEAR | VM_PFNMAP |		\
++	 VM_RESERVED | VM_NORESERVE | VM_HUGETLB | VM_NONLINEAR |	\
++	 VM_MAPPED_COPY | VM_INSERTPAGE | VM_MIXEDMAP | VM_SAO)
+ 
+ static inline int ckpt_validate_errno(int errno)
+ {
+diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
+index f2c67ee..86cab42 100644
+--- a/include/linux/checkpoint_hdr.h
++++ b/include/linux/checkpoint_hdr.h
+@@ -131,6 +131,8 @@ struct ckpt_hdr_objref {
+ enum obj_type {
+ 	CKPT_OBJ_IGNORE = 0,
+ #define CKPT_OBJ_IGNORE CKPT_OBJ_IGNORE
++	CKPT_OBJ_INODE,
++#define CKPT_OBJ_INODE CKPT_OBJ_INODE
+ 	CKPT_OBJ_FILE_TABLE,
+ #define CKPT_OBJ_FILE_TABLE CKPT_OBJ_FILE_TABLE
+ 	CKPT_OBJ_FILE,
+@@ -224,6 +226,7 @@ struct ckpt_hdr_task {
+ /* task's shared resources */
+ struct ckpt_hdr_task_objs {
+ 	struct ckpt_hdr h;
++
+ 	__s32 files_objref;
+ 	__s32 mm_objref;
+ } __attribute__((aligned(8)));
+@@ -322,6 +325,12 @@ enum vma_type {
+ #define CKPT_VMA_ANON CKPT_VMA_ANON
+ 	CKPT_VMA_FILE,		/* private mapped file */
+ #define CKPT_VMA_FILE CKPT_VMA_FILE
++	CKPT_VMA_SHM_ANON,	/* shared anonymous */
++#define CKPT_VMA_SHM_ANON CKPT_VMA_SHM_ANON
++	CKPT_VMA_SHM_ANON_SKIP,	/* shared anonymous (skip contents) */
++#define CKPT_VMA_SHM_ANON_SKIP CKPT_VMA_SHM_ANON_SKIP
++	CKPT_VMA_SHM_FILE,	/* shared mapped file, only msync */
++#define CKPT_VMA_SHM_FILE CKPT_VMA_SHM_FILE
+ 	CKPT_VMA_MAX
+ #define CKPT_VMA_MAX CKPT_VMA_MAX
  };
+@@ -331,6 +340,9 @@ struct ckpt_hdr_vma {
+ 	struct ckpt_hdr h;
+ 	__u32 vma_type;
+ 	__s32 vma_objref;	/* objref of backing file */
++	__s32 ino_objref;	/* objref of shared segment */
++	__u32 _padding;
++	__u64 ino_size;		/* size of shared segment */
+ 
+ 	__u64 vm_start;
+ 	__u64 vm_end;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 5ebb781..31520e5 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1331,6 +1331,8 @@ extern int filemap_restore(struct ckpt_ctx *ctx, struct mm_struct *mm,
+ 			   struct ckpt_hdr_vma *hh);
+ extern int special_mapping_restore(struct ckpt_ctx *ctx, struct mm_struct *mm,
+ 				   struct ckpt_hdr_vma *hh);
++extern int shmem_restore(struct ckpt_ctx *ctx, struct mm_struct *mm,
++			 struct ckpt_hdr_vma *hh);
+ #endif
+ 
+ /* readahead.c */
+diff --git a/kernel/checkpoint/objhash.c b/kernel/checkpoint/objhash.c
+index 75bf2da..1d78dbf 100644
+--- a/kernel/checkpoint/objhash.c
++++ b/kernel/checkpoint/objhash.c
+@@ -15,6 +15,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/hash.h>
++#include <linux/file.h>
+ #include <linux/checkpoint.h>
+ 
+ struct ckpt_obj {
+@@ -45,6 +46,7 @@ static const struct ckpt_obj_ops ckpt_obj_ignored_ops = {
+ 	.ref_grab = NULL,
+ };
+ 
++/* objects array */
+ static const struct ckpt_obj_ops *ckpt_obj_ops[CKPT_OBJ_MAX] = {
+ 	[CKPT_OBJ_IGNORE] = &ckpt_obj_ignored_ops,
+ };
+diff --git a/mm/checkpoint.c b/mm/checkpoint.c
+index d53025b..6d71180 100644
+--- a/mm/checkpoint.c
++++ b/mm/checkpoint.c
+@@ -22,6 +22,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/mm_types.h>
+ #include <linux/proc_fs.h>
++#include <linux/swap.h>
+ #include <linux/checkpoint.h>
  
  /*
-diff --git a/fs/jffs2/dir.c b/fs/jffs2/dir.c
-index 7aa4417..482e34a 100644
---- a/fs/jffs2/dir.c
-+++ b/fs/jffs2/dir.c
-@@ -41,6 +41,9 @@ const struct file_operations jffs2_dir_operations =
- 	.unlocked_ioctl=jffs2_ioctl,
- 	.fsync =	jffs2_fsync,
- 	.llseek =	generic_file_llseek,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint =	generic_file_checkpoint,
-+#endif
- };
+@@ -227,6 +228,54 @@ static struct page *consider_private_page(struct vm_area_struct *vma,
+ }
  
+ /**
++ * consider_shared_page - return page pointer for dirty pages
++ * @ino - inode of shmem object
++ * @idx - page index in shmem object
++ *
++ * Looks up the page that corresponds to the index in the shmem object,
++ * and returns the page if it was modified (and grabs a reference to it),
++ * or otherwise returns NULL (or error).
++ */
++static struct page *consider_shared_page(struct inode *ino, unsigned long idx)
++{
++	struct page *page = NULL;
++	int ret;
++
++	/*
++	 * Inspired by do_shmem_file_read(): very simplified version.
++	 *
++	 * FIXME: consolidate with do_shmem_file_read()
++	 */
++
++	ret = shmem_getpage(ino, idx, &page, SGP_READ, NULL);
++	if (ret < 0)
++		return ERR_PTR(ret);
++
++	/*
++	 * Only care about dirty pages; shmem_getpage() only returns
++	 * pages that have been allocated, so they must be dirty. The
++	 * pages returned are locked and referenced.
++	 */
++
++	if (page) {
++		unlock_page(page);
++		/*
++		 * If users can be writing to this page using arbitrary
++		 * virtual addresses, take care about potential aliasing
++		 * before reading the page on the kernel side.
++		 */
++		if (mapping_writably_mapped(ino->i_mapping))
++			flush_dcache_page(page);
++		/*
++		 * Mark the page accessed if we read the beginning.
++		 */
++		mark_page_accessed(page);
++	}
++
++	return page;
++}
++
++/**
+  * vma_fill_pgarr - fill a page-array with addr/page tuples
+  * @ctx - checkpoint context
+  * @vma - vma to scan
+@@ -235,16 +284,15 @@ static struct page *consider_private_page(struct vm_area_struct *vma,
+  * Returns the number of pages collected
+  */
+ static int vma_fill_pgarr(struct ckpt_ctx *ctx,
+-			  struct vm_area_struct *vma,
+-			  unsigned long *start)
++			  struct vm_area_struct *vma, struct inode *inode,
++			  unsigned long *start, unsigned long end)
+ {
+-	unsigned long end = vma->vm_end;
+ 	unsigned long addr = *start;
+ 	struct ckpt_pgarr *pgarr;
+ 	int nr_used;
+ 	int cnt = 0;
  
-diff --git a/fs/jffs2/file.c b/fs/jffs2/file.c
-index e7291c1..c2bcb4d 100644
---- a/fs/jffs2/file.c
-+++ b/fs/jffs2/file.c
-@@ -49,6 +49,9 @@ const struct file_operations jffs2_file_operations =
- 	.mmap =		generic_file_readonly_mmap,
- 	.fsync =	jffs2_fsync,
- 	.splice_read =	generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint =	generic_file_checkpoint,
-+#endif
- };
+-	BUG_ON(vma->vm_flags & (VM_SHARED | VM_MAYSHARE));
++	BUG_ON(inode && vma);
  
- /* jffs2_file_inode_operations */
-diff --git a/fs/jfs/file.c b/fs/jfs/file.c
-index 14ba982..cda38cb 100644
---- a/fs/jfs/file.c
-+++ b/fs/jfs/file.c
-@@ -143,4 +143,7 @@ const struct file_operations jfs_file_operations = {
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= jfs_compat_ioctl,
- #endif
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/jfs/namei.c b/fs/jfs/namei.c
-index 4a3e9f3..83f2490 100644
---- a/fs/jfs/namei.c
-+++ b/fs/jfs/namei.c
-@@ -1571,6 +1571,9 @@ const struct file_operations jfs_dir_operations = {
- 	.compat_ioctl	= jfs_compat_ioctl,
- #endif
- 	.llseek		= generic_file_llseek,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+ 	if (vma)
+ 		down_read(&vma->vm_mm->mmap_sem);
+@@ -260,7 +308,11 @@ static int vma_fill_pgarr(struct ckpt_ctx *ctx,
+ 		while (addr < end) {
+ 			struct page *page;
  
- static int jfs_ci_hash(struct dentry *dir, struct qstr *this)
-diff --git a/fs/minix/dir.c b/fs/minix/dir.c
-index 6198731..715dd03 100644
---- a/fs/minix/dir.c
-+++ b/fs/minix/dir.c
-@@ -23,6 +23,9 @@ const struct file_operations minix_dir_operations = {
- 	.read		= generic_read_dir,
- 	.readdir	= minix_readdir,
- 	.fsync		= simple_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+-			page = consider_private_page(vma, addr);
++			if (vma)
++				page = consider_private_page(vma, addr);
++			else
++				page = consider_shared_page(inode, addr);
++
+ 			if (IS_ERR(page)) {
+ 				cnt = PTR_ERR(page);
+ 				goto out;
+@@ -274,7 +326,10 @@ static int vma_fill_pgarr(struct ckpt_ctx *ctx,
+ 				pgarr->nr_used++;
+ 			}
  
- static inline void dir_put_page(struct page *page)
-diff --git a/fs/minix/file.c b/fs/minix/file.c
-index 3eec3e6..8e8f6a9 100644
---- a/fs/minix/file.c
-+++ b/fs/minix/file.c
-@@ -21,6 +21,9 @@ const struct file_operations minix_file_operations = {
- 	.mmap		= generic_file_mmap,
- 	.fsync		= simple_fsync,
- 	.splice_read	= generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+-			addr += PAGE_SIZE;
++			if (vma)
++				addr += PAGE_SIZE;
++			else
++				addr++;
  
- const struct inode_operations minix_file_inode_operations = {
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index be46f26..ac4c291 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -63,6 +63,9 @@ const struct file_operations nfs_dir_operations = {
- 	.open		= nfs_opendir,
- 	.release	= nfs_release,
- 	.fsync		= nfs_fsync_dir,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+ 			if (pgarr_is_full(pgarr))
+ 				break;
+@@ -341,23 +396,32 @@ static int vma_dump_pages(struct ckpt_ctx *ctx, int total)
+ }
  
- const struct inode_operations nfs_dir_inode_operations = {
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index 8d965bd..456e861 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -78,6 +78,9 @@ const struct file_operations nfs_file_operations = {
- 	.splice_write	= nfs_file_splice_write,
- 	.check_flags	= nfs_check_flags,
- 	.setlease	= nfs_setlease,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+ /**
+- * checkpoint_memory_contents - dump contents of a VMA with private memory
++ * checkpoint_memory_contents - dump contents of a memory region
+  * @ctx - checkpoint context
+- * @vma - vma to scan
++ * @vma - vma to scan (--or--)
++ * @inode - inode to scan
+  *
+  * Collect lists of pages that needs to be dumped, and corresponding
+  * virtual addresses into ctx->pgarr_list page-array chain. Then dump
+  * the addresses, followed by the page contents.
+  */
+ static int checkpoint_memory_contents(struct ckpt_ctx *ctx,
+-				      struct vm_area_struct *vma)
++				      struct vm_area_struct *vma,
++				      struct inode *inode)
+ {
+ 	struct ckpt_hdr_pgarr *h;
+ 	unsigned long addr, end;
+ 	int cnt, ret;
  
- const struct inode_operations nfs_file_inode_operations = {
-@@ -583,6 +586,9 @@ out_unlock:
- static const struct vm_operations_struct nfs_file_vm_ops = {
- 	.fault = filemap_fault,
- 	.page_mkwrite = nfs_vm_page_mkwrite,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = filemap_checkpoint,
-+#endif
- };
+-	addr = vma->vm_start;
+-	end = vma->vm_end;
++	BUG_ON(vma && inode);
++
++	if (vma) {
++		addr = vma->vm_start;
++		end = vma->vm_end;
++	} else {
++		addr = 0;
++		end = PAGE_ALIGN(i_size_read(inode)) >> PAGE_CACHE_SHIFT;
++	}
  
- static int nfs_need_sync_write(struct file *filp, struct inode *inode)
-diff --git a/fs/nilfs2/dir.c b/fs/nilfs2/dir.c
-index 85c89df..d677449 100644
---- a/fs/nilfs2/dir.c
-+++ b/fs/nilfs2/dir.c
-@@ -702,5 +702,7 @@ const struct file_operations nilfs_dir_operations = {
- 	.compat_ioctl	= nilfs_ioctl,
- #endif	/* CONFIG_COMPAT */
- 	.fsync		= nilfs_sync_file,
--
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
-index 30292df..9306d6f 100644
---- a/fs/nilfs2/file.c
-+++ b/fs/nilfs2/file.c
-@@ -149,6 +149,9 @@ const struct file_operations nilfs_file_operations = {
- 	/* .release	= nilfs_release_file, */
- 	.fsync		= nilfs_sync_file,
- 	.splice_read	= generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+ 	/*
+ 	 * Work iteratively, collecting and dumping at most CKPT_PGARR_BATCH
+@@ -383,7 +447,7 @@ static int checkpoint_memory_contents(struct ckpt_ctx *ctx,
+ 	 */
  
- const struct inode_operations nilfs_file_inode_operations = {
-diff --git a/fs/ntfs/dir.c b/fs/ntfs/dir.c
-index fe44d3f..229d00b 100644
---- a/fs/ntfs/dir.c
-+++ b/fs/ntfs/dir.c
-@@ -1573,4 +1573,7 @@ const struct file_operations ntfs_dir_ops = {
- 	/*.ioctl	= ,*/			/* Perform function on the
- 						   mounted filesystem. */
- 	.open		= ntfs_dir_open,	/* Open directory. */
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
-index 8804f09..303ee8e 100644
---- a/fs/ntfs/file.c
-+++ b/fs/ntfs/file.c
-@@ -2225,7 +2225,7 @@ const struct file_operations ntfs_file_ops = {
- 						    mounted filesystem. */
- 	.mmap		= generic_file_mmap,	 /* Mmap file. */
- 	.open		= ntfs_file_open,	 /* Open file. */
--	.splice_read	= generic_file_splice_read /* Zero-copy data send with
-+	.splice_read	= generic_file_splice_read, /* Zero-copy data send with
- 						    the data source being on
- 						    the ntfs partition.  We do
- 						    not need to care about the
-@@ -2235,6 +2235,9 @@ const struct file_operations ntfs_file_ops = {
- 						    on the ntfs partition.  We
- 						    do not need to care about
- 						    the data source. */
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+ 	while (addr < end) {
+-		cnt = vma_fill_pgarr(ctx, vma, &addr);
++		cnt = vma_fill_pgarr(ctx, vma, inode, &addr, end);
+ 		if (cnt == 0)
+ 			break;
+ 		else if (cnt < 0)
+@@ -427,7 +491,7 @@ static int checkpoint_memory_contents(struct ckpt_ctx *ctx,
+  * @vma_objref: vma objref
+  */
+ int generic_vma_checkpoint(struct ckpt_ctx *ctx, struct vm_area_struct *vma,
+-			   enum vma_type type, int vma_objref)
++			   enum vma_type type, int vma_objref, int ino_objref)
+ {
+ 	struct ckpt_hdr_vma *h;
+ 	int ret;
+@@ -441,6 +505,13 @@ int generic_vma_checkpoint(struct ckpt_ctx *ctx, struct vm_area_struct *vma,
  
- const struct inode_operations ntfs_file_inode_ops = {
-diff --git a/fs/omfs/dir.c b/fs/omfs/dir.c
-index b42d624..3b08c84 100644
---- a/fs/omfs/dir.c
-+++ b/fs/omfs/dir.c
-@@ -502,4 +502,7 @@ const struct file_operations omfs_dir_operations = {
- 	.read = generic_read_dir,
- 	.readdir = omfs_readdir,
- 	.llseek = generic_file_llseek,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/omfs/file.c b/fs/omfs/file.c
-index 399487c..fb5fa02 100644
---- a/fs/omfs/file.c
-+++ b/fs/omfs/file.c
-@@ -331,6 +331,9 @@ const struct file_operations omfs_file_operations = {
- 	.mmap = generic_file_mmap,
- 	.fsync = simple_fsync,
- 	.splice_read = generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = generic_file_checkpoint,
-+#endif
- };
+ 	h->vma_type = type;
+ 	h->vma_objref = vma_objref;
++	h->ino_objref = ino_objref;
++
++	if (vma->vm_file)
++		h->ino_size = i_size_read(vma->vm_file->f_dentry->d_inode);
++	else
++		h->ino_size = 0;
++
+ 	h->vm_start = vma->vm_start;
+ 	h->vm_end = vma->vm_end;
+ 	h->vm_page_prot = pgprot_val(vma->vm_page_prot);
+@@ -468,10 +539,37 @@ int private_vma_checkpoint(struct ckpt_ctx *ctx,
  
- const struct inode_operations omfs_file_inops = {
-diff --git a/fs/openpromfs/inode.c b/fs/openpromfs/inode.c
-index ffcd04f..f5e4649 100644
---- a/fs/openpromfs/inode.c
-+++ b/fs/openpromfs/inode.c
-@@ -160,6 +160,9 @@ static const struct file_operations openpromfs_prop_ops = {
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
- 	.release	= seq_release,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= NULL,
-+#endif
- };
+ 	BUG_ON(vma->vm_flags & (VM_SHARED | VM_MAYSHARE));
  
- static int openpromfs_readdir(struct file *, void *, filldir_t);
-@@ -168,6 +171,9 @@ static const struct file_operations openprom_operations = {
- 	.read		= generic_read_dir,
- 	.readdir	= openpromfs_readdir,
- 	.llseek		= generic_file_llseek,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+-	ret = generic_vma_checkpoint(ctx, vma, type, vma_objref);
++	ret = generic_vma_checkpoint(ctx, vma, type, vma_objref, 0);
++	if (ret < 0)
++		goto out;
++	ret = checkpoint_memory_contents(ctx, vma, NULL);
++ out:
++	return ret;
++}
++
++/**
++ * shmem_vma_checkpoint - dump contents of private (anon, file) vma
++ * @ctx: checkpoint context
++ * @vma: vma object
++ * @type: vma type
++ * @objref: vma object id
++ */
++int shmem_vma_checkpoint(struct ckpt_ctx *ctx, struct vm_area_struct *vma,
++			 enum vma_type type, int ino_objref)
++{
++	struct file *file = vma->vm_file;
++	int ret;
++
++	ckpt_debug("type %d, ino_ref %d\n", type, ino_objref);
++	BUG_ON(!(vma->vm_flags & (VM_SHARED | VM_MAYSHARE)));
++	BUG_ON(!file);
++
++	ret = generic_vma_checkpoint(ctx, vma, type, 0, ino_objref);
+ 	if (ret < 0)
+ 		goto out;
+-	ret = checkpoint_memory_contents(ctx, vma);
++	if (type == CKPT_VMA_SHM_ANON_SKIP)
++		goto out;
++	ret = checkpoint_memory_contents(ctx, NULL, file->f_dentry->d_inode);
+  out:
+ 	return ret;
+ }
+@@ -772,16 +870,39 @@ int restore_read_page(struct ckpt_ctx *ctx, struct page *page)
+ 	return 0;
+ }
  
- static struct dentry *openpromfs_lookup(struct inode *, struct dentry *, struct nameidata *);
-diff --git a/fs/qnx4/dir.c b/fs/qnx4/dir.c
-index 6f30c3d..3414bf8 100644
---- a/fs/qnx4/dir.c
-+++ b/fs/qnx4/dir.c
-@@ -80,6 +80,9 @@ const struct file_operations qnx4_dir_operations =
- 	.read		= generic_read_dir,
- 	.readdir	= qnx4_readdir,
- 	.fsync		= simple_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
++static struct page *bring_private_page(unsigned long addr)
++{
++	struct page *page;
++	int ret;
++
++	ret = get_user_pages(current, current->mm, addr, 1, 1, 1, &page, NULL);
++	if (ret < 0)
++		page = ERR_PTR(ret);
++	return page;
++}
++
++static struct page *bring_shared_page(unsigned long idx, struct inode *ino)
++{
++	struct page *page = NULL;
++	int ret;
++
++	ret = shmem_getpage(ino, idx, &page, SGP_WRITE, NULL);
++	if (ret < 0)
++		return ERR_PTR(ret);
++	if (page)
++		unlock_page(page);
++	return page;
++}
++
+ /**
+  * read_pages_contents - read in data of pages in page-array chain
+  * @ctx - restart context
+  */
+-static int read_pages_contents(struct ckpt_ctx *ctx)
++static int read_pages_contents(struct ckpt_ctx *ctx, struct inode *inode)
+ {
+-	struct mm_struct *mm = current->mm;
+ 	struct ckpt_pgarr *pgarr;
+ 	unsigned long *vaddrs;
+-	int i, ret = 0;
++	int i, ret;
  
- const struct inode_operations qnx4_dir_inode_operations =
-diff --git a/fs/ramfs/file-mmu.c b/fs/ramfs/file-mmu.c
-index 78f613c..34dc7f2 100644
---- a/fs/ramfs/file-mmu.c
-+++ b/fs/ramfs/file-mmu.c
-@@ -47,6 +47,9 @@ const struct file_operations ramfs_file_operations = {
- 	.splice_read	= generic_file_splice_read,
- 	.splice_write	= generic_file_splice_write,
- 	.llseek		= generic_file_llseek,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+ 	list_for_each_entry_reverse(pgarr, &ctx->pgarr_list, list) {
+ 		vaddrs = pgarr->vaddrs;
+@@ -791,11 +912,14 @@ static int read_pages_contents(struct ckpt_ctx *ctx)
+ 			/* TODO: do in chunks to reduce mmap_sem overhead */
+ 			_ckpt_debug(CKPT_DPAGE, "got page %#lx\n", vaddrs[i]);
+ 			down_read(&current->mm->mmap_sem);
+-			ret = get_user_pages(current, mm, vaddrs[i],
+-					     1, 1, 1, &page, NULL);
++			if (inode)
++				page = bring_shared_page(vaddrs[i], inode);
++			else
++				page = bring_private_page(vaddrs[i]);
+ 			up_read(&current->mm->mmap_sem);
+-			if (ret < 0)
+-				return ret;
++
++			if (IS_ERR(page))
++				return PTR_ERR(page);
  
- const struct inode_operations ramfs_file_inode_operations = {
-diff --git a/fs/ramfs/file-nommu.c b/fs/ramfs/file-nommu.c
-index 5ea4ad8..7aa0d43 100644
---- a/fs/ramfs/file-nommu.c
-+++ b/fs/ramfs/file-nommu.c
-@@ -46,6 +46,9 @@ const struct file_operations ramfs_file_operations = {
- 	.splice_read		= generic_file_splice_read,
- 	.splice_write		= generic_file_splice_write,
- 	.llseek			= generic_file_llseek,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint		= generic_file_checkpoint,
-+#endif
- };
+ 			ret = restore_read_page(ctx, page);
+ 			page_cache_release(page);
+@@ -804,12 +928,13 @@ static int read_pages_contents(struct ckpt_ctx *ctx)
+ 				return ret;
+ 		}
+ 	}
+-	return ret;
++	return 0;
+ }
  
- const struct inode_operations ramfs_file_inode_operations = {
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 67b7d83..d566214 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -27,6 +27,9 @@ const struct file_operations generic_ro_fops = {
- 	.aio_read	= generic_file_aio_read,
- 	.mmap		= generic_file_readonly_mmap,
- 	.splice_read	= generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
+ /**
+- * restore_memory_contents - restore contents of a VMA with private memory
++ * restore_memory_contents - restore contents of a memory region
+  * @ctx - restart context
++ * @inode - backing inode
+  *
+  * Reads a header that specifies how many pages will follow, then reads
+  * a list of virtual addresses into ctx->pgarr_list page-array chain,
+@@ -817,7 +942,7 @@ static int read_pages_contents(struct ckpt_ctx *ctx)
+  * these steps until reaching a header specifying "0" pages, which marks
+  * the end of the contents.
+  */
+-static int restore_memory_contents(struct ckpt_ctx *ctx)
++int restore_memory_contents(struct ckpt_ctx *ctx, struct inode *inode)
+ {
+ 	struct ckpt_hdr_pgarr *h;
+ 	unsigned long nr_pages;
+@@ -844,7 +969,7 @@ static int restore_memory_contents(struct ckpt_ctx *ctx)
+ 		ret = read_pages_vaddrs(ctx, nr_pages);
+ 		if (ret < 0)
+ 			break;
+-		ret = read_pages_contents(ctx);
++		ret = read_pages_contents(ctx, inode);
+ 		if (ret < 0)
+ 			break;
+ 		pgarr_reset_all(ctx);
+@@ -902,9 +1027,9 @@ static unsigned long calc_map_flags_bits(unsigned long orig_vm_flags)
+  * @file - file to map (NULL for anonymous)
+  * @h - vma header data
+  */
+-static unsigned long generic_vma_restore(struct mm_struct *mm,
+-					 struct file *file,
+-					 struct ckpt_hdr_vma *h)
++unsigned long generic_vma_restore(struct mm_struct *mm,
++				  struct file *file,
++				  struct ckpt_hdr_vma *h)
+ {
+ 	unsigned long vm_size, vm_start, vm_flags, vm_prot, vm_pgoff;
+ 	unsigned long addr;
+@@ -949,7 +1074,7 @@ int private_vma_restore(struct ckpt_ctx *ctx, struct mm_struct *mm,
+ 	if (IS_ERR((void *) addr))
+ 		return PTR_ERR((void *) addr);
  
- EXPORT_SYMBOL(generic_ro_fops);
-diff --git a/fs/reiserfs/dir.c b/fs/reiserfs/dir.c
-index f8a6075..1fb4ce6 100644
---- a/fs/reiserfs/dir.c
-+++ b/fs/reiserfs/dir.c
-@@ -25,6 +25,9 @@ const struct file_operations reiserfs_dir_operations = {
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl = reiserfs_compat_ioctl,
- #endif
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = generic_file_checkpoint,
-+#endif
- };
+-	return restore_memory_contents(ctx);
++	return restore_memory_contents(ctx, NULL);
+ }
  
- static int reiserfs_dir_fsync(struct file *filp, struct dentry *dentry,
-diff --git a/fs/reiserfs/file.c b/fs/reiserfs/file.c
-index 1d9c127..5b2d720 100644
---- a/fs/reiserfs/file.c
-+++ b/fs/reiserfs/file.c
-@@ -297,6 +297,9 @@ const struct file_operations reiserfs_file_operations = {
- 	.splice_read = generic_file_splice_read,
- 	.splice_write = generic_file_splice_write,
- 	.llseek = generic_file_llseek,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = generic_file_checkpoint,
-+#endif
- };
- 
- const struct inode_operations reiserfs_file_inode_operations = {
-diff --git a/fs/romfs/mmap-nommu.c b/fs/romfs/mmap-nommu.c
-index f0511e8..f488a8a 100644
---- a/fs/romfs/mmap-nommu.c
-+++ b/fs/romfs/mmap-nommu.c
-@@ -72,4 +72,7 @@ const struct file_operations romfs_ro_fops = {
- 	.splice_read		= generic_file_splice_read,
- 	.mmap			= romfs_mmap,
- 	.get_unmapped_area	= romfs_get_unmapped_area,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint		= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/romfs/super.c b/fs/romfs/super.c
-index 42d2135..6a07e29 100644
---- a/fs/romfs/super.c
-+++ b/fs/romfs/super.c
-@@ -282,6 +282,9 @@ error:
- static const struct file_operations romfs_dir_operations = {
- 	.read		= generic_read_dir,
- 	.readdir	= romfs_readdir,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static const struct inode_operations romfs_dir_inode_operations = {
-diff --git a/fs/squashfs/dir.c b/fs/squashfs/dir.c
-index 12b933a..1bc7cc0 100644
---- a/fs/squashfs/dir.c
-+++ b/fs/squashfs/dir.c
-@@ -230,5 +230,8 @@ failed_read:
- 
- const struct file_operations squashfs_dir_ops = {
- 	.read = generic_read_dir,
--	.readdir = squashfs_readdir
-+	.readdir = squashfs_readdir,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/sysv/dir.c b/fs/sysv/dir.c
-index 4e50286..e1030d4 100644
---- a/fs/sysv/dir.c
-+++ b/fs/sysv/dir.c
-@@ -25,6 +25,9 @@ const struct file_operations sysv_dir_operations = {
- 	.read		= generic_read_dir,
- 	.readdir	= sysv_readdir,
- 	.fsync		= simple_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static inline void dir_put_page(struct page *page)
-diff --git a/fs/sysv/file.c b/fs/sysv/file.c
-index 96340c0..78b7e65 100644
---- a/fs/sysv/file.c
-+++ b/fs/sysv/file.c
-@@ -28,6 +28,9 @@ const struct file_operations sysv_file_operations = {
- 	.mmap		= generic_file_mmap,
- 	.fsync		= simple_fsync,
- 	.splice_read	= generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- const struct inode_operations sysv_file_inode_operations = {
-diff --git a/fs/ubifs/debug.c b/fs/ubifs/debug.c
-index c2a68ba..b357ca3 100644
---- a/fs/ubifs/debug.c
-+++ b/fs/ubifs/debug.c
-@@ -2625,6 +2625,9 @@ static const struct file_operations dfs_fops = {
- 	.open = open_debugfs_file,
- 	.write = write_debugfs_file,
- 	.owner = THIS_MODULE,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint = generic_file_checkpoint,
-+#endif
+ /**
+@@ -1005,6 +1130,24 @@ static struct restore_vma_ops restore_vma_ops[] = {
+ 		.vma_type = CKPT_VMA_FILE,
+ 		.restore = filemap_restore,
+ 	},
++	/* anonymous shared */
++	{
++		.vma_name = "ANON SHARED",
++		.vma_type = CKPT_VMA_SHM_ANON,
++		.restore = shmem_restore,
++	},
++	/* anonymous shared (skipped) */
++	{
++		.vma_name = "ANON SHARED (skip)",
++		.vma_type = CKPT_VMA_SHM_ANON_SKIP,
++		.restore = shmem_restore,
++	},
++	/* file-mapped shared */
++	{
++		.vma_name = "FILE SHARED",
++		.vma_type = CKPT_VMA_SHM_FILE,
++		.restore = filemap_restore,
++	},
  };
  
  /**
-diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
-index 401e503..a72070e 100644
---- a/fs/ubifs/dir.c
-+++ b/fs/ubifs/dir.c
-@@ -1228,4 +1228,7 @@ const struct file_operations ubifs_dir_operations = {
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl   = ubifs_compat_ioctl,
+@@ -1022,15 +1165,15 @@ static int restore_vma(struct ckpt_ctx *ctx, struct mm_struct *mm)
+ 	if (IS_ERR(h))
+ 		return PTR_ERR(h);
+ 
+-	ckpt_debug("vma %#lx-%#lx flags %#lx type %d vmaref %d\n",
++	ckpt_debug("vma %#lx-%#lx flags %#lx type %d vmaref %d inoref %d\n",
+ 		   (unsigned long) h->vm_start, (unsigned long) h->vm_end,
+ 		   (unsigned long) h->vm_flags, (int) h->vma_type,
+-		   (int) h->vma_objref);
++		   (int) h->vma_objref, (int) h->ino_objref);
+ 
+ 	ret = -EINVAL;
+ 	if (h->vm_end < h->vm_start)
+ 		goto out;
+-	if (h->vma_objref < 0)
++	if (h->vma_objref < 0 || h->ino_objref < 0)
+ 		goto out;
+ 	if (h->vma_type >= CKPT_VMA_MAX)
+ 		goto out;
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 24d4c54..3d6c497 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1596,6 +1596,8 @@ int filemap_checkpoint(struct ckpt_ctx *ctx, struct vm_area_struct *vma)
+ {
+ 	struct file *file = vma->vm_file;
+ 	int vma_objref;
++	int ino_objref;
++	int first, ret;
+ 
+ 	if (vma->vm_flags & CKPT_VMA_NOT_SUPPORTED) {
+ 		pr_warning("c/r: unsupported VMA %#lx\n", vma->vm_flags);
+@@ -1608,7 +1610,42 @@ int filemap_checkpoint(struct ckpt_ctx *ctx, struct vm_area_struct *vma)
+ 	if (vma_objref < 0)
+ 		return vma_objref;
+ 
+-	return private_vma_checkpoint(ctx, vma, CKPT_VMA_FILE, vma_objref);
++	if (vma->vm_flags & (VM_SHARED | VM_MAYSHARE)) {
++		/*
++		 * Citing mmap(2): "Updates to the mapping are visible
++		 * to other processes that map this file, and are
++		 * carried through to the underlying file. The file
++		 * may not actually be updated until msync(2) or
++		 * munmap(2) is called"
++		 *
++		 * Citing msync(2): "Without use of this call there is
++		 * no guarantee that changes are written back before
++		 * munmap(2) is called."
++		 *
++		 * Force msync for region of shared mapped files, to
++		 * ensure that that the file system is consistent with
++		 * the checkpoint image.  (inspired by sys_msync).
++		 */
++
++		ino_objref = ckpt_obj_lookup_add(ctx, file->f_dentry->d_inode,
++					       CKPT_OBJ_INODE, &first);
++		if (ino_objref < 0)
++			return ino_objref;
++
++		if (first) {
++			ret = vfs_fsync(file, file->f_path.dentry, 0);
++			if (ret < 0)
++				return ret;
++		}
++
++		ret = generic_vma_checkpoint(ctx, vma, CKPT_VMA_SHM_FILE,
++					     vma_objref, ino_objref);
++	} else {
++		ret = private_vma_checkpoint(ctx, vma, CKPT_VMA_FILE,
++					     vma_objref);
++	}
++
++	return ret;
+ }
+ EXPORT_SYMBOL(filemap_checkpoint);
+ 
+@@ -1617,17 +1654,28 @@ int filemap_restore(struct ckpt_ctx *ctx,
+ 		    struct ckpt_hdr_vma *h)
+ {
+ 	struct file *file;
++	unsigned long addr;
+ 	int ret;
+ 
+ 	if (h->vma_type == CKPT_VMA_FILE &&
+ 	    (h->vm_flags & (VM_SHARED | VM_MAYSHARE)))
+ 		return -EINVAL;
++	if (h->vma_type == CKPT_VMA_SHM_FILE &&
++	    !(h->vm_flags & (VM_SHARED | VM_MAYSHARE)))
++		return -EINVAL;
+ 
+ 	file = ckpt_obj_fetch(ctx, h->vma_objref, CKPT_OBJ_FILE);
+ 	if (IS_ERR(file))
+ 		return PTR_ERR(file);
+ 
+-	ret = private_vma_restore(ctx, mm, file, h);
++	if (h->vma_type == CKPT_VMA_FILE) {
++		/* private mapped file */
++		ret = private_vma_restore(ctx, mm, file, h);
++	} else {
++		/* shared mapped file */
++		addr = generic_vma_restore(mm, file, h);
++		ret = (IS_ERR((void *) addr) ? PTR_ERR((void *) addr) : 0);
++	}
+ 	return ret;
+ }
+ #endif
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 9d4891f..ddbe589 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2471,7 +2471,7 @@ static int special_mapping_checkpoint(struct ckpt_ctx *ctx,
+ 	if (!name || strcmp(name, "[vdso]"))
+ 		return -ENOSYS;
+ 
+-	return generic_vma_checkpoint(ctx, vma, CKPT_VMA_VDSO, 0);
++	return generic_vma_checkpoint(ctx, vma, CKPT_VMA_VDSO, 0, 0);
+ }
+ 
+ int special_mapping_restore(struct ckpt_ctx *ctx,
+diff --git a/mm/shmem.c b/mm/shmem.c
+index d93c394..1f361a6 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -29,6 +29,7 @@
+ #include <linux/mm.h>
+ #include <linux/module.h>
+ #include <linux/swap.h>
++#include <linux/checkpoint.h>
+ 
+ static struct vfsmount *shm_mnt;
+ 
+@@ -2393,6 +2394,86 @@ static void shmem_destroy_inode(struct inode *inode)
+ 	kmem_cache_free(shmem_inode_cachep, SHMEM_I(inode));
+ }
+ 
++#ifdef CONFIG_CHECKPOINT
++static int shmem_checkpoint(struct ckpt_ctx *ctx, struct vm_area_struct *vma)
++{
++	enum vma_type vma_type;
++	int ino_objref;
++	int ret, first;
++
++	/* should be private anonymous ... verify that this is the case */
++	if (vma->vm_flags & CKPT_VMA_NOT_SUPPORTED) {
++		pr_warning("c/r: unsupported VMA %#lx\n", vma->vm_flags);
++		return -ENOSYS;
++	}
++
++	BUG_ON(!vma->vm_file);
++
++	/* we collected the file but we don't checkpoint it per-se */
++	ret = ckpt_obj_visit(ctx, vma->vm_file, CKPT_OBJ_FILE);
++	if (ret < 0)
++		return ret;
++
++	ino_objref = ckpt_obj_lookup_add(ctx, vma->vm_file->f_dentry->d_inode,
++					 CKPT_OBJ_INODE, &first);
++	if (ino_objref < 0)
++		return ino_objref;
++
++	vma_type = (first ? CKPT_VMA_SHM_ANON : CKPT_VMA_SHM_ANON_SKIP);
++
++	return shmem_vma_checkpoint(ctx, vma, vma_type, ino_objref);
++}
++
++int shmem_restore(struct ckpt_ctx *ctx,
++		  struct mm_struct *mm, struct ckpt_hdr_vma *h)
++{
++	unsigned long addr;
++	struct file *file;
++	int ret = 0;
++
++	file = ckpt_obj_try_fetch(ctx, h->ino_objref, CKPT_OBJ_FILE);
++	if (PTR_ERR(file) == -EINVAL)
++		file = NULL;
++	if (IS_ERR(file))
++		return PTR_ERR(file);
++
++	/* if file is NULL, this is the premiere - create and insert */
++	if (!file) {
++		if (h->vma_type != CKPT_VMA_SHM_ANON)
++			return -EINVAL;
++		/*
++		 * in theory could pass NULL to mmap and let it create
++		 * the file. But, if 'shm_size != vm_end - vm_start',
++		 * or if 'vm_pgoff != 0', then the vma reflects only a
++		 * portion of the shm object and we need to "manually"
++		 * create the full shm object.
++		 */
++		file = shmem_file_setup("/dev/zero", h->ino_size, h->vm_flags);
++		if (IS_ERR(file))
++			return PTR_ERR(file);
++		ret = ckpt_obj_insert(ctx, file, h->ino_objref, CKPT_OBJ_FILE);
++		if (ret < 0)
++			goto out;
++	} else {
++		if (h->vma_type != CKPT_VMA_SHM_ANON_SKIP)
++			return -EINVAL;
++		/* Already need fput() for the file above; keep path simple */
++		get_file(file);
++	}
++
++	addr = generic_vma_restore(mm, file, h);
++	if (IS_ERR((void *) addr))
++		return PTR_ERR((void *) addr);
++
++	if (h->vma_type == CKPT_VMA_SHM_ANON)
++		ret = restore_memory_contents(ctx, file->f_dentry->d_inode);
++ out:
++	fput(file);
++	return ret;
++}
++
++#endif /* CONFIG_CHECKPOINT */
++
+ static void init_once(void *foo)
+ {
+ 	struct shmem_inode_info *p = (struct shmem_inode_info *) foo;
+@@ -2505,6 +2586,9 @@ static const struct vm_operations_struct shmem_vm_ops = {
+ 	.set_policy     = shmem_set_policy,
+ 	.get_policy     = shmem_get_policy,
  #endif
 +#ifdef CONFIG_CHECKPOINT
-+	.checkpoint     = generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
-index 5692cf7..566e172 100644
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -1583,4 +1583,7 @@ const struct file_operations ubifs_file_operations = {
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl   = ubifs_compat_ioctl,
- #endif
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint     = generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/udf/dir.c b/fs/udf/dir.c
-index f0f2a43..43bf889 100644
---- a/fs/udf/dir.c
-+++ b/fs/udf/dir.c
-@@ -211,4 +211,7 @@ const struct file_operations udf_dir_operations = {
- 	.readdir		= udf_readdir,
- 	.ioctl			= udf_ioctl,
- 	.fsync			= simple_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint		= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/udf/file.c b/fs/udf/file.c
-index 4b6a46c..0c73a47 100644
---- a/fs/udf/file.c
-+++ b/fs/udf/file.c
-@@ -216,6 +216,9 @@ const struct file_operations udf_file_operations = {
- 	.fsync			= simple_fsync,
- 	.splice_read		= generic_file_splice_read,
- 	.llseek			= generic_file_llseek,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint		= generic_file_checkpoint,
++	.checkpoint	= shmem_checkpoint,
 +#endif
  };
  
- int udf_setattr(struct dentry *dentry, struct iattr *iattr)
-diff --git a/fs/ufs/dir.c b/fs/ufs/dir.c
-index 317a0d4..9841034 100644
---- a/fs/ufs/dir.c
-+++ b/fs/ufs/dir.c
-@@ -668,4 +668,7 @@ const struct file_operations ufs_dir_operations = {
- 	.readdir	= ufs_readdir,
- 	.fsync		= simple_fsync,
- 	.llseek		= generic_file_llseek,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/ufs/file.c b/fs/ufs/file.c
-index a8962ce..f180014 100644
---- a/fs/ufs/file.c
-+++ b/fs/ufs/file.c
-@@ -44,4 +44,7 @@ const struct file_operations ufs_file_operations = {
- 	.open           = dquot_file_open,
- 	.fsync		= simple_fsync,
- 	.splice_read	= generic_file_splice_read,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
-diff --git a/fs/xfs/linux-2.6/xfs_file.c b/fs/xfs/linux-2.6/xfs_file.c
-index 42dd3bc..8aea381 100644
---- a/fs/xfs/linux-2.6/xfs_file.c
-+++ b/fs/xfs/linux-2.6/xfs_file.c
-@@ -1015,6 +1015,9 @@ const struct file_operations xfs_file_operations = {
- #ifdef HAVE_FOP_OPEN_EXEC
- 	.open_exec	= xfs_file_open_exec,
- #endif
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
  
- const struct file_operations xfs_dir_file_operations = {
-@@ -1027,6 +1030,9 @@ const struct file_operations xfs_dir_file_operations = {
- 	.compat_ioctl	= xfs_file_compat_ioctl,
- #endif
- 	.fsync		= xfs_file_fsync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= generic_file_checkpoint,
-+#endif
- };
- 
- static const struct vm_operations_struct xfs_file_vm_ops = {
 -- 
 1.6.3.3
 
