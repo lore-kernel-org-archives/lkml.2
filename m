@@ -1,21 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab0EAK6o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 06:58:44 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55494 "EHLO
+	id S1752133Ab0EALHw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 07:07:52 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38136 "EHLO
 	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751718Ab0EAK6m (ORCPT
+	with ESMTP id S1751739Ab0EALHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 06:58:42 -0400
-Date: Sat, 1 May 2010 12:04:18 +0100
+	Sat, 1 May 2010 07:07:50 -0400
+Date: Sat, 1 May 2010 12:11:11 +0100
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Samo Pogacnik <samo_pogacnik@t-2.net>
-Cc: linux-embedded <linux-embedded@vger.kernel.org>,
-       linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] console logging detour via printk
-Message-ID: <20100501120418.6fca2aad@lxorguk.ukuu.org.uk>
-In-Reply-To: <1272664980.10241.77.camel@itpsd6lap>
-References: <1272664980.10241.77.camel@itpsd6lap>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+       Arnd Bergmann <arnd@arndb.de>, John Kacur <jkacur@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>, Greg KH <gregkh@suse.de>,
+       Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: [PATCH 0/5] Pushdown bkl from v4l ioctls
+Message-ID: <20100501121111.4ac32c35@lxorguk.ukuu.org.uk>
+In-Reply-To: <201004290844.29347.hverkuil@xs4all.nl>
+References: <alpine.LFD.2.00.1004280750330.3739@i5.linux-foundation.org>
+	<1272512564-14683-1-git-send-regression-fweisbec@gmail.com>
+	<201004290844.29347.hverkuil@xs4all.nl>
 X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,49 +32,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> while i was searching for effective logging of complete console output
-> produced by the kernel and user phase of the boot process, it turned out
-> that only kernel messages imho get systematically cached and stored into
-> log files (if needed). All userspace processes are on their own to use
-> syslog, which is fine, but there are also many console messages
-> reporting the boot status via init scripts, .... I came across the
-> bootlogd daemo, which handles the job of redirecting console output into
-> a log file, but i find it problematic to use especialy, when using
-> initial ram disk image.
+> I much prefer to keep the bkl inside the v4l2 core. One reason is that I
+> think that we can replace the bkl in the core with a mutex. Still not
+> ideal of course, so the next step will be to implement proper locking in
 
-So you want to patch the kernel because you can't work out how to do this
-in userspace ? The distributions seem to have no problem doing this in
-user space that I can see. It doesn't seem to be a hard user space
-problem, and there are a ton of things you want to do with this sort of
-stuff (like network logging) that you can't do in kernel space.
+I did look at this a long time ago - it doesn't really work becaue the
+mutex you propose then has to be dropped and taken in the sleeping parts
+of each ioctl to avoid app problems and in some cases threaded apps
+deadlocking.
 
-> --- a_linux-2.6.33.3/drivers/char/vt.c
-> +++ b_linux-2.6.33.3/drivers/char/vt.c
-> @@ -2696,6 +2696,16 @@ static int con_write(struct tty_struct *tty, const unsigned char *buf, int count
->  {
->  	int	retval;
->  
-> +#ifdef CONFIG_VT_CONSOLE_DETOUR
-> +	if (console_detour) {
-> +		int idx = vt_console_driver.index - 1;
-> + 
-> +		if ((idx >= 0) && (idx == tty->index)) {
-> +			console_printk_detour(buf, count);
-> +			return count;
-> +		}
-> +	}
-> +#endif
-
-This requires you go around hacking up each device which is not a good
-idea and becomes rapidly unmaintainable.
-
-I suspect what you actually need for such logging might be to write a
-very simple tty driver whose write method is implemented as printk. That
-works in the general case and doesn't require hacking up the code
-everywhere else.
-
-However given your init stuff can trivially use openpty to set up a logged
-console I am not sure I see the point in doing this in kernel in the
-first place.
-
-Alan
+I think Arnd is right on his approach to this, having tried the other way.
