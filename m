@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab0EAA1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 20:27:51 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:35426 "EHLO e1.ny.us.ibm.com"
+	id S1759981Ab0EAA17 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 20:27:59 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:47473 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758057Ab0EAA0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757632Ab0EAA0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Apr 2010 20:26:21 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,10 +13,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       Vivek Goyal <vgoyal@redhat.com>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 10/10] vfs: fix RCU-lockdep false positive due to /proc access
-Date: Fri, 30 Apr 2010 17:26:14 -0700
-Message-Id: <1272673574-27797-10-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 09/10] blk-cgroup: Fix RCU correctness warning in cfq_init_queue()
+Date: Fri, 30 Apr 2010 17:26:13 -0700
+Message-Id: <1272673574-27797-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100501002548.GA27375@linux.vnet.ibm.com>
 References: <20100501002548.GA27375@linux.vnet.ibm.com>
@@ -24,37 +25,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a single-threaded process does a file-descriptor operation, and
-some other process accesses that same file descriptor via /proc,
-the current rcu_dereference_check_fdtable() can give a false-positive
-RCU-lockdep splat due to the reference count being increased by the
-/proc access after the reference-count check in fget_light() but before
-the check in rcu_dereference_check_fdtable().
+From: Vivek Goyal <vgoyal@redhat.com>
 
-This commit prevents this false positive by checking for a single-threaded
-process.
+It is necessary to be in an RCU read-side critical section when invoking
+css_id(), so this patch adds one to blkiocg_add_blkio_group().  This is
+actually a false positive, because this is called at initialization time
+and hence always refers to the root cgroup, which cannot go away.
+
+[  103.790505] ===================================================
+[  103.790509] [ INFO: suspicious rcu_dereference_check() usage. ]
+[  103.790511] ---------------------------------------------------
+[  103.790514] kernel/cgroup.c:4432 invoked rcu_dereference_check() without protection!
+[  103.790517]
+[  103.790517] other info that might help us debug this:
+[  103.790519]
+[  103.790521]
+[  103.790521] rcu_scheduler_active = 1, debug_locks = 1
+[  103.790524] 4 locks held by bash/4422:
+[  103.790526]  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff8114befa>] sysfs_write_file+0x3c/0x144
+[  103.790537]  #1:  (s_active#102){.+.+.+}, at: [<ffffffff8114bfa5>] sysfs_write_file+0xe7/0x144
+[  103.790544]  #2:  (&q->sysfs_lock){+.+.+.}, at: [<ffffffff812263b1>] queue_attr_store+0x49/0x8f
+[  103.790552]  #3:  (&(&blkcg->lock)->rlock){......}, at: [<ffffffff8122e4db>] blkiocg_add_blkio_group+0x2b/0xad
+[  103.790560]
+[  103.790561] stack backtrace:
+[  103.790564] Pid: 4422, comm: bash Not tainted 2.6.34-rc4-blkio-second-crash #81
+[  103.790567] Call Trace:
+[  103.790572]  [<ffffffff81068f57>] lockdep_rcu_dereference+0x9d/0xa5
+[  103.790577]  [<ffffffff8107fac1>] css_id+0x44/0x57
+[  103.790581]  [<ffffffff8122e503>] blkiocg_add_blkio_group+0x53/0xad
+[  103.790586]  [<ffffffff81231936>] cfq_init_queue+0x139/0x32c
+[  103.790591]  [<ffffffff8121f2d0>] elv_iosched_store+0xbf/0x1bf
+[  103.790595]  [<ffffffff812263d8>] queue_attr_store+0x70/0x8f
+[  103.790599]  [<ffffffff8114bfa5>] ? sysfs_write_file+0xe7/0x144
+[  103.790603]  [<ffffffff8114bfc6>] sysfs_write_file+0x108/0x144
+[  103.790609]  [<ffffffff810f527f>] vfs_write+0xae/0x10b
+[  103.790612]  [<ffffffff81069863>] ? trace_hardirqs_on_caller+0x10c/0x130
+[  103.790616]  [<ffffffff810f539c>] sys_write+0x4a/0x6e
+[  103.790622]  [<ffffffff81002b5b>] system_call_fastpath+0x16/0x1b
+[  103.790625]
 
 Located-by: Miles Lane <miles.lane@gmail.com>
-Located-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/fdtable.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ block/cfq-iosched.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/fdtable.h b/include/linux/fdtable.h
-index 013dc52..e4a6d31 100644
---- a/include/linux/fdtable.h
-+++ b/include/linux/fdtable.h
-@@ -61,7 +61,8 @@ struct files_struct {
- 	(rcu_dereference_check((fdtfd), \
- 			       rcu_read_lock_held() || \
- 			       lockdep_is_held(&(files)->file_lock) || \
--			       atomic_read(&(files)->count) == 1))
-+			       atomic_read(&(files)->count) == 1 || \
-+			       thread_group_empty(current)))
- 
- #define files_fdtable(files) \
- 		(rcu_dereference_check_fdtable((files), (files)->fdt))
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 838834b..5f127cf 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3694,8 +3694,10 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	 * to make sure that cfq_put_cfqg() does not try to kfree root group
+ 	 */
+ 	atomic_set(&cfqg->ref, 1);
++	rcu_read_lock();
+ 	blkiocg_add_blkio_group(&blkio_root_cgroup, &cfqg->blkg, (void *)cfqd,
+ 					0);
++	rcu_read_unlock();
+ #endif
+ 	/*
+ 	 * Not strictly needed (since RB_ROOT just clears the node and we
 -- 
 1.7.0
 
