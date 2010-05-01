@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073Ab0EAOmM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:42:12 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:64450 "EHLO
+	id S933267Ab0EAOnM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:43:12 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:64438 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933046Ab0EAOi4 (ORCPT
+	with ESMTP id S933036Ab0EAOiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:38:56 -0400
+	Sat, 1 May 2010 10:38:51 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
        Pavel Emelyanov <xemul@openvz.org>, Dan Smith <danms@us.ibm.com>,
        netdev@vger.kernel.org
-Subject: [PATCH v21 098/100] c/r: Add a checkpoint handler to the 'sit' device
-Date: Sat,  1 May 2010 10:16:20 -0400
-Message-Id: <1272723382-19470-99-git-send-email-orenl@cs.columbia.edu>
+Subject: [PATCH v21 097/100] c/r: Add loopback checkpoint support (v2)
+Date: Sat,  1 May 2010 10:16:19 -0400
+Message-Id: <1272723382-19470-98-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -26,16 +26,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Smith <danms@us.ibm.com>
 
-This handler doesn't really do much to checkpoint the device, other
-than the minimum required to support the restart process.  When we
-add IPv6 support to this, then we can fill this out.
-
-This allows us to avoid skipping unsupported interfaces on a normal
-system.
+Adds a small ndo_checkpoint() handler for loopback devices to write the
+name and addresses like other interfaces.
 
 Changelog[v21]:
-  - Do not include checkpoint_hdr.h explicitly
-  - Unbreak compiling with CONFIG_CHECKPOINT=n or CONFIG_NET_NS=n
+ - Unbreak compiling with CONFIG_CHECKPOINT=n or CONFIG_NET_NS=n
+
+Changes in v2:
+ - Add CONFIG_CHECKPOINT around the handler
 
 Cc: netdev@vger.kernel.org
 Signed-off-by: Dan Smith <danms@us.ibm.com>
@@ -43,21 +41,22 @@ Acked-by: David S. Miller <davem@davemloft.net>
 Acked-by: Serge Hallyn <serue@us.ibm.com>
 Acked-by: Oren Laadan <orenl@cs.columbia.edu>
 ---
- net/ipv6/sit.c |   34 ++++++++++++++++++++++++++++++++++
- 1 files changed, 34 insertions(+), 0 deletions(-)
+ drivers/net/loopback.c |   45 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 42 insertions(+), 3 deletions(-)
 
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index 5abae10..5ecbe56 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -1084,11 +1084,45 @@ static int ipip6_tunnel_change_mtu(struct net_device *dev, int new_mtu)
- 	return 0;
+diff --git a/drivers/net/loopback.c b/drivers/net/loopback.c
+index 72b7949..9a958a8 100644
+--- a/drivers/net/loopback.c
++++ b/drivers/net/loopback.c
+@@ -155,10 +155,49 @@ static void loopback_dev_free(struct net_device *dev)
+ 	free_netdev(dev);
  }
  
-+#include <linux/checkpoint.h>
-+
 +#ifdef CONFIG_NETNS_CHECKPOINT
-+static int ipip6_checkpoint(struct ckpt_ctx *ctx, struct net_device *dev)
++#include <linux/checkpoint.h>
++#include <linux/checkpoint_hdr.h>
++
++static int loopback_checkpoint(struct ckpt_ctx *ctx, struct net_device *dev)
 +{
 +	struct ckpt_hdr_netdev *h;
 +	struct ckpt_netdev_addr *addrs;
@@ -67,9 +66,13 @@ index 5abae10..5ecbe56 100644
 +	if (IS_ERR(h))
 +		return PTR_ERR(h);
 +
-+	h->type = CKPT_NETDEV_SIT;
++	h->type = CKPT_NETDEV_LO;
 +
-+	ret = ckpt_write_obj(ctx, (struct ckpt_hdr *) h);
++	ret = ckpt_write_obj(ctx, (struct ckpt_hdr *)h);
++	if (ret < 0)
++		goto out;
++
++	ret = ckpt_write_buffer(ctx, dev->name, IFNAMSIZ);
 +	if (ret < 0)
 +		goto out;
 +
@@ -77,6 +80,7 @@ index 5abae10..5ecbe56 100644
 +		int len = (sizeof(struct ckpt_netdev_addr) * h->inet_addrs);
 +		ret = ckpt_write_buffer(ctx, addrs, len);
 +	}
++
 + out:
 +	ckpt_hdr_put(ctx, h);
 +	kfree(addrs);
@@ -84,18 +88,19 @@ index 5abae10..5ecbe56 100644
 +	return ret;
 +}
 +#endif
-+
- static const struct net_device_ops ipip6_netdev_ops = {
- 	.ndo_uninit	= ipip6_tunnel_uninit,
- 	.ndo_start_xmit	= ipip6_tunnel_xmit,
- 	.ndo_do_ioctl	= ipip6_tunnel_ioctl,
- 	.ndo_change_mtu	= ipip6_tunnel_change_mtu,
+ static const struct net_device_ops loopback_ops = {
+-	.ndo_init      = loopback_dev_init,
+-	.ndo_start_xmit= loopback_xmit,
+-	.ndo_get_stats = loopback_get_stats,
++	.ndo_init       = loopback_dev_init,
++	.ndo_start_xmit = loopback_xmit,
++	.ndo_get_stats  = loopback_get_stats,
 +#ifdef CONFIG_NETNS_CHECKPOINT
-+	.ndo_checkpoint	= ipip6_checkpoint,
++	.ndo_checkpoint = loopback_checkpoint,
 +#endif
  };
  
- static void ipip6_tunnel_setup(struct net_device *dev)
+ /*
 -- 
 1.6.3.3
 
