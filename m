@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab0EANBp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 09:01:45 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:42088 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab0EANBo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 09:01:44 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Bcache: version 4
-In-Reply-To: Your message of "Fri, 30 Apr 2010 16:12:13 -0800."
-             <20100501001212.GA31135@moria>
-From: Valdis.Kletnieks@vt.edu
-References: <20100501001212.GA31135@moria>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1272718901_4236P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1751699Ab0EANDi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 09:03:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14624 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772Ab0EANDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 May 2010 09:03:37 -0400
+Message-ID: <4BDC2664.40504@redhat.com>
+Date: Sat, 01 May 2010 09:02:28 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
+ and rmap_walk() during migration by not migrating temporary stacks
+References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie> <1272529930-29505-3-git-send-email-mel@csn.ul.ie> <20100429162120.GC22108@random.random> <20100430192235.GL22108@random.random> <20100501093926.GA19891@random.random>
+In-Reply-To: <20100501093926.GA19891@random.random>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Sat, 01 May 2010 09:01:41 -0400
-Message-ID: <63479.1272718901@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020203.4BDC2636.01D2,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1272718901_4236P
-Content-Type: text/plain; charset=us-ascii
+On 05/01/2010 05:39 AM, Andrea Arcangeli wrote:
 
-On Fri, 30 Apr 2010 16:12:13 -0800, Kent Overstreet said:
+> ===
+> Subject: fix race between shift_arg_pages and rmap_walk
+>
+> From: Andrea Arcangeli<aarcange@redhat.com>
+>
+> migrate.c requires rmap to be able to find all ptes mapping a page at
+> all times, otherwise the migration entry can be instantiated, but it
+> can't be removed if the second rmap_walk fails to find the page.
+>
+> And split_huge_page() will have the same requirements as migrate.c
+> already has.
+>
+> Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
 
-> Most of the basic functionality is now there; the most visible thing is
-> it's now correctly saving all the metadata, so you can unload a cache
-> and then reload it, and everything will still be there.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-If you unload a cache and then reload it, what prevents it from serving
-up now-stale data from an extent that was modified while the cache was
-unloaded?
-
-(Telling me "Get some caffeine, it's about halfway down in patch 2" or
-"We'll add that in Version 6 of the patch" are both acceptable answers" :)
-
---==_Exmh_1272718901_4236P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFL3CY1cC3lWbTT17ARAuppAKD9g/uL+6+Wh7omfN85jBWgfnSzLQCgsaf9
-efKRmfVYeKzDGut04Zm6A58=
-=7v/d
------END PGP SIGNATURE-----
-
---==_Exmh_1272718901_4236P--
-
+-- 
+All rights reversed
