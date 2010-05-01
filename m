@@ -1,97 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760059Ab0EADZe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 23:25:34 -0400
-Received: from vana.uk.cvut.cz ([147.32.245.124]:59576 "EHLO vana.vc.cvut.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932757Ab0EADZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 23:25:31 -0400
-X-Greylist: delayed 1862 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Apr 2010 23:25:31 EDT
-Date: Sat, 1 May 2010 04:54:23 +0200
-From: Petr Vandrovec <petr@vandrovec.name>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       x86@kernel.org, Jacob Pan <jacob.jun.pan@intel.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH 2.6.34-rcX] Do not expect PCI devices to return zeroes in PCIe space
-Message-ID: <20100501025423.GA10671@vana.vc.cvut.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	id S1760073Ab0EADZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 23:25:59 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:37127 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759069Ab0EADZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 23:25:55 -0400
+Message-Id: <20100501032120.998807955@vergenet.net>
+User-Agent: quilt/0.48-1
+Date: Sat, 01 May 2010 13:20:17 +1000
+Subject: [patch v2.2 3/4] [PATCH v2.1 3/4] IPVS: make FTP work with full NAT support
+To: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, netfilter@vger.kernel.org
+From: Simon Horman <horms@verge.net.au>
+Cc: Wensong Zhang <wensong@linux-vs.org>, Julius Volz <julius.volz@gmail.com>,
+       Patrick McHardy <kaber@trash.net>,
+       "David S. Miller" <davem@davemloft.net>, Hannes Eder <heder@google.com>
+References: <20100501032014.406353538@vergenet.net>
+Content-Disposition: inline; filename=3.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-  openSUSE11.3 32bit kernels hang when installed to the VMware's VMs because Moorestown
-fixed capabilities detection code enters endless loop on Intel's AGP bridges (with
-device ID=7191).  See https://bugzilla.kernel.org/show_bug.cgi?id=15888 for additional
-details.  arch/x86/pci/mrst.c was introduced after 2.6.33, so only 2.6.34-rcX are
-affected.
-				Thanks,
-					Petr Vandrovec
+From:	Hannes Eder <heder@google.com>
+
+Use nf_conntrack/nf_nat code to do the packet mangling and the TCP
+sequence adjusting.  The function 'ip_vs_skb_replace' is now dead
+code, so it is removed.
+
+To SNAT FTP, use something like:
+
+% iptables -t nat -A POSTROUTING -m ipvs --vaddr 192.168.100.30/32 \
+> --vport 21 -j SNAT --to-source 192.168.10.10
+
+and for the data connections in passive mode:
+
+% iptables -t nat -A POSTROUTING -m ipvs --vaddr 192.168.100.30/32 \
+> --vportctl 21 -j SNAT --to-source 192.168.10.10
+
+using '-m state --state RELATED' would also works.
+
+Make sure the kernel modules ip_vs_ftp, nf_conntrack_ftp, and
+nf_nat_ftp are loaded.
+
+[ trivial up-port by Simon Horman <horms@verge.net.au> ]
+Signed-off-by: Hannes Eder <heder@google.com>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+
+--- 
+
+ include/net/ip_vs.h             |    2 
+ net/netfilter/ipvs/Kconfig      |    2 
+ net/netfilter/ipvs/ip_vs_app.c  |   43 ---------
+ net/netfilter/ipvs/ip_vs_core.c |    1 
+ net/netfilter/ipvs/ip_vs_ftp.c  |  178 ++++++++++++++++++++++++++++++++++++---
+ 5 files changed, 164 insertions(+), 62 deletions(-)
 
 
-commit 11a35e56ad8275cbf62882d9c0dc2f17c2b5628b
-Author: Petr Vandrovec <petr@vandrovec.name>
-Date:   Fri Apr 30 19:17:43 2010 -0700
-
-    Do not expect PCI devices to return zeroes in PCIe space
-
-    There is no reason why old pre-PCIe/PCI-X devices should return zeroes when
-    configuration space above 0x100 is accessed.  If these devices decode just
-    low 8 bits of register number, conventional space repeats 15 times in
-    PCIe config space.  And Moorestown parser for fixed bars then can enter
-    endless loop when finding Intel AGP bridge device 0x7191 with secondary
-    latency timer programmed to 0x40 - when such device is encountered, code
-    will enter endless loop of reading registers 0x718 (reading 0x40010100)
-    and 0x400 (reading 0x71918086).
-
-    This change adds additional condition to the test: if device id/vendor
-    match first PCIe capability, then device is not really PCIe.  It should
-    not cause any problems: fixed_bar_cap is invoked only on Intel's devices,
-    so only time there is possibilty to have false match would be if first
-    PCIe capability would have ID 0x8086, and even then that address of
-    next capability pointer and capability version will match device ID seems
-    highly unlikely.
-
-    This fix unbreaks 32bit 2.6.33+ kernels configured with Moorestown
-    support to boot on AMD rev 10h+ processors under VMware in VMs which
-    lack PCIe support.
-    
-    Signed-off-by: Petr Vandrovec <petr@vandrovec.name>
-
-diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
-index 8bf2fcb..cd6c277 100644
---- a/arch/x86/pci/mrst.c
-+++ b/arch/x86/pci/mrst.c
-@@ -55,12 +55,16 @@ static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
+Index: nf-next-2.6/include/net/ip_vs.h
+===================================================================
+--- nf-next-2.6.orig/include/net/ip_vs.h	2010-04-29 20:11:51.000000000 +0900
++++ nf-next-2.6/include/net/ip_vs.h	2010-04-29 20:12:03.000000000 +0900
+@@ -716,8 +716,6 @@ extern void ip_vs_app_inc_put(struct ip_
+ 
+ extern int ip_vs_app_pkt_out(struct ip_vs_conn *, struct sk_buff *skb);
+ extern int ip_vs_app_pkt_in(struct ip_vs_conn *, struct sk_buff *skb);
+-extern int ip_vs_skb_replace(struct sk_buff *skb, gfp_t pri,
+-			     char *o_buf, int o_len, char *n_buf, int n_len);
+ extern int ip_vs_app_init(void);
+ extern void ip_vs_app_cleanup(void);
+ 
+Index: nf-next-2.6/net/netfilter/ipvs/Kconfig
+===================================================================
+--- nf-next-2.6.orig/net/netfilter/ipvs/Kconfig	2010-04-29 20:11:59.000000000 +0900
++++ nf-next-2.6/net/netfilter/ipvs/Kconfig	2010-04-29 20:12:03.000000000 +0900
+@@ -231,7 +231,7 @@ comment 'IPVS application helper'
+ 
+ config	IP_VS_FTP
+   	tristate "FTP protocol helper"
+-        depends on IP_VS_PROTO_TCP
++        depends on IP_VS_PROTO_TCP && NF_NAT
+ 	---help---
+ 	  FTP is a protocol that transfers IP address and/or port number in
+ 	  the payload. In the virtual server via Network Address Translation,
+Index: nf-next-2.6/net/netfilter/ipvs/ip_vs_app.c
+===================================================================
+--- nf-next-2.6.orig/net/netfilter/ipvs/ip_vs_app.c	2010-04-29 20:11:51.000000000 +0900
++++ nf-next-2.6/net/netfilter/ipvs/ip_vs_app.c	2010-04-29 20:12:03.000000000 +0900
+@@ -568,49 +568,6 @@ static const struct file_operations ip_v
+ };
+ #endif
+ 
+-
+-/*
+- *	Replace a segment of data with a new segment
+- */
+-int ip_vs_skb_replace(struct sk_buff *skb, gfp_t pri,
+-		      char *o_buf, int o_len, char *n_buf, int n_len)
+-{
+-	int diff;
+-	int o_offset;
+-	int o_left;
+-
+-	EnterFunction(9);
+-
+-	diff = n_len - o_len;
+-	o_offset = o_buf - (char *)skb->data;
+-	/* The length of left data after o_buf+o_len in the skb data */
+-	o_left = skb->len - (o_offset + o_len);
+-
+-	if (diff <= 0) {
+-		memmove(o_buf + n_len, o_buf + o_len, o_left);
+-		memcpy(o_buf, n_buf, n_len);
+-		skb_trim(skb, skb->len + diff);
+-	} else if (diff <= skb_tailroom(skb)) {
+-		skb_put(skb, diff);
+-		memmove(o_buf + n_len, o_buf + o_len, o_left);
+-		memcpy(o_buf, n_buf, n_len);
+-	} else {
+-		if (pskb_expand_head(skb, skb_headroom(skb), diff, pri))
+-			return -ENOMEM;
+-		skb_put(skb, diff);
+-		memmove(skb->data + o_offset + n_len,
+-			skb->data + o_offset + o_len, o_left);
+-		skb_copy_to_linear_data_offset(skb, o_offset, n_buf, n_len);
+-	}
+-
+-	/* must update the iph total length here */
+-	ip_hdr(skb)->tot_len = htons(skb->len);
+-
+-	LeaveFunction(9);
+-	return 0;
+-}
+-
+-
+ int __init ip_vs_app_init(void)
  {
- 	int pos;
- 	u32 pcie_cap = 0, cap_data;
-+	u32 devid;
+ 	/* we will replace it with proc_net_ipvs_create() soon */
+Index: nf-next-2.6/net/netfilter/ipvs/ip_vs_core.c
+===================================================================
+--- nf-next-2.6.orig/net/netfilter/ipvs/ip_vs_core.c	2010-04-29 20:11:59.000000000 +0900
++++ nf-next-2.6/net/netfilter/ipvs/ip_vs_core.c	2010-04-29 20:12:03.000000000 +0900
+@@ -52,7 +52,6 @@
  
- 	pos = PCIE_CAP_OFFSET;
+ EXPORT_SYMBOL(register_ip_vs_scheduler);
+ EXPORT_SYMBOL(unregister_ip_vs_scheduler);
+-EXPORT_SYMBOL(ip_vs_skb_replace);
+ EXPORT_SYMBOL(ip_vs_proto_name);
+ EXPORT_SYMBOL(ip_vs_conn_new);
+ EXPORT_SYMBOL(ip_vs_conn_in_get);
+Index: nf-next-2.6/net/netfilter/ipvs/ip_vs_ftp.c
+===================================================================
+--- nf-next-2.6.orig/net/netfilter/ipvs/ip_vs_ftp.c	2010-04-29 20:11:51.000000000 +0900
++++ nf-next-2.6/net/netfilter/ipvs/ip_vs_ftp.c	2010-04-29 20:12:03.000000000 +0900
+@@ -20,6 +20,17 @@
+  *
+  * Author:	Wouter Gadeyne
+  *
++ *
++ * Code for ip_vs_expect_related and ip_vs_expect_callback is taken from
++ * http://www.ssi.bg/~ja/nfct/:
++ *
++ * ip_vs_nfct.c:	Netfilter connection tracking support for IPVS
++ *
++ * Portions Copyright (C) 2001-2002
++ * Antefacto Ltd, 181 Parnell St, Dublin 1, Ireland.
++ *
++ * Portions Copyright (C) 2003-2008
++ * Julian Anastasov
+  */
  
- 	if (!raw_pci_ext_ops)
- 		return 0;
+ #define KMSG_COMPONENT "IPVS"
+@@ -32,6 +43,9 @@
+ #include <linux/in.h>
+ #include <linux/ip.h>
+ #include <linux/netfilter.h>
++#include <net/netfilter/nf_conntrack.h>
++#include <net/netfilter/nf_conntrack_expect.h>
++#include <net/netfilter/nf_nat_helper.h>
+ #include <net/protocol.h>
+ #include <net/tcp.h>
+ #include <asm/unaligned.h>
+@@ -42,6 +56,16 @@
+ #define SERVER_STRING "227 Entering Passive Mode ("
+ #define CLIENT_STRING "PORT "
  
-+	if (raw_pci_ops->read(pci_domain_nr(bus), bus->number, devfn, 0, 4, &devid))
-+		return 0;
++#define FMT_TUPLE	"%u.%u.%u.%u:%u->%u.%u.%u.%u:%u/%u"
++#define ARG_TUPLE(T)	NIPQUAD((T)->src.u3.ip), ntohs((T)->src.u.all), \
++			NIPQUAD((T)->dst.u3.ip), ntohs((T)->dst.u.all), \
++			(T)->dst.protonum
 +
- 	while (pos) {
- 		if (raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
- 					  devfn, pos, 4, &pcie_cap))
-@@ -69,6 +73,9 @@ static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
- 		if (pcie_cap == 0xffffffff)
- 			return 0;
++#define FMT_CONN	"%u.%u.%u.%u:%u->%u.%u.%u.%u:%u->%u.%u.%u.%u:%u/%u:%u"
++#define ARG_CONN(C)	NIPQUAD((C)->caddr), ntohs((C)->cport), \
++			NIPQUAD((C)->vaddr), ntohs((C)->vport), \
++			NIPQUAD((C)->daddr), ntohs((C)->dport), \
++			(C)->protocol, (C)->state
  
-+		if (pcie_cap == devid && pos == PCIE_CAP_OFFSET)
-+			return 0;
+ /*
+  * List of ports (up to IP_VS_APP_MAX_PORTS) to be handled by helper
+@@ -122,6 +146,119 @@ static int ip_vs_ftp_get_addrport(char *
+ 	return 1;
+ }
+ 
++/*
++ * Called from init_conntrack() as expectfn handler.
++ */
++static void
++ip_vs_expect_callback(struct nf_conn *ct,
++		      struct nf_conntrack_expect *exp)
++{
++	struct nf_conntrack_tuple *orig, new_reply;
++	struct ip_vs_conn *cp;
 +
- 		if (PCI_EXT_CAP_ID(pcie_cap) == PCI_EXT_CAP_ID_VNDR) {
- 			raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
- 					      devfn, pos + 4, 4, &cap_data);
++	if (exp->tuple.src.l3num != PF_INET)
++		return;
++
++	/*
++	 * We assume that no NF locks are held before this callback.
++	 * ip_vs_conn_out_get and ip_vs_conn_in_get should match their
++	 * expectations even if they use wildcard values, now we provide the
++	 * actual values from the newly created original conntrack direction.
++	 * The conntrack is confirmed when packet reaches IPVS hooks.
++	 */
++
++	/* RS->CLIENT */
++	orig = &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple;
++	cp = ip_vs_conn_out_get(exp->tuple.src.l3num, orig->dst.protonum,
++				&orig->src.u3, orig->src.u.tcp.port,
++				&orig->dst.u3, orig->dst.u.tcp.port);
++	if (cp) {
++		/* Change reply CLIENT->RS to CLIENT->VS */
++		new_reply = ct->tuplehash[IP_CT_DIR_REPLY].tuple;
++		IP_VS_DBG(7, "%s(): ct=%p, status=0x%lX, tuples=" FMT_TUPLE ", "
++			  FMT_TUPLE ", found inout cp=" FMT_CONN "\n",
++			  __func__, ct, ct->status,
++			  ARG_TUPLE(orig), ARG_TUPLE(&new_reply),
++			  ARG_CONN(cp));
++		new_reply.dst.u3 = cp->vaddr;
++		new_reply.dst.u.tcp.port = cp->vport;
++		IP_VS_DBG(7, "%s(): ct=%p, new tuples=" FMT_TUPLE ", " FMT_TUPLE
++			  ", inout cp=" FMT_CONN "\n",
++			  __func__, ct,
++			  ARG_TUPLE(orig), ARG_TUPLE(&new_reply),
++			  ARG_CONN(cp));
++		goto alter;
++	}
++
++	/* CLIENT->VS */
++	cp = ip_vs_conn_in_get(exp->tuple.src.l3num, orig->dst.protonum,
++			       &orig->src.u3, orig->src.u.tcp.port,
++			       &orig->dst.u3, orig->dst.u.tcp.port);
++	if (cp) {
++		/* Change reply VS->CLIENT to RS->CLIENT */
++		new_reply = ct->tuplehash[IP_CT_DIR_REPLY].tuple;
++		IP_VS_DBG(7, "%s(): ct=%p, status=0x%lX, tuples=" FMT_TUPLE ", "
++			  FMT_TUPLE ", found outin cp=" FMT_CONN "\n",
++			  __func__, ct, ct->status,
++			  ARG_TUPLE(orig), ARG_TUPLE(&new_reply),
++			  ARG_CONN(cp));
++		new_reply.src.u3 = cp->daddr;
++		new_reply.src.u.tcp.port = cp->dport;
++		IP_VS_DBG(7, "%s(): ct=%p, new tuples=" FMT_TUPLE ", "
++			  FMT_TUPLE ", outin cp=" FMT_CONN "\n",
++			  __func__, ct,
++			  ARG_TUPLE(orig), ARG_TUPLE(&new_reply),
++			  ARG_CONN(cp));
++		goto alter;
++	}
++
++	IP_VS_DBG(7, "%s(): ct=%p, status=0x%lX, tuple=" FMT_TUPLE
++		  " - unknown expect\n",
++		  __func__, ct, ct->status, ARG_TUPLE(orig));
++	return;
++
++alter:
++	/* Never alter conntrack for non-NAT conns */
++	if (IP_VS_FWD_METHOD(cp) == IP_VS_CONN_F_MASQ)
++		nf_conntrack_alter_reply(ct, &new_reply);
++	ip_vs_conn_put(cp);
++	return;
++}
++
++/*
++ * Create NF conntrack expectation with wildcard (optional) source port.
++ * Then the default callback function will alter the reply and will confirm
++ * the conntrack entry when the first packet comes.
++ */
++static void
++ip_vs_expect_related(struct sk_buff *skb, struct nf_conn *ct,
++		     struct ip_vs_conn *cp, u_int8_t proto,
++		     const __be16 *port, int from_rs)
++{
++	struct nf_conntrack_expect *exp;
++
++	BUG_ON(!ct || ct == &nf_conntrack_untracked);
++
++	exp = nf_ct_expect_alloc(ct);
++	if (!exp)
++		return;
++
++	if (from_rs)
++		nf_ct_expect_init(exp, NF_CT_EXPECT_CLASS_DEFAULT,
++				  nf_ct_l3num(ct), &cp->daddr, &cp->caddr,
++				  proto, port, &cp->cport);
++	else
++		nf_ct_expect_init(exp, NF_CT_EXPECT_CLASS_DEFAULT,
++				  nf_ct_l3num(ct), &cp->caddr, &cp->vaddr,
++				  proto, port, &cp->vport);
++
++	exp->expectfn = ip_vs_expect_callback;
++
++	IP_VS_DBG(7, "%s(): ct=%p, expect tuple=" FMT_TUPLE "\n",
++		  __func__, ct, ARG_TUPLE(&exp->tuple));
++	nf_ct_expect_related(exp);
++	nf_ct_expect_put(exp);
++}
+ 
+ /*
+  * Look at outgoing ftp packets to catch the response to a PASV command
+@@ -146,9 +283,11 @@ static int ip_vs_ftp_out(struct ip_vs_ap
+ 	union nf_inet_addr from;
+ 	__be16 port;
+ 	struct ip_vs_conn *n_cp;
+-	char buf[24];		/* xxx.xxx.xxx.xxx,ppp,ppp\000 */
++	char buf[sizeof("xxx,xxx,xxx,xxx,ppp,ppp")];
+ 	unsigned buf_len;
+ 	int ret;
++	enum ip_conntrack_info ctinfo;
++	struct nf_conn *ct;
+ 
+ #ifdef CONFIG_IP_VS_IPV6
+ 	/* This application helper doesn't work with IPv6 yet,
+@@ -208,23 +347,26 @@ static int ip_vs_ftp_out(struct ip_vs_ap
+ 		 */
+ 		from.ip = n_cp->vaddr.ip;
+ 		port = n_cp->vport;
+-		sprintf(buf, "%u,%u,%u,%u,%u,%u", NIPQUAD(from.ip),
+-			(ntohs(port)>>8)&255, ntohs(port)&255);
+-		buf_len = strlen(buf);
++		buf_len = sprintf(buf, "%u,%u,%u,%u,%u,%u", NIPQUAD(from.ip),
++				  (ntohs(port)>>8)&255, ntohs(port)&255);
++
++		ct = nf_ct_get(skb, &ctinfo);
++		ret = nf_nat_mangle_tcp_packet(skb,
++					       ct,
++					       ctinfo,
++					       start-data,
++					       end-start,
++					       buf,
++					       buf_len);
++
++		if (ct && ct != &nf_conntrack_untracked)
++			ip_vs_expect_related(skb, ct, n_cp,
++					     IPPROTO_TCP, NULL, 0);
+ 
+ 		/*
+-		 * Calculate required delta-offset to keep TCP happy
++		 * Not setting 'diff' is intentional, otherwise the sequence
++		 * would be adjusted twice.
+ 		 */
+-		*diff = buf_len - (end-start);
+-
+-		if (*diff == 0) {
+-			/* simply replace it with new passive address */
+-			memcpy(start, buf, buf_len);
+-			ret = 1;
+-		} else {
+-			ret = !ip_vs_skb_replace(skb, GFP_ATOMIC, start,
+-					  end-start, buf, buf_len);
+-		}
+ 
+ 		cp->app_data = NULL;
+ 		ip_vs_tcp_conn_listen(n_cp);
+@@ -256,6 +398,7 @@ static int ip_vs_ftp_in(struct ip_vs_app
+ 	union nf_inet_addr to;
+ 	__be16 port;
+ 	struct ip_vs_conn *n_cp;
++	struct nf_conn *ct;
+ 
+ #ifdef CONFIG_IP_VS_IPV6
+ 	/* This application helper doesn't work with IPv6 yet,
+@@ -342,6 +485,11 @@ static int ip_vs_ftp_in(struct ip_vs_app
+ 		ip_vs_control_add(n_cp, cp);
+ 	}
+ 
++	ct = (struct nf_conn *)skb->nfct;
++	if (ct && ct != &nf_conntrack_untracked)
++		ip_vs_expect_related(skb, ct, n_cp,
++				     IPPROTO_TCP, &n_cp->dport, 1);
++
+ 	/*
+ 	 *	Move tunnel to listen state
+ 	 */
 
