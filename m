@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab0EAO0V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:26:21 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:62969 "EHLO
+	id S1754041Ab0EAO0y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:26:54 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63127 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352Ab0EAO0I (ORCPT
+	with ESMTP id S1754012Ab0EAO0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:26:08 -0400
+	Sat, 1 May 2010 10:26:49 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
-       Cedric Le Goater <legoater@free.fr>, Paul Menage <menage@google.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       linux-pm@lists.linux-foundation.org
-Subject: [PATCH v21 016/100] cgroup freezer: Add CHECKPOINTING state to safeguard container checkpoint
-Date: Sat,  1 May 2010 10:14:58 -0400
-Message-Id: <1272723382-19470-17-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>
+Subject: [PATCH v21 027/100] c/r: restart-blocks
+Date: Sat,  1 May 2010 10:15:09 -0400
+Message-Id: <1272723382-19470-28-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -26,315 +23,444 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Helsley <matthltc@us.ibm.com>
+(Paraphrasing what's said this message:
+http://lists.openwall.net/linux-kernel/2007/12/05/64)
 
-The CHECKPOINTING state prevents userspace from unfreezing tasks until
-sys_checkpoint() is finished. When doing container checkpoint userspace
-will do:
+Restart blocks are callbacks used cause a system call to be restarted
+with the arguments specified in the system call restart block. It is
+useful for system call that are not idempotent, i.e. the argument(s)
+might be a relative timeout, where some adjustments are required when
+restarting the system call. It relies on the system call itself to set
+up its restart point and the argument save area.  They are rare: an
+actual signal would turn that it an EINTR. The only case that should
+ever trigger this is some kernel action that interrupts the system
+call, but does not actually result in any user-visible state changes -
+like freeze and thaw.
 
-	echo FROZEN > /cgroups/my_container/freezer.state
-	...
-	rc = sys_checkpoint( <pid of container root> );
+So restart blocks are about time remaining for the system call to
+sleep/wait. Generally in c/r, there are two possible time models that
+we can follow: absolute, relative. Here, I chose to save the relative
+timeout, measured from the beginning of the checkpoint. The time when
+the checkpoint (and restart) begin is also saved. This information is
+sufficient to restart in either model (absolute or negative).
 
-To ensure a consistent checkpoint image userspace should not be allowed
-to thaw the cgroup (echo THAWED > /cgroups/my_container/freezer.state)
-during checkpoint.
+Which model to use should eventually be a per application choice (and
+possible configurable via cradvise() or some sort). For now, we adopt
+the relative model, namely, at restart the timeout is set relative to
+the beginning of the restart.
 
-"CHECKPOINTING" can only be set on a "FROZEN" cgroup using the checkpoint
-system call. Once in the "CHECKPOINTING" state, the cgroup may not leave until
-the checkpoint system call is finished and ready to return. Then the
-freezer state returns to "FROZEN". Writing any new state to freezer.state while
-checkpointing will return EBUSY. These semantics ensure that userspace cannot
-unfreeze the cgroup midway through the checkpoint system call.
+To checkpoint, we check if a task has a valid restart block, and if so
+we save the *remaining* time that is has to wait/sleep, and the type
+of the restart block.
 
-The cgroup_freezer_begin_checkpoint() and cgroup_freezer_end_checkpoint()
-make relatively few assumptions about the task that is passed in. However the
-way they are called in do_checkpoint() assumes that the root of the container
-is in the same freezer cgroup as all the other tasks that will be
-checkpointed.
+To restart, we fill in the data required at the proper place in the
+thread information. If the system call return an error (which is
+possibly an -ERESTARTSYS eg), we not only use that error as our own
+return value, but also arrange for the task to execute the signal
+handler (by faking a signal). The handler, in turn, already has the
+code to handle these restart request gracefully.
 
-Notes:
-        As a side-effect this prevents the multiple tasks from entering the
-        CHECKPOINTING state simultaneously. All but one will get -EBUSY.
+Changelog[v19-rc1]:
+  - [Matt Helsley] Add cpp definitions for enums
+Changelog[v1]:
+  - [Nathan Lynch] fix compilation errors with CONFIG_COMPAT=y
 
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-Cc: Cedric Le Goater <legoater@free.fr>
-Cc: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- Documentation/cgroups/freezer-subsystem.txt |   10 ++
- include/linux/freezer.h                     |    8 ++
- kernel/cgroup_freezer.c                     |  166 ++++++++++++++++++++-------
- 3 files changed, 142 insertions(+), 42 deletions(-)
+ include/linux/checkpoint.h       |    4 +
+ include/linux/checkpoint_hdr.h   |   34 ++++++
+ include/linux/checkpoint_types.h |    3 +
+ kernel/checkpoint/checkpoint.c   |    1 +
+ kernel/checkpoint/process.c      |  226 ++++++++++++++++++++++++++++++++++++++
+ kernel/checkpoint/restart.c      |    1 -
+ kernel/checkpoint/sys.c          |    1 +
+ 7 files changed, 269 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/cgroups/freezer-subsystem.txt b/Documentation/cgroups/freezer-subsystem.txt
-index 41f37fe..92b68e6 100644
---- a/Documentation/cgroups/freezer-subsystem.txt
-+++ b/Documentation/cgroups/freezer-subsystem.txt
-@@ -100,3 +100,13 @@ things happens:
- 		and returns EINVAL)
- 	3) The tasks that blocked the cgroup from entering the "FROZEN"
- 		state disappear from the cgroup's set of tasks.
-+
-+When the cgroup freezer is used to guard container checkpoint operations the
-+freezer.state may be "CHECKPOINTING". "CHECKPOINTING" can only be set on a
-+"FROZEN" cgroup using the checkpoint system call. Once in the "CHECKPOINTING"
-+state, the cgroup may not leave until the checkpoint system call returns the
-+freezer state to "FROZEN". Writing any new state to freezer.state while
-+checkpointing will return EBUSY. These semantics ensure that userspace cannot
-+unfreeze the cgroup midway through the checkpoint system call. Note that,
-+unlike "FROZEN" and "FREEZING", there is no corresponding "CHECKPOINTED"
-+state.
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index da7e52b..3d32641 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -65,11 +65,19 @@ extern void cancel_freezing(struct task_struct *p);
+diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
+index 077bbcd..20dcd95 100644
+--- a/include/linux/checkpoint.h
++++ b/include/linux/checkpoint.h
+@@ -79,6 +79,10 @@ extern int restore_read_header_arch(struct ckpt_ctx *ctx);
+ extern int restore_thread(struct ckpt_ctx *ctx);
+ extern int restore_cpu(struct ckpt_ctx *ctx);
  
- #ifdef CONFIG_CGROUP_FREEZER
- extern int cgroup_freezing_or_frozen(struct task_struct *task);
-+extern int in_same_cgroup_freezer(struct task_struct *p, struct task_struct *q);
-+extern int cgroup_freezer_begin_checkpoint(struct task_struct *task);
-+extern void cgroup_freezer_end_checkpoint(struct task_struct *task);
- #else /* !CONFIG_CGROUP_FREEZER */
- static inline int cgroup_freezing_or_frozen(struct task_struct *task)
++extern int checkpoint_restart_block(struct ckpt_ctx *ctx,
++				    struct task_struct *t);
++extern int restore_restart_block(struct ckpt_ctx *ctx);
++
+ static inline int ckpt_validate_errno(int errno)
  {
- 	return 0;
- }
-+static inline int in_same_cgroup_freezer(struct task_struct *p,
-+					 struct task_struct *q)
-+{
-+	return 0;
-+}
- #endif /* !CONFIG_CGROUP_FREEZER */
+ 	return (errno >= 0) && (errno < MAX_ERRNO);
+diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
+index ecc4afb..f17f081 100644
+--- a/include/linux/checkpoint_hdr.h
++++ b/include/linux/checkpoint_hdr.h
+@@ -72,6 +72,8 @@ enum {
  
- /*
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index 85f19cc..58ee049 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -26,6 +26,7 @@ enum freezer_state {
- 	CGROUP_THAWED = 0,
- 	CGROUP_FREEZING,
- 	CGROUP_FROZEN,
-+	CGROUP_CHECKPOINTING,
- };
+ 	CKPT_HDR_TASK = 101,
+ #define CKPT_HDR_TASK CKPT_HDR_TASK
++	CKPT_HDR_RESTART_BLOCK,
++#define CKPT_HDR_RESTART_BLOCK CKPT_HDR_RESTART_BLOCK
+ 	CKPT_HDR_THREAD,
+ #define CKPT_HDR_THREAD CKPT_HDR_THREAD
+ 	CKPT_HDR_CPU,
+@@ -152,4 +154,36 @@ struct ckpt_hdr_task {
+ 	__u64 clear_child_tid;
+ } __attribute__((aligned(8)));
  
- struct freezer {
-@@ -64,6 +65,44 @@ int cgroup_freezing_or_frozen(struct task_struct *task)
- 	return (state == CGROUP_FREEZING) || (state == CGROUP_FROZEN);
- }
- 
-+/* Task is frozen or will freeze immediately when next it gets woken */
-+static bool is_task_frozen_enough(struct task_struct *task)
-+{
-+	return frozen(task) ||
-+		(task_is_stopped_or_traced(task) && freezing(task));
-+}
++/* restart blocks */
++struct ckpt_hdr_restart_block {
++	struct ckpt_hdr h;
++	__u64 function_type;
++	__u64 arg_0;
++	__u64 arg_1;
++	__u64 arg_2;
++	__u64 arg_3;
++	__u64 arg_4;
++} __attribute__((aligned(8)));
 +
-+/*
-+ * caller must hold freezer->lock
-+ */
-+static void update_freezer_state(struct cgroup *cgroup,
-+				 struct freezer *freezer)
-+{
-+	struct cgroup_iter it;
-+	struct task_struct *task;
-+	unsigned int nfrozen = 0, ntotal = 0;
++enum restart_block_type {
++	CKPT_RESTART_BLOCK_NONE = 1,
++#define CKPT_RESTART_BLOCK_NONE CKPT_RESTART_BLOCK_NONE
++	CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP,
++#define CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP \
++		CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP
++	CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP,
++#define CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP \
++		CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP
++	CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP,
++#define CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP \
++		CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP
++	CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP,
++#define CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP \
++		CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP
++	CKPT_RESTART_BLOCK_POLL,
++#define CKPT_RESTART_BLOCK_POLL CKPT_RESTART_BLOCK_POLL
++	CKPT_RESTART_BLOCK_FUTEX,
++#define CKPT_RESTART_BLOCK_FUTEX CKPT_RESTART_BLOCK_FUTEX
++};
 +
-+	cgroup_iter_start(cgroup, &it);
-+	while ((task = cgroup_iter_next(cgroup, &it))) {
-+		ntotal++;
-+		if (is_task_frozen_enough(task))
-+			nfrozen++;
+ #endif /* _CHECKPOINT_CKPT_HDR_H_ */
+diff --git a/include/linux/checkpoint_types.h b/include/linux/checkpoint_types.h
+index ff35b97..417e119 100644
+--- a/include/linux/checkpoint_types.h
++++ b/include/linux/checkpoint_types.h
+@@ -15,10 +15,13 @@
+ #include <linux/sched.h>
+ #include <linux/nsproxy.h>
+ #include <linux/fs.h>
++#include <linux/ktime.h>
+ 
+ struct ckpt_ctx {
+ 	int crid;		/* unique checkpoint id */
+ 
++	ktime_t ktime_begin;	/* checkpoint start time */
++
+ 	pid_t root_pid;				/* [container] root pid */
+ 	struct task_struct *root_task;		/* [container] root task */
+ 	struct nsproxy *root_nsproxy;		/* [container] root nsproxy */
+diff --git a/kernel/checkpoint/checkpoint.c b/kernel/checkpoint/checkpoint.c
+index e45653b..0dbf3e7 100644
+--- a/kernel/checkpoint/checkpoint.c
++++ b/kernel/checkpoint/checkpoint.c
+@@ -23,6 +23,7 @@
+ #include <linux/mount.h>
+ #include <linux/utsname.h>
+ #include <linux/magic.h>
++#include <linux/hrtimer.h>
+ #include <linux/checkpoint.h>
+ 
+ /* unique checkpoint identifier (FIXME: should be per-container ?) */
+diff --git a/kernel/checkpoint/process.c b/kernel/checkpoint/process.c
+index e78b29b..b662e5d 100644
+--- a/kernel/checkpoint/process.c
++++ b/kernel/checkpoint/process.c
+@@ -12,6 +12,9 @@
+ #define CKPT_DFLAG  CKPT_DSYS
+ 
+ #include <linux/sched.h>
++#include <linux/posix-timers.h>
++#include <linux/futex.h>
++#include <linux/poll.h>
+ #include <linux/checkpoint.h>
+ 
+ /***********************************************************************
+@@ -46,6 +49,116 @@ static int checkpoint_task_struct(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	return ckpt_write_string(ctx, t->comm, TASK_COMM_LEN);
+ }
+ 
++/* dump the task_struct of a given task */
++int checkpoint_restart_block(struct ckpt_ctx *ctx, struct task_struct *t)
++{
++	struct ckpt_hdr_restart_block *h;
++	struct restart_block *restart_block;
++	long (*fn)(struct restart_block *);
++	s64 base, expire = 0;
++	int ret;
++
++	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_RESTART_BLOCK);
++	if (!h)
++		return -ENOMEM;
++
++	base = ktime_to_ns(ctx->ktime_begin);
++	restart_block = &task_thread_info(t)->restart_block;
++	fn = restart_block->fn;
++
++	/* FIX: enumerate clockid_t so we're immune to changes */
++
++	if (fn == do_no_restart_syscall) {
++
++		h->function_type = CKPT_RESTART_BLOCK_NONE;
++		ckpt_debug("restart_block: non\n");
++
++	} else if (fn == hrtimer_nanosleep_restart) {
++
++		h->function_type = CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP;
++		h->arg_0 = restart_block->nanosleep.index;
++		h->arg_1 = (unsigned long) restart_block->nanosleep.rmtp;
++		expire = restart_block->nanosleep.expires;
++		ckpt_debug("restart_block: hrtimer expire %lld now %lld\n",
++			 expire, base);
++
++	} else if (fn == posix_cpu_nsleep_restart) {
++		struct timespec ts;
++
++		h->function_type = CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP;
++		h->arg_0 = restart_block->arg0;
++		h->arg_1 = restart_block->arg1;
++		ts.tv_sec = restart_block->arg2;
++		ts.tv_nsec = restart_block->arg3;
++		expire = timespec_to_ns(&ts);
++		ckpt_debug("restart_block: posix_cpu expire %lld now %lld\n",
++			 expire, base);
++
++#ifdef CONFIG_COMPAT
++	} else if (fn == compat_nanosleep_restart) {
++
++		h->function_type = CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP;
++		h->arg_0 = restart_block->nanosleep.index;
++		h->arg_1 = (unsigned long)restart_block->nanosleep.rmtp;
++		h->arg_2 = (unsigned long)restart_block->nanosleep.compat_rmtp;
++		expire = restart_block->nanosleep.expires;
++		ckpt_debug("restart_block: compat expire %lld now %lld\n",
++			 expire, base);
++
++	} else if (fn == compat_clock_nanosleep_restart) {
++
++		h->function_type = CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP;
++		h->arg_0 = restart_block->nanosleep.index;
++		h->arg_1 = (unsigned long)restart_block->nanosleep.rmtp;
++		h->arg_2 = (unsigned long)restart_block->nanosleep.compat_rmtp;
++		expire = restart_block->nanosleep.expires;
++		ckpt_debug("restart_block: compat_clock expire %lld now %lld\n",
++			 expire, base);
++
++#endif
++	} else if (fn == futex_wait_restart) {
++
++		h->function_type = CKPT_RESTART_BLOCK_FUTEX;
++		h->arg_0 = (unsigned long) restart_block->futex.uaddr;
++		h->arg_1 = restart_block->futex.val;
++		h->arg_2 = restart_block->futex.flags;
++		h->arg_3 = restart_block->futex.bitset;
++		expire = restart_block->futex.time;
++		ckpt_debug("restart_block: futex expire %lld now %lld\n",
++			 expire, base);
++
++	} else if (fn == do_restart_poll) {
++		struct timespec ts;
++
++		h->function_type = CKPT_RESTART_BLOCK_POLL;
++		h->arg_0 = (unsigned long) restart_block->poll.ufds;
++		h->arg_1 = restart_block->poll.nfds;
++		h->arg_2 = restart_block->poll.has_timeout;
++		ts.tv_sec = restart_block->poll.tv_sec;
++		ts.tv_nsec = restart_block->poll.tv_nsec;
++		expire = timespec_to_ns(&ts);
++		ckpt_debug("restart_block: poll expire %lld now %lld\n",
++			 expire, base);
++
++	} else {
++
++		BUG();
++
 +	}
 +
-+	/*
-+	 * Transition to FROZEN when no new tasks can be added ensures
-+	 * that we never exist in the FROZEN state while there are unfrozen
-+	 * tasks.
-+	 */
-+	if (nfrozen == ntotal)
-+		freezer->state = CGROUP_FROZEN;
-+	else if (nfrozen > 0)
-+		freezer->state = CGROUP_FREEZING;
-+	else
-+		freezer->state = CGROUP_THAWED;
-+	cgroup_iter_end(cgroup, &it);
++	/* common to all restart blocks: */
++	h->arg_4 = (base < expire ? expire - base : 0);
++
++	ckpt_debug("restart_block: args %#llx %#llx %#llx %#llx %#llx\n",
++		 h->arg_0, h->arg_1, h->arg_2, h->arg_3, h->arg_4);
++
++	ret = ckpt_write_obj(ctx, &h->h);
++	ckpt_hdr_put(ctx, h);
++
++	ckpt_debug("restart_block ret %d\n", ret);
++	return ret;
 +}
 +
- /*
-  * cgroups_write_string() limits the size of freezer state strings to
-  * CGROUP_LOCAL_BUFFER_SIZE
-@@ -72,6 +111,7 @@ static const char *freezer_state_strs[] = {
- 	"THAWED",
- 	"FREEZING",
- 	"FROZEN",
-+	"CHECKPOINTING",
- };
- 
- /*
-@@ -79,9 +119,9 @@ static const char *freezer_state_strs[] = {
-  * Transitions are caused by userspace writes to the freezer.state file.
-  * The values in parenthesis are state labels. The rest are edge labels.
-  *
-- * (THAWED) --FROZEN--> (FREEZING) --FROZEN--> (FROZEN)
-- *    ^ ^                    |                     |
-- *    | \_______THAWED_______/                     |
-+ * (THAWED) --FROZEN--> (FREEZING) --FROZEN--> (FROZEN) --> (CHECKPOINTING)
-+ *    ^ ^                    |                     | ^             |
-+ *    | \_______THAWED_______/                     | \_____________/
-  *    \__________________________THAWED____________/
-  */
- 
-@@ -154,13 +194,6 @@ static void freezer_destroy(struct cgroup_subsys *ss,
- 	kfree(cgroup_freezer(cgroup));
- }
- 
--/* Task is frozen or will freeze immediately when next it gets woken */
--static bool is_task_frozen_enough(struct task_struct *task)
--{
--	return frozen(task) ||
--		(task_is_stopped_or_traced(task) && freezing(task));
--}
--
- /*
-  * The call to cgroup_lock() in the freezer.state write method prevents
-  * a write to that file racing against an attach, and hence the
-@@ -230,37 +263,6 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- 	spin_unlock_irq(&freezer->lock);
- }
- 
--/*
-- * caller must hold freezer->lock
-- */
--static void update_freezer_state(struct cgroup *cgroup,
--				 struct freezer *freezer)
--{
--	struct cgroup_iter it;
--	struct task_struct *task;
--	unsigned int nfrozen = 0, ntotal = 0;
--
--	cgroup_iter_start(cgroup, &it);
--	while ((task = cgroup_iter_next(cgroup, &it))) {
--		ntotal++;
--		if (is_task_frozen_enough(task))
--			nfrozen++;
--	}
--
--	/*
--	 * Transition to FROZEN when no new tasks can be added ensures
--	 * that we never exist in the FROZEN state while there are unfrozen
--	 * tasks.
--	 */
--	if (nfrozen == ntotal)
--		freezer->state = CGROUP_FROZEN;
--	else if (nfrozen > 0)
--		freezer->state = CGROUP_FREEZING;
--	else
--		freezer->state = CGROUP_THAWED;
--	cgroup_iter_end(cgroup, &it);
--}
--
- static int freezer_read(struct cgroup *cgroup, struct cftype *cft,
- 			struct seq_file *m)
+ /* dump the entire state of a given task */
+ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
  {
-@@ -331,7 +333,10 @@ static int freezer_change_state(struct cgroup *cgroup,
- 	freezer = cgroup_freezer(cgroup);
- 
- 	spin_lock_irq(&freezer->lock);
--
-+	if (freezer->state == CGROUP_CHECKPOINTING) {
-+		retval = -EBUSY;
-+		goto out;
-+	}
- 	update_freezer_state(cgroup, freezer);
- 	if (goal_state == freezer->state)
+@@ -61,6 +174,10 @@ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	ckpt_debug("thread %d\n", ret);
+ 	if (ret < 0)
  		goto out;
-@@ -399,3 +404,80 @@ struct cgroup_subsys freezer_subsys = {
- 	.fork		= freezer_fork,
- 	.exit		= NULL,
- };
-+
-+#ifdef CONFIG_CHECKPOINT
-+/*
-+ * Caller is expected to ensure that neither @p nor @q may change its
-+ * freezer cgroup during this test in a way that may affect the result.
-+ * E.g., when called form c/r, @p must be in CHECKPOINTING cgroup, so
-+ * may not change cgroup, and either @q is also there, or is not there
-+ * and may not join.
-+ */
-+int in_same_cgroup_freezer(struct task_struct *p, struct task_struct *q)
++	ret = checkpoint_restart_block(ctx, t);
++	ckpt_debug("restart-blocks %d\n", ret);
++	if (ret < 0)
++		goto out;
+ 	ret = checkpoint_cpu(ctx, t);
+ 	ckpt_debug("cpu %d\n", ret);
+  out:
+@@ -97,6 +214,111 @@ static int restore_task_struct(struct ckpt_ctx *ctx)
+ 	return ret;
+ }
+ 
++int restore_restart_block(struct ckpt_ctx *ctx)
 +{
-+	struct cgroup_subsys_state *p_css, *q_css;
++	struct ckpt_hdr_restart_block *h;
++	struct restart_block restart_block;
++	struct timespec ts;
++	clockid_t clockid;
++	s64 expire;
++	int ret = 0;
 +
-+	task_lock(p);
-+	p_css = task_subsys_state(p, freezer_subsys_id);
-+	task_unlock(p);
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_RESTART_BLOCK);
++	if (IS_ERR(h))
++		return PTR_ERR(h);
 +
-+	task_lock(q);
-+	q_css = task_subsys_state(q, freezer_subsys_id);
-+	task_unlock(q);
++	expire = ktime_to_ns(ctx->ktime_begin) + h->arg_4;
++	restart_block.fn = NULL;
 +
-+	return (p_css == q_css);
-+}
++	ckpt_debug("restart_block: expire %lld begin %lld\n",
++		 expire, ktime_to_ns(ctx->ktime_begin));
++	ckpt_debug("restart_block: args %#llx %#llx %#llx %#llx %#llx\n",
++		 h->arg_0, h->arg_1, h->arg_2, h->arg_3, h->arg_4);
 +
-+/*
-+ * cgroup freezer state changes made without the aid of the cgroup filesystem
-+ * must go through this function to ensure proper locking is observed.
-+ */
-+static int freezer_checkpointing(struct task_struct *task,
-+				 enum freezer_state next_state)
-+{
-+	struct freezer *freezer;
-+	struct cgroup_subsys_state *css;
-+	enum freezer_state state;
-+
-+	task_lock(task);
-+	css = task_subsys_state(task, freezer_subsys_id);
-+	css_get(css); /* make sure freezer doesn't go away */
-+	freezer = container_of(css, struct freezer, css);
-+	task_unlock(task);
-+
-+	if (freezer->state == CGROUP_FREEZING) {
-+		/* May be in middle of a lazy FREEZING -> FROZEN transition */
-+		if (cgroup_lock_live_group(css->cgroup)) {
-+			spin_lock_irq(&freezer->lock);
-+			update_freezer_state(css->cgroup, freezer);
-+			spin_unlock_irq(&freezer->lock);
-+			cgroup_unlock();
-+		}
++	switch (h->function_type) {
++	case CKPT_RESTART_BLOCK_NONE:
++		restart_block.fn = do_no_restart_syscall;
++		break;
++	case CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP:
++		clockid = h->arg_0;
++		if (clockid < 0 || invalid_clockid(clockid))
++			break;
++		restart_block.fn = hrtimer_nanosleep_restart;
++		restart_block.nanosleep.index = clockid;
++		restart_block.nanosleep.rmtp =
++			(struct timespec __user *) (unsigned long) h->arg_1;
++		restart_block.nanosleep.expires = expire;
++		break;
++	case CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP:
++		clockid = h->arg_0;
++		if (clockid < 0 || invalid_clockid(clockid))
++			break;
++		restart_block.fn = posix_cpu_nsleep_restart;
++		restart_block.arg0 = clockid;
++		restart_block.arg1 = h->arg_1;
++		ts = ns_to_timespec(expire);
++		restart_block.arg2 = ts.tv_sec;
++		restart_block.arg3 = ts.tv_nsec;
++		break;
++#ifdef CONFIG_COMPAT
++	case CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP:
++		clockid = h->arg_0;
++		if (clockid < 0 || invalid_clockid(clockid))
++			break;
++		restart_block.fn = compat_nanosleep_restart;
++		restart_block.nanosleep.index = clockid;
++		restart_block.nanosleep.rmtp =
++			(struct timespec __user *) (unsigned long) h->arg_1;
++		restart_block.nanosleep.compat_rmtp =
++			(struct compat_timespec __user *)
++				(unsigned long) h->arg_2;
++		restart_block.nanosleep.expires = expire;
++		break;
++	case CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP:
++		clockid = h->arg_0;
++		if (clockid < 0 || invalid_clockid(clockid))
++			break;
++		restart_block.fn = compat_clock_nanosleep_restart;
++		restart_block.nanosleep.index = clockid;
++		restart_block.nanosleep.rmtp =
++			(struct timespec __user *) (unsigned long) h->arg_1;
++		restart_block.nanosleep.compat_rmtp =
++			(struct compat_timespec __user *)
++				(unsigned long) h->arg_2;
++		restart_block.nanosleep.expires = expire;
++		break;
++#endif
++	case CKPT_RESTART_BLOCK_FUTEX:
++		restart_block.fn = futex_wait_restart;
++		restart_block.futex.uaddr = (u32 *) (unsigned long) h->arg_0;
++		restart_block.futex.val = h->arg_1;
++		restart_block.futex.flags = h->arg_2;
++		restart_block.futex.bitset = h->arg_3;
++		restart_block.futex.time = expire;
++		break;
++	case CKPT_RESTART_BLOCK_POLL:
++		restart_block.fn = do_restart_poll;
++		restart_block.poll.ufds =
++			(struct pollfd __user *) (unsigned long) h->arg_0;
++		restart_block.poll.nfds = h->arg_1;
++		restart_block.poll.has_timeout = h->arg_2;
++		ts = ns_to_timespec(expire);
++		restart_block.poll.tv_sec = ts.tv_sec;
++		restart_block.poll.tv_nsec = ts.tv_nsec;
++		break;
++	default:
++		break;
 +	}
 +
-+	spin_lock_irq(&freezer->lock);
-+	state = freezer->state;
-+	if ((state == CGROUP_FROZEN && next_state == CGROUP_CHECKPOINTING) ||
-+	    (state == CGROUP_CHECKPOINTING && next_state == CGROUP_FROZEN))
-+		freezer->state = next_state;
-+	spin_unlock_irq(&freezer->lock);
-+	css_put(css);
-+	return state;
++	if (restart_block.fn)
++		task_thread_info(current)->restart_block = restart_block;
++	else
++		ret = -EINVAL;
++
++	ckpt_hdr_put(ctx, h);
++	return ret;
 +}
 +
-+int cgroup_freezer_begin_checkpoint(struct task_struct *task)
-+{
-+	if (freezer_checkpointing(task, CGROUP_CHECKPOINTING) != CGROUP_FROZEN)
-+		return -EBUSY;
-+	return 0;
-+}
-+
-+void cgroup_freezer_end_checkpoint(struct task_struct *task)
-+{
-+	/*
-+	 * If we weren't in CHECKPOINTING state then userspace could have
-+	 * unfrozen a task and given us an inconsistent checkpoint image
-+	 */
-+	WARN_ON(freezer_checkpointing(task, CGROUP_FROZEN) != CGROUP_CHECKPOINTING);
-+}
-+#endif /* CONFIG_CHECKPOINT */
+ /* read the entire state of the current task */
+ int restore_task(struct ckpt_ctx *ctx)
+ {
+@@ -110,6 +332,10 @@ int restore_task(struct ckpt_ctx *ctx)
+ 	ckpt_debug("thread %d\n", ret);
+ 	if (ret < 0)
+ 		goto out;
++	ret = restore_restart_block(ctx);
++	ckpt_debug("restart-blocks %d\n", ret);
++	if (ret < 0)
++		goto out;
+ 	ret = restore_cpu(ctx);
+ 	ckpt_debug("cpu %d\n", ret);
+  out:
+diff --git a/kernel/checkpoint/restart.c b/kernel/checkpoint/restart.c
+index 7b6caf9..d9eeb39 100644
+--- a/kernel/checkpoint/restart.c
++++ b/kernel/checkpoint/restart.c
+@@ -527,6 +527,5 @@ long do_restart(struct ckpt_ctx *ctx, pid_t pid)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	/* on success, adjust the return value if needed [TODO] */
+ 	return restore_retval();
+ }
+diff --git a/kernel/checkpoint/sys.c b/kernel/checkpoint/sys.c
+index 28a1b27..4345bcc 100644
+--- a/kernel/checkpoint/sys.c
++++ b/kernel/checkpoint/sys.c
+@@ -188,6 +188,7 @@ static struct ckpt_ctx *ckpt_ctx_alloc(int fd, unsigned long uflags,
+ 
+ 	ctx->uflags = uflags;
+ 	ctx->kflags = kflags;
++	ctx->ktime_begin = ktime_get();
+ 
+ 	mutex_init(&ctx->msg_mutex);
+ 
 -- 
 1.6.3.3
 
