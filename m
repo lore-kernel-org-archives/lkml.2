@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346Ab0EAOnf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:43:35 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:64384 "EHLO
+	id S933332Ab0EAOov (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:44:51 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:64201 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933001Ab0EAOid (ORCPT
+	with ESMTP id S932515Ab0EAOhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:38:33 -0400
+	Sat, 1 May 2010 10:37:45 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>
-Subject: [PATCH v21 100/100] c/r: add an entry for checkpoint/restart in MAINTAINERS
-Date: Sat,  1 May 2010 10:16:22 -0400
-Message-Id: <1272723382-19470-101-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH v21 076/100] c/r: [pty 1/2] allow allocation of desired pty slave
+Date: Sat,  1 May 2010 10:15:58 -0400
+Message-Id: <1272723382-19470-77-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -23,34 +25,223 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
----
- MAINTAINERS |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+During restart, we need to allocate pty slaves with the same
+identifiers as recorded during checkpoint. Modify the allocation code
+to allow an in-kernel caller to request a specific slave identifier.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index a0e3c3a..e4494d2 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1501,6 +1501,18 @@ M:	Andy Whitcroft <apw@canonical.com>
- S:	Supported
- F:	scripts/checkpatch.pl
+For this, add a new field to task_struct - 'required_id'. It will
+hold the desired identifier when restoring a (master) pty.
+
+The code in ptmx_open() will use this value only for tasks that try to
+open /dev/ptmx that are restarting (PF_RESTARTING), and if the value
+isn't CKPT_REQUIRED_NONE (-1).
+
+Changelog[v19-rc3]:
+  - Rebase to kernel 2.6.33
+
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
+Acked-by: Serge Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+---
+ drivers/char/pty.c        |   66 +++++++++++++++++++++++++++++++++++++++++---
+ fs/devpts/inode.c         |   13 +++++++--
+ include/linux/devpts_fs.h |    6 +++-
+ include/linux/tty.h       |    1 -
+ 4 files changed, 76 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/char/pty.c b/drivers/char/pty.c
+index d83a431..cfe77c8 100644
+--- a/drivers/char/pty.c
++++ b/drivers/char/pty.c
+@@ -28,6 +28,7 @@
+ #include <linux/device.h>
+ #include <linux/uaccess.h>
+ #include <linux/bitops.h>
++#include <linux/file.h>
+ #include <linux/devpts_fs.h>
+ #include <linux/slab.h>
  
-+CHECKPOINT-RESTART
-+M:	Oren Laadan <orenl@cs.columbia.edu>
-+M:	Serge E. Hallyn <serue@us.ibm.com>
-+L:	containers@lists.linux-foundation.org
-+W:	http://ckpt.wiki.kernel.org/index.php/Main_Page
-+S:	Maintained
-+F:	*checkpoint*
-+K:	checkpoint
-+K:	restore
-+K:	ckpt
-+K:	c/r
+@@ -615,9 +616,10 @@ static const struct tty_operations pty_unix98_ops = {
+ };
+ 
+ /**
+- *	ptmx_open		-	open a unix 98 pty master
++ *	__ptmx_open		-	open a unix 98 pty master
+  *	@inode: inode of device file
+  *	@filp: file pointer to tty
++ *	@index: desired slave index
+  *
+  *	Allocate a unix98 pty master device from the ptmx driver.
+  *
+@@ -626,16 +628,15 @@ static const struct tty_operations pty_unix98_ops = {
+  *		allocated_ptys_lock handles the list of free pty numbers
+  */
+ 
+-static int __ptmx_open(struct inode *inode, struct file *filp)
++static int __ptmx_open(struct inode *inode, struct file *filp, int index)
+ {
+ 	struct tty_struct *tty;
+ 	int retval;
+-	int index;
+ 
+ 	nonseekable_open(inode, filp);
+ 
+ 	/* find a device that is not in use. */
+-	index = devpts_new_index(inode);
++	index = devpts_new_index(inode, index);
+ 	if (index < 0)
+ 		return index;
+ 
+@@ -671,12 +672,66 @@ static int ptmx_open(struct inode *inode, struct file *filp)
+ {
+ 	int ret;
+ 
++#ifdef CONFIG_CHECKPOINT
++	/*
++	 * If current task is restarting, we skip the actual open.
++	 * Instead, leave it up to the caller (restart code) to invoke
++	 * __ptmx_open() with the desired pty index request.
++	 *
++	 * NOTE: this gives a half-baked file that has ptmx f_op but
++	 * the tty (private_data) is NULL. It is the responsibility of
++	 * the _caller_ to ensure proper initialization before
++	 * allowing it to be used (ptmx_release() tolerates NULL tty).
++	 */
++	if (current->flags & PF_RESTARTING)
++		return 0;
++#endif
 +
- CISCO 10G ETHERNET DRIVER
- M:	Scott Feldman <scofeldm@cisco.com>
- M:	Joe Eykholt <jeykholt@cisco.com>
+ 	lock_kernel();
+-	ret = __ptmx_open(inode, filp);
++	ret = __ptmx_open(inode, filp, UNSPECIFIED_PTY_INDEX);
+ 	unlock_kernel();
+ 	return ret;
+ }
+ 
++static int ptmx_release(struct inode *inode, struct file *filp)
++{
++#ifdef CONFIG_CHECKPOINT
++	/*
++	 * It is possible for a restart to create a half-baked
++	 * ptmx file - see ptmx_open(). In that case there is no
++	 * tty (private_data) and nothing to do.
++	 */
++	if (!filp->private_data)
++		return 0;
++#endif
++
++	return tty_release(inode, filp);
++}
++
++struct file *pty_open_by_index(char *ptmxpath, int index)
++{
++	struct file *ptmxfile;
++	int ret;
++
++	/*
++	 * We need to pick a way to specify which devpts mountpoint to
++	 * use. For now, we'll just use whatever /dev/ptmx points to.
++	 */
++	ptmxfile = filp_open(ptmxpath, O_RDWR|O_NOCTTY, 0);
++	if (IS_ERR(ptmxfile))
++		return ptmxfile;
++
++	lock_kernel();
++	ret = __ptmx_open(ptmxfile->f_dentry->d_inode, ptmxfile, index);
++	unlock_kernel();
++	if (ret) {
++		fput(ptmxfile);
++		return ERR_PTR(ret);
++	}
++
++	return ptmxfile;
++}
++
+ static struct file_operations ptmx_fops;
+ 
+ static void __init unix98_pty_init(void)
+@@ -733,6 +788,7 @@ static void __init unix98_pty_init(void)
+ 	/* Now create the /dev/ptmx special device */
+ 	tty_default_fops(&ptmx_fops);
+ 	ptmx_fops.open = ptmx_open;
++	ptmx_fops.release = ptmx_release;
+ 
+ 	cdev_init(&ptmx_cdev, &ptmx_fops);
+ 	if (cdev_add(&ptmx_cdev, MKDEV(TTYAUX_MAJOR, 2), 1) ||
+diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
+index 0120247..75fb8c5 100644
+--- a/fs/devpts/inode.c
++++ b/fs/devpts/inode.c
+@@ -433,11 +433,11 @@ static struct file_system_type devpts_fs_type = {
+  * to the System V naming convention
+  */
+ 
+-int devpts_new_index(struct inode *ptmx_inode)
++int devpts_new_index(struct inode *ptmx_inode, int req_idx)
+ {
+ 	struct super_block *sb = pts_sb_from_inode(ptmx_inode);
+ 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
+-	int index;
++	int index = req_idx;
+ 	int ida_ret;
+ 
+ retry:
+@@ -445,7 +445,9 @@ retry:
+ 		return -ENOMEM;
+ 
+ 	mutex_lock(&allocated_ptys_lock);
+-	ida_ret = ida_get_new(&fsi->allocated_ptys, &index);
++	if (index == UNSPECIFIED_PTY_INDEX)
++		index = 0;
++	ida_ret = ida_get_new_above(&fsi->allocated_ptys, index, &index);
+ 	if (ida_ret < 0) {
+ 		mutex_unlock(&allocated_ptys_lock);
+ 		if (ida_ret == -EAGAIN)
+@@ -453,6 +455,11 @@ retry:
+ 		return -EIO;
+ 	}
+ 
++	if (req_idx != UNSPECIFIED_PTY_INDEX && index != req_idx) {
++		ida_remove(&fsi->allocated_ptys, index);
++		mutex_unlock(&allocated_ptys_lock);
++		return -EBUSY;
++	}
+ 	if (index >= pty_limit) {
+ 		ida_remove(&fsi->allocated_ptys, index);
+ 		mutex_unlock(&allocated_ptys_lock);
+diff --git a/include/linux/devpts_fs.h b/include/linux/devpts_fs.h
+index 5ce0e5f..163a70e 100644
+--- a/include/linux/devpts_fs.h
++++ b/include/linux/devpts_fs.h
+@@ -15,9 +15,13 @@
+ 
+ #include <linux/errno.h>
+ 
++#define UNSPECIFIED_PTY_INDEX -1
++
+ #ifdef CONFIG_UNIX98_PTYS
+ 
+-int devpts_new_index(struct inode *ptmx_inode);
++struct file *pty_open_by_index(char *ptmxpath, int index);
++
++int devpts_new_index(struct inode *ptmx_inode, int req_idx);
+ void devpts_kill_index(struct inode *ptmx_inode, int idx);
+ /* mknod in devpts */
+ int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty);
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 4409967..d0cbcec 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -513,7 +513,6 @@ extern void tty_ldisc_begin(void);
+ /* This last one is just for the tty layer internals and shouldn't be used elsewhere */
+ extern void tty_ldisc_enable(struct tty_struct *tty);
+ 
+-
+ /* n_tty.c */
+ extern struct tty_ldisc_ops tty_ldisc_N_TTY;
+ extern void n_tty_inherit_ops(struct tty_ldisc_ops *ops);
 -- 
 1.6.3.3
 
