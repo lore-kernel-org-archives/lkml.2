@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab0EAObI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:31:08 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63455 "EHLO
+	id S1754253Ab0EAOc7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:32:59 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63493 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab0EAOav (ORCPT
+	with ESMTP id S932459Ab0EAObG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:30:51 -0400
+	Sat, 1 May 2010 10:31:06 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
        Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
-       linux-mm@kvack.org
-Subject: [PATCH v21 040/100] Introduce FOLL_DIRTY to follow_page() for "dirty" pages
-Date: Sat,  1 May 2010 10:15:22 -0400
-Message-Id: <1272723382-19470-41-git-send-email-orenl@cs.columbia.edu>
+       Ingo Molnar <mingo@elte.hu>, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: [PATCH v21 034/100] c/r: detect resource leaks for whole-container checkpoint
+Date: Sat,  1 May 2010 10:15:16 -0400
+Message-Id: <1272723382-19470-35-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -24,211 +24,463 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a preparatory patch necessary for checkpoint/restart (next
-two patches) of memory to work correctly.
+Add a 'users' count to objhash items, and, for a !CHECKPOINT_SUBTREE
+checkpoint, return an error code if the actual objects' counts are
+higher, indicating leaks (references to the objects from a task not
+being checkpointed).
 
-The patch introduces a new FOLL_DIRTY flag which tells follow_page()
-to return -EFAULT also for not-present file-backed pages.
+The comparison of the objhash user counts to object refcounts as a
+basis for checking for leaks comes from Alexey's OpenVZ-based c/r
+patchset.
 
-In 2.6.32 follow_page() changes its behavior due to this commit:
-	mm: FOLL_DUMP replace FOLL_ANON
- 	8e4b9a60718970bbc02dfd3abd0b956ab65af231
+"Leak detection" occurs _before_ any real state is saved, as a
+pre-step. This prevents races due to sharing with outside world where
+the sharing ceases before the leak test takes place, thus protecting
+the checkpoint image from inconsistencies.
 
-Also introduce __get_dirty_page() that returns a page only if it's
-"dirty", that is that has been modified before, and otherwise returns
-NULL. It uses FOLL_DUMP | FOLL_DIRTY and converts the error value
-EFAULT to NULL - telling the caller that the page in question is
-clean.
+Once leak testing concludes, checkpoint will proceed. Because objects
+are already in the objhash, checkpoint_obj() cannot distinguish
+between the first and subsequent encounters. This is solved with a
+flag (CKPT_OBJ_CHECKPOINTED) per object.
 
-(This also optimizes for checkpoint in the next patch: before, if a
-file-backed page was not-present we would first fault it in (read from
-disk) and then detect that it was virgin. Instead, now we detect that
-the page is clean earlier without needing to fault it in).
+Two additional checks take place during checkpoint: for objects that
+were created during, and objects destroyed, while the leak-detection
+pre-step took place. (By the time this occurs part of the checkpoint
+image has been written out to disk, so this is purely advisory).
 
-To see why it's needed, consider these scenarios:
+Changelog[v20]:
+  - Export key symbols to enable c/r from kernel modules
+Changelog[v18]:
+  - [Dan Smith] Fix ckpt_obj_lookup_add() leak detection logic
+  - Replace some EAGAIN with EBUSY
+  - Add a few more ckpt_write_err()s
+  - Introduce CKPT_OBJ_VISITED
+  - ckpt_obj_collect() returns objref for new objects, 0 otherwise
+  - Rename ckpt_obj_checkpointed() to ckpt_obj_visited()
+  - Introduce ckpt_obj_visit() to mark objects as visited
+  - Set the CHECKPOINTED flag on objects before calling checkpoint
+Changelog[v17]:
+  - Leak detection is performed in two-steps
+  - Detect reverse-leaks (objects disappearing unexpectedly)
+  - Skip reverse-leak detection if ops->ref_users isn't defined
 
-1. Task maps a file beyond it's limit, never touches those
- extra page (if it did, it would get EFAULT/Bus error)
-
-2. Task maps a file and writes the last page, then the file gets
- truncated (by at least a page). A subsequent access to the page will
- cause bus error (VM_FAULT_SIGBUS).
-
-3. If the file size is extended back (using truncate) and the task
- accesses that page, then the task will get a fresh page (losing data
- it had written to that address before).
-
-[Before kernel 2.6.32, that page would become anonymous once it was
-dirtied, such that accesses in case #2 are valid, and in case #3 the
-task would see the old page regardless of the file contents.]
-
---CHECKPOINT: before we used FOLL_ANON flags to tell follow_page() to
-return the zero-page for case#1. For case#2, the actual page was
-returned. Without this patch, In kernel 2.3.32, FOLL_DUMP would make
-follow_page() return NULL and then fault handler would have returned
-VM_FAULT_SIGBUS in case#1 (and depending on arch, case#2 too), and
-checkpoint would fails.
-
---RESTART: case #1 works, because mmap() works as before, and those
-pages that were never touched will not be restored either, they will
-remain untouched. The same holds for case#2 (as of kernel 2.6.32),
-because at checkpoint it would decide that the page is clean and not
-save the contents, and therefore it will not try to restore the
-contents at restart. This is consistent with the expected behavior
-after restart: if the file remains as is, subsequent accesses will
-trigger a bus error, and if the file is extended, then the user will
-observe a fresh page.
-
-Cc: linux-mm@kvack.org
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- include/linux/mm.h |    2 +
- mm/memory.c        |   95 +++++++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 96 insertions(+), 1 deletions(-)
+ include/linux/checkpoint.h       |    7 ++
+ include/linux/checkpoint_types.h |    1 +
+ kernel/checkpoint/checkpoint.c   |   41 +++++++++
+ kernel/checkpoint/objhash.c      |  186 +++++++++++++++++++++++++++++++++++++-
+ kernel/checkpoint/process.c      |    5 +
+ 5 files changed, 237 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 4dfaf69..5e9ad0d 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -846,6 +846,7 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 			struct page **pages);
- struct page *get_dump_page(unsigned long addr);
-+struct page *__get_dirty_page(struct vm_area_struct *vma, unsigned long addr);
+diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
+index 2f5af3c..d438d08 100644
+--- a/include/linux/checkpoint.h
++++ b/include/linux/checkpoint.h
+@@ -113,6 +113,12 @@ extern int ckpt_obj_hash_alloc(struct ckpt_ctx *ctx);
+ extern int restore_obj(struct ckpt_ctx *ctx, struct ckpt_hdr_objref *h);
+ extern int checkpoint_obj(struct ckpt_ctx *ctx, void *ptr,
+ 			  enum obj_type type);
++extern int ckpt_obj_collect(struct ckpt_ctx *ctx, void *ptr,
++			    enum obj_type type);
++extern int ckpt_obj_contained(struct ckpt_ctx *ctx);
++extern int ckpt_obj_visited(struct ckpt_ctx *ctx);
++extern int ckpt_obj_visit(struct ckpt_ctx *ctx, void *ptr,
++			  enum obj_type type);
+ extern int ckpt_obj_lookup(struct ckpt_ctx *ctx, void *ptr,
+ 			   enum obj_type type);
+ extern int ckpt_obj_lookup_add(struct ckpt_ctx *ctx, void *ptr,
+@@ -135,6 +141,7 @@ extern long do_restart(struct ckpt_ctx *ctx, pid_t pid);
  
- extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
- extern void do_invalidatepage(struct page *page, unsigned long offset);
-@@ -1373,6 +1374,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
- #define FOLL_GET	0x04	/* do get_page on page */
- #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
- #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
-+#define FOLL_DIRTY	0x20	/* give error on non-present file mapped */
+ /* task */
+ extern int ckpt_activate_next(struct ckpt_ctx *ctx);
++extern int ckpt_collect_task(struct ckpt_ctx *ctx, struct task_struct *t);
+ extern int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t);
+ extern int restore_task(struct ckpt_ctx *ctx);
  
- typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
- 			void *data);
-diff --git a/mm/memory.c b/mm/memory.c
-index 833952d..21de72d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1314,8 +1314,17 @@ bad_page:
- 
- no_page:
- 	pte_unmap_unlock(ptep, ptl);
--	if (!pte_none(pte))
-+	if (!pte_none(pte)) {
-+		/*
-+		 * When checkpointing we only care about dirty pages.
-+		 * If a file-backed page is missing, then return an
-+		 * error to tell __get_dirty_page() that it's clean,
-+		 * so it won't try to demand page it into memory.
-+		 */
-+		if ((flags & FOLL_DIRTY) && pte_file(pte))
-+			page = ERR_PTR(-EFAULT);
- 		return page;
-+	}
- 
- no_page_table:
- 	/*
-@@ -1329,6 +1338,16 @@ no_page_table:
- 	if ((flags & FOLL_DUMP) &&
- 	    (!vma->vm_ops || !vma->vm_ops->fault))
- 		return ERR_PTR(-EFAULT);
-+
-+	/*
-+	 * When checkpointing we only care about dirty pages. If there
-+	 * is no page table for a non-anonymous page, we return an
-+	 * error to tell __get_dirty_page() that the page is clean, so
-+	 * it won't allocate page tables and the page unnecessarily.
-+	 */
-+	if ((flags & FOLL_DIRTY) && vma->vm_ops)
-+		return ERR_PTR(-EFAULT);
-+
- 	return page;
+diff --git a/include/linux/checkpoint_types.h b/include/linux/checkpoint_types.h
+index 912e06a..ce68f54 100644
+--- a/include/linux/checkpoint_types.h
++++ b/include/linux/checkpoint_types.h
+@@ -77,6 +77,7 @@ struct ckpt_obj_ops {
+ 	int obj_type;
+ 	void (*ref_drop)(void *ptr, int lastref);
+ 	int (*ref_grab)(void *ptr);
++	int (*ref_users)(void *ptr);
+ 	int (*checkpoint)(struct ckpt_ctx *ctx, void *ptr);
+ 	void *(*restore)(struct ckpt_ctx *ctx);
+ };
+diff --git a/kernel/checkpoint/checkpoint.c b/kernel/checkpoint/checkpoint.c
+index f451f8f..4640e80 100644
+--- a/kernel/checkpoint/checkpoint.c
++++ b/kernel/checkpoint/checkpoint.c
+@@ -315,6 +315,24 @@ static int checkpoint_pids(struct ckpt_ctx *ctx)
+ 	return ret;
  }
  
-@@ -1586,6 +1605,80 @@ pte_t *get_locked_pte(struct mm_struct *mm, unsigned long addr,
- 	return NULL;
- }
- 
-+/**
-+ * __get_dirty_page - return page pointer for dirty user page
-+ * @vma - target vma
-+ * @addr - page address
-+ *
-+ * Looks up the page that correspond to the address in the vma, and
-+ * return the page if it was modified (and grabs a reference to it),
-+ * or otherwise returns NULL or error.
-+ *
-+ * Should only be called for private vma.
-+ * Must be called with mmap_sem held for read or write.
-+ */
-+struct page *__get_dirty_page(struct vm_area_struct *vma, unsigned long addr)
++static int collect_objects(struct ckpt_ctx *ctx)
 +{
-+	struct page *page;
++	int n, ret = 0;
 +
-+	BUG_ON(vma->vm_flags & (VM_SHARED | VM_MAYSHARE));
-+
-+	/*
-+	 * FOLL_DUMP tells follow_page() to return -EFAULT for either
-+	 * non-present anonymous pages, or memory "holes".
-+	 * FOLL_DIRTY tells follow_page() to return -EFAULT also for
-+	 * non-present file-mapped pages.
-+	 * Otherwise, follow_page() returns the page, or NULL if the
-+	 * page is swapped out.
-+	 */
-+
-+	cond_resched();
-+	while (!(page = follow_page(vma, addr,
-+				    FOLL_GET | FOLL_DUMP | FOLL_DIRTY))) {
-+		int ret;
-+
-+		/* the page is swapped out - bring it in (optimize ?) */
-+		ret = handle_mm_fault(vma->vm_mm, vma, addr, 0);
-+		if (ret & VM_FAULT_ERROR) {
-+			if (ret & VM_FAULT_OOM)
-+				return ERR_PTR(-ENOMEM);
-+			else if (ret & VM_FAULT_SIGBUS)
-+				return ERR_PTR(-EFAULT);
-+			else
-+				BUG();
++	for (n = 0; n < ctx->nr_tasks; n++) {
++		ckpt_debug("dumping task #%d\n", n);
++		ret = ckpt_collect_task(ctx, ctx->tasks_arr[n]);
++		if (ret < 0) {
++			ctx->tsk = ctx->tasks_arr[n];
++			ckpt_err(ctx, ret, "%(T)Collect failed\n");
++			ctx->tsk = NULL;
 +			break;
 +		}
-+		cond_resched();
 +	}
 +
-+	/* -EFAULT means that the page is clean (see above) */
-+	if (PTR_ERR(page) == -EFAULT)
-+		return NULL;
-+	else if (IS_ERR(page))
-+		return page;
-+
-+	/*
-+	 * Only care about dirty pages: either anonymous non-zero pages,
-+	 * or file-backed COW (copy-on-write) pages that were modified.
-+	 * A clean COW page is not interesting because its contents are
-+	 * identical to the backing file; ignore such pages.
-+	 * A file-backed broken COW is identified by its page_mapping()
-+	 * being unset (NULL) because the page will no longer be mapped
-+	 * to the original file after having been modified.
-+	 */
-+	if (is_zero_pfn(page_to_pfn(page))) {
-+		/* this is the zero page: ignore */
-+		page_cache_release(page);
-+		page = NULL;
-+	} else if (vma->vm_file && (page_mapping(page) != NULL)) {
-+		/* file backed clean cow: ignore */
-+		page_cache_release(page);
-+		page = NULL;
-+	}
-+
-+	return page;
++	return ret;
 +}
 +
- /*
-  * This is the old fallback for page remapping.
-  *
+ struct ckpt_cnt_tasks {
+ 	struct ckpt_ctx *ctx;
+ 	int nr;
+@@ -537,6 +555,21 @@ long do_checkpoint(struct ckpt_ctx *ctx, pid_t pid)
+ 	if (ret < 0)
+ 		goto out;
+ 
++	if (!(ctx->uflags & CHECKPOINT_SUBTREE)) {
++		/*
++		 * Verify that all objects are contained (no leaks):
++		 * First collect them all into the while counting users
++		 * and then compare to the objects' real user counts.
++		 */
++		ret = collect_objects(ctx);
++		if (ret < 0)
++			goto out;
++		if (!ckpt_obj_contained(ctx)) {
++			ret = -EBUSY;
++			goto out;
++		}
++	}
++
+ 	ret = checkpoint_write_header(ctx);
+ 	if (ret < 0)
+ 		goto out;
+@@ -549,6 +582,14 @@ long do_checkpoint(struct ckpt_ctx *ctx, pid_t pid)
+ 	ret = checkpoint_all_tasks(ctx);
+ 	if (ret < 0)
+ 		goto out;
++
++	/* verify that all objects were indeed visited */
++	if (!ckpt_obj_visited(ctx)) {
++		ckpt_err(ctx, -EBUSY, "Leak: unvisited\n");
++		ret = -EBUSY;
++		goto out;
++	}
++
+ 	ret = checkpoint_write_tail(ctx);
+ 	if (ret < 0)
+ 		goto out;
+diff --git a/kernel/checkpoint/objhash.c b/kernel/checkpoint/objhash.c
+index 1ee06d0..75bf2da 100644
+--- a/kernel/checkpoint/objhash.c
++++ b/kernel/checkpoint/objhash.c
+@@ -18,18 +18,22 @@
+ #include <linux/checkpoint.h>
+ 
+ struct ckpt_obj {
++	int users;
+ 	int objref;
+ 	int flags;
+ 	void *ptr;
+ 	const struct ckpt_obj_ops *ops;
+ 	struct hlist_node hash;
++	struct hlist_node next;
+ };
+ 
+ /* object internal flags */
+ #define CKPT_OBJ_CHECKPOINTED		0x1   /* object already checkpointed */
++#define CKPT_OBJ_VISITED		0x2   /* object already visited */
+ 
+ struct ckpt_obj_hash {
+ 	struct hlist_head *head;
++	struct hlist_head list;
+ 	int next_free_objref;
+ };
+ 
+@@ -103,6 +107,7 @@ int ckpt_obj_hash_alloc(struct ckpt_ctx *ctx)
+ 
+ 	obj_hash->head = head;
+ 	obj_hash->next_free_objref = 1;
++	INIT_HLIST_HEAD(&obj_hash->list);
+ 
+ 	ctx->obj_hash = obj_hash;
+ 	return 0;
+@@ -178,6 +183,7 @@ static struct ckpt_obj *obj_new(struct ckpt_ctx *ctx, void *ptr,
+ 
+ 	obj->ptr = ptr;
+ 	obj->ops = ops;
++	obj->users = 2;  /* extra reference that objhash itself takes */
+ 
+ 	if (!objref) {
+ 		/* use @obj->ptr to index, assign objref (checkpoint) */
+@@ -195,6 +201,7 @@ static struct ckpt_obj *obj_new(struct ckpt_ctx *ctx, void *ptr,
+ 		obj = ERR_PTR(ret);
+ 	} else {
+ 		hlist_add_head(&obj->hash, &ctx->obj_hash->head[i]);
++		hlist_add_head(&obj->next, &ctx->obj_hash->list);
+ 	}
+ 
+ 	return obj;
+@@ -212,6 +219,7 @@ static struct ckpt_obj *obj_new(struct ckpt_ctx *ctx, void *ptr,
+ static void ckpt_obj_del(struct ckpt_ctx *ctx, struct ckpt_obj *obj)
+ {
+ 	hlist_del(&obj->hash);
++	hlist_del(&obj->next);
+ 	if (obj->ops->ref_drop)
+ 		obj->ops->ref_drop(obj->ptr, 1);
+ 	kfree(obj);
+@@ -244,12 +252,35 @@ static struct ckpt_obj *obj_lookup_add(struct ckpt_ctx *ctx, void *ptr,
+ 		*first = 1;
+ 	} else {
+ 		BUG_ON(obj->ops->obj_type != type);
++		obj->users++;
+ 		*first = 0;
+ 	}
+ 	return obj;
+ }
+ 
+ /**
++ * ckpt_obj_collect - collect object into objhash
++ * @ctx: checkpoint context
++ * @ptr: pointer to object
++ * @type: object type
++ *
++ * [used during checkpoint].
++ * Return: objref if object is new, 0 otherwise, or an error
++ */
++int ckpt_obj_collect(struct ckpt_ctx *ctx, void *ptr, enum obj_type type)
++{
++	struct ckpt_obj *obj;
++	int first;
++
++	obj = obj_lookup_add(ctx, ptr, type, &first);
++	if (IS_ERR(obj))
++		return PTR_ERR(obj);
++	ckpt_debug("%s objref %d first %d\n",
++		   obj->ops->obj_name, obj->objref, first);
++	return first ? obj->objref : 0;
++}
++
++/**
+  * ckpt_obj_lookup - lookup object (by pointer) in objhash
+  * @ctx: checkpoint context
+  * @ptr: pointer to object
+@@ -270,6 +301,21 @@ int ckpt_obj_lookup(struct ckpt_ctx *ctx, void *ptr, enum obj_type type)
+ }
+ EXPORT_SYMBOL(ckpt_obj_lookup);
+ 
++static inline int obj_reverse_leak(struct ckpt_ctx *ctx, struct ckpt_obj *obj)
++{
++	/*
++	 * A "reverse" leak ?  All objects should already be in the
++	 * objhash by now. But an outside task may have created an
++	 * object while we were collecting, which we didn't catch.
++	 */
++	if (obj->ops->ref_users && !(ctx->uflags & CHECKPOINT_SUBTREE)) {
++		ckpt_err(ctx, -EBUSY, "%(O)%(P)Leak: reverse added late (%s)\n",
++			       obj->objref, obj->ptr, obj->ops->obj_name);
++		return -EBUSY;
++	}
++	return 0;
++}
++
+ /**
+  * ckpt_obj_lookup_add - lookup object and add if not in objhash
+  * @ctx: checkpoint context
+@@ -290,7 +336,11 @@ int ckpt_obj_lookup_add(struct ckpt_ctx *ctx, void *ptr,
+ 		return PTR_ERR(obj);
+ 	ckpt_debug("%s objref %d first %d\n",
+ 		   obj->ops->obj_name, obj->objref, *first);
+-	obj->flags |= CKPT_OBJ_CHECKPOINTED;
++
++	if (*first && obj_reverse_leak(ctx, obj))
++		return -EBUSY;
++
++	obj->flags |= CKPT_OBJ_VISITED;
+ 	return obj->objref;
+ }
+ EXPORT_SYMBOL(ckpt_obj_lookup_add);
+@@ -332,6 +382,9 @@ int checkpoint_obj(struct ckpt_ctx *ctx, void *ptr, enum obj_type type)
+ 	if (IS_ERR(obj))
+ 		return PTR_ERR(obj);
+ 
++	if (new && obj_reverse_leak(ctx, obj))
++		return -EBUSY;
++
+ 	if (!(obj->flags & CKPT_OBJ_CHECKPOINTED)) {
+ 		h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_OBJREF);
+ 		if (!h)
+@@ -346,15 +399,142 @@ int checkpoint_obj(struct ckpt_ctx *ctx, void *ptr, enum obj_type type)
+ 			return ret;
+ 
+ 		/* invoke callback to actually dump the state */
+-		if (obj->ops->checkpoint)
+-			ret = obj->ops->checkpoint(ctx, ptr);
++		BUG_ON(!obj->ops->checkpoint);
+ 
+ 		obj->flags |= CKPT_OBJ_CHECKPOINTED;
++		ret = obj->ops->checkpoint(ctx, ptr);
+ 	}
++
++	obj->flags |= CKPT_OBJ_VISITED;
+ 	return (ret < 0 ? ret : obj->objref);
+ }
+ EXPORT_SYMBOL(checkpoint_obj);
+ 
++/**
++ * ckpt_obj_visit - mark object as visited
++ * @ctx: checkpoint context
++ * @ptr: pointer to object
++ * @type: object type
++ *
++ * [used during checkpoint].
++ * Marks the object as visited, or fail if not found
++ */
++int ckpt_obj_visit(struct ckpt_ctx *ctx, void *ptr, enum obj_type type)
++{
++	struct ckpt_obj *obj;
++
++	obj = obj_find_by_ptr(ctx, ptr);
++	BUG_ON(obj && obj->ops->obj_type != type);
++
++	if (!obj) {
++		if (!(ctx->uflags & CHECKPOINT_SUBTREE)) {
++			/* if not found report reverse leak (full container) */
++			ckpt_err(ctx, -EBUSY,
++				 "%(O)%(P)Leak: reverse unknown (%s)\n",
++				 obj->objref, obj->ptr, obj->ops->obj_name);
++			return -EBUSY;
++		}
++	} else {
++		ckpt_debug("visit %s objref %d\n",
++			   obj->ops->obj_name, obj->objref);
++		obj->flags |= CKPT_OBJ_VISITED;
++	}
++	return 0;
++}
++EXPORT_SYMBOL(ckpt_obj_visit);
++
++/* increment the 'users' count of an object */
++static void ckpt_obj_users_inc(struct ckpt_ctx *ctx, void *ptr, int increment)
++{
++	struct ckpt_obj *obj;
++
++	obj = obj_find_by_ptr(ctx, ptr);
++	if (obj)
++		obj->users += increment;
++}
++
++/*
++ * "Leak detection" - to guarantee a consistent checkpoint of a full
++ * container we verify that all resources are confined and isolated in
++ * that container:
++ *
++ * c/r code first walks through all tasks and collects all shared
++ * resources into the objhash, while counting the references to them;
++ * then, it compares this count to the object's real reference count,
++ * and if they don't match it means that an object has "leaked" to the
++ * outside.
++ *
++ * Otherwise, it is guaranteed that there are no references outside
++ * (of container). c/r code now proceeds to walk through all tasks,
++ * again, and checkpoints the resources. It ensures that all resources
++ * are already in the objhash, and that all of them are checkpointed.
++ * Otherwise it means that due to a race, an object was created or
++ * destroyed during the first walk but not accounted for.
++ *
++ * For instance, consider an outside task A that shared files_struct
++ * with inside task B. Then, after B's files where collected, A opens
++ * or closes a file, and immediately exits - before the first leak
++ * test is performed, such that the test passes.
++ */
++
++/**
++ * ckpt_obj_contained - test if shared objects are contained in checkpoint
++ * @ctx: checkpoint context
++ *
++ * Loops through all objects in the table and compares the number of
++ * references accumulated during checkpoint, with the reference count
++ * reported by the kernel.
++ *
++ * Return 1 if respective counts match for all objects, 0 otherwise.
++ */
++int ckpt_obj_contained(struct ckpt_ctx *ctx)
++{
++	struct ckpt_obj *obj;
++	struct hlist_node *node;
++
++	/* account for ctx->{file,logfile} (if in the table already) */
++	ckpt_obj_users_inc(ctx, ctx->file, 1);
++	if (ctx->logfile)
++		ckpt_obj_users_inc(ctx, ctx->logfile, 1);
++
++	hlist_for_each_entry(obj, node, &ctx->obj_hash->list, next) {
++		if (!obj->ops->ref_users)
++			continue;
++		if (obj->ops->ref_users(obj->ptr) != obj->users) {
++			ckpt_err(ctx, -EBUSY,
++				 "%(O)%(P)%(S)Usage leak (%d != %d)\n",
++				 obj->objref, obj->ptr, obj->ops->obj_name,
++				 obj->ops->ref_users(obj->ptr), obj->users);
++			return 0;
++		}
++	}
++
++	return 1;
++}
++
++/**
++ * ckpt_obj_visited - test that all shared objects were visited
++ * @ctx: checkpoint context
++ *
++ * Return 1 if all objects where visited, 0 otherwise.
++ */
++int ckpt_obj_visited(struct ckpt_ctx *ctx)
++{
++	struct ckpt_obj *obj;
++	struct hlist_node *node;
++
++	hlist_for_each_entry(obj, node, &ctx->obj_hash->list, next) {
++		if (!(obj->flags & CKPT_OBJ_VISITED)) {
++			ckpt_err(ctx, -EBUSY,
++				 "%(O)%(P)%(S)Leak: not visited\n",
++				 obj->objref, obj->ptr, obj->ops->obj_name);
++			return 0;
++		}
++	}
++
++	return 1;
++}
++
+ /**************************************************************************
+  * Restart
+  */
+diff --git a/kernel/checkpoint/process.c b/kernel/checkpoint/process.c
+index aabefb6..f17f040 100644
+--- a/kernel/checkpoint/process.c
++++ b/kernel/checkpoint/process.c
+@@ -244,6 +244,11 @@ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	return ret;
+ }
+ 
++int ckpt_collect_task(struct ckpt_ctx *ctx, struct task_struct *t)
++{
++	return 0;
++}
++
+ /***********************************************************************
+  * Restart
+  */
 -- 
 1.6.3.3
 
