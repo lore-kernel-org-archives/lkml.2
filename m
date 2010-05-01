@@ -1,174 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab0EAQrT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 12:47:19 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34574 "EHLO
+	id S1752743Ab0EARMg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 13:12:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21584 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab0EAQrR (ORCPT
+	with ESMTP id S1751835Ab0EARMa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 12:47:17 -0400
-Date: Sat, 1 May 2010 09:46:15 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH] watchdogs: fix several MODULE_PARM_DESC strings
-Message-Id: <20100501094615.06fc4972.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 1 May 2010 13:12:30 -0400
+MIME-Version: 1.0
+Message-ID: <3a62a058-7976-48d7-acd2-8c6a8312f10f@default>
+Date: Sat, 1 May 2010 10:10:45 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <4BD16D09.2030803@redhat.com>>
+ <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>>
+ <4BD1A74A.2050003@redhat.com>>
+ <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com>
+ <4BD1B626.7020702@redhat.com>>
+ <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>>
+ <4BD3377E.6010303@redhat.com>>
+ <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>>
+ <ce808441-fae6-4a33-8335-f7702740097a@default>>
+ <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz>
+ <4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default>
+ <4BDB026E.1030605@redhat.com> <4BDB18CE.2090608@goop.org
+ 4BDB2069.4000507@redhat.com>
+In-Reply-To: <4BDB2069.4000507@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090201.4BDC5B0B.00D0:SCFMA4539811,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090208.4BDC60C3.00F8:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+> Eventually you'll have to swap frontswap pages, or kill uncooperative
+> guests.  At which point all of the simplicity is gone.
 
-Fix MODULE_PARM_DESC() strings in several watchdog drivers.
-Some are simple as add a parenthesis.
-Others are problems from __stringify() being used on a
-variable name instead of a macro name, so the variable name
-is produced in the string instead of its build-time value.
-In these cases, create a macro for the value so that the
-module param description string is useful.
+OK, now I think I see the crux of the disagreement.
 
-Only pc87413_wdt has been built (due to toolchains).
+NO!  Frontswap on Xen+tmem never *never* _never_ NEVER results
+in host swapping.  Host swapping is evil.  Host swapping is
+the root of most of the bad reputation that memory overcommit
+has gotten from VMware customers.  Host swapping can't be
+avoided with some memory overcommit technologies (such as page
+sharing), but frontswap on Xen+tmem CAN and DOES avoid it.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>
----
-BTW, in ep93xx_wdt.c, I can't find where WATCHDOG_TIMEOUT is
-defined.  Can someone point me to it, please?
-(or does it not even build?)
+So, to summarize:
 
- drivers/watchdog/mpc8xxx_wdt.c |    2 +-
- drivers/watchdog/pc87413_wdt.c |    8 +++++---
- drivers/watchdog/pnx833x_wdt.c |   11 +++++++----
- drivers/watchdog/s3c2410_wdt.c |    6 +++---
- drivers/watchdog/shwdt.c       |    2 +-
- drivers/watchdog/wdt977.c      |    2 +-
- 6 files changed, 18 insertions(+), 13 deletions(-)
+1) You agreed that a synchronous interface for frontswap makes
+   sense for swap-to-in-kernel-compressed-RAM because it is
+   truly swapping to RAM.
+2) You have pointed out that an asynchronous interface for
+   frontswap makes more sense for KVM than a synchronous
+   interface, because KVM does host swapping.  Then you said
+   if you have an asynchronous interface anyway, the existing
+   swap code works just fine with no changes so frontswap
+   is not needed at all... for KVM.
+3) You have suggested that if Xen were more like KVM and required
+   host-swapping, then Xen doesn't need frontswap either.
 
---- lnx-2634-rc6.orig/drivers/watchdog/mpc8xxx_wdt.c
-+++ lnx-2634-rc6/drivers/watchdog/mpc8xxx_wdt.c
-@@ -53,7 +53,7 @@ static int mpc8xxx_wdt_init_late(void);
- static u16 timeout = 0xffff;
- module_param(timeout, ushort, 0);
- MODULE_PARM_DESC(timeout,
--	"Watchdog timeout in ticks. (0<timeout<65536, default=65535");
-+	"Watchdog timeout in ticks. (0<timeout<65536, default=65535)");
- 
- static int reset = 1;
- module_param(reset, bool, 0);
---- lnx-2634-rc6.orig/drivers/watchdog/pc87413_wdt.c
-+++ lnx-2634-rc6/drivers/watchdog/pc87413_wdt.c
-@@ -53,7 +53,9 @@
- #define WDTO                0x11	/* Watchdog timeout register */
- #define WDCFG               0x12	/* Watchdog config register */
- 
--static int io = 0x2E;			/* Address used on Portwell Boards */
-+#define IO_DEFAULT	0x2E		/* Address used on Portwell Boards */
-+
-+static int io = IO_DEFAULT;
- 
- static int timeout = DEFAULT_TIMEOUT;	/* timeout value */
- static unsigned long timer_enabled;	/* is the timer enabled? */
-@@ -583,12 +585,12 @@ MODULE_LICENSE("GPL");
- MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
- 
- module_param(io, int, 0);
--MODULE_PARM_DESC(io, MODNAME " I/O port (default: " __MODULE_STRING(io) ").");
-+MODULE_PARM_DESC(io, MODNAME " I/O port (default: " __MODULE_STRING(IO_DEFAULT) ").");
- 
- module_param(timeout, int, 0);
- MODULE_PARM_DESC(timeout,
- 		"Watchdog timeout in minutes (default="
--				__MODULE_STRING(timeout) ").");
-+				__MODULE_STRING(DEFAULT_TIMEOUT) ").");
- 
- module_param(nowayout, int, 0);
- MODULE_PARM_DESC(nowayout,
---- lnx-2634-rc6.orig/drivers/watchdog/pnx833x_wdt.c
-+++ lnx-2634-rc6/drivers/watchdog/pnx833x_wdt.c
-@@ -33,6 +33,8 @@
- #define PFX "pnx833x: "
- #define WATCHDOG_TIMEOUT 30		/* 30 sec Maximum timeout */
- #define WATCHDOG_COUNT_FREQUENCY 68000000U /* Watchdog counts at 68MHZ. */
-+#define	PNX_WATCHDOG_TIMEOUT	(WATCHDOG_TIMEOUT * WATCHDOG_COUNT_FREQUENCY)
-+#define PNX_TIMEOUT_VALUE	2040000000U
- 
- /** CONFIG block */
- #define PNX833X_CONFIG                      (0x07000U)
-@@ -47,20 +49,21 @@
- static int pnx833x_wdt_alive;
- 
- /* Set default timeout in MHZ.*/
--static int pnx833x_wdt_timeout = (WATCHDOG_TIMEOUT * WATCHDOG_COUNT_FREQUENCY);
-+static int pnx833x_wdt_timeout = PNX_WATCHDOG_TIMEOUT;
- module_param(pnx833x_wdt_timeout, int, 0);
- MODULE_PARM_DESC(timeout, "Watchdog timeout in Mhz. (68Mhz clock), default="
--			__MODULE_STRING(pnx833x_wdt_timeout) "(30 seconds).");
-+			__MODULE_STRING(PNX_TIMEOUT_VALUE) "(30 seconds).");
- 
- static int nowayout = WATCHDOG_NOWAYOUT;
- module_param(nowayout, int, 0);
- MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
- 					__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
- 
--static int start_enabled = 1;
-+#define START_DEFAULT	1
-+static int start_enabled = START_DEFAULT;
- module_param(start_enabled, int, 0);
- MODULE_PARM_DESC(start_enabled, "Watchdog is started on module insertion "
--				"(default=" __MODULE_STRING(start_enabled) ")");
-+				"(default=" __MODULE_STRING(START_DEFAULT) ")");
- 
- static void pnx833x_wdt_start(void)
- {
---- lnx-2634-rc6.orig/drivers/watchdog/s3c2410_wdt.c
-+++ lnx-2634-rc6/drivers/watchdog/s3c2410_wdt.c
-@@ -63,7 +63,7 @@ module_param(nowayout,    int, 0);
- module_param(soft_noboot, int, 0);
- module_param(debug,	  int, 0);
- 
--MODULE_PARM_DESC(tmr_margin, "Watchdog tmr_margin in seconds. default="
-+MODULE_PARM_DESC(tmr_margin, "Watchdog tmr_margin in seconds. (default="
- 		__MODULE_STRING(CONFIG_S3C2410_WATCHDOG_DEFAULT_TIME) ")");
- MODULE_PARM_DESC(tmr_atboot,
- 		"Watchdog is started at boot time if set to 1, default="
-@@ -71,8 +71,8 @@ MODULE_PARM_DESC(tmr_atboot,
- MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
- 			__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
- MODULE_PARM_DESC(soft_noboot, "Watchdog action, set to 1 to ignore reboots, "
--			"0 to reboot (default depends on ONLY_TESTING)");
--MODULE_PARM_DESC(debug, "Watchdog debug, set to >1 for debug, (default 0)");
-+			"0 to reboot (default 0)");
-+MODULE_PARM_DESC(debug, "Watchdog debug, set to >1 for debug (default 0)");
- 
- static unsigned long open_lock;
- static struct device    *wdt_dev;	/* platform device attached to */
---- lnx-2634-rc6.orig/drivers/watchdog/wdt977.c
-+++ lnx-2634-rc6/drivers/watchdog/wdt977.c
-@@ -63,7 +63,7 @@ static	char expect_close;
- static	DEFINE_SPINLOCK(spinlock);
- 
- module_param(timeout, int, 0);
--MODULE_PARM_DESC(timeout, "Watchdog timeout in seconds (60..15300), default="
-+MODULE_PARM_DESC(timeout, "Watchdog timeout in seconds (60..15300, default="
- 				__MODULE_STRING(DEFAULT_TIMEOUT) ")");
- module_param(testmode, int, 0);
- MODULE_PARM_DESC(testmode, "Watchdog testmode (1 = no reboot), default=0");
---- lnx-2634-rc6.orig/drivers/watchdog/shwdt.c
-+++ lnx-2634-rc6/drivers/watchdog/shwdt.c
-@@ -496,7 +496,7 @@ MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
- module_param(clock_division_ratio, int, 0);
- MODULE_PARM_DESC(clock_division_ratio,
- 	"Clock division ratio. Valid ranges are from 0x5 (1.31ms) "
--	"to 0x7 (5.25ms). (default=" __MODULE_STRING(clock_division_ratio) ")");
-+	"to 0x7 (5.25ms). (default=" __MODULE_STRING(WTCSR_CKS_4096) ")");
- 
- module_param(heartbeat, int, 0);
- MODULE_PARM_DESC(heartbeat,
+BUT frontswap on Xen+tmem always truly swaps to RAM.
+
+So there are two users of frontswap for which the synchronous
+interface makes sense.  I believe there may be more in the
+future and you disagree but, as Jeremy said, "a general Linux
+principle is not to overdesign interfaces for hypothetical users,
+only for real needs."  We have demonstrated there is a need
+with at least two users so the debate is only whether the
+number of users is two or more than two.
+
+Frontswap is a very non-invasive patch and is very cleanly
+layered so that if it is not in the presence of either of 
+the intended "users", it can be turned off in many different
+ways with zero overhead (CONFIG'ed off) or extremely small overhead
+(frontswap_ops is never set; or frontswap_ops is set but the
+underlying hypervisor doesn't support it so frontswap_poolid
+never gets set).
+
+So... KVM doesn't need it and won't use it.  Do you, Avi, have
+any other objections as to why the frontswap patch shouldn't be
+accepted as is for the users that DO need it and WILL use it?
