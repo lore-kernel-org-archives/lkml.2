@@ -1,324 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932630Ab0EACzs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 22:55:48 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:58932 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759243Ab0EACyE (ORCPT
+	id S1759089Ab0EADW6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 23:22:58 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:37083 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab0EADW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 22:54:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=OEFKl15h7WZxOsXsdnpfhAJ95zQ2Sjl9Yf9HY0wrflIBjulkpSYcWjdzLGGva0WaEk
-         ZftpOxFpuZUPaBmbOp+Qh/lRnkN5i2WkhIZQYFMBw3yB2Yo33jEgCDP+MGmhSLBGBB7l
-         txOofekl0i99IlZ+RDYtyQgwF0qzQ1WsP5Hb0=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Will Deacon <will.deacon@arm.com>,
-       Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-       "K. Prasad" <prasad@linux.vnet.ibm.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>,
-       Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 5/8] hw-breakpoints: Change/Enforce some breakpoints policies
-Date: Sat,  1 May 2010 04:53:52 +0200
-Message-Id: <1272682436-10682-6-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1272682436-10682-1-git-send-regression-fweisbec@gmail.com>
-References: <1272682436-10682-1-git-send-regression-fweisbec@gmail.com>
+	Fri, 30 Apr 2010 23:22:56 -0400
+Message-Id: <20100501032014.406353538@vergenet.net>
+User-Agent: quilt/0.48-1
+Date: Sat, 01 May 2010 13:20:14 +1000
+Subject: [patch v2.2 0/4] IPVS full NAT support + netfilter 'ipvs' match support
+To: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, netfilter@vger.kernel.org
+From: Simon Horman <horms@verge.net.au>
+Cc: Wensong Zhang <wensong@linux-vs.org>, Julius Volz <julius.volz@gmail.com>,
+       Patrick McHardy <kaber@trash.net>,
+       "David S. Miller" <davem@davemloft.net>, Hannes Eder <heder@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current policies of breakpoints in x86 and SH are the following:
+[re-reposting without bogus headers that vger dislikes]
 
-- task bound breakpoints can only break on userspace addresses
-- cpu wide breakpoints can only break on kernel addresses
+This is a repost of a patch-series posted by Hannes Eder last Steptember.
+This is v2 of the patch series and I don't see any outstanding objections to
+it in the mailing list archives. I would like it considered for inclusion
+in the nf-next-2.6 kernel tree and iptables.
 
-The former rule prevents ptrace breakpoints to be set to trigger on
-kernel addresses, which is good. But as a side effect, we can't
-breakpoint on kernel addresses for task bound breakpoints.
+The original cover-email from Hannes follows.
+The diffstat output has been updated to reflect minor up-porting by me.
 
-The latter rule simply makes no sense, there is no reason why we
-can't set breakpoints on userspace while performing cpu bound
-profiles.
+From:	Hannes Eder <heder@google.com>
 
-We want the following new policies:
+The following series implements full NAT support for IPVS.  The
+approach is via a minimal change to IPVS (make friends with
+nf_conntrack) and adding a netfilter matcher, kernel- and user-space
+part, i.e. xt_ipvs and libxt_ipvs.
 
-- task bound breakpoint can set userspace address breakpoints, with
-no particular privilege required.
-- task bound breakpoints can set kernelspace address breakpoints but
-must be privileged to do that.
-- cpu bound breakpoints can do what they want as they are privileged
-already.
+Example usage:
 
-To implement these new policies, this patch checks if we are dealing
-with a kernel address breakpoint, if so and if the exclude_kernel
-parameter is set, we tell the user that the breakpoint is invalid,
-which makes a good generic ptrace protection.
-If we don't have exclude_kernel, ensure the user has the right
-privileges as kernel breakpoints are quite sensitive (risk of
-trap recursion attacks and global performance impacts).
+% ipvsadm -A -t 192.168.100.30:80 -s rr
+% ipvsadm -a -t 192.168.100.30:80 -r 192.168.10.20:80 -m
+# ...
 
-[ Paul Mundt: keep addr space check for sh signal delivery and fix
-  double function declaration]
+# Source NAT for VIP 192.168.100.30:80
+% iptables -t nat -A POSTROUTING -m ipvs --vaddr 192.168.100.30/32 \
+> --vport 80 -j SNAT --to-source 192.168.10.10
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-Cc: K. Prasad <prasad@linux.vnet.ibm.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
----
- arch/sh/include/asm/hw_breakpoint.h  |    5 +--
- arch/sh/kernel/hw_breakpoint.c       |   34 +++++----------------------
- arch/x86/include/asm/hw_breakpoint.h |    5 +--
- arch/x86/kernel/hw_breakpoint.c      |   41 +++++-----------------------------
- kernel/hw_breakpoint.c               |   26 +++++++++++++++++++-
- 5 files changed, 41 insertions(+), 70 deletions(-)
+or SNAT-ing only a specific real server:
 
-diff --git a/arch/sh/include/asm/hw_breakpoint.h b/arch/sh/include/asm/hw_breakpoint.h
-index 965dd78..382bad9 100644
---- a/arch/sh/include/asm/hw_breakpoint.h
-+++ b/arch/sh/include/asm/hw_breakpoint.h
-@@ -47,9 +47,8 @@ struct pmu;
- #define HBP_NUM		2
- 
- /* arch/sh/kernel/hw_breakpoint.c */
--extern int arch_check_va_in_userspace(unsigned long va, u16 hbp_len);
--extern int arch_validate_hwbkpt_settings(struct perf_event *bp,
--					 struct task_struct *tsk);
-+extern int arch_check_bp_in_kernelspace(struct perf_event *bp);
-+extern int arch_validate_hwbkpt_settings(struct perf_event *bp);
- extern int hw_breakpoint_exceptions_notify(struct notifier_block *unused,
- 					   unsigned long val, void *data);
- 
-diff --git a/arch/sh/kernel/hw_breakpoint.c b/arch/sh/kernel/hw_breakpoint.c
-index 675eea7..1f2cf62 100644
---- a/arch/sh/kernel/hw_breakpoint.c
-+++ b/arch/sh/kernel/hw_breakpoint.c
-@@ -120,25 +120,16 @@ static int get_hbp_len(u16 hbp_len)
- }
- 
- /*
-- * Check for virtual address in user space.
-- */
--int arch_check_va_in_userspace(unsigned long va, u16 hbp_len)
--{
--	unsigned int len;
--
--	len = get_hbp_len(hbp_len);
--
--	return (va <= TASK_SIZE - len);
--}
--
--/*
-  * Check for virtual address in kernel space.
-  */
--static int arch_check_va_in_kernelspace(unsigned long va, u8 hbp_len)
-+int arch_check_bp_in_kernelspace(struct perf_event *bp)
- {
- 	unsigned int len;
-+	unsigned long va;
-+	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
- 
--	len = get_hbp_len(hbp_len);
-+	va = info->address;
-+	len = get_hbp_len(info->len);
- 
- 	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
- }
-@@ -226,8 +217,7 @@ static int arch_build_bp_info(struct perf_event *bp)
- /*
-  * Validate the arch-specific HW Breakpoint register settings
-  */
--int arch_validate_hwbkpt_settings(struct perf_event *bp,
--				  struct task_struct *tsk)
-+int arch_validate_hwbkpt_settings(struct perf_event *bp)
- {
- 	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
- 	unsigned int align;
-@@ -270,15 +260,6 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp,
- 	if (info->address & align)
- 		return -EINVAL;
- 
--	/* Check that the virtual address is in the proper range */
--	if (tsk) {
--		if (!arch_check_va_in_userspace(info->address, info->len))
--			return -EFAULT;
--	} else {
--		if (!arch_check_va_in_kernelspace(info->address, info->len))
--			return -EFAULT;
--	}
--
- 	return 0;
- }
- 
-@@ -363,8 +344,7 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
- 		perf_bp_event(bp, args->regs);
- 
- 		/* Deliver the signal to userspace */
--		if (arch_check_va_in_userspace(bp->attr.bp_addr,
--					       bp->attr.bp_len)) {
-+		if (!arch_check_bp_in_kernelspace(bp)) {
- 			siginfo_t info;
- 
- 			info.si_signo = args->signr;
-diff --git a/arch/x86/include/asm/hw_breakpoint.h b/arch/x86/include/asm/hw_breakpoint.h
-index 2a1bd8f..c77a5a6 100644
---- a/arch/x86/include/asm/hw_breakpoint.h
-+++ b/arch/x86/include/asm/hw_breakpoint.h
-@@ -44,9 +44,8 @@ struct arch_hw_breakpoint {
- struct perf_event;
- struct pmu;
- 
--extern int arch_check_va_in_userspace(unsigned long va, u8 hbp_len);
--extern int arch_validate_hwbkpt_settings(struct perf_event *bp,
--					 struct task_struct *tsk);
-+extern int arch_check_bp_in_kernelspace(struct perf_event *bp);
-+extern int arch_validate_hwbkpt_settings(struct perf_event *bp);
- extern int hw_breakpoint_exceptions_notify(struct notifier_block *unused,
- 					   unsigned long val, void *data);
- 
-diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-index d6cc065..a8f1b80 100644
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -189,25 +189,16 @@ static int get_hbp_len(u8 hbp_len)
- }
- 
- /*
-- * Check for virtual address in user space.
-- */
--int arch_check_va_in_userspace(unsigned long va, u8 hbp_len)
--{
--	unsigned int len;
--
--	len = get_hbp_len(hbp_len);
--
--	return (va <= TASK_SIZE - len);
--}
--
--/*
-  * Check for virtual address in kernel space.
-  */
--static int arch_check_va_in_kernelspace(unsigned long va, u8 hbp_len)
-+int arch_check_bp_in_kernelspace(struct perf_event *bp)
- {
- 	unsigned int len;
-+	unsigned long va;
-+	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
- 
--	len = get_hbp_len(hbp_len);
-+	va = info->address;
-+	len = get_hbp_len(info->len);
- 
- 	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
- }
-@@ -300,8 +291,7 @@ static int arch_build_bp_info(struct perf_event *bp)
- /*
-  * Validate the arch-specific HW Breakpoint register settings
-  */
--int arch_validate_hwbkpt_settings(struct perf_event *bp,
--				  struct task_struct *tsk)
-+int arch_validate_hwbkpt_settings(struct perf_event *bp)
- {
- 	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
- 	unsigned int align;
-@@ -314,16 +304,6 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp,
- 
- 	ret = -EINVAL;
- 
--	if (info->type == X86_BREAKPOINT_EXECUTE)
--		/*
--		 * Ptrace-refactoring code
--		 * For now, we'll allow instruction breakpoint only for user-space
--		 * addresses
--		 */
--		if ((!arch_check_va_in_userspace(info->address, info->len)) &&
--			info->len != X86_BREAKPOINT_EXECUTE)
--			return ret;
--
- 	switch (info->len) {
- 	case X86_BREAKPOINT_LEN_1:
- 		align = 0;
-@@ -350,15 +330,6 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp,
- 	if (info->address & align)
- 		return -EINVAL;
- 
--	/* Check that the virtual address is in the proper range */
--	if (tsk) {
--		if (!arch_check_va_in_userspace(info->address, info->len))
--			return -EFAULT;
--	} else {
--		if (!arch_check_va_in_kernelspace(info->address, info->len))
--			return -EFAULT;
--	}
--
- 	return 0;
- }
- 
-diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
-index 9ed9ae3..89e8a05 100644
---- a/kernel/hw_breakpoint.c
-+++ b/kernel/hw_breakpoint.c
-@@ -308,6 +308,28 @@ int dbg_release_bp_slot(struct perf_event *bp)
- 	return 0;
- }
- 
-+static int validate_hw_breakpoint(struct perf_event *bp)
-+{
-+	int ret;
-+
-+	ret = arch_validate_hwbkpt_settings(bp);
-+	if (ret)
-+		return ret;
-+
-+	if (arch_check_bp_in_kernelspace(bp)) {
-+		if (bp->attr.exclude_kernel)
-+			return -EINVAL;
-+		/*
-+		 * Don't let unprivileged users set a breakpoint in the trap
-+		 * path to avoid trap recursion attacks.
-+		 */
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+	}
-+
-+	return 0;
-+}
-+
- int register_perf_hw_breakpoint(struct perf_event *bp)
- {
- 	int ret;
-@@ -316,7 +338,7 @@ int register_perf_hw_breakpoint(struct perf_event *bp)
- 	if (ret)
- 		return ret;
- 
--	ret = arch_validate_hwbkpt_settings(bp, bp->ctx->task);
-+	ret = validate_hw_breakpoint(bp);
- 
- 	/* if arch_validate_hwbkpt_settings() fails then release bp slot */
- 	if (ret)
-@@ -363,7 +385,7 @@ int modify_user_hw_breakpoint(struct perf_event *bp, struct perf_event_attr *att
- 	if (attr->disabled)
- 		goto end;
- 
--	err = arch_validate_hwbkpt_settings(bp, bp->ctx->task);
-+	err = validate_hw_breakpoint(bp);
- 	if (!err)
- 		perf_event_enable(bp);
- 
--- 
-1.6.2.3
+% iptables -t nat -A POSTROUTING --dst 192.168.11.20 \
+> -m ipvs --vaddr 192.168.100.30/32 -j SNAT --to-source 192.168.10.10
+
+
+First of all, thanks for all the feedback.  This is the changelog for v2:
+
+- Make ip_vs_ftp work again.  Setup nf_conntrack expectations for
+  related data connections (based on Julian's patch see
+  http://www.ssi.bg/~ja/nfct/) and let nf_conntrack/nf_nat do the
+  packet mangling and the TCP sequence adjusting.
+
+  This change rises the question how to deal with ip_vs_sync?  Does it
+  work together with conntrackd?  Wild idea: what about getting rid of
+  ip_vs_sync and piggy packing all on nf_conntrack and use conntrackd?
+
+  Any comments on this?
+
+- xt_ipvs: add new rule '--vportctl port' to match the VIP port of the
+  controlling connection, e.g. port 21 for FTP.  Can be used to match
+  a related data connection for FTP:
+
+  # SNAT FTP control connection
+  % iptables -t nat -A POSTROUTING -m ipvs --vaddr 192.168.100.30/32 \
+  > --vport 21 -j SNAT --to-source 192.168.10.10
+  
+  # SNAT FTP passive data connection
+  % iptables -t nat -A POSTROUTING -m ipvs --vaddr 192.168.100.30/32 \
+  > --vportctl 21 -j SNAT --to-source 192.168.10.10
+
+- xt_ipvs: use 'par->family' instead of 'skb->protocol'
+
+- xt_ipvs: add ipvs_mt_check and restrict to NFPROTO_IPV4 and NFPROTO_IPV6
+
+- Call nf_conntrack_alter_reply(), so helper lookup is performed based
+  on the changed tuple.
+
+Changes to the linux kernel (rebased to next-20090925):
+
+Hannes Eder (3):
+      netfilter: xt_ipvs (netfilter matcher for IPVS)
+      IPVS: make friends with nf_conntrack
+      IPVS: make FTP work with full NAT support
+
+
+ include/linux/netfilter/xt_ipvs.h |   25 +++++
+ include/net/ip_vs.h               |    2 
+ net/netfilter/Kconfig             |    9 ++
+ net/netfilter/Makefile            |    1 
+ net/netfilter/ipvs/Kconfig        |    4 -
+ net/netfilter/ipvs/ip_vs_app.c    |   43 ---------
+ net/netfilter/ipvs/ip_vs_core.c   |   37 -------
+ net/netfilter/ipvs/ip_vs_ftp.c    |  178 ++++++++++++++++++++++++++++++++---
+ net/netfilter/ipvs/ip_vs_proto.c  |    1 
+ net/netfilter/ipvs/ip_vs_xmit.c   |   30 ++++++
+ net/netfilter/xt_ipvs.c           |  187 +++++++++++++++++++++++++++++++++++++
+ 11 files changed, 418 insertions(+), 99 deletions(-)
+ create mode 100644 include/linux/netfilter/xt_ipvs.h
+ create mode 100644 net/netfilter/xt_ipvs.c
+
+
+Changes to iptables (relative to 1.4.5):
+
+Hannes Eder (1):
+      libxt_ipvs: user-space lib for netfilter matcher xt_ipvs
+
+ configure.ac                      |   10 1
+ extensions/libxt_ipvs.c           |  365 +++++++++++++++++++++++++++++++++++++
+ extensions/libxt_ipvs.man         |   24 ++
+ include/linux/netfilter/xt_ipvs.h |   25 +++
+ 4 files changed, 422 insertions(+), 2 deletions(-)
+ create mode 100644 extensions/libxt_ipvs.c
+ create mode 100644 extensions/libxt_ipvs.man
+ create mode 100644 include/linux/netfilter/xt_ipvs.h
 
