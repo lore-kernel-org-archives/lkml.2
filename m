@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab0EAO1O (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:27:14 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63133 "EHLO
+	id S1753851Ab0EAO0b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:26:31 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63059 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753354Ab0EAO0u (ORCPT
+	with ESMTP id S1753739Ab0EAO0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:26:50 -0400
+	Sat, 1 May 2010 10:26:25 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
        Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
-       Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH v21 030/100] c/r: introduce PF_RESTARTING, and skip notification on exit
-Date: Sat,  1 May 2010 10:15:12 -0400
-Message-Id: <1272723382-19470-31-git-send-email-orenl@cs.columbia.edu>
+       linux-fsdevel@vger.kernel.org
+Subject: [PATCH v21 019/100] Make file_pos_read/write() public and export kernel_write()
+Date: Sat,  1 May 2010 10:15:01 -0400
+Message-Id: <1272723382-19470-20-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -24,99 +24,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To restore zombie's we will create the a task, that, on its turn to
-run, calls do_exit(). Unlike normal tasks that exit, we need to
-prevent notification side effects that send signals to other
-processes, e.g. parent (SIGCHLD) or child tasks (per child's request).
+These three are used in a subsequent patch to allow the kernel c/r
+code to call vfs_read/write() to read and write data to and from the
+checkpoint image.
 
-There are three main cases for such notifications:
+This patch makes the following changes:
 
-1) do_notify_parent(): parent of a process is notified about a change
- in status (e.g. become zombie, reparent, etc). If parent ignores,
- then mark child for immediate release (skip zombie).
+1) Move kernel_write() from fs/splice.c to fs/exec.c to be near
+kernel_read()
 
-2) kill_orphan_pgrp(): a process group that becomes orphaned will
- signal stopped jobs (HUP then CONT).
+2) Make kernel_read/write() iterate if they face partial reads or
+writes, and retry if they face -EAGAIN.
 
-3) forget_original_parent(): children of a process are signaled (per
- request) with p->pdeath_signal
+3) Adjust prototypes of kernel_read/write() to use size_t and ssize_t
 
-Remember that restoring signal state (for any restarting task) must
-complete _before_ it is allowed to resume execution, and not during
-the resume. Otherwise, a running task may send a signal to another
-task that hasn't restored yet, so the new signal will be lost
-soon-after.
+4) Move file_pos_read/write() to include/linux/fs.h
 
-I considered two possible way to address this:
+Changelog [ckpt-v21]
+  - Introduce kernel_write(), fix kernel_read()
 
-1. Add another sync point to restart: all tasks will first restore
-their state without signals (all signals blocked), and zombies call
-do_exit(). A sync point then will ensure that all zombies are gone and
-their effects done. Then all tasks restore their signal state (and
-mask), and sync (new point) again. Only then they may resume
-execution.
-The main disadvantage is the added complexity and inefficiency,
-for no good reason.
-
-2. Introduce PF_RESTARTING: mark all restarting tasks with a new flag,
-and teach the above three notifications to skip sending the signal if
-theis flag is set.
-The main advantage is simplicity and completeness. Also, such a flag
-may to be useful later on. This the method implemented.
-
-Changelog [ckpt-v19-rc3]:
-  - Rebase to kernel 2.6.33
-Changelog [ckpt-v19-rc1]:
-  - In reparent_thread() test for PF_RESTARTING on parent
-
-Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- kernel/exit.c   |    6 +++++-
- kernel/signal.c |    4 ++++
- 2 files changed, 9 insertions(+), 1 deletions(-)
+ fs/exec.c          |   69 ++++++++++++++++++++++++++++++++++++++++++++++++----
+ fs/read_write.c    |   10 -------
+ fs/splice.c        |   17 +------------
+ include/linux/fs.h |   13 +++++++++-
+ 4 files changed, 77 insertions(+), 32 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index d9da011..0ef6685 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -304,6 +304,10 @@ kill_orphaned_pgrp(struct task_struct *tsk, struct task_struct *parent)
- 	struct pid *pgrp = task_pgrp(tsk);
- 	struct task_struct *ignored_task = tsk;
+diff --git a/fs/exec.c b/fs/exec.c
+index 49cdaa1..7bacb6a 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -693,23 +693,82 @@ exit:
+ }
+ EXPORT_SYMBOL(open_exec);
  
-+	/* restarting zombie doesn't trigger signals */
-+	if (tsk->flags & PF_RESTARTING)
-+		return;
+-int kernel_read(struct file *file, loff_t offset,
+-		char *addr, unsigned long count)
++static ssize_t _kernel_read(struct file *file, loff_t offset,
++			    char __user *ubuf, size_t count)
+ {
+-	mm_segment_t old_fs;
++	ssize_t nread;
++	size_t nleft;
+ 	loff_t pos = offset;
+-	int result;
 +
- 	if (!parent)
- 		 /* exit: our father is in a different pgrp than
- 		  * we are and we were the only connection outside.
-@@ -793,7 +797,7 @@ static void forget_original_parent(struct task_struct *father)
- 				BUG_ON(task_ptrace(t));
- 				t->parent = t->real_parent;
- 			}
--			if (t->pdeath_signal)
-+			if (t->pdeath_signal && !(t->flags & PF_RESTARTING))
- 				group_send_sig_info(t->pdeath_signal,
- 						    SEND_SIG_NOINFO, t);
- 		} while_each_thread(p, t);
-diff --git a/kernel/signal.c b/kernel/signal.c
-index dbd7fe0..be447c8 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1449,6 +1449,10 @@ int do_notify_parent(struct task_struct *tsk, int sig)
- 	BUG_ON(!task_ptrace(tsk) &&
- 	       (tsk->group_leader != tsk || !thread_group_empty(tsk)));
++	for (nleft = count; nleft; nleft -= nread) {
++		nread = vfs_read(file, ubuf, nleft, &pos);
++		if (nread <= 0) {
++			if (nread == -EAGAIN) {
++				nread = 0;
++				continue;
++			} else if (nread == 0)
++				break;
++			else
++				return nread;
++		}
++		ubuf += nread;
++	}
++	return count - nleft;
++}
++
++ssize_t kernel_read(struct file *file, loff_t offset,
++		    char *addr, size_t count)
++{
++	mm_segment_t old_fs;
++	ssize_t result;
  
-+	/* restarting zombie doesn't notify parent */
-+	if (tsk->flags & PF_RESTARTING)
-+		return ret;
+ 	old_fs = get_fs();
+ 	set_fs(get_ds());
+ 	/* The cast to a user pointer is valid due to the set_fs() */
+-	result = vfs_read(file, (void __user *)addr, count, &pos);
++	result = _kernel_read(file, offset, (void __user *)addr, count);
+ 	set_fs(old_fs);
+ 	return result;
+ }
+ 
+ EXPORT_SYMBOL(kernel_read);
+ 
++static ssize_t _kernel_write(struct file *file, loff_t offset,
++			     const char __user *ubuf, size_t count)
++{
++	ssize_t nwrite;
++	size_t nleft;
++	loff_t pos = offset;
 +
- 	info.si_signo = sig;
- 	info.si_errno = 0;
- 	/*
++	for (nleft = count; nleft; nleft -= nwrite) {
++		nwrite = vfs_write(file, ubuf, nleft, &pos);
++		if (nwrite < 0) {
++			if (nwrite == -EAGAIN) {
++				nwrite = 0;
++				continue;
++			} else
++				return nwrite;
++		}
++		ubuf += nwrite;
++	}
++	return count - nleft;
++}
++
++ssize_t kernel_write(struct file *file, loff_t offset,
++		     const char *addr, size_t count)
++{
++	mm_segment_t old_fs;
++	ssize_t result;
++
++	old_fs = get_fs();
++	set_fs(get_ds());
++	/* The cast to a user pointer is valid due to the set_fs() */
++	result = _kernel_write(file, offset, (void __user *)addr, count);
++	set_fs(old_fs);
++	return result;
++}
++
++EXPORT_SYMBOL(kernel_write);
++
+ static int exec_mmap(struct mm_struct *mm)
+ {
+ 	struct task_struct *tsk;
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 113386d..67b7d83 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -361,16 +361,6 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
+ 
+ EXPORT_SYMBOL(vfs_write);
+ 
+-static inline loff_t file_pos_read(struct file *file)
+-{
+-	return file->f_pos;
+-}
+-
+-static inline void file_pos_write(struct file *file, loff_t pos)
+-{
+-	file->f_pos = pos;
+-}
+-
+ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+ {
+ 	struct file *file;
+diff --git a/fs/splice.c b/fs/splice.c
+index 9313b61..188e17d 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -538,21 +538,6 @@ static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
+ 	return res;
+ }
+ 
+-static ssize_t kernel_write(struct file *file, const char *buf, size_t count,
+-			    loff_t pos)
+-{
+-	mm_segment_t old_fs;
+-	ssize_t res;
+-
+-	old_fs = get_fs();
+-	set_fs(get_ds());
+-	/* The cast to a user pointer is valid due to the set_fs() */
+-	res = vfs_write(file, (const char __user *)buf, count, &pos);
+-	set_fs(old_fs);
+-
+-	return res;
+-}
+-
+ ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
+ 				 struct pipe_inode_info *pipe, size_t len,
+ 				 unsigned int flags)
+@@ -1011,7 +996,7 @@ static int write_pipe_buf(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+ 		return ret;
+ 
+ 	data = buf->ops->map(pipe, buf, 0);
+-	ret = kernel_write(sd->u.file, data + buf->offset, sd->len, sd->pos);
++	ret = kernel_write(sd->u.file, sd->pos, data + buf->offset, sd->len);
+ 	buf->ops->unmap(pipe, buf, data);
+ 
+ 	return ret;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 39d57bc..9e8b171 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1548,6 +1548,16 @@ ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
+ 				struct iovec *fast_pointer,
+ 				struct iovec **ret_pointer);
+ 
++static inline loff_t file_pos_read(struct file *file)
++{
++	return file->f_pos;
++}
++
++static inline void file_pos_write(struct file *file, loff_t pos)
++{
++	file->f_pos = pos;
++}
++
+ extern ssize_t vfs_read(struct file *, char __user *, size_t, loff_t *);
+ extern ssize_t vfs_write(struct file *, const char __user *, size_t, loff_t *);
+ extern ssize_t vfs_readv(struct file *, const struct iovec __user *,
+@@ -2127,7 +2137,8 @@ extern struct file *do_filp_open(int dfd, const char *pathname,
+ 		int open_flag, int mode, int acc_mode);
+ extern int may_open(struct path *, int, int);
+ 
+-extern int kernel_read(struct file *, loff_t, char *, unsigned long);
++extern ssize_t kernel_read(struct file *, loff_t, char *, size_t);
++extern ssize_t kernel_write(struct file *, loff_t, const char *, size_t);
+ extern struct file * open_exec(const char *);
+  
+ /* fs/dcache.c -- generic fs support functions */
 -- 
 1.6.3.3
 
