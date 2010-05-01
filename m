@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760044Ab0EACy4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 22:54:56 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63375 "EHLO
+	id S1758896Ab0EACzM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 22:55:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41533 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759293Ab0EACyG (ORCPT
+	with ESMTP id S1759346Ab0EACyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 22:54:06 -0400
+	Fri, 30 Apr 2010 22:54:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=s2DCFH7erFi6PISstey2/BcVFzUiNZVIbVQXQE5bIfXRFAevjGr/ZB4C4eDQbuVAUu
-         idxBxGv2vfCHRJlR/KJT7CxRJTTxCDBmxQ5u4RTiWcTXiW5oF2hiYgcSdxAkTPyvgEEn
-         vbLHxs6jegDJySe8PQVGWoitBBLA0lG1tW2WY=
+        b=Gz9tsyIs40TusDP1MkjEHrxYiQFM2vDdVcN5m3YPIAuSu3LJZ/Z2V2oTb1Ly7ZHZxq
+         D/sqA4mbOaJ78nmzu2Nmu71ZNvaA9wGtIW1iccHkKlvaRHu6o/LDVTkVGcS1TxrU8pQw
+         DO6t+aTmAHYZ3kvyGut2Sl9eV/tbhXCJstCUo=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -23,9 +23,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        "K. Prasad" <prasad@linux.vnet.ibm.com>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 6/8] hw-breakpoints: Separate constraint space for data and instruction breakpoints
-Date: Sat,  1 May 2010 04:53:53 +0200
-Message-Id: <1272682436-10682-7-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH 7/8] hw-breakpoints: Handle breakpoint weight in allocation constraints
+Date: Sat,  1 May 2010 04:53:54 +0200
+Message-Id: <1272682436-10682-8-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1272682436-10682-1-git-send-regression-fweisbec@gmail.com>
@@ -34,29 +34,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two outstanding fashions for archs to implement hardware
-breakpoints.
+Depending on their nature and on what an arch supports, breakpoints
+may consume more than one address register. For example a simple
+absolute address match usually only requires one address register.
+But an address range match may consume two registers.
 
-The first is to separate breakpoint address pattern definition
-space between data and instruction breakpoints. We then have
-typically distinct instruction address breakpoint registers
-and data address breakpoint registers, delivered with
-separate control registers for data and instruction breakpoints
-as well. This is the case of PowerPc and ARM for example.
+Currently our slot allocation constraints, that tend to reflect the
+limited arch's resources, always consider that a breakpoint consumes
+one slot.
 
-The second consists in having merged breakpoint address space
-definition between data and instruction breakpoint. Address
-registers can host either instruction or data address and
-the access mode for the breakpoint is defined in a control
-register. This is the case of x86 and Super H.
-
-This patch adds a new CONFIG_HAVE_MIXED_BREAKPOINTS_REGS config
-that archs can select if they belong to the second case. Those
-will have their slot allocation merged for instructions and
-data breakpoints.
-
-The others will have a separate slot tracking between data and
-instruction breakpoints.
+Then provide a way for archs to tell us the weight of a breakpoint
+through a new hw_breakpoint_weight() helper. This weight will be
+computed against the generic allocation constraints instead of
+a constant value.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Acked-by: Paul Mundt <lethal@linux-sh.org>
@@ -67,292 +57,156 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
 ---
- arch/Kconfig                  |   11 +++++
- arch/sh/Kconfig               |    1 +
- arch/x86/Kconfig              |    1 +
- include/linux/hw_breakpoint.h |    9 +++-
- kernel/hw_breakpoint.c        |   86 ++++++++++++++++++++++++++++-------------
- 5 files changed, 78 insertions(+), 30 deletions(-)
+ kernel/hw_breakpoint.c |   63 ++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 45 insertions(+), 18 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index f06010f..acda512 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -137,6 +137,17 @@ config HAVE_HW_BREAKPOINT
- 	bool
- 	depends on PERF_EVENTS
- 
-+config HAVE_MIXED_BREAKPOINTS_REGS
-+	bool
-+	depends on HAVE_HW_BREAKPOINT
-+	help
-+	  Depending on the arch implementation of hardware breakpoints,
-+	  some of them have separate registers for data and instruction
-+	  breakpoints addresses, others have mixed registers to store
-+	  them but define the access type in a control register.
-+	  Select this option if your arch implements breakpoints under the
-+	  latter fashion.
-+
- config HAVE_USER_RETURN_NOTIFIER
- 	bool
- 
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index 8d90564..e6d8ab5 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -44,6 +44,7 @@ config SUPERH32
- 	select HAVE_FUNCTION_GRAPH_TRACER
- 	select HAVE_ARCH_KGDB
- 	select HAVE_HW_BREAKPOINT
-+	select HAVE_MIXED_BREAKPOINTS_REGS
- 	select PERF_EVENTS if HAVE_HW_BREAKPOINT
- 	select ARCH_HIBERNATION_POSSIBLE if MMU
- 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 97a95df..01177dc 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -53,6 +53,7 @@ config X86
- 	select HAVE_KERNEL_LZMA
- 	select HAVE_KERNEL_LZO
- 	select HAVE_HW_BREAKPOINT
-+	select HAVE_MIXED_BREAKPOINTS_REGS
- 	select PERF_EVENTS
- 	select ANON_INODES
- 	select HAVE_ARCH_KMEMCHECK
-diff --git a/include/linux/hw_breakpoint.h b/include/linux/hw_breakpoint.h
-index a0aa5a9..7e88990 100644
---- a/include/linux/hw_breakpoint.h
-+++ b/include/linux/hw_breakpoint.h
-@@ -9,9 +9,12 @@ enum {
- };
- 
- enum {
--	HW_BREAKPOINT_R = 1,
--	HW_BREAKPOINT_W = 2,
--	HW_BREAKPOINT_X = 4,
-+	HW_BREAKPOINT_EMPTY	= 0,
-+	HW_BREAKPOINT_R		= 1,
-+	HW_BREAKPOINT_W		= 2,
-+	HW_BREAKPOINT_RW	= HW_BREAKPOINT_R | HW_BREAKPOINT_W,
-+	HW_BREAKPOINT_X		= 4,
-+	HW_BREAKPOINT_INVALID   = HW_BREAKPOINT_RW | HW_BREAKPOINT_X,
- };
- 
- #ifdef __KERNEL__
 diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
-index 89e8a05..8ead134 100644
+index 8ead134..974498b 100644
 --- a/kernel/hw_breakpoint.c
 +++ b/kernel/hw_breakpoint.c
-@@ -45,18 +45,28 @@
- 
- #include <linux/hw_breakpoint.h>
- 
-+enum bp_type_idx {
-+	TYPE_INST 	= 0,
-+#ifdef CONFIG_HAVE_MIXED_BREAKPOINTS_REGS
-+	TYPE_DATA	= 0,
-+#else
-+	TYPE_DATA	= 1,
-+#endif
-+	TYPE_MAX
-+};
-+
- /*
-  * Constraints data
-  */
- 
- /* Number of pinned cpu breakpoints in a cpu */
--static DEFINE_PER_CPU(unsigned int, nr_cpu_bp_pinned);
-+static DEFINE_PER_CPU(unsigned int, nr_cpu_bp_pinned[TYPE_MAX]);
- 
- /* Number of pinned task breakpoints in a cpu */
--static DEFINE_PER_CPU(unsigned int, nr_task_bp_pinned[HBP_NUM]);
-+static DEFINE_PER_CPU(unsigned int, nr_task_bp_pinned[TYPE_MAX][HBP_NUM]);
- 
- /* Number of non-pinned cpu/task breakpoints in a cpu */
--static DEFINE_PER_CPU(unsigned int, nr_bp_flexible);
-+static DEFINE_PER_CPU(unsigned int, nr_bp_flexible[TYPE_MAX]);
- 
- /* Gather the number of total pinned and un-pinned bp in a cpuset */
- struct bp_busy_slots {
-@@ -67,14 +77,22 @@ struct bp_busy_slots {
+@@ -77,6 +77,11 @@ struct bp_busy_slots {
  /* Serialize accesses to the above constraints */
  static DEFINE_MUTEX(nr_bp_mutex);
  
-+static inline enum bp_type_idx find_slot_idx(struct perf_event *bp)
++__weak int hw_breakpoint_weight(struct perf_event *bp)
 +{
-+	if (bp->attr.bp_type & HW_BREAKPOINT_RW)
-+		return TYPE_DATA;
-+
-+	return TYPE_INST;
++	return 1;
 +}
 +
- /*
-  * Report the maximum number of pinned breakpoints a task
-  * have in this cpu
-  */
--static unsigned int max_task_bp_pinned(int cpu)
-+static unsigned int max_task_bp_pinned(int cpu, enum bp_type_idx type)
+ static inline enum bp_type_idx find_slot_idx(struct perf_event *bp)
  {
- 	int i;
--	unsigned int *tsk_pinned = per_cpu(nr_task_bp_pinned, cpu);
-+	unsigned int *tsk_pinned = per_cpu(nr_task_bp_pinned[type], cpu);
- 
- 	for (i = HBP_NUM -1; i >= 0; i--) {
- 		if (tsk_pinned[i] > 0)
-@@ -84,7 +102,7 @@ static unsigned int max_task_bp_pinned(int cpu)
- 	return 0;
- }
- 
--static int task_bp_pinned(struct task_struct *tsk)
-+static int task_bp_pinned(struct task_struct *tsk, enum bp_type_idx type)
- {
- 	struct perf_event_context *ctx = tsk->perf_event_ctxp;
- 	struct list_head *list;
-@@ -105,7 +123,8 @@ static int task_bp_pinned(struct task_struct *tsk)
- 	 */
+ 	if (bp->attr.bp_type & HW_BREAKPOINT_RW)
+@@ -124,7 +129,7 @@ static int task_bp_pinned(struct task_struct *tsk, enum bp_type_idx type)
  	list_for_each_entry(bp, list, event_entry) {
  		if (bp->attr.type == PERF_TYPE_BREAKPOINT)
--			count++;
-+			if (find_slot_idx(bp) == type)
-+				count++;
+ 			if (find_slot_idx(bp) == type)
+-				count++;
++				count += hw_breakpoint_weight(bp);
  	}
  
  	raw_spin_unlock_irqrestore(&ctx->lock, flags);
-@@ -118,18 +137,19 @@ static int task_bp_pinned(struct task_struct *tsk)
-  * a given cpu (cpu > -1) or in all of them (cpu = -1).
-  */
- static void
--fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp)
-+fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
-+		    enum bp_type_idx type)
- {
- 	int cpu = bp->cpu;
- 	struct task_struct *tsk = bp->ctx->task;
+@@ -174,25 +179,40 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
+ }
  
- 	if (cpu >= 0) {
--		slots->pinned = per_cpu(nr_cpu_bp_pinned, cpu);
-+		slots->pinned = per_cpu(nr_cpu_bp_pinned[type], cpu);
- 		if (!tsk)
--			slots->pinned += max_task_bp_pinned(cpu);
-+			slots->pinned += max_task_bp_pinned(cpu, type);
- 		else
--			slots->pinned += task_bp_pinned(tsk);
--		slots->flexible = per_cpu(nr_bp_flexible, cpu);
-+			slots->pinned += task_bp_pinned(tsk, type);
-+		slots->flexible = per_cpu(nr_bp_flexible[type], cpu);
- 
- 		return;
- 	}
-@@ -137,16 +157,16 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp)
- 	for_each_online_cpu(cpu) {
- 		unsigned int nr;
- 
--		nr = per_cpu(nr_cpu_bp_pinned, cpu);
-+		nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
- 		if (!tsk)
--			nr += max_task_bp_pinned(cpu);
-+			nr += max_task_bp_pinned(cpu, type);
- 		else
--			nr += task_bp_pinned(tsk);
-+			nr += task_bp_pinned(tsk, type);
- 
- 		if (nr > slots->pinned)
- 			slots->pinned = nr;
- 
--		nr = per_cpu(nr_bp_flexible, cpu);
-+		nr = per_cpu(nr_bp_flexible[type], cpu);
- 
- 		if (nr > slots->flexible)
- 			slots->flexible = nr;
-@@ -156,14 +176,15 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp)
  /*
++ * For now, continue to consider flexible as pinned, until we can
++ * ensure no flexible event can ever be scheduled before a pinned event
++ * in a same cpu.
++ */
++static void
++fetch_this_slot(struct bp_busy_slots *slots, int weight)
++{
++	slots->pinned += weight;
++}
++
++/*
   * Add a pinned breakpoint for the given task in our constraint table
   */
--static void toggle_bp_task_slot(struct task_struct *tsk, int cpu, bool enable)
-+static void toggle_bp_task_slot(struct task_struct *tsk, int cpu, bool enable,
-+				enum bp_type_idx type)
+ static void toggle_bp_task_slot(struct task_struct *tsk, int cpu, bool enable,
+-				enum bp_type_idx type)
++				enum bp_type_idx type, int weight)
  {
  	unsigned int *tsk_pinned;
- 	int count = 0;
+-	int count = 0;
++	int old_count = 0;
++	int old_idx = 0;
++	int idx = 0;
  
--	count = task_bp_pinned(tsk);
-+	count = task_bp_pinned(tsk, type);
+-	count = task_bp_pinned(tsk, type);
++	old_count = task_bp_pinned(tsk, type);
++	old_idx = old_count - 1;
++	idx = old_idx + weight;
  
--	tsk_pinned = per_cpu(nr_task_bp_pinned, cpu);
-+	tsk_pinned = per_cpu(nr_task_bp_pinned[type], cpu);
+ 	tsk_pinned = per_cpu(nr_task_bp_pinned[type], cpu);
  	if (enable) {
- 		tsk_pinned[count]++;
- 		if (count > 0)
-@@ -178,7 +199,8 @@ static void toggle_bp_task_slot(struct task_struct *tsk, int cpu, bool enable)
- /*
+-		tsk_pinned[count]++;
+-		if (count > 0)
+-			tsk_pinned[count-1]--;
++		tsk_pinned[idx]++;
++		if (old_count > 0)
++			tsk_pinned[old_idx]--;
+ 	} else {
+-		tsk_pinned[count]--;
+-		if (count > 0)
+-			tsk_pinned[count-1]++;
++		tsk_pinned[idx]--;
++		if (old_count > 0)
++			tsk_pinned[old_idx]++;
+ 	}
+ }
+ 
+@@ -200,7 +220,8 @@ static void toggle_bp_task_slot(struct task_struct *tsk, int cpu, bool enable,
   * Add/remove the given breakpoint in our constraint table
   */
--static void toggle_bp_slot(struct perf_event *bp, bool enable)
-+static void
-+toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type)
+ static void
+-toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type)
++toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
++	       int weight)
  {
  	int cpu = bp->cpu;
  	struct task_struct *tsk = bp->ctx->task;
-@@ -186,20 +208,20 @@ static void toggle_bp_slot(struct perf_event *bp, bool enable)
+@@ -208,20 +229,20 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type)
  	/* Pinned counter task profiling */
  	if (tsk) {
  		if (cpu >= 0) {
--			toggle_bp_task_slot(tsk, cpu, enable);
-+			toggle_bp_task_slot(tsk, cpu, enable, type);
+-			toggle_bp_task_slot(tsk, cpu, enable, type);
++			toggle_bp_task_slot(tsk, cpu, enable, type, weight);
  			return;
  		}
  
  		for_each_online_cpu(cpu)
--			toggle_bp_task_slot(tsk, cpu, enable);
-+			toggle_bp_task_slot(tsk, cpu, enable, type);
+-			toggle_bp_task_slot(tsk, cpu, enable, type);
++			toggle_bp_task_slot(tsk, cpu, enable, type, weight);
  		return;
  	}
  
  	/* Pinned counter cpu profiling */
  	if (enable)
--		per_cpu(nr_cpu_bp_pinned, bp->cpu)++;
-+		per_cpu(nr_cpu_bp_pinned[type], bp->cpu)++;
+-		per_cpu(nr_cpu_bp_pinned[type], bp->cpu)++;
++		per_cpu(nr_cpu_bp_pinned[type], bp->cpu) += weight;
  	else
--		per_cpu(nr_cpu_bp_pinned, bp->cpu)--;
-+		per_cpu(nr_cpu_bp_pinned[type], bp->cpu)--;
+-		per_cpu(nr_cpu_bp_pinned[type], bp->cpu)--;
++		per_cpu(nr_cpu_bp_pinned[type], bp->cpu) -= weight;
  }
  
  /*
-@@ -246,14 +268,21 @@ static void toggle_bp_slot(struct perf_event *bp, bool enable)
- static int __reserve_bp_slot(struct perf_event *bp)
+@@ -269,6 +290,7 @@ static int __reserve_bp_slot(struct perf_event *bp)
  {
  	struct bp_busy_slots slots = {0};
-+	enum bp_type_idx type;
+ 	enum bp_type_idx type;
++	int weight;
  
--	fetch_bp_busy_slots(&slots, bp);
-+	/* Basic checks */
-+	if (bp->attr.bp_type == HW_BREAKPOINT_EMPTY ||
-+	    bp->attr.bp_type == HW_BREAKPOINT_INVALID)
-+		return -EINVAL;
+ 	/* Basic checks */
+ 	if (bp->attr.bp_type == HW_BREAKPOINT_EMPTY ||
+@@ -276,13 +298,16 @@ static int __reserve_bp_slot(struct perf_event *bp)
+ 		return -EINVAL;
+ 
+ 	type = find_slot_idx(bp);
++	weight = hw_breakpoint_weight(bp);
 +
-+	type = find_slot_idx(bp);
-+	fetch_bp_busy_slots(&slots, bp, type);
+ 	fetch_bp_busy_slots(&slots, bp, type);
++	fetch_this_slot(&slots, weight);
  
  	/* Flexible counters need to keep at least one slot */
- 	if (slots.pinned + (!!slots.flexible) == HBP_NUM)
+-	if (slots.pinned + (!!slots.flexible) == HBP_NUM)
++	if (slots.pinned + (!!slots.flexible) > HBP_NUM)
  		return -ENOSPC;
  
--	toggle_bp_slot(bp, true);
-+	toggle_bp_slot(bp, true, type);
+-	toggle_bp_slot(bp, true, type);
++	toggle_bp_slot(bp, true, type, weight);
  
  	return 0;
  }
-@@ -273,7 +302,10 @@ int reserve_bp_slot(struct perf_event *bp)
- 
+@@ -303,9 +328,11 @@ int reserve_bp_slot(struct perf_event *bp)
  static void __release_bp_slot(struct perf_event *bp)
  {
--	toggle_bp_slot(bp, false);
-+	enum bp_type_idx type;
-+
-+	type = find_slot_idx(bp);
-+	toggle_bp_slot(bp, false, type);
+ 	enum bp_type_idx type;
++	int weight;
+ 
+ 	type = find_slot_idx(bp);
+-	toggle_bp_slot(bp, false, type);
++	weight = hw_breakpoint_weight(bp);
++	toggle_bp_slot(bp, false, type, weight);
  }
  
  void release_bp_slot(struct perf_event *bp)
