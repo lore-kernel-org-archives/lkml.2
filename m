@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933398Ab0EAOqy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:46:54 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:64026 "EHLO
+	id S1753524Ab0EAOrm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:47:42 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:64015 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968Ab0EAOgA (ORCPT
+	with ESMTP id S1752900Ab0EAOfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:36:00 -0400
+	Sat, 1 May 2010 10:35:50 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, linux-fsdevel@vger.kernel.org,
-       David Howells <dhowells@redhat.com>
-Subject: [PATCH v21 063/100] c/r: restore file->f_cred
-Date: Sat,  1 May 2010 10:15:45 -0400
-Message-Id: <1272723382-19470-64-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
+       Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>
+Subject: [PATCH v21 068/100] c/r: [signal 4/4] support for real/virt/prof itimers
+Date: Sat,  1 May 2010 10:15:50 -0400
+Message-Id: <1272723382-19470-69-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -24,82 +24,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Serge E. Hallyn <serue@us.ibm.com>
+This patch adds support for real/virt/prof itimers.
+Expiry and the interval values are both saved in nanoseconds.
 
-Restore a file's f_cred.  This is set to the cred of the task doing
-the open, so often it will be the same as that of the restarted task.
-
+Changelog[v19-rc2]:
+  - Adjust virt/prof itimer code for kernel 2.6.32
 Changelog[v1]:
-  - [Nathan Lynch] discard const from struct cred * where appropriate
+  - [Louis Rilling] Fix saving of signal->it_real_incr if not expired
+  - Fix restoring of signal->it_real_incr if expire is zero
+  - Save virt/prof expire relative to process accumulated time
 
-Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
-Acked-by: Oren Laadan <orenl@cs.columbia.edu>
-Cc: linux-fsdevel@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>
+Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
+Acked-by: Louis Rilling <Louis.Rilling@kerlabs.com>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- fs/checkpoint.c                |   21 ++++++++++++++++++---
- include/linux/checkpoint_hdr.h |    2 +-
- 2 files changed, 19 insertions(+), 4 deletions(-)
+ include/linux/checkpoint_hdr.h |    6 +++
+ include/linux/posix-timers.h   |    9 ++++
+ kernel/posix-cpu-timers.c      |    9 ----
+ kernel/signal.c                |   90 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 105 insertions(+), 9 deletions(-)
 
-diff --git a/fs/checkpoint.c b/fs/checkpoint.c
-index 874be00..783c920 100644
---- a/fs/checkpoint.c
-+++ b/fs/checkpoint.c
-@@ -148,14 +148,21 @@ static int scan_fds(struct files_struct *files, int **fdtable)
- int checkpoint_file_common(struct ckpt_ctx *ctx, struct file *file,
- 			   struct ckpt_hdr_file *h)
- {
-+	struct cred *f_cred = (struct cred *) file->f_cred;
-+
- 	h->f_flags = file->f_flags;
- 	h->f_mode = file->f_mode;
- 	h->f_pos = file->f_pos;
- 	h->f_version = file->f_version;
- 
--	ckpt_debug("file %s", file->f_dentry->d_name.name);
-+	h->f_credref = checkpoint_obj(ctx, f_cred, CKPT_OBJ_CRED);
-+	if (h->f_credref < 0)
-+		return h->f_credref;
-+
-+	ckpt_debug("file %s credref %d", file->f_dentry->d_name.name,
-+		h->f_credref);
- 
--	/* FIX: need also file->uid, file->gid, file->f_owner, etc */
-+	/* FIX: need also file->f_owner, etc */
- 
- 	return 0;
- }
-@@ -516,8 +523,16 @@ int restore_file_common(struct ckpt_ctx *ctx, struct file *file,
- 	fmode_t new_mode = file->f_mode;
- 	fmode_t saved_mode = (__force fmode_t) h->f_mode;
- 	int ret;
-+	struct cred *cred;
-+
-+	/* FIX: need to restore owner etc */
- 
--	/* FIX: need to restore uid, gid, owner etc */
-+	/* restore the cred */
-+	cred = ckpt_obj_fetch(ctx, h->f_credref, CKPT_OBJ_CRED);
-+	if (IS_ERR(cred))
-+		return PTR_ERR(cred);
-+	put_cred(file->f_cred);
-+	file->f_cred = get_cred(cred);
- 
- 	/* safe to set 1st arg (fd) to 0, as command is F_SETFL */
- 	ret = vfs_fcntl(0, F_SETFL, h->f_flags & CKPT_SETFL_MASK, file);
 diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 8598eb5..261badb 100644
+index 3e6b49b..01f7493 100644
 --- a/include/linux/checkpoint_hdr.h
 +++ b/include/linux/checkpoint_hdr.h
-@@ -437,7 +437,7 @@ struct ckpt_hdr_file {
- 	__u32 f_type;
- 	__u32 f_mode;
- 	__u32 f_flags;
--	__u32 _padding;
-+	__s32 f_credref;
- 	__u64 f_pos;
- 	__u64 f_version;
+@@ -586,6 +586,12 @@ struct ckpt_rlimit {
+ struct ckpt_hdr_signal {
+ 	struct ckpt_hdr h;
+ 	struct ckpt_rlimit rlim[CKPT_RLIM_NLIMITS];
++	__u64 it_real_value;
++	__u64 it_real_incr;
++	__u64 it_virt_value;
++	__u64 it_virt_incr;
++	__u64 it_prof_value;
++	__u64 it_prof_incr;
  } __attribute__((aligned(8)));
+ 
+ struct ckpt_hdr_signal_task {
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index d0d6a66..7dd69c3 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -125,4 +125,13 @@ void update_rlimit_cpu(unsigned long rlim_new);
+ 
+ int invalid_clockid(const clockid_t which_clock);
+ 
++static inline cputime_t prof_ticks(struct task_struct *p)
++{
++	return cputime_add(p->utime, p->stime);
++}
++static inline cputime_t virt_ticks(struct task_struct *p)
++{
++	return p->utime;
++}
++
+ #endif
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index bc7704b..fd35ef1 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -168,15 +168,6 @@ static void bump_cpu_timer(struct k_itimer *timer,
+ 	}
+ }
+ 
+-static inline cputime_t prof_ticks(struct task_struct *p)
+-{
+-	return cputime_add(p->utime, p->stime);
+-}
+-static inline cputime_t virt_ticks(struct task_struct *p)
+-{
+-	return p->utime;
+-}
+-
+ int posix_cpu_clock_getres(const clockid_t which_clock, struct timespec *tp)
+ {
+ 	int error = check_clock(which_clock);
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 11f54ad..1d511e7 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -33,6 +33,8 @@
+ #define CKPT_DFLAG  CKPT_DSYS
+ #include <linux/errno.h>
+ #include <linux/resource.h>
++#include <linux/timer.h>
++#include <linux/posix-timers.h>
+ #include <linux/checkpoint.h>
+ 
+ #include <asm/param.h>
+@@ -3058,7 +3060,10 @@ static int checkpoint_signal(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	struct ckpt_hdr_signal *h;
+ 	struct signal_struct *signal;
+ 	struct sigpending shared_pending;
++	struct timeval tval;
+ 	struct rlimit *rlim;
++	struct cpu_itimer *it;
++	cputime_t cputime;
+ 	unsigned long flags;
+ 	int i, ret;
+ 
+@@ -3095,6 +3100,53 @@ static int checkpoint_signal(struct ckpt_ctx *ctx, struct task_struct *t)
+ 		h->rlim[i].rlim_cur = rlim[i].rlim_cur;
+ 		h->rlim[i].rlim_max = rlim[i].rlim_max;
+ 	}
++
++	/* real/virt/prof itimers */
++	if (hrtimer_active(&signal->real_timer)) {
++		/* For an active timer compute the time delta */
++		ktime_t delta = hrtimer_get_remaining(&signal->real_timer);
++		/*
++		 * If the timer expired after the the test above, then
++		 * set the expire to the minimum possible (because by
++		 * now the pending signal have been saved already, but
++		 * the signal from this very expiry won't be sent before
++		 * we release t->sighand->siglock).
++		 */
++		ckpt_debug("active ! %lld\n", delta.tv64);
++		if (delta.tv64 <= 0)
++			delta.tv64 = NSEC_PER_USEC;
++		h->it_real_value = ktime_to_ns(delta);
++	} else {
++		/*
++		 * Timer is inactive; if @it_real_incr is 0 the timer
++		 * will not be re-armed. Beacuse we hold siglock, if
++		 * @it_real_incr > 0, the timer must have just expired
++		 * but not yet re-armed, and we have a SIGALRM pending
++		 * - that will trigger timer re-arm after restart.
++		 */
++		h->it_real_value = 0;
++	}
++	h->it_real_incr = ktime_to_ns(signal->it_real_incr);
++
++	/* for prof/virt, ignore error and incr_error */
++	it = &signal->it[CPUCLOCK_VIRT];
++	cputime = it->expires;
++	if (!cputime_eq(cputime, cputime_zero))
++		cputime = cputime_sub(it->expires, virt_ticks(t));
++	cputime_to_timeval(cputime, &tval);
++	h->it_virt_value = timeval_to_ns(&tval);
++	cputime_to_timeval(it->incr, &tval);
++	h->it_virt_incr = timeval_to_ns(&tval);
++
++	it = &signal->it[CPUCLOCK_PROF];
++	cputime = it->expires;
++	if (!cputime_eq(cputime, cputime_zero))
++		cputime = cputime_sub(it->expires, prof_ticks(t));
++	cputime_to_timeval(cputime, &tval);
++	h->it_prof_value = timeval_to_ns(&tval);
++	cputime_to_timeval(it->incr, &tval);
++	h->it_prof_incr = timeval_to_ns(&tval);
++
+ 	unlock_task_sighand(t, &flags);
+ 
+ 	ret = ckpt_write_obj(ctx, &h->h);
+@@ -3165,6 +3217,7 @@ static int restore_sigpending(struct ckpt_ctx *ctx, struct sigpending *pending)
+ 
+ static int restore_signal(struct ckpt_ctx *ctx)
+ {
++	struct itimerval itimer;
+ 	struct ckpt_hdr_signal *h;
+ 	struct sigpending new_pending;
+ 	struct sigpending *pending;
+@@ -3188,12 +3241,49 @@ static int restore_signal(struct ckpt_ctx *ctx)
+ 	if (ret < 0)
+ 		goto out;
+ 
++	/*
++	 * Reset real/virt/prof itimer (in case they were set), to
++	 * prevent unwanted signals after flushing current signals
++	 * and before restoring original real/virt/prof itimer.
++	 */
++	itimer.it_value = (struct timeval) { .tv_sec = 0, .tv_usec = 0 };
++	itimer.it_interval =  (struct timeval) { .tv_sec = 0, .tv_usec = 0 };
++	do_setitimer(ITIMER_REAL, &itimer, NULL);
++	do_setitimer(ITIMER_VIRTUAL, &itimer, NULL);
++	do_setitimer(ITIMER_PROF, &itimer, NULL);
++
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	pending = &current->signal->shared_pending;
+ 	flush_sigqueue(pending);
+ 	pending->signal = new_pending.signal;
+ 	list_splice_init(&new_pending.list, &pending->list);
+ 	spin_unlock_irq(&current->sighand->siglock);
++
++	/* real/virt/prof itimers */
++	itimer.it_value = ns_to_timeval(h->it_real_value);
++	itimer.it_interval = ns_to_timeval(h->it_real_incr);
++	ret = do_setitimer(ITIMER_REAL, &itimer, NULL);
++	if (ret < 0)
++		goto out;
++	/*
++	 * If expire is 0 but incr > 0 then we have a SIGALRM pending.
++	 * It should re-arm the timer when handled. But do_setitimer()
++	 * above already ignored @it_real_incr because @it_real_value
++	 * that was zero. So we set it manually. (This is safe against
++	 * malicious input, because in the worst case will generate an
++	 * unexpected SIGALRM to this process).
++	 */
++	if (!h->it_real_value && h->it_real_incr)
++		current->signal->it_real_incr = ns_to_ktime(h->it_real_incr);
++
++	itimer.it_value = ns_to_timeval(h->it_virt_value);
++	itimer.it_interval = ns_to_timeval(h->it_virt_incr);
++	ret = do_setitimer(ITIMER_VIRTUAL, &itimer, NULL);
++	if (ret < 0)
++		goto out;
++	itimer.it_value = ns_to_timeval(h->it_prof_value);
++	itimer.it_interval = ns_to_timeval(h->it_prof_incr);
++	ret = do_setitimer(ITIMER_PROF, &itimer, NULL);
+ out:
+ 	ckpt_hdr_put(ctx, h);
+ 	return ret;
 -- 
 1.6.3.3
 
