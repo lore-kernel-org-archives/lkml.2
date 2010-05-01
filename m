@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab0EAO0k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:26:40 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63099 "EHLO
+	id S932108Ab0EAO1O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:27:14 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63133 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788Ab0EAO0c (ORCPT
+	with ESMTP id S1753354Ab0EAO0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:26:32 -0400
+	Sat, 1 May 2010 10:26:50 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>
-Subject: [PATCH v21 031/100] c/r: support for zombie processes
-Date: Sat,  1 May 2010 10:15:13 -0400
-Message-Id: <1272723382-19470-32-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
+       Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH v21 030/100] c/r: introduce PF_RESTARTING, and skip notification on exit
+Date: Sat,  1 May 2010 10:15:12 -0400
+Message-Id: <1272723382-19470-31-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -23,274 +24,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During checkpoint, a zombie processes need only save p->comm,
-p->state, p->exit_state, and p->exit_code.
+To restore zombie's we will create the a task, that, on its turn to
+run, calls do_exit(). Unlike normal tasks that exit, we need to
+prevent notification side effects that send signals to other
+processes, e.g. parent (SIGCHLD) or child tasks (per child's request).
 
-During restart, zombie processes are created like all other
-processes. They validate the saved exit_code restore p->comm
-and p->exit_code. Then they call do_exit() instead of waking
-up the next task in line.
+There are three main cases for such notifications:
 
-But before, they place the @ctx in p->checkpoint_ctx, so that
-only at exit time they will wake up the next task in line,
-and drop the reference to the @ctx.
+1) do_notify_parent(): parent of a process is notified about a change
+ in status (e.g. become zombie, reparent, etc). If parent ignores,
+ then mark child for immediate release (skip zombie).
 
-This provides the guarantee that when the coordinator's wait
-completes, all normal tasks completed their restart, and all
-zombie tasks are already zombified (as opposed to perhap only
-becoming a zombie).
+2) kill_orphan_pgrp(): a process group that becomes orphaned will
+ signal stopped jobs (HUP then CONT).
 
-Changelog[v19-rc1]:
-  - Simplify logic of tracking restarting tasks
-Changelog[v18]:
-  - Fix leak of ckpt_ctx when restoring zombie tasks
-  - Add a few more ckpt_write_err()s
-Changelog[v17]:
-  - Validate t->exit_signal for both threads and leader
-  - Skip zombies in most of may_checkpoint_task()
-  - Save/restore t->pdeath_signal
-  - Validate ->exit_signal and ->pdeath_signal
+3) forget_original_parent(): children of a process are signaled (per
+ request) with p->pdeath_signal
 
+Remember that restoring signal state (for any restarting task) must
+complete _before_ it is allowed to resume execution, and not during
+the resume. Otherwise, a running task may send a signal to another
+task that hasn't restored yet, so the new signal will be lost
+soon-after.
+
+I considered two possible way to address this:
+
+1. Add another sync point to restart: all tasks will first restore
+their state without signals (all signals blocked), and zombies call
+do_exit(). A sync point then will ensure that all zombies are gone and
+their effects done. Then all tasks restore their signal state (and
+mask), and sync (new point) again. Only then they may resume
+execution.
+The main disadvantage is the added complexity and inefficiency,
+for no good reason.
+
+2. Introduce PF_RESTARTING: mark all restarting tasks with a new flag,
+and teach the above three notifications to skip sending the signal if
+theis flag is set.
+The main advantage is simplicity and completeness. Also, such a flag
+may to be useful later on. This the method implemented.
+
+Changelog [ckpt-v19-rc3]:
+  - Rebase to kernel 2.6.33
+Changelog [ckpt-v19-rc1]:
+  - In reparent_thread() test for PF_RESTARTING on parent
+
+Cc: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- include/linux/checkpoint.h     |    1 +
- include/linux/checkpoint_hdr.h |    1 +
- kernel/checkpoint/checkpoint.c |   10 ++++--
- kernel/checkpoint/process.c    |   69 +++++++++++++++++++++++++++++++++++-----
- kernel/checkpoint/restart.c    |   22 +++++++++++--
- 5 files changed, 89 insertions(+), 14 deletions(-)
+ kernel/exit.c   |    6 +++++-
+ kernel/signal.c |    4 ++++
+ 2 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
-index f787a75..2d32c17 100644
---- a/include/linux/checkpoint.h
-+++ b/include/linux/checkpoint.h
-@@ -113,6 +113,7 @@ extern long do_checkpoint(struct ckpt_ctx *ctx, pid_t pid);
- extern long do_restart(struct ckpt_ctx *ctx, pid_t pid);
+diff --git a/kernel/exit.c b/kernel/exit.c
+index d9da011..0ef6685 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -304,6 +304,10 @@ kill_orphaned_pgrp(struct task_struct *tsk, struct task_struct *parent)
+ 	struct pid *pgrp = task_pgrp(tsk);
+ 	struct task_struct *ignored_task = tsk;
  
- /* task */
-+extern int ckpt_activate_next(struct ckpt_ctx *ctx);
- extern int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t);
- extern int restore_task(struct ckpt_ctx *ctx);
- 
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 4abae32..68ee0f3 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -165,6 +165,7 @@ struct ckpt_hdr_task {
- 	__u32 exit_state;
- 	__u32 exit_code;
- 	__u32 exit_signal;
-+	__u32 pdeath_signal;
- 
- 	__u64 set_child_tid;
- 	__u64 clear_child_tid;
-diff --git a/kernel/checkpoint/checkpoint.c b/kernel/checkpoint/checkpoint.c
-index 14801f3..f451f8f 100644
---- a/kernel/checkpoint/checkpoint.c
-+++ b/kernel/checkpoint/checkpoint.c
-@@ -219,7 +219,7 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 
- 	ckpt_debug("check %d\n", task_pid_nr_ns(t, ctx->root_nsproxy->pid_ns));
- 
--	if (t->state == TASK_DEAD) {
-+	if (t->exit_state == EXIT_DEAD) {
- 		_ckpt_err(ctx, -EBUSY, "%(T)Task state EXIT_DEAD\n");
- 		return -EBUSY;
- 	}
-@@ -229,6 +229,10 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 		return -EPERM;
- 	}
- 
-+	/* zombies are cool (and also don't have nsproxy, below...) */
-+	if (t->exit_state)
-+		return 0;
++	/* restarting zombie doesn't trigger signals */
++	if (tsk->flags & PF_RESTARTING)
++		return;
 +
- 	/* verify that all tasks belongs to same freezer cgroup */
- 	if (t != current && !in_same_cgroup_freezer(t, ctx->root_freezer)) {
- 		_ckpt_err(ctx, -EBUSY, "%(T)Not frozen or wrong cgroup\n");
-@@ -245,8 +249,8 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 	 * FIX: for now, disallow siblings of container init created
- 	 * via CLONE_PARENT (unclear if they will remain possible)
- 	 */
--	if (ctx->root_init && t != root && t->tgid != root->tgid &&
--	    t->real_parent == root->real_parent) {
-+	if (ctx->root_init && t != root &&
-+	    t->real_parent == root->real_parent && t->tgid != root->tgid) {
- 		_ckpt_err(ctx, -EINVAL, "%(T)Task is sibling of root\n");
- 		return -EINVAL;
- 	}
-diff --git a/kernel/checkpoint/process.c b/kernel/checkpoint/process.c
-index b662e5d..ce009cb 100644
---- a/kernel/checkpoint/process.c
-+++ b/kernel/checkpoint/process.c
-@@ -34,12 +34,18 @@ static int checkpoint_task_struct(struct ckpt_ctx *ctx, struct task_struct *t)
- 	h->state = t->state;
- 	h->exit_state = t->exit_state;
- 	h->exit_code = t->exit_code;
--	h->exit_signal = t->exit_signal;
+ 	if (!parent)
+ 		 /* exit: our father is in a different pgrp than
+ 		  * we are and we were the only connection outside.
+@@ -793,7 +797,7 @@ static void forget_original_parent(struct task_struct *father)
+ 				BUG_ON(task_ptrace(t));
+ 				t->parent = t->real_parent;
+ 			}
+-			if (t->pdeath_signal)
++			if (t->pdeath_signal && !(t->flags & PF_RESTARTING))
+ 				group_send_sig_info(t->pdeath_signal,
+ 						    SEND_SIG_NOINFO, t);
+ 		} while_each_thread(p, t);
+diff --git a/kernel/signal.c b/kernel/signal.c
+index dbd7fe0..be447c8 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1449,6 +1449,10 @@ int do_notify_parent(struct task_struct *tsk, int sig)
+ 	BUG_ON(!task_ptrace(tsk) &&
+ 	       (tsk->group_leader != tsk || !thread_group_empty(tsk)));
  
--	h->set_child_tid = (unsigned long) t->set_child_tid;
--	h->clear_child_tid = (unsigned long) t->clear_child_tid;
-+	if (t->exit_state) {
-+		/* zombie - skip remaining state */
-+		BUG_ON(t->exit_state != EXIT_ZOMBIE);
-+	} else {
-+		/* FIXME: save remaining relevant task_struct fields */
-+		h->exit_signal = t->exit_signal;
-+		h->pdeath_signal = t->pdeath_signal;
- 
--	/* FIXME: save remaining relevant task_struct fields */
-+		h->set_child_tid = (unsigned long) t->set_child_tid;
-+		h->clear_child_tid = (unsigned long) t->clear_child_tid;
-+	}
- 
- 	ret = ckpt_write_obj(ctx, &h->h);
- 	ckpt_hdr_put(ctx, h);
-@@ -170,6 +176,11 @@ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 	ckpt_debug("task %d\n", ret);
- 	if (ret < 0)
- 		goto out;
++	/* restarting zombie doesn't notify parent */
++	if (tsk->flags & PF_RESTARTING)
++		return ret;
 +
-+	/* zombie - we're done here */
-+	if (t->exit_state)
-+		return 0;
-+
- 	ret = checkpoint_thread(ctx, t);
- 	ckpt_debug("thread %d\n", ret);
- 	if (ret < 0)
-@@ -189,6 +200,19 @@ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
-  * Restart
-  */
- 
-+static inline int valid_exit_code(int exit_code)
-+{
-+	if (exit_code >= 0x10000)
-+		return 0;
-+	if (exit_code & 0xff) {
-+		if (exit_code & ~0xff)
-+			return 0;
-+		if (!valid_signal(exit_code & 0xff))
-+			return 0;
-+	}
-+	return 1;
-+}
-+
- /* read the task_struct into the current task */
- static int restore_task_struct(struct ckpt_ctx *ctx)
- {
-@@ -200,15 +224,39 @@ static int restore_task_struct(struct ckpt_ctx *ctx)
- 	if (IS_ERR(h))
- 		return PTR_ERR(h);
- 
-+	ret = -EINVAL;
-+	if (h->state == TASK_DEAD) {
-+		if (h->exit_state != EXIT_ZOMBIE)
-+			goto out;
-+		if (!valid_exit_code(h->exit_code))
-+			goto out;
-+		t->exit_code = h->exit_code;
-+	} else {
-+		if (h->exit_code)
-+			goto out;
-+		if ((thread_group_leader(t) && !valid_signal(h->exit_signal)) ||
-+		    (!thread_group_leader(t) && h->exit_signal != -1))
-+			goto out;
-+		if (!valid_signal(h->pdeath_signal))
-+			goto out;
-+
-+		/* FIXME: restore remaining relevant task_struct fields */
-+		t->exit_signal = h->exit_signal;
-+		t->pdeath_signal = h->pdeath_signal;
-+
-+		t->set_child_tid =
-+			(int __user *) (unsigned long) h->set_child_tid;
-+		t->clear_child_tid =
-+			(int __user *) (unsigned long) h->clear_child_tid;
-+	}
-+
- 	memset(t->comm, 0, TASK_COMM_LEN);
- 	ret = _ckpt_read_string(ctx, t->comm, TASK_COMM_LEN);
- 	if (ret < 0)
- 		goto out;
- 
--	t->set_child_tid = (int __user *) (unsigned long) h->set_child_tid;
--	t->clear_child_tid = (int __user *) (unsigned long) h->clear_child_tid;
--
--	/* FIXME: restore remaining relevant task_struct fields */
-+	/* return 1 for zombie, 0 otherwise */
-+	ret = (h->state == TASK_DEAD ? 1 : 0);
-  out:
- 	ckpt_hdr_put(ctx, h);
- 	return ret;
-@@ -328,6 +376,11 @@ int restore_task(struct ckpt_ctx *ctx)
- 	ckpt_debug("task %d\n", ret);
- 	if (ret < 0)
- 		goto out;
-+
-+	/* zombie - we're done here */
-+	if (ret)
-+		goto out;
-+
- 	ret = restore_thread(ctx);
- 	ckpt_debug("thread %d\n", ret);
- 	if (ret < 0)
-diff --git a/kernel/checkpoint/restart.c b/kernel/checkpoint/restart.c
-index ddc71ee..18b3815 100644
---- a/kernel/checkpoint/restart.c
-+++ b/kernel/checkpoint/restart.c
-@@ -854,7 +854,7 @@ static int wait_sync_threads(void)
- static int do_restore_task(void)
- {
- 	struct ckpt_ctx *ctx;
--	int ret;
-+	int zombie, ret;
- 
- 	ctx = wait_checkpoint_ctx();
- 	if (IS_ERR(ctx))
-@@ -864,6 +864,8 @@ static int do_restore_task(void)
- 	if (ret < 0)
- 		goto out;
- 
-+	current->flags |= PF_RESTARTING;
-+
- 	ret = wait_sync_threads();
- 	if (ret < 0)
- 		goto out;
-@@ -875,9 +877,22 @@ static int do_restore_task(void)
- 
- 	restore_debug_running(ctx);
- 
--	ret = restore_task(ctx);
--	if (ret < 0)
-+	zombie = restore_task(ctx);
-+	if (zombie < 0) {
-+		ret = zombie;
- 		goto out;
-+	}
-+
-+	/*
-+	 * zombie: we're done here; do_exit() will notice the @ctx on
-+	 * our current->checkpoint_ctx (and our PF_RESTARTING) - it
-+	 * will call restore_activate_next() and release the @ctx.
-+	 */
-+	if (zombie) {
-+		restore_debug_exit(ctx);
-+		ckpt_ctx_put(ctx);
-+		do_exit(current->exit_code);
-+	}
- 
- 	restore_task_done(ctx);
- 	ret = wait_task_sync(ctx);
-@@ -886,6 +901,7 @@ static int do_restore_task(void)
- 	if (ret < 0)
- 		ckpt_err(ctx, ret, "task restart failed\n");
- 
-+	current->flags &= ~PF_RESTARTING;
- 	clear_task_ctx(current);
- 	ckpt_ctx_put(ctx);
- 	return ret;
+ 	info.si_signo = sig;
+ 	info.si_errno = 0;
+ 	/*
 -- 
 1.6.3.3
 
