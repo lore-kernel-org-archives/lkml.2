@@ -1,71 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab0EAO2u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:28:50 -0400
-Received: from 8bytes.org ([88.198.83.132]:50082 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab0EAO2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:28:42 -0400
-Date: Sat, 1 May 2010 16:28:40 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Tom Lyon <pugs@lyon-about.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, hjk@linutronix.de, gregkh@suse.de,
-       chrisw@sous-sol.org, avi@redhat.com, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] drivers/uio/uio_pci_generic.c: allow access for
-	non-privileged processes
-Message-ID: <20100501142839.GD14542@8bytes.org>
-References: <4bccd3af.M/eSrn9OV22zg0A8%pugs@cisco.com> <20100421093849.GB30855@redhat.com> <201004291229.40918.pugs@lyon-about.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004291229.40918.pugs@lyon-about.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932074Ab0EAO07 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:26:59 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63125 "EHLO
+	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754011Ab0EAO0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 May 2010 10:26:46 -0400
+From: Oren Laadan <orenl@cs.columbia.edu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
+       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>
+Subject: [PATCH v21 025/100] c/r: external checkpoint of a task other than ourself
+Date: Sat,  1 May 2010 10:15:07 -0400
+Message-Id: <1272723382-19470-26-git-send-email-orenl@cs.columbia.edu>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
+References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 29, 2010 at 12:29:40PM -0700, Tom Lyon wrote:
+Now we can do "external" checkpoint, i.e. act on another task.
 
-> I think the plan for V4 will be to take things entirely out of the UIO
-> framework, and instead have a driver which supports user mode use of
-> "well-behaved" PCI devices.
+sys_checkpoint() now looks up the target pid (in our namespace) and
+checkpoints that corresponding task. That task should be the root of
+a container, unless CHECKPOINT_SUBTREE flag is given.
 
-I really don't think that we should create another uio-subsystem for the
-kernel. The current one can be easily extended to fit your and the
-virtualization needs.
+Set state of freezer cgroup of checkpointed task hierarchy to
+"CHECKPOINTING" during a checkpoint, to ensure that task(s) cannot be
+thawed while at it.
 
-> So, I will go outside UIO because:
+Ensure that all tasks belong to root task's freezer cgroup (the root
+task is also tested, to detect it if changes its freezer cgroups
+before it moves to "CHECKPOINTING").
 
-> 1 - it doesn't allow reads and writes to sub-drivers, just irqcontrol
+sys_restart() remains nearly the same, as the restart is always done
+in the context of the restarting task. However, the original task may
+have been frozen from user space, or interrupted from a syscall for
+the checkpoint. This is accounted for by restoring a suitable retval
+for the restarting task, according to how it was checkpointed.
 
-Can you elaborate on that? What do you mean by sub-drivers?
+Changelog[v20]:
+  - [Nathan Lynch] Use syscall_get_error
+Changelog[v19-rc1]:
+  - [Serge Hallyn] Add global section container to image format
+Changelog[v17]:
+  - Move restore_retval() to this patch
+  - Tighten ptrace ceckpoint for checkpoint to PTRACE_MODE_ATTACH
+  - Use CHECKPOINTING state for hierarchy's freezer for checkpoint
+Changelog[v16]:
+  - Use CHECKPOINT_SUBTREE to allow subtree (partial container)
+Changelog[v14]:
+  - Refuse non-self checkpoint if target task isn't frozen
+Changelog[v12]:
+  - Replace obsolete ckpt_debug() with pr_debug()
+Changelog[v11]:
+  - Copy contents of 'init->fs->root' instead of pointing to them
+Changelog[v10]:
+  - Grab vfs root of container init, rather than current process
 
-> 2 - it doesn't have ioctls
+Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+---
+ include/linux/checkpoint_types.h |    7 ++-
+ kernel/checkpoint/Kconfig        |    1 +
+ kernel/checkpoint/checkpoint.c   |   98 +++++++++++++++++++++++++++++++++++++-
+ kernel/checkpoint/restart.c      |   66 +++++++++++++++++++++++++-
+ kernel/checkpoint/sys.c          |   10 ++++
+ 5 files changed, 179 insertions(+), 3 deletions(-)
 
-You already added ioctls. This is not a big deal.
-
-> 3 - it has its own interrupt model which doesn't use eventfds
-
-Can be extended using the ioctl.
-
-> 4 - it's ugly doing the new stuff and maintaining backwards compat.
-
-Not really. In the ioctls you will add to enable msi/msi-x you can pass
-the eventfds to userspace. Thats not ugly at all. Its just an addition.
-
-Here is the approach I would take:
-
-* Add an ioctl to the uio-framework and add some basic functionality
-  like querying for some device capabilities like memory regions to mmap
-  or io regions.
-* Add ioctls to uio-pci-generic to ask for interrupt capabilities of the
-  pci device (old style irqs/msi/msi-x, how many vectors and so on) and
-  ioctls to enable them and get an eventfd back for each vector.
-
-Thats a good extension and backwards compatible as well in my eyes. What
-do you think?
-
-
-	Joerg
+diff --git a/include/linux/checkpoint_types.h b/include/linux/checkpoint_types.h
+index 13d6dd5..ff35b97 100644
+--- a/include/linux/checkpoint_types.h
++++ b/include/linux/checkpoint_types.h
+@@ -12,12 +12,17 @@
+ 
+ #ifdef __KERNEL__
+ 
++#include <linux/sched.h>
++#include <linux/nsproxy.h>
+ #include <linux/fs.h>
+ 
+ struct ckpt_ctx {
+ 	int crid;		/* unique checkpoint id */
+ 
+-	pid_t root_pid;		/* container identifier */
++	pid_t root_pid;				/* [container] root pid */
++	struct task_struct *root_task;		/* [container] root task */
++	struct nsproxy *root_nsproxy;		/* [container] root nsproxy */
++	struct task_struct *root_freezer;	/* [container] root task */
+ 
+ 	unsigned long kflags;	/* kerenl flags */
+ 	unsigned long uflags;	/* user flags */
+diff --git a/kernel/checkpoint/Kconfig b/kernel/checkpoint/Kconfig
+index ef7d406..21fc86b 100644
+--- a/kernel/checkpoint/Kconfig
++++ b/kernel/checkpoint/Kconfig
+@@ -5,6 +5,7 @@
+ config CHECKPOINT
+ 	bool "Checkpoint/restart (EXPERIMENTAL)"
+ 	depends on CHECKPOINT_SUPPORT && EXPERIMENTAL
++	depends on CGROUP_FREEZER
+ 	help
+ 	  Application checkpoint/restart is the ability to save the
+ 	  state of a running application so that it can later resume
+diff --git a/kernel/checkpoint/checkpoint.c b/kernel/checkpoint/checkpoint.c
+index 0f55d37..e45653b 100644
+--- a/kernel/checkpoint/checkpoint.c
++++ b/kernel/checkpoint/checkpoint.c
+@@ -13,6 +13,9 @@
+ 
+ #include <linux/version.h>
+ #include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/freezer.h>
++#include <linux/ptrace.h>
+ #include <linux/time.h>
+ #include <linux/fs.h>
+ #include <linux/file.h>
+@@ -193,17 +196,108 @@ static int checkpoint_write_tail(struct ckpt_ctx *ctx)
+ 	return ret;
+ }
+ 
++static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
++{
++	if (t->state == TASK_DEAD) {
++		_ckpt_err(ctx, -EBUSY, "%(T)Task state EXIT_DEAD\n");
++		return -EBUSY;
++	}
++
++	if (!ptrace_may_access(t, PTRACE_MODE_ATTACH)) {
++		_ckpt_err(ctx, -EPERM, "%(T)Ptrace attach denied\n");
++		return -EPERM;
++	}
++
++	/* verify that all tasks belongs to same freezer cgroup */
++	if (t != current && !in_same_cgroup_freezer(t, ctx->root_freezer)) {
++		_ckpt_err(ctx, -EBUSY, "%(T)Not frozen or wrong cgroup\n");
++		return -EBUSY;
++	}
++
++	/* FIX: add support for ptraced tasks */
++	if (task_ptrace(t)) {
++		_ckpt_err(ctx, -EBUSY, "%(T)Task is ptraced\n");
++		return -EBUSY;
++	}
++
++	return 0;
++}
++
++/* setup checkpoint-specific parts of ctx */
++static int init_checkpoint_ctx(struct ckpt_ctx *ctx, pid_t pid)
++{
++	struct task_struct *task;
++	struct nsproxy *nsproxy;
++	int ret;
++
++	/*
++	 * No need for explicit cleanup here, because if an error
++	 * occurs then ckpt_ctx_free() is eventually called.
++	 */
++
++	ctx->root_pid = pid;
++
++	/* root task */
++	read_lock(&tasklist_lock);
++	task = find_task_by_vpid(pid);
++	if (task)
++		get_task_struct(task);
++	read_unlock(&tasklist_lock);
++	if (!task)
++		return -ESRCH;
++	else
++		ctx->root_task = task;
++
++	/* root nsproxy */
++	rcu_read_lock();
++	nsproxy = task_nsproxy(task);
++	if (nsproxy)
++		get_nsproxy(nsproxy);
++	rcu_read_unlock();
++	if (!nsproxy)
++		return -ESRCH;
++	else
++		ctx->root_nsproxy = nsproxy;
++
++	/* root freezer */
++	ctx->root_freezer = task;
++	get_task_struct(task);
++
++	ret = may_checkpoint_task(ctx, task);
++	if (ret) {
++		_ckpt_msg_complete(ctx);
++		put_task_struct(task);
++		put_task_struct(task);
++		put_nsproxy(nsproxy);
++		ctx->root_nsproxy = NULL;
++		ctx->root_task = NULL;
++		return ret;
++	}
++
++	return 0;
++}
++
+ long do_checkpoint(struct ckpt_ctx *ctx, pid_t pid)
+ {
+ 	long ret;
+ 
++	ret = init_checkpoint_ctx(ctx, pid);
++	if (ret < 0)
++		return ret;
++
++	if (ctx->root_freezer) {
++		ret = cgroup_freezer_begin_checkpoint(ctx->root_freezer);
++		if (ret < 0)
++			return ret;
++	}
++
+ 	ret = checkpoint_write_header(ctx);
+ 	if (ret < 0)
+ 		goto out;
+ 	ret = checkpoint_container(ctx);
+ 	if (ret < 0)
+ 		goto out;
+-	ret = checkpoint_task(ctx, current);
++	ret = checkpoint_task(ctx, ctx->root_task);
+ 	if (ret < 0)
+ 		goto out;
+ 	ret = checkpoint_write_tail(ctx);
+@@ -214,5 +308,7 @@ long do_checkpoint(struct ckpt_ctx *ctx, pid_t pid)
+ 	ctx->crid = atomic_inc_return(&ctx_count);
+ 	ret = ctx->crid;
+  out:
++	if (ctx->root_freezer)
++		cgroup_freezer_end_checkpoint(ctx->root_freezer);
+ 	return ret;
+ }
+diff --git a/kernel/checkpoint/restart.c b/kernel/checkpoint/restart.c
+index f2b8575..7b6caf9 100644
+--- a/kernel/checkpoint/restart.c
++++ b/kernel/checkpoint/restart.c
+@@ -18,8 +18,11 @@
+ #include <linux/file.h>
+ #include <linux/magic.h>
+ #include <linux/utsname.h>
++#include <linux/elf.h>
+ #include <linux/checkpoint.h>
+ 
++#include <asm/syscall.h>
++
+ static int _ckpt_read_err(struct ckpt_ctx *ctx, struct ckpt_hdr *h)
+ {
+ 	char *ptr;
+@@ -448,10 +451,69 @@ static int restore_read_tail(struct ckpt_ctx *ctx)
+ 	return ret;
+ }
+ 
++static long restore_retval(void)
++{
++	struct pt_regs *regs = task_pt_regs(current);
++	long syscall_err;
++	long syscall_nr;
++
++	/*
++	 * For the restart, we entered the kernel via sys_restart(),
++	 * so our return path is via the syscall exit. In particular,
++	 * the code in entry.S will put the value that we will return
++	 * into a register (e.g. regs->eax in x86), thus passing it to
++	 * the caller task.
++	 *
++	 * What we do now depends on what happened to the checkpointed
++	 * task right before the checkpoint - there are three cases:
++	 *
++	 * 1) It was carrying out a syscall when became frozen, or
++	 * 2) It was running in userspace, or
++	 * 3) It was doing a self-checkpoint
++	 *
++	 * In case #1, if the syscall succeeded, perhaps partially,
++	 * then the retval is non-negative. If it failed, the error
++	 * may be one of -ERESTART..., which is interpreted in the
++	 * signal handling code. If that is the case, we force the
++	 * signal handler to kick in by faking a signal to ourselves
++	 * (a la freeze/thaw) when ret < 0.
++	 *
++	 * In case #2, our return value will overwrite the original
++	 * value in the affected register. Workaround by simply using
++	 * that saved value of that register as our retval.
++	 *
++	 * In case #3, then the state was recorded while the task was
++	 * in checkpoint(2) syscall. The syscall is execpted to return
++	 * 0 when returning from a restart. Fortunately, this already
++	 * has been arranged for at checkpoint time (the register that
++	 * holds the retval, e.g. regs->eax in x86, was set to
++	 * zero).
++	 */
++
++	/* needed for all 3 cases: get old value/error/retval */
++	syscall_nr = syscall_get_nr(current, regs);
++	syscall_err = syscall_get_error(current, regs);
++
++	/* if from a syscall and returning error, kick in signal handling */
++	if (syscall_nr >= 0 && syscall_err != 0)
++		set_tsk_thread_flag(current, TIF_SIGPENDING);
++
++	return syscall_get_return_value(current, regs);
++}
++
++/* setup restart-specific parts of ctx */
++static int init_restart_ctx(struct ckpt_ctx *ctx, pid_t pid)
++{
++	return 0;
++}
++
+ long do_restart(struct ckpt_ctx *ctx, pid_t pid)
+ {
+ 	long ret;
+ 
++	ret = init_restart_ctx(ctx, pid);
++	if (ret < 0)
++		return ret;
+ 	ret = restore_read_header(ctx);
+ 	if (ret < 0)
+ 		return ret;
+@@ -462,7 +524,9 @@ long do_restart(struct ckpt_ctx *ctx, pid_t pid)
+ 	if (ret < 0)
+ 		return ret;
+ 	ret = restore_read_tail(ctx);
++	if (ret < 0)
++		return ret;
+ 
+ 	/* on success, adjust the return value if needed [TODO] */
+-	return ret;
++	return restore_retval();
+ }
+diff --git a/kernel/checkpoint/sys.c b/kernel/checkpoint/sys.c
+index af8c1bf..28a1b27 100644
+--- a/kernel/checkpoint/sys.c
++++ b/kernel/checkpoint/sys.c
+@@ -13,7 +13,9 @@
+ 
+ #include <linux/sched.h>
+ #include <linux/module.h>
++#include <linux/nsproxy.h>
+ #include <linux/kernel.h>
++#include <linux/cgroup.h>
+ #include <linux/syscalls.h>
+ #include <linux/slab.h>
+ #include <linux/fs.h>
+@@ -163,6 +165,14 @@ static void ckpt_ctx_free(struct ckpt_ctx *ctx)
+ 		fput(ctx->file);
+ 	if (ctx->logfile)
+ 		fput(ctx->logfile);
++
++	if (ctx->root_nsproxy)
++		put_nsproxy(ctx->root_nsproxy);
++	if (ctx->root_task)
++		put_task_struct(ctx->root_task);
++	if (ctx->root_freezer)
++		put_task_struct(ctx->root_freezer);
++
+ 	kfree(ctx);
+ }
+ 
+-- 
+1.6.3.3
 
