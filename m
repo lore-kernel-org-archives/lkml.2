@@ -1,102 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab0EASsO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 14:48:14 -0400
-Received: from t21.t-2.net ([84.255.209.100]:35010 "EHLO t21.t-2.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753826Ab0EASsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 14:48:13 -0400
-Subject: Re: [PATCH] console logging detour via printk
-From: Samo Pogacnik <samo_pogacnik@t-2.net>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-embedded <linux-embedded@vger.kernel.org>,
-       linux kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100501120418.6fca2aad@lxorguk.ukuu.org.uk>
-References: <1272664980.10241.77.camel@itpsd6lap>
-	 <20100501120418.6fca2aad@lxorguk.ukuu.org.uk>
-Content-Type: text/plain
-Date: Sat, 01 May 2010 20:48:09 +0200
-Message-Id: <1272739689.2147.156.camel@itpsd6lap>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
-X-SGG-UMAMSID: 20100501184810Z22686t21.t-2.net 1O8HjX-0005tu-6y
-X-SGG-RESULT: 20100501184810Z22686t21.t-2.net C1:OK E1:OK MX1:OK BL:OK SPF:off  CT:Unknown CM: SIP:84.255.254.67 SMF:samo_pogacnik@t-2.net
+	id S1757357Ab0EASsi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 14:48:38 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:58886 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757182Ab0EASsf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 May 2010 14:48:35 -0400
+X-Greylist: delayed 690 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 May 2010 14:48:35 EDT
+Date: Sat, 1 May 2010 21:35:44 +0300
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Imre Deak <imre.deak@nokia.com>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       Jamie Lokier <jamie@shareable.org>,
+       "rostedt@goodmis.org" <rostedt@goodmis.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] create generic alignment api (v5)
+Message-ID: <20100501183544.GC27062@shisha.kicks-ass.net>
+Mail-Followup-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	Imre Deak <imre.deak@nokia.com>,
+	Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	Jamie Lokier <jamie@shareable.org>,
+	"rostedt@goodmis.org" <rostedt@goodmis.org>,
+	"mingo@elte.hu" <mingo@elte.hu>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20100328012247.GA17763@Krystal>
+ <20100328154029.GA21061@localhost>
+ <20100329000900.GB27379@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100329000900.GB27379@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 01.05.2010 (sob) ob 12:04 +0100 je Alan Cox zapisal(a):
-> > while i was searching for effective logging of complete console output
-> > produced by the kernel and user phase of the boot process, it turned out
-> > that only kernel messages imho get systematically cached and stored into
-> > log files (if needed). All userspace processes are on their own to use
-> > syslog, which is fine, but there are also many console messages
-> > reporting the boot status via init scripts, .... I came across the
-> > bootlogd daemo, which handles the job of redirecting console output into
-> > a log file, but i find it problematic to use especialy, when using
-> > initial ram disk image.
+On Sun, Mar 28, 2010 at 08:09:00 -0400, Mathieu Desnoyers wrote:
+> Rather than re-doing the "alignment on a type size" trick all over again at
+> different levels, import the "ltt_align" from LTTng into kernel.h and make this
+> available to everyone. Renaming to:
 > 
-> So you want to patch the kernel because you can't work out how to do this
-> in userspace ? The distributions seem to have no problem doing this in
-> user space that I can see. It doesn't seem to be a hard user space
-> problem, and there are a ton of things you want to do with this sort of
-> stuff (like network logging) that you can't do in kernel space.
+> - object_align()
+> - object_align_floor()
+> - offset_align()
+> - offset_align_floor()
 
-The distros have no problem logging complete console output into log
-files or over the network, because they simply do not do it at least for
-the initrd part of the boot process (i'd be glad, if i'm wrong). 
-Anyway the proposed mechanism nicely bridges the gap between the kernel
-boot start and the system logging daemon start-up. It also solves the
-chicken and egg problem of how to log console if user space console
-logging facility fails.
+Do you plan to have this integrated to the mainline? I'd like to use one of
+these in my next version of the __xchg patch. So, do you need any help or
+feedback or whatnot with this one?
 
+> Changelog since v4:
+> - add missing ( ) around parameters within object_align() and
+>   object_align_floor().
+> - More coding style cleanups to ALIGN() (checkpatch.pl is happy now).
 > 
-> > --- a_linux-2.6.33.3/drivers/char/vt.c
-> > +++ b_linux-2.6.33.3/drivers/char/vt.c
-> > @@ -2696,6 +2696,16 @@ static int con_write(struct tty_struct *tty, const unsigned char *buf, int count
-> >  {
-> >  	int	retval;
-> >  
-> > +#ifdef CONFIG_VT_CONSOLE_DETOUR
-> > +	if (console_detour) {
-> > +		int idx = vt_console_driver.index - 1;
-> > + 
-> > +		if ((idx >= 0) && (idx == tty->index)) {
-> > +			console_printk_detour(buf, count);
-> > +			return count;
-> > +		}
-> > +	}
-> > +#endif
+> Changelog since v3:
+> - optimize object_align*() so fewer instructions are needed for alignment of
+>   addresses known dynamically. Use the (already existing) "ALIGN()", and create
+>   the "ALIGN_FLOOR()" macro.
+> - While we are there, let's clean up the ALIGN() macros wrt coding style. e.g.
+>   missing parenthesis around the first use of the "x" parameter in ALIGN().
 > 
-> This requires you go around hacking up each device which is not a good
-> idea and becomes rapidly unmaintainable.
-
-Agree, it should have been done within a well defined code volume.
-
+> Changelog since v2:
+> - Fix object_align*(): should use object size alignment, not pointer alignment.
 > 
-> I suspect what you actually need for such logging might be to write a
-> very simple tty driver whose write method is implemented as printk. That
-> works in the general case and doesn't require hacking up the code
-> everywhere else.
-
-Looks to me that some kernel code is welcome:)?
-
+> Changelog since v1:
+> - Align on the object natural alignment
+>     (rather than min(arch word alignment, natural alignment))
 > 
-> However given your init stuff can trivially use openpty to set up a logged
-> console I am not sure I see the point in doing this in kernel in the
-> first place.
+> The advantage of separating the API in "object alignment" and "offset alignment"
+> is that it gives more freedom to play with offset alignment. Very useful to
+> implement a tracer ring-buffer alignment. (hint hint)
 > 
+> Typical users will use "object alignment", but infrastructures like tracers
+> which need to perform alignment of statically known base+offsets will typically
+> use "offset alignment", because it allows to align with respect to a base rather
+> than to pass an absolute address.
+> 
+> We use "sizeof(object)" rather than "__alignof__()" object because alignof
+> returns "recommended" object alignment for the architecture, which can be
+> sub-optimal on some architectures. By ensuring alignment on the object size, we
+> are sure to make the right choice.
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
+> Cc: Alexander Shishkin <virtuoso@slind.org>,
+> CC: linux-arm-kernel@lists.infradead.org
+> CC: Imre Deak <imre.deak@nokia.com>
+> CC: Jamie Lokier <jamie@shareable.org>
+> CC: rostedt@goodmis.org
+> CC: mingo@elte.hu
 
-As said above, how to bridge kernel boot start and logging daemon
-start-up without kernel help, especially when initrd is in the way? imho
-it would be too complicated.
+Acked-by: Alexander Shishkin <virtuoso@slind.org>
 
-> Alan
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-embedded" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-thanks for the reply, with best regards, Samo
-
+> ---
+>  include/linux/kernel.h |   45 +++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 41 insertions(+), 4 deletions(-)
+> 
+> Index: linux-2.6-lttng/include/linux/kernel.h
+> ===================================================================
+> --- linux-2.6-lttng.orig/include/linux/kernel.h	2010-03-27 20:46:07.000000000 -0400
+> +++ linux-2.6-lttng/include/linux/kernel.h	2010-03-28 20:06:27.000000000 -0400
+> @@ -37,10 +37,47 @@ extern const char linux_proc_banner[];
+>  
+>  #define STACK_MAGIC	0xdeadbeef
+>  
+> -#define ALIGN(x,a)		__ALIGN_MASK(x,(typeof(x))(a)-1)
+> -#define __ALIGN_MASK(x,mask)	(((x)+(mask))&~(mask))
+> -#define PTR_ALIGN(p, a)		((typeof(p))ALIGN((unsigned long)(p), (a)))
+> -#define IS_ALIGNED(x, a)		(((x) & ((typeof(x))(a) - 1)) == 0)
+> +#define ALIGN(x, a)		__ALIGN_MASK((x), (typeof(x)) (a) - 1)
+> +#define __ALIGN_MASK(x, mask)	(((x) + (mask)) & ~(mask))
+> +#define PTR_ALIGN(p, a)		((typeof(p)) ALIGN((unsigned long) (p), (a)))
+> +#define ALIGN_FLOOR(x, a)	__ALIGN_FLOOR_MASK((x), (typeof(x)) (a) - 1)
+> +#define __ALIGN_FLOOR_MASK(x, mask)	((x) & ~(mask))
+> +#define PTR_ALIGN_FLOOR(p, a) \
+> +			((typeof(p)) ALIGN_FLOOR((unsigned long) (p), (a)))
+> +#define IS_ALIGNED(x, a)	(((x) & ((typeof(x)) (a) - 1)) == 0)
+> +
+> +/*
+> + * Align pointer on natural object alignment. Object size must be power of two.
+> + */
+> +#define object_align(obj)	PTR_ALIGN((obj), sizeof(*(obj)))
+> +#define object_align_floor(obj)	PTR_ALIGN_FLOOR((obj), sizeof(*(obj)))
+> +
+> +/**
+> + * offset_align - Calculate the offset needed to align an object on its natural
+> + *                alignment towards higher addresses.
+> + * @align_drift:  object offset from an "alignment"-aligned address.
+> + * @alignment:    natural object alignment. Must be non-zero, power of 2.
+> + *
+> + * Returns the offset that must be added to align towards higher
+> + * addresses.
+> + */
+> +static inline size_t offset_align(size_t align_drift, size_t alignment)
+> +{
+> +	return (alignment - align_drift) & (alignment - 1);
+> +}
+> +
+> +/**
+> + * offset_align_floor - Calculate the offset needed to align an object
+> + *                      on its natural alignment towards lower addresses.
+> + * @align_drift:  object offset from an "alignment"-aligned address.
+> + * @alignment:    natural object alignment. Must be non-zero, power of 2.
+> + *
+> + * Returns the offset that must be substracted to align towards lower addresses.
+> + */
+> +static inline size_t offset_align_floor(size_t align_drift, size_t alignment)
+> +{
+> +	return (align_drift - alignment) & (alignment - 1);
+> +}
+>  
+>  #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
+>  
+> 
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
