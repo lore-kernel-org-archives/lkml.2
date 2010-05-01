@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab0EAOfW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:35:22 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63897 "EHLO
+	id S932738Ab0EAOd1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:33:27 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63458 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab0EAOfL (ORCPT
+	with ESMTP id S1753689Ab0EAOax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:35:11 -0400
+	Sat, 1 May 2010 10:30:53 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>
-Subject: [PATCH v21 051/100] c/r: make ckpt_may_checkpoint_task() check each namespace individually
-Date: Sat,  1 May 2010 10:15:33 -0400
-Message-Id: <1272723382-19470-52-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
+       linux-fsdevel@vger.kernel.org
+Subject: [PATCH v21 043/100] c/r: add generic '->checkpoint()' f_op to simple devices
+Date: Sat,  1 May 2010 10:15:25 -0400
+Message-Id: <1272723382-19470-44-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -23,449 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For a given namespace type, say XXX, if a checkpoint was taken on a
-CONFIG_XXX_NS system, is restarted on a !CONFIG_XXX_NS, then ensure
-that:
+* /dev/null
+* /dev/zero
+* /dev/random
+* /dev/urandom
 
-1) The global settings of the global (init) namespace do not get
-overwritten. Creating new objects in that namespace is ok, as long as
-the request identifier is available.
+Changelog [v21]:
+  - Put file_ops->checkpoint under CONFIG_CHECKPOINT
 
-2) All restarting tasks use a single namespace - because it is
-impossible to create additional namespaces to accommodate for what had
-been checkpointed.
-
-Original patch introducing nsproxy c/r by Dan Smith <danms@us.ibm.com>
-
-Chagnelog[v19]:
-  - Restart to handle checkpoint images lacking {uts,ipc}-ns
-Chagnelog[v19-rc1]:
-  - [Matt Helsley] Add cpp definitions for enums
-Chagnelog[v18]:
-  - Add a few more ckpt_write_err()s
-Chagnelog[v17]:
-  - Only collect sub-objects of struct_nsproxy once.
-  - Restore namespace pieces directly instead of using sys_unshare()
-  - Proper handling of restart from namespace(s) without namespace(s)
-
+Cc: linux-fsdevel@vger.kernel.org
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- include/linux/checkpoint.h     |    3 +
- include/linux/checkpoint_hdr.h |   16 +++++
- kernel/checkpoint/checkpoint.c |   29 +++++++-
- kernel/checkpoint/objhash.c    |    2 +
- kernel/checkpoint/process.c    |   81 ++++++++++++++++++++++++
- kernel/nsproxy.c               |  136 ++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 263 insertions(+), 4 deletions(-)
+ drivers/char/mem.c    |    6 ++++++
+ drivers/char/random.c |    6 ++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
-index 24ad717..2b6d0c7 100644
---- a/include/linux/checkpoint.h
-+++ b/include/linux/checkpoint.h
-@@ -166,6 +166,9 @@ extern int checkpoint_restart_block(struct ckpt_ctx *ctx,
- 				    struct task_struct *t);
- extern int restore_restart_block(struct ckpt_ctx *ctx);
- 
-+/* namespaces */
-+extern int ckpt_collect_ns(struct ckpt_ctx *ctx, struct task_struct *t);
-+
- /* file table */
- extern int ckpt_collect_file_table(struct ckpt_ctx *ctx, struct task_struct *t);
- extern int checkpoint_obj_file_table(struct ckpt_ctx *ctx,
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index fbcbee7..f119991 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -76,6 +76,8 @@ enum {
- #define CKPT_HDR_TREE CKPT_HDR_TREE
- 	CKPT_HDR_TASK,
- #define CKPT_HDR_TASK CKPT_HDR_TASK
-+	CKPT_HDR_TASK_NS,
-+#define CKPT_HDR_TASK_NS CKPT_HDR_TASK_NS
- 	CKPT_HDR_TASK_OBJS,
- #define CKPT_HDR_TASK_OBJS CKPT_HDR_TASK_OBJS
- 	CKPT_HDR_RESTART_BLOCK,
-@@ -84,6 +86,8 @@ enum {
- #define CKPT_HDR_THREAD CKPT_HDR_THREAD
- 	CKPT_HDR_CPU,
- #define CKPT_HDR_CPU CKPT_HDR_CPU
-+	CKPT_HDR_NS,
-+#define CKPT_HDR_NS CKPT_HDR_NS
- 
- 	/* 201-299: reserved for arch-dependent */
- 
-@@ -141,6 +145,8 @@ enum obj_type {
- #define CKPT_OBJ_FILE CKPT_OBJ_FILE
- 	CKPT_OBJ_MM,
- #define CKPT_OBJ_MM CKPT_OBJ_MM
-+	CKPT_OBJ_NS,
-+#define CKPT_OBJ_NS CKPT_OBJ_NS
- 	CKPT_OBJ_MAX
- #define CKPT_OBJ_MAX CKPT_OBJ_MAX
- };
-@@ -225,6 +231,16 @@ struct ckpt_hdr_task {
- 	__u64 clear_child_tid;
- } __attribute__((aligned(8)));
- 
-+/* namespaces */
-+struct ckpt_hdr_task_ns {
-+	struct ckpt_hdr h;
-+	__s32 ns_objref;
-+} __attribute__((aligned(8)));
-+
-+struct ckpt_hdr_ns {
-+	struct ckpt_hdr h;
-+} __attribute__((aligned(8)));
-+
- /* task's shared resources */
- struct ckpt_hdr_task_objs {
- 	struct ckpt_hdr h;
-diff --git a/kernel/checkpoint/checkpoint.c b/kernel/checkpoint/checkpoint.c
-index 0f83cca..ab1081c 100644
---- a/kernel/checkpoint/checkpoint.c
-+++ b/kernel/checkpoint/checkpoint.c
-@@ -219,6 +219,8 @@ static int checkpoint_all_tasks(struct ckpt_ctx *ctx)
- static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- {
- 	struct task_struct *root = ctx->root_task;
-+	struct nsproxy *nsproxy;
-+	int ret = 0;
- 
- 	ckpt_debug("check %d\n", task_pid_nr_ns(t, ctx->root_nsproxy->pid_ns));
- 
-@@ -258,11 +260,30 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 		return -EINVAL;
- 	}
- 
--	/* FIX: change this when namespaces are added */
--	if (task_nsproxy(t) != ctx->root_nsproxy)
--		return -EPERM;
-+	rcu_read_lock();
-+	nsproxy = task_nsproxy(t);
-+	if (nsproxy->uts_ns != ctx->root_nsproxy->uts_ns)
-+		ret = -EPERM;
-+	if (nsproxy->ipc_ns != ctx->root_nsproxy->ipc_ns)
-+		ret = -EPERM;
-+	/* no support for >1 private mntns */
-+	if (nsproxy->mnt_ns != ctx->root_nsproxy->mnt_ns) {
-+		_ckpt_err(ctx, -EPERM, "%(T)Nested mnt_ns unsupported\n");
-+		ret = -EPERM;
-+	}
-+	/* no support for >1 private netns */
-+	if (nsproxy->net_ns != ctx->root_nsproxy->net_ns) {
-+		_ckpt_err(ctx, -EPERM, "%(T)Nested net_ns unsupported\n");
-+		ret = -EPERM;
-+	}
-+	/* no support for >1 private pidns */
-+	if (nsproxy->pid_ns != ctx->root_nsproxy->pid_ns) {
-+		_ckpt_err(ctx, -EPERM, "%(T)Nested pid_ns unsupported\n");
-+		ret = -EPERM;
-+	}
-+	rcu_read_unlock();
- 
--	return 0;
-+	return ret;
- }
- 
- #define CKPT_HDR_PIDS_CHUNK	256
-diff --git a/kernel/checkpoint/objhash.c b/kernel/checkpoint/objhash.c
-index 1d78dbf..d504568 100644
---- a/kernel/checkpoint/objhash.c
-+++ b/kernel/checkpoint/objhash.c
-@@ -498,6 +498,8 @@ int ckpt_obj_contained(struct ckpt_ctx *ctx)
- 	ckpt_obj_users_inc(ctx, ctx->file, 1);
- 	if (ctx->logfile)
- 		ckpt_obj_users_inc(ctx, ctx->logfile, 1);
-+	/* account for ctx->root_nsproxy (if in the table already) */
-+	ckpt_obj_users_inc(ctx, ctx->root_nsproxy, 1);
- 
- 	hlist_for_each_entry(obj, node, &ctx->obj_hash->list, next) {
- 		if (!obj->ops->ref_users)
-diff --git a/kernel/checkpoint/process.c b/kernel/checkpoint/process.c
-index 1ec5c6a..22fb938 100644
---- a/kernel/checkpoint/process.c
-+++ b/kernel/checkpoint/process.c
-@@ -12,6 +12,7 @@
- #define CKPT_DFLAG  CKPT_DSYS
- 
- #include <linux/sched.h>
-+#include <linux/nsproxy.h>
- #include <linux/posix-timers.h>
- #include <linux/futex.h>
- #include <linux/compat.h>
-@@ -103,6 +104,35 @@ static int checkpoint_task_struct(struct ckpt_ctx *ctx, struct task_struct *t)
- 	return ckpt_write_string(ctx, t->comm, TASK_COMM_LEN);
- }
- 
-+static int checkpoint_task_ns(struct ckpt_ctx *ctx, struct task_struct *t)
-+{
-+	struct ckpt_hdr_task_ns *h;
-+	struct nsproxy *nsproxy;
-+	int ns_objref;
-+	int ret;
-+
-+	rcu_read_lock();
-+	nsproxy = task_nsproxy(t);
-+	get_nsproxy(nsproxy);
-+	rcu_read_unlock();
-+
-+	ns_objref = checkpoint_obj(ctx, nsproxy, CKPT_OBJ_NS);
-+	put_nsproxy(nsproxy);
-+
-+	ckpt_debug("nsproxy: objref %d\n", ns_objref);
-+	if (ns_objref < 0)
-+		return ns_objref;
-+
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_TASK_NS);
-+	if (!h)
-+		return -ENOMEM;
-+	h->ns_objref = ns_objref;
-+	ret = ckpt_write_obj(ctx, &h->h);
-+	ckpt_hdr_put(ctx, h);
-+
-+	return ret;
-+}
-+
- static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
- {
- 	struct ckpt_hdr_task_objs *h;
-@@ -110,6 +140,19 @@ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
- 	int mm_objref;
- 	int ret;
- 
-+	/*
-+	 * Shared objects may have dependencies among them: task->mm
-+	 * depends on task->nsproxy (by ipc_ns). Therefore first save
-+	 * the namespaces, and then the remaining shared objects.
-+	 * During restart a task will already have its namespaces
-+	 * restored when it gets to restore, e.g. its memory.
-+	 */
-+
-+	ret = checkpoint_task_ns(ctx, t);
-+	ckpt_debug("ns: objref %d\n", ret);
-+	if (ret < 0)
-+		return ret;
-+
- 	files_objref = checkpoint_obj_file_table(ctx, t);
- 	ckpt_debug("files: objref %d\n", files_objref);
- 	if (files_objref < 0) {
-@@ -284,6 +327,9 @@ int ckpt_collect_task(struct ckpt_ctx *ctx, struct task_struct *t)
- {
- 	int ret;
- 
-+	ret = ckpt_collect_ns(ctx, t);
-+	if (ret < 0)
-+		return ret;
- 	ret = ckpt_collect_file_table(ctx, t);
- 	if (ret < 0)
- 		return ret;
-@@ -359,11 +405,46 @@ static int restore_task_struct(struct ckpt_ctx *ctx)
- 	return ret;
- }
- 
-+static int restore_task_ns(struct ckpt_ctx *ctx)
-+{
-+	struct ckpt_hdr_task_ns *h;
-+	struct nsproxy *nsproxy;
-+	int ret = 0;
-+
-+	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_TASK_NS);
-+	if (IS_ERR(h))
-+		return PTR_ERR(h);
-+
-+	nsproxy = ckpt_obj_fetch(ctx, h->ns_objref, CKPT_OBJ_NS);
-+	if (IS_ERR(nsproxy)) {
-+		ret = PTR_ERR(nsproxy);
-+		goto out;
-+	}
-+
-+	if (nsproxy != task_nsproxy(current)) {
-+		get_nsproxy(nsproxy);
-+		switch_task_namespaces(current, nsproxy);
-+	}
-+ out:
-+	ckpt_debug("nsproxy: ret %d (%p)\n", ret, task_nsproxy(current));
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-+
- static int restore_task_objs(struct ckpt_ctx *ctx)
- {
- 	struct ckpt_hdr_task_objs *h;
- 	int ret;
- 
-+	/*
-+	 * Namespaces come first, because ->mm depends on ->nsproxy,
-+	 * and because shared objects are restored before they are
-+	 * referenced. See comment in checkpoint_task_objs.
-+	 */
-+	ret = restore_task_ns(ctx);
-+	if (ret < 0)
-+		return ret;
-+
- 	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_TASK_OBJS);
- 	if (IS_ERR(h))
- 		return PTR_ERR(h);
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index f74e6c0..7082283 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -22,6 +22,7 @@
- #include <linux/pid_namespace.h>
- #include <net/net_namespace.h>
- #include <linux/ipc_namespace.h>
-+#include <linux/checkpoint.h>
- 
- static struct kmem_cache *nsproxy_cachep;
- 
-@@ -233,10 +234,145 @@ void exit_task_namespaces(struct task_struct *p)
- 	switch_task_namespaces(p, NULL);
- }
- 
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index f54dab8..4e48384 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -767,6 +767,9 @@ static const struct file_operations null_fops = {
+ 	.read		= read_null,
+ 	.write		= write_null,
+ 	.splice_write	= splice_write_null,
 +#ifdef CONFIG_CHECKPOINT
-+int ckpt_collect_ns(struct ckpt_ctx *ctx, struct task_struct *t)
-+{
-+	struct nsproxy *nsproxy;
-+	int exists;
-+	int ret;
-+
-+	rcu_read_lock();
-+	nsproxy = task_nsproxy(t);
-+	if (nsproxy)
-+		get_nsproxy(nsproxy);
-+	rcu_read_unlock();
-+
-+	if (!nsproxy)
-+		return 0;
-+
-+	/* if already exists, don't proceed inside the struct */
-+	exists = ckpt_obj_lookup(ctx, nsproxy, CKPT_OBJ_NS);
-+
-+	ret = ckpt_obj_collect(ctx, nsproxy, CKPT_OBJ_NS);
-+	if (ret < 0 || exists)
-+		goto out;
-+
-+	/* TODO: collect other namespaces here */
-+ out:
-+	put_nsproxy(nsproxy);
-+	return ret;
-+}
-+
-+static int checkpoint_ns(struct ckpt_ctx *ctx, void *ptr)
-+{
-+	struct nsproxy *nsproxy = ptr;
-+	struct ckpt_hdr_ns *h;
-+	int ret;
-+
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_NS);
-+	if (!h)
-+		return -ENOMEM;
-+
-+	/* TODO: Write other namespaces here */
-+
-+	ret = ckpt_write_obj(ctx, &h->h);
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-+
-+static void *restore_ns(struct ckpt_ctx *ctx)
-+{
-+	struct ckpt_hdr_ns *h;
-+	struct nsproxy *nsproxy = NULL;
-+	struct uts_namespace *uts_ns;
-+	struct ipc_namespace *ipc_ns;
-+	struct mnt_namespace *mnt_ns;
-+	struct net *net_ns;
-+	int ret = 0;
-+
-+	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_NS);
-+	if (IS_ERR(h))
-+		return (void *) h;
-+
-+	uts_ns = ctx->root_nsproxy->uts_ns;
-+	ipc_ns = ctx->root_nsproxy->ipc_ns;
-+	mnt_ns = ctx->root_nsproxy->mnt_ns;
-+	net_ns = ctx->root_nsproxy->net_ns;
-+
-+	if (uts_ns == current->nsproxy->uts_ns &&
-+	    ipc_ns == current->nsproxy->ipc_ns &&
-+	    mnt_ns == current->nsproxy->mnt_ns &&
-+	    net_ns == current->nsproxy->net_ns) {
-+		/* all xxx-ns are identical: reuse nsproxy */
-+		nsproxy = current->nsproxy;
-+		get_nsproxy(nsproxy);
-+	} else {
-+		nsproxy = create_nsproxy();
-+		if (!nsproxy) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+
-+		get_uts_ns(uts_ns);
-+		nsproxy->uts_ns = uts_ns;
-+		get_ipc_ns(ipc_ns);
-+		nsproxy->ipc_ns = ipc_ns;
-+		get_mnt_ns(mnt_ns);
-+		nsproxy->mnt_ns = mnt_ns;
-+		get_net(net_ns);
-+		nsproxy->net_ns = net_ns;
-+
-+		get_pid_ns(current->nsproxy->pid_ns);
-+		nsproxy->pid_ns = current->nsproxy->pid_ns;
-+	}
-+ out:
-+	if (ret < 0)
-+		nsproxy = ERR_PTR(ret);
-+	ckpt_hdr_put(ctx, h);
-+	return (void *) nsproxy;
-+}
-+
-+static int obj_ns_grab(void *ptr)
-+{
-+	get_nsproxy((struct nsproxy *) ptr);
-+	return 0;
-+}
-+
-+static void obj_ns_drop(void *ptr, int lastref)
-+{
-+	put_nsproxy((struct nsproxy *) ptr);
-+}
-+
-+static int obj_ns_users(void *ptr)
-+{
-+	return atomic_read(&((struct nsproxy *) ptr)->count);
-+}
-+
-+/* ns object */
-+static const struct ckpt_obj_ops ckpt_obj_nsproxy_ops = {
-+	.obj_name = "NSPROXY",
-+	.obj_type = CKPT_OBJ_NS,
-+	.ref_drop = obj_ns_drop,
-+	.ref_grab = obj_ns_grab,
-+	.ref_users = obj_ns_users,
-+	.checkpoint = checkpoint_ns,
-+	.restore = restore_ns,
-+};
-+
-+static inline int checkpoint_register_nsproxy(void)
-+{
-+	return register_checkpoint_obj(&ckpt_obj_nsproxy_ops);
-+}
-+#endif /* CONFIG_CHECKPOINT */
-+
- static int __init nsproxy_cache_init(void)
- {
- 	nsproxy_cachep = KMEM_CACHE(nsproxy, SLAB_PANIC);
-+#ifdef CONFIG_CHECKPOINT
-+	return checkpoint_register_nsproxy();
-+#else
- 	return 0;
++	.checkpoint	= generic_file_checkpoint,
 +#endif
- }
+ };
  
- module_init(nsproxy_cache_init);
+ #ifdef CONFIG_DEVPORT
+@@ -783,6 +786,9 @@ static const struct file_operations zero_fops = {
+ 	.read		= read_zero,
+ 	.write		= write_zero,
+ 	.mmap		= mmap_zero,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint	= generic_file_checkpoint,
++#endif
+ };
+ 
+ /*
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 2fd3d39..47a224c 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1169,6 +1169,9 @@ const struct file_operations random_fops = {
+ 	.poll  = random_poll,
+ 	.unlocked_ioctl = random_ioctl,
+ 	.fasync = random_fasync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+ 
+ const struct file_operations urandom_fops = {
+@@ -1176,6 +1179,9 @@ const struct file_operations urandom_fops = {
+ 	.write = random_write,
+ 	.unlocked_ioctl = random_ioctl,
+ 	.fasync = random_fasync,
++#ifdef CONFIG_CHECKPOINT
++	.checkpoint = generic_file_checkpoint,
++#endif
+ };
+ 
+ /***************************************************************
 -- 
 1.6.3.3
 
