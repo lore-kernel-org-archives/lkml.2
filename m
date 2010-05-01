@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab0EAWpS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 18:45:18 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50752 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757134Ab0EAWpN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 18:45:13 -0400
-Date: Sat, 1 May 2010 23:44:29 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
-Message-ID: <20100501224429.GA17693@n2100.arm.linux.org.uk>
-References: <1270681920-4461-1-git-send-email-linus.walleij@stericsson.com> <v2se9c3a7c21004071645u8180f4d7p3b4b1f96de11303e@mail.gmail.com> <CEE6BB42CAD6E947908279175AF8470A03A50F78@EXDCVYMBSTM006.EQ1STM.local> <t2qe9c3a7c21004141815x70ecf123p4364802681417da9@mail.gmail.com> <q2o63386a3d1004162158v296379fat2b376d5c4c087378@mail.gmail.com> <20100422110025.GC20008@n2100.arm.linux.org.uk> <g2qe9c3a7c21005011500l11511d43i12d971775b139c3b@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <g2qe9c3a7c21005011500l11511d43i12d971775b139c3b@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1757664Ab0EAWpx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 18:45:53 -0400
+Received: from t21.t-2.net ([84.255.209.100]:48080 "EHLO t21.t-2.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757496Ab0EAWpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 May 2010 18:45:51 -0400
+Subject: Re: [PATCH] console logging detour via printk
+From: Samo Pogacnik <samo_pogacnik@t-2.net>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-embedded <linux-embedded@vger.kernel.org>,
+       linux kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100501204131.4c7aeae4@lxorguk.ukuu.org.uk>
+References: <1272664980.10241.77.camel@itpsd6lap>
+	 <20100501120418.6fca2aad@lxorguk.ukuu.org.uk>
+	 <1272739689.2147.156.camel@itpsd6lap>
+	 <20100501204131.4c7aeae4@lxorguk.ukuu.org.uk>
+Content-Type: text/plain
+Date: Sun, 02 May 2010 00:45:48 +0200
+Message-Id: <1272753948.2147.262.camel@itpsd6lap>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
+X-SGG-UMAMSID: 20100501224549Z32579t21.t-2.net 1O8LRV-0008TT-HS
+X-SGG-RESULT: 20100501224549Z32579t21.t-2.net C1:OK E1:OK MX1:OK BL:OK SPF:off  CT:Unknown CM: SIP:84.255.254.67 SMF:samo_pogacnik@t-2.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 01, 2010 at 03:00:09PM -0700, Dan Williams wrote:
-> Just to clarify are you nak'ing these patches for upstream inclusion
-> until this testing occurs?  Or do we just need a !ARCH_VERSATILE
-> somewhere to allow any incompatibilities to be worked out later
-> in-tree?
+Dne 01.05.2010 (sob) ob 20:41 +0100 je Alan Cox zapisal(a):
+> > The distros have no problem logging complete console output into log
+> > files or over the network, because they simply do not do it at least for
+> > the initrd part of the boot process (i'd be glad, if i'm wrong). 
+> 
+> I'd have to double check - but its trivial to move the log if so.
+> 
+> > > I suspect what you actually need for such logging might be to write a
+> > > very simple tty driver whose write method is implemented as printk. That
+> > > works in the general case and doesn't require hacking up the code
+> > > everywhere else.
+> > 
+> > Looks to me that some kernel code is welcome:)?
+> 
+> I really don't see the point but if you must do it then doing it as its
+> own driver would at least avoid making a mess in the rest of the kernel,
+> at which point it becomes less of a problem
+> 
+> > > However given your init stuff can trivially use openpty to set up a logged
+> > > console I am not sure I see the point in doing this in kernel in the
+> > > first place.
+> > > 
+> > 
+> > As said above, how to bridge kernel boot start and logging daemon
+> > start-up without kernel help, especially when initrd is in the way? imho
+> > it would be too complicated.
+> 
+> Put the logging start up in the initrd, its just a ramdisk its not
+> special in any way at all.
+I understand and can agree with everything you said, however providing
+an additional mechanism might not hurt. Funny enough by generalizing the
+patch for any console type, the essential code change is made at the
+same place where initial console redirection mechanism has been
+implemented. And again, console redirection can not log anything that
+has been output to console prior to redirection activation.  
 
-What I don't want to do is to get into the situation where we throw
-this patchset into the kernel and then find that we have to invent a
-whole new implementation in the various primecell drivers to support
-the Versatile hardware.
+regards, Samo
 
-Versatile has some MUXing on three of the DMA signals, so (eg) we
-really don't want UARTs claiming DMAs just because they're in existence
-and not in use - that would prevent DMAs from being used for (eg) AACI
-or MMC.
-
-The alternative is that we could just take the attitude that Versatile/
-Realview will never have DMA support implemented, but that seems rather
-silly, as they've tended to be the first platforms I get new CPU
-architectures for.  (This is why DMA coherency stuff on new architectures
-tends to be left for others to do...)
