@@ -1,251 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750774Ab0EAEWM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 00:22:12 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50463 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab0EAEWK (ORCPT
+	id S1751136Ab0EAFso (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 01:48:44 -0400
+Received: from mail-iw0-f182.google.com ([209.85.223.182]:54106 "EHLO
+	mail-iw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab0EAFsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 00:22:10 -0400
+	Sat, 1 May 2010 01:48:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=plAbZ6D6k31eocpLpjC/1ku/jWvNpGB9HVwm17CPTt0obrCa1PBrTP4f/VIn+RpbAP
-         lVcQ80Cd7DQE8hTc55foCPyIq0CRln0NPlmjKk8b33ZYZCESYlDp0Hr0hJzwaSpMpv9n
-         gZJcQHJH1uI1kK1K/T4s7D1fEwIFnzHoR5C68=
-From: Dustin Dorroh <dustindorroh@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Dustin Dorroh <dustindorroh@gmail.com>
-Subject: [PATCH] Staging: comedi: ssc_dnp: adjusted comments: coding style issue
-Date: Fri, 30 Apr 2010 21:22:00 -0700
-Message-Id: <1272687720-27039-1-git-send-email-dustindorroh@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Uqt3KulVSD/oB2MyZ0TNF98mUi66Mm/zZMqTl8JI52U5hW5Ily6LVNiwq5Avw53KGB
+         6S4hDsRPaF0/+TFZqdac9T3G+8Fltv/EERYcc8cC7CmQISLkD1SYZXrO6Pqv3V2dhErn
+         UTOxANoLyvRNPYnzWZKy9XziGXeeuC7qGpVrE=
+Subject: Re: [BUG] perf: perf trace does not work anymore
+From: Tom Zanussi <tzanussi@gmail.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       peterz@infradead.org, mingo@elte.hu, paulus@samba.org,
+       davem@davemloft.net, robert.richter@amd.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+In-Reply-To: <v2mbd4cb8901004290528jb13ced31j7f8b0231019bbbcb@mail.gmail.com>
+References: <v2mbd4cb8901004290528jb13ced31j7f8b0231019bbbcb@mail.gmail.com>
+Content-Type: text/plain
+Date: Sat, 01 May 2010 00:44:59 -0500
+Message-Id: <1272692699.11904.16.camel@tropicana>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding style issue.
+Hi,
 
-Signed-off-by: Dustin Dorroh <dustindorroh@gmail.com>
+On Thu, 2010-04-29 at 14:28 +0200, Stephane Eranian wrote:
+> Hi,
+> 
+> I am trying to use perf trace to dump the raw samples.
+> 
+> $ perf record -R noploop 5
+> noploop for 5 seconds
+> [ perf record: Woken up 3 times to write data ]
+> [ perf record: Captured and wrote 0.269 MB perf.data (~11759 samples) ]
+> 
+> $ perf trace
+>   Fatal: reading input file (size expected=3 received=-1)
+> 
+> Seems like trace does not understand the format of the perf.data file anymore.
+> This used to work. Did you change the purpose of perf trace?
+
+Hmm, I don't think this has ever worked - you're recording raw samples
+but no tracepoints - the current code seems to assume raw samples means
+tracepoints and anyway perf trace currently only deals with tracepoint
+events.  It would have worked before if you had recorded tracepoint
+events - perhaps that's what you're remembering? 
+
+In any case, you should be able to dump the raw non-tracepoint samples
+using perf report -D, but that also shows the same problem.
+
+The patch below should at least allow perf report -D to work - that
+won't help displaying them in perf trace though, unless/until it gets
+enhanced to do something with non-tracepoint events.
+
+Also, there seems to be another recent problem showing the 'size
+expected' warnings, probably to do with some malformed trace event
+descriptions, but that's a different problem, a warning whereas this
+shows up as an error. 
+
+>From 17b268102265b673b7e7d589f7aaf983d7178766 Mon Sep 17 00:00:00 2001
+From: Tom Zanussi <tzanussi@gmail.com>
+Date: Sat, 1 May 2010 00:09:25 -0500
+Subject: [PATCH] perf: record TRACE_INFO only if using tracepoints and
+SAMPLE_RAW
+
+The current perf code implicitly assumes SAMPLE_RAW means tracepoints
+are being used, but doesn't check for that.  It happily records the
+TRACE_INFO even if SAMPLE_RAW is used without tracepoints, but when
+the perf data is read it won't go any further when it finds TRACE_INFO
+but no tracepoints, and displays misleading errors.
+
+This adds a check for both in perf-record, and won't record TRACE_INFO
+unless both are true.  This at least allows perf report -D to dump raw
+events, and avoids triggering a misleading error condition in perf
+trace.  It doesn't actually enable the non-tracepoint raw events to be
+displayed in perf trace, since perf trace currently only deals with
+tracepoint events.
+
+Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
 ---
- drivers/staging/comedi/drivers/ssv_dnp.c |   97 ++++++++++++++++--------------
- 1 files changed, 51 insertions(+), 46 deletions(-)
+ tools/perf/builtin-record.c        |   25 ++++++++++++++-----------
+ tools/perf/util/header.c           |    1 -
+ tools/perf/util/parse-events.h     |    1 +
+ tools/perf/util/trace-event-info.c |    5 +++++
+ 4 files changed, 20 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ssv_dnp.c b/drivers/staging/comedi/drivers/ssv_dnp.c
-index 17c92a5..f49ea03 100644
---- a/drivers/staging/comedi/drivers/ssv_dnp.c
-+++ b/drivers/staging/comedi/drivers/ssv_dnp.c
-@@ -41,14 +41,14 @@ Status: unknown
- /* 0..3 remain unchanged! For details about Port C Mode Register see         */
- /* the remarks in dnp_insn_config() below.                                   */
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 83b308a..722b6f1 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -567,11 +567,12 @@ static int __cmd_record(int argc, const char **argv)
+ 			return err;
+ 	}
  
--#define CSCIR 0x22		/* Chip Setup and Control Index Register       */
--#define CSCDR 0x23		/* Chip Setup and Control Data Register        */
--#define PAMR  0xa5		/* Port A Mode Register                        */
--#define PADR  0xa9		/* Port A Data Register                        */
--#define PBMR  0xa4		/* Port B Mode Register                        */
--#define PBDR  0xa8		/* Port B Data Register                        */
--#define PCMR  0xa3		/* Port C Mode Register                        */
--#define PCDR  0xa7		/* Port C Data Register                        */
-+#define CSCIR 0x22		/* Chip Setup and Control Index Register     */
-+#define CSCDR 0x23		/* Chip Setup and Control Data Register      */
-+#define PAMR  0xa5		/* Port A Mode Register                      */
-+#define PADR  0xa9		/* Port A Data Register                      */
-+#define PBMR  0xa4		/* Port B Mode Register                      */
-+#define PBDR  0xa8		/* Port B Data Register                      */
-+#define PCMR  0xa3		/* Port C Mode Register                      */
-+#define PCDR  0xa7		/* Port C Data Register                      */
+-	if (raw_samples) {
++	if (raw_samples && have_tracepoints(attrs, nr_counters)) {
+ 		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
+ 	} else {
+ 		for (i = 0; i < nr_counters; i++) {
+-			if (attrs[i].sample_type & PERF_SAMPLE_RAW) {
++			if (attrs[i].sample_type & PERF_SAMPLE_RAW &&
++				attrs[i].type == PERF_TYPE_TRACEPOINT) {
+ 				perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
+ 				break;
+ 			}
+@@ -669,16 +670,18 @@ static int __cmd_record(int argc, const char **argv)
+ 			return err;
+ 		}
  
- /* This data structure holds information about the supported boards -------- */
+-		err = event__synthesize_tracing_data(output, attrs,
+-						     nr_counters,
+-						     process_synthesized_event,
+-						     session);
+-		if (err <= 0) {
+-			pr_err("Couldn't record tracing data.\n");
+-			return err;
+-		}
++		if (have_tracepoints(attrs, nr_counters)) {
++			err = event__synthesize_tracing_data(output, attrs,
++							     nr_counters,
++							     process_synthesized_event,
++							     session);
++			if (err <= 0) {
++				pr_err("Couldn't record tracing data.\n");
++				return err;
++			}
  
-@@ -59,8 +59,10 @@ struct dnp_board {
- 	int have_dio;
+-		advance_output(err);
++			advance_output(err);
++		}
+ 	}
+ 
+ 	machine = perf_session__find_host_machine(session);
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 6227dc4..fe12276 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -436,7 +436,6 @@ static int perf_header__adds_write(struct perf_header *self, int fd)
+ 		trace_sec->size = lseek(fd, 0, SEEK_CUR) - trace_sec->offset;
+ 	}
+ 
+-
+ 	if (perf_header__has_feat(self, HEADER_BUILD_ID)) {
+ 		struct perf_file_section *buildid_sec;
+ 
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index b8c1f64..fc4ab3f 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -13,6 +13,7 @@ struct tracepoint_path {
  };
  
--static const struct dnp_board dnp_boards[] = {	/* we only support one DNP 'board'   */
--	{			/* variant at the moment             */
-+static const struct dnp_board dnp_boards[] = {	
-+				/* we only support one DNP 'board'   	     */
-+				/* variant at the moment             	     */
-+	{
- 	 .name = "dnp-1486",
- 	 .ai_chans = 16,
- 	 .ai_bits = 12,
-@@ -80,9 +82,9 @@ struct dnp_private_data {
- #define devpriv ((dnp_private *)dev->private)
+ extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
++extern bool have_tracepoints(struct perf_event_attr *pattrs, int nb_events);
  
- /* ------------------------------------------------------------------------- */
--/* The struct comedi_driver structure tells the Comedi core module which functions  */
--/* to call to configure/deconfigure (attach/detach) the board, and also      */
--/* about the kernel module that contains the device code.                    */
-+/* The struct comedi_driver structure tells the Comedi core module which     */
-+/* functions to call to configure/deconfigure (attach/detach) the board,     */
-+/* and also about the kernel module that contains the device code.           */
- /*                                                                           */
- /* In the following section we define the API of this driver.                */
- /* ------------------------------------------------------------------------- */
-@@ -97,7 +99,8 @@ static struct comedi_driver driver_dnp = {
- 	.detach = dnp_detach,
- 	.board_name = &dnp_boards[0].name,
- 	/* only necessary for non-PnP devs   */
--	.offset = sizeof(struct dnp_board),	/* like ISA-PnP, PCI or PCMCIA.      */
-+	/* like ISA-PnP, PCI or PCMCIA.      */					
-+	.offset = sizeof(struct dnp_board),
- 	.num_names = ARRAY_SIZE(dnp_boards),
- };
+ extern int			nr_counters;
  
-@@ -124,26 +127,26 @@ static int dnp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 30cd9b5..0a1fb9d 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -487,6 +487,11 @@ get_tracepoints_path(struct perf_event_attr *pattrs, int nb_events)
+ 	return nr_tracepoints > 0 ? path.next : NULL;
+ }
  
- 	printk("comedi%d: dnp: ", dev->minor);
- 
--	/* Autoprobing: this should find out which board we have. Currently only   */
--	/* the 1486 board is supported and autoprobing is not implemented :-)      */
--	/* dev->board_ptr = dnp_probe(dev); */
-+	/* Autoprobing: this should find out which board we have.	     */
-+	/* Currently only the 1486 board is supported and autoprobing is     */
-+	/* not implemented :-) dev->board_ptr = dnp_probe(dev);		     */
- 
--	/* Initialize the name of the board. We can use the "thisboard" macro now. */
-+	/* Initialize the board name. We can use the "thisboard" macro now.  */
- 	dev->board_name = thisboard->name;
- 
--	/* Allocate the private structure area. alloc_private() is a convenient    */
--	/* macro defined in comedidev.h.                                           */
-+	/* Allocate the private structure area. alloc_private() is a	     */
-+	/* convenient macro defined in comedidev.h.			     */
- 	if (alloc_private(dev, sizeof(struct dnp_private_data)) < 0)
- 		return -ENOMEM;
- 
--	/* Allocate the subdevice structures. alloc_subdevice() is a convenient    */
--	/* macro defined in comedidev.h.                                           */
-+	/* Allocate the subdevice structures. alloc_subdevice() is a	     */
-+	/* convenient macro defined in comedidev.h.			     */
- 
- 	if (alloc_subdevices(dev, 1) < 0)
- 		return -ENOMEM;
- 
- 	s = dev->subdevices + 0;
--	/* digital i/o subdevice                                                   */
-+	/* digital i/o subdevice */
- 	s->type = COMEDI_SUBD_DIO;
- 	s->subdev_flags = SDF_READABLE | SDF_WRITABLE;
- 	s->n_chan = 20;
-@@ -154,11 +157,11 @@ static int dnp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	printk("attached\n");
- 
--	/* We use the I/O ports 0x22,0x23 and 0xa3-0xa9, which are always
--	 * allocated for the primary 8259, so we don't need to allocate them
--	 * ourselves. */
-+	/* We use the I/O ports 0x22,0x23 and 0xa3-0xa9, which are always    */
-+	/* allocated for the primary 8259, so we don't need to allocate them */
-+	/* ourselves. 							     */
- 
--	/* configure all ports as input (default)                                  */
-+	/* configure all ports as input (default) */
- 	outb(PAMR, CSCIR);
- 	outb(0x00, CSCDR);
- 	outb(PBMR, CSCIR);
-@@ -181,7 +184,7 @@ static int dnp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- static int dnp_detach(struct comedi_device *dev)
++bool have_tracepoints(struct perf_event_attr *pattrs, int nb_events)
++{
++	return get_tracepoints_path(pattrs, nb_events) ? true : false;
++}
++
+ int read_tracing_data(int fd, struct perf_event_attr *pattrs, int nb_events)
  {
- 
--	/* configure all ports as input (default)                                  */
-+	/* configure all ports as input (default) */
- 	outb(PAMR, CSCIR);
- 	outb(0x00, CSCDR);
- 	outb(PBMR, CSCIR);
-@@ -189,7 +192,7 @@ static int dnp_detach(struct comedi_device *dev)
- 	outb(PCMR, CSCIR);
- 	outb((inb(CSCDR) & 0xAA), CSCDR);
- 
--	/* announce that we are finished                                           */
-+	/* announce that we are finished */
- 	printk("comedi%d: dnp: remove\n", dev->minor);
- 
- 	return 0;
-@@ -208,15 +211,15 @@ static int dnp_dio_insn_bits(struct comedi_device *dev,
- {
- 
- 	if (insn->n != 2)
--		return -EINVAL;	/* insn uses data[0] and data[1]     */
-+		return -EINVAL;	/* insn uses data[0] and data[1]     	     */
- 
--	/* The insn data is a mask in data[0] and the new data in data[1], each    */
--	/* channel cooresponding to a bit.                                         */
--
--	/* Ports A and B are straight forward: each bit corresponds to an output   */
--	/* pin with the same order. Port C is different: bits 0...3 correspond to  */
--	/* bits 4...7 of the output register (PCDR).                               */
-+	/* The insn data is a mask in data[0] and the new data in data[1],   */
-+	/* each channel cooresponding to a bit. 			     */
- 
-+	/* Ports A and B are straight forward: each bit corresponds to an    */
-+	/* output pin with the same order. Port C is different: bits 0...3   */
-+	/* correspond to  bits 4...7 of the output register (PCDR).	     */
-+	
- 	if (data[0]) {
- 
- 		outb(PADR, CSCIR);
-@@ -235,7 +238,7 @@ static int dnp_dio_insn_bits(struct comedi_device *dev,
- 		     | (u8) ((data[1] & 0x0F0000) >> 12), CSCDR);
- 	}
- 
--	/* on return, data[1] contains the value of the digital input lines.       */
-+	/* on return, data[1] contains the value of the digital input lines. */
- 	outb(PADR, CSCIR);
- 	data[0] = inb(CSCDR);
- 	outb(PBDR, CSCIR);
-@@ -259,8 +262,9 @@ static int dnp_dio_insn_config(struct comedi_device *dev,
- {
- 
- 	u8 register_buffer;
--
--	int chan = CR_CHAN(insn->chanspec);	/* reduces chanspec to lower 16 bits */
-+	
-+	/* reduces chanspec to lower 16 bits */
-+	int chan = CR_CHAN(insn->chanspec);
- 
- 	switch (data[0]) {
- 	case INSN_CONFIG_DIO_OUTPUT:
-@@ -275,11 +279,11 @@ static int dnp_dio_insn_config(struct comedi_device *dev,
- 		return -EINVAL;
- 		break;
- 	}
--	/* Test: which port does the channel belong to?                            */
-+	/* Test: which port does the channel belong to? */
- 
--	/* We have to pay attention with port C: this is the meaning of PCMR:      */
--	/* Bit in PCMR:              7 6 5 4 3 2 1 0                               */
--	/* Corresponding port C pin: d 3 d 2 d 1 d 0   d= don't touch              */
-+	/* We have to pay attention with port C: this is the meaning of PCMR:*/
-+	/* Bit in PCMR:              7 6 5 4 3 2 1 0			     */
-+	/* Corresponding port C pin: d 3 d 2 d 1 d 0   d= don't touch	     */
- 
- 	if ((chan >= 0) && (chan <= 7)) {
- 		/* this is port A */
-@@ -289,8 +293,9 @@ static int dnp_dio_insn_config(struct comedi_device *dev,
- 		chan -= 8;
- 		outb(PBMR, CSCIR);
- 	} else if ((chan >= 16) && (chan <= 19)) {
--		/* this is port C; multiplication with 2 brings bits into correct        */
--		/* position for PCMR!                                                    */
-+		/* this is port C */
-+		/* multiplication with 2 brings bits into correct position   */
-+		/* for PCMR! 						     */
- 		chan -= 16;
- 		chan *= 2;
- 		outb(PCMR, CSCIR);
-@@ -298,7 +303,7 @@ static int dnp_dio_insn_config(struct comedi_device *dev,
- 		return -EINVAL;
- 	}
- 
--	/* read 'old' direction of the port and set bits (out=1, in=0)             */
-+	/* read 'old' direction of the port and set bits (out=1, in=0) 	     */
- 	register_buffer = inb(CSCDR);
- 	if (data[0] == COMEDI_OUTPUT)
- 		register_buffer |= (1 << chan);
+ 	char buf[BUFSIZ];
 -- 
-1.7.0.4
+1.6.4.GIT
+
+
 
