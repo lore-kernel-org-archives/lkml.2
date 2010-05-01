@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab0EAOY7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:24:59 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:62807 "EHLO
+	id S932459Ab0EAOei (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:34:38 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63790 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752878Ab0EAOY4 (ORCPT
+	with ESMTP id S1752900Ab0EAOe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:24:56 -0400
+	Sat, 1 May 2010 10:34:28 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, linux-api@vger.kernel.org,
-       x86@kernel.org, linux-s390@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: [PATCH v21 009/100] eclone (9/11): Implement sys_eclone for s390
-Date: Sat,  1 May 2010 10:14:51 -0400
-Message-Id: <1272723382-19470-10-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
+       linux-mm@kvack.org
+Subject: [PATCH v21 045/100] c/r: export shmem_getpage() to support shared memory
+Date: Sat,  1 May 2010 10:15:27 -0400
+Message-Id: <1272723382-19470-46-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -24,147 +24,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Serge E. Hallyn <serue@us.ibm.com>
+Export functionality to retrieve specific pages from shared memory
+given an inode in shmem-fs; this will be used in the next two patches
+to provide support for c/r of shared memory.
 
-Implement the s390 hook for sys_eclone().
+mm/shmem.c:
+- shmem_getpage() and 'enum sgp_type' moved to linux/mm.h
 
-Changelog:
-	Nov 24: Removed user-space code from commit log. See user-cr git tree.
-	Nov 17: remove redundant flags_high check
-	Nov 13: As suggested by Heiko, convert eclone to take its
-		parameters via registers.
-
-Cc: linux-api@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-s390@vger.kernel.org
-Cc: linuxppc-dev@ozlabs.org
-Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
+Cc: linux-mm@kvack.org
+Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- arch/s390/include/asm/unistd.h    |    3 ++-
- arch/s390/kernel/compat_linux.c   |   17 +++++++++++++++++
- arch/s390/kernel/compat_wrapper.S |    8 ++++++++
- arch/s390/kernel/process.c        |   37 +++++++++++++++++++++++++++++++++++++
- arch/s390/kernel/syscalls.S       |    1 +
- 5 files changed, 65 insertions(+), 1 deletions(-)
+ include/linux/mm.h |   11 +++++++++++
+ mm/shmem.c         |   15 ++-------------
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/arch/s390/include/asm/unistd.h b/arch/s390/include/asm/unistd.h
-index 5f00751..ff13be1 100644
---- a/arch/s390/include/asm/unistd.h
-+++ b/arch/s390/include/asm/unistd.h
-@@ -269,7 +269,8 @@
- #define	__NR_pwritev		329
- #define __NR_rt_tgsigqueueinfo	330
- #define __NR_perf_event_open	331
--#define NR_syscalls 332
-+#define __NR_eclone		332
-+#define NR_syscalls 333
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 913c7fe..5ebb781 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -340,6 +340,17 @@ void put_pages_list(struct list_head *pages);
  
- /* 
-  * There are some system calls that are not present on 64 bit, some
-diff --git a/arch/s390/kernel/compat_linux.c b/arch/s390/kernel/compat_linux.c
-index 73b624e..1f70d6f 100644
---- a/arch/s390/kernel/compat_linux.c
-+++ b/arch/s390/kernel/compat_linux.c
-@@ -663,6 +663,23 @@ asmlinkage long sys32_write(unsigned int fd, char __user * buf, size_t count)
- 	return sys_write(fd, buf, count);
- }
+ void split_page(struct page *page, unsigned int order);
  
-+asmlinkage long sys32_clone(void)
-+{
-+	struct pt_regs *regs = task_pt_regs(current);
-+	unsigned long clone_flags;
-+	unsigned long newsp;
-+	int __user *parent_tidptr, *child_tidptr;
++/* Flag allocation requirements to shmem_getpage and shmem_swp_alloc */
++enum sgp_type {
++	SGP_READ,	/* don't exceed i_size, don't allocate page */
++	SGP_CACHE,	/* don't exceed i_size, may allocate page */
++	SGP_DIRTY,	/* like SGP_CACHE, but set new page dirty */
++	SGP_WRITE,	/* may exceed i_size, may allocate page */
++};
 +
-+	clone_flags = regs->gprs[3] & 0xffffffffUL;
-+	newsp = regs->orig_gpr2 & 0x7fffffffUL;
-+	parent_tidptr = compat_ptr(regs->gprs[4]);
-+	child_tidptr = compat_ptr(regs->gprs[5]);
-+	if (!newsp)
-+		newsp = regs->gprs[15];
-+	return do_fork(clone_flags, newsp, regs, 0,
-+		       parent_tidptr, child_tidptr);
-+}
++extern int shmem_getpage(struct inode *inode, unsigned long idx,
++			 struct page **pagep, enum sgp_type sgp, int *type);
 +
  /*
-  * 31 bit emulation wrapper functions for sys_fadvise64/fadvise64_64.
-  * These need to rewrite the advise values for POSIX_FADV_{DONTNEED,NOREUSE}
-diff --git a/arch/s390/kernel/compat_wrapper.S b/arch/s390/kernel/compat_wrapper.S
-index 672ce52..b7bedfa 100644
---- a/arch/s390/kernel/compat_wrapper.S
-+++ b/arch/s390/kernel/compat_wrapper.S
-@@ -1847,6 +1847,14 @@ sys_clone_wrapper:
- 	llgtr	%r5,%r5			# int *
- 	jg	sys_clone		# branch to system call
+  * Compound pages have a destructor function.  Provide a
+  * prototype for that function and accessor functions.
+diff --git a/mm/shmem.c b/mm/shmem.c
+index eef4ebe..d93c394 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -98,14 +98,6 @@ static struct vfsmount *shm_mnt;
+ /* Pretend that each entry is of this size in directory's i_size */
+ #define BOGO_DIRENT_SIZE 20
  
-+	.globl	sys_eclone_wrapper
-+sys_eclone_wrapper:
-+	llgfr	%r2,%r2			# unsigned int
-+	llgtr	%r3,%r3			# struct clone_args *
-+	lgfr	%r4,%r4			# int
-+	llgtr	%r5,%r5			# pid_t *
-+	jg	sys_eclone		# branch to system call
-+
- 	.globl	sys32_execve_wrapper
- sys32_execve_wrapper:
- 	llgtr	%r2,%r2			# char *
-diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
-index 1039fde..799cbb0 100644
---- a/arch/s390/kernel/process.c
-+++ b/arch/s390/kernel/process.c
-@@ -240,6 +240,43 @@ SYSCALL_DEFINE4(clone, unsigned long, newsp, unsigned long, clone_flags,
- 		       parent_tidptr, child_tidptr);
+-/* Flag allocation requirements to shmem_getpage and shmem_swp_alloc */
+-enum sgp_type {
+-	SGP_READ,	/* don't exceed i_size, don't allocate page */
+-	SGP_CACHE,	/* don't exceed i_size, may allocate page */
+-	SGP_DIRTY,	/* like SGP_CACHE, but set new page dirty */
+-	SGP_WRITE,	/* may exceed i_size, may allocate page */
+-};
+-
+ #ifdef CONFIG_TMPFS
+ static unsigned long shmem_default_max_blocks(void)
+ {
+@@ -118,9 +110,6 @@ static unsigned long shmem_default_max_inodes(void)
  }
+ #endif
  
-+SYSCALL_DEFINE4(eclone, unsigned int, flags_low, struct clone_args __user *,
-+		uca, int, args_size, pid_t __user *, pids)
-+{
-+	int rc;
-+	struct pt_regs *regs = task_pt_regs(current);
-+	struct clone_args kca;
-+	int __user *parent_tid_ptr;
-+	int __user *child_tid_ptr;
-+	unsigned long flags;
-+	unsigned long __user child_stack;
-+	unsigned long stack_size;
-+
-+	rc = fetch_clone_args_from_user(uca, args_size, &kca);
-+	if (rc)
-+		return rc;
-+
-+	flags = flags_low;
-+	parent_tid_ptr = (int __user *) kca.parent_tid_ptr;
-+	child_tid_ptr =  (int __user *) kca.child_tid_ptr;
-+
-+	stack_size = (unsigned long) kca.child_stack_size;
-+	if (stack_size)
-+		return -EINVAL;
-+
-+	child_stack = (unsigned long) kca.child_stack;
-+	if (!child_stack)
-+		child_stack = regs->gprs[15];
-+
-+	/*
-+	 * TODO: On 32-bit systems, clone_flags is passed in as 32-bit value
-+	 * to several functions. Need to convert clone_flags to 64-bit.
-+	 */
-+	return do_fork_with_pids(flags, child_stack, regs, stack_size,
-+				parent_tid_ptr, child_tid_ptr, kca.nr_pids,
-+				pids);
-+}
-+
- /*
-  * This is trivial, and on the face of it looks like it
-  * could equally well be done in user mode.
-diff --git a/arch/s390/kernel/syscalls.S b/arch/s390/kernel/syscalls.S
-index 201ce6b..08eab1d 100644
---- a/arch/s390/kernel/syscalls.S
-+++ b/arch/s390/kernel/syscalls.S
-@@ -340,3 +340,4 @@ SYSCALL(sys_preadv,sys_preadv,compat_sys_preadv_wrapper)
- SYSCALL(sys_pwritev,sys_pwritev,compat_sys_pwritev_wrapper)
- SYSCALL(sys_rt_tgsigqueueinfo,sys_rt_tgsigqueueinfo,compat_sys_rt_tgsigqueueinfo_wrapper) /* 330 */
- SYSCALL(sys_perf_event_open,sys_perf_event_open,sys_perf_event_open_wrapper)
-+SYSCALL(sys_eclone,sys_eclone,sys_eclone_wrapper)
+-static int shmem_getpage(struct inode *inode, unsigned long idx,
+-			 struct page **pagep, enum sgp_type sgp, int *type);
+-
+ static inline struct page *shmem_dir_alloc(gfp_t gfp_mask)
+ {
+ 	/*
+@@ -1213,8 +1202,8 @@ static inline struct mempolicy *shmem_get_sbmpol(struct shmem_sb_info *sbinfo)
+  * vm. If we swap it in we mark it dirty since we also free the swap
+  * entry since a page cannot live in both the swap and page cache
+  */
+-static int shmem_getpage(struct inode *inode, unsigned long idx,
+-			struct page **pagep, enum sgp_type sgp, int *type)
++int shmem_getpage(struct inode *inode, unsigned long idx,
++		  struct page **pagep, enum sgp_type sgp, int *type)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
+ 	struct shmem_inode_info *info = SHMEM_I(inode);
 -- 
 1.6.3.3
 
