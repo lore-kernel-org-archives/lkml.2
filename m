@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819Ab0EAXZz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 19:25:55 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33842 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755339Ab0EAXZx convert rfc822-to-8bit (ORCPT
+	id S1757598Ab0EAX1Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 19:27:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52250 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab0EAX1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 19:25:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=kUMJ4BmtkXpHGI7haQD2UP80+2JH7oZh8HN0ZQKAtvgTL219T4TtpuLu79o1XLOhr1
-         q5/179Qu73OJTpUlh/HsgLb3E/Vg2wfEAu7TfpMjZ831rcD8C9orpBfn+QQXqG8hsh6C
-         zSZOPb1fhdrDv9P/Hoo7r1NhoeMn0fY0B3QQA=
-MIME-Version: 1.0
-In-Reply-To: <20100501224429.GA17693@n2100.arm.linux.org.uk>
-References: <1270681920-4461-1-git-send-email-linus.walleij@stericsson.com>
-	 <v2se9c3a7c21004071645u8180f4d7p3b4b1f96de11303e@mail.gmail.com>
-	 <CEE6BB42CAD6E947908279175AF8470A03A50F78@EXDCVYMBSTM006.EQ1STM.local>
-	 <t2qe9c3a7c21004141815x70ecf123p4364802681417da9@mail.gmail.com>
-	 <q2o63386a3d1004162158v296379fat2b376d5c4c087378@mail.gmail.com>
-	 <20100422110025.GC20008@n2100.arm.linux.org.uk>
-	 <g2qe9c3a7c21005011500l11511d43i12d971775b139c3b@mail.gmail.com>
-	 <20100501224429.GA17693@n2100.arm.linux.org.uk>
-Date: Sat, 1 May 2010 16:25:52 -0700
-X-Google-Sender-Auth: 71da49ad79b97688
-Message-ID: <h2ue9c3a7c21005011625u4a523dbbs5bdc6869a0bcc71@mail.gmail.com>
-Subject: Re: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
-From: Dan Williams <dan.j.williams@intel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 1 May 2010 19:27:12 -0400
+Date: Sat, 1 May 2010 16:29:17 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
+       cpufreq@vger.kernel.org
+Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with
+ ondemand during disk IO
+Message-ID: <20100501162917.06bcafed@infradead.org>
+In-Reply-To: <20100424045626.GA7561@elf.ucw.cz>
+References: <20100418115949.7b743898@infradead.org>
+	<20100418120346.1b478410@infradead.org>
+	<20100423052439.GB4829@ucw.cz>
+	<20100423065248.3b0a98ab@infradead.org>
+	<20100424045626.GA7561@elf.ucw.cz>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 1, 2010 at 3:44 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sat, May 01, 2010 at 03:00:09PM -0700, Dan Williams wrote:
->> Just to clarify are you nak'ing these patches for upstream inclusion
->> until this testing occurs?  Or do we just need a !ARCH_VERSATILE
->> somewhere to allow any incompatibilities to be worked out later
->> in-tree?
->
-> What I don't want to do is to get into the situation where we throw
-> this patchset into the kernel and then find that we have to invent a
-> whole new implementation in the various primecell drivers to support
-> the Versatile hardware.
->
-> Versatile has some MUXing on three of the DMA signals, so (eg) we
-> really don't want UARTs claiming DMAs just because they're in existence
-> and not in use - that would prevent DMAs from being used for (eg) AACI
-> or MMC.
->
-> The alternative is that we could just take the attitude that Versatile/
-> Realview will never have DMA support implemented, but that seems rather
-> silly, as they've tended to be the first platforms I get new CPU
-> architectures for.  (This is why DMA coherency stuff on new architectures
-> tends to be left for others to do...)
+On Sat, 24 Apr 2010 06:56:26 +0200
+Pavel Machek <pavel@ucw.cz> wrote:
 
-Ok, it will be good to have this approach vetted on a challenging
-arch.  We'll see where things stand when the merge window opens.
+> 
+> So... some old data. It is not exactly athlon 64 -- I don't have that
+> particular number for it -- but: (from my old notes):
+> 
+> thinkpad x32 [52Wh]
+> ~~~~~~~~~~~~
+> idle machine at 600MHz, min bl:         10 W
+>              at 1.8GHz:                 +6.6 W
+> 
+> ...so yes, I kind of see a pattern there. And you should be able to
+> easily see the difference, too, if you took something from that era...
 
---
-Dan
+
+so I finally found a machine based on a Pentium M (similar to this
+Thinkpad, at least according to google) and spend half a day getting its
+Fedora 8 installation to compile a modern kernel (these guys don't
+compile very fast....).
+
+Turns out that things are not as simple as your data suggest.
+The complexity is in USB autosuspend.
+Without USB devices, I see:
+
+"powersave"	9.7 / 9.8  Watts (alternating between these readings)
+"ondemand"      9.7 / 9.8  Watts
+"performance"   9.8 Watts (solid on 9.8, not alternating)
+
+if all USB devices are in autosuspend, it's pretty much the same
+picture.
+
+But if there is an active USB device, the CPU will no longer go to C4,
+but will be stuck in C2 (this is the last generation of Intel chipsets
+that suffer from this behavior; "c2 popup" is what the ich4m is
+missing). And the C2 power behavior does show sensitivity to the CPU
+frequency... roughly 3 1/2 Watts for my machine.
+
+Doing the 'cat' from a usb mount as you suggested, which implies active
+USB DMA, shows this 3 1/2 Watts increase between the old and new
+ondemand. At the same time, the performance went up a little as well (a
+3.7Gb took 3m32.5s before, and now takes 3m20.5s, so that saves a
+little of the energy back).
+
+ 
+
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
