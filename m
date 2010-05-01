@@ -1,180 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932826Ab0EADY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 23:24:58 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:37108 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758661Ab0EADYz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 23:24:55 -0400
-Message-Id: <20100501032120.644762316@vergenet.net>
-User-Agent: quilt/0.48-1
-Date: Sat, 01 May 2010 13:20:16 +1000
-Subject: [patch v2.2 2/4] [PATCH v2.1 2/4] IPVS: make friends with nf_conntrack
-To: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netfilter@vger.kernel.org
-From: Simon Horman <horms@verge.net.au>
-Cc: Wensong Zhang <wensong@linux-vs.org>, Julius Volz <julius.volz@gmail.com>,
-       Patrick McHardy <kaber@trash.net>,
-       "David S. Miller" <davem@davemloft.net>, Hannes Eder <heder@google.com>
-References: <20100501032014.406353538@vergenet.net>
-Content-Disposition: inline; filename=2.patch
+	id S1760059Ab0EADZe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 23:25:34 -0400
+Received: from vana.uk.cvut.cz ([147.32.245.124]:59576 "EHLO vana.vc.cvut.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932757Ab0EADZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 23:25:31 -0400
+X-Greylist: delayed 1862 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Apr 2010 23:25:31 EDT
+Date: Sat, 1 May 2010 04:54:23 +0200
+From: Petr Vandrovec <petr@vandrovec.name>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       x86@kernel.org, Jacob Pan <jacob.jun.pan@intel.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH 2.6.34-rcX] Do not expect PCI devices to return zeroes in PCIe space
+Message-ID: <20100501025423.GA10671@vana.vc.cvut.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From:	Hannes Eder <heder@google.com>
+Hello,
+  openSUSE11.3 32bit kernels hang when installed to the VMware's VMs because Moorestown
+fixed capabilities detection code enters endless loop on Intel's AGP bridges (with
+device ID=7191).  See https://bugzilla.kernel.org/show_bug.cgi?id=15888 for additional
+details.  arch/x86/pci/mrst.c was introduced after 2.6.33, so only 2.6.34-rcX are
+affected.
+				Thanks,
+					Petr Vandrovec
 
-Update the nf_conntrack tuple in reply direction, as we will see
-traffic from the real server (RIP) to the client (CIP).  Once this is
-done we can use netfilters SNAT in POSTROUTING, especially with
-xt_ipvs, to do source NAT, e.g.:
 
-% iptables -t nat -A POSTROUTING -m ipvs --vaddr 192.168.100.30/32 --vport 80 \
-> -j SNAT --to-source 192.168.10.10
+commit 11a35e56ad8275cbf62882d9c0dc2f17c2b5628b
+Author: Petr Vandrovec <petr@vandrovec.name>
+Date:   Fri Apr 30 19:17:43 2010 -0700
 
-Signed-off-by: Hannes Eder <heder@google.com>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+    Do not expect PCI devices to return zeroes in PCIe space
 
- net/netfilter/ipvs/Kconfig      |    2 +-
- net/netfilter/ipvs/ip_vs_core.c |   36 ------------------------------------
- net/netfilter/ipvs/ip_vs_xmit.c |   30 ++++++++++++++++++++++++++++++
- 3 files changed, 31 insertions(+), 37 deletions(-)
+    There is no reason why old pre-PCIe/PCI-X devices should return zeroes when
+    configuration space above 0x100 is accessed.  If these devices decode just
+    low 8 bits of register number, conventional space repeats 15 times in
+    PCIe config space.  And Moorestown parser for fixed bars then can enter
+    endless loop when finding Intel AGP bridge device 0x7191 with secondary
+    latency timer programmed to 0x40 - when such device is encountered, code
+    will enter endless loop of reading registers 0x718 (reading 0x40010100)
+    and 0x400 (reading 0x71918086).
 
-Index: nf-next-2.6/net/netfilter/ipvs/Kconfig
-===================================================================
---- nf-next-2.6.orig/net/netfilter/ipvs/Kconfig	2010-04-29 20:11:51.000000000 +0900
-+++ nf-next-2.6/net/netfilter/ipvs/Kconfig	2010-04-29 20:11:59.000000000 +0900
-@@ -3,7 +3,7 @@
- #
- menuconfig IP_VS
- 	tristate "IP virtual server support"
--	depends on NET && INET && NETFILTER
-+	depends on NET && INET && NETFILTER && NF_CONNTRACK
- 	---help---
- 	  IP Virtual Server support will let you build a high-performance
- 	  virtual server based on cluster of two or more real servers. This
-Index: nf-next-2.6/net/netfilter/ipvs/ip_vs_core.c
-===================================================================
---- nf-next-2.6.orig/net/netfilter/ipvs/ip_vs_core.c	2010-04-29 20:11:51.000000000 +0900
-+++ nf-next-2.6/net/netfilter/ipvs/ip_vs_core.c	2010-04-29 20:11:59.000000000 +0900
-@@ -521,26 +521,6 @@ int ip_vs_leave(struct ip_vs_service *sv
- 	return NF_DROP;
- }
- 
--
--/*
-- *      It is hooked before NF_IP_PRI_NAT_SRC at the NF_INET_POST_ROUTING
-- *      chain, and is used for VS/NAT.
-- *      It detects packets for VS/NAT connections and sends the packets
-- *      immediately. This can avoid that iptable_nat mangles the packets
-- *      for VS/NAT.
-- */
--static unsigned int ip_vs_post_routing(unsigned int hooknum,
--				       struct sk_buff *skb,
--				       const struct net_device *in,
--				       const struct net_device *out,
--				       int (*okfn)(struct sk_buff *))
--{
--	if (!skb->ipvs_property)
--		return NF_ACCEPT;
--	/* The packet was sent from IPVS, exit this chain */
--	return NF_STOP;
--}
--
- __sum16 ip_vs_checksum_complete(struct sk_buff *skb, int offset)
+    This change adds additional condition to the test: if device id/vendor
+    match first PCIe capability, then device is not really PCIe.  It should
+    not cause any problems: fixed_bar_cap is invoked only on Intel's devices,
+    so only time there is possibilty to have false match would be if first
+    PCIe capability would have ID 0x8086, and even then that address of
+    next capability pointer and capability version will match device ID seems
+    highly unlikely.
+
+    This fix unbreaks 32bit 2.6.33+ kernels configured with Moorestown
+    support to boot on AMD rev 10h+ processors under VMware in VMs which
+    lack PCIe support.
+    
+    Signed-off-by: Petr Vandrovec <petr@vandrovec.name>
+
+diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
+index 8bf2fcb..cd6c277 100644
+--- a/arch/x86/pci/mrst.c
++++ b/arch/x86/pci/mrst.c
+@@ -55,12 +55,16 @@ static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
  {
- 	return csum_fold(skb_checksum(skb, offset, skb->len - offset, 0));
-@@ -1443,14 +1423,6 @@ static struct nf_hook_ops ip_vs_ops[] __
- 		.hooknum        = NF_INET_FORWARD,
- 		.priority       = 99,
- 	},
--	/* Before the netfilter connection tracking, exit from POST_ROUTING */
--	{
--		.hook		= ip_vs_post_routing,
--		.owner		= THIS_MODULE,
--		.pf		= PF_INET,
--		.hooknum        = NF_INET_POST_ROUTING,
--		.priority       = NF_IP_PRI_NAT_SRC-1,
--	},
- #ifdef CONFIG_IP_VS_IPV6
- 	/* After packet filtering, forward packet through VS/DR, VS/TUN,
- 	 * or VS/NAT(change destination), so that filtering rules can be
-@@ -1479,14 +1451,6 @@ static struct nf_hook_ops ip_vs_ops[] __
- 		.hooknum        = NF_INET_FORWARD,
- 		.priority       = 99,
- 	},
--	/* Before the netfilter connection tracking, exit from POST_ROUTING */
--	{
--		.hook		= ip_vs_post_routing,
--		.owner		= THIS_MODULE,
--		.pf		= PF_INET6,
--		.hooknum        = NF_INET_POST_ROUTING,
--		.priority       = NF_IP6_PRI_NAT_SRC-1,
--	},
- #endif
- };
+ 	int pos;
+ 	u32 pcie_cap = 0, cap_data;
++	u32 devid;
  
-Index: nf-next-2.6/net/netfilter/ipvs/ip_vs_xmit.c
-===================================================================
---- nf-next-2.6.orig/net/netfilter/ipvs/ip_vs_xmit.c	2010-04-29 20:11:51.000000000 +0900
-+++ nf-next-2.6/net/netfilter/ipvs/ip_vs_xmit.c	2010-04-29 20:11:59.000000000 +0900
-@@ -27,6 +27,7 @@
- #include <net/ip6_route.h>
- #include <linux/icmpv6.h>
- #include <linux/netfilter.h>
-+#include <net/netfilter/nf_conntrack.h>
- #include <linux/netfilter_ipv4.h>
+ 	pos = PCIE_CAP_OFFSET;
  
- #include <net/ip_vs.h>
-@@ -347,6 +348,31 @@ ip_vs_bypass_xmit_v6(struct sk_buff *skb
- }
- #endif
+ 	if (!raw_pci_ext_ops)
+ 		return 0;
  
-+static void
-+ip_vs_update_conntrack(struct sk_buff *skb, struct ip_vs_conn *cp)
-+{
-+	struct nf_conn *ct = (struct nf_conn *)skb->nfct;
-+	struct nf_conntrack_tuple new_tuple;
++	if (raw_pci_ops->read(pci_domain_nr(bus), bus->number, devfn, 0, 4, &devid))
++		return 0;
 +
-+	if (ct == NULL || ct == &nf_conntrack_untracked ||
-+	    nf_ct_is_confirmed(ct))
-+		return;
-+
-+	/*
-+	 * The connection is not yet in the hashtable, so we update it.
-+	 * CIP->VIP will remain the same, so leave the tuple in
-+	 * IP_CT_DIR_ORIGINAL untouched.  When the reply comes back from the
-+	 * real-server we will see RIP->DIP.
-+	 */
-+	new_tuple = ct->tuplehash[IP_CT_DIR_REPLY].tuple;
-+	new_tuple.src.u3 = cp->daddr;
-+	/*
-+	 * This will also take care of UDP and other protocols.
-+	 */
-+	new_tuple.src.u.tcp.port = cp->dport;
-+	nf_conntrack_alter_reply(ct, &new_tuple);
-+}
-+
- /*
-  *      NAT transmitter (only for outside-to-inside nat forwarding)
-  *      Not used for related ICMP
-@@ -402,6 +428,8 @@ ip_vs_nat_xmit(struct sk_buff *skb, stru
+ 	while (pos) {
+ 		if (raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
+ 					  devfn, pos, 4, &pcie_cap))
+@@ -69,6 +73,9 @@ static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
+ 		if (pcie_cap == 0xffffffff)
+ 			return 0;
  
- 	IP_VS_DBG_PKT(10, pp, skb, 0, "After DNAT");
- 
-+	ip_vs_update_conntrack(skb, cp);
++		if (pcie_cap == devid && pos == PCIE_CAP_OFFSET)
++			return 0;
 +
- 	/* FIXME: when application helper enlarges the packet and the length
- 	   is larger than the MTU of outgoing device, there will be still
- 	   MTU problem. */
-@@ -478,6 +506,8 @@ ip_vs_nat_xmit_v6(struct sk_buff *skb, s
- 
- 	IP_VS_DBG_PKT(10, pp, skb, 0, "After DNAT");
- 
-+	ip_vs_update_conntrack(skb, cp);
-+
- 	/* FIXME: when application helper enlarges the packet and the length
- 	   is larger than the MTU of outgoing device, there will be still
- 	   MTU problem. */
+ 		if (PCI_EXT_CAP_ID(pcie_cap) == PCI_EXT_CAP_ID_VNDR) {
+ 			raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
+ 					      devfn, pos + 4, 4, &cap_data);
 
