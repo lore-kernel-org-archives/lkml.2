@@ -1,150 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759052Ab0EABgb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 21:36:31 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:46183 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758203Ab0EABg1 (ORCPT
+	id S1758895Ab0EABgO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 21:36:14 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:57242 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758203Ab0EABgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 21:36:27 -0400
-From: John Stultz <johnstul@us.ibm.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/3] Convert common x86 clocksources to use clocksource_register_hz/khz
-Date: Fri, 30 Apr 2010 18:36:24 -0700
-Message-Id: <1272677785-23881-2-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1272677785-23881-1-git-send-email-johnstul@us.ibm.com>
-References: <1272677785-23881-1-git-send-email-johnstul@us.ibm.com>
+	Fri, 30 Apr 2010 21:36:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=F0ZQvvTMPvxwyisQnljql1hGyvrXcA2+pOfzvev3m/plcEgoBLCuev3BgdXKzloDlb
+         gff7ygSAWmamrWhsfJyKL/GHGp4TvEdXpb5EJKHHqCfSn+NxQU1GFoef+eDyx6/LHTgY
+         svd8N3honLuIHUkfB7vS+ekIY79ZLOpQNPkz8=
+Date: Sat, 1 May 2010 03:36:13 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Will Deacon <will.deacon@arm.com>,
+       Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+       "K . Prasad" <prasad@linux.vnet.ibm.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 3/6] hw-breakpoints: Change/Enforce some breakpoints
+	policies
+Message-ID: <20100501013611.GD5357@nowhere>
+References: <1271999639-23605-1-git-send-regression-fweisbec@gmail.com> <1271999639-23605-4-git-send-regression-fweisbec@gmail.com> <20100423093234.GC11770@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100423093234.GC11770@linux-sh.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This converts the most common of the x86 clocksources over to use
-clocksource_register_hz/khz.
+On Fri, Apr 23, 2010 at 06:32:35PM +0900, Paul Mundt wrote:
+> On Fri, Apr 23, 2010 at 07:13:56AM +0200, Frederic Weisbecker wrote:
+> > diff --git a/arch/sh/kernel/hw_breakpoint.c b/arch/sh/kernel/hw_breakpoint.c
+> > index 675eea7..2d44a2d 100644
+> > --- a/arch/sh/kernel/hw_breakpoint.c
+> > +++ b/arch/sh/kernel/hw_breakpoint.c
+> > @@ -120,25 +120,16 @@ static int get_hbp_len(u16 hbp_len)
+> >  }
+> >  
+> >  /*
+> > - * Check for virtual address in user space.
+> > - */
+> > -int arch_check_va_in_userspace(unsigned long va, u16 hbp_len)
+> > -{
+> > -	unsigned int len;
+> > -
+> > -	len = get_hbp_len(hbp_len);
+> > -
+> > -	return (va <= TASK_SIZE - len);
+> > -}
+> > -
+> > -/*
+> >   * Check for virtual address in kernel space.
+> >   */
+> 
+> We were also using the va_in_userspace check for the case of signal
+> delivery, so I've just inverted the test for that. Perhaps there's a
+> cleaner way to handle it, though.
 
-I've tested this on my system, and would probably be fine for 2.6.35.
 
-CC: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- arch/x86/kernel/hpet.c        |   13 +++++++++----
- arch/x86/kernel/tsc.c         |    6 ++----
- drivers/clocksource/acpi_pm.c |    9 ++-------
- 3 files changed, 13 insertions(+), 15 deletions(-)
+That looks fine. I wonder if I can assume that such tests, that
+are the same between x86 and Sh, can apply to every archs, in which
+case I could move that to the generic code.
 
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 23b4ecd..bfd1e6f 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -16,7 +16,6 @@
- #include <asm/hpet.h>
- 
- #define HPET_MASK			CLOCKSOURCE_MASK(32)
--#define HPET_SHIFT			22
- 
- /* FSEC = 10^-15
-    NSEC = 10^-9 */
-@@ -782,7 +781,6 @@ static struct clocksource clocksource_hpet = {
- 	.rating		= 250,
- 	.read		= read_hpet,
- 	.mask		= HPET_MASK,
--	.shift		= HPET_SHIFT,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- 	.resume		= hpet_resume_counter,
- #ifdef CONFIG_X86_64
-@@ -793,6 +791,7 @@ static struct clocksource clocksource_hpet = {
- static int hpet_clocksource_register(void)
- {
- 	u64 start, now;
-+	u64 hpet_freq;
- 	cycle_t t1;
- 
- 	/* Start the counter */
-@@ -827,9 +826,15 @@ static int hpet_clocksource_register(void)
- 	 *  mult = (hpet_period * 2^shift)/10^6
- 	 *  mult = (hpet_period << shift)/FSEC_PER_NSEC
- 	 */
--	clocksource_hpet.mult = div_sc(hpet_period, FSEC_PER_NSEC, HPET_SHIFT);
- 
--	clocksource_register(&clocksource_hpet);
-+	/* Need to convert hpet_period (fsec/cyc) to cyc/sec:
-+	 * 
-+	 * cyc/sec = FSEC_PER_SEC/hpet_period(fsec/cyc)
-+	 * cyc/sec = (FSEC_PER_NSEC * NSEC_PER_SEC)/hpet_period
-+	 */
-+	hpet_freq = FSEC_PER_NSEC * NSEC_PER_SEC;
-+	do_div(hpet_freq, hpet_period);
-+	clocksource_register_hz(&clocksource_hpet, (u32)hpet_freq);
- 
- 	return 0;
- }
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 9faf91a..5ca6370 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -751,7 +751,6 @@ static struct clocksource clocksource_tsc = {
- 	.read                   = read_tsc,
- 	.resume			= resume_tsc,
- 	.mask                   = CLOCKSOURCE_MASK(64),
--	.shift                  = 22,
- 	.flags                  = CLOCK_SOURCE_IS_CONTINUOUS |
- 				  CLOCK_SOURCE_MUST_VERIFY,
- #ifdef CONFIG_X86_64
-@@ -845,8 +844,6 @@ __cpuinit int unsynchronized_tsc(void)
- 
- static void __init init_tsc_clocksource(void)
- {
--	clocksource_tsc.mult = clocksource_khz2mult(tsc_khz,
--			clocksource_tsc.shift);
- 	if (tsc_clocksource_reliable)
- 		clocksource_tsc.flags &= ~CLOCK_SOURCE_MUST_VERIFY;
- 	/* lower the rating if we already know its unstable: */
-@@ -854,7 +851,8 @@ static void __init init_tsc_clocksource(void)
- 		clocksource_tsc.rating = 0;
- 		clocksource_tsc.flags &= ~CLOCK_SOURCE_IS_CONTINUOUS;
- 	}
--	clocksource_register(&clocksource_tsc);
-+	
-+	clocksource_register_khz(&clocksource_tsc, tsc_khz);
- }
- 
- #ifdef CONFIG_X86_64
-diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
-index 72a633a..cfb0f52 100644
---- a/drivers/clocksource/acpi_pm.c
-+++ b/drivers/clocksource/acpi_pm.c
-@@ -68,10 +68,7 @@ static struct clocksource clocksource_acpi_pm = {
- 	.rating		= 200,
- 	.read		= acpi_pm_read,
- 	.mask		= (cycle_t)ACPI_PM_MASK,
--	.mult		= 0, /*to be calculated*/
--	.shift		= 22,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
--
- };
- 
- 
-@@ -190,9 +187,6 @@ static int __init init_acpi_pm_clocksource(void)
- 	if (!pmtmr_ioport)
- 		return -ENODEV;
- 
--	clocksource_acpi_pm.mult = clocksource_hz2mult(PMTMR_TICKS_PER_SEC,
--						clocksource_acpi_pm.shift);
--
- 	/* "verify" this timing source: */
- 	for (j = 0; j < ACPI_PM_MONOTONICITY_CHECKS; j++) {
- 		udelay(100 * j);
-@@ -220,7 +214,8 @@ static int __init init_acpi_pm_clocksource(void)
- 	if (verify_pmtmr_rate() != 0)
- 		return -ENODEV;
- 
--	return clocksource_register(&clocksource_acpi_pm);
-+	return clocksource_register_hz(&clocksource_acpi_pm,
-+						PMTMR_TICKS_PER_SEC);
- }
- 
- /* We use fs_initcall because we want the PCI fixups to have run
--- 
-1.6.0.4
+
+> 
+> Other than that, everything seems to work ok. The ksym tracer and ptrace
+> tests still pass at least. Feel free to add my Tested/Acked-by on the
+> rest if you're respinning it at some point.
+> 
+> Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+
+
+Great, I'll then merge this fix to the appropriate patch and
+add the appropriate tags.
+
+Thanks Paul!
+
+
+
+> 
+> ---
+> 
+> diff --git a/arch/sh/include/asm/hw_breakpoint.h b/arch/sh/include/asm/hw_breakpoint.h
+> index 4d5e514..89890f6 100644
+> --- a/arch/sh/include/asm/hw_breakpoint.h
+> +++ b/arch/sh/include/asm/hw_breakpoint.h
+> @@ -54,8 +54,6 @@ static inline int hw_breakpoint_slots(int type)
+>  /* arch/sh/kernel/hw_breakpoint.c */
+>  extern int arch_check_bp_in_kernelspace(struct perf_event *bp);
+>  extern int arch_validate_hwbkpt_settings(struct perf_event *bp);
+> -extern int arch_validate_hwbkpt_settings(struct perf_event *bp,
+> -					 struct task_struct *tsk);
+>  extern int hw_breakpoint_exceptions_notify(struct notifier_block *unused,
+>  					   unsigned long val, void *data);
+>  
+> diff --git a/arch/sh/kernel/hw_breakpoint.c b/arch/sh/kernel/hw_breakpoint.c
+> index 67564e3..efae6ab 100644
+> --- a/arch/sh/kernel/hw_breakpoint.c
+> +++ b/arch/sh/kernel/hw_breakpoint.c
+> @@ -344,8 +344,7 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
+>  		perf_bp_event(bp, args->regs);
+>  
+>  		/* Deliver the signal to userspace */
+> -		if (arch_check_va_in_userspace(bp->attr.bp_addr,
+> -					       bp->attr.bp_len)) {
+> +		if (!arch_check_bp_in_kernelspace(bp)) {
+>  			siginfo_t info;
+>  
+>  			info.si_signo = args->signr;
 
