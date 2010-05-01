@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab0EAAeU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 20:34:20 -0400
-Received: from ozlabs.org ([203.10.76.45]:35788 "EHLO ozlabs.org"
+	id S1759997Ab0EAAeR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 20:34:17 -0400
+Received: from ozlabs.org ([203.10.76.45]:35786 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758141Ab0EAAeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755612Ab0EAAeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Apr 2010 20:34:15 -0400
-Date: Sat, 1 May 2010 10:28:11 +1000
+Date: Sat, 1 May 2010 10:34:10 +1000
 From: Paul Mackerras <paulus@samba.org>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Jiri Kosina <jkosina@suse.cz>, Tejun Heo <tj@kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] perf_event: Use UTF-8 copyright symbol instead of \251
-Message-ID: <20100501002811.GA2610@brick.ozlabs.ibm.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Paul Mackerras <paulus@au1.ibm.com>
+Subject: Re: [PATCH] trivial: use (C) instead of \251
+Message-ID: <20100501003410.GB2610@brick.ozlabs.ibm.com>
+References: <4BD80037.9060704@kernel.org>
+ <alpine.LNX.2.00.1004290040510.9849@pobox.suse.cz>
+ <20100430075510.GA21105@elte.hu>
+ <alpine.LNX.2.00.1004300957130.9849@pobox.suse.cz>
+ <20100430083720.GA3318@elte.hu>
+ <alpine.LNX.2.00.1004301103280.9849@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LNX.2.00.1004301103280.9849@pobox.suse.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As noted by Tejun Heo, the latin-1 copyright character \251 is invalid
-in ASCII or UTF-8.  This changes the character to its UTF-8 encoding
-in order to avoid problems with editors and other tools.
+On Fri, Apr 30, 2010 at 11:04:46AM +0200, Jiri Kosina wrote:
+> On Fri, 30 Apr 2010, Ingo Molnar wrote:
+> 
+> > > Well, Paul himself stated that according to their lawyer department, 
+> > > "Copyright" (which is there) is enough. So it made sense to remove invalid 
+> > > (at least in some sense) character.
+> > > 
+> > > Also zillion of other files copyrighted by Paul contain "Copyright (C)".
+> > > 
+> > > If we really want this character there then, why not rather in UTF-8, so 
+> > > that it works flawlessly?
+> > 
+> > It might be fine but i havent seen Paul reply to this thread - and this is my 
+> > point: _you_ should have waited for an ack from Paul (who is co-maintaining 
+> > that file) before applying it. The commit doesnt have it:
+> 
+> I got Pauls reply as "as soon as there is `Copyright', it's fine". If I 
+> misunderstood it, sorry for that, and I'll drop the patch.
+> 
+> Paul, could you please send explicit Acked-by: or Naked-by:, so that 
+> everything is in line?
 
-Signed-off-by: Paul Mackerras <paulus@samba.org>
----
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 9dbe8cd..d46a277 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4,7 +4,7 @@
-  *  Copyright (C) 2008 Thomas Gleixner <tglx@linutronix.de>
-  *  Copyright (C) 2008-2009 Red Hat, Inc., Ingo Molnar
-  *  Copyright (C) 2008-2009 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
-- *  Copyright  �  2009 Paul Mackerras, IBM Corp. <paulus@au1.ibm.com>
-+ *  Copyright  ©  2009 Paul Mackerras, IBM Corp. <paulus@au1.ibm.com>
-  *
-  * For licensing details see kernel-base/COPYING
-  */
+Nacked-by: Paul Mackerras <paulus@samba.org>
+
+Please apply the patch I just sent that changes the encoding to
+UTF-8.
+
+I take your point that there are lots of other copyright notices in
+the kernel with "(C)", including mine, and I'm not for a moment
+suggesting that they are all invalid.  Nevertheless, it seems that it
+is better to use the proper copyright symbol rather than "(C)" for new
+code, so I'd like to keep the copyright symbol here.
+
+Paul.
