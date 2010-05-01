@@ -1,191 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab0EAReM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 13:34:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50984 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab0EAReI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 13:34:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=J73gcCoJSs9e4ckuyF2FnLb+nTeePaOK7UQzS6AXsQ+Vv/3VCVDa+6ki2NXlcPngCl
-         T5wuHr6X5M1sAxAsQ7VEtzTDspG+4swmiSGmVrQ1kok3OwYT7iVZqiohPU0Fihcgy4nW
-         AcflqbZqk2plyJM743bDwWgbZH7xHXQaV8paU=
+	id S1754346Ab0EASMU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 14:12:20 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48426 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751934Ab0EASMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 May 2010 14:12:18 -0400
+Date: Sat, 1 May 2010 20:12:12 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Peter Zijlstra <peterz@infradead.org>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: perf, ftrace and MCEs
+Message-ID: <20100501181212.GA25352@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@elte.hu>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	lkml <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20100420135227.GC2628@linux.vnet.ibm.com>
-References: <q2x7e0fb38c1004121144rb097e521hd2a7d8cea77c54b7@mail.gmail.com>
-	 <1271242058.32749.19.camel@laptop>
-	 <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com>
-	 <20100419230136.GA16856@linux.vnet.ibm.com>
-	 <1271726729.2972.13.camel@dhcp231-113.rdu.redhat.com>
-	 <20100420030452.GB2905@linux.vnet.ibm.com>
-	 <4BCD646B.1080206@cn.fujitsu.com>
-	 <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com>
-	 <j2ya44ae5cd1004200545q6be4ec82o18ae99d93e8c29c7@mail.gmail.com>
-	 <20100420135227.GC2628@linux.vnet.ibm.com>
-Date: Sat, 1 May 2010 13:26:15 -0400
-Message-ID: <t2pa44ae5cd1005011026lab3a2440tb9fa351f172abf75@mail.gmail.com>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious 
-	rcu_dereference_check() usage
-From: Miles Lane <miles.lane@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 9:52 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Tue, Apr 20, 2010 at 08:45:28AM -0400, Miles Lane wrote:
->> Is there a patch set for 2.6.34-rc5 I can test?
->
-> I will be sending a patchset out later today after testing, but
-> please see below for a sneak preview collapsed into a single patch.
->
->                                                        Thanx, Paul
->
->> On Tue, Apr 20, 2010 at 8:31 AM, Eric Paris <eparis@redhat.com> wrote:
->>
->> > On Tue, 2010-04-20 at 16:23 +0800, Lai Jiangshan wrote:
->> >
->> > > [PATCH] RCU: don't turn off lockdep when find suspicious
->> > rcu_dereference_check() usage
->> > >
->> > > When suspicious rcu_dereference_check() usage is detected, lockdep is
->> > still
->> > > available actually, so we should not call debug_locks_off() in
->> > > lockdep_rcu_dereference().
->> > >
->> > > For get rid of too much "suspicious rcu_dereference_check() usage"
->> > > output when the "if(!debug_locks_off())" statement is removed. This patch
->> > uses
->> > > static variable '__warned's for very usage of "rcu_dereference*()".
->> > >
->> > > One variable per usage, so, Now, we can get multiple complaint
->> > > when we detect multiple different suspicious rcu_dereference_check()
->> > usage.
->> > >
->> > > Requested-by: Eric Paris <eparis@redhat.com>
->> > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
->> >
->> > Although mine was a linux-next kernel and it doesn't appear that I have
->> > rcu_dereference_protected() at all, so I dropped that bit of the patch,
->> > it worked great!  I got 4 more complaints to harass people with.  Feel
->> > free to add my tested by if you care to.
->> >
->> > Tested-by: Eric Paris <eparis@redhat.com>
->
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 07db2fe..ec9ab49 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -190,6 +190,15 @@ static inline int rcu_read_lock_sched_held(void)
->
->  #ifdef CONFIG_PROVE_RCU
->
-> +#define __do_rcu_dereference_check(c)                                  \
-> +       do {                                                            \
-> +               static bool __warned;                                   \
-> +               if (debug_lockdep_rcu_enabled() && !__warned && !(c)) { \
-> +                       __warned = true;                                \
-> +                       lockdep_rcu_dereference(__FILE__, __LINE__);    \
-> +               }                                                       \
-> +       } while (0)
-> +
->  /**
->  * rcu_dereference_check - rcu_dereference with debug checking
->  * @p: The pointer to read, prior to dereferencing
-> @@ -219,8 +228,7 @@ static inline int rcu_read_lock_sched_held(void)
->  */
->  #define rcu_dereference_check(p, c) \
->        ({ \
-> -               if (debug_lockdep_rcu_enabled() && !(c)) \
-> -                       lockdep_rcu_dereference(__FILE__, __LINE__); \
-> +               __do_rcu_dereference_check(c); \
->                rcu_dereference_raw(p); \
->        })
->
-> @@ -237,8 +245,7 @@ static inline int rcu_read_lock_sched_held(void)
->  */
->  #define rcu_dereference_protected(p, c) \
->        ({ \
-> -               if (debug_lockdep_rcu_enabled() && !(c)) \
-> -                       lockdep_rcu_dereference(__FILE__, __LINE__); \
-> +               __do_rcu_dereference_check(c); \
->                (p); \
->        })
->
-> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> index da5e139..e5c0244 100644
-> --- a/kernel/cgroup_freezer.c
-> +++ b/kernel/cgroup_freezer.c
-> @@ -205,9 +205,12 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
->         * No lock is needed, since the task isn't on tasklist yet,
->         * so it can't be moved to another cgroup, which means the
->         * freezer won't be removed and will be valid during this
-> -        * function call.
-> +        * function call.  Nevertheless, apply RCU read-side critical
-> +        * section to suppress RCU lockdep false positives.
->         */
-> +       rcu_read_lock();
->        freezer = task_freezer(task);
-> +       rcu_read_unlock();
->
->        /*
->         * The root cgroup is non-freezable, so we can skip the
-> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> index 2594e1c..03dd1fa 100644
-> --- a/kernel/lockdep.c
-> +++ b/kernel/lockdep.c
-> @@ -3801,8 +3801,6 @@ void lockdep_rcu_dereference(const char *file, const int line)
->  {
->        struct task_struct *curr = current;
->
-> -       if (!debug_locks_off())
-> -               return;
->        printk("\n===================================================\n");
->        printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
->        printk(  "---------------------------------------------------\n");
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 6af210a..14c44ec 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -323,6 +323,15 @@ static inline struct task_group *task_group(struct task_struct *p)
->  /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
->  static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
->  {
-> +       /*
-> +        * Strictly speaking this rcu_read_lock() is not needed since the
-> +        * task_group is tied to the cgroup, which in turn can never go away
-> +        * as long as there are tasks attached to it.
-> +        *
-> +        * However since task_group() uses task_subsys_state() which is an
-> +        * rcu_dereference() user, this quiets CONFIG_PROVE_RCU.
-> +        */
-> +       rcu_read_lock();
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->        p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
->        p->se.parent = task_group(p)->se[cpu];
-> @@ -332,6 +341,7 @@ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
->        p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
->        p->rt.parent = task_group(p)->rt_se[cpu];
->  #endif
-> +       rcu_read_unlock();
->  }
->
->  #else
->
+Hi,
 
-Hi Paul.
+so I finally had some spare time to stare at perf/ftrace code and ponder
+on how to use those facilities for MCE collecting and reporting. Btw, I
+have to say, it took me quite a while to understand what goes where - my
+suggestion to anyone who tries to understand how perf/ftrace works is
+to do make <file.i> where there is at least one trace_XXX emit record
+function call and start untangling code paths from there.
 
-Has this patch made it into the Linus tree?
-Thanks!
+So anyway, here are some questions I had, I just as well may've missed
+something so please correct me if I'm wrong:
 
-          Miles
+1. Since machine checks can happen at any time, we need to have the
+MCE tracepoint (trace_mce_record() in <include/trace/events/mce.h>)
+always enabled. This, in turn, means that we need the ftrace/perf
+infrastructure always compiled in (lockless ring buffer, perf_event.c
+stuff) on any x86 system so that MCEs can be handled at anytime. Is this
+going to be ok to be enabled on _all_ machines, hmmm... I dunno, maybe
+only a subset of those facilites at least.
+
+2. Tangential to 1., we need that "thin" software layer prepared for
+decoding and reporting them as early as possible. event_trace_init() is
+an fs_initcall and executed too late, IMHO. The ->perf_event_enable in
+the ftrace_event_call is enabled even later on the perf init path over
+the sys_perf_even_open which is at userspace time. In our case, this is
+going be executed by the error logging and decoding daemon I guess.
+
+3. Since we want to listen for MCEs all the time, the concept of
+enabling and disabling those events does not apply in the sense of
+performance profiling. IOW, MCEs need to be able to be logged to the
+ring buffer at any time. I guess this is easily done - we simply enable
+MCE events at the earliest moment possible and disable them on shutdown;
+done.
+
+So yeah, some food for thought but what do you guys think?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
