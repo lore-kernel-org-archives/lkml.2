@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab0EAOtv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:49:51 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63795 "EHLO
+	id S1755431Ab0EAOud (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:50:33 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:62817 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689Ab0EAOeb (ORCPT
+	with ESMTP id S1752888Ab0EAOY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:34:31 -0400
+	Sat, 1 May 2010 10:24:58 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
-       linux-fsdevel@vger.kernel.org
-Subject: [PATCH v21 048/100] c/r: support for open pipes
-Date: Sat,  1 May 2010 10:15:30 -0400
-Message-Id: <1272723382-19470-49-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>, x86@kernel.org,
+       linux-s390@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       Oren Laadan <orenl@cs.columbia.edu>
+Subject: [PATCH v21 012/100] c/r: extend arch_setup_additional_pages()
+Date: Sat,  1 May 2010 10:14:54 -0400
+Message-Id: <1272723382-19470-13-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -24,335 +26,260 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A pipe is a double-headed inode with a buffer attached to it. We
-checkpoint the pipe buffer only once, as soon as we hit one side of
-the pipe, regardless whether it is read- or write- end.
+From: Alexey Dobriyan <adobriyan@gmail.com>
 
-To checkpoint a file descriptor that refers to a pipe (either end), we
-first lookup the inode in the hash table: If not found, it is the
-first encounter of this pipe. Besides the file descriptor, we also (a)
-save the pipe data, and (b) register the pipe inode in the hash. If
-found, it is the second encounter of this pipe, namely, as we hit the
-other end of the same pipe. In both cases we write the pipe-objref of
-the inode.
+Add "start" argument, to request to map vDSO to a specific place,
+and fail the operation if not.
 
-To restore, create a new pipe and thus have two file pointers (read-
-and write- ends). We only use one of them, depending on which side was
-checkpointed first. We register the file pointer of the other end in
-the hash table, with the pipe_objref given for this pipe from the
-checkpoint, to be used later when the other arrives. At this point we
-also restore the contents of the pipe buffers.
+This is useful for restart(2) to ensure that memory layout is restore
+exactly as needed.
 
-To save the pipe buffer, given a source pipe, use do_tee() to clone
-its contents into a temporary 'struct pipe_inode_info', and then use
-do_splice_from() to transfer it directly to the checkpoint image file.
+Changelog[v19]:
+  - [serge hallyn] Fix potential use-before-set ret
+Changelog[v2]:
+  - [ntl] powerpc: vdso build fix (ckpt-v17)
 
-To restore the pipe buffer, with a fresh newly allocated target pipe,
-use do_splice_to() to splice the data directly between the checkpoint
-image file and the pipe.
-
-Changelog[v21]:
-  - Put file_ops->checkpoint under CONFIG_CHECKPOINT
-Changelog[v19-rc1]:
-  - Switch to ckpt_obj_try_fetch()
-  - [Matt Helsley] Add cpp definitions for enums
-Changelog[v18]:
-  - Adjust format of pipe buffer to include the mandatory pre-header
-Changelog[v17]:
-  - Forward-declare 'ckpt_ctx' et-al, don't use checkpoint_types.h
-
-Cc: linux-fsdevel@vger.kernel.org
+Cc: x86@kernel.org
+Cc: linux-s390@vger.kernel.org
+Cc: linuxppc-dev@ozlabs.org
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- fs/checkpoint.c                |    7 ++
- fs/pipe.c                      |  161 ++++++++++++++++++++++++++++++++++++++++
- include/linux/checkpoint_hdr.h |    9 ++
- include/linux/pipe_fs_i.h      |    8 ++
- 4 files changed, 185 insertions(+), 0 deletions(-)
+ arch/powerpc/include/asm/elf.h     |    1 +
+ arch/powerpc/kernel/vdso.c         |   13 ++++++++++++-
+ arch/s390/include/asm/elf.h        |    2 +-
+ arch/s390/kernel/vdso.c            |   13 ++++++++++++-
+ arch/sh/include/asm/elf.h          |    1 +
+ arch/sh/kernel/vsyscall/vsyscall.c |    2 +-
+ arch/x86/include/asm/elf.h         |    3 ++-
+ arch/x86/vdso/vdso32-setup.c       |    9 +++++++--
+ arch/x86/vdso/vma.c                |   11 ++++++++---
+ fs/binfmt_elf.c                    |    2 +-
+ 10 files changed, 46 insertions(+), 11 deletions(-)
 
-diff --git a/fs/checkpoint.c b/fs/checkpoint.c
-index 95a51e9..e840d8a 100644
---- a/fs/checkpoint.c
-+++ b/fs/checkpoint.c
-@@ -17,6 +17,7 @@
- #include <linux/file.h>
- #include <linux/fdtable.h>
- #include <linux/fsnotify.h>
-+#include <linux/pipe_fs_i.h>
- #include <linux/syscalls.h>
- #include <linux/deferqueue.h>
- #include <linux/checkpoint.h>
-@@ -586,6 +587,12 @@ static struct restore_file_ops restore_file_ops[] = {
- 		.file_type = CKPT_FILE_GENERIC,
- 		.restore = generic_file_restore,
- 	},
-+	/* pipes */
-+	{
-+		.file_name = "PIPE",
-+		.file_type = CKPT_FILE_PIPE,
-+		.restore = pipe_file_restore,
-+	},
- };
+diff --git a/arch/powerpc/include/asm/elf.h b/arch/powerpc/include/asm/elf.h
+index c376eda..0b06255 100644
+--- a/arch/powerpc/include/asm/elf.h
++++ b/arch/powerpc/include/asm/elf.h
+@@ -266,6 +266,7 @@ extern int ucache_bsize;
+ #define ARCH_HAS_SETUP_ADDITIONAL_PAGES
+ struct linux_binprm;
+ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
++				       unsigned long start,
+ 				       int uses_interp);
+ #define VDSO_AUX_ENT(a,b) NEW_AUX_ENT(a,b);
  
- static void *restore_file(struct ckpt_ctx *ctx)
-diff --git a/fs/pipe.c b/fs/pipe.c
-index 37ba29f..801aad9 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -13,11 +13,13 @@
- #include <linux/fs.h>
- #include <linux/mount.h>
- #include <linux/pipe_fs_i.h>
-+#include <linux/splice.h>
- #include <linux/uio.h>
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
- #include <linux/audit.h>
- #include <linux/syscalls.h>
-+#include <linux/checkpoint.h>
+diff --git a/arch/powerpc/kernel/vdso.c b/arch/powerpc/kernel/vdso.c
+index d84d192..74210ab 100644
+--- a/arch/powerpc/kernel/vdso.c
++++ b/arch/powerpc/kernel/vdso.c
+@@ -188,7 +188,8 @@ static void dump_vdso_pages(struct vm_area_struct * vma)
+  * This is called from binfmt_elf, we create the special vma for the
+  * vDSO and insert it into the mm struct tree
+  */
+-int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++int arch_setup_additional_pages(struct linux_binprm *bprm,
++				unsigned long start, int uses_interp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	struct page **vdso_pagelist;
+@@ -220,6 +221,10 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+ 	vdso_base = VDSO32_MBASE;
+ #endif
  
- #include <asm/uaccess.h>
- #include <asm/ioctls.h>
-@@ -828,6 +830,156 @@ pipe_rdwr_open(struct inode *inode, struct file *filp)
- 	return ret;
++	/* in case restart(2) mandates a specific location */
++	if (start)
++		vdso_base = start;
++
+ 	current->mm->context.vdso_base = 0;
+ 
+ 	/* vDSO has a problem and was disabled, just don't "enable" it for the
+@@ -249,6 +254,12 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+ 	/* Add required alignment. */
+ 	vdso_base = ALIGN(vdso_base, VDSO_ALIGNMENT);
+ 
++	/* for restart(2), double check that we got we asked for */
++	if (start && vdso_base != start) {
++		rc = -EBUSY;
++		goto fail_mmapsem;
++	}
++
+ 	/*
+ 	 * Put vDSO base into mm struct. We need to do this before calling
+ 	 * install_special_mapping or the perf counter mmap tracking code
+diff --git a/arch/s390/include/asm/elf.h b/arch/s390/include/asm/elf.h
+index 354d426..5081938 100644
+--- a/arch/s390/include/asm/elf.h
++++ b/arch/s390/include/asm/elf.h
+@@ -216,6 +216,6 @@ do {									    \
+ struct linux_binprm;
+ 
+ #define ARCH_HAS_SETUP_ADDITIONAL_PAGES 1
+-int arch_setup_additional_pages(struct linux_binprm *, int);
++int arch_setup_additional_pages(struct linux_binprm *, unsigned long, int);
+ 
+ #endif
+diff --git a/arch/s390/kernel/vdso.c b/arch/s390/kernel/vdso.c
+index 6bc9c19..54dad2f 100644
+--- a/arch/s390/kernel/vdso.c
++++ b/arch/s390/kernel/vdso.c
+@@ -195,7 +195,8 @@ static void vdso_init_cr5(void)
+  * This is called from binfmt_elf, we create the special vma for the
+  * vDSO and insert it into the mm struct tree
+  */
+-int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++int arch_setup_additional_pages(struct linux_binprm *bprm,
++				unsigned long start, int uses_interp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	struct page **vdso_pagelist;
+@@ -226,6 +227,10 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+ 	vdso_pages = vdso32_pages;
+ #endif
+ 
++	/* in case restart(2) mandates a specific location */
++	if (start)
++		vdso_base = start;
++
+ 	/*
+ 	 * vDSO has a problem and was disabled, just don't "enable" it for
+ 	 * the process
+@@ -248,6 +253,12 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+ 		goto out_up;
+ 	}
+ 
++	/* for restart(2), double check that we got we asked for */
++	if (start && vdso_base != start) {
++		rc = -EINVAL;
++		goto out_up;
++	}
++
+ 	/*
+ 	 * Put vDSO base into mm struct. We need to do this before calling
+ 	 * install_special_mapping or the perf counter mmap tracking code
+diff --git a/arch/sh/include/asm/elf.h b/arch/sh/include/asm/elf.h
+index ce830fa..4128c30 100644
+--- a/arch/sh/include/asm/elf.h
++++ b/arch/sh/include/asm/elf.h
+@@ -201,6 +201,7 @@ do {									\
+ #define ARCH_HAS_SETUP_ADDITIONAL_PAGES
+ struct linux_binprm;
+ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
++				       unsigned long start,
+ 				       int uses_interp);
+ 
+ extern unsigned int vdso_enabled;
+diff --git a/arch/sh/kernel/vsyscall/vsyscall.c b/arch/sh/kernel/vsyscall/vsyscall.c
+index 242117c..6dbdfe1 100644
+--- a/arch/sh/kernel/vsyscall/vsyscall.c
++++ b/arch/sh/kernel/vsyscall/vsyscall.c
+@@ -58,7 +58,7 @@ int __init vsyscall_init(void)
  }
  
-+#ifdef CONFIG_CHECKPOINT
-+static int checkpoint_pipe(struct ckpt_ctx *ctx, struct inode *inode)
-+{
-+	struct pipe_inode_info *pipe;
-+	int len, ret = -ENOMEM;
-+
-+	pipe = alloc_pipe_info(NULL);
-+	if (!pipe)
-+		return ret;
-+
-+	pipe->readers = 1;	/* bluff link_pipe() below */
-+	len = link_pipe(inode->i_pipe, pipe, INT_MAX, SPLICE_F_NONBLOCK);
-+	if (len == -EAGAIN)
-+		len = 0;
-+	if (len < 0) {
-+		ret = len;
-+		goto out;
-+	}
-+
-+	ret = ckpt_write_obj_type(ctx, NULL, len, CKPT_HDR_PIPE_BUF);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = do_splice_from(pipe, ctx->file, &ctx->file->f_pos, len, 0);
-+	if (ret < 0)
-+		goto out;
-+	if (ret != len)
-+		ret = -EPIPE;  /* can occur due to an error in target file */
-+ out:
-+	__free_pipe_info(pipe);
-+	return ret;
-+}
-+
-+static int pipe_file_checkpoint(struct ckpt_ctx *ctx, struct file *file)
-+{
-+	struct ckpt_hdr_file_pipe *h;
-+	struct inode *inode = file->f_dentry->d_inode;
-+	int objref, first, ret;
-+
-+	objref = ckpt_obj_lookup_add(ctx, inode, CKPT_OBJ_INODE, &first);
-+	if (objref < 0)
-+		return objref;
-+
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_FILE);
-+	if (!h)
-+		return -ENOMEM;
-+
-+	h->common.f_type = CKPT_FILE_PIPE;
-+	h->pipe_objref = objref;
-+
-+	ret = checkpoint_file_common(ctx, file, &h->common);
-+	if (ret < 0)
-+		goto out;
-+	ret = ckpt_write_obj(ctx, &h->common.h);
-+	if (ret < 0)
-+		goto out;
-+
-+	if (first)
-+		ret = checkpoint_pipe(ctx, inode);
-+ out:
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-+
-+static int restore_pipe(struct ckpt_ctx *ctx, struct file *file)
-+{
-+	struct pipe_inode_info *pipe;
-+	int len, ret;
-+
-+	len = _ckpt_read_obj_type(ctx, NULL, 0, CKPT_HDR_PIPE_BUF);
-+	if (len < 0)
-+		return len;
-+
-+	pipe = file->f_dentry->d_inode->i_pipe;
-+	ret = do_splice_to(ctx->file, &ctx->file->f_pos, pipe, len, 0);
-+
-+	if (ret >= 0 && ret != len)
-+		ret = -EPIPE;  /* can occur due to an error in source file */
-+
-+	return ret;
-+}
-+
-+struct file *pipe_file_restore(struct ckpt_ctx *ctx, struct ckpt_hdr_file *ptr)
-+{
-+	struct ckpt_hdr_file_pipe *h = (struct ckpt_hdr_file_pipe *) ptr;
-+	struct file *file;
-+	int fds[2], which, ret;
-+
-+	if (ptr->h.type != CKPT_HDR_FILE  ||
-+	    ptr->h.len != sizeof(*h) || ptr->f_type != CKPT_FILE_PIPE)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (h->pipe_objref <= 0)
-+		return ERR_PTR(-EINVAL);
-+
-+	file = ckpt_obj_try_fetch(ctx, h->pipe_objref, CKPT_OBJ_FILE);
-+	/*
-+	 * If ckpt_obj_try_fetch() returned ERR_PTR(-EINVAL), then this is
-+	 * the first time we see this pipe so need to restore the
-+	 * contents.  Otherwise, use the file pointer skip forward.
-+	 */
-+	if (!IS_ERR(file)) {
-+		get_file(file);
-+	} else if (PTR_ERR(file) == -EINVAL) {
-+		/* first encounter of this pipe: create it */
-+		ret = do_pipe_flags(fds, 0);
-+		if (ret < 0)
-+			return file;
-+
-+		which = (ptr->f_flags & O_WRONLY ? 1 : 0);
-+		/*
-+		 * Below we return the file corersponding to one side
-+		 * of the pipe for our caller to use. Now insert the
-+		 * other side of the pipe to the hash, to be picked up
-+		 * when that side is restored.
-+		 */
-+		file = fget(fds[1-which]);	/* the 'other' side */
-+		if (!file)	/* this should _never_ happen ! */
-+			return ERR_PTR(-EBADF);
-+		ret = ckpt_obj_insert(ctx, file, h->pipe_objref, CKPT_OBJ_FILE);
-+		if (ret < 0)
-+			goto out;
-+
-+		ret = restore_pipe(ctx, file);
-+		fput(file);
-+		if (ret < 0)
-+			return ERR_PTR(ret);
-+
-+		file = fget(fds[which]);	/* 'this' side */
-+		if (!file)	/* this should _never_ happen ! */
-+			return ERR_PTR(-EBADF);
-+
-+		/* get rid of the file descriptors (caller sets that) */
-+		sys_close(fds[which]);
-+		sys_close(fds[1-which]);
-+	} else {
-+		return file;
-+	}
-+
-+	ret = restore_file_common(ctx, file, ptr);
-+ out:
-+	if (ret < 0) {
-+		fput(file);
-+		file = ERR_PTR(ret);
-+	}
-+
-+	return file;
-+}
-+#endif /* CONFIG_CHECKPOINT */
-+
- /*
-  * The file_operations structs are not static because they
-  * are also used in linux/fs/fifo.c to do operations on FIFOs.
-@@ -844,6 +996,9 @@ const struct file_operations read_pipefifo_fops = {
- 	.open		= pipe_read_open,
- 	.release	= pipe_read_release,
- 	.fasync		= pipe_read_fasync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= pipe_file_checkpoint,
-+#endif
- };
+ /* Setup a VMA at program startup for the vsyscall page */
+-int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++int arch_setup_additional_pages(struct linux_binprm *bprm, unsigned long start, int uses_interp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long addr;
+diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
+index f2ad216..3761be8 100644
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -312,9 +312,10 @@ struct linux_binprm;
  
- const struct file_operations write_pipefifo_fops = {
-@@ -856,6 +1011,9 @@ const struct file_operations write_pipefifo_fops = {
- 	.open		= pipe_write_open,
- 	.release	= pipe_write_release,
- 	.fasync		= pipe_write_fasync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= pipe_file_checkpoint,
-+#endif
- };
+ #define ARCH_HAS_SETUP_ADDITIONAL_PAGES 1
+ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
++				       unsigned long start,
+ 				       int uses_interp);
  
- const struct file_operations rdwr_pipefifo_fops = {
-@@ -869,6 +1027,9 @@ const struct file_operations rdwr_pipefifo_fops = {
- 	.open		= pipe_rdwr_open,
- 	.release	= pipe_rdwr_release,
- 	.fasync		= pipe_rdwr_fasync,
-+#ifdef CONFIG_CHECKPOINT
-+	.checkpoint	= pipe_file_checkpoint,
-+#endif
- };
+-extern int syscall32_setup_pages(struct linux_binprm *, int exstack);
++extern int syscall32_setup_pages(struct linux_binprm *, unsigned long start, int exstack);
+ #define compat_arch_setup_additional_pages	syscall32_setup_pages
  
- struct pipe_inode_info * alloc_pipe_info(struct inode *inode)
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 86cab42..50ef2b6 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -95,6 +95,8 @@ enum {
- #define CKPT_HDR_FILE_NAME CKPT_HDR_FILE_NAME
- 	CKPT_HDR_FILE,
- #define CKPT_HDR_FILE CKPT_HDR_FILE
-+	CKPT_HDR_PIPE_BUF,
-+#define CKPT_HDR_PIPE_BUF CKPT_HDR_PIPE_BUF
+ extern unsigned long arch_randomize_brk(struct mm_struct *mm);
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index 02b442e..62043c1 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -310,7 +310,8 @@ int __init sysenter_setup(void)
+ }
  
- 	CKPT_HDR_MM = 401,
- #define CKPT_HDR_MM CKPT_HDR_MM
-@@ -282,6 +284,8 @@ enum file_type {
- #define CKPT_FILE_IGNORE CKPT_FILE_IGNORE
- 	CKPT_FILE_GENERIC,
- #define CKPT_FILE_GENERIC CKPT_FILE_GENERIC
-+	CKPT_FILE_PIPE,
-+#define CKPT_FILE_PIPE CKPT_FILE_PIPE
- 	CKPT_FILE_MAX
- #define CKPT_FILE_MAX CKPT_FILE_MAX
- };
-@@ -301,6 +305,11 @@ struct ckpt_hdr_file_generic {
- 	struct ckpt_hdr_file common;
- } __attribute__((aligned(8)));
+ /* Setup a VMA at program startup for the vsyscall page */
+-int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++int arch_setup_additional_pages(struct linux_binprm *bprm,
++				unsigned long start, int uses_interp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long addr;
+@@ -331,13 +332,17 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+ 	if (compat)
+ 		addr = VDSO_HIGH_BASE;
+ 	else {
+-		addr = get_unmapped_area(NULL, 0, PAGE_SIZE, 0, 0);
++		addr = get_unmapped_area(NULL, start, PAGE_SIZE, 0, 0);
+ 		if (IS_ERR_VALUE(addr)) {
+ 			ret = addr;
+ 			goto up_fail;
+ 		}
+ 	}
  
-+struct ckpt_hdr_file_pipe {
-+	struct ckpt_hdr_file common;
-+	__s32 pipe_objref;
-+} __attribute__((aligned(8)));
++	/* for restart(2), double check that we got we asked for */
++	if (start && addr != start)
++		goto up_fail;
 +
- /* memory layout */
- struct ckpt_hdr_mm {
- 	struct ckpt_hdr h;
-diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
-index b43a9e0..e526a12 100644
---- a/include/linux/pipe_fs_i.h
-+++ b/include/linux/pipe_fs_i.h
-@@ -154,4 +154,12 @@ int generic_pipe_buf_confirm(struct pipe_inode_info *, struct pipe_buffer *);
- int generic_pipe_buf_steal(struct pipe_inode_info *, struct pipe_buffer *);
- void generic_pipe_buf_release(struct pipe_inode_info *, struct pipe_buffer *);
+ 	current->mm->context.vdso = (void *)addr;
  
-+/* checkpoint/restart */
-+#ifdef CONFIG_CHECKPOINT
-+struct ckpt_ctx;
-+struct ckpt_hdr_file;
-+extern struct file *pipe_file_restore(struct ckpt_ctx *ctx,
-+				      struct ckpt_hdr_file *ptr);
-+#endif
+ 	if (compat_uses_vma || !compat) {
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index ac74869..b813286 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -100,23 +100,28 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
+ 
+ /* Setup a VMA at program startup for the vsyscall page.
+    Not called for compat tasks */
+-int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++int arch_setup_additional_pages(struct linux_binprm *bprm,
++				unsigned long start, int uses_interp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long addr;
+-	int ret;
++	int ret = -EINVAL;
+ 
+ 	if (!vdso_enabled)
+ 		return 0;
+ 
+ 	down_write(&mm->mmap_sem);
+-	addr = vdso_addr(mm->start_stack, vdso_size);
++	addr = start ? : vdso_addr(mm->start_stack, vdso_size);
+ 	addr = get_unmapped_area(NULL, addr, vdso_size, 0, 0);
+ 	if (IS_ERR_VALUE(addr)) {
+ 		ret = addr;
+ 		goto up_fail;
+ 	}
+ 
++	/* for restart(2), double check that we got we asked for */
++	if (start && addr != start)
++		goto up_fail;
 +
- #endif
+ 	current->mm->context.vdso = (void *)addr;
+ 
+ 	ret = install_special_mapping(mm, addr, vdso_size,
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 535e763..6434003 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -923,7 +923,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 	set_binfmt(&elf_format);
+ 
+ #ifdef ARCH_HAS_SETUP_ADDITIONAL_PAGES
+-	retval = arch_setup_additional_pages(bprm, !!elf_interpreter);
++	retval = arch_setup_additional_pages(bprm, 0, !!elf_interpreter);
+ 	if (retval < 0) {
+ 		send_sig(SIGKILL, current, 0);
+ 		goto out;
 -- 
 1.6.3.3
 
