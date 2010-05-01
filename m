@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192Ab0EAOjx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:39:53 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:64441 "EHLO
+	id S933212Ab0EAOj6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:39:58 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:64459 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933042Ab0EAOiz (ORCPT
+	with ESMTP id S933011Ab0EAOjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:38:55 -0400
+	Sat, 1 May 2010 10:39:10 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Dan Smith <danms@us.ibm.com>,
-       netdev@vger.kernel.org
-Subject: [PATCH v21 096/100] c/r: Add checkpoint support for veth devices (v2)
-Date: Sat,  1 May 2010 10:16:18 -0400
-Message-Id: <1272723382-19470-97-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>,
+       linux-security-module@vger.kernel.org,
+       Kentaro Takeda <takedakn@nttdata.co.jp>,
+       David Howells <dhowells@redhat.com>
+Subject: [PATCH v21 091/100] c/r: add smack support to lsm c/r (v4)
+Date: Sat,  1 May 2010 10:16:13 -0400
+Message-Id: <1272723382-19470-92-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -24,270 +26,441 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Smith <danms@us.ibm.com>
+From: Serge E. Hallyn <serue@us.ibm.com>
 
-Adds an ndo_checkpoint() handler for veth devices to checkpoint themselves.
-Writes out the pairing information, addresses, and initiates a checkpoint
-on the peer if the peer won't be reached from another netns.  Throws an
-error of our peer's netns isn't already in the hash (i.e., a tree leak).
+Documentation/checkpoint/readme.txt begins:
+"""
+Application checkpoint/restart is the ability to save the state
+of a running application so that it can later resume its execution
+from the time at which it was checkpointed.
+"""
 
-Changelog[v21]
- - Unbreak compiling with CONFIG_CHECKPOINT=n or CONFIG_NET_NS=n
- - Clean up the error path in restore_veth()
+This patch implements checkpoint and restore of Smack security
+labels.  The rules are the same as in previous versions:
 
-Changes in v2:
- - Fix check detecting if peer is in the init netns
+	1. when objects are created during restore() they are
+	   automatically labeled with current_security().
+	2. if there was a label checkpointed with the object,
+	   and that label != current_security() (which is the
+	   same as obj->security), then the object is relabeled
+	   if the sys_restart() caller has CAP_MAC_ADMIN.
+	   Otherwise we return -EPERM.
 
-Cc: netdev@vger.kernel.org
-Signed-off-by: Dan Smith <danms@us.ibm.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+This has been tested by checkpointing tasks under labels
+_, vs1, and vs2, and restarting from tasks under _, vs1,
+and vs2, with and without CAP_MAC_ADMIN in the bounding
+set, and with and without the '-k' (keep_lsm) flag to mktree.
+Expected results:
+
+	#shell 1:
+	echo vs1 > /proc/self/attr/current
+	ckpt > out
+	echo vs2 > /proc/self/attr/current
+	mktree -F /cgroup/2 < out
+		(frozen)
+	# shell 2:
+	cat /proc/`pidof ckpt`/attr/current
+		vs2
+	echo THAWED > /cgroup/2/freezer.state
+	# shell 1:
+	mktree -k -F /cgroup/2 < out
+		(frozen)
+	# shell 2:
+	cat /proc/`pidof ckpt`/attr/current
+		vs1
+	echo THAWED > /cgroup/2/freezer.state
+	# shell 1:
+	capsh --drop=cap_mac_admin --
+	mktree -k -F /cgroup/2 < out
+		(permission denied)
+
+There are testcases in git://git.sr71.net/~hallyn/cr_tests.git
+under cr_tests/smack, which automate the above (and pass).
+
+Changelog:
+	sep 3: add a version to smack lsm, accessible through
+		/smack/version  (Casey and Serge)
+	sep 10: rename xyz_get_ctx() to xyz_checkpoint()
+
+Cc: linux-security-module@vger.kernel.org
+Cc: Kentaro Takeda <takedakn@nttdata.co.jp>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
+Acked-by: Casey Schaufler <casey@schaufler-ca.com>
 Acked-by: Oren Laadan <orenl@cs.columbia.edu>
 ---
- drivers/net/veth.c   |   76 +++++++++++++++++++++++++++++++++++++++++++
- net/checkpoint_dev.c |   87 +++++++++++++++++--------------------------------
- 2 files changed, 106 insertions(+), 57 deletions(-)
+ kernel/checkpoint/restart.c |    1 +
+ security/smack/smack.h      |    1 +
+ security/smack/smack_lsm.c  |  144 +++++++++++++++++++++++++++++++++++++++++++
+ security/smack/smackfs.c    |   83 +++++++++++++++++++++++++
+ 4 files changed, 229 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/veth.c b/drivers/net/veth.c
-index f9f0730..d76b5e0 100644
---- a/drivers/net/veth.c
-+++ b/drivers/net/veth.c
-@@ -285,6 +285,79 @@ static void veth_dev_free(struct net_device *dev)
- 	free_netdev(dev);
+diff --git a/kernel/checkpoint/restart.c b/kernel/checkpoint/restart.c
+index 6605597..3aa69e4 100644
+--- a/kernel/checkpoint/restart.c
++++ b/kernel/checkpoint/restart.c
+@@ -682,6 +682,7 @@ static int restore_lsm(struct ckpt_ctx *ctx)
+ 	}
+ 
+ 	if (strcmp(ctx->lsm_name, "lsm_none") != 0 &&
++			strcmp(ctx->lsm_name, "smack") != 0 &&
+ 			strcmp(ctx->lsm_name, "default") != 0) {
+ 		ckpt_debug("c/r: RESTART_KEEP_LSM unsupported for %s\n",
+ 				ctx->lsm_name);
+diff --git a/security/smack/smack.h b/security/smack/smack.h
+index c6e9aca..a8917b0 100644
+--- a/security/smack/smack.h
++++ b/security/smack/smack.h
+@@ -216,6 +216,7 @@ u32 smack_to_secid(const char *);
+ extern int smack_cipso_direct;
+ extern char *smack_net_ambient;
+ extern char *smack_onlycap;
++extern char *smack_version;
+ extern const char *smack_cipso_option;
+ 
+ extern struct smack_known smack_known_floor;
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index fdfeaa2..6f01f6d 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -28,6 +28,7 @@
+ #include <linux/slab.h>
+ #include <linux/mutex.h>
+ #include <linux/pipe_fs_i.h>
++#include <linux/checkpoint.h>
+ #include <net/netlabel.h>
+ #include <net/cipso_ipv4.h>
+ #include <linux/audit.h>
+@@ -887,6 +888,28 @@ static int smack_file_permission(struct file *file, int mask)
+ 	return 0;
  }
  
-+#ifdef CONFIG_NETNS_CHECKPOINT
-+#include <linux/checkpoint.h>
-+#include <linux/checkpoint_hdr.h>
-+
-+static int veth_checkpoint(struct ckpt_ctx *ctx, struct net_device *dev)
++static inline char *smack_file_checkpoint(void *security)
 +{
-+	struct ckpt_hdr_netdev *h;
-+	struct veth_priv *priv = netdev_priv(dev);
-+	struct net_device *peer = priv->peer;
-+	struct ckpt_netdev_addr *addrs;
-+	int ret;
-+	int n;
++	return kstrdup((char *)security, GFP_KERNEL);
++}
 +
-+	if (!peer) {
-+		ckpt_err(ctx, -EINVAL, "veth device has no peer!\n");
++static inline int smack_file_restore(struct file *file, char *ctx)
++{
++	char *newsmack = smk_import(ctx, 0);
++
++	if (newsmack == NULL)
 +		return -EINVAL;
-+	}
++	/* I think by definition, file->f_security == current_security
++	 * right now, but let's assume somehow it might not be */
++	if (newsmack == file->f_security)
++		return 0;
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	file->f_security = newsmack;
 +
-+	h = ckpt_netdev_base(ctx, dev, &addrs);
-+	if (IS_ERR(h))
-+		return PTR_ERR(h);
++	return 0;
++}
 +
-+	h->type = CKPT_NETDEV_VETH;
+ /**
+  * smack_file_alloc_security - assign a file security blob
+  * @file: the object
+@@ -1074,6 +1097,27 @@ static int smack_file_receive(struct file *file)
+  * Task hooks
+  */
+ 
++static inline char *smack_cred_checkpoint(void *security)
++{
++	return kstrdup((char *)security, GFP_KERNEL);
++}
 +
-+	ret = h->veth.this_ref = ckpt_obj_lookup_add(ctx, dev,
-+						     CKPT_OBJ_NETDEV, &n);
-+	if (ret < 0)
-+		goto out;
++static inline int smack_cred_restore(struct file *file, struct cred *cred,
++					char *ctx)
++{
++	char *newsmack = smk_import(ctx, 0);
 +
-+	ret = h->veth.peer_ref = ckpt_obj_lookup_add(ctx, peer,
-+						     CKPT_OBJ_NETDEV, &n);
-+	if (ret < 0)
-+		goto out;
++	if (newsmack == NULL)
++		return -EINVAL;
++	if (newsmack == cred->security)
++		return 0;
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	cred->security = newsmack;
 +
-+	ret = ckpt_write_obj(ctx, (struct ckpt_hdr *)h);
-+	if (ret < 0)
-+		goto out;
++	return 0;
++}
 +
-+	ret = ckpt_write_buffer(ctx, dev->name, IFNAMSIZ);
-+	if (ret < 0)
-+		goto out;
+ /**
+  * smack_cred_alloc_blank - "allocate" blank task-level security credentials
+  * @new: the new credentials
+@@ -1766,6 +1810,26 @@ static int smack_msg_msg_alloc_security(struct msg_msg *msg)
+ 	return 0;
+ }
+ 
++static inline char *smack_msg_msg_checkpoint(void *security)
++{
++	return kstrdup((char *)security, GFP_KERNEL);
++}
 +
-+	ret = ckpt_write_buffer(ctx, peer->name, IFNAMSIZ);
-+	if (ret < 0)
-+		goto out;
++static inline int smack_msg_msg_restore(struct msg_msg *msg, char *ctx)
++{
++	char *newsmack = smk_import(ctx, 0);
 +
-+	if (h->inet_addrs > 0) {
-+		int len = (sizeof(struct ckpt_netdev_addr) * h->inet_addrs);
-+		ret = ckpt_write_buffer(ctx, addrs, len);
-+		if (ret)
-+			goto out;
-+	}
++	if (newsmack == NULL)
++		return -EINVAL;
++	if (newsmack == msg->security)
++		return 0;
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	msg->security = newsmack;
 +
-+	/* Only checkpoint peer if we're not going to arrive at it
-+	 * via another task's netns.  Fail if the pipe exits
-+	 * our container to a netns not already in the hash
++	return 0;
++}
++
+ /**
+  * smack_msg_msg_free_security - Clear the security blob for msg_msg
+  * @msg: the object
+@@ -2199,6 +2263,26 @@ static void smack_ipc_getsecid(struct kern_ipc_perm *ipp, u32 *secid)
+ 	*secid = smack_to_secid(smack);
+ }
+ 
++static inline char *smack_ipc_checkpoint(void *security)
++{
++	return kstrdup((char *)security, GFP_KERNEL);
++}
++
++static inline int smack_ipc_restore(struct kern_ipc_perm *ipcp, char *ctx)
++{
++	char *newsmack = smk_import(ctx, 0);
++
++	if (newsmack == NULL)
++		return -EINVAL;
++	if (newsmack == ipcp->security)
++		return 0;
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	ipcp->security = newsmack;
++
++	return 0;
++}
++
+ /**
+  * smack_d_instantiate - Make sure the blob is correct on an inode
+  * @opt_dentry: unused
+@@ -3074,6 +3158,51 @@ static int smack_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_CHECKPOINT
++
++static int smack_may_restart(struct ckpt_ctx *ctx)
++{
++	struct ckpt_hdr *chp;
++	char *saved_version;
++	int ret = 0;
++
++	chp = ckpt_read_buf_type(ctx, CKPT_LSM_INFO_LEN, CKPT_HDR_LSM_INFO);
++	if (IS_ERR(chp))
++		return PTR_ERR(chp);
++
++	/*
++	 * After the checkpoint header comes the null terminated
++	 * Smack "policy" version. This will usually be the
++	 * floor label "_".
 +	 */
-+	if (ckpt_netdev_in_init_netns(ctx, peer))
-+		ret = checkpoint_obj(ctx, peer, CKPT_OBJ_NETDEV);
-+	else if (!ckpt_obj_lookup(ctx, peer->nd_net, CKPT_OBJ_NET_NS)) {
-+		ret = -EINVAL;
-+		ckpt_err(ctx, ret,
-+			 "Peer %s of %s not in checkpointed namespaces\n",
-+			 peer->name, dev->name);
-+	}
-+ out:
-+	ckpt_hdr_put(ctx, h);
-+	kfree(addrs);
++	saved_version = (char *)(chp + 1);
 +
++	/*
++	 * Of course, it is possible that a "policy" version mismatch
++	 * is not considered threatening.
++	 */
++	if (!(ctx->uflags & RESTART_KEEP_LSM))
++		goto skip;
++
++	if (strcmp(saved_version, smack_version) != 0) {
++		ckpt_debug("Smack version at checkpoint was"
++			   "\"%s\", now is \"%s\".\n",
++				saved_version, smack_version);
++		ret = -EINVAL;
++	}
++skip:
++	ckpt_hdr_put(ctx, chp);
 +	return ret;
++}
++
++static int smack_checkpoint_header(struct ckpt_ctx *ctx)
++{
++	return ckpt_write_obj_type(ctx, smack_version,
++					strlen(smack_version) + 1,
++					CKPT_HDR_LSM_INFO);
 +}
 +#endif
 +
- static const struct net_device_ops veth_netdev_ops = {
- 	.ndo_init            = veth_dev_init,
- 	.ndo_open            = veth_open,
-@@ -293,6 +366,9 @@ static const struct net_device_ops veth_netdev_ops = {
- 	.ndo_change_mtu      = veth_change_mtu,
- 	.ndo_get_stats       = veth_get_stats,
- 	.ndo_set_mac_address = eth_mac_addr,
-+#ifdef CONFIG_NETNS_CHECKPOINT
-+	.ndo_checkpoint      = veth_checkpoint,
+ struct security_operations smack_ops = {
+ 	.name =				"smack",
+ 
+@@ -3109,6 +3238,8 @@ struct security_operations smack_ops = {
+ 	.inode_getsecid =		smack_inode_getsecid,
+ 
+ 	.file_permission = 		smack_file_permission,
++	.file_checkpoint =		smack_file_checkpoint,
++	.file_restore =			smack_file_restore,
+ 	.file_alloc_security = 		smack_file_alloc_security,
+ 	.file_free_security = 		smack_file_free_security,
+ 	.file_ioctl = 			smack_file_ioctl,
+@@ -3119,6 +3250,10 @@ struct security_operations smack_ops = {
+ 	.file_receive = 		smack_file_receive,
+ 
+ 	.cred_alloc_blank =		smack_cred_alloc_blank,
++
++	.cred_checkpoint =		smack_cred_checkpoint,
++	.cred_restore =			smack_cred_restore,
++
+ 	.cred_free =			smack_cred_free,
+ 	.cred_prepare =			smack_cred_prepare,
+ 	.cred_commit =			smack_cred_commit,
+@@ -3141,8 +3276,12 @@ struct security_operations smack_ops = {
+ 
+ 	.ipc_permission = 		smack_ipc_permission,
+ 	.ipc_getsecid =			smack_ipc_getsecid,
++	.ipc_checkpoint =		smack_ipc_checkpoint,
++	.ipc_restore =			smack_ipc_restore,
+ 
+ 	.msg_msg_alloc_security = 	smack_msg_msg_alloc_security,
++	.msg_msg_checkpoint =		smack_msg_msg_checkpoint,
++	.msg_msg_restore =		smack_msg_msg_restore,
+ 	.msg_msg_free_security = 	smack_msg_msg_free_security,
+ 
+ 	.msg_queue_alloc_security = 	smack_msg_queue_alloc_security,
+@@ -3205,6 +3344,11 @@ struct security_operations smack_ops = {
+ 	.inode_notifysecctx =		smack_inode_notifysecctx,
+ 	.inode_setsecctx =		smack_inode_setsecctx,
+ 	.inode_getsecctx =		smack_inode_getsecctx,
++
++#ifdef CONFIG_CHECKPOINT
++	.may_restart =			smack_may_restart,
++	.checkpoint_header =		smack_checkpoint_header,
 +#endif
  };
  
- static void veth_setup(struct net_device *dev)
-diff --git a/net/checkpoint_dev.c b/net/checkpoint_dev.c
-index 5097011..a8e3341 100644
---- a/net/checkpoint_dev.c
-+++ b/net/checkpoint_dev.c
-@@ -20,11 +20,6 @@
- #include <net/net_namespace.h>
- #include <net/sch_generic.h>
  
--struct dq_netdev {
--	struct net_device *dev;
--	struct ckpt_ctx *ctx;
--};
--
- struct veth_newlink {
- 	char *peer;
+diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+index a2b72d7..2a551b2 100644
+--- a/security/smack/smackfs.c
++++ b/security/smack/smackfs.c
+@@ -43,6 +43,7 @@ enum smk_inos {
+ 	SMK_NETLBLADDR	= 8,	/* single label hosts */
+ 	SMK_ONLYCAP	= 9,	/* the only "capable" label */
+ 	SMK_LOGGING	= 10,	/* logging */
++	SMK_VERSION	= 11,	/* logging */
  };
-@@ -587,25 +582,6 @@ static int rtnl_dellink(char *name)
- 	return ret;
- }
  
--static int netdev_noop(void *data)
--{
--	return 0;
--}
--
--static int netdev_cleanup(void *data)
--{
--	struct dq_netdev *dq = data;
--
--	dev_put(dq->dev);
--
--	if (dq->ctx->errno) {
--		ckpt_debug("Unregistering netdev %s\n", dq->dev->name);
--		unregister_netdev(dq->dev);
--	}
--
--	return 0;
--}
--
- static struct net_device *restore_veth(struct ckpt_ctx *ctx,
- 				       struct ckpt_hdr_netdev *h,
- 				       struct net *net)
-@@ -616,9 +592,6 @@ static struct net_device *restore_veth(struct ckpt_ctx *ctx,
- 	struct net_device *dev;
- 	struct net_device *peer;
- 	struct ifreq req;
--	struct dq_netdev dq;
--
--	dq.ctx = ctx;
+ /*
+@@ -52,6 +53,7 @@ static DEFINE_MUTEX(smack_list_lock);
+ static DEFINE_MUTEX(smack_cipso_lock);
+ static DEFINE_MUTEX(smack_ambient_lock);
+ static DEFINE_MUTEX(smk_netlbladdr_lock);
++static DEFINE_MUTEX(smack_version_lock);
  
- 	ret = _ckpt_read_buffer(ctx, this_name, IFNAMSIZ);
- 	if (ret < 0)
-@@ -640,37 +613,31 @@ static struct net_device *restore_veth(struct ckpt_ctx *ctx,
- 		if (IS_ERR(dev))
- 			return dev;
+ /*
+  * This is the "ambient" label for network traffic.
+@@ -61,6 +63,16 @@ static DEFINE_MUTEX(smk_netlbladdr_lock);
+ char *smack_net_ambient = smack_known_floor.smk_known;
  
-+		ret = ckpt_obj_insert(ctx, dev, h->veth.this_ref,
-+				      CKPT_OBJ_NETDEV);
-+		dev_put(dev);
-+		if (ret < 0)
-+			goto err;
+ /*
++ * This is the policy version. In the interest of simplicity the
++ * policy version is a string that meets all of the requirements
++ * of a Smack label. This is enforced by the expedient of
++ * importing it like a label. The policy version is thus always
++ * also a valid label on the system. This may prove useful under
++ * some as yet undiscovered circumstance.
++ */
++char *smack_version = smack_known_floor.smk_known;
 +
- 		peer = dev_get_by_name(current->nsproxy->net_ns, peer_name);
- 		if (!peer) {
- 			ret = -EINVAL;
--			goto err_dev;
-+			goto err;
- 		}
- 
--		dq.dev = peer;
--		ret = deferqueue_add(ctx->deferqueue, &dq, sizeof(dq),
--				     netdev_noop, netdev_cleanup);
--		if (ret)
--			goto err_peer;
--
- 		ret = ckpt_obj_insert(ctx, peer, h->veth.peer_ref,
- 				      CKPT_OBJ_NETDEV);
--		if (ret < 0)
--			/* Can't recall peer dq, so let it cleanup peer */
--			goto err_dev;
- 		dev_put(peer);
--
--		dq.dev = dev;
--		ret = deferqueue_add(ctx->deferqueue, &dq, sizeof(dq),
--				     netdev_noop, netdev_cleanup);
--		if (ret)
--			/* Can't recall peer dq, so let it cleanup peer */
--			goto err_dev;
-+		if (ret < 0)
-+			goto err;
- 
- 	} else {
- 		/* We're second: get our dev from the hash */
- 		dev = ckpt_obj_fetch(ctx, h->veth.this_ref, CKPT_OBJ_NETDEV);
--		if (IS_ERR(dev))
--			return dev;
-+		if (IS_ERR(dev)) {
-+			ret = PTR_ERR(dev);
-+			goto err;
-+		}
- 	}
- 
- 	/* Move to our new netns */
-@@ -678,25 +645,31 @@ static struct net_device *restore_veth(struct ckpt_ctx *ctx,
- 	ret = dev_change_net_namespace(dev, net, dev->name);
- 	rtnl_unlock();
- 	if (ret < 0)
--		goto out;
-+		goto err;
- 
- 	/* Restore MAC address */
- 	memcpy(req.ifr_name, dev->name, IFNAMSIZ);
- 	memcpy(req.ifr_hwaddr.sa_data, h->hwaddr, sizeof(h->hwaddr));
- 	req.ifr_hwaddr.sa_family = ARPHRD_ETHER;
- 	ret = __kern_dev_ioctl(net, SIOCSIFHWADDR, &req);
-- out:
--	if (ret)
--		dev = ERR_PTR(ret);
-+	if (ret < 0)
-+		goto err;
- 
- 	return dev;
--
-- err_peer:
--	dev_put(peer);
--	unregister_netdev(peer);
-- err_dev:
--	dev_put(dev);
--	unregister_netdev(dev);
-+ err:
-+	/* Delete from hash to drop reference */
-+	ckpt_obj_delete(ctx, h->veth.this_ref, CKPT_OBJ_NETDEV);
-+	ckpt_obj_delete(ctx, h->veth.peer_ref, CKPT_OBJ_NETDEV);
++/*
+  * This is the level in a CIPSO header that indicates a
+  * smack label is contained directly in the category set.
+  * It can be reset via smackfs/direct
+@@ -1256,6 +1268,75 @@ static const struct file_operations smk_logging_ops = {
+ 	.read		= smk_read_logging,
+ 	.write		= smk_write_logging,
+ };
 +
-+	/* This will fail to delete the interface if we get here
-+	 * because of a failed attempt at setting the hardware
-+	 * address, since the device has been moved to another netns.
-+	 * This is not a problem, however, because the death of that
-+	 * netns will take the device (and its peer) down with it
-+	 * cleanly.
-+	 */
-+	if (rtnl_dellink(this_name) < 0)
-+		ckpt_debug("failed to delete interfaces on error\n");
++#define SMK_VERSIONLEN 12
++/**
++ * smk_read_version - read() for /smack/version
++ * @filp: file pointer, not actually used
++ * @buf: where to put the result
++ * @cn: maximum to send along
++ * @ppos: where to start
++ *
++ * Returns number of bytes read or error code, as appropriate
++ */
++static ssize_t smk_read_version(struct file *filp, char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	int rc;
++
++	if (*ppos != 0)
++		return 0;
++
++	mutex_lock(&smack_version_lock);
++
++	rc = simple_read_from_buffer(buf, count, ppos, smack_version,
++					strlen(smack_version) + 1);
++
++	mutex_unlock(&smack_version_lock);
++
++	return rc;
++}
++
++/**
++ * smk_write_version - write() for /smack/version
++ * @file: file pointer, not actually used
++ * @buf: where to get the data from
++ * @count: bytes sent
++ * @ppos: where to start
++ *
++ * Returns number of bytes written or error code, as appropriate
++ */
++static ssize_t smk_write_version(struct file *file, const char __user *buf,
++				 size_t count, loff_t *ppos)
++{
++	char *smack;
++	char in[SMK_LABELLEN];
++
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	if (count >= SMK_LABELLEN)
++		return -EINVAL;
++
++	if (copy_from_user(in, buf, count) != 0)
++		return -EFAULT;
++
++	smack = smk_import(in, count);
++	if (smack == NULL)
++		return -EINVAL;
++
++	mutex_lock(&smack_version_lock);
++	smack_version = smack;
++	mutex_unlock(&smack_version_lock);
++
++	return count;
++}
++
++static const struct file_operations smk_version_ops = {
++	.read		= smk_read_version,
++	.write		= smk_write_version,
++};
++
+ /**
+  * smk_fill_super - fill the /smackfs superblock
+  * @sb: the empty superblock
+@@ -1288,6 +1369,8 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
+ 			{"onlycap", &smk_onlycap_ops, S_IRUGO|S_IWUSR},
+ 		[SMK_LOGGING]	=
+ 			{"logging", &smk_logging_ops, S_IRUGO|S_IWUSR},
++		[SMK_VERSION]	=
++			{"version", &smk_version_ops, S_IRUGO|S_IWUSR},
+ 		/* last one */ {""}
+ 	};
  
- 	return ERR_PTR(ret);
- }
 -- 
 1.6.3.3
 
