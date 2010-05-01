@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab0EAO2f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:28:35 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63106 "EHLO
+	id S1754037Ab0EAO2k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:28:40 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63107 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab0EAO0g (ORCPT
+	with ESMTP id S1753870Ab0EAO0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:26:36 -0400
+	Sat, 1 May 2010 10:26:35 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
        Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
-       linux-api@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, netdev@vger.kernel.org,
-       Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [PATCH v21 020/100] c/r: documentation
-Date: Sat,  1 May 2010 10:15:02 -0400
-Message-Id: <1272723382-19470-21-git-send-email-orenl@cs.columbia.edu>
+       Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH v21 028/100] c/r: checkpoint multiple processes
+Date: Sat,  1 May 2010 10:15:10 -0400
+Message-Id: <1272723382-19470-29-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -26,839 +24,695 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Covers application checkpoint/restart, overall design, interfaces,
-usage, shared objects, and and checkpoint image format.
+Checkpointing of multiple processes works by recording the tasks tree
+structure below a given "root" task. The root task is expected to be a
+container init, and then an entire container is checkpointed. However,
+passing CHECKPOINT_SUBTREE to checkpoint(2) relaxes this requirement
+and allows to checkpoint a subtree of processes from the root task.
 
+For a given root task, do a DFS scan of the tasks tree and collect them
+into an array (keeping a reference to each task). Using DFS simplifies
+the recreation of tasks either in user space or kernel space. For each
+task collected, test if it can be checkpointed, and save its pid, tgid,
+and ppid.
+
+The actual work is divided into two passes: a first scan counts the
+tasks, then memory is allocated and a second scan fills the array.
+
+Whether checkpoints and restarts require CAP_SYS_ADMIN is determined
+by sysctl 'ckpt_unpriv_allowed': if 1, then regular permission checks
+are intended to prevent privilege escalation, however if 0 it prevents
+unprivileged users from exploiting any privilege escalation bugs.
+
+The logic is suitable for creation of processes during restart either
+in userspace or by the kernel.
+
+Currently we ignore threads and zombies.
+
+Changelog[v20]:
+  - [Serge Hallyn] Change sysctl and default for unprivileged use
+Changelog[v19-rc3]:
+  - Rebase to kernel 2.6.33 (fix sysctl entry for ckpt_unpriv_allowed)
 Changelog[v19-rc1]:
-  - Update documentation and examples for new syscalls API
-  - [Liu Alexander] Fix typos
-  - [Serge Hallyn] Update checkpoint image format
+  - Introduce walk_task_subtree() to iterate through descendants
+  - [Matt Helsley] Add cpp definitions for enums
+  - [Serge Hallyn] Add global section container to image format
+Changelog[v18]:
+  - Replace some EAGAIN with EBUSY
+  - Add a few more ckpt_write_err()s
+  - Rename headerless struct ckpt_hdr_* to struct ckpt_*
 Changelog[v16]:
-  - Update documentation
-  - Unify into readme.txt and usage.txt
+  - CHECKPOINT_SUBTREE flags allows subtree (not whole container)
+  - sysctl variable 'ckpt_unpriv_allowed' controls needed privileges
 Changelog[v14]:
-  - Discard the 'h.parent' field
-  - New image format (shared objects appear before they are referenced
-    unless they are compound)
-Changelog[v8]:
-  - Split into multiple files in Documentation/checkpoint/...
-  - Extend documentation, fix typos and comments from feedback
+  - Refuse non-self checkpoint if target task isn't frozen
+  - Refuse checkpoint (for now) if task is ptraced
+  - Revert change to pr_debug(), back to ckpt_debug()
+  - Use only unsigned fields in checkpoint headers
+  - Check retval of ckpt_tree_count_tasks() in ckpt_build_tree()
+  - Discard 'h.parent' field
+  - Check whether calls to ckpt_hbuf_get() fail
+  - Disallow threads or siblings to container init
+Changelog[v13]:
+  - Release tasklist_lock in error path in ckpt_tree_count_tasks()
+  - Use separate index for 'tasks_arr' and 'hh' in ckpt_write_pids()
+Changelog[v12]:
+  - Replace obsolete ckpt_debug() with pr_debug()
 
-Cc: linux-api@vger.kernel.org
-Cc: linux-mm@kvack.org
-Cc: linux-fsdevel@vger.kernel.org
-Cc: netdev@vger.kernel.org
+Cc: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- Documentation/checkpoint/checkpoint.c      |   38 +++
- Documentation/checkpoint/readme.txt        |  370 ++++++++++++++++++++++++++++
- Documentation/checkpoint/self_checkpoint.c |   69 +++++
- Documentation/checkpoint/self_restart.c    |   40 +++
- Documentation/checkpoint/usage.txt         |  247 +++++++++++++++++++
- 5 files changed, 764 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/checkpoint/checkpoint.c
- create mode 100644 Documentation/checkpoint/readme.txt
- create mode 100644 Documentation/checkpoint/self_checkpoint.c
- create mode 100644 Documentation/checkpoint/self_restart.c
- create mode 100644 Documentation/checkpoint/usage.txt
+ include/linux/checkpoint.h       |   10 ++
+ include/linux/checkpoint_hdr.h   |   18 +++-
+ include/linux/checkpoint_types.h |    4 +
+ kernel/checkpoint/checkpoint.c   |  272 ++++++++++++++++++++++++++++++++++++--
+ kernel/checkpoint/restart.c      |    2 +-
+ kernel/checkpoint/sys.c          |  108 +++++++++++++++-
+ kernel/sysctl.c                  |   16 +++
+ 7 files changed, 412 insertions(+), 18 deletions(-)
 
-diff --git a/Documentation/checkpoint/checkpoint.c b/Documentation/checkpoint/checkpoint.c
-new file mode 100644
-index 0000000..8560f30
---- /dev/null
-+++ b/Documentation/checkpoint/checkpoint.c
-@@ -0,0 +1,38 @@
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <errno.h>
-+#include <unistd.h>
-+#include <sys/syscall.h>
+diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
+index 20dcd95..d423a37 100644
+--- a/include/linux/checkpoint.h
++++ b/include/linux/checkpoint.h
+@@ -12,6 +12,9 @@
+ 
+ #define CHECKPOINT_VERSION  3
+ 
++/* checkpoint user flags */
++#define CHECKPOINT_SUBTREE	0x1
 +
-+#include <linux/checkpoint.h>
+ /* misc user visible */
+ #define CHECKPOINT_FD_NONE	-1
+ 
+@@ -37,6 +40,13 @@ extern long do_sys_restart(pid_t pid, int fd,
+ #define CKPT_CTX_RESTART	(1 << CKPT_CTX_RESTART_BIT)
+ #define CKPT_CTX_ERROR		(1 << CKPT_CTX_ERROR_BIT)
+ 
++/* ckpt_ctx: uflags */
++#define CHECKPOINT_USER_FLAGS		CHECKPOINT_SUBTREE
 +
-+static inline int checkpoint(pid_t pid, int fd, unsigned long flags)
++
++extern int walk_task_subtree(struct task_struct *task,
++			     int (*func)(struct task_struct *, void *),
++			     void *data);
+ 
+ extern int ckpt_kwrite(struct ckpt_ctx *ctx, void *buf, size_t count);
+ extern int ckpt_kread(struct ckpt_ctx *ctx, void *buf, size_t count);
+diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
+index f17f081..4abae32 100644
+--- a/include/linux/checkpoint_hdr.h
++++ b/include/linux/checkpoint_hdr.h
+@@ -70,7 +70,9 @@ enum {
+ 	CKPT_HDR_STRING,
+ #define CKPT_HDR_STRING CKPT_HDR_STRING
+ 
+-	CKPT_HDR_TASK = 101,
++	CKPT_HDR_TREE = 101,
++#define CKPT_HDR_TREE CKPT_HDR_TREE
++	CKPT_HDR_TASK,
+ #define CKPT_HDR_TASK CKPT_HDR_TASK
+ 	CKPT_HDR_RESTART_BLOCK,
+ #define CKPT_HDR_RESTART_BLOCK CKPT_HDR_RESTART_BLOCK
+@@ -142,6 +144,20 @@ struct ckpt_hdr_container {
+ 	struct ckpt_hdr h;
+ } __attribute__((aligned(8)));;
+ 
++/* task tree */
++struct ckpt_hdr_tree {
++	struct ckpt_hdr h;
++	__s32 nr_tasks;
++} __attribute__((aligned(8)));
++
++struct ckpt_pids {
++	__s32 vpid;
++	__s32 vppid;
++	__s32 vtgid;
++	__s32 vpgid;
++	__s32 vsid;
++} __attribute__((aligned(8)));
++
+ /* task data */
+ struct ckpt_hdr_task {
+ 	struct ckpt_hdr h;
+diff --git a/include/linux/checkpoint_types.h b/include/linux/checkpoint_types.h
+index 417e119..527b877 100644
+--- a/include/linux/checkpoint_types.h
++++ b/include/linux/checkpoint_types.h
+@@ -22,6 +22,7 @@ struct ckpt_ctx {
+ 
+ 	ktime_t ktime_begin;	/* checkpoint start time */
+ 
++	int root_init;				/* [container] root init ? */
+ 	pid_t root_pid;				/* [container] root pid */
+ 	struct task_struct *root_task;		/* [container] root task */
+ 	struct nsproxy *root_nsproxy;		/* [container] root nsproxy */
+@@ -35,6 +36,9 @@ struct ckpt_ctx {
+ 	struct file *logfile;	/* status/debug log file */
+ 	loff_t total;		/* total read/written */
+ 
++	struct task_struct **tasks_arr;	/* array of all tasks in container */
++	int nr_tasks;			/* size of tasks array */
++
+ 	struct task_struct *tsk;/* checkpoint: current target task */
+ 	char err_string[256];	/* checkpoint: error string */
+ 
+diff --git a/kernel/checkpoint/checkpoint.c b/kernel/checkpoint/checkpoint.c
+index 0dbf3e7..de7e19a 100644
+--- a/kernel/checkpoint/checkpoint.c
++++ b/kernel/checkpoint/checkpoint.c
+@@ -14,6 +14,7 @@
+ #include <linux/version.h>
+ #include <linux/module.h>
+ #include <linux/sched.h>
++#include <linux/slab.h>
+ #include <linux/freezer.h>
+ #include <linux/ptrace.h>
+ #include <linux/time.h>
+@@ -197,8 +198,27 @@ static int checkpoint_write_tail(struct ckpt_ctx *ctx)
+ 	return ret;
+ }
+ 
++/* dump all tasks in ctx->tasks_arr[] */
++static int checkpoint_all_tasks(struct ckpt_ctx *ctx)
 +{
-+	return syscall(__NR_checkpoint, pid, fd, flags);
++	int n, ret = 0;
++
++	for (n = 0; n < ctx->nr_tasks; n++) {
++		ckpt_debug("dumping task #%d\n", n);
++		ret = checkpoint_task(ctx, ctx->tasks_arr[n]);
++		if (ret < 0)
++			break;
++	}
++
++	return ret;
 +}
 +
-+int main(int argc, char *argv[])
+ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
+ {
++	struct task_struct *root = ctx->root_task;
++
++	ckpt_debug("check %d\n", task_pid_nr_ns(t, ctx->root_nsproxy->pid_ns));
++
+ 	if (t->state == TASK_DEAD) {
+ 		_ckpt_err(ctx, -EBUSY, "%(T)Task state EXIT_DEAD\n");
+ 		return -EBUSY;
+@@ -221,15 +241,234 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
+ 		return -EBUSY;
+ 	}
+ 
++	/*
++	 * FIX: for now, disallow siblings of container init created
++	 * via CLONE_PARENT (unclear if they will remain possible)
++	 */
++	if (ctx->root_init && t != root && t->tgid != root->tgid &&
++	    t->real_parent == root->real_parent) {
++		_ckpt_err(ctx, -EINVAL, "%(T)Task is sibling of root\n");
++		return -EINVAL;
++	}
++
++	/* FIX: change this when namespaces are added */
++	if (task_nsproxy(t) != ctx->root_nsproxy)
++		return -EPERM;
++
+ 	return 0;
+ }
+ 
++#define CKPT_HDR_PIDS_CHUNK	256
++
++static int checkpoint_pids(struct ckpt_ctx *ctx)
 +{
-+	pid_t pid;
++	struct ckpt_pids *h;
++	struct pid_namespace *ns;
++	struct task_struct *task;
++	struct task_struct **tasks_arr;
++	int nr_tasks, n, pos = 0, ret = 0;
++
++	ns = ctx->root_nsproxy->pid_ns;
++	tasks_arr = ctx->tasks_arr;
++	nr_tasks = ctx->nr_tasks;
++	BUG_ON(nr_tasks <= 0);
++
++	ret = ckpt_write_obj_type(ctx, NULL,
++				  sizeof(*h) * nr_tasks,
++				  CKPT_HDR_BUFFER);
++	if (ret < 0)
++		return ret;
++
++	h = ckpt_hdr_get(ctx, sizeof(*h) * CKPT_HDR_PIDS_CHUNK);
++	if (!h)
++		return -ENOMEM;
++
++	do {
++		rcu_read_lock();
++		for (n = 0; n < min(nr_tasks, CKPT_HDR_PIDS_CHUNK); n++) {
++			task = tasks_arr[pos];
++
++			h[n].vpid = task_pid_nr_ns(task, ns);
++			h[n].vtgid = task_tgid_nr_ns(task, ns);
++			h[n].vpgid = task_pgrp_nr_ns(task, ns);
++			h[n].vsid = task_session_nr_ns(task, ns);
++			h[n].vppid = task_tgid_nr_ns(task->real_parent, ns);
++			ckpt_debug("task[%d]: vpid %d vtgid %d parent %d\n",
++				   pos, h[n].vpid, h[n].vtgid, h[n].vppid);
++			pos++;
++		}
++		rcu_read_unlock();
++
++		n = min(nr_tasks, CKPT_HDR_PIDS_CHUNK);
++		ret = ckpt_kwrite(ctx, h, n * sizeof(*h));
++		if (ret < 0)
++			break;
++
++		nr_tasks -= n;
++	} while (nr_tasks > 0);
++
++	_ckpt_hdr_put(ctx, h, sizeof(*h) * CKPT_HDR_PIDS_CHUNK);
++	return ret;
++}
++
++struct ckpt_cnt_tasks {
++	struct ckpt_ctx *ctx;
++	int nr;
++};
++
++/* count number of tasks in tree (and optionally fill pid's in array) */
++static int __tree_count_tasks(struct task_struct *task, void *data)
++{
++	struct ckpt_cnt_tasks *d = (struct ckpt_cnt_tasks *) data;
++	struct ckpt_ctx *ctx = d->ctx;
 +	int ret;
 +
-+	if (argc != 2) {
-+		printf("usage: ckpt PID\n");
-+		exit(1);
-+	}
++	ctx->tsk = task;  /* (for _ckpt_err()) */
 +
-+	pid = atoi(argv[1]);
-+	if (pid <= 0) {
-+		printf("invalid pid\n");
-+		exit(1);
-+	}
-+
-+	ret = checkpoint(pid, STDOUT_FILENO, CHECKPOINT_SUBTREE);
-+
++	/* is this task cool ? */
++	ret = may_checkpoint_task(ctx, task);
 +	if (ret < 0)
-+		perror("checkpoint");
-+	else
-+		printf("checkpoint id %d\n", ret);
++		goto out;
 +
-+	return (ret > 0 ? 0 : 1);
++	if (ctx->tasks_arr) {
++		if (d->nr == ctx->nr_tasks) {  /* unlikely... try again later */
++			_ckpt_err(ctx, -EBUSY, "%(T)Bad task count (%d)\n",
++				  d->nr);
++			ret = -EBUSY;
++			goto out;
++		}
++		ctx->tasks_arr[d->nr++] = task;
++		get_task_struct(task);
++	}
++
++	ret = 1;
++ out:
++	ctx->tsk = NULL;
++	return ret;
 +}
-diff --git a/Documentation/checkpoint/readme.txt b/Documentation/checkpoint/readme.txt
-new file mode 100644
-index 0000000..4fa5560
---- /dev/null
-+++ b/Documentation/checkpoint/readme.txt
-@@ -0,0 +1,370 @@
 +
-+	      Checkpoint-Restart support in the Linux kernel
-+	==========================================================
++static int tree_count_tasks(struct ckpt_ctx *ctx)
++{
++	struct ckpt_cnt_tasks data;
++	int ret;
++
++	data.ctx = ctx;
++	data.nr = 0;
++
++	ckpt_msg_lock(ctx);
++	ret = walk_task_subtree(ctx->root_task, __tree_count_tasks, &data);
++	ckpt_msg_unlock(ctx);
++	if (ret < 0)
++		_ckpt_msg_complete(ctx);
++	return ret;
++}
 +
-+Copyright (C) 2008-2010 Oren Laadan
-+
-+Author:		Oren Laadan <orenl@cs.columbia.edu>
-+
-+License:	The GNU Free Documentation License, Version 1.2
-+		(dual licensed under the GPL v2)
-+
-+Contributors:	Oren Laadan <orenl@cs.columbia.edu>
-+		Serge Hallyn <serue@us.ibm.com>
-+		Dan Smith <danms@us.ibm.com>
-+		Matt Helsley <matthltc@us.ibm.com>
-+		Nathan Lynch <ntl@pobox.com>
-+		Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-+		Dave Hansen <dave@linux.vnet.ibm.com>
-+
-+
-+Introduction
-+============
-+
-+Application checkpoint/restart [C/R] is the ability to save the state
-+of a running application so that it can later resume its execution
-+from the time at which it was checkpointed. An application can be
-+migrated by checkpointing it on one machine and restarting it on
-+another. C/R can provide many potential benefits:
-+
-+* Failure recovery: by rolling back to a previous checkpoint
-+
-+* Improved response time: by restarting applications from checkpoints
-+  instead of from scratch.
-+
-+* Improved system utilization: by suspending long running CPU
-+  intensive jobs and resuming them when load decreases.
-+
-+* Fault resilience: by migrating applications off faulty hosts.
-+
-+* Dynamic load balancing: by migrating applications to less loaded
-+  hosts.
-+
-+* Improved service availability and administration: by migrating
-+  applications before host maintenance so that they continue to run
-+  with minimal downtime
-+
-+* Time-travel: by taking periodic checkpoints and restarting from
-+  any previous checkpoint.
-+
-+Compared to hypervisor approaches, application C/R is more lightweight
-+since it need only save the state associated with applications, while
-+operating system data structures (e.g. buffer cache, drivers state
-+and the like) are uninteresting.
-+
-+
-+Overall design
-+==============
-+
-+Checkpoint and restart are done in the kernel as much as possible.
-+Two new system calls are introduced to provide C/R: sys_checkpoint()
-+and sys_restart(). They both operate on a process tree (hierarchy),
-+either a whole container or a subtree of a container.
-+
-+Checkpointing entire containers ensures that there are no dependencies
-+on anything outside the container, which guarantees that a matching
-+restart will succeed (assuming that the file system state remains
-+consistent). However, it requires that users will always run the tasks
-+that they wish to checkpoint inside containers. This is ideal for,
-+e.g., private virtual servers and the like.
-+
-+In contrast, when checkpointing a subtree of a container it is up to
-+the user to ensure that dependencies either don't exist or can be
-+safely ignored. This is useful, for instance, for HPC scenarios or
-+even a user that would like to periodically checkpoint a long-running
-+batch job.
-+
-+An additional system call, a la madvise(), is planned, so that tasks
-+can advise the kernel how to handle specific resources. For instance,
-+a task could ask to skip a memory area at checkpoint to save space,
-+or to use a preset file descriptor at restart instead of restoring it
-+from the checkpoint image. It will provide the flexibility that is
-+particularly useful to address the needs of a diverse crowd of users
-+and use-cases.
-+
-+Syscall sys_checkpoint() is given a pid that indicates the top of the
-+hierarchy, a file descriptor to store the image, and flags. The code
-+serializes internal user- and kernel-state and writes it out to the
-+file descriptor. The resulting image is stream-able. The processes are
-+expected to be frozen for the duration of the checkpoint.
-+
-+In general, a checkpoint consists of 5 steps:
-+1. Pre-dump
-+2. Freeze the container/subtree
-+3. Save tasks' and kernel state		<-- sys_checkpoint()
-+4. Thaw (or kill) the container/subtree
-+5. Post-dump
-+
-+Step 3 is done by calling sys_checkpoint(). Steps 1 and 5 are an
-+optimization to reduce application downtime. In particular, "pre-dump"
-+works before freezing the container, e.g. the pre-copy for live
-+migration, and "post-dump" works after the container resumes
-+execution, e.g. write-back the data to secondary storage.
-+
-+The kernel exports a relatively opaque 'blob' of data to userspace
-+which can then be handed to the new kernel at restart time.  The
-+'blob' contains data and state of select portions of kernel structures
-+such as VMAs and mm_structs, as well as copies of the actual memory
-+that the tasks use. Any changes in this blob's format between kernel
-+revisions can be handled by an in-userspace conversion program.
-+
-+To restart, userspace first create a process hierarchy that matches
-+that of the checkpoint, and each task calls sys_restart(). The syscall
-+reads the saved kernel state from a file descriptor, and re-creates
-+the resources that the tasks need to resume execution. The restart
-+code is executed by each task that is restored in the new hierarchy to
-+reconstruct its own state.
-+
-+In general, a restart consists of 3 steps:
-+1. Create hierarchy
-+2. Restore tasks' and kernel state	<-- sys_restart()
-+3. Resume userspace (or freeze tasks)
-+
-+Because the process hierarchy, during restart in created in userspace,
-+the restarting tasks have the flexibility to prepare before calling
-+sys_restart().
-+
-+
-+Checkpoint image format
-+=======================
-+
-+The checkpoint image format is built of records that consist of a
-+pre-header identifying its contents, followed by a payload. This
-+format allow userspace tools to easily parse and skip through the
-+image without requiring intimate knowledge of the data. It will also
-+be handy to enable parallel checkpointing in the future where multiple
-+threads interleave data from multiple processes into a single stream.
-+
-+The pre-header is defined by 'struct ckpt_hdr' as follows: @type
-+identifies the type of the payload, @len tells its length in bytes
-+including the pre-header.
-+
-+struct ckpt_hdr {
-+	__s32 type;
-+	__s32 len;
-+};
-+
-+The pre-header must be the first component in all other headers. For
-+instance, the task data is saved in 'struct ckpt_hdr_task', which
-+looks something like this:
-+
-+struct ckpt_hdr_task {
-+	struct ckpt_hdr h;
-+	__u32 pid;
-+	...
-+};
-+
-+THE IMAGE FORMAT IS EXPECTED TO CHANGE over time as more features are
-+supported, or as existing features change in the kernel and require to
-+adjust their representation. Any such changes will be be handled by
-+in-userspace conversion tools.
-+
-+The general format of the checkpoint image is as follows:
-+* Image header
-+* Container configuration
-+* Task hierarchy
-+* Tasks' state
-+* Image trailer
-+
-+The image always begins with a general header that holds a magic
-+number, an architecture identifier (little endian format), a format
-+version number (@rev), followed by information about the kernel
-+(currently version and UTS data). It also holds the time of the
-+checkpoint and the flags given to sys_checkpoint(). This header is
-+followed by an arch-specific header.
-+
-+The container configuration section containers information that is
-+global to the container. Security (LSM) configuration is one example.
-+Network configuration and container-wide mounts may also go here, so
-+that the userspace restart coordinator can re-create a suitable
-+environment.
-+
-+The task hierarchy comes next so that userspace tools can read it
-+early (even from a stream) and re-create the restarting tasks. This is
-+basically an array of all checkpointed tasks, and their relationships
-+(parent, siblings, threads, etc).
-+
-+Then the state of all tasks is saved, in the order that they appear in
-+the tasks array above. For each state, we save data like task_struct,
-+namespaces, open files, memory layout, memory contents, cpu state,
-+signals and signal handlers, etc. For resources that are shared among
-+multiple processes, we first checkpoint said resource (and only once),
-+and in the task data we give a reference to it. More about shared
-+resources below.
-+
-+Finally, the image always ends with a trailer that holds a (different)
-+magic number, serving for sanity check.
-+
-+
-+Shared objects
-+==============
-+
-+Many resources may be shared by multiple tasks (e.g. file descriptors,
-+memory address space, etc), or even have multiple references from
-+other resources (e.g. a single inode that represents two ends of a
-+pipe).
-+
-+Shared objects are tracked using a hash table (objhash) to ensure that
-+they are only checkpointed or restored once. To handle a shared
-+object, it is first looked up in the hash table, to determine if is
-+the first encounter or a recurring appearance.  The hash table itself
-+is not saved as part of the checkpoint image: it is constructed
-+dynamically during both checkpoint and restart, and discarded at the
-+end of the operation.
-+
-+During checkpoint, when a shared object is encountered for the first
-+time, it is inserted to the hash table, indexed by its kernel address.
-+It is assigned an identifier (@objref) in order of appearance, and
-+then its state is saved. Subsequent lookups of that object in the hash
-+will yield that entry, in which case only the @objref is saved, as
-+opposed the entire state of the object.
-+
-+During restart, shared objects are indexed by their @objref as given
-+during the checkpoint. On the first appearance of each shared object,
-+a new resource will be created and its state restored from the image.
-+Then the object is added to the hash table. Subsequent lookups of the
-+same unique identifier in the hash table will yield that entry, and
-+then the existing object instance is reused instead of creating
-+a new one.
-+
-+The hash grabs a reference to each object that is inserted, and
-+maintains this reference for the entire lifetime of the hash. Thus,
-+it is always safe to reference an object that is stored in the hash.
-+The hash is "one-way" in the sense that objects that are added are
-+never deleted from the hash until the hash is discarded. This, in
-+turn, happens only when the checkpoint (or restart) terminates.
-+
-+Shared objects are thus saved when they are first seen, and _before_
-+the parent object that uses them. Therefore by the time the parent
-+objects needs them, they should already be in the objhash. The one
-+exception is when more than a single shared resource will be restarted
-+at once (e.g. like the two ends of a pipe, or all the namespaces in an
-+nsproxy). In this case the parent object is dumped first followed by
-+the individual sub-resources).
-+
-+The checkpoint image is stream-able, meaning that restarting from it
-+may not require lseek(). This is enforced at checkpoint time, by
-+carefully selecting the order of shared objects, to respect the rule
-+that an object is always saved before the objects that refers to it.
-+
-+
-+Memory contents format
-+======================
-+
-+The memory contents of a given memory address space (->mm) is dumped
-+as a sequence of vma objects, represented by 'struct ckpt_hdr_vma'.
-+This header details the vma properties, and a reference to a file
-+(if file backed) or an inode (or shared memory) object.
-+
-+The vma header is followed by the actual contents - but only those
-+pages that need to be saved, i.e. dirty pages. They are written in
-+chunks of data, where each chunks contains a header that indicates
-+that number of pages in the chunk, followed by an array of virtual
-+addresses and then an array of actual page contents. The last chunk
-+holds zero pages.
-+
-+To illustrate this, consider a single simple task with two vmas: one
-+is file mapped with two dumped pages, and the other is anonymous with
-+three dumped pages. The memory dump will look like this:
-+
-+	ckpt_hdr + ckpt_hdr_vma
-+		ckpt_hdr_pgarr (nr_pages = 2)
-+			addr1, addr2
-+			page1, page2
-+		ckpt_hdr_pgarr (nr_pages = 0)
-+	ckpt_hdr + ckpt_hdr_vma
-+		ckpt_hdr_pgarr (nr_pages = 3)
-+		addr3, addr4, addr5
-+		page3, page4, page5
-+		ckpt_hdr_pgarr (nr_pages = 0)
-+
-+
-+Error handling
-+==============
-+
-+Both checkpoint and restart operations may fail due to a variety of
-+reasons. Using a simple, single return value from the system call is
-+insufficient to report the reason of a failure.
-+
-+Instead, both sys_checkpoint() and sys_restart() accept an additional
-+argument - a file descriptor to which the kernel writes diagnostic
-+and debugging information. Both the checkpoint and restart userspace
-+utilities have options to specify a filename to store this log.
-+
-+In addition, checkpoint provides informative status report upon
-+failure in the checkpoint image in the form of (one or more) error
-+objects, 'struct ckpt_hdr_err'.  An error objects consists of a
-+mandatory pre-header followed by a null character ('\0'), and then a
-+string that describes the error. By default, if an error occurs, this
-+will be the last object written to the checkpoint image.
-+
-+Upon failure, the caller can examine the image (e.g. with 'ckptinfo')
-+and extract the detailed error message. The leading '\0' is useful if
-+one wants to seek back from the end of the checkpoint image, instead
-+of parsing the entire image separately.
-+
-+
-+Security
-+========
-+
-+The main question is whether sys_checkpoint() and sys_restart()
-+require privileged or unprivileged operation.
-+
-+Early versions checked capable(CAP_SYS_ADMIN) assuming that we would
-+attempt to remove the need for privilege, so that all users could
-+safely use it. Arnd Bergmann pointed out that it'd make more sense to
-+let unprivileged users use them now, so that we'll be more careful
-+about the security as patches roll in.
-+
-+Checkpoint: the main concern is whether a task that performs the
-+checkpoint of another task has sufficient privileges to access its
-+state. We address this by requiring that the checkpointer task will be
-+able to ptrace the target task, by means of ptrace_may_access() with
-+access mode.
-+
-+Restart: the main concern is that we may allow an unprivileged user to
-+feed the kernel with random data. To this end, the restart works in a
-+way that does not skip the usual security checks. Task credentials,
-+i.e. euid, reuid, and LSM security contexts currently come from the
-+caller, not the checkpoint image.  As credentials are restored too,
-+the ability of a task that calls sys_restore() to setresuid/setresgid
-+to those values must be checked.
-+
-+Keeping the restart procedure to operate within the limits of the
-+caller's credentials means that there various scenarios that cannot
-+be supported. For instance, a setuid program that opened a protected
-+log file and then dropped privileges will fail the restart, because
-+the user won't have enough credentials to reopen the file. In these
-+cases, we should probably treat restarting like inserting a kernel
-+module: surely the user can cause havoc by providing incorrect data,
-+but then again we must trust the root account.
-+
-+So that's why we don't want CAP_SYS_ADMIN required up-front. That way
-+we will be forced to more carefully review each of those features.
-+However, this can be controlled with a sysctl-variable.
-+
-+
-+Kernel interfaces
-+=================
-+
-+* To checkpoint a vma, the 'struct vm_operations_struct' needs to
-+  provide a method ->checkpoint:
-+    int checkpoint(struct ckpt_ctx *, struct vma_struct *)
-+  Restart requires a matching (exported) restore:
-+    int restore(struct ckpt_ctx *, struct mm_struct *, struct ckpt_hdr_vma *)
-+
-+* To checkpoint a file, the 'struct file_operations' needs to provide
-+  the methods ->checkpoint and ->collect:
-+    int checkpoint(struct ckpt_ctx *, struct file *)
-+    int collect(struct ckpt_ctx *, struct file *)
-+  Restart requires a matching (exported) restore:
-+    int restore(struct ckpt_ctx *, struct ckpt_hdr_file *)
-+  For most file systems, generic_file_{checkpoint,restore}() can be
-+  used.
-+
-+* To checkpoint a socket, the 'struct proto_ops' needs to provide
-+  the methods ->checkpoint, ->collect and ->restore:
-+    int checkpoint(struct ckpt_ctx *ctx, struct socket *sock);
-+    int collect(struct ckpt_ctx *ctx, struct socket *sock);
-+    int restore(struct ckpt_ctx *, struct socket *sock, struct ckpt_hdr_socket *h)
-+
-diff --git a/Documentation/checkpoint/self_checkpoint.c b/Documentation/checkpoint/self_checkpoint.c
-new file mode 100644
-index 0000000..27dba0d
---- /dev/null
-+++ b/Documentation/checkpoint/self_checkpoint.c
-@@ -0,0 +1,69 @@
 +/*
-+ *  self_checkpoint.c: demonstrate self-checkpoint
++ * build_tree - scan the tasks tree in DFS order and fill in array
++ * @ctx: checkpoint context
 + *
-+ *  Copyright (C) 2008 Oren Laadan
++ * Using DFS order simplifies the restart logic to re-create the tasks.
 + *
-+ *  This file is subject to the terms and conditions of the GNU General Public
-+ *  License.  See the file COPYING in the main directory of the Linux
-+ *  distribution for more details.
++ * On success, ctx->tasks_arr will be allocated and populated with all
++ * tasks (reference taken), and ctx->nr_tasks will hold the total count.
++ * The array is cleaned up by ckpt_ctx_free().
 + */
-+
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <string.h>
-+#include <unistd.h>
-+#include <errno.h>
-+#include <math.h>
-+#include <sys/syscall.h>
-+
-+#include <linux/checkpoint.h>
-+
-+static inline int checkpoint(pid_t pid, int fd, unsigned long flags)
++static int build_tree(struct ckpt_ctx *ctx)
 +{
-+	return syscall(__NR_checkpoint, pid, fd, flags, CHECKPOINT_FD_NONE);
++	int n, m;
++
++	/* count tasks (no side effects) */
++	n = tree_count_tasks(ctx);
++	if (n < 0)
++		return n;
++
++	ctx->nr_tasks = n;
++	ctx->tasks_arr = kzalloc(n * sizeof(*ctx->tasks_arr), GFP_KERNEL);
++	if (!ctx->tasks_arr)
++		return -ENOMEM;
++
++	/* count again (now will fill array) */
++	m = tree_count_tasks(ctx);
++
++	/* unlikely, but ... (cleanup in ckpt_ctx_free) */
++	if (m < 0)
++		return m;
++	else if (m != n)
++		return -EBUSY;
++
++	return 0;
 +}
 +
-+#define OUTFILE  "/tmp/cr-self.out"
-+
-+int main(int argc, char *argv[])
++/* dump the array that describes the tasks tree */
++static int checkpoint_tree(struct ckpt_ctx *ctx)
 +{
-+	pid_t pid = getpid();
-+	FILE *file;
-+	int i, ret;
++	struct ckpt_hdr_tree *h;
++	int ret;
 +
-+	close(0);
-+	close(2);
++	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_TREE);
++	if (!h)
++		return -ENOMEM;
 +
-+	unlink(OUTFILE);
-+	file = fopen(OUTFILE, "w+");
-+	if (!file) {
-+		perror("open");
-+		exit(1);
++	h->nr_tasks = ctx->nr_tasks;
++
++	ret = ckpt_write_obj(ctx, &h->h);
++	ckpt_hdr_put(ctx, h);
++	if (ret < 0)
++		return ret;
++
++	ret = checkpoint_pids(ctx);
++	return ret;
++}
++
++static struct task_struct *get_freezer_task(struct task_struct *root_task)
++{
++	struct task_struct *p;
++
++	/*
++	 * For the duration of checkpoint we deep-freeze all tasks.
++	 * Normally do it through the root task's freezer cgroup.
++	 * However, if the root task is also the current task (doing
++	 * self-checkpoint) we can't freeze ourselves. In this case,
++	 * choose the next available (non-dead) task instead. We'll
++	 * use its freezer cgroup to verify that all tasks belong to
++	 * the same cgroup.
++	 */
++
++	if (root_task != current) {
++		get_task_struct(root_task);
++		return root_task;
 +	}
-+	if (dup2(0, 2) < 0) {
-+		perror("dup2");
-+		exit(1);
-+	}
 +
-+	fprintf(file, "hello, world!\n");
-+	fflush(file);
++	/* search among threads, then children */
++	read_lock(&tasklist_lock);
 +
-+	for (i = 0; i < 1000; i++) {
-+		sleep(1);
-+		fprintf(file, "count %d\n", i);
-+		fflush(file);
-+
-+		if (i != 2)
++	for (p = next_thread(root_task); p != root_task; p = next_thread(p)) {
++		if (p->state == TASK_DEAD)
 +			continue;
-+		ret = checkpoint(pid, STDOUT_FILENO, CHECKPOINT_SUBTREE);
++		if (!in_same_cgroup_freezer(p, root_task))
++			goto out;
++	}
++
++	list_for_each_entry(p, &root_task->children, sibling) {
++		if (p->state == TASK_DEAD)
++			continue;
++		if (!in_same_cgroup_freezer(p, root_task))
++			goto out;
++	}
++
++	p = NULL;
++ out:
++	read_unlock(&tasklist_lock);
++	if (p)
++		get_task_struct(p);
++	return p;
++}
++
+ /* setup checkpoint-specific parts of ctx */
+ static int init_checkpoint_ctx(struct ckpt_ctx *ctx, pid_t pid)
+ {
+ 	struct task_struct *task;
+ 	struct nsproxy *nsproxy;
+-	int ret;
+ 
+ 	/*
+ 	 * No need for explicit cleanup here, because if an error
+@@ -261,18 +500,14 @@ static int init_checkpoint_ctx(struct ckpt_ctx *ctx, pid_t pid)
+ 		ctx->root_nsproxy = nsproxy;
+ 
+ 	/* root freezer */
+-	ctx->root_freezer = task;
+-	get_task_struct(task);
++	ctx->root_freezer = get_freezer_task(task);
+ 
+-	ret = may_checkpoint_task(ctx, task);
+-	if (ret) {
+-		_ckpt_msg_complete(ctx);
+-		put_task_struct(task);
+-		put_task_struct(task);
+-		put_nsproxy(nsproxy);
+-		ctx->root_nsproxy = NULL;
+-		ctx->root_task = NULL;
+-		return ret;
++	/* container init ? */
++	ctx->root_init = is_container_init(task);
++
++	if (!(ctx->uflags & CHECKPOINT_SUBTREE) && !ctx->root_init) {
++		ckpt_err(ctx, -EINVAL, "Not container init\n");
++		return -EINVAL;  /* cleanup by ckpt_ctx_free() */
+ 	}
+ 
+ 	return 0;
+@@ -288,17 +523,26 @@ long do_checkpoint(struct ckpt_ctx *ctx, pid_t pid)
+ 
+ 	if (ctx->root_freezer) {
+ 		ret = cgroup_freezer_begin_checkpoint(ctx->root_freezer);
+-		if (ret < 0)
 +		if (ret < 0) {
-+			fprintf(file, "ckpt: %s\n", strerror(errno));
-+			exit(2);
++			ckpt_err(ctx, ret, "Freezer cgroup failed\n");
+ 			return ret;
++		}
+ 	}
+ 
++	ret = build_tree(ctx);
++	if (ret < 0)
++		goto out;
++
+ 	ret = checkpoint_write_header(ctx);
+ 	if (ret < 0)
+ 		goto out;
+ 	ret = checkpoint_container(ctx);
+ 	if (ret < 0)
+ 		goto out;
+-	ret = checkpoint_task(ctx, ctx->root_task);
++	ret = checkpoint_tree(ctx);
++	if (ret < 0)
++		goto out;
++	ret = checkpoint_all_tasks(ctx);
+ 	if (ret < 0)
+ 		goto out;
+ 	ret = checkpoint_write_tail(ctx);
+diff --git a/kernel/checkpoint/restart.c b/kernel/checkpoint/restart.c
+index d9eeb39..936fc5e 100644
+--- a/kernel/checkpoint/restart.c
++++ b/kernel/checkpoint/restart.c
+@@ -384,7 +384,7 @@ static int restore_read_header(struct ckpt_ctx *ctx)
+ 		ckpt_err(ctx, ret, "incompatible kernel version");
+ 		goto out;
+ 	}
+-	if (h->uflags) {
++	if (h->uflags & ~CHECKPOINT_USER_FLAGS) {
+ 		ckpt_err(ctx, ret, "incompatible restart user flags");
+ 		goto out;
+ 	}
+diff --git a/kernel/checkpoint/sys.c b/kernel/checkpoint/sys.c
+index 4345bcc..3b13e08 100644
+--- a/kernel/checkpoint/sys.c
++++ b/kernel/checkpoint/sys.c
+@@ -25,6 +25,16 @@
+ #include <linux/checkpoint.h>
+ 
+ /*
++ * ckpt_unpriv_allowed - sysctl controlled.
++ *   If 0, then caller of sys_checkpoint() or sys_restart() must have
++ *	CAP_SYS_ADMIN
++ *   If 1, then only sys_restart() requires CAP_SYS_ADMIN.
++ *   If 2, then both can be called without privilege - regular permissions
++ *	checks are intended to do the job.
++ */
++int ckpt_unpriv_allowed = 1;	/* default: unpriv checkpoint not restart */
++
++/*
+  * Helpers to write(read) from(to) kernel space to(from) the checkpoint
+  * image file descriptor (similar to how a core-dump is performed).
+  *
+@@ -159,6 +169,19 @@ EXPORT_SYMBOL(ckpt_hdr_get_type);
+  * restart operation, and persists until the operation is completed.
+  */
+ 
++static void task_arr_free(struct ckpt_ctx *ctx)
++{
++	int n;
++
++	for (n = 0; n < ctx->nr_tasks; n++) {
++		if (ctx->tasks_arr[n]) {
++			put_task_struct(ctx->tasks_arr[n]);
++			ctx->tasks_arr[n] = NULL;
++		}
++	}
++	kfree(ctx->tasks_arr);
++}
++
+ static void ckpt_ctx_free(struct ckpt_ctx *ctx)
+ {
+ 	if (ctx->file)
+@@ -166,6 +189,9 @@ static void ckpt_ctx_free(struct ckpt_ctx *ctx)
+ 	if (ctx->logfile)
+ 		fput(ctx->logfile);
+ 
++	if (ctx->tasks_arr)
++		task_arr_free(ctx);
++
+ 	if (ctx->root_nsproxy)
+ 		put_nsproxy(ctx->root_nsproxy);
+ 	if (ctx->root_task)
+@@ -407,6 +433,79 @@ void do_ckpt_msg(struct ckpt_ctx *ctx, int err, char *fmt, ...)
+ }
+ EXPORT_SYMBOL(do_ckpt_msg);
+ 
++/**
++ * walk_task_subtree: iterate through a task's descendants
++ * @root: subtree root task
++ * @func: callback invoked on each task
++ * @data: pointer passed to the callback
++ *
++ * The function will start with @root, and iterate through all the
++ * descendants, including threads, in a DFS manner. Children of a task
++ * are traversed before proceeding to the next thread of that task.
++ *
++ * For each task, the callback @func will be called providing the task
++ * pointer and the @data. The callback is invoked while holding the
++ * tasklist_lock for reading. If the callback fails it should return a
++ * negative error, and the traversal ends. If the callback succeeds,
++ * it returns a non-negative number, and these values are summed.
++ *
++ * On success, walk_task_subtree() returns the total summed. On
++ * failure, it returns a negative value.
++ */
++int walk_task_subtree(struct task_struct *root,
++		      int (*func)(struct task_struct *, void *),
++		      void *data)
++{
++
++	struct task_struct *leader = root;
++	struct task_struct *parent = NULL;
++	struct task_struct *task = root;
++	int total = 0;
++	int ret;
++
++	read_lock(&tasklist_lock);
++	while (1) {
++		/* invoke callback on this task */
++		ret = func(task, data);
++		if (ret < 0)
++			break;
++
++		total += ret;
++
++		/* if has children - proceed with child */
++		if (!list_empty(&task->children)) {
++			parent = task;
++			task = list_entry(task->children.next,
++					  struct task_struct, sibling);
++			continue;
 +		}
 +
-+		fprintf(file, "checkpoint ret: %d\n", ret);
-+		fflush(file);
++		while (task != root) {
++			/* if has sibling - proceed with sibling */
++			if (!list_is_last(&task->sibling, &parent->children)) {
++				task = list_entry(task->sibling.next,
++						  struct task_struct, sibling);
++				break;
++			}
++
++			/* else, trace back to parent and proceed */
++			task = parent;
++			parent = parent->real_parent;
++		}
++
++		if (task == root) {
++			/* in case root task is multi-threaded */
++			root = task = next_thread(task);
++			if (root == leader)
++				break;
++		}
 +	}
++	read_unlock(&tasklist_lock);
 +
-+	return 0;
-+}
-diff --git a/Documentation/checkpoint/self_restart.c b/Documentation/checkpoint/self_restart.c
-new file mode 100644
-index 0000000..647ce51
---- /dev/null
-+++ b/Documentation/checkpoint/self_restart.c
-@@ -0,0 +1,40 @@
-+/*
-+ *  self_restart.c: demonstrate self-restart
-+ *
-+ *  Copyright (C) 2008 Oren Laadan
-+ *
-+ *  This file is subject to the terms and conditions of the GNU General Public
-+ *  License.  See the file COPYING in the main directory of the Linux
-+ *  distribution for more details.
-+ */
-+
-+#define _GNU_SOURCE        /* or _BSD_SOURCE or _SVID_SOURCE */
-+
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <errno.h>
-+#include <fcntl.h>
-+#include <unistd.h>
-+#include <unistd.h>
-+#include <sys/syscall.h>
-+
-+#include <linux/checkpoint.h>
-+
-+static inline int restart(pid_t pid, int fd, unsigned long flags)
-+{
-+	return syscall(__NR_restart, pid, fd, flags, CHECKPOINT_FD_NONE);
++	ckpt_debug("total %d ret %d\n", total, ret);
++	return (ret < 0 ? ret : total);
 +}
 +
-+int main(int argc, char *argv[])
-+{
-+	pid_t pid = getpid();
-+	int ret;
+ /* checkpoint/restart syscalls */
+ 
+ /**
+@@ -424,10 +523,12 @@ long do_sys_checkpoint(pid_t pid, int fd, unsigned long flags, int logfd)
+ 	struct ckpt_ctx *ctx;
+ 	long ret;
+ 
+-	/* no flags for now */
+-	if (flags)
++	if (flags & ~CHECKPOINT_USER_FLAGS)
+ 		return -EINVAL;
+ 
++	if (!ckpt_unpriv_allowed && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
 +
-+	ret = restart(pid, STDIN_FILENO, RESTART_TASKSELF);
-+	if (ret < 0)
-+		perror("restart");
+ 	if (pid == 0)
+ 		pid = task_pid_vnr(current);
+ 	ctx = ckpt_ctx_alloc(fd, flags, CKPT_CTX_CHECKPOINT, logfd);
+@@ -462,6 +563,9 @@ long do_sys_restart(pid_t pid, int fd, unsigned long flags, int logfd)
+ 	if (flags)
+ 		return -EINVAL;
+ 
++	if (ckpt_unpriv_allowed < 2 && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
 +
-+	printf("should not reach here !\n");
+ 	ctx = ckpt_ctx_alloc(fd, flags, CKPT_CTX_RESTART, logfd);
+ 	if (IS_ERR(ctx))
+ 		return PTR_ERR(ctx);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 8686b0f..b7afc16 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -194,6 +194,10 @@ extern struct ctl_table epoll_table[];
+ int sysctl_legacy_va_layout;
+ #endif
+ 
++#ifdef CONFIG_CHECKPOINT
++extern int ckpt_unpriv_allowed;
++#endif
 +
-+	return 0;
-+}
-diff --git a/Documentation/checkpoint/usage.txt b/Documentation/checkpoint/usage.txt
-new file mode 100644
-index 0000000..c6fc045
---- /dev/null
-+++ b/Documentation/checkpoint/usage.txt
-@@ -0,0 +1,247 @@
+ /* The default sysctl tables: */
+ 
+ static struct ctl_table root_table[] = {
+@@ -926,6 +930,18 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ #endif
++#ifdef CONFIG_CHECKPOINT
++	{
++		.procname	= "ckpt_unpriv_allowed",
++		.data		= &ckpt_unpriv_allowed,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &two,
++	},
++#endif
 +
-+	      How to use Checkpoint-Restart
-+	=========================================
-+
-+
-+API
-+===
-+
-+The API consists of three new system calls:
-+
-+* long checkpoint(pid_t pid, int fd, unsigned long flag, int logfd);
-+
-+ Checkpoint a (sub-)container whose root task is identified by @pid,
-+ to the open file indicated by @fd. If @logfd isn't -1, it indicates
-+ an open file to which error and debug messages are written. @flags
-+ may be one or more of:
-+   - CHECKPOINT_SUBTREE : allow checkpoint of sub-container
-+ (other value are not allowed).
-+
-+ Returns: a positive checkpoint identifier (ckptid) upon success, 0 if
-+ it returns from a restart, and -1 if an error occurs. The ckptid will
-+ uniquely identify a checkpoint image, for as long as the checkpoint
-+ is kept in the kernel (e.g. if one wishes to keep a checkpoint, or a
-+ partial checkpoint, residing in kernel memory).
-+
-+* long sys_restart(pid_t pid, int fd, unsigned long flags, int logfd);
-+
-+ Restart a process hierarchy from a checkpoint image that is read from
-+ the blob stored in the file indicated by @fd.  If @logfd isn't -1, it
-+ indicates an open file to which error and debug messages are written.
-+ @flags will have future meaning (must be 0 for now). @pid indicates
-+ the root of the hierarchy as seen in the coordinator's pid-namespace,
-+ and is expected to be a child of the coordinator. @flags may be one
-+ or more of:
-+   - RESTART_TASKSELF : (self) restart of a single process
-+   - RESTART_FROEZN : processes remain frozen once restart completes
-+   - RESTART_GHOST : process is a ghost (placeholder for a pid)
-+ (Note that this argument may mean 'ckptid' to identify an in-kernel
-+ checkpoint image, with some @flags in the future).
-+
-+ Returns: -1 if an error occurs, 0 on success when restarting from a
-+ "self" checkpoint, and return value of system call at the time of the
-+ checkpoint when restarting from an "external" checkpoint.
-+
-+ (If a process was frozen for checkpoint while in userspace, it will
-+ resume running in userspace exactly where it was interrupted. If it
-+ was frozen while in kernel doing a syscall, it will return what the
-+ syscall returned when interrupted/completed, and proceed from there
-+ as if it had only been frozen and then thawed. Finally, if it did a
-+ self-checkpoint, it will resume to the first instruction after the
-+ call to checkpoint(2), having returned 0, to indicate whether the
-+ return is from the checkpoint or a restart).
-+
-+* int clone_with_pid(unsigned long clone_flags, void *news,
-+		     int *parent_tidptr, int *child_tidptr,
-+		     struct target_pid_set *pid_set)
-+
-+  struct target_pid_set {
-+	 int num_pids;
-+	 pid_t *target_pids;
-+  }
-+
-+ Container restart requires that a task have the same pid it had when
-+ it was checkpointed. When containers are nested the tasks within the
-+ containers exist in multiple pid namespaces and hence have multiple
-+ pids to specify during restart.
-+
-+ clone_with_pids(), intended for use during restart, is similar to
-+ clone(), except that it takes a 'target_pid_set' parameter. This
-+ parameter lets caller choose specific pid numbers for the child
-+ process, in the process's active and ancestor pid namespaces.
-+
-+ Unlike clone(), clone_with_pids() needs CAP_SYS_ADMIN, at least for
-+ now, to prevent unprivileged processes from misusing this interface.
-+
-+ If a target-pid is 0, the kernel continues to assign a pid for the
-+ process in that namespace. If a requested pid is taken, the system
-+ call fails with -EBUSY. If 'pid_set.num_pids' exceeds the current
-+ nesting level of pid namespaces, the system call fails with -EINVAL.
-+
-+
-+Sysctl/proc
-+===========
-+
-+/proc/sys/kernel/ckpt_unpriv_allowed		[default = 1]
-+  controls whether c/r operation is allowed for unprivileged users
-+
-+
-+Operation
-+=========
-+
-+The granularity of a checkpoint usually is a process hierarchy. The
-+'pid' argument is interpreted in the caller's pid namespace. So to
-+checkpoint a container whose init task (pid 1 in that pidns) appears
-+as pid 3497 the caller's pidns, the caller must use pid 3497. Passing
-+pid 1 will attempt to checkpoint the caller's container, and if the
-+caller isn't privileged and init is owned by root, it will fail.
-+
-+Unless the CHECKPOINT_SUBTREE flag is set, if the caller passes a pid
-+which does not refer to a container's init task, then sys_checkpoint()
-+would return -EINVAL.
-+
-+We assume that during checkpoint and restart the container state is
-+quiescent. During checkpoint, this means that all affected tasks are
-+frozen (or otherwise stopped). During restart, this means that all
-+affected tasks are executing the sys_restart() call. In both cases, if
-+there are other tasks possible sharing state with the container, they
-+must not modify it during the operation. It is the responsibility of
-+the caller to follow this requirement.
-+
-+If the assumption that all tasks are frozen and that there is no other
-+sharing doesn't hold - then the results of the operation are undefined
-+(just as, e.g. not calling execve() immediately after vfork() produces
-+undefined results). In particular, either checkpoint will fail, or it
-+may produce a checkpoint image that can't be restarted, or (unlikely)
-+the restart may produce a container whose state does not match that of
-+the original container.
-+
-+
-+User tools
-+==========
-+
-+* checkpoint(1): a tool to perform a checkpoint of a container/subtree
-+* restart(1): a tool to restart a container/subtree
-+* ckptinfo: a tool to examine a checkpoint image
-+
-+It is best to use the dedicated user tools for checkpoint and restart.
-+
-+If you insist, then here is a code snippet that illustrates how a
-+checkpoint is initiated by a process inside a container - the logic is
-+similar to fork():
-+	...
-+	ckptid = checkpoint(0, ...);
-+	switch (crid) {
-+	case -1:
-+		perror("checkpoint failed");
-+		break;
-+	default:
-+		fprintf(stderr, "checkpoint succeeded, CRID=%d\n", ret);
-+		/* proceed with execution after checkpoint */
-+		...
-+		break;
-+	case 0:
-+		fprintf(stderr, "returned after restart\n");
-+		/* proceed with action required following a restart */
-+		...
-+		break;
-+	}
-+	...
-+
-+And to initiate a restart, the process in an empty container can use
-+logic similar to execve():
-+	...
-+	if (restart(pid, ...) < 0)
-+		perror("restart failed");
-+	/* only get here if restart failed */
-+	...
-+
-+Note, that the code also supports "self" checkpoint, where a process
-+can checkpoint itself. This mode does not capture the relationships of
-+the task with other tasks, or any shared resources. It is useful for
-+application that wish to be able to save and restore their state.
-+They will either not use (or care about) shared resources, or they
-+will be aware of the operations and adapt suitably after a restart.
-+The code above can also be used for "self" checkpoint.
-+
-+
-+You may find the following sample programs useful:
-+
-+* checkpoint.c: accepts a 'pid' and checkpoint that task to stdout
-+* self_checkpoint.c: a simple test program doing self-checkpoint
-+* self_restart.c: restarts a (self-) checkpoint image from stdin
-+
-+See also the utilities 'checkpoint' and 'restart' (from user-cr).
-+
-+
-+"External" checkpoint
-+=====================
-+
-+To do "external" checkpoint, you need to first freeze that other task
-+either using the freezer cgroup.
-+
-+Restart does not preserve the original PID yet, (because we haven't
-+solved yet the fork-with-specific-pid issue). In a real scenario, you
-+probably want to first create a new names space, and have the init
-+task there call 'sys_restart()'.
-+
-+I tested it this way:
-+	$ ./test &
-+	[1] 3493
-+
-+	$ echo 3493 > /cgroup/0/tasks
-+	$ echo FROZEN > /cgroup/0/freezer.state
-+	$ ./checkpoint 3493 > ckpt.image
-+
-+	$ mv /tmp/cr-test.out /tmp/cr-test.out.orig
-+	$ cp /tmp/cr-test.out.orig /tmp/cr-test.out
-+
-+	$ echo THAWED > /cgroup/0/freezer.state
-+
-+	$ ./self_restart < ckpt.image
-+Now compare the output of the two output files.
-+
-+
-+"Self" checkpoint
-+================
-+
-+To do self-checkpoint, you can incorporate the code from
-+self_checkpoint.c into your application.
-+
-+Here is how to test the self-checkpoint:
-+	$ ./self_checkpoint > self.image &
-+	[1] 3512
-+
-+	$ sleep 3
-+	$ mv /tmp/cr-self.out /tmp/cr-self.out.orig
-+	$ cp /tmp/cr-self.out.orig /tmp/cr-self.out
-+
-+	$ cat /tmp/cr-self.out
-+	hello, world!
-+	count 0
-+	count 1
-+	count 2
-+	checkpoint ret: 1
-+	count 3
-+	...
-+
-+	$ sed -i 's/count/xxxxx/g' /tmp/cr-self.out
-+
-+	$ ./self_restart < self.image &
-+
-+Now compare the output of the two output files.
-+	$ cat /tmp/cr-self.out
-+	hello, world!
-+	xxxxx 0
-+	xxxxx 1
-+	xxxxx 2
-+	checkpoint ret: 0
-+	count 3
-+	...
-+
-+
-+Note how in test.c we close stdin, stdout, stderr - that's because
-+currently we only support regular files (not ttys/ptys).
-+
-+If you check the output of ps, you'll see that "self_restart" changed
-+its name to "test" or "self_checkpoint", as expected.
+ /*
+  * NOTE: do not add new entries to this table unless you have read
+  * Documentation/sysctl/ctl_unnumbered.txt
 -- 
 1.6.3.3
 
