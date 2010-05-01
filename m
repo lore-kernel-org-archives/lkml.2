@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab0EAOel (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:34:41 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63794 "EHLO
+	id S1752837Ab0EAOao (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:30:44 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63396 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505Ab0EAOea (ORCPT
+	with ESMTP id S1753600Ab0EAOae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:34:30 -0400
+	Sat, 1 May 2010 10:30:34 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
        Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
-       linux-fsdevel@vger.kernel.org
-Subject: [PATCH v21 049/100] c/r: checkpoint and restore FIFOs
-Date: Sat,  1 May 2010 10:15:31 -0400
-Message-Id: <1272723382-19470-50-git-send-email-orenl@cs.columbia.edu>
+       x86@kernel.org
+Subject: [PATCH v21 024/100] c/r: x86-64: checkpoint/restart implementation
+Date: Sat,  1 May 2010 10:15:06 -0400
+Message-Id: <1272723382-19470-25-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -24,191 +24,414 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FIFOs are almost like pipes.
+Support for checkpoint and restart for X86_32 architecture.
+Partly based on Alexey's work.
 
-Checkpoints adds the FIFO pathname. The first time the FIFO is found
-it also assigns an @objref and dumps the contents in the buffers.
+Support for 32bit on 64bit and fixes from Serge Hallyn.
 
-To restore, use the @objref only to determine whether a particular
-FIFO has already been restored earlier. Note that it ignores the file
-pointer that matches that @objref (unlike with pipes, where that file
-corresponds to the other end of the pipe). Instead, it creates a new
-FIFO using the saved pathname.
+ Checkpoint          Restart
+ (app/arch)         (app/arch/program*)
+---------------------------------------
+  64/x86-64	->  64/x86-64	  works
+  32/x86-64	->  32/x86-64	  works
+  32/x86-64	->  32/x86-32	  ?
+  32/x86-32	->  32/x86-64	  ?
 
-Changelog [v21]:
-  - Put file_ops->checkpoint under CONFIG_CHECKPOINT
-Changelog [v19-rc3]:
+  32/x86-64	->  32/x86-32	  ?
+  32/x86-32	->  32/x86-64	  ?
+
+(*) "program" indicates the bit-ness of 'restart' executable.
+
+Changelog[v21]:
+  - Do not include checkpoint_hdr.h explicitly
+Changelog[v19-rc3]:
   - Rebase to kernel 2.6.33
-Changelog [v19-rc1]:
-  - Switch to ckpt_obj_try_fetch()
-  - [Matt Helsley] Add cpp definitions for enums
+  - [Serge Hallyn] Changes to fs/gs register handling
+  - [Serge Hallyn] Allow 32-bit restart of 64-bit and vice versa
+  - [Serge Hallyn] Only allow 'restart' with same bit-ness as image.
 
-Cc: linux-fsdevel@vger.kernel.org
+Cc: x86@kernel.org
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+Signed-off-by: Serge Hallyn <serue@us.ibm.com>
 ---
- fs/checkpoint.c                |    6 +++
- fs/pipe.c                      |   80 +++++++++++++++++++++++++++++++++++++++-
- include/linux/checkpoint_hdr.h |    2 +
- include/linux/pipe_fs_i.h      |    2 +
- 4 files changed, 89 insertions(+), 1 deletions(-)
+ arch/x86/Kconfig                      |    2 +-
+ arch/x86/include/asm/checkpoint_hdr.h |    6 +
+ arch/x86/include/asm/unistd_64.h      |    4 +
+ arch/x86/kernel/Makefile              |    2 +
+ arch/x86/kernel/checkpoint.c          |   16 +++
+ arch/x86/kernel/checkpoint_64.c       |  240 +++++++++++++++++++++++++++++++++
+ arch/x86/kernel/entry_64.S            |    7 +
+ include/linux/checkpoint_hdr.h        |    2 +
+ 8 files changed, 278 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/kernel/checkpoint_64.c
 
-diff --git a/fs/checkpoint.c b/fs/checkpoint.c
-index e840d8a..06f1130 100644
---- a/fs/checkpoint.c
-+++ b/fs/checkpoint.c
-@@ -593,6 +593,12 @@ static struct restore_file_ops restore_file_ops[] = {
- 		.file_type = CKPT_FILE_PIPE,
- 		.restore = pipe_file_restore,
- 	},
-+	/* fifo */
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0874484..335a4b3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -95,7 +95,7 @@ config HAVE_LATENCYTOP_SUPPORT
+ 
+ config CHECKPOINT_SUPPORT
+ 	bool
+-	default y if X86_32
++	default y
+ 
+ config MMU
+ 	def_bool y
+diff --git a/arch/x86/include/asm/checkpoint_hdr.h b/arch/x86/include/asm/checkpoint_hdr.h
+index e6cfc99..6f600dd 100644
+--- a/arch/x86/include/asm/checkpoint_hdr.h
++++ b/arch/x86/include/asm/checkpoint_hdr.h
+@@ -36,6 +36,10 @@
+ #include <asm/processor.h>
+ #endif
+ 
++#ifdef CONFIG_X86_64
++#define CKPT_ARCH_ID	CKPT_ARCH_X86_64
++#endif
++
+ #ifdef CONFIG_X86_32
+ #define CKPT_ARCH_ID	CKPT_ARCH_X86_32
+ #endif
+@@ -106,6 +110,8 @@ struct ckpt_hdr_cpu {
+ #define CKPT_X86_SEG_NULL	0
+ #define CKPT_X86_SEG_USER32_CS	1
+ #define CKPT_X86_SEG_USER32_DS	2
++#define CKPT_X86_SEG_USER64_CS	3
++#define CKPT_X86_SEG_USER64_DS	4
+ #define CKPT_X86_SEG_TLS	0x4000	/* 0100 0000 0000 00xx */
+ #define CKPT_X86_SEG_LDT	0x8000	/* 100x xxxx xxxx xxxx */
+ 
+diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
+index 1cd16af..2b162e1 100644
+--- a/arch/x86/include/asm/unistd_64.h
++++ b/arch/x86/include/asm/unistd_64.h
+@@ -665,6 +665,10 @@ __SYSCALL(__NR_perf_event_open, sys_perf_event_open)
+ __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
+ #define __NR_eclone				300
+ __SYSCALL(__NR_eclone, stub_eclone)
++#define __NR_checkpoint				301
++__SYSCALL(__NR_checkpoint, stub_checkpoint)
++#define __NR_restart				302
++__SYSCALL(__NR_restart, stub_restart)
+ 
+ #ifndef __NO_STUBS
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 2078d1b..916a7e1 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -138,4 +138,6 @@ ifeq ($(CONFIG_X86_64),y)
+ 
+ 	obj-$(CONFIG_PCI_MMCONFIG)	+= mmconf-fam10h_64.o
+ 	obj-y				+= vsmp_64.o
++
++	obj-$(CONFIG_CHECKPOINT)	+= checkpoint_64.o
+ endif
+diff --git a/arch/x86/kernel/checkpoint.c b/arch/x86/kernel/checkpoint.c
+index 015401a..3976318 100644
+--- a/arch/x86/kernel/checkpoint.c
++++ b/arch/x86/kernel/checkpoint.c
+@@ -249,6 +249,22 @@ int restore_thread(struct ckpt_ctx *ctx)
+ 	load_TLS(thread, cpu);
+ 	put_cpu();
+ 
 +	{
-+		.file_name = "FIFO",
-+		.file_type = CKPT_FILE_FIFO,
-+		.restore = fifo_file_restore,
-+	},
- };
- 
- static void *restore_file(struct ckpt_ctx *ctx)
-diff --git a/fs/pipe.c b/fs/pipe.c
-index 801aad9..7f00e58 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -830,6 +830,8 @@ pipe_rdwr_open(struct inode *inode, struct file *filp)
- 	return ret;
- }
- 
-+static struct vfsmount *pipe_mnt __read_mostly;
-+
- #ifdef CONFIG_CHECKPOINT
- static int checkpoint_pipe(struct ckpt_ctx *ctx, struct inode *inode)
- {
-@@ -877,7 +879,11 @@ static int pipe_file_checkpoint(struct ckpt_ctx *ctx, struct file *file)
- 	if (!h)
- 		return -ENOMEM;
- 
--	h->common.f_type = CKPT_FILE_PIPE;
-+	/* fifo and pipe are similar at checkpoint, differ on restore */
-+	if (inode->i_sb == pipe_mnt->mnt_sb)
-+		h->common.f_type = CKPT_FILE_PIPE;
-+	else
-+		h->common.f_type = CKPT_FILE_FIFO;
- 	h->pipe_objref = objref;
- 
- 	ret = checkpoint_file_common(ctx, file, &h->common);
-@@ -887,6 +893,13 @@ static int pipe_file_checkpoint(struct ckpt_ctx *ctx, struct file *file)
- 	if (ret < 0)
- 		goto out;
- 
-+	/* FIFO also needs a file name */
-+	if (h->common.f_type == CKPT_FILE_FIFO) {
-+		ret = checkpoint_fname(ctx, &file->f_path, &ctx->root_fs_path);
-+		if (ret < 0)
++		int pre, post;
++		/*
++		 * Eventually we'd like to support mixed-bit restart, but for
++		 * now don't pretend to.
++		 */
++		pre = test_thread_flag(TIF_IA32);
++		post = !!(h->thread_info_flags & _TIF_IA32);
++		if (pre != post) {
++			ret = -EINVAL;
++			ckpt_err(ctx, ret, "%d-bit restarting %d-bit\n",
++				64 >> pre, 64 >> post);
 +			goto out;
++		}
 +	}
 +
- 	if (first)
- 		ret = checkpoint_pipe(ctx, inode);
-  out:
-@@ -978,6 +991,71 @@ struct file *pipe_file_restore(struct ckpt_ctx *ctx, struct ckpt_hdr_file *ptr)
+ 	/* TODO: restore TIF flags as necessary (e.g. TIF_NOTSC) */
  
- 	return file;
- }
+ 	ret = 0;
+diff --git a/arch/x86/kernel/checkpoint_64.c b/arch/x86/kernel/checkpoint_64.c
+new file mode 100644
+index 0000000..cac52f3
+--- /dev/null
++++ b/arch/x86/kernel/checkpoint_64.c
+@@ -0,0 +1,240 @@
++/*
++ *  Checkpoint/restart - architecture specific support for x86_64
++ *
++ *  Copyright (C) 2009 Oren Laadan
++ *
++ *  This file is subject to the terms and conditions of the GNU General Public
++ *  License.  See the file COPYING in the main directory of the Linux
++ *  distribution for more details.
++ */
 +
-+struct file *fifo_file_restore(struct ckpt_ctx *ctx, struct ckpt_hdr_file *ptr)
++/* default debug level for output */
++#define CKPT_DFLAG  CKPT_DSYS
++
++#include <asm/desc.h>
++#include <asm/i387.h>
++#include <asm/elf.h>
++
++#include <linux/checkpoint.h>
++
++/* helpers to encode/decode/validate segments */
++
++int check_segment(__u16 seg)
 +{
-+	struct ckpt_hdr_file_pipe *h = (struct ckpt_hdr_file_pipe *) ptr;
-+	struct file *file;
-+	int first, ret;
++	int ret = 0;
 +
-+	if (ptr->h.type != CKPT_HDR_FILE  ||
-+	    ptr->h.len != sizeof(*h) || ptr->f_type != CKPT_FILE_FIFO)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (h->pipe_objref <= 0)
-+		return ERR_PTR(-EINVAL);
-+
-+	/*
-+	 * If ckpt_obj_try_fetch() returned ERR_PTR(-EINVAL), this is the
-+	 * first time for this fifo.
-+	 */
-+	file = ckpt_obj_try_fetch(ctx, h->pipe_objref, CKPT_OBJ_FILE);
-+	if (!IS_ERR(file))
-+		first = 0;
-+	else if (PTR_ERR(file) == -EINVAL)
-+		first = 1;
-+	else
-+		return file;
-+
-+	/*
-+	 * To avoid blocking, always open the fifo with O_RDWR;
-+	 * then fix flags below.
-+	 */
-+	file = restore_open_fname(ctx, (ptr->f_flags & ~O_ACCMODE) | O_RDWR);
-+	if (IS_ERR(file))
-+		return file;
-+
-+	if ((ptr->f_flags & O_ACCMODE) == O_RDONLY) {
-+		file->f_flags = (file->f_flags & ~O_ACCMODE) | O_RDONLY;
-+		file->f_mode &= ~FMODE_WRITE;
-+	} else if ((ptr->f_flags & O_ACCMODE) == O_WRONLY) {
-+		file->f_flags = (file->f_flags & ~O_ACCMODE) | O_WRONLY;
-+		file->f_mode &= ~FMODE_READ;
-+	} else if ((ptr->f_flags & O_ACCMODE) != O_RDWR) {
-+		ret = -EINVAL;
-+		goto out;
++	switch (seg) {
++	case CKPT_X86_SEG_NULL:
++	case CKPT_X86_SEG_USER64_CS:
++	case CKPT_X86_SEG_USER64_DS:
++#ifdef CONFIG_COMPAT
++	case CKPT_X86_SEG_USER32_CS:
++	case CKPT_X86_SEG_USER32_DS:
++#endif
++		return 1;
 +	}
-+
-+	/* first time: add to objhash and restore fifo's contents */
-+	if (first) {
-+		ret = ckpt_obj_insert(ctx, file, h->pipe_objref, CKPT_OBJ_FILE);
-+		if (ret < 0)
-+			goto out;
-+
-+		ret = restore_pipe(ctx, file);
-+		if (ret < 0)
-+			goto out;
++	if (seg & CKPT_X86_SEG_TLS) {
++		seg &= ~CKPT_X86_SEG_TLS;
++		if (seg <= GDT_ENTRY_TLS_MAX - GDT_ENTRY_TLS_MIN)
++			ret = 1;
++	} else if (seg & CKPT_X86_SEG_LDT) {
++		seg &= ~CKPT_X86_SEG_LDT;
++		if (seg <= 0x1fff)
++			ret = 1;
 +	}
-+
-+	ret = restore_file_common(ctx, file, ptr);
-+ out:
-+	if (ret < 0) {
-+		fput(file);
-+		file = ERR_PTR(ret);
-+	}
-+
-+	return file;
++	return ret;
 +}
- #endif /* CONFIG_CHECKPOINT */
++
++__u16 encode_segment(unsigned short seg)
++{
++	if (seg == 0)
++		return CKPT_X86_SEG_NULL;
++	BUG_ON((seg & 3) != 3);
++
++	if (seg == __USER_CS)
++		return CKPT_X86_SEG_USER64_CS;
++	if (seg == __USER_DS)
++		return CKPT_X86_SEG_USER64_DS;
++#ifdef CONFIG_COMPAT
++	if (seg == __USER32_CS)
++		return CKPT_X86_SEG_USER32_CS;
++	if (seg == __USER32_DS)
++		return CKPT_X86_SEG_USER32_DS;
++#endif
++
++	if (seg & 4)
++		return CKPT_X86_SEG_LDT | (seg >> 3);
++
++	seg >>= 3;
++	if (GDT_ENTRY_TLS_MIN <= seg && seg <= GDT_ENTRY_TLS_MAX)
++		return CKPT_X86_SEG_TLS | (seg - GDT_ENTRY_TLS_MIN);
++
++	printk(KERN_ERR "c/r: (decode) bad segment %#hx\n", seg);
++	BUG();
++}
++
++unsigned short decode_segment(__u16 seg)
++{
++	if (seg == CKPT_X86_SEG_NULL)
++		return 0;
++
++	if (seg == CKPT_X86_SEG_USER64_CS)
++		return __USER_CS;
++	if (seg == CKPT_X86_SEG_USER64_DS)
++		return __USER_DS;
++#ifdef CONFIG_COMPAT
++	if (seg == CKPT_X86_SEG_USER32_CS)
++		return __USER32_CS;
++	if (seg == CKPT_X86_SEG_USER32_DS)
++		return __USER32_DS;
++#endif
++
++	if (seg & CKPT_X86_SEG_TLS) {
++		seg &= ~CKPT_X86_SEG_TLS;
++		return ((GDT_ENTRY_TLS_MIN + seg) << 3) | 3;
++	}
++	if (seg & CKPT_X86_SEG_LDT) {
++		seg &= ~CKPT_X86_SEG_LDT;
++		return (seg << 3) | 7;
++	}
++	BUG();
++}
++
++void save_cpu_regs(struct ckpt_hdr_cpu *h, struct task_struct *t)
++{
++	struct pt_regs *regs = task_pt_regs(t);
++	unsigned long _ds, _es, _fs, _gs;
++
++	h->r15 = regs->r15;
++	h->r14 = regs->r14;
++	h->r13 = regs->r13;
++	h->r12 = regs->r12;
++	h->r11 = regs->r11;
++	h->r10 = regs->r10;
++	h->r9 = regs->r9;
++	h->r8 = regs->r8;
++
++	h->bp = regs->bp;
++	h->bx = regs->bx;
++	h->ax = regs->ax;
++	h->cx = regs->cx;
++	h->dx = regs->dx;
++	h->si = regs->si;
++	h->di = regs->di;
++	h->orig_ax = regs->orig_ax;
++	h->ip = regs->ip;
++
++	h->flags = regs->flags;
++	h->sp = regs->sp;
++
++	/*
++	 * for checkpoint in process context (from within a container)
++	 * DS, ES, FS, GS registers should be saved from the hardware;
++	 * otherwise they are already saved on the thread structure
++	 */
++
++	h->cs = encode_segment(regs->cs);
++	h->ss = encode_segment(regs->ss);
++
++	if (t == current) {
++		savesegment(ds, _ds);
++		savesegment(es, _es);
++		savesegment(fs, _fs);
++		savesegment(gs, _gs);
++		rdmsrl(MSR_FS_BASE, h->fs);
++		rdmsrl(MSR_KERNEL_GS_BASE, h->gs);
++	} else {
++		_ds = t->thread.ds;
++		_es = t->thread.es;
++		_fs = t->thread.fsindex;
++		_gs = t->thread.gsindex;
++		h->fs = t->thread.fs;
++		h->gs = t->thread.gs;
++	}
++	h->ds = encode_segment(_ds);
++	h->es = encode_segment(_es);
++	h->fsindex = encode_segment(_fs);
++	h->gsindex = encode_segment(_gs);
++
++	/* see comment in __switch_to() */
++	if (_fs)
++		h->fs = 0;
++	if (_gs)
++		h->gs = 0;
++
++	/*
++	 * for checkpoint in process context (from within a container),
++	 * the actual syscall is taking place at this very moment; so
++	 * we (optimistically) subtitute the future return value (0) of
++	 * this syscall into the orig_eax, so that upon restart it will
++	 * succeed (or it will endlessly retry checkpoint...)
++	 */
++	if (t == current) {
++		BUG_ON(h->orig_ax < 0);
++		h->ax = 0;
++	}
++}
++
++int load_cpu_regs(struct ckpt_hdr_cpu *h, struct task_struct *t)
++{
++	struct thread_struct *thread = &t->thread;
++	struct pt_regs *regs = task_pt_regs(t);
++
++	if (h->cs == CKPT_X86_SEG_NULL)
++		return -EINVAL;
++	if (!check_segment(h->cs) || !check_segment(h->ds) ||
++	    !check_segment(h->es) || !check_segment(h->ss) ||
++	    !check_segment(h->fsindex) || !check_segment(h->gsindex))
++		return -EINVAL;
++
++	regs->r15 = h->r15;
++	regs->r14 = h->r14;
++	regs->r13 = h->r13;
++	regs->r12 = h->r12;
++	regs->r11 = h->r11;
++	regs->r10 = h->r10;
++	regs->r9 = h->r9;
++	regs->r8 = h->r8;
++
++	regs->bp = h->bp;
++	regs->bx = h->bx;
++	regs->ax = h->ax;
++	regs->cx = h->cx;
++	regs->dx = h->dx;
++	regs->si = h->si;
++	regs->di = h->di;
++	regs->orig_ax = h->orig_ax;
++	regs->ip = h->ip;
++
++	regs->sp = h->sp;
++	thread->usersp = h->sp;
++
++	preempt_disable();
++
++	regs->cs = decode_segment(h->cs);
++	regs->ss = decode_segment(h->ss);
++	thread->ds = decode_segment(h->ds);
++	thread->es = decode_segment(h->es);
++	thread->fsindex = decode_segment(h->fsindex);
++	thread->gsindex = decode_segment(h->gsindex);
++
++	thread->fs = h->fs;
++	thread->gs = h->gs;
++
++	/* XXX - unsure is this really needed ... */
++	loadsegment(fs, thread->fsindex);
++	if (thread->fs)
++		wrmsrl(MSR_FS_BASE, thread->fs);
++	load_gs_index(thread->gsindex);
++	/*
++	 * when we switch to user-space, the MSR_KERNEL_GS_BASE
++	 * will be moved back to MSR_GS_BASE.
++	 * http://lists.openwall.net/linux-kernel/2008/11/18/340
++	 */
++	if (thread->gs)
++		wrmsrl(MSR_KERNEL_GS_BASE, thread->gs);
++
++	preempt_enable();
++
++	return 0;
++}
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 216681e..c2ece28 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -699,6 +699,13 @@ END(\label)
+ 	PTREGSCALL stub_sigaltstack, sys_sigaltstack, %rdx
+ 	PTREGSCALL stub_iopl, sys_iopl, %rsi
+ 	PTREGSCALL stub_eclone, sys_eclone, %r8
++#ifdef CONFIG_CHECKPOINT
++	PTREGSCALL stub_checkpoint, sys_checkpoint, %r8
++	PTREGSCALL stub_restart, sys_restart, %r8
++#else
++	PTREGSCALL stub_checkpoint, sys_ni_syscall, %r8
++	PTREGSCALL stub_restart, sys_ni_syscall, %r8
++#endif
  
- /*
+ ENTRY(ptregscall_common)
+ 	DEFAULT_FRAME 1 8	/* offset 8: return address */
 diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 50ef2b6..fbcbee7 100644
+index a0189de..ecc4afb 100644
 --- a/include/linux/checkpoint_hdr.h
 +++ b/include/linux/checkpoint_hdr.h
-@@ -286,6 +286,8 @@ enum file_type {
- #define CKPT_FILE_GENERIC CKPT_FILE_GENERIC
- 	CKPT_FILE_PIPE,
- #define CKPT_FILE_PIPE CKPT_FILE_PIPE
-+	CKPT_FILE_FIFO,
-+#define CKPT_FILE_FIFO CKPT_FILE_FIFO
- 	CKPT_FILE_MAX
- #define CKPT_FILE_MAX CKPT_FILE_MAX
+@@ -90,6 +90,8 @@ enum {
+ enum {
+ 	CKPT_ARCH_X86_32 = 1,
+ #define CKPT_ARCH_X86_32 CKPT_ARCH_X86_32
++	CKPT_ARCH_X86_64,
++#define CKPT_ARCH_X86_64 CKPT_ARCH_X86_64
  };
-diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
-index e526a12..596403e 100644
---- a/include/linux/pipe_fs_i.h
-+++ b/include/linux/pipe_fs_i.h
-@@ -160,6 +160,8 @@ struct ckpt_ctx;
- struct ckpt_hdr_file;
- extern struct file *pipe_file_restore(struct ckpt_ctx *ctx,
- 				      struct ckpt_hdr_file *ptr);
-+extern struct file *fifo_file_restore(struct ckpt_ctx *ctx,
-+				      struct ckpt_hdr_file *ptr);
- #endif
  
- #endif
+ /* kernel constants */
 -- 
 1.6.3.3
 
