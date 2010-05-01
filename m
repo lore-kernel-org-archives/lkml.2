@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab0EAOcd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:32:33 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63509 "EHLO
+	id S932489Ab0EAObI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:31:08 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63455 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932537Ab0EAObN (ORCPT
+	with ESMTP id S1754163Ab0EAOav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:31:13 -0400
+	Sat, 1 May 2010 10:30:51 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>
-Subject: [PATCH v21 035/100] deferqueue: generic queue to defer work
-Date: Sat,  1 May 2010 10:15:17 -0400
-Message-Id: <1272723382-19470-36-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
+       linux-mm@kvack.org
+Subject: [PATCH v21 040/100] Introduce FOLL_DIRTY to follow_page() for "dirty" pages
+Date: Sat,  1 May 2010 10:15:22 -0400
+Message-Id: <1272723382-19470-41-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -23,304 +24,211 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a interface to postpone an action until the end of the entire
-checkpoint or restart operation. This is useful when during the
-scan of tasks an operation cannot be performed in place, to avoid
-the need for a second scan.
+This is a preparatory patch necessary for checkpoint/restart (next
+two patches) of memory to work correctly.
 
-One use case is when restoring an ipc shared memory region that has
-been deleted (but is still attached), during restart it needs to be
-create, attached and then deleted. However, creation and attachment
-are performed in distinct locations, so deletion can not be performed
-on the spot. Instead, this work (delete) is deferred until later.
-(This example is in one of the following patches).
+The patch introduces a new FOLL_DIRTY flag which tells follow_page()
+to return -EFAULT also for not-present file-backed pages.
 
-This interface allows chronic procrastination in the kernel:
+In 2.6.32 follow_page() changes its behavior due to this commit:
+	mm: FOLL_DUMP replace FOLL_ANON
+ 	8e4b9a60718970bbc02dfd3abd0b956ab65af231
 
-deferqueue_create(void):
-    Allocates and returns a new deferqueue.
+Also introduce __get_dirty_page() that returns a page only if it's
+"dirty", that is that has been modified before, and otherwise returns
+NULL. It uses FOLL_DUMP | FOLL_DIRTY and converts the error value
+EFAULT to NULL - telling the caller that the page in question is
+clean.
 
-deferqueue_run(deferqueue):
-    Executes all the pending works in the queue. Returns the number
-    of works executed, or an error upon the first error reported by
-    a deferred work.
+(This also optimizes for checkpoint in the next patch: before, if a
+file-backed page was not-present we would first fault it in (read from
+disk) and then detect that it was virgin. Instead, now we detect that
+the page is clean earlier without needing to fault it in).
 
-deferqueue_add(deferqueue, data, size, func, dtor):
-    Enqueue a deferred work. @function is the callback function to
-    do the work, which will be called with @data as an argument.
-    @size tells the size of data. @dtor is a destructor callback
-    that is invoked for deferred works remaining in the queue when
-    the queue is destroyed. NOTE: for a given deferred work, @dtor
-    is _not_ called if @func was already called (regardless of the
-    return value of the latter).
+To see why it's needed, consider these scenarios:
 
-deferqueue_destroy(deferqueue):
-    Free the deferqueue and any queued items while invoking the
-    @dtor callback for each queued item.
+1. Task maps a file beyond it's limit, never touches those
+ extra page (if it did, it would get EFAULT/Bus error)
 
-Why aren't we using the existing kernel workqueue mechanism?  We need
-to defer to work until the end of the operation: not earlier, since we
-need other things to be in place; not later, to not block waiting for
-it. However, the workqueue schedules the work for 'some time later'.
-Also, the kernel workqueue may run in any task context, but we require
-many times that an operation be run in the context of some specific
-restarting task (e.g., restoring IPC state of a certain ipc_ns).
+2. Task maps a file and writes the last page, then the file gets
+ truncated (by at least a page). A subsequent access to the page will
+ cause bus error (VM_FAULT_SIGBUS).
 
-Instead, this mechanism is a simple way for the c/r operation as a
-whole, and later a task in particular, to defer some action until
-later (but not arbitrarily later) _in the restore_ operation.
+3. If the file size is extended back (using truncate) and the task
+ accesses that page, then the task will get a fresh page (losing data
+ it had written to that address before).
 
-Changelog[v19-rc1]
-  - [Matt Helsley] Check for valid destructor before calling it
-Changelog[v18]
-  - Interface to pass simple pointers as data with deferqueue
-Changelog[v17]
-  - Fix deferqueue_add() function
+[Before kernel 2.6.32, that page would become anonymous once it was
+dirtied, such that accesses in case #2 are valid, and in case #3 the
+task would see the old page regardless of the file contents.]
 
+--CHECKPOINT: before we used FOLL_ANON flags to tell follow_page() to
+return the zero-page for case#1. For case#2, the actual page was
+returned. Without this patch, In kernel 2.3.32, FOLL_DUMP would make
+follow_page() return NULL and then fault handler would have returned
+VM_FAULT_SIGBUS in case#1 (and depending on arch, case#2 too), and
+checkpoint would fails.
+
+--RESTART: case #1 works, because mmap() works as before, and those
+pages that were never touched will not be restored either, they will
+remain untouched. The same holds for case#2 (as of kernel 2.6.32),
+because at checkpoint it would decide that the page is clean and not
+save the contents, and therefore it will not try to restore the
+contents at restart. This is consistent with the expected behavior
+after restart: if the file remains as is, subsequent accesses will
+trigger a bus error, and if the file is extended, then the user will
+observe a fresh page.
+
+Cc: linux-mm@kvack.org
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- include/linux/deferqueue.h |   78 +++++++++++++++++++++++++++++++
- kernel/Makefile            |    1 +
- kernel/checkpoint/Kconfig  |    5 ++
- kernel/deferqueue.c        |  110 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 194 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/deferqueue.h
- create mode 100644 kernel/deferqueue.c
+ include/linux/mm.h |    2 +
+ mm/memory.c        |   95 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 96 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/deferqueue.h b/include/linux/deferqueue.h
-new file mode 100644
-index 0000000..51bfd68
---- /dev/null
-+++ b/include/linux/deferqueue.h
-@@ -0,0 +1,78 @@
-+/*
-+ * deferqueue.h --- deferred work queue handling for Linux.
-+ */
-+
-+#ifndef _LINUX_DEFERQUEUE_H
-+#define _LINUX_DEFERQUEUE_H
-+
-+#include <linux/list.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+
-+/*
-+ * This interface allows chronic procrastination in the kernel:
-+ *
-+ * deferqueue_create(void):
-+ *     Allocates and returns a new deferqueue.
-+ *
-+ * deferqueue_run(deferqueue):
-+ *     Executes all the pending works in the queue. Returns the number
-+ *     of works executed, or an error upon the first error reported by
-+ *     a deferred work.
-+ *
-+ * deferqueue_add(deferqueue, data, size, func, dtor):
-+ *      Enqueue a deferred work. @function is the callback function to
-+ *      do the work, which will be called with @data as an argument.
-+ *      @size tells the size of data. @dtor is a destructor callback
-+ *      that is invoked for deferred works remaining in the queue when
-+ *      the queue is destroyed. NOTE: for a given deferred work, @dtor
-+ *      is _not_ called if @func was already called (regardless of the
-+ *      return value of the latter).
-+ *
-+ * deferqueue_destroy(deferqueue):
-+ *      Free the deferqueue and any queued items while invoking the
-+ *      @dtor callback for each queued item.
-+ *
-+ * The following helpers are useful when @data is a simple pointer:
-+ *
-+ * deferqueue_add_ptr(deferqueue, ptr, func, dtor):
-+ *	Enqueue a deferred work whos data is @ptr.
-+ *
-+ * deferqueue_data_ptr(data):
-+ *	Convert a deferqueue @data to a void * pointer.
-+ */
-+
-+
-+typedef int (*deferqueue_func_t)(void *);
-+
-+struct deferqueue_entry {
-+	deferqueue_func_t function;
-+	deferqueue_func_t destructor;
-+	struct list_head list;
-+	char data[0];
-+};
-+
-+struct deferqueue_head {
-+	spinlock_t lock;
-+	struct list_head list;
-+};
-+
-+struct deferqueue_head *deferqueue_create(void);
-+void deferqueue_destroy(struct deferqueue_head *head);
-+int deferqueue_add(struct deferqueue_head *head, void *data, int size,
-+		   deferqueue_func_t func, deferqueue_func_t dtor);
-+int deferqueue_run(struct deferqueue_head *head);
-+
-+static inline int deferqueue_add_ptr(struct deferqueue_head *head, void *ptr,
-+				     deferqueue_func_t func,
-+				     deferqueue_func_t dtor)
-+{
-+	return deferqueue_add(head, &ptr, sizeof(ptr), func, dtor);
-+}
-+
-+static inline void *deferqueue_data_ptr(void *data)
-+{
-+	return *((void **) data);
-+}
-+
-+#endif
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 1b78cca..67159cd 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -25,6 +25,7 @@ CFLAGS_REMOVE_sched_clock.o = -pg
- CFLAGS_REMOVE_perf_event.o = -pg
- endif
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 4dfaf69..5e9ad0d 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -846,6 +846,7 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages);
+ struct page *get_dump_page(unsigned long addr);
++struct page *__get_dirty_page(struct vm_area_struct *vma, unsigned long addr);
  
-+obj-$(CONFIG_DEFERQUEUE) += deferqueue.o
- obj-$(CONFIG_FREEZER) += freezer.o
- obj-$(CONFIG_PROFILING) += profile.o
- obj-$(CONFIG_SYSCTL_SYSCALL_CHECK) += sysctl_check.o
-diff --git a/kernel/checkpoint/Kconfig b/kernel/checkpoint/Kconfig
-index 21fc86b..4a2c845 100644
---- a/kernel/checkpoint/Kconfig
-+++ b/kernel/checkpoint/Kconfig
-@@ -2,10 +2,15 @@
- # implemented the hooks for processor state etc. needed by the
- # core checkpoint/restart code.
+ extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
+ extern void do_invalidatepage(struct page *page, unsigned long offset);
+@@ -1373,6 +1374,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
+ #define FOLL_GET	0x04	/* do get_page on page */
+ #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
+ #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
++#define FOLL_DIRTY	0x20	/* give error on non-present file mapped */
  
-+config DEFERQUEUE
-+	bool
-+	default n
-+
- config CHECKPOINT
- 	bool "Checkpoint/restart (EXPERIMENTAL)"
- 	depends on CHECKPOINT_SUPPORT && EXPERIMENTAL
- 	depends on CGROUP_FREEZER
-+	select DEFERQUEUE
- 	help
- 	  Application checkpoint/restart is the ability to save the
- 	  state of a running application so that it can later resume
-diff --git a/kernel/deferqueue.c b/kernel/deferqueue.c
-new file mode 100644
-index 0000000..1204c8b
---- /dev/null
-+++ b/kernel/deferqueue.c
-@@ -0,0 +1,110 @@
-+/*
-+ *  Infrastructure to manage deferred work
-+ *
-+ *  This differs from a workqueue in that the work must be deferred
-+ *  until specifically run by the caller.
-+ *
-+ *  As the only user currently is checkpoint/restart, which has
-+ *  very simple usage, the locking is kept simple.  Adding rules
-+ *  is protected by the head->lock.  But deferqueue_run() is only
-+ *  called once, after all entries have been added.  So it is not
-+ *  protected.  Similarly, _destroy is only called once when the
-+ *  ckpt_ctx is releeased, so it is not locked or refcounted.  These
-+ *  can of course be added if needed by other users.
-+ *
-+ *  Why not use workqueue ?  We need to defer work until the end of an
-+ *  operation: not earlier, since we need other things to be in place;
-+ *  not later, to not block waiting for it. However, the workqueue
-+ *  schedules the work for 'some time later'. Also, workqueue may run
-+ *  in any task context, but we require many times that an operation
-+ *  be run in the context of some specific restarting task (e.g.,
-+ *  restoring IPC state of a certain ipc_ns).
-+ *
-+ *  Instead, this mechanism is a simple way for the c/r operation as a
-+ *  whole, and later a task in particular, to defer some action until
-+ *  later (but not arbitrarily later) _in the restore_ operation.
-+ *
-+ *  Copyright (C) 2009 Oren Laadan
-+ *
-+ *  This file is subject to the terms and conditions of the GNU General Public
-+ *  License.  See the file COPYING in the main directory of the Linux
-+ *  distribution for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/deferqueue.h>
-+
-+struct deferqueue_head *deferqueue_create(void)
-+{
-+	struct deferqueue_head *h = kmalloc(sizeof(*h), GFP_KERNEL);
-+	if (h) {
-+		spin_lock_init(&h->lock);
-+		INIT_LIST_HEAD(&h->list);
+ typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
+ 			void *data);
+diff --git a/mm/memory.c b/mm/memory.c
+index 833952d..21de72d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1314,8 +1314,17 @@ bad_page:
+ 
+ no_page:
+ 	pte_unmap_unlock(ptep, ptl);
+-	if (!pte_none(pte))
++	if (!pte_none(pte)) {
++		/*
++		 * When checkpointing we only care about dirty pages.
++		 * If a file-backed page is missing, then return an
++		 * error to tell __get_dirty_page() that it's clean,
++		 * so it won't try to demand page it into memory.
++		 */
++		if ((flags & FOLL_DIRTY) && pte_file(pte))
++			page = ERR_PTR(-EFAULT);
+ 		return page;
 +	}
-+	return h;
-+}
+ 
+ no_page_table:
+ 	/*
+@@ -1329,6 +1338,16 @@ no_page_table:
+ 	if ((flags & FOLL_DUMP) &&
+ 	    (!vma->vm_ops || !vma->vm_ops->fault))
+ 		return ERR_PTR(-EFAULT);
 +
-+void deferqueue_destroy(struct deferqueue_head *h)
++	/*
++	 * When checkpointing we only care about dirty pages. If there
++	 * is no page table for a non-anonymous page, we return an
++	 * error to tell __get_dirty_page() that the page is clean, so
++	 * it won't allocate page tables and the page unnecessarily.
++	 */
++	if ((flags & FOLL_DIRTY) && vma->vm_ops)
++		return ERR_PTR(-EFAULT);
++
+ 	return page;
+ }
+ 
+@@ -1586,6 +1605,80 @@ pte_t *get_locked_pte(struct mm_struct *mm, unsigned long addr,
+ 	return NULL;
+ }
+ 
++/**
++ * __get_dirty_page - return page pointer for dirty user page
++ * @vma - target vma
++ * @addr - page address
++ *
++ * Looks up the page that correspond to the address in the vma, and
++ * return the page if it was modified (and grabs a reference to it),
++ * or otherwise returns NULL or error.
++ *
++ * Should only be called for private vma.
++ * Must be called with mmap_sem held for read or write.
++ */
++struct page *__get_dirty_page(struct vm_area_struct *vma, unsigned long addr)
 +{
-+	if (!list_empty(&h->list)) {
-+		struct deferqueue_entry *dq, *n;
++	struct page *page;
 +
-+		pr_debug("%s: freeing non-empty queue\n", __func__);
-+		list_for_each_entry_safe(dq, n, &h->list, list) {
-+			if (dq->destructor)
-+				dq->destructor(dq->data);
-+			list_del(&dq->list);
-+			kfree(dq);
++	BUG_ON(vma->vm_flags & (VM_SHARED | VM_MAYSHARE));
++
++	/*
++	 * FOLL_DUMP tells follow_page() to return -EFAULT for either
++	 * non-present anonymous pages, or memory "holes".
++	 * FOLL_DIRTY tells follow_page() to return -EFAULT also for
++	 * non-present file-mapped pages.
++	 * Otherwise, follow_page() returns the page, or NULL if the
++	 * page is swapped out.
++	 */
++
++	cond_resched();
++	while (!(page = follow_page(vma, addr,
++				    FOLL_GET | FOLL_DUMP | FOLL_DIRTY))) {
++		int ret;
++
++		/* the page is swapped out - bring it in (optimize ?) */
++		ret = handle_mm_fault(vma->vm_mm, vma, addr, 0);
++		if (ret & VM_FAULT_ERROR) {
++			if (ret & VM_FAULT_OOM)
++				return ERR_PTR(-ENOMEM);
++			else if (ret & VM_FAULT_SIGBUS)
++				return ERR_PTR(-EFAULT);
++			else
++				BUG();
++			break;
 +		}
-+	}
-+	kfree(h);
-+}
-+
-+int deferqueue_add(struct deferqueue_head *head, void *data, int size,
-+		   deferqueue_func_t func, deferqueue_func_t dtor)
-+{
-+	struct deferqueue_entry *dq;
-+
-+	dq = kmalloc(sizeof(*dq) + size, GFP_KERNEL);
-+	if (!dq)
-+		return -ENOMEM;
-+
-+	dq->function = func;
-+	dq->destructor = dtor;
-+	memcpy(dq->data, data, size);
-+
-+	pr_debug("%s: adding work %p func %p dtor %p\n",
-+		 __func__, dq, func, dtor);
-+	spin_lock(&head->lock);
-+	list_add_tail(&dq->list, &head->list);
-+	spin_unlock(&head->lock);
-+	return 0;
-+}
-+
-+/*
-+ * deferqueue_run - perform all work in the work queue
-+ * @head: deferqueue_head from which to run
-+ *
-+ * returns: number of works performed, or < 0 on error
-+ */
-+int deferqueue_run(struct deferqueue_head *head)
-+{
-+	struct deferqueue_entry *dq, *n;
-+	int nr = 0;
-+	int ret;
-+
-+	list_for_each_entry_safe(dq, n, &head->list, list) {
-+		pr_debug("doing work %p function %p\n", dq, dq->function);
-+		/* don't call destructor - function callback should do it */
-+		ret = dq->function(dq->data);
-+		if (ret < 0)
-+			pr_debug("wq function failed %d\n", ret);
-+		list_del(&dq->list);
-+		kfree(dq);
-+		nr++;
++		cond_resched();
 +	}
 +
-+	return nr;
++	/* -EFAULT means that the page is clean (see above) */
++	if (PTR_ERR(page) == -EFAULT)
++		return NULL;
++	else if (IS_ERR(page))
++		return page;
++
++	/*
++	 * Only care about dirty pages: either anonymous non-zero pages,
++	 * or file-backed COW (copy-on-write) pages that were modified.
++	 * A clean COW page is not interesting because its contents are
++	 * identical to the backing file; ignore such pages.
++	 * A file-backed broken COW is identified by its page_mapping()
++	 * being unset (NULL) because the page will no longer be mapped
++	 * to the original file after having been modified.
++	 */
++	if (is_zero_pfn(page_to_pfn(page))) {
++		/* this is the zero page: ignore */
++		page_cache_release(page);
++		page = NULL;
++	} else if (vma->vm_file && (page_mapping(page) != NULL)) {
++		/* file backed clean cow: ignore */
++		page_cache_release(page);
++		page = NULL;
++	}
++
++	return page;
 +}
++
+ /*
+  * This is the old fallback for page remapping.
+  *
 -- 
 1.6.3.3
 
