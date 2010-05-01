@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab0EAOao (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 10:30:44 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63396 "EHLO
+	id S1754583Ab0EAOfW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 10:35:22 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:63897 "EHLO
 	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600Ab0EAOae (ORCPT
+	with ESMTP id S1752900Ab0EAOfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 10:30:34 -0400
+	Sat, 1 May 2010 10:35:11 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>,
-       x86@kernel.org
-Subject: [PATCH v21 024/100] c/r: x86-64: checkpoint/restart implementation
-Date: Sat,  1 May 2010 10:15:06 -0400
-Message-Id: <1272723382-19470-25-git-send-email-orenl@cs.columbia.edu>
+       Pavel Emelyanov <xemul@openvz.org>, Oren Laadan <orenl@cs.columbia.edu>
+Subject: [PATCH v21 051/100] c/r: make ckpt_may_checkpoint_task() check each namespace individually
+Date: Sat,  1 May 2010 10:15:33 -0400
+Message-Id: <1272723382-19470-52-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
 References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
@@ -24,414 +23,449 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support for checkpoint and restart for X86_32 architecture.
-Partly based on Alexey's work.
+For a given namespace type, say XXX, if a checkpoint was taken on a
+CONFIG_XXX_NS system, is restarted on a !CONFIG_XXX_NS, then ensure
+that:
 
-Support for 32bit on 64bit and fixes from Serge Hallyn.
+1) The global settings of the global (init) namespace do not get
+overwritten. Creating new objects in that namespace is ok, as long as
+the request identifier is available.
 
- Checkpoint          Restart
- (app/arch)         (app/arch/program*)
----------------------------------------
-  64/x86-64	->  64/x86-64	  works
-  32/x86-64	->  32/x86-64	  works
-  32/x86-64	->  32/x86-32	  ?
-  32/x86-32	->  32/x86-64	  ?
+2) All restarting tasks use a single namespace - because it is
+impossible to create additional namespaces to accommodate for what had
+been checkpointed.
 
-  32/x86-64	->  32/x86-32	  ?
-  32/x86-32	->  32/x86-64	  ?
+Original patch introducing nsproxy c/r by Dan Smith <danms@us.ibm.com>
 
-(*) "program" indicates the bit-ness of 'restart' executable.
+Chagnelog[v19]:
+  - Restart to handle checkpoint images lacking {uts,ipc}-ns
+Chagnelog[v19-rc1]:
+  - [Matt Helsley] Add cpp definitions for enums
+Chagnelog[v18]:
+  - Add a few more ckpt_write_err()s
+Chagnelog[v17]:
+  - Only collect sub-objects of struct_nsproxy once.
+  - Restore namespace pieces directly instead of using sys_unshare()
+  - Proper handling of restart from namespace(s) without namespace(s)
 
-Changelog[v21]:
-  - Do not include checkpoint_hdr.h explicitly
-Changelog[v19-rc3]:
-  - Rebase to kernel 2.6.33
-  - [Serge Hallyn] Changes to fs/gs register handling
-  - [Serge Hallyn] Allow 32-bit restart of 64-bit and vice versa
-  - [Serge Hallyn] Only allow 'restart' with same bit-ness as image.
-
-Cc: x86@kernel.org
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Signed-off-by: Serge Hallyn <serue@us.ibm.com>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- arch/x86/Kconfig                      |    2 +-
- arch/x86/include/asm/checkpoint_hdr.h |    6 +
- arch/x86/include/asm/unistd_64.h      |    4 +
- arch/x86/kernel/Makefile              |    2 +
- arch/x86/kernel/checkpoint.c          |   16 +++
- arch/x86/kernel/checkpoint_64.c       |  240 +++++++++++++++++++++++++++++++++
- arch/x86/kernel/entry_64.S            |    7 +
- include/linux/checkpoint_hdr.h        |    2 +
- 8 files changed, 278 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/kernel/checkpoint_64.c
+ include/linux/checkpoint.h     |    3 +
+ include/linux/checkpoint_hdr.h |   16 +++++
+ kernel/checkpoint/checkpoint.c |   29 +++++++-
+ kernel/checkpoint/objhash.c    |    2 +
+ kernel/checkpoint/process.c    |   81 ++++++++++++++++++++++++
+ kernel/nsproxy.c               |  136 ++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 263 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0874484..335a4b3 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -95,7 +95,7 @@ config HAVE_LATENCYTOP_SUPPORT
+diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
+index 24ad717..2b6d0c7 100644
+--- a/include/linux/checkpoint.h
++++ b/include/linux/checkpoint.h
+@@ -166,6 +166,9 @@ extern int checkpoint_restart_block(struct ckpt_ctx *ctx,
+ 				    struct task_struct *t);
+ extern int restore_restart_block(struct ckpt_ctx *ctx);
  
- config CHECKPOINT_SUPPORT
- 	bool
--	default y if X86_32
-+	default y
++/* namespaces */
++extern int ckpt_collect_ns(struct ckpt_ctx *ctx, struct task_struct *t);
++
+ /* file table */
+ extern int ckpt_collect_file_table(struct ckpt_ctx *ctx, struct task_struct *t);
+ extern int checkpoint_obj_file_table(struct ckpt_ctx *ctx,
+diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
+index fbcbee7..f119991 100644
+--- a/include/linux/checkpoint_hdr.h
++++ b/include/linux/checkpoint_hdr.h
+@@ -76,6 +76,8 @@ enum {
+ #define CKPT_HDR_TREE CKPT_HDR_TREE
+ 	CKPT_HDR_TASK,
+ #define CKPT_HDR_TASK CKPT_HDR_TASK
++	CKPT_HDR_TASK_NS,
++#define CKPT_HDR_TASK_NS CKPT_HDR_TASK_NS
+ 	CKPT_HDR_TASK_OBJS,
+ #define CKPT_HDR_TASK_OBJS CKPT_HDR_TASK_OBJS
+ 	CKPT_HDR_RESTART_BLOCK,
+@@ -84,6 +86,8 @@ enum {
+ #define CKPT_HDR_THREAD CKPT_HDR_THREAD
+ 	CKPT_HDR_CPU,
+ #define CKPT_HDR_CPU CKPT_HDR_CPU
++	CKPT_HDR_NS,
++#define CKPT_HDR_NS CKPT_HDR_NS
  
- config MMU
- 	def_bool y
-diff --git a/arch/x86/include/asm/checkpoint_hdr.h b/arch/x86/include/asm/checkpoint_hdr.h
-index e6cfc99..6f600dd 100644
---- a/arch/x86/include/asm/checkpoint_hdr.h
-+++ b/arch/x86/include/asm/checkpoint_hdr.h
-@@ -36,6 +36,10 @@
- #include <asm/processor.h>
- #endif
+ 	/* 201-299: reserved for arch-dependent */
  
-+#ifdef CONFIG_X86_64
-+#define CKPT_ARCH_ID	CKPT_ARCH_X86_64
-+#endif
-+
- #ifdef CONFIG_X86_32
- #define CKPT_ARCH_ID	CKPT_ARCH_X86_32
- #endif
-@@ -106,6 +110,8 @@ struct ckpt_hdr_cpu {
- #define CKPT_X86_SEG_NULL	0
- #define CKPT_X86_SEG_USER32_CS	1
- #define CKPT_X86_SEG_USER32_DS	2
-+#define CKPT_X86_SEG_USER64_CS	3
-+#define CKPT_X86_SEG_USER64_DS	4
- #define CKPT_X86_SEG_TLS	0x4000	/* 0100 0000 0000 00xx */
- #define CKPT_X86_SEG_LDT	0x8000	/* 100x xxxx xxxx xxxx */
+@@ -141,6 +145,8 @@ enum obj_type {
+ #define CKPT_OBJ_FILE CKPT_OBJ_FILE
+ 	CKPT_OBJ_MM,
+ #define CKPT_OBJ_MM CKPT_OBJ_MM
++	CKPT_OBJ_NS,
++#define CKPT_OBJ_NS CKPT_OBJ_NS
+ 	CKPT_OBJ_MAX
+ #define CKPT_OBJ_MAX CKPT_OBJ_MAX
+ };
+@@ -225,6 +231,16 @@ struct ckpt_hdr_task {
+ 	__u64 clear_child_tid;
+ } __attribute__((aligned(8)));
  
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index 1cd16af..2b162e1 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -665,6 +665,10 @@ __SYSCALL(__NR_perf_event_open, sys_perf_event_open)
- __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
- #define __NR_eclone				300
- __SYSCALL(__NR_eclone, stub_eclone)
-+#define __NR_checkpoint				301
-+__SYSCALL(__NR_checkpoint, stub_checkpoint)
-+#define __NR_restart				302
-+__SYSCALL(__NR_restart, stub_restart)
- 
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 2078d1b..916a7e1 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -138,4 +138,6 @@ ifeq ($(CONFIG_X86_64),y)
- 
- 	obj-$(CONFIG_PCI_MMCONFIG)	+= mmconf-fam10h_64.o
- 	obj-y				+= vsmp_64.o
++/* namespaces */
++struct ckpt_hdr_task_ns {
++	struct ckpt_hdr h;
++	__s32 ns_objref;
++} __attribute__((aligned(8)));
 +
-+	obj-$(CONFIG_CHECKPOINT)	+= checkpoint_64.o
- endif
-diff --git a/arch/x86/kernel/checkpoint.c b/arch/x86/kernel/checkpoint.c
-index 015401a..3976318 100644
---- a/arch/x86/kernel/checkpoint.c
-+++ b/arch/x86/kernel/checkpoint.c
-@@ -249,6 +249,22 @@ int restore_thread(struct ckpt_ctx *ctx)
- 	load_TLS(thread, cpu);
- 	put_cpu();
- 
-+	{
-+		int pre, post;
-+		/*
-+		 * Eventually we'd like to support mixed-bit restart, but for
-+		 * now don't pretend to.
-+		 */
-+		pre = test_thread_flag(TIF_IA32);
-+		post = !!(h->thread_info_flags & _TIF_IA32);
-+		if (pre != post) {
-+			ret = -EINVAL;
-+			ckpt_err(ctx, ret, "%d-bit restarting %d-bit\n",
-+				64 >> pre, 64 >> post);
-+			goto out;
-+		}
-+	}
++struct ckpt_hdr_ns {
++	struct ckpt_hdr h;
++} __attribute__((aligned(8)));
 +
- 	/* TODO: restore TIF flags as necessary (e.g. TIF_NOTSC) */
- 
- 	ret = 0;
-diff --git a/arch/x86/kernel/checkpoint_64.c b/arch/x86/kernel/checkpoint_64.c
-new file mode 100644
-index 0000000..cac52f3
---- /dev/null
-+++ b/arch/x86/kernel/checkpoint_64.c
-@@ -0,0 +1,240 @@
-+/*
-+ *  Checkpoint/restart - architecture specific support for x86_64
-+ *
-+ *  Copyright (C) 2009 Oren Laadan
-+ *
-+ *  This file is subject to the terms and conditions of the GNU General Public
-+ *  License.  See the file COPYING in the main directory of the Linux
-+ *  distribution for more details.
-+ */
-+
-+/* default debug level for output */
-+#define CKPT_DFLAG  CKPT_DSYS
-+
-+#include <asm/desc.h>
-+#include <asm/i387.h>
-+#include <asm/elf.h>
-+
-+#include <linux/checkpoint.h>
-+
-+/* helpers to encode/decode/validate segments */
-+
-+int check_segment(__u16 seg)
-+{
+ /* task's shared resources */
+ struct ckpt_hdr_task_objs {
+ 	struct ckpt_hdr h;
+diff --git a/kernel/checkpoint/checkpoint.c b/kernel/checkpoint/checkpoint.c
+index 0f83cca..ab1081c 100644
+--- a/kernel/checkpoint/checkpoint.c
++++ b/kernel/checkpoint/checkpoint.c
+@@ -219,6 +219,8 @@ static int checkpoint_all_tasks(struct ckpt_ctx *ctx)
+ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
+ {
+ 	struct task_struct *root = ctx->root_task;
++	struct nsproxy *nsproxy;
 +	int ret = 0;
+ 
+ 	ckpt_debug("check %d\n", task_pid_nr_ns(t, ctx->root_nsproxy->pid_ns));
+ 
+@@ -258,11 +260,30 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
+ 		return -EINVAL;
+ 	}
+ 
+-	/* FIX: change this when namespaces are added */
+-	if (task_nsproxy(t) != ctx->root_nsproxy)
+-		return -EPERM;
++	rcu_read_lock();
++	nsproxy = task_nsproxy(t);
++	if (nsproxy->uts_ns != ctx->root_nsproxy->uts_ns)
++		ret = -EPERM;
++	if (nsproxy->ipc_ns != ctx->root_nsproxy->ipc_ns)
++		ret = -EPERM;
++	/* no support for >1 private mntns */
++	if (nsproxy->mnt_ns != ctx->root_nsproxy->mnt_ns) {
++		_ckpt_err(ctx, -EPERM, "%(T)Nested mnt_ns unsupported\n");
++		ret = -EPERM;
++	}
++	/* no support for >1 private netns */
++	if (nsproxy->net_ns != ctx->root_nsproxy->net_ns) {
++		_ckpt_err(ctx, -EPERM, "%(T)Nested net_ns unsupported\n");
++		ret = -EPERM;
++	}
++	/* no support for >1 private pidns */
++	if (nsproxy->pid_ns != ctx->root_nsproxy->pid_ns) {
++		_ckpt_err(ctx, -EPERM, "%(T)Nested pid_ns unsupported\n");
++		ret = -EPERM;
++	}
++	rcu_read_unlock();
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ #define CKPT_HDR_PIDS_CHUNK	256
+diff --git a/kernel/checkpoint/objhash.c b/kernel/checkpoint/objhash.c
+index 1d78dbf..d504568 100644
+--- a/kernel/checkpoint/objhash.c
++++ b/kernel/checkpoint/objhash.c
+@@ -498,6 +498,8 @@ int ckpt_obj_contained(struct ckpt_ctx *ctx)
+ 	ckpt_obj_users_inc(ctx, ctx->file, 1);
+ 	if (ctx->logfile)
+ 		ckpt_obj_users_inc(ctx, ctx->logfile, 1);
++	/* account for ctx->root_nsproxy (if in the table already) */
++	ckpt_obj_users_inc(ctx, ctx->root_nsproxy, 1);
+ 
+ 	hlist_for_each_entry(obj, node, &ctx->obj_hash->list, next) {
+ 		if (!obj->ops->ref_users)
+diff --git a/kernel/checkpoint/process.c b/kernel/checkpoint/process.c
+index 1ec5c6a..22fb938 100644
+--- a/kernel/checkpoint/process.c
++++ b/kernel/checkpoint/process.c
+@@ -12,6 +12,7 @@
+ #define CKPT_DFLAG  CKPT_DSYS
+ 
+ #include <linux/sched.h>
++#include <linux/nsproxy.h>
+ #include <linux/posix-timers.h>
+ #include <linux/futex.h>
+ #include <linux/compat.h>
+@@ -103,6 +104,35 @@ static int checkpoint_task_struct(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	return ckpt_write_string(ctx, t->comm, TASK_COMM_LEN);
+ }
+ 
++static int checkpoint_task_ns(struct ckpt_ctx *ctx, struct task_struct *t)
++{
++	struct ckpt_hdr_task_ns *h;
++	struct nsproxy *nsproxy;
++	int ns_objref;
++	int ret;
 +
-+	switch (seg) {
-+	case CKPT_X86_SEG_NULL:
-+	case CKPT_X86_SEG_USER64_CS:
-+	case CKPT_X86_SEG_USER64_DS:
-+#ifdef CONFIG_COMPAT
-+	case CKPT_X86_SEG_USER32_CS:
-+	case CKPT_X86_SEG_USER32_DS:
-+#endif
-+		return 1;
-+	}
-+	if (seg & CKPT_X86_SEG_TLS) {
-+		seg &= ~CKPT_X86_SEG_TLS;
-+		if (seg <= GDT_ENTRY_TLS_MAX - GDT_ENTRY_TLS_MIN)
-+			ret = 1;
-+	} else if (seg & CKPT_X86_SEG_LDT) {
-+		seg &= ~CKPT_X86_SEG_LDT;
-+		if (seg <= 0x1fff)
-+			ret = 1;
-+	}
++	rcu_read_lock();
++	nsproxy = task_nsproxy(t);
++	get_nsproxy(nsproxy);
++	rcu_read_unlock();
++
++	ns_objref = checkpoint_obj(ctx, nsproxy, CKPT_OBJ_NS);
++	put_nsproxy(nsproxy);
++
++	ckpt_debug("nsproxy: objref %d\n", ns_objref);
++	if (ns_objref < 0)
++		return ns_objref;
++
++	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_TASK_NS);
++	if (!h)
++		return -ENOMEM;
++	h->ns_objref = ns_objref;
++	ret = ckpt_write_obj(ctx, &h->h);
++	ckpt_hdr_put(ctx, h);
++
 +	return ret;
 +}
 +
-+__u16 encode_segment(unsigned short seg)
+ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
+ {
+ 	struct ckpt_hdr_task_objs *h;
+@@ -110,6 +140,19 @@ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	int mm_objref;
+ 	int ret;
+ 
++	/*
++	 * Shared objects may have dependencies among them: task->mm
++	 * depends on task->nsproxy (by ipc_ns). Therefore first save
++	 * the namespaces, and then the remaining shared objects.
++	 * During restart a task will already have its namespaces
++	 * restored when it gets to restore, e.g. its memory.
++	 */
++
++	ret = checkpoint_task_ns(ctx, t);
++	ckpt_debug("ns: objref %d\n", ret);
++	if (ret < 0)
++		return ret;
++
+ 	files_objref = checkpoint_obj_file_table(ctx, t);
+ 	ckpt_debug("files: objref %d\n", files_objref);
+ 	if (files_objref < 0) {
+@@ -284,6 +327,9 @@ int ckpt_collect_task(struct ckpt_ctx *ctx, struct task_struct *t)
+ {
+ 	int ret;
+ 
++	ret = ckpt_collect_ns(ctx, t);
++	if (ret < 0)
++		return ret;
+ 	ret = ckpt_collect_file_table(ctx, t);
+ 	if (ret < 0)
+ 		return ret;
+@@ -359,11 +405,46 @@ static int restore_task_struct(struct ckpt_ctx *ctx)
+ 	return ret;
+ }
+ 
++static int restore_task_ns(struct ckpt_ctx *ctx)
 +{
-+	if (seg == 0)
-+		return CKPT_X86_SEG_NULL;
-+	BUG_ON((seg & 3) != 3);
++	struct ckpt_hdr_task_ns *h;
++	struct nsproxy *nsproxy;
++	int ret = 0;
 +
-+	if (seg == __USER_CS)
-+		return CKPT_X86_SEG_USER64_CS;
-+	if (seg == __USER_DS)
-+		return CKPT_X86_SEG_USER64_DS;
-+#ifdef CONFIG_COMPAT
-+	if (seg == __USER32_CS)
-+		return CKPT_X86_SEG_USER32_CS;
-+	if (seg == __USER32_DS)
-+		return CKPT_X86_SEG_USER32_DS;
-+#endif
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_TASK_NS);
++	if (IS_ERR(h))
++		return PTR_ERR(h);
 +
-+	if (seg & 4)
-+		return CKPT_X86_SEG_LDT | (seg >> 3);
++	nsproxy = ckpt_obj_fetch(ctx, h->ns_objref, CKPT_OBJ_NS);
++	if (IS_ERR(nsproxy)) {
++		ret = PTR_ERR(nsproxy);
++		goto out;
++	}
 +
-+	seg >>= 3;
-+	if (GDT_ENTRY_TLS_MIN <= seg && seg <= GDT_ENTRY_TLS_MAX)
-+		return CKPT_X86_SEG_TLS | (seg - GDT_ENTRY_TLS_MIN);
-+
-+	printk(KERN_ERR "c/r: (decode) bad segment %#hx\n", seg);
-+	BUG();
++	if (nsproxy != task_nsproxy(current)) {
++		get_nsproxy(nsproxy);
++		switch_task_namespaces(current, nsproxy);
++	}
++ out:
++	ckpt_debug("nsproxy: ret %d (%p)\n", ret, task_nsproxy(current));
++	ckpt_hdr_put(ctx, h);
++	return ret;
 +}
 +
-+unsigned short decode_segment(__u16 seg)
+ static int restore_task_objs(struct ckpt_ctx *ctx)
+ {
+ 	struct ckpt_hdr_task_objs *h;
+ 	int ret;
+ 
++	/*
++	 * Namespaces come first, because ->mm depends on ->nsproxy,
++	 * and because shared objects are restored before they are
++	 * referenced. See comment in checkpoint_task_objs.
++	 */
++	ret = restore_task_ns(ctx);
++	if (ret < 0)
++		return ret;
++
+ 	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_TASK_OBJS);
+ 	if (IS_ERR(h))
+ 		return PTR_ERR(h);
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index f74e6c0..7082283 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -22,6 +22,7 @@
+ #include <linux/pid_namespace.h>
+ #include <net/net_namespace.h>
+ #include <linux/ipc_namespace.h>
++#include <linux/checkpoint.h>
+ 
+ static struct kmem_cache *nsproxy_cachep;
+ 
+@@ -233,10 +234,145 @@ void exit_task_namespaces(struct task_struct *p)
+ 	switch_task_namespaces(p, NULL);
+ }
+ 
++#ifdef CONFIG_CHECKPOINT
++int ckpt_collect_ns(struct ckpt_ctx *ctx, struct task_struct *t)
 +{
-+	if (seg == CKPT_X86_SEG_NULL)
++	struct nsproxy *nsproxy;
++	int exists;
++	int ret;
++
++	rcu_read_lock();
++	nsproxy = task_nsproxy(t);
++	if (nsproxy)
++		get_nsproxy(nsproxy);
++	rcu_read_unlock();
++
++	if (!nsproxy)
 +		return 0;
 +
-+	if (seg == CKPT_X86_SEG_USER64_CS)
-+		return __USER_CS;
-+	if (seg == CKPT_X86_SEG_USER64_DS)
-+		return __USER_DS;
-+#ifdef CONFIG_COMPAT
-+	if (seg == CKPT_X86_SEG_USER32_CS)
-+		return __USER32_CS;
-+	if (seg == CKPT_X86_SEG_USER32_DS)
-+		return __USER32_DS;
-+#endif
++	/* if already exists, don't proceed inside the struct */
++	exists = ckpt_obj_lookup(ctx, nsproxy, CKPT_OBJ_NS);
 +
-+	if (seg & CKPT_X86_SEG_TLS) {
-+		seg &= ~CKPT_X86_SEG_TLS;
-+		return ((GDT_ENTRY_TLS_MIN + seg) << 3) | 3;
-+	}
-+	if (seg & CKPT_X86_SEG_LDT) {
-+		seg &= ~CKPT_X86_SEG_LDT;
-+		return (seg << 3) | 7;
-+	}
-+	BUG();
++	ret = ckpt_obj_collect(ctx, nsproxy, CKPT_OBJ_NS);
++	if (ret < 0 || exists)
++		goto out;
++
++	/* TODO: collect other namespaces here */
++ out:
++	put_nsproxy(nsproxy);
++	return ret;
 +}
 +
-+void save_cpu_regs(struct ckpt_hdr_cpu *h, struct task_struct *t)
++static int checkpoint_ns(struct ckpt_ctx *ctx, void *ptr)
 +{
-+	struct pt_regs *regs = task_pt_regs(t);
-+	unsigned long _ds, _es, _fs, _gs;
++	struct nsproxy *nsproxy = ptr;
++	struct ckpt_hdr_ns *h;
++	int ret;
 +
-+	h->r15 = regs->r15;
-+	h->r14 = regs->r14;
-+	h->r13 = regs->r13;
-+	h->r12 = regs->r12;
-+	h->r11 = regs->r11;
-+	h->r10 = regs->r10;
-+	h->r9 = regs->r9;
-+	h->r8 = regs->r8;
++	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_NS);
++	if (!h)
++		return -ENOMEM;
 +
-+	h->bp = regs->bp;
-+	h->bx = regs->bx;
-+	h->ax = regs->ax;
-+	h->cx = regs->cx;
-+	h->dx = regs->dx;
-+	h->si = regs->si;
-+	h->di = regs->di;
-+	h->orig_ax = regs->orig_ax;
-+	h->ip = regs->ip;
++	/* TODO: Write other namespaces here */
 +
-+	h->flags = regs->flags;
-+	h->sp = regs->sp;
++	ret = ckpt_write_obj(ctx, &h->h);
++	ckpt_hdr_put(ctx, h);
++	return ret;
++}
 +
-+	/*
-+	 * for checkpoint in process context (from within a container)
-+	 * DS, ES, FS, GS registers should be saved from the hardware;
-+	 * otherwise they are already saved on the thread structure
-+	 */
++static void *restore_ns(struct ckpt_ctx *ctx)
++{
++	struct ckpt_hdr_ns *h;
++	struct nsproxy *nsproxy = NULL;
++	struct uts_namespace *uts_ns;
++	struct ipc_namespace *ipc_ns;
++	struct mnt_namespace *mnt_ns;
++	struct net *net_ns;
++	int ret = 0;
 +
-+	h->cs = encode_segment(regs->cs);
-+	h->ss = encode_segment(regs->ss);
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_NS);
++	if (IS_ERR(h))
++		return (void *) h;
 +
-+	if (t == current) {
-+		savesegment(ds, _ds);
-+		savesegment(es, _es);
-+		savesegment(fs, _fs);
-+		savesegment(gs, _gs);
-+		rdmsrl(MSR_FS_BASE, h->fs);
-+		rdmsrl(MSR_KERNEL_GS_BASE, h->gs);
++	uts_ns = ctx->root_nsproxy->uts_ns;
++	ipc_ns = ctx->root_nsproxy->ipc_ns;
++	mnt_ns = ctx->root_nsproxy->mnt_ns;
++	net_ns = ctx->root_nsproxy->net_ns;
++
++	if (uts_ns == current->nsproxy->uts_ns &&
++	    ipc_ns == current->nsproxy->ipc_ns &&
++	    mnt_ns == current->nsproxy->mnt_ns &&
++	    net_ns == current->nsproxy->net_ns) {
++		/* all xxx-ns are identical: reuse nsproxy */
++		nsproxy = current->nsproxy;
++		get_nsproxy(nsproxy);
 +	} else {
-+		_ds = t->thread.ds;
-+		_es = t->thread.es;
-+		_fs = t->thread.fsindex;
-+		_gs = t->thread.gsindex;
-+		h->fs = t->thread.fs;
-+		h->gs = t->thread.gs;
-+	}
-+	h->ds = encode_segment(_ds);
-+	h->es = encode_segment(_es);
-+	h->fsindex = encode_segment(_fs);
-+	h->gsindex = encode_segment(_gs);
++		nsproxy = create_nsproxy();
++		if (!nsproxy) {
++			ret = -ENOMEM;
++			goto out;
++		}
 +
-+	/* see comment in __switch_to() */
-+	if (_fs)
-+		h->fs = 0;
-+	if (_gs)
-+		h->gs = 0;
++		get_uts_ns(uts_ns);
++		nsproxy->uts_ns = uts_ns;
++		get_ipc_ns(ipc_ns);
++		nsproxy->ipc_ns = ipc_ns;
++		get_mnt_ns(mnt_ns);
++		nsproxy->mnt_ns = mnt_ns;
++		get_net(net_ns);
++		nsproxy->net_ns = net_ns;
 +
-+	/*
-+	 * for checkpoint in process context (from within a container),
-+	 * the actual syscall is taking place at this very moment; so
-+	 * we (optimistically) subtitute the future return value (0) of
-+	 * this syscall into the orig_eax, so that upon restart it will
-+	 * succeed (or it will endlessly retry checkpoint...)
-+	 */
-+	if (t == current) {
-+		BUG_ON(h->orig_ax < 0);
-+		h->ax = 0;
++		get_pid_ns(current->nsproxy->pid_ns);
++		nsproxy->pid_ns = current->nsproxy->pid_ns;
 +	}
++ out:
++	if (ret < 0)
++		nsproxy = ERR_PTR(ret);
++	ckpt_hdr_put(ctx, h);
++	return (void *) nsproxy;
 +}
 +
-+int load_cpu_regs(struct ckpt_hdr_cpu *h, struct task_struct *t)
++static int obj_ns_grab(void *ptr)
 +{
-+	struct thread_struct *thread = &t->thread;
-+	struct pt_regs *regs = task_pt_regs(t);
-+
-+	if (h->cs == CKPT_X86_SEG_NULL)
-+		return -EINVAL;
-+	if (!check_segment(h->cs) || !check_segment(h->ds) ||
-+	    !check_segment(h->es) || !check_segment(h->ss) ||
-+	    !check_segment(h->fsindex) || !check_segment(h->gsindex))
-+		return -EINVAL;
-+
-+	regs->r15 = h->r15;
-+	regs->r14 = h->r14;
-+	regs->r13 = h->r13;
-+	regs->r12 = h->r12;
-+	regs->r11 = h->r11;
-+	regs->r10 = h->r10;
-+	regs->r9 = h->r9;
-+	regs->r8 = h->r8;
-+
-+	regs->bp = h->bp;
-+	regs->bx = h->bx;
-+	regs->ax = h->ax;
-+	regs->cx = h->cx;
-+	regs->dx = h->dx;
-+	regs->si = h->si;
-+	regs->di = h->di;
-+	regs->orig_ax = h->orig_ax;
-+	regs->ip = h->ip;
-+
-+	regs->sp = h->sp;
-+	thread->usersp = h->sp;
-+
-+	preempt_disable();
-+
-+	regs->cs = decode_segment(h->cs);
-+	regs->ss = decode_segment(h->ss);
-+	thread->ds = decode_segment(h->ds);
-+	thread->es = decode_segment(h->es);
-+	thread->fsindex = decode_segment(h->fsindex);
-+	thread->gsindex = decode_segment(h->gsindex);
-+
-+	thread->fs = h->fs;
-+	thread->gs = h->gs;
-+
-+	/* XXX - unsure is this really needed ... */
-+	loadsegment(fs, thread->fsindex);
-+	if (thread->fs)
-+		wrmsrl(MSR_FS_BASE, thread->fs);
-+	load_gs_index(thread->gsindex);
-+	/*
-+	 * when we switch to user-space, the MSR_KERNEL_GS_BASE
-+	 * will be moved back to MSR_GS_BASE.
-+	 * http://lists.openwall.net/linux-kernel/2008/11/18/340
-+	 */
-+	if (thread->gs)
-+		wrmsrl(MSR_KERNEL_GS_BASE, thread->gs);
-+
-+	preempt_enable();
-+
++	get_nsproxy((struct nsproxy *) ptr);
 +	return 0;
 +}
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 216681e..c2ece28 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -699,6 +699,13 @@ END(\label)
- 	PTREGSCALL stub_sigaltstack, sys_sigaltstack, %rdx
- 	PTREGSCALL stub_iopl, sys_iopl, %rsi
- 	PTREGSCALL stub_eclone, sys_eclone, %r8
++
++static void obj_ns_drop(void *ptr, int lastref)
++{
++	put_nsproxy((struct nsproxy *) ptr);
++}
++
++static int obj_ns_users(void *ptr)
++{
++	return atomic_read(&((struct nsproxy *) ptr)->count);
++}
++
++/* ns object */
++static const struct ckpt_obj_ops ckpt_obj_nsproxy_ops = {
++	.obj_name = "NSPROXY",
++	.obj_type = CKPT_OBJ_NS,
++	.ref_drop = obj_ns_drop,
++	.ref_grab = obj_ns_grab,
++	.ref_users = obj_ns_users,
++	.checkpoint = checkpoint_ns,
++	.restore = restore_ns,
++};
++
++static inline int checkpoint_register_nsproxy(void)
++{
++	return register_checkpoint_obj(&ckpt_obj_nsproxy_ops);
++}
++#endif /* CONFIG_CHECKPOINT */
++
+ static int __init nsproxy_cache_init(void)
+ {
+ 	nsproxy_cachep = KMEM_CACHE(nsproxy, SLAB_PANIC);
 +#ifdef CONFIG_CHECKPOINT
-+	PTREGSCALL stub_checkpoint, sys_checkpoint, %r8
-+	PTREGSCALL stub_restart, sys_restart, %r8
++	return checkpoint_register_nsproxy();
 +#else
-+	PTREGSCALL stub_checkpoint, sys_ni_syscall, %r8
-+	PTREGSCALL stub_restart, sys_ni_syscall, %r8
+ 	return 0;
 +#endif
+ }
  
- ENTRY(ptregscall_common)
- 	DEFAULT_FRAME 1 8	/* offset 8: return address */
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index a0189de..ecc4afb 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -90,6 +90,8 @@ enum {
- enum {
- 	CKPT_ARCH_X86_32 = 1,
- #define CKPT_ARCH_X86_32 CKPT_ARCH_X86_32
-+	CKPT_ARCH_X86_64,
-+#define CKPT_ARCH_X86_64 CKPT_ARCH_X86_64
- };
- 
- /* kernel constants */
+ module_init(nsproxy_cache_init);
 -- 
 1.6.3.3
 
