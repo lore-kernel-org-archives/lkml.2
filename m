@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757163Ab0EAXEl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 19:04:41 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:32973 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754726Ab0EAXEi convert rfc822-to-8bit (ORCPT
+	id S1757819Ab0EAXZz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 19:25:55 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33842 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755339Ab0EAXZx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 19:04:38 -0400
+	Sat, 1 May 2010 19:25:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NhxHm4PsNKXiK2bjsbzGg7QMtdl7o/SPGVzFtjR/Igr4mpqrSF6Ar0SFynfaC8kYWE
-         ZkCqVb5gnrKftWH1vEmXCGJ5ETQfIBQl8B9PjcX1oVZpBSunFsLgxMf2BXkdHolTHMFc
-         l5hqEqbH48VWcTFNK4Fy8AkKHNmEvg8P4Ndug=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=kUMJ4BmtkXpHGI7haQD2UP80+2JH7oZh8HN0ZQKAtvgTL219T4TtpuLu79o1XLOhr1
+         q5/179Qu73OJTpUlh/HsgLb3E/Vg2wfEAu7TfpMjZ831rcD8C9orpBfn+QQXqG8hsh6C
+         zSZOPb1fhdrDv9P/Hoo7r1NhoeMn0fY0B3QQA=
 MIME-Version: 1.0
 In-Reply-To: <20100501224429.GA17693@n2100.arm.linux.org.uk>
 References: <1270681920-4461-1-git-send-email-linus.walleij@stericsson.com>
@@ -24,12 +25,13 @@ References: <1270681920-4461-1-git-send-email-linus.walleij@stericsson.com>
 	 <20100422110025.GC20008@n2100.arm.linux.org.uk>
 	 <g2qe9c3a7c21005011500l11511d43i12d971775b139c3b@mail.gmail.com>
 	 <20100501224429.GA17693@n2100.arm.linux.org.uk>
-Date: Sun, 2 May 2010 01:04:37 +0200
-Message-ID: <x2u63386a3d1005011604kaee33364l880e90a4e2453e0f@mail.gmail.com>
+Date: Sat, 1 May 2010 16:25:52 -0700
+X-Google-Sender-Auth: 71da49ad79b97688
+Message-ID: <h2ue9c3a7c21005011625u4a523dbbs5bdc6869a0bcc71@mail.gmail.com>
 Subject: Re: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
-From: Linus Walleij <linus.ml.walleij@gmail.com>
+From: Dan Williams <dan.j.williams@intel.com>
 To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dan Williams <dan.j.williams@intel.com>,
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
        Linus WALLEIJ <linus.walleij@stericsson.com>,
        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
        Grant Likely <grant.likely@secretlab.ca>,
@@ -44,32 +46,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/2 Russell King - ARM Linux <linux@arm.linux.org.uk>:
-
+On Sat, May 1, 2010 at 3:44 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sat, May 01, 2010 at 03:00:09PM -0700, Dan Williams wrote:
+>> Just to clarify are you nak'ing these patches for upstream inclusion
+>> until this testing occurs?  Or do we just need a !ARCH_VERSATILE
+>> somewhere to allow any incompatibilities to be worked out later
+>> in-tree?
+>
+> What I don't want to do is to get into the situation where we throw
+> this patchset into the kernel and then find that we have to invent a
+> whole new implementation in the various primecell drivers to support
+> the Versatile hardware.
+>
 > Versatile has some MUXing on three of the DMA signals, so (eg) we
 > really don't want UARTs claiming DMAs just because they're in existence
 > and not in use - that would prevent DMAs from being used for (eg) AACI
 > or MMC.
+>
+> The alternative is that we could just take the attitude that Versatile/
+> Realview will never have DMA support implemented, but that seems rather
+> silly, as they've tended to be the first platforms I get new CPU
+> architectures for.  (This is why DMA coherency stuff on new architectures
+> tends to be left for others to do...)
 
-As long as Versatile doesn't specify any filter function or
-data for the channel allocation function (it currently doesn't and defaults
-to NULL) it won't even try to call the DMA engine to allocate a channel
-for say the UART.
+Ok, it will be good to have this approach vetted on a challenging
+arch.  We'll see where things stand when the merge window opens.
 
-There is nothing blocking some other peripheral from grabbing a
-muxed channel in that case.
-
-But the implementation of the DMA engine would be better of
-handling the muxing dynamically I believe, so when the PL011
-driver (say) requests a DMA channel, it doesn't mean it requests the
-*physical* channel and holds it (unless the driver is very naïvely
-implemented) it nominally means it reserves a placeholder in the
-DMA engine.
-
-When the driver issues a request to perform a DMA transfer, it will pull
-out a physical channel and use that, then return it. If there is too
-much combat about the physical channels, you configure out DMA
-for the least wanted PrimeCells.
-
-Yours,
-Linus Walleij
+--
+Dan
