@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab0EBRgH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 13:36:07 -0400
-Received: from p01c12o141.mxlogic.net ([208.65.145.64]:48961 "EHLO
-	p01c12o141.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732Ab0EBRgB convert rfc822-to-8bit (ORCPT
+	id S1758225Ab0EBRip (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 13:38:45 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:36208 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754732Ab0EBRin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 13:36:01 -0400
-X-MXL-Hash: 4bddb8015a792b29-89c3faba663cf935a11b369eb0d858efd8a26d7c
-X-MXL-Hash: 4bddb7fe39d7683c-3eca7ffdfbbc8b9510f1cabae83f613b38f43776
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg KH <greg@kroah.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-       "ss@aao.gov.au" <ss@aao.gov.au>
-Date: Sun, 2 May 2010 12:35:51 -0500
-Subject: RE: [PATCH] Staging: dt3155: Cleanup memory mapped i/o access
-Thread-Topic: [PATCH] Staging: dt3155: Cleanup memory mapped i/o access
-Thread-Index: AcrpTXSDAe6CiT+tQ1qgv9uArHaulwA0BGkg
-Message-ID: <0D753D10438DA54287A00B0270842697636E9B9B08@AUSP01VMBX24.collaborationhost.net>
-References: <0D753D10438DA54287A00B0270842697636DAFCD14@AUSP01VMBX24.collaborationhost.net>
- <20100430215645.GA12409@kroah.com>
-In-Reply-To: <20100430215645.GA12409@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 2 May 2010 13:38:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=asieCBpnTzQtJQcfnwClkcVyb9OqqNDaDfw6TEiuxuBjkf4CrSvFMshmJNYUx1vl6n
+         cDUpLnU4yVKl0qVs5fMUC0IN1dtzj6DJV3hXWOGiiIo8Q7kC4y690o8WrlHBupaH7eiK
+         Z1W2wBX/geXCje/bFGMlKBrOAON2Bp4tX9mZY=
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010043001)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.178]
-X-AnalysisOut: [v=1.0 c=1 a=JOBpZgLcNDIA:10 a=VphdPIyG4kEA:10 a=kj9zAlcOel]
-X-AnalysisOut: [0A:10 a=N0rcUYRaQg3G+2kUXxmxxA==:17 a=i00gxMtYAAAA:8 a=Dx-]
-X-AnalysisOut: [d76IhDorM3sAMhNIA:9 a=3ASGjPp2_wtgu0PsMBCzI0o86nUA:4 a=Cju]
-X-AnalysisOut: [IK1q_8ugA:10 a=x1WnkoZAwusA:10 a=0kPLrQdw3YYA:10]
+In-Reply-To: <1272812038-32484-2-git-send-email-avi@redhat.com>
+References: <1272812038-32484-1-git-send-email-avi@redhat.com>
+	 <1272812038-32484-2-git-send-email-avi@redhat.com>
+Date: Sun, 2 May 2010 13:38:41 -0400
+Message-ID: <u2p73c1f2161005021038gce35c1bbpca6ec119d24e646e@mail.gmail.com>
+Subject: Re: [PATCH 1/2] x86: eliminate TS_XSAVE
+From: Brian Gerst <brgerst@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Dexuan Cui <dexuan.cui@intel.com>, Sheng Yang <sheng@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 30, 2010 2:57 PM, Greg KH wrote:
-> On Wed, Apr 28, 2010 at 12:23:09PM -0500, H Hartley Sweeten wrote:
->> The macros ReadMReg and WriteMReg are really just private versions of
->> the kernel's readl and writel functions.  Use the kernel's functions
->> instead.  And since ioremap returns a (void __iomem *) not a (u8 *),
->> change all the uses of dt3155_lbase to reflect this.
->> 
->> While here, make dt3155_lbase static since it is only used in the
->> dt3155_drv.c file.  Also, remove the global variable dt3155_bbase
->> since it is not used anywhere in the code.
->> 
->> Where is makes sense, create a local 'mmio' variable instead of using
->> dt3155_lbase[minor] to make the code more readable.
->> 
->> This change also affects the {Read|Write}I2C functions so they are
->> also modified as needed.
->> 
->> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
->> Cc: Greg Kroah-Hartman <gregkh@suse.de>
->> Cc: Scott Smedley <ss@aao.gov.au>
->> 
->> --- a/drivers/staging/dt3155/dt3155_drv.c
+On Sun, May 2, 2010 at 10:53 AM, Avi Kivity <avi@redhat.com> wrote:
+> The fpu code currently uses current->thread_info->status & TS_XSAVE as
+> a way to distinguish between XSAVE capable processors and older processors.
+> The decision is not really task specific; instead we use the task status to
+> avoid a global memory reference - the value should be the same across all
+> threads.
 >
-> This doesn't apply at all against the latest linux-next tree.  Care to
-> redo it and resend it (not in base64 please.)
+> Eliminate this tie-in into the task structure by using an alternative
+> instruction keyed off the XSAVE cpu feature; this results in shorter and
+> faster code, without introducing a global memory reference.
 
-Hmm... Strange, I just rechecked the patch against next-20100430.  It
-applied with no issues.
+I think you should either just use cpu_has_xsave, or extend this use
+of alternatives to all cpu features.  It doesn't make sense to only do
+it for xsave.
 
-I'll resend in just a bit.  Hopefully this is just a mail issue.
-
-> thanks,
->
-> greg k-h
-
-Regards,
-Hartley
+--
+Brian Gerst
