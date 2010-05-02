@@ -1,134 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab0EBO7P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 10:59:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55399 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056Ab0EBO7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 10:59:14 -0400
-Subject: Re: [PATCH 1/3 ] SCSI: Support HW reset for EH and polling scheme
- for scsi device
-From: James Bottomley <James.Bottomley@suse.de>
-To: nick.cheng@areca.com.tw
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <D4960FDBD0714FA69F9D9D77831E95FB@areca4e4f859d4>
-References: <D4960FDBD0714FA69F9D9D77831E95FB@areca4e4f859d4>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 02 May 2010 10:59:05 -0400
-Message-ID: <1272812345.23834.15.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1756169Ab0EBPHS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 11:07:18 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20752 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008Ab0EBPHP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 May 2010 11:07:15 -0400
+MIME-Version: 1.0
+Message-ID: <47d6b5d9-beb5-4e49-9910-064d6f7b13e5@default>
+Date: Sun, 2 May 2010 08:05:29 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+       Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, hugh.dickins@tiscali.co.uk, ngupta@vflare.org,
+       JBeulich@novell.com, chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <4BD3377E.6010303@redhat.com>
+ <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>
+ <ce808441-fae6-4a33-8335-f7702740097a@default> <20100428055538.GA1730@ucw.cz>
+ <1272591924.23895.807.camel@nimitz> <4BDA8324.7090409@redhat.com>
+ <084f72bf-21fd-4721-8844-9d10cccef316@default> <4BDB026E.1030605@redhat.com>
+ <4BDB18CE.2090608@goop.org4BDB2069.4000507@redhat.com>
+ <3a62a058-7976-48d7-acd2-8c6a8312f10f@default 20100502071059.GF1790@ucw.cz>
+In-Reply-To: <20100502071059.GF1790@ucw.cz>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090202.4BDD9503.00DC:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-15 at 13:56 +0800, Nick Cheng wrote:
-> 1. To support instantaneous report for SCSI device existing by periodic
-> polling
-> 2. In arcmsr_iop_xfer(), inform AP of F/W's deadlock state to prevent
-> endless waiting
-> 3. To block the coming SCSI command while the driver is handling bus reset
-> 4. To support HW reset in bus reset error handler
-> Signed-off-by: Nick Cheng< nick.cheng@areca.com.tw >
+> > So there are two users of frontswap for which the synchronous
+> > interface makes sense.  I believe there may be more in the
+> > future and you disagree but, as Jeremy said, "a general Linux
+> > principle is not to overdesign interfaces for hypothetical users,
+> > only for real needs."  We have demonstrated there is a need
+> > with at least two users so the debate is only whether the
+> > number of users is two or more than two.
+> >
+> > Frontswap is a very non-invasive patch and is very cleanly
+> > layered so that if it is not in the presence of either of
+> > the intended "users", it can be turned off in many different
+> > ways with zero overhead (CONFIG'ed off) or extremely small overhead
+> > (frontswap_ops is never set; or frontswap_ops is set but the
+> > underlying hypervisor doesn't support it so frontswap_poolid
+> > never gets set).
+> 
+> Yet there are less invasive solutions available, like 'add trim
+> operation to swap_ops'.
 
-This is reverting essential build fixes (and other deprecation fixes)
-like this:
+As Nitin pointed out much earlier in this thread:
 
+"No: trim or discard is not useful"
 
-> @@ -96,14 +103,18 @@ static u32 arcmsr_disable_outbound_ints(struct AdapterControlBlock *acb);
->  static void arcmsr_stop_adapter_bgrb(struct AdapterControlBlock *acb);
->  static void arcmsr_flush_hba_cache(struct AdapterControlBlock *acb);
->  static void arcmsr_flush_hbb_cache(struct AdapterControlBlock *acb);
-> +static void arcmsr_request_device_map(unsigned long pacb);
-> +static void arcmsr_request_hba_device_map(struct AdapterControlBlock *acb);
-> +static void arcmsr_request_hbb_device_map(struct AdapterControlBlock *acb);
-> +static void arcmsr_message_isr_bh_fn(struct work_struct *work);
-> +static void *arcmsr_get_firmware_spec(struct AdapterControlBlock *acb, int mode);
-> +static void arcmsr_start_adapter_bgrb(struct AdapterControlBlock *acb);
-> +
->  static const char *arcmsr_info(struct Scsi_Host *);
->  static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb);
->  static int arcmsr_adjust_disk_queue_depth(struct scsi_device *sdev,
-> -					  int queue_depth, int reason)
-> +								int queue_depth)
+I also think that trim does not do anything for the widely
+varying dynamically changing size that frontswap provides.
+ 
+> So what needs to be said here is 'frontswap is XX times faster than
+> swap_ops based solution on workload YY'.
 
-The indentation is bad, but removing one of the arguments causes this compile warning:
-
-drivers/scsi/arcmsr/arcmsr_hba.c:133: warning: initialization from incompatible pointer type
-
-Which is right, this function is supposed to have three arguments.
-
-
-
-> @@ -66,6 +66,17 @@ struct device_attribute;
->  #define ARC_SUCCESS
-> 0
->  #define ARC_FAILURE
-> 1
->  /*
-> +**********************************************************************************
-> +**
-> +**********************************************************************************
-> +*/
-> +#ifndef TRUE
-> +#define TRUE 1
-> +#endif
-> +#ifndef FALSE
-> +#define FALSE 0
-> +#endif
-
-This one's a no-no ... we've been trying to get rid of the 10 million
-different TRUE/FALSE defines.  The gcc compiler for the kernel supports
-the bool type and the true/false keywords, use them instead.  Oh, and
-all the
-
-> +		if (acb->fw_state == FALSE) {
-> +			pcmdmessagefld->cmdmessage.ReturnCode =
-
-Is much better written
-
-	if (!acb->fw_state)
-
-
-> @@ -397,9 +478,9 @@ static int arcmsr_probe(struct pci_dev *
->         acb = (struct AdapterControlBlock *)host->hostdata;
->         memset(acb, 0, sizeof (struct AdapterControlBlock));
->  
-> -       error = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
-> +       error = pci_set_dma_mask(pdev, DMA_64BIT_MASK);
->         if (error) {
-> -               error = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
-> +               error = pci_set_dma_mask(pdev, DMA_32BIT_MASK);
->                 if (error) {
->                         printk(KERN_WARNING
->                                "scsi%d: No suitable DMA mask available
-> \n",
-> @@ -432,17 +513,17 @@ static int arcmsr_probe(struct pci_dev *
-
-This is again reverting a necessary change.  With this in place the
-compile now spits warnings about DMA_nnBIT_MASK being deprecated.
-
-
-> iff -Naurp --ignore-blank-lines --ignore-all-space
-> --ignore-space-change linux-2.6/drivers/scsi/arcmsr/Makefile
-> linux-2.6/drivers/scsi/arcmsr.1.20.00.15-81103/Makefile
-> --- linux-2.6/drivers/scsi/arcmsr/Makefile      2010-04-14
-> 19:15:11.000000000 +0800
-> +++
-> linux-2.6/drivers/scsi/arcmsr.1.20.00.15-81103/Makefile     1970-01-01
-> 08:00:00.000000000 +0800
-> @@ -1,6 +0,0 @@
-> -# File: drivers/arcmsr/Makefile
-> -# Makefile for the ARECA PCI-X PCI-EXPRESS SATA RAID controllers SCSI
-> driver.
-> -
-> -arcmsr-objs := arcmsr_attr.o arcmsr_hba.o
-> -
-> -obj-$(CONFIG_SCSI_ARCMSR) := arcmsr.o
-
-So if you take away the Makefile, this doesn't even build.
-
-James
-
+Are you asking me to demonstrate that swap-to-hypervisor-RAM is
+faster than swap-to-disk?
 
