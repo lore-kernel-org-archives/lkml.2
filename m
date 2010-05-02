@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758249Ab0EBRkr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 13:40:47 -0400
-Received: from mail-iw0-f202.google.com ([209.85.223.202]:34001 "EHLO
-	mail-iw0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758076Ab0EBRkp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 13:40:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=H6uovyVW8vGI7h6y3dOo8B6sRknOquRgiJixawGkMZ/BbEpTMyOhOomV0S9sni0YpF
-         SGvXtqCfwCtU76p6MbYT10yxYm/UZHF+q6a/gG8VjErXlx0V1ogzqDMw3dRXh/OpoSZX
-         lmo1WlMPLk4OpCioeDFYYqQWyGiiYA+e6/t0M=
+	id S1758285Ab0EBRpM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 13:45:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20254 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758183Ab0EBRpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 May 2010 13:45:10 -0400
+Message-ID: <4BDDBA18.3080909@redhat.com>
+Date: Sun, 02 May 2010 20:44:56 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100429162120.GC22108@random.random>
-References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie>
-	 <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
-	 <20100429162120.GC22108@random.random>
-Date: Mon, 3 May 2010 02:40:44 +0900
-Message-ID: <m2j28c262361005021040q118934b8j1f2f0146c9217a0f@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages() 
-	and rmap_walk() during migration by not migrating temporary stacks
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Brian Gerst <brgerst@gmail.com>
+CC: Dexuan Cui <dexuan.cui@intel.com>, Sheng Yang <sheng@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86: eliminate TS_XSAVE
+References: <1272812038-32484-1-git-send-email-avi@redhat.com>	 <1272812038-32484-2-git-send-email-avi@redhat.com> <u2p73c1f2161005021038gce35c1bbpca6ec119d24e646e@mail.gmail.com>
+In-Reply-To: <u2p73c1f2161005021038gce35c1bbpca6ec119d24e646e@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 30, 2010 at 1:21 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> Hi Mel,
->
-> did you see my proposed fix? I'm running with it applied, I'd be
-> interested if you can test it. Surely it will also work for new
-> anon-vma code in upstream, because at that point there's just 1
-> anon-vma and nothing else attached to the vma.
->
-> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commit;h=6efa1dfa5152ef8d7f26beb188d6877525a9dd03
->
-> I think it's wrong to try to handle the race in rmap walk by making
-> magic checks on vm_flags VM_GROWSDOWN|GROWSUP and
-> vma->vm_mm->map_count == 1, when we can fix it fully and simply in
-> exec.c by indexing two vmas in the same anon-vma with a different
-> vm_start so the pages will be found at all times by the rmap_walk.
->
+On 05/02/2010 08:38 PM, Brian Gerst wrote:
+> On Sun, May 2, 2010 at 10:53 AM, Avi Kivity<avi@redhat.com>  wrote:
+>    
+>> The fpu code currently uses current->thread_info->status&  TS_XSAVE as
+>> a way to distinguish between XSAVE capable processors and older processors.
+>> The decision is not really task specific; instead we use the task status to
+>> avoid a global memory reference - the value should be the same across all
+>> threads.
+>>
+>> Eliminate this tie-in into the task structure by using an alternative
+>> instruction keyed off the XSAVE cpu feature; this results in shorter and
+>> faster code, without introducing a global memory reference.
+>>      
+> I think you should either just use cpu_has_xsave, or extend this use
+> of alternatives to all cpu features.  It doesn't make sense to only do
+> it for xsave.
+>    
 
-I like this approach than exclude temporal stack while migration.
+I was trying to avoid a performance regression relative to the current 
+code, as it appears that some care was taken to avoid the memory reference.
 
-If we look it through viewpoint of performance, Mel and Kame's one
-look good and simple. But If I look it through viewpoint of
-correctness, Andrea's one looks good.
-I mean Mel's approach is that problem is here but let us solve it with
-there. it makes dependency between here and there. And In future, if
-temporal stack and rmap code might be problem, we also should solve it
-in there. :)
-
-So I support this one.
+I agree that it's probably negligible compared to the save/restore 
+code.  If the x86 maintainers agree as well, I'll replace it with 
+cpu_has_xsave.
 
 -- 
-Kind regards,
-Minchan Kim
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
