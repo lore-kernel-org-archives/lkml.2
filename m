@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab0EBNz4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 09:55:56 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:50660 "EHLO
+	id S1756968Ab0EBNz6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 09:55:58 -0400
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:50653 "EHLO
 	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756175Ab0EBNzZ (ORCPT
+	with ESMTP id S1756165Ab0EBNzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 May 2010 09:55:25 -0400
 From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
@@ -13,10 +13,11 @@ Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
        h.mitake@gmail.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Paul Mackerras <paulus@samba.org>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 4/4][RFC] perf bench: implement parallel oriented benchmarking
-Date: Sun,  2 May 2010 22:55:19 +0900
-Message-Id: <1272808519-4743-5-git-send-email-mitake@dcl.info.waseda.ac.jp>
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3/4][RFC] perf bench: fix "sched" subsystem to adopt new style of perf bench
+Date: Sun,  2 May 2010 22:55:18 +0900
+Message-Id: <1272808519-4743-4-git-send-email-mitake@dcl.info.waseda.ac.jp>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1272808519-4743-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
 References: <1272808519-4743-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
@@ -24,469 +25,871 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements structure for parallel oriented benchmarking in perf bench.
-Now perf bench receives the option -p or --parallel.
-These are used for specifying number of parallelism of benchmark.
+This patch adopts "sched" subsystem to new structure of perf bench.
 
-Important point is that every programmer who writes each benchmark programs
-don't have to care about parallelism.
-If benchmark program was written in the guide line of perf bench,
-benchmarks will be able to parallel execution ready.
+This containts a big change of "messaging" suite.
+Previous messaging was based on Rusty Russell's hackbench,
+and that contained groups of processes or threads.
 
-Of course, benchmark programs can care about parallelism.
-For example, sched messaging and sched pipe create
-their own threads or processes.
+Now perf bench provides parallel oriented framework,
+so the concept of groups was reduced from messaging.
+In other words, new messaging suite only cares about one group,
+and perf bench creates and controls each groups.
 
-=== How to implement a suite of perf bench ===
-
-Each benchmarks have to implement these functions.
-
- void *(*parse_arg)(int argc, const char **argv, const char *prefix);
- void (*prepare)(struct bench_ctx *);
- void (*bench)(struct bench_ctx *);
- void (*clean)(struct bench_ctx *);
-
-1) parse_arg()
-   argc, argv, prefix will be passed to this function.
-   And this function should allocate and return memory for storing parameters.
-   Returned pointer will be assigned to void *param of struct bench_ctx.
-   *param will be shared between each instance of benchmark thread/process.
-   So it should be treated as read only object.
-
-1) prepare()
-   This function should prepare memory for each instance of benchmark
-   thread/process from bench_ctx->param and return it.
-   Returned pointer will be assigned to void *priv of struct bench_ctx.
-   *priv will not be shared between each instance of benchmark thread/process.
-   This can be destroyed by each thread/process.
-
-2) benchmark()
-   Do benchmark.
-
-3) clean()
-   Clean up resources used in benchmarking.
-   This function will be called only in thread mode.
-   Because if perf bench is executed with process mode,
-   each instance of benchmarking will be exit(),
-   so cleaning will not be required.
-
-And these functions should be registered in bench/<subsystem name>.h
-like this form:
-
-BENCH("<name>", "<easy description>",
-      <parse_arg()>, <prepare()>, <bench()>, <clean()>)
-
-The headers will be included by bench/bench.h and builtin-bench.c
-for prototypes and structures.
-
-ATTENTION: 
-* BENCH_END() has style problem with checkpatch.pl like this:
-ERROR: Macros with multiple statements should be enclosed in a do - while loop
-#170: FILE: tools/perf/builtin-bench.c:44:
-+#define BENCH(n, s, pa, pr, b, c) {n, s, pa, pr, b, c},
-
-ERROR: Macros with complex values should be enclosed in parenthesis
-#172: FILE: tools/perf/builtin-bench.c:46:
-+#define BENCH_END() ALL, { NULL, NULL, NULL, NULL, NULL, NULL }
-
-But I think these are not fatal.
-If you think this is a fatal problem, please tell me,
-I'd like to seek another way.
+And "pipe" suite changed too.
+But this change is little and trivial compared with change of messaging.
 
 Example of usage:
-| % ./perf bench -p 2 all     # do every benchmarks with 2 groups
-| # Running sched/messaging benchmark with 2 parallelism ...
-|      Total time: 0.066 [sec]
-| # Running sched/pipe benchmark with 2 parallelism ...
-|      Total time: 11.429 [sec]
-| # Running mem/memcpy benchmark with 2 parallelism ...
-|      Total time: 0.002 [sec]
+
+| % ./perf bench sched messaging                # default messaging benchmark
+| # Running sched/messaging benchmark with 1 parallelism ...
+|      Total time: 0.037 [sec]
+| % ./perf bench -p 10 sched messaging          # 10 groups
+| # Running sched/messaging benchmark with 10 parallelism ...
+|      Total time: 0.357 [sec]
+| % ./perf bench -p 10 sched messaging -l 1000  # 10 groups, 1000 loops
+| # Running sched/messaging benchmark with 10 parallelism ...
+|      Total time: 3.435 [sec]
+
+| % ./perf bench sched pipe                     # default pipe benchmark
+| # Running sched/pipe benchmark with 1 parallelism ...
+|      Total time: 5.655 [sec]
+| % ./perf bench -p 4 sched pipe -l 100000      # 4 groups, 100000 loops
+| # Running sched/pipe benchmark with 4 parallelism ...
+|      Total time: 2.284 [sec]
 
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 ---
- tools/perf/Makefile        |    5 +
- tools/perf/bench/bench.h   |   32 ++++++
- tools/perf/builtin-bench.c |  227 +++++++++++++++++++++++++++++++++-----------
- 3 files changed, 209 insertions(+), 55 deletions(-)
+ tools/perf/bench/sched-messaging.c |  553 ++++++++++++++++++++----------------
+ tools/perf/bench/sched-pipe.c      |  146 +++++-----
+ tools/perf/bench/sched.h           |    8 +
+ 3 files changed, 383 insertions(+), 324 deletions(-)
+ create mode 100644 tools/perf/bench/sched.h
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 3ac6b67..1980d7f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -415,6 +415,10 @@ LIB_H += util/trace-event.h
- LIB_H += util/probe-finder.h
- LIB_H += util/probe-event.h
- LIB_H += util/cpumap.h
-+LIB_H += bench/bench.h
-+LIB_H += bench/sample.h
-+LIB_H += bench/sched.h
-+LIB_H += bench/mem.h
+diff --git a/tools/perf/bench/sched-messaging.c b/tools/perf/bench/sched-messaging.c
+index da1b2e9..029e346 100644
+--- a/tools/perf/bench/sched-messaging.c
++++ b/tools/perf/bench/sched-messaging.c
+@@ -12,10 +12,10 @@
+ #include "../perf.h"
+ #include "../util/util.h"
+ #include "../util/parse-options.h"
++#include "../util/header.h"
+ #include "../builtin.h"
+ #include "bench.h"
  
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -471,6 +475,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
- BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
- BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
-+BUILTIN_OBJS += $(OUTPUT)bench/sample-sample.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
- BUILTIN_OBJS += $(OUTPUT)builtin-help.o
-diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
-index f7781c6..5ccf137 100644
---- a/tools/perf/bench/bench.h
-+++ b/tools/perf/bench/bench.h
-@@ -1,6 +1,9 @@
- #ifndef BENCH_H
- #define BENCH_H
- 
-+#include <unistd.h>
-+#include <pthread.h>
-+
- extern int bench_sched_messaging(int argc, const char **argv, const char *prefix);
- extern int bench_sched_pipe(int argc, const char **argv, const char *prefix);
- extern int bench_mem_memcpy(int argc, const char **argv, const char *prefix __used);
-@@ -14,4 +17,33 @@ extern int bench_mem_memcpy(int argc, const char **argv, const char *prefix __us
- 
- extern int bench_format;
- 
-+struct bench_ctx {
-+	int argc;
-+	const char **argv;
-+	const char *prefix;
-+
-+	void (*prepare)(struct bench_ctx *);
-+	void (*bench)(struct bench_ctx *);
-+	void (*clean)(struct bench_ctx *);
-+
-+	pthread_t pt;
-+	pid_t pid;
-+
-+	int readyfd, wakefd;
-+	void *param;		/* shared */
-+	void *priv;		/* not shared */
-+};
-+
-+#define BENCH(n, s, parse, prepare, bench, clean)			\
-+	void *parse(int argc, const char **argv, const char *prefix);	\
-+	void prepare(struct bench_ctx *ctx);				\
-+	void bench(struct bench_ctx *ctx);				\
-+	void clean(struct bench_ctx *ctx);				\
-+
-+#include "sample.h"
-+#include "sched.h"
-+#include "mem.h"
-+
-+#undef BENCH
-+
- #endif
-diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-index 4699677..29d39e6 100644
---- a/tools/perf/builtin-bench.c
-+++ b/tools/perf/builtin-bench.c
-@@ -26,48 +26,55 @@
+-/* Test groups of 20 processes spraying to 20 receivers */
+ #include <pthread.h>
+ #include <stdio.h>
  #include <stdlib.h>
- #include <string.h>
+@@ -29,310 +29,365 @@
+ #include <sys/poll.h>
+ #include <limits.h>
  
-+struct bench_subsys {
-+	const char *name;
-+	const char *summary;
-+	struct bench_suite *suites;
+-#define DATASIZE 100
+-
+-static bool use_pipes = false;
+-static unsigned int loops = 100;
+-static bool thread_mode = false;
+-static unsigned int num_groups = 10;
++struct messaging_param {
++	bool use_pipes;
++	unsigned int loops;
++	bool thread_mode;
++	unsigned int pairs;	/* pairs per one group */
++	unsigned int data_size;
 +};
-+
- struct bench_suite {
- 	const char *name;
- 	const char *summary;
--	int (*fn)(int, const char **, const char *);
-+	void *(*parse_arg)(int argc, const char **argv, const char *prefix);
-+	void (*prepare)(struct bench_ctx *);
-+	void (*bench)(struct bench_ctx *);
-+	void (*clean)(struct bench_ctx *);
- };
--						\
--/* sentinel: easy for help */
--#define suite_all { "all", "test all suite (pseudo suite)", NULL }
-+
-+#define BENCH(n, s, pa, pr, b, c) {n, s, pa, pr, b, c},
-+#define ALL { "all", "test all suite (pseudo suite)", NULL, NULL, NULL, NULL }
-+#define BENCH_END() ALL, { NULL, NULL, NULL, NULL, NULL, NULL }
-+
-+#ifdef BUILD_SAMPLE		/* if you need, turn it on manually */
-+static struct bench_suite sample_suites[] = {
-+#include "bench/sample.h"
-+	BENCH_END()
-+};
-+#endif
  
- static struct bench_suite sched_suites[] = {
--	{ "messaging",
--	  "Benchmark for scheduler and IPC mechanisms",
--	  bench_sched_messaging },
--	{ "pipe",
--	  "Flood of communication over pipe() between two processes",
--	  bench_sched_pipe      },
--	suite_all,
--	{ NULL,
--	  NULL,
--	  NULL                  }
-+#include "bench/sched.h"
-+	BENCH_END()
+ struct sender_context {
+-	unsigned int num_fds;
+-	int ready_out;
+-	int wakefd;
+-	int out_fds[0];
++	int readyfd, wakefd;
++	pthread_t thid;
++
++	int *sendfds;
++	unsigned int loops;
++	int data_size;
++	char *data;
++
++	void *param;
  };
  
- static struct bench_suite mem_suites[] = {
--	{ "memcpy",
--	  "Simple memory copy in various ways",
--	  bench_mem_memcpy },
--	suite_all,
--	{ NULL,
--	  NULL,
--	  NULL             }
-+#include "bench/mem.h"
-+	BENCH_END()
- };
- 
--struct bench_subsys {
--	const char *name;
--	const char *summary;
--	struct bench_suite *suites;
+ struct receiver_context {
+-	unsigned int num_packets;
+-	int in_fds[2];
+-	int ready_out;
+-	int wakefd;
 -};
-+#undef BENCH
++	int readyfd, wakefd;
++	pthread_t thid;
  
- static struct bench_subsys subsystems[] = {
-+#ifdef BUILD_SAMPLE
-+	{ "sample",
-+	  "sample implementation of perf bench",
-+	  sample_suites
-+	},
-+#endif
- 	{ "sched",
- 	  "scheduler and IPC mechanism",
--	  sched_suites },
-+	  sched_suites
-+	},
- 	{ "mem",
- 	  "memory access performance",
- 	  mem_suites },
-@@ -98,9 +105,16 @@ static void dump_suites(int subsys_index)
- static char *bench_format_str;
- int bench_format = BENCH_FORMAT_DEFAULT;
+-static void barf(const char *msg)
+-{
+-	fprintf(stderr, "%s (error: %s)\n", msg, strerror(errno));
+-	exit(1);
+-}
++	int readfd;
++	unsigned int loops;
++	int data_size;
++	char *data;
  
-+static int thread_mode;		/* default is process mode */
-+static int parallel = 1;
+-static void fdpair(int fds[2])
+-{
+-	if (use_pipes) {
+-		if (pipe(fds) == 0)
+-			return;
+-	} else {
+-		if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == 0)
+-			return;
+-	}
++	void *param;
++};
+ 
+-	barf(use_pipes ? "pipe()" : "socketpair()");
+-}
++struct messaging_context {
++	int readyfd, wakefd;
 +
- static const struct option bench_options[] = {
- 	OPT_STRING('f', "format", &bench_format_str, "default",
- 		    "Specify format style"),
-+	OPT_BOOLEAN('t', "thread", &thread_mode,
-+		    "Be multi thread instead of multi process"),
-+	OPT_INTEGER('p', "parallel", &parallel,
-+		    "Number of processes (or threads)"),
- 	OPT_END()
- };
++	struct sender_context **sarray;
++	struct receiver_context **rarray;
++};
  
-@@ -139,38 +153,144 @@ static int bench_str2int(char *str)
- 	return BENCH_FORMAT_UNKNOWN;
+ /* Block until we're ready to go */
+-static void ready(int ready_out, int wakefd)
++static void ready(int readyfd, int wakefd)
+ {
+ 	char dummy;
+ 	struct pollfd pollfd = { .fd = wakefd, .events = POLLIN };
+ 
+ 	/* Tell them we're ready. */
+-	if (write(ready_out, &dummy, 1) != 1)
+-		barf("CLIENT: ready write");
++	if (write(readyfd, &dummy, 1) != 1)
++		die("write() failed\n");
+ 
+ 	/* Wait for "GO" signal */
+ 	if (poll(&pollfd, 1, -1) != 1)
+-		barf("poll");
++		die("poll() failed\n");
  }
  
--static void all_suite(struct bench_subsys *subsys)	  /* FROM HERE */
-+static void *worker(void *arg)
+-/* Sender sprays loops messages down each file descriptor */
+-static void *sender(struct sender_context *ctx)
++static void *receiver(void *arg)
  {
--	int i;
--	const char *argv[2];
--	struct bench_suite *suites = subsys->suites;
-+	int dummy = 0;
-+	struct bench_ctx *ctx = arg;
-+	struct pollfd pollfd = { .fd = ctx->wakefd, .events = POLLIN };
+-	char data[DATASIZE];
+-	unsigned int i, j;
+-
+-	ready(ctx->ready_out, ctx->wakefd);
+-
+-	/* Now pump to every receiver. */
+-	for (i = 0; i < loops; i++) {
+-		for (j = 0; j < ctx->num_fds; j++) {
+-			int ret, done = 0;
+-
+-again:
+-			ret = write(ctx->out_fds[j], data + done,
+-				    sizeof(data)-done);
+-			if (ret < 0)
+-				barf("SENDER: write");
+-			done += ret;
+-			if (done < DATASIZE)
+-				goto again;
++	int rtotal, rbytes;
++	struct receiver_context *ctx = arg;
++	struct messaging_param *param = ctx->param;
 +
-+	ctx->prepare(ctx);
-+	if (write(ctx->readyfd, &dummy, 1) != 1)
-+		die("writing data to readyfd failed\n");
-+	if (poll(&pollfd, 1, -1) != 1)
-+		die("poll()ing wakefd failed\n");
++	ready(ctx->readyfd, ctx->wakefd);
 +
-+	ctx->bench(ctx);
++	rtotal = ctx->loops * param->pairs * ctx->data_size;
++loop:
++	rbytes = read(ctx->readfd, ctx->data, ctx->data_size);
++	if (rbytes < 0)
++		die("read() failed\n");
++	rtotal -= rbytes;
++	BUG_ON(rtotal < 0);
++	if (rtotal)
++		goto loop;
 +
-+	if (thread_mode)
++	if (param->thread_mode)
 +		pthread_exit(NULL);
 +	else
 +		exit(0);
-+
 +	return NULL;
 +}
 +
-+static int do_one_suite(int argc, const char **argv, const char *prefix,
-+			struct bench_subsys *subsys, struct bench_suite *suite)
++static void *sender(void *arg)
 +{
-+	int i, dummy = 0;
-+	struct bench_ctx *ctx_array;
-+	struct timeval start, stop, diff;
++	unsigned int r;
++	int wtotal, wbytes;
++	struct sender_context *ctx = arg;
++	struct messaging_param *param = ctx->param;
++
++	ready(ctx->readyfd, ctx->wakefd);
++
++	while (ctx->loops--) {
++		for (r = 0; r < param->pairs; r++) {
++			wtotal = 0;
++loop:
++			wbytes = write(ctx->sendfds[r], ctx->data + wtotal,
++				       ctx->data_size - wtotal);
++			if (wbytes < 0)
++				die("write() failed\n");
++			wtotal += wbytes;
++			if (wtotal != ctx->data_size)
++				goto loop;
+ 		}
+ 	}
+ 
++	if (param->thread_mode)
++		pthread_exit(NULL);
++	else
++		exit(0);
+ 	return NULL;
+ }
+ 
++static const char * const sched_messaging_usage[] = {
++       "perf bench sched messaging <options>",
++       NULL
++};
+ 
+-/* One receiver per fd */
+-static void *receiver(struct receiver_context* ctx)
++static void *__sched_messaging_parse(int argc, const char **argv,
++			      const char *prefix __used,
++			      struct messaging_param *param)
+ {
+-	unsigned int i;
++	const struct option options[] = {
++		OPT_BOOLEAN('p', "pipe", &param->use_pipes,
++			    "Use pipe() instead of socketpair()"),
++		OPT_BOOLEAN('t', "thread", &param->thread_mode,
++			    "Be multi thread instead of multi process"),
++		OPT_INTEGER('g', "pairs", &param->pairs,
++			    "Pairs per one group"),
++		OPT_INTEGER('l', "loop", &param->loops,
++			    "Number of loops"),
++		OPT_INTEGER('d', "datasize", &param->data_size,
++			    "Datasize per messaging"),
++		OPT_END()
++	};
+ 
+-	if (!thread_mode)
+-		close(ctx->in_fds[1]);
++	argc = parse_options(argc, argv, options,
++			     sched_messaging_usage, PARSE_OPT_KEEP_ARGV0);
+ 
+-	/* Wait for start... */
+-	ready(ctx->ready_out, ctx->wakefd);
++	return param;
++}
+ 
+-	/* Receive them all */
+-	for (i = 0; i < ctx->num_packets; i++) {
+-		char data[DATASIZE];
+-		int ret, done = 0;
++void *sched_messaging_parse(int argc, const char **argv,
++			    const char *prefix __used)
++{
++	struct messaging_param *param;
+ 
+-again:
+-		ret = read(ctx->in_fds[0], data + done, DATASIZE - done);
+-		if (ret < 0)
+-			barf("SERVER: read");
+-		done += ret;
+-		if (done < DATASIZE)
+-			goto again;
+-	}
++	param = zalloc(sizeof(struct messaging_param));
++	if (!param)
++		die("Memory allocation failed\n");
+ 
+-	return NULL;
++	/* set default parameters */
++	param->use_pipes = 0;
++	param->thread_mode = 0;
++	param->pairs = 10;
++	param->loops = 100;
++	param->data_size = 100;
++
++	return __sched_messaging_parse(argc, argv, prefix, param);
+ }
+ 
+-static pthread_t create_worker(void *ctx, void *(*func)(void *))
++void sched_messaging_prepare(struct bench_ctx *ctx)
+ {
+-	pthread_attr_t attr;
+-	pthread_t childid;
+-	int err;
+-
+-	if (!thread_mode) {
+-		/* process mode */
+-		/* Fork the receiver. */
+-		switch (fork()) {
+-		case -1:
+-			barf("fork()");
+-			break;
+-		case 0:
+-			(*func) (ctx);
+-			exit(0);
+-			break;
+-		default:
+-			break;
+-		}
+-
+-		return (pthread_t)0;
++	unsigned int i, s, r;
++	char dummy;
 +	int readyfd[2], wakefd[2];
-+	void *param;
++	int **commfds;
 +
-+	if (bench_format == BENCH_FORMAT_DEFAULT) {
-+		printf("# Running %s/%s benchmark with %d parallelism ...\n",
-+		       subsys->name, suite->name, parallel);
-+	}
++	struct messaging_context *msg;
++	struct messaging_param *param = ctx->param;
++	struct sender_context **sarray;
++	struct receiver_context **rarray;
 +
-+	ctx_array = zalloc(parallel * sizeof(struct bench_ctx));
-+	if (!ctx_array)
++	msg = zalloc(sizeof(struct messaging_context));
++	if (!msg)
 +		die("Memory allocation failed\n");
 +
-+	param = suite->parse_arg(argc, argv, prefix);
++	sarray = zalloc(sizeof(struct sender_context *) * param->pairs);
++	if (!sarray)
++		die("Memory allocation failed\n");
++
++	rarray = zalloc(sizeof(struct receiver_context *) * param->pairs);
++	if (!rarray)
++		die("Memory allocation failed\n");
 +
 +	if (pipe(readyfd))
 +		die("pipe() failed\n");
 +	if (pipe(wakefd))
 +		die("pipe() failed\n");
 +
-+	for (i = 0; i < parallel; i++) {
-+		ctx_array[i].argc = argc;
-+		ctx_array[i].argv = argv;
-+		ctx_array[i].prefix = prefix;
++	msg->readyfd = readyfd[0];
++	msg->wakefd = wakefd[1];
 +
-+		ctx_array[i].param = param;
-+		ctx_array[i].prepare = suite->prepare;
-+		ctx_array[i].bench = suite->bench;
-+		ctx_array[i].clean = suite->clean;
-+
-+		ctx_array[i].readyfd = readyfd[1];
-+		ctx_array[i].wakefd = wakefd[0];
-+
-+		if (thread_mode) {
-+			if (pthread_create(&ctx_array[i].pt, NULL,
-+					   worker, &ctx_array[i]))
-+				die("pthread_create() failed\n");
++	commfds = zalloc(sizeof(int *) * param->pairs);
++	if (!commfds)
++		die("Memory allocation failed\n");
++	for (i = 0; i < param->pairs; i++) {
++		commfds[i] = zalloc(sizeof(int) * 2);
++		if (!commfds[i])
++			die("Memory allocation failed\n");
+ 	}
+ 
+-	if (pthread_attr_init(&attr) != 0)
+-		barf("pthread_attr_init:");
++	for (i = 0; i < param->pairs; i++) {
++		if (param->use_pipes) {
++			if (pipe(commfds[i]))
++				die("pipe() failed\n");
 +		} else {
-+			ctx_array[i].pid = fork();
-+			switch (ctx_array[i].pid) {
-+			case 0:
-+				worker(&ctx_array[i]);
-+				break;
++			if (socketpair(AF_UNIX, SOCK_STREAM, 0, commfds[i]))
++				die("socketpair() failed\n");
++		}
++	}
+ 
+-#ifndef __ia64__
+-	if (pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN) != 0)
+-		barf("pthread_attr_setstacksize");
+-#endif
++	for (s = 0; s < param->pairs; s++) {
++		struct sender_context *new_sctx = NULL;
++
++		sarray[s] = zalloc(sizeof(struct sender_context));
++		if (!sarray[s])
++			die("Memory allocation failed\n");
++		new_sctx = sarray[s];
++
++		new_sctx->sendfds = zalloc(sizeof(int) * param->pairs);
++		if (!new_sctx->sendfds)
++			die("Memory allocation failed\n");
++		new_sctx->data = zalloc(sizeof(char) * param->data_size);
++		if (!new_sctx->data)
++			die("Memory allocation failed\n");
++		new_sctx->data_size = param->data_size;
++		new_sctx->readyfd = readyfd[1];
++		new_sctx->wakefd = wakefd[0];
++		new_sctx->loops = param->loops;
++		new_sctx->param = param;
++
++		for (r = 0; r < param->pairs; r++)
++			new_sctx->sendfds[r] = commfds[r][1];
++
++		if (param->thread_mode) {
++			if (pthread_create(&new_sctx->thid, NULL,
++					   sender, new_sctx))
++				die("pthread_create()\n");
++		} else {
++			switch (fork()) {
 +			case -1:
 +				die("fork() failed\n");
 +				break;
++			case 0:
++				sender(new_sctx);
++				break;
 +			default:
++				/* I'm parent, do nothing */
 +				break;
 +			}
 +		}
 +	}
-+
-+	for (i = 0; i < parallel; i++) {
-+		if (read(readyfd[0], &dummy, 1) != 1)
-+			die("reading data from readyfd failed\n");
-+	}
-+
-+	gettimeofday(&start, NULL);
-+	if (write(wakefd[1], &dummy, 1) != 1)
-+		die("writing data to wakefd failed\n");
-+
-+	for (i = 0; i < parallel; i++) {
-+		if (thread_mode) {
-+			if (pthread_join(ctx_array[i].pt, NULL))
-+				die("pthread_join() failed\n");
-+		} else {
-+			if (wait(NULL) == -1)
-+				die("wait() failed\n");
-+		}
-+	}
-+
-+	gettimeofday(&stop, NULL);
-+	timersub(&stop, &start, &diff);
-+
-+	printf(" %14s: %lu.%03lu [sec]\n", "Total time",
-+	       diff.tv_sec,
-+	       (unsigned long) (diff.tv_usec/1000));
  
--	argv[1] = NULL;
- 	/*
--	 * TODO:
--	 * preparing preset parameters for
--	 * embedded, ordinary PC, HPC, etc...
--	 * will be helpful
-+	 * if it is process mode, resources are freeed
-+	 * because child processes already exit()ed
- 	 */
--	for (i = 0; suites[i].fn; i++) {
--		printf("# Running %s/%s benchmark...\n",
--		       subsys->name,
--		       suites[i].name);
--
--		argv[1] = suites[i].name;
--		suites[i].fn(1, argv, NULL);
--		printf("\n");
-+	if (thread_mode) {
-+		for (i = 0; i < parallel; i++)
-+			ctx_array[i].clean(&ctx_array[i]);
+-	err = pthread_create(&childid, &attr, func, ctx);
+-	if (err != 0) {
+-		fprintf(stderr, "pthread_create failed: %s (%d)\n",
+-			strerror(err), err);
+-		exit(-1);
++	for (r = 0; r < param->pairs; r++) {
++		struct receiver_context *new_rctx = NULL;
++
++		rarray[r] = zalloc(sizeof(struct receiver_context));
++		if (!rarray[r])
++			die("Memory allocation failed\n");
++		new_rctx = rarray[r];
++
++		new_rctx->readyfd = readyfd[1];
++		new_rctx->wakefd = wakefd[0];
++		new_rctx->loops = param->loops;
++
++		new_rctx->data = zalloc(sizeof(char) * param->data_size);
++		if (!new_rctx->data)
++			die("Memory allocation failed\n");
++		new_rctx->data_size = param->data_size;
++		new_rctx->param = param;
++
++		new_rctx->readfd = commfds[r][0];
++
++		if (param->thread_mode) {
++			if (pthread_create(&new_rctx->thid, NULL,
++					   receiver, new_rctx))
++				die("pthread_create()\n");
++		} else {
++			switch (fork()) {
++			case -1:
++				die("fork() failed\n");
++				break;
++			case 0:
++				receiver(new_rctx);
++				break;
++			default:
++				/* I'm parent, do nothing */
++				break;
++			}
++		}
  	}
+-	return childid;
+-}
+ 
+-static void reap_worker(pthread_t id)
+-{
+-	int proc_status;
+-	void *thread_status;
+-
+-	if (!thread_mode) {
+-		/* process mode */
+-		wait(&proc_status);
+-		if (!WIFEXITED(proc_status))
+-			exit(1);
+-	} else {
+-		pthread_join(id, &thread_status);
++	for (s = 0; s < param->pairs; s++) {
++		if (read(msg->readyfd, &dummy, 1) != 1)
++			die("read() failed\n");
+ 	}
++	for (r = 0; r < param->pairs; r++) {
++		if (read(msg->readyfd, &dummy, 1) != 1)
++			die("read() failed\n");
++	}
 +
-+	free(param);
-+	free(ctx_array);
-+
-+	return 0;
++	msg->sarray = sarray;
++	msg->rarray = rarray;
++	ctx->priv = msg;
++	for (i = 0; i < param->pairs; i++)
++		free(commfds[i]);
++	free(commfds);
  }
  
--static void all_subsystem(void)
-+static void do_all_suite(int argc, const char **argv, const char *prefix,
-+			struct bench_subsys *subsys)
+-/* One group of senders and receivers */
+-static unsigned int group(pthread_t *pth,
+-		unsigned int num_fds,
+-		int ready_out,
+-		int wakefd)
++void sched_messaging_bench(struct bench_ctx *ctx)
  {
- 	int i;
+ 	unsigned int i;
+-	struct sender_context *snd_ctx = malloc(sizeof(struct sender_context)
+-			+ num_fds * sizeof(int));
+-
+-	if (!snd_ctx)
+-		barf("malloc()");
+-
+-	for (i = 0; i < num_fds; i++) {
+-		int fds[2];
+-		struct receiver_context *ctx = malloc(sizeof(*ctx));
+-
+-		if (!ctx)
+-			barf("malloc()");
+-
+-
+-		/* Create the pipe between client and server */
+-		fdpair(fds);
+-
+-		ctx->num_packets = num_fds * loops;
+-		ctx->in_fds[0] = fds[0];
+-		ctx->in_fds[1] = fds[1];
+-		ctx->ready_out = ready_out;
+-		ctx->wakefd = wakefd;
++	char dummy;
++	struct messaging_context *msg = ctx->priv;
++	struct messaging_param *param = ctx->param;
+ 
+-		pth[i] = create_worker(ctx, (void *)receiver);
++	if (write(msg->wakefd, &dummy, 1) != 1)
++		die("write() failed\n");
+ 
+-		snd_ctx->out_fds[i] = fds[1];
+-		if (!thread_mode)
+-			close(fds[0]);
+-	}
+-
+-	/* Now we have all the fds, fork the senders */
+-	for (i = 0; i < num_fds; i++) {
+-		snd_ctx->ready_out = ready_out;
+-		snd_ctx->wakefd = wakefd;
+-		snd_ctx->num_fds = num_fds;
++	if (param->thread_mode) {
++		for (i = 0; i < param->pairs; i++) {
++			pthread_join(msg->sarray[i]->thid, NULL);
++			pthread_join(msg->rarray[i]->thid, NULL);
++		}
++	} else {
++		int proc_status;
+ 
+-		pth[num_fds+i] = create_worker(snd_ctx, (void *)sender);
++		for (i = 0; i < param->pairs * 2; i++) {
++			wait(&proc_status);
++			if (!WIFEXITED(proc_status))
++				die("Invalid exit status\n");
++		}
+ 	}
+-
+-	/* Close the fds we have left */
+-	if (!thread_mode)
+-		for (i = 0; i < num_fds; i++)
+-			close(snd_ctx->out_fds[i]);
+-
+-	/* Return number of children to reap */
+-	return num_fds * 2;
+ }
+ 
+-static const struct option options[] = {
+-	OPT_BOOLEAN('p', "pipe", &use_pipes,
+-		    "Use pipe() instead of socketpair()"),
+-	OPT_BOOLEAN('t', "thread", &thread_mode,
+-		    "Be multi thread instead of multi process"),
+-	OPT_INTEGER('g', "group", &num_groups,
+-		    "Specify number of groups"),
+-	OPT_INTEGER('l', "loop", &loops,
+-		    "Specify number of loops"),
+-	OPT_END()
+-};
+-
+-static const char * const bench_sched_message_usage[] = {
+-	"perf bench sched messaging <options>",
+-	NULL
+-};
+-
+-int bench_sched_messaging(int argc, const char **argv,
+-		    const char *prefix __used)
++void sched_messaging_clean(struct bench_ctx *ctx)
+ {
+-	unsigned int i, total_children;
+-	struct timeval start, stop, diff;
+-	unsigned int num_fds = 20;
+-	int readyfds[2], wakefds[2];
+-	char dummy;
+-	pthread_t *pth_tab;
++	unsigned int i;
++	struct messaging_param *param = ctx->param;
++	struct messaging_context *msg = ctx->priv;
 +
-+	for (i = 0; subsys->suites[i].parse_arg; i++)
-+		do_one_suite(argc, argv, prefix, subsys, &subsys->suites[i]);
++	for (i = 0; i < param->pairs; i++) {
++		struct sender_context *sctx;
++		sctx = msg->sarray[i];
++		close(sctx->readyfd);
++		close(sctx->wakefd);
++		free(sctx->data);
++		free(sctx);
++	}
+ 
+-	argc = parse_options(argc, argv, options,
+-			     bench_sched_message_usage, 0);
+-
+-	pth_tab = malloc(num_fds * 2 * num_groups * sizeof(pthread_t));
+-	if (!pth_tab)
+-		barf("main:malloc()");
+-
+-	fdpair(readyfds);
+-	fdpair(wakefds);
+-
+-	total_children = 0;
+-	for (i = 0; i < num_groups; i++)
+-		total_children += group(pth_tab+total_children, num_fds,
+-					readyfds[1], wakefds[0]);
+-
+-	/* Wait for everyone to be ready */
+-	for (i = 0; i < total_children; i++)
+-		if (read(readyfds[0], &dummy, 1) != 1)
+-			barf("Reading for readyfds");
+-
+-	gettimeofday(&start, NULL);
+-
+-	/* Kick them off */
+-	if (write(wakefds[1], &dummy, 1) != 1)
+-		barf("Writing to start them");
+-
+-	/* Reap them all */
+-	for (i = 0; i < total_children; i++)
+-		reap_worker(pth_tab[i]);
+-
+-	gettimeofday(&stop, NULL);
+-
+-	timersub(&stop, &start, &diff);
+-
+-	switch (bench_format) {
+-	case BENCH_FORMAT_DEFAULT:
+-		printf("# %d sender and receiver %s per group\n",
+-		       num_fds, thread_mode ? "threads" : "processes");
+-		printf("# %d groups == %d %s run\n\n",
+-		       num_groups, num_groups * 2 * num_fds,
+-		       thread_mode ? "threads" : "processes");
+-		printf(" %14s: %lu.%03lu [sec]\n", "Total time",
+-		       diff.tv_sec,
+-		       (unsigned long) (diff.tv_usec/1000));
+-		break;
+-	case BENCH_FORMAT_SIMPLE:
+-		printf("%lu.%03lu\n", diff.tv_sec,
+-		       (unsigned long) (diff.tv_usec/1000));
+-		break;
+-	default:
+-		/* reaching here is something disaster */
+-		fprintf(stderr, "Unknown format:%d\n", bench_format);
+-		exit(1);
+-		break;
++	for (i = 0; i < param->pairs; i++) {
++		struct receiver_context *rctx;
++		rctx = msg->rarray[i];
++		close(rctx->readyfd);
++		close(rctx->wakefd);
++		free(rctx->data);
++		free(rctx);
+ 	}
+ 
+-	return 0;
++	close(msg->readyfd);
++	close(msg->wakefd);
++	free(msg->sarray);
++	free(msg->rarray);
+ }
++
+diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
+index d9ab3ce..8d2e8fd 100644
+--- a/tools/perf/bench/sched-pipe.c
++++ b/tools/perf/bench/sched-pipe.c
+@@ -29,99 +29,95 @@
+ #include <sys/types.h>
+ 
+ #define LOOPS_DEFAULT 1000000
+-static int loops = LOOPS_DEFAULT;
+-
+-static const struct option options[] = {
+-	OPT_INTEGER('l', "loop", &loops,
+-		    "Specify number of loops"),
+-	OPT_END()
+-};
+ 
+ static const char * const bench_sched_pipe_usage[] = {
+ 	"perf bench sched pipe <options>",
+ 	NULL
+ };
+ 
+-int bench_sched_pipe(int argc, const char **argv,
+-		     const char *prefix __used)
+-{
+-	int pipe_1[2], pipe_2[2];
+-	int m = 0, i;
+-	struct timeval start, stop, diff;
+-	unsigned long long result_usec = 0;
+-
+-	/*
+-	 * why does "ret" exist?
+-	 * discarding returned value of read(), write()
+-	 * causes error in building environment for perf
+-	 */
+-	int ret, wait_stat;
+-	pid_t pid, retpid;
+-
+-	argc = parse_options(argc, argv, options,
+-			     bench_sched_pipe_usage, 0);
+-
+-	assert(!pipe(pipe_1));
+-	assert(!pipe(pipe_2));
+-
+-	pid = fork();
+-	assert(pid >= 0);
++struct pipe_param {
++	int loops;
++};
+ 
+-	gettimeofday(&start, NULL);
++struct pipe_context {
++	int loops;
++	int pipe_1[2], pipe_2[2];
++};
+ 
+-	if (!pid) {
+-		for (i = 0; i < loops; i++) {
+-			ret = read(pipe_1[0], &m, sizeof(int));
+-			ret = write(pipe_2[1], &m, sizeof(int));
+-		}
+-	} else {
+-		for (i = 0; i < loops; i++) {
+-			ret = write(pipe_1[1], &m, sizeof(int));
+-			ret = read(pipe_2[0], &m, sizeof(int));
+-		}
+-	}
++static void *__sched_pipe_parse(int argc, const char **argv,
++				const char *prefix __used,
++				struct pipe_param *param)
++{
++	const struct option options[] = {
++		OPT_INTEGER('l', "loop", &param->loops,
++			    "Number of loops"),
++		OPT_END()
++	};
+ 
+-	gettimeofday(&stop, NULL);
+-	timersub(&stop, &start, &diff);
++	argc = parse_options(argc, argv, options,
++			     bench_sched_pipe_usage, PARSE_OPT_KEEP_ARGV0);
++	return param;
++}
+ 
+-	if (pid) {
+-		retpid = waitpid(pid, &wait_stat, 0);
+-		assert((retpid == pid) && WIFEXITED(wait_stat));
+-	} else {
+-		exit(0);
+-	}
++void *sched_pipe_parse(int argc, const char **argv, const char *prefix)
++{
++	struct pipe_param *param;
+ 
+-	switch (bench_format) {
+-	case BENCH_FORMAT_DEFAULT:
+-		printf("# Executed %d pipe operations between two tasks\n\n",
+-			loops);
++	param = zalloc(sizeof(struct pipe_param));
++	if (!param)
++		die("Memory allocation failed\n");
++	param->loops = LOOPS_DEFAULT;
+ 
+-		result_usec = diff.tv_sec * 1000000;
+-		result_usec += diff.tv_usec;
++	return __sched_pipe_parse(argc, argv, prefix, param);
++}
+ 
+-		printf(" %14s: %lu.%03lu [sec]\n\n", "Total time",
+-		       diff.tv_sec,
+-		       (unsigned long) (diff.tv_usec/1000));
++void sched_pipe_prepare(struct bench_ctx *ctx)
++{
++	struct pipe_context *pipec;
++	struct pipe_param *param = ctx->param;
++
++	pipec = zalloc(sizeof(struct pipe_context));
++	if (!pipec)
++		die("Memory allocation failed\n");
++	pipec->loops = param->loops;
++	if (pipe(pipec->pipe_1))
++		die("pipe() failed\n");
++	if (pipe(pipec->pipe_2))
++		die("pipe() failed\n");
++
++	ctx->priv = pipec;
++}
+ 
+-		printf(" %14lf usecs/op\n",
+-		       (double)result_usec / (double)loops);
+-		printf(" %14d ops/sec\n",
+-		       (int)((double)loops /
+-			     ((double)result_usec / (double)1000000)));
++void sched_pipe_bench(struct bench_ctx *ctx)
++{
++	int ret, m = 0;
++	struct pipe_context *pipec = ctx->priv;
++
++	switch (fork()) {
++	case 0:
++		while (pipec->loops--) {
++			ret = read(pipec->pipe_1[0], &m, sizeof(int));
++			ret = write(pipec->pipe_2[1], &m, sizeof(int));
++		}
+ 		break;
+-
+-	case BENCH_FORMAT_SIMPLE:
+-		printf("%lu.%03lu\n",
+-		       diff.tv_sec,
+-		       (unsigned long) (diff.tv_usec / 1000));
++	case -1:
++		die("fork() failed\n");
+ 		break;
+-
+ 	default:
+-		/* reaching here is something disaster */
+-		fprintf(stderr, "Unknown format:%d\n", bench_format);
+-		exit(1);
++		while (pipec->loops--) {
++			ret = write(pipec->pipe_1[1], &m, sizeof(int));
++			ret = read(pipec->pipe_2[0], &m, sizeof(int));
++		}
+ 		break;
+ 	}
 +}
 +
-+static void do_all_subsystem(int argc, const char **argv, const char *prefix)
++void sched_pipe_clean(struct bench_ctx *ctx)
 +{
-+	int i;
-+
- 	for (i = 0; subsystems[i].suites; i++)
--		all_suite(&subsystems[i]);
-+		do_all_suite(argc, argv, prefix, &subsystems[i]);
++	struct pipe_context *pipec = ctx->priv;
+ 
+-	return 0;
++	close(pipec->pipe_1[0]);
++	close(pipec->pipe_1[1]);
++	close(pipec->pipe_2[0]);
++	close(pipec->pipe_1[1]);
  }
- 
--int cmd_bench(int argc, const char **argv, const char *prefix __used)
-+int cmd_bench(int argc, const char **argv, const char *prefix)
- {
- 	int i, j, status = 0;
- 
-@@ -195,7 +315,7 @@ int cmd_bench(int argc, const char **argv, const char *prefix __used)
- 	}
- 
- 	if (!strcmp(argv[0], "all")) {
--		all_subsystem();
-+		do_all_subsystem(argc, argv, prefix);
- 		goto end;
- 	}
- 
-@@ -210,7 +330,7 @@ int cmd_bench(int argc, const char **argv, const char *prefix __used)
- 		}
- 
- 		if (!strcmp(argv[1], "all")) {
--			all_suite(&subsystems[i]);
-+			do_all_suite(argc, argv, prefix, &subsystems[i]);
- 			goto end;
- 		}
- 
-@@ -218,12 +338,9 @@ int cmd_bench(int argc, const char **argv, const char *prefix __used)
- 			if (strcmp(subsystems[i].suites[j].name, argv[1]))
- 				continue;
- 
--			if (bench_format == BENCH_FORMAT_DEFAULT)
--				printf("# Running %s/%s benchmark...\n",
--				       subsystems[i].name,
--				       subsystems[i].suites[j].name);
--			status = subsystems[i].suites[j].fn(argc - 1,
--							    argv + 1, prefix);
-+			status = do_one_suite(argc, argv, prefix,
-+					      &subsystems[i],
-+					      &subsystems[i].suites[j]);
- 			goto end;
- 		}
- 
+diff --git a/tools/perf/bench/sched.h b/tools/perf/bench/sched.h
+new file mode 100644
+index 0000000..2d621b5
+--- /dev/null
++++ b/tools/perf/bench/sched.h
+@@ -0,0 +1,8 @@
++
++BENCH("messaging", "Benchmark for scheduler and IPC mechanisms",
++      sched_messaging_parse, sched_messaging_prepare,
++      sched_messaging_bench, sched_messaging_clean)
++
++BENCH("pipe", "Flood of communication over pipe() between two processes",
++      sched_pipe_parse, sched_pipe_prepare,
++      sched_pipe_bench, sched_pipe_clean)
 -- 
 1.7.1
 
