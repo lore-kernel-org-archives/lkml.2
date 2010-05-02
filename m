@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab0EBENX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 00:13:23 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41257 "EHLO mx1.suse.de"
+	id S1751953Ab0EBEco (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 00:32:44 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:48184 "EHLO mail.issp.bas.bg"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781Ab0EBENS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 00:13:18 -0400
-Date: Sat, 1 May 2010 11:07:15 -0700
-From: Greg KH <gregkh@suse.de>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: trenn@suse.de, yinghai@kernel.org, hpa@zytor.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [2.6.31.13] Build failure at arch/x86/kernel/apic/io_apic.c
-Message-ID: <20100501180715.GA7745@suse.de>
-References: <201004120230.o3C2UhfQ050532@www262.sakura.ne.jp> <20100412024446.GA28141@suse.de> <201004120410.o3C4Axwe066941@www262.sakura.ne.jp>
+	id S1750971Ab0EBEcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 May 2010 00:32:43 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+Organization: Institute of Solid State Physics
+To: Greg KH <greg@kroah.com>
+Subject: Re: [RFC] Yet another (third) dt3155 driver PCI/video4linux compliant
+Date: Sun, 2 May 2010 07:29:24 +0300
+User-Agent: KMail/1.11.4 (Linux/2.6.34-rc6; KDE/4.2.4; x86_64; ; )
+Cc: Scott Smedley <ss@aao.gov.au>, linux-kernel@vger.kernel.org,
+       Mauro Carvalho Chehab <mchehab@infradead.org>
+References: <201003201118.36736.mitov@issp.bas.bg> <201004301836.09200.mitov@issp.bas.bg> <20100501175853.GB22217@kroah.com>
+In-Reply-To: <20100501175853.GB22217@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <201004120410.o3C4Axwe066941@www262.sakura.ne.jp>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Message-Id: <201005020729.24346.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 12, 2010 at 01:10:59PM +0900, Tetsuo Handa wrote:
-> Commit d539e5576605d048e6aeb21cbe3a8e71dc5eea81 "x86: Fix SCI on IOAPIC != 0"
-> introduced "void setup_IO_APIC_irq_extra(u32 gsi)" which calls
-> mp_find_ioapic() and mp_find_ioapic_pin().
+On Saturday 01 May 2010 08:58:53 pm Greg KH wrote:
+> On Fri, Apr 30, 2010 at 06:36:09PM +0300, Marin Mitov wrote:
+> > > I like it, want me to apply it?  
+> > 
+> > Thank you for liking it. Since the time I sent the patch much in the driver has changed.
+> > Now it works (tested only with xawtv -f) with read(), as well as mmap(), but see below
+> > for the problems.
+> > 
+> > Now I send you an updated patch, but it is not reviewed. You could either review it :-) or
+> > apply the previous patch. In the last case I will prepare a difference patch and will send it.
 > 
-> This commit does not compile if CONFIG_X86_IO_APIC=y and CONFIG_ACPI=n .
+> This one worked for me, with the exception that you forgot to modify the
+> drivers/staging/Makefile file to add the driver to the build.  I've
+> fixed that up, and it builds on my i386 box, so I've added it to my
+> tree.
 
-Why would you want to build without ACPI on any modern system?  Anyway,
-have a fix for this?
+Yes, this is my fault, sorry, and thank you.
 
-thanks,
+Marin Mitov
 
-greg k-h
+> 
+> thanks,
+> 
+> greg k-h
+> 
