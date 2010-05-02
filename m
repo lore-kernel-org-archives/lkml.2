@@ -1,120 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab0EBLml (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 07:42:41 -0400
-Received: from mail.sv1.nifty.com ([220.209.183.60]:60166 "EHLO
-	defg302p.nifty.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755852Ab0EBLmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 07:42:39 -0400
-X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 May 2010 07:42:39 EDT
-DomainKey-Signature: a=rsa-sha1; s=2007jul; d=nifty.com; c=nofws; q=dns;
-	h=message-id:date:from:to:subject:cc:in-reply-to:
-	mime-version:content-type:content-transfer-encoding:x-priority:
-	x-msmail-priority:priority:x-mailer:references;
-	b=YBBTZddCgqR+2lCUnGnigAvbIk2Q/7FCs+4/0imh3o2Vnk0PCMRv3ZNwNYjNk6lMI
-	jfuKayoVZ0cwOBHjWC0Xw==
-X-Nifty-SrcIP: [172.22.128.194]
-Message-ID: <9179202.147991272799869586.komurojun-mbn@nifty.com>
-Date: Sun, 2 May 2010 20:31:09 +0900 (JST)
-From: Komuro <komurojun-mbn@nifty.com>
-To: linux-pcmcia@lists.infradead.org
-Subject: [BUG: invalid hash]  - update pata_pcmcia/ide-cs with transcend and kingston cards
-Cc: Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-       linux@dominikbrodowski.net, jeff@garzik.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <4BD0FD68.90408@garzik.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-2022-jp"
+	id S1755985Ab0EBN3y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 09:29:54 -0400
+Received: from t23.t-2.net ([84.255.209.102]:59731 "EHLO t23.t-2.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755705Ab0EBN3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 May 2010 09:29:52 -0400
+Subject: Re: [PATCH] console logging detour via printk
+From: Samo Pogacnik <samo_pogacnik@t-2.net>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       linux-embedded <linux-embedded@vger.kernel.org>,
+       linux kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4BDD4CD7.2060205@gmail.com>
+References: <1272664980.10241.77.camel@itpsd6lap>
+	 <20100501120418.6fca2aad@lxorguk.ukuu.org.uk>
+	 <1272739689.2147.156.camel@itpsd6lap>  <4BDD4CD7.2060205@gmail.com>
+Content-Type: text/plain
+Date: Sun, 02 May 2010 15:29:47 +0200
+Message-Id: <1272806987.2155.34.camel@itpsd6lap>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: @nifty Webmail 2.0
-References: <4BD0FD68.90408@garzik.org>
- <20100419195411.f16d8f68.kristoffer.ericson@gmail.com>
+X-SGG-UMAMSID: 20100502132949Z4070t23.t-2.net 1O8ZEz-00013e-IT
+X-SGG-RESULT: 20100502132949Z4070t23.t-2.net C1:OK E1:OK MX1:OK BL:OK SPF:off  CT:Unknown CM: SIP:84.255.254.67 SMF:samo_pogacnik@t-2.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Dne 02.05.2010 (ned) ob 11:58 +0200 je Marco Stornelli zapisal(a):
+> 01/05/2010 20:48, Samo Pogacnik wrote:
+> > Dne 01.05.2010 (sob) ob 12:04 +0100 je Alan Cox zapisal(a):
+> >>> while i was searching for effective logging of complete console output
+> >>> produced by the kernel and user phase of the boot process, it turned out
+> >>> that only kernel messages imho get systematically cached and stored into
+> >>> log files (if needed). All userspace processes are on their own to use
+> >>> syslog, which is fine, but there are also many console messages
+> >>> reporting the boot status via init scripts, .... I came across the
+> >>> bootlogd daemo, which handles the job of redirecting console output into
+> >>> a log file, but i find it problematic to use especialy, when using
+> >>> initial ram disk image.
+> >>
+> >> So you want to patch the kernel because you can't work out how to do this
+> >> in userspace ? The distributions seem to have no problem doing this in
+> >> user space that I can see. It doesn't seem to be a hard user space
+> >> problem, and there are a ton of things you want to do with this sort of
+> >> stuff (like network logging) that you can't do in kernel space.
+> > 
+> > The distros have no problem logging complete console output into log
+> > files or over the network, because they simply do not do it at least for
+> > the initrd part of the boot process (i'd be glad, if i'm wrong). 
+> 
+> Mmm...It's an interesting problem. I see in my distro (openSuse) a
+> script called boot.klog that it seems to perform that (even initrd
+> part). In the file boot.msg I can see the initial prints of the kernel
+> and user space scripts.
+> 
+Thanks for the info. 
+Is this boot.klog script from the initrd image or from the real rootfs?
+As you can see, i am still suspicious about the initrd part user console
+messages:)
 
-The hash of "CF CARD 1GB" and "TS4GCF133" are wrong.
-
-pcmcia: pata_pcmcia: invalid hash for product string "CF CARD 1GB": is 0x3e520
-e17, should be 0x55d5bffb
-pcmcia: see Documentation/pcmcia/devicetable.txt for details
-pcmcia: pata_pcmcia: invalid hash for product string "TS4GCF133": is 0x9351e59
-d, should be 0x7558f133
-pcmcia: see Documentation/pcmcia/devicetable.txt for details
-
->
->On 04/19/2010 01:54 PM, Kristoffer Ericson wrote:
->> This patch adds idstrings for Kingston 1GB/4GB and Transcend 4GB/8GB.
->>
->> Signed-off-by: Kristoffer Ericson<kristoffer.ericson@gmail.com>
->>
->> diff --git a/drivers/ide/ide-cs.c b/drivers/ide/ide-cs.c
->> index ab87e4f..defce28 100644
->> --- a/drivers/ide/ide-cs.c
->> +++ b/drivers/ide/ide-cs.c
->> @@ -409,6 +409,8 @@ static struct pcmcia_device_id ide_ids[] = {
->>   	PCMCIA_DEVICE_PROD_ID12("Hyperstone", "Model1", 0x3d5b9ef5, 0xca6ab420),
->>   	PCMCIA_DEVICE_PROD_ID12("IBM", "microdrive", 0xb569a6e5, 0xa6d76178),
->>   	PCMCIA_DEVICE_PROD_ID12("IBM", "IBM17JSSFP20", 0xb569a6e5, 0xf2508753),
->> +	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 1GB", 0x2e6d1829, 0x3e520e17
-),
->> +	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 4GB", 0x2e6d1829, 0x531e7d10
-),
->>   	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF8GB", 0x2e6d1829, 0xacbe682e),
->>   	PCMCIA_DEVICE_PROD_ID12("IO DATA", "CBIDE2      ", 0x547e66dc, 0x8671043
-b),
->>   	PCMCIA_DEVICE_PROD_ID12("IO DATA", "PCIDE", 0x547e66dc, 0x5c5ab149),
->> @@ -429,6 +431,8 @@ static struct pcmcia_device_id ide_ids[] = {
->>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS1GCF80", 0x709b1bf1, 0x2a54d4b1)
-,
->>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS2GCF120", 0x709b1bf1, 0x969aa4f2
-),
->>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF120", 0x709b1bf1, 0xf54a91c8
-),
->> +	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF133", 0x709b1bf1, 0x9351e59d)
-,
->> +	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS8GCF133", 0x709b1bf1, 0xb2f89b47)
-,
->>   	PCMCIA_DEVICE_PROD_ID12("WIT", "IDE16", 0x244e5994, 0x3e232852),
->>   	PCMCIA_DEVICE_PROD_ID12("WEIDA", "TWTTI", 0xcc7cf69c, 0x212bb918),
->>   	PCMCIA_DEVICE_PROD_ID1("STI Flash", 0xe4a13209),
->> diff --git a/drivers/ata/pata_pcmcia.c b/drivers/ata/pata_pcmcia.c
->> index 3c3172d..4164dd2 100644
->> --- a/drivers/ata/pata_pcmcia.c
->> +++ b/drivers/ata/pata_pcmcia.c
->> @@ -424,6 +424,8 @@ static struct pcmcia_device_id pcmcia_devices[] = {
->>   	PCMCIA_DEVICE_PROD_ID12("Hyperstone", "Model1", 0x3d5b9ef5, 0xca6ab420),
->>   	PCMCIA_DEVICE_PROD_ID12("IBM", "microdrive", 0xb569a6e5, 0xa6d76178),
->>   	PCMCIA_DEVICE_PROD_ID12("IBM", "IBM17JSSFP20", 0xb569a6e5, 0xf2508753),
->> +	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 1GB", 0x2e6d1829, 0x3e520e17
-),
->> +	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 4GB", 0x2e6d1829, 0x531e7d10
-),
->>   	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF8GB", 0x2e6d1829, 0xacbe682e),
->>   	PCMCIA_DEVICE_PROD_ID12("IO DATA", "CBIDE2      ", 0x547e66dc, 0x8671043
-b),
->>   	PCMCIA_DEVICE_PROD_ID12("IO DATA", "PCIDE", 0x547e66dc, 0x5c5ab149),
->> @@ -444,6 +446,8 @@ static struct pcmcia_device_id pcmcia_devices[] = {
->>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS1GCF80", 0x709b1bf1, 0x2a54d4b1)
-,
->>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS2GCF120", 0x709b1bf1, 0x969aa4f2
-),
->>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF120", 0x709b1bf1, 0xf54a91c8
-),
->> +	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF133", 0x709b1bf1, 0x9351e59d)
-,
->> +	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS8GCF133", 0x709b1bf1, 0xb2f89b47)
-,
->>   	PCMCIA_DEVICE_PROD_ID12("WIT", "IDE16", 0x244e5994, 0x3e232852),
->>   	PCMCIA_DEVICE_PROD_ID12("WEIDA", "TWTTI", 0xcc7cf69c, 0x212bb918),
->>   	PCMCIA_DEVICE_PROD_ID1("STI Flash", 0xe4a13209),
->>
-
-Best Regards
-Komuro
+Samo
 
