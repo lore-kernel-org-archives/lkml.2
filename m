@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757675Ab0EAXsi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 19:48:38 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:53584 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab0EAXsg convert rfc822-to-8bit (ORCPT
+	id S1757841Ab0EBAOj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 20:14:39 -0400
+Received: from mail-iw0-f182.google.com ([209.85.223.182]:38546 "EHLO
+	mail-iw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754249Ab0EBAOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 19:48:36 -0400
+	Sat, 1 May 2010 20:14:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=i04c17PYyA26EbfcCQ5a+pcXXf/or/16PgZlrNmPsfF1NXGHImplpGqcyBjvKGksAR
-         1Z2MMoCD2mTKOBOjdYrafuQN92cpFGKjrQtrC7T3BFz1SyPg5MgYEni14dDyYk9YUQl/
-         rEI1fS8aEQKmaPIPyGqt8iSgfZsav2nWAXX18=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=F0YgcKPf7201cX1g8eZAV9/3i2zop6CQKsLTn/m7CTdSKBoQ2288tEFDZzMYPNs4XT
+         tAUjL9AkodbICZIXNmp8uL/UsaRy21R7aomjBtU0pDXnZuhhCvqd/po1eT3y/YhB9Tz9
+         lyLXp8thOXKWpQphCbiUy5eGTLYKt168XNCbc=
+Date: Sat, 1 May 2010 20:14:27 -0400
+From: Josh Boyer <jwboyer@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: orenl@cs.columbia.edu, akpm@linux-foundation.org,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       serue@us.ibm.com, matthltc@us.ibm.com, xemul@openvz.org,
+       sukadev@linux.vnet.ibm.com, linux-api@vger.kernel.org, x86@kernel.org,
+       linux-s390@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH v21 001/100] eclone (1/11): Factor out code to allocate
+	pidmap page
+Message-ID: <20100502001427.GH2671@hansolo.jdub.homelinux.org>
+References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu> <1272723382-19470-2-git-send-email-orenl@cs.columbia.edu> <20100501.151022.190375136.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <z2ye9c3a7c21005011628r7c0c2b5bq36126db83d3ea5e3@mail.gmail.com>
-References: <1270681920-4461-1-git-send-email-linus.walleij@stericsson.com>
-	 <v2se9c3a7c21004071645u8180f4d7p3b4b1f96de11303e@mail.gmail.com>
-	 <CEE6BB42CAD6E947908279175AF8470A03A50F78@EXDCVYMBSTM006.EQ1STM.local>
-	 <t2qe9c3a7c21004141815x70ecf123p4364802681417da9@mail.gmail.com>
-	 <q2o63386a3d1004162158v296379fat2b376d5c4c087378@mail.gmail.com>
-	 <20100422110025.GC20008@n2100.arm.linux.org.uk>
-	 <g2qe9c3a7c21005011500l11511d43i12d971775b139c3b@mail.gmail.com>
-	 <20100501224429.GA17693@n2100.arm.linux.org.uk>
-	 <x2u63386a3d1005011604kaee33364l880e90a4e2453e0f@mail.gmail.com>
-	 <z2ye9c3a7c21005011628r7c0c2b5bq36126db83d3ea5e3@mail.gmail.com>
-Date: Sun, 2 May 2010 01:48:34 +0200
-Message-ID: <u2q63386a3d1005011648k5fa29ae9y9e03d3c94594902b@mail.gmail.com>
-Subject: Re: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100501.151022.190375136.davem@davemloft.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/2 Dan Williams <dan.j.williams@intel.com>:
-> On Sat, May 1, 2010 at 4:04 PM, Linus Walleij
-
->> When the driver issues a request to perform a DMA transfer, it will pull
->> out a physical channel and use that, then return it. If there is too
->> much combat about the physical channels, you configure out DMA
->> for the least wanted PrimeCells.
->>
+On Sat, May 01, 2010 at 03:10:22PM -0700, David Miller wrote:
 >
-> Could you simulate this by publishing more struct dma_chans than are
-> physically present, and then handle the muxing internal to the driver?
->  Or am I misunderstanding the usage model?
+>NO WAY, there is no way in the world you should post 100 patches
+>at a time to any mailing list, especially those at vger.kernel.org
+>that have thousands upon thousands of subscribers.
+>
+>Post only small, well contained, sets of patches at a time.  At most
+>10 or so in one go.
+>
+>Do you realize how much mail traffic you generate by posting so many
+>patches at one time, and how unlikely it is for anyone to actually
+>sift through and review your patches after you've spammed them by
+>posting so many at one time?
+>
+>A second infraction and I will have no choice but to block you at the
+>SMTP level at vger.kernel.org so please do not do it again.
 
-Yes exactly that way. What I had in mind atleast.
+So I really agree with everything you said here, but I do wonder why you haven't
+sent a similar rant about the often 100+ patchsets for the -stable series.  We  
+are supposed to review those and follow up on them to be sure they're suitable  
+for a stable release.
 
-Yours,
-Linus Walleij
+Or the 100+ emails about regressions from version to version.  Etc, etc.
+
+I'm not saying you're wrong, but it does seem a bit odd that you choose to reply
+to this one, and not the other umpteen cases I often see.  Maybe it isn't about 
+the size or volume of the emails, and more about the fact that it's 100 patches 
+to implement _one_ thing?  If so, then I don't really think it's about list
+traffic at all...
+
+josh
