@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab0EBHdj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 03:33:39 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:59120 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab0EBHdi (ORCPT
+	id S1755783Ab0EBIA7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 04:00:59 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:53368 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755647Ab0EBIA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 03:33:38 -0400
-X-SENDER-IP: [83.226.250.226]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ai8+AMbH3EtT4vriPGdsb2JhbACBN4RCgXCVTgEBAQE1uHKFEgQ
-X-IronPort-AV: E=Sophos;i="4.52,311,1270418400"; 
-   d="scan'208";a="69704705"
-Message-ID: <4BDD2AC6.8010900@coyote.org>
-Date: Sun, 02 May 2010 09:33:26 +0200
-From: Lars Lindley <lindley@coyote.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100428 Thunderbird/3.0.4
+	Sun, 2 May 2010 04:00:58 -0400
+Message-ID: <4BDD3079.5060101@vflare.org>
+Date: Sun, 02 May 2010 13:27:45 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: gregkh@suse.de, pavel@ucw.cz, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: Staging: winbond: Renamed README to TODO and corrected Pavel's
- mail
-References: <1268431099-18367-1-git-send-email-lindley@coyote.org> <20100427203816.GB22461@kroah.com>
-In-Reply-To: <20100427203816.GB22461@kroah.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+       Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       hugh.dickins@tiscali.co.uk, JBeulich@novell.com, chris.mason@oracle.com,
+       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
+       akpm@linux-foundation.org, riel@redhat.com
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <4BD16D09.2030803@redhat.com>> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>> <4BD1A74A.2050003@redhat.com>> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com>> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>> <4BD3377E.6010303@redhat.com>> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>> <ce808441-fae6-4a33-8335-f7702740097a@default>> <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz> <4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default> <4BDB026E.1030605@redhat.com> <4BDB18CE.2090608@goop.org 4BDB2069.4000507@redhat.com> <3a62a058-7976-48d7-acd2-8c6a8312f10f@default>
+In-Reply-To: <3a62a058-7976-48d7-acd2-8c6a8312f10f@default>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-04-27 22:38, Greg KH wrote:
-> I need a "Signed-off-by:" line in order to be able to apply this.  Care
-> to resend it with it?
+On 05/01/2010 10:40 PM, Dan Magenheimer wrote:
+>> Eventually you'll have to swap frontswap pages, or kill uncooperative
+>> guests.  At which point all of the simplicity is gone.
 > 
-> thanks,
+> OK, now I think I see the crux of the disagreement.
 > 
-> greg k-h
+> NO!  Frontswap on Xen+tmem never *never* _never_ NEVER results
+> in host swapping.  Host swapping is evil.  Host swapping is
+> the root of most of the bad reputation that memory overcommit
+> has gotten from VMware customers.  Host swapping can't be
+> avoided with some memory overcommit technologies (such as page
+> sharing), but frontswap on Xen+tmem CAN and DOES avoid it.
 > 
-> 
-Ok here it comes.
 
+Why host-level swapping is evil? In KVM case, VM is just another
+process and host will just swap out pages using the same LRU like
+scheme as with any other process, AFAIK.
 
+Also, with frontswap, host cannot discard pages at any time as is
+the case will cleancache. So, while cleancache is obviously very
+useful, the usefulness of frontswap remains doubtful.
 
+IMHO, along with cleancache, we should just have in in-memory
+compressed swapping at *host* level i.e. no frontswap. I agree
+that using frontswap hooks, it is easy to implement ramzswap
+functionality but I think its not worth replacing this driver
+with frontswap hooks. This driver already has all the goodness:
+asynchronous interface, ability to dynamically add/remove ramzswap
+devices etc. All that is lacking in this driver is a more efficient
+'discard' functionality so we can free a page as soon as it becomes
+unused.
 
-[PATCH] staging: winbond: Renamed README to TODO and corrected Pavel's mail
+It should also be easy to extend this driver to allow sending pages
+to host using virtio (for KVM) or Xen hypercalls, if frontswap is
+needed at all.
 
-Signed-off-by: Lars Lindley <lindley@coyote.org>
-Acked-by: Pavel Machek <pavel@ucw.cz>
----
- drivers/staging/winbond/README |   11 -----------
- drivers/staging/winbond/TODO   |   11 +++++++++++
- 2 files changed, 11 insertions(+), 11 deletions(-)
- delete mode 100644 drivers/staging/winbond/README
- create mode 100644 drivers/staging/winbond/TODO
+So, IMHO we can focus on cleancache development and add missing
+parts to ramzswap driver.
 
-diff --git a/drivers/staging/winbond/README b/drivers/staging/winbond/README
-deleted file mode 100644
-index cb944e4..0000000
---- a/drivers/staging/winbond/README
-+++ /dev/null
-@@ -1,11 +0,0 @@
--TODO:
--	- sparse cleanups
--	- checkpatch cleanups
--	- kerneldoc cleanups
--	- remove typedefs
--	- remove unused ioctls
--	- use cfg80211 for regulatory stuff
--	- fix 4k stack problems
--
--Please send patches to Greg Kroah-Hartman <greg@kroah.com> and
--Pavel Machek <pavel@suse.cz>
-diff --git a/drivers/staging/winbond/TODO b/drivers/staging/winbond/TODO
-new file mode 100644
-index 0000000..f4fb3f3
---- /dev/null
-+++ b/drivers/staging/winbond/TODO
-@@ -0,0 +1,11 @@
-+TODO:
-+	- sparse cleanups
-+	- checkpatch cleanups
-+	- kerneldoc cleanups
-+	- remove typedefs
-+	- remove unused ioctls
-+	- use cfg80211 for regulatory stuff
-+	- fix 4k stack problems
-+
-+Please send patches to Greg Kroah-Hartman <greg@kroah.com> and
-+Pavel Machek <pavel@ucw.cz>
--- 
-1.7.1
+Thanks,
+Nitin
