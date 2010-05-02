@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab0EBSVw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 14:21:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750807Ab0EBSVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 14:21:51 -0400
-Date: Sun, 2 May 2010 20:20:40 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
- and rmap_walk() during migration by not migrating temporary stacks
-Message-ID: <20100502182040.GB19891@random.random>
-References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie>
- <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
- <20100429162120.GC22108@random.random>
- <m2j28c262361005021040q118934b8j1f2f0146c9217a0f@mail.gmail.com>
+	id S1758395Ab0EBSkj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 14:40:39 -0400
+Received: from mail-pw0-f66.google.com ([209.85.160.66]:63031 "EHLO
+	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab0EBSki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 May 2010 14:40:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:message-id:subject:mime-version:content-type
+         :content-transfer-encoding;
+        b=atnQRckIepmye/HF/pUSjc22gy1wSfs1dBhfctURNzXmoNU24uEfqnBOrCGNk8RUNc
+         sNY1HqHVxvjZ7DyoecLgi2mgNXRDeLjKADTmysMsRMSkI996Y3PqQRnQzGlKhapdvfXg
+         bUqEOHhKRWFSF27WGkznyIc10QSAawFUMAYJU=
+Date: Mon, 3 May 2010 02:40:22 +0800 (CST)
+From: jacalyngeorgesf6n@gmail.com
+To: linux-kernel@vger.kernel.org
+Message-ID: <25292276.120.1272825622156.JavaMail.Administrator@ZHAOFUZHI>
+Subject: About the best internet brand for you:pkmap.cn
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m2j28c262361005021040q118934b8j1f2f0146c9217a0f@mail.gmail.com>
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 03, 2010 at 02:40:44AM +0900, Minchan Kim wrote:
-> On Fri, Apr 30, 2010 at 1:21 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> > Hi Mel,
-> >
-> > did you see my proposed fix? I'm running with it applied, I'd be
-> > interested if you can test it. Surely it will also work for new
-> > anon-vma code in upstream, because at that point there's just 1
-> > anon-vma and nothing else attached to the vma.
-> >
-> > http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commit;h=6efa1dfa5152ef8d7f26beb188d6877525a9dd03
-> >
-> > I think it's wrong to try to handle the race in rmap walk by making
-> > magic checks on vm_flags VM_GROWSDOWN|GROWSUP and
-> > vma->vm_mm->map_count == 1, when we can fix it fully and simply in
-> > exec.c by indexing two vmas in the same anon-vma with a different
-> > vm_start so the pages will be found at all times by the rmap_walk.
-> >
-> 
-> I like this approach than exclude temporal stack while migration.
-> 
-> If we look it through viewpoint of performance, Mel and Kame's one
-> look good and simple. But If I look it through viewpoint of
-> correctness, Andrea's one looks good.
-> I mean Mel's approach is that problem is here but let us solve it with
-> there. it makes dependency between here and there. And In future, if
-> temporal stack and rmap code might be problem, we also should solve it
-> in there. :)
+Dear Sirs, 
+   
+   We take the liberty of writing to you would like to inform you that currently we are selling our domain name www.pkmap.cn. 
+   
+   This domain name would be important if you would like to open China Market in near future. 
+   
+   If you are interested in it , pls reply to us(mail to barcew@gmail.com) and disscuss the domain tranfer matters. 
+   
+   Sorry for the disturb if any. 
+   
+   Best Regards. 
+   
+   barcew
+   barcew@gmail.com
 
-That explains exactly why I wanted to solve it locally to exec.c and
-by using the same method of mremap. And it fixes all users not just
-migrate (split_huge_page may also need it in the future if we ever
-allow the user stack to be born huge instead of growing huge with
-khugepaged if needed).
