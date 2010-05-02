@@ -1,33 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab0EBFoH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 01:44:07 -0400
-Received: from outgoing.hosting.tp.pl ([193.110.120.20]:20538 "EHLO
-	mta6.hosting.tp.pl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751124Ab0EBFoE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 01:44:04 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=Windows-1251
-Message-id: <0L1S00EE00C0TN90@mta6.hosting.tp.pl>
-Reply-to: tomonori@discuz.org
-From: Tomo Sand Nori <monika.nike@neostrada.pl>
-Subject: Urgent Attention..
-Date: Sat, 01 May 2010 21:55:40 -0700
-X-Priority: 3
-X-MSMail-priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MIMEOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: unlisted-recipients:; (no To-header on input)
+	id S1755124Ab0EBGD7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 02:03:59 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46207 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752704Ab0EBGD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 May 2010 02:03:58 -0400
+Date: Sun, 2 May 2010 08:03:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ring-buffer: Wrap open-coded WARN_ONCE
+Message-ID: <20100502060354.GA5281@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+	lkml <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings from Japan
+Wrap open-coded WARN_ONCE functionality into the equivalent macro.
 
-I'm Mr. Tomo Sand Nori Head of Account Dept, Mitsubishi Bank,here in Japan.
-I find it pleasurable to offer you my partnership in business.
-get back to me for more details Email: sandtomo@w.cn
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ kernel/trace/ring_buffer.c |   14 +++++---------
+ 1 files changed, 5 insertions(+), 9 deletions(-)
 
-Mr.Tomo Nori
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 41ca394..19a7407 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1979,17 +1979,13 @@ rb_add_time_stamp(struct ring_buffer_per_cpu *cpu_buffer,
+ 		  u64 *ts, u64 *delta)
+ {
+ 	struct ring_buffer_event *event;
+-	static int once;
+ 	int ret;
+ 
+-	if (unlikely(*delta > (1ULL << 59) && !once++)) {
+-		printk(KERN_WARNING "Delta way too big! %llu"
+-		       " ts=%llu write stamp = %llu\n",
+-		       (unsigned long long)*delta,
+-		       (unsigned long long)*ts,
+-		       (unsigned long long)cpu_buffer->write_stamp);
+-		WARN_ON(1);
+-	}
++	WARN_ONCE(*delta > (1ULL << 59),
++		  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n",
++		  (unsigned long long)*delta,
++		  (unsigned long long)*ts,
++		  (unsigned long long)cpu_buffer->write_stamp);
+ 
+ 	/*
+ 	 * The delta is too big, we to add a
+-- 
+1.7.0.3
+
+
+-- 
+Regards/Gruss,
+    Boris.
