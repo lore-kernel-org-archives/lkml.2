@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab0EBPHe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 11:07:34 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:38845 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756853Ab0EBPHb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 11:07:31 -0400
-Date: Sun, 2 May 2010 11:07:31 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-cc: dri-devel@lists.freedesktop.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: s2ram slow (radeon) / failing (usb)
-In-Reply-To: <20100502155653.68fc3643@neptune.home>
-Message-ID: <Pine.LNX.4.44L0.1005021102340.25185-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757964Ab0EBPJO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 11:09:14 -0400
+Received: from mail.gmx.net ([213.165.64.20]:50124 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756939Ab0EBPJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 May 2010 11:09:06 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/UX6tkr6bUC/YzU+rL1/9oKpbbHSLbI9Z60qvIVl
+	4+olBbQW7cVHVb
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
+       ScottFang@viatech.com.cn, corbet@lwn.net,
+       Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH 3/4] viafb: make suspend and resume work (on all machines?)
+Date: Sun,  2 May 2010 15:17:33 +0000
+Message-Id: <1272813454-3229-4-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.6.3.2
+In-Reply-To: <1272813454-3229-1-git-send-email-FlorianSchandinat@gmx.de>
+References: <1272813454-3229-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.52000000000000002
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2 May 2010, Bruno [UTF-8] Prémont wrote:
+viafb: make suspend and resume work (on all machines?)
 
-> Hi,
-> 
-> On a IEI Kino 690S1 I'm having a hard time to get s2ram running.
-> It freezes during device suspend (unless I rmmod everything USB
-> related) - usb fails even in pm_test case 'devices'.
-> 
-> When the system is able to suspend it takes an eternity (more than 3
-> minutes to wake-up, the radeon apparently being responsible for quite
-> a big share of that slowness.
-> 
-> 
-> During resume early it looks like every PCI access needs about a second,
-> and there are a few cases where during lots of seconds nothing seems to
-> happen and the first event following is related to radeon.
-> 
-> The kernel used is todays Linus's tree at commit be1066bbcd443a65df312fdecea7e4959adedb45
-> with Dave's drm-linus and drm-radeon-testing applied on top.
-> 
-> Note, I've not been able to suspend to RAM properly recently (last one
-> that worked correctly but resumed without graphics was some-when during
-> 2.6.2x, before KMS)
-> Since then the system would either fail suspend or resume.
-> 
-> Manual changes I applied in order to find out some context information:
-> - add a few debugging printk's to ata/ahci as that was the last entry
->   on serial console for freezing suspends (that one succeeded but
->   following step never completed, from suspend_prepare that would have
->   been USB => unload usb before suspend)
-> - strip "if EMBEDED" from CONFIG_SERIAL_8250_PNP and disabled it so serial
->   console would continue working as long as possible and output suspend
->   progress (resume output happens only very late)
-> 
-> Is there some additional information I could gather in order do help
-> improving s2ram on this system?
-> - get it to suspend with usb loaded (ohci + ehci)
-> - get it to resume a reasonable speed
+This patch removes the dangerous suspend and resume code that was
+developed for VX855 only. After this the framebuffer is expected to
+cause no longer serious (freezing) issues on any machines.
+However the hardware acceleration is broken now so only doing resume
+with unaccelerated framebuffers is save. This did not work previously
+as the 2D engine is not mapped if the framebuffer is not accelerated.
+The acceleration issue will be addressed later.
 
-There's no way to fix the USB problem without knowing what goes wrong.  
-Let's see how far you get before the system freezes on a kernel with 
-CONFIG_USB_DEBUG enabled.
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+---
+ drivers/video/via/viafbdev.c |   10 ----------
+ drivers/video/via/viafbdev.h |    3 ---
+ 2 files changed, 0 insertions(+), 13 deletions(-)
 
-Alan Stern
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index b4baed6..b5099b9 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -1746,11 +1746,6 @@ int viafb_suspend(struct pci_dev *pdev, pm_message_t state)
+ {
+ 	if (state.event == PM_EVENT_SUSPEND) {
+ 		acquire_console_sem();
+-
+-		memcpy_fromio(viaparinfo->shared->saved_regs,
+-			      viaparinfo->shared->vdev->engine_mmio + 0x100,
+-			      0xff * sizeof(u32));
+-
+ 		fb_set_suspend(viafbinfo, 1);
+ 
+ 		viafb_sync(viafbinfo);
+@@ -1772,11 +1767,6 @@ int viafb_resume(struct pci_dev *pdev)
+ 	if (pci_enable_device(pdev))
+ 		goto fail;
+ 	pci_set_master(pdev);
+-
+-	memcpy_toio(viaparinfo->shared->vdev->engine_mmio + 0x100,
+-		    viaparinfo->shared->saved_regs,
+-		    0x100 * sizeof(u32));
+-
+ 	viafb_set_par(viafbinfo);
+ 	if (viafb_dual_fb)
+ 		viafb_set_par(viafbinfo1);
+diff --git a/drivers/video/via/viafbdev.h b/drivers/video/via/viafbdev.h
+index 3bcae0a..be2fad6 100644
+--- a/drivers/video/via/viafbdev.h
++++ b/drivers/video/via/viafbdev.h
+@@ -57,9 +57,6 @@ struct viafb_shared {
+ 		u8 dst_bpp, u32 dst_addr, u32 dst_pitch, u32 dst_x, u32 dst_y,
+ 		u32 *src_mem, u32 src_addr, u32 src_pitch, u32 src_x, u32 src_y,
+ 		u32 fg_color, u32 bg_color, u8 fill_rop);
+-
+-	/* For suspend/resume */
+-	u32 saved_regs[0x100];
+ };
+ 
+ struct viafb_par {
+-- 
+1.6.3.2
 
