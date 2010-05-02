@@ -1,169 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab0EBPgY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 11:36:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39548 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752214Ab0EBPgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 11:36:22 -0400
-Message-ID: <4BDD9BD3.2080301@redhat.com>
-Date: Sun, 02 May 2010 18:35:47 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com>> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>> <4BD1A74A.2050003@redhat.com>> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com>> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>> <4BD3377E.6010303@redhat.com>> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>> <ce808441-fae6-4a33-8335-f7702740097a@default>> <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz> <4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default> <4BDB026E.1030605@redhat.com> <4BDB18CE.2090608@goop.org 4BDB2069.4000507@redhat.com> <3a62a058-7976-48d7-acd2-8c6a8312f10f@default>
-In-Reply-To: <3a62a058-7976-48d7-acd2-8c6a8312f10f@default>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757283Ab0EBP5J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 11:57:09 -0400
+Received: from mail-qy0-f189.google.com ([209.85.221.189]:64086 "EHLO
+	mail-qy0-f189.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755133Ab0EBP5G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 May 2010 11:57:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=JR4rqR8uwGfFJREyhEPm8e6hhuy5YPKMQkTq3FrsJf8Do99SKYSS5dOYYrTWpxYbCs
+         6PwUgqeI78fLTDwn9XCn9WVdhQffwYA12tMxQ4fk+2ber9zlRM3MrUM+oqH1UBhpTp9Z
+         eT5L4AwigqzSrJhl2500U/exh5eScP+WPATpM=
+Subject: [PATCH] Staging: cxt1e1: Fix build error
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Bob Beers <bob.beers@gmail.com>,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 02 May 2010 11:56:53 -0400
+Message-ID: <1272815813.16886.5.camel@lenovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2010 08:10 PM, Dan Magenheimer wrote:
->> Eventually you'll have to swap frontswap pages, or kill uncooperative
->> guests.  At which point all of the simplicity is gone.
->>      
-> OK, now I think I see the crux of the disagreement.
->    
+With today linux-next I got this compilation error:
 
-Alas, I think we're pretty far from that.
+drivers/staging/cxt1e1/linux.c: In function ‘c4_add_dev’:
+drivers/staging/cxt1e1/linux.c:1195: error: ‘struct net_device’ has no member named ‘priv’
 
-> NO!  Frontswap on Xen+tmem never *never* _never_ NEVER results
-> in host swapping.
+I think this patch solves the issue
 
-That's a bug.  You're giving the guest memory without the means to take 
-it back.  The result is that you have to _undercommit_ your memory 
-resources.
+Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+---
+ drivers/staging/cxt1e1/linux.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Consider a machine running a guest, with most of its memory free.  You 
-give the memory via frontswap to the guest.  The guest happily swaps to 
-frontswap, and uses the freed memory for something unswappable, like 
-mlock()ed memory or hugetlbfs.
-
-Now the second node dies and you need memory to migrate your guests 
-into.  But you can't, and the hypervisor is at the mercy of the guest 
-for getting its memory back; and the guest can't do it (at least not 
-quickly).
-
-> Host swapping is evil.  Host swapping is
-> the root of most of the bad reputation that memory overcommit
-> has gotten from VMware customers.  Host swapping can't be
-> avoided with some memory overcommit technologies (such as page
-> sharing), but frontswap on Xen+tmem CAN and DOES avoid it.
->    
-
-In this case the guest expects that swapped out memory will be slow 
-(since was freed via the swap API; it will be slow if the host happened 
-to run out of tmem).  So by storing this memory on disk you aren't 
-reducing performance beyond what you promised to the guest.
-
-Swapping guest RAM will indeed cause a performance hit, but sometimes 
-you need to do it.
-
-> So, to summarize:
->
-> 1) You agreed that a synchronous interface for frontswap makes
->     sense for swap-to-in-kernel-compressed-RAM because it is
->     truly swapping to RAM.
->    
-
-Because the interface is internal to the kernel.
-
-> 2) You have pointed out that an asynchronous interface for
->     frontswap makes more sense for KVM than a synchronous
->     interface, because KVM does host swapping.
-
-kvm's host swapping is unrelated.  Host swapping swaps guest-owned 
-memory; that's not what we want here.  We want to cache guest swap in 
-RAM, and that's easily done by having a virtual disk cached in main 
-memory.  We're simply presenting a disk with a large write-back cache to 
-the guest.
-
-You could just as easily cache a block device in free RAM with Xen.  
-Have a tmem domain behave as the backend for your swap device.  Use 
-ballooning to force tmem to disk, or to allow more cache when memory is 
-free.
-
-Voila: you no longer depend on guests (you depend on the tmem domain, 
-but that's part of the host code), you don't need guest modifications, 
-so it works across a wider range of guests.
-
->    Then you said
->     if you have an asynchronous interface anyway, the existing
->     swap code works just fine with no changes so frontswap
->     is not needed at all... for KVM.
->    
-
-For any hypervisor which implements virtual disks with write-back cache 
-in host memory.
-
-> 3) You have suggested that if Xen were more like KVM and required
->     host-swapping, then Xen doesn't need frontswap either.
->    
-
-Host swapping is not a requirement.
-
-> BUT frontswap on Xen+tmem always truly swaps to RAM.
->    
-
-AND that's a problem because it puts the hypervisor at the mercy of the 
-guest.
-
-> So there are two users of frontswap for which the synchronous
-> interface makes sense.
-
-I believe there is only one.  See below.
-
-> I believe there may be more in the
-> future and you disagree but, as Jeremy said, "a general Linux
-> principle is not to overdesign interfaces for hypothetical users,
-> only for real needs."  We have demonstrated there is a need
-> with at least two users so the debate is only whether the
-> number of users is two or more than two.
->
-> Frontswap is a very non-invasive patch and is very cleanly
-> layered so that if it is not in the presence of either of
-> the intended "users", it can be turned off in many different
-> ways with zero overhead (CONFIG'ed off) or extremely small overhead
-> (frontswap_ops is never set; or frontswap_ops is set but the
-> underlying hypervisor doesn't support it so frontswap_poolid
-> never gets set).
->    
-
-The problem is not the complexity of the patch itself.  It's the fact 
-that it introduces a new external API.  If we refactor swapping, that 
-stands in the way.
-
-How much, that's up to the mm maintainers to say.  If it isn't a problem 
-for them, fine (but I still think 
-swap-to-RAM-without-hypervisor-decommit is a bad idea).
-
-> So... KVM doesn't need it and won't use it.  Do you, Avi, have
-> any other objections as to why the frontswap patch shouldn't be
-> accepted as is for the users that DO need it and WILL use it?
->    
-
-Even ignoring the problems above (which are really hypervisor problems 
-and the guest, which is what we're discussing here, shouldn't care if 
-the hypervisor paints itself into an oom), a synchronous single-page DMA 
-API is a bad idea.  Look at the Xen network and block code, while they 
-eventually do a memory copy for every page they see, they try to batch 
-multiple pages into an exit, and make the response asynchronous.
-
-As an example, with a batched API you could save/restore the fpu context 
-and use sse for copying the memory, while with a single page API you'd 
-probably lost out.  Synchronous DMA, even for emulated hardware, is out 
-of place in 2010.
-
+diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
+index 23e184d..d8ef006 100644
+--- a/drivers/staging/cxt1e1/linux.c
++++ b/drivers/staging/cxt1e1/linux.c
+@@ -1192,7 +1192,7 @@ c4_add_dev (hdw_info_t * hi, int brdno, unsigned long f0, unsigned long f1,
+                 hi->devname, irq1);
+         unregister_netdev (ndev);
+         free_irq (irq0, ndev);
+-        OS_kfree (ndev->priv);
++	OS_kfree(netdev_priv(ndev));
+         OS_kfree (ndev);
+         error_flag = EIO;
+         return 0;
 -- 
-error compiling committee.c: too many arguments to function
+1.7.0.4
+
+
+
+
 
