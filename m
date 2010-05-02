@@ -1,80 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758962Ab0EBW7Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 18:59:25 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51467 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758828Ab0EBW7P (ORCPT
+	id S1758991Ab0EBW73 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 18:59:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45142 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888Ab0EBW7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 18:59:15 -0400
+	Sun, 2 May 2010 18:59:13 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
+Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tzanussi@gmail.com>,
        =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 0/5] perf inject + say no to __KERNEL__ only stuff
-Date: Sun,  2 May 2010 19:58:57 -0300
-Message-Id: <1272841142-26029-1-git-send-email-acme@infradead.org>
+       Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/5] perf/live: don't synthesize build ids at the end of a live mode trace
+Date: Sun,  2 May 2010 19:58:59 -0300
+Message-Id: <1272841142-26029-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+In-Reply-To: <1272841142-26029-1-git-send-email-acme@infradead.org>
+References: <1272841142-26029-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Tom Zanussi <tzanussi@gmail.com>
 
-Hi Ingo,
+It doesn't really make sense to record the build ids at the end of a
+live mode session - live mode samples need that information during the
+trace rather than at the end.
 
-	Please consider pulling from:
+Leave event__synthesize_build_id() in place, however; we'll still be
+using that to synthesize build ids in a more timely fashion in a
+future patch.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+LKML-Reference: <1272696080-16435-2-git-send-email-tzanussi@gmail.com>
+Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c |    7 -----
+ tools/perf/util/header.c    |   61 -------------------------------------------
+ tools/perf/util/header.h    |    2 -
+ 3 files changed, 0 insertions(+), 70 deletions(-)
 
-- Arnaldo
-
-Arnaldo Carvalho de Melo (3):
-  perf tools: Don't use code surrounded by __KERNEL__
-  perf record: Don't exit in live mode when no tracepoints are enabled
-  perf inject: Refactor read_buildid function
-
-Tom Zanussi (2):
-  perf/live: don't synthesize build ids at the end of a live mode trace
-  perf: add perf-inject builtin
-
- tools/perf/Makefile                    |   17 +--
- tools/perf/builtin-annotate.c          |    2 +-
- tools/perf/builtin-buildid-list.c      |    2 +-
- tools/perf/builtin-diff.c              |    4 +-
- tools/perf/builtin-inject.c            |  228 ++++++++++++++++++++++++++++++++
- tools/perf/builtin-kmem.c              |    2 +-
- tools/perf/builtin-lock.c              |    2 +-
- tools/perf/builtin-record.c            |   24 ++--
- tools/perf/builtin-report.c            |    2 +-
- tools/perf/builtin-sched.c             |    2 +-
- tools/perf/builtin-timechart.c         |    2 +-
- tools/perf/builtin-top.c               |    2 +-
- tools/perf/builtin-trace.c             |    2 +-
- tools/perf/builtin.h                   |    1 +
- tools/perf/perf.c                      |    1 +
- tools/perf/util/bitmap.c               |   21 +++
- tools/perf/util/header.c               |   96 ++++----------
- tools/perf/util/header.h               |    2 -
- tools/perf/util/hweight.c              |   31 +++++
- tools/perf/util/include/asm/bitops.h   |   18 ---
- tools/perf/util/include/asm/hweight.h  |    8 +
- tools/perf/util/include/linux/bitmap.h |   38 +++++-
- tools/perf/util/include/linux/bitops.h |   20 ++--
- tools/perf/util/session.c              |    3 +-
- tools/perf/util/session.h              |    3 +-
- tools/perf/util/trace-event-read.c     |   19 +++-
- tools/perf/util/trace-event.h          |    2 +-
- 27 files changed, 407 insertions(+), 147 deletions(-)
- create mode 100644 tools/perf/builtin-inject.c
- create mode 100644 tools/perf/util/bitmap.c
- create mode 100644 tools/perf/util/hweight.c
- delete mode 100644 tools/perf/util/include/asm/bitops.h
- create mode 100644 tools/perf/util/include/asm/hweight.h
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 83b308a..1a73796 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -446,13 +446,6 @@ static void atexit_header(void)
+ 
+ 		process_buildids();
+ 		perf_header__write(&session->header, output, true);
+-	} else {
+-		int err;
+-
+-		err = event__synthesize_build_ids(process_synthesized_event,
+-						  session);
+-		if (err < 0)
+-			pr_err("Couldn't synthesize build ids.\n");
+ 	}
+ }
+ 
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 6227dc4..2d1d97e 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1136,67 +1136,6 @@ int event__synthesize_build_id(struct dso *pos, u16 misc,
+ 	return err;
+ }
+ 
+-static int __event_synthesize_build_ids(struct list_head *head, u16 misc,
+-					event__handler_t process,
+-					struct machine *machine,
+-					struct perf_session *session)
+-{
+-	struct dso *pos;
+-
+-	dsos__for_each_with_build_id(pos, head) {
+-		int err;
+-		if (!pos->hit)
+-			continue;
+-
+-		err = event__synthesize_build_id(pos, misc, process,
+-						 machine, session);
+-		if (err < 0)
+-			return err;
+-	}
+-
+-	return 0;
+-}
+-
+-int event__synthesize_build_ids(event__handler_t process,
+-				struct perf_session *session)
+-{
+-	int err = 0;
+-	u16 kmisc, umisc;
+-	struct machine *pos;
+-	struct rb_node *nd;
+-
+-	if (!dsos__read_build_ids(&session->header, true))
+-		return 0;
+-
+-	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
+-		pos = rb_entry(nd, struct machine, rb_node);
+-		if (machine__is_host(pos)) {
+-			kmisc = PERF_RECORD_MISC_KERNEL;
+-			umisc = PERF_RECORD_MISC_USER;
+-		} else {
+-			kmisc = PERF_RECORD_MISC_GUEST_KERNEL;
+-			umisc = PERF_RECORD_MISC_GUEST_USER;
+-		}
+-
+-		err = __event_synthesize_build_ids(&pos->kernel_dsos, kmisc,
+-						   process, pos, session);
+-		if (err == 0)
+-			err = __event_synthesize_build_ids(&pos->user_dsos, umisc,
+-							   process, pos, session);
+-		if (err)
+-			break;
+-	}
+-
+-	if (err < 0) {
+-		pr_debug("failed to synthesize build ids\n");
+-		return err;
+-	}
+-
+-	dsos__cache_build_ids(&session->header);
+-
+-	return 0;
+-}
+-
+ int event__process_build_id(event_t *self,
+ 			    struct perf_session *session)
+ {
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index f39443d..402ac24 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -122,8 +122,6 @@ int event__synthesize_build_id(struct dso *pos, u16 misc,
+ 			       event__handler_t process,
+ 			       struct machine *machine,
+ 			       struct perf_session *session);
+-int event__synthesize_build_ids(event__handler_t process,
+-				struct perf_session *session);
+ int event__process_build_id(event_t *self, struct perf_session *session);
+ 
+ #endif /* __PERF_HEADER_H */
+-- 
+1.6.2.5
 
