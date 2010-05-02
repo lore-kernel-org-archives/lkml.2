@@ -1,145 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab0EBPJq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 11:09:46 -0400
-Received: from mail.gmx.net ([213.165.64.20]:50507 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755008Ab0EBPJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 11:09:07 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX19S5BUBZGNSjPX44eXzSgofuy61NzigsrFauP1X1q
-	Livfxu8ViVrUri
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
-       ScottFang@viatech.com.cn, corbet@lwn.net,
-       Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 4/4] viafb: fix hardware acceleration for suspend & resume
-Date: Sun,  2 May 2010 15:17:34 +0000
-Message-Id: <1272813454-3229-5-git-send-email-FlorianSchandinat@gmx.de>
-X-Mailer: git-send-email 1.6.3.2
-In-Reply-To: <1272813454-3229-1-git-send-email-FlorianSchandinat@gmx.de>
-References: <1272813454-3229-1-git-send-email-FlorianSchandinat@gmx.de>
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.44
+	id S1754232Ab0EBPgY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 11:36:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39548 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752214Ab0EBPgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 May 2010 11:36:22 -0400
+Message-ID: <4BDD9BD3.2080301@redhat.com>
+Date: Sun, 02 May 2010 18:35:47 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+       Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <4BD16D09.2030803@redhat.com>> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>> <4BD1A74A.2050003@redhat.com>> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com>> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>> <4BD3377E.6010303@redhat.com>> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>> <ce808441-fae6-4a33-8335-f7702740097a@default>> <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz> <4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default> <4BDB026E.1030605@redhat.com> <4BDB18CE.2090608@goop.org 4BDB2069.4000507@redhat.com> <3a62a058-7976-48d7-acd2-8c6a8312f10f@default>
+In-Reply-To: <3a62a058-7976-48d7-acd2-8c6a8312f10f@default>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-viafb: fix hardware acceleration for suspend & resume
+On 05/01/2010 08:10 PM, Dan Magenheimer wrote:
+>> Eventually you'll have to swap frontswap pages, or kill uncooperative
+>> guests.  At which point all of the simplicity is gone.
+>>      
+> OK, now I think I see the crux of the disagreement.
+>    
 
-This patch splits the acceleration initialization in two parts:
-The first is only called during probe and is used to allocate
-resources. The second part is also called on resume to reinitalize
-the 2D engine. This should fix all acceleration issues after resume
-most notable an "invisible" cursor and as we do nothing special it is
-reasonable to assume that it works on all supported IGPs.
+Alas, I think we're pretty far from that.
 
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
----
- drivers/video/via/accel.c    |   41 +++++++++++++++++++++++++----------------
- drivers/video/via/accel.h    |    1 +
- drivers/video/via/viafbdev.c |    2 ++
- 3 files changed, 28 insertions(+), 16 deletions(-)
+> NO!  Frontswap on Xen+tmem never *never* _never_ NEVER results
+> in host swapping.
 
-diff --git a/drivers/video/via/accel.c b/drivers/video/via/accel.c
-index 189aba4..49c27b5 100644
---- a/drivers/video/via/accel.c
-+++ b/drivers/video/via/accel.c
-@@ -318,9 +318,7 @@ int viafb_init_engine(struct fb_info *info)
- {
- 	struct viafb_par *viapar = info->par;
- 	void __iomem *engine;
--	int highest_reg, i;
--	u32 vq_start_addr, vq_end_addr, vq_start_low, vq_end_low, vq_high,
--		vq_len, chip_name = viapar->shared->chip_info.gfx_chip_name;
-+	u32 chip_name = viapar->shared->chip_info.gfx_chip_name;
- 
- 	engine = viapar->shared->vdev->engine_mmio;
- 	if (!engine) {
-@@ -329,18 +327,6 @@ int viafb_init_engine(struct fb_info *info)
- 		return -ENOMEM;
- 	}
- 
--	/* Initialize registers to reset the 2D engine */
--	switch (viapar->shared->chip_info.twod_engine) {
--	case VIA_2D_ENG_M1:
--		highest_reg = 0x5c;
--		break;
--	default:
--		highest_reg = 0x40;
--		break;
--	}
--	for (i = 0; i <= highest_reg; i += 4)
--		writel(0x0, engine + i);
--
- 	switch (chip_name) {
- 	case UNICHROME_CLE266:
- 	case UNICHROME_K400:
-@@ -386,6 +372,29 @@ int viafb_init_engine(struct fb_info *info)
- 	viapar->shared->vdev->camera_fbmem_offset = viapar->fbmem_free;
- #endif
- 
-+	viafb_start_engine(viapar);
-+	return 0;
-+}
-+
-+void viafb_start_engine(struct viafb_par *viapar)
-+{
-+	void __iomem *engine = viapar->shared->vdev->engine_mmio;
-+	int highest_reg, i;
-+	u32 vq_start_addr, vq_end_addr, vq_start_low, vq_end_low, vq_high,
-+		vq_len, chip_name = viapar->shared->chip_info.gfx_chip_name;
-+
-+	/* Initialize registers to reset the 2D engine */
-+	switch (viapar->shared->chip_info.twod_engine) {
-+	case VIA_2D_ENG_M1:
-+		highest_reg = 0x5c;
-+		break;
-+	default:
-+		highest_reg = 0x40;
-+		break;
-+	}
-+	for (i = 0; i <= highest_reg; i += 4)
-+		writel(0x0, engine + i);
-+
- 	/* Init AGP and VQ regs */
- 	switch (chip_name) {
- 	case UNICHROME_K8M890:
-@@ -473,7 +482,7 @@ int viafb_init_engine(struct fb_info *info)
- 	writel(0x0, engine + VIA_REG_CURSOR_ORG);
- 	writel(0x0, engine + VIA_REG_CURSOR_BG);
- 	writel(0x0, engine + VIA_REG_CURSOR_FG);
--	return 0;
-+	return;
- }
- 
- void viafb_show_hw_cursor(struct fb_info *info, int Status)
-diff --git a/drivers/video/via/accel.h b/drivers/video/via/accel.h
-index 2c122d2..5352f87 100644
---- a/drivers/video/via/accel.h
-+++ b/drivers/video/via/accel.h
-@@ -204,6 +204,7 @@
- #define VIA_BITBLT_FILL		3
- 
- int viafb_init_engine(struct fb_info *info);
-+void viafb_start_engine(struct viafb_par *viapar);
- void viafb_show_hw_cursor(struct fb_info *info, int Status);
- void viafb_wait_engine_idle(struct fb_info *info);
- 
-diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-index b5099b9..aaf572a 100644
---- a/drivers/video/via/viafbdev.c
-+++ b/drivers/video/via/viafbdev.c
-@@ -1767,6 +1767,8 @@ int viafb_resume(struct pci_dev *pdev)
- 	if (pci_enable_device(pdev))
- 		goto fail;
- 	pci_set_master(pdev);
-+	if (viaparinfo->shared->vdev->engine_mmio)
-+		viafb_start_engine(viaparinfo);
- 	viafb_set_par(viafbinfo);
- 	if (viafb_dual_fb)
- 		viafb_set_par(viafbinfo1);
+That's a bug.  You're giving the guest memory without the means to take 
+it back.  The result is that you have to _undercommit_ your memory 
+resources.
+
+Consider a machine running a guest, with most of its memory free.  You 
+give the memory via frontswap to the guest.  The guest happily swaps to 
+frontswap, and uses the freed memory for something unswappable, like 
+mlock()ed memory or hugetlbfs.
+
+Now the second node dies and you need memory to migrate your guests 
+into.  But you can't, and the hypervisor is at the mercy of the guest 
+for getting its memory back; and the guest can't do it (at least not 
+quickly).
+
+> Host swapping is evil.  Host swapping is
+> the root of most of the bad reputation that memory overcommit
+> has gotten from VMware customers.  Host swapping can't be
+> avoided with some memory overcommit technologies (such as page
+> sharing), but frontswap on Xen+tmem CAN and DOES avoid it.
+>    
+
+In this case the guest expects that swapped out memory will be slow 
+(since was freed via the swap API; it will be slow if the host happened 
+to run out of tmem).  So by storing this memory on disk you aren't 
+reducing performance beyond what you promised to the guest.
+
+Swapping guest RAM will indeed cause a performance hit, but sometimes 
+you need to do it.
+
+> So, to summarize:
+>
+> 1) You agreed that a synchronous interface for frontswap makes
+>     sense for swap-to-in-kernel-compressed-RAM because it is
+>     truly swapping to RAM.
+>    
+
+Because the interface is internal to the kernel.
+
+> 2) You have pointed out that an asynchronous interface for
+>     frontswap makes more sense for KVM than a synchronous
+>     interface, because KVM does host swapping.
+
+kvm's host swapping is unrelated.  Host swapping swaps guest-owned 
+memory; that's not what we want here.  We want to cache guest swap in 
+RAM, and that's easily done by having a virtual disk cached in main 
+memory.  We're simply presenting a disk with a large write-back cache to 
+the guest.
+
+You could just as easily cache a block device in free RAM with Xen.  
+Have a tmem domain behave as the backend for your swap device.  Use 
+ballooning to force tmem to disk, or to allow more cache when memory is 
+free.
+
+Voila: you no longer depend on guests (you depend on the tmem domain, 
+but that's part of the host code), you don't need guest modifications, 
+so it works across a wider range of guests.
+
+>    Then you said
+>     if you have an asynchronous interface anyway, the existing
+>     swap code works just fine with no changes so frontswap
+>     is not needed at all... for KVM.
+>    
+
+For any hypervisor which implements virtual disks with write-back cache 
+in host memory.
+
+> 3) You have suggested that if Xen were more like KVM and required
+>     host-swapping, then Xen doesn't need frontswap either.
+>    
+
+Host swapping is not a requirement.
+
+> BUT frontswap on Xen+tmem always truly swaps to RAM.
+>    
+
+AND that's a problem because it puts the hypervisor at the mercy of the 
+guest.
+
+> So there are two users of frontswap for which the synchronous
+> interface makes sense.
+
+I believe there is only one.  See below.
+
+> I believe there may be more in the
+> future and you disagree but, as Jeremy said, "a general Linux
+> principle is not to overdesign interfaces for hypothetical users,
+> only for real needs."  We have demonstrated there is a need
+> with at least two users so the debate is only whether the
+> number of users is two or more than two.
+>
+> Frontswap is a very non-invasive patch and is very cleanly
+> layered so that if it is not in the presence of either of
+> the intended "users", it can be turned off in many different
+> ways with zero overhead (CONFIG'ed off) or extremely small overhead
+> (frontswap_ops is never set; or frontswap_ops is set but the
+> underlying hypervisor doesn't support it so frontswap_poolid
+> never gets set).
+>    
+
+The problem is not the complexity of the patch itself.  It's the fact 
+that it introduces a new external API.  If we refactor swapping, that 
+stands in the way.
+
+How much, that's up to the mm maintainers to say.  If it isn't a problem 
+for them, fine (but I still think 
+swap-to-RAM-without-hypervisor-decommit is a bad idea).
+
+> So... KVM doesn't need it and won't use it.  Do you, Avi, have
+> any other objections as to why the frontswap patch shouldn't be
+> accepted as is for the users that DO need it and WILL use it?
+>    
+
+Even ignoring the problems above (which are really hypervisor problems 
+and the guest, which is what we're discussing here, shouldn't care if 
+the hypervisor paints itself into an oom), a synchronous single-page DMA 
+API is a bad idea.  Look at the Xen network and block code, while they 
+eventually do a memory copy for every page they see, they try to batch 
+multiple pages into an exit, and make the response asynchronous.
+
+As an example, with a batched API you could save/restore the fpu context 
+and use sse for copying the memory, while with a single page API you'd 
+probably lost out.  Synchronous DMA, even for emulated hardware, is out 
+of place in 2010.
+
 -- 
-1.6.3.2
+error compiling committee.c: too many arguments to function
 
