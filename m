@@ -1,73 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab0EBBw4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 May 2010 21:52:56 -0400
-Received: from tex.lwn.net ([70.33.254.29]:35105 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754865Ab0EBBwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 May 2010 21:52:55 -0400
-Date: Sat, 1 May 2010 19:52:51 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
-       ScottFang@viatech.com.cn
-Subject: Re: [PATCH 24/30] viafb: Add a driver for the video capture engine
-Message-ID: <20100501195251.50093ddb@bike.lwn.net>
-In-Reply-To: <4BDCD2FD.8090104@gmx.de>
-References: <1272493051-25380-1-git-send-email-corbet@lwn.net>
-	<1272493051-25380-25-git-send-email-corbet@lwn.net>
-	<4BDCD2FD.8090104@gmx.de>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1757406Ab0EBB5O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 May 2010 21:57:14 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:55070 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754287Ab0EBB5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 May 2010 21:57:13 -0400
+Date: Sat, 1 May 2010 20:56:18 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
+ and rmap_walk() during migration by not migrating temporary stacks
+In-Reply-To: <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1005012055010.2663@router.home>
+References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie> <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 02 May 2010 03:18:53 +0200
-Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+On Thu, 29 Apr 2010, Mel Gorman wrote:
 
-> > +config FB_VIA_CAMERA
-> > +	tristate "VIAFB camera controller support"
-> > +	depends on FB_VIA
-> > +	select VIDEOBUF_DMA_SG
-> > +	help
-> > +	   Driver support for the integrated camera controller in VIA
-> > +	   Chrome9 chipsets.  Currently only tested on OLPC xo-1.5 systems
-> > +	   with ov7670 sensors.
-> > +  
-> 
-> Probably this is not the right place for this config option. Even if it 
-> currently depends on the framebuffer having it there is just confusing. 
+> There is a race between shift_arg_pages and migration that triggers this bug.
+> A temporary stack is setup during exec and later moved. If migration moves
+> a page in the temporary stack and the VMA is then removed before migration
+> completes, the migration PTE may not be found leading to a BUG when the
+> stack is faulted.
 
-It's the wrong place for the driver as a whole; it needs to move to
-drivers/media/video, and the configuration option with it.  As noted,
-the camera driver isn't ready for submission yet; that's on a list of
-about a half-dozen things that need fixing.  There's just a bit more
-stuff to separate to make that move possible.
+A simpler solution would be to not allow migration of the temporary stack?
 
-One other thing to consider is moving via-core, i2c, and gpio to
-drivers/mfd.  It's perhaps a more logical place for it, but I'm not
-sure there's a lot of value in making that move.
-
-> Additionally you should depend/select some V4L stuff to make the 
-> following compile errors go away:
-
-OK.  A half-dozen plus one things to fix.
-
-> Otherwise you can count this patch series as
-> Acked-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> Although it is still far away from destination and has its issues but 
-> it's a step forward and delaying it would be probably just frustrating 
-> for both of us.
-
-Thanks for reviewing it!
-
-There are definitely things to fix, and I expect some of them to last
-past the merge window.  But, hopefully, it's progress, and it's very
-much my intention to continue to make things better.
-
-jon
