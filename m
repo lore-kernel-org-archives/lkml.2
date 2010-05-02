@@ -1,61 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758813Ab0EBVHL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 17:07:11 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20474 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756865Ab0EBVHJ convert rfc822-to-8bit (ORCPT
+	id S1758830Ab0EBVXM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 17:23:12 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36276 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756335Ab0EBVXI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 17:07:09 -0400
+	Sun, 2 May 2010 17:23:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend blockers from user-space
+Date: Sun, 2 May 2010 23:23:30 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Jim Collar <jim.collar@eqware.net>,
+       "Greg Kroah-Hartman" <gregkh@suse.de>, Avi Kivity <avi@redhat.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Magnus Damm <damm@igel.co.jp>, Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
+References: <1272667021-21312-1-git-send-email-arve@android.com> <1272667021-21312-2-git-send-email-arve@android.com> <1272667021-21312-3-git-send-email-arve@android.com>
+In-Reply-To: <1272667021-21312-3-git-send-email-arve@android.com>
 MIME-Version: 1.0
-Message-ID: <ae6823b2-09ad-4e9d-ad7e-40922cf9b6c9@default>
-Date: Sun, 2 May 2010 14:05:59 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, hugh.dickins@tiscali.co.uk, ngupta@vflare.org,
-       JBeulich@novell.com, chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>
- <ce808441-fae6-4a33-8335-f7702740097a@default> <20100428055538.GA1730@ucw.cz>
- <1272591924.23895.807.camel@nimitz> <4BDA8324.7090409@redhat.com>
- <084f72bf-21fd-4721-8844-9d10cccef316@default> <4BDB026E.1030605@redhat.com>
- <4BDB18CE.2090608@goop.org4BDB2069.4000507@redhat.com>
- <3a62a058-7976-48d7-acd2-8c6a8312f10f@default20100502071059.GF1790@ucw.cz>
- <47d6b5d9-beb5-4e49-9910-064d6f7b13e5@default
- 20100502200615.GA9051@elf.ucw.cz>
-In-Reply-To: <20100502200615.GA9051@elf.ucw.cz>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090203.4BDDE959.00F9:SCFMA4539811,ss=1,fgs=0
+Message-Id: <201005022323.30128.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Pavel Machek [mailto:pavel@ucw.cz]
+On Saturday 01 May 2010, Arve Hjønnevåg wrote:
+> Add a misc device, "suspend_blocker", that allows user-space processes
+> to block auto suspend. The device has ioctls to create a suspend_blocker,
+> and to block and unblock suspend. To delete the suspend_blocker, close
+> the device.
 > 
-> > > So what needs to be said here is 'frontswap is XX times faster than
-> > > swap_ops based solution on workload YY'.
-> >
-> > Are you asking me to demonstrate that swap-to-hypervisor-RAM is
-> > faster than swap-to-disk?
+> Signed-off-by: Arve Hjønnevåg <arve@android.com>
+> ---
+>  Documentation/ioctl/ioctl-number.txt          |    3 +-
+>  Documentation/power/opportunistic-suspend.txt |   17 ++++
+>  include/linux/suspend_block_dev.h             |   25 +++++
+>  kernel/power/Kconfig                          |    9 ++
+>  kernel/power/Makefile                         |    1 +
+>  kernel/power/user_suspend_blocker.c           |  128 +++++++++++++++++++++++++
+>  6 files changed, 182 insertions(+), 1 deletions(-)
+>  create mode 100644 include/linux/suspend_block_dev.h
+>  create mode 100644 kernel/power/user_suspend_blocker.c
 > 
-> I would like comparison of swap-to-frontswap vs. swap-to-RAMdisk.
-> 									Pavel
+> diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
+> index dd5806f..e2458f7 100644
+> --- a/Documentation/ioctl/ioctl-number.txt
+> +++ b/Documentation/ioctl/ioctl-number.txt
+> @@ -254,7 +254,8 @@ Code  Seq#(hex)	Include File		Comments
+>  'q'	80-FF	linux/telephony.h	Internet PhoneJACK, Internet LineJACK
+>  		linux/ixjuser.h		<http://www.quicknet.net>
+>  'r'	00-1F	linux/msdos_fs.h and fs/fat/dir.c
+> -'s'	all	linux/cdk.h
+> +'s'	all	linux/cdk.h	conflict!
+> +'s'	all	linux/suspend_block_dev.h	conflict!
+>  't'	00-7F	linux/if_ppp.h
+>  't'	80-8F	linux/isdn_ppp.h
+>  't'	90	linux/toshiba.h
+> diff --git a/Documentation/power/opportunistic-suspend.txt b/Documentation/power/opportunistic-suspend.txt
+> index 3d060e8..f2b145e 100644
+> --- a/Documentation/power/opportunistic-suspend.txt
+> +++ b/Documentation/power/opportunistic-suspend.txt
+> @@ -117,3 +117,20 @@ if (list_empty(&state->pending_work))
+>  else
+>  	suspend_block(&state->suspend_blocker);
+>  
+> +User-space API
+> +==============
+> +
+> +To create a suspend_blocker from user-space, open the suspend_blocker device:
+> +    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
+> +then call:
+> +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_INIT(strlen(name)), name);
+> +
+> +To activate a suspend_blocker call:
+> +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_BLOCK);
+> +
+> +To unblock call:
+> +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_UNBLOCK);
+> +
+> +To destroy the suspend_blocker, close the device:
+> +    close(fd);
+> +
+> diff --git a/include/linux/suspend_block_dev.h b/include/linux/suspend_block_dev.h
+> new file mode 100644
+> index 0000000..24bc5c7
+> --- /dev/null
+> +++ b/include/linux/suspend_block_dev.h
+> @@ -0,0 +1,25 @@
+> +/* include/linux/suspend_block_dev.h
+> + *
+> + * Copyright (C) 2009 Google, Inc.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#ifndef _LINUX_SUSPEND_BLOCK_DEV_H
+> +#define _LINUX_SUSPEND_BLOCK_DEV_H
+> +
+> +#include <linux/ioctl.h>
+> +
+> +#define SUSPEND_BLOCKER_IOCTL_INIT(len)		_IOC(_IOC_WRITE, 's', 0, len)
+> +#define SUSPEND_BLOCKER_IOCTL_BLOCK		_IO('s', 1)
+> +#define SUSPEND_BLOCKER_IOCTL_UNBLOCK		_IO('s', 2)
+> +
+> +#endif
+> diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+> index 55a06a1..fe5a2f2 100644
+> --- a/kernel/power/Kconfig
+> +++ b/kernel/power/Kconfig
+> @@ -146,6 +146,15 @@ config OPPORTUNISTIC_SUSPEND
+>  	  determines the sleep state the system will be put into when there are
+>  	  no active suspend blockers.
+>  
+> +config USER_SUSPEND_BLOCKERS
+> +	bool "Userspace suspend blockers"
+> +	depends on OPPORTUNISTIC_SUSPEND
+> +	default y
+> +	---help---
+> +	  User-space suspend block api. Creates a misc device with ioctls
+> +	  to create, block and unblock a suspend_blocker. The suspend_blocker
+> +	  will be deleted when the device is closed.
+> +
+>  config HIBERNATION_NVS
+>  	bool
+>  
+> diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+> index ee5276d..78f703b 100644
+> --- a/kernel/power/Makefile
+> +++ b/kernel/power/Makefile
+> @@ -8,6 +8,7 @@ obj-$(CONFIG_PM_SLEEP)		+= console.o
+>  obj-$(CONFIG_FREEZER)		+= process.o
+>  obj-$(CONFIG_SUSPEND)		+= suspend.o
+>  obj-$(CONFIG_OPPORTUNISTIC_SUSPEND)	+= suspend_blocker.o
+> +obj-$(CONFIG_USER_SUSPEND_BLOCKERS)	+= user_suspend_blocker.o
+>  obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
+>  obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o
+>  obj-$(CONFIG_HIBERNATION_NVS)	+= hibernate_nvs.o
+> diff --git a/kernel/power/user_suspend_blocker.c b/kernel/power/user_suspend_blocker.c
+> new file mode 100644
+> index 0000000..dc1d06f
+> --- /dev/null
+> +++ b/kernel/power/user_suspend_blocker.c
+> @@ -0,0 +1,128 @@
+> +/* kernel/power/user_suspend_block.c
+> + *
+> + * Copyright (C) 2009-2010 Google, Inc.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#include <linux/fs.h>
+> +#include <linux/miscdevice.h>
+> +#include <linux/module.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/slab.h>
+> +#include <linux/suspend_blocker.h>
+> +#include <linux/suspend_block_dev.h>
+> +
+> +enum {
+> +	DEBUG_FAILURE	= BIT(0),
+> +};
+> +static int debug_mask = DEBUG_FAILURE;
+> +module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
+> +
+> +static DEFINE_MUTEX(ioctl_lock);
+> +
+> +struct user_suspend_blocker {
+> +	struct suspend_blocker	blocker;
+> +	char			name[0];
+> +};
+> +
+> +static int create_user_suspend_blocker(struct file *file, void __user *name,
+> +				 size_t name_len)
+> +{
+> +	struct user_suspend_blocker *bl;
+> +	if (file->private_data)
+> +		return -EBUSY;
+> +	if (name_len > NAME_MAX)
+> +		return -ENAMETOOLONG;
+> +	bl = kzalloc(sizeof(*bl) + name_len + 1, GFP_KERNEL);
+> +	if (!bl)
+> +		return -ENOMEM;
+> +	if (copy_from_user(bl->name, name, name_len))
+> +		goto err_fault;
+> +	suspend_blocker_init(&bl->blocker, bl->name);
+> +	file->private_data = bl;
 
-Well, it's not really apples-to-apples because swap-to-RAMdisk
-is copying to a chunk of RAM with a known permanently-fixed size
-so it SHOULD be faster than swap-to-hypervisor, and should
-*definitely* be faster than swap-to-in-kernel-compressed-RAM
-but I suppose it is still an interesting comparison.  I'll
-see what I can do, but it will probably be a couple days to
-figure out how to measure it (e.g. without accidentally measuring
-any swap-to-disk).
+Hmm.  It doesn't seem to be possible to create two different suspend blockers
+using the same file handle.  So, what exactly is a process supposed to do to
+use two suspend blockers at the same time?
+
+Rafael
