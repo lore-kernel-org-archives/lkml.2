@@ -1,96 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758621Ab0EBUGp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 16:06:45 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:58297 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758543Ab0EBUGm convert rfc822-to-8bit (ORCPT
+	id S1758657Ab0EBUMM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 16:12:12 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:34650 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab0EBUMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 16:06:42 -0400
-Date: Sun, 2 May 2010 22:06:28 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: dri-devel@lists.freedesktop.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: s2ram slow (radeon) / failing (usb)
-Message-ID: <20100502220628.0728d8d4@neptune.home>
-In-Reply-To: <Pine.LNX.4.44L0.1005021102340.25185-100000@netrider.rowland.org>
-References: <20100502155653.68fc3643@neptune.home>
-	<Pine.LNX.4.44L0.1005021102340.25185-100000@netrider.rowland.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 2 May 2010 16:12:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=c6CGjFdoBF641dFyqqqiflEFEkcC244Ez2jwWAyUXRJQcGYvkBIDJNr4rdCqjHNYTR
+         dGmgJS2mnXOLzhXRrdmOJRtThxoiMwTs6BevBwgLRXv59V9tfry7fqMpnsLMNdEILq4f
+         jEMasCHYyhHFE5jpWAhrsFmcOuVYTTHK8SGUc=
+Date: Mon, 3 May 2010 00:12:02 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Marek Vasut <marek.vasut@gmail.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Remove tosa_battery driver (was: Re: [PATCH]
+ tosa_battery: fix FTBFS bug due to driver_data access)
+Message-ID: <20100502201202.GA18647@oksana.dev.rtsoft.ru>
+References: <1272374302-9506-1-git-send-email-dbaryshkov@gmail.com>
+ <20100427154835.27bdc233.akpm@linux-foundation.org>
+ <20100430181349.GA1015@oksana.dev.rtsoft.ru>
+ <g2qbc64b4641004301340h3c942f3cn40de735b419b8535@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <g2qbc64b4641004301340h3c942f3cn40de735b419b8535@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 02 May 2010 Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Sun, 2 May 2010, Bruno [UTF-8] Prémont wrote:
-> > On a IEI Kino 690S1 I'm having a hard time to get s2ram running.
-> > It freezes during device suspend (unless I rmmod everything USB
-> > related) - usb fails even in pm_test case 'devices'.
-> > 
-> > When the system is able to suspend it takes an eternity (more than 3
-> > minutes to wake-up, the radeon apparently being responsible for quite
-> > a big share of that slowness.
-> > 
-> > 
-> > During resume early it looks like every PCI access needs about a second,
-> > and there are a few cases where during lots of seconds nothing seems to
-> > happen and the first event following is related to radeon.
-> > 
-> > The kernel used is todays Linus's tree at commit be1066bbcd443a65df312fdecea7e4959adedb45
-> > with Dave's drm-linus and drm-radeon-testing applied on top.
-> > 
-> > Note, I've not been able to suspend to RAM properly recently (last one
-> > that worked correctly but resumed without graphics was some-when during
-> > 2.6.2x, before KMS)
-> > Since then the system would either fail suspend or resume.
-> > 
-> > Manual changes I applied in order to find out some context information:
-> > - add a few debugging printk's to ata/ahci as that was the last entry
-> >   on serial console for freezing suspends (that one succeeded but
-> >   following step never completed, from suspend_prepare that would have
-> >   been USB => unload usb before suspend)
-> > - strip "if EMBEDED" from CONFIG_SERIAL_8250_PNP and disabled it so serial
-> >   console would continue working as long as possible and output suspend
-> >   progress (resume output happens only very late)
-> > 
-> > Is there some additional information I could gather in order do help
-> > improving s2ram on this system?
-> > - get it to suspend with usb loaded (ohci + ehci)
-> > - get it to resume a reasonable speed
+On Sat, May 01, 2010 at 12:40:54AM +0400, Dmitry Eremin-Solenikov wrote:
+[...]
+> >> Ah, it appears to be a build fix.
+> >
+> > It seems that the driver isn't buildable since 2.6.32
+> > (i.e. commit b4028437 "Driver core: move dev_get/set_drvdata to
+> > drivers/base/dd.c").
+> >
+> > Also, IIRC it was deprecated in favor of wm97xx_battery.c
+> > driver.
+> >
+> > So, I'm not picking this patch for 2.6.34, it's not a
+> > new regression, and the driver is probably needs to be
+> > removed.
+> >
+> > Any objections on the patch down below?
 > 
-> There's no way to fix the USB problem without knowing what goes wrong.  
-> Let's see how far you get before the system freezes on a kernel with 
-> CONFIG_USB_DEBUG enabled.
+> Yes. wm97xx_battery handles only one battery, while tosa uses 3
+> different batterires.
+> So, wm97xx_battery needs to be adapted/enhanced.
 
-Am I missing something?
+Eh. I see, thanks for making this clear. I added some changelog
+and applied the following patch to battery-2.6.git:
 
-I've enabled CONFIG_USB_DEBUG but don't see any additional module parameter
-nor anything extra to toggle and I don't get more output than without it.
+- - -
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Date: Tue, 27 Apr 2010 17:18:22 +0400
+Subject: [PATCH] tosa_battery: Fix build error due to direct driver_data usage
 
-Device suspend (pm_test = device) works well when there is no USB device
-connected, but with USB keyboard I get the freeze (though the keyboard
-is still usable, e.g. CAPS key works and I can issue SYSRQ commands).
+The driver isn't buildable since 2.6.32 (i.e. commit b4028437
+"Driver core: move dev_get/set_drvdata to drivers/base/dd.c"):
 
-When I issue sysreq-t, I find the following suspicious entry:
-[  669.112505] usbhid_resume D ffff88007a085fd8     0  1145      2 0x00000000
-[  669.112505]  ffff88007a085e20 0000000000000046 ffff88007a085fd8 ffff88007c536820
-[  669.112505]  ffff88007a085fd8 ffff88007a085fd8 00000000000129c0 00000000000129c0
-[  669.112505]  ffff88007c536820 ffff88007cf3f040 ffff88007a085fd8 ffff88007a085fd8
-[  669.112505] Call Trace:
-[  669.112505]  [<ffffffff8105d765>] refrigerator+0x95/0xf0
-[  669.112505]  [<ffffffff81051a16>] worker_thread+0xc6/0x1e0
-[  669.112505]  [<ffffffff81055e90>] ? autoremove_wake_function+0x0/0x40
-[  669.112505]  [<ffffffff81051950>] ? worker_thread+0x0/0x1e0
-[  669.112505]  [<ffffffff810559be>] kthread+0x8e/0xa0
-[  669.112505]  [<ffffffff81003a94>] kernel_thread_helper+0x4/0x10
-[  669.112505]  [<ffffffff81055930>] ? kthread+0x0/0xa0
-[  669.112505]  [<ffffffff81003a90>] ? kernel_thread_helper+0x0/0x10
+  CC      tosa_battery.o
+tosa_battery.c: In function 'tosa_read_bat':
+tosa_battery.c:64: error: 'struct device' has no member named 'driver_data'
+tosa_battery.c: In function 'tosa_read_temp':
+tosa_battery.c:84: error: 'struct device' has no member named 'driver_data'
 
-Except for that one there are a few async/* tasks waiting.
+Nowadays we must not access driver_data directly, use dev_get_drvdata()
+instead.
 
-Thanks,
-Bruno
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+---
+ drivers/power/tosa_battery.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/power/tosa_battery.c b/drivers/power/tosa_battery.c
+index 2eab35a..ee04936 100644
+--- a/drivers/power/tosa_battery.c
++++ b/drivers/power/tosa_battery.c
+@@ -61,7 +61,7 @@ static unsigned long tosa_read_bat(struct tosa_bat *bat)
+ 	mutex_lock(&bat_lock);
+ 	gpio_set_value(bat->gpio_bat, 1);
+ 	msleep(5);
+-	value = wm97xx_read_aux_adc(bat->psy.dev->parent->driver_data,
++	value = wm97xx_read_aux_adc(dev_get_drvdata(bat->psy.dev->parent),
+ 			bat->adc_bat);
+ 	gpio_set_value(bat->gpio_bat, 0);
+ 	mutex_unlock(&bat_lock);
+@@ -81,7 +81,7 @@ static unsigned long tosa_read_temp(struct tosa_bat *bat)
+ 	mutex_lock(&bat_lock);
+ 	gpio_set_value(bat->gpio_temp, 1);
+ 	msleep(5);
+-	value = wm97xx_read_aux_adc(bat->psy.dev->parent->driver_data,
++	value = wm97xx_read_aux_adc(dev_get_drvdata(bat->psy.dev->parent),
+ 			bat->adc_temp);
+ 	gpio_set_value(bat->gpio_temp, 0);
+ 	mutex_unlock(&bat_lock);
+-- 
+1.7.0.5
+
