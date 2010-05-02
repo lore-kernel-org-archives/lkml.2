@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab0EBPHS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 11:07:18 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20752 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008Ab0EBPHP convert rfc822-to-8bit (ORCPT
+	id S1757060Ab0EBPHe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 11:07:34 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:38845 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756853Ab0EBPHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 11:07:15 -0400
+	Sun, 2 May 2010 11:07:31 -0400
+Date: Sun, 2 May 2010 11:07:31 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+cc: dri-devel@lists.freedesktop.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: s2ram slow (radeon) / failing (usb)
+In-Reply-To: <20100502155653.68fc3643@neptune.home>
+Message-ID: <Pine.LNX.4.44L0.1005021102340.25185-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Message-ID: <47d6b5d9-beb5-4e49-9910-064d6f7b13e5@default>
-Date: Sun, 2 May 2010 08:05:29 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, hugh.dickins@tiscali.co.uk, ngupta@vflare.org,
-       JBeulich@novell.com, chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD3377E.6010303@redhat.com>
- <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>
- <ce808441-fae6-4a33-8335-f7702740097a@default> <20100428055538.GA1730@ucw.cz>
- <1272591924.23895.807.camel@nimitz> <4BDA8324.7090409@redhat.com>
- <084f72bf-21fd-4721-8844-9d10cccef316@default> <4BDB026E.1030605@redhat.com>
- <4BDB18CE.2090608@goop.org4BDB2069.4000507@redhat.com>
- <3a62a058-7976-48d7-acd2-8c6a8312f10f@default 20100502071059.GF1790@ucw.cz>
-In-Reply-To: <20100502071059.GF1790@ucw.cz>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090202.4BDD9503.00DC:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > So there are two users of frontswap for which the synchronous
-> > interface makes sense.  I believe there may be more in the
-> > future and you disagree but, as Jeremy said, "a general Linux
-> > principle is not to overdesign interfaces for hypothetical users,
-> > only for real needs."  We have demonstrated there is a need
-> > with at least two users so the debate is only whether the
-> > number of users is two or more than two.
-> >
-> > Frontswap is a very non-invasive patch and is very cleanly
-> > layered so that if it is not in the presence of either of
-> > the intended "users", it can be turned off in many different
-> > ways with zero overhead (CONFIG'ed off) or extremely small overhead
-> > (frontswap_ops is never set; or frontswap_ops is set but the
-> > underlying hypervisor doesn't support it so frontswap_poolid
-> > never gets set).
+On Sun, 2 May 2010, Bruno [UTF-8] Prémont wrote:
+
+> Hi,
 > 
-> Yet there are less invasive solutions available, like 'add trim
-> operation to swap_ops'.
+> On a IEI Kino 690S1 I'm having a hard time to get s2ram running.
+> It freezes during device suspend (unless I rmmod everything USB
+> related) - usb fails even in pm_test case 'devices'.
+> 
+> When the system is able to suspend it takes an eternity (more than 3
+> minutes to wake-up, the radeon apparently being responsible for quite
+> a big share of that slowness.
+> 
+> 
+> During resume early it looks like every PCI access needs about a second,
+> and there are a few cases where during lots of seconds nothing seems to
+> happen and the first event following is related to radeon.
+> 
+> The kernel used is todays Linus's tree at commit be1066bbcd443a65df312fdecea7e4959adedb45
+> with Dave's drm-linus and drm-radeon-testing applied on top.
+> 
+> Note, I've not been able to suspend to RAM properly recently (last one
+> that worked correctly but resumed without graphics was some-when during
+> 2.6.2x, before KMS)
+> Since then the system would either fail suspend or resume.
+> 
+> Manual changes I applied in order to find out some context information:
+> - add a few debugging printk's to ata/ahci as that was the last entry
+>   on serial console for freezing suspends (that one succeeded but
+>   following step never completed, from suspend_prepare that would have
+>   been USB => unload usb before suspend)
+> - strip "if EMBEDED" from CONFIG_SERIAL_8250_PNP and disabled it so serial
+>   console would continue working as long as possible and output suspend
+>   progress (resume output happens only very late)
+> 
+> Is there some additional information I could gather in order do help
+> improving s2ram on this system?
+> - get it to suspend with usb loaded (ohci + ehci)
+> - get it to resume a reasonable speed
 
-As Nitin pointed out much earlier in this thread:
+There's no way to fix the USB problem without knowing what goes wrong.  
+Let's see how far you get before the system freezes on a kernel with 
+CONFIG_USB_DEBUG enabled.
 
-"No: trim or discard is not useful"
-
-I also think that trim does not do anything for the widely
-varying dynamically changing size that frontswap provides.
- 
-> So what needs to be said here is 'frontswap is XX times faster than
-> swap_ops based solution on workload YY'.
-
-Are you asking me to demonstrate that swap-to-hypervisor-RAM is
-faster than swap-to-disk?
+Alan Stern
 
