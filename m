@@ -1,252 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab0ECFLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 01:11:38 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:61475 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab0ECFLg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 01:11:36 -0400
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
-       h.mitake@gmail.com, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: [PATCH v3] perf lock: add "info" subcommand for dumping misc information
-Date: Mon,  3 May 2010 14:12:00 +0900
-Message-Id: <1272863520-16179-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <4BDE5AFD.6040603@dcl.info.waseda.ac.jp>
-References: <4BDE5AFD.6040603@dcl.info.waseda.ac.jp>
+	id S1752491Ab0ECFQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 01:16:29 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59332 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751027Ab0ECFQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 01:16:25 -0400
+Date: Mon, 3 May 2010 15:16:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for May 3
+Message-Id: <20100503151619.f75e3a80.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__3_May_2010_15_16_19_+1000_yN=p4ZM+vZKurYUQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+--Signature=_Mon__3_May_2010_15_16_19_+1000_yN=p4ZM+vZKurYUQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I added "info" subcommand to perf lock,
-this can be used as dumping metadata like thread or address of lock instances.
-"map" was removed because info should do the work of it.
+Hi all,
 
-This will be useful not only for debugging but also for ordinary analyzing.
+Changes since 20100430:
 
-I made this patch on perf/core of your tree, could you queue this?
+Dropped trees: tmio-mmc (long unresolved conflicts and unable to fetch)
+	hwlat (at the maintainer's request)
 
-v2: adding example of usage
-% sudo ./perf lock info -t
- | Thread ID: comm
- | 	 0: swapper
- |         1: init
- |        18: migration/5
- |        29: events/2
- |        32: events/5
- |        33: events/6
-...
+My fixes tree is empty.
 
-% sudo ./perf lock info -m
-| Address of instance: name of class
-|  0xffff8800b95adae0: &(&sighand->siglock)->rlock
-|  0xffff8800bbb41ae0: &(&sighand->siglock)->rlock
-|  0xffff8800bf165ae0: &(&sighand->siglock)->rlock
-|  0xffff8800b9576a98: &p->cred_guard_mutex
-|  0xffff8800bb890a08: &(&p->alloc_lock)->rlock
-|  0xffff8800b9522a08: &(&p->alloc_lock)->rlock
-|  0xffff8800bb8aaa08: &(&p->alloc_lock)->rlock
-|  0xffff8800bba72a08: &(&p->alloc_lock)->rlock
-|  0xffff8800bf18ea08: &(&p->alloc_lock)->rlock
-|  0xffff8800b8a0d8a0: &(&ip->i_lock)->mr_lock
-|  0xffff88009bf818a0: &(&ip->i_lock)->mr_lock
-|  0xffff88004c66b8a0: &(&ip->i_lock)->mr_lock
-|  0xffff8800bb6478a0: &(shost->host_lock)->rlock
+The usb.current tree lost its conflict.
 
-v3: fixed some problems Frederic pointed out
- * better rbtree tracking in dump_threads()
- * removed printf() and used pr_info() and pr_debug()
+The v4l-dvb tree still has its build failure, so I used the version from
+next-20100409.
 
-Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Jens Axboe <jens.axboe@oracle.com>
-Cc: Jason Baron <jbaron@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- tools/perf/builtin-lock.c |   96 ++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 73 insertions(+), 23 deletions(-)
+The net tree gained a build failure so I used the version from
+next-20100430.
 
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index ce27675..010a7c8 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -720,15 +720,15 @@ static void print_result(void)
- 	char cut_name[20];
- 	int bad, total;
- 
--	printf("%20s ", "Name");
--	printf("%10s ", "acquired");
--	printf("%10s ", "contended");
-+	pr_info("%20s ", "Name");
-+	pr_info("%10s ", "acquired");
-+	pr_info("%10s ", "contended");
- 
--	printf("%15s ", "total wait (ns)");
--	printf("%15s ", "max wait (ns)");
--	printf("%15s ", "min wait (ns)");
-+	pr_info("%15s ", "total wait (ns)");
-+	pr_info("%15s ", "max wait (ns)");
-+	pr_info("%15s ", "min wait (ns)");
- 
--	printf("\n\n");
-+	pr_info("\n\n");
- 
- 	bad = total = 0;
- 	while ((st = pop_from_result())) {
-@@ -741,7 +741,7 @@ static void print_result(void)
- 
- 		if (strlen(st->name) < 16) {
- 			/* output raw name */
--			printf("%20s ", st->name);
-+			pr_info("%20s ", st->name);
- 		} else {
- 			strncpy(cut_name, st->name, 16);
- 			cut_name[16] = '.';
-@@ -749,17 +749,17 @@ static void print_result(void)
- 			cut_name[18] = '.';
- 			cut_name[19] = '\0';
- 			/* cut off name for saving output style */
--			printf("%20s ", cut_name);
-+			pr_info("%20s ", cut_name);
- 		}
- 
--		printf("%10u ", st->nr_acquired);
--		printf("%10u ", st->nr_contended);
-+		pr_info("%10u ", st->nr_acquired);
-+		pr_info("%10u ", st->nr_contended);
- 
--		printf("%15llu ", st->wait_time_total);
--		printf("%15llu ", st->wait_time_max);
--		printf("%15llu ", st->wait_time_min == ULLONG_MAX ?
-+		pr_info("%15llu ", st->wait_time_total);
-+		pr_info("%15llu ", st->wait_time_max);
-+		pr_info("%15llu ", st->wait_time_min == ULLONG_MAX ?
- 		       0 : st->wait_time_min);
--		printf("\n");
-+		pr_info("\n");
- 	}
- 
- 	{
-@@ -768,28 +768,59 @@ static void print_result(void)
- 		const char *name[4] =
- 			{ "acquire", "acquired", "contended", "release" };
- 
--		printf("\n=== output for debug===\n\n");
--		printf("bad:%d, total:%d\n", bad, total);
--		printf("bad rate:%f\n", (double)(bad / total));
-+		pr_debug("\n=== output for debug===\n\n");
-+		pr_debug("bad:%d, total:%d\n", bad, total);
-+		pr_debug("bad rate:%f\n", (double)(bad / total));
- 
--		printf("histogram of events caused bad sequence\n");
-+		pr_debug("histogram of events caused bad sequence\n");
- 		for (i = 0; i < 4; i++)
--			printf(" %10s: %d\n", name[i], bad_hist[i]);
-+			pr_debug(" %10s: %d\n", name[i], bad_hist[i]);
- 	}
- }
- 
-+static int			info_threads;
-+static int			info_map;
-+
-+static void dump_threads(void)
-+{
-+	struct thread_stat *st;
-+	struct rb_node *node;
-+	struct thread *t;
-+
-+	pr_info("%10s: comm\n", "Thread ID");
-+
-+	node = rb_first(&thread_stats);
-+	while (node) {
-+		st = container_of(node, struct thread_stat, rb);
-+		t = perf_session__findnew(session, st->tid);
-+		pr_info("%10d: %s\n", st->tid, t->comm);
-+		node = rb_next(node);
-+	};
-+}
-+
- static void dump_map(void)
- {
- 	unsigned int i;
- 	struct lock_stat *st;
- 
-+	pr_info("Address of instance: name of class\n");
- 	for (i = 0; i < LOCKHASH_SIZE; i++) {
- 		list_for_each_entry(st, &lockhash_table[i], hash_entry) {
--			printf("%p: %s\n", st->addr, st->name);
-+			pr_info(" %p: %s\n", st->addr, st->name);
- 		}
- 	}
- }
- 
-+static void dump_info(void)
-+{
-+	if (info_threads)
-+		dump_threads();
-+	else if (info_map)
-+		dump_map();
-+	else
-+		die("Unknown type of information\n");
-+}
-+
- static int process_sample_event(event_t *self, struct perf_session *s)
- {
- 	struct sample_data data;
-@@ -858,6 +889,19 @@ static const struct option report_options[] = {
- 	OPT_END()
- };
- 
-+static const char * const info_usage[] = {
-+	"perf lock info [<options>]",
-+	NULL
-+};
-+
-+static const struct option info_options[] = {
-+	OPT_BOOLEAN('t', "threads", &info_threads,
-+		    "dump thread list in perf.data"),
-+	OPT_BOOLEAN('m', "map", &info_map,
-+		    "map of lock instances (name:address table)"),
-+	OPT_END()
-+};
-+
- static const char * const lock_usage[] = {
- 	"perf lock [<options>] {record|trace|report}",
- 	NULL
-@@ -929,12 +973,18 @@ int cmd_lock(int argc, const char **argv, const char *prefix __used)
- 	} else if (!strcmp(argv[0], "trace")) {
- 		/* Aliased to 'perf trace' */
- 		return cmd_trace(argc, argv, prefix);
--	} else if (!strcmp(argv[0], "map")) {
-+	} else if (!strcmp(argv[0], "info")) {
-+		if (argc) {
-+			argc = parse_options(argc, argv,
-+					     info_options, info_usage, 0);
-+			if (argc)
-+				usage_with_options(info_usage, info_options);
-+		}
- 		/* recycling report_lock_ops */
- 		trace_handler = &report_lock_ops;
- 		setup_pager();
- 		read_events();
--		dump_map();
-+		dump_info();
- 	} else {
- 		usage_with_options(lock_usage, lock_options);
- 	}
--- 
-1.6.5.2
+The bk-ioctl tree lost its build failure and 2 conflicts.
 
+The driver-core tree gained a build failure for which I applied a patch.
+
+The usb tree lost two of its build failures bit still has one more for
+which I have reverted a commit.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 162 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Applying: ar9170: fix for driver-core ABI change
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/for-linus
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Applying: staging: update gfp/slab.h includes
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+CONFLICT (content): Merge conflict in arch/arm/Kconfig
+Applying: arm: update gfp/slab.h includes
+Merging davinci/davinci-next
+Applying: davinci: update gfp/slab.h includes
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Applying: ocfs2: update gfp/slab.h includes
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+CONFLICT (content): Merge conflict in fs/9p/vfs_super.c
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+CONFLICT (content): Merge conflict in fs/cifs/file.c
+CONFLICT (content): Merge conflict in fs/namei.c
+CONFLICT (content): Merge conflict in fs/nfs/inode.c
+CONFLICT (content): Merge conflict in fs/nfsd/nfs4xdr.c
+CONFLICT (content): Merge conflict in fs/nfsd/vfs.c
+CONFLICT (content): Merge conflict in fs/ufs/inode.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
+CONFLICT (content): Merge conflict in security/tomoyo/realpath.c
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+CONFLICT (content): Merge conflict in drivers/input/input.c
+Applying: v4l-dvb: update gfp/slab.h includes
+$ git reset --hard HEAD^
+Merging refs/next/20100409/v4l-dvb
+CONFLICT (content): Merge conflict in drivers/media/video/meye.c
+CONFLICT (content): Merge conflict in drivers/media/video/soc_camera.c
+CONFLICT (content): Merge conflict in drivers/staging/cx25821/cx25821-audio=
+-upstream.c
+Applying: v4l-dvb: update gfp/slab.h includes
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Applying: acpi: update gfp/slab.h includes
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Applying: kvm: powerpc: use of kzalloc/kfree requires including slab.h
+Merging dlm/next
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/scsi/iscsi_tcp.c
+$ git reset --hard HEAD^
+Merging refs/next/20100430/net
+CONFLICT (content): Merge conflict in drivers/scsi/iscsi_tcp.c
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/libertas_tf/cmd.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/libertas_tf/main=
+.c
+Applying: wireless: update gfp/slab.h includes
+Merging mtd/master
+CONFLICT (content): Merge conflict in drivers/mtd/mtdcore.c
+Applying: mtd: update gfp/slab.h includes
+Merging crypto/master
+CONFLICT (content): Merge conflict in drivers/crypto/mv_cesa.c
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+CONFLICT (content): Merge conflict in drivers/net/virtio_net.c
+CONFLICT (content): Merge conflict in include/linux/mod_devicetable.h
+CONFLICT (content): Merge conflict in scripts/mod/file2alias.c
+Merging mmc/next
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in fs/ext3/fsync.c
+CONFLICT (content): Merge conflict in fs/ext4/fsync.c
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+CONFLICT (content): Merge conflict in drivers/net/pcmcia/3c589_cs.c
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Applying: kgdb: update for sysrq handling change
+Applying: kdb: update gfp/slab.h includes
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/dma/Makefile
+CONFLICT (add/add): Merge conflict in drivers/dma/timb_dma.c
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/i915_drv.h
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/r300.c
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+Applying: fsnotify: update gfp/slab.h includes
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging drbd/for-jens
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Applying: vbus: use of kzalloc/kfree requires the include of slab.h
+Applying: vbus: update gfp/slab.h includes
+Merging i7core_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging omap_dss2/for-next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Applying: lockdep: Fix redundant_hardirqs_on incremented with irqs enabled
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+CONFLICT (content): Merge conflict in arch/cris/arch-v10/drivers/ds1302.c
+CONFLICT (content): Merge conflict in drivers/block/pktcdvd.c
+Merging quilt/driver-core
+CONFLICT (content): Merge conflict in drivers/base/platform.c
+CONFLICT (content): Merge conflict in drivers/staging/comedi/drivers/quatec=
+h_daqp_cs.c
+Applying: md: fixup for sysfs_get_dirent API change
+Merging quilt/tty
+CONFLICT (content): Merge conflict in include/linux/tty.h
+Merging quilt/usb
+CONFLICT (content): Merge conflict in drivers/input/tablet/acecad.c
+CONFLICT (content): Merge conflict in drivers/input/tablet/kbtab.c
+CONFLICT (content): Merge conflict in drivers/input/tablet/wacom_sys.c
+CONFLICT (delete/modify): sound/usb/usbaudio.c deleted in HEAD and modified=
+ in quilt/usb. Version quilt/usb of sound/usb/usbaudio.c left in tree.
+$ git rm -f sound/usb/usbaudio.c
+Applying: usb: update gfp/slab.h includes
+Applying: sound: fixup for usb_buffer_alloc/free rename
+Merging staging-next/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/arlan/arlan-main.c
+CONFLICT (content): Merge conflict in drivers/staging/comedi/drivers/cb_das=
+16_cs.c
+CONFLICT (content): Merge conflict in drivers/staging/cx25821/cx25821-alsa.c
+CONFLICT (content): Merge conflict in drivers/staging/dt3155/dt3155_drv.c
+CONFLICT (content): Merge conflict in drivers/staging/netwave/netwave_cs.c
+Merging slabh/slabh
+Merging scsi-post-merge/master
+[master 528af62] Revert "usb: otg: twl4030: use the global ULPI register de=
+finitions"
+
+--Signature=_Mon__3_May_2010_15_16_19_+1000_yN=p4ZM+vZKurYUQ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkveXCMACgkQjjKRsyhoI8xaGgCfZIMuu2z+F5yMZiYAR/r9MpdD
+v6QAoKUlVar59YjsZcZB2fWWZ/vjnyEg
+=jvYN
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__3_May_2010_15_16_19_+1000_yN=p4ZM+vZKurYUQ--
