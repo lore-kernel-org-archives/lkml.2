@@ -1,88 +1,404 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933231Ab0ECXT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 19:19:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7786 "EHLO mx1.redhat.com"
+	id S933341Ab0ECXUO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 19:20:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18364 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932288Ab0ECXNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 19:13:52 -0400
+	id S932213Ab0ECXNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 19:13:47 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
        Christoph Hellwig <hch@infradead.org>, Jan Blunck <jblunck@suse.de>,
        Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 26/39] VFS: Create user_path_nd() to lookup both parent and target
-Date: Mon,  3 May 2010 16:12:25 -0700
-Message-Id: <1272928358-20854-27-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 21/39] union-mount: Implement union lookup
+Date: Mon,  3 May 2010 16:12:20 -0700
+Message-Id: <1272928358-20854-22-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 References: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Proof-of-concept implementation of user_path_nd().  Lookup both the
-parent and the target of a user-supplied filename, to supply later to
-union copyup routines.
+Implement unioned directories, whiteouts, and fallthrus in pathname
+lookup routines.  do_lookup() and lookup_hash() call lookup_union()
+after looking up the dentry from the top-level file system.
+lookup_union() is centered around __lookup_hash(), which does cached
+and/or real lookups and revalidates each dentry in the union stack.
+
+The added cost to a non-union mount pathname lookup in a
+CONFIG_UNION_MOUNT kernel is either one or two mount flag tests per
+pathname component, in needs_union_lookup().
+
+XXX - implement negative union cache entries
 ---
- fs/namei.c            |   31 +++++++++++++++++++++++++++++++
- include/linux/namei.h |    2 ++
- 2 files changed, 33 insertions(+), 0 deletions(-)
+ fs/namei.c            |  199 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/union.c            |   67 +++++++++++++++++
+ include/linux/union.h |    9 ++
+ 3 files changed, 274 insertions(+), 1 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 92a4ff2..0c52042 100644
+index 7e2c31f..a72187b 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -1571,6 +1571,37 @@ static int user_path_parent(int dfd, const char __user *path,
- 	return error;
+@@ -32,6 +32,7 @@
+ #include <linux/fcntl.h>
+ #include <linux/device_cgroup.h>
+ #include <linux/fs_struct.h>
++#include <linux/union.h>
+ #include <asm/uaccess.h>
+ 
+ #include "internal.h"
+@@ -722,6 +723,189 @@ static __always_inline void follow_dotdot(struct nameidata *nd)
+ 	follow_mount(&nd->path);
  }
  
-+int user_path_nd(int dfd, const char __user *filename,
-+			 unsigned flags, struct nameidata *parent_nd,
-+			 struct path *child, char **tmp)
++static struct dentry *__lookup_hash(struct qstr *name, struct dentry *base,
++				    struct nameidata *nd);
++
++/*
++ * __lookup_union - Given a path from the topmost layer, lookup and
++ * revalidate each dentry in its union stack, building it if necessary
++ *
++ * @nd - nameidata for the parent of @topmost
++ * @name - pathname from this element on
++ * @topmost - path of the topmost matching dentry
++ *
++ * Given the nameidata and the path of the topmost dentry for this
++ * pathname, lookup, revalidate, and build the associated union stack.
++ * @topmost must be either a negative dentry or a directory.
++ *
++ * This function is called both to build a new union stack and to
++ * revalidate a pre-existing union stack.  So we must cope with
++ * already existing union cache entries.
++ *
++ * This function may stomp nd->path with the path of the parent
++ * directory of lower layer, so the caller must save nd->path and
++ * restore it afterwards.  You probably want to use lookup_union(),
++ * not __lookup_union().
++ */
++
++static int __lookup_union(struct nameidata *nd, struct qstr *name,
++			  struct path *topmost)
 +{
-+	struct nameidata child_nd;
-+	char *s = getname(filename);
-+	int error;
++	struct path parent = nd->path;
++	struct dentry *dentry;
++	struct path upper;
++	struct path lower;
++	int err = 0;
 +
-+	if (IS_ERR(s))
-+		return PTR_ERR(s);
++	if (d_is_whiteout(topmost->dentry))
++		return 0;
 +
-+	/* Lookup parent */
-+	error = do_path_lookup(dfd, s, LOOKUP_PARENT, parent_nd);
-+	if (error)
-+		goto out_putname;
++	if (IS_OPAQUE(nd->path.dentry->d_inode) &&
++	    !d_is_fallthru(topmost->dentry))
++		return 0;
 +
-+	/* Lookup child - XXX optimize, racy */
-+	error = do_path_lookup(dfd, s, flags, &child_nd);
-+	if (error)
-+		goto out_path_put;
-+	*child = child_nd.path;
-+	*tmp = s;
-+	return 0;
++	/* upper is the most recent positive dentry or topmost negative */
++	upper.dentry = dget(topmost->dentry);
++	upper.mnt = mntget(topmost->mnt);
 +
-+out_path_put:
-+	path_put(&parent_nd->path);
-+out_putname:
-+	putname(s);
-+	return error;
++	/* union_down_one() drops a reference, take one */
++	path_get(&nd->path);
++
++	/* Traverse the parent dir's union stack looking for this name */
++	while (union_down_one(&nd->path.mnt, &nd->path.dentry)) {
++		/* Lookup and revalidate the child dentry */
++		lower.mnt = nd->path.mnt;
++		lower.dentry = __lookup_hash(name, nd->path.dentry, nd);
++
++		if (IS_ERR(lower.dentry)) {
++			err = PTR_ERR(lower.dentry);
++			break;
++		}
++
++		if (d_is_whiteout(lower.dentry)) {
++			dput(lower.dentry);
++			break;
++		}
++
++		if (IS_OPAQUE(nd->path.dentry->d_inode) &&
++		    !d_is_fallthru(lower.dentry))
++			break;
++
++		if (!lower.dentry->d_inode) {
++			dput(lower.dentry);
++			continue;
++		}
++
++		/*
++		 * You can't union a file with a directory!  Note that
++		 * if the topmost directory entry is positive, then it
++		 * will be a directory at this point.
++		 */
++		if (topmost->dentry->d_inode &&
++		    !S_ISDIR(lower.dentry->d_inode->i_mode)) {
++			dput(lower.dentry);
++			break;
++		}
++
++		/* Non-dir entries block anything below, so bail out */
++		if (!S_ISDIR(lower.dentry->d_inode->i_mode)) {
++			dput(topmost->dentry);
++			topmost->dentry = lower.dentry;
++			/*
++			 * mntput() of previous topmost done in
++			 * link_path_walk()
++			 */
++			topmost->mnt = mntget(lower.mnt);
++			break;
++		}
++
++		/* The topmost directory must always exist. */
++		if (!topmost->dentry->d_inode) {
++			dentry = union_create_topmost_dir(&parent, name,
++							  &lower);
++			if (IS_ERR(dentry)) {
++				err = PTR_ERR(dentry);
++				dput(lower.dentry);
++				break;
++			}
++			dput(topmost->dentry);
++			topmost->dentry = dentry;
++			dput(upper.dentry);
++			upper.dentry = dget(dentry);
++		}
++
++		/*
++		 * Add new dentry to the union stack.  It's okay if
++		 * we've already added it, append_to_union() can
++		 * handle that case.
++		 */
++		err = append_to_union(&upper, &lower);
++		if (err) {
++			dput(lower.dentry);
++			break;
++		}
++
++		path_put(&upper);
++		upper.mnt = mntget(lower.mnt);
++		upper.dentry = lower.dentry;
++	}
++	path_put(&nd->path);
++	path_put(&upper);
++
++	return err;
++}
++
++/*
++ * lookup_union - revalidate and build union stack for this path
++ *
++ * We borrow the nameidata struct from the topmost layer to do the
++ * revalidation on lower dentries, replacing the topmost parent
++ * directory's path with that of the matching parent dir in each lower
++ * layer.  This wrapper for __lookup_union() saves the topmost layer's
++ * path and restores it when we are done.
++ */
++static int lookup_union(struct nameidata *nd, struct qstr *name,
++			struct path *topmost)
++{
++	struct path saved_path;
++	int err;
++
++	BUG_ON(!IS_MNT_UNION(nd->path.mnt) && !IS_MNT_UNION(topmost->mnt));
++	BUG_ON(!mutex_is_locked(&nd->path.dentry->d_inode->i_mutex));
++
++	saved_path = nd->path;
++	path_get(&saved_path);
++
++	err = __lookup_union(nd, name, topmost);
++
++	nd->path = saved_path;
++	path_put(&saved_path);
++
++	return err;
++}
++
++/*
++ * do_union_lookup - union mount-aware part of do_lookup
++ *
++ * do_lookup()-style wrapper for lookup_union().  Follows mounts.
++ */
++
++static int do_union_lookup(struct nameidata *nd, struct qstr *name,
++			   struct path *topmost)
++{
++	struct dentry *parent = nd->path.dentry;
++	struct inode *dir = parent->d_inode;
++	int err;
++
++	mutex_lock(&dir->i_mutex);
++	err = lookup_union(nd, name, topmost);
++	mutex_unlock(&dir->i_mutex);
++
++	__follow_mount(topmost);
++
++	return err;
 +}
 +
  /*
-  * It's inline, so penalty for filesystems that don't use sticky bit is
-  * minimal.
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 05b441d..83dc8b5 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -58,6 +58,8 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
- #define LOOKUP_RENAME_TARGET	0x0800
+  *  It's more convoluted than I'd like it to be, but... it's still fairly
+  *  small and for now I'd prefer to have fast path as straight as possible.
+@@ -752,6 +936,11 @@ done:
+ 	path->mnt = mnt;
+ 	path->dentry = dentry;
+ 	__follow_mount(path);
++	if (needs_union_lookup(nd->path.mnt, path)) {
++		int err = do_union_lookup(nd, name, path);
++		if (err < 0)
++			return err;
++	}
+ 	return 0;
  
- extern int user_path_at(int, const char __user *, unsigned, struct path *);
-+extern int user_path_nd(int, const char __user *, unsigned,
-+			struct nameidata *, struct path *, char **);
+ need_lookup:
+@@ -1223,8 +1412,13 @@ static int lookup_hash(struct nameidata *nd, struct qstr *name,
+ 		err = PTR_ERR(path->dentry);
+ 		path->dentry = NULL;
+ 		path->mnt = NULL;
++		return err;
+ 	}
++
++	if (needs_union_lookup(nd->path.mnt, path))
++		err = lookup_union(nd, name, path);
+ 	return err;
++
+ }
  
- #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
- #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
+ static int __lookup_one_len(const char *name, struct qstr *this,
+@@ -2947,7 +3141,10 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	error = -EXDEV;
+ 	if (oldnd.path.mnt != newnd.path.mnt)
+ 		goto exit2;
+-
++	/* Rename on union mounts not implemented yet */
++	/* XXX much harsher check than necessary - can do some renames */
++	if (IS_UNIONED_DIR(&oldnd.path) || IS_UNIONED_DIR(&newnd.path))
++		goto exit2;
+ 	old_dir = oldnd.path.dentry;
+ 	error = -EBUSY;
+ 	if (oldnd.last_type != LAST_NORM)
+diff --git a/fs/union.c b/fs/union.c
+index eb664e6..f42c490 100644
+--- a/fs/union.c
++++ b/fs/union.c
+@@ -22,6 +22,7 @@
+ #include <linux/fs_struct.h>
+ #include <linux/slab.h>
+ #include <linux/union.h>
++#include <linux/namei.h>
+ 
+ /*
+  * This is borrowed from fs/inode.c. The hashtable for lookups. Somebody
+@@ -196,6 +197,43 @@ static struct union_dir *union_cache_rlookup(struct dentry *dentry, struct vfsmo
+ }
+ 
+ /*
++ * needs_union_lookup - Does this path need a union lookup?
++ *
++ * @parent_mnt - parent mnt, usually from associated nameidata (nd->path.mnt)
++ * @path - path of potential child union directory
++ *
++ * Short-circuit union operations on paths that can't possibly be
++ * unioned directories or don't need union lookup.
++ */
++
++int needs_union_lookup(struct vfsmount *parent_mnt, struct path *path)
++{
++	/* If this is the root of a mount, ignore the parent */
++	if (IS_ROOT(path->dentry) && !IS_MNT_UNION(path->mnt))
++		return 0;
++
++	/* The child could be from a lower layer, check the parent mnt */
++	if (!IS_MNT_UNION(parent_mnt))
++		return 0;
++
++	/* Only directories can be unioned */
++	if (path->dentry->d_inode &&
++	    !S_ISDIR(path->dentry->d_inode->i_mode))
++		return 0;
++
++	/*
++	 * XXX - A negative dentry for a directory in a unioned
++	 * directory could have a matching directory below it.  Or it
++	 * could not.  Either way, all we have is a negative dentry.
++	 * As a result, negative dentries with unioned parents always
++	 * have to go through a full union lookup.  This can be
++	 * avoided by adding a negative union cache entry for the
++	 * negative dentry.
++	 */
++	return 1;
++}
++
++/*
+  * append_to_union - add a path to the bottom of the union stack
+  *
+  * Allocate and attach a union cache entry linking the new, upper
+@@ -343,3 +381,32 @@ repeat:
+ 	}
+ 	spin_unlock(&union_lock);
+ }
++
++/*
++ * union_create_topmost_dir - Create a matching dir in the topmost file system
++ */
++
++struct dentry * union_create_topmost_dir(struct path *parent, struct qstr *name,
++					 struct path *lower)
++{
++	struct dentry *dentry;
++	int mode = lower->dentry->d_inode->i_mode;
++	int res;
++
++	res = mnt_want_write(parent->mnt);
++	if (res)
++		return ERR_PTR(res);
++
++	dentry = lookup_one_len(name->name, parent->dentry, name->len);
++	if (IS_ERR(dentry))
++		goto out;
++
++	res = vfs_mkdir(parent->dentry->d_inode, dentry, mode);
++	if (res) {
++		dput(dentry);
++		goto out;
++	}
++out:
++	mnt_drop_write(parent->mnt);
++	return dentry;
++}
+diff --git a/include/linux/union.h b/include/linux/union.h
+index 70b2adb..24608b2 100644
+--- a/include/linux/union.h
++++ b/include/linux/union.h
+@@ -38,19 +38,28 @@ struct union_dir {
+ };
+ 
+ #define IS_MNT_UNION(mnt)	((mnt)->mnt_flags & MNT_UNION)
++#define IS_UNIONED_DIR(path)	(IS_MNT_UNION((path)->mnt) && \
++				 ((path)->dentry->d_union_lower_count || \
++				  !list_empty(&(path)->dentry->d_unions)))
+ 
++extern int needs_union_lookup(struct vfsmount *, struct path *);
+ extern int append_to_union(struct path *, struct path*);
+ extern int union_down_one(struct vfsmount **, struct dentry **);
+ extern void __d_drop_unions(struct dentry *);
+ extern void shrink_d_unions(struct dentry *);
++extern struct dentry * union_create_topmost_dir(struct path *, struct qstr *,
++						struct path *);
+ 
+ #else /* CONFIG_UNION_MOUNT */
+ 
+ #define IS_MNT_UNION(x)			(0)
++#define IS_UNIONED_DIR(x)		(0)
++#define needs_union_lookup(x, y)	({ (0); })
+ #define append_to_union(x, y)		({ BUG(); (0); })
+ #define union_down_one(x, y)		({ (0); })
+ #define __d_drop_unions(x)		do { } while (0)
+ #define shrink_d_unions(x)		do { } while (0)
++#define union_create_topmost_dir(x, y, z)	({ BUG(); (NULL); })
+ 
+ #endif	/* CONFIG_UNION_MOUNT */
+ #endif	/* __KERNEL__ */
 -- 
 1.6.3.3
 
