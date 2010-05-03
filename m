@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759340Ab0ECNhM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 09:37:12 -0400
-Received: from vms173001pub.verizon.net ([206.46.173.1]:56878 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755525Ab0ECNhK (ORCPT
+	id S1759385Ab0ECNh7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 09:37:59 -0400
+Received: from vms173011pub.verizon.net ([206.46.173.11]:36155 "EHLO
+	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755386Ab0ECNh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 09:37:10 -0400
-Date: Mon, 03 May 2010 08:36:59 -0500
+	Mon, 3 May 2010 09:37:58 -0400
+Date: Mon, 03 May 2010 08:37:45 -0500
 From: Corey Minyard <minyard@acm.org>
 To: Linux Kernel <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@osdl.org>
 Cc: OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 6/8] ipmi: Reduce polling
-Message-id: <20100503133659.GF8130@minyard.local>
+Subject: [PATCH 7/8] ipmi: Attempt to register multiple SIs of the same type
+Message-id: <20100503133745.GG8130@minyard.local>
 Reply-to: minyard@acm.org
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
@@ -25,8 +25,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matthew Garrett <mjg@redhat.com>
 
-We can reasonably alter the poll rate depending on whether we're performing a
-transaction or merely waiting for an event.
+Some odd systems may have multiple BMCs, and we want to be able to support
+them. Let's make the assumption that if a system legitimately has multiple
+BMCs then each BMC's SI will be of the same type, and also that we won't
+see multiple SIs of the same type unless we have multiple BMCs. If these
+hold true then we should register all SIs of the same type.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Corey Minyard <cminyard@mvista.com>
@@ -36,63 +39,62 @@ Index: linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
 ===================================================================
 --- linux-2.6.orig/drivers/char/ipmi/ipmi_si_intf.c
 +++ linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
-@@ -893,6 +893,9 @@ static void sender(void                *
+@@ -3278,6 +3278,7 @@ static __devinit int init_ipmi_si(void)
+ 	char *str;
+ 	int  rv;
+ 	struct smi_info *e;
++	enum ipmi_addr_src type = SI_INVALID;
  
- 	mod_timer(&smi_info->si_timer, jiffies + SI_TIMEOUT_JIFFIES);
- 
-+	if (smi_info->thread)
-+		wake_up_process(smi_info->thread);
-+
- 	if (smi_info->run_to_completion) {
- 		/*
- 		 * If we are running to completion, then throw it in
-@@ -1013,6 +1016,8 @@ static int ipmi_thread(void *data)
- 			; /* do nothing */
- 		else if (smi_result == SI_SM_CALL_WITH_DELAY && busy_wait)
- 			schedule();
-+		else if (smi_result == SI_SM_IDLE)
-+			schedule_timeout_interruptible(100);
- 		else
- 			schedule_timeout_interruptible(0);
- 	}
-@@ -1055,6 +1060,7 @@ static void smi_timeout(unsigned long da
- 	unsigned long     flags;
- 	unsigned long     jiffies_now;
- 	long              time_diff;
-+	long		  timeout;
- #ifdef DEBUG_TIMING
- 	struct timeval    t;
+ 	if (initialized)
+ 		return 0;
+@@ -3344,30 +3345,43 @@ static __devinit int init_ipmi_si(void)
+ 	of_register_platform_driver(&ipmi_of_platform_driver);
  #endif
-@@ -1075,9 +1081,9 @@ static void smi_timeout(unsigned long da
  
- 	if ((smi_info->irq) && (!smi_info->interrupt_disabled)) {
- 		/* Running with interrupts, only do long timeouts. */
--		smi_info->si_timer.expires = jiffies + SI_TIMEOUT_JIFFIES;
-+		timeout = jiffies + SI_TIMEOUT_JIFFIES;
- 		smi_inc_stat(smi_info, long_timeouts);
--		goto do_add_timer;
-+		goto do_mod_timer;
+-	/* Try to register something with interrupts first */
++	/* We prefer devices with interrupts, but in the case of a machine
++	   with multiple BMCs we assume that there will be several instances
++	   of a given type so if we succeed in registering a type then also
++	   try to register everything else of the same type */
+ 
+ 	mutex_lock(&smi_infos_lock);
+ 	list_for_each_entry(e, &smi_infos, link) {
+-		if (e->irq) {
++		/* Try to register a device if it has an IRQ and we either
++		   haven't successfully registered a device yet or this
++		   device has the same type as one we successfully registered */
++		if (e->irq && (!type || e->addr_source == type)) {
+ 			if (!try_smi_init(e)) {
+-				mutex_unlock(&smi_infos_lock);
+-				return 0;
++				type = e->addr_source;
+ 			}
+ 		}
  	}
  
- 	/*
-@@ -1086,15 +1092,15 @@ static void smi_timeout(unsigned long da
- 	 */
- 	if (smi_result == SI_SM_CALL_WITH_DELAY) {
- 		smi_inc_stat(smi_info, short_timeouts);
--		smi_info->si_timer.expires = jiffies + 1;
-+		timeout = jiffies + 1;
- 	} else {
- 		smi_inc_stat(smi_info, long_timeouts);
--		smi_info->si_timer.expires = jiffies + SI_TIMEOUT_JIFFIES;
-+		timeout = jiffies + SI_TIMEOUT_JIFFIES;
++	/* type will only have been set if we successfully registered an si */
++	if (type) {
++		mutex_unlock(&smi_infos_lock);
++		return 0;
++	}
++
+ 	/* Fall back to the preferred device */
+ 
+ 	list_for_each_entry(e, &smi_infos, link) {
+-		if (!e->irq) {
++		if (!e->irq && (!type || e->addr_source == type)) {
+ 			if (!try_smi_init(e)) {
+-				mutex_unlock(&smi_infos_lock);
+-				return 0;
++				type = e->addr_source;
+ 			}
+ 		}
  	}
+ 	mutex_unlock(&smi_infos_lock);
  
-- do_add_timer:
--	if ((smi_result != SI_SM_IDLE) || smi_info->interrupt_disabled)
--		add_timer(&(smi_info->si_timer));
-+ do_mod_timer:
-+	if (smi_result != SI_SM_IDLE)
-+		mod_timer(&(smi_info->si_timer), timeout);
- }
- 
- static irqreturn_t si_irq_handler(int irq, void *data)
++	if (type)
++		return 0;
++
+ 	if (si_trydefaults) {
+ 		mutex_lock(&smi_infos_lock);
+ 		if (list_empty(&smi_infos)) {
