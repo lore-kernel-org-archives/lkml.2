@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932811Ab0ECXPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 19:15:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34747 "EHLO mx1.redhat.com"
+	id S932876Ab0ECXP5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 19:15:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18083 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932407Ab0ECXOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 19:14:16 -0400
+	id S932399Ab0ECXOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 19:14:15 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
        Christoph Hellwig <hch@infradead.org>, Jan Blunck <jblunck@suse.de>,
        Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 39/39] union-mount: Implement union-aware lsetxattr()
-Date: Mon,  3 May 2010 16:12:38 -0700
-Message-Id: <1272928358-20854-40-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 38/39] union-mount: Implement union-aware setxattr()
+Date: Mon,  3 May 2010 16:12:37 -0700
+Message-Id: <1272928358-20854-39-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 References: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,14 +21,22 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---
- fs/xattr.c |   31 +++++++++++++++++++++++++------
- 1 files changed, 25 insertions(+), 6 deletions(-)
+ fs/xattr.c |   33 +++++++++++++++++++++++++++------
+ 1 files changed, 27 insertions(+), 6 deletions(-)
 
 diff --git a/fs/xattr.c b/fs/xattr.c
-index f930ab7..0a56629 100644
+index 46f87e8..f930ab7 100644
 --- a/fs/xattr.c
 +++ b/fs/xattr.c
-@@ -321,17 +321,36 @@ SYSCALL_DEFINE5(lsetxattr, const char __user *, pathname,
+@@ -18,6 +18,7 @@
+ #include <linux/module.h>
+ #include <linux/fsnotify.h>
+ #include <linux/audit.h>
++#include <linux/union.h>
+ #include <asm/uaccess.h>
+ 
+ 
+@@ -281,17 +282,37 @@ SYSCALL_DEFINE5(setxattr, const char __user *, pathname,
  		size_t, size, int, flags)
  {
  	struct path path;
@@ -37,8 +45,9 @@ index f930ab7..0a56629 100644
 +	char *tmp;
  	int error;
  
--	error = user_lpath(pathname, &path);
-+	error = user_path_nd(AT_FDCWD, pathname, 0, &nd, &path, &tmp);
+-	error = user_path(pathname, &path);
++	error = user_path_nd(AT_FDCWD, pathname, LOOKUP_FOLLOW, &nd, &path,
++			     &tmp);
  	if (error)
  		return error;
 -	error = mnt_want_write(path.mnt);
