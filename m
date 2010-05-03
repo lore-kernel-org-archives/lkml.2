@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab0ECJBh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 05:01:37 -0400
-Received: from smtp141.iad.emailsrvr.com ([207.97.245.141]:40698 "EHLO
-	smtp141.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab0ECJBf (ORCPT
+	id S1752515Ab0ECJDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 05:03:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65208 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab0ECJDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 05:01:35 -0400
-X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 May 2010 05:01:35 EDT
-Message-ID: <4BDE8DCB.4000404@aljex.com>
-Date: Mon, 03 May 2010 04:48:11 -0400
-From: "Brian K. White" <brian@aljex.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Mon, 3 May 2010 05:03:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=mgyn2jiLuyfPgJTIC/mWO+cPWKlVs6PnTrOVckumZv7YxO6ohTU0+H/LiAR+V1WqqV
+         YTZbnAJqN+2uQDXku7wqKj43JglVcb78CfIuZckpPAIIGXm73a321ZEamkeVFe7ghX34
+         lJ5g1fZ2JX6ptjrCvJBCJB+aiTOvKwZpdwHnY=
+Message-ID: <4BDE914C.6080504@suse.cz>
+Date: Mon, 03 May 2010 11:03:08 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.6 Thunderbird/3.1b1
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: orenl@cs.columbia.edu, linux-s390@vger.kernel.org,
-       linux-api@vger.kernel.org, containers@lists.linux-foundation.org,
-       x86@kernel.org, linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-       akpm@linux-foundation.org, sukadev@linux.vnet.ibm.com, xemul@openvz.org
-Subject: Re: [PATCH v21 001/100] eclone (1/11): Factor out code to allocate
- pidmap page
-References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>	<1272723382-19470-2-git-send-email-orenl@cs.columbia.edu> <20100501.151022.190375136.davem@davemloft.net>
-In-Reply-To: <20100501.151022.190375136.davem@davemloft.net>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Changli Gao <xiaosuo@gmail.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+       akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+       adobriyan@gmail.com, mingo@elte.hu, peterz@infradead.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: use kmalloc() to allocate fdmem if possible
+References: <viro@zeniv.linux.org.uk> <1272818776-7729-1-git-send-email-xiaosuo@gmail.com> 	<4BDDB6E9.4060703@redhat.com> <201005030915.FCD09385.FFHVOMJtSLOFQO@I-love.SAKURA.ne.jp> 	<4BDE67DA.4080004@redhat.com> <y2z412e6f7f1005030005vc3be4977z3add08bfc72d1c44@mail.gmail.com> 	<4BDE7E66.8030509@redhat.com> <m2l412e6f7f1005030052ka39a33ceke8c6b61553ba007f@mail.gmail.com> <4BDE8E24.5050200@redhat.com>
+In-Reply-To: <4BDE8E24.5050200@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller wrote:
-> NO WAY, there is no way in the world you should post 100 patches
-> at a time to any mailing list, especially those at vger.kernel.org
-> that have thousands upon thousands of subscribers.
+On 05/03/2010 10:49 AM, Avi Kivity wrote:
+> On 05/03/2010 10:52 AM, Changli Gao wrote:
+>> On Mon, May 3, 2010 at 3:42 PM, Avi Kivity<avi@redhat.com>  wrote:
+>>   
+>>> On 05/03/2010 10:05 AM, Changli Gao wrote:
+>>>     
+>>>> On Mon, May 3, 2010 at 2:06 PM, Avi Kivity<avi@redhat.com>    wrote:
+>>>>
+>>>>       
+>>>>> My point is, vmalloc() and vfree should do this, not their callers:
+>>>>>
+>>>>> vmalloc(size):
+>>>>>     if (size<= PAGE_SIZE)
+>>>>>         return kmalloc(size, GFP_KERNEL);
+>>>>>     ...
+>>>>>
+>>>>> vfree(p):
+>>>>>     if (!is_vmalloc_addr(p) {
+>>>>>         kfree(p);
+>>>>>         return;
+>>>>>     }
+>>>>>     ...
+>>>>>
+>>>>>          
+>>>> I think we should not change vmalloc/vfree, and you can invent new
+>>>> memory APIs, such as malloc()/free().
+>>>>
+>>>>        
+>>> Why?
+>>>
+>>>      
+>> Because vmalloc is used to allocate virtually contiguous memory. v in
+>> vmalloc means virtually.
+>>
+>>    
 > 
-> Post only small, well contained, sets of patches at a time.  At most
-> 10 or so in one go.
-> 
-> Do you realize how much mail traffic you generate by posting so many
-> patches at one time, and how unlikely it is for anyone to actually
-> sift through and review your patches after you've spammed them by
-> posting so many at one time?
-> 
-> A second infraction and I will have no choice but to block you at the
-> SMTP level at vger.kernel.org so please do not do it again.
+> A kmalloc()ed page is virtually contiguous, satisfying your requirement.
 
-Some people, you give them gold and they just complain it's heavy.
+But it won't work well for vmalloc_to_{page,pfn} and similar. Some code
+may expect vmalloc result to be in the vmalloc area and page-aligned
+(both in position and size).
 
+Not that it won't be possible to inspect the callers, but in my eyes it
+would definitely be better to introduce kmalloc_or_vmalloc-alike where
+the caller explicitly doesn't care about the resulting position and size.
+
+regards,
 -- 
-bkw
+js
+suse labs
