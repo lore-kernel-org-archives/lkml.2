@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab0ECSx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 14:53:29 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:40163 "EHLO e2.ny.us.ibm.com"
+	id S1756163Ab0ECSxh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 14:53:37 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:47440 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752218Ab0ECSx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755537Ab0ECSx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 May 2010 14:53:27 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,10 +13,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       Li Zefan <lizf@cn.fujitsu.com>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 03/10] KEYS: Fix an RCU warning in the reading of user keys
-Date: Mon,  3 May 2010 11:53:12 -0700
-Message-Id: <1272912799-17859-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 07/10] cgroup: Check task_lock in task_subsys_state()
+Date: Mon,  3 May 2010 11:53:16 -0700
+Message-Id: <1272912799-17859-7-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100503185253.GA17672@linux.vnet.ibm.com>
 References: <20100503185253.GA17672@linux.vnet.ibm.com>
@@ -24,50 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
+From: Li Zefan <lizf@cn.fujitsu.com>
 
-Fix an RCU warning in the reading of user keys:
+Expand task_subsys_state()'s rcu_dereference_check() to include the full
+locking rule as documented in Documentation/cgroups/cgroups.txt by adding
+a check for task->alloc_lock being held.
 
-===================================================
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-security/keys/user_defined.c:202 invoked rcu_dereference_check() without protection!
+This fixes an RCU false positive when resuming from suspend. The warning
+comes from freezer cgroup in cgroup_freezing_or_frozen().
 
-other info that might help us debug this:
-
-rcu_scheduler_active = 1, debug_locks = 0
-1 lock held by keyctl/3637:
- #0:  (&key->sem){+++++.}, at: [<ffffffff811a80ae>] keyctl_read_key+0x9c/0xcf
-
-stack backtrace:
-Pid: 3637, comm: keyctl Not tainted 2.6.34-rc5-cachefs #18
-Call Trace:
- [<ffffffff81051f6c>] lockdep_rcu_dereference+0xaa/0xb2
- [<ffffffff811aa55f>] user_read+0x47/0x91
- [<ffffffff811a80be>] keyctl_read_key+0xac/0xcf
- [<ffffffff811a8a06>] sys_keyctl+0x75/0xb7
- [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+Acked-by: Matt Helsley <matthltc@us.ibm.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- security/keys/user_defined.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ include/linux/cgroup.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
-index 7c687d5..e9aa079 100644
---- a/security/keys/user_defined.c
-+++ b/security/keys/user_defined.c
-@@ -199,7 +199,8 @@ long user_read(const struct key *key, char __user *buffer, size_t buflen)
- 	struct user_key_payload *upayload;
- 	long ret;
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index b8ad1ea..8f78073 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -530,6 +530,7 @@ static inline struct cgroup_subsys_state *task_subsys_state(
+ {
+ 	return rcu_dereference_check(task->cgroups->subsys[subsys_id],
+ 				     rcu_read_lock_held() ||
++				     lockdep_is_held(&task->alloc_lock) ||
+ 				     cgroup_lock_is_held());
+ }
  
--	upayload = rcu_dereference(key->payload.data);
-+	upayload = rcu_dereference_protected(
-+		key->payload.data, rwsem_is_locked(&((struct key *)key)->sem));
- 	ret = upayload->datalen;
- 
- 	/* we can return the data as is */
 -- 
 1.7.0
 
