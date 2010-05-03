@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933304Ab0ECQcc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 12:32:32 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:14814
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933052Ab0ECQcb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 12:32:31 -0400
-X-SpamScore: -5
-X-BigFish: VPS-5(zz98dNzz1202hzzz32i87h2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L1UR9W-02-9O6-02
-X-M-MSG: 
-Date: Mon, 3 May 2010 18:32:21 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/22] KVM: MMU: Track page fault data in struct vcpu
-Message-ID: <20100503163221.GB28950@amd.com>
-References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com>
- <1272364712-17425-17-git-send-email-joerg.roedel@amd.com>
- <4BD6DF7C.1090203@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4BD6DF7C.1090203@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	id S933345Ab0ECQdJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 12:33:09 -0400
+Received: from tex.lwn.net ([70.33.254.29]:35324 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933321Ab0ECQdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 12:33:06 -0400
+Date: Mon, 3 May 2010 10:33:00 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: mgross@linux.intel.com
+Cc: Kevin Hilman <khilman@deeprootsystems.com>, aili@codeaurora.org,
+       dwalker@codeaurora.org, tiwai@suse.de, bruce.w.allan@intel.com,
+       davidb@quicinc.com, mcgrof@gmail.com, pavel@ucw.cz,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]PM QOS refresh against next-20100430
+Message-ID: <20100503103300.6330e522@bike.lwn.net>
+In-Reply-To: <20100430212043.GA30315@linux.intel.com>
+References: <20100430212043.GA30315@linux.intel.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 03:58:36PM +0300, Avi Kivity wrote:
-> So we probably need to upgrade gva_t to a u64.  Please send this as
-> a separate patch, and test on i386 hosts.
+On Fri, 30 Apr 2010 14:20:43 -0700
+mark gross <mgross@linux.intel.com> wrote:
 
-Are there _any_ regular tests of KVM on i386 hosts? For me this is
-terribly broken (also after I fixed the issue which gave me a
-VMEXIT_INVALID at the first vmrun).
+> This patch changes the string based list management to a handle base
+> implementation to help with the hot path use of pm-qos
 
-	Joerg
+Having taken a quick look, I think the API change makes a lot of
+sense.  Hot paths are one thing; avoidance of accidental conflicts
+would be another.
 
+One question, though...  one clear use of this API is for drivers to
+say "don't go into C3 or deeper because things go wrong"; I'm about to
+add another one of those.  It works, but the use of a
+PM_QOS_CPU_DMA_LATENCY requirement with a hard-coded number that one
+hopes is small enough seems a bit...indirect.  I wonder if it would be
+clearer and more robust to add a new requirement^Wrequest type saying
+"the quality of service I need is shallow sleeps only"?
 
+jon
