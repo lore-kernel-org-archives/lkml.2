@@ -1,292 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759299Ab0ECQKv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 12:10:51 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:59052 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758675Ab0ECQKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 12:10:49 -0400
-Message-ID: <4BDEF582.2040806@us.ibm.com>
-Date: Mon, 03 May 2010 09:10:42 -0700
-From: Darren Hart <dvhltc@us.ibm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Oren Laadan <orenl@cs.columbia.edu>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH v21 032/100] c/r: Save and restore the [compat_]robust_list
- member of the task struct
-References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu> <1272723382-19470-33-git-send-email-orenl@cs.columbia.edu>
-In-Reply-To: <1272723382-19470-33-git-send-email-orenl@cs.columbia.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1759631Ab0ECQNX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 12:13:23 -0400
+Received: from smtpout.cs.fsu.edu ([128.186.122.75]:23159 "EHLO
+	mail.cs.fsu.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758998Ab0ECQNV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 12:13:21 -0400
+Date: Mon, 3 May 2010 12:13:19 -0400
+From: Ted Baker <baker@cs.fsu.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: raj@ece.cmu.edu, jayhawk@soe.ucsc.edu, raistlin@linux.it,
+       niehaus@ittc.ku.edu, henrik@austad.us, linux-kernel@vger.kernel.org,
+       mingo@elte.hu, billh@gnuppy.monkey.org, linux-rt-users@vger.kernel.org,
+       fabio@gandalf.sssup.it, anderson@cs.unc.edu, tglx@linutronix.de,
+       dhaval.giani@gmail.com, cucinotta@sssup.it, lipari@retis.sssup.it,
+       baker.tlh@comcast.net
+Subject: Re: [Fwd: Re: RFC for a new Scheduling policy/class in the Linux-kernel]
+Message-ID: <20100503161319.GC11020@cs.fsu.edu>
+References: <20100426115658.GA21346@cs.fsu.edu> <1272897682.1642.124.camel@laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272897682.1642.124.camel@laptop>
+User-Agent: Mutt/1.4.2.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oren Laadan wrote:
-> From: Matt Helsley <matthltc@us.ibm.com>
-> 
-> These lists record which futexes the task holds. To keep the overhead of
-> robust futexes low the list is kept in userspace. When the task exits the
-> kernel carefully walks these lists to recover held futexes that
-> other tasks may be attempting to acquire with FUTEX_WAIT.
-> 
-> Because they point to userspace memory that is saved/restored by
-> checkpoint/restart saving the list pointers themselves is safe.
-> 
-> While saving the pointers is safe during checkpoint, restart is tricky
-> because the robust futex ABI contains provisions for changes based on
-> checking the size of the list head. So we need to save the length of
-> the list head too in order to make sure that the kernel used during
-> restart is capable of handling that ABI. Since there is only one ABI
-> supported at the moment taking the list head's size is simple. Should
-> the ABI change we will need to use the same size as specified during
-> sys_set_robust_list() and hence some new means of determining the length
-> of this userspace structure in sys_checkpoint would be required.
-> 
-> Rather than rewrite the logic that checks and handles the ABI we reuse
-> sys_set_robust_list() by factoring out the body of the function and
-> calling it during restart.
-> 
+Sorry for the complaint about the lklm.org reference.
+Somehow, the "2/28/107" portion of the URL got cut off when
+I pasted it into my browser. :-}
 
-The approach looks sound to me. I presume there is no way for the task 
-to wake and set the robust list to something else after the checkpoint 
-has started?
+However, the rest of my comments still apply.
 
-Couple of comments re documentation below.
+--Ted
 
-Thanks,
-
-Darren
-
-> Changelog [v19]:
->   - Keep __u32s in even groups for 32-64 bit compatibility
+On Mon, May 03, 2010 at 04:41:22PM +0200, Peter Zijlstra wrote:
+> Hi Ted,
 > 
-> Cc: Darren Hart <dvhltc@us.ibm.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-> Acked-by: Oren Laadan <orenl@cs.columbia.edu>
-> Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-> Tested-by: Serge E. Hallyn <serue@us.ibm.com>
-> ---
->  include/linux/checkpoint_hdr.h |    5 ++++
->  include/linux/compat.h         |    3 +-
->  include/linux/futex.h          |    1 +
->  kernel/checkpoint/process.c    |   49 ++++++++++++++++++++++++++++++++++++++++
->  kernel/futex.c                 |   19 +++++++++-----
->  kernel/futex_compat.c          |   13 ++++++++--
->  6 files changed, 79 insertions(+), 11 deletions(-)
+> On Mon, 2010-04-26 at 07:56 -0400, Ted Baker wrote:
+> > I have not seen any more e-mail on this.  How is it going?  Is there any
+> > chance of rolling in some corrections for the SCHED_SPORADIC treatment?  In
+> > particular, could we have a DO_NOT_RUN priority, that is guaranteed to
+> > prevent a task from running at all?
 > 
-> diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-> index 68ee0f3..c7d34a6 100644
-> --- a/include/linux/checkpoint_hdr.h
-> +++ b/include/linux/checkpoint_hdr.h
-> @@ -167,6 +167,11 @@ struct ckpt_hdr_task {
->  	__u32 exit_signal;
->  	__u32 pdeath_signal;
+> Without having fully read the referenced paper, we're currently looking
+> to support the sporadic task model through SCHED_DEADLINE (by our SSSUP
+> friends):
 > 
-> +	__u32 compat_robust_futex_head_len;
-> +	__u32 compat_robust_futex_list; /* a compat __user ptr */
-> +	__u32 robust_futex_head_len;
-> +	__u64 robust_futex_list; /* a __user ptr */
-> +
->  	__u64 set_child_tid;
->  	__u64 clear_child_tid;
->  } __attribute__((aligned(8)));
-> diff --git a/include/linux/compat.h b/include/linux/compat.h
-> index 717c691..89125dd 100644
-> --- a/include/linux/compat.h
-> +++ b/include/linux/compat.h
-> @@ -210,7 +210,8 @@ struct compat_robust_list_head {
->  };
+>   http://lkml.org/lkml/2010/2/28/107
 > 
->  extern void compat_exit_robust_list(struct task_struct *curr);
-> -
-> +extern long do_compat_set_robust_list(struct compat_robust_list_head __user *head,
-> +				      compat_size_t len);
->  asmlinkage long
->  compat_sys_set_robust_list(struct compat_robust_list_head __user *head,
->  			   compat_size_t len);
-> diff --git a/include/linux/futex.h b/include/linux/futex.h
-> index ae755f6..c825790 100644
-> --- a/include/linux/futex.h
-> +++ b/include/linux/futex.h
-> @@ -185,6 +185,7 @@ union futex_key {
->  #define FUTEX_KEY_INIT (union futex_key) { .both = { .ptr = NULL } }
+> This work aims to implement a full sporadic task scheduler [initially
+> (g)EDF], SCHED_SPORADIC would have been a better name, but since POSIX
+> stole that from us we took SCHED_DEADLINE to indicate its a deadline
+> scheduler.
 > 
->  #ifdef CONFIG_FUTEX
-> +extern long do_set_robust_list(struct robust_list_head __user *head, size_t len);
->  extern void exit_robust_list(struct task_struct *curr);
->  extern void exit_pi_state_list(struct task_struct *curr);
->  extern int futex_cmpxchg_enabled;
-> diff --git a/kernel/checkpoint/process.c b/kernel/checkpoint/process.c
-> index ce009cb..aabefb6 100644
-> --- a/kernel/checkpoint/process.c
-> +++ b/kernel/checkpoint/process.c
-> @@ -14,9 +14,56 @@
->  #include <linux/sched.h>
->  #include <linux/posix-timers.h>
->  #include <linux/futex.h>
-> +#include <linux/compat.h>
->  #include <linux/poll.h>
->  #include <linux/checkpoint.h>
+> Along with this work comes the full Deadline-inheritance (which should
+> be but a small change from our current Priority-inheritance code), and
+> also Bandwidth-inheritance (more work). Esp. the latter would also be
+> required for your proposed SCHED_SPORADIC since it does aim to be a
+> 'strict' bandwidth enforcing scheduler.
 > 
-> +
-> +#ifdef CONFIG_FUTEX
-> +static void save_task_robust_futex_list(struct ckpt_hdr_task *h,
-> +					struct task_struct *t)
-> +{
-> +	/*
-> +	 * These are __user pointers and thus can be saved without
-> +	 * the objhash.
-> +	 */
-> +	h->robust_futex_list = (unsigned long)t->robust_list;
-> +	h->robust_futex_head_len = sizeof(*t->robust_list);
-> +#ifdef CONFIG_COMPAT
-> +	h->compat_robust_futex_list = ptr_to_compat(t->compat_robust_list);
-> +	h->compat_robust_futex_head_len = sizeof(*t->compat_robust_list);
-> +#endif
-> +}
-> +
-> +static void restore_task_robust_futex_list(struct ckpt_hdr_task *h)
-> +{
-> +	/* Since we restore the memory map the address remains the same and
-> +	 * this is safe. This is the same as [compat_]sys_set_robust_list() */
-> +	if (h->robust_futex_list) {
-> +		struct robust_list_head __user *rfl;
-> +		rfl = (void __user *)(unsigned long) h->robust_futex_list;
-> +		do_set_robust_list(rfl, h->robust_futex_head_len);
-> +	}
-> +#ifdef CONFIG_COMPAT
-> +	if (h->compat_robust_futex_list) {
-> +		struct compat_robust_list_head __user *crfl;
-> +		crfl = compat_ptr(h->compat_robust_futex_list);
-> +		do_compat_set_robust_list(crfl, h->compat_robust_futex_head_len);
-> +	}
-> +#endif
-> +}
-> +#else /* !CONFIG_FUTEX */
-> +static inline void save_task_robust_futex_list(struct ckpt_hdr_task *h,
-> +					       struct task_struct *t)
-> +{
-> +}
-> +
-> +static inline void restore_task_robust_futex_list(struct ckpt_hdr_task *h)
-> +{
-> +}
-> +#endif /* CONFIG_FUTEX */
-> +
-> +
->  /***********************************************************************
->   * Checkpoint
->   */
-> @@ -45,6 +92,7 @@ static int checkpoint_task_struct(struct ckpt_ctx *ctx, struct task_struct *t)
+> [Does the proposed 'fixed' SCHED_SPORADIC deal with admission control?]
 > 
->  		h->set_child_tid = (unsigned long) t->set_child_tid;
->  		h->clear_child_tid = (unsigned long) t->clear_child_tid;
-> +		save_task_robust_futex_list(h, t);
->  	}
+> But as it stands, this work would provide much more complete sporadic
+> task support than the fixed SCHED_SPORADIC would.
 > 
->  	ret = ckpt_write_obj(ctx, &h->h);
-> @@ -248,6 +296,7 @@ static int restore_task_struct(struct ckpt_ctx *ctx)
->  			(int __user *) (unsigned long) h->set_child_tid;
->  		t->clear_child_tid =
->  			(int __user *) (unsigned long) h->clear_child_tid;
-> +		restore_task_robust_futex_list(h);
->  	}
 > 
->  	memset(t->comm, 0, TASK_COMM_LEN);
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index 23419c9..baaecb4 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -2342,13 +2342,7 @@ out:
->   * the list. There can only be one such pending lock.
->   */
 > 
-> -/**
-> - * sys_set_robust_list() - Set the robust-futex list head of a task
-> - * @head:	pointer to the list-head
-> - * @len:	length of the list-head, as userspace expects
-> - */
-> -SYSCALL_DEFINE2(set_robust_list, struct robust_list_head __user *, head,
-> -		size_t, len)
-> +long do_set_robust_list(struct robust_list_head __user *head, size_t len)
-
-
-Please provide a full kerneldoc header for the new function.
-
-
->  {
->  	if (!futex_cmpxchg_enabled)
->  		return -ENOSYS;
-> @@ -2364,6 +2358,17 @@ SYSCALL_DEFINE2(set_robust_list, struct robust_list_head __user *, head,
->  }
-> 
->  /**
-> + * sys_set_robust_list() - Set the robust-futex list head of a task
-> + * @head:	pointer to the list-head
-> + * @len:	length of the list-head, as userspace expects
-> + */
-> +SYSCALL_DEFINE2(set_robust_list, struct robust_list_head __user *, head,
-> +		size_t, len)
-> +{
-> +	return do_set_robust_list(head, len);
-> +}
-> +
-> +/**
->   * sys_get_robust_list() - Get the robust-futex list head of a task
->   * @pid:	pid of the process [zero for current task]
->   * @head_ptr:	pointer to a list-head pointer, the kernel fills it in
-> diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
-> index d49afb2..900bb2b 100644
-> --- a/kernel/futex_compat.c
-> +++ b/kernel/futex_compat.c
-> @@ -114,9 +114,9 @@ void compat_exit_robust_list(struct task_struct *curr)
->  	}
->  }
-> 
-> -asmlinkage long
-> -compat_sys_set_robust_list(struct compat_robust_list_head __user *head,
-> -			   compat_size_t len)
-> +long
-> +do_compat_set_robust_list(struct compat_robust_list_head __user *head,
-
-
-I know futex_compat.c doesn't have as much kerneldoc as futex.c does, 
-but I'd like to see that improved. Please include a kerneldoc here too.
-
-
-> +			  compat_size_t len)
->  {
->  	if (!futex_cmpxchg_enabled)
->  		return -ENOSYS;
-> @@ -130,6 +130,13 @@ compat_sys_set_robust_list(struct compat_robust_list_head __user *head,
->  }
-> 
->  asmlinkage long
-> +compat_sys_set_robust_list(struct compat_robust_list_head __user *head,
-> +			   compat_size_t len)
-> +{
-> +	return do_compat_set_robust_list(head, len);
-> +}
-> +
-> +asmlinkage long
->  compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
->  			   compat_size_t __user *len_ptr)
->  {
-
-
--- 
-Darren Hart
-IBM Linux Technology Center
-Real-Time Linux Team
+> -- 
+> This message has been scanned for viruses and
+> dangerous content by MailScanner, and is
+> believed to be clean.
