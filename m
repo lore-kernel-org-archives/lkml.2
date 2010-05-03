@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab0ECXhq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 19:37:46 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43669 "EHLO mx1.suse.de"
+	id S1759927Ab0ECXln (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 19:41:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46027 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759911Ab0ECXhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 19:37:43 -0400
-Date: Tue, 4 May 2010 09:37:31 +1000
-From: Neil Brown <neilb@suse.de>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-       Jan Blunck <jblunck@suse.de>, David Woodhouse <dwmw2@infradead.org>,
-       linux-nfs@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [PATCH 05/39] whiteout/NFSD: Don't return information about
- whiteouts to userspace
-Message-ID: <20100504093731.3a45ff5f@notabene.brown>
-In-Reply-To: <1272928358-20854-6-git-send-email-vaurora@redhat.com>
-References: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
-	<1272928358-20854-6-git-send-email-vaurora@redhat.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759748Ab0ECXlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 19:41:42 -0400
+Date: Mon, 3 May 2010 16:40:13 -0700
+From: Greg KH <gregkh@suse.de>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Greg KH <greg@kroah.com>,
+       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+       "ss@aao.gov.au" <ss@aao.gov.au>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Staging: dt3155: Cleanup memory mapped i/o access
+Message-ID: <20100503234013.GB13519@suse.de>
+References: <0D753D10438DA54287A00B0270842697636DAFCD14@AUSP01VMBX24.collaborationhost.net>
+ <20100430215645.GA12409@kroah.com>
+ <0D753D10438DA54287A00B0270842697636E9B9B0D@AUSP01VMBX24.collaborationhost.net>
+ <20100503185933.GA27346@kroah.com>
+ <0D753D10438DA54287A00B0270842697636EADDEC0@AUSP01VMBX24.collaborationhost.net>
+ <20100503211751.GB21402@kroah.com>
+ <0D753D10438DA54287A00B0270842697636EADE1D2@AUSP01VMBX24.collaborationhost.net>
+ <0D753D10438DA54287A00B0270842697636EADE26A@AUSP01VMBX24.collaborationhost.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0D753D10438DA54287A00B0270842697636EADE26A@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  3 May 2010 16:12:04 -0700
-Valerie Aurora <vaurora@redhat.com> wrote:
-
-> From: Jan Blunck <jblunck@suse.de>
+On Mon, May 03, 2010 at 06:33:08PM -0500, H Hartley Sweeten wrote:
+> On Monday, May 03, 2010 3:45 PM, H Hartley Sweeten wrote:
+> >>> Could the next tree be out of sync with your tree?
+> >>
+> >> Hm, some other tree might be doing something in those files.  But the
+> >> fact that the drivers/staging/dt3155/dt3155_io.h was so wrong it thought
+> >> it was a revert, makes me suspect that you did it against something
+> >> else.
+> >>
+> >> If you make this against my staging-next tree at
+> >> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-next-2.6.git
+> >> Using the staging-next branch, does that make the patch different?
+> >
+> > Ok.  Pulled your staging-next (thanks Joe).
+> >
+> > It's way different from linux-next and matches Linus' tree exactly.  It's
+> > missing all of your "Drop the "_s"..." and "The typedef is not needed." 
+> > patches.
+> >
+> > Of course I could be on the wrong branch for your staging-next tree.  The
+> > only branches listed are:
+> >
+> > $ git branch -a
+> > * master
+> >   remotes/origin/HEAD -> origin/master
+> >   remotes/origin/master
 > 
-> Userspace isn't ready for handling another file type, so silently drop
-> whiteout directory entries before they leave the kernel.
+> It appears these are the patches missing in your staging-next tree that do
+> exist in the linux-next tree:
+> 
+> Staging: dt3155: remove "inline" usage
+> Staging: dt3155: rename dt3155_fbuffer_s
+> Staging: dt3155: rename dt3155_config_s
+> Staging: dt3155: rename dt3155_read_t
+> Staging: dt3155: rename dt3155_status_t
+> Staging: dt3155: remove frame_info_t
+> Staging: dt3155: remove TRUE/FALSE
+> Staging: dt3155: remove #ifdef
+> Staging: dt3155: allocator.c: sparse cleanups
+> Staging: dt3155: fix parentheses and bracket spacing style issues
+> Staging: dt3155: fix coding style issue in dt3155_isr.c
+> Staging: dt3155: fix wait_ibsyclr function
+> Staging: remove unused #include <linux/version.h>
 
-Feels very intrusive doesn't it....
+Odd, what branch did they come from?
 
-Have you considered something like the following?
+> The first one that exists in both is:
+> 
+> Staging: dt3155: fix 50Hz configuration
+> 
+> Could the others be in a staging-stable branch?
 
-NeilBrown
+I do not know, they don't look to be something I've seen.
 
-diff --git a/fs/readdir.c b/fs/readdir.c
-index 7723401..4c5b347 100644
---- a/fs/readdir.c
-+++ b/fs/readdir.c
-@@ -19,10 +19,26 @@
- 
- #include <asm/uaccess.h>
- 
-+struct readdir_info {
-+	filldir_t filler;
-+	void *data;
-+};
-+
-+static int white_out(void *vrdi, const char *name, int namlen,
-+		     loff_t offset, u64 ino, unsigned int d_type)
-+{
-+	struct readdir_info *rdi = vrdi;
-+	if (d_type == DT_WHT)
-+		return 0;
-+	return rdi->filler(rdi->data, name, namlen, offset, info, d_type);
-+}
-+
- int vfs_readdir(struct file *file, filldir_t filler, void *buf)
- {
- 	struct inode *inode = file->f_path.dentry->d_inode;
- 	int res = -ENOTDIR;
-+	struct readir_info rdi = { filler, buf };
-+
- 	if (!file->f_op || !file->f_op->readdir)
- 		goto out;
- 
-@@ -36,7 +52,7 @@ int vfs_readdir(struct file *file, filldir_t filler, void *buf)
- 
- 	res = -ENOENT;
- 	if (!IS_DEADDIR(inode)) {
--		res = file->f_op->readdir(file, buf, filler);
-+		res = file->f_op->readdir(file, &rdi, white_out);
- 		file_accessed(file);
- 	}
- 	mutex_unlock(&inode->i_mutex);
+thanks,
+
+greg k-h
