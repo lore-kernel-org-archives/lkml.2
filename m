@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab0ECLTi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 07:19:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56605 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757824Ab0ECLTg convert rfc822-to-8bit (ORCPT
+	id S1758048Ab0ECLaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 07:30:09 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:37499 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757824Ab0ECLaC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 07:19:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,318,1270450800"; 
-   d="scan'208";a="272627611"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       David Woodhouse <dwmw2@infradead.org>
-Date: Mon, 3 May 2010 14:19:26 +0300
-Subject: RE: linux-next: build warnings after merge of the
- driver-core.current tree
-Thread-Topic: linux-next: build warnings after merge of the
- driver-core.current tree
-Thread-Index: AcrqU9QuwqrsGa7ASt6aOdtma4/t1gAXngsw
-Message-ID: <6F5C1D715B2DA5498A628E6B9C124F04016E727F00@hasmsx504.ger.corp.intel.com>
-References: <20100503100137.a05c9098.sfr@canb.auug.org.au>
-In-Reply-To: <20100503100137.a05c9098.sfr@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 3 May 2010 07:30:02 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=CKOfCVFk6AjBQexqh+UAnB31DQhUlcXwYw0ztyJaJZ5SagBdpPyDgv8RQ7cdsJE7B
+	SpK2DjGOA2U8/rJCSap1A==
 MIME-Version: 1.0
+In-Reply-To: <4BDC543F.7060500@trash.net>
+References: <20100501032014.406353538@vergenet.net>
+	 <20100501032120.298829234@vergenet.net> <4BDC543F.7060500@trash.net>
+Date: Mon, 3 May 2010 13:29:46 +0200
+Message-ID: <AANLkTikIzHuzxo4z1_8_fEGLBC2-0Uz0X8SOc8n2msuX@mail.gmail.com>
+Subject: Re: [patch v2.2 1/4] [PATCH v2.1 1/4] netfilter: xt_ipvs (netfilter 
+	matcher for IPVS)
+From: Hannes Eder <heder@google.com>
+To: Patrick McHardy <kaber@trash.net>
+Cc: Simon Horman <horms@verge.net.au>, lvs-devel@vger.kernel.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netfilter@vger.kernel.org, Wensong Zhang <wensong@linux-vs.org>,
+       Julius Volz <julius.volz@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Netfilter Development Mailinglist 
+	<netfilter-devel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thank you for picking this series of patches up again and thanks for
+the feedback.
 
+I'll send an updated version in the next days.
 
-> -----Original Message-----
-> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
-> Sent: Monday, May 03, 2010 3:02 AM
-> To: Greg KH
-> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; David
-> Woodhouse; Winkler, Tomas
-> Subject: linux-next: build warnings after merge of the driver-core.current
-> tree
-> 
-> Hi Greg,
-> 
-> After merging the driver-core.current tree, today's linux-next build
-> (powerpc ppc64_defconfig and x86_64 allmodconfig) produced these warning:
+Cheers, -Hannes
+
+On Sat, May 1, 2010 at 18:18, Patrick McHardy <kaber@trash.net> wrote:
+> Simon Horman wrote:
 >
-> drivers/pcmcia/ds.c: In function 'pcmcia_load_firmware':
-> drivers/pcmcia/ds.c:761: warning: passing argument 1 of 'release_firmware'
-> discards qualifiers from pointer target type
-> include/linux/firmware.h:46: note: expected 'struct firmware *' but argument
-> is of type 'const struct firmware *'
-> drivers/net/cxgb3/cxgb3_main.c: In function 't3_get_edc_fw':
-> drivers/net/cxgb3/cxgb3_main.c:1084: warning: passing argument 1 of
-> 'release_firmware' discards qualifiers from pointer target type
-> include/linux/firmware.h:46: note: expected 'struct firmware *' but argument
-> is of type 'const struct firmware *'
-> 
-> and *lots* more similar warnings ...
-> 
-> Caused by commit d5ae47f7d90f94a15e668f389c12211a11798b6f
-> ("firmware_class: fix memory leak - free allocated pages").  This patch was
-> modified from an earlier version that produced different (though many
-> fewer) warnings.
-
-Yesterday I posted the fixed version (v3) of this patch http://marc.info/?l=linux-kernel&m=127278850518085&w=2
-Thanks
-Tomas
-
----------------------------------------------------------------------
-Intel Israel (74) Limited
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
+>> @@ -0,0 +1,25 @@
+>> +#ifndef _XT_IPVS_H
+>> +#define _XT_IPVS_H 1
+>
+> You don't need to define a value.
+>
+>> +config NETFILTER_XT_MATCH_IPVS
+>> +     tristate '"ipvs" match support'
+>> +     depends on IP_VS
+>> +     depends on NETFILTER_ADVANCED
+>> +     help
+>> +       This option allows you to match against IPVS properties of a packet.
+>> +
+>> +       If unsure, say N.
+>
+> You're using conntrack symbols, so this seems to need a dependency
+> on NF_CONNTRACK.
+>
+>> +static bool ipvs_mt_check(const struct xt_mtchk_param *par)
+>
+> We've changed the signature to "int" in nf-next to be able to
+> return errno codes. Please rebase your patches onto nf-next-2.6.git.
+>
+> Please also CC netfilter-devel at least for those parts that affect
+> non-IPVS netfilter.
+>
+>> +{
+>> +     if (par->family != NFPROTO_IPV4
+>> +#ifdef CONFIG_IP_VS_IPV6
+>> +         && par->family != NFPROTO_IPV6
+>> +#endif
+>> +             ) {
+>> +             pr_info("protocol family %u not supported\n", par->family);
+>> +             return false;
+>> +     }
+>> +
+>> +     return true;
+>> +}
+>
+>
