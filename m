@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab0ECRHs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 13:07:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64832 "EHLO
+	id S1755079Ab0ECRIA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 13:08:00 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:65069 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab0ECRHp (ORCPT
+	with ESMTP id S1755001Ab0ECRH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 13:07:45 -0400
-Date: Mon, 3 May 2010 10:07:25 -0700
+	Mon, 3 May 2010 13:07:57 -0400
+Date: Mon, 3 May 2010 10:06:11 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
+To: Stephen Rothwell <sfr@canb.auug.org.au>, "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       lud <linux-usb@vger.kernel.org>
-Subject: [PATCH -next] usbserial: fix mos7720 dependencies
-Message-Id: <20100503100725.c4006b32.randy.dunlap@oracle.com>
+       linux-pm@lists.linux-foundation.org
+Subject: [PATCH -next] power: fix block_io.c printk warning
+Message-Id: <20100503100611.2ca63b58.randy.dunlap@oracle.com>
 In-Reply-To: <20100503151619.f75e3a80.sfr@canb.auug.org.au>
 References: <20100503151619.f75e3a80.sfr@canb.auug.org.au>
 Organization: Oracle Linux Eng.
@@ -23,50 +23,33 @@ Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 X-Auth-Type: Internal IP
 X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090205.4BDF02D8.0090:SCFMA922111,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4BDF02AE.0006:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Fix mos7720 Kconfig dependencies.
-When an enabled bool selects a tristate, the tristate becomes =y,
-even if it should be limited to modular, so limit the bool kconfig
-option to configs that will build cleanly.
-Also change the if-block to a simple depends on.
+Fix printk format warning in block_io.c:
 
-drivers/built-in.o: In function `mos7720_release':
-mos7720.c:(.text+0xad432): undefined reference to `parport_remove_port'
-drivers/built-in.o: In function `mos7715_parport_init':
-mos7720.c:(.text+0xae197): undefined reference to `parport_register_port'
-mos7720.c:(.text+0xae210): undefined reference to `parport_announce_port'
-drivers/built-in.o:(.data+0x201c8): undefined reference to `parport_ieee1284_read_nibble'
-drivers/built-in.o:(.data+0x201d0): undefined reference to `parport_ieee1284_read_byte'
+kernel/power/block_io.c:41: warning: format '%ld' expects type 'long int', but argument 2 has type 'sector_t'
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 ---
- drivers/usb/serial/Kconfig |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ kernel/power/block_io.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- linux-next-20100503.orig/drivers/usb/serial/Kconfig
-+++ linux-next-20100503/drivers/usb/serial/Kconfig
-@@ -425,16 +425,15 @@ config USB_SERIAL_MOS7720
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called mos7720.
+--- linux-next-20100503.orig/kernel/power/block_io.c
++++ linux-next-20100503/kernel/power/block_io.c
+@@ -37,8 +37,8 @@ static int submit(int rw, struct block_d
+ 	bio->bi_end_io = end_swap_bio_read;
  
--if USB_SERIAL_MOS7720
- config USB_SERIAL_MOS7715_PARPORT
- 	bool "Support for parallel port on the Moschip 7715"
-+	depends on USB_SERIAL_MOS7720
-+	depends on PARPORT=y || PARPORT=USB_SERIAL_MOS7720
- 	select PARPORT_NOT_PC
--	depends on PARPORT
- 	---help---
- 	Say Y if you have a Moschip 7715 device and would like to use
- 	the parallel port it provides.  The port will register with
- 	the parport subsystem as a low-level driver.
--endif
- 
- config USB_SERIAL_MOS7840
- 	tristate "USB Moschip 7840/7820 USB Serial Driver"
+ 	if (bio_add_page(bio, page, PAGE_SIZE, 0) < PAGE_SIZE) {
+-		printk(KERN_ERR "PM: Adding page to bio failed at %ld\n",
+-			sector);
++		printk(KERN_ERR "PM: Adding page to bio failed at %llu\n",
++			(unsigned long long)sector);
+ 		bio_put(bio);
+ 		return -EFAULT;
+ 	}
