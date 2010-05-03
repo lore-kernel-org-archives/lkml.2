@@ -1,222 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab0ECFLB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 01:11:01 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:61461 "EHLO
+	id S1752845Ab0ECFLi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 01:11:38 -0400
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:61475 "EHLO
 	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab0ECFK7 (ORCPT
+	with ESMTP id S1752282Ab0ECFLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 01:10:59 -0400
-Message-ID: <4BDE5AFD.6040603@dcl.info.waseda.ac.jp>
-Date: Mon, 03 May 2010 14:11:25 +0900
+	Mon, 3 May 2010 01:11:36 -0400
 From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
-MIME-Version: 1.0
 To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
+       h.mitake@gmail.com, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Paul Mackerras <paulus@samba.org>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: Re: [PATCH v2] perf lock: add "info" subcommand for dumping misc
- information
-References: <1272074742-3654-2-git-send-regression-fweisbec@gmail.com> <1272106001-10519-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <20100430184937.GB5357@nowhere>
-In-Reply-To: <20100430184937.GB5357@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH v3] perf lock: add "info" subcommand for dumping misc information
+Date: Mon,  3 May 2010 14:12:00 +0900
+Message-Id: <1272863520-16179-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <4BDE5AFD.6040603@dcl.info.waseda.ac.jp>
+References: <4BDE5AFD.6040603@dcl.info.waseda.ac.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/10 03:49, Frederic Weisbecker wrote:
- > On Sat, Apr 24, 2010 at 07:46:41PM +0900, Hitoshi Mitake wrote:
- >> Hi Frederic,
- >>
- >> I added "info" subcommand to perf lock,
- >> this can be used as dumping metadata like thread or address of lock 
-instances.
- >> "map" was removed because info should do the work of it.
- >>
- >> This will be useful not only for debugging but also for ordinary 
-analyzing.
- >>
- >> I made this patch on perf/core of your tree, could you queue this?
- >>
- >> v2: adding example of usage
- >> % sudo ./perf lock info -t
- >>   | Thread ID: comm
- >>   | 	 0: swapper
- >>   |         1: init
- >>   |        18: migration/5
- >>   |        29: events/2
- >>   |        32: events/5
- >>   |        33: events/6
- >> ...
- >>
- >> % sudo ./perf lock info -m
- >> | Address of instance: name of class
- >> |  0xffff8800b95adae0:&(&sighand->siglock)->rlock
- >> |  0xffff8800bbb41ae0:&(&sighand->siglock)->rlock
- >> |  0xffff8800bf165ae0:&(&sighand->siglock)->rlock
- >> |  0xffff8800b9576a98:&p->cred_guard_mutex
- >> |  0xffff8800bb890a08:&(&p->alloc_lock)->rlock
- >> |  0xffff8800b9522a08:&(&p->alloc_lock)->rlock
- >> |  0xffff8800bb8aaa08:&(&p->alloc_lock)->rlock
- >> |  0xffff8800bba72a08:&(&p->alloc_lock)->rlock
- >> |  0xffff8800bf18ea08:&(&p->alloc_lock)->rlock
- >> |  0xffff8800b8a0d8a0:&(&ip->i_lock)->mr_lock
- >> |  0xffff88009bf818a0:&(&ip->i_lock)->mr_lock
- >> |  0xffff88004c66b8a0:&(&ip->i_lock)->mr_lock
- >> |  0xffff8800bb6478a0:&(shost->host_lock)->rlock
- >> Signed-off-by: Hitoshi Mitake<mitake@dcl.info.waseda.ac.jp>
- >> Cc: Ingo Molnar<mingo@elte.hu>
- >> Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
- >> Cc: Paul Mackerras<paulus@samba.org>
- >> Cc: Arnaldo Carvalho de Melo<acme@redhat.com>
- >> Cc: Jens Axboe<jens.axboe@oracle.com>
- >> Cc: Jason Baron<jbaron@redhat.com>
- >> Cc: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
- >
- >
- > I've eventually not queued it because of some various
- > problems, see below:
+Hi Frederic,
 
-Thanks for your advice, Frederic!
+I added "info" subcommand to perf lock,
+this can be used as dumping metadata like thread or address of lock instances.
+"map" was removed because info should do the work of it.
 
- >
- >
- >
- >> ---
- >>   tools/perf/builtin-lock.c |   68 
-+++++++++++++++++++++++++++++++++++++++++++--
- >>   1 files changed, 65 insertions(+), 3 deletions(-)
- >>
- >> diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
- >> index ce27675..c54211e 100644
- >> --- a/tools/perf/builtin-lock.c
- >> +++ b/tools/perf/builtin-lock.c
- >> @@ -778,18 +778,61 @@ static void print_result(void)
- >>   	}
- >>   }
- >>
- >> +static int			info_threads;
- >> +static int			info_map;
- >> +
- >> +static void rec_dump_threads(struct rb_node *node)
- >> +{
- >> +	struct thread_stat *st;
- >> +	struct thread *t;
- >> +
- >> +	if (!node)
- >> +		return;
- >> +
- >> +	if (node->rb_left)
- >> +		rec_dump_threads(node->rb_left);
- >
- >
- > That only walks the left nodes of the rbtree, imagine the following
- > rbtree, W are visited nodes, U are the unvisited:
- >
- >                     Root
- >                   /      \
- >                  W        U
- >                /  \      / \
- >               W    U    U   U
- >
- >
- > Better iterate using rb_first() then rb_next() until it is NULL.
+This will be useful not only for debugging but also for ordinary analyzing.
 
-Ah, yeah, recursive tracking is too primitive.
-I rewrote it with rb_first() and rb_next().
+I made this patch on perf/core of your tree, could you queue this?
 
- >
- >
- >
- >> +
- >> +	st = container_of(node, struct thread_stat, rb);
- >> +	BUG_ON(!st);
- >
- >
- > You won't ever have !st because container_of computes an address
- > based on a struct type and a contained address inside this struct.
- >
- > struct thread_stat {
- > 	struct list_head	hash_entry;
- > 	struct rb_node		rb;
- > 	[...]
- > } ts;
- >
- > If ts->rb == 1000, ts == 1000 - 16 or something like this.
- >
- > What matters is the "if (!node)" check you did before.
+v2: adding example of usage
+% sudo ./perf lock info -t
+ | Thread ID: comm
+ | 	 0: swapper
+ |         1: init
+ |        18: migration/5
+ |        29: events/2
+ |        32: events/5
+ |        33: events/6
+...
 
-Yeah... my BUG_ON() checking was really silly and meaningless :(
-I'll remove it.
+% sudo ./perf lock info -m
+| Address of instance: name of class
+|  0xffff8800b95adae0: &(&sighand->siglock)->rlock
+|  0xffff8800bbb41ae0: &(&sighand->siglock)->rlock
+|  0xffff8800bf165ae0: &(&sighand->siglock)->rlock
+|  0xffff8800b9576a98: &p->cred_guard_mutex
+|  0xffff8800bb890a08: &(&p->alloc_lock)->rlock
+|  0xffff8800b9522a08: &(&p->alloc_lock)->rlock
+|  0xffff8800bb8aaa08: &(&p->alloc_lock)->rlock
+|  0xffff8800bba72a08: &(&p->alloc_lock)->rlock
+|  0xffff8800bf18ea08: &(&p->alloc_lock)->rlock
+|  0xffff8800b8a0d8a0: &(&ip->i_lock)->mr_lock
+|  0xffff88009bf818a0: &(&ip->i_lock)->mr_lock
+|  0xffff88004c66b8a0: &(&ip->i_lock)->mr_lock
+|  0xffff8800bb6478a0: &(shost->host_lock)->rlock
 
- >
- >
- >
- >> +	t = perf_session__findnew(session, st->tid);
- >> +	BUG_ON(!t);
- >> +
- >> +	printf("%10d: %s\n", st->tid, t->comm);
- >
- >
- >
- > Please don't use printf anymore (I did the same mistakes lately),
- > now that are using a TUI and we might use a GUI one day, we
- > can't assume anymore we are dealing with a normal stdout.
- >
- > So better use pr_debug, pr_err, pr_warning, etc...
+v3: fixed some problems Frederic pointed out
+ * better rbtree tracking in dump_threads()
+ * removed printf() and used pr_info() and pr_debug()
 
-OK. I'll replace printf() with pr_info() or pr_debug().
+Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Jens Axboe <jens.axboe@oracle.com>
+Cc: Jason Baron <jbaron@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ tools/perf/builtin-lock.c |   96 ++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 73 insertions(+), 23 deletions(-)
 
- >
- >
- >
- >> +
- >> +	if (node->rb_right)
- >> +		rec_dump_threads(node->rb_right);
- >> +}
- >> +
- >> +static void dump_threads(void)
- >> +{
- >> +	printf("%10s: comm\n", "Thread ID");
- >
- >
- >
- > Same here and below.
- >
- >
- >
- >> +	rec_dump_threads(thread_stats.rb_node);
- >> +}
- >> +
- >>   static void dump_map(void)
- >>   {
- >>   	unsigned int i;
- >>   	struct lock_stat *st;
- >>
- >> +	printf("Address of instance: name of class\n");
- >>   	for (i = 0; i<  LOCKHASH_SIZE; i++) {
- >>   		list_for_each_entry(st,&lockhash_table[i], hash_entry) {
- >> -			printf("%p: %s\n", st->addr, st->name);
- >> +			printf(" %p: %s\n", st->addr, st->name);
- >>   		}
- >>   	}
- >>   }
- >>
- >> +static void dump_info(void)
- >> +{
- >> +	/* ugly... */
- >> +	if (info_threads)
- >> +		dump_threads();
- >
- >
- > No it's not ugly, it's ok, we do this everywhere in perf tools :)
- >
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index ce27675..010a7c8 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -720,15 +720,15 @@ static void print_result(void)
+ 	char cut_name[20];
+ 	int bad, total;
+ 
+-	printf("%20s ", "Name");
+-	printf("%10s ", "acquired");
+-	printf("%10s ", "contended");
++	pr_info("%20s ", "Name");
++	pr_info("%10s ", "acquired");
++	pr_info("%10s ", "contended");
+ 
+-	printf("%15s ", "total wait (ns)");
+-	printf("%15s ", "max wait (ns)");
+-	printf("%15s ", "min wait (ns)");
++	pr_info("%15s ", "total wait (ns)");
++	pr_info("%15s ", "max wait (ns)");
++	pr_info("%15s ", "min wait (ns)");
+ 
+-	printf("\n\n");
++	pr_info("\n\n");
+ 
+ 	bad = total = 0;
+ 	while ((st = pop_from_result())) {
+@@ -741,7 +741,7 @@ static void print_result(void)
+ 
+ 		if (strlen(st->name) < 16) {
+ 			/* output raw name */
+-			printf("%20s ", st->name);
++			pr_info("%20s ", st->name);
+ 		} else {
+ 			strncpy(cut_name, st->name, 16);
+ 			cut_name[16] = '.';
+@@ -749,17 +749,17 @@ static void print_result(void)
+ 			cut_name[18] = '.';
+ 			cut_name[19] = '\0';
+ 			/* cut off name for saving output style */
+-			printf("%20s ", cut_name);
++			pr_info("%20s ", cut_name);
+ 		}
+ 
+-		printf("%10u ", st->nr_acquired);
+-		printf("%10u ", st->nr_contended);
++		pr_info("%10u ", st->nr_acquired);
++		pr_info("%10u ", st->nr_contended);
+ 
+-		printf("%15llu ", st->wait_time_total);
+-		printf("%15llu ", st->wait_time_max);
+-		printf("%15llu ", st->wait_time_min == ULLONG_MAX ?
++		pr_info("%15llu ", st->wait_time_total);
++		pr_info("%15llu ", st->wait_time_max);
++		pr_info("%15llu ", st->wait_time_min == ULLONG_MAX ?
+ 		       0 : st->wait_time_min);
+-		printf("\n");
++		pr_info("\n");
+ 	}
+ 
+ 	{
+@@ -768,28 +768,59 @@ static void print_result(void)
+ 		const char *name[4] =
+ 			{ "acquire", "acquired", "contended", "release" };
+ 
+-		printf("\n=== output for debug===\n\n");
+-		printf("bad:%d, total:%d\n", bad, total);
+-		printf("bad rate:%f\n", (double)(bad / total));
++		pr_debug("\n=== output for debug===\n\n");
++		pr_debug("bad:%d, total:%d\n", bad, total);
++		pr_debug("bad rate:%f\n", (double)(bad / total));
+ 
+-		printf("histogram of events caused bad sequence\n");
++		pr_debug("histogram of events caused bad sequence\n");
+ 		for (i = 0; i < 4; i++)
+-			printf(" %10s: %d\n", name[i], bad_hist[i]);
++			pr_debug(" %10s: %d\n", name[i], bad_hist[i]);
+ 	}
+ }
+ 
++static int			info_threads;
++static int			info_map;
++
++static void dump_threads(void)
++{
++	struct thread_stat *st;
++	struct rb_node *node;
++	struct thread *t;
++
++	pr_info("%10s: comm\n", "Thread ID");
++
++	node = rb_first(&thread_stats);
++	while (node) {
++		st = container_of(node, struct thread_stat, rb);
++		t = perf_session__findnew(session, st->tid);
++		pr_info("%10d: %s\n", st->tid, t->comm);
++		node = rb_next(node);
++	};
++}
++
+ static void dump_map(void)
+ {
+ 	unsigned int i;
+ 	struct lock_stat *st;
+ 
++	pr_info("Address of instance: name of class\n");
+ 	for (i = 0; i < LOCKHASH_SIZE; i++) {
+ 		list_for_each_entry(st, &lockhash_table[i], hash_entry) {
+-			printf("%p: %s\n", st->addr, st->name);
++			pr_info(" %p: %s\n", st->addr, st->name);
+ 		}
+ 	}
+ }
+ 
++static void dump_info(void)
++{
++	if (info_threads)
++		dump_threads();
++	else if (info_map)
++		dump_map();
++	else
++		die("Unknown type of information\n");
++}
++
+ static int process_sample_event(event_t *self, struct perf_session *s)
+ {
+ 	struct sample_data data;
+@@ -858,6 +889,19 @@ static const struct option report_options[] = {
+ 	OPT_END()
+ };
+ 
++static const char * const info_usage[] = {
++	"perf lock info [<options>]",
++	NULL
++};
++
++static const struct option info_options[] = {
++	OPT_BOOLEAN('t', "threads", &info_threads,
++		    "dump thread list in perf.data"),
++	OPT_BOOLEAN('m', "map", &info_map,
++		    "map of lock instances (name:address table)"),
++	OPT_END()
++};
++
+ static const char * const lock_usage[] = {
+ 	"perf lock [<options>] {record|trace|report}",
+ 	NULL
+@@ -929,12 +973,18 @@ int cmd_lock(int argc, const char **argv, const char *prefix __used)
+ 	} else if (!strcmp(argv[0], "trace")) {
+ 		/* Aliased to 'perf trace' */
+ 		return cmd_trace(argc, argv, prefix);
+-	} else if (!strcmp(argv[0], "map")) {
++	} else if (!strcmp(argv[0], "info")) {
++		if (argc) {
++			argc = parse_options(argc, argv,
++					     info_options, info_usage, 0);
++			if (argc)
++				usage_with_options(info_usage, info_options);
++		}
+ 		/* recycling report_lock_ops */
+ 		trace_handler = &report_lock_ops;
+ 		setup_pager();
+ 		read_events();
+-		dump_map();
++		dump_info();
+ 	} else {
+ 		usage_with_options(lock_usage, lock_options);
+ 	}
+-- 
+1.6.5.2
 
-Thanks :) I'll resend v3 patch later.
-
-        Hitoshi
