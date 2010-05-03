@@ -1,105 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab0ECRMI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 13:12:08 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:41313 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753269Ab0ECRMG (ORCPT
+	id S1754808Ab0ECRMi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 13:12:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53359 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822Ab0ECRMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 13:12:06 -0400
-Date: Mon, 3 May 2010 13:12:02 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Kevin Hilman <khilman@deeprootsystems.com>
-cc: Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       <magnus.damm@gmail.com>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-In-Reply-To: <87wrvl5479.fsf@deeprootsystems.com>
-Message-ID: <Pine.LNX.4.44L0.1005031301400.1651-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 3 May 2010 13:12:36 -0400
+Date: Mon, 3 May 2010 10:09:02 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+       devel@driverdev.osuosl.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       support@sbei.com, support@onestopsystems.com
+Subject: [PATCH -next] staging: fix cxt1e1 module names
+Message-Id: <20100503100902.517c146f.randy.dunlap@oracle.com>
+In-Reply-To: <20100503151619.f75e3a80.sfr@canb.auug.org.au>
+References: <20100503151619.f75e3a80.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090208.4BDF0398.003A:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 May 2010, Kevin Hilman wrote:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-> Suspend blockers vs runtime PM
-> ------------------------------
-> 
-> My primary concern is that suspend blockers attempt to address the
-> same problem(s) as runtime PM, but with a very different approach.
-> Suspend blockers use one very large hammer whereas runtime PM hands
-> out many little hammers.  Since I believe power management to be a
-> problem of many little nails, I think many little hammers are better
-> suited for the job.
+Lots of cxt1e1 source code uses THIS_MODULE->name, which won't build
+when CONFIG_MODULES is not enabled, so use KBUILD_MODNAME instead.
 
-There is a major difference between suspend blockers and runtime PM 
-which was not discussed in your email.  Namely: Runtime PM is aimed at 
-suspending individual devices and not the system as a whole (in 
-particular, not CPUs), whereas suspend blockers are aimed at suspending 
--- or more accurately, blocking suspends -- of the system as a whole 
-and not individual devices.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: support@sbei.com
+Cc: support@onestopsystems.com
+---
+ drivers/staging/cxt1e1/hwprobe.c   |    9 +++++----
+ drivers/staging/cxt1e1/linux.c     |   16 ++++++++--------
+ drivers/staging/cxt1e1/musycc.c    |    4 ++--
+ drivers/staging/cxt1e1/pmcc4_drv.c |   13 ++++++++-----
+ drivers/staging/cxt1e1/sbeproc.c   |    4 ++--
+ 5 files changed, 25 insertions(+), 21 deletions(-)
 
-So for example, runtime PM cannot be used to put the system into an S3 
-sleep state.  But suspend blockers _are_ used to keep the system from 
-going into S3.
-
-> Currently in the kernel, we have two main forms of PM
-> 
-> - static PM (system PM, traditional suspend/resume etc.)
-> - dynamic PM (runtime PM, CPUfreq, CPUidle, etc.)
-> 
-> And with the addition of suspend blockers we have something in
-> between.  In my simple world, I think of suspend_blockers as static PM
-> with a retrofit of some basic dynamic capabilities.  In my view, a
-> poor man's dynamic PM.
-
-I wouldn't describe it like that.  Consider dividing PM along a 
-different axis:
-
-- entire system (ACPI sleep states, CPUs turned off, etc.)
-- single, independent devices (e.g., USB autosuspend)
-
-Then system PM combines static + entire, whereas runtime PM combines 
-dynamic + single.  By contrast, suspend blockers are aimed at the 
-dynamic + entire combination.  This makes them different from anything 
-already present in the kernel.
-
-> The current design of suspend blockers was (presumably) taken due to
-> major limitations and/or problems in dynamic PM when it was designed.
-> However, since then, some very signifcant improvements in dynamic PM
-> have come along, particularily in the form of runtime PM.  What I
-> still feel is missing from this discussion are details about why the
-> issues addressed by suspend blockers cannot be solved with runtime PM.
-
-The simplest example is that suspend blockers can be used to control 
-whether or not the CPU shuts down, whereas runtime PM can't.
-
-> To me, runtime PM is a generic and flexible approach that can be used
-> with any userspace.  Driver writers should not have to care whether
-> the system is in "opportunistic" mode or about whether userspace is
-> suspend blocker capable.  They should only have to think about when
-> the device is (or should be) idle.
-> 
-> From my experience with OMAP, we *really* do not want to care about
-> what userspace is or isn't capable of, or what suspend-mode the kernel
-> is in.  Among other things, the OMAP linux kernel is used in the Nokia
-> N900 (Maemo), the Motorola Droid (Android) and the Palm Pre (webOS).
-> Comments on the future of each SW stack aside, we really want to run
-> the same kernel and drivers across all of those platforms as well as
-> whatever comes next.
-
-That is indeed a weak point of the proposal.  Kernel drivers' use of
-suspend blockers appears to be somewhat arbitrary and directed by the
-needs of userspace.  It's not at all clear how drivers can use suspend
-blockers in a way that will work on all systems.
-
-Alan Stern
-
+--- linux-next-20100503.orig/drivers/staging/cxt1e1/musycc.c
++++ linux-next-20100503/drivers/staging/cxt1e1/musycc.c
+@@ -960,13 +960,13 @@ musycc_init (ci_t * ci)
+     if (max_mru > 0xffe)
+     {
+         printk (KERN_WARNING "%s: Maximum allowed MRU exceeded, resetting %d to %d.\n",
+-                THIS_MODULE->name, max_mru, 0xffe);
++                KBUILD_MODNAME, max_mru, 0xffe);
+         max_mru = 0xffe;
+     }
+     if (max_mtu > 0xffe)
+     {
+         printk (KERN_WARNING "%s: Maximum allowed MTU exceeded, resetting %d to %d.\n",
+-                THIS_MODULE->name, max_mtu, 0xffe);
++                KBUILD_MODNAME, max_mtu, 0xffe);
+         max_mtu = 0xffe;
+     }
+ #ifdef SBE_WAN256T3_ENABLE
+--- linux-next-20100503.orig/drivers/staging/cxt1e1/pmcc4_drv.c
++++ linux-next-20100503/drivers/staging/cxt1e1/pmcc4_drv.c
+@@ -171,10 +171,11 @@ sbecom_set_loglevel (int d)
+     {
+         if (log_level != d)
+         {
+-            printk ("%s: log level changed from %d to %d\n", THIS_MODULE->name, log_level, d);
++            printk ("%s: log level changed from %d to %d\n",
++		KBUILD_MODNAME, log_level, d);
+             log_level = d;          /* set new */
+         } else
+-            printk ("%s: log level is %d\n", THIS_MODULE->name, log_level);
++            printk ("%s: log level is %d\n", KBUILD_MODNAME, log_level);
+     }
+ }
+ 
+@@ -221,7 +222,7 @@ c4_new (void *hi)
+         ci->brdno = ci->next ? ci->next->brdno + 1 : 0;
+     } else
+         printk (KERN_WARNING "%s: failed CI malloc, size %u.\n",
+-                THIS_MODULE->name, (unsigned int) sizeof (ci_t));
++                KBUILD_MODNAME, (unsigned int) sizeof (ci_t));
+ 
+     if (CI == 0)
+         CI = ci;                    /* DEBUG, only board 0 usage */
+@@ -545,7 +546,8 @@ c4_watchdog (ci_t * ci)
+     if (drvr_state != SBE_DRVR_AVAILABLE)
+     {
+         if (log_level >= LOG_MONITOR)
+-            printk ("%s: drvr not available (%x)\n", THIS_MODULE->name, drvr_state);
++            printk ("%s: drvr not available (%x)\n",
++		KBUILD_MODNAME, drvr_state);
+         return;
+     }
+ #if 0
+@@ -848,7 +850,8 @@ c4_init (ci_t * ci, u_char *func0, u_cha
+             } else
+             {
+                 printk (KERN_WARNING "%s: failed mch_t malloc, port %d channel %d size %u.\n",
+-                        THIS_MODULE->name, portnum, j, (unsigned int) sizeof (mch_t));
++                        KBUILD_MODNAME, portnum, j,
++			(unsigned int) sizeof (mch_t));
+                 break;
+             }
+         }
+--- linux-next-20100503.orig/drivers/staging/cxt1e1/linux.c
++++ linux-next-20100503/drivers/staging/cxt1e1/linux.c
+@@ -338,7 +338,7 @@ chan_open (struct net_device * ndev)
+ 
+     if ((ret = hdlc_open (ndev)))
+     {
+-        printk ("%s: hdlc_open failure, err %d.\n", THIS_MODULE->name, ret);
++        printk ("%s: hdlc_open failure, err %d.\n", KBUILD_MODNAME, ret);
+         return ret;
+     }
+     if ((ret = c4_chan_up (priv->ci, priv->channum)))
+@@ -1263,33 +1263,33 @@ c4_mod_init (void)
+ {
+     int         rtn;
+ 
+-    printk (KERN_WARNING "%s: %s\n", THIS_MODULE->name, pmcc4_OSSI_release);
++    printk (KERN_WARNING "%s: %s\n", KBUILD_MODNAME, pmcc4_OSSI_release);
+     if ((rtn = c4hw_attach_all ()))
+         return -rtn;                /* installation failure - see system log */
+ 
+     /* housekeeping notifications */
+     if (log_level != log_level_default)
+         printk (KERN_INFO "%s NOTE: driver parameter <log_level> changed from default %d to %d.\n",
+-                THIS_MODULE->name, log_level_default, log_level);
++                KBUILD_MODNAME, log_level_default, log_level);
+     if (max_mru != max_mru_default)
+         printk (KERN_INFO "%s NOTE: driver parameter <max_mru> changed from default %d to %d.\n",
+-                THIS_MODULE->name, max_mru_default, max_mru);
++                KBUILD_MODNAME, max_mru_default, max_mru);
+     if (max_mtu != max_mtu_default)
+         printk (KERN_INFO "%s NOTE: driver parameter <max_mtu> changed from default %d to %d.\n",
+-                THIS_MODULE->name, max_mtu_default, max_mtu);
++                KBUILD_MODNAME, max_mtu_default, max_mtu);
+     if (max_rxdesc_used != max_rxdesc_default)
+     {
+         if (max_rxdesc_used > 2000)
+             max_rxdesc_used = 2000; /* out-of-bounds reset */
+         printk (KERN_INFO "%s NOTE: driver parameter <max_rxdesc_used> changed from default %d to %d.\n",
+-                THIS_MODULE->name, max_rxdesc_default, max_rxdesc_used);
++                KBUILD_MODNAME, max_rxdesc_default, max_rxdesc_used);
+     }
+     if (max_txdesc_used != max_txdesc_default)
+     {
+         if (max_txdesc_used > 1000)
+             max_txdesc_used = 1000; /* out-of-bounds reset */
+         printk (KERN_INFO "%s NOTE: driver parameter <max_txdesc_used> changed from default %d to %d.\n",
+-                THIS_MODULE->name, max_txdesc_default, max_txdesc_used);
++                KBUILD_MODNAME, max_txdesc_default, max_txdesc_used);
+     }
+     return 0;                       /* installation success */
+ }
+@@ -1331,7 +1331,7 @@ c4_mod_remove (void)
+     cleanup_devs ();
+     c4_cleanup ();
+     cleanup_ioremap ();
+-    printk (KERN_INFO "SBE %s - driver removed.\n", THIS_MODULE->name);
++    printk (KERN_INFO "SBE %s - driver removed.\n", KBUILD_MODNAME);
+ }
+ 
+ module_init (c4_mod_init);
+--- linux-next-20100503.orig/drivers/staging/cxt1e1/sbeproc.c
++++ linux-next-20100503/drivers/staging/cxt1e1/sbeproc.c
+@@ -319,7 +319,7 @@ sbecom_proc_brd_init (ci_t * ci)
+     if (!ci->dir_dev)
+     {
+         printk (KERN_ERR "%s: Unable to create directory /proc/driver/%s\n",
+-                THIS_MODULE->name, ci->devname);
++                KBUILD_MODNAME, ci->devname);
+         goto fail;
+     }
+     e = create_proc_read_entry ("info", S_IFREG | S_IRUGO,
+@@ -327,7 +327,7 @@ sbecom_proc_brd_init (ci_t * ci)
+     if (!e)
+     {
+         printk (KERN_ERR "%s: Unable to create entry /proc/driver/%s/info\n",
+-                THIS_MODULE->name, ci->devname);
++                KBUILD_MODNAME, ci->devname);
+         goto fail;
+     }
+     return 0;
+--- linux-next-20100503.orig/drivers/staging/cxt1e1/hwprobe.c
++++ linux-next-20100503/drivers/staging/cxt1e1/hwprobe.c
+@@ -230,7 +230,8 @@ c4_hdw_init (struct pci_dev * pdev, int 
+     /* our MUSYCC chip supports two functions, 0 & 1 */
+     if ((fun = PCI_FUNC (pdev->devfn)) > 1)
+     {
+-        printk (KERN_WARNING "%s: unexpected devfun: 0x%x\n", THIS_MODULE->name, pdev->devfn);
++        printk (KERN_WARNING "%s: unexpected devfun: 0x%x\n",
++		KBUILD_MODNAME, pdev->devfn);
+         return 0;
+     }
+     if (pdev->bus)                  /* obtain bus number */
+@@ -260,7 +261,7 @@ c4_hdw_init (struct pci_dev * pdev, int 
+                                      * exceeded */
+     {
+         printk (KERN_WARNING "%s: exceeded number of allowed devices (>%d)?\n",
+-                THIS_MODULE->name, MAX_BOARDS);
++                KBUILD_MODNAME, MAX_BOARDS);
+         return 0;
+     }
+     if (pdev->bus)
+@@ -282,7 +283,7 @@ c4_hdw_init (struct pci_dev * pdev, int 
+          */
+         char       *cp = hi->devname;
+ 
+-        strcpy (cp, THIS_MODULE->name);
++        strcpy (cp, KBUILD_MODNAME);
+         cp += strlen (cp);          /* reposition */
+         *cp++ = '-';
+         *cp++ = '0' + (found / 2);  /* there are two found interfaces per
+@@ -319,7 +320,7 @@ c4hw_attach_all (void)
+     }
+     if (!found)
+     {
+-        printk (KERN_WARNING "%s: No boards found.\n", THIS_MODULE->name);
++        printk (KERN_WARNING "%s: No boards found.\n", KBUILD_MODNAME);
+         return ENODEV;
+     }
+     /* sanity check for consistant hardware found */
