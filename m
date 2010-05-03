@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933105Ab0ECPy5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 11:54:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62600 "EHLO mx1.redhat.com"
+	id S933075Ab0ECQBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 12:01:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22755 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759134Ab0ECPxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 11:53:53 -0400
-From: Glauber Costa <glommer@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com
-Subject: [PATCH v2 3/7] change msr numbers for kvmclock
-Date: Mon,  3 May 2010 11:52:03 -0400
-Message-Id: <1272901927-829-4-git-send-email-glommer@redhat.com>
-In-Reply-To: <1272901927-829-3-git-send-email-glommer@redhat.com>
-References: <1272901927-829-1-git-send-email-glommer@redhat.com>
- <1272901927-829-2-git-send-email-glommer@redhat.com>
- <1272901927-829-3-git-send-email-glommer@redhat.com>
+	id S932986Ab0ECQBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 12:01:30 -0400
+Message-ID: <4BDEF355.8050504@redhat.com>
+Date: Mon, 03 May 2010 12:01:25 -0400
+From: Peter Jones <pjones@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc14 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
+Subject: Re: linux-next: April 27 (iscsi_ibft)
+References: <80edf231-ef31-4f21-ab1b-1a21fda35809@default> <20100427230121.GA31743@andromeda.dapyr.net>
+In-Reply-To: <20100427230121.GA31743@andromeda.dapyr.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi pointed out a while ago that those MSRs falls into the pentium
-PMU range. So the idea here is to add new ones, and after a while,
-deprecate the old ones.
+On 04/27/2010 07:01 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Apr 27, 2010 at 09:13:16AM -0700, Randy Dunlap wrote:
+>> when CONFIG_ACPI is not enabled:
+>>
+>> drivers/firmware/iscsi_ibft_find.c:112: error: dereferencing pointer to incomplete type
+>> drivers/firmware/iscsi_ibft_find.c:112: error: dereferencing pointer to incomplete type
+>> drivers/firmware/iscsi_ibft_find.c:112: warning: type defaults to 'int' in declaration of 'type name'
+>> drivers/firmware/iscsi_ibft_find.c:112: error: dereferencing pointer to incomplete type
+>> drivers/firmware/iscsi_ibft_find.c:112: warning: type defaults to 'int' in declaration of 'type name'
+> 
+> Yikes.
+> 
+> Randy, thank you for spotting this and sending an e-mail my way.
+> 
+> It is all b/c we now use the 'struct acpi_table_ibft *ibft_addr' which
+> is gone when !CONFIG_ACPI.
+> 
+> Peter, if we did in an #ifdef !CONFIG_ACPI in iscsi_ibft.h and included
+> a copy of the old ibft_struct that should work.
+> 
+> Or we make the code dependent on CONFIG_ACPI (in the Kconfig
+> file).
+> 
+> Peter, Randy: Which option do you think makes more sense?
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
----
- arch/x86/include/asm/kvm_para.h |    4 ++++
- arch/x86/kvm/x86.c              |    7 ++++++-
- 2 files changed, 10 insertions(+), 1 deletions(-)
+Or we make that one structure be defined whether CONFIG_ACPI is enabled
+or not.
 
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index ffae142..9734808 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -20,6 +20,10 @@
- #define MSR_KVM_WALL_CLOCK  0x11
- #define MSR_KVM_SYSTEM_TIME 0x12
- 
-+/* Custom MSRs falls in the range 0x4b564d00-0x4b564dff */
-+#define MSR_KVM_WALL_CLOCK_NEW  0x4b564d00
-+#define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
-+
- #define KVM_MAX_MMU_OP_BATCH           32
- 
- /* Operations for KVM_HC_MMU_OP */
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 6b2ce1d..eb84947 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -664,9 +664,10 @@ static inline u32 bit(int bitno)
-  * kvm-specific. Those are put in the beginning of the list.
-  */
- 
--#define KVM_SAVE_MSRS_BEGIN	5
-+#define KVM_SAVE_MSRS_BEGIN	7
- static u32 msrs_to_save[] = {
- 	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
-+	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
- 	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
- 	HV_X64_MSR_APIC_ASSIST_PAGE,
- 	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
-@@ -1192,10 +1193,12 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
- 	case MSR_IA32_MISC_ENABLE:
- 		vcpu->arch.ia32_misc_enable_msr = data;
- 		break;
-+	case MSR_KVM_WALL_CLOCK_NEW:
- 	case MSR_KVM_WALL_CLOCK:
- 		vcpu->kvm->arch.wall_clock = data;
- 		kvm_write_wall_clock(vcpu->kvm, data);
- 		break;
-+	case MSR_KVM_SYSTEM_TIME_NEW:
- 	case MSR_KVM_SYSTEM_TIME: {
- 		if (vcpu->arch.time_page) {
- 			kvm_release_page_dirty(vcpu->arch.time_page);
-@@ -1467,9 +1470,11 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
- 		data = vcpu->arch.efer;
- 		break;
- 	case MSR_KVM_WALL_CLOCK:
-+	case MSR_KVM_WALL_CLOCK_NEW:
- 		data = vcpu->kvm->arch.wall_clock;
- 		break;
- 	case MSR_KVM_SYSTEM_TIME:
-+	case MSR_KVM_SYSTEM_TIME_NEW:
- 		data = vcpu->arch.time;
- 		break;
- 	case MSR_IA32_P5_MC_ADDR:
 -- 
-1.6.2.2
+        Peter
 
+For some reason it has always seemed to me that the term software 
+engineering contains some very optimistic assumptions about the 
+nature of reality.
