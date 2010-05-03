@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab0ECTLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 15:11:44 -0400
-Received: from kroah.org ([198.145.64.141]:49362 "EHLO coco.kroah.org"
+	id S1756523Ab0ECTLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 15:11:47 -0400
+Received: from kroah.org ([198.145.64.141]:49358 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756298Ab0ECTLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756285Ab0ECTLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 May 2010 15:11:38 -0400
-Date: Mon, 3 May 2010 11:49:37 -0700
+Date: Mon, 3 May 2010 11:48:32 -0700
 From: Greg KH <greg@kroah.com>
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Bob Beers <bob.beers@gmail.com>,
+To: Lars Lindley <lindley@coyote.org>
+Cc: gregkh@suse.de, penberg@cs.helsinki.fi, pavel@ucw.cz,
        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: cxt1e1: Fix build error
-Message-ID: <20100503184937.GA10877@kroah.com>
-References: <1272815813.16886.5.camel@lenovo>
+Subject: Re: [PATCH] staging: winbond: wb35tx.c Coding style fixes.
+Message-ID: <20100503184832.GA10862@kroah.com>
+References: <1269764725-10190-1-git-send-email-lindley@coyote.org>
+ <20100429160630.GA8710@kroah.com>
+ <4BDD3C4F.7030500@coyote.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1272815813.16886.5.camel@lenovo>
+In-Reply-To: <4BDD3C4F.7030500@coyote.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 02, 2010 at 11:56:53AM -0400, Javier Martinez Canillas wrote:
-> With today linux-next I got this compilation error:
+On Sun, May 02, 2010 at 10:48:15AM +0200, Lars Lindley wrote:
+> On 2010-04-29 18:06, Greg KH wrote:
+> > On Sun, Mar 28, 2010 at 10:25:25AM +0200, Lars Lindley wrote:
+> >> I fixed the problems reported by checkpatch.pl except some long
+> >> lines and printk:s.
+> >> I also removed versioning comments.
+> >> Builds fine, .o identical to before and checked it with
+> >> Dan Carpenters strip_whitespace.pl and diff.
+> >>
+> >> Signed-off-by: Lars Lindley <lindley@coyote.org>
+> > 
+> > This no longer applies on linux-next due to some upstream changes.  Can
+> > you rediff it and resend it?
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> > 
 > 
-> drivers/staging/cxt1e1/linux.c: In function ‘c4_add_dev’:
-> drivers/staging/cxt1e1/linux.c:1195: error: ‘struct net_device’ has no member named ‘priv’
-> 
-> I think this patch solves the issue
+> Ok, does this work better?
 
-It does, but Randy Dunlap sent this fix in on Friday and I applied it
-already :(
+Close, but it still fails on the first chunk:
+	patching file drivers/staging/winbond/wb35tx.c
+	Hunk #1 FAILED at 1.
+	Hunk #2 succeeded at 26 (offset 1 line).
+	Hunk #3 succeeded at 65 (offset 1 line).
+	Hunk #4 succeeded at 114 (offset 1 line).
+	Hunk #5 succeeded at 125 (offset 1 line).
+	Hunk #6 succeeded at 134 (offset 1 line).
+	Hunk #7 succeeded at 201 (offset 1 line).
+	Hunk #8 succeeded at 252 (offset 1 line).
+	Hunk #9 succeeded at 264 (offset 1 line).
+	Hunk #10 succeeded at 288 (offset 1 line).
+	1 out of 10 hunks FAILED -- saving rejects to file drivers/staging/winbond/wb35tx.c.rej
+
+Care to redo it on top of the linux-next tree?
 
 thanks,
 
