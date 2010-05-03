@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab0ECABq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 May 2010 20:01:46 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39324 "EHLO smtps.tip.net.au"
+	id S1755163Ab0ECAP2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 May 2010 20:15:28 -0400
+Received: from wine.ocn.ne.jp ([122.1.235.145]:52172 "EHLO smtp.wine.ocn.ne.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604Ab0ECABo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 May 2010 20:01:44 -0400
-Date: Mon, 3 May 2010 10:01:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       David Woodhouse <dwmw2@infradead.org>,
-       Tomas Winkler <tomas.winkler@intel.com>
-Subject: linux-next: build warnings after merge of the driver-core.current
- tree
-Message-Id: <20100503100137.a05c9098.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+	id S1752604Ab0ECAP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 May 2010 20:15:27 -0400
+To: avi@redhat.com, xiaosuo@gmail.com
+Cc: jslaby@suse.cz, akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+       adobriyan@gmail.com, mingo@elte.hu, peterz@infradead.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: use kmalloc() to allocate fdmem if possible
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <viro@zeniv.linux.org.uk>
+	<1272818776-7729-1-git-send-email-xiaosuo@gmail.com>
+	<4BDDB6E9.4060703@redhat.com>
+In-Reply-To: <4BDDB6E9.4060703@redhat.com>
+Message-Id: <201005030915.FCD09385.FFHVOMJtSLOFQO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 3 May 2010 09:15:25 +0900
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__3_May_2010_10_01_37_+1000_RXy9i_6=8Cy+iHrL"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__3_May_2010_10_01_37_+1000_RXy9i_6=8Cy+iHrL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Avi Kivity wrote:
+> On 05/02/2010 07:46 PM, Changli Gao wrote:
+> > use kmalloc() to allocate fdmem if possible.
+> >
+> > vmalloc() is used as a fallback solution for fdmem allocation. Two members are
+> > added into the hole of the structure fdtable to indicate if vmalloc() is used
+> > or not.
+> >
+> >
+> > diff --git a/fs/file.c b/fs/file.c
+> > index 34bb7f7..f71dd85 100644
+> > --- a/fs/file.c
+> > +++ b/fs/file.c
+> > @@ -39,28 +39,34 @@ int sysctl_nr_open_max = 1024 * 1024; /* raised later */
+> >    */
+> >   static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
+> >
+> > -static inline void * alloc_fdmem(unsigned int size)
+> > +static inline void *alloc_fdmem(unsigned int size, unsigned short *use_vmalloc)
+> >   {
+> > -	if (size<= PAGE_SIZE)
+> > -		return kmalloc(size, GFP_KERNEL);
+> > -	else
+> > -		return vmalloc(size);
+> > +	void *data;
+> > +
+> > +	data = kmalloc(size, GFP_KERNEL);
+> > +	if (data != NULL) {
+> > +		*use_vmalloc = 0;
+> > +		return data;
+> > +	}
+> > +	*use_vmalloc = 1;
+> > +
+> > +	return vmalloc(size);
+> >   }
+> >    
+> 
+> Perhaps vmalloc() should do this by itself?  vfree() can examine the 
+> pointer and call kfree() if it isn't within the vmalloc address range.
 
-Hi Greg,
+You can use is_vmalloc_addr().
 
-After merging the driver-core.current tree, today's linux-next build (power=
-pc
-ppc64_defconfig and x86_64 allmodconfig) produced these warning:
-
-drivers/pcmcia/ds.c: In function 'pcmcia_load_firmware':
-drivers/pcmcia/ds.c:761: warning: passing argument 1 of 'release_firmware' =
-discards qualifiers from pointer target type
-include/linux/firmware.h:46: note: expected 'struct firmware *' but argumen=
-t is of type 'const struct firmware *'
-drivers/net/cxgb3/cxgb3_main.c: In function 't3_get_edc_fw':
-drivers/net/cxgb3/cxgb3_main.c:1084: warning: passing argument 1 of 'releas=
-e_firmware' discards qualifiers from pointer target type
-include/linux/firmware.h:46: note: expected 'struct firmware *' but argumen=
-t is of type 'const struct firmware *'
-
-and *lots* more similar warnings ...
-
-Caused by commit d5ae47f7d90f94a15e668f389c12211a11798b6f
-("firmware_class: fix memory leak - free allocated pages").  This patch
-was modified from an earlier version that produced different (though many
-fewer) warnings.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__3_May_2010_10_01_37_+1000_RXy9i_6=8Cy+iHrL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkveEmEACgkQjjKRsyhoI8xGogCfZ+b7yHUBkOZ67kuvGuAZQnyB
-LYYAnAuIOYY+jqL2Wyy6ZZeIwFjpD4Lg
-=80aF
------END PGP SIGNATURE-----
-
---Signature=_Mon__3_May_2010_10_01_37_+1000_RXy9i_6=8Cy+iHrL--
+	if (is_vmalloc_addr(p))
+		vfree(p);
+	else
+		kfree(p);
