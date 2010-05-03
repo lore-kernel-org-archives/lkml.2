@@ -1,126 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab0ECULP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 16:11:15 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37534 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756642Ab0ECULL (ORCPT
+	id S1756739Ab0ECUOI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 16:14:08 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:46173 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756535Ab0ECUOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 16:11:11 -0400
-Date: Mon, 3 May 2010 16:11:10 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       USB list <linux-usb@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>
-Subject: Re: s2ram slow (radeon) / failing (usb)
-In-Reply-To: <20100503214642.67577f91@neptune.home>
-Message-ID: <Pine.LNX.4.44L0.1005031557080.1502-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 3 May 2010 16:14:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qHsNir/Wxr6JjJlCzUI8cnRbBxp9fTY1bNF4C8NJjuqX08VBG9tFth/EHMFibqgcIa
+         Co1b3/WiRRLyjgoY9/ZVIYG2ljNQZY59OxaLEZYpmpcrH0NYkxv1LWx3sKPv3ekC2gEK
+         f1skZo/OQvcAmnWp5/1mjbf/X5oFUN72DmX4Q=
+Subject: Re: [PATCH net-next-2.6] net: if6_get_next() fix
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: paulmck@linux.vnet.ibm.com, shemminger@vyatta.com, Valdis.Kletnieks@vt.edu,
+       akpm@linux-foundation.org, peterz@infradead.org, kaber@trash.net,
+       linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+       netdev@vger.kernel.org
+In-Reply-To: <20100503.130902.172620141.davem@davemloft.net>
+References: <1272903293.2226.50.camel@edumazet-laptop>
+	 <20100503181629.GJ2597@linux.vnet.ibm.com>
+	 <1272916007.2407.75.camel@edumazet-laptop>
+	 <20100503.130902.172620141.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 03 May 2010 22:13:55 +0200
+Message-ID: <1272917635.2407.106.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 May 2010, Bruno [UTF-8] Prémont wrote:
-
-> On Mon, 03 May 2010 Alan Stern <stern@rowland.harvard.edu> wrote:
-> > You might also want to #define VERBOSE_DEBUG at the start of 
-> > drivers/usb/core/driver.c, before the first #include.
+Le lundi 03 mai 2010 à 13:09 -0700, David Miller a écrit :
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Mon, 03 May 2010 21:46:47 +0200
 > 
-> Still no difference... (will retry with own printk's in ohci's suspend
-> code as suggested in other mail)
+> > Then, net-next-2.6 doesnt yet have your commit Paul to relax
+> > hlist_for_each_entry_rcu(), so its a bit difficult to continue the work.
+> 
+> Is that in Linus's tree yet?  If it propagates there I can make it
+> propagate to net-next-2.6, you just have to tell me you need it.
 
-First of all, have you tried disabling async suspend?  Look at 
-/sys/power/pm_async.
 
-> Suspend output as it goes:
+Hmm, it seems it's already in net-next-2.6, sorry for the confusion.
 
-Let's just look at the USB entries:
+commit 3120438ad68601f341e61e7cb1323b0e1a6ca367
+Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date:   Mon Feb 22 17:04:48 2010 -0800
 
-> [  241.358651] usb usb1: preparing type suspend, may wakeup
-> [  241.364247] usb usb2: preparing type suspend, may wakeup
-> [  241.369847] usb usb3: preparing type suspend, may wakeup
-> [  241.375443] usb usb4: preparing type suspend, may wakeup
-> [  241.381044] usb usb5: preparing type suspend, may wakeup
-> [  241.386643] usb usb6: preparing type suspend, may wakeup
-> [  241.392244] usb 1-2: preparing type suspend, may wakeup
-> [  241.397762] usb 1-2.1: preparing type suspend, may wakeup
+    rcu: Disable lockdep checking in RCU list-traversal primitives
+    
+    The theory is that use of bare rcu_dereference() is more prone
+    to error than use of the RCU list-traversal primitives.
+    Therefore, disable lockdep RCU read-side critical-section
+    checking in these primitives for the time being.  Once all of
+    the rcu_dereference() uses have been dealt with, it may be time
+    to re-enable lockdep checking for the RCU list-traversal
+    primitives.
+    
 
-Those are normal.
-
-> [  241.407504] usbhid 1-2.1:1.1: suspend
-> [  241.407511] usbhid 1-2.1:1.0: suspend
-
-These are HID suspends for the keyboard and mouse interfaces.
-
-> [  241.407516] usb 1-2.1: type suspend, may wakeup
-
-This is a USB suspend for the KB/mouse device.
-
-> [  241.443340] hub 1-2:1.0: suspend
-
-Suspend for the embedded hub interface.  Next we should see
-
-	[....] usb 1-2: type suspend, may wakeup
-
-for the embedded hub device, but we don't.  That's the problem.  It 
-must be waiting for something -- goodness knows what.
-
-> [  241.911502] hub 6-0:1.0: suspend
-> [  241.914928] usb usb6: type suspend, may wakeup
-> [  241.919583] usb usb6: usb_suspend_both: status 0
-> [  241.924448] usb usb6: suspend, may wakeup
-> [  241.928663] hub 5-0:1.0: suspend
-> [  241.932082] usb usb5: type suspend, may wakeup
-> [  241.936794] usb usb5: usb_suspend_both: status 0
-> [  241.941669] usb usb5: suspend, may wakeup
-> [  241.945888] hub 4-0:1.0: suspend
-> [  241.949294] usb usb4: type suspend, may wakeup
-> [  241.953966] usb usb4: usb_suspend_both: status 0
-> [  241.958814] usb usb4: suspend, may wakeup
-> [  241.963069] hub 3-0:1.0: suspend
-> [  241.966452] usb usb3: type suspend, may wakeup
-> [  241.971126] usb usb3: usb_suspend_both: status 0
-> [  241.976015] usb usb3: suspend, may wakeup
-> [  241.980232] hub 2-0:1.0: suspend
-> [  241.983662] usb usb2: type suspend, may wakeup
-> [  241.988316] usb usb2: usb_suspend_both: status 0
-> [  241.993192] usb usb2: suspend, may wakeup
-> [  241.997418] hub 1-0:1.0: suspend
-
-And here we should see
-
-	[....] usb usb1: type suspend, may wakeup
-	etc.
-
-but we don't, because it's waiting for the 1-2 device.
-
-> [  242.125768] ehci_hcd 0000:00:13.5: suspend
-> [  242.130076] ehci_hcd 0000:00:13.5: PCI INT D disabled
-> [  242.135410] ohci_hcd 0000:00:13.4: suspend
-> [  242.139696] ohci_hcd 0000:00:13.4: PCI INT C disabled
-> [  242.145035] ohci_hcd 0000:00:13.3: suspend
-> [  242.149348] ohci_hcd 0000:00:13.3: PCI INT B disabled
-> [  242.154705] ohci_hcd 0000:00:13.2: suspend
-> [  242.159012] ohci_hcd 0000:00:13.2: PCI INT C disabled
-> [  242.164342] ohci_hcd 0000:00:13.1: suspend
-> [  242.168676] ohci_hcd 0000:00:13.1: PCI INT B disabled
-
-> I guess here PM is waiting for ohci_hcd 0000:00:13.0 to suspend
-> and disable its interrupt.
-> (and that last ohci device would match the usbhid_resume thread that's
-> frozen...)
-
-The 0000:00:13.0 device can't suspend until usb1 does, and usb1 can't
-suspend until 1-2 does.
-
-Can you boot the dmesg log for bootup and device detection?  It may 
-indicate what we're missing.  Also include the contents of 
-/sys/kernel/debug/usb/devices.
-
-Alan Stern
 
