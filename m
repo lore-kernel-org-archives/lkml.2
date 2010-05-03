@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758753Ab0ECWPN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 18:15:13 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:37728 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758388Ab0ECWPK (ORCPT
+	id S1758844Ab0ECWRV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 18:17:21 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46490
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758419Ab0ECWRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 18:15:10 -0400
-Date: Mon, 3 May 2010 17:14:55 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@osdl.org, akpm@linux-foundation.org, keyrings@linux-nfs.org,
-       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] KEYS: find_keyring_by_name() can gain access to a
- freed keyring
-Message-ID: <20100503221455.GB6968@us.ibm.com>
-References: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
- <20100430133213.2126.63908.stgit@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100430133213.2126.63908.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 3 May 2010 18:17:19 -0400
+Date: Mon, 03 May 2010 15:17:25 -0700 (PDT)
+Message-Id: <20100503.151725.94856059.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: paulmck@linux.vnet.ibm.com, shemminger@vyatta.com, Valdis.Kletnieks@vt.edu,
+       akpm@linux-foundation.org, peterz@infradead.org, kaber@trash.net,
+       linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+       netdev@vger.kernel.org
+Subject: Re: [PATCH net-next-2.6] net: if6_get_next() fix
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1272919814.2407.149.camel@edumazet-laptop>
+References: <1272917635.2407.106.camel@edumazet-laptop>
+	<20100503.132442.200112018.davem@davemloft.net>
+	<1272919814.2407.149.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting David Howells (dhowells@redhat.com):
-> Reported-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 03 May 2010 22:50:14 +0200
 
-(looks good, fwiw)
+> Paul, David, here the patch I was thinking about :
+> 
+> Feel free to split it in two parts if you like, I am too tired and must
+> sleep now ;)
+ ...
+> [PATCH net-next-2.6] net: rcu fixes
+> 
+> Add hlist_for_each_entry_rcu_bh() and
+> hlist_for_each_entry_continue_rcu_bh() macros, and use them in
+> ipv6_get_ifaddr(), if6_get_first() and if6_get_next() to fix lockdeps
+> warnings.
+> 
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+Paul, let me know if you want to handle these seperately (one commit
+in your tree for the rculist.h bit and one for the ipv6 change) or to
+put it all at once into net-next-2.6, I'm happy either way.
