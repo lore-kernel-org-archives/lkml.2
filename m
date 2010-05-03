@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab0ECRIA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 13:08:00 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:65069 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755001Ab0ECRH5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 13:07:57 -0400
-Date: Mon, 3 May 2010 10:06:11 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       linux-pm@lists.linux-foundation.org
-Subject: [PATCH -next] power: fix block_io.c printk warning
-Message-Id: <20100503100611.2ca63b58.randy.dunlap@oracle.com>
-In-Reply-To: <20100503151619.f75e3a80.sfr@canb.auug.org.au>
-References: <20100503151619.f75e3a80.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1754880Ab0ECRKZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 13:10:25 -0400
+Received: from tex.lwn.net ([70.33.254.29]:41750 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754099Ab0ECRKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 13:10:24 -0400
+Date: Mon, 3 May 2010 11:10:20 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: mgross@linux.intel.com, aili@codeaurora.org, dwalker@codeaurora.org,
+       tiwai@suse.de, bruce.w.allan@intel.com, davidb@quicinc.com,
+       mcgrof@gmail.com, pavel@ucw.cz,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]PM QOS refresh against next-20100430
+Message-ID: <20100503111020.2dab8003@bike.lwn.net>
+In-Reply-To: <87tyqo537l.fsf@deeprootsystems.com>
+References: <20100430212043.GA30315@linux.intel.com>
+	<20100503103300.6330e522@bike.lwn.net>
+	<87y6g1547o.fsf@deeprootsystems.com>
+	<20100503104250.7605d2bc@bike.lwn.net>
+	<87tyqo537l.fsf@deeprootsystems.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090203.4BDF02AE.0006:SCFMA922111,ss=1,fgs=0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon, 03 May 2010 10:01:50 -0700
+Kevin Hilman <khilman@deeprootsystems.com> wrote:
 
-Fix printk format warning in block_io.c:
+> > Well, shallow could mean that the state lacks the CPUIDLE_FLAG_DEEP
+> > flag; that should be relatively portable.  In any case, it seems
+> > more so than "if I put in a 55us latency requirement, I'll stay out
+> > of C3".  
+> 
+> I guess it depends on your goal.  Do you just want to stay out of C3
+> on your current platform?  or do you want to stay out of any low-power
+> state (on any platform) where you'll have a latency of > 55 usecs?
 
-kernel/power/block_io.c:41: warning: format '%ld' expects type 'long int', but argument 2 has type 'sector_t'
+My case is a camera driver; as long as latencies are on the scale of
+the frame rate, things won't go too wrong.  1ms latencies would not be
+a huge problem.  What happens is that the hardware corrupts the data if
+it goes into C3 while video capture is happening.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
----
- kernel/power/block_io.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Comments in drivers/net/e1000e/netdev.c suggest that they were dealing
+with similar issues.
 
---- linux-next-20100503.orig/kernel/power/block_io.c
-+++ linux-next-20100503/kernel/power/block_io.c
-@@ -37,8 +37,8 @@ static int submit(int rw, struct block_d
- 	bio->bi_end_io = end_swap_bio_read;
- 
- 	if (bio_add_page(bio, page, PAGE_SIZE, 0) < PAGE_SIZE) {
--		printk(KERN_ERR "PM: Adding page to bio failed at %ld\n",
--			sector);
-+		printk(KERN_ERR "PM: Adding page to bio failed at %llu\n",
-+			(unsigned long long)sector);
- 		bio_put(bio);
- 		return -EFAULT;
- 	}
+> The former is not portable (as C-states don't have the same meanings
+> across arches/SoCs) where as using a real-world number in usecs will
+> have meaning on any platform.
+
+Understood.  But the end result is that I've ended up specifying a
+latency requirement that is far tighter than the situation really needs
+in order to achieve the real goal.
+
+> My main concern is that drivers not be written with latency
+> constraints that assume an Intel-centric set of power states.  There
+> are other SoCs out there with different sets of states and
+> corresponding latencies, so keeping things in real-world numbers
+> (latency, throughput, etc.) seems to me to be the only portable way.
+
+Understood.  Perhaps the pm_qos interface isn't the best way to achieve
+the real goal here, but it's all we have at the moment.
+
+Thanks,
+
+jon
