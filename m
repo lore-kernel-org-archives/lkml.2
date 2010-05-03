@@ -1,96 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab0ECGHL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 02:07:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1586 "EHLO mx1.redhat.com"
+	id S1755369Ab0ECGLY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 02:11:24 -0400
+Received: from tauceti.net ([62.245.250.166]:50767 "EHLO www.tauceti.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211Ab0ECGHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 02:07:06 -0400
-Message-ID: <4BDE67DA.4080004@redhat.com>
-Date: Mon, 03 May 2010 09:06:18 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1753211Ab0ECGLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 02:11:22 -0400
 MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-CC: xiaosuo@gmail.com, jslaby@suse.cz, akpm@linux-foundation.org,
-       paulmck@linux.vnet.ibm.com, adobriyan@gmail.com, mingo@elte.hu,
-       peterz@infradead.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: use kmalloc() to allocate fdmem if possible
-References: <viro@zeniv.linux.org.uk>	<1272818776-7729-1-git-send-email-xiaosuo@gmail.com>	<4BDDB6E9.4060703@redhat.com> <201005030915.FCD09385.FFHVOMJtSLOFQO@I-love.SAKURA.ne.jp>
-In-Reply-To: <201005030915.FCD09385.FFHVOMJtSLOFQO@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Mon, 03 May 2010 10:11:18 +0200
+From: kernel <kernel@tauceti.net>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: "Michael S. Tsirkin\" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+	bugzilla-daemon@bugzilla.kernel.org, Rusty Russell
+	<rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
+	linux-nfs@vger.kernel.org,",
+       <linux-kernel@vger.kernel.org>
+Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
+In-Reply-To: <4BD76B81.2070606@tauceti.net>
+References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain> <4BD5F6C5.8080605@tauceti.net> <1272315854.8984.125.camel@localhost.localdomain> <4BD61147.40709@tauceti.net> <1272324536.16814.45.camel@localhost.localdomain> <4BD76B81.2070606@tauceti.net>
+Message-ID: <be8a0f012ebb2ae02522998591e6f1a5@tauceti.net>
+User-Agent: RoundCube Webmail/0.3.1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2010 03:15 AM, Tetsuo Handa wrote:
-> Avi Kivity wrote:
->    
->> On 05/02/2010 07:46 PM, Changli Gao wrote:
->>      
->>> use kmalloc() to allocate fdmem if possible.
+Anything we can do to investigate this further?
+
+Thanks!
+Robert
+
+
+On Wed, 28 Apr 2010 00:56:01 +0200, Robert Wimmer <kernel@tauceti.net>
+wrote:
+> I've applied the patch against the kernel which I got
+> from "git clone ...." resulted in a kernel 2.6.34-rc5.
+> 
+> The stack trace after mounting NFS is here:
+> https://bugzilla.kernel.org/attachment.cgi?id=26166
+> /var/log/messages after soft lockup:
+> https://bugzilla.kernel.org/attachment.cgi?id=26167
+> 
+> I hope that there is any usefull information in there.
+> 
+> Thanks!
+> Robert
+> 
+> On 04/27/10 01:28, Trond Myklebust wrote:
+>> On Tue, 2010-04-27 at 00:18 +0200, Robert Wimmer wrote: 
+>>   
+>>>> Sure. In addition to what you did above, please do
+>>>>
+>>>> mount -t debugfs none /sys/kernel/debug
+>>>>
+>>>> and then cat the contents of the pseudofile at
+>>>>
+>>>> /sys/kernel/debug/tracing/stack_trace
+>>>>
+>>>> Please do this more or less immediately after you've finished
+mounting
+>>>> the NFSv4 client.
+>>>>   
+>>>>       
+>>> I've uploaded the stack trace. It was generated
+>>> directly after mounting. Here are the stacks:
 >>>
->>> vmalloc() is used as a fallback solution for fdmem allocation. Two members are
->>> added into the hole of the structure fdtable to indicate if vmalloc() is used
->>> or not.
+>>> After mounting:
+>>> https://bugzilla.kernel.org/attachment.cgi?id=26153
+>>> After the soft lockup:
+>>> https://bugzilla.kernel.org/attachment.cgi?id=26154
+>>> The dmesg output of the soft lockup:
+>>> https://bugzilla.kernel.org/attachment.cgi?id=26155
+>>>
+>>>     
+>>>> Does your server have the 'crossmnt' or 'nohide' flags set, or does
+it
+>>>> use the 'refer' export option anywhere? If so, then we might have to
+>>>> test further, since those may trigger the NFSv4 submount feature.
+>>>>   
+>>>>       
+>>> The server has the following settings:
+>>> rw,nohide,insecure,async,no_subtree_check,no_root_squash
+>>>
+>>> Thanks!
+>>> Robert
 >>>
 >>>
->>> diff --git a/fs/file.c b/fs/file.c
->>> index 34bb7f7..f71dd85 100644
->>> --- a/fs/file.c
->>> +++ b/fs/file.c
->>> @@ -39,28 +39,34 @@ int sysctl_nr_open_max = 1024 * 1024; /* raised later */
->>>     */
->>>    static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
->>>
->>> -static inline void * alloc_fdmem(unsigned int size)
->>> +static inline void *alloc_fdmem(unsigned int size, unsigned short *use_vmalloc)
->>>    {
->>> -	if (size<= PAGE_SIZE)
->>> -		return kmalloc(size, GFP_KERNEL);
->>> -	else
->>> -		return vmalloc(size);
->>> +	void *data;
->>> +
->>> +	data = kmalloc(size, GFP_KERNEL);
->>> +	if (data != NULL) {
->>> +		*use_vmalloc = 0;
->>> +		return data;
->>> +	}
->>> +	*use_vmalloc = 1;
->>> +
->>> +	return vmalloc(size);
->>>    }
->>>
->>>        
->> Perhaps vmalloc() should do this by itself?  vfree() can examine the
->> pointer and call kfree() if it isn't within the vmalloc address range.
->>      
-> You can use is_vmalloc_addr().
->
-> 	if (is_vmalloc_addr(p))
-> 		vfree(p);
-> 	else
-> 		kfree(p);
->    
-
-
-My point is, vmalloc() and vfree should do this, not their callers:
-
-vmalloc(size):
-     if (size <= PAGE_SIZE)
-         return kmalloc(size, GFP_KERNEL);
-     ...
-
-vfree(p):
-     if (!is_vmalloc_addr(p) {
-         kfree(p);
-         return;
-     }
-     ...
-
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
-
+>>>     
+>> That second trace is more than 5.5K deep, more than half of which is
+>> socket overhead :-(((.
+>>
+>> The process stack does not appear to have overflowed, however that
+trace
+>> doesn't include any IRQ stack overhead.
+>>
+>> OK... So what happens if we get rid of half of that trace by forcing
+>> asynchronous tasks such as this to run entirely in rpciod instead of
+>> first trying to run in the process context?
+>>
+>> See the attachment...
+>>
