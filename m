@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab0ECNms (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 09:42:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56849 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755978Ab0ECNmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 09:42:46 -0400
-Date: Mon, 3 May 2010 15:42:44 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf_event: Use UTF-8 copyright symbol instead of \251
-In-Reply-To: <20100501002811.GA2610@brick.ozlabs.ibm.com>
-Message-ID: <alpine.LNX.2.00.1005031541390.9849@pobox.suse.cz>
-References: <20100501002811.GA2610@brick.ozlabs.ibm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1759413Ab0ECNnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 09:43:10 -0400
+Received: from mailout2.zih.tu-dresden.de ([141.30.67.73]:38928 "EHLO
+	mailout2.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932386Ab0ECNnH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 09:43:07 -0400
+X-Greylist: delayed 1424 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 May 2010 09:43:07 EDT
+Message-ID: <4BDECD66.2010906@tu-dresden.de>
+Date: Mon, 03 May 2010 15:19:34 +0200
+From: =?ISO-8859-15?Q?Ronny_Tsch=FCter?= <Ronny.Tschueter@tu-dresden.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
+To: Arjan van de Ven <arjan@linux.intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Tracing of power:power_start events doesn't work
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 8BIT
+X-TUD-Virus-Scanned: mailout2.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 1 May 2010, Paul Mackerras wrote:
+Hello,
 
-> As noted by Tejun Heo, the latin-1 copyright character \251 is invalid
-> in ASCII or UTF-8.  This changes the character to its UTF-8 encoding
-> in order to avoid problems with editors and other tools.
-> 
-> Signed-off-by: Paul Mackerras <paulus@samba.org>
-> ---
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index 9dbe8cd..d46a277 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -4,7 +4,7 @@
->   *  Copyright (C) 2008 Thomas Gleixner <tglx@linutronix.de>
->   *  Copyright (C) 2008-2009 Red Hat, Inc., Ingo Molnar
->   *  Copyright (C) 2008-2009 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
-> - *  Copyright  ???  2009 Paul Mackerras, IBM Corp. <paulus@au1.ibm.com>
+i use kernel version 2.6.33.2 (x86-64, Core 2 Duo) and the perf events 
+to track frequency and c states of my cpu. But if i want to trace 
+power:power_start events, it does not work. After typing
 
-Umm ... this looks odd.
+echo "power:power_start" | sudo tee set_event
 
-> + *  Copyright  Â©  2009 Paul Mackerras, IBM Corp. <paulus@au1.ibm.com>
+on the console, the trace doesn't contain such events. 
+power:power_frequency and power:power_end events are reported correctly 
+by the system. I read in the mailing list that Robert Schoene had a 
+similiar problem, but with power:power_end events. Is there a known bug 
+regarding to trace_power_start methods in process.c?
 
-This seems to add \251 again :) Maybe some of your tools got confused 
-enough?
-
-Anyway, I have dropped the patch from Tejun for now.
+Bye Ronny
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Ronny Tschueter
+
+Technische Universität Dresden
+Center for Information Services
+and High Performance Computing (ZIH)
+D-01062 Dresden
+Germany
+
+Office: Willersbau, room A31
+Phone:	(+49) 351/463-35448
+E-Mail: ronny.tschueter@tu-dresden.de
+WWW:    http://www.tu-dresden.de/zih
+
