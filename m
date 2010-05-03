@@ -1,125 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759563Ab0ECPCH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 11:02:07 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28657 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759427Ab0ECPCE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 11:02:04 -0400
+	id S1759592Ab0ECPDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 11:03:14 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37753 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759427Ab0ECPDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 11:03:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend blockers from user-space
+Date: Mon, 3 May 2010 17:03:11 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Jim Collar <jim.collar@eqware.net>,
+       "Greg Kroah-Hartman" <gregkh@suse.de>, Avi Kivity <avi@redhat.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
+References: <Pine.LNX.4.44L0.1005021755320.30701-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1005021755320.30701-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Message-ID: <d3bbdffe-8cc7-4ab9-8292-1531d13fad8e@default>
-Date: Mon, 3 May 2010 07:59:57 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: ngupta@vflare.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       hugh.dickins@tiscali.co.uk, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com>>
- <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>>
- <4BD1A74A.2050003@redhat.com>>
- <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com>
- <4BD1B626.7020702@redhat.com>>
- <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>>
- <4BD3377E.6010303@redhat.com>>
- <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>>
- <ce808441-fae6-4a33-8335-f7702740097a@default>>
- <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz>
- <4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default>
- <4BDB026E.1030605@redhat.com> <4BDB18CE.2090608@goop.org>
- <4BDB2069.4000507@redhat.com> <3a62a058-7976-48d7-acd2-8c6a8312f10f@default>
- <4BDD3079.5060101@vflare.org> <b09a9cc6-8481-4dd3-8374-68ff6fb714d9@default>
- <4BDDACF5.90601@redhat.com> <b6cfd097-1003-47ce-9f1c-278835ba52d2@default
- 4BDE99C8.1090002@redhat.com>
-In-Reply-To: <4BDE99C8.1090002@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4BDEE53F.00FF:SCFMA922111,ss=1,fgs=0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005031703.11448.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > My analogy only requires some
-> > statistical bad luck: Multiple guests with peaks and valleys
-> > of memory requirements happen to have their peaks align.
+On Sunday 02 May 2010, Alan Stern wrote:
+> On Sun, 2 May 2010, Rafael J. Wysocki wrote:
 > 
-> Not sure I understand.
-
-Virtualization is all about statistical multiplexing of fixed
-resources.  If all guests demand a resource simultaneously,
-that is peak alignment == "bad luck".
-
-(But, honestly, I don't even remember the point either of us
-was trying to make here :-)
-
-> > Or maybe not... when a guest is in the middle of a live migration,
-> > I believe (in Xen), the entire guest memory allocation (possibly
-> > excluding ballooned-out pages) must be simultaneously in RAM briefly
-> > in BOTH the host and target machine.  That is, live migration is
-> > not "pipelined".  Is this also true of KVM?
+> > Hmm.  It doesn't seem to be possible to create two different suspend blockers
+> > using the same file handle.  So, what exactly is a process supposed to do to
+> > use two suspend blockers at the same time?
 > 
-> No.  The entire guest address space can be swapped out on the source
-> and
-> target, less the pages being copied to or from the wire, and pages
-> actively accessed by the guest.  Of course performance will suck if all
-> memory is swapped out.
+> Open the file twice, thereby obtaining two file handles.
 
-Will it suck to the point of eventually causing the live migration
-to fail?  Or will swap-storms effectively cause denial-of-service
-for other guests?
+Well, that's what I thought.
 
-Anyway, if live migration works fine with mostly-swapped-out guests
-on KVM, that's great.
+I must admit I'm not really comfortable with this interface.  IMO it would
+be better if _open() created the suspend blocker giving it a name based on
+the name of the process that called it.  Something like
+"<process name>_<timestamp>" might work at first sight.
 
-> > Choosing the _optimal_ overcommit ratio is impossible without a
-> > prescient knowledge of the workload in each guest.  Hoping memory
-> > will be available is certainly not a good solution, but if memory
-> > is not available guest swapping is much better than host swapping.
-> 
-> You cannot rely on guest swapping.
+Alternatively, "<process_name><number>", where <number> is 0 for the first
+suspend blocker created by the given process, 1 for the second one etc., also
+seems to be doable.
 
-Frontswap only relies on the guest having an existing swap device,
-defined in /etc/fstab like any normal Linux swap device.  If this
-is "relying on guest swapping", yes frontswap relies on guest swapping.
-
-Or if you are referring to your "host can't force guest to
-reclaim pages" argument, see the other thread.
-
-> > And making RAM usage as dynamic as possible and live migration
-> > as easy as possible are keys to maximizing the benefits (and
-> > limiting the problems) of virtualization.
-> 
-> That is why you need overcommit.  You make things dynamic with page
-> sharing and ballooning and live migration, but at some point you need a
-> failsafe fallback.  The only failsafe fallback I can see (where the
-> host doesn't rely on guests) is swapping.
-
-No fallback is required if the overcommitment is done intelligently.
-
-> As far as I can tell, frontswap+tmem increases the problem.  You loan
-> the guest some memory without the means to take it back, this increases
-> memory pressure on the host.  The result is that if you want to avoid
-> swapping (or are unable to) you need to undercommit host resources.
-> Instead of sum(guest mem) + reserve < (host mem), you need sum(guest
-> mem
-> + committed tmem) + reserve < (host mem).  You need more host memory,
-> or less guests, or to be prepared to swap if the worst happens.
-
-Your argument might make sense from a KVM perspective but is
-not true of frontswap with Xen+tmem.  With KVM, the host's
-swap disk(s) can all be used as "slow RAM".  With Xen, there is
-no host swap disk.  So, yes, the degree of potential memory
-overcommitment is smaller with Xen+tmem than with KVM.  In
-order to avoid all the host problems with host-swapping,
-frontswap+Xen+tmem intentionally limits the degree of memory
-overcommitment... but this is just memory overcommitment done
-intelligently.
+Rafael
