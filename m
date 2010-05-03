@@ -1,85 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab0ECVSe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 17:18:34 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:48448 "EHLO
-	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757216Ab0ECVSc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 17:18:32 -0400
-X-SpamScore: -32
-X-BigFish: VPS-32(zz1432P98dN936eM1419M62a3Lzz1202hzz6ff19h2ba5Mz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L1V4IM-02-F3X-02
-X-M-MSG: 
-Date: Mon, 3 May 2010 23:18:20 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-CC: "Siamashka Siarhei (Nokia-D/Helsinki)" <siarhei.siamashka@nokia.com>,
-       "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>,
-       "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] updates for oprofile
-Message-ID: <20100503211820.GF5979@erda.amd.com>
-References: <20100427152544.GA9063@pcarmody-desktop>
- <20100427174026.GR6450@erda.amd.com>
- <201004272047.52056.siarhei.siamashka@nokia.com>
- <20100428165906.GA21724@erda.amd.com>
- <20100428170915.GF17639@pcarmody-desktop>
+	id S1756783Ab0ECVVK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 17:21:10 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47129 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752045Ab0ECVVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 17:21:07 -0400
+Date: Mon, 3 May 2010 23:20:47 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: perf, ftrace and MCEs
+Message-ID: <20100503212047.GA16301@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	lkml <linux-kernel@vger.kernel.org>
+References: <20100501181212.GA25352@liondog.tnic>
+ <1272897672.9739.218.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100428170915.GF17639@pcarmody-desktop>
+In-Reply-To: <1272897672.9739.218.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.04.10 12:09:16, Phil Carmody wrote:
-> On 28/04/10 18:59 +0200, ext Robert Richter wrote:
-> > On 27.04.10 20:47:51, Siarhei Siamashka wrote:
-> > > Isn't hrtimer callback function supposed to be only called from IRQ context
-> > > after this cleanup: http://lwn.net/Articles/308545/ ?
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Mon, May 03, 2010 at 10:41:12AM -0400
+
+Hi Steven,
+
+> On Sat, 2010-05-01 at 20:12 +0200, Borislav Petkov wrote:
+> > Hi,
 > > 
-> > Yes, the patch is upstream since v2.6.29. Thanks Siarhei.
+> > so I finally had some spare time to stare at perf/ftrace code and ponder
+> > on how to use those facilities for MCE collecting and reporting. Btw, I
+> > have to say, it took me quite a while to understand what goes where - my
+> > suggestion to anyone who tries to understand how perf/ftrace works is
+> > to do make <file.i> where there is at least one trace_XXX emit record
+> > function call and start untangling code paths from there.
 > > 
-> > I will add a null pointer check anyway.
+> > So anyway, here are some questions I had, I just as well may've missed
+> > something so please correct me if I'm wrong:
+> > 
+> > 1. Since machine checks can happen at any time, we need to have the
+> > MCE tracepoint (trace_mce_record() in <include/trace/events/mce.h>)
+> > always enabled. This, in turn, means that we need the ftrace/perf
+> > infrastructure always compiled in (lockless ring buffer, perf_event.c
+> > stuff) on any x86 system so that MCEs can be handled at anytime. Is this
+> > going to be ok to be enabled on _all_ machines, hmmm... I dunno, maybe
+> > only a subset of those facilites at least.
 > 
-> A few here thrashed around a couple of ideas, and the general consensus 
-> was that the following work for us, and is offered for consideration.
-> 
-> Phil
-> 
-> 
-> From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-> Date: Tue, 27 Apr 2010 19:28:33 +0300
-> Subject: [PATCH v2 1/1] oprofile: HACK - protect from not being in an IRQ context
-> 
-> http://lkml.org/lkml/2010/4/27/285
-> 
-> Protect against dereferencing regs when it's NULL, and
-> force a magic number into pc to prevent too deep processing.
-> This approach permits the dropped samples to be tallied as
-> invalid Instruction Pointer events.
-> 
-> e.g. output from about 15mins at 10kHz sample rate:
-> Nr. samples received: 2565380
-> Nr. samples lost invalid pc: 4
-> 
-> Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> I'm not exactly sure what you goal is, but if you need to do something
+> directly, you can bypass ftrace and perf. All trace events can be
+> connected by anything even when ftrace and perf are not enabled.
 
-Patch applied to:
+Right, so the idea is to use the perf/ftrace infrastructure to detect
+failing hardware which is signalled through machine checks, among
+others. I'm thinking a lockless ring buffer would be cool so we can
+execute in any context... wait a minute, right, we have that already.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
+However, if I use the perf/ftrace facilities, I have to have them
+enabled on every system since machine checks are core processor
+functionality and the software support for those has to be always
+enabled. And the code has to be small and execute fast since after a
+critical mcheck happens all bets are off.
 
-Thanks Phil!
+So I'm thinking maybe a core perf/ftrace stuff which is thin and is
+always enabled... but I'm not sure for I haven't stared at the code
+enough yet.
 
--Robert
+> That is, you need to connect to the tracepoint and write you own
+> callback. This can be done pretty much at anytime during boot up. To see
+> how to connect to a trace point, you can look at
+> register_trace_sched_switch() in kernel/trace/ftrace.c. This registers a
+> callback to the trace_sched_switch() trace point in sched.c.
+
+The base tracepoint functionality should suffice for now but this is
+definitely a cool point and good to know, thanks.
+
+> > 
+> > 2. Tangential to 1., we need that "thin" software layer prepared for
+> > decoding and reporting them as early as possible. event_trace_init() is
+> > an fs_initcall and executed too late, IMHO. The ->perf_event_enable in
+> > the ftrace_event_call is enabled even later on the perf init path over
+> > the sys_perf_even_open which is at userspace time. In our case, this is
+> > going be executed by the error logging and decoding daemon I guess.
+> > 
+> > 3. Since we want to listen for MCEs all the time, the concept of
+> > enabling and disabling those events does not apply in the sense of
+> > performance profiling. IOW, MCEs need to be able to be logged to the
+> > ring buffer at any time. I guess this is easily done - we simply enable
+> > MCE events at the earliest moment possible and disable them on shutdown;
+> > done.
+> 
+> This looks like a good reason to have your own handler. More than one
+> callback may be registered to a tracepoint, so you do not need to worry
+> about having other handlers affect your code.
+
+Yep, good ideas, thanks. /me goes back to the drawing board.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
-
+Regards/Gruss,
+    Boris.
