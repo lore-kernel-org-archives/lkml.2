@@ -1,86 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932912Ab0ECPoE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 11:44:04 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:38018 "EHLO e7.ny.us.ibm.com"
+	id S1754051Ab0ECPrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 11:47:37 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:42411 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932822Ab0ECPoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 11:44:00 -0400
-Date: Mon, 3 May 2010 08:43:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Patrick McHardy <kaber@trash.net>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: mmotm 2010-04-28 - RCU whinges
-Message-ID: <20100503154357.GF2597@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <201004290021.o3T0L04Y028017@imap1.linux-foundation.org>
- <5702.1272822394@localhost>
- <1272865137.2173.179.camel@edumazet-laptop>
- <5933.1272897014@localhost>
- <1272898726.2226.47.camel@edumazet-laptop>
- <5112.1272900590@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5112.1272900590@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751861Ab0ECPrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 11:47:36 -0400
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org,
+       Alexandre Bounine <alexandre.bounine@idt.com>,
+       Matt Porter <mporter@kernel.crashing.org>,
+       Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+       Thomas Moll <thomas.moll@sysgo.com>
+Subject: [PATCH -mm 0/5] RapidIO: Set of patches to current -mm tree
+Date: Mon,  3 May 2010 11:45:53 -0400
+Message-Id: <1272901558-9292-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 03, 2010 at 11:29:50AM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Mon, 03 May 2010 16:58:46 +0200, Eric Dumazet said:
-> > Le lundi 03 mai 2010 à 10:30 -0400, Valdis.Kletnieks@vt.edu a écrit :
-> 
-> > > [    9.129872] net/netfilter/nf_log.c:55 invoked rcu_dereference_check() without protection!
-> 
-> > Thanks for the report !
-> > 
-> > [PATCH] net: nf_log RCU fixes
-> > 
-> > nf_log_register() and nf_log_unregister() use a mutex to have exclusive
-> > access to nf_logers[]. Use appropriate rcu_dereference_protected()
-> > lockdep annotation.
-> 
-> Confirming that one fixed.  Now it lives a whole 36 seconds before whinging:
-> 
-> [   35.328729] ===================================================
-> [   35.328803] [ INFO: suspicious rcu_dereference_check() usage. ]
-> [   35.328837] ---------------------------------------------------
-> [   35.328872] net/ipv6/addrconf.c:2977 invoked rcu_dereference_check() without protection!
-> [   35.328926] 
-> [   35.328927] other info that might help us debug this:
-> [   35.328928] 
-> [   35.329016] 
-> [   35.329016] rcu_scheduler_active = 1, debug_locks = 0
-> [   35.329089] 2 locks held by ifconfig/2680:
-> [   35.329120]  #0:  (&p->lock){+.+.+.}, at: [<ffffffff810f5db8>] seq_read+0x3a/0x42d
-> [   35.329217]  #1:  (rcu_read_lock_bh){.+....}, at: [<ffffffff814eec68>] rcu_read_lock_bh+0x0/0x35
-> [   35.329322] 
-> [   35.329323] stack backtrace:
-> [   35.329380] Pid: 2680, comm: ifconfig Tainted: G        W   2.6.34-rc5-mmotm0428 #3
-> [   35.329439] Call Trace:
-> [   35.329471]  [<ffffffff81064832>] lockdep_rcu_dereference+0xaa/0xb2
-> [   35.329514]  [<ffffffff814ef3ae>] if6_get_next+0x34/0x6d
-> [   35.329554]  [<ffffffff814ef3f8>] if6_seq_next+0x11/0x18
-> [   35.329595]  [<ffffffff810f6083>] seq_read+0x305/0x42d
-> [   35.329635]  [<ffffffff810f5d7e>] ? seq_read+0x0/0x42d
-> [   35.329676]  [<ffffffff81129e8c>] proc_reg_read+0x8d/0xac
-> [   35.329717]  [<ffffffff810db7e0>] vfs_read+0xe0/0x140
-> [   35.329758]  [<ffffffff810db8f6>] sys_read+0x45/0x69
-> [   35.329799]  [<ffffffff810025eb>] system_call_fastpath+0x16/0x1b
-> 
-> Maybe I need to go and stick the "RCU whinge multiple times" patch on this
-> kernel and get it over with. :)
-
-Highly recommended.  ;-)
-
-And thanks to you for your testing efforts and to Eric for the fixes!!!
-
-							Thanx, Paul
+This set of RapidIO patches is applicable to the latest -mm code tree.
+These patches require series of RapidIO patches submitted earlier.
