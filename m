@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757583Ab0ECVqk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 17:46:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37926 "EHLO mail.zytor.com"
+	id S1757856Ab0ECVrx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 17:47:53 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38646 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755975Ab0ECVqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 17:46:39 -0400
-Message-ID: <4BDF4407.8000503@zytor.com>
-Date: Mon, 03 May 2010 14:45:43 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1751581Ab0ECVrv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 17:47:51 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
+Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend blockers from user-space
+Date: Mon, 3 May 2010 23:49:00 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Jim Collar <jim.collar@eqware.net>,
+       "Greg Kroah-Hartman" <gregkh@suse.de>, Avi Kivity <avi@redhat.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
+References: <Pine.LNX.4.44L0.1005021755320.30701-100000@netrider.rowland.org> <201005031703.11448.rjw@sisk.pl> <m2yd6200be21005031426n87ea43a0k968fd5898ce0b873@mail.gmail.com>
+In-Reply-To: <m2yd6200be21005031426n87ea43a0k968fd5898ce0b873@mail.gmail.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>, Suresh Siddha <suresh.b.siddha@intel.com>
-CC: Brian Gerst <brgerst@gmail.com>, Dexuan Cui <dexuan.cui@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 1/2] x86: eliminate TS_XSAVE
-References: <1272812038-32484-1-git-send-email-avi@redhat.com>	 <1272812038-32484-2-git-send-email-avi@redhat.com> <u2p73c1f2161005021038gce35c1bbpca6ec119d24e646e@mail.gmail.com> <4BDDBA18.3080909@redhat.com>
-In-Reply-To: <4BDDBA18.3080909@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201005032349.00876.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2010 10:44 AM, Avi Kivity wrote:
-> On 05/02/2010 08:38 PM, Brian Gerst wrote:
->> On Sun, May 2, 2010 at 10:53 AM, Avi Kivity<avi@redhat.com>  wrote:
->>    
->>> The fpu code currently uses current->thread_info->status&  TS_XSAVE as
->>> a way to distinguish between XSAVE capable processors and older processors.
->>> The decision is not really task specific; instead we use the task status to
->>> avoid a global memory reference - the value should be the same across all
->>> threads.
->>>
->>> Eliminate this tie-in into the task structure by using an alternative
->>> instruction keyed off the XSAVE cpu feature; this results in shorter and
->>> faster code, without introducing a global memory reference.
->>>      
->> I think you should either just use cpu_has_xsave, or extend this use
->> of alternatives to all cpu features.  It doesn't make sense to only do
->> it for xsave.
->>    
+On Monday 03 May 2010, Arve Hjønnevåg wrote:
+> On Mon, May 3, 2010 at 8:03 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Sunday 02 May 2010, Alan Stern wrote:
+> >> On Sun, 2 May 2010, Rafael J. Wysocki wrote:
+> >>
+> >> > Hmm.  It doesn't seem to be possible to create two different suspend blockers
+> >> > using the same file handle.  So, what exactly is a process supposed to do to
+> >> > use two suspend blockers at the same time?
+> >>
+> >> Open the file twice, thereby obtaining two file handles.
+> >
+> > Well, that's what I thought.
+> >
+> > I must admit I'm not really comfortable with this interface.  IMO it would
+> > be better if _open() created the suspend blocker giving it a name based on
+> > the name of the process that called it.  Something like
+> > "<process name>_<timestamp>" might work at first sight.
+> >
+> > Alternatively, "<process_name><number>", where <number> is 0 for the first
+> > suspend blocker created by the given process, 1 for the second one etc., also
+> > seems to be doable.
 > 
-> I was trying to avoid a performance regression relative to the current 
-> code, as it appears that some care was taken to avoid the memory reference.
-> 
-> I agree that it's probably negligible compared to the save/restore 
-> code.  If the x86 maintainers agree as well, I'll replace it with 
-> cpu_has_xsave.
-> 
+> I think it is important to let user-space specify the name. If a
+> process uses multiple suspend blockers, it is impossible to tell what
+> each one is used for if they are automatically named.
 
-I asked Suresh to comment on this, since he wrote the original code.  He
-did confirm that the intent was to avoid a global memory reference.
+Well, the problem is the only purpose of this is user space debugging, isn't it?
 
-	-hpa
+Now, while I don't think it's generally bad to provide kernel interfaces
+helping to debug user space, I'm not quite sure if that should be done at the
+expense of the clarity of kernel-user space interfaces.
 
+I wonder how many cases there are in which distinguishing between suspend
+blockers used by the same user space task is practically relevant.
+
+Thanks,
+Rafael
