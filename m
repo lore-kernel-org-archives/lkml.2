@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab0ECI5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 04:57:22 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:25235 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751028Ab0ECI5U (ORCPT
+	id S1752373Ab0ECJBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 05:01:37 -0400
+Received: from smtp141.iad.emailsrvr.com ([207.97.245.141]:40698 "EHLO
+	smtp141.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab0ECJBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 04:57:20 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAFMr3ktbstD1/2dsb2JhbACdIHK5QQ6FBAQ
-Date: Mon, 3 May 2010 10:57:19 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH] watchdogs: fix several MODULE_PARM_DESC strings
-Message-ID: <20100503085719.GA24325@infomag.iguana.be>
-References: <20100501094615.06fc4972.randy.dunlap@oracle.com>
+	Mon, 3 May 2010 05:01:35 -0400
+X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 May 2010 05:01:35 EDT
+Message-ID: <4BDE8DCB.4000404@aljex.com>
+Date: Mon, 03 May 2010 04:48:11 -0400
+From: "Brian K. White" <brian@aljex.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100501094615.06fc4972.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: David Miller <davem@davemloft.net>
+CC: orenl@cs.columbia.edu, linux-s390@vger.kernel.org,
+       linux-api@vger.kernel.org, containers@lists.linux-foundation.org,
+       x86@kernel.org, linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       akpm@linux-foundation.org, sukadev@linux.vnet.ibm.com, xemul@openvz.org
+Subject: Re: [PATCH v21 001/100] eclone (1/11): Factor out code to allocate
+ pidmap page
+References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>	<1272723382-19470-2-git-send-email-orenl@cs.columbia.edu> <20100501.151022.190375136.davem@davemloft.net>
+In-Reply-To: <20100501.151022.190375136.davem@davemloft.net>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
-
-> Fix MODULE_PARM_DESC() strings in several watchdog drivers.
-> Some are simple as add a parenthesis.
-> Others are problems from __stringify() being used on a
-> variable name instead of a macro name, so the variable name
-> is produced in the string instead of its build-time value.
-> In these cases, create a macro for the value so that the
-> module param description string is useful.
+David Miller wrote:
+> NO WAY, there is no way in the world you should post 100 patches
+> at a time to any mailing list, especially those at vger.kernel.org
+> that have thousands upon thousands of subscribers.
 > 
-> Only pc87413_wdt has been built (due to toolchains).
+> Post only small, well contained, sets of patches at a time.  At most
+> 10 or so in one go.
 > 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc: Wim Van Sebroeck <wim@iguana.be>
+> Do you realize how much mail traffic you generate by posting so many
+> patches at one time, and how unlikely it is for anyone to actually
+> sift through and review your patches after you've spammed them by
+> posting so many at one time?
+> 
+> A second infraction and I will have no choice but to block you at the
+> SMTP level at vger.kernel.org so please do not do it again.
 
-Adding this one to the linux-2.6-watchdog-next tree.
+Some people, you give them gold and they just complain it's heavy.
 
-> BTW, in ep93xx_wdt.c, I can't find where WATCHDOG_TIMEOUT is
-> defined.  Can someone point me to it, please?
-> (or does it not even build?)
-
-I don't think it will build: WDT_TIMEOUT is the correct timeout macro.
-I'll sent in a fix for this. Thanks!
-
-> --- lnx-2634-rc6.orig/drivers/watchdog/pc87413_wdt.c
-> +++ lnx-2634-rc6/drivers/watchdog/pc87413_wdt.c
-> @@ -53,7 +53,9 @@
->  #define WDTO                0x11	/* Watchdog timeout register */
->  #define WDCFG               0x12	/* Watchdog config register */
->  
-> -static int io = 0x2E;			/* Address used on Portwell Boards */
-> +#define IO_DEFAULT	0x2E		/* Address used on Portwell Boards */
-> +
-> +static int io = IO_DEFAULT;
->  
->  static int timeout = DEFAULT_TIMEOUT;	/* timeout value */
->  static unsigned long timer_enabled;	/* is the timer enabled? */
-> @@ -583,12 +585,12 @@ MODULE_LICENSE("GPL");
->  MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
->  
->  module_param(io, int, 0);
-> -MODULE_PARM_DESC(io, MODNAME " I/O port (default: " __MODULE_STRING(io) ").");
-> +MODULE_PARM_DESC(io, MODNAME " I/O port (default: " __MODULE_STRING(IO_DEFAULT) ").");
-
-This one is changed to:
-+MODULE_PARM_DESC(io, MODNAME " I/O port (default: "
-+                                       __MODULE_STRING(IO_DEFAULT) ").");
-
-Kind regards,
-Wim.
-
+-- 
+bkw
