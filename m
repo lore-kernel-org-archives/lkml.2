@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab0ECGdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 02:33:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48484 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757064Ab0ECGdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 02:33:41 -0400
-Message-ID: <4BDE6D5A.6060407@zytor.com>
-Date: Sun, 02 May 2010 23:29:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Arnaldo Carvalho de Melo <acme@infradead.org>,
-       linux-kernel@vger.kernel.org,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 0/5] perf inject + say no to __KERNEL__ only stuff
-References: <1272841142-26029-1-git-send-email-acme@infradead.org> <20100503062407.GB15241@elte.hu>
-In-Reply-To: <20100503062407.GB15241@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+	id S932101Ab0ECGee (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 02:34:34 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40425
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753754Ab0ECGed (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 02:34:33 -0400
+Date: Sun, 02 May 2010 23:34:39 -0700 (PDT)
+Message-Id: <20100502.233439.77341308.davem@davemloft.net>
+To: arnd@arndb.de
+Cc: mst@redhat.com, sri@us.ibm.com, eric.dumazet@gmail.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       dlstevens@us.ibm.com
+Subject: Re: [PATCH] macvtap: add ioctl to modify vnet header size
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100502.233232.66719719.davem@davemloft.net>
+References: <20100429135158.GA26303@redhat.com>
+	<201004291640.57280.arnd@arndb.de>
+	<20100502.233232.66719719.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2010 11:24 PM, Ingo Molnar wrote:
+From: David Miller <davem@davemloft.net>
+Date: Sun, 02 May 2010 23:32:32 -0700 (PDT)
+
+> From: Arnd Bergmann <arnd@arndb.de>
+> Date: Thu, 29 Apr 2010 16:40:57 +0200
 > 
-> Pulled, thanks a lot!
+>> On Thursday 29 April 2010, Michael S. Tsirkin wrote:
+>>> This adds TUNSETVNETHDRSZ/TUNGETVNETHDRSZ support
+>>> to macvtap.
+>> 
+>> Looks good, thanks Michael!
+>> 
+>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+>> 
+>> Acked-by: Arnd Bergmann <arnd@arndb.de>
 > 
+> Applied to net-next-2.6, thanks.
 
-With this, core/hweight should work properly, I hope.
+Nevermind, reverted:
 
-	-hpa
+drivers/net/macvtap.c: In function 'macvtap_ioctl':
+drivers/net/macvtap.c:679:7: error: 'TUNGETVNETHDRSZ' undeclared (first use in this function)
+drivers/net/macvtap.c:679:7: note: each undeclared identifier is reported only once for each function it appears in
+drivers/net/macvtap.c:685:7: error: 'TUNSETVNETHDRSZ' undeclared (first use in this function)
 
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+What tree is this supposed to build under?  Certinaly not net-2.6
+or net-next-2.6
