@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759927Ab0ECXln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 19:41:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46027 "EHLO mx2.suse.de"
+	id S1759966Ab0ECXlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 19:41:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46035 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759748Ab0ECXlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 19:41:42 -0400
-Date: Mon, 3 May 2010 16:40:13 -0700
+	id S1759777Ab0ECXlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 19:41:44 -0400
+Date: Mon, 3 May 2010 16:41:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: H Hartley Sweeten <hartleys@visionengravers.com>
 Cc: Greg KH <greg@kroah.com>,
@@ -14,7 +14,7 @@ Cc: Greg KH <greg@kroah.com>,
        "ss@aao.gov.au" <ss@aao.gov.au>,
        Linux Kernel <linux-kernel@vger.kernel.org>
 Subject: Re: Staging: dt3155: Cleanup memory mapped i/o access
-Message-ID: <20100503234013.GB13519@suse.de>
+Message-ID: <20100503234123.GC13519@suse.de>
 References: <0D753D10438DA54287A00B0270842697636DAFCD14@AUSP01VMBX24.collaborationhost.net>
  <20100430215645.GA12409@kroah.com>
  <0D753D10438DA54287A00B0270842697636E9B9B0D@AUSP01VMBX24.collaborationhost.net>
@@ -76,16 +76,11 @@ On Mon, May 03, 2010 at 06:33:08PM -0500, H Hartley Sweeten wrote:
 > Staging: dt3155: fix wait_ibsyclr function
 > Staging: remove unused #include <linux/version.h>
 
-Odd, what branch did they come from?
+No, wait, I see these in my staging-next tree here.  Some of them I
+wrote :)
 
-> The first one that exists in both is:
-> 
-> Staging: dt3155: fix 50Hz configuration
-> 
-> Could the others be in a staging-stable branch?
+Are you sure you are cloning my tree properly?
 
-I do not know, they don't look to be something I've seen.
-
-thanks,
+confused,
 
 greg k-h
