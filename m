@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345Ab0ECQdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 12:33:09 -0400
-Received: from tex.lwn.net ([70.33.254.29]:35324 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933321Ab0ECQdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 12:33:06 -0400
-Date: Mon, 3 May 2010 10:33:00 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: mgross@linux.intel.com
-Cc: Kevin Hilman <khilman@deeprootsystems.com>, aili@codeaurora.org,
-       dwalker@codeaurora.org, tiwai@suse.de, bruce.w.allan@intel.com,
-       davidb@quicinc.com, mcgrof@gmail.com, pavel@ucw.cz,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]PM QOS refresh against next-20100430
-Message-ID: <20100503103300.6330e522@bike.lwn.net>
-In-Reply-To: <20100430212043.GA30315@linux.intel.com>
-References: <20100430212043.GA30315@linux.intel.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S933263Ab0ECQg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 12:36:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51418 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759063Ab0ECQg0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 12:36:26 -0400
+Date: Mon, 3 May 2010 09:34:14 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+cc: akpm@linux-foundation.org, Mel Gorman <mel@csn.ul.ie>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 2/2] mm: fix race between shift_arg_pages and rmap_walk
+In-Reply-To: <20100503121929.260ed5ee@annuminas.surriel.com>
+Message-ID: <alpine.LFD.2.00.1005030928350.5478@i5.linux-foundation.org>
+References: <20100503121743.653e5ecc@annuminas.surriel.com> <20100503121929.260ed5ee@annuminas.surriel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010 14:20:43 -0700
-mark gross <mgross@linux.intel.com> wrote:
 
-> This patch changes the string based list management to a handle base
-> implementation to help with the hot path use of pm-qos
 
-Having taken a quick look, I think the API change makes a lot of
-sense.  Hot paths are one thing; avoidance of accidental conflicts
-would be another.
+On Mon, 3 May 2010, Rik van Riel wrote:
+> 
+> migrate.c requires rmap to be able to find all ptes mapping a page at
+> all times, otherwise the migration entry can be instantiated, but it
+> can't be removed if the second rmap_walk fails to find the page.
 
-One question, though...  one clear use of this API is for drivers to
-say "don't go into C3 or deeper because things go wrong"; I'm about to
-add another one of those.  It works, but the use of a
-PM_QOS_CPU_DMA_LATENCY requirement with a hard-coded number that one
-hopes is small enough seems a bit...indirect.  I wonder if it would be
-clearer and more robust to add a new requirement^Wrequest type saying
-"the quality of service I need is shallow sleeps only"?
+Please correct me if I'm wrong, but this patch looks like pure and utter 
+garbage.
 
-jon
+It looks like it makes execve() do a totally insane "create and then 
+immediately destroy temporary vma and anon_vma chain" for a case that is 
+unlikely to ever matter. 
+
+In fact, for a case that isn't even normally _enabled_, namely migration.
+
+Why would we want to slow down execve() for that?
+
+		Linus
