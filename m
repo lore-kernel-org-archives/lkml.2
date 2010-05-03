@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749Ab0ECUxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 16:53:24 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:21657 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921Ab0ECUxW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 16:53:22 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=fJbPgAOXvUMEcAXdmlx/VR96LuHehCpI266zMa8rsfmmc27YEXVEhRqNJa2v2YlEh
-	1OkqrmsqEKgsh8tHkwMgA==
+	id S1756846Ab0ECU5A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 16:57:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56682 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754921Ab0ECU46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 16:56:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,321,1270450800"; 
+   d="scan'208";a="514702684"
+Date: Mon, 3 May 2010 13:56:57 -0700 (Pacific Daylight Time)
+From: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
+To: stable@kernel.org
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, brandon@ifup.org,
+       jesse.brandeburg@intel.com
+Subject: [stable] ixgbe: Fix return of invalid txq
+Message-ID: <alpine.WNT.2.00.1005031333200.4376@jbrandeb-desk1.amr.corp.intel.com>
+User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
+ReplyTo: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
+X-X-Sender: amrjbrandeb@imapmail.glb.intel.com
 MIME-Version: 1.0
-In-Reply-To: <1272919356.1642.154.camel@laptop>
-References: <20100503203813.GA17886@sharma-home.net>
-	 <1272919356.1642.154.camel@laptop>
-Date: Mon, 3 May 2010 13:53:19 -0700
-Message-ID: <w2u850c51c31005031353x9be8ca7h90c244d64675ce3e@mail.gmail.com>
-Subject: Re: [PATCH] perf: implement recording/reporting per-cpu samples
-From: Arun Sharma <aruns@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-       davem@davemloft.net, fweisbec@gmail.com
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 3, 2010 at 1:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> On Mon, 2010-05-03 at 13:38 -0700, Arun Sharma wrote:
-> > Enable PERF_SAMPLE_CPU by default. Implement --sort cpu.
->
-> Why? The downside is that you unconditionally grow each sample and thus
-> increase the overhead for something that doesn't make sense for the
-> normal (task-inherit) case.
+Please consider commit fdd3d631cddad20ad9d3e1eb7dbf26825a8a121f for 
+inclusion in 2.6.32.y (it is already in 2.6.33.y)
 
-In a shared multi-core environment, users want to analyze why their
-program was slow. In particular, if the code ran slower only on
-certain CPUs due to interference from other programs or kernel
-threads, they want to know that.
+Here is the commit message, it fixes a panic on machines with a larger 
+number of cpus than ixgbe has tx queues (64).
 
-But that's just our use case. The patch is mostly about --sort cpu
-option. If you want to drop the part that enables PERF_SAMPLE_CPU by
-default, that's fine by me.
+commit fdd3d631cddad20ad9d3e1eb7dbf26825a8a121f
+Author: Krishna Kumar <krkumar2@in.ibm.com>
+Date:   Wed Feb 3 13:13:10 2010 +0000
 
- -Arun
+    ixgbe: Fix return of invalid txq
+
+    a developer had complained of getting lots of warnings:
+
+    "eth16 selects TX queue 98, but real number of TX queues is 64"
+    
+	http://www.mail-archive.com/e1000-devel@lists.sourceforge.net/msg02200.html
+
+    As there was no follow up on that bug, I am submitting this
+    patch assuming that the other return points will not return
+    invalid txq's, and also that this fixes the bug (not tested).
+
+    Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+    Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+    Acked-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+    Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
