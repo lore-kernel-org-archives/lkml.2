@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab0ECSxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 14:53:42 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:47463 "EHLO e5.ny.us.ibm.com"
+	id S1756135Ab0ECSxf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 14:53:35 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:40164 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756066Ab0ECSxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 14:53:34 -0400
+	id S1754117Ab0ECSx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 14:53:27 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,13 +13,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH tip/core/urgent 08/10] memcg: css_id() must be called under rcu_read_lock()
-Date: Mon,  3 May 2010 11:53:17 -0700
-Message-Id: <1272912799-17859-8-git-send-email-paulmck@linux.vnet.ibm.com>
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 01/10] rcu: v2: optionally leave lockdep enabled after RCU lockdep splat
+Date: Mon,  3 May 2010 11:53:10 -0700
+Message-Id: <1272912799-17859-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100503185253.GA17672@linux.vnet.ibm.com>
 References: <20100503185253.GA17672@linux.vnet.ibm.com>
@@ -27,83 +24,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes task_in_mem_cgroup(), mem_cgroup_uncharge_swapcache(),
-mem_cgroup_move_swap_account(), and is_target_pte_for_mc() to protect
-calls to css_id().  An additional RCU lockdep splat was reported for
-memcg_oom_wake_function(), however, this function is not yet in
-mainline as of 2.6.34-rc5.
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Reported-by: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Tested-by: Li Zefan <lizf@cn.fujitsu.com>
+There is no need to disable lockdep after an RCU lockdep splat, so
+remove the debug_lockdeps_off() from lockdep_rcu_dereference().
+To avoid repeated lockdep splats, use a static variable in the
+inlined rcu_dereference_check() and rcu_dereference_protected()
+macros so that a given instance splats only once, but so that
+multiple instances can be detected per boot.
+
+This is controlled by a new config variable CONFIG_PROVE_RCU_REPEATEDLY,
+which is disabled by default.
+
+Requested-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Tested-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- mm/memcontrol.c |   21 ++++++++++++++++-----
- 1 files changed, 16 insertions(+), 5 deletions(-)
+ include/linux/rcupdate.h |   15 +++++++++++----
+ kernel/lockdep.c         |    2 ++
+ lib/Kconfig.debug        |   12 ++++++++++++
+ 3 files changed, 25 insertions(+), 4 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f4ede99..e06490d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -811,10 +811,12 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem)
- 	 * enabled in "curr" and "curr" is a child of "mem" in *cgroup*
- 	 * hierarchy(even if use_hierarchy is disabled in "mem").
- 	 */
-+	rcu_read_lock();
- 	if (mem->use_hierarchy)
- 		ret = css_is_ancestor(&curr->css, &mem->css);
- 	else
- 		ret = (curr == mem);
-+	rcu_read_unlock();
- 	css_put(&curr->css);
- 	return ret;
- }
-@@ -2312,7 +2314,9 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 07db2fe..ec9ab49 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -190,6 +190,15 @@ static inline int rcu_read_lock_sched_held(void)
  
- 	/* record memcg information */
- 	if (do_swap_account && swapout && memcg) {
-+		rcu_read_lock();
- 		swap_cgroup_record(ent, css_id(&memcg->css));
-+		rcu_read_unlock();
- 		mem_cgroup_get(memcg);
- 	}
- 	if (swapout && memcg)
-@@ -2369,8 +2373,10 @@ static int mem_cgroup_move_swap_account(swp_entry_t entry,
+ #ifdef CONFIG_PROVE_RCU
+ 
++#define __do_rcu_dereference_check(c)					\
++	do {								\
++		static bool __warned;					\
++		if (debug_lockdep_rcu_enabled() && !__warned && !(c)) {	\
++			__warned = true;				\
++			lockdep_rcu_dereference(__FILE__, __LINE__);	\
++		}							\
++	} while (0)
++
+ /**
+  * rcu_dereference_check - rcu_dereference with debug checking
+  * @p: The pointer to read, prior to dereferencing
+@@ -219,8 +228,7 @@ static inline int rcu_read_lock_sched_held(void)
+  */
+ #define rcu_dereference_check(p, c) \
+ 	({ \
+-		if (debug_lockdep_rcu_enabled() && !(c)) \
+-			lockdep_rcu_dereference(__FILE__, __LINE__); \
++		__do_rcu_dereference_check(c); \
+ 		rcu_dereference_raw(p); \
+ 	})
+ 
+@@ -237,8 +245,7 @@ static inline int rcu_read_lock_sched_held(void)
+  */
+ #define rcu_dereference_protected(p, c) \
+ 	({ \
+-		if (debug_lockdep_rcu_enabled() && !(c)) \
+-			lockdep_rcu_dereference(__FILE__, __LINE__); \
++		__do_rcu_dereference_check(c); \
+ 		(p); \
+ 	})
+ 
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 2594e1c..73747b7 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -3801,8 +3801,10 @@ void lockdep_rcu_dereference(const char *file, const int line)
  {
- 	unsigned short old_id, new_id;
+ 	struct task_struct *curr = current;
  
-+	rcu_read_lock();
- 	old_id = css_id(&from->css);
- 	new_id = css_id(&to->css);
-+	rcu_read_unlock();
++#ifndef CONFIG_PROVE_RCU_REPEATEDLY
+ 	if (!debug_locks_off())
+ 		return;
++#endif /* #ifdef CONFIG_PROVE_RCU_REPEATEDLY */
+ 	printk("\n===================================================\n");
+ 	printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
+ 	printk(  "---------------------------------------------------\n");
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 935248b..94090b4 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -512,6 +512,18 @@ config PROVE_RCU
  
- 	if (swap_cgroup_cmpxchg(entry, old_id, new_id) == old_id) {
- 		mem_cgroup_swap_statistics(from, false);
-@@ -4038,11 +4044,16 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
- 			put_page(page);
- 	}
- 	/* throught */
--	if (ent.val && do_swap_account && !ret &&
--			css_id(&mc.from->css) == lookup_swap_cgroup(ent)) {
--		ret = MC_TARGET_SWAP;
--		if (target)
--			target->ent = ent;
-+	if (ent.val && do_swap_account && !ret) {
-+		unsigned short id;
-+		rcu_read_lock();
-+		id = css_id(&mc.from->css);
-+		rcu_read_unlock();
-+		if (id == lookup_swap_cgroup(ent)) {
-+			ret = MC_TARGET_SWAP;
-+			if (target)
-+				target->ent = ent;
-+		}
- 	}
- 	return ret;
- }
+ 	 Say N if you are unsure.
+ 
++config PROVE_RCU_REPEATEDLY
++	bool "RCU debugging: don't disable PROVE_RCU on first splat"
++	depends on PROVE_RCU
++	default n
++	help
++	 By itself, PROVE_RCU will disable checking upon issuing the
++	 first warning (or "splat").  This feature prevents such
++	 disabling, allowing multiple RCU-lockdep warnings to be printed
++	 on a single reboot.
++
++	 Say N if you are unsure.
++
+ config LOCKDEP
+ 	bool
+ 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
 -- 
 1.7.0
 
