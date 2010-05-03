@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab0ECN22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 09:28:28 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54206 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758975Ab0ECN2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 09:28:21 -0400
-Date: Mon, 3 May 2010 15:28:16 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Oliver Neukum <oliver@neukum.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Nicu Pavel <npavel@ituner.com>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>,
-       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>
-Subject: Re: [PATCH 2/2] hid: add PM support to PicoLCD device
-In-Reply-To: <20100502160505.4acc9f1c@neptune.home>
-Message-ID: <alpine.LNX.2.00.1005031527350.9849@pobox.suse.cz>
-References: <20100425214003.7e87c6a3@neptune.home> <20100425214306.5d7be049@neptune.home> <alpine.LNX.2.00.1004271525330.9849@pobox.suse.cz> <20100427221648.39735c41@neptune.home> <alpine.LNX.2.00.1004272256160.9849@pobox.suse.cz>
- <20100502160505.4acc9f1c@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759343Ab0ECN3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 09:29:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49844 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754575Ab0ECN3p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 09:29:45 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] rtc: Use genirq directly in rtc-wm831x
+Date: Mon,  3 May 2010 14:29:41 +0100
+Message-Id: <1272893381-2899-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2 May 2010, Bruno Prémont wrote:
+Now that the WM831x core uses genirq for the IRQ controller there is
+no need to use the WM831x-specific wrappers to request interrupts so
+convert to use genirq directly.
 
-> Ok, below is an updated patch, which also adds missing 'inline' keyword
-> for a few stubs and replaces #define f(a,b) to nothing with equivalent
-> stubs.
+Also use more meaningful strings to make /proc/interrupts more readily
+legible.
 
-Looks good to me, I have applied the patch. Thanks Bruno.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/rtc/rtc-wm831x.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/rtc/rtc-wm831x.c b/drivers/rtc/rtc-wm831x.c
+index b16cfe5..82931dc 100644
+--- a/drivers/rtc/rtc-wm831x.c
++++ b/drivers/rtc/rtc-wm831x.c
+@@ -449,17 +449,17 @@ static int wm831x_rtc_probe(struct platform_device *pdev)
+ 		goto err;
+ 	}
+ 
+-	ret = wm831x_request_irq(wm831x, per_irq, wm831x_per_irq,
+-				 IRQF_TRIGGER_RISING, "wm831x_rtc_per",
+-				 wm831x_rtc);
++	ret = request_threaded_irq(per_irq, NULL, wm831x_per_irq,
++				   IRQF_TRIGGER_RISING, "RTC period",
++				   wm831x_rtc);
+ 	if (ret != 0) {
+ 		dev_err(&pdev->dev, "Failed to request periodic IRQ %d: %d\n",
+ 			per_irq, ret);
+ 	}
+ 
+-	ret = wm831x_request_irq(wm831x, alm_irq, wm831x_alm_irq,
+-				 IRQF_TRIGGER_RISING, "wm831x_rtc_alm",
+-				 wm831x_rtc);
++	ret = request_threaded_irq(alm_irq, NULL, wm831x_alm_irq,
++				   IRQF_TRIGGER_RISING, "RTC alarm",
++				   wm831x_rtc);
+ 	if (ret != 0) {
+ 		dev_err(&pdev->dev, "Failed to request alarm IRQ %d: %d\n",
+ 			alm_irq, ret);
+@@ -478,8 +478,8 @@ static int __devexit wm831x_rtc_remove(struct platform_device *pdev)
+ 	int per_irq = platform_get_irq_byname(pdev, "PER");
+ 	int alm_irq = platform_get_irq_byname(pdev, "ALM");
+ 
+-	wm831x_free_irq(wm831x_rtc->wm831x, alm_irq, wm831x_rtc);
+-	wm831x_free_irq(wm831x_rtc->wm831x, per_irq, wm831x_rtc);
++	free_irq(alm_irq, wm831x_rtc);
++	free_irq(per_irq, wm831x_rtc);
+ 	rtc_device_unregister(wm831x_rtc->rtc);
+ 	kfree(wm831x_rtc);
+ 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+1.7.0.3
+
