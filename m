@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab0ECSw7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 14:52:59 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:41016 "EHLO e3.ny.us.ibm.com"
+	id S1755745Ab0ECSx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 14:53:29 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:40163 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752218Ab0ECSw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 14:52:57 -0400
-Date: Mon, 3 May 2010 11:52:53 -0700
+	id S1752218Ab0ECSx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 14:53:27 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: [PATCH tip/core/urgent 0/10] v3: Fix RCU lockdep splats
-Message-ID: <20100503185253.GA17672@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 03/10] KEYS: Fix an RCU warning in the reading of user keys
+Date: Mon,  3 May 2010 11:53:12 -0700
+Message-Id: <1272912799-17859-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <20100503185253.GA17672@linux.vnet.ibm.com>
+References: <20100503185253.GA17672@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: David Howells <dhowells@redhat.com>
 
-This patchset reposts ten fixes for various lockdep splats.  The only
-changes from v2 (http://lkml.org/lkml/2010/4/30/500) is the addition of
-relevant maintainers on CC and fixing the last patch to work correctly
-from modules.  (Of course, if you would rather take the patch up your
-tree, please let me know.)
+Fix an RCU warning in the reading of user keys:
 
-							Thanx, Paul
+===================================================
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+security/keys/user_defined.c:202 invoked rcu_dereference_check() without protection!
 
-o	rcu: v2: optionally leave lockdep enabled after RCU lockdep splat
-	This is a repost that makes the one-splat-per-boot the default,
-	but allows those who want multiple splats to get this behavior
-	via a new CONFIG_PROVE_RCU_REPEATEDLY configuration parameter.
-	(Original from Lai Jiangshan.)
+other info that might help us debug this:
 
-o	KEYS: Fix an RCU warning
-	KEYS: Fix an RCU warning in the reading of user keys
-	Fixes for RCU-lockdep splats from David Howells for
-	security/keys.  Repost of http://lkml.org/lkml/2010/4/22/411.
+rcu_scheduler_active = 1, debug_locks = 0
+1 lock held by keyctl/3637:
+ #0:  (&key->sem){+++++.}, at: [<ffffffff811a80ae>] keyctl_read_key+0x9c/0xcf
 
-o	cgroup: Fix an RCU warning in cgroup_path()
-	cgroup: Fix an RCU warning in alloc_css_id()
-	sched: Fix an RCU warning in print_task()
-	cgroup: Check task_lock in task_subsys_state()
-	Fixes for RCU-lockdep splats in cgroups and sched from
-	Li Zefan.
+stack backtrace:
+Pid: 3637, comm: keyctl Not tainted 2.6.34-rc5-cachefs #18
+Call Trace:
+ [<ffffffff81051f6c>] lockdep_rcu_dereference+0xaa/0xb2
+ [<ffffffff811aa55f>] user_read+0x47/0x91
+ [<ffffffff811a80be>] keyctl_read_key+0xac/0xcf
+ [<ffffffff811a8a06>] sys_keyctl+0x75/0xb7
+ [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
 
-o	memcg: css_id() must be called under rcu_read_lock()
-	Fixes for RCU-lockdep splats in memcg from Kamazawa Hiroyuki.
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ security/keys/user_defined.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-o	blk-cgroup: Fix RCU correctness warning in cfq_init_queue()
-	Fix for RCU-lockdep splat in I/O scheduler from Vivek Goyal.
+diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
+index 7c687d5..e9aa079 100644
+--- a/security/keys/user_defined.c
++++ b/security/keys/user_defined.c
+@@ -199,7 +199,8 @@ long user_read(const struct key *key, char __user *buffer, size_t buflen)
+ 	struct user_key_payload *upayload;
+ 	long ret;
+ 
+-	upayload = rcu_dereference(key->payload.data);
++	upayload = rcu_dereference_protected(
++		key->payload.data, rwsem_is_locked(&((struct key *)key)->sem));
+ 	ret = upayload->datalen;
+ 
+ 	/* we can return the data as is */
+-- 
+1.7.0
 
-o	vfs: fix RCU-lockdep false positive due to /proc access
-	Fix for RCU-lockdep splat from fdtable.h, with much
-	debugging assist from Eric Dumazet.  Updated to provide a
-	wrapper function for thread_group_empty() to continue to allow
-	this to be callable from a module.
-
- b/block/cfq-iosched.c          |    2 ++
- b/include/linux/cgroup.h       |    1 +
- b/include/linux/fdtable.h      |    3 ++-
- b/include/linux/rcupdate.h     |   15 +++++++++++----
- b/kernel/cgroup.c              |   12 +++++++++---
- b/kernel/lockdep.c             |    2 ++
- b/kernel/rcupdate.c            |   11 +++++++++++
- b/kernel/sched_debug.c         |    2 ++
- b/lib/Kconfig.debug            |   12 ++++++++++++
- b/mm/memcontrol.c              |   21 ++++++++++++++++-----
- b/security/keys/request_key.c  |   13 ++++++++-----
- b/security/keys/user_defined.c |    3 ++-
- include/linux/rcupdate.h       |    2 ++
- kernel/cgroup.c                |    4 ++--
- 14 files changed, 82 insertions(+), 21 deletions(-)
