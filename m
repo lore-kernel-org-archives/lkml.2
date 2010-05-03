@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759413Ab0ECNnK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 09:43:10 -0400
-Received: from mailout2.zih.tu-dresden.de ([141.30.67.73]:38928 "EHLO
-	mailout2.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932386Ab0ECNnH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 09:43:07 -0400
-X-Greylist: delayed 1424 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 May 2010 09:43:07 EDT
-Message-ID: <4BDECD66.2010906@tu-dresden.de>
-Date: Mon, 03 May 2010 15:19:34 +0200
-From: =?ISO-8859-15?Q?Ronny_Tsch=FCter?= <Ronny.Tschueter@tu-dresden.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
+	id S1759186Ab0ECNr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 09:47:59 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33711 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022Ab0ECNr6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 09:47:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=HsTuU4mhThMTfp81g+67ajoARv9iBnh0bSCGoloQdnrCVBJLnp/4pFYV+ddPM2/1QW
+         0RPszP2tva4LzBF3ILk54mSRKunWv3RG1jZRGCt5yHA73PfsgPeqc06OxSv/Az459Ti3
+         /6XRlPfLEvCkxOhMK5ucWwt41yeP6MrquKsGA=
+Date: Mon, 3 May 2010 15:47:50 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+       Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [GIT PULL] lockdep updates
+Message-ID: <20100503134748.GB5497@nowhere>
+References: <1272648859-7203-1-git-send-regression-fweisbec@gmail.com> <20100503072331.GD6642@elte.hu> <20100503130035.GA19763@elte.hu>
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Tracing of power:power_start events doesn't work
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-TUD-Virus-Scanned: mailout2.zih.tu-dresden.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100503130035.GA19763@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, May 03, 2010 at 03:00:35PM +0200, Ingo Molnar wrote:
+> 
+> * Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > 
+> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > 
+> > > Ingo,
+> > > 
+> > > Please pull the core/locking branch that can be found at:
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> > > 	core/locking
+> > > 
+> > > Note there is also a merge of v2.6.34-rc6 because these patches
+> > > depend on older per cpu updates.
+> > > 
+> > > Thanks,
+> > > 	Frederic
+> > > ---
+> > > 
+> > > Frederic Weisbecker (2):
+> > >       lockdep: Fix redundant_hardirqs_on incremented with irqs enabled
+> > >       lockdep: Simplify debug atomic ops
+> > > 
+> > > 
+> > >  kernel/lockdep.c           |    7 ++++++-
+> > >  kernel/lockdep_internals.h |   10 ++--------
+> > >  2 files changed, 8 insertions(+), 9 deletions(-)
+> 
+> this one is causing:
+> 
+> kernel/lockdep.c:2306: error: 'lockdep_stats' undeclared (first use in this function)
+> kernel/lockdep.c:2306: error: (Each undeclared identifier is reported only once
+> kernel/lockdep.c:2306: error: for each function it appears in.)
+> 
+> with these settings:
+> 
+> CONFIG_LOCKDEP=y
+> # CONFIG_LOCK_STAT is not set
+> # CONFIG_DEBUG_LOCKDEP is not set
+> # CONFIG_DEBUG_SPINLOCK_SLEEP is not set
+> # CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
+> 
+> Thanks,
+> 
+> 	Ingo
 
-i use kernel version 2.6.33.2 (x86-64, Core 2 Duo) and the perf events 
-to track frequency and c states of my cpu. But if i want to trace 
-power:power_start events, it does not work. After typing
 
-echo "power:power_start" | sudo tee set_event
+Ah, I unconditionally deref lockdep_stats there. Ok, will
+fix.
 
-on the console, the trace doesn't contain such events. 
-power:power_frequency and power:power_end events are reported correctly 
-by the system. I read in the mailing list that Robert Schoene had a 
-similiar problem, but with power:power_end events. Is there a known bug 
-regarding to trace_power_start methods in process.c?
+I'm not home yet, but once I can, will send the fix asap.
 
-Bye Ronny
-
--- 
-Ronny Tschueter
-
-Technische Universität Dresden
-Center for Information Services
-and High Performance Computing (ZIH)
-D-01062 Dresden
-Germany
-
-Office: Willersbau, room A31
-Phone:	(+49) 351/463-35448
-E-Mail: ronny.tschueter@tu-dresden.de
-WWW:    http://www.tu-dresden.de/zih
+Thanks.
 
