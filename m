@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab0ECGLY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 02:11:24 -0400
-Received: from tauceti.net ([62.245.250.166]:50767 "EHLO www.tauceti.net"
+	id S1755304Ab0ECGYp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 02:24:45 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56034 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211Ab0ECGLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 02:11:22 -0400
+	id S1751720Ab0ECGYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 02:24:41 -0400
+Date: Mon, 3 May 2010 08:24:07 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCH 0/5] perf inject + say no to __KERNEL__ only stuff
+Message-ID: <20100503062407.GB15241@elte.hu>
+References: <1272841142-26029-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Date: Mon, 03 May 2010 10:11:18 +0200
-From: kernel <kernel@tauceti.net>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: "Michael S. Tsirkin\" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-	bugzilla-daemon@bugzilla.kernel.org, Rusty Russell
-	<rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-	linux-nfs@vger.kernel.org,",
-       <linux-kernel@vger.kernel.org>
-Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
-In-Reply-To: <4BD76B81.2070606@tauceti.net>
-References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain> <4BD5F6C5.8080605@tauceti.net> <1272315854.8984.125.camel@localhost.localdomain> <4BD61147.40709@tauceti.net> <1272324536.16814.45.camel@localhost.localdomain> <4BD76B81.2070606@tauceti.net>
-Message-ID: <be8a0f012ebb2ae02522998591e6f1a5@tauceti.net>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272841142-26029-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anything we can do to investigate this further?
 
-Thanks!
-Robert
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling from:
+> 
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (3):
+>   perf tools: Don't use code surrounded by __KERNEL__
+>   perf record: Don't exit in live mode when no tracepoints are enabled
+>   perf inject: Refactor read_buildid function
+> 
+> Tom Zanussi (2):
+>   perf/live: don't synthesize build ids at the end of a live mode trace
+>   perf: add perf-inject builtin
+> 
+>  tools/perf/Makefile                    |   17 +--
+>  tools/perf/builtin-annotate.c          |    2 +-
+>  tools/perf/builtin-buildid-list.c      |    2 +-
+>  tools/perf/builtin-diff.c              |    4 +-
+>  tools/perf/builtin-inject.c            |  228 ++++++++++++++++++++++++++++++++
+>  tools/perf/builtin-kmem.c              |    2 +-
+>  tools/perf/builtin-lock.c              |    2 +-
+>  tools/perf/builtin-record.c            |   24 ++--
+>  tools/perf/builtin-report.c            |    2 +-
+>  tools/perf/builtin-sched.c             |    2 +-
+>  tools/perf/builtin-timechart.c         |    2 +-
+>  tools/perf/builtin-top.c               |    2 +-
+>  tools/perf/builtin-trace.c             |    2 +-
+>  tools/perf/builtin.h                   |    1 +
+>  tools/perf/perf.c                      |    1 +
+>  tools/perf/util/bitmap.c               |   21 +++
+>  tools/perf/util/header.c               |   96 ++++----------
+>  tools/perf/util/header.h               |    2 -
+>  tools/perf/util/hweight.c              |   31 +++++
+>  tools/perf/util/include/asm/bitops.h   |   18 ---
+>  tools/perf/util/include/asm/hweight.h  |    8 +
+>  tools/perf/util/include/linux/bitmap.h |   38 +++++-
+>  tools/perf/util/include/linux/bitops.h |   20 ++--
+>  tools/perf/util/session.c              |    3 +-
+>  tools/perf/util/session.h              |    3 +-
+>  tools/perf/util/trace-event-read.c     |   19 +++-
+>  tools/perf/util/trace-event.h          |    2 +-
+>  27 files changed, 407 insertions(+), 147 deletions(-)
+>  create mode 100644 tools/perf/builtin-inject.c
+>  create mode 100644 tools/perf/util/bitmap.c
+>  create mode 100644 tools/perf/util/hweight.c
+>  delete mode 100644 tools/perf/util/include/asm/bitops.h
+>  create mode 100644 tools/perf/util/include/asm/hweight.h
 
-On Wed, 28 Apr 2010 00:56:01 +0200, Robert Wimmer <kernel@tauceti.net>
-wrote:
-> I've applied the patch against the kernel which I got
-> from "git clone ...." resulted in a kernel 2.6.34-rc5.
-> 
-> The stack trace after mounting NFS is here:
-> https://bugzilla.kernel.org/attachment.cgi?id=26166
-> /var/log/messages after soft lockup:
-> https://bugzilla.kernel.org/attachment.cgi?id=26167
-> 
-> I hope that there is any usefull information in there.
-> 
-> Thanks!
-> Robert
-> 
-> On 04/27/10 01:28, Trond Myklebust wrote:
->> On Tue, 2010-04-27 at 00:18 +0200, Robert Wimmer wrote: 
->>   
->>>> Sure. In addition to what you did above, please do
->>>>
->>>> mount -t debugfs none /sys/kernel/debug
->>>>
->>>> and then cat the contents of the pseudofile at
->>>>
->>>> /sys/kernel/debug/tracing/stack_trace
->>>>
->>>> Please do this more or less immediately after you've finished
-mounting
->>>> the NFSv4 client.
->>>>   
->>>>       
->>> I've uploaded the stack trace. It was generated
->>> directly after mounting. Here are the stacks:
->>>
->>> After mounting:
->>> https://bugzilla.kernel.org/attachment.cgi?id=26153
->>> After the soft lockup:
->>> https://bugzilla.kernel.org/attachment.cgi?id=26154
->>> The dmesg output of the soft lockup:
->>> https://bugzilla.kernel.org/attachment.cgi?id=26155
->>>
->>>     
->>>> Does your server have the 'crossmnt' or 'nohide' flags set, or does
-it
->>>> use the 'refer' export option anywhere? If so, then we might have to
->>>> test further, since those may trigger the NFSv4 submount feature.
->>>>   
->>>>       
->>> The server has the following settings:
->>> rw,nohide,insecure,async,no_subtree_check,no_root_squash
->>>
->>> Thanks!
->>> Robert
->>>
->>>
->>>     
->> That second trace is more than 5.5K deep, more than half of which is
->> socket overhead :-(((.
->>
->> The process stack does not appear to have overflowed, however that
-trace
->> doesn't include any IRQ stack overhead.
->>
->> OK... So what happens if we get rid of half of that trace by forcing
->> asynchronous tasks such as this to run entirely in rpciod instead of
->> first trying to run in the process context?
->>
->> See the attachment...
->>
+Pulled, thanks a lot!
+
+	Ingo
