@@ -1,70 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933195Ab0ECQR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 12:17:28 -0400
-Received: from symlink.to.noone.org ([85.10.207.172]:48163 "EHLO sym.noone.org"
+	id S933226Ab0ECQUs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 12:20:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55551 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932803Ab0ECQRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 12:17:24 -0400
-Date: Mon, 3 May 2010 18:17:21 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the staging tree
-Message-ID: <20100503161721.GW9489@distanz.ch>
-References: <20100427141224.834a102a.sfr@canb.auug.org.au> <20100427151305.GA7653@kroah.com> <20100428161425.eff4c40a.sfr@canb.auug.org.au> <20100428152809.GF4483@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100428152809.GF4483@kroah.com>
-X-Editor: Vi IMproved 7.1
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933187Ab0ECQUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 12:20:46 -0400
+Date: Mon, 3 May 2010 12:19:29 -0400
+From: Rik van Riel <riel@redhat.com>
+To: akpm@linux-foundation.org
+Cc: torvalds@linux-foundation.org, Mel Gorman <mel@csn.ul.ie>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux.com>
+Subject: [PATCH 2/2] mm: fix race between shift_arg_pages and rmap_walk
+Message-ID: <20100503121929.260ed5ee@annuminas.surriel.com>
+In-Reply-To: <20100503121743.653e5ecc@annuminas.surriel.com>
+References: <20100503121743.653e5ecc@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-04-28 at 17:28:09 +0200, Greg KH <greg@kroah.com> wrote:
-> On Wed, Apr 28, 2010 at 04:14:25PM +1000, Stephen Rothwell wrote:
-> > Hi Greg,
-> > 
-> > On Tue, 27 Apr 2010 08:13:05 -0700 Greg KH <greg@kroah.com> wrote:
-> > >
-> > > On Tue, Apr 27, 2010 at 02:12:24PM +1000, Stephen Rothwell wrote:
-> > > > 
-> > > > After merging the staging tree, today's linux-next build (x86_64
-> > > > allmodconfig) failed like this:
-> > > > 
-> > > > ERROR: "uart_console_device" [drivers/serial/altera_uart.ko] undefined!
-> > > > ERROR: "uart_console_device" [drivers/serial/altera_jtaguart.ko] undefined!
-> > > > 
-> > > > Introduced by commits 76bdbd933febe791fee114e7bb6c42bbd1a3f4f3 ("serial:
-> > > > Add driver for the Altera UART") and
-> > > > 11c59b34b299d7214b466cf799410a9a540476e3 ("serial: Add driver for the
-> > > > Altera JTAG UART").
-> > > > 
-> > > > I have reverted those commits for today.
-> > > 
-> > > Those came in through the tty quilt tree, not the staging tree, right?
-> > 
-> > Yeah, I just don't do a build between merging the tty and staging trees.
-> 
-> Ok, that makes sense.
-> 
-> > > Tobias, care to send me a patch to resolve this?  I already fixed one
-> > > Kconfig issue in these patches (forcing the driver to always be built
-> > > in.)  Is that what caused this symbol issue?
-> > 
-> > I have reverted those commits again today.
-> 
-> I think I'll go drop these patches now.  Tobias, care to resend them
-> when you have them working properly?
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-I just built the current linux-next (20100503) with the patches applied
-(including Greg's Kconfig change) on x86_64 with allmodconfig and wasn't
-able to reproduce the build failure.
+migrate.c requires rmap to be able to find all ptes mapping a page at
+all times, otherwise the migration entry can be instantiated, but it
+can't be removed if the second rmap_walk fails to find the page.
 
-Any pointers on how to reproduce and/or fix this would be appreciated.
+And split_huge_page() will have the same requirements as migrate.c
+already has.
 
-Thanks,
-Tobias
+The fix is to instantiate a temporary vma during shift_arg_pages.
+Every page can be found in either the old or the new VMA.  This
+essentially is a light-weight implementation of mremap.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Minchan Kim <minchan.kim@gmail.com>
+
+diff --git a/fs/exec.c b/fs/exec.c
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -55,6 +55,7 @@
+ #include <linux/fsnotify.h>
+ #include <linux/fs_struct.h>
+ #include <linux/pipe_fs_i.h>
++#include <linux/rmap.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+@@ -503,7 +504,9 @@ static int shift_arg_pages(struct vm_are
+ 	unsigned long length = old_end - old_start;
+ 	unsigned long new_start = old_start - shift;
+ 	unsigned long new_end = old_end - shift;
++	unsigned long moved_length;
+ 	struct mmu_gather *tlb;
++	struct vm_area_struct *tmp_vma;
+ 
+ 	BUG_ON(new_start > new_end);
+ 
+@@ -515,17 +518,46 @@ static int shift_arg_pages(struct vm_are
+ 		return -EFAULT;
+ 
+ 	/*
++	 * We need to create a fake temporary vma and index it in the
++	 * anon_vma list in order to allow the pages to be reachable
++	 * at all times by the rmap walk for migrate, while
++	 * move_page_tables() is running.
++	 */
++	tmp_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
++	if (!tmp_vma)
++		return -ENOMEM;
++	*tmp_vma = *vma;
++	INIT_LIST_HEAD(&tmp_vma->anon_vma_chain);
++	if (unlikely(anon_vma_clone(tmp_vma, vma))) {
++		kmem_cache_free(vm_area_cachep, tmp_vma);
++		return -ENOMEM;
++	}
++
++	/*
+ 	 * cover the whole range: [new_start, old_end)
++	 *
++	 * The vma is attached only to vma->anon_vma so one lock is
++	 * enough. Even this lock might be removed and we could run it
++	 * out of order but it's nicer to make atomic updates to
++	 * vm_start and so we won't need a smb_wmb() before calling
++	 * move_page_tables.
+ 	 */
+-	if (vma_adjust(vma, new_start, old_end, vma->vm_pgoff, NULL))
+-		return -ENOMEM;
++	spin_lock(&vma->anon_vma->lock);
++	vma->vm_start = new_start;
++	spin_unlock(&vma->anon_vma->lock);
+ 
+ 	/*
+ 	 * move the page tables downwards, on failure we rely on
+ 	 * process cleanup to remove whatever mess we made.
+ 	 */
+-	if (length != move_page_tables(vma, old_start,
+-				       vma, new_start, length))
++	moved_length = move_page_tables(vma, old_start,
++					vma, new_start, length);
++
++	/* rmap walk will already find all pages using the new_start */
++	unlink_anon_vmas(tmp_vma);
++	kmem_cache_free(vm_area_cachep, tmp_vma);
++
++	if (length != moved_length) 
+ 		return -ENOMEM;
+ 
+ 	lru_add_drain();
+@@ -551,7 +583,7 @@ static int shift_arg_pages(struct vm_are
+ 	/*
+ 	 * Shrink the vma to just the new range.  Always succeeds.
+ 	 */
+-	vma_adjust(vma, new_start, new_end, vma->vm_pgoff, NULL);
++	vma->vm_end = new_end;
+ 
+ 	return 0;
+ }
+
