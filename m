@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab0ECE50 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 00:57:26 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35914 "EHLO smtps.tip.net.au"
+	id S1751894Ab0ECFBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 01:01:32 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48781 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027Ab0ECE5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 00:57:24 -0400
-Date: Mon, 3 May 2010 14:57:15 +1000
+	id S1751027Ab0ECFB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 01:01:28 -0400
+Date: Mon, 3 May 2010 15:01:23 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
-Cc: Greg KH <greg@kroah.com>,
-       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree (usb
- tree related)
-Message-Id: <20100503145715.def1a8f1.sfr@canb.auug.org.au>
-In-Reply-To: <20100430062224.GB27724@esdhcp042221.research.nokia.com>
-References: <20100430160555.d58bd9aa.sfr@canb.auug.org.au>
-	<20100430062224.GB27724@esdhcp042221.research.nokia.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+Message-Id: <20100503150123.8fab27b1.sfr@canb.auug.org.au>
+In-Reply-To: <20100428110710.cec8acdb.sfr@canb.auug.org.au>
+References: <20100412124041.4876c3f9.sfr@canb.auug.org.au>
+	<20100428110710.cec8acdb.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Mon__3_May_2010_14_57_15_+1000_7yfV2CPUKwfgVFvy"
+ boundary="Signature=_Mon__3_May_2010_15_01_23_+1000_TwzpkckpAlYTvjm4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__3_May_2010_14_57_15_+1000_7yfV2CPUKwfgVFvy
+--Signature=_Mon__3_May_2010_15_01_23_+1000_TwzpkckpAlYTvjm4
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Guys,
+Hi Mauro,
 
-On Fri, 30 Apr 2010 09:22:24 +0300 Heikki Krogerus <ext-heikki.krogerus@nok=
-ia.com> wrote:
+On Wed, 28 Apr 2010 11:07:10 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
-> On Fri, Apr 30, 2010 at 08:05:55AM +0200, ext Stephen Rothwell wrote:
+> On Mon, 12 Apr 2010 12:40:41 +1000 Stephen Rothwell <sfr@canb.auug.org.au=
+> wrote:
+> >
+> > After merging the v4l-dvb tree, today's linux-next build (powerpc
+> > ppc64_defconfig) failed like this:
 > >=20
-> > After merging the final tree, today's linux-next build (powerpc
-> > allyesconfig) failed like this:
+> > drivers/input/input.c: In function 'input_default_setkeycode':
+> > drivers/input/input.c:691: error: 'keycode' undeclared (first use in th=
+is function)
 > >=20
-> > drivers/usb/otg/twl4030-usb.c: In function 'twl4030_usb_set_bits':
-> > drivers/usb/otg/twl4030-usb.c:238: error: implicit declaration of funct=
-ion 'ULPI_SET'
-> > drivers/usb/otg/twl4030-usb.c: In function 'twl4030_usb_clear_bits':
-> > drivers/usb/otg/twl4030-usb.c:244: error: implicit declaration of funct=
-ion 'ULPI_CLR'
-> > drivers/usb/otg/twl4030-usb.c: In function 'twl4030_usb_set_mode':
-> > drivers/usb/otg/twl4030-usb.c:303: error: 'ULPI_IFC_CTRL' undeclared (f=
-irst use in this function)
-> > drivers/usb/otg/twl4030-usb.c:304: error: 'ULPI_IFC_CTRL_CARKITMODE' un=
-declared (first use in this function)
-> > drivers/usb/otg/twl4030-usb.c:306: error: 'ULPI_FUNC_CTRL' undeclared (=
-first use in this function)
-> > drivers/usb/otg/twl4030-usb.c:307: error: 'ULPI_FUNC_CTRL_XCVRSEL_MASK'=
- undeclared (first use in this function)
-> > drivers/usb/otg/twl4030-usb.c:308: error: 'ULPI_FUNC_CTRL_OPMODE_MASK' =
-undeclared (first use in this function)
+> > Caused by commit df7ad46fc171965103f02649f6c2f02c6ca8b331 ("Merge branch
+> > 'master' of /home/v4l/bare_trees/v4l-dvb").  The merge resolution is not
+> > quite right.
 > >=20
-> > Caused by commit 57983872ff14cba23d6404a40c89e52063c94854 ("usb: otg:
-> > twl4030: use the global ULPI register definitions").  I have reverted
-> > that commit for today.
+> > I have used the v4l-dvb tree from next-20100409 for today.
 >=20
-> Already informed Greg that he needs the patch for the global ulpi
-> registers before this one.
+> I am still getting this build failure ...
 
-Still got this one today.
-
+Any chance of it being fixed?
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__3_May_2010_14_57_15_+1000_7yfV2CPUKwfgVFvy
+--Signature=_Mon__3_May_2010_15_01_23_+1000_TwzpkckpAlYTvjm4
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAkveV6sACgkQjjKRsyhoI8zbpgCgngGS0geHuCIUfGRHWn9MuB6K
-bVwAnRXc5SslbwiTklICrNWyfPFBJWG+
-=FKUa
+iEUEARECAAYFAkveWKMACgkQjjKRsyhoI8woDQCXaZhu4Occk9BgIN4rRzdX9Gv7
+mwCeMpygYLUY/kVhG/5xdJ4OrEmsHEI=
+=Oc/B
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__3_May_2010_14_57_15_+1000_7yfV2CPUKwfgVFvy--
+--Signature=_Mon__3_May_2010_15_01_23_+1000_TwzpkckpAlYTvjm4--
