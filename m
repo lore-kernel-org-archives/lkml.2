@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab0ECVrx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 17:47:53 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38646 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751581Ab0ECVrv convert rfc822-to-8bit (ORCPT
+	id S1757303Ab0ECVuw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 17:50:52 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:37295 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754307Ab0ECVuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 17:47:51 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend blockers from user-space
-Date: Mon, 3 May 2010 23:49:00 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-       Jim Collar <jim.collar@eqware.net>,
-       "Greg Kroah-Hartman" <gregkh@suse.de>, Avi Kivity <avi@redhat.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
-References: <Pine.LNX.4.44L0.1005021755320.30701-100000@netrider.rowland.org> <201005031703.11448.rjw@sisk.pl> <m2yd6200be21005031426n87ea43a0k968fd5898ce0b873@mail.gmail.com>
-In-Reply-To: <m2yd6200be21005031426n87ea43a0k968fd5898ce0b873@mail.gmail.com>
+	Mon, 3 May 2010 17:50:51 -0400
+Date: Mon, 3 May 2010 22:50:28 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100503215028.GB18910@srcf.ucam.org>
+References: <1272667021-21312-1-git-send-email-arve@android.com> <87wrvl5479.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005032349.00876.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87wrvl5479.fsf@deeprootsystems.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 May 2010, Arve Hjønnevåg wrote:
-> On Mon, May 3, 2010 at 8:03 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Sunday 02 May 2010, Alan Stern wrote:
-> >> On Sun, 2 May 2010, Rafael J. Wysocki wrote:
-> >>
-> >> > Hmm.  It doesn't seem to be possible to create two different suspend blockers
-> >> > using the same file handle.  So, what exactly is a process supposed to do to
-> >> > use two suspend blockers at the same time?
-> >>
-> >> Open the file twice, thereby obtaining two file handles.
-> >
-> > Well, that's what I thought.
-> >
-> > I must admit I'm not really comfortable with this interface.  IMO it would
-> > be better if _open() created the suspend blocker giving it a name based on
-> > the name of the process that called it.  Something like
-> > "<process name>_<timestamp>" might work at first sight.
-> >
-> > Alternatively, "<process_name><number>", where <number> is 0 for the first
-> > suspend blocker created by the given process, 1 for the second one etc., also
-> > seems to be doable.
-> 
-> I think it is important to let user-space specify the name. If a
-> process uses multiple suspend blockers, it is impossible to tell what
-> each one is used for if they are automatically named.
+On Mon, May 03, 2010 at 09:40:26AM -0700, Kevin Hilman wrote:
 
-Well, the problem is the only purpose of this is user space debugging, isn't it?
+> In my view, the truly significant difference between suspend blockers
+> and runtime PM is what happens to userspace.  So far, to me the only
+> compelling argument for suspend blockers is the goal of forcibly
+> shutting down userspace and thus forcing the system into idle
+> (although drivers could still reject a suspend request.)
 
-Now, while I don't think it's generally bad to provide kernel interfaces
-helping to debug user space, I'm not quite sure if that should be done at the
-expense of the clarity of kernel-user space interfaces.
+I'd say that this is certainly the main issue, though the remaining 
+periodic timers in the kernel are also inconvenient.
 
-I wonder how many cases there are in which distinguishing between suspend
-blockers used by the same user space task is practically relevant.
+> And if untrusted userspace apps remain as the major problem, maybe we
+> should aim for a solution directly targetting that problem.  I'm just
+> shooting from the hip now, but maybe containing (cgroups?) untrusted
+> processes together into a set that could be frozen/idled so that runtime PM
+> would be more effective would be a workable solution?
 
-Thanks,
-Rafael
+I considered this. The problem is that not all of your wakeup events 
+pass through trusted code. Assume we've used a freezer cgroup and the 
+applications are now frozen. One of them is blocking on a network 
+socket. A packet arrives and triggers a wakeup of the hardware. How do 
+we unfreeze the userspace app?
+
+I agree that the runtime scenario is a far more appealing one from an 
+aesthetic standpoint, but so far we don't have a very compelling 
+argument for dealing with the starting and stopping of userspace. The 
+use-cases that Google have provided are valid and they have an 
+implementation that addresses them, and while we're unable to provide an 
+alternative that provides the same level of functionality I think we're 
+in a poor position to prevent this from going in.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
