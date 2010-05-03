@@ -1,37 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab0ECFcI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 01:32:08 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:27473 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab0ECFb7 (ORCPT
+	id S1752976Ab0ECFjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 01:39:11 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:54208 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325Ab0ECFjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 01:31:59 -0400
-From: Samu Onkalo <samu.p.onkalo@nokia.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org
-Subject: [PATCH 0/1] drivers: misc: pass pointer to misc device itself
-Date: Mon,  3 May 2010 08:31:32 +0300
-Message-Id: <1272864693-27343-1-git-send-email-samu.p.onkalo@nokia.com>
-X-Mailer: git-send-email 1.6.0.4
-X-OriginalArrivalTime: 03 May 2010 05:31:37.0690 (UTC) FILETIME=[E6C60BA0:01CAEA81]
-X-Nokia-AV: Clean
+	Mon, 3 May 2010 01:39:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sARF6L6Z8Et+eTNNUNyeDL9fxdXG6AIps3HC0QIdjtV3Yk14pSHJWoXhDVodML9eTa
+         dy4Et0z0dilqqFdTwSffOJU0DwWJRXeUMFRlH0EBciWOL0XB+ak7oYwYXVllxComsJ44
+         D31UIKQaCX7S0xxgUmukjn4rVa6NUVOwmBnsA=
+Subject: Re: mmotm 2010-04-28 - RCU whinges
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Patrick McHardy <kaber@trash.net>,
+       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <5702.1272822394@localhost>
+References: <201004290021.o3T0L04Y028017@imap1.linux-foundation.org>
+	 <5702.1272822394@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 03 May 2010 07:38:57 +0200
+Message-ID: <1272865137.2173.179.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have not found a reasonable way to find an address of the
-misc-device structure in the driver file operations.
-inode->i_cdev is not pointing to the correct place due to way how
-misc driver class is implemented - or I have totally missed something.
-In misc open, information is available but it is not passed to the
-driver itself. Privatedata field of the file struct passes now
-pointer to the driver open function. Driver can do what ever needed
-with that information.
+Le dimanche 02 mai 2010 à 13:46 -0400, Valdis.Kletnieks@vt.edu a écrit :
+> On Wed, 28 Apr 2010 16:53:32 PDT, akpm@linux-foundation.org said:
+> > The mm-of-the-moment snapshot 2010-04-28-16-53 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
+> 
+> I thought we swatted all these, hit another one...
+> 
+> [    9.131490] ctnetlink v0.93: registering with nfnetlink.
+> [    9.131535]
+> [    9.131535] ===================================================
+> [    9.131704] [ INFO: suspicious rcu_dereference_check() usage. ]
+> [    9.131794] ---------------------------------------------------
+> [    9.131883] net/netfilter/nf_conntrack_ecache.c:88 invoked rcu_dereference_check() without protection!
+> [    9.131977]
+> [    9.131977] other info that might help us debug this:
+> [    9.131978]
+> [    9.132218]
+> [    9.132219] rcu_scheduler_active = 1, debug_locks = 0
+> [    9.132434] 1 lock held by swapper/1:
+> [    9.132519]  #0:  (nf_ct_ecache_mutex){+.+...}, at: [<ffffffff8148922d>] nf_conntrack_register_notifier+0x1a/0x75
+> [    9.132938]
+> [    9.132939] stack backtrace:
+> [    9.133129] Pid: 1, comm: swapper Tainted: G        W   2.6.34-rc5-mmotm0428 #1
+> [    9.133220] Call Trace:
+> [    9.133319]  [<ffffffff81064832>] lockdep_rcu_dereference+0xaa/0xb2
+> [    9.133410]  [<ffffffff81489250>] nf_conntrack_register_notifier+0x3d/0x75
+> [    9.133521]  [<ffffffff81b5a157>] ctnetlink_init+0x71/0xd5
+> [    9.133627]  [<ffffffff81b5a0e6>] ? ctnetlink_init+0x0/0xd5
+> [    9.133735]  [<ffffffff810001ef>] do_one_initcall+0x59/0x14e
+> [    9.133843]  [<ffffffff81b2e68a>] kernel_init+0x144/0x1ce
+> [    9.133949]  [<ffffffff81003414>] kernel_thread_helper+0x4/0x10
+> [    9.134060]  [<ffffffff81598a40>] ? restore_args+0x0/0x30
+> [    9.134196]  [<ffffffff81b2e546>] ? kernel_init+0x0/0x1ce
+> [    9.134328]  [<ffffffff81003410>] ? kernel_thread_helper+0x0/0x10
+> [    9.134530] ip_tables: (C) 2000-2006 Netfilter Core Team
+> [    9.134655] TCP bic registered
+> 
 
-Samu Onkalo (1):
-  drivers: misc: pass miscdevice pointer via file private data
+Thanks for the report !
 
- drivers/char/misc.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+We can use rcu_dereference_protected() in those cases.
+
+[PATCH] net: Use rcu_dereference_protected in nf_conntrack_ecache
+
+Writers own nf_ct_ecache_mutex.
+
+Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ net/netfilter/nf_conntrack_ecache.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/net/netfilter/nf_conntrack_ecache.c b/net/netfilter/nf_conntrack_ecache.c
+index f516961..cdcc764 100644
+--- a/net/netfilter/nf_conntrack_ecache.c
++++ b/net/netfilter/nf_conntrack_ecache.c
+@@ -85,7 +85,8 @@ int nf_conntrack_register_notifier(struct nf_ct_event_notifier *new)
+ 	struct nf_ct_event_notifier *notify;
+ 
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_conntrack_event_cb);
++	notify = rcu_dereference_protected(nf_conntrack_event_cb,
++					   lockdep_is_held(&nf_ct_ecache_mutex));
+ 	if (notify != NULL) {
+ 		ret = -EBUSY;
+ 		goto out_unlock;
+@@ -105,7 +106,8 @@ void nf_conntrack_unregister_notifier(struct nf_ct_event_notifier *new)
+ 	struct nf_ct_event_notifier *notify;
+ 
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_conntrack_event_cb);
++	notify = rcu_dereference_protected(nf_conntrack_event_cb,
++					   lockdep_is_held(&nf_ct_ecache_mutex));
+ 	BUG_ON(notify != new);
+ 	rcu_assign_pointer(nf_conntrack_event_cb, NULL);
+ 	mutex_unlock(&nf_ct_ecache_mutex);
+@@ -118,7 +120,8 @@ int nf_ct_expect_register_notifier(struct nf_exp_event_notifier *new)
+ 	struct nf_exp_event_notifier *notify;
+ 
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_expect_event_cb);
++	notify = rcu_dereference_protected(nf_expect_event_cb,
++					   lockdep_is_held(&nf_ct_ecache_mutex));
+ 	if (notify != NULL) {
+ 		ret = -EBUSY;
+ 		goto out_unlock;
+@@ -138,7 +141,8 @@ void nf_ct_expect_unregister_notifier(struct nf_exp_event_notifier *new)
+ 	struct nf_exp_event_notifier *notify;
+ 
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_expect_event_cb);
++	notify = rcu_dereference_protected(nf_expect_event_cb,
++					   lockdep_is_held(&nf_ct_ecache_mutex));
+ 	BUG_ON(notify != new);
+ 	rcu_assign_pointer(nf_expect_event_cb, NULL);
+ 	mutex_unlock(&nf_ct_ecache_mutex);
+
 
