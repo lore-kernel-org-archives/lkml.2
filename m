@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab0ECSyx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 14:54:53 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:47457 "EHLO e5.ny.us.ibm.com"
+	id S1756232Ab0ECSzd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 14:55:33 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:40168 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755879Ab0ECSxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 14:53:32 -0400
+	id S1755605Ab0ECSx2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 14:53:28 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,11 +13,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 04/10] cgroup: Fix an RCU warning in cgroup_path()
-Date: Mon,  3 May 2010 11:53:13 -0700
-Message-Id: <1272912799-17859-4-git-send-email-paulmck@linux.vnet.ibm.com>
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH tip/core/urgent 10/10] vfs: fix RCU-lockdep false positive due to /proc access
+Date: Mon,  3 May 2010 11:53:19 -0700
+Message-Id: <1272912799-17859-10-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100503185253.GA17672@linux.vnet.ibm.com>
 References: <20100503185253.GA17672@linux.vnet.ibm.com>
@@ -25,61 +25,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+If a single-threaded process does a file-descriptor operation, and
+some other process accesses that same file descriptor via /proc,
+the current rcu_dereference_check_fdtable() can give a false-positive
+RCU-lockdep splat due to the reference count being increased by the
+/proc access after the reference-count check in fget_light() but before
+the check in rcu_dereference_check_fdtable().
 
-with CONFIG_PROVE_RCU=y, a warning can be triggered:
+This commit prevents this false positive by checking for a single-threaded
+process.  To avoid #include hell, this commit also introduces an
+rcu_my_thread_group_empty() as a wrapper for thread_group_empty(current).
 
-  # mount -t cgroup -o debug xxx /mnt
-  # cat /proc/$$/cgroup
-
-...
-kernel/cgroup.c:1649 invoked rcu_dereference_check() without protection!
-...
-
-This is a false-positive, because cgroup_path() can be called
-with either rcu_read_lock() held or cgroup_mutex held.
-
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+Located-by: Miles Lane <miles.lane@gmail.com>
+Located-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
 ---
- kernel/cgroup.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+ include/linux/fdtable.h  |    3 ++-
+ include/linux/rcupdate.h |    2 ++
+ kernel/rcupdate.c        |   11 +++++++++++
+ 3 files changed, 15 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e2769e1..4ca928d 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1646,7 +1646,9 @@ static inline struct cftype *__d_cft(struct dentry *dentry)
- int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
- {
- 	char *start;
--	struct dentry *dentry = rcu_dereference(cgrp->dentry);
-+	struct dentry *dentry = rcu_dereference_check(cgrp->dentry,
-+						      rcu_read_lock_held() ||
-+						      cgroup_lock_is_held());
+diff --git a/include/linux/fdtable.h b/include/linux/fdtable.h
+index 013dc52..d147461 100644
+--- a/include/linux/fdtable.h
++++ b/include/linux/fdtable.h
+@@ -61,7 +61,8 @@ struct files_struct {
+ 	(rcu_dereference_check((fdtfd), \
+ 			       rcu_read_lock_held() || \
+ 			       lockdep_is_held(&(files)->file_lock) || \
+-			       atomic_read(&(files)->count) == 1))
++			       atomic_read(&(files)->count) == 1 || \
++			       rcu_my_thread_group_empty()))
  
- 	if (!dentry || cgrp == dummytop) {
- 		/*
-@@ -1662,13 +1664,17 @@ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
- 	*--start = '\0';
- 	for (;;) {
- 		int len = dentry->d_name.len;
+ #define files_fdtable(files) \
+ 		(rcu_dereference_check_fdtable((files), (files)->fdt))
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index ec9ab49..4dca275 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -190,6 +190,8 @@ static inline int rcu_read_lock_sched_held(void)
+ 
+ #ifdef CONFIG_PROVE_RCU
+ 
++extern int rcu_my_thread_group_empty(void);
 +
- 		if ((start -= len) < buf)
- 			return -ENAMETOOLONG;
--		memcpy(start, cgrp->dentry->d_name.name, len);
-+		memcpy(start, dentry->d_name.name, len);
- 		cgrp = cgrp->parent;
- 		if (!cgrp)
- 			break;
--		dentry = rcu_dereference(cgrp->dentry);
+ #define __do_rcu_dereference_check(c)					\
+ 	do {								\
+ 		static bool __warned;					\
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index 03a7ea1..49d808e 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -122,3 +122,14 @@ void wakeme_after_rcu(struct rcu_head  *head)
+ 	rcu = container_of(head, struct rcu_synchronize, head);
+ 	complete(&rcu->completion);
+ }
 +
-+		dentry = rcu_dereference_check(cgrp->dentry,
-+					       rcu_read_lock_held() ||
-+					       cgroup_lock_is_held());
- 		if (!cgrp->parent)
- 			continue;
- 		if (--start < buf)
++#ifdef CONFIG_PROVE_RCU
++/*
++ * wrapper function to avoid #include problems.
++ */
++int rcu_my_thread_group_empty(void)
++{
++	return thread_group_empty(current);
++}
++EXPORT_SYMBOL_GPL(rcu_my_thread_group_empty);
++#endif /* #ifdef CONFIG_PROVE_RCU */
 -- 
 1.7.0
 
