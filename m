@@ -1,128 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab0EDNsz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 09:48:55 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39164 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760038Ab0EDNsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 09:48:37 -0400
-From: Tejun Heo <tj@kernel.org>
-To: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Dipankar Sarma <dipankar@in.ibm.com>,
-       Josh Triplett <josh@freedesktop.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Dimitri Sivanich <sivanich@sgi.com>
-Subject: [PATCH 4/4] scheduler: kill paranoia check in synchronize_sched_expedited()
-Date: Tue,  4 May 2010 15:47:44 +0200
-Message-Id: <1272980864-27235-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1272980864-27235-1-git-send-email-tj@kernel.org>
-References: <1272980864-27235-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 May 2010 13:47:55 +0000 (UTC)
+	id S932071Ab0EDNti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 09:49:38 -0400
+Received: from ext-fwsm-phx2.redhat.com ([209.132.183.252]:29283 "EHLO
+	test1244.test.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753863Ab0EDNsM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 09:48:12 -0400
+X-Greylist: delayed 17399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 May 2010 09:48:08 EDT
+From: Josef Bacik <josef@redhat.com>
+To: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org
+Cc: Josef Bacik <josef@redhat.com>
+Subject: [PATCH 3/3] Btrfs: add basic DIO read support
+Date: Mon,  3 May 2010 12:11:05 -0400
+Message-Id: <1272903065-1974-3-git-send-email-josef@redhat.com>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <1272903065-1974-2-git-send-email-josef@redhat.com>
+References: <1272903065-1974-1-git-send-email-josef@redhat.com>
+ <1272903065-1974-2-git-send-email-josef@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The paranoid check which verifies that the cpu_stop callback is
-actually called on all online cpus is completely superflous.  It's
-guaranteed by cpu_stop facility and if it didn't work as advertised
-other things would go horribly wrong and trying to recover using
-synchronize_sched() wouldn't be very meaningful.
+This provides basic DIO support for reads only.  It does not do any of the work
+to recover from mismatching checksums, that will come later.  A few design
+changes have been made from Jim's code (sorry Jim!)
 
-Kill the paranoid check.  Removal of this feature is done as a
-separate step so that it can serve as a bisection point if something
-actually goes wrong.
+1) Use the generic direct-io code.  Jim originally re-wrote all the generic DIO
+code in order to account for all of BTRFS's oddities, but thanks to that work it
+seems like the best bet is to just ignore compression and such and just opt to
+fallback on buffered IO.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: Josh Triplett <josh@freedesktop.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Dimitri Sivanich <sivanich@sgi.com>
+2) Fallback on buffered IO for compressed or inline extents.  Jim's code did
+it's own buffering to make dio with compressed extents work.  Now we just
+fallback onto normal buffered IO.
+
+3) Lock the entire range during DIO.  I originally had it so we would lock the
+extents as get_block was called, and then unlock them as the endio function was
+called, which worked great, but if we ever had an error in the submit_io hook,
+we could have locked an extent that would never be submitted for IO, so we
+wouldn't be able to unlock it, so this solution fixed that problem and made it a
+bit cleaner.
+
+I've tested this with fsx and everything works great.  This patch depends on my
+dio and filemap.c patches to work.  Thanks,
+
+Signed-off-by: Josef Bacik <josef@redhat.com>
 ---
- kernel/sched.c |   40 +++-------------------------------------
- 1 files changed, 3 insertions(+), 37 deletions(-)
+ fs/btrfs/ctree.h     |    2 +
+ fs/btrfs/file-item.c |   25 +++++-
+ fs/btrfs/inode.c     |  208 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 230 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 8a198f1..c65ebbd 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -8941,14 +8941,6 @@ static atomic_t synchronize_sched_expedited_count = ATOMIC_INIT(0);
+diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
+index 746a724..36994e8 100644
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -2257,6 +2257,8 @@ int btrfs_del_csums(struct btrfs_trans_handle *trans,
+ 		    struct btrfs_root *root, u64 bytenr, u64 len);
+ int btrfs_lookup_bio_sums(struct btrfs_root *root, struct inode *inode,
+ 			  struct bio *bio, u32 *dst);
++int btrfs_lookup_bio_sums_dio(struct btrfs_root *root, struct inode *inode,
++			      struct bio *bio, u64 logical_offset, u32 *dst);
+ int btrfs_insert_file_extent(struct btrfs_trans_handle *trans,
+ 			     struct btrfs_root *root,
+ 			     u64 objectid, u64 pos,
+diff --git a/fs/btrfs/file-item.c b/fs/btrfs/file-item.c
+index 54a2550..34ea718 100644
+--- a/fs/btrfs/file-item.c
++++ b/fs/btrfs/file-item.c
+@@ -149,13 +149,14 @@ int btrfs_lookup_file_extent(struct btrfs_trans_handle *trans,
+ }
  
- static int synchronize_sched_expedited_cpu_stop(void *data)
+ 
+-int btrfs_lookup_bio_sums(struct btrfs_root *root, struct inode *inode,
+-			  struct bio *bio, u32 *dst)
++static int __btrfs_lookup_bio_sums(struct btrfs_root *root,
++				   struct inode *inode, struct bio *bio,
++				   u64 logical_offset, u32 *dst, int dio)
  {
--	static DEFINE_SPINLOCK(done_mask_lock);
--	struct cpumask *done_mask = data;
--
--	if (done_mask) {
--		spin_lock(&done_mask_lock);
--		cpumask_set_cpu(smp_processor_id(), done_mask);
--		spin_unlock(&done_mask_lock);
--	}
+ 	u32 sum;
+ 	struct bio_vec *bvec = bio->bi_io_vec;
+ 	int bio_index = 0;
+-	u64 offset;
++	u64 offset = 0;
+ 	u64 item_start_offset = 0;
+ 	u64 item_last_offset = 0;
+ 	u64 disk_bytenr;
+@@ -174,8 +175,11 @@ int btrfs_lookup_bio_sums(struct btrfs_root *root, struct inode *inode,
+ 	WARN_ON(bio->bi_vcnt <= 0);
+ 
+ 	disk_bytenr = (u64)bio->bi_sector << 9;
++	if (dio)
++		offset = logical_offset;
+ 	while (bio_index < bio->bi_vcnt) {
+-		offset = page_offset(bvec->bv_page) + bvec->bv_offset;
++		if (!dio)
++			offset = page_offset(bvec->bv_page) + bvec->bv_offset;
+ 		ret = btrfs_find_ordered_sum(inode, offset, disk_bytenr, &sum);
+ 		if (ret == 0)
+ 			goto found;
+@@ -238,6 +242,7 @@ found:
+ 		else
+ 			set_state_private(io_tree, offset, sum);
+ 		disk_bytenr += bvec->bv_len;
++		offset += bvec->bv_len;
+ 		bio_index++;
+ 		bvec++;
+ 	}
+@@ -245,6 +250,18 @@ found:
  	return 0;
  }
  
-@@ -8964,55 +8956,29 @@ static int synchronize_sched_expedited_cpu_stop(void *data)
-  */
- void synchronize_sched_expedited(void)
++int btrfs_lookup_bio_sums(struct btrfs_root *root, struct inode *inode,
++			  struct bio *bio, u32 *dst)
++{
++	return __btrfs_lookup_bio_sums(root, inode, bio, 0, dst, 0);
++}
++
++int btrfs_lookup_bio_sums_dio(struct btrfs_root *root, struct inode *inode,
++			      struct bio *bio, u64 offset, u32 *dst)
++{
++	return __btrfs_lookup_bio_sums(root, inode, bio, offset, dst, 1);
++}
++
+ int btrfs_lookup_csums_range(struct btrfs_root *root, u64 start, u64 end,
+ 			     struct list_head *list)
  {
--	cpumask_var_t done_mask_var;
--	struct cpumask *done_mask = NULL;
- 	int snap, trycount = 0;
- 
--	/*
--	 * done_mask is used to check that all cpus actually have
--	 * finished running the stopper, which is guaranteed by
--	 * stop_cpus() if it's called with cpu hotplug blocked.  Keep
--	 * the paranoia for now but it's best effort if cpumask is off
--	 * stack.
--	 */
--	if (zalloc_cpumask_var(&done_mask_var, GFP_ATOMIC))
--		done_mask = done_mask_var;
--
- 	smp_mb();  /* ensure prior mod happens before capturing snap. */
- 	snap = atomic_read(&synchronize_sched_expedited_count) + 1;
- 	get_online_cpus();
- 	while (try_stop_cpus(cpu_online_mask,
- 			     synchronize_sched_expedited_cpu_stop,
--			     done_mask) == -EAGAIN) {
-+			     NULL) == -EAGAIN) {
- 		put_online_cpus();
- 		if (trycount++ < 10)
- 			udelay(trycount * num_online_cpus());
- 		else {
- 			synchronize_sched();
--			goto free_out;
-+			return;
- 		}
- 		if (atomic_read(&synchronize_sched_expedited_count) - snap > 0) {
- 			smp_mb(); /* ensure test happens before caller kfree */
--			goto free_out;
-+			return;
- 		}
- 		get_online_cpus();
- 	}
- 	atomic_inc(&synchronize_sched_expedited_count);
--	if (done_mask)
--		cpumask_xor(done_mask, done_mask, cpu_online_mask);
- 	put_online_cpus();
--
--	/* paranoia - this can't happen */
--	if (done_mask && cpumask_weight(done_mask)) {
--		char buf[80];
--
--		cpulist_scnprintf(buf, sizeof(buf), done_mask);
--		WARN_ONCE(1, "synchronize_sched_expedited: cpu online and done masks disagree on %d cpus: %s\n",
--			  cpumask_weight(done_mask), buf);
--		synchronize_sched();
--	}
--free_out:
--	free_cpumask_var(done_mask_var);
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 2bfdc64..ce7008a 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -4875,11 +4875,217 @@ out:
+ 	return em;
  }
- EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
  
++static int btrfs_get_blocks_direct(struct inode *inode, sector_t iblock,
++				   struct buffer_head *bh_result, int create)
++{
++	struct extent_map *em;
++	u64 start = iblock << inode->i_blkbits;
++	u64 len = bh_result->b_size;
++
++
++	em = btrfs_get_extent(inode, NULL, 0, start, len, 0);
++	if (IS_ERR(em))
++		return PTR_ERR(em);
++
++	/*
++	 * Ok for INLINE and COMPRESSED extents we need to fallback on buffered
++	 * io.  INLINE is special, and we could probably kludge it in here, but
++	 * it's still buffered so for safety lets just fall back to the generic
++	 * buffered path.
++	 *
++	 * For COMPRESSED we _have_ to read the entire extent in so we can
++	 * decompress it, so there will be buffering required no matter what we
++	 * do, so go ahead and fallback to buffered.
++	 *
++	 * We return -ENOTBLK because thats what makes DIO go ahead and go back
++	 * to buffered IO.  Don't blame me, this is the price we pay for using
++	 * the generic code.
++	 */
++	if (test_bit(EXTENT_FLAG_COMPRESSED, &em->flags) ||
++	    em->block_start == EXTENT_MAP_INLINE) {
++		free_extent_map(em);
++		return -ENOTBLK;
++	}
++
++	/* Just a good old fashioned hole, return */
++	if (em->block_start == EXTENT_MAP_HOLE) {
++		free_extent_map(em);
++		return 0;
++	}
++
++	/*
++	 * We use the relative offset in the file so that our own submit bio
++	 * routine will do the mapping to the real blocks.
++	 */
++	bh_result->b_blocknr = start >> inode->i_blkbits;
++	bh_result->b_size = em->len - (start - em->start);
++	bh_result->b_bdev = em->bdev;
++	set_buffer_mapped(bh_result);
++	set_buffer_boundary(bh_result);
++
++	free_extent_map(em);
++
++	return 0;
++}
++
++struct btrfs_dio_private {
++	struct inode *inode;
++	u64 logical_offset;
++	u32 *csums;
++	void *private;
++};
++
++static void btrfs_endio_direct(struct bio *bio, int err)
++{
++	struct bio_vec *bvec_end = bio->bi_io_vec + bio->bi_vcnt - 1;
++	struct bio_vec *bvec = bio->bi_io_vec;
++	struct btrfs_dio_private *dip = bio->bi_private;
++	struct inode *inode = dip->inode;
++	struct btrfs_root *root = BTRFS_I(inode)->root;
++	u64 start;
++	u32 *private = dip->csums;
++
++	start = dip->logical_offset;
++	do {
++		if (!(BTRFS_I(inode)->flags & BTRFS_INODE_NODATASUM)) {
++			struct page *page = bvec->bv_page;
++			char *kaddr;
++			u32 csum = ~(u32)0;
++
++			kaddr = kmap_atomic(page, KM_USER0);
++			csum = btrfs_csum_data(root, kaddr + bvec->bv_offset,
++					       csum, bvec->bv_len);
++			btrfs_csum_final(csum, (char *)&csum);
++			kunmap_atomic(kaddr, KM_USER0);
++
++			if (csum != *private) {
++				printk(KERN_ERR "btrfs csum failed ino %lu off"
++				      " %llu csum %u private %u\n",
++				      inode->i_ino, (unsigned long long)start,
++				      csum, *private);
++				err = -EIO;
++			}
++		}
++
++		start += bvec->bv_len;
++		private++;
++		bvec++;
++	} while (bvec <= bvec_end);
++
++	bio->bi_private = dip->private;
++
++	kfree(dip->csums);
++	kfree(dip);
++	dio_end_io(bio, err);
++}
++
++static void btrfs_submit_direct(int rw, struct bio *bio, struct inode *inode)
++{
++	struct btrfs_root *root = BTRFS_I(inode)->root;
++	struct extent_map *em;
++	struct btrfs_dio_private *dip;
++	struct bio_vec *bvec = bio->bi_io_vec;
++	u64 start;
++	int skip_sum;
++	int ret = 0;
++
++	dip = kmalloc(sizeof(*dip), GFP_NOFS);
++	if (!dip) {
++		bio_endio(bio, -ENOMEM);
++		return;
++	}
++
++	dip->csums = kmalloc(sizeof(u32) * bio->bi_vcnt, GFP_NOFS);
++	if (!dip->csums) {
++		kfree(dip);
++		bio_endio(bio, -ENOMEM);
++	}
++
++	dip->private = bio->bi_private;
++	dip->inode = inode;
++	dip->logical_offset = (u64)bio->bi_sector << 9;
++
++	start = dip->logical_offset;
++	em = btrfs_get_extent(inode, NULL, 0, start, bvec->bv_len, 0);
++	if (IS_ERR(em)) {
++		ret = PTR_ERR(em);
++		goto out_err;
++	}
++
++	if (em->block_start >= EXTENT_MAP_LAST_BYTE) {
++		printk(KERN_ERR "dio to inode resulted in a bad extent "
++		       "(%llu) %llu\n", (unsigned long long)em->block_start, start);
++		ret = -EIO;
++		free_extent_map(em);
++		goto out_err;
++	}
++
++	bio->bi_sector =
++		(em->block_start + (dip->logical_offset - em->start)) >> 9;
++	bio->bi_private = dip;
++
++	free_extent_map(em);
++	skip_sum = BTRFS_I(inode)->flags & BTRFS_INODE_NODATASUM;
++
++	bio->bi_end_io = btrfs_endio_direct;
++
++	ret = btrfs_bio_wq_end_io(root->fs_info, bio, 0);
++	if (ret)
++		goto out_err;
++
++	if (!skip_sum)
++		btrfs_lookup_bio_sums_dio(root, inode, bio,
++					  dip->logical_offset, dip->csums);
++
++	ret = btrfs_map_bio(root, rw, bio, 0, 0);
++	if (ret)
++		goto out_err;
++	return;
++out_err:
++	kfree(dip->csums);
++	kfree(dip);
++	bio_endio(bio, ret);
++}
++
+ static ssize_t btrfs_direct_IO(int rw, struct kiocb *iocb,
+ 			const struct iovec *iov, loff_t offset,
+ 			unsigned long nr_segs)
+ {
+-	return -EINVAL;
++	struct file *file = iocb->ki_filp;
++	struct inode *inode = file->f_mapping->host;
++	struct extent_state *cached_state = NULL;
++	struct btrfs_ordered_extent *ordered;
++	u64 len = 0;
++	ssize_t ret;
++	int i;
++
++	if (rw == WRITE)
++		return 0;
++
++	while (1) {
++		lock_extent_bits(&BTRFS_I(inode)->io_tree, offset,
++				 offset + iov_length(iov, nr_segs) - 1, 0,
++				 &cached_state, GFP_NOFS);
++		ordered = btrfs_lookup_ordered_extent(inode, offset);
++		if (!ordered)
++			break;
++		unlock_extent_cached(&BTRFS_I(inode)->io_tree, offset,
++				     offset + iov_length(iov, nr_segs) - 1,
++				     &cached_state, GFP_NOFS);
++		btrfs_start_ordered_extent(inode, ordered, 1);
++		btrfs_put_ordered_extent(ordered);
++		cond_resched();
++	}
++
++	ret = blockdev_direct_IO_own_submit(rw, iocb, inode, NULL, iov,
++					    offset, nr_segs,
++					    btrfs_get_blocks_direct,
++					    btrfs_submit_direct);
++
++	unlock_extent_cached(&BTRFS_I(inode)->io_tree, offset,
++			     offset + iov_length(iov, nr_segs) - 1,
++			     &cached_state, GFP_NOFS);
++	return ret;
+ }
+ 
+ static int btrfs_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
 -- 
-1.6.4.2
+1.6.6.1
 
