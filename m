@@ -1,129 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab0ECJju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 05:39:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5563 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753939Ab0ECJjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 05:39:49 -0400
-Message-ID: <4BDE99C8.1090002@redhat.com>
-Date: Mon, 03 May 2010 12:39:20 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1753157Ab0ECJud (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 05:50:33 -0400
+Received: from mail.turknet.net.tr ([193.192.98.182]:35005 "EHLO
+	mail.turknet.net.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739Ab0ECJub convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 05:50:31 -0400
+X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 May 2010 05:50:31 EDT
+From: Tarkan Erimer <tarkan.erimer@turknet.net.tr>
+To: linux-kernel@vger.kernel.org
+Subject: [BUG] Linux-2.6.33.3-rt19 Compile Error With PohmelFS
+Date: Mon, 3 May 2010 12:40:23 +0300
+User-Agent: KMail/1.13.2 (Linux/2.6.34-rc5-6-desktop; KDE/4.4.2; x86_64; ; )
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: ngupta@vflare.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       hugh.dickins@tiscali.co.uk, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com>> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>> <4BD1A74A.2050003@redhat.com>> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com>> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>> <4BD3377E.6010303@redhat.com>> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>> <ce808441-fae6-4a33-8335-f7702740097a@default>> <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz> <4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default> <4BDB026E.1030605@redhat.com> <4BDB18CE.2090608@goop.org> <4BDB2069.4000507@redhat.com> <3a62a058-7976-48d7-acd2-8c6a8312f10f@default> <4BDD3079.5060101@vflare.org> <b09a9cc6-8481-4dd3-8374-68ff6fb714d9@default 4BDDACF5.90601@redhat.com> <b6cfd097-1003-47ce-9f1c-278835ba52d2@default>
-In-Reply-To: <b6cfd097-1003-47ce-9f1c-278835ba52d2@default>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201005031240.23858.tarkan.erimer@turknet.net.tr>
+X-OriginalArrivalTime: 03 May 2010 09:40:15.0933 (UTC) FILETIME=[A2BD46D0:01CAEAA4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2010 08:22 PM, Dan Magenheimer wrote:
->> It's bad, but it's better than ooming.
->>
->> The same thing happens with vcpus: you run 10 guests on one core, if
->> they all wake up, your cpu is suddenly 10x slower and has 30000x
->> interrupt latency (30ms vs 1us, assuming 3ms timeslices).  Your disks
->> become slower as well.
->>
->> It's worse with memory, so you try to swap as a last resort.  However,
->> swap is still faster than a crashed guest.
->>      
-> Your analogy only holds when the host administrator is either
-> extremely greedy or stupid.
 
-10x vcpu is reasonable in some situations (VDI, powersave at night).  
-Even a 2x vcpu overcommit will cause a 10000x interrupt latency degradation.
+This is an openSUSE 11.3 Milestone 6 with GCC-4.5. When I tried to compile, I 
+got the following error message related to inode.c. 
 
-> My analogy only requires some
-> statistical bad luck: Multiple guests with peaks and valleys
-> of memory requirements happen to have their peaks align.
->    
+Tarkan
 
-Not sure I understand.
-
->>> Third, host swapping makes live migration much more difficult.
->>> Either the host swap disk must be accessible to all machines
->>> or data sitting on a local disk MUST be migrated along with
->>> RAM (which is not impossible but complicates live migration
->>> substantially).
->>>        
->> kvm does live migration with swapping, and has no special code to
->> integrate them.
->>   :
->> Don't know about vmware, but kvm supports page sharing, swapping, and
->> live migration simultaneously.
->>      
-> Hmmm... I'll bet I can break it pretty easily.  I think the
-> case you raised that you thought would cause host OOM'ing
-> will cause kvm live migration to fail.
->
-> Or maybe not... when a guest is in the middle of a live migration,
-> I believe (in Xen), the entire guest memory allocation (possibly
-> excluding ballooned-out pages) must be simultaneously in RAM briefly
-> in BOTH the host and target machine.  That is, live migration is
-> not "pipelined".  Is this also true of KVM?
-
-No.  The entire guest address space can be swapped out on the source and 
-target, less the pages being copied to or from the wire, and pages 
-actively accessed by the guest.  Of course performance will suck if all 
-memory is swapped out.
-
-> If so, your
-> statement above is just waiting a corner case to break it.
-> And if not, I expect you've got fault tolerance issues.
->    
-
-Not that I'm aware of.
-
->>> If you talk to VMware customers (especially web-hosting services)
->>> that have attempted to use overcommit technologies that require
->>> host-swapping, you will find that they quickly become allergic
->>> to memory overcommit and turn it off.  The end users (users of
->>> the VMs that inexplicably grind to a halt) complain loudly.
->>> As a result, RAM has become a bottleneck in many many systems,
->>> which ultimately reduces the utility of servers and the value
->>> of virtualization.
->>>        
->> Choosing the correct overcommit ratio is certainly not an easy task.
->> However, just hoping that memory will be available when you need it is
->> not a good solution.
->>      
-> Choosing the _optimal_ overcommit ratio is impossible without a
-> prescient knowledge of the workload in each guest.  Hoping memory
-> will be available is certainly not a good solution, but if memory
-> is not available guest swapping is much better than host swapping.
->    
-
-You cannot rely on guest swapping.
-
-> And making RAM usage as dynamic as possible and live migration
-> as easy as possible are keys to maximizing the benefits (and
-> limiting the problems) of virtualization.
->    
-
-That is why you need overcommit.  You make things dynamic with page 
-sharing and ballooning and live migration, but at some point you need a 
-failsafe fallback.  The only failsafe fallback I can see (where the host 
-doesn't rely on guests) is swapping.
-
-As far as I can tell, frontswap+tmem increases the problem.  You loan 
-the guest some memory without the means to take it back, this increases 
-memory pressure on the host.  The result is that if you want to avoid 
-swapping (or are unable to) you need to undercommit host resources.  
-Instead of sum(guest mem) + reserve < (host mem), you need sum(guest mem 
-+ committed tmem) + reserve < (host mem).  You need more host memory, or 
-less guests, or to be prepared to swap if the worst happens.
-
--- 
-error compiling committee.c: too many arguments to function
+  CC      drivers/staging/staging.o
+  LD      drivers/staging/built-in.o
+  LD      drivers/staging/pohmelfs/built-in.o
+  CC [M]  drivers/staging/pohmelfs/inode.o
+drivers/staging/pohmelfs/inode.c: In function ‘pohmelfs_put_super’:
+drivers/staging/pohmelfs/inode.c:1293:3: warning: passing argument 1 of 
+‘atomic_read’ from incompatible pointer type
+/usr/src/linux-2.6.33.3/arch/x86/include/asm/atomic_64.h:21:19: note: expected 
+‘const struct atomic_t *’ but argument is of type ‘unsigned int *’
+drivers/staging/pohmelfs/inode.c:1296:6: warning: passing argument 1 of 
+‘atomic_read’ from incompatible pointer type
+/usr/src/linux-2.6.33.3/arch/x86/include/asm/atomic_64.h:21:19: note: expected 
+‘const struct atomic_t *’ but argument is of type ‘unsigned int *’
+drivers/staging/pohmelfs/inode.c:1297:4: warning: passing argument 1 of 
+‘atomic_read’ from incompatible pointer type
+/usr/src/linux-2.6.33.3/arch/x86/include/asm/atomic_64.h:21:19: note: expected 
+‘const struct atomic_t *’ but argument is of type ‘unsigned int *’
+drivers/staging/pohmelfs/inode.c:1305:2: error: request for member ‘next’ in 
+something not a structure or union
+drivers/staging/pohmelfs/inode.c:1305:2: warning: comparison of distinct 
+pointer types lacks a cast
+drivers/staging/pohmelfs/inode.c:1317:3: warning: passing argument 1 of 
+‘atomic_read’ from incompatible pointer type
+/usr/src/linux-2.6.33.3/arch/x86/include/asm/atomic_64.h:21:19: note: expected 
+‘const struct atomic_t *’ but argument is of type ‘unsigned int *’
+make[5]: *** [drivers/staging/pohmelfs/inode.o] Error 1
+make[4]: *** [drivers/staging/pohmelfs] Error 2
+make[3]: *** [drivers/staging] Error 2
+make[2]: *** [drivers] Error 2
+make[1]: *** [binrpm-pkg] Error 2
+make: *** [binrpm-pkg] Error 2
 
