@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759264Ab0ECNlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 09:41:10 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:61710 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754605Ab0ECNlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 09:41:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=G1pHH4yEcfvvpdDvP7HGtJesbCHMegkMpVyFPtZCtCY2HUoIWENXKQc87FGcC9AdKb
-         m3v6uy8crORyO5VqeDHWWSIc+9E0tbp3Vdv1JxDiWqiAcywYPaOuukEznAjw5wX0ki2m
-         nadJoHIifByKBw3ooZmIb7wSL4VGRJvYfffI4=
-Date: Mon, 3 May 2010 15:39:45 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] perf and breakpoints updates
-Message-ID: <20100503133942.GA5497@nowhere>
-References: <1272682436-10682-1-git-send-regression-fweisbec@gmail.com> <20100503065032.GC15241@elte.hu> <20100503070059.GA31397@elte.hu>
+	id S932315Ab0ECNms (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 09:42:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56849 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755978Ab0ECNmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 09:42:46 -0400
+Date: Mon, 3 May 2010 15:42:44 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf_event: Use UTF-8 copyright symbol instead of \251
+In-Reply-To: <20100501002811.GA2610@brick.ozlabs.ibm.com>
+Message-ID: <alpine.LNX.2.00.1005031541390.9849@pobox.suse.cz>
+References: <20100501002811.GA2610@brick.ozlabs.ibm.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100503070059.GA31397@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 03, 2010 at 09:00:59AM +0200, Ingo Molnar wrote:
+On Sat, 1 May 2010, Paul Mackerras wrote:
+
+> As noted by Tejun Heo, the latin-1 copyright character \251 is invalid
+> in ASCII or UTF-8.  This changes the character to its UTF-8 encoding
+> in order to avoid problems with editors and other tools.
 > 
-> note, when merged into tip:master there's a new build failure with these 
-> changes:
-> 
-> kernel/hw_breakpoint.c:58:1: error: pasting "__pcpu_scope_" and "*" does not give a valid preprocessing token
-> kernel/hw_breakpoint.c:58:1: error: pasting "__pcpu_unique_" and "*" does not give a valid preprocessing token
-> kernel/hw_breakpoint.c:58:1: error: pasting "__pcpu_unique_" and "*" does not give a valid preprocessing token
-> 
-> config attached.
-> 
-> 	Ingo
+> Signed-off-by: Paul Mackerras <paulus@samba.org>
+> ---
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index 9dbe8cd..d46a277 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -4,7 +4,7 @@
+>   *  Copyright (C) 2008 Thomas Gleixner <tglx@linutronix.de>
+>   *  Copyright (C) 2008-2009 Red Hat, Inc., Ingo Molnar
+>   *  Copyright (C) 2008-2009 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
+> - *  Copyright  ???  2009 Paul Mackerras, IBM Corp. <paulus@au1.ibm.com>
 
+Umm ... this looks odd.
 
-Ah indeed.
+> + *  Copyright  ©  2009 Paul Mackerras, IBM Corp. <paulus@au1.ibm.com>
 
-I can reproduce, it happens if CONFIG_DEBUG_FORCE_WEAK_PER_CPU,
-because we concatenate someting with the name and we have the "*" in
-the name.
+This seems to add \251 again :) Maybe some of your tools got confused 
+enough?
 
-The right fix seems to be the following, but I prefer to test it further before
-submitting it, that said it builds:
+Anyway, I have dropped the patch from Tejun for now.
 
-
-diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
-index 684b710..7a56b22 100644
---- a/kernel/hw_breakpoint.c
-+++ b/kernel/hw_breakpoint.c
-@@ -55,7 +55,7 @@
- static DEFINE_PER_CPU(unsigned int, nr_cpu_bp_pinned[TYPE_MAX]);
- 
- /* Number of pinned task breakpoints in a cpu */
--static DEFINE_PER_CPU(unsigned int, *nr_task_bp_pinned[TYPE_MAX]);
-+static DEFINE_PER_CPU(unsigned int *, nr_task_bp_pinned[TYPE_MAX]);
- 
- /* Number of non-pinned cpu/task breakpoints in a cpu */
- static DEFINE_PER_CPU(unsigned int, nr_bp_flexible[TYPE_MAX]);
-
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
