@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab0ECRxL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 13:53:11 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23349 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755097Ab0ECRxI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 13:53:08 -0400
-Message-ID: <4BDF0CF1.5070006@oracle.com>
-Date: Mon, 03 May 2010 10:50:41 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	id S1755628Ab0ECR7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 13:59:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22410 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755482Ab0ECR7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 13:59:21 -0400
+Message-ID: <4BDF0ECC.5080902@redhat.com>
+Date: Mon, 03 May 2010 13:58:36 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, trenn@suse.de,
-       hpa@zytor.com, linux-kernel@vger.kernel.org
-Subject: Re: [2.6.31.13] Build failure at arch/x86/kernel/apic/io_apic.c
-References: <201004120230.o3C2UhfQ050532@www262.sakura.ne.jp> <20100412024446.GA28141@suse.de> <201004120410.o3C4Axwe066941@www262.sakura.ne.jp> <20100501180715.GA7745@suse.de> <4BDF04D6.7040003@oracle.com> <20100503174422.GC11676@suse.de>
-In-Reply-To: <20100503174422.GC11676@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org, Mel Gorman <mel@csn.ul.ie>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 1/2] mm: Take all anon_vma locks in anon_vma_lock
+References: <20100503121743.653e5ecc@annuminas.surriel.com> <20100503121847.7997d280@annuminas.surriel.com> <alpine.LFD.2.00.1005030940490.5478@i5.linux-foundation.org> <4BDEFF9E.6080508@redhat.com> <alpine.LFD.2.00.1005030958140.5478@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1005030958140.5478@i5.linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090209.4BDF0D7D.00F7:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2010 10:44 AM, Greg KH wrote:
-> On Mon, May 03, 2010 at 10:16:06AM -0700, Yinghai wrote:
->> On 05/01/2010 11:07 AM, Greg KH wrote:
->>> On Mon, Apr 12, 2010 at 01:10:59PM +0900, Tetsuo Handa wrote:
->>>> Commit d539e5576605d048e6aeb21cbe3a8e71dc5eea81 "x86: Fix SCI on IOAPIC != 0"
->>>> introduced "void setup_IO_APIC_irq_extra(u32 gsi)" which calls
->>>> mp_find_ioapic() and mp_find_ioapic_pin().
->>>>
->>>> This commit does not compile if CONFIG_X86_IO_APIC=y and CONFIG_ACPI=n .
->>>
->>> Why would you want to build without ACPI on any modern system?  Anyway,
->>> have a fix for this?
->>>
->> maybe just put #ifdef CONFIG_ACPI around the callee etc?
-> 
-> Ick.  How was it solved upstream?
-> 
+On 05/03/2010 01:17 PM, Linus Torvalds wrote:
 
-those two functions are moved to arch/x86/kernel/apic/io_apic.c
+> Quite frankly, I think it's totally insane to walk a list of all
+> anon_vma's that are associated with one vma, just to lock them all.
+>
+> Tell me why you just don't put the lock in the vma itself then? Walking a
+> list in order to lock multiple things is something we should _never_ do
+> under any normal circumstances.
 
-maybe you can put that patch to 2.6.31.xx?
+One problem is that we cannot find the VMAs (multiple) from
+the page, except by walking the anon_vma_chain.same_anon_vma
+list.  At the very least, that list requires locking, done
+by the anon_vma.lock.
 
-YH
+When already you have that lock, also taking per-VMA locks
+would be superfluous. It could also be difficult, especially
+since the rmap side code and the mmap side code approach the
+data structures from the other side, potentially leading to
+locking order conflicts.
 
-commit 2a4ab640d3c28c2952967e5f63ea495555bf2a5f
-Author: Feng Tang <feng.tang@intel.com>
-Date:   Tue Jul 7 23:01:15 2009 -0400
+> I can see why you'd want to do this in theory (the "other side" of the
+> locker might have to lock just the _one_ anon_vma), but if your argument
+> is that the list is usually not very deep ("one"?), then there is no
+> advantage, because putting the lock in the anon_vma vs the vma will get
+> the same kind of contention.
 
-    ACPI, x86: expose some IO-APIC routines when CONFIG_ACPI=n
-    
-    Some IO-APIC routines are ACPI specific now, but need to
-    be exposed when CONFIG_ACPI=n for the benefit of SFI.
-    
-    Remove #ifdef ACPI around these routines:
-    
-    io_apic_get_unique_id(int ioapic, int apic_id);
-    io_apic_get_version(int ioapic);
-    io_apic_get_redir_entries(int ioapic);
-    
-    Move these routines from ACPI-specific boot.c to io_apic.c:
-    
-    uniq_ioapic_id(u8 id)
-    mp_find_ioapic()
-    mp_find_ioapic_pin()
-    mp_register_ioapic()
-    
-    Also, since uniq_ioapic_id() is now no longer static,
-    re-name it to io_apic_unique_id() for consistency
-    with the other public io_apic routines.
-    
-    For simplicity, do not #ifdef the resulting code ACPI || SFI,
-    thought that could be done in the future if it is important
-    to optimize the !ACPI !SFI IO-APIC x86 kernel for size.
-    
-    Signed-off-by: Feng Tang <feng.tang@intel.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-    Cc: x86@kernel.org
+In a freshly exec()d process, there will be one anon_vma.
 
+In workloads with forking daemons, like apache, postgresql
+or sendmail, the child process will end up with two anon_vmas
+in VMAs inherited from the parent.
+
+> And if the list _is_ deep, then walking the list to lock them all is a
+> crime against humanity.
+
+A forkbomb could definately end up getting slowed down by
+this patch.  Is there any real workload out there that just
+forks deeper and deeper from the parent process, without
+calling exec() after a generation or two?
+
+>> As for patch 2/2, Mel has an alternative approach for that:
+>>
+>> http://lkml.org/lkml/2010/4/30/198
+>>
+>> Does Mel's patch seem more reasonable to you?
+>
+> Well, I certainly think that seems to be a lot more targeted,
+
+> In particular, why don't we just make rmap_walk() be the one that locks
+> all the anon_vma's? Instead of locking just one? THAT is the function that
+> cares. THAT is the function that should do proper locking and not expect
+> others to do extra unnecessary locking.
+
+That looks like it might work for rmap_walk.
+
+> So again, my gut feel is that if the lock just were in the vma itself,
+> then the "normal" users would have just one natural lock, while the
+> special case users (rmap_walk_anon) would have to lock each vma it
+> traverses. That would seem to be the more natural way to lock things.
+
+However ... there's still the issue of page_lock_anon_vma
+in try_to_unmap_anon.
+
+I guess it protects against any of the VMAs going away,
+because anon_vma_unlink also takes the anon_vma->lock.
+
+Does it need to protect against anything else?
+
+> Btw, Mel's patch doesn't really match the description of 2/2. 2/2 says
+> that all pages must always be findable in rmap. Mel's patch seems to
+> explicitly say "we want to ignore that thing that is busy for execve". Are
+> we just avoiding a BUG_ON()? Is perhaps the BUG_ON() buggy?
+
+I have no good answer to this question.
+
+Mel?  Andrea?
+
+-- 
+All rights reversed
