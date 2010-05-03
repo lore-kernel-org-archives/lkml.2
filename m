@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab0ECSHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 14:07:47 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58844 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755712Ab0ECSHq (ORCPT
+	id S1755950Ab0ECSLN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 14:11:13 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39268 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755712Ab0ECSLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 14:07:46 -0400
-Date: Mon, 3 May 2010 19:07:42 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100503180741.GB2098@rakim.wolfsonmicro.main>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
- <87wrvl5479.fsf@deeprootsystems.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wrvl5479.fsf@deeprootsystems.com>
-X-Cookie: APL hackers do it in the quad.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 3 May 2010 14:11:11 -0400
+Date: Mon, 3 May 2010 11:06:57 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+       devel@driverdev.osuosl.org, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>, support@sbei.com,
+       support@onestopsystems.com
+Subject: Re: [PATCH -next] staging: fix cxt1e1 module names
+Message-Id: <20100503110657.00b4e140.randy.dunlap@oracle.com>
+In-Reply-To: <1272909764.30040.92.camel@Joe-Laptop.home>
+References: <20100503151619.f75e3a80.sfr@canb.auug.org.au>
+	<20100503100902.517c146f.randy.dunlap@oracle.com>
+	<1272909764.30040.92.camel@Joe-Laptop.home>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090203.4BDF114C.0155:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 03, 2010 at 09:40:26AM -0700, Kevin Hilman wrote:
+On Mon, 03 May 2010 11:02:44 -0700 Joe Perches wrote:
 
-> At least from the kernel perspective, both suspend blockers and
-> runtime PM have the same goal.  Given that, which framework should the
-> driver writer target?  Both?  Seems like duplicate effort.  Using
-> suspend blockers assumes the system is in opportunitstic suspend mode
-> and (at least in the keypad example given) assumes a suspend-blocker
-> aware userspace (Android.) Without both, targeted power savings will
-> not be acheived.
+> On Mon, 2010-05-03 at 10:09 -0700, Randy Dunlap wrote:
+> > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > 
+> > Lots of cxt1e1 source code uses THIS_MODULE->name, which won't build
+> > when CONFIG_MODULES is not enabled, so use KBUILD_MODNAME instead.
+> 
+> Perhaps a conversion to pr_<level> is better?
 
-The other concern here is that for many mobile systems the actual
-semantic intended by "suspend" as it's currently used is more runtime PM
-like than full suspend - the classic example of this is that when
-suspending while on a call in a phone you don't want to suspend the
-modem or audio CODEC, you want to leave them running.  If you use a full
-system suspend then the drivers for affected components have to play
-guessing games (or add currently non-standard knobs for apps to twiddle)
-to decide if the system intends them to actually implement the suspend
-or not but with runtime PM it all falls out very naturally without any
-effort on the part of the driver.
+Sure, fine with me.  Thanks.
 
-> To me, runtime PM is a generic and flexible approach that can be used
-> with any userspace.  Driver writers should not have to care whether
-> the system is in "opportunistic" mode or about whether userspace is
-> suspend blocker capable.  They should only have to think about when
-> the device is (or should be) idle.
-
-I fully agree with this.  We do need to ensure that a runtime PM based
-system can suspend the CPU core and RAM as well as system suspend can
-but that seems doable.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
