@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab0ECVC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 17:02:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33920 "EHLO mga02.intel.com"
+	id S1757021Ab0ECVCo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 17:02:44 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:37312 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753988Ab0ECVC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 17:02:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,321,1270450800"; 
-   d="scan'208";a="514704434"
-Date: Mon, 3 May 2010 14:02:25 -0700 (Pacific Daylight Time)
-From: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
-To: "stable@kernel.org" <stable@kernel.org>, davem@davemloft.net
-cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "brandon@ifup.org" <brandon@ifup.org>
-Subject: Re: [stable] ixgbe: Fix return of invalid txq
-In-Reply-To: <alpine.WNT.2.00.1005031333200.4376@jbrandeb-desk1.amr.corp.intel.com>
-Message-ID: <alpine.WNT.2.00.1005031401100.4376@jbrandeb-desk1.amr.corp.intel.com>
-References: <alpine.WNT.2.00.1005031333200.4376@jbrandeb-desk1.amr.corp.intel.com>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
-ReplyTo: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
-X-X-Sender: amrjbrandeb@imapmail.glb.intel.com
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756952Ab0ECVCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 17:02:39 -0400
+Subject: Re: [PATCH v21 001/100] eclone (1/11): Factor out code to allocate
+ pidmap page
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: orenl@cs.columbia.edu, akpm@linux-foundation.org,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       serue@us.ibm.com, matthltc@us.ibm.com, xemul@openvz.org,
+       sukadev@linux.vnet.ibm.com, linux-api@vger.kernel.org, x86@kernel.org,
+       linux-s390@vger.kernel.org, linuxppc-dev@ozlabs.org
+In-Reply-To: <20100501.151022.190375136.davem@davemloft.net>
+References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
+	 <1272723382-19470-2-git-send-email-orenl@cs.columbia.edu>
+	 <20100501.151022.190375136.davem@davemloft.net>
+Content-Type: text/plain
+Date: Mon, 03 May 2010 14:02:31 -0700
+Message-Id: <1272920551.12034.4729.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-putting davem on to: line...  sorry for not including on first email.
+On Sat, 2010-05-01 at 15:10 -0700, David Miller wrote:
+> NO WAY, there is no way in the world you should post 100 patches
+> at a time to any mailing list, especially those at vger.kernel.org
+> that have thousands upon thousands of subscribers.
+> 
+> Post only small, well contained, sets of patches at a time.  At most
+> 10 or so in one go.
 
-On Mon, 3 May 2010, Brandeburg, Jesse wrote:
+Hi Dave,
 
-> Please consider commit fdd3d631cddad20ad9d3e1eb7dbf26825a8a121f for 
-> inclusion in 2.6.32.y (it is already in 2.6.33.y)
-> 
-> Here is the commit message, it fixes a panic on machines with a larger 
-> number of cpus than ixgbe has tx queues (64).
-> 
-> commit fdd3d631cddad20ad9d3e1eb7dbf26825a8a121f
-> Author: Krishna Kumar <krkumar2@in.ibm.com>
-> Date:   Wed Feb 3 13:13:10 2010 +0000
-> 
->     ixgbe: Fix return of invalid txq
-> 
->     a developer had complained of getting lots of warnings:
-> 
->     "eth16 selects TX queue 98, but real number of TX queues is 64"
->     
-> 	http://www.mail-archive.com/e1000-devel@lists.sourceforge.net/msg02200.html
-> 
->     As there was no follow up on that bug, I am submitting this
->     patch assuming that the other return points will not return
->     invalid txq's, and also that this fixes the bug (not tested).
-> 
->     Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
->     Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
->     Acked-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
->     Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
-> 
+I really do apologize if these caused undue traffic on vger.  It
+certainly wasn't our intention to cause any problems.
+
+We've had a fear all along that we'll just go back into our little
+containers@lists.linux-foundation.org, and go astray of what the
+community wants done with these patches.  It's also important to
+remember that these really do affect the entire kernel.  Unfortunately,
+it's not really a single feature or something that fits well on any
+other mailing list.  It has implications _everywhere_.  I think Andrew
+Morton also asked that these continue coming to LKML, although his
+request probably came at a time when the set was a wee bit smaller.
+
+> Do you realize how much mail traffic you generate by posting so many
+> patches at one time, and how unlikely it is for anyone to actually
+> sift through and review your patches after you've spammed them by
+> posting so many at one time?
+
+I honestly don't expect people to be reading the whole thing at once.
+But, I do hope that people can take a look at their individual bits that
+are touched.
+
+> A second infraction and I will have no choice but to block you at the
+> SMTP level at vger.kernel.org so please do not do it again.
+
+I know these patches are certainly not at the level of importance as,
+say the pata or -stable updates, but they're certainly not of
+unprecedented scale.  I've seen a number of patchbombs of this size
+recently.
+
+I hope Andrew pulls this set into -mm so this doesn't even come up
+again.  But, if it does, can you make some suggestions on how to be more
+kind to vger in the process?
+
+-- Dave
+
