@@ -1,146 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab0ECXXl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 19:23:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26556 "EHLO mx1.redhat.com"
+	id S933472Ab0ECXX7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 19:23:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32652 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759890Ab0ECXNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 19:13:23 -0400
+	id S1759861Ab0ECXNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 19:13:21 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
        Christoph Hellwig <hch@infradead.org>, Jan Blunck <jblunck@suse.de>,
-       Valerie Aurora <vaurora@redhat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 03/39] VFS: Add read-only users count to superblock
-Date: Mon,  3 May 2010 16:12:02 -0700
-Message-Id: <1272928358-20854-4-git-send-email-vaurora@redhat.com>
+       Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 08/39] whiteout: Allow removal of a directory with whiteouts
+Date: Mon,  3 May 2010 16:12:07 -0700
+Message-Id: <1272928358-20854-9-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 References: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While we can check if a file system is currently read-only, we can't
-guarantee that it will stay read-only.  The file system can be
-remounted read-write at any time; it's also conceivable that a file
-system can be mounted a second time and converted to read-write if the
-underlying fs allows it.  This is a problem for union mounts, which
-require the underlying file system be read-only.  Add a read-only
-users count and don't allow remounts to change the file system to
-read-write or read-write mounts if there are any read-only users.
+From: Jan Blunck <jblunck@suse.de>
 
+do_whiteout() allows removal of a directory when it has whiteouts but
+is logically empty.
+
+XXX - This patch abuses readdir() to check if the union directory is
+logically empty - that is, all the entries are whiteouts (or "." or
+"..").  Currently, we have no clean VFS interface to ask the lower
+file system if a directory is empty.
+
+Fixes:
+ - Add ->is_directory_empty() op
+ - Add is_directory_empty flag to dentry (ugly dcache populate)
+ - Ask underlying fs to remove it and look for an error return
+ - (your idea here)
+
+Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- fs/namespace.c     |   11 +++++++++++
- fs/super.c         |   23 +++++++++++++++++++++++
- include/linux/fs.h |    8 ++++++++
- 3 files changed, 42 insertions(+), 0 deletions(-)
+ fs/namei.c |   88 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 88 insertions(+), 0 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 1cd59a0..9a40282 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -200,6 +200,17 @@ int __mnt_is_readonly(struct vfsmount *mnt)
- }
- EXPORT_SYMBOL_GPL(__mnt_is_readonly);
+diff --git a/fs/namei.c b/fs/namei.c
+index ce32e66..7e2c31f 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2309,6 +2309,94 @@ int path_whiteout(struct path *dir_path, struct dentry *dentry, int isdir)
+ EXPORT_SYMBOL(path_whiteout);
  
-+static void inc_hard_readonly_users(struct vfsmount *mnt)
-+{
-+	mnt->mnt_sb->s_hard_readonly_users++;
-+}
-+
-+static void dec_hard_readonly_users(struct vfsmount *mnt)
-+{
-+	BUG_ON(mnt->mnt_sb->s_hard_readonly_users == 0);
-+	mnt->mnt_sb->s_hard_readonly_users--;
-+}
-+
- static inline void inc_mnt_writers(struct vfsmount *mnt)
- {
- #ifdef CONFIG_SMP
-diff --git a/fs/super.c b/fs/super.c
-index 1527e6a..6add39b 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -118,6 +118,7 @@ out:
-  */
- static inline void destroy_super(struct super_block *s)
- {
-+	BUG_ON(s->s_hard_readonly_users);
- 	security_sb_free(s);
- 	kfree(s->s_subtype);
- 	kfree(s->s_options);
-@@ -557,6 +558,21 @@ out:
- 	return err;
- }
- 
-+/*
-+ * Some uses of file systems require that they never be mounted
-+ * read-write anywhere (e.g., the lower layers of union mounts must
-+ * always be read-only).  If there are any of these "hard" read-only
-+ * mounts, don't permit a transition to read-write.
-+ *
-+ * Must be called while holding the namespace lock.
+ /*
++ * XXX - We are abusing readdir to check if a union directory is
++ * logically empty.
 + */
-+
-+int sb_is_hard_readonly(struct super_block *sb)
++static int filldir_is_empty(void *__buf, const char *name, int namlen,
++			    loff_t offset, u64 ino, unsigned int d_type)
 +{
-+	return sb->s_hard_readonly_users ? 1 : 0;
++	int *is_empty = (int *)__buf;
++
++	switch (namlen) {
++	case 2:
++		if (name[1] != '.')
++			break;
++	case 1:
++		if (name[0] != '.')
++			break;
++		return 0;
++	}
++
++	if (d_type == DT_WHT)
++		return 0;
++
++	(*is_empty) = 0;
++	return 0;
 +}
-+EXPORT_SYMBOL(sb_is_hard_readonly);
 +
- /**
-  *	do_remount_sb - asks filesystem to change mount options.
-  *	@sb:	superblock in question
-@@ -599,6 +615,9 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
- 			return -EBUSY;
- 	}
- 
-+	if (remount_rw && sb_is_hard_readonly(sb))
-+		return -EROFS;
++static int directory_is_empty(struct dentry *dentry, struct vfsmount *mnt)
++{
++	struct file *file;
++	int err;
++	int is_empty = 1;
 +
- 	if (sb->s_op->remount_fs) {
- 		retval = sb->s_op->remount_fs(sb, &flags, data);
- 		if (retval)
-@@ -972,6 +991,10 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
- 	WARN((mnt->mnt_sb->s_maxbytes < 0), "%s set sb->s_maxbytes to "
- 		"negative value (%lld)\n", type->name, mnt->mnt_sb->s_maxbytes);
- 
-+	error = -EROFS;
-+	if (!(flags & MS_RDONLY) && sb_is_hard_readonly(mnt->mnt_sb))
-+		goto out_sb;
++	BUG_ON(!S_ISDIR(dentry->d_inode->i_mode));
 +
- 	mnt->mnt_mountpoint = mnt->mnt_root;
- 	mnt->mnt_parent = mnt;
- 	up_write(&mnt->mnt_sb->s_umount);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 44f35ae..d7ef72a 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1383,6 +1383,13 @@ struct super_block {
- 	 * generic_show_options()
- 	 */
- 	char *s_options;
++	/* references for the file pointer */
++	dget(dentry);
++	mntget(mnt);
 +
-+	/*
-+	 * Some mounts require that the underlying file system never
-+	 * transition to read-write.  They mark the sb itself as
-+	 * read-only.
-+	 */
-+	int s_hard_readonly_users;
- };
- 
- extern struct timespec current_fs_time(struct super_block *sb);
-@@ -1767,6 +1774,7 @@ extern int get_sb_nodev(struct file_system_type *fs_type,
- 	int (*fill_super)(struct super_block *, void *, int),
- 	struct vfsmount *mnt);
- void generic_shutdown_super(struct super_block *sb);
-+int sb_is_hard_readonly(struct super_block *sb);
- void kill_block_super(struct super_block *sb);
- void kill_anon_super(struct super_block *sb);
- void kill_litter_super(struct super_block *sb);
++	file = dentry_open(dentry, mnt, O_RDONLY, current_cred());
++	if (IS_ERR(file))
++		return 0;
++
++	err = vfs_readdir(file, filldir_is_empty, &is_empty);
++
++	fput(file);
++	return is_empty;
++}
++
++static int do_whiteout(struct nameidata *nd, struct path *path, int isdir)
++{
++	struct path safe = { .dentry = dget(nd->path.dentry),
++			     .mnt = mntget(nd->path.mnt) };
++	struct dentry *dentry = path->dentry;
++	int err;
++
++	err = may_whiteout(nd->path.dentry->d_inode, dentry, isdir);
++	if (err)
++		goto out;
++
++	err = -ENOENT;
++	if (!dentry->d_inode)
++		goto out;
++
++	err = -ENOTEMPTY;
++	if (isdir && !directory_is_empty(path->dentry, path->mnt))
++		goto out;
++
++	if (nd->path.dentry != dentry->d_parent) {
++		dentry = __lookup_hash(&path->dentry->d_name, nd->path.dentry,
++				       nd);
++		err = PTR_ERR(dentry);
++		if (IS_ERR(dentry))
++			goto out;
++
++		dput(path->dentry);
++		if (path->mnt != safe.mnt)
++			mntput(path->mnt);
++		path->mnt = nd->path.mnt;
++		path->dentry = dentry;
++	}
++
++	err = vfs_whiteout(nd->path.dentry->d_inode, dentry, isdir);
++
++out:
++	path_put(&safe);
++	return err;
++}
++
++/*
+  * We try to drop the dentry early: we should have
+  * a usage count of 2 if we're the only user of this
+  * dentry, and if that is true (possibly after pruning
 -- 
 1.6.3.3
 
