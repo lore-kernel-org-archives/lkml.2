@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab0ECIu2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 04:50:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22559 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab0ECIu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 04:50:27 -0400
-Message-ID: <4BDE8E24.5050200@redhat.com>
-Date: Mon, 03 May 2010 11:49:40 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1752060Ab0ECI5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 04:57:22 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:25235 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751028Ab0ECI5U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 04:57:20 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAFMr3ktbstD1/2dsb2JhbACdIHK5QQ6FBAQ
+Date: Mon, 3 May 2010 10:57:19 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH] watchdogs: fix several MODULE_PARM_DESC strings
+Message-ID: <20100503085719.GA24325@infomag.iguana.be>
+References: <20100501094615.06fc4972.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-To: Changli Gao <xiaosuo@gmail.com>
-CC: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, jslaby@suse.cz,
-       akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-       adobriyan@gmail.com, mingo@elte.hu, peterz@infradead.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: use kmalloc() to allocate fdmem if possible
-References: <viro@zeniv.linux.org.uk> <1272818776-7729-1-git-send-email-xiaosuo@gmail.com> 	<4BDDB6E9.4060703@redhat.com> <201005030915.FCD09385.FFHVOMJtSLOFQO@I-love.SAKURA.ne.jp> 	<4BDE67DA.4080004@redhat.com> <y2z412e6f7f1005030005vc3be4977z3add08bfc72d1c44@mail.gmail.com> 	<4BDE7E66.8030509@redhat.com> <m2l412e6f7f1005030052ka39a33ceke8c6b61553ba007f@mail.gmail.com>
-In-Reply-To: <m2l412e6f7f1005030052ka39a33ceke8c6b61553ba007f@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100501094615.06fc4972.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2010 10:52 AM, Changli Gao wrote:
-> On Mon, May 3, 2010 at 3:42 PM, Avi Kivity<avi@redhat.com>  wrote:
->    
->> On 05/03/2010 10:05 AM, Changli Gao wrote:
->>      
->>> On Mon, May 3, 2010 at 2:06 PM, Avi Kivity<avi@redhat.com>    wrote:
->>>
->>>        
->>>> My point is, vmalloc() and vfree should do this, not their callers:
->>>>
->>>> vmalloc(size):
->>>>     if (size<= PAGE_SIZE)
->>>>         return kmalloc(size, GFP_KERNEL);
->>>>     ...
->>>>
->>>> vfree(p):
->>>>     if (!is_vmalloc_addr(p) {
->>>>         kfree(p);
->>>>         return;
->>>>     }
->>>>     ...
->>>>
->>>>          
->>> I think we should not change vmalloc/vfree, and you can invent new
->>> memory APIs, such as malloc()/free().
->>>
->>>        
->> Why?
->>
->>      
-> Because vmalloc is used to allocate virtually contiguous memory. v in
-> vmalloc means virtually.
->
->    
+Hi Randy,
 
-A kmalloc()ed page is virtually contiguous, satisfying your requirement.
+> Fix MODULE_PARM_DESC() strings in several watchdog drivers.
+> Some are simple as add a parenthesis.
+> Others are problems from __stringify() being used on a
+> variable name instead of a macro name, so the variable name
+> is produced in the string instead of its build-time value.
+> In these cases, create a macro for the value so that the
+> module param description string is useful.
+> 
+> Only pc87413_wdt has been built (due to toolchains).
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: Wim Van Sebroeck <wim@iguana.be>
 
--- 
-error compiling committee.c: too many arguments to function
+Adding this one to the linux-2.6-watchdog-next tree.
+
+> BTW, in ep93xx_wdt.c, I can't find where WATCHDOG_TIMEOUT is
+> defined.  Can someone point me to it, please?
+> (or does it not even build?)
+
+I don't think it will build: WDT_TIMEOUT is the correct timeout macro.
+I'll sent in a fix for this. Thanks!
+
+> --- lnx-2634-rc6.orig/drivers/watchdog/pc87413_wdt.c
+> +++ lnx-2634-rc6/drivers/watchdog/pc87413_wdt.c
+> @@ -53,7 +53,9 @@
+>  #define WDTO                0x11	/* Watchdog timeout register */
+>  #define WDCFG               0x12	/* Watchdog config register */
+>  
+> -static int io = 0x2E;			/* Address used on Portwell Boards */
+> +#define IO_DEFAULT	0x2E		/* Address used on Portwell Boards */
+> +
+> +static int io = IO_DEFAULT;
+>  
+>  static int timeout = DEFAULT_TIMEOUT;	/* timeout value */
+>  static unsigned long timer_enabled;	/* is the timer enabled? */
+> @@ -583,12 +585,12 @@ MODULE_LICENSE("GPL");
+>  MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
+>  
+>  module_param(io, int, 0);
+> -MODULE_PARM_DESC(io, MODNAME " I/O port (default: " __MODULE_STRING(io) ").");
+> +MODULE_PARM_DESC(io, MODNAME " I/O port (default: " __MODULE_STRING(IO_DEFAULT) ").");
+
+This one is changed to:
++MODULE_PARM_DESC(io, MODNAME " I/O port (default: "
++                                       __MODULE_STRING(IO_DEFAULT) ").");
+
+Kind regards,
+Wim.
 
