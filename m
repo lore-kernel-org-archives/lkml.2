@@ -1,173 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933459Ab0ECXXH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 19:23:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61368 "EHLO mx1.redhat.com"
+	id S933468Ab0ECXXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 19:23:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26556 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932169Ab0ECXNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 19:13:31 -0400
+	id S1759890Ab0ECXNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 19:13:23 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
        Christoph Hellwig <hch@infradead.org>, Jan Blunck <jblunck@suse.de>,
-       Valerie Aurora <vaurora@redhat.com>, Theodore Tso <tytso@mit.edu>,
-       linux-ext4@vger.kernel.org
-Subject: [PATCH 10/39] whiteout: Split of ext2_append_link() from ext2_add_link()
-Date: Mon,  3 May 2010 16:12:09 -0700
-Message-Id: <1272928358-20854-11-git-send-email-vaurora@redhat.com>
+       Valerie Aurora <vaurora@redhat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 03/39] VFS: Add read-only users count to superblock
+Date: Mon,  3 May 2010 16:12:02 -0700
+Message-Id: <1272928358-20854-4-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 References: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
+While we can check if a file system is currently read-only, we can't
+guarantee that it will stay read-only.  The file system can be
+remounted read-write at any time; it's also conceivable that a file
+system can be mounted a second time and converted to read-write if the
+underlying fs allows it.  This is a problem for union mounts, which
+require the underlying file system be read-only.  Add a read-only
+users count and don't allow remounts to change the file system to
+read-write or read-write mounts if there are any read-only users.
 
-The ext2_append_link() is later used to find or append a directory
-entry to whiteout.
-
-Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: Theodore Tso <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- fs/ext2/dir.c |   70 ++++++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 50 insertions(+), 20 deletions(-)
+ fs/namespace.c     |   11 +++++++++++
+ fs/super.c         |   23 +++++++++++++++++++++++
+ include/linux/fs.h |    8 ++++++++
+ 3 files changed, 42 insertions(+), 0 deletions(-)
 
-diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
-index 7516957..57207a9 100644
---- a/fs/ext2/dir.c
-+++ b/fs/ext2/dir.c
-@@ -472,9 +472,10 @@ void ext2_set_link(struct inode *dir, struct ext2_dir_entry_2 *de,
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 1cd59a0..9a40282 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -200,6 +200,17 @@ int __mnt_is_readonly(struct vfsmount *mnt)
  }
+ EXPORT_SYMBOL_GPL(__mnt_is_readonly);
  
- /*
-- *	Parent is locked.
-+ * Find or append a given dentry to the parent directory
-  */
--int ext2_add_link (struct dentry *dentry, struct inode *inode)
-+static ext2_dirent * ext2_append_entry(struct dentry * dentry,
-+				       struct page ** page)
- {
- 	struct inode *dir = dentry->d_parent->d_inode;
- 	const char *name = dentry->d_name.name;
-@@ -482,13 +483,10 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 	unsigned chunk_size = ext2_chunk_size(dir);
- 	unsigned reclen = EXT2_DIR_REC_LEN(namelen);
- 	unsigned short rec_len, name_len;
--	struct page *page = NULL;
--	ext2_dirent * de;
-+	ext2_dirent * de = NULL;
- 	unsigned long npages = dir_pages(dir);
- 	unsigned long n;
- 	char *kaddr;
--	loff_t pos;
--	int err;
- 
- 	/*
- 	 * We take care of directory expansion in the same loop.
-@@ -498,20 +496,19 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 	for (n = 0; n <= npages; n++) {
- 		char *dir_end;
- 
--		page = ext2_get_page(dir, n, 0);
--		err = PTR_ERR(page);
--		if (IS_ERR(page))
-+		*page = ext2_get_page(dir, n, 0);
-+		de = ERR_PTR(PTR_ERR(*page));
-+		if (IS_ERR(*page))
- 			goto out;
--		lock_page(page);
--		kaddr = page_address(page);
-+		lock_page(*page);
-+		kaddr = page_address(*page);
- 		dir_end = kaddr + ext2_last_byte(dir, n);
- 		de = (ext2_dirent *)kaddr;
- 		kaddr += PAGE_CACHE_SIZE - reclen;
- 		while ((char *)de <= kaddr) {
- 			if ((char *)de == dir_end) {
- 				/* We hit i_size */
--				name_len = 0;
--				rec_len = chunk_size;
-+				de->name_len = 0;
- 				de->rec_len = ext2_rec_len_to_disk(chunk_size);
- 				de->inode = 0;
- 				goto got_it;
-@@ -519,12 +516,11 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 			if (de->rec_len == 0) {
- 				ext2_error(dir->i_sb, __func__,
- 					"zero-length directory entry");
--				err = -EIO;
-+				de = ERR_PTR(-EIO);
- 				goto out_unlock;
- 			}
--			err = -EEXIST;
- 			if (ext2_match (namelen, name, de))
--				goto out_unlock;
-+				goto got_it;
- 			name_len = EXT2_DIR_REC_LEN(de->name_len);
- 			rec_len = ext2_rec_len_from_disk(de->rec_len);
- 			if (!de->inode && rec_len >= reclen)
-@@ -533,13 +529,48 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 				goto got_it;
- 			de = (ext2_dirent *) ((char *) de + rec_len);
- 		}
--		unlock_page(page);
--		ext2_put_page(page);
-+		unlock_page(*page);
-+		ext2_put_page(*page);
- 	}
-+
- 	BUG();
--	return -EINVAL;
- 
- got_it:
-+	return de;
-+	/* OFFSET_CACHE */
-+out_unlock:
-+	unlock_page(*page);
-+	ext2_put_page(*page);
-+out:
-+	return de;
++static void inc_hard_readonly_users(struct vfsmount *mnt)
++{
++	mnt->mnt_sb->s_hard_readonly_users++;
 +}
 +
-+/*
-+ *	Parent is locked.
-+ */
-+int ext2_add_link (struct dentry *dentry, struct inode *inode)
++static void dec_hard_readonly_users(struct vfsmount *mnt)
 +{
-+	struct inode *dir = dentry->d_parent->d_inode;
-+	const char *name = dentry->d_name.name;
-+	int namelen = dentry->d_name.len;
-+	unsigned short rec_len, name_len;
-+	ext2_dirent * de;
-+	struct page *page;
-+	loff_t pos;
-+	int err;
++	BUG_ON(mnt->mnt_sb->s_hard_readonly_users == 0);
++	mnt->mnt_sb->s_hard_readonly_users--;
++}
 +
-+	de = ext2_append_entry(dentry, &page);
-+	if (IS_ERR(de))
-+		return PTR_ERR(de);
-+
-+	err = -EEXIST;
-+	if (ext2_match (namelen, name, de))
-+		goto out_unlock;
-+
-+got_it:
-+	name_len = EXT2_DIR_REC_LEN(de->name_len);
-+	rec_len = ext2_rec_len_from_disk(de->rec_len);
-+
- 	pos = page_offset(page) +
- 		(char*)de - (char*)page_address(page);
- 	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
-@@ -563,7 +594,6 @@ got_it:
- 	/* OFFSET_CACHE */
- out_put:
- 	ext2_put_page(page);
--out:
+ static inline void inc_mnt_writers(struct vfsmount *mnt)
+ {
+ #ifdef CONFIG_SMP
+diff --git a/fs/super.c b/fs/super.c
+index 1527e6a..6add39b 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -118,6 +118,7 @@ out:
+  */
+ static inline void destroy_super(struct super_block *s)
+ {
++	BUG_ON(s->s_hard_readonly_users);
+ 	security_sb_free(s);
+ 	kfree(s->s_subtype);
+ 	kfree(s->s_options);
+@@ -557,6 +558,21 @@ out:
  	return err;
- out_unlock:
- 	unlock_page(page);
+ }
+ 
++/*
++ * Some uses of file systems require that they never be mounted
++ * read-write anywhere (e.g., the lower layers of union mounts must
++ * always be read-only).  If there are any of these "hard" read-only
++ * mounts, don't permit a transition to read-write.
++ *
++ * Must be called while holding the namespace lock.
++ */
++
++int sb_is_hard_readonly(struct super_block *sb)
++{
++	return sb->s_hard_readonly_users ? 1 : 0;
++}
++EXPORT_SYMBOL(sb_is_hard_readonly);
++
+ /**
+  *	do_remount_sb - asks filesystem to change mount options.
+  *	@sb:	superblock in question
+@@ -599,6 +615,9 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
+ 			return -EBUSY;
+ 	}
+ 
++	if (remount_rw && sb_is_hard_readonly(sb))
++		return -EROFS;
++
+ 	if (sb->s_op->remount_fs) {
+ 		retval = sb->s_op->remount_fs(sb, &flags, data);
+ 		if (retval)
+@@ -972,6 +991,10 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
+ 	WARN((mnt->mnt_sb->s_maxbytes < 0), "%s set sb->s_maxbytes to "
+ 		"negative value (%lld)\n", type->name, mnt->mnt_sb->s_maxbytes);
+ 
++	error = -EROFS;
++	if (!(flags & MS_RDONLY) && sb_is_hard_readonly(mnt->mnt_sb))
++		goto out_sb;
++
+ 	mnt->mnt_mountpoint = mnt->mnt_root;
+ 	mnt->mnt_parent = mnt;
+ 	up_write(&mnt->mnt_sb->s_umount);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 44f35ae..d7ef72a 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1383,6 +1383,13 @@ struct super_block {
+ 	 * generic_show_options()
+ 	 */
+ 	char *s_options;
++
++	/*
++	 * Some mounts require that the underlying file system never
++	 * transition to read-write.  They mark the sb itself as
++	 * read-only.
++	 */
++	int s_hard_readonly_users;
+ };
+ 
+ extern struct timespec current_fs_time(struct super_block *sb);
+@@ -1767,6 +1774,7 @@ extern int get_sb_nodev(struct file_system_type *fs_type,
+ 	int (*fill_super)(struct super_block *, void *, int),
+ 	struct vfsmount *mnt);
+ void generic_shutdown_super(struct super_block *sb);
++int sb_is_hard_readonly(struct super_block *sb);
+ void kill_block_super(struct super_block *sb);
+ void kill_anon_super(struct super_block *sb);
+ void kill_litter_super(struct super_block *sb);
 -- 
 1.6.3.3
 
