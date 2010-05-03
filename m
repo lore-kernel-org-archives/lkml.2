@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757072Ab0ECVST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 17:18:19 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38528 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755221Ab0ECVSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 17:18:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Date: Mon, 3 May 2010 23:18:35 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-References: <1272667021-21312-1-git-send-email-arve@android.com> <87wrvl5479.fsf@deeprootsystems.com> <20100503180741.GB2098@rakim.wolfsonmicro.main>
-In-Reply-To: <20100503180741.GB2098@rakim.wolfsonmicro.main>
+	id S1757291Ab0ECVSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 17:18:34 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:48448 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757216Ab0ECVSc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 17:18:32 -0400
+X-SpamScore: -32
+X-BigFish: VPS-32(zz1432P98dN936eM1419M62a3Lzz1202hzz6ff19h2ba5Mz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L1V4IM-02-F3X-02
+X-M-MSG: 
+Date: Mon, 3 May 2010 23:18:20 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+CC: "Siamashka Siarhei (Nokia-D/Helsinki)" <siarhei.siamashka@nokia.com>,
+       "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>,
+       "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] updates for oprofile
+Message-ID: <20100503211820.GF5979@erda.amd.com>
+References: <20100427152544.GA9063@pcarmody-desktop>
+ <20100427174026.GR6450@erda.amd.com>
+ <201004272047.52056.siarhei.siamashka@nokia.com>
+ <20100428165906.GA21724@erda.amd.com>
+ <20100428170915.GF17639@pcarmody-desktop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005032318.35383.rjw@sisk.pl>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100428170915.GF17639@pcarmody-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 May 2010, Mark Brown wrote:
-> On Mon, May 03, 2010 at 09:40:26AM -0700, Kevin Hilman wrote:
+On 28.04.10 12:09:16, Phil Carmody wrote:
+> On 28/04/10 18:59 +0200, ext Robert Richter wrote:
+> > On 27.04.10 20:47:51, Siarhei Siamashka wrote:
+> > > Isn't hrtimer callback function supposed to be only called from IRQ context
+> > > after this cleanup: http://lwn.net/Articles/308545/ ?
+> > 
+> > Yes, the patch is upstream since v2.6.29. Thanks Siarhei.
+> > 
+> > I will add a null pointer check anyway.
 > 
-> > At least from the kernel perspective, both suspend blockers and
-> > runtime PM have the same goal.  Given that, which framework should the
-> > driver writer target?  Both?  Seems like duplicate effort.  Using
-> > suspend blockers assumes the system is in opportunitstic suspend mode
-> > and (at least in the keypad example given) assumes a suspend-blocker
-> > aware userspace (Android.) Without both, targeted power savings will
-> > not be acheived.
+> A few here thrashed around a couple of ideas, and the general consensus 
+> was that the following work for us, and is offered for consideration.
 > 
-> The other concern here is that for many mobile systems the actual
-> semantic intended by "suspend" as it's currently used is more runtime PM
-> like than full suspend - the classic example of this is that when
-> suspending while on a call in a phone you don't want to suspend the
-> modem or audio CODEC, you want to leave them running.  If you use a full
-> system suspend then the drivers for affected components have to play
-> guessing games (or add currently non-standard knobs for apps to twiddle)
-> to decide if the system intends them to actually implement the suspend
-> or not but with runtime PM it all falls out very naturally without any
-> effort on the part of the driver.
+> Phil
 > 
-> > To me, runtime PM is a generic and flexible approach that can be used
-> > with any userspace.  Driver writers should not have to care whether
-> > the system is in "opportunistic" mode or about whether userspace is
-> > suspend blocker capable.  They should only have to think about when
-> > the device is (or should be) idle.
 > 
-> I fully agree with this.  We do need to ensure that a runtime PM based
-> system can suspend the CPU core and RAM as well as system suspend can
-> but that seems doable.
+> From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> Date: Tue, 27 Apr 2010 19:28:33 +0300
+> Subject: [PATCH v2 1/1] oprofile: HACK - protect from not being in an IRQ context
+> 
+> http://lkml.org/lkml/2010/4/27/285
+> 
+> Protect against dereferencing regs when it's NULL, and
+> force a magic number into pc to prevent too deep processing.
+> This approach permits the dropped samples to be tallied as
+> invalid Instruction Pointer events.
+> 
+> e.g. output from about 15mins at 10kHz sample rate:
+> Nr. samples received: 2565380
+> Nr. samples lost invalid pc: 4
+> 
+> Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
 
-I _think_ it would be hard at least.  On ACPI-based systems it's not doable at
-all AFAICS.
+Patch applied to:
 
-However, the real question is whether or not the opportunistic suspend feature
-is worth adding to the kernel as such and I think it is.
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
 
-To me, it doesn't duplicate the runtime PM framework which is aimed at the power
-management of individual devices rather than the system as a whole.
+Thanks Phil!
 
-Thanks,
-Rafael
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
+
