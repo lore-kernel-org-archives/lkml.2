@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757126Ab0ECVpA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 17:45:00 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:17821 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab0ECVo6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 17:44:58 -0400
-Subject: Re: [PATCH] net: show stopped status in sysfs
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Tom Herbert <therbert@google.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100503212423.GA15998@redhat.com>
-References: <20100503212423.GA15998@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Mon, 03 May 2010 22:44:53 +0100
-Message-ID: <1272923093.27948.63.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757583Ab0ECVqk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 17:46:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37926 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755975Ab0ECVqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 17:46:39 -0400
+Message-ID: <4BDF4407.8000503@zytor.com>
+Date: Mon, 03 May 2010 14:45:43 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>, Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Brian Gerst <brgerst@gmail.com>, Dexuan Cui <dexuan.cui@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86: eliminate TS_XSAVE
+References: <1272812038-32484-1-git-send-email-avi@redhat.com>	 <1272812038-32484-2-git-send-email-avi@redhat.com> <u2p73c1f2161005021038gce35c1bbpca6ec119d24e646e@mail.gmail.com> <4BDDBA18.3080909@redhat.com>
+In-Reply-To: <4BDDBA18.3080909@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 May 2010 21:45:19.0646 (UTC) FILETIME=[ECF913E0:01CAEB09]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17360.005
-X-TM-AS-Result: No--17.629100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-04 at 00:24 +0300, Michael S. Tsirkin wrote:
-> When debugging faulty hardware (in case of virt, faulty
-> emulation) I found it helpful to be able to examine
-> stopped status of the interface. The following patch makes
-> this visible in sysfs.
-[...]
+On 05/02/2010 10:44 AM, Avi Kivity wrote:
+> On 05/02/2010 08:38 PM, Brian Gerst wrote:
+>> On Sun, May 2, 2010 at 10:53 AM, Avi Kivity<avi@redhat.com>  wrote:
+>>    
+>>> The fpu code currently uses current->thread_info->status&  TS_XSAVE as
+>>> a way to distinguish between XSAVE capable processors and older processors.
+>>> The decision is not really task specific; instead we use the task status to
+>>> avoid a global memory reference - the value should be the same across all
+>>> threads.
+>>>
+>>> Eliminate this tie-in into the task structure by using an alternative
+>>> instruction keyed off the XSAVE cpu feature; this results in shorter and
+>>> faster code, without introducing a global memory reference.
+>>>      
+>> I think you should either just use cpu_has_xsave, or extend this use
+>> of alternatives to all cpu features.  It doesn't make sense to only do
+>> it for xsave.
+>>    
+> 
+> I was trying to avoid a performance regression relative to the current 
+> code, as it appears that some care was taken to avoid the memory reference.
+> 
+> I agree that it's probably negligible compared to the save/restore 
+> code.  If the x86 maintainers agree as well, I'll replace it with 
+> cpu_has_xsave.
+> 
 
-This is a per-queue attribute and should not be associated directly with
-the netdev.
+I asked Suresh to comment on this, since he wrote the original code.  He
+did confirm that the intent was to avoid a global memory reference.
 
-Ben.
-
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+	-hpa
 
