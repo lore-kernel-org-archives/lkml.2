@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab0ECGBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 02:01:10 -0400
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:53000 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754549Ab0ECGBG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 02:01:06 -0400
-X-SENDER-IP: [85.228.117.137]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtMYALYD3ktV5HWJPGdsb2JhbAAHgxCEUpVCAQEBATWpVo9lgSaCfm4E
-X-IronPort-AV: E=Sophos;i="4.52,317,1270418400"; 
-   d="scan'208";a="514048548"
-Message-ID: <4BDE669C.6030901@pelagicore.com>
-Date: Mon, 03 May 2010 08:01:00 +0200
-From: =?UTF-8?B?UmljaGFyZCBSw7ZqZm9ycw==?= 
-	<richard.rojfors@pelagicore.com>
-Organization: Pelagicore AB
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100411 Iceowl/1.0b1 Icedove/3.0.4
+	id S1755229Ab0ECGHL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 02:07:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1586 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753211Ab0ECGHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 02:07:06 -0400
+Message-ID: <4BDE67DA.4080004@redhat.com>
+Date: Mon, 03 May 2010 09:06:18 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Anton Vorontsov <avorontsov@mvista.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       David Vrabel <david.vrabel@csr.com>, Pierre Ossman <pierre@ossman.eu>,
-       Ben Dooks <ben@simtec.co.uk>, linux-mmc@vger.kernel.org,
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC: xiaosuo@gmail.com, jslaby@suse.cz, akpm@linux-foundation.org,
+       paulmck@linux.vnet.ibm.com, adobriyan@gmail.com, mingo@elte.hu,
+       peterz@infradead.org, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] sdhci-pltfm: Do not print errors in case of an extended
- iomem size
-References: <20100316183400.GA24191@oksana.dev.rtsoft.ru> <20100316183430.GC25670@oksana.dev.rtsoft.ru> <4BA0708C.8070402@pelagicore.com> <20100423182552.GA4076@oksana.dev.rtsoft.ru>
-In-Reply-To: <20100423182552.GA4076@oksana.dev.rtsoft.ru>
+Subject: Re: [PATCH] fs: use kmalloc() to allocate fdmem if possible
+References: <viro@zeniv.linux.org.uk>	<1272818776-7729-1-git-send-email-xiaosuo@gmail.com>	<4BDDB6E9.4060703@redhat.com> <201005030915.FCD09385.FFHVOMJtSLOFQO@I-love.SAKURA.ne.jp>
+In-Reply-To: <201005030915.FCD09385.FFHVOMJtSLOFQO@I-love.SAKURA.ne.jp>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2010 08:25 PM, Anton Vorontsov wrote:
-> On Wed, Mar 17, 2010 at 07:02:52AM +0100, Richard Röjfors wrote:
->> On 3/16/10 7:34 PM, Anton Vorontsov wrote:
->>> Some hosts have an extended SDHCI iomem size, so the driver should
->>> only print errors if the iomem size is less than 0x100.
->>
->> With this change you allow a bigger resource than we really need.
->> I think you should also change request_mem_region and ioremap to only
->> request and map the actual needed size. (0x100)
->
-> Sorry for the delayed response.
->
-> Why do you think that mapping more than "needed" is a bad thing?
-> Looking into the PCI driver, it just maps the whole PCI BAR (which
-> makes sense, since later SDHCI spec might easily introduce an
-> extended address space, so hardcoding 0x100 isn't very good).
->
-> There is another case when mapping the whole SDHCI mem space
-> might be convenient: if the platform code will want to use
-> the ioremapped region inside the platform hooks.
-
-That's a good reason.
-
-Acked-by: Richard Röjfors <richard.rojfors@pelagicore.com>
-
->
-> Thanks!
->
->>> Signed-off-by: Anton Vorontsov<avorontsov@ru.mvista.com>
->>> ---
->>>   drivers/mmc/host/sdhci-pltfm.c |    2 +-
->>>   1 files changed, 1 insertions(+), 1 deletions(-)
+On 05/03/2010 03:15 AM, Tetsuo Handa wrote:
+> Avi Kivity wrote:
+>    
+>> On 05/02/2010 07:46 PM, Changli Gao wrote:
+>>      
+>>> use kmalloc() to allocate fdmem if possible.
 >>>
->>> diff --git a/drivers/mmc/host/sdhci-pltfm.c b/drivers/mmc/host/sdhci-pltfm.c
->>> index 217b911..b6ee0d7 100644
->>> --- a/drivers/mmc/host/sdhci-pltfm.c
->>> +++ b/drivers/mmc/host/sdhci-pltfm.c
->>> @@ -61,7 +61,7 @@ static int __devinit sdhci_pltfm_probe(struct platform_device *pdev)
->>>   		goto err;
->>>   	}
+>>> vmalloc() is used as a fallback solution for fdmem allocation. Two members are
+>>> added into the hole of the structure fdtable to indicate if vmalloc() is used
+>>> or not.
 >>>
->>> -	if (resource_size(iomem) != 0x100)
->>> +	if (resource_size(iomem)<  0x100)
->>>   		dev_err(&pdev->dev, "Invalid iomem size. You may "
->>>   			"experience problems.\n");
 >>>
->>
+>>> diff --git a/fs/file.c b/fs/file.c
+>>> index 34bb7f7..f71dd85 100644
+>>> --- a/fs/file.c
+>>> +++ b/fs/file.c
+>>> @@ -39,28 +39,34 @@ int sysctl_nr_open_max = 1024 * 1024; /* raised later */
+>>>     */
+>>>    static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
+>>>
+>>> -static inline void * alloc_fdmem(unsigned int size)
+>>> +static inline void *alloc_fdmem(unsigned int size, unsigned short *use_vmalloc)
+>>>    {
+>>> -	if (size<= PAGE_SIZE)
+>>> -		return kmalloc(size, GFP_KERNEL);
+>>> -	else
+>>> -		return vmalloc(size);
+>>> +	void *data;
+>>> +
+>>> +	data = kmalloc(size, GFP_KERNEL);
+>>> +	if (data != NULL) {
+>>> +		*use_vmalloc = 0;
+>>> +		return data;
+>>> +	}
+>>> +	*use_vmalloc = 1;
+>>> +
+>>> +	return vmalloc(size);
+>>>    }
+>>>
+>>>        
+>> Perhaps vmalloc() should do this by itself?  vfree() can examine the
+>> pointer and call kfree() if it isn't within the vmalloc address range.
+>>      
+> You can use is_vmalloc_addr().
 >
+> 	if (is_vmalloc_addr(p))
+> 		vfree(p);
+> 	else
+> 		kfree(p);
+>    
+
+
+My point is, vmalloc() and vfree should do this, not their callers:
+
+vmalloc(size):
+     if (size <= PAGE_SIZE)
+         return kmalloc(size, GFP_KERNEL);
+     ...
+
+vfree(p):
+     if (!is_vmalloc_addr(p) {
+         kfree(p);
+         return;
+     }
+     ...
+
+-- 
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+
