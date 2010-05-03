@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758844Ab0ECWRV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 18:17:21 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46490
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758419Ab0ECWRT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 18:17:19 -0400
-Date: Mon, 03 May 2010 15:17:25 -0700 (PDT)
-Message-Id: <20100503.151725.94856059.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: paulmck@linux.vnet.ibm.com, shemminger@vyatta.com, Valdis.Kletnieks@vt.edu,
-       akpm@linux-foundation.org, peterz@infradead.org, kaber@trash.net,
-       linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: Re: [PATCH net-next-2.6] net: if6_get_next() fix
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1272919814.2407.149.camel@edumazet-laptop>
-References: <1272917635.2407.106.camel@edumazet-laptop>
-	<20100503.132442.200112018.davem@davemloft.net>
-	<1272919814.2407.149.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1759017Ab0ECWYP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 18:24:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758575Ab0ECWYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 18:24:12 -0400
+Date: Tue, 4 May 2010 01:20:23 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] first round of vhost-net enhancements for net-next
+Message-ID: <20100503222022.GC16181@redhat.com>
+References: <20100503213244.GA16006@redhat.com> <20100503.150729.00474027.davem@davemloft.net> <20100503.150829.254849182.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100503.150829.254849182.davem@davemloft.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Mon, 03 May 2010 22:50:14 +0200
+On Mon, May 03, 2010 at 03:08:29PM -0700, David Miller wrote:
+> From: David Miller <davem@davemloft.net>
+> Date: Mon, 03 May 2010 15:07:29 -0700 (PDT)
+> 
+> > From: "Michael S. Tsirkin" <mst@redhat.com>
+> > Date: Tue, 4 May 2010 00:32:45 +0300
+> > 
+> >> The following tree includes a couple of enhancements that help vhost-net.
+> >> Please pull them for net-next. Another set of patches is under
+> >> debugging/testing and I hope to get them ready in time for 2.6.35,
+> >> so there may be another pull request later.
+> > 
+> > Pulled, thanks.
+> 
+> Nevermind, reverted.
+> 
+> Do you even compile test what you send to people?
+> 
+> drivers/net/macvtap.c: In function ‘macvtap_ioctl’:
+> drivers/net/macvtap.c:713: warning: control reaches end of non-void function
+> 
+> You're really batting 1000 today Michael...
 
-> Paul, David, here the patch I was thinking about :
-> 
-> Feel free to split it in two parts if you like, I am too tired and must
-> sleep now ;)
- ...
-> [PATCH net-next-2.6] net: rcu fixes
-> 
-> Add hlist_for_each_entry_rcu_bh() and
-> hlist_for_each_entry_continue_rcu_bh() macros, and use them in
-> ipv6_get_ifaddr(), if6_get_first() and if6_get_next() to fix lockdeps
-> warnings.
-> 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Ouch. Should teach me not to send out stuff after midnight. Sorry about
+the noise.
 
-Paul, let me know if you want to handle these seperately (one commit
-in your tree for the rculist.h bit and one for the ipv6 change) or to
-put it all at once into net-next-2.6, I'm happy either way.
+-- 
+MST
