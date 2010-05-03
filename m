@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab0ECSLN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 14:11:13 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39268 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755712Ab0ECSLL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 14:11:11 -0400
-Date: Mon, 3 May 2010 11:06:57 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-       devel@driverdev.osuosl.org, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, support@sbei.com,
-       support@onestopsystems.com
-Subject: Re: [PATCH -next] staging: fix cxt1e1 module names
-Message-Id: <20100503110657.00b4e140.randy.dunlap@oracle.com>
-In-Reply-To: <1272909764.30040.92.camel@Joe-Laptop.home>
-References: <20100503151619.f75e3a80.sfr@canb.auug.org.au>
-	<20100503100902.517c146f.randy.dunlap@oracle.com>
-	<1272909764.30040.92.camel@Joe-Laptop.home>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090203.4BDF114C.0155:SCFMA922111,ss=1,fgs=0
+	id S1755994Ab0ECSOm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 14:14:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5152 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755841Ab0ECSOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 14:14:41 -0400
+Date: Mon, 3 May 2010 20:13:40 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, akpm@linux-foundation.org,
+       Mel Gorman <mel@csn.ul.ie>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 1/2] mm: Take all anon_vma locks in anon_vma_lock
+Message-ID: <20100503181340.GH19891@random.random>
+References: <20100503121743.653e5ecc@annuminas.surriel.com>
+ <20100503121847.7997d280@annuminas.surriel.com>
+ <alpine.LFD.2.00.1005030940490.5478@i5.linux-foundation.org>
+ <4BDEFF9E.6080508@redhat.com>
+ <alpine.LFD.2.00.1005030958140.5478@i5.linux-foundation.org>
+ <4BDF0ECC.5080902@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BDF0ECC.5080902@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 May 2010 11:02:44 -0700 Joe Perches wrote:
-
-> On Mon, 2010-05-03 at 10:09 -0700, Randy Dunlap wrote:
-> > From: Randy Dunlap <randy.dunlap@oracle.com>
-> > 
-> > Lots of cxt1e1 source code uses THIS_MODULE->name, which won't build
-> > when CONFIG_MODULES is not enabled, so use KBUILD_MODNAME instead.
+> > Btw, Mel's patch doesn't really match the description of 2/2. 2/2 says
+> > that all pages must always be findable in rmap. Mel's patch seems to
+> > explicitly say "we want to ignore that thing that is busy for execve". Are
+> > we just avoiding a BUG_ON()? Is perhaps the BUG_ON() buggy?
 > 
-> Perhaps a conversion to pr_<level> is better?
+> I have no good answer to this question.
+> 
+> Mel?  Andrea?
 
-Sure, fine with me.  Thanks.
+If try_to_unmap is allowed to establish the migration pte, then such
+pte has to remain reachable through rmap_walk at all times after that,
+or migration_entry_wait will crash because it notices the page has
+been migrated already (PG_lock not set) but there is still a migration
+pte established. (remove_migration_pte like split_huge_page isn't
+allowed to fail finding all migration ptes mapping a page during the
+rmap walk)
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+It's not false positive BUG_ON if that's what you mean, removing the
+BUG_ON would still lead to infinite hang waiting on a migration pte
+that shouldn't be there anymore.
