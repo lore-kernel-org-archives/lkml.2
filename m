@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab0ECSxh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 14:53:37 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:47440 "EHLO e5.ny.us.ibm.com"
+	id S1756205Ab0ECSxj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 14:53:39 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:39451 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755537Ab0ECSx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 14:53:27 -0400
+	id S1755665Ab0ECSx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 14:53:29 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,11 +13,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Li Zefan <lizf@cn.fujitsu.com>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 07/10] cgroup: Check task_lock in task_subsys_state()
-Date: Mon,  3 May 2010 11:53:16 -0700
-Message-Id: <1272912799-17859-7-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 02/10] KEYS: Fix an RCU warning
+Date: Mon,  3 May 2010 11:53:11 -0700
+Message-Id: <1272912799-17859-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100503185253.GA17672@linux.vnet.ibm.com>
 References: <20100503185253.GA17672@linux.vnet.ibm.com>
@@ -25,33 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+From: David Howells <dhowells@redhat.com>
 
-Expand task_subsys_state()'s rcu_dereference_check() to include the full
-locking rule as documented in Documentation/cgroups/cgroups.txt by adding
-a check for task->alloc_lock being held.
+Fix the following RCU warning:
 
-This fixes an RCU false positive when resuming from suspend. The warning
-comes from freezer cgroup in cgroup_freezing_or_frozen().
+===================================================
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+security/keys/request_key.c:116 invoked rcu_dereference_check() without protection!
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-Acked-by: Matt Helsley <matthltc@us.ibm.com>
+other info that might help us debug this:
+
+rcu_scheduler_active = 1, debug_locks = 0
+1 lock held by keyctl/5372:
+ #0:  (key_types_sem){.+.+.+}, at: [<ffffffff811a4e3d>] key_type_lookup+0x1c/0x70
+
+stack backtrace:
+Pid: 5372, comm: keyctl Not tainted 2.6.34-rc3-cachefs #150
+Call Trace:
+ [<ffffffff810515f8>] lockdep_rcu_dereference+0xaa/0xb2
+ [<ffffffff811a9220>] call_sbin_request_key+0x156/0x2b6
+ [<ffffffff811a4c66>] ? __key_instantiate_and_link+0xb1/0xdc
+ [<ffffffff811a4cd3>] ? key_instantiate_and_link+0x42/0x5f
+ [<ffffffff811a96b8>] ? request_key_auth_new+0x17b/0x1f3
+ [<ffffffff811a8e00>] ? request_key_and_link+0x271/0x400
+ [<ffffffff810aba6f>] ? kmem_cache_alloc+0xe1/0x118
+ [<ffffffff811a8f1a>] request_key_and_link+0x38b/0x400
+ [<ffffffff811a7b72>] sys_request_key+0xf7/0x14a
+ [<ffffffff81052227>] ? trace_hardirqs_on_caller+0x10c/0x130
+ [<ffffffff81393f5c>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
+
+This was caused by doing:
+
+	[root@andromeda ~]# keyctl newring fred @s
+	539196288
+	[root@andromeda ~]# keyctl request2 user a a 539196288
+	request_key: Required key not available
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/cgroup.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ security/keys/request_key.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index b8ad1ea..8f78073 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -530,6 +530,7 @@ static inline struct cgroup_subsys_state *task_subsys_state(
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 03fe63e..ea97c31 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -68,7 +68,8 @@ static int call_sbin_request_key(struct key_construction *cons,
  {
- 	return rcu_dereference_check(task->cgroups->subsys[subsys_id],
- 				     rcu_read_lock_held() ||
-+				     lockdep_is_held(&task->alloc_lock) ||
- 				     cgroup_lock_is_held());
- }
+ 	const struct cred *cred = current_cred();
+ 	key_serial_t prkey, sskey;
+-	struct key *key = cons->key, *authkey = cons->authkey, *keyring;
++	struct key *key = cons->key, *authkey = cons->authkey, *keyring,
++		*session;
+ 	char *argv[9], *envp[3], uid_str[12], gid_str[12];
+ 	char key_str[12], keyring_str[3][12];
+ 	char desc[20];
+@@ -112,10 +113,12 @@ static int call_sbin_request_key(struct key_construction *cons,
+ 	if (cred->tgcred->process_keyring)
+ 		prkey = cred->tgcred->process_keyring->serial;
+ 
+-	if (cred->tgcred->session_keyring)
+-		sskey = rcu_dereference(cred->tgcred->session_keyring)->serial;
+-	else
+-		sskey = cred->user->session_keyring->serial;
++	rcu_read_lock();
++	session = rcu_dereference(cred->tgcred->session_keyring);
++	if (!session)
++		session = cred->user->session_keyring;
++	sskey = session->serial;
++	rcu_read_unlock();
+ 
+ 	sprintf(keyring_str[2], "%d", sskey);
  
 -- 
 1.7.0
