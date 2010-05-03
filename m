@@ -1,109 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932683Ab0ECOtA convert rfc822-to-quoted-printable (ORCPT
-	<rfc822;w@1wt.eu>); Mon, 3 May 2010 10:49:00 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:48168 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932532Ab0ECOs5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 10:48:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=u6Ansm3HwNvVxe6aKf5gY02DylsX2hoJKe0SoG9ndr3XDteNdmIGXOXYlvbHeLLoi0
-         KIll66cWIgbHywOpqrEbEAmijCh2/pSv0gDhpZdtpnUDm9XhgrA3sdTP3TBSQTNrrKVK
-         e7aRrkBLNoIZn5tJs39NuVMlTX+si0lzZZVkg=
-Subject: Re: mmotm 2010-04-28 - RCU whinges
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Patrick McHardy <kaber@trash.net>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <5933.1272897014@localhost>
-References: <201004290021.o3T0L04Y028017@imap1.linux-foundation.org>
-	 <5702.1272822394@localhost> <1272865137.2173.179.camel@edumazet-laptop>
-	 <5933.1272897014@localhost>
-Content-Type: text/plain; charset=UTF-8
-Date: Mon, 03 May 2010 16:48:52 +0200
-Message-ID: <1272898132.2226.42.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+	id S1759536Ab0ECOy0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 10:54:26 -0400
+Received: from kroah.org ([198.145.64.141]:53917 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759026Ab0ECOyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 10:54:24 -0400
+Date: Sun, 2 May 2010 19:59:28 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       David Woodhouse <dwmw2@infradead.org>,
+       Tomas Winkler <tomas.winkler@intel.com>
+Subject: Re: linux-next: build warnings after merge of the
+ driver-core.current tree
+Message-ID: <20100503025928.GA28102@kroah.com>
+References: <20100503100137.a05c9098.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100503100137.a05c9098.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 03 mai 2010 =C3=A0 10:30 -0400, Valdis.Kletnieks@vt.edu a =C3=A9=
-crit :
+On Mon, May 03, 2010 at 10:01:37AM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the driver-core.current tree, today's linux-next build (powerpc
+> ppc64_defconfig and x86_64 allmodconfig) produced these warning:
+> 
+> drivers/pcmcia/ds.c: In function 'pcmcia_load_firmware':
+> drivers/pcmcia/ds.c:761: warning: passing argument 1 of 'release_firmware' discards qualifiers from pointer target type
+> include/linux/firmware.h:46: note: expected 'struct firmware *' but argument is of type 'const struct firmware *'
+> drivers/net/cxgb3/cxgb3_main.c: In function 't3_get_edc_fw':
+> drivers/net/cxgb3/cxgb3_main.c:1084: warning: passing argument 1 of 'release_firmware' discards qualifiers from pointer target type
+> include/linux/firmware.h:46: note: expected 'struct firmware *' but argument is of type 'const struct firmware *'
+> 
+> and *lots* more similar warnings ...
+> 
+> Caused by commit d5ae47f7d90f94a15e668f389c12211a11798b6f
+> ("firmware_class: fix memory leak - free allocated pages").  This patch
+> was modified from an earlier version that produced different (though many
+> fewer) warnings.
 
->=20
-> I *really* thought we swatted a bunch of these - did the fixes not ma=
-ke it
-> into linux-next or -mm?  Your patch fixed that one, but then:
->=20
-> [    9.128899] Netfilter messages via NETLINK v0.30.
-> [    9.128919] nf_conntrack version 0.5.0 (16384 buckets, 65536 max)
-> [    9.129108] CONFIG_NF_CT_ACCT is deprecated and will be removed so=
-on. Please use
-> [    9.129110] nf_conntrack.acct=3D1 kernel parameter, acct=3D1 nf_co=
-nntrack module option or
-> [    9.129113] sysctl net.netfilter.nf_conntrack_acct=3D1 to enable i=
-t.
-> [    9.129135] ctnetlink v0.93: registering with nfnetlink.
-> [    9.129452] ip_tables: (C) 2000-2006 Netfilter Core Team
-> [    9.129506]=20
-> [    9.129507] =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> [    9.129683] [ INFO: suspicious rcu_dereference_check() usage. ]
-> [    9.129777] ---------------------------------------------------
-> [    9.129872] net/netfilter/nf_log.c:55 invoked rcu_dereference_chec=
-k() without protection!
-> [    9.129969]=20
-> [    9.129969] other info that might help us debug this:
-> [    9.129970]=20
-> [    9.130232]=20
-> [    9.130232] rcu_scheduler_active =3D 1, debug_locks =3D 0
-> [    9.130407] 1 lock held by swapper/1:
-> [    9.130525]  #0:  (nf_log_mutex){+.+...}, at: [<ffffffff81481154>]=
- nf_log_register+0x57/0x10f
-> [    9.130955]=20
-> [    9.130956] stack backtrace:
-> [    9.131162] Pid: 1, comm: swapper Tainted: G        W   2.6.34-rc5=
--mmotm0428 #2
-> [    9.131259] Call Trace:
-> [    9.131370]  [<ffffffff81064832>] lockdep_rcu_dereference+0xaa/0xb=
-2
-> [    9.131466]  [<ffffffff814811db>] nf_log_register+0xde/0x10f
-> [    9.131579]  [<ffffffff81b5ca28>] ? log_tg_init+0x0/0x29
-> [    9.131689]  [<ffffffff81b5ca4d>] log_tg_init+0x25/0x29
-> [    9.131800]  [<ffffffff810001ef>] do_one_initcall+0x59/0x14e
-> [    9.131912]  [<ffffffff81b2e68a>] kernel_init+0x144/0x1ce
-> [    9.132033]  [<ffffffff81003414>] kernel_thread_helper+0x4/0x10
-> [    9.132146]  [<ffffffff81598a40>] ? restore_args+0x0/0x30
-> [    9.132257]  [<ffffffff81b2e546>] ? kernel_init+0x0/0x1ce
-> [    9.132370]  [<ffffffff81003410>] ? kernel_thread_helper+0x0/0x10
-> [    9.132513] TCP bic registered
->=20
+Yeah, the people responsible were been notified last Friday, and they
+sent me a patch today, hopefully it fixes the issue.  I'll test it out
+tomorrow and merge it if it does.
 
-You probably know this PROVE_RCU thing is new and reserved to
-developpers ?
+thanks,
 
-We yet have to change all spots were a rcu_dereference() was used
-without rcu_read_lock(). Not a bug by itself, just lockdep is to be
-instructed not to shout.
-
-Maybe 30 patches already in, and maybe 30 other are still needed.
-
-
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel"=
- in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+greg k-h
