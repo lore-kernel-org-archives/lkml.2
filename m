@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab0ECSy2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 14:54:28 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36304 "EHLO mx1.suse.de"
+	id S1756389Ab0ECSyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 14:54:51 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:40180 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754800Ab0ECSyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 14:54:23 -0400
-Date: Mon, 3 May 2010 20:54:21 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: David Woodhouse <dwmw2@infradead.org>, Jan Kara <jack@suse.cz>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       David Howells <dhowells@redhat.com>,
-       Alexander Shishkin <virtuoso@slind.org>,
-       Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mtd: Do not corrupt backing device of device node inode
-Message-ID: <20100503185421.GF3470@quack.suse.cz>
-References: <1271934535.11751.1550.camel@macbook.infradead.org>
- <1272905767-4317-1-git-send-email-kirill@shutemov.name>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272905767-4317-1-git-send-email-kirill@shutemov.name>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755920Ab0ECSxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 14:53:32 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 06/10] sched: Fix an RCU warning in print_task()
+Date: Mon,  3 May 2010 11:53:15 -0700
+Message-Id: <1272912799-17859-6-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <20100503185253.GA17672@linux.vnet.ibm.com>
+References: <20100503185253.GA17672@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 03-05-10 19:56:07, Kirill A. Shutemov wrote:
-> We cannot modify file->f_mapping->backing_dev_info, because it will corrupt
-> backing device of device node inode, since file->f_mapping is equal to
-> inode->i_mapping (see __dentry_open() in fs/open.c).
-> 
-> Let's introduce separate inode for MTD device with appropriate backing
-> device.
-  Now the patch looks much cleaner. Thanks! Having a separate fstype for a
-single inode seems like a bit of an overkill but I agree there doesn't seem
-to be a suitable filesystem where an inode could live, so it's probably OK.
-Two minor comments are below.
+From: Li Zefan <lizf@cn.fujitsu.com>
 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> ---
->  drivers/mtd/mtdchar.c   |   70 +++++++++++++++++++++++++++++++++++++++++-----
->  drivers/mtd/mtdcore.c   |    3 ++
->  include/linux/mtd/mtd.h |    3 ++
->  3 files changed, 68 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
-> index 5b081cb..24ea34f 100644
-> --- a/drivers/mtd/mtdchar.c
-> +++ b/drivers/mtd/mtdchar.c
-> @@ -88,8 +91,21 @@ static int mtd_open(struct inode *inode, struct file *file)
->  		goto out;
->  	}
->  
-> -	if (mtd->backing_dev_info)
-> -		file->f_mapping->backing_dev_info = mtd->backing_dev_info;
-> +	if (!mtd->inode) {
-> +		mtd->inode = new_inode(mtd_inode_mnt->mnt_sb);
-  This can fail so you should check whether mtd->inode is != NULL.
+With CONFIG_PROVE_RCU=y, a warning can be triggered:
+
+  $ cat /proc/sched_debug
 
 ...
->  static int __init init_mtdchar(void)
->  {
-> -	int status;
-> +	int ret;
->  
-> -	status = register_chrdev(MTD_CHAR_MAJOR, "mtd", &mtd_fops);
-> -	if (status < 0) {
-> -		printk(KERN_NOTICE "Can't allocate major number %d for Memory Technology Devices.\n",
-> -		       MTD_CHAR_MAJOR);
-> +	ret = register_chrdev(MTD_CHAR_MAJOR, "mtd", &mtd_fops);
-> +	if (ret < 0) {
-> +		pr_notice("Can't allocate major number %d for "
-> +				"Memory Technology Devices.\n", MTD_CHAR_MAJOR);
-> +		return ret;
-> +	}
-> +
-> +	ret = register_filesystem(&mtd_inodefs_type);
-> +	if (ret) {
-> +		pr_notice("Can't register mtd_inodefs filesystem: %d\n", ret);
-> +		goto err_unregister_chdev;
-> +	}
-> +
-> +	mtd_inode_mnt = kern_mount(&mtd_inodefs_type);
-> +	if (IS_ERR(mtd_inode_mnt)) {
-> +		ret = PTR_ERR(mtd_inode_mnt);
-> +		pr_notice("Error mounting mtd_inodefs filesystem: %d\n", ret);
-> +		goto err_unregister_filesystem;
->  	}
->  
-> -	return status;
-> +	return ret;
-> +
-> +err_unregister_chdev:
-> +	unregister_chrdev(MTD_CHAR_MAJOR, "mtd");
-> +err_unregister_filesystem:
-> +	unregister_filesystem(&mtd_inodefs_type);
-> +	return ret;
-  I think you should swap unregister_chrdev and unregister_filesystem
-blocks...
+kernel/cgroup.c:1649 invoked rcu_dereference_check() without protection!
+...
 
-								Honza
+Both cgroup_path() and task_group() should be called with either
+rcu_read_lock or cgroup_mutex held.
+
+The rcu_dereference_check() does include cgroup_lock_is_held(), so we
+know that this lock is not held.  Therefore, in a CONFIG_PREEMPT kernel,
+to say nothing of a CONFIG_PREEMPT_RT kernel, the original code could
+have ended up copying a string out of the freelist.
+
+This patch inserts RCU read-side primitives needed to prevent this
+scenario.
+
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/sched_debug.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
+index 9b49db1..19be00b 100644
+--- a/kernel/sched_debug.c
++++ b/kernel/sched_debug.c
+@@ -114,7 +114,9 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
+ 	{
+ 		char path[64];
+ 
++		rcu_read_lock();
+ 		cgroup_path(task_group(p)->css.cgroup, path, sizeof(path));
++		rcu_read_unlock();
+ 		SEQ_printf(m, " %s", path);
+ 	}
+ #endif
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.0
+
