@@ -1,93 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759628Ab0ECPy0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 11:54:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36969 "EHLO mx1.redhat.com"
+	id S933045Ab0ECPyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 11:54:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21296 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759570Ab0ECPxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 11:53:55 -0400
+	id S1759217Ab0ECPxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 11:53:54 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com
-Subject: [PATCH v2 6/7] don't compute pvclock adjustments if we trust the tsc
-Date: Mon,  3 May 2010 11:52:06 -0400
-Message-Id: <1272901927-829-7-git-send-email-glommer@redhat.com>
-In-Reply-To: <1272901927-829-6-git-send-email-glommer@redhat.com>
+Subject: [PATCH v2 5/7] Try using new kvm clock msrs
+Date: Mon,  3 May 2010 11:52:05 -0400
+Message-Id: <1272901927-829-6-git-send-email-glommer@redhat.com>
+In-Reply-To: <1272901927-829-5-git-send-email-glommer@redhat.com>
 References: <1272901927-829-1-git-send-email-glommer@redhat.com>
  <1272901927-829-2-git-send-email-glommer@redhat.com>
  <1272901927-829-3-git-send-email-glommer@redhat.com>
  <1272901927-829-4-git-send-email-glommer@redhat.com>
  <1272901927-829-5-git-send-email-glommer@redhat.com>
- <1272901927-829-6-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the HV told us we can fully trust the TSC, skip any
-correction
+We now added a new set of clock-related msrs in replacement of the old
+ones. In theory, we could just try to use them and get a return value
+indicating they do not exist, due to our use of kvm_write_msr_save.
+
+However, kvm clock registration happens very early, and if we ever
+try to write to a non-existant MSR, we raise a lethal #GP, since our
+idt handlers are not in place yet.
+
+So this patch tests for a cpuid feature exported by the host to
+decide which set of msrs are supported.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
 ---
- arch/x86/include/asm/kvm_para.h    |    5 +++++
- arch/x86/include/asm/pvclock-abi.h |    1 +
- arch/x86/kernel/kvmclock.c         |    3 +++
- arch/x86/kernel/pvclock.c          |    4 ++++
- 4 files changed, 13 insertions(+), 0 deletions(-)
+ arch/x86/kernel/kvmclock.c |   53 ++++++++++++++++++++++++++-----------------
+ 1 files changed, 32 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index f019f8c..6f1b878 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -21,6 +21,11 @@
-  */
- #define KVM_FEATURE_CLOCKSOURCE2        3
- 
-+/* The last 8 bits are used to indicate how to interpret the flags field
-+ * in pvclock structure. If no bits are set, all flags are ignored.
-+ */
-+#define KVM_FEATURE_CLOCKSOURCE_STABLE_TSC	24
-+
- #define MSR_KVM_WALL_CLOCK  0x11
- #define MSR_KVM_SYSTEM_TIME 0x12
- 
-diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
-index ec5c41a..b123bd7 100644
---- a/arch/x86/include/asm/pvclock-abi.h
-+++ b/arch/x86/include/asm/pvclock-abi.h
-@@ -39,5 +39,6 @@ struct pvclock_wall_clock {
- 	u32   nsec;
- } __attribute__((__packed__));
- 
-+#define PVCLOCK_STABLE_TSC	(1 << 0)
- #endif /* __ASSEMBLY__ */
- #endif /* _ASM_X86_PVCLOCK_ABI_H */
 diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index 59c740f..518de01 100644
+index feaeb0d..59c740f 100644
 --- a/arch/x86/kernel/kvmclock.c
 +++ b/arch/x86/kernel/kvmclock.c
-@@ -215,4 +215,7 @@ void __init kvmclock_init(void)
- 	clocksource_register(&kvm_clock);
- 	pv_info.paravirt_enabled = 1;
- 	pv_info.name = "KVM";
-+
-+	if (kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE_STABLE_TSC))
-+		pvclock_set_flags(PVCLOCK_STABLE_TSC);
- }
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 3dff5fa..0d4fe0c 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -135,6 +135,10 @@ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
- 		barrier();
- 	} while (version != src->version);
+@@ -29,6 +29,8 @@
+ #define KVM_SCALE 22
  
-+	if ((valid_flags & PVCLOCK_STABLE_TSC) &&
-+		(shadow.flags & PVCLOCK_STABLE_TSC))
-+		return ret;
+ static int kvmclock = 1;
++static int msr_kvm_system_time = MSR_KVM_SYSTEM_TIME;
++static int msr_kvm_wall_clock = MSR_KVM_WALL_CLOCK;
+ 
+ static int parse_no_kvmclock(char *arg)
+ {
+@@ -54,7 +56,8 @@ static unsigned long kvm_get_wallclock(void)
+ 
+ 	low = (int)__pa_symbol(&wall_clock);
+ 	high = ((u64)__pa_symbol(&wall_clock) >> 32);
+-	native_write_msr(MSR_KVM_WALL_CLOCK, low, high);
 +
- 	/*
- 	 * Assumption here is that last_value, a global accumulator, always goes
- 	 * forward. If we are less than that, we should not be much smaller.
++	native_write_msr(msr_kvm_wall_clock, low, high);
+ 
+ 	vcpu_time = &get_cpu_var(hv_clock);
+ 	pvclock_read_wallclock(&wall_clock, vcpu_time, &ts);
+@@ -130,7 +133,8 @@ static int kvm_register_clock(char *txt)
+ 	high = ((u64)__pa(&per_cpu(hv_clock, cpu)) >> 32);
+ 	printk(KERN_INFO "kvm-clock: cpu %d, msr %x:%x, %s\n",
+ 	       cpu, high, low, txt);
+-	return native_write_msr_safe(MSR_KVM_SYSTEM_TIME, low, high);
++
++	return native_write_msr_safe(msr_kvm_system_time, low, high);
+ }
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+@@ -165,14 +169,14 @@ static void __init kvm_smp_prepare_boot_cpu(void)
+ #ifdef CONFIG_KEXEC
+ static void kvm_crash_shutdown(struct pt_regs *regs)
+ {
+-	native_write_msr_safe(MSR_KVM_SYSTEM_TIME, 0, 0);
++	native_write_msr(msr_kvm_system_time, 0, 0);
+ 	native_machine_crash_shutdown(regs);
+ }
+ #endif
+ 
+ static void kvm_shutdown(void)
+ {
+-	native_write_msr_safe(MSR_KVM_SYSTEM_TIME, 0, 0);
++	native_write_msr(msr_kvm_system_time, 0, 0);
+ 	native_machine_shutdown();
+ }
+ 
+@@ -181,27 +185,34 @@ void __init kvmclock_init(void)
+ 	if (!kvm_para_available())
+ 		return;
+ 
+-	if (kvmclock && kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE)) {
+-		if (kvm_register_clock("boot clock"))
+-			return;
+-		pv_time_ops.sched_clock = kvm_clock_read;
+-		x86_platform.calibrate_tsc = kvm_get_tsc_khz;
+-		x86_platform.get_wallclock = kvm_get_wallclock;
+-		x86_platform.set_wallclock = kvm_set_wallclock;
++	if (kvmclock && kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE2)) {
++		msr_kvm_system_time = MSR_KVM_SYSTEM_TIME_NEW;
++		msr_kvm_wall_clock = MSR_KVM_WALL_CLOCK_NEW;
++	} else if (!(kvmclock && kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE)))
++		return;
++
++	printk(KERN_INFO "kvm-clock: Using msrs %x and %x",
++		msr_kvm_system_time, msr_kvm_wall_clock);
++
++	if (kvm_register_clock("boot clock"))
++		return;
++	pv_time_ops.sched_clock = kvm_clock_read;
++	x86_platform.calibrate_tsc = kvm_get_tsc_khz;
++	x86_platform.get_wallclock = kvm_get_wallclock;
++	x86_platform.set_wallclock = kvm_set_wallclock;
+ #ifdef CONFIG_X86_LOCAL_APIC
+-		x86_cpuinit.setup_percpu_clockev =
+-			kvm_setup_secondary_clock;
++	x86_cpuinit.setup_percpu_clockev =
++		kvm_setup_secondary_clock;
+ #endif
+ #ifdef CONFIG_SMP
+-		smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
++	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
+ #endif
+-		machine_ops.shutdown  = kvm_shutdown;
++	machine_ops.shutdown  = kvm_shutdown;
+ #ifdef CONFIG_KEXEC
+-		machine_ops.crash_shutdown  = kvm_crash_shutdown;
++	machine_ops.crash_shutdown  = kvm_crash_shutdown;
+ #endif
+-		kvm_get_preset_lpj();
+-		clocksource_register(&kvm_clock);
+-		pv_info.paravirt_enabled = 1;
+-		pv_info.name = "KVM";
+-	}
++	kvm_get_preset_lpj();
++	clocksource_register(&kvm_clock);
++	pv_info.paravirt_enabled = 1;
++	pv_info.name = "KVM";
+ }
 -- 
 1.6.2.2
 
