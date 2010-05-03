@@ -1,56 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759570Ab0ECWyI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 18:54:08 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46779
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759431Ab0ECWyG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 18:54:06 -0400
-Date: Mon, 03 May 2010 15:54:11 -0700 (PDT)
-Message-Id: <20100503.155411.112816416.davem@davemloft.net>
-To: paulmck@linux.vnet.ibm.com
-Cc: eric.dumazet@gmail.com, shemminger@vyatta.com, Valdis.Kletnieks@vt.edu,
-       akpm@linux-foundation.org, peterz@infradead.org, kaber@trash.net,
-       linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: Re: [PATCH net-next-2.6] net: if6_get_next() fix
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100503225229.GO2597@linux.vnet.ibm.com>
-References: <20100503.132442.200112018.davem@davemloft.net>
-	<1272919814.2407.149.camel@edumazet-laptop>
-	<20100503225229.GO2597@linux.vnet.ibm.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1759830Ab0ECXNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 19:13:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759748Ab0ECXNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 19:13:10 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Christoph Hellwig <hch@infradead.org>, Jan Blunck <jblunck@suse.de>,
+       Valerie Aurora <vaurora@redhat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 02/39] VFS: Make lookup_hash() return a struct path
+Date: Mon,  3 May 2010 16:12:01 -0700
+Message-Id: <1272928358-20854-3-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
+References: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Mon, 3 May 2010 15:52:29 -0700
+From: Jan Blunck <jblunck@suse.de>
 
-> On Mon, May 03, 2010 at 10:50:14PM +0200, Eric Dumazet wrote:
->> Paul, David, here the patch I was thinking about :
->> 
->> Feel free to split it in two parts if you like, I am too tired and must
->> sleep now ;)
->> 
->> Thanks
->> 
->> [PATCH net-next-2.6] net: rcu fixes
->> 
->> Add hlist_for_each_entry_rcu_bh() and
->> hlist_for_each_entry_continue_rcu_bh() macros, and use them in
->> ipv6_get_ifaddr(), if6_get_first() and if6_get_next() to fix lockdeps
->> warnings.
-> 
-> Looks good!!!
-> 
-> It will collide with Arnd's sparse-based changes, but that will be
-> easy to fix, so no problem.
-> 
-> Reviewed-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+This patch changes lookup_hash() into returning a struct path.
 
-Applied, thanks!
+Signed-off-by: Jan Blunck <jblunck@suse.de>
+Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+---
+ fs/namei.c |  113 ++++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 57 insertions(+), 56 deletions(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index dda6b7e..219da2b 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1155,7 +1155,7 @@ int vfs_path_lookup(struct dentry *dentry, struct vfsmount *mnt,
+ }
+ 
+ static struct dentry *__lookup_hash(struct qstr *name,
+-		struct dentry *base, struct nameidata *nd)
++				    struct dentry *base, struct nameidata *nd)
+ {
+ 	struct dentry *dentry;
+ 	struct inode *inode;
+@@ -1212,14 +1212,22 @@ out:
+  * needs parent already locked. Doesn't follow mounts.
+  * SMP-safe.
+  */
+-static struct dentry *lookup_hash(struct nameidata *nd)
++static int lookup_hash(struct nameidata *nd, struct qstr *name,
++		       struct path *path)
+ {
+ 	int err;
+ 
+ 	err = exec_permission(nd->path.dentry->d_inode);
+ 	if (err)
+-		return ERR_PTR(err);
+-	return __lookup_hash(&nd->last, nd->path.dentry, nd);
++		return err;
++	path->mnt = nd->path.mnt;
++	path->dentry =  __lookup_hash(name, nd->path.dentry, nd);
++	if (IS_ERR(path->dentry)) {
++		err = PTR_ERR(path->dentry);
++		path->dentry = NULL;
++		path->mnt = NULL;
++	}
++	return err;
+ }
+ 
+ static int __lookup_one_len(const char *name, struct qstr *this,
+@@ -1701,12 +1709,9 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 
+ 	/* OK, it's O_CREAT */
+ 	mutex_lock(&dir->d_inode->i_mutex);
++	error = lookup_hash(nd, &nd->last, path);
+ 
+-	path->dentry = lookup_hash(nd);
+-	path->mnt = nd->path.mnt;
+-
+-	error = PTR_ERR(path->dentry);
+-	if (IS_ERR(path->dentry)) {
++	if (error) {
+ 		mutex_unlock(&dir->d_inode->i_mutex);
+ 		goto exit;
+ 	}
+@@ -1956,7 +1961,8 @@ EXPORT_SYMBOL(filp_open);
+  */
+ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ {
+-	struct dentry *dentry = ERR_PTR(-EEXIST);
++	struct path path;
++	int err;
+ 
+ 	mutex_lock_nested(&nd->path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+ 	/*
+@@ -1964,7 +1970,7 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	 * (foo/., foo/.., /////)
+ 	 */
+ 	if (nd->last_type != LAST_NORM)
+-		goto fail;
++		return ERR_PTR(-EEXIST);
+ 	nd->flags &= ~LOOKUP_PARENT;
+ 	nd->flags |= LOOKUP_CREATE | LOOKUP_EXCL;
+ 	nd->intent.open.flags = O_EXCL;
+@@ -1972,11 +1978,11 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	/*
+ 	 * Do the final lookup.
+ 	 */
+-	dentry = lookup_hash(nd);
+-	if (IS_ERR(dentry))
+-		goto fail;
++	err = lookup_hash(nd, &nd->last, &path);
++	if (err)
++		return ERR_PTR(err);
+ 
+-	if (dentry->d_inode)
++	if (path.dentry->d_inode)
+ 		goto eexist;
+ 	/*
+ 	 * Special case - lookup gave negative, but... we had foo/bar/
+@@ -1985,15 +1991,14 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	 * been asking for (non-existent) directory. -ENOENT for you.
+ 	 */
+ 	if (unlikely(!is_dir && nd->last.name[nd->last.len])) {
+-		dput(dentry);
+-		dentry = ERR_PTR(-ENOENT);
++		dput(path.dentry);
++		return ERR_PTR(-ENOENT);
+ 	}
+-	return dentry;
++
++	return path.dentry;
+ eexist:
+-	dput(dentry);
+-	dentry = ERR_PTR(-EEXIST);
+-fail:
+-	return dentry;
++	path_put_conditional(&path, nd);
++	return ERR_PTR(-EEXIST);
+ }
+ EXPORT_SYMBOL_GPL(lookup_create);
+ 
+@@ -2226,7 +2231,7 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ {
+ 	int error = 0;
+ 	char * name;
+-	struct dentry *dentry;
++	struct path path;
+ 	struct nameidata nd;
+ 
+ 	error = user_path_parent(dfd, pathname, &nd, &name);
+@@ -2248,21 +2253,20 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ 	nd.flags &= ~LOOKUP_PARENT;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	error = PTR_ERR(dentry);
+-	if (IS_ERR(dentry))
++	error = lookup_hash(&nd, &nd.last, &path);
++	if (error)
+ 		goto exit2;
+ 	error = mnt_want_write(nd.path.mnt);
+ 	if (error)
+ 		goto exit3;
+-	error = security_path_rmdir(&nd.path, dentry);
++	error = security_path_rmdir(&nd.path, path.dentry);
+ 	if (error)
+ 		goto exit4;
+-	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
++	error = vfs_rmdir(nd.path.dentry->d_inode, path.dentry);
+ exit4:
+ 	mnt_drop_write(nd.path.mnt);
+ exit3:
+-	dput(dentry);
++	path_put_conditional(&path, &nd);
+ exit2:
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ exit1:
+@@ -2318,7 +2322,7 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ {
+ 	int error;
+ 	char *name;
+-	struct dentry *dentry;
++	struct path path;
+ 	struct nameidata nd;
+ 	struct inode *inode = NULL;
+ 
+@@ -2333,26 +2337,25 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 	nd.flags &= ~LOOKUP_PARENT;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	error = PTR_ERR(dentry);
+-	if (!IS_ERR(dentry)) {
++	error = lookup_hash(&nd, &nd.last, &path);
++	if (!error) {
+ 		/* Why not before? Because we want correct error value */
+ 		if (nd.last.name[nd.last.len])
+ 			goto slashes;
+-		inode = dentry->d_inode;
++		inode = path.dentry->d_inode;
+ 		if (inode)
+ 			atomic_inc(&inode->i_count);
+ 		error = mnt_want_write(nd.path.mnt);
+ 		if (error)
+ 			goto exit2;
+-		error = security_path_unlink(&nd.path, dentry);
++		error = security_path_unlink(&nd.path, path.dentry);
+ 		if (error)
+ 			goto exit3;
+-		error = vfs_unlink(nd.path.dentry->d_inode, dentry);
++		error = vfs_unlink(nd.path.dentry->d_inode, path.dentry);
+ exit3:
+ 		mnt_drop_write(nd.path.mnt);
+ 	exit2:
+-		dput(dentry);
++		path_put_conditional(&path, &nd);
+ 	}
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ 	if (inode)
+@@ -2363,8 +2366,8 @@ exit1:
+ 	return error;
+ 
+ slashes:
+-	error = !dentry->d_inode ? -ENOENT :
+-		S_ISDIR(dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
++	error = !path.dentry->d_inode ? -ENOENT :
++		S_ISDIR(path.dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
+ 	goto exit2;
+ }
+ 
+@@ -2699,7 +2702,7 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 		int, newdfd, const char __user *, newname)
+ {
+ 	struct dentry *old_dir, *new_dir;
+-	struct dentry *old_dentry, *new_dentry;
++	struct path old, new;
+ 	struct dentry *trap;
+ 	struct nameidata oldnd, newnd;
+ 	char *from;
+@@ -2733,16 +2736,15 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 
+ 	trap = lock_rename(new_dir, old_dir);
+ 
+-	old_dentry = lookup_hash(&oldnd);
+-	error = PTR_ERR(old_dentry);
+-	if (IS_ERR(old_dentry))
++	error = lookup_hash(&oldnd, &oldnd.last, &old);
++	if (error)
+ 		goto exit3;
+ 	/* source must exist */
+ 	error = -ENOENT;
+-	if (!old_dentry->d_inode)
++	if (!old.dentry->d_inode)
+ 		goto exit4;
+ 	/* unless the source is a directory trailing slashes give -ENOTDIR */
+-	if (!S_ISDIR(old_dentry->d_inode->i_mode)) {
++	if (!S_ISDIR(old.dentry->d_inode->i_mode)) {
+ 		error = -ENOTDIR;
+ 		if (oldnd.last.name[oldnd.last.len])
+ 			goto exit4;
+@@ -2751,32 +2753,31 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	}
+ 	/* source should not be ancestor of target */
+ 	error = -EINVAL;
+-	if (old_dentry == trap)
++	if (old.dentry == trap)
+ 		goto exit4;
+-	new_dentry = lookup_hash(&newnd);
+-	error = PTR_ERR(new_dentry);
+-	if (IS_ERR(new_dentry))
++	error = lookup_hash(&newnd, &newnd.last, &new);
++	if (error)
+ 		goto exit4;
+ 	/* target should not be an ancestor of source */
+ 	error = -ENOTEMPTY;
+-	if (new_dentry == trap)
++	if (new.dentry == trap)
+ 		goto exit5;
+ 
+ 	error = mnt_want_write(oldnd.path.mnt);
+ 	if (error)
+ 		goto exit5;
+-	error = security_path_rename(&oldnd.path, old_dentry,
+-				     &newnd.path, new_dentry);
++	error = security_path_rename(&oldnd.path, old.dentry,
++				     &newnd.path, new.dentry);
+ 	if (error)
+ 		goto exit6;
+-	error = vfs_rename(old_dir->d_inode, old_dentry,
+-				   new_dir->d_inode, new_dentry);
++	error = vfs_rename(old_dir->d_inode, old.dentry,
++				   new_dir->d_inode, new.dentry);
+ exit6:
+ 	mnt_drop_write(oldnd.path.mnt);
+ exit5:
+-	dput(new_dentry);
++	path_put_conditional(&new, &newnd);
+ exit4:
+-	dput(old_dentry);
++	path_put_conditional(&old, &oldnd);
+ exit3:
+ 	unlock_rename(new_dir, old_dir);
+ exit2:
+-- 
+1.6.3.3
+
