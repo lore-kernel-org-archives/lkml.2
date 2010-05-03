@@ -1,75 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759343Ab0ECN3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 09:29:47 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49844 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754575Ab0ECN3p (ORCPT
+	id S1754552Ab0ECNdp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 09:33:45 -0400
+Received: from vms173007pub.verizon.net ([206.46.173.7]:19843 "EHLO
+	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab0ECNdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 09:29:45 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] rtc: Use genirq directly in rtc-wm831x
-Date: Mon,  3 May 2010 14:29:41 +0100
-Message-Id: <1272893381-2899-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.0.3
+	Mon, 3 May 2010 09:33:44 -0400
+Date: Mon, 03 May 2010 08:33:31 -0500
+From: Corey Minyard <minyard@acm.org>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@osdl.org>
+Cc: OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
+       Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 1/8] ipmi: Change addr_source to an enum rather than strings
+Message-id: <20100503133331.GA8130@minyard.local>
+Reply-to: minyard@acm.org
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the WM831x core uses genirq for the IRQ controller there is
-no need to use the WM831x-specific wrappers to request interrupts so
-convert to use genirq directly.
+From: Matthew Garrett <mjg@redhat.com>
 
-Also use more meaningful strings to make /proc/interrupts more readily
-legible.
+Switch from a char* to an enum to identify the address source of SIs,
+making it easier to handle them appropriately during registration.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
 ---
- drivers/rtc/rtc-wm831x.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/rtc/rtc-wm831x.c b/drivers/rtc/rtc-wm831x.c
-index b16cfe5..82931dc 100644
---- a/drivers/rtc/rtc-wm831x.c
-+++ b/drivers/rtc/rtc-wm831x.c
-@@ -449,17 +449,17 @@ static int wm831x_rtc_probe(struct platform_device *pdev)
- 		goto err;
+Index: linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
+===================================================================
+--- linux-2.6.orig/drivers/char/ipmi/ipmi_si_intf.c
++++ linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
+@@ -107,6 +107,14 @@ enum si_type {
+ };
+ static char *si_to_str[] = { "kcs", "smic", "bt" };
+ 
++enum ipmi_addr_src {
++	SI_INVALID = 0, SI_HOTMOD, SI_HARDCODED, SI_SPMI, SI_ACPI, SI_SMBIOS,
++	SI_PCI,	SI_DEVICETREE, SI_DEFAULT
++};
++static char *ipmi_addr_src_to_str[] = { NULL, "hotmod", "hardcoded", "SPMI",
++					"ACPI", "SMBIOS", "PCI",
++					"device-tree", "default" };
++
+ #define DEVICE_NAME "ipmi_si"
+ 
+ static struct platform_driver ipmi_driver = {
+@@ -188,7 +196,7 @@ struct smi_info {
+ 	int (*irq_setup)(struct smi_info *info);
+ 	void (*irq_cleanup)(struct smi_info *info);
+ 	unsigned int io_size;
+-	char *addr_source; /* ACPI, PCI, SMBIOS, hardcode, default. */
++	enum ipmi_addr_src addr_source; /* ACPI, PCI, SMBIOS, hardcode, etc. */
+ 	void (*addr_source_cleanup)(struct smi_info *info);
+ 	void *addr_source_data;
+ 
+@@ -1755,7 +1763,7 @@ static int hotmod_handler(const char *va
+ 				goto out;
+ 			}
+ 
+-			info->addr_source = "hotmod";
++			info->addr_source = SI_HOTMOD;
+ 			info->si_type = si_type;
+ 			info->io.addr_data = addr;
+ 			info->io.addr_type = addr_space;
+@@ -1813,7 +1821,7 @@ static __devinit void hardcode_find_bmc(
+ 		if (!info)
+ 			return;
+ 
+-		info->addr_source = "hardcoded";
++		info->addr_source = SI_HARDCODED;
+ 
+ 		if (!si_type[i] || strcmp(si_type[i], "kcs") == 0) {
+ 			info->si_type = SI_KCS;
+@@ -2004,7 +2012,7 @@ static __devinit int try_init_spmi(struc
+ 		return -ENOMEM;
  	}
  
--	ret = wm831x_request_irq(wm831x, per_irq, wm831x_per_irq,
--				 IRQF_TRIGGER_RISING, "wm831x_rtc_per",
--				 wm831x_rtc);
-+	ret = request_threaded_irq(per_irq, NULL, wm831x_per_irq,
-+				   IRQF_TRIGGER_RISING, "RTC period",
-+				   wm831x_rtc);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request periodic IRQ %d: %d\n",
- 			per_irq, ret);
+-	info->addr_source = "SPMI";
++	info->addr_source = SI_SPMI;
+ 
+ 	/* Figure out the interface type. */
+ 	switch (spmi->InterfaceType) {
+@@ -2105,7 +2113,7 @@ static int __devinit ipmi_pnp_probe(stru
+ 	if (!info)
+ 		return -ENOMEM;
+ 
+-	info->addr_source = "ACPI";
++	info->addr_source = SI_ACPI;
+ 
+ 	handle = acpi_dev->handle;
+ 
+@@ -2269,7 +2277,7 @@ static __devinit void try_init_dmi(struc
+ 		return;
  	}
  
--	ret = wm831x_request_irq(wm831x, alm_irq, wm831x_alm_irq,
--				 IRQF_TRIGGER_RISING, "wm831x_rtc_alm",
--				 wm831x_rtc);
-+	ret = request_threaded_irq(alm_irq, NULL, wm831x_alm_irq,
-+				   IRQF_TRIGGER_RISING, "RTC alarm",
-+				   wm831x_rtc);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request alarm IRQ %d: %d\n",
- 			alm_irq, ret);
-@@ -478,8 +478,8 @@ static int __devexit wm831x_rtc_remove(struct platform_device *pdev)
- 	int per_irq = platform_get_irq_byname(pdev, "PER");
- 	int alm_irq = platform_get_irq_byname(pdev, "ALM");
+-	info->addr_source = "SMBIOS";
++	info->addr_source = SI_SMBIOS;
  
--	wm831x_free_irq(wm831x_rtc->wm831x, alm_irq, wm831x_rtc);
--	wm831x_free_irq(wm831x_rtc->wm831x, per_irq, wm831x_rtc);
-+	free_irq(alm_irq, wm831x_rtc);
-+	free_irq(per_irq, wm831x_rtc);
- 	rtc_device_unregister(wm831x_rtc->rtc);
- 	kfree(wm831x_rtc);
+ 	switch (ipmi_data->type) {
+ 	case 0x01: /* KCS */
+@@ -2368,7 +2376,7 @@ static int __devinit ipmi_pci_probe(stru
+ 	if (!info)
+ 		return -ENOMEM;
  
--- 
-1.7.0.3
-
+-	info->addr_source = "PCI";
++	info->addr_source = SI_PCI;
+ 
+ 	switch (class_type) {
+ 	case PCI_ERMC_CLASSCODE_TYPE_SMIC:
+@@ -2508,7 +2516,7 @@ static int __devinit ipmi_of_probe(struc
+ 	}
+ 
+ 	info->si_type		= (enum si_type) match->data;
+-	info->addr_source	= "device-tree";
++	info->addr_source	= SI_DEVICETREE;
+ 	info->irq_setup		= std_irq_setup;
+ 
+ 	if (resource.flags & IORESOURCE_IO) {
+@@ -2948,7 +2956,7 @@ static __devinit void default_find_bmc(v
+ 		if (!info)
+ 			return;
+ 
+-		info->addr_source = NULL;
++		info->addr_source = SI_DEFAULT;
+ 
+ 		info->si_type = ipmi_defaults[i].type;
+ 		info->io_setup = port_setup;
+@@ -2991,16 +2999,14 @@ static int try_smi_init(struct smi_info 
+ 	int rv;
+ 	int i;
+ 
+-	if (new_smi->addr_source) {
+-		printk(KERN_INFO "ipmi_si: Trying %s-specified %s state"
+-		       " machine at %s address 0x%lx, slave address 0x%x,"
+-		       " irq %d\n",
+-		       new_smi->addr_source,
+-		       si_to_str[new_smi->si_type],
+-		       addr_space_to_str[new_smi->io.addr_type],
+-		       new_smi->io.addr_data,
+-		       new_smi->slave_addr, new_smi->irq);
+-	}
++	printk(KERN_INFO "ipmi_si: Trying %s-specified %s state"
++	       " machine at %s address 0x%lx, slave address 0x%x,"
++	       " irq %d\n",
++	       ipmi_addr_src_to_str[new_smi->addr_source],
++	       si_to_str[new_smi->si_type],
++	       addr_space_to_str[new_smi->io.addr_type],
++	       new_smi->io.addr_data,
++	       new_smi->slave_addr, new_smi->irq);
+ 
+ 	mutex_lock(&smi_infos_lock);
+ 	if (!is_new_interface(new_smi)) {
