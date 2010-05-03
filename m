@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab0ECJJq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 05:09:46 -0400
-Received: from stag.seas.upenn.edu ([158.130.70.79]:36731 "EHLO
+	id S1753532Ab0ECJJr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 05:09:47 -0400
+Received: from stag.seas.upenn.edu ([158.130.70.79]:36730 "EHLO
 	stag.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab0ECJJn (ORCPT
+	with ESMTP id S1753042Ab0ECJJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 May 2010 05:09:43 -0400
 From: Rafi Rubin <rafi@seas.upenn.edu>
 To: linux-input@vger.kernel.org, jkosina@suse.cz, chatty@enac.fr
 Cc: dmitry.torokhov@gmail.com, micki@n-trig.com, linux-kernel@vger.kernel.org,
        Rafi Rubin <rafi@seas.upenn.edu>
-Subject: [PATCH 1/2] TipSwitch for single touch mode touch.
-Date: Mon,  3 May 2010 05:08:29 -0400
-Message-Id: <1272877710-25431-2-git-send-email-rafi@seas.upenn.edu>
+Subject: [PATCH 2/2] Remove unused macro, TripleTap and QuadTap
+Date: Mon,  3 May 2010 05:08:30 -0400
+Message-Id: <1272877710-25431-3-git-send-email-rafi@seas.upenn.edu>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1272877710-25431-1-git-send-email-rafi@seas.upenn.edu>
 References: <1272877710-25431-1-git-send-email-rafi@seas.upenn.edu>
@@ -21,89 +21,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include TipSwitch in the touch detection decision for some single touch
-firmwares.  Confidence and InRange are high for all finger events
-including those used to indicate the finger is no longer in contact with
-the sensor.
+Removing the higher number taps.  Their usage was incorrect
+and even if correct they should not be used for a touch screen.
+_MT_ events should be used to communicate multiple fingers.
 
 Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
+
 ---
- drivers/hid/hid-ntrig.c |   29 +++++++++++++++++++++--------
- 1 files changed, 21 insertions(+), 8 deletions(-)
+I'm not removing DoubleTap just yet.  There are still some people
+using the wacom driver for touch, and I'd rather not pull the rug
+out from under them.
+---
+ drivers/hid/hid-ntrig.c |   32 ++------------------------------
+ 1 files changed, 2 insertions(+), 30 deletions(-)
 
 diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
-index 58ba0d3..10b08d6 100644
+index 10b08d6..4777bbf 100644
 --- a/drivers/hid/hid-ntrig.c
 +++ b/drivers/hid/hid-ntrig.c
-@@ -31,10 +31,12 @@ struct ntrig_data {
+@@ -24,9 +24,6 @@
+ 
+ #define NTRIG_DUPLICATE_USAGES	0x001
+ 
+-#define nt_map_key_clear(c)	hid_map_usage_clear(hi, usage, bit, max, \
+-					EV_KEY, (c))
+-
+ struct ntrig_data {
  	/* Incoming raw values for a single contact */
  	__u16 x, y, w, h;
- 	__u16 id;
--	__u8 confidence;
-+
-+	bool tipswitch;
-+	bool confidence;
-+	bool first_contact_touch;
- 
- 	bool reading_mt;
--	__u8 first_contact_confidence;
- 
- 	__u8 mt_footer[4];
- 	__u8 mt_foot_count;
-@@ -141,9 +143,10 @@ static int ntrig_event (struct hid_device *hid, struct hid_field *field,
- 		case 0xff000001:
- 			/* Tag indicating the start of a multitouch group */
- 			nd->reading_mt = 1;
--			nd->first_contact_confidence = 0;
-+			nd->first_contact_touch = 0;
- 			break;
- 		case HID_DG_TIPSWITCH:
-+			nd->tipswitch = value;
- 			/* Prevent emission of touch until validated */
- 			return 1;
- 		case HID_DG_CONFIDENCE:
-@@ -171,10 +174,14 @@ static int ntrig_event (struct hid_device *hid, struct hid_field *field,
- 			 * to emit a normal (X, Y) position
- 			 */
- 			if (!nd->reading_mt) {
--				input_report_key(input, BTN_TOOL_DOUBLETAP,
--						 (nd->confidence != 0));
-+				/*
-+				 * TipSwitch indicates the presence of a
-+				 * finger in single touch mode.
-+				 */
- 				input_report_key(input, BTN_TOUCH,
--						 (nd->confidence != 0));
-+						 nd->tipswitch);
-+				input_report_key(input, BTN_TOOL_DOUBLETAP,
-+						 nd->tipswitch);
- 				input_event(input, EV_ABS, ABS_X, nd->x);
- 				input_event(input, EV_ABS, ABS_Y, nd->y);
- 			}
-@@ -213,7 +220,13 @@ static int ntrig_event (struct hid_device *hid, struct hid_field *field,
- 
- 			/* emit a normal (X, Y) for the first point only */
- 			if (nd->id == 0) {
--				nd->first_contact_confidence = nd->confidence;
-+				/*
-+				 * TipSwitch is superfluous in multitouch
-+				 * mode.  The footer events tell us
-+				 * if there is a finger on the screen or
-+				 * not.
-+				 */
-+				nd->first_contact_touch = nd->confidence;
- 				input_event(input, EV_ABS, ABS_X, nd->x);
- 				input_event(input, EV_ABS, ABS_Y, nd->y);
- 			}
-@@ -243,7 +256,7 @@ static int ntrig_event (struct hid_device *hid, struct hid_field *field,
- 
+@@ -257,29 +254,10 @@ static int ntrig_event (struct hid_device *hid, struct hid_field *field,
  			nd->reading_mt = 0;
  
--			if (nd->first_contact_confidence) {
-+			if (nd->first_contact_touch) {
- 				switch (value) {
- 				case 0:	/* for single touch devices */
- 				case 1:
+ 			if (nd->first_contact_touch) {
+-				switch (value) {
+-				case 0:	/* for single touch devices */
+-				case 1:
+-					input_report_key(input,
+-							BTN_TOOL_DOUBLETAP, 1);
+-					break;
+-				case 2:
+-					input_report_key(input,
+-							BTN_TOOL_TRIPLETAP, 1);
+-					break;
+-				case 3:
+-				default:
+-					input_report_key(input,
+-							BTN_TOOL_QUADTAP, 1);
+-				}
++				input_report_key(input, BTN_TOOL_DOUBLETAP, 1);
+ 				input_report_key(input, BTN_TOUCH, 1);
+ 			} else {
+-				input_report_key(input,
+-						BTN_TOOL_DOUBLETAP, 0);
+-				input_report_key(input,
+-						BTN_TOOL_TRIPLETAP, 0);
+-				input_report_key(input,
+-						BTN_TOOL_QUADTAP, 0);
++				input_report_key(input, BTN_TOOL_DOUBLETAP, 0);
+ 				input_report_key(input, BTN_TOUCH, 0);
+ 			}
+ 			break;
+@@ -345,13 +323,7 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 			__clear_bit(BTN_TOOL_PEN, input->keybit);
+ 			__clear_bit(BTN_TOOL_FINGER, input->keybit);
+ 			__clear_bit(BTN_0, input->keybit);
+-			/*
+-			 * A little something special to enable
+-			 * two and three finger taps.
+-			 */
+ 			__set_bit(BTN_TOOL_DOUBLETAP, input->keybit);
+-			__set_bit(BTN_TOOL_TRIPLETAP, input->keybit);
+-			__set_bit(BTN_TOOL_QUADTAP, input->keybit);
+ 			/*
+ 			 * The physical touchscreen (single touch)
+ 			 * input has a value for physical, whereas
 -- 
 1.7.1
 
