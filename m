@@ -1,91 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab0ECWkH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 18:40:07 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60838 "EHLO hera.kernel.org"
+	id S1757762Ab0ECWkT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 18:40:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60847 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756875Ab0ECWkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 18:40:04 -0400
-Date: Mon, 3 May 2010 22:39:41 GMT
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+	id S1757219Ab0ECWkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 18:40:14 -0400
+Date: Mon, 3 May 2010 22:39:58 GMT
+From: tip-bot for Frank Arnold <frank.arnold@amd.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       tglx@linutronix.de, borislav.petkov@amd.com
+       frank.arnold@amd.com, tglx@linutronix.de, borislav.petkov@amd.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, borislav.petkov@amd.com
-In-Reply-To: <1271945222-5283-2-git-send-email-bp@amd64.org>
-References: <1271945222-5283-2-git-send-email-bp@amd64.org>
+       frank.arnold@amd.com, tglx@linutronix.de, borislav.petkov@amd.com
+In-Reply-To: <1271945222-5283-3-git-send-email-bp@amd64.org>
+References: <1271945222-5283-3-git-send-email-bp@amd64.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, cacheinfo: Unify AMD L3 cache index disable checking
-Message-ID: <tip-b1ab1b4d9ab9812c77843abec79030292ef0a544@git.kernel.org>
-Git-Commit-ID: b1ab1b4d9ab9812c77843abec79030292ef0a544
+Subject: [tip:x86/cpu] x86, cacheinfo: Turn off L3 cache index disable feature in virtualized environments
+Message-ID: <tip-f2b20e41407fccfcfacf927ff91ec888832a37af@git.kernel.org>
+Git-Commit-ID: f2b20e41407fccfcfacf927ff91ec888832a37af
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 03 May 2010 22:39:42 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 03 May 2010 22:39:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b1ab1b4d9ab9812c77843abec79030292ef0a544
-Gitweb:     http://git.kernel.org/tip/b1ab1b4d9ab9812c77843abec79030292ef0a544
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Thu, 22 Apr 2010 16:06:58 +0200
+Commit-ID:  f2b20e41407fccfcfacf927ff91ec888832a37af
+Gitweb:     http://git.kernel.org/tip/f2b20e41407fccfcfacf927ff91ec888832a37af
+Author:     Frank Arnold <frank.arnold@amd.com>
+AuthorDate: Thu, 22 Apr 2010 16:06:59 +0200
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 22 Apr 2010 17:17:20 -0700
+CommitDate: Thu, 22 Apr 2010 17:17:21 -0700
 
-x86, cacheinfo: Unify AMD L3 cache index disable checking
+x86, cacheinfo: Turn off L3 cache index disable feature in virtualized environments
 
-All F10h CPUs starting with model 8 resp. 9, stepping 1, support L3
-cache index disable. Concentrate the family, model, stepping checking at
-one place and enable the feature implicitly on upcoming Fam10h models.
+When running a quest kernel on xen we get:
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <1271945222-5283-2-git-send-email-bp@amd64.org>
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+IP: [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
+PGD 0
+Oops: 0000 [#1] SMP
+last sysfs file:
+CPU 0
+Modules linked in:
+
+Pid: 0, comm: swapper Tainted: G        W  2.6.34-rc3 #1 /HVM domU
+RIP: 0010:[<ffffffff8142f2fb>]  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x
+2ca/0x3df
+RSP: 0018:ffff880002203e08  EFLAGS: 00010046
+RAX: 0000000000000000 RBX: 0000000000000003 RCX: 0000000000000060
+RDX: 0000000000000000 RSI: 0000000000000040 RDI: 0000000000000000
+RBP: ffff880002203ed8 R08: 00000000000017c0 R09: ffff880002203e38
+R10: ffff8800023d5d40 R11: ffffffff81a01e28 R12: ffff880187e6f5c0
+R13: ffff880002203e34 R14: ffff880002203e58 R15: ffff880002203e68
+FS:  0000000000000000(0000) GS:ffff880002200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000038 CR3: 0000000001a3c000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a44020)
+Stack:
+ ffffffff810d7ecb ffff880002203e20 ffffffff81059140 ffff880002203e30
+<0> ffffffff810d7ec9 0000000002203e40 000000000050d140 ffff880002203e70
+<0> 0000000002008140 0000000000000086 ffff880040020140 ffffffff81068b8b
+Call Trace:
+ <IRQ>
+ [<ffffffff810d7ecb>] ? sync_supers_timer_fn+0x0/0x1c
+ [<ffffffff81059140>] ? mod_timer+0x23/0x25
+ [<ffffffff810d7ec9>] ? arm_supers_timer+0x34/0x36
+ [<ffffffff81068b8b>] ? hrtimer_get_next_event+0xa7/0xc3
+ [<ffffffff81058e85>] ? get_next_timer_interrupt+0x19a/0x20d
+ [<ffffffff8142fa23>] get_cpu_leaves+0x5c/0x232
+ [<ffffffff8106a7b1>] ? sched_clock_local+0x1c/0x82
+ [<ffffffff8106a9a0>] ? sched_clock_tick+0x75/0x7a
+ [<ffffffff8107748c>] generic_smp_call_function_single_interrupt+0xae/0xd0
+ [<ffffffff8101f6ef>] smp_call_function_single_interrupt+0x18/0x27
+ [<ffffffff8100a773>] call_function_single_interrupt+0x13/0x20
+ <EOI>
+ [<ffffffff8143c468>] ? notifier_call_chain+0x14/0x63
+ [<ffffffff810295c6>] ? native_safe_halt+0xc/0xd
+ [<ffffffff810114eb>] ? default_idle+0x36/0x53
+ [<ffffffff81008c22>] cpu_idle+0xaa/0xe4
+ [<ffffffff81423a9a>] rest_init+0x7e/0x80
+ [<ffffffff81b10dd2>] start_kernel+0x40e/0x419
+ [<ffffffff81b102c8>] x86_64_start_reservations+0xb3/0xb7
+ [<ffffffff81b103c4>] x86_64_start_kernel+0xf8/0x107
+Code: 14 d5 40 ff ae 81 8b 14 02 31 c0 3b 15 47 1c 8b 00 7d 0e 48 8b 05 36 1c 8b
+ 00 48 63 d2 48 8b 04 d0 c7 85 5c ff ff ff 00 00 00 00 <8b> 70 38 48 8d 8d 5c ff
+ ff ff 48 8b 78 10 ba c4 01 00 00 e8 eb
+RIP  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
+ RSP <ffff880002203e08>
+CR2: 0000000000000038
+---[ end trace a7919e7f17c0a726 ]---
+
+The L3 cache index disable feature of AMD CPUs has to be disabled if the
+kernel is running as guest on top of a hypervisor because northbridge
+devices are not available to the guest. Currently, this fixes a boot
+crash on top of Xen. In the future this will become an issue on KVM as
+well.
+
+Check if northbridge devices are present and do not enable the feature
+if there are none.
+
+Signed-off-by: Frank Arnold <frank.arnold@amd.com>
+LKML-Reference: <1271945222-5283-3-git-send-email-bp@amd64.org>
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/kernel/cpu/intel_cacheinfo.c |   17 ++++++++++-------
- 1 files changed, 10 insertions(+), 7 deletions(-)
+ arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index b3eeb66..acfb083 100644
+index acfb083..5ab14c8 100644
 --- a/arch/x86/kernel/cpu/intel_cacheinfo.c
 +++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -328,18 +328,22 @@ static unsigned int __cpuinit amd_calc_l3_indices(void)
- static void __cpuinit
- amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
- {
--	if (index < 3)
-+	if (boot_cpu_data.x86 != 0x10)
- 		return;
+@@ -344,6 +344,10 @@ amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
+ 	     boot_cpu_data.x86_mask < 0x1)
+ 			return;
  
--	if (boot_cpu_data.x86 == 0x11)
-+	if (index < 3)
- 		return;
- 
- 	/* see errata #382 and #388 */
--	if ((boot_cpu_data.x86 == 0x10) &&
--	    ((boot_cpu_data.x86_model < 0x8) ||
--	     (boot_cpu_data.x86_mask  < 0x1)))
-+	if (boot_cpu_data.x86_model < 0x8)
- 		return;
- 
-+	if ((boot_cpu_data.x86_model == 0x8 ||
-+	     boot_cpu_data.x86_model == 0x9)
-+		&&
-+	     boot_cpu_data.x86_mask < 0x1)
-+			return;
++	/* not in virtualized environments */
++	if (num_k8_northbridges == 0)
++		return;
 +
  	this_leaf->can_disable = true;
  	this_leaf->l3_indices  = amd_calc_l3_indices();
  }
-@@ -443,8 +447,7 @@ __cpuinit cpuid4_cache_lookup_regs(int index,
- 
- 	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD) {
- 		amd_cpuid4(index, &eax, &ebx, &ecx);
--		if (boot_cpu_data.x86 >= 0x10)
--			amd_check_l3_disable(index, this_leaf);
-+		amd_check_l3_disable(index, this_leaf);
- 	} else {
- 		cpuid_count(4, index, &eax.full, &ebx.full, &ecx.full, &edx);
- 	}
