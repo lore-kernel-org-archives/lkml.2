@@ -1,196 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363Ab0ECQ5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 12:57:12 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:34333 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab0ECQ5K (ORCPT
+	id S1754223Ab0ECRBz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 13:01:55 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54335 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab0ECRBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 12:57:10 -0400
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-       David Howells <dhowells@redhat.com>,
-       Alexander Shishkin <virtuoso@slind.org>,
-       Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH] mtd: Do not corrupt backing device of device node inode
-Date: Mon,  3 May 2010 19:56:07 +0300
-Message-Id: <1272905767-4317-1-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1271934535.11751.1550.camel@macbook.infradead.org>
-References: <1271934535.11751.1550.camel@macbook.infradead.org>
+	Mon, 3 May 2010 13:01:54 -0400
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: mgross@linux.intel.com, aili@codeaurora.org, dwalker@codeaurora.org,
+       tiwai@suse.de, bruce.w.allan@intel.com, davidb@quicinc.com,
+       mcgrof@gmail.com, pavel@ucw.cz,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]PM QOS refresh against next-20100430
+References: <20100430212043.GA30315@linux.intel.com>
+	<20100503103300.6330e522@bike.lwn.net>
+	<87y6g1547o.fsf@deeprootsystems.com>
+	<20100503104250.7605d2bc@bike.lwn.net>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Mon, 03 May 2010 10:01:50 -0700
+In-Reply-To: <20100503104250.7605d2bc@bike.lwn.net> (Jonathan Corbet's message of "Mon\, 3 May 2010 10\:42\:50 -0600")
+Message-ID: <87tyqo537l.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We cannot modify file->f_mapping->backing_dev_info, because it will corrupt
-backing device of device node inode, since file->f_mapping is equal to
-inode->i_mapping (see __dentry_open() in fs/open.c).
+Jonathan Corbet <corbet@lwn.net> writes:
 
-Let's introduce separate inode for MTD device with appropriate backing
-device.
+> On Mon, 03 May 2010 09:40:11 -0700
+> Kevin Hilman <khilman@deeprootsystems.com> wrote:
+>
+>> > One question, though...  one clear use of this API is for drivers to
+>> > say "don't go into C3 or deeper because things go wrong"; I'm about to
+>> > add another one of those.  It works, but the use of a
+>> > PM_QOS_CPU_DMA_LATENCY requirement with a hard-coded number that one
+>> > hopes is small enough seems a bit...indirect.  I wonder if it would be
+>> > clearer and more robust to add a new requirement^Wrequest type saying
+>> > "the quality of service I need is shallow sleeps only"?  
+>> 
+>> The problem with that is portability.
+>> 
+>> What does "shallow" mean?  
+>
+> Well, shallow could mean that the state lacks the CPUIDLE_FLAG_DEEP
+> flag; that should be relatively portable.  In any case, it seems
+> more so than "if I put in a 55us latency requirement, I'll stay out
+> of C3".
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- drivers/mtd/mtdchar.c   |   70 +++++++++++++++++++++++++++++++++++++++++-----
- drivers/mtd/mtdcore.c   |    3 ++
- include/linux/mtd/mtd.h |    3 ++
- 3 files changed, 68 insertions(+), 8 deletions(-)
+I guess it depends on your goal.  Do you just want to stay out of C3
+on your current platform?  or do you want to stay out of any low-power
+state (on any platform) where you'll have a latency of > 55 usecs?
 
-diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
-index 5b081cb..24ea34f 100644
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -15,12 +15,15 @@
- #include <linux/smp_lock.h>
- #include <linux/backing-dev.h>
- #include <linux/compat.h>
-+#include <linux/mount.h>
- 
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/compatmac.h>
- 
- #include <asm/uaccess.h>
- 
-+#define MTD_INODE_FS_MAGIC 0x11307854
-+static struct vfsmount *mtd_inode_mnt __read_mostly;
- 
- /*
-  * Data structure to hold the pointer to the mtd device as well
-@@ -88,8 +91,21 @@ static int mtd_open(struct inode *inode, struct file *file)
- 		goto out;
- 	}
- 
--	if (mtd->backing_dev_info)
--		file->f_mapping->backing_dev_info = mtd->backing_dev_info;
-+	if (!mtd->inode) {
-+		mtd->inode = new_inode(mtd_inode_mnt->mnt_sb);
-+		mtd->inode->i_mode = S_IFCHR;
-+		mtd->inode->i_rdev = inode->i_rdev;
-+		if (mtd->backing_dev_info) {
-+			mtd->inode->i_data.backing_dev_info =
-+				mtd->backing_dev_info;
-+		}
-+	}
-+
-+	spin_lock(&inode_lock);
-+	__iget(mtd->inode);
-+	spin_unlock(&inode_lock);
-+
-+	file->f_mapping = mtd->inode->i_mapping;
- 
- 	/* You can't open it RW if it's not a writeable device */
- 	if ((file->f_mode & FMODE_WRITE) && !(mtd->flags & MTD_WRITEABLE)) {
-@@ -125,6 +141,8 @@ static int mtd_close(struct inode *inode, struct file *file)
- 	if ((file->f_mode & FMODE_WRITE) && mtd->sync)
- 		mtd->sync(mtd);
- 
-+	iput(mtd->inode);
-+
- 	put_mtd_device(mtd);
- 	file->private_data = NULL;
- 	kfree(mfi);
-@@ -954,21 +972,57 @@ static const struct file_operations mtd_fops = {
- #endif
- };
- 
-+static int mtd_inodefs_get_sb(struct file_system_type *fs_type, int flags,
-+                               const char *dev_name, void *data,
-+                               struct vfsmount *mnt)
-+{
-+        return get_sb_pseudo(fs_type, "mtd_inode:", NULL, MTD_INODE_FS_MAGIC,
-+                             mnt);
-+}
-+
-+static struct file_system_type mtd_inodefs_type = {
-+       .name = "mtd_inodefs",
-+       .get_sb = mtd_inodefs_get_sb,
-+       .kill_sb = kill_anon_super,
-+};
-+
- static int __init init_mtdchar(void)
- {
--	int status;
-+	int ret;
- 
--	status = register_chrdev(MTD_CHAR_MAJOR, "mtd", &mtd_fops);
--	if (status < 0) {
--		printk(KERN_NOTICE "Can't allocate major number %d for Memory Technology Devices.\n",
--		       MTD_CHAR_MAJOR);
-+	ret = register_chrdev(MTD_CHAR_MAJOR, "mtd", &mtd_fops);
-+	if (ret < 0) {
-+		pr_notice("Can't allocate major number %d for "
-+				"Memory Technology Devices.\n", MTD_CHAR_MAJOR);
-+		return ret;
-+	}
-+
-+	ret = register_filesystem(&mtd_inodefs_type);
-+	if (ret) {
-+		pr_notice("Can't register mtd_inodefs filesystem: %d\n", ret);
-+		goto err_unregister_chdev;
-+	}
-+
-+	mtd_inode_mnt = kern_mount(&mtd_inodefs_type);
-+	if (IS_ERR(mtd_inode_mnt)) {
-+		ret = PTR_ERR(mtd_inode_mnt);
-+		pr_notice("Error mounting mtd_inodefs filesystem: %d\n", ret);
-+		goto err_unregister_filesystem;
- 	}
- 
--	return status;
-+	return ret;
-+
-+err_unregister_chdev:
-+	unregister_chrdev(MTD_CHAR_MAJOR, "mtd");
-+err_unregister_filesystem:
-+	unregister_filesystem(&mtd_inodefs_type);
-+	return ret;
- }
- 
- static void __exit cleanup_mtdchar(void)
- {
-+	mntput(mtd_inode_mnt);
-+	unregister_filesystem(&mtd_inodefs_type);
- 	unregister_chrdev(MTD_CHAR_MAJOR, "mtd");
- }
- 
-diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
-index b177e75..980919e 100644
---- a/drivers/mtd/mtdcore.c
-+++ b/drivers/mtd/mtdcore.c
-@@ -383,6 +383,9 @@ int del_mtd_device (struct mtd_info *mtd)
- 	} else {
- 		struct mtd_notifier *not;
- 
-+		if (mtd->inode)
-+			iput(mtd->inode);
-+
- 		device_unregister(&mtd->dev);
- 
- 		/* No need to get a refcount on the module containing
-diff --git a/include/linux/mtd/mtd.h b/include/linux/mtd/mtd.h
-index 0f32a9b..0589632 100644
---- a/include/linux/mtd/mtd.h
-+++ b/include/linux/mtd/mtd.h
-@@ -12,6 +12,7 @@
- #include <linux/uio.h>
- #include <linux/notifier.h>
- #include <linux/device.h>
-+#include <linux/fs.h>
- 
- #include <linux/mtd/compatmac.h>
- #include <mtd/mtd-abi.h>
-@@ -177,6 +178,8 @@ struct mtd_info {
- 	 */
- 	struct backing_dev_info *backing_dev_info;
- 
-+	/* inode for mtd device */
-+	struct inode *inode;
- 
- 	int (*read) (struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf);
- 	int (*write) (struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf);
--- 
-1.7.0.4
+The former is not portable (as C-states don't have the same meanings
+across arches/SoCs) where as using a real-world number in usecs will
+have meaning on any platform.
+
+> Just a thought, anyway; it's not like I've really worked through a
+> plausible alternative API.
+
+My main concern is that drivers not be written with latency
+constraints that assume an Intel-centric set of power states.  There
+are other SoCs out there with different sets of states and
+corresponding latencies, so keeping things in real-world numbers
+(latency, throughput, etc.) seems to me to be the only portable way.
+
+Kevin
 
