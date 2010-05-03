@@ -1,160 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324Ab0ECVWG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 17:22:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39855 "EHLO hera.kernel.org"
+	id S1757505Ab0ECVWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 17:22:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39869 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045Ab0ECVWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 17:22:00 -0400
-Date: Mon, 3 May 2010 21:21:44 GMT
+	id S1756242Ab0ECVWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 17:22:16 -0400
+Date: Mon, 3 May 2010 21:22:02 GMT
 From: tip-bot for Brian Gerst <brgerst@gmail.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
        brgerst@gmail.com, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
        brgerst@gmail.com, tglx@linutronix.de
-In-Reply-To: <1269176446-2489-2-git-send-email-brgerst@gmail.com>
-References: <1269176446-2489-2-git-send-email-brgerst@gmail.com>
+In-Reply-To: <1269176446-2489-3-git-send-email-brgerst@gmail.com>
+References: <1269176446-2489-3-git-send-email-brgerst@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/fpu] x86-32: Rework cache flush denied handler
-Message-ID: <tip-40d2e76315da38993129090dc5d56377e573c312@git.kernel.org>
-Git-Commit-ID: 40d2e76315da38993129090dc5d56377e573c312
+Subject: [tip:x86/fpu] x86: Merge simd_math_error() into math_error()
+Message-ID: <tip-9b6dba9e0798325dab427b9d60c61630ccc39b28@git.kernel.org>
+Git-Commit-ID: 9b6dba9e0798325dab427b9d60c61630ccc39b28
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 03 May 2010 21:21:45 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 03 May 2010 21:22:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  40d2e76315da38993129090dc5d56377e573c312
-Gitweb:     http://git.kernel.org/tip/40d2e76315da38993129090dc5d56377e573c312
+Commit-ID:  9b6dba9e0798325dab427b9d60c61630ccc39b28
+Gitweb:     http://git.kernel.org/tip/9b6dba9e0798325dab427b9d60c61630ccc39b28
 Author:     Brian Gerst <brgerst@gmail.com>
-AuthorDate: Sun, 21 Mar 2010 09:00:43 -0400
+AuthorDate: Sun, 21 Mar 2010 09:00:44 -0400
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Mon, 3 May 2010 13:39:26 -0700
+CommitDate: Mon, 3 May 2010 13:39:29 -0700
 
-x86-32: Rework cache flush denied handler
+x86: Merge simd_math_error() into math_error()
 
-The cache flush denied error is an erratum on some AMD 486 clones.  If an invd
-instruction is executed in userspace, the processor calls exception 19 (13 hex)
-instead of #GP (13 decimal).  On cpus where XMM is not supported, redirect
-exception 19 to do_general_protection().  Also, remove die_if_kernel(), since
-this was the last user.
+The only difference between FPU and SIMD exceptions is where the
+status bits are read from (cwd/swd vs. mxcsr).  This also fixes
+the discrepency introduced by commit adf77bac, which fixed FPU
+but not SIMD.
 
 Signed-off-by: Brian Gerst <brgerst@gmail.com>
-LKML-Reference: <1269176446-2489-2-git-send-email-brgerst@gmail.com>
+LKML-Reference: <1269176446-2489-3-git-send-email-brgerst@gmail.com>
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/Kconfig.cpu       |    4 ++++
- arch/x86/kernel/entry_32.S |   19 +++++++++++++++++++
- arch/x86/kernel/traps.c    |   31 +++----------------------------
- 3 files changed, 26 insertions(+), 28 deletions(-)
+ arch/x86/include/asm/traps.h |    2 +-
+ arch/x86/kernel/irqinit.c    |    2 +-
+ arch/x86/kernel/traps.c      |  100 +++++++++++++----------------------------
+ 3 files changed, 34 insertions(+), 70 deletions(-)
 
-diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index a198293..6f6792c 100644
---- a/arch/x86/Kconfig.cpu
-+++ b/arch/x86/Kconfig.cpu
-@@ -338,6 +338,10 @@ config X86_F00F_BUG
- 	def_bool y
- 	depends on M586MMX || M586TSC || M586 || M486 || M386
+diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
+index 4da91ad..f66cda5 100644
+--- a/arch/x86/include/asm/traps.h
++++ b/arch/x86/include/asm/traps.h
+@@ -79,7 +79,7 @@ static inline int get_si_code(unsigned long condition)
  
-+config X86_INVD_BUG
-+	def_bool y
-+	depends on M486 || M386
-+
- config X86_WP_WORKS_OK
- 	def_bool y
- 	depends on !M386
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 44a8e0d..cd49141 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -53,6 +53,7 @@
- #include <asm/processor-flags.h>
- #include <asm/ftrace.h>
- #include <asm/irq_vectors.h>
-+#include <asm/cpufeature.h>
+ extern int panic_on_unrecovered_nmi;
  
- /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
- #include <linux/elf-em.h>
-@@ -905,7 +906,25 @@ ENTRY(simd_coprocessor_error)
- 	RING0_INT_FRAME
- 	pushl $0
- 	CFI_ADJUST_CFA_OFFSET 4
-+#ifdef CONFIG_X86_INVD_BUG
-+	/* AMD 486 bug: invd from userspace calls exception 19 instead of #GP */
-+661:	pushl $do_general_protection
-+662:
-+.section .altinstructions,"a"
-+	.balign 4
-+	.long 661b
-+	.long 663f
-+	.byte X86_FEATURE_XMM
-+	.byte 662b-661b
-+	.byte 664f-663f
-+.previous
-+.section .altinstr_replacement,"ax"
-+663:	pushl $do_simd_coprocessor_error
-+664:
-+.previous
-+#else
- 	pushl $do_simd_coprocessor_error
-+#endif
- 	CFI_ADJUST_CFA_OFFSET 4
- 	jmp error_code
- 	CFI_ENDPROC
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 1168e44..a16c9df 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -108,15 +108,6 @@ static inline void preempt_conditional_cli(struct pt_regs *regs)
- 	dec_preempt_count();
+-void math_error(void __user *);
++void math_error(struct pt_regs *, int, int);
+ void math_emulate(struct math_emu_info *);
+ #ifndef CONFIG_X86_32
+ asmlinkage void smp_thermal_interrupt(void);
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index 0ed2d30..990ae7c 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -60,7 +60,7 @@ static irqreturn_t math_error_irq(int cpl, void *dev_id)
+ 	outb(0, 0xF0);
+ 	if (ignore_fpu_irq || !boot_cpu_data.hard_math)
+ 		return IRQ_NONE;
+-	math_error((void __user *)get_irq_regs()->ip);
++	math_error(get_irq_regs(), 0, 16);
+ 	return IRQ_HANDLED;
  }
  
--#ifdef CONFIG_X86_32
--static inline void
--die_if_kernel(const char *str, struct pt_regs *regs, long err)
--{
--	if (!user_mode_vm(regs))
--		die(str, regs, err);
--}
--#endif
--
- static void __kprobes
- do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
- 	long error_code, siginfo_t *info)
-@@ -729,30 +720,14 @@ do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
- 	conditional_sti(regs);
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index a16c9df..a472992 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -595,36 +595,48 @@ static int kernel_math_error(struct pt_regs *regs, const char *str, int trapnr)
+  * the correct behaviour even in the presence of the asynchronous
+  * IRQ13 behaviour
+  */
+-void math_error(void __user *ip)
++void math_error(struct pt_regs *regs, int error_code, int trapnr)
+ {
+ 	struct task_struct *task;
+ 	siginfo_t info;
+-	unsigned short cwd, swd, err;
++	unsigned short err;
  
- #ifdef CONFIG_X86_32
--	if (cpu_has_xmm) {
--		/* Handle SIMD FPU exceptions on PIII+ processors. */
--		ignore_fpu_irq = 1;
--		simd_math_error((void __user *)regs->ip);
--		return;
--	}
+ 	/*
+ 	 * Save the info for the exception handler and clear the error.
+ 	 */
+ 	task = current;
+ 	save_init_fpu(task);
+-	task->thread.trap_no = 16;
+-	task->thread.error_code = 0;
++	task->thread.trap_no = trapnr;
++	task->thread.error_code = error_code;
+ 	info.si_signo = SIGFPE;
+ 	info.si_errno = 0;
+-	info.si_addr = ip;
 -	/*
--	 * Handle strange cache flush from user space exception
--	 * in all other cases.  This is undocumented behaviour.
+-	 * (~cwd & swd) will mask out exceptions that are not set to unmasked
+-	 * status.  0x3f is the exception bits in these regs, 0x200 is the
+-	 * C1 reg you need in case of a stack fault, 0x040 is the stack
+-	 * fault bit.  We should only be taking one exception at a time,
+-	 * so if this combination doesn't produce any single exception,
+-	 * then we have a bad program that isn't synchronizing its FPU usage
+-	 * and it will suffer the consequences since we won't be able to
+-	 * fully reproduce the context of the exception
 -	 */
--	if (regs->flags & X86_VM_MASK) {
--		handle_vm86_fault((struct kernel_vm86_regs *)regs, error_code);
--		return;
--	}
--	current->thread.trap_no = 19;
--	current->thread.error_code = error_code;
--	die_if_kernel("cache flush denied", regs, error_code);
--	force_sig(SIGSEGV, current);
-+	ignore_fpu_irq = 1;
- #else
- 	if (!user_mode(regs) &&
- 			kernel_math_error(regs, "kernel simd math error", 19))
+-	cwd = get_fpu_cwd(task);
+-	swd = get_fpu_swd(task);
++	info.si_addr = (void __user *)regs->ip;
++	if (trapnr == 16) {
++		unsigned short cwd, swd;
++		/*
++		 * (~cwd & swd) will mask out exceptions that are not set to unmasked
++		 * status.  0x3f is the exception bits in these regs, 0x200 is the
++		 * C1 reg you need in case of a stack fault, 0x040 is the stack
++		 * fault bit.  We should only be taking one exception at a time,
++		 * so if this combination doesn't produce any single exception,
++		 * then we have a bad program that isn't synchronizing its FPU usage
++		 * and it will suffer the consequences since we won't be able to
++		 * fully reproduce the context of the exception
++		 */
++		cwd = get_fpu_cwd(task);
++		swd = get_fpu_swd(task);
+ 
+-	err = swd & ~cwd;
++		err = swd & ~cwd;
++	} else {
++		/*
++		 * The SIMD FPU exceptions are handled a little differently, as there
++		 * is only a single status/control register.  Thus, to determine which
++		 * unmasked exception was caught we must mask the exception mask bits
++		 * at 0x1f80, and then use these to mask the exception bits at 0x3f.
++		 */
++		unsigned short mxcsr = get_fpu_mxcsr(task);
++		err = ~(mxcsr >> 7) & mxcsr;
++	}
+ 
+ 	if (err & 0x001) {	/* Invalid op */
+ 		/*
+@@ -663,55 +675,7 @@ dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
  		return;
--	simd_math_error((void __user *)regs->ip);
  #endif
-+
-+	simd_math_error((void __user *)regs->ip);
+ 
+-	math_error((void __user *)regs->ip);
+-}
+-
+-static void simd_math_error(void __user *ip)
+-{
+-	struct task_struct *task;
+-	siginfo_t info;
+-	unsigned short mxcsr;
+-
+-	/*
+-	 * Save the info for the exception handler and clear the error.
+-	 */
+-	task = current;
+-	save_init_fpu(task);
+-	task->thread.trap_no = 19;
+-	task->thread.error_code = 0;
+-	info.si_signo = SIGFPE;
+-	info.si_errno = 0;
+-	info.si_code = __SI_FAULT;
+-	info.si_addr = ip;
+-	/*
+-	 * The SIMD FPU exceptions are handled a little differently, as there
+-	 * is only a single status/control register.  Thus, to determine which
+-	 * unmasked exception was caught we must mask the exception mask bits
+-	 * at 0x1f80, and then use these to mask the exception bits at 0x3f.
+-	 */
+-	mxcsr = get_fpu_mxcsr(task);
+-	switch (~((mxcsr & 0x1f80) >> 7) & (mxcsr & 0x3f)) {
+-	case 0x000:
+-	default:
+-		break;
+-	case 0x001: /* Invalid Op */
+-		info.si_code = FPE_FLTINV;
+-		break;
+-	case 0x002: /* Denormalize */
+-	case 0x010: /* Underflow */
+-		info.si_code = FPE_FLTUND;
+-		break;
+-	case 0x004: /* Zero Divide */
+-		info.si_code = FPE_FLTDIV;
+-		break;
+-	case 0x008: /* Overflow */
+-		info.si_code = FPE_FLTOVF;
+-		break;
+-	case 0x020: /* Precision */
+-		info.si_code = FPE_FLTRES;
+-		break;
+-	}
+-	force_sig_info(SIGFPE, &info, task);
++	math_error(regs, error_code, 16);
+ }
+ 
+ dotraplinkage void
+@@ -727,7 +691,7 @@ do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
+ 		return;
+ #endif
+ 
+-	simd_math_error((void __user *)regs->ip);
++	math_error(regs, error_code, 19);
  }
  
  dotraplinkage void
