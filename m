@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab0ECH6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 03:58:36 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59849 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932153Ab0ECH6e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 03:58:34 -0400
-Message-ID: <4BDE8226.3010402@infradead.org>
-Date: Mon, 03 May 2010 04:58:30 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+	id S932353Ab0ECH7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 03:59:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15664 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932153Ab0ECH7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 03:59:09 -0400
+Date: Mon, 3 May 2010 10:55:11 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: arnd@arndb.de, sri@us.ibm.com, eric.dumazet@gmail.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       dlstevens@us.ibm.com
+Subject: Re: [PATCH] macvtap: add ioctl to modify vnet header size
+Message-ID: <20100503075511.GA8298@redhat.com>
+References: <20100429135158.GA26303@redhat.com> <201004291640.57280.arnd@arndb.de> <20100502.233232.66719719.davem@davemloft.net> <20100502.233439.77341308.davem@davemloft.net>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-References: <20100412124041.4876c3f9.sfr@canb.auug.org.au>	<20100428110710.cec8acdb.sfr@canb.auug.org.au> <20100503150123.8fab27b1.sfr@canb.auug.org.au>
-In-Reply-To: <20100503150123.8fab27b1.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100502.233439.77341308.davem@davemloft.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> Hi Mauro,
+On Sun, May 02, 2010 at 11:34:39PM -0700, David Miller wrote:
+> From: David Miller <davem@davemloft.net>
+> Date: Sun, 02 May 2010 23:32:32 -0700 (PDT)
 > 
-> On Wed, 28 Apr 2010 11:07:10 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> On Mon, 12 Apr 2010 12:40:41 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> After merging the v4l-dvb tree, today's linux-next build (powerpc
->>> ppc64_defconfig) failed like this:
->>>
->>> drivers/input/input.c: In function 'input_default_setkeycode':
->>> drivers/input/input.c:691: error: 'keycode' undeclared (first use in this function)
->>>
->>> Caused by commit df7ad46fc171965103f02649f6c2f02c6ca8b331 ("Merge branch
->>> 'master' of /home/v4l/bare_trees/v4l-dvb").  The merge resolution is not
->>> quite right.
->>>
->>> I have used the v4l-dvb tree from next-20100409 for today.
->> I am still getting this build failure ...
+> > From: Arnd Bergmann <arnd@arndb.de>
+> > Date: Thu, 29 Apr 2010 16:40:57 +0200
+> > 
+> >> On Thursday 29 April 2010, Michael S. Tsirkin wrote:
+> >>> This adds TUNSETVNETHDRSZ/TUNGETVNETHDRSZ support
+> >>> to macvtap.
+> >> 
+> >> Looks good, thanks Michael!
+> >> 
+> >>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >> 
+> >> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > 
+> > Applied to net-next-2.6, thanks.
 > 
-> Any chance of it being fixed?
+> Nevermind, reverted:
+> 
+> drivers/net/macvtap.c: In function 'macvtap_ioctl':
+> drivers/net/macvtap.c:679:7: error: 'TUNGETVNETHDRSZ' undeclared (first use in this function)
+> drivers/net/macvtap.c:679:7: note: each undeclared identifier is reported only once for each function it appears in
+> drivers/net/macvtap.c:685:7: error: 'TUNSETVNETHDRSZ' undeclared (first use in this function)
+> 
+> What tree is this supposed to build under?  Certinaly not net-2.6
+> or net-next-2.6
 
-Done. 
-
+The reason is it needs to be applied on top of the patch that adds the
+same header to tun that you acked.  I put this in patch description:
+> I plan to merge both patches through vhost tree together
+> with mergeable buffer support. Comments?
+In other words, this will be included in a pull request that I
+intend to send out shortly.
 
 -- 
-
-Cheers,
-Mauro
+MST
