@@ -1,210 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933117Ab0ECQEf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 12:04:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53885 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933012Ab0ECQEd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 12:04:33 -0400
+	id S1759299Ab0ECQKv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 12:10:51 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:59052 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758675Ab0ECQKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 12:10:49 -0400
+Message-ID: <4BDEF582.2040806@us.ibm.com>
+Date: Mon, 03 May 2010 09:10:42 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Message-ID: <74c69226-4678-4b9b-bfeb-1490c8f5636d@default>
-Date: Mon, 3 May 2010 09:01:15 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, Pavel Machek <pavel@ucw.cz>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <4BD16D09.2030803@redhat.com>>
- <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>>
- <4BD1A74A.2050003@redhat.com>>
- <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>> <4BD1B427.9010905@redhat.com>
- <4BD1B626.7020702@redhat.com>>
- <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>>
- <4BD3377E.6010303@redhat.com>>
- <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>>
- <ce808441-fae6-4a33-8335-f7702740097a@default>>
- <20100428055538.GA1730@ucw.cz> <1272591924.23895.807.camel@nimitz>
- <4BDA8324.7090409@redhat.com> <084f72bf-21fd-4721-8844-9d10cccef316@default>
- <4BDB026E.1030605@redhat.com> <4BDB18CE.2090608@goop.org>
- <4BDB2069.4000507@redhat.com> <3a62a058-7976-48d7-acd2-8c6a8312f10f@default>
- <4BDD9BD3.2080301@redhat.com> <f392dc83-f5a3-4048-ab4d-758225d16547@default
- 4BDE8D76.3000703@redhat.com>
-In-Reply-To: <4BDE8D76.3000703@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090208.4BDEF3AA.0168:SCFMA4539811,ss=1,pt=DBB_66871,fgs=0
+To: Oren Laadan <orenl@cs.columbia.edu>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH v21 032/100] c/r: Save and restore the [compat_]robust_list
+ member of the task struct
+References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu> <1272723382-19470-33-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1272723382-19470-33-git-send-email-orenl@cs.columbia.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Simple policies must exist and must be enforced by the hypervisor to
-> ensure
-> > this doesn't happen.  Xen+tmem provides these policies and enforces
-> them.
-> > And it enforces them very _dynamically_ to constantly optimize
-> > RAM utilization across multiple guests each with dynamically varying
-> RAM
-> > usage.  Frontswap fits nicely into this framework.
->
-> Can you explain what "enforcing" means in this context?  You loaned the
-> guest some pages, can you enforce their return?
-
-We're getting into hypervisor policy issues, but given that probably
-nobody else is listening by now, I guess that's OK. ;-)
-
-The enforcement is on the "put" side.  The page is not loaned,
-it is freely given, but only if the guest is within its
-contractual limitations (e.g. within its predefined "maxmem").
-If the guest chooses to never remove the pages from frontswap,
-that's the guest's option, but that part of the guests
-memory allocation can never be used for anything else so
-it is in the guest's self-interest to "get" or "flush" the
-pages from frontswap.
-
-> > Huge performance hits that are completely inexplicable to a user
-> > give virtualization a bad reputation.  If the user (i.e. guest,
-> > not host, administrator) can at least see "Hmmm... I'm doing a lot
-> > of swapping, guess I'd better pay for more (virtual) RAM", then
-> > the user objections are greatly reduced.
+Oren Laadan wrote:
+> From: Matt Helsley <matthltc@us.ibm.com>
 > 
-> What you're saying is "don't overcommit".
-
-Not at all.  I am saying "overcommit, but do it intelligently".
-
-> That's a good policy for some
-> scenarios but not for others.  Note it applies equally well for cpu as
-> well as memory.
-
-Perhaps, but CPU overcommit has been a well-understood
-part of computing for a very long time and users, admins,
-and hosting providers all know how to recognize it and
-deal with it.  Not so with overcommitment of memory;
-the only exposure to memory limitations is "my disk light
-is flashing a lot, I'd better buy more RAM".  Obviously,
-this doesn't translate to virtualization very well.
-
-And, as for your interrupt latency analogy, let's
-revisit that if/when Xen or KVM support CPU overcommitment
-for real-time-sensitive guests.  Until then, your analogy
-is misleading.
-
-> frontswap+tmem is not overcommit, it's undercommit.   You have spare
-> memory, and you give it away.  It isn't a replacement.  However,
-> without
-> the means to reclaim this spare memory, it can result in overcommit.
-
-But you are missing part of the magic:  Once the memory
-page is no longer directly addressable (AND this implies not
-directly writable) by the guest, the hypervisor can do interesting
-things with it, such as compression and deduplication.
-
-As a result, the sum of pages used by all the guests exceeds
-the total pages of RAM in the system.  Thus overcommitment.
-I agree that the degree of overcommitment is less than possible
-with host-swapping, but none of the evil issues of host-swapping
-happen. Again, this is "intelligent overcommitment".  Other
-existing forms are "overcommit and cross your fingers that bad
-things don't happen."
-
-> > Xen+tmem uses the SAME internal kernel interface.  The Xen-specific
-> > code which performs the Xen-specific stuff (hypercalls) is only in
-> > the Xen-specific directory.
+> These lists record which futexes the task holds. To keep the overhead of
+> robust futexes low the list is kept in userspace. When the task exits the
+> kernel carefully walks these lists to recover held futexes that
+> other tasks may be attempting to acquire with FUTEX_WAIT.
 > 
-> This makes it an external interface.
->  :
-> Something completely internal to the guest can be replaced by something
-> completely different.  Something that talks to a hypervisor will need
-> those hooks forever to avoid regressions.
+> Because they point to userspace memory that is saved/restored by
+> checkpoint/restart saving the list pointers themselves is safe.
+> 
+> While saving the pointers is safe during checkpoint, restart is tricky
+> because the robust futex ABI contains provisions for changes based on
+> checking the size of the list head. So we need to save the length of
+> the list head too in order to make sure that the kernel used during
+> restart is capable of handling that ABI. Since there is only one ABI
+> supported at the moment taking the list head's size is simple. Should
+> the ABI change we will need to use the same size as specified during
+> sys_set_robust_list() and hence some new means of determining the length
+> of this userspace structure in sys_checkpoint would be required.
+> 
+> Rather than rewrite the logic that checks and handles the ABI we reuse
+> sys_set_robust_list() by factoring out the body of the function and
+> calling it during restart.
+> 
 
-Uh, no.  As I've said, everything about frontswap is entirely
-optional, both at compile-time and run-time.  A frontswap-enabled
-guest is fully compatible with a hypervisor with no frontswap;
-a frontswap-enabled hypervisor is fully compatible with a guest
-with no frontswap.  The only thing that is reserved forever is
-a hypervisor-specific "hypercall number" which is not exposed in
-the Linux kernel except in Xen-specific code.  And, for Xen,
-frontswap shares the same hypercall number with cleancache.
+The approach looks sound to me. I presume there is no way for the task 
+to wake and set the robust list to something else after the checkpoint 
+has started?
 
-So, IMHO, you are being alarmist.  This is not an "API
-maintenance" problem for Linux.
+Couple of comments re documentation below.
 
-> Exactly as large as the swap space which the guest would have in the
-> frontswap+tmem case.
->  :
-> Not needed, though I expect it is already supported (SAN volumes do
-> grow).
->  :
-> If block layer overhead is a problem, go ahead and optimize it instead
-> of adding new interfaces to bypass it.  Though I expect it wouldn't be
-> needed, and if any optimization needs to be done it is in the swap
-> layer.
-> Optimizing swap has the additional benefit of improving performance on
-> flash-backed swap.
->  :
-> What happens when no tmem is available?  you swap to a volume.  That's
-> the disk size needed.
->  :
-> You're dynamic swap is limited too.  And no, no guest modifications.
+Thanks,
 
-You keep saying you are going to implement all of the dynamic features
-of frontswap with no changes to the guest and no copying and no
-host-swapping.  You are being disingenuous.  VMware has had a lot
-of people working on virtualization a lot longer than you or I have.
-Don't you think they would have done this by now?
+Darren
 
-Frontswap exists today and is even shipping in real released products.
-If you can work your magic (in Xen... I am not trying to claim
-frontswap should work with KVM), please show us the code.
+> Changelog [v19]:
+>   - Keep __u32s in even groups for 32-64 bit compatibility
+> 
+> Cc: Darren Hart <dvhltc@us.ibm.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
+> Acked-by: Oren Laadan <orenl@cs.columbia.edu>
+> Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+> Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+> ---
+>  include/linux/checkpoint_hdr.h |    5 ++++
+>  include/linux/compat.h         |    3 +-
+>  include/linux/futex.h          |    1 +
+>  kernel/checkpoint/process.c    |   49 ++++++++++++++++++++++++++++++++++++++++
+>  kernel/futex.c                 |   19 +++++++++-----
+>  kernel/futex_compat.c          |   13 ++++++++--
+>  6 files changed, 79 insertions(+), 11 deletions(-)
+> 
+> diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
+> index 68ee0f3..c7d34a6 100644
+> --- a/include/linux/checkpoint_hdr.h
+> +++ b/include/linux/checkpoint_hdr.h
+> @@ -167,6 +167,11 @@ struct ckpt_hdr_task {
+>  	__u32 exit_signal;
+>  	__u32 pdeath_signal;
+> 
+> +	__u32 compat_robust_futex_head_len;
+> +	__u32 compat_robust_futex_list; /* a compat __user ptr */
+> +	__u32 robust_futex_head_len;
+> +	__u64 robust_futex_list; /* a __user ptr */
+> +
+>  	__u64 set_child_tid;
+>  	__u64 clear_child_tid;
+>  } __attribute__((aligned(8)));
+> diff --git a/include/linux/compat.h b/include/linux/compat.h
+> index 717c691..89125dd 100644
+> --- a/include/linux/compat.h
+> +++ b/include/linux/compat.h
+> @@ -210,7 +210,8 @@ struct compat_robust_list_head {
+>  };
+> 
+>  extern void compat_exit_robust_list(struct task_struct *curr);
+> -
+> +extern long do_compat_set_robust_list(struct compat_robust_list_head __user *head,
+> +				      compat_size_t len);
+>  asmlinkage long
+>  compat_sys_set_robust_list(struct compat_robust_list_head __user *head,
+>  			   compat_size_t len);
+> diff --git a/include/linux/futex.h b/include/linux/futex.h
+> index ae755f6..c825790 100644
+> --- a/include/linux/futex.h
+> +++ b/include/linux/futex.h
+> @@ -185,6 +185,7 @@ union futex_key {
+>  #define FUTEX_KEY_INIT (union futex_key) { .both = { .ptr = NULL } }
+> 
+>  #ifdef CONFIG_FUTEX
+> +extern long do_set_robust_list(struct robust_list_head __user *head, size_t len);
+>  extern void exit_robust_list(struct task_struct *curr);
+>  extern void exit_pi_state_list(struct task_struct *curr);
+>  extern int futex_cmpxchg_enabled;
+> diff --git a/kernel/checkpoint/process.c b/kernel/checkpoint/process.c
+> index ce009cb..aabefb6 100644
+> --- a/kernel/checkpoint/process.c
+> +++ b/kernel/checkpoint/process.c
+> @@ -14,9 +14,56 @@
+>  #include <linux/sched.h>
+>  #include <linux/posix-timers.h>
+>  #include <linux/futex.h>
+> +#include <linux/compat.h>
+>  #include <linux/poll.h>
+>  #include <linux/checkpoint.h>
+> 
+> +
+> +#ifdef CONFIG_FUTEX
+> +static void save_task_robust_futex_list(struct ckpt_hdr_task *h,
+> +					struct task_struct *t)
+> +{
+> +	/*
+> +	 * These are __user pointers and thus can be saved without
+> +	 * the objhash.
+> +	 */
+> +	h->robust_futex_list = (unsigned long)t->robust_list;
+> +	h->robust_futex_head_len = sizeof(*t->robust_list);
+> +#ifdef CONFIG_COMPAT
+> +	h->compat_robust_futex_list = ptr_to_compat(t->compat_robust_list);
+> +	h->compat_robust_futex_head_len = sizeof(*t->compat_robust_list);
+> +#endif
+> +}
+> +
+> +static void restore_task_robust_futex_list(struct ckpt_hdr_task *h)
+> +{
+> +	/* Since we restore the memory map the address remains the same and
+> +	 * this is safe. This is the same as [compat_]sys_set_robust_list() */
+> +	if (h->robust_futex_list) {
+> +		struct robust_list_head __user *rfl;
+> +		rfl = (void __user *)(unsigned long) h->robust_futex_list;
+> +		do_set_robust_list(rfl, h->robust_futex_head_len);
+> +	}
+> +#ifdef CONFIG_COMPAT
+> +	if (h->compat_robust_futex_list) {
+> +		struct compat_robust_list_head __user *crfl;
+> +		crfl = compat_ptr(h->compat_robust_futex_list);
+> +		do_compat_set_robust_list(crfl, h->compat_robust_futex_head_len);
+> +	}
+> +#endif
+> +}
+> +#else /* !CONFIG_FUTEX */
+> +static inline void save_task_robust_futex_list(struct ckpt_hdr_task *h,
+> +					       struct task_struct *t)
+> +{
+> +}
+> +
+> +static inline void restore_task_robust_futex_list(struct ckpt_hdr_task *h)
+> +{
+> +}
+> +#endif /* CONFIG_FUTEX */
+> +
+> +
+>  /***********************************************************************
+>   * Checkpoint
+>   */
+> @@ -45,6 +92,7 @@ static int checkpoint_task_struct(struct ckpt_ctx *ctx, struct task_struct *t)
+> 
+>  		h->set_child_tid = (unsigned long) t->set_child_tid;
+>  		h->clear_child_tid = (unsigned long) t->clear_child_tid;
+> +		save_task_robust_futex_list(h, t);
+>  	}
+> 
+>  	ret = ckpt_write_obj(ctx, &h->h);
+> @@ -248,6 +296,7 @@ static int restore_task_struct(struct ckpt_ctx *ctx)
+>  			(int __user *) (unsigned long) h->set_child_tid;
+>  		t->clear_child_tid =
+>  			(int __user *) (unsigned long) h->clear_child_tid;
+> +		restore_task_robust_futex_list(h);
+>  	}
+> 
+>  	memset(t->comm, 0, TASK_COMM_LEN);
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 23419c9..baaecb4 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -2342,13 +2342,7 @@ out:
+>   * the list. There can only be one such pending lock.
+>   */
+> 
+> -/**
+> - * sys_set_robust_list() - Set the robust-futex list head of a task
+> - * @head:	pointer to the list-head
+> - * @len:	length of the list-head, as userspace expects
+> - */
+> -SYSCALL_DEFINE2(set_robust_list, struct robust_list_head __user *, head,
+> -		size_t, len)
+> +long do_set_robust_list(struct robust_list_head __user *head, size_t len)
 
-> So, you take a synchronous copyful interface, add another copy to make
-> it into an asynchronous interface, instead of using the original
-> asynchronous copyless interface.
 
-"Add another copy" is not required any more than it is with the
-other examples you cited.
+Please provide a full kerneldoc header for the new function.
 
-The "original asynchronous copyless interface" works because DMA
-for devices has been around for >40 years and has been greatly
-refined.  We're not talking about DMA to a device here, we're
-talking about DMA from one place in RAM to another (i.e. from
-guest RAM to hypervisor RAM).  Do you have examples of DMA engines
-that do page-size-ish RAM-to-RAM more efficiently than copying?
 
-> The networking stack seems to think 4096 bytes is a good size for dma
-> (see net/core/user_dma.c, NET_DMA_DEFAULT_COPYBREAK).
+>  {
+>  	if (!futex_cmpxchg_enabled)
+>  		return -ENOSYS;
+> @@ -2364,6 +2358,17 @@ SYSCALL_DEFINE2(set_robust_list, struct robust_list_head __user *, head,
+>  }
+> 
+>  /**
+> + * sys_set_robust_list() - Set the robust-futex list head of a task
+> + * @head:	pointer to the list-head
+> + * @len:	length of the list-head, as userspace expects
+> + */
+> +SYSCALL_DEFINE2(set_robust_list, struct robust_list_head __user *, head,
+> +		size_t, len)
+> +{
+> +	return do_set_robust_list(head, len);
+> +}
+> +
+> +/**
+>   * sys_get_robust_list() - Get the robust-futex list head of a task
+>   * @pid:	pid of the process [zero for current task]
+>   * @head_ptr:	pointer to a list-head pointer, the kernel fills it in
+> diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+> index d49afb2..900bb2b 100644
+> --- a/kernel/futex_compat.c
+> +++ b/kernel/futex_compat.c
+> @@ -114,9 +114,9 @@ void compat_exit_robust_list(struct task_struct *curr)
+>  	}
+>  }
+> 
+> -asmlinkage long
+> -compat_sys_set_robust_list(struct compat_robust_list_head __user *head,
+> -			   compat_size_t len)
+> +long
+> +do_compat_set_robust_list(struct compat_robust_list_head __user *head,
 
-Networking is a device-to-RAM, not RAM-to-RAM.
 
-> When swapping out, Linux already batches pages in the block device's
-> request queue.  Swapping out is inherently asynchronous and batched,
-> you're swapping out those pages _because_ you don't need them, and
-> you're never interested in swapping out a single page.  Linux already
-> reserves memory for use during swapout.  There's no need to re-solve
-> solved problems.
+I know futex_compat.c doesn't have as much kerneldoc as futex.c does, 
+but I'd like to see that improved. Please include a kerneldoc here too.
 
-Swapping out is inherently asynchronous and batches because it was
-designed for swapping to a device, while you are claiming that the
-same _unchanged_ interface is suitable for swap-to-hypervisor-RAM
-and at the same time saying that the block layer might need
-to be "optimized" (apparently without code changes).
 
-I'm not trying to re-solve a solved problem; frontswap solves a NEW
-problem, with very little impact to existing code.
+> +			  compat_size_t len)
+>  {
+>  	if (!futex_cmpxchg_enabled)
+>  		return -ENOSYS;
+> @@ -130,6 +130,13 @@ compat_sys_set_robust_list(struct compat_robust_list_head __user *head,
+>  }
+> 
+>  asmlinkage long
+> +compat_sys_set_robust_list(struct compat_robust_list_head __user *head,
+> +			   compat_size_t len)
+> +{
+> +	return do_compat_set_robust_list(head, len);
+> +}
+> +
+> +asmlinkage long
+>  compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
+>  			   compat_size_t __user *len_ptr)
+>  {
 
-> Swapping in is less simple, it is mostly synchronous (in some cases it
-> isn't: with many threads, or with the preswap patches (IIRC unmerged)).
-> You can always choose to copy if you don't have enough to justify dma.
 
-Do you have a pointer to these preswap patches?
-
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
