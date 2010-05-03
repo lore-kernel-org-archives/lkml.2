@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515Ab0ECJDQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 05:03:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65208 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab0ECJDM (ORCPT
+	id S1752628Ab0ECJFX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 05:05:23 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:28582 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751829Ab0ECJFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 05:03:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=mgyn2jiLuyfPgJTIC/mWO+cPWKlVs6PnTrOVckumZv7YxO6ohTU0+H/LiAR+V1WqqV
-         YTZbnAJqN+2uQDXku7wqKj43JglVcb78CfIuZckpPAIIGXm73a321ZEamkeVFe7ghX34
-         lJ5g1fZ2JX6ptjrCvJBCJB+aiTOvKwZpdwHnY=
-Message-ID: <4BDE914C.6080504@suse.cz>
-Date: Mon, 03 May 2010 11:03:08 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.6 Thunderbird/3.1b1
+	Mon, 3 May 2010 05:05:22 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAKot3ktbstD1/2dsb2JhbACdIHK5Og6FBAQ
+Date: Mon, 3 May 2010 11:05:17 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>
+Subject: watchdog: ep93xx_wdt.c - fix module-param-desc.
+Message-ID: <20100503090517.GA25865@infomag.iguana.be>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Changli Gao <xiaosuo@gmail.com>,
-       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-       akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-       adobriyan@gmail.com, mingo@elte.hu, peterz@infradead.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: use kmalloc() to allocate fdmem if possible
-References: <viro@zeniv.linux.org.uk> <1272818776-7729-1-git-send-email-xiaosuo@gmail.com> 	<4BDDB6E9.4060703@redhat.com> <201005030915.FCD09385.FFHVOMJtSLOFQO@I-love.SAKURA.ne.jp> 	<4BDE67DA.4080004@redhat.com> <y2z412e6f7f1005030005vc3be4977z3add08bfc72d1c44@mail.gmail.com> 	<4BDE7E66.8030509@redhat.com> <m2l412e6f7f1005030052ka39a33ceke8c6b61553ba007f@mail.gmail.com> <4BDE8E24.5050200@redhat.com>
-In-Reply-To: <4BDE8E24.5050200@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2010 10:49 AM, Avi Kivity wrote:
-> On 05/03/2010 10:52 AM, Changli Gao wrote:
->> On Mon, May 3, 2010 at 3:42 PM, Avi Kivity<avi@redhat.com>  wrote:
->>   
->>> On 05/03/2010 10:05 AM, Changli Gao wrote:
->>>     
->>>> On Mon, May 3, 2010 at 2:06 PM, Avi Kivity<avi@redhat.com>    wrote:
->>>>
->>>>       
->>>>> My point is, vmalloc() and vfree should do this, not their callers:
->>>>>
->>>>> vmalloc(size):
->>>>>     if (size<= PAGE_SIZE)
->>>>>         return kmalloc(size, GFP_KERNEL);
->>>>>     ...
->>>>>
->>>>> vfree(p):
->>>>>     if (!is_vmalloc_addr(p) {
->>>>>         kfree(p);
->>>>>         return;
->>>>>     }
->>>>>     ...
->>>>>
->>>>>          
->>>> I think we should not change vmalloc/vfree, and you can invent new
->>>> memory APIs, such as malloc()/free().
->>>>
->>>>        
->>> Why?
->>>
->>>      
->> Because vmalloc is used to allocate virtually contiguous memory. v in
->> vmalloc means virtually.
->>
->>    
-> 
-> A kmalloc()ed page is virtually contiguous, satisfying your requirement.
+Hi Linus,
 
-But it won't work well for vmalloc_to_{page,pfn} and similar. Some code
-may expect vmalloc result to be in the vmalloc area and page-aligned
-(both in position and size).
+Please pull from 'master' branch of
+	git://git.kernel.org/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
+or if master.kernel.org hasn't synced up yet:
+	master.kernel.org:/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
 
-Not that it won't be possible to inspect the callers, but in my eyes it
-would definitely be better to introduce kmalloc_or_vmalloc-alike where
-the caller explicitly doesn't care about the resulting position and size.
+This will update the following files:
 
-regards,
--- 
-js
-suse labs
+ drivers/watchdog/ep93xx_wdt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+with these Changes:
+
+Author: Wim Van Sebroeck <wim@iguana.be>
+Date:   Mon May 3 08:58:56 2010 +0000
+
+    watchdog: ep93xx_wdt.c fix default timout value in MODULE_PARM_DESC string.
+    
+    The WATCHDOG_TIMEOUT macro does not exist. The default timeout value is WDT_TIMEOUT.
+    Fix the MODULE_PARM_DESC so that the code can compile again.
+    
+    reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+The Changes can also be looked at on:
+	http://www.kernel.org/git/?p=linux/kernel/git/wim/linux-2.6-watchdog.git;a=summary
+
+For completeness, I added the overal diff below.
+
+Greetings,
+Wim.
+
+================================================================================
+diff --git a/drivers/watchdog/ep93xx_wdt.c b/drivers/watchdog/ep93xx_wdt.c
+index 88ed54e..59359c9 100644
+--- a/drivers/watchdog/ep93xx_wdt.c
++++ b/drivers/watchdog/ep93xx_wdt.c
+@@ -244,7 +244,7 @@ MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started");
+ module_param(timeout, int, 0);
+ MODULE_PARM_DESC(timeout,
+ 	"Watchdog timeout in seconds. (1<=timeout<=3600, default="
+-				__MODULE_STRING(WATCHDOG_TIMEOUT) ")");
++				__MODULE_STRING(WDT_TIMEOUT) ")");
+ 
+ MODULE_AUTHOR("Ray Lehtiniemi <rayl@mail.com>,"
+ 		"Alessandro Zummo <a.zummo@towertech.it>");
