@@ -1,193 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933383Ab0ECXUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 19:20:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38169 "EHLO mx1.redhat.com"
+	id S933392Ab0ECXUv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 19:20:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2790 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932265Ab0ECXNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 19:13:44 -0400
+	id S932256Ab0ECXNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 19:13:43 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
        Christoph Hellwig <hch@infradead.org>, Jan Blunck <jblunck@suse.de>,
-       Felix Fietkau <nbd@openwrt.org>, Valerie Aurora <vaurora@redhat.com>,
-       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Subject: [PATCH 12/39] whiteout: jffs2 whiteout support
-Date: Mon,  3 May 2010 16:12:11 -0700
-Message-Id: <1272928358-20854-13-git-send-email-vaurora@redhat.com>
+       Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 20/39] union-mount: Drive the union cache via dcache
+Date: Mon,  3 May 2010 16:12:19 -0700
+Message-Id: <1272928358-20854-21-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 References: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Jan Blunck <jblunck@suse.de>
 
-Add support for whiteout dentries to jffs2.
+If a dentry is removed from dentry cache because its usage count drops to
+zero, the references to the underlying layer of the unions the dentry is in
+are dropped too. Therefore the union cache is driven by the dentry cache.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
 ---
- fs/jffs2/dir.c        |   72 +++++++++++++++++++++++++++++++++++++++++++++++-
- fs/jffs2/fs.c         |    4 +++
- fs/jffs2/super.c      |    2 +-
- include/linux/jffs2.h |    2 +
- 4 files changed, 77 insertions(+), 3 deletions(-)
+ fs/dcache.c            |   13 +++++++++++
+ fs/union.c             |   56 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/dcache.h |    8 ++++++
+ include/linux/mount.h  |    2 +-
+ include/linux/union.h  |    4 +++
+ 5 files changed, 82 insertions(+), 1 deletions(-)
 
-diff --git a/fs/jffs2/dir.c b/fs/jffs2/dir.c
-index 7aa4417..c259193 100644
---- a/fs/jffs2/dir.c
-+++ b/fs/jffs2/dir.c
-@@ -34,6 +34,8 @@ static int jffs2_mknod (struct inode *,struct dentry *,int,dev_t);
- static int jffs2_rename (struct inode *, struct dentry *,
- 			 struct inode *, struct dentry *);
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 7b47f53..322c1f7 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -18,6 +18,7 @@
+ #include <linux/string.h>
+ #include <linux/mm.h>
+ #include <linux/fs.h>
++#include <linux/union.h>
+ #include <linux/fsnotify.h>
+ #include <linux/slab.h>
+ #include <linux/init.h>
+@@ -175,6 +176,8 @@ static struct dentry *d_kill(struct dentry *dentry)
+ 	dentry_stat.nr_dentry--;	/* For d_free, below */
+ 	/*drops the locks, at that point nobody can reach this dentry */
+ 	dentry_iput(dentry);
++	/* If the dentry was in an union delete them */
++	shrink_d_unions(dentry);
+ 	if (IS_ROOT(dentry))
+ 		parent = NULL;
+ 	else
+@@ -696,6 +699,7 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
+ 					iput(inode);
+ 			}
  
-+static int jffs2_whiteout (struct inode *, struct dentry *, struct dentry *);
-+
- const struct file_operations jffs2_dir_operations =
- {
- 	.read =		generic_read_dir,
-@@ -56,6 +58,7 @@ const struct inode_operations jffs2_dir_inode_operations =
- 	.mknod =	jffs2_mknod,
- 	.rename =	jffs2_rename,
- 	.check_acl =	jffs2_check_acl,
-+	.whiteout =     jffs2_whiteout,
- 	.setattr =	jffs2_setattr,
- 	.setxattr =	jffs2_setxattr,
- 	.getxattr =	jffs2_getxattr,
-@@ -98,8 +101,14 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
- 			fd = fd_list;
- 		}
++			shrink_d_unions(dentry);
+ 			d_free(dentry);
+ 
+ 			/* finished when we fall off the top of the tree,
+@@ -1535,7 +1539,9 @@ void d_delete(struct dentry * dentry)
+ 	spin_lock(&dentry->d_lock);
+ 	isdir = S_ISDIR(dentry->d_inode->i_mode);
+ 	if (atomic_read(&dentry->d_count) == 1) {
++		__d_drop_unions(dentry);
+ 		dentry_iput(dentry);
++		shrink_d_unions(dentry);
+ 		fsnotify_nameremove(dentry, isdir);
+ 		return;
  	}
--	if (fd)
--		ino = fd->ino;
-+	if (fd) {
-+		spin_lock(&target->d_lock);
-+		if (fd->type == DT_WHT)
-+			target->d_flags |= DCACHE_WHITEOUT;
-+		else
-+			ino = fd->ino;
-+		spin_unlock(&target->d_lock);
-+	}
- 	mutex_unlock(&dir_f->sem);
- 	if (ino) {
- 		inode = jffs2_iget(dir_i->i_sb, ino);
-@@ -498,6 +507,11 @@ static int jffs2_mkdir (struct inode *dir_i, struct dentry *dentry, int mode)
- 		return PTR_ERR(inode);
+@@ -1546,6 +1552,13 @@ void d_delete(struct dentry * dentry)
+ 	spin_unlock(&dentry->d_lock);
+ 	spin_unlock(&dcache_lock);
+ 
++	/*
++	 * Remove any associated unions.  While someone still has this
++	 * directory open (ref count > 0), we could not have deleted
++	 * it unless it was empty, and therefore has no references to
++	 * directories below it.  So we don't need the unions.
++	 */
++	shrink_d_unions(dentry);
+ 	fsnotify_nameremove(dentry, isdir);
+ }
+ EXPORT_SYMBOL(d_delete);
+diff --git a/fs/union.c b/fs/union.c
+index 4377cf4..eb664e6 100644
+--- a/fs/union.c
++++ b/fs/union.c
+@@ -14,6 +14,7 @@
+ 
+ #include <linux/bootmem.h>
+ #include <linux/init.h>
++#include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/hash.h>
+ #include <linux/fs.h>
+@@ -235,6 +236,8 @@ int append_to_union(struct path *upper, struct path *lower)
+ 		union_put(new);
+ 		return 0;
  	}
- 
-+	if (dentry->d_flags & DCACHE_WHITEOUT) {
-+		inode->i_flags |= S_OPAQUE;
-+		ri->flags = cpu_to_je16(JFFS2_INO_FLAG_OPAQUE);
-+	}
-+
- 	inode->i_op = &jffs2_dir_inode_operations;
- 	inode->i_fop = &jffs2_dir_operations;
- 
-@@ -779,6 +793,60 @@ static int jffs2_mknod (struct inode *dir_i, struct dentry *dentry, int mode, de
++	list_add(&new->u_unions, &upper->dentry->d_unions);
++	lower->dentry->d_union_lower_count++;
+ 	__union_hash(new);
+ 	spin_unlock(&union_lock);
+ 	return 0;
+@@ -287,3 +290,56 @@ int union_down_one(struct vfsmount **mnt, struct dentry **dentry)
+ 	}
  	return 0;
  }
- 
-+static int jffs2_whiteout (struct inode *dir, struct dentry *old_dentry,
-+			   struct dentry *new_dentry)
++
++/**
++ * __d_drop_unions  -  remove all this dentry's unions from the union hash table
++ *
++ * @dentry - topmost dentry in the union stack to remove
++ *
++ * This must be called after unhashing a dentry. This is called with
++ * dcache_lock held and unhashes all the unions this dentry is
++ * attached to.
++ */
++void __d_drop_unions(struct dentry *dentry)
 +{
-+	struct jffs2_sb_info *c = JFFS2_SB_INFO(dir->i_sb);
-+	struct jffs2_inode_info *victim_f = NULL;
-+	uint32_t now;
-+	int ret;
++	struct union_dir *this, *next;
 +
-+	/* If it's a directory, then check whether it is really empty */
-+	if (new_dentry->d_inode) {
-+		victim_f = JFFS2_INODE_INFO(old_dentry->d_inode);
-+		if (S_ISDIR(old_dentry->d_inode->i_mode)) {
-+			struct jffs2_full_dirent *fd;
-+
-+			mutex_lock(&victim_f->sem);
-+			for (fd = victim_f->dents; fd; fd = fd->next) {
-+				if (fd->ino) {
-+					mutex_unlock(&victim_f->sem);
-+					return -ENOTEMPTY;
-+				}
-+			}
-+			mutex_unlock(&victim_f->sem);
-+		}
-+	}
-+
-+	now = get_seconds();
-+	ret = jffs2_do_link(c, JFFS2_INODE_INFO(dir), 0, DT_WHT,
-+			    new_dentry->d_name.name, new_dentry->d_name.len, now);
-+	if (ret)
-+		return ret;
-+
-+	spin_lock(&new_dentry->d_lock);
-+	new_dentry->d_flags |= DCACHE_WHITEOUT;
-+	spin_unlock(&new_dentry->d_lock);
-+	d_add(new_dentry, NULL);
-+
-+	if (victim_f) {
-+		/* There was a victim. Kill it off nicely */
-+		drop_nlink(old_dentry->d_inode);
-+		/* Don't oops if the victim was a dirent pointing to an
-+		   inode which didn't exist. */
-+		if (victim_f->inocache) {
-+			mutex_lock(&victim_f->sem);
-+			if (S_ISDIR(old_dentry->d_inode->i_mode))
-+				victim_f->inocache->pino_nlink = 0;
-+			else
-+				victim_f->inocache->pino_nlink--;
-+			mutex_unlock(&victim_f->sem);
-+		}
-+	}
-+
-+	return 0;
++	spin_lock(&union_lock);
++	list_for_each_entry_safe(this, next, &dentry->d_unions, u_unions)
++		__union_unhash(this);
++	spin_unlock(&union_lock);
 +}
++EXPORT_SYMBOL_GPL(__d_drop_unions);
 +
- static int jffs2_rename (struct inode *old_dir_i, struct dentry *old_dentry,
- 			 struct inode *new_dir_i, struct dentry *new_dentry)
++/*
++ * This must be called after __d_drop_unions() without holding any
++ * locks.  Note: The dentry might still be reachable via a lookup but
++ * at that time it already a negative dentry. Otherwise it would be
++ * unhashed. The union_dir structure itself is still reachable through
++ * mnt->mnt_unions (which we protect against with union_lock).
++ *
++ * We were worried about a recursive dput() call through:
++ *
++ * dput()->d_kill()->shrink_d_unions()->union_put()->dput()
++ *
++ * But this path can only be reached if the dentry is unhashed when we
++ * enter the first dput(), and it can only be unhashed if it was
++ * rmdir()'d, and d_delete() calls shrink_d_unions() for us.
++ */
++void shrink_d_unions(struct dentry *dentry)
++{
++	struct union_dir *this, *next;
++
++repeat:
++	spin_lock(&union_lock);
++	list_for_each_entry_safe(this, next, &dentry->d_unions, u_unions) {
++		BUG_ON(!hlist_unhashed(&this->u_hash));
++		BUG_ON(!hlist_unhashed(&this->u_rhash));
++		list_del(&this->u_unions);
++		this->u_lower.dentry->d_union_lower_count--;
++		spin_unlock(&union_lock);
++		union_put(this);
++		goto repeat;
++	}
++	spin_unlock(&union_lock);
++}
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 1745881..31656e9 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -223,12 +223,20 @@ extern seqlock_t rename_lock;
+  * __d_drop requires dentry->d_lock.
+  */
+ 
++#ifdef CONFIG_UNION_MOUNT
++extern void __d_drop_unions(struct dentry *);
++#endif
++
+ static inline void __d_drop(struct dentry *dentry)
  {
-diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
-index 3451a81..c1e333c 100644
---- a/fs/jffs2/fs.c
-+++ b/fs/jffs2/fs.c
-@@ -301,6 +301,10 @@ struct inode *jffs2_iget(struct super_block *sb, unsigned long ino)
- 
- 		inode->i_op = &jffs2_dir_inode_operations;
- 		inode->i_fop = &jffs2_dir_operations;
-+
-+		if (je16_to_cpu(latest_node.flags) & JFFS2_INO_FLAG_OPAQUE)
-+			inode->i_flags |= S_OPAQUE;
-+
- 		break;
+ 	if (!(dentry->d_flags & DCACHE_UNHASHED)) {
+ 		dentry->d_flags |= DCACHE_UNHASHED;
+ 		hlist_del_rcu(&dentry->d_hash);
  	}
- 	case S_IFREG:
-diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
-index 9a80e8e..c12cd1c 100644
---- a/fs/jffs2/super.c
-+++ b/fs/jffs2/super.c
-@@ -172,7 +172,7 @@ static int jffs2_fill_super(struct super_block *sb, void *data, int silent)
++#ifdef CONFIG_UNION_MOUNT
++	/* remove dentry from the union hashtable */
++	__d_drop_unions(dentry);
++#endif
+ }
  
- 	sb->s_op = &jffs2_super_operations;
- 	sb->s_export_op = &jffs2_export_ops;
--	sb->s_flags = sb->s_flags | MS_NOATIME;
-+	sb->s_flags = sb->s_flags | MS_NOATIME | MS_WHITEOUT;
- 	sb->s_xattr = jffs2_xattr_handlers;
- #ifdef CONFIG_JFFS2_FS_POSIX_ACL
- 	sb->s_flags |= MS_POSIXACL;
-diff --git a/include/linux/jffs2.h b/include/linux/jffs2.h
-index 2b32d63..65533bb 100644
---- a/include/linux/jffs2.h
-+++ b/include/linux/jffs2.h
-@@ -87,6 +87,8 @@
- #define JFFS2_INO_FLAG_USERCOMPR  2	/* User has requested a specific
- 					   compression type */
+ static inline void d_drop(struct dentry *dentry)
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 0517114..13a3818 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -65,7 +65,7 @@ struct vfsmount {
+ 	struct list_head mnt_slave;	/* slave list entry */
+ 	struct vfsmount *mnt_master;	/* slave is on master->mnt_slave_list */
+ #ifdef CONFIG_UNION_MOUNT
+-	struct list_head mnt_unions;	/* list of union_mount structures */
++	struct list_head mnt_unions;	/* list of union_dir structures */
+ #endif
+ 	struct mnt_namespace *mnt_ns;	/* containing namespace */
+ 	int mnt_id;			/* mount identifier */
+diff --git a/include/linux/union.h b/include/linux/union.h
+index d66beb7..70b2adb 100644
+--- a/include/linux/union.h
++++ b/include/linux/union.h
+@@ -41,12 +41,16 @@ struct union_dir {
  
-+#define JFFS2_INO_FLAG_OPAQUE     4	/* Directory is opaque (for union mounts) */
-+
+ extern int append_to_union(struct path *, struct path*);
+ extern int union_down_one(struct vfsmount **, struct dentry **);
++extern void __d_drop_unions(struct dentry *);
++extern void shrink_d_unions(struct dentry *);
  
- /* These can go once we've made sure we've caught all uses without
-    byteswapping */
+ #else /* CONFIG_UNION_MOUNT */
+ 
+ #define IS_MNT_UNION(x)			(0)
+ #define append_to_union(x, y)		({ BUG(); (0); })
+ #define union_down_one(x, y)		({ (0); })
++#define __d_drop_unions(x)		do { } while (0)
++#define shrink_d_unions(x)		do { } while (0)
+ 
+ #endif	/* CONFIG_UNION_MOUNT */
+ #endif	/* __KERNEL__ */
 -- 
 1.6.3.3
 
