@@ -1,110 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933424Ab0ECXU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 19:20:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25227 "EHLO mx1.redhat.com"
+	id S1759910Ab0ECXVC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 19:21:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40177 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932254Ab0ECXNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 19:13:43 -0400
+	id S932248Ab0ECXNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 19:13:42 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
        Christoph Hellwig <hch@infradead.org>, Jan Blunck <jblunck@suse.de>,
        Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 13/39] fallthru: Basic fallthru definitions
-Date: Mon,  3 May 2010 16:12:12 -0700
-Message-Id: <1272928358-20854-14-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 16/39] fallthru: tmpfs fallthru support
+Date: Mon,  3 May 2010 16:12:15 -0700
+Message-Id: <1272928358-20854-17-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 References: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define the fallthru dcache flag and file system op.  Mask out the
-DCACHE_FALLTHRU flag on dentry creation.  Actual users and changes to
-lookup come in later patches.
+Add support for fallthru directory entries to tmpfs
+
+XXX - Makes up inode number for dirent
 
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- Documentation/filesystems/vfs.txt |    6 ++++++
- fs/dcache.c                       |    2 +-
- include/linux/dcache.h            |    6 ++++++
- include/linux/fs.h                |    1 +
- 4 files changed, 14 insertions(+), 1 deletions(-)
+ fs/dcache.c |    3 +-
+ fs/libfs.c  |   21 +++++++++++++++++--
+ mm/shmem.c  |   60 ++++++++++++++++++++++++++++++++++++++++++++++++++++------
+ 3 files changed, 73 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 8846b4f..29f3476 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -320,6 +320,7 @@ struct inode_operations {
- 	int (*rmdir) (struct inode *,struct dentry *);
- 	int (*mknod) (struct inode *,struct dentry *,int,dev_t);
- 	int (*whiteout) (struct inode *, struct dentry *, struct dentry *);
-+	int (*fallthru) (struct inode *, struct dentry *);
- 	int (*rename) (struct inode *, struct dentry *,
- 			struct inode *, struct dentry *);
- 	int (*readlink) (struct dentry *, char __user *,int);
-@@ -390,6 +391,11 @@ otherwise noted.
-         second is the dentry for the whiteout itself.  This method
-         must unlink() or rmdir() the original entry if it exists.
- 
-+  fallthru: called by the readdir(2) system call on a layered file
-+        system.  Only required if you want to support fallthrus.
-+        Fallthrus are place-holders for directory entries visible from
-+        a lower level file system.
-+
-   rename: called by the rename(2) system call to rename the object to
- 	have the parent and name given by the second inode and dentry.
- 
 diff --git a/fs/dcache.c b/fs/dcache.c
-index 3b0e525..b76f9e4 100644
+index b76f9e4..1575af4 100644
 --- a/fs/dcache.c
 +++ b/fs/dcache.c
-@@ -993,7 +993,7 @@ EXPORT_SYMBOL(d_alloc_name);
- static void __d_instantiate(struct dentry *dentry, struct inode *inode)
- {
- 	if (inode) {
--		dentry->d_flags &= ~DCACHE_WHITEOUT;
-+		dentry->d_flags &= ~(DCACHE_WHITEOUT|DCACHE_FALLTHRU);
- 		list_add(&dentry->d_alias, &inode->i_dentry);
+@@ -2240,7 +2240,8 @@ resume:
+ 		 * we can evict it.
+ 		 */
+ 		if (d_unhashed(dentry)||(!dentry->d_inode &&
+-					 !d_is_whiteout(dentry)))
++					 !d_is_whiteout(dentry) &&
++					 !d_is_fallthru(dentry)))
+ 			continue;
+ 		if (!list_empty(&dentry->d_subdirs)) {
+ 			this_parent = dentry;
+diff --git a/fs/libfs.c b/fs/libfs.c
+index ea9a6cc..2b28ca9 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -134,6 +134,7 @@ int dcache_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ 	struct dentry *cursor = filp->private_data;
+ 	struct list_head *p, *q = &cursor->d_u.d_child;
+ 	ino_t ino;
++	int d_type;
+ 	int i = filp->f_pos;
+ 
+ 	switch (i) {
+@@ -159,14 +160,28 @@ int dcache_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ 			for (p=q->next; p != &dentry->d_subdirs; p=p->next) {
+ 				struct dentry *next;
+ 				next = list_entry(p, struct dentry, d_u.d_child);
+-				if (d_unhashed(next) || !next->d_inode)
++				if (d_unhashed(next) || (!next->d_inode && !d_is_fallthru(next)))
+ 					continue;
+ 
++				if (d_is_fallthru(next)) {
++					/* XXX We don't know the inode
++					 * number of the directory
++					 * entry in the underlying
++					 * file system.  Should look
++					 * it up, either on fallthru
++					 * creation at first readdir
++					 * or now at filldir time. */
++					ino = 123; /* Made up ino */
++					d_type = DT_UNKNOWN;
++				} else {
++					ino = next->d_inode->i_ino;
++					d_type = dt_type(next->d_inode);
++				}
++
+ 				spin_unlock(&dcache_lock);
+ 				if (filldir(dirent, next->d_name.name, 
+ 					    next->d_name.len, filp->f_pos, 
+-					    next->d_inode->i_ino, 
+-					    dt_type(next->d_inode)) < 0)
++					    ino, d_type) < 0)
+ 					return 0;
+ 				spin_lock(&dcache_lock);
+ 				/* next is still alive */
+diff --git a/mm/shmem.c b/mm/shmem.c
+index c58ecf4..163957b 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1809,8 +1809,7 @@ static int shmem_rmdir(struct inode *dir, struct dentry *dentry);
+ static int shmem_unlink(struct inode *dir, struct dentry *dentry);
+ 
+ /*
+- * This is the whiteout support for tmpfs. It uses one singleton whiteout
+- * inode per superblock thus it is very similar to shmem_link().
++ * Create a dentry to signify a whiteout.
+  */
+ static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
+ 			  struct dentry *new_dentry)
+@@ -1841,8 +1840,10 @@ static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
+ 		spin_unlock(&sbinfo->stat_lock);
  	}
- 	dentry->d_inode = inode;
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index 7648b49..e035c51 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -184,6 +184,7 @@ d_iput:		no		no		no       yes
  
- #define DCACHE_COOKIE		0x0040	/* For use by dcookie subsystem */
- #define DCACHE_WHITEOUT		0x0080	/* This negative dentry is a whiteout */
-+#define DCACHE_FALLTHRU		0x0100	/* Keep looking in the file system below */
- 
- #define DCACHE_FSNOTIFY_PARENT_WATCHED	0x0080 /* Parent inode is watched by some fsnotify listener */
- 
-@@ -364,6 +365,11 @@ static inline int d_is_whiteout(struct dentry *dentry)
- 	return (dentry->d_flags & DCACHE_WHITEOUT);
+-	if (old_dentry->d_inode) {
+-		if (S_ISDIR(old_dentry->d_inode->i_mode))
++	if (old_dentry->d_inode || d_is_fallthru(old_dentry)) {
++		/* A fallthru for a dir is treated like a regular link */
++		if (old_dentry->d_inode &&
++		    S_ISDIR(old_dentry->d_inode->i_mode))
+ 			shmem_rmdir(dir, old_dentry);
+ 		else
+ 			shmem_unlink(dir, old_dentry);
+@@ -1859,6 +1860,48 @@ static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
  }
  
-+static inline int d_is_fallthru(struct dentry *dentry)
+ static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
++				struct inode *inode);
++
++/*
++ * Create a dentry to signify a fallthru.  A fallthru in tmpfs is the
++ * logical equivalent of an in-kernel readdir() cache.  It can't be
++ * deleted until the file system is unmounted.
++ */
++static int shmem_fallthru(struct inode *dir, struct dentry *dentry)
 +{
-+	return (dentry->d_flags & DCACHE_FALLTHRU);
++	struct shmem_sb_info *sbinfo = SHMEM_SB(dir->i_sb);
++
++	/* FIXME: this is stupid */
++	if (!(dir->i_sb->s_flags & MS_WHITEOUT))
++		return -EPERM;
++
++	if (dentry->d_inode || d_is_fallthru(dentry) || d_is_whiteout(dentry))
++		return -EEXIST;
++
++	/*
++	 * Each new link needs a new dentry, pinning lowmem, and tmpfs
++	 * dentries cannot be pruned until they are unlinked.
++	 */
++	if (sbinfo->max_inodes) {
++		spin_lock(&sbinfo->stat_lock);
++		if (!sbinfo->free_inodes) {
++			spin_unlock(&sbinfo->stat_lock);
++			return -ENOSPC;
++		}
++		sbinfo->free_inodes--;
++		spin_unlock(&sbinfo->stat_lock);
++	}
++
++	shmem_d_instantiate(dir, dentry, NULL);
++	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
++
++	spin_lock(&dentry->d_lock);
++	dentry->d_flags |= DCACHE_FALLTHRU;
++	spin_unlock(&dentry->d_lock);
++	return 0;
 +}
 +
- static inline struct dentry *dget_parent(struct dentry *dentry)
++static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
+ 				struct inode *inode)
  {
- 	struct dentry *ret;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index e9aa650..b59cd7b 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1532,6 +1532,7 @@ struct inode_operations {
- 	int (*rmdir) (struct inode *,struct dentry *);
- 	int (*mknod) (struct inode *,struct dentry *,int,dev_t);
- 	int (*whiteout) (struct inode *, struct dentry *, struct dentry *);
-+	int (*fallthru) (struct inode *, struct dentry *);
- 	int (*rename) (struct inode *, struct dentry *,
- 			struct inode *, struct dentry *);
- 	int (*readlink) (struct dentry *, char __user *,int);
+ 	if (d_is_whiteout(dentry)) {
+@@ -1866,14 +1909,15 @@ static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
+ 		shmem_free_inode(dir->i_sb);
+ 		if (S_ISDIR(inode->i_mode))
+ 			inode->i_mode |= S_OPAQUE;
++	} else if (d_is_fallthru(dentry)) {
++		shmem_free_inode(dir->i_sb);
+ 	} else {
+ 		/* New dentry */
+ 		dir->i_size += BOGO_DIRENT_SIZE;
+ 		dget(dentry); /* Extra count - pin the dentry in core */
+ 	}
+-	/* Will clear DCACHE_WHITEOUT flag */
++	/* Will clear DCACHE_WHITEOUT and DCACHE_FALLTHRU flags */
+ 	d_instantiate(dentry, inode);
+-
+ }
+ /*
+  * File creation. Allocate an inode, and we're done..
+@@ -1962,7 +2006,8 @@ static int shmem_unlink(struct inode *dir, struct dentry *dentry)
+ {
+ 	struct inode *inode = dentry->d_inode;
+ 
+-	if (d_is_whiteout(dentry) || (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
++	if (d_is_whiteout(dentry) || d_is_fallthru(dentry) ||
++	    (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
+ 		shmem_free_inode(dir->i_sb);
+ 
+ 	if (inode) {
+@@ -2596,6 +2641,7 @@ static const struct inode_operations shmem_dir_inode_operations = {
+ 	.mknod		= shmem_mknod,
+ 	.rename		= shmem_rename,
+ 	.whiteout       = shmem_whiteout,
++	.fallthru       = shmem_fallthru,
+ #endif
+ #ifdef CONFIG_TMPFS_POSIX_ACL
+ 	.setattr	= shmem_notify_change,
 -- 
 1.6.3.3
 
