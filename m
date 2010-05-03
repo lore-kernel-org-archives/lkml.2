@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933151Ab0ECQPC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 12:15:02 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:52946 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758731Ab0ECQO7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 12:14:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=OkRjfbryPQyIX3CmzTCZFPbQ/8JRE9hdudq9kD2nRl4o4vuaUuSNXpWnpuD/4GgwqY
-         BYfFmkVVuAiBFgOFU6zW1xatzVbGOVJ/N5i3QfwXFfUP/M3R2fP5NK8JBWWVdkzLLaBN
-         Q0nn6J/ZDa+qRGlbaFtHbdu/p9yFmrAIh2mkM=
-Subject: Re: mmotm 2010-04-28 - RCU whinges
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Patrick McHardy <kaber@trash.net>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <20100503154357.GF2597@linux.vnet.ibm.com>
-References: <201004290021.o3T0L04Y028017@imap1.linux-foundation.org>
-	 <5702.1272822394@localhost> <1272865137.2173.179.camel@edumazet-laptop>
-	 <5933.1272897014@localhost> <1272898726.2226.47.camel@edumazet-laptop>
-	 <5112.1272900590@localhost>  <20100503154357.GF2597@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 03 May 2010 18:14:53 +0200
-Message-ID: <1272903293.2226.50.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S933195Ab0ECQR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 12:17:28 -0400
+Received: from symlink.to.noone.org ([85.10.207.172]:48163 "EHLO sym.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932803Ab0ECQRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 12:17:24 -0400
+Date: Mon, 3 May 2010 18:17:21 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the staging tree
+Message-ID: <20100503161721.GW9489@distanz.ch>
+References: <20100427141224.834a102a.sfr@canb.auug.org.au> <20100427151305.GA7653@kroah.com> <20100428161425.eff4c40a.sfr@canb.auug.org.au> <20100428152809.GF4483@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100428152809.GF4483@kroah.com>
+X-Editor: Vi IMproved 7.1
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 03 mai 2010 à 08:43 -0700, Paul E. McKenney a écrit :
-
-> Highly recommended.  ;-)
+On 2010-04-28 at 17:28:09 +0200, Greg KH <greg@kroah.com> wrote:
+> On Wed, Apr 28, 2010 at 04:14:25PM +1000, Stephen Rothwell wrote:
+> > Hi Greg,
+> > 
+> > On Tue, 27 Apr 2010 08:13:05 -0700 Greg KH <greg@kroah.com> wrote:
+> > >
+> > > On Tue, Apr 27, 2010 at 02:12:24PM +1000, Stephen Rothwell wrote:
+> > > > 
+> > > > After merging the staging tree, today's linux-next build (x86_64
+> > > > allmodconfig) failed like this:
+> > > > 
+> > > > ERROR: "uart_console_device" [drivers/serial/altera_uart.ko] undefined!
+> > > > ERROR: "uart_console_device" [drivers/serial/altera_jtaguart.ko] undefined!
+> > > > 
+> > > > Introduced by commits 76bdbd933febe791fee114e7bb6c42bbd1a3f4f3 ("serial:
+> > > > Add driver for the Altera UART") and
+> > > > 11c59b34b299d7214b466cf799410a9a540476e3 ("serial: Add driver for the
+> > > > Altera JTAG UART").
+> > > > 
+> > > > I have reverted those commits for today.
+> > > 
+> > > Those came in through the tty quilt tree, not the staging tree, right?
+> > 
+> > Yeah, I just don't do a build between merging the tty and staging trees.
 > 
-> And thanks to you for your testing efforts and to Eric for the fixes!!!
+> Ok, that makes sense.
 > 
+> > > Tobias, care to send me a patch to resolve this?  I already fixed one
+> > > Kconfig issue in these patches (forcing the driver to always be built
+> > > in.)  Is that what caused this symbol issue?
+> > 
+> > I have reverted those commits again today.
+> 
+> I think I'll go drop these patches now.  Tobias, care to resend them
+> when you have them working properly?
 
-For this last one, I think you should push following patch Paul
+I just built the current linux-next (20100503) with the patches applied
+(including Greg's Kconfig change) on x86_64 with allmodconfig and wasn't
+able to reproduce the build failure.
 
-Followup of commit 3120438ad6
-(rcu: Disable lockdep checking in RCU list-traversal primitives)
+Any pointers on how to reproduce and/or fix this would be appreciated.
 
-Or we might introduce a hlist_for_each_entry_continue_rcu_bh() macro...
-
-
-
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index 004908b..b0c7e24 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -435,10 +435,10 @@ static inline void hlist_add_after_rcu(struct hlist_node *prev,
-  * @member:	the name of the hlist_node within the struct.
-  */
- #define hlist_for_each_entry_continue_rcu(tpos, pos, member)		\
--	for (pos = rcu_dereference((pos)->next);			\
-+	for (pos = rcu_dereference_raw((pos)->next);			\
- 	     pos && ({ prefetch(pos->next); 1; }) &&			\
- 	     ({ tpos = hlist_entry(pos, typeof(*tpos), member); 1; });  \
--	     pos = rcu_dereference(pos->next))
-+	     pos = rcu_dereference_raw(pos->next))
- 
- 
- #endif	/* __KERNEL__ */
-
-
+Thanks,
+Tobias
