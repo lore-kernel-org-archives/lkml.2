@@ -1,99 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759227Ab0ECWab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 18:30:31 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:45376 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753175Ab0ECWa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 18:30:29 -0400
-Date: Mon, 3 May 2010 17:30:23 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@osdl.org, akpm@linux-foundation.org, keyrings@linux-nfs.org,
-       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] KEYS: Use RCU dereference wrappers in keyring key
- type code
-Message-ID: <20100503223023.GC6968@us.ibm.com>
-References: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
- <20100430133218.2126.28129.stgit@warthog.procyon.org.uk>
+	id S1756616Ab0ECWjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 18:39:43 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:53018 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755281Ab0ECWjl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 18:39:41 -0400
+Date: Mon, 3 May 2010 15:42:25 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] ceph fixes for 2.6.34-rc7
+Message-ID: <Pine.LNX.4.64.1005031531330.23536@cobra.newdream.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100430133218.2126.28129.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting David Howells (dhowells@redhat.com):
-> The keyring key type code should use RCU dereference wrappers, even when it
-> holds the keyring's key semaphore.
-> 
-> Reported-by: Vegard Nossum <vegard.nossum@gmail.com>
-> Signed-off-by: David Howells <dhowells@redhat.com>
+Hi Linus,
 
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+Please pull the following Ceph fixes from
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-<shrug> does this mean that the
-        klist = rcu_dereference_check(keyring->payload.subscriptions,
-				      lockdep_is_held(&key_serial_lock));
-in security/keys/gc.c:key_gc_keyring() should become a
-rcu_dereference_protected() to avoid the rcu_dereference_raw() and for
-consistency?
+The main items are fixes for rename, a direct io oops, and a mismatched 
+spin_unlock.  The others fix less common bugs.  The last batch of testing 
+has gone smoothly, so hopefully this will be the last before 2.6.34.
 
-> ---
-> 
->  security/keys/keyring.c |   23 +++++++++++++----------
->  1 files changed, 13 insertions(+), 10 deletions(-)
-> 
-> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-> index d570824..63385af 100644
-> --- a/security/keys/keyring.c
-> +++ b/security/keys/keyring.c
-> @@ -20,6 +20,11 @@
->  #include <linux/uaccess.h>
->  #include "internal.h"
-> 
-> +#define rcu_dereference_locked_keyring(keyring)				\
-> +	(rcu_dereference_protected(					\
-> +		(keyring)->payload.subscriptions,			\
-> +		rwsem_is_locked((struct rw_semaphore *)&(keyring)->sem)))
-> +
->  /*
->   * when plumbing the depths of the key tree, this sets a hard limit set on how
->   * deep we're willing to go
-> @@ -201,8 +206,7 @@ static long keyring_read(const struct key *keyring,
->  	int loop, ret;
-> 
->  	ret = 0;
-> -	klist = keyring->payload.subscriptions;
-> -
-> +	klist = rcu_dereference_locked_keyring(keyring);
+Thanks-
+sage
 
-Weird, this was a straight rcu_dereference in my tree (which would
-still deserve a switch for the same reason as patch 1 of course)
+---
 
->  	if (klist) {
->  		/* calculate how much data we could return */
->  		qty = klist->nkeys * sizeof(key_serial_t);
-> @@ -720,8 +724,7 @@ int __key_link(struct key *keyring, struct key *key)
->  	}
-> 
->  	/* see if there's a matching key we can displace */
-> -	klist = keyring->payload.subscriptions;
-> -
-> +	klist = rcu_dereference_locked_keyring(keyring);
->  	if (klist && klist->nkeys > 0) {
->  		struct key_type *type = key->type;
-> 
-> @@ -765,8 +768,6 @@ int __key_link(struct key *keyring, struct key *key)
->  	if (ret < 0)
->  		goto error2;
-> 
-> -	klist = keyring->payload.subscriptions;
-> -
+Sage Weil (11):
+      ceph: clear dir complete on d_move
+      ceph: fix snap realm splits
+      ceph: print more useful version info on module load
+      ceph: fix leaked spinlock during mds reconnect
+      ceph: add missing #includes
+      ceph: fix seq counting for skipped messages
+      ceph: discard incoming messages with bad seq #
+      ceph: fix direct io truncate offset
+      ceph: clear dir complete, invalidate dentry on replayed rename
+      ceph: fix lockless caps check
+      ceph: remove bad auth_x kmem_cache
 
-huh, yeah, seems to have been there and unneeded since at least 2007.
+ fs/ceph/addr.c      |    2 +-
+ fs/ceph/auth.c      |    1 +
+ fs/ceph/auth_none.h |    2 ++
+ fs/ceph/auth_x.c    |   32 ++++++++++----------------------
+ fs/ceph/caps.c      |    2 +-
+ fs/ceph/dir.c       |    9 +++++++++
+ fs/ceph/file.c      |    3 ++-
+ fs/ceph/inode.c     |    4 ++++
+ fs/ceph/messenger.c |   22 ++++++++++++++++++++++
+ fs/ceph/snap.c      |   24 ++++++++++++++----------
+ fs/ceph/super.c     |    7 ++++---
+ fs/ceph/super.h     |    1 +
+ 12 files changed, 71 insertions(+), 38 deletions(-)
 
--serge
