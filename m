@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759269Ab0ECN04 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 09:26:56 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:65513 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab0ECN0y (ORCPT
+	id S1759337Ab0ECN1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 09:27:13 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:61037 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759302Ab0ECN1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 09:26:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=M7+1yj0xDNmnNijwaxiCS4EldOJnL0QM1l0FESjOo6CI1N2ioC8xIbnMtZhWz15Y6n
-         PpqCpIs8ZR1cFaaysla0sot09++mFIHQQWOcdBIF2ecYhs8a9w5n8MCIFdiKVSF9h7g8
-         CioXEbp7wVy9cnIFKx6HrwH8+STbrIm3tHJ9A=
-Message-ID: <4BDECF24.8070604@gmail.com>
-Date: Mon, 03 May 2010 06:27:00 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Mon, 3 May 2010 09:27:10 -0400
+Reply-To: <nick.cheng@areca.com.tw>
+From: "Nick Cheng" <nick.cheng@areca.com.tw>
+To: "'James Bottomley'" <James.Bottomley@suse.de>
+Cc: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <5B75F1A9B45A486E8A44B035EDCC381E@areca4e4f859d4> <1272891585.4369.15.camel@mulgrave.site> <543391074648471F8A10624BAC48E286@areca4e4f859d4> <1272893071.4369.24.camel@mulgrave.site>
+Subject: RE: [PATCH 1/3 ] SCSI: Support HW reset for EH and polling scheme for scsi device(This is correct revision, please ignore last one)
+Date: Mon, 3 May 2010 21:26:57 +0800
+Organization: Areca Technology
+Message-ID: <B16CB7C307AA4AD0B4083BE7F6B2DAE1@areca4e4f859d4>
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]trivial:Fix some comments.
-References: <1272260842-2592-1-git-send-email-justinmattock@gmail.com>
-In-Reply-To: <1272260842-2592-1-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1272893071.4369.24.camel@mulgrave.site>
+Thread-Index: Acrqw/opwvrf1vTSQO6AFgrSDMr5BgAABMtA
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2010 10:47 PM, Justin P. Mattock wrote:
-> Fix some comments.
->
-> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
-> ---
->   drivers/gpu/drm/nouveau/nv50_display.c |    2 +-
->   drivers/s390/block/dasd_eckd.c         |    2 +-
->   2 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/gpu/drm/nouveau/nv50_display.c b/drivers/gpu/drm/nouveau/nv50_display.c
-> index 649db4c..452ed31 100644
-> --- a/drivers/gpu/drm/nouveau/nv50_display.c
-> +++ b/drivers/gpu/drm/nouveau/nv50_display.c
-> @@ -239,7 +239,7 @@ nv50_display_init(struct drm_device *dev)
->   	nv_wr32(dev, NV50_PDISPLAY_UNK_388, 0x150000);
->   	nv_wr32(dev, NV50_PDISPLAY_UNK_38C, 0);
->
-> -	/* The precise purpose is unknown, i suspect it has something to do
-> +	/* The precise purpose is unknown, I suspect it has something to do
->   	 * with text mode.
->   	 */
->   	if (nv_rd32(dev, NV50_PDISPLAY_INTR_1)&  0x100) {
-> diff --git a/drivers/s390/block/dasd_eckd.c b/drivers/s390/block/dasd_eckd.c
-> index 0cb2331..582c568 100644
-> --- a/drivers/s390/block/dasd_eckd.c
-> +++ b/drivers/s390/block/dasd_eckd.c
-> @@ -2291,7 +2291,7 @@ static struct dasd_ccw_req *dasd_eckd_build_cp_tpm_track(
->   	} else
->   		return ERR_PTR(-EINVAL);
->
-> -	/* trackbased I/O needs address all memory via TIDAWs,
-> +	/* trackbased I/O needs to address all memory via TIDAWs,
->   	 * not just for 64 bit addresses. This allows us to map
->   	 * each segment directly to one tidaw.
->   	 */
+It seems I have to remove this section first then make a new patch for you.
+I will email the patches to you tomorrow.
+Thanks,
+-----Original Message-----
+From: James Bottomley [mailto:James.Bottomley@suse.de] 
+Sent: Monday, May 03, 2010 9:25 PM
+To: nick.cheng@areca.com.tw
+Cc: linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: RE: [PATCH 1/3 ] SCSI: Support HW reset for EH and polling scheme
+for scsi device(This is correct revision, please ignore last one)
+
+On Mon, 2010-05-03 at 21:17 +0800, Nick Cheng wrote:
+> Hi James,
+> It seems you set CONFIG_SCSI_ARCMSR_AER.
+> Could you undefine it?
+
+Config option testing is part of the stuff I run through.  Even if I
+undefine it, one of the many people who run automated config testing
+will pick it up ... and then I'll get email about it.
+
+> I will remove this section.
+
+Thanks.
+
+James
 
 
-no response on this
-fame or shame?
-
-Justin P. Mattock
