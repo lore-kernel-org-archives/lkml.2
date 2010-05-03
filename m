@@ -1,140 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360Ab0ECXOH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 19:14:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22363 "EHLO mx1.redhat.com"
+	id S932160Ab0ECXO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 19:14:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31592 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932240Ab0ECXNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 19:13:40 -0400
+	id S932335Ab0ECXOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 19:14:01 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
        Christoph Hellwig <hch@infradead.org>, Jan Blunck <jblunck@suse.de>,
-       Felix Fietkau <nbd@openwrt.org>, David Woodhouse <dwmw2@infradead.org>,
-       linux-mtd@lists.infradead.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 15/39] fallthru: jffs2 fallthru support
-Date: Mon,  3 May 2010 16:12:14 -0700
-Message-Id: <1272928358-20854-16-git-send-email-vaurora@redhat.com>
+       Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 29/39] union-mount: Implement union-aware access()/faccessat()
+Date: Mon,  3 May 2010 16:12:28 -0700
+Message-Id: <1272928358-20854-30-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 References: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felix Fietkau <nbd@openwrt.org>
-
-Add support for fallthru dentries to jffs2.
-
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+For union mounts, a file located on the lower layer will incorrectly
+return EROFS on an access check.  To fix this, use the new
+path_permission() call, which ignores a read-only lower layer file
+system if the target will be copied up to the topmost file system.
 ---
- fs/jffs2/dir.c        |   36 +++++++++++++++++++++++++++++++++---
- include/linux/jffs2.h |    6 ++++++
- 2 files changed, 39 insertions(+), 3 deletions(-)
+ fs/open.c |   21 +++++++++++++++++----
+ 1 files changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/fs/jffs2/dir.c b/fs/jffs2/dir.c
-index c259193..98397b3 100644
---- a/fs/jffs2/dir.c
-+++ b/fs/jffs2/dir.c
-@@ -35,6 +35,7 @@ static int jffs2_rename (struct inode *, struct dentry *,
- 			 struct inode *, struct dentry *);
+diff --git a/fs/open.c b/fs/open.c
+index 74e5cd9..cb39b9d 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -30,6 +30,7 @@
+ #include <linux/falloc.h>
+ #include <linux/fs_struct.h>
+ #include <linux/ima.h>
++#include <linux/union.h>
  
- static int jffs2_whiteout (struct inode *, struct dentry *, struct dentry *);
-+static int jffs2_fallthru (struct inode *, struct dentry *);
+ #include "internal.h"
  
- const struct file_operations jffs2_dir_operations =
- {
-@@ -59,6 +60,7 @@ const struct inode_operations jffs2_dir_inode_operations =
- 	.rename =	jffs2_rename,
- 	.check_acl =	jffs2_check_acl,
- 	.whiteout =     jffs2_whiteout,
-+	.fallthru =     jffs2_fallthru,
- 	.setattr =	jffs2_setattr,
- 	.setxattr =	jffs2_setxattr,
- 	.getxattr =	jffs2_getxattr,
-@@ -103,10 +105,14 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
+@@ -454,7 +455,10 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	const struct cred *old_cred;
+ 	struct cred *override_cred;
+ 	struct path path;
++	struct nameidata nd;
++	struct vfsmount *mnt;
+ 	struct inode *inode;
++	char *tmp;
+ 	int res;
+ 
+ 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
+@@ -478,10 +482,17 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 
+ 	old_cred = override_creds(override_cred);
+ 
+-	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
++	res = user_path_nd(dfd, filename, LOOKUP_FOLLOW,
++				   &nd, &path, &tmp);
+ 	if (res)
+ 		goto out;
+ 
++	/* For union mounts, use the topmost mnt's permissions */
++	if (IS_UNIONED_DIR(&nd.path))
++		mnt = nd.path.mnt;
++	else
++		mnt = path.mnt;
++
+ 	inode = path.dentry->d_inode;
+ 
+ 	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
+@@ -490,11 +501,11 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 		 * with the "noexec" flag.
+ 		 */
+ 		res = -EACCES;
+-		if (path.mnt->mnt_flags & MNT_NOEXEC)
++		if (mnt->mnt_flags & MNT_NOEXEC)
+ 			goto out_path_release;
  	}
- 	if (fd) {
- 		spin_lock(&target->d_lock);
--		if (fd->type == DT_WHT)
-+		switch (fd->type) {
-+		case DT_WHT:
- 			target->d_flags |= DCACHE_WHITEOUT;
--		else
-+		case JFFS2_DT_FALLTHRU:
-+			target->d_flags |= DCACHE_FALLTHRU;
-+		default:
- 			ino = fd->ino;
-+		}
- 		spin_unlock(&target->d_lock);
- 	}
- 	mutex_unlock(&dir_f->sem);
-@@ -164,7 +170,10 @@ static int jffs2_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 				  fd->name, fd->ino, fd->type, curofs, offset));
- 			continue;
- 		}
--		if (!fd->ino) {
-+		if (fd->type == JFFS2_DT_FALLTHRU)
-+			/* XXX Should really do a lookup for the real inode number here */
-+			fd->ino = 100;
-+		else if (!fd->ino && (fd->type != DT_WHT)) {
- 			D2(printk(KERN_DEBUG "Skipping deletion dirent \"%s\"\n", fd->name));
- 			offset++;
- 			continue;
-@@ -793,6 +802,26 @@ static int jffs2_mknod (struct inode *dir_i, struct dentry *dentry, int mode, de
- 	return 0;
- }
  
-+static int jffs2_fallthru (struct inode *dir, struct dentry *dentry)
-+{
-+	struct jffs2_sb_info *c = JFFS2_SB_INFO(dir->i_sb);
-+	uint32_t now;
-+	int ret;
-+
-+	now = get_seconds();
-+	ret = jffs2_do_link(c, JFFS2_INODE_INFO(dir), 0, DT_UNKNOWN,
-+			    dentry->d_name.name, dentry->d_name.len, now);
-+	if (ret)
-+		return ret;
-+
-+	d_instantiate(dentry, NULL);
-+	spin_lock(&dentry->d_lock);
-+	dentry->d_flags |= DCACHE_FALLTHRU;
-+	spin_unlock(&dentry->d_lock);
-+
-+	return 0;
-+}
-+
- static int jffs2_whiteout (struct inode *dir, struct dentry *old_dentry,
- 			   struct dentry *new_dentry)
- {
-@@ -825,6 +854,7 @@ static int jffs2_whiteout (struct inode *dir, struct dentry *old_dentry,
- 		return ret;
+-	res = inode_permission(inode, mode | MAY_ACCESS);
++	res = path_permission(&path, &nd.path, mode | MAY_ACCESS);
+ 	/* SuS v2 requires we report a read only fs too */
+ 	if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
+ 		goto out_path_release;
+@@ -508,11 +519,13 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	 * inherently racy and know that the fs may change
+ 	 * state before we even see this result.
+ 	 */
+-	if (__mnt_is_readonly(path.mnt))
++	if (__mnt_is_readonly(mnt))
+ 		res = -EROFS;
  
- 	spin_lock(&new_dentry->d_lock);
-+	new_dentry->d_flags &= ~DCACHE_FALLTHRU;
- 	new_dentry->d_flags |= DCACHE_WHITEOUT;
- 	spin_unlock(&new_dentry->d_lock);
- 	d_add(new_dentry, NULL);
-diff --git a/include/linux/jffs2.h b/include/linux/jffs2.h
-index 65533bb..dbe8c93 100644
---- a/include/linux/jffs2.h
-+++ b/include/linux/jffs2.h
-@@ -114,6 +114,12 @@ struct jffs2_unknown_node
- 	jint32_t hdr_crc;
- };
- 
-+/*
-+ * Non-standard directory entry type(s), for on-disk use
-+ */
-+
-+#define                JFFS2_DT_FALLTHRU       (DT_WHT + 1)
-+
- struct jffs2_raw_dirent
- {
- 	jint16_t magic;
+ out_path_release:
+ 	path_put(&path);
++	path_put(&nd.path);
++	putname(tmp);
+ out:
+ 	revert_creds(old_cred);
+ 	put_cred(override_cred);
 -- 
 1.6.3.3
 
