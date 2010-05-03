@@ -1,42 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759617Ab0ECPEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 11:04:37 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51481 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759427Ab0ECPEf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 11:04:35 -0400
-Date: Mon, 3 May 2010 11:04:33 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       USB list <linux-usb@vger.kernel.org>
-Subject: Re: s2ram slow (radeon) / failing (usb)
-In-Reply-To: <20100503164820.384a371f@pluto.restena.lu>
-Message-ID: <Pine.LNX.4.44L0.1005031103180.1651-100000@iolanthe.rowland.org>
+	id S932744Ab0ECPO6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 11:14:58 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3656 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932715Ab0ECPO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 11:14:57 -0400
+Message-ID: <4BDEE868.5020001@canonical.com>
+Date: Mon, 03 May 2010 16:14:48 +0100
+From: Tim Gardner <tim.gardner@canonical.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "stable@kernel.org" <stable@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Tim Gardner <timg@canonical.com>, kassah@gmail.com
+Subject: stable: Add usb id for HP ev2210 a.k.a Sierra MC5725 miniPCI-e Cell
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 May 2010, Bruno [UTF-8] Prémont wrote:
+Looks like this didn't get Cc'd for stable updates. Please consider 
+cfbaa39347b34837f26e01fe8f4f8dbbae60b520 for inclusion in 2.6.32.y and 
+2.6.33.y stable. See test results in 
+http://bugs.launchpad.net/bugs/511066, 
+http://bugs.launchpad.net/ubuntu/+source/linux/+bug/511066/comments/10
 
-> > Did you boot with "no_console_suspend"?  Are you using a VT console
-> > instead of X (a serial console may or may not work as well)?
-> 
-> Yes, I'm booting with no_console_suspend and console=ttyS0. On that
-> system there is no X. Multiple ttys are showing up on display with
-> KMS or VGA text mode (just the getty, all kernel and init output goes to
-> serial console as expected)
-
-You're better off sending the console output to the display (or to
-both); I don't know how well serial consoles work with
-no_console_suspend.
-
-Alan Stern
-
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
