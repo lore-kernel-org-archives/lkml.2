@@ -1,88 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab0ECWBn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 18:01:43 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:40519 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756882Ab0ECWBl convert rfc822-to-8bit (ORCPT
+	id S1757018Ab0ECWEe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 18:04:34 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:48825 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753338Ab0ECWEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 18:01:41 -0400
+	Mon, 3 May 2010 18:04:32 -0400
+Date: Mon, 3 May 2010 17:04:20 -0500
+From: "Serge E. Hallyn" <serue@us.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@osdl.org, akpm@linux-foundation.org, keyrings@linux-nfs.org,
+       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] KEYS: Fix an RCU warning in the reading of user
+ keys
+Message-ID: <20100503220420.GA6968@us.ibm.com>
+References: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <201005032349.00876.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1005021755320.30701-100000@netrider.rowland.org>
-	 <201005031703.11448.rjw@sisk.pl>
-	 <m2yd6200be21005031426n87ea43a0k968fd5898ce0b873@mail.gmail.com>
-	 <201005032349.00876.rjw@sisk.pl>
-Date: Mon, 3 May 2010 15:01:41 -0700
-Message-ID: <x2id6200be21005031501p7f151324wb8bbf928bc2cb25e@mail.gmail.com>
-Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend 
-	blockers from user-space
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-       Jim Collar <jim.collar@eqware.net>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Avi Kivity <avi@redhat.com>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/3 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Monday 03 May 2010, Arve Hjønnevåg wrote:
->> On Mon, May 3, 2010 at 8:03 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Sunday 02 May 2010, Alan Stern wrote:
->> >> On Sun, 2 May 2010, Rafael J. Wysocki wrote:
->> >>
->> >> > Hmm.  It doesn't seem to be possible to create two different suspend blockers
->> >> > using the same file handle.  So, what exactly is a process supposed to do to
->> >> > use two suspend blockers at the same time?
->> >>
->> >> Open the file twice, thereby obtaining two file handles.
->> >
->> > Well, that's what I thought.
->> >
->> > I must admit I'm not really comfortable with this interface.  IMO it would
->> > be better if _open() created the suspend blocker giving it a name based on
->> > the name of the process that called it.  Something like
->> > "<process name>_<timestamp>" might work at first sight.
->> >
->> > Alternatively, "<process_name><number>", where <number> is 0 for the first
->> > suspend blocker created by the given process, 1 for the second one etc., also
->> > seems to be doable.
->>
->> I think it is important to let user-space specify the name. If a
->> process uses multiple suspend blockers, it is impossible to tell what
->> each one is used for if they are automatically named.
->
-> Well, the problem is the only purpose of this is user space debugging, isn't it?
->
-At the moment, yes. But having an explicit init call also simplifies
-future expansion. If we ever need to add back multiple types of
-suspend blockers, we can add an init call with a type argument and
-have the current init call use the default type. If the past we have
-had types that keeps the screen on and prevented idle sleep modes. In
-the future we could for instance want to specify if a suspend blocker
-should prevent suspend when the battery is low or when the lid is
-closed.
+Quoting David Howells (dhowells@redhat.com):
+> Fix an RCU warning in the reading of user keys:
+> 
+> ===================================================
+> [ INFO: suspicious rcu_dereference_check() usage. ]
+> ---------------------------------------------------
+> security/keys/user_defined.c:202 invoked rcu_dereference_check() without protection!
+> 
+> other info that might help us debug this:
+> 
+> 
+> rcu_scheduler_active = 1, debug_locks = 0
+> 1 lock held by keyctl/3637:
+>  #0:  (&key->sem){+++++.}, at: [<ffffffff811a80ae>] keyctl_read_key+0x9c/0xcf
+> 
+> stack backtrace:
+> Pid: 3637, comm: keyctl Not tainted 2.6.34-rc5-cachefs #18
+> Call Trace:
+>  [<ffffffff81051f6c>] lockdep_rcu_dereference+0xaa/0xb2
+>  [<ffffffff811aa55f>] user_read+0x47/0x91
+>  [<ffffffff811a80be>] keyctl_read_key+0xac/0xcf
+>  [<ffffffff811a8a06>] sys_keyctl+0x75/0xb7
+>  [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
 
-> Now, while I don't think it's generally bad to provide kernel interfaces
-> helping to debug user space, I'm not quite sure if that should be done at the
-> expense of the clarity of kernel-user space interfaces.
->
-> I wonder how many cases there are in which distinguishing between suspend
-> blockers used by the same user space task is practically relevant.
->
+heck it also serves to document it a bit, as looking at the fn
+itself it's not clear that it is called under key->sem.
 
-I think all of them (when more than one suspend blocker is used).
+Acked-by: Serge Hallyn <serue@us.ibm.com>
 
--- 
-Arve Hjønnevåg
+> ---
+> 
+>  security/keys/user_defined.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
+> index 7c687d5..e9aa079 100644
+> --- a/security/keys/user_defined.c
+> +++ b/security/keys/user_defined.c
+> @@ -199,7 +199,8 @@ long user_read(const struct key *key, char __user *buffer, size_t buflen)
+>  	struct user_key_payload *upayload;
+>  	long ret;
+> 
+> -	upayload = rcu_dereference(key->payload.data);
+> +	upayload = rcu_dereference_protected(
+> +		key->payload.data, rwsem_is_locked(&((struct key *)key)->sem));
+>  	ret = upayload->datalen;
+> 
+>  	/* we can return the data as is */
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
