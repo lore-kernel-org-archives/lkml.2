@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933246Ab0ECQjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 12:39:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59246 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759329Ab0ECQjX (ORCPT
+	id S933337Ab0ECQkS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 12:40:18 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46076 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933004Ab0ECQkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 12:39:23 -0400
-Date: Mon, 3 May 2010 09:37:17 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-cc: akpm@linux-foundation.org, Mel Gorman <mel@csn.ul.ie>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 2/2] mm: fix race between shift_arg_pages and rmap_walk
-In-Reply-To: <alpine.LFD.2.00.1005030928350.5478@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1005030935100.5478@i5.linux-foundation.org>
-References: <20100503121743.653e5ecc@annuminas.surriel.com> <20100503121929.260ed5ee@annuminas.surriel.com> <alpine.LFD.2.00.1005030928350.5478@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 3 May 2010 12:40:15 -0400
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: mgross@linux.intel.com, aili@codeaurora.org, dwalker@codeaurora.org,
+       tiwai@suse.de, bruce.w.allan@intel.com, davidb@quicinc.com,
+       mcgrof@gmail.com, pavel@ucw.cz,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]PM QOS refresh against next-20100430
+References: <20100430212043.GA30315@linux.intel.com>
+	<20100503103300.6330e522@bike.lwn.net>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Mon, 03 May 2010 09:40:11 -0700
+In-Reply-To: <20100503103300.6330e522@bike.lwn.net> (Jonathan Corbet's message of "Mon\, 3 May 2010 10\:33\:00 -0600")
+Message-ID: <87y6g1547o.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jonathan Corbet <corbet@lwn.net> writes:
 
+> On Fri, 30 Apr 2010 14:20:43 -0700
+> mark gross <mgross@linux.intel.com> wrote:
+>
+>> This patch changes the string based list management to a handle base
+>> implementation to help with the hot path use of pm-qos
+>
+> Having taken a quick look, I think the API change makes a lot of
+> sense.  Hot paths are one thing; avoidance of accidental conflicts
+> would be another.
+>
+> One question, though...  one clear use of this API is for drivers to
+> say "don't go into C3 or deeper because things go wrong"; I'm about to
+> add another one of those.  It works, but the use of a
+> PM_QOS_CPU_DMA_LATENCY requirement with a hard-coded number that one
+> hopes is small enough seems a bit...indirect.  I wonder if it would be
+> clearer and more robust to add a new requirement^Wrequest type saying
+> "the quality of service I need is shallow sleeps only"?
 
-On Mon, 3 May 2010, Linus Torvalds wrote:
-> 
-> It looks like it makes execve() do a totally insane "create and then 
-> immediately destroy temporary vma and anon_vma chain" for a case that is 
-> unlikely to ever matter. 
-> 
-> In fact, for a case that isn't even normally _enabled_, namely migration.
-> 
-> Why would we want to slow down execve() for that?
+The problem with that is portability.
 
-Alternate suggestions:
+What does "shallow" mean?  
 
- - clean up the patch so that it is explicitly abouy migration, and 
-   doesn't even get enabled for anything else.
+Even between different SoCs in the same family, shallow might have
+different meaning, but across architectures, this certainly would not
+be portable.
 
- - make the migration code take the VM lock for writing (why doesn't it 
-   already?) and never race with things like this in the first place.
-
- - explain why the new code isn't any slower.
-
-Hmm?
-
-		Linus
+Kevin
