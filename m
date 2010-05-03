@@ -1,92 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758430Ab0ECMKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 08:10:30 -0400
-Received: from fg-out-1718.google.com ([72.14.220.158]:34988 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758181Ab0ECMK1 (ORCPT
+	id S1758539Ab0ECMLx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 08:11:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53047 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758181Ab0ECMLv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 08:10:27 -0400
-Subject: generate "change" uevent for loop device
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: David Zeuthen <davidz@redhat.com>, Greg KH <greg@kroah.com>
+	Mon, 3 May 2010 08:11:51 -0400
+Subject: Re: [PATCH] lockdep: reduce stack_trace usage
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: John Kacur <jkacur@redhat.com>, Yong Zhang <yong.zhang@windriver.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       linux-rt-users <linux-rt-users@vger.kernel.org>,
+       Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+       Clark Williams <williams@redhat.com>,
+       "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Gregory Haskins <ghaskins@novell.com>,
+       "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <20100423134044.GA2777@zhy-desktop>
+References: <alpine.LFD.2.00.1004222208310.3155@localhost>
+	 <20100423025850.GA21328@windriver.com>
+	 <alpine.LFD.2.00.1004230907050.4151@localhost>
+	 <1272009915.1646.25.camel@laptop>
+	 <w2v520f0cf11004230131i743c596emfd0e5b8870330a8b@mail.gmail.com>
+	 <20100423134044.GA2777@zhy-desktop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 03 May 2010 14:08:59 +0200
-Message-ID: <1272888539.27606.3.camel@yio.site>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 03 May 2010 14:11:29 +0200
+Message-ID: <1272888689.5605.3.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.0.1 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Zeuthen <davidz@redhat.com>
-Subject: generate "change" uevent for loop device
+On Fri, 2010-04-23 at 21:40 +0800, Yong Zhang wrote:
 
-Recent udev versions probe loop devices for filesystems meaning that
-the /dev/disk hierarchy may contain useful entries such as
+> From 6b9d513b7c417c0805ef0acc1cb3227bddba0889 Mon Sep 17 00:00:00 2001
+> From: Yong Zhang <yong.zhang0@gmail.com>
+> Date: Fri, 23 Apr 2010 21:13:54 +0800
+> Subject: [PATCH] lockdep: reduce stack_trace usage
+> 
+> When calling check_prevs_add(), if all validations passed
+> add_lock_to_list() will add new lock to dependency tree and
+> alloc stack_trace for each list_entry. But at this time,
+> we are always on the same stack, so stack_trace for each
+> list_entry has the same value. This is redundant and eats up
+> lots of memory which could lead to warning on low
+> MAX_STACK_TRACE_ENTRIES.
+> Using one copy of stack_trace instead.
 
- $ ls -l /dev/disk/by-label/Fedora-12-x86_64-Live
- lrwxrwxrwx 1 root root 11 Mar 11 13:41 /dev/disk/by-label/Fedora-12-x86_64-Live -> ../../loop0
+OK, I like the idea, but I'm a little confused as to why you pull
+save_trace() up two functions, from what I can see we can now end up
+saving a trace where we previously would not have done one (the whole
+recursive lock mess.
 
-Unfortunately, no "change" uevent is generated when the loop device is
-detached so the symlink persists. Additionally, no "change" uevent is
-guaranteed to be generated when attaching an fd or changing capacity.
-For example,  user space could open the loop device O_RDONLY (in fact,
-recent util-linux-ng does this) so udev's OPTIONS+="watch" machinery may
-not trigger the "change" uevent.
+So please respin this with save_trace() in check_prev_add() right before
+the first add_lock_to_list().
 
-This patch ensures that the "change" uevent is generated in all of
-these cases. As a result, the /dev/disk hierarchy works as expected
-for loop devices.
-
-Signed-off-by: David Zeuthen <davidz@redhat.com>
-Acked-by: Kay Sievers <kay.sievers@vrfy.org>
----
- drivers/block/loop.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -835,6 +835,8 @@ static int loop_set_fd(struct loop_devic
- 
- 	set_capacity(lo->lo_disk, size);
- 	bd_set_size(bdev, size << 9);
-+	/* let user-space know about the new size */
-+	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
- 
- 	set_blocksize(bdev, lo_blocksize);
- 
-@@ -858,6 +860,7 @@ out_clr:
- 	set_capacity(lo->lo_disk, 0);
- 	invalidate_bdev(bdev);
- 	bd_set_size(bdev, 0);
-+	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
- 	mapping_set_gfp_mask(mapping, lo->old_gfp_mask);
- 	lo->lo_state = Lo_unbound;
-  out_putf:
-@@ -944,8 +947,11 @@ static int loop_clr_fd(struct loop_devic
- 	if (bdev)
- 		invalidate_bdev(bdev);
- 	set_capacity(lo->lo_disk, 0);
--	if (bdev)
-+	if (bdev) {
- 		bd_set_size(bdev, 0);
-+		/* let user-space know about this change */
-+		kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
-+	}
- 	mapping_set_gfp_mask(filp->f_mapping, gfp);
- 	lo->lo_state = Lo_unbound;
- 	/* This is safe: open() is still holding a reference. */
-@@ -1189,6 +1195,8 @@ static int loop_set_capacity(struct loop
- 	sz <<= 9;
- 	mutex_lock(&bdev->bd_mutex);
- 	bd_set_size(bdev, sz);
-+	/* let user-space know about the new size */
-+	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
- 	mutex_unlock(&bdev->bd_mutex);
- 
-  out:
-
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: David S. Miller <davem@davemloft.net>
+> ---
+>  kernel/lockdep.c |   20 ++++++++++++--------
+>  1 files changed, 12 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index 2594e1c..097d5fb 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -818,7 +818,8 @@ static struct lock_list *alloc_list_entry(void)
+>   * Add a new dependency to the head of the list:
+>   */
+>  static int add_lock_to_list(struct lock_class *class, struct lock_class *this,
+> -			    struct list_head *head, unsigned long ip, int distance)
+> +			    struct list_head *head, unsigned long ip,
+> +			    int distance, struct stack_trace *trace)
+>  {
+>  	struct lock_list *entry;
+>  	/*
+> @@ -829,11 +830,9 @@ static int add_lock_to_list(struct lock_class *class, struct lock_class *this,
+>  	if (!entry)
+>  		return 0;
+>  
+> -	if (!save_trace(&entry->trace))
+> -		return 0;
+> -
+>  	entry->class = this;
+>  	entry->distance = distance;
+> +	entry->trace = *trace;
+>  	/*
+>  	 * Since we never remove from the dependency list, the list can
+>  	 * be walked lockless by other CPUs, it's only allocation
+> @@ -1635,7 +1634,7 @@ check_deadlock(struct task_struct *curr, struct held_lock *next,
+>   */
+>  static int
+>  check_prev_add(struct task_struct *curr, struct held_lock *prev,
+> -	       struct held_lock *next, int distance)
+> +	       struct held_lock *next, int distance, struct stack_trace *trace)
+>  {
+>  	struct lock_list *entry;
+>  	int ret;
+> @@ -1694,14 +1693,14 @@ check_prev_add(struct task_struct *curr, struct held_lock *prev,
+>  	 */
+>  	ret = add_lock_to_list(hlock_class(prev), hlock_class(next),
+>  			       &hlock_class(prev)->locks_after,
+> -			       next->acquire_ip, distance);
+> +			       next->acquire_ip, distance, trace);
+>  
+>  	if (!ret)
+>  		return 0;
+>  
+>  	ret = add_lock_to_list(hlock_class(next), hlock_class(prev),
+>  			       &hlock_class(next)->locks_before,
+> -			       next->acquire_ip, distance);
+> +			       next->acquire_ip, distance, trace);
+>  	if (!ret)
+>  		return 0;
+>  
+> @@ -1732,6 +1731,7 @@ check_prevs_add(struct task_struct *curr, struct held_lock *next)
+>  {
+>  	int depth = curr->lockdep_depth;
+>  	struct held_lock *hlock;
+> +	struct stack_trace trace;
+>  
+>  	/*
+>  	 * Debugging checks.
+> @@ -1748,6 +1748,9 @@ check_prevs_add(struct task_struct *curr, struct held_lock *next)
+>  			curr->held_locks[depth-1].irq_context)
+>  		goto out_bug;
+>  
+> +	if (!save_trace(&trace))
+> +		return 0;
+> +
+>  	for (;;) {
+>  		int distance = curr->lockdep_depth - depth + 1;
+>  		hlock = curr->held_locks + depth-1;
+> @@ -1756,7 +1759,8 @@ check_prevs_add(struct task_struct *curr, struct held_lock *next)
+>  		 * added:
+>  		 */
+>  		if (hlock->read != 2) {
+> -			if (!check_prev_add(curr, hlock, next, distance))
+> +			if (!check_prev_add(curr, hlock, next,
+> +						distance, &trace))
+>  				return 0;
+>  			/*
+>  			 * Stop after the first non-trylock entry,
 
