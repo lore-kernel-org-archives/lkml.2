@@ -1,69 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab0ECSxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 14:53:33 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:41093 "EHLO e3.ny.us.ibm.com"
+	id S1756373Ab0ECSy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 14:54:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36304 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755450Ab0ECSx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 14:53:27 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 05/10] cgroup: Fix an RCU warning in alloc_css_id()
-Date: Mon,  3 May 2010 11:53:14 -0700
-Message-Id: <1272912799-17859-5-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100503185253.GA17672@linux.vnet.ibm.com>
-References: <20100503185253.GA17672@linux.vnet.ibm.com>
+	id S1754800Ab0ECSyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 14:54:23 -0400
+Date: Mon, 3 May 2010 20:54:21 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: David Woodhouse <dwmw2@infradead.org>, Jan Kara <jack@suse.cz>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       David Howells <dhowells@redhat.com>,
+       Alexander Shishkin <virtuoso@slind.org>,
+       Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: Do not corrupt backing device of device node inode
+Message-ID: <20100503185421.GF3470@quack.suse.cz>
+References: <1271934535.11751.1550.camel@macbook.infradead.org>
+ <1272905767-4317-1-git-send-email-kirill@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272905767-4317-1-git-send-email-kirill@shutemov.name>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+On Mon 03-05-10 19:56:07, Kirill A. Shutemov wrote:
+> We cannot modify file->f_mapping->backing_dev_info, because it will corrupt
+> backing device of device node inode, since file->f_mapping is equal to
+> inode->i_mapping (see __dentry_open() in fs/open.c).
+> 
+> Let's introduce separate inode for MTD device with appropriate backing
+> device.
+  Now the patch looks much cleaner. Thanks! Having a separate fstype for a
+single inode seems like a bit of an overkill but I agree there doesn't seem
+to be a suitable filesystem where an inode could live, so it's probably OK.
+Two minor comments are below.
 
-With CONFIG_PROVE_RCU=y, a warning can be triggered:
-
-  # mount -t cgroup -o memory xxx /mnt
-  # mkdir /mnt/0
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> ---
+>  drivers/mtd/mtdchar.c   |   70 +++++++++++++++++++++++++++++++++++++++++-----
+>  drivers/mtd/mtdcore.c   |    3 ++
+>  include/linux/mtd/mtd.h |    3 ++
+>  3 files changed, 68 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
+> index 5b081cb..24ea34f 100644
+> --- a/drivers/mtd/mtdchar.c
+> +++ b/drivers/mtd/mtdchar.c
+> @@ -88,8 +91,21 @@ static int mtd_open(struct inode *inode, struct file *file)
+>  		goto out;
+>  	}
+>  
+> -	if (mtd->backing_dev_info)
+> -		file->f_mapping->backing_dev_info = mtd->backing_dev_info;
+> +	if (!mtd->inode) {
+> +		mtd->inode = new_inode(mtd_inode_mnt->mnt_sb);
+  This can fail so you should check whether mtd->inode is != NULL.
 
 ...
-kernel/cgroup.c:4442 invoked rcu_dereference_check() without protection!
-...
+>  static int __init init_mtdchar(void)
+>  {
+> -	int status;
+> +	int ret;
+>  
+> -	status = register_chrdev(MTD_CHAR_MAJOR, "mtd", &mtd_fops);
+> -	if (status < 0) {
+> -		printk(KERN_NOTICE "Can't allocate major number %d for Memory Technology Devices.\n",
+> -		       MTD_CHAR_MAJOR);
+> +	ret = register_chrdev(MTD_CHAR_MAJOR, "mtd", &mtd_fops);
+> +	if (ret < 0) {
+> +		pr_notice("Can't allocate major number %d for "
+> +				"Memory Technology Devices.\n", MTD_CHAR_MAJOR);
+> +		return ret;
+> +	}
+> +
+> +	ret = register_filesystem(&mtd_inodefs_type);
+> +	if (ret) {
+> +		pr_notice("Can't register mtd_inodefs filesystem: %d\n", ret);
+> +		goto err_unregister_chdev;
+> +	}
+> +
+> +	mtd_inode_mnt = kern_mount(&mtd_inodefs_type);
+> +	if (IS_ERR(mtd_inode_mnt)) {
+> +		ret = PTR_ERR(mtd_inode_mnt);
+> +		pr_notice("Error mounting mtd_inodefs filesystem: %d\n", ret);
+> +		goto err_unregister_filesystem;
+>  	}
+>  
+> -	return status;
+> +	return ret;
+> +
+> +err_unregister_chdev:
+> +	unregister_chrdev(MTD_CHAR_MAJOR, "mtd");
+> +err_unregister_filesystem:
+> +	unregister_filesystem(&mtd_inodefs_type);
+> +	return ret;
+  I think you should swap unregister_chrdev and unregister_filesystem
+blocks...
 
-This is a false-positive. It's safe to directly access parent_css->id.
-
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/cgroup.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 4ca928d..3a53c77 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4561,13 +4561,13 @@ static int alloc_css_id(struct cgroup_subsys *ss, struct cgroup *parent,
- {
- 	int subsys_id, i, depth = 0;
- 	struct cgroup_subsys_state *parent_css, *child_css;
--	struct css_id *child_id, *parent_id = NULL;
-+	struct css_id *child_id, *parent_id;
- 
- 	subsys_id = ss->subsys_id;
- 	parent_css = parent->subsys[subsys_id];
- 	child_css = child->subsys[subsys_id];
--	depth = css_depth(parent_css) + 1;
- 	parent_id = parent_css->id;
-+	depth = parent_id->depth;
- 
- 	child_id = get_new_cssid(ss, depth);
- 	if (IS_ERR(child_id))
+								Honza
 -- 
-1.7.0
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
