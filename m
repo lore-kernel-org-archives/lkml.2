@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011Ab0ECRUG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 13:20:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43899 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754913Ab0ECRUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 13:20:00 -0400
-Date: Mon, 3 May 2010 10:17:26 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-cc: akpm@linux-foundation.org, Mel Gorman <mel@csn.ul.ie>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 1/2] mm: Take all anon_vma locks in anon_vma_lock
-In-Reply-To: <4BDEFF9E.6080508@redhat.com>
-Message-ID: <alpine.LFD.2.00.1005030958140.5478@i5.linux-foundation.org>
-References: <20100503121743.653e5ecc@annuminas.surriel.com> <20100503121847.7997d280@annuminas.surriel.com> <alpine.LFD.2.00.1005030940490.5478@i5.linux-foundation.org> <4BDEFF9E.6080508@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755182Ab0ECRYO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 13:24:14 -0400
+Received: from kroah.org ([198.145.64.141]:45512 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753843Ab0ECRYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 13:24:11 -0400
+Date: Mon, 3 May 2010 10:13:48 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Heikki Krogerus <ext-heikki.krogerus@nokia.com>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the final tree (usb
+ tree related)
+Message-ID: <20100503171348.GB2533@kroah.com>
+References: <20100430160555.d58bd9aa.sfr@canb.auug.org.au>
+ <20100430062224.GB27724@esdhcp042221.research.nokia.com>
+ <20100503145715.def1a8f1.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100503145715.def1a8f1.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Mon, 3 May 2010, Rik van Riel wrote:
+On Mon, May 03, 2010 at 02:57:15PM +1000, Stephen Rothwell wrote:
+> Hi Guys,
+> 
+> On Fri, 30 Apr 2010 09:22:24 +0300 Heikki Krogerus <ext-heikki.krogerus@nokia.com> wrote:
+> >
+> > On Fri, Apr 30, 2010 at 08:05:55AM +0200, ext Stephen Rothwell wrote:
+> > > 
+> > > After merging the final tree, today's linux-next build (powerpc
+> > > allyesconfig) failed like this:
+> > > 
+> > > drivers/usb/otg/twl4030-usb.c: In function 'twl4030_usb_set_bits':
+> > > drivers/usb/otg/twl4030-usb.c:238: error: implicit declaration of function 'ULPI_SET'
+> > > drivers/usb/otg/twl4030-usb.c: In function 'twl4030_usb_clear_bits':
+> > > drivers/usb/otg/twl4030-usb.c:244: error: implicit declaration of function 'ULPI_CLR'
+> > > drivers/usb/otg/twl4030-usb.c: In function 'twl4030_usb_set_mode':
+> > > drivers/usb/otg/twl4030-usb.c:303: error: 'ULPI_IFC_CTRL' undeclared (first use in this function)
+> > > drivers/usb/otg/twl4030-usb.c:304: error: 'ULPI_IFC_CTRL_CARKITMODE' undeclared (first use in this function)
+> > > drivers/usb/otg/twl4030-usb.c:306: error: 'ULPI_FUNC_CTRL' undeclared (first use in this function)
+> > > drivers/usb/otg/twl4030-usb.c:307: error: 'ULPI_FUNC_CTRL_XCVRSEL_MASK' undeclared (first use in this function)
+> > > drivers/usb/otg/twl4030-usb.c:308: error: 'ULPI_FUNC_CTRL_OPMODE_MASK' undeclared (first use in this function)
+> > > 
+> > > Caused by commit 57983872ff14cba23d6404a40c89e52063c94854 ("usb: otg:
+> > > twl4030: use the global ULPI register definitions").  I have reverted
+> > > that commit for today.
 > > 
-> > Pretty much same comments as for the other one. Why are we pandering to
-> > the case that is/should be unusual?
+> > Already informed Greg that he needs the patch for the global ulpi
+> > registers before this one.
 > 
-> In this case, because the fix from the migration side is
-> difficult and fragile, while fixing things from the mmap
-> side is straightforward.
-> 
-> I believe the overhead of patch 1/2 should be minimal
-> as well, because the locks we take are the _depth_ of
-> the process tree (truncated every exec), not the width.
+> Still got this one today.
 
-Quite frankly, I think it's totally insane to walk a list of all 
-anon_vma's that are associated with one vma, just to lock them all.
+Yes, I need the patch from Heikki...  {hint...}
 
-Tell me why you just don't put the lock in the vma itself then? Walking a 
-list in order to lock multiple things is something we should _never_ do 
-under any normal circumstances.
+thanks,
 
-I can see why you'd want to do this in theory (the "other side" of the 
-locker might have to lock just the _one_ anon_vma), but if your argument 
-is that the list is usually not very deep ("one"?), then there is no 
-advantage, because putting the lock in the anon_vma vs the vma will get 
-the same kind of contention.
-
-And if the list _is_ deep, then walking the list to lock them all is a 
-crime against humanity.
-
-So explain.
-
-> As for patch 2/2, Mel has an alternative approach for that:
-> 
-> http://lkml.org/lkml/2010/4/30/198
-> 
-> Does Mel's patch seem more reasonable to you?
-
-Well, I certainly think that seems to be a lot more targeted, and not add 
-new allocations in a path that I think is already one of the more 
-expensive ones. Yes, you can argue that execve() is already so expensive 
-that a few more allocations don't matter, and you migth be right, but 
-that's how things get to be too expensive to begin with.
-
-That said, I do still wonder why we shouldn't just say that the person who 
-wants the safety is the one that should do the extra work.
-
-In particular, why don't we just make rmap_walk() be the one that locks 
-all the anon_vma's? Instead of locking just one? THAT is the function that 
-cares. THAT is the function that should do proper locking and not expect 
-others to do extra unnecessary locking.
-
-So again, my gut feel is that if the lock just were in the vma itself, 
-then the "normal" users would have just one natural lock, while the 
-special case users (rmap_walk_anon) would have to lock each vma it 
-traverses. That would seem to be the more natural way to lock things.
-
-I dunno. There may well be reasons why it doesn't work, like just the 
-allocation lifetime rules for vma's vs anon_vma's. I'm not claiming I've 
-thought this true. I just get a feeling of "that isn't right" when I look 
-at the original 2/2 patch, and while Mel's patch certainly looks better, 
-it seems to be a bit ad-hoc and hacky to me.
-
-Btw, Mel's patch doesn't really match the description of 2/2. 2/2 says 
-that all pages must always be findable in rmap. Mel's patch seems to 
-explicitly say "we want to ignore that thing that is busy for execve". Are 
-we just avoiding a BUG_ON()? Is perhaps the BUG_ON() buggy?
-
-		Linus
+greg k-h
