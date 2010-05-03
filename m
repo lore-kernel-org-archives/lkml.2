@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759883Ab0ECXNV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 19:13:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46333 "EHLO mx1.redhat.com"
+	id S932137Ab0ECXNZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 19:13:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7853 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759837Ab0ECXNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 19:13:18 -0400
+	id S1759879Ab0ECXNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 19:13:21 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
        Christoph Hellwig <hch@infradead.org>, Jan Blunck <jblunck@suse.de>,
-       Valerie Aurora <vaurora@redhat.com>, autofs@linux.kernel.org,
-       Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 04/39] autofs4: Save autofs trigger's vfsmount in super block info
-Date: Mon,  3 May 2010 16:12:03 -0700
-Message-Id: <1272928358-20854-5-git-send-email-vaurora@redhat.com>
+       David Woodhouse <dwmw2@infradead.org>,
+       Valerie Aurora <vaurora@redhat.com>, linux-nfs@vger.kernel.org,
+       "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
+Subject: [PATCH 05/39] whiteout/NFSD: Don't return information about whiteouts to userspace
+Date: Mon,  3 May 2010 16:12:04 -0700
+Message-Id: <1272928358-20854-6-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 References: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,117 +24,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Blunck <jblunck@suse.de>
 
-XXX - This is broken and included just to make union mounts work.  See
-discussion at:
-
-http://kerneltrap.org/mailarchive/linux-fsdevel/2010/1/15/6708053/thread
-
-Original commit message:
-
-This is a bugfix/replacement for commit
-051d381259eb57d6074d02a6ba6e90e744f1a29f:
-
-    During a path walk if an autofs trigger is mounted on a dentry,
-    when the follow_link method is called, the nameidata struct
-    contains the vfsmount and mountpoint dentry of the parent mount
-    while the dentry that is passed in is the root of the autofs
-    trigger mount.  I believe it is impossible to get the vfsmount of
-    the trigger mount, within the follow_link method, when only the
-    parent vfsmount and the root dentry of the trigger mount are
-    known.
-
-The solution in this commit was to replace the path embedded in the
-parent's nameidata with the path of the link itself in
-__do_follow_link().  This is a relatively harmless misuse of the
-field, but union mounts ran into a bug during follow_link() caused by
-the nameidata containing the wrong path (we count on it being what it
-is all other places - the path of the parent).
-
-A cleaner and easier to understand solution is to save the necessary
-vfsmount in the autofs superblock info when it is mounted.  Then we
-can easily update the vfsmount in autofs4_follow_link().
+Userspace isn't ready for handling another file type, so silently drop
+whiteout directory entries before they leave the kernel.
 
 Signed-off-by: Jan Blunck <jblunck@suse.de>
+Signed-off-by: David Woodhouse <dwmw2@infradead.org>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Acked-by: Ian Kent <raven@themaw.net>
-Cc: autofs@linux.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-nfs@vger.kernel.org
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Neil Brown <neilb@suse.de>
 ---
- fs/autofs4/autofs_i.h |    1 +
- fs/autofs4/init.c     |   11 ++++++++++-
- fs/autofs4/root.c     |    6 ++++++
- fs/namei.c            |    7 ++-----
- 4 files changed, 19 insertions(+), 6 deletions(-)
+ fs/compat.c       |    9 +++++++++
+ fs/nfsd/nfs3xdr.c |    5 +++++
+ fs/nfsd/nfs4xdr.c |    5 +++++
+ fs/nfsd/nfsxdr.c  |    4 ++++
+ fs/readdir.c      |    9 +++++++++
+ 5 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-index 3d283ab..de3af64 100644
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -133,6 +133,7 @@ struct autofs_sb_info {
- 	int reghost_enabled;
- 	int needs_reghost;
- 	struct super_block *sb;
-+	struct vfsmount *mnt;
- 	struct mutex wq_mutex;
- 	spinlock_t fs_lock;
- 	struct autofs_wait_queue *queues; /* Wait queue pointer */
-diff --git a/fs/autofs4/init.c b/fs/autofs4/init.c
-index 9722e4b..5e0dcd7 100644
---- a/fs/autofs4/init.c
-+++ b/fs/autofs4/init.c
-@@ -17,7 +17,16 @@
- static int autofs_get_sb(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
- {
--	return get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
-+	struct autofs_sb_info *sbi;
-+	int ret;
-+
-+	ret = get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
-+	if (ret)
-+		return ret;
-+
-+	sbi = autofs4_sbi(mnt->mnt_sb);
-+	sbi->mnt = mnt;
-+	return 0;
- }
+diff --git a/fs/compat.c b/fs/compat.c
+index 4b6ed03..adec661 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -839,6 +839,9 @@ static int compat_fillonedir(void *__buf, const char *name, int namlen,
+ 	struct compat_old_linux_dirent __user *dirent;
+ 	compat_ulong_t d_ino;
  
- static struct file_system_type autofs_fs_type = {
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 109a6c6..54d2857 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -220,6 +220,12 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
- 	DPRINTK("dentry=%p %.*s oz_mode=%d nd->flags=%d",
- 		dentry, dentry->d_name.len, dentry->d_name.name, oz_mode,
- 		nd->flags);
++	if (d_type == DT_WHT)
++		return 0;
 +
-+	dput(nd->path.dentry);
-+	mntput(nd->path.mnt);
-+	nd->path.mnt = mntget(sbi->mnt);
-+	nd->path.dentry = dget(dentry);
-+
- 	/*
- 	 * For an expire of a covered direct or offset mount we need
- 	 * to break out of follow_down() at the autofs mount trigger
-diff --git a/fs/namei.c b/fs/namei.c
-index 219da2b..304aa05 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -538,11 +538,8 @@ __do_follow_link(struct path *path, struct nameidata *nd, void **p)
- 	touch_atime(path->mnt, dentry);
- 	nd_set_link(nd, NULL);
+ 	if (buf->result)
+ 		return -EINVAL;
+ 	d_ino = ino;
+@@ -910,6 +913,9 @@ static int compat_filldir(void *__buf, const char *name, int namlen,
+ 	compat_ulong_t d_ino;
+ 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(compat_long_t));
  
--	if (path->mnt != nd->path.mnt) {
--		path_to_nameidata(path, nd);
--		dget(dentry);
--	}
--	mntget(path->mnt);
-+	if (path->mnt == nd->path.mnt)
-+		mntget(nd->path.mnt);
- 	nd->last_type = LAST_BIND;
- 	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
- 	error = PTR_ERR(*p);
++	if (d_type == DT_WHT)
++		return 0;
++
+ 	buf->error = -EINVAL;	/* only used if we fail.. */
+ 	if (reclen > buf->count)
+ 		return -EINVAL;
+@@ -999,6 +1005,9 @@ static int compat_filldir64(void * __buf, const char * name, int namlen, loff_t
+ 	int reclen = ALIGN(jj + namlen + 1, sizeof(u64));
+ 	u64 off;
+ 
++	if (d_type == DT_WHT)
++		return 0;
++
+ 	buf->error = -EINVAL;	/* only used if we fail.. */
+ 	if (reclen > buf->count)
+ 		return -EINVAL;
+diff --git a/fs/nfsd/nfs3xdr.c b/fs/nfsd/nfs3xdr.c
+index 2a533a0..9b96f5a 100644
+--- a/fs/nfsd/nfs3xdr.c
++++ b/fs/nfsd/nfs3xdr.c
+@@ -885,6 +885,11 @@ encode_entry(struct readdir_cd *ccd, const char *name, int namlen,
+ 	int		elen;		/* estimated entry length in words */
+ 	int		num_entry_words = 0;	/* actual number of words */
+ 
++	if (d_type == DT_WHT) {
++		cd->common.err = nfs_ok;
++		return 0;
++	}
++
+ 	if (cd->offset) {
+ 		u64 offset64 = offset;
+ 
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 34ccf81..2ddf144 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -2269,6 +2269,11 @@ nfsd4_encode_dirent(void *ccdv, const char *name, int namlen,
+ 		return 0;
+ 	}
+ 
++	if (d_type == DT_WHT) {
++		cd->common.err = nfs_ok;
++		return 0;
++	}
++
+ 	if (cd->offset)
+ 		xdr_encode_hyper(cd->offset, (u64) offset);
+ 
+diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
+index 4ce005d..0e57d4b 100644
+--- a/fs/nfsd/nfsxdr.c
++++ b/fs/nfsd/nfsxdr.c
+@@ -503,6 +503,10 @@ nfssvc_encode_entry(void *ccdv, const char *name,
+ 			namlen, name, offset, ino);
+ 	 */
+ 
++	if (d_type == DT_WHT) {
++		cd->common.err = nfs_ok;
++		return 0;
++	}
+ 	if (offset > ~((u32) 0)) {
+ 		cd->common.err = nfserr_fbig;
+ 		return -EINVAL;
+diff --git a/fs/readdir.c b/fs/readdir.c
+index 7723401..3a48491 100644
+--- a/fs/readdir.c
++++ b/fs/readdir.c
+@@ -77,6 +77,9 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
+ 	struct old_linux_dirent __user * dirent;
+ 	unsigned long d_ino;
+ 
++	if (d_type == DT_WHT)
++		return 0;
++
+ 	if (buf->result)
+ 		return -EINVAL;
+ 	d_ino = ino;
+@@ -154,6 +157,9 @@ static int filldir(void * __buf, const char * name, int namlen, loff_t offset,
+ 	unsigned long d_ino;
+ 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(long));
+ 
++	if (d_type == DT_WHT)
++		return 0;
++
+ 	buf->error = -EINVAL;	/* only used if we fail.. */
+ 	if (reclen > buf->count)
+ 		return -EINVAL;
+@@ -239,6 +245,9 @@ static int filldir64(void * __buf, const char * name, int namlen, loff_t offset,
+ 	struct getdents_callback64 * buf = (struct getdents_callback64 *) __buf;
+ 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 1, sizeof(u64));
+ 
++	if (d_type == DT_WHT)
++		return 0;
++
+ 	buf->error = -EINVAL;	/* only used if we fail.. */
+ 	if (reclen > buf->count)
+ 		return -EINVAL;
 -- 
 1.6.3.3
 
