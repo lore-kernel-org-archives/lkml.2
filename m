@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab0EDHem (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 03:34:42 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:45373 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756631Ab0EDHek (ORCPT
+	id S1756727Ab0EDHkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 03:40:53 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:50123 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab0EDHkw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 03:34:40 -0400
-Message-ID: <4BDFCDFD.60402@euromail.se>
-Date: Tue, 04 May 2010 09:34:21 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] input: mt: Simplify event bypass logic
-References: <1272721779-2124-1-git-send-email-rydberg@euromail.se> <20100504064905.GB17482@core.coreip.homeip.net>
-In-Reply-To: <20100504064905.GB17482@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1O9CeC-0005Jz-5R.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1O9CeC-0005Jz-5R ba16d81629fd1bfeed5d6cc29f02f79a
+	Tue, 4 May 2010 03:40:52 -0400
+Subject: Re: [PATCH 3/3] alpha: Implement HW performance events on the EV67
+ and later CPUs.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Richard Henderson <rth@twiddle.net>,
+       Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+       Matt Turner <mattst88@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-alpha@vger.kernel.org
+In-Reply-To: <8e86ca502b675b3730bd58be391e0239e87e176d.1272668361.git.mcree@orcon.net.nz>
+References: <cover.1272668360.git.mcree@orcon.net.nz>
+	 <8e86ca502b675b3730bd58be391e0239e87e176d.1272668361.git.mcree@orcon.net.nz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 04 May 2010 09:40:08 +0200
+Message-ID: <1272958808.5605.126.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote:
-> On Sat, May 01, 2010 at 03:49:39PM +0200, Henrik Rydberg wrote:
->> The input bypass mechanism is only used by the MT events. Since all
->> MT events use bypassing by construction, the current list is a mere
->> duplication of input.h. This patch replaces the bypass list by a
->> simple range test.
->>
-> 
-> Henrik,
-> 
-> I disagree with the patch. I can not guarantee that we will be able to
-> maintain continuous range of ABS_MT_* events and thus current scheme is
-> more flexible.
-> 
-> Thanks.
-> 
+On Sat, 2010-05-01 at 11:55 +1200, Michael Cree wrote:
+> +/* I wonder what this is for ??? */
+> +void set_perf_event_pending(void)
+> +{
+> +} 
 
-Yes, I was hesitant myself. I would rather keep all [ABS_MAX + 1 - ABS_MT_MIN]
-in the slot. Introduces a memory slack but is more flexible.
+If the PMU Interrupt comes in as an NMI we cannot take locks and such
+from its handler. So what we do is queue that work to be ran later. The
+kernel has a fallback to run this stuff from the timer hardirq, but if
+the PMI is IRQ context (like ARM) you can simply call
+perf_event_do_pending() at its tail.
 
-Henrik
+Alternatively you can self-IPI like x86 does and run
+perf_event_do_pending() from there.
+
+
