@@ -1,286 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab0EDFjD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 01:39:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37315 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858Ab0EDFi7 convert rfc822-to-8bit (ORCPT
+	id S1754397Ab0EDFns (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 01:43:48 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:60090 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753871Ab0EDFnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 01:38:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,324,1270450800"; 
-   d="scan'208";a="514820661"
-From: "Du, Alek" <alek.du@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-       Ondrej Zary <linux@rainbow-software.org>
-CC: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       USB list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>
-Date: Tue, 4 May 2010 13:37:47 +0800
-Subject: RE: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
- (WKOC_E) and disconnect (WKDISC_E)
-Thread-Topic: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
- (WKOC_E) and disconnect (WKDISC_E)
-Thread-Index: Acrnw8fpVd/dzYXLRXm3aBN/xDZ5lwDh59Fw
-Message-ID: <1865303E0DED764181A9D882DEF65FB6178CB72CDD@shsmsx502.ccr.corp.intel.com>
-References: <Pine.LNX.4.44L0.1004291041300.1697-100000@iolanthe.rowland.org>
- <Pine.LNX.4.44L0.1004291338090.1339-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1004291338090.1339-100000@iolanthe.rowland.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 May 2010 01:43:46 -0400
+Date: Tue, 4 May 2010 07:43:32 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Thomas Renninger <trenn@suse.de>, Willy Tarreau <w@1wt.eu>,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
+       cpufreq@vger.kernel.org, riel@redhat.com
+Subject: Re: [PATCH 8/7] cpufreq: make the iowait-is-busy-time a sysfs
+ tunable
+Message-ID: <20100504054332.GA3130@elf.ucw.cz>
+References: <20100418115949.7b743898@infradead.org>
+ <201004231050.10667.trenn@suse.de>
+ <20100423090819.4273b327@infradead.org>
+ <201004271339.34711.trenn@suse.de>
+ <20100503204818.7b801f43@infradead.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100503204818.7b801f43@infradead.org>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Alan Stern [mailto:stern@rowland.harvard.edu]
->Sent: Friday, April 30, 2010 1:46 AM
->To: Ondrej Zary; Du, Alek
->Cc: Linux-pm mailing list; USB list; Kernel development list
->Subject: Re: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
->(WKOC_E) and disconnect (WKDISC_E)
->
->On Thu, 29 Apr 2010, Alan Stern wrote:
->
->> > > > > You said earlier that the host controller was disabled for remote
->> > > > > wakeup ("/sys/devices/pci0000:00/0000:00:1d.7/power/wakeup is
->disabled
->> > > > > by default").  So even though the root hub might issue a wakeup
->> > > > > request, the controller hardware should not forward that request to
->the
->> > > > > PCI bus and it should not cause the system to wake up.
->> > > >
->> > > > Maybe it should not - but it wakes up this board and probably also
->> > > > P4P800, P4P800-E and P4C800-E at least:
->> > > > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/75497
->> > >
->> > > Okay, evidently the hardware or firmware on these boards is buggy.
->> > > Other systems do not have the same problem, as far as I know.
->>
->> I take this back.  The same thing happens on my machine (Intel ICH5
->> chipset).  I'd guess there is a bug in the PCI or ACPI subsystem, but
->> more testing is needed before I can be sure.  Somehow the PCI or
->> platform wakeup mechanism gets activated even when it is supposed to be
->> disabled.
->
->This patch fixes the problem on my system.  Does it work for you?
->I still think that disabling wakeup at the PCI or platform level should
->override the port wakeup flags, but apparently it doesn't.
->
->Alek, can you confirm that the changes in this patch are okay for the
->Moorestown EHCI controller?  I had to guess at how to handle the
->HOSTPCx register settings.
+On Mon 2010-05-03 20:48:18, Arjan van de Ven wrote:
+> On Tue, 27 Apr 2010 13:39:34 +0200
+> Thomas Renninger <trenn@suse.de> wrote:
+> 
+> > On Friday 23 April 2010 06:08:19 pm Arjan van de Ven wrote:
+> > > On Fri, 23 Apr 2010 10:50:10 +0200
+> > > Thomas Renninger <trenn@suse.de> wrote:
+> > >  Especially on battery, users will appreciate some minutes
+> > >
+> > > > of more battery lifetime and do not care about some ms of IO
+> > > > latencies.
+> > >
+> > > the assumption that power doesn't matter on AC is a huge fiction
+> > > that any data center operator would love to get out of everyones
+> > > head as quickly as possible.
+> > 
+> > Have I said power doesn't matter on AC?
+> > Do you agree that a datacenter has different performance vs power 
+> > tradeoff demands as a battery driven mobile device?
+> > 
+> > Back to the topic:
+> > As you did not answer on my (several) sysfs knob request(s), I expect
+> > you agree with it and will add one.
+> > 
+> 
+> yup it makes sense to have a sysfs knob with a sane default value
+> 
+> From: Arjan van de Ven <arjan@linux.intel.com>
+> Subject: [PATCH] cpufreq: make the iowait-is-busy-time a sysfs tunable
+> 
+> Pavel Machek pointed out that not all CPUs have an efficient idle
+> at high frequency. Specifically, older Intel and various AMD cpus
+> would get a higher power usage when copying files from USB.
+> 
+> Mike Chan pointed out that the same is true for various ARM chips
+> as well.
+> 
+> Thomas Renninger suggested to make this a sysfs tunable with a
+> reasonable default.
+> 
+> This patch adds a sysfs tunable for the new behavior, and uses
+> a very simple function to determine a reasonable default, depending
+> on the CPU vendor/type.
+> 
+> Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
 
-Alan,
+ACK.
 
-I will test this patch when back to office, probably at 4 May.
+> ---
+>  drivers/cpufreq/cpufreq_ondemand.c |   46 +++++++++++++++++++++++++++++++++++-
+>  1 files changed, 45 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+> index ed472f8..4877e8f 100644
+> --- a/drivers/cpufreq/cpufreq_ondemand.c
+> +++ b/drivers/cpufreq/cpufreq_ondemand.c
+> @@ -109,6 +109,7 @@ static struct dbs_tuners {
+>  	unsigned int down_differential;
+>  	unsigned int ignore_nice;
+>  	unsigned int powersave_bias;
+> +	unsigned int io_is_busy;
+>  } dbs_tuners_ins = {
+>  	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
+>  	.down_differential = DEF_FREQUENCY_DOWN_DIFFERENTIAL,
+> @@ -260,6 +261,7 @@ static ssize_t show_##file_name						\
+>  	return sprintf(buf, "%u\n", dbs_tuners_ins.object);		\
+>  }
+>  show_one(sampling_rate, sampling_rate);
+> +show_one(io_is_busy, io_is_busy);
+>  show_one(up_threshold, up_threshold);
+>  show_one(ignore_nice_load, ignore_nice);
+>  show_one(powersave_bias, powersave_bias);
+> @@ -310,6 +312,22 @@ static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
+>  	return count;
+>  }
+>  
+> +static ssize_t store_io_is_busy(struct kobject *a, struct attribute *b,
+> +				   const char *buf, size_t count)
+> +{
+> +	unsigned int input;
+> +	int ret;
+> +	ret = sscanf(buf, "%u", &input);
+> +	if (ret != 1)
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&dbs_mutex);
+> +	dbs_tuners_ins.io_is_busy = !!input;
+> +	mutex_unlock(&dbs_mutex);
+> +
+> +	return count;
+> +}
+> +
+>  static ssize_t store_up_threshold(struct kobject *a, struct attribute *b,
+>  				  const char *buf, size_t count)
+>  {
+> @@ -392,6 +410,7 @@ static struct global_attr _name = \
+>  __ATTR(_name, 0644, show_##_name, store_##_name)
+>  
+>  define_one_rw(sampling_rate);
+> +define_one_rw(io_is_busy);
+>  define_one_rw(up_threshold);
+>  define_one_rw(ignore_nice_load);
+>  define_one_rw(powersave_bias);
+> @@ -403,6 +422,7 @@ static struct attribute *dbs_attributes[] = {
+>  	&up_threshold.attr,
+>  	&ignore_nice_load.attr,
+>  	&powersave_bias.attr,
+> +	&io_is_busy.attr,
+>  	NULL
+>  };
+>  
+> @@ -527,7 +547,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
+>  		 * from the cpu idle time.
+>  		 */
+>  
+> -		if (idle_time >= iowait_time)
+> +		if (dbs_tuners_ins.io_is_busy && idle_time >= iowait_time)
+>  			idle_time -= iowait_time;
+>  
+>  		if (unlikely(!wall_time || wall_time < idle_time))
+> @@ -643,6 +663,29 @@ static inline void dbs_timer_exit(struct cpu_dbs_info_s *dbs_info)
+>  	cancel_delayed_work_sync(&dbs_info->work);
+>  }
+>  
+> +/*
+> + * Not all CPUs want IO time to be accounted as busy; this depends on how
+> + * efficient idling at a higher frequency/voltage is.
+> + * Pavel Machek says this is not so for various generations of AMD and old
+> + * Intel systems.
+> + * Mike Chan (android.com) says this is also not true for ARM.
+> + * Because of this, whitelist specific known (series) of CPUs by default, and
+> + * leave all others up to the user.
+> + */
+> +static int should_io_be_busy(void)
+> +{
+> +#if defined(CONFIG_X86)
+> +	/*
+> +	 * For Intel, Core 2 (model 15) and later have an efficient idle.
+> +	 */
+> +	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
+> +	    boot_cpu_data.x86 == 6 &&
+> +	    boot_cpu_data.x86_model >= 15)
+> +		return 1;
+> +#endif
+> +	return 0;
+> +}
+> +
+>  static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  				   unsigned int event)
+>  {
+> @@ -705,6 +748,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  			dbs_tuners_ins.sampling_rate =
+>  				max(min_sampling_rate,
+>  				    latency * LATENCY_MULTIPLIER);
+> +			dbs_tuners_ins.io_is_busy = should_io_be_busy();
+>  		}
+>  		mutex_unlock(&dbs_mutex);
+>  
 
-Thanks,
-Alek
-
->
->Alan Stern
->
->
->
->Index: usb-2.6/drivers/usb/host/ehci-hub.c
->===================================================================
->--- usb-2.6.orig/drivers/usb/host/ehci-hub.c
->+++ usb-2.6/drivers/usb/host/ehci-hub.c
->@@ -106,6 +106,47 @@ static void ehci_handover_companion_port
-> 	ehci->owned_ports = 0;
-> }
->
->+static void ehci_set_wakeup_flags(struct ehci_hcd *ehci)
->+{
->+	int	port;
->+
->+	/* enable remote wakeup on all ports, if allowed */
->+	port = HCS_N_PORTS(ehci->hcs_params);
->+	while (port--) {
->+		u32 __iomem	*reg = &ehci->regs->port_status[port];
->+		u32		t1 = ehci_readl(ehci, reg) & ~PORT_RWC_BITS;
->+		u32		t2 = t1 & ~PORT_WAKE_BITS;
->+
->+		/* only enable appropriate wake bits, otherwise the
->+		 * hardware can not go phy low power mode. If a race
->+		 * condition happens here(connection change during bits
->+		 * set), the port change detection will finally fix it.
->+		 */
->+		if (device_may_wakeup(ehci_to_hcd(ehci)->self.controller)) {
->+			if (t1 & PORT_CONNECT)
->+				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
->+			else
->+				t2 |= PORT_WKOC_E | PORT_WKCONN_E;
->+			ehci_vdbg(ehci, "port %d, %08x -> %08x\n",
->+					port + 1, t1, t2);
->+		}
->+		ehci_writel(ehci, t2, reg);
->+	}
->+}
->+
->+static void ehci_clear_wakeup_flags(struct ehci_hcd *ehci)
->+{
->+	int	port;
->+
->+	port = HCS_N_PORTS(ehci->hcs_params);
->+	while (port--) {
->+		u32 __iomem	*reg = &ehci->regs->port_status[port];
->+		u32		t1 = ehci_readl(ehci, reg) & ~PORT_RWC_BITS;
->+
->+		ehci_writel(ehci, t1 & ~PORT_WAKE_BITS, reg);
->+	}
->+}
->+
-> static int ehci_bus_suspend (struct usb_hcd *hcd)
-> {
-> 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
->@@ -170,26 +211,6 @@ static int ehci_bus_suspend (struct usb_
-> 		else if ((t1 & PORT_PE) && !(t1 & PORT_SUSPEND)) {
-> 			t2 |= PORT_SUSPEND;
-> 			set_bit(port, &ehci->bus_suspended);
->-		}
->-
->-		/* enable remote wakeup on all ports */
->-		if (hcd->self.root_hub->do_remote_wakeup) {
->-			/* only enable appropriate wake bits, otherwise the
->-			 * hardware can not go phy low power mode. If a race
->-			 * condition happens here(connection change during bits
->-			 * set), the port change detection will finally fix it.
->-			 */
->-			if (t1 & PORT_CONNECT) {
->-				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
->-				t2 &= ~PORT_WKCONN_E;
->-			} else {
->-				t2 |= PORT_WKOC_E | PORT_WKCONN_E;
->-				t2 &= ~PORT_WKDISC_E;
->-			}
->-		} else
->-			t2 &= ~PORT_WAKE_BITS;
->-
->-		if (t1 != t2) {
-> 			ehci_vdbg (ehci, "port %d, %08x -> %08x\n",
-> 				port + 1, t1, t2);
-> 			ehci_writel(ehci, t2, reg);
->@@ -907,12 +928,7 @@ static int ehci_hub_control (
-> 					|| (temp & PORT_RESET) != 0)
-> 				goto error;
->
->-			/* After above check the port must be connected.
->-			 * Set appropriate bit thus could put phy into low power
->-			 * mode if we have hostpc feature
->-			 */
->-			temp &= ~PORT_WKCONN_E;
->-			temp |= PORT_WKDISC_E | PORT_WKOC_E;
->+			temp &= ~PORT_WAKE_BITS;
-> 			ehci_writel(ehci, temp | PORT_SUSPEND, status_reg);
-> 			if (hostpc_reg) {
-> 				spin_unlock_irqrestore(&ehci->lock, flags);
->Index: usb-2.6/drivers/usb/host/ehci-pci.c
->===================================================================
->--- usb-2.6.orig/drivers/usb/host/ehci-pci.c
->+++ usb-2.6/drivers/usb/host/ehci-pci.c
->@@ -284,23 +284,15 @@ static int ehci_pci_suspend(struct usb_h
-> 		msleep(10);
->
-> 	/* Root hub was already suspended. Disable irq emission and
->-	 * mark HW unaccessible, bail out if RH has been resumed. Use
->-	 * the spinlock to properly synchronize with possible pending
->-	 * RH suspend or resume activity.
->-	 *
->-	 * This is still racy as hcd->state is manipulated outside of
->-	 * any locks =P But that will be a different fix.
->+	 * mark HW unaccessible.  The PM and USB cores make sure that
->+	 * the root hub is either suspended or stopped.
-> 	 */
-> 	spin_lock_irqsave (&ehci->lock, flags);
->-	if (hcd->state != HC_STATE_SUSPENDED) {
->-		rc = -EINVAL;
->-		goto bail;
->-	}
->+	ehci_set_wakeup_flags(ehci);
-> 	ehci_writel(ehci, 0, &ehci->regs->intr_enable);
-> 	(void)ehci_readl(ehci, &ehci->regs->intr_enable);
->
-> 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
->- bail:
-> 	spin_unlock_irqrestore (&ehci->lock, flags);
->
-> 	// could save FLADJ in case of Vaux power loss
->@@ -330,6 +322,7 @@ static int ehci_pci_resume(struct usb_hc
-> 				!hibernated) {
-> 		int	mask = INTR_MASK;
->
->+		ehci_clear_wakeup_flags(ehci);
-> 		if (!hcd->self.root_hub->do_remote_wakeup)
-> 			mask &= ~STS_PCD;
-> 		ehci_writel(ehci, mask, &ehci->regs->intr_enable);
->Index: usb-2.6/drivers/usb/host/ehci-au1xxx.c
->===================================================================
->--- usb-2.6.orig/drivers/usb/host/ehci-au1xxx.c
->+++ usb-2.6/drivers/usb/host/ehci-au1xxx.c
->@@ -215,26 +215,17 @@ static int ehci_hcd_au1xxx_drv_suspend(s
-> 		msleep(10);
->
-> 	/* Root hub was already suspended. Disable irq emission and
->-	 * mark HW unaccessible, bail out if RH has been resumed. Use
->-	 * the spinlock to properly synchronize with possible pending
->-	 * RH suspend or resume activity.
->-	 *
->-	 * This is still racy as hcd->state is manipulated outside of
->-	 * any locks =P But that will be a different fix.
->+	 * mark HW unaccessible.  The PM and USB cores make sure that
->+	 * the root hub is either suspended or stopped.
-> 	 */
-> 	spin_lock_irqsave(&ehci->lock, flags);
->-	if (hcd->state != HC_STATE_SUSPENDED) {
->-		rc = -EINVAL;
->-		goto bail;
->-	}
->+	ehci_set_wakeup_flags(ehci);
-> 	ehci_writel(ehci, 0, &ehci->regs->intr_enable);
-> 	(void)ehci_readl(ehci, &ehci->regs->intr_enable);
->
-> 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
->
-> 	au1xxx_stop_ehc();
->-
->-bail:
-> 	spin_unlock_irqrestore(&ehci->lock, flags);
->
-> 	// could save FLADJ in case of Vaux power loss
->@@ -264,6 +255,7 @@ static int ehci_hcd_au1xxx_drv_resume(st
-> 	if (ehci_readl(ehci, &ehci->regs->configured_flag) == FLAG_CF) {
-> 		int	mask = INTR_MASK;
->
->+		ehci_clear_wakeup_flags(ehci);
-> 		if (!hcd->self.root_hub->do_remote_wakeup)
-> 			mask &= ~STS_PCD;
-> 		ehci_writel(ehci, mask, &ehci->regs->intr_enable);
->Index: usb-2.6/drivers/usb/host/ehci-fsl.c
->===================================================================
->--- usb-2.6.orig/drivers/usb/host/ehci-fsl.c
->+++ usb-2.6/drivers/usb/host/ehci-fsl.c
->@@ -313,6 +313,7 @@ static int ehci_fsl_drv_suspend(struct d
-> 	struct ehci_fsl *ehci_fsl = hcd_to_ehci_fsl(hcd);
-> 	void __iomem *non_ehci = hcd->regs;
->
->+	ehci_set_wakeup_flags(ehci);
-> 	if (!fsl_deep_sleep())
-> 		return 0;
->
->@@ -327,6 +328,7 @@ static int ehci_fsl_drv_resume(struct de
-> 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
-> 	void __iomem *non_ehci = hcd->regs;
->
->+	ehci_clear_wakeup_flags(ehci);
-> 	if (!fsl_deep_sleep())
-> 		return 0;
->
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
