@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757637Ab0EDR3R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 13:29:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51374 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156Ab0EDR3P (ORCPT
+	id S1757977Ab0EDR3b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 13:29:31 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55947 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757858Ab0EDR33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 13:29:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pHMTtUTEyFQkWT1NIL/9txH7+Ror9LHJIHiKuxMEMBBRV11zX2KC+NUXjSja0clKHq
-         B9Q4h8Vl92LgoTzqy9MWHHfJeRMBnjWcTNd4jU1A7CJu+bfOoF1narYUWkccOm+31G3e
-         p06Y5GyxFE2ikbpmBpkupD0sIQh8ZkcmmsNOM=
-Date: Tue, 4 May 2010 10:29:03 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@bitmath.org>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: introduce MT event slots
-Message-ID: <20100504172903.GB29428@core.coreip.homeip.net>
-References: <1270685590-2204-1-git-send-email-rydberg@euromail.se>
- <20100415232523.GA18263@core.coreip.homeip.net>
- <4BDFD356.7070008@bitmath.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BDFD356.7070008@bitmath.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Tue, 4 May 2010 13:29:29 -0400
+Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move
+ perf on top of TP
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, efault@gmx.de, avi@redhat.com, paulus@samba.org,
+       acme@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1272976724-14312-1-git-send-email-tj@kernel.org>
+References: <1272976724-14312-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 May 2010 19:29:25 +0200
+Message-ID: <1272994165.1642.203.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 04, 2010 at 09:57:10AM +0200, Henrik Rydberg wrote:
-> > It would be nice to use abs[ABS_MT_MAX - ABS_MT_TOUCH_MAJOR] to save
-> > some memory.
-> > 
+On Tue, 2010-05-04 at 14:38 +0200, Tejun Heo wrote:
 > 
-> Is it possible this was meant to read "ABS_MAX - ABS_MT_TOUCH_MAJOR"? It would
-> explain my confusion.
+> This patchset does the following two things.
 > 
+> * 0001-0007: Unify the three tracers (tracepoints, perf_events and
+>   preempt/sched notifiers) in scheduler.
 
-By ABS_MT_MAX I meant highest MT event currently defined. No need to go all
-the way to ABS_MAX if there are no MT events defined there.
+Right, so I really don't like the SCHED_EVENT() thing much, esp the 3
+different function postfixes.
 
--- 
-Dmitry
+> * 0008-0012: Move perf hooks in sched on top of tracepoints if TPs are
+>              enabled.
+
+This seems to add a terrible amount of overhead for no particular
+reason.
+
+I know Ingo was pushing to consolidate things, but imho this cure is
+worse than the ailment.
+
+
+
