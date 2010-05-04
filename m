@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933647Ab0EDUGy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:06:54 -0400
-Received: from mail-yw0-f198.google.com ([209.85.211.198]:45397 "EHLO
-	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933571Ab0EDUGw (ORCPT
+	id S933666Ab0EDUOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:14:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52357 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933608Ab0EDUOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 16:06:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=dIUbQEQ5hjrhMtg9SYiNeZtz3Vxz96AqdmRi9nbHOTdTynSTvQ1O59UYYL4BQKopZX
-         RIzPTTsNZ0gbaay6lhtdcP255okMPgEFvuqW2eEJpPXw2laGGIPdrTo5/PP2tAgM9Lot
-         COKQkX+hcPyx73vg+8ZHOoQ3BHkRSDOMRIi4k=
-MIME-Version: 1.0
-In-Reply-To: <1272978272.3702.5.camel@localhost>
-References: <1270891582.4704.102.camel@macbook.infradead.org>
-	 <e970485f0e9f4c9e1cb6e594a45dd11308683197@localhost.localdomain>
-	 <1272354388.26036.4.camel@localhost>
-	 <1272978272.3702.5.camel@localhost>
-Date: Tue, 4 May 2010 13:06:51 -0700
-Message-ID: <i2w347733d51005041306q4b1d9f0bzd2206805c96cbad2@mail.gmail.com>
-Subject: Re: [PATCHv2] MTD: Suppress warnings in inline_map_read()
-From: Kevin Cernekee <cernekee@gmail.com>
-To: dedekind1@gmail.com
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 May 2010 16:14:10 -0400
+Date: Tue, 4 May 2010 13:13:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-aio@kvack.org, linux-kernel@vger.kernel.org, mjt@tls.msk.ru,
+       stable@kernel.org
+Subject: Re: [PATCH 0/2] aio: fix the vectored aio routines
+Message-Id: <20100504131353.adf8c186.akpm@linux-foundation.org>
+In-Reply-To: <1272660540-6567-1-git-send-email-jmoyer@redhat.com>
+References: <1272660540-6567-1-git-send-email-jmoyer@redhat.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 4, 2010 at 6:04 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> /home/dedekind/git/l2-mtd-2.6/include/linux/mtd/map.h: In function 'inline_map_read':
-> /home/dedekind/git/l2-mtd-2.6/include/linux/mtd/map.h:390: error: implicit declaration of function 'BUG'
+On Fri, 30 Apr 2010 16:48:58 -0400
+Jeff Moyer <jmoyer@redhat.com> wrote:
 
-I did test my patch, but it didn't generate any warnings or errors on MIPS...
+> Hi,
+> 
+> It was reported[1] that 32 bit readv and writev AIO operations were
+> not functioning properly.  It turns out that the code to convert the
+> 32bit io vectors to 64 bits was never written.  The results of that
+> can be pretty bad, but in my testing, it mostly ended up in generating
+> EFAULT as we walked off the list of I/O vectors provided.
+> 
+> This patch set fixes the problem in my environment.  Comments, as always,
+> are greatly appreciated.
+> 
+> Cheers,
+> Jeff
+> 
+> [1] http://lkml.org/lkml/2010/3/8/309
+> 
+> [PATCH 1/2] compat: factor out compat_rw_copy_check_uvector from compat_do_readv_writev
+> [PATCH 2/2] aio: fix the compat vectored operations
 
-Could you please apply this patch and retry:
+The patches are large(ish) and we're at -rc6.  I'm inclined to merge
+these into 2.6.35-rc1 with a -stable tag so they get backported into 2.6.34.1
+after a bit of mainline testing, OK?
 
-http://lists.infradead.org/pipermail/linux-mtd/2010-May/029904.html
-
-<linux/bug.h> should probably be added anyway since there are two
-other BUG statements in that file.
-
-Thanks.
