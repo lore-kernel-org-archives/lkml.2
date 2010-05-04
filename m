@@ -1,133 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760032Ab0EDNkV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 09:40:21 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:40726 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759930Ab0EDNkR (ORCPT
+	id S1759983Ab0EDNkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 09:40:18 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:54999 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754191Ab0EDNkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 May 2010 09:40:17 -0400
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Jean Delvare <khali@linux-fr.org>
 Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+       Alex Murray <murray.alex@gmail.com>,
        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 1/2] hwmon: applesmc: Correct sysfs fan error handling
-Date: Tue,  4 May 2010 15:39:02 +0200
-Message-Id: <1272980343-3880-1-git-send-email-rydberg@euromail.se>
+Subject: [PATCH 2/2] hwmon: applesmc: Add temperature sensor labels to sysfs interface (rev2)
+Date: Tue,  4 May 2010 15:39:03 +0200
+Message-Id: <1272980343-3880-2-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1272980343-3880-1-git-send-email-rydberg@euromail.se>
+References: <1272980343-3880-1-git-send-email-rydberg@euromail.se>
 X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1O9ILI-0005yN-61.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1O9ILI-0005yN-61 fca13f93997f5b5f92699f6ed26606b9
+X-Scan-Result: No virus found in message 1O9ILr-0002lZ-Ak.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1O9ILr-0002lZ-Ak 2447daed6d956cfbdc92b4b1d8433f7e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code will not remove the sysfs files for fan numbers three
-and up. Also, upon exit, fans one and two are removed regardless of
-their existence.  This patch cleans up the sysfs error handling for
-the fans.
+From: Alex Murray <murray.alex@gmail.com>
 
+The Apple SMC uses a systematic labeling scheme for the hardware
+temperature sensors. This scheme is currently hidden from
+userland. Since the sensor set, and consequently the numbering,
+differs between models, an extensive database of configurations is
+required for an application such as fan control. This patch adds the
+SMC labels to the hwmon sysfs interface, allowing applications to use
+the sensors more intelligibly.
+
+[rydberg@euromail.se: fixed error handling]
+Signed-off-by: Alex Murray <murray.alex@gmail.com>
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/hwmon/applesmc.c |   61 +++++++++++++++++++---------------------------
- 1 files changed, 25 insertions(+), 36 deletions(-)
+ drivers/hwmon/applesmc.c |  148 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 147 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-index 36a0d62..57c0331 100644
+index 57c0331..b6598aa 100644
 --- a/drivers/hwmon/applesmc.c
 +++ b/drivers/hwmon/applesmc.c
-@@ -209,6 +209,9 @@ static unsigned int applesmc_accelerometer;
- /* Indicates whether this computer has light sensors and keyboard backlight. */
- static unsigned int applesmc_light;
+@@ -660,6 +660,17 @@ out:
+ 		return snprintf(sysfsbuf, PAGE_SIZE, "(%d,%d)\n", left, right);
+ }
  
-+/* The number of fans handled by the driver */
-+static unsigned int fans_handled;
++/* Displays sensor key as label */
++static ssize_t applesmc_show_sensor_label(struct device *dev,
++			struct device_attribute *devattr, char *sysfsbuf)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	const char *key =
++		temperature_sensors_sets[applesmc_temperature_set][attr->index];
 +
- /* Indicates which temperature sensors set to use. */
- static unsigned int applesmc_temperature_set;
- 
-@@ -1530,39 +1533,24 @@ static int __init applesmc_init(void)
- 
- 	/* create fan files */
- 	count = applesmc_get_fan_count();
--	if (count < 0) {
-+	if (count < 0)
- 		printk(KERN_ERR "applesmc: Cannot get the number of fans.\n");
--	} else {
-+	else
- 		printk(KERN_INFO "applesmc: %d fans found.\n", count);
- 
--		switch (count) {
--		default:
--			printk(KERN_WARNING "applesmc: More than 4 fans found,"
--					" but at most 4 fans are supported"
--						" by the driver.\n");
--		case 4:
--			ret = sysfs_create_group(&pdev->dev.kobj,
--						 &fan_attribute_groups[3]);
--			if (ret)
--				goto out_key_enumeration;
--		case 3:
--			ret = sysfs_create_group(&pdev->dev.kobj,
--						 &fan_attribute_groups[2]);
--			if (ret)
--				goto out_key_enumeration;
--		case 2:
--			ret = sysfs_create_group(&pdev->dev.kobj,
--						 &fan_attribute_groups[1]);
--			if (ret)
--				goto out_key_enumeration;
--		case 1:
--			ret = sysfs_create_group(&pdev->dev.kobj,
--						 &fan_attribute_groups[0]);
--			if (ret)
--				goto out_fan_1;
--		case 0:
--			;
--		}
-+	if (count > 4) {
-+		count = 4;
-+		printk(KERN_WARNING "applesmc: More than 4 fans found,"
-+		       " but at most 4 fans are supported"
-+		       " by the driver.\n");
-+	}
++	return snprintf(sysfsbuf, PAGE_SIZE, "%s\n", key);
++}
 +
-+	while (fans_handled < count) {
-+		ret = sysfs_create_group(&pdev->dev.kobj,
-+					 &fan_attribute_groups[fans_handled]);
+ /* Displays degree Celsius * 1000 */
+ static ssize_t applesmc_show_temperature(struct device *dev,
+ 			struct device_attribute *devattr, char *sysfsbuf)
+@@ -1127,6 +1138,86 @@ static const struct attribute_group fan_attribute_groups[] = {
+ /*
+  * Temperature sensors sysfs entries.
+  */
++static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 1);
++static SENSOR_DEVICE_ATTR(temp3_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 2);
++static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 3);
++static SENSOR_DEVICE_ATTR(temp5_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 4);
++static SENSOR_DEVICE_ATTR(temp6_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 5);
++static SENSOR_DEVICE_ATTR(temp7_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 6);
++static SENSOR_DEVICE_ATTR(temp8_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 7);
++static SENSOR_DEVICE_ATTR(temp9_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 8);
++static SENSOR_DEVICE_ATTR(temp10_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 9);
++static SENSOR_DEVICE_ATTR(temp11_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 10);
++static SENSOR_DEVICE_ATTR(temp12_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 11);
++static SENSOR_DEVICE_ATTR(temp13_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 12);
++static SENSOR_DEVICE_ATTR(temp14_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 13);
++static SENSOR_DEVICE_ATTR(temp15_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 14);
++static SENSOR_DEVICE_ATTR(temp16_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 15);
++static SENSOR_DEVICE_ATTR(temp17_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 16);
++static SENSOR_DEVICE_ATTR(temp18_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 17);
++static SENSOR_DEVICE_ATTR(temp19_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 18);
++static SENSOR_DEVICE_ATTR(temp20_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 19);
++static SENSOR_DEVICE_ATTR(temp21_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 20);
++static SENSOR_DEVICE_ATTR(temp22_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 21);
++static SENSOR_DEVICE_ATTR(temp23_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 22);
++static SENSOR_DEVICE_ATTR(temp24_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 23);
++static SENSOR_DEVICE_ATTR(temp25_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 24);
++static SENSOR_DEVICE_ATTR(temp26_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 25);
++static SENSOR_DEVICE_ATTR(temp27_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 26);
++static SENSOR_DEVICE_ATTR(temp28_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 27);
++static SENSOR_DEVICE_ATTR(temp29_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 28);
++static SENSOR_DEVICE_ATTR(temp30_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 29);
++static SENSOR_DEVICE_ATTR(temp31_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 30);
++static SENSOR_DEVICE_ATTR(temp32_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 31);
++static SENSOR_DEVICE_ATTR(temp33_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 32);
++static SENSOR_DEVICE_ATTR(temp34_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 33);
++static SENSOR_DEVICE_ATTR(temp35_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 34);
++static SENSOR_DEVICE_ATTR(temp36_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 35);
++static SENSOR_DEVICE_ATTR(temp37_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 36);
++static SENSOR_DEVICE_ATTR(temp38_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 37);
++static SENSOR_DEVICE_ATTR(temp39_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 38);
++static SENSOR_DEVICE_ATTR(temp40_label, S_IRUGO,
++					applesmc_show_sensor_label, NULL, 39);
+ static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO,
+ 					applesmc_show_temperature, NULL, 0);
+ static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO,
+@@ -1208,6 +1299,50 @@ static SENSOR_DEVICE_ATTR(temp39_input, S_IRUGO,
+ static SENSOR_DEVICE_ATTR(temp40_input, S_IRUGO,
+ 					applesmc_show_temperature, NULL, 39);
+ 
++static struct attribute *label_attributes[] = {
++	&sensor_dev_attr_temp1_label.dev_attr.attr,
++	&sensor_dev_attr_temp2_label.dev_attr.attr,
++	&sensor_dev_attr_temp3_label.dev_attr.attr,
++	&sensor_dev_attr_temp4_label.dev_attr.attr,
++	&sensor_dev_attr_temp5_label.dev_attr.attr,
++	&sensor_dev_attr_temp6_label.dev_attr.attr,
++	&sensor_dev_attr_temp7_label.dev_attr.attr,
++	&sensor_dev_attr_temp8_label.dev_attr.attr,
++	&sensor_dev_attr_temp9_label.dev_attr.attr,
++	&sensor_dev_attr_temp10_label.dev_attr.attr,
++	&sensor_dev_attr_temp11_label.dev_attr.attr,
++	&sensor_dev_attr_temp12_label.dev_attr.attr,
++	&sensor_dev_attr_temp13_label.dev_attr.attr,
++	&sensor_dev_attr_temp14_label.dev_attr.attr,
++	&sensor_dev_attr_temp15_label.dev_attr.attr,
++	&sensor_dev_attr_temp16_label.dev_attr.attr,
++	&sensor_dev_attr_temp17_label.dev_attr.attr,
++	&sensor_dev_attr_temp18_label.dev_attr.attr,
++	&sensor_dev_attr_temp19_label.dev_attr.attr,
++	&sensor_dev_attr_temp20_label.dev_attr.attr,
++	&sensor_dev_attr_temp21_label.dev_attr.attr,
++	&sensor_dev_attr_temp22_label.dev_attr.attr,
++	&sensor_dev_attr_temp23_label.dev_attr.attr,
++	&sensor_dev_attr_temp24_label.dev_attr.attr,
++	&sensor_dev_attr_temp25_label.dev_attr.attr,
++	&sensor_dev_attr_temp26_label.dev_attr.attr,
++	&sensor_dev_attr_temp27_label.dev_attr.attr,
++	&sensor_dev_attr_temp28_label.dev_attr.attr,
++	&sensor_dev_attr_temp29_label.dev_attr.attr,
++	&sensor_dev_attr_temp30_label.dev_attr.attr,
++	&sensor_dev_attr_temp31_label.dev_attr.attr,
++	&sensor_dev_attr_temp32_label.dev_attr.attr,
++	&sensor_dev_attr_temp33_label.dev_attr.attr,
++	&sensor_dev_attr_temp34_label.dev_attr.attr,
++	&sensor_dev_attr_temp35_label.dev_attr.attr,
++	&sensor_dev_attr_temp36_label.dev_attr.attr,
++	&sensor_dev_attr_temp37_label.dev_attr.attr,
++	&sensor_dev_attr_temp38_label.dev_attr.attr,
++	&sensor_dev_attr_temp39_label.dev_attr.attr,
++	&sensor_dev_attr_temp40_label.dev_attr.attr,
++	NULL
++};
++
+ static struct attribute *temperature_attributes[] = {
+ 	&sensor_dev_attr_temp1_input.dev_attr.attr,
+ 	&sensor_dev_attr_temp2_input.dev_attr.attr,
+@@ -1255,6 +1390,10 @@ static struct attribute *temperature_attributes[] = {
+ static const struct attribute_group temperature_attributes_group =
+ 	{ .attrs = temperature_attributes };
+ 
++static const struct attribute_group label_attributes_group = {
++	.attrs = label_attributes
++};
++
+ /* Module stuff */
+ 
+ /*
+@@ -1556,7 +1695,8 @@ static int __init applesmc_init(void)
+ 	for (i = 0;
+ 	     temperature_sensors_sets[applesmc_temperature_set][i] != NULL;
+ 	     i++) {
+-		if (temperature_attributes[i] == NULL) {
++		if (temperature_attributes[i] == NULL ||
++		    label_attributes[i] == NULL) {
+ 			printk(KERN_ERR "applesmc: More temperature sensors "
+ 				"in temperature_sensors_sets (at least %i)"
+ 				"than available sysfs files in "
+@@ -1568,6 +1708,10 @@ static int __init applesmc_init(void)
+ 						temperature_attributes[i]);
+ 		if (ret)
+ 			goto out_temperature;
++		ret = sysfs_create_file(&pdev->dev.kobj,
++						label_attributes[i]);
 +		if (ret)
-+			goto out_fans;
-+		fans_handled++;
++			goto out_temperature;
  	}
  
- 	for (i = 0;
-@@ -1631,10 +1619,10 @@ out_accelerometer:
- 		applesmc_release_accelerometer();
- out_temperature:
- 	sysfs_remove_group(&pdev->dev.kobj, &temperature_attributes_group);
--	sysfs_remove_group(&pdev->dev.kobj, &fan_attribute_groups[0]);
--out_fan_1:
--	sysfs_remove_group(&pdev->dev.kobj, &fan_attribute_groups[1]);
--out_key_enumeration:
-+out_fans:
-+	while (fans_handled)
-+		sysfs_remove_group(&pdev->dev.kobj,
-+				   &fan_attribute_groups[--fans_handled]);
- 	sysfs_remove_group(&pdev->dev.kobj, &key_enumeration_group);
- out_name:
- 	sysfs_remove_file(&pdev->dev.kobj, &dev_attr_name.attr);
-@@ -1660,8 +1648,9 @@ static void __exit applesmc_exit(void)
+ 	if (applesmc_accelerometer) {
+@@ -1618,6 +1762,7 @@ out_accelerometer:
  	if (applesmc_accelerometer)
  		applesmc_release_accelerometer();
+ out_temperature:
++	sysfs_remove_group(&pdev->dev.kobj, &label_attributes_group);
  	sysfs_remove_group(&pdev->dev.kobj, &temperature_attributes_group);
--	sysfs_remove_group(&pdev->dev.kobj, &fan_attribute_groups[0]);
--	sysfs_remove_group(&pdev->dev.kobj, &fan_attribute_groups[1]);
-+	while (fans_handled)
-+		sysfs_remove_group(&pdev->dev.kobj,
-+				   &fan_attribute_groups[--fans_handled]);
- 	sysfs_remove_group(&pdev->dev.kobj, &key_enumeration_group);
- 	sysfs_remove_file(&pdev->dev.kobj, &dev_attr_name.attr);
- 	platform_device_unregister(pdev);
+ out_fans:
+ 	while (fans_handled)
+@@ -1647,6 +1792,7 @@ static void __exit applesmc_exit(void)
+ 	}
+ 	if (applesmc_accelerometer)
+ 		applesmc_release_accelerometer();
++	sysfs_remove_group(&pdev->dev.kobj, &label_attributes_group);
+ 	sysfs_remove_group(&pdev->dev.kobj, &temperature_attributes_group);
+ 	while (fans_handled)
+ 		sysfs_remove_group(&pdev->dev.kobj,
 -- 
 1.6.3.3
 
