@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934151Ab0EDU36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:29:58 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:33756 "EHLO e6.ny.us.ibm.com"
+	id S934162Ab0EDUaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:30:14 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:41793 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933755Ab0EDUUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933753Ab0EDUUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 May 2010 16:20:15 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 14/48] rcu: print boot-time console messages if RCU configs out of ordinary
-Date: Tue,  4 May 2010 13:19:24 -0700
-Message-Id: <1273004398-19760-14-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 17/48] rcu: v2: reduce the number of spurious RCU_SOFTIRQ invocations
+Date: Tue,  4 May 2010 13:19:27 -0700
+Message-Id: <1273004398-19760-17-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100504201934.GA19234@linux.vnet.ibm.com>
 References: <20100504201934.GA19234@linux.vnet.ibm.com>
@@ -24,108 +24,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print boot-time messages if tracing is enabled, if fanout is set
-to non-default values, if exact fanout is specified, if accelerated
-dyntick-idle grace periods have been enabled, if RCU-lockdep is enabled,
-if rcutorture has been boot-time enabled, if the CPU stall detector has
-been disabled, or if four-level hierarchy has been enabled.
+Lai Jiangshan noted that up to 10% of the RCU_SOFTIRQ are spurious, and
+traced this down to the fact that the current grace-period machinery
+will uselessly raise RCU_SOFTIRQ when a given CPU needs to go through
+a quiescent state, but has not yet done so.  In this situation, there
+might well be nothing that RCU_SOFTIRQ can do, and the overhead can be
+worth worrying about in the ksoftirqd case.  This patch therefore avoids
+raising RCU_SOFTIRQ in this situation.
 
-This is all for TREE_RCU and TREE_PREEMPT_RCU.  TINY_RCU will be handled
-separately, if at all.
+Changes since v1 (http://lkml.org/lkml/2010/3/30/122 from Lai Jiangshan):
 
-Suggested-by: Josh Triplett <josh@joshtriplett.org>
+o	Omit the rcu_qs_pending() prechecks, as they aren't that
+	much less expensive than the quiescent-state checks.
+
+o	Merge with the set_need_resched() patch that reduces IPIs.
+
+o	Add the new n_rp_report_qs field to the rcu_pending tracing output.
+
+o	Update the tracing documentation accordingly.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c        |    6 ------
- kernel/rcutree_plugin.h |   44 ++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 42 insertions(+), 8 deletions(-)
+ Documentation/RCU/trace.txt |   35 +++++++++++++++++++----------------
+ kernel/rcutree.c            |   11 ++++++-----
+ kernel/rcutree.h            |    1 +
+ kernel/rcutree_trace.c      |    4 +++-
+ 4 files changed, 29 insertions(+), 22 deletions(-)
 
+diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
+index 8608fd8..efd8cc9 100644
+--- a/Documentation/RCU/trace.txt
++++ b/Documentation/RCU/trace.txt
+@@ -256,23 +256,23 @@ o	Each element of the form "1/1 0:127 ^0" represents one struct
+ The output of "cat rcu/rcu_pending" looks as follows:
+ 
+ rcu_sched:
+-  0 np=255892 qsp=53936 cbr=0 cng=14417 gpc=10033 gps=24320 nf=6445 nn=146741
+-  1 np=261224 qsp=54638 cbr=0 cng=25723 gpc=16310 gps=2849 nf=5912 nn=155792
+-  2 np=237496 qsp=49664 cbr=0 cng=2762 gpc=45478 gps=1762 nf=1201 nn=136629
+-  3 np=236249 qsp=48766 cbr=0 cng=286 gpc=48049 gps=1218 nf=207 nn=137723
+-  4 np=221310 qsp=46850 cbr=0 cng=26 gpc=43161 gps=4634 nf=3529 nn=123110
+-  5 np=237332 qsp=48449 cbr=0 cng=54 gpc=47920 gps=3252 nf=201 nn=137456
+-  6 np=219995 qsp=46718 cbr=0 cng=50 gpc=42098 gps=6093 nf=4202 nn=120834
+-  7 np=249893 qsp=49390 cbr=0 cng=72 gpc=38400 gps=17102 nf=41 nn=144888
++  0 np=255892 qsp=53936 rpq=85 cbr=0 cng=14417 gpc=10033 gps=24320 nf=6445 nn=146741
++  1 np=261224 qsp=54638 rpq=33 cbr=0 cng=25723 gpc=16310 gps=2849 nf=5912 nn=155792
++  2 np=237496 qsp=49664 rpq=23 cbr=0 cng=2762 gpc=45478 gps=1762 nf=1201 nn=136629
++  3 np=236249 qsp=48766 rpq=98 cbr=0 cng=286 gpc=48049 gps=1218 nf=207 nn=137723
++  4 np=221310 qsp=46850 rpq=7 cbr=0 cng=26 gpc=43161 gps=4634 nf=3529 nn=123110
++  5 np=237332 qsp=48449 rpq=9 cbr=0 cng=54 gpc=47920 gps=3252 nf=201 nn=137456
++  6 np=219995 qsp=46718 rpq=12 cbr=0 cng=50 gpc=42098 gps=6093 nf=4202 nn=120834
++  7 np=249893 qsp=49390 rpq=42 cbr=0 cng=72 gpc=38400 gps=17102 nf=41 nn=144888
+ rcu_bh:
+-  0 np=146741 qsp=1419 cbr=0 cng=6 gpc=0 gps=0 nf=2 nn=145314
+-  1 np=155792 qsp=12597 cbr=0 cng=0 gpc=4 gps=8 nf=3 nn=143180
+-  2 np=136629 qsp=18680 cbr=0 cng=0 gpc=7 gps=6 nf=0 nn=117936
+-  3 np=137723 qsp=2843 cbr=0 cng=0 gpc=10 gps=7 nf=0 nn=134863
+-  4 np=123110 qsp=12433 cbr=0 cng=0 gpc=4 gps=2 nf=0 nn=110671
+-  5 np=137456 qsp=4210 cbr=0 cng=0 gpc=6 gps=5 nf=0 nn=133235
+-  6 np=120834 qsp=9902 cbr=0 cng=0 gpc=6 gps=3 nf=2 nn=110921
+-  7 np=144888 qsp=26336 cbr=0 cng=0 gpc=8 gps=2 nf=0 nn=118542
++  0 np=146741 qsp=1419 rpq=6 cbr=0 cng=6 gpc=0 gps=0 nf=2 nn=145314
++  1 np=155792 qsp=12597 rpq=3 cbr=0 cng=0 gpc=4 gps=8 nf=3 nn=143180
++  2 np=136629 qsp=18680 rpq=1 cbr=0 cng=0 gpc=7 gps=6 nf=0 nn=117936
++  3 np=137723 qsp=2843 rpq=0 cbr=0 cng=0 gpc=10 gps=7 nf=0 nn=134863
++  4 np=123110 qsp=12433 rpq=0 cbr=0 cng=0 gpc=4 gps=2 nf=0 nn=110671
++  5 np=137456 qsp=4210 rpq=1 cbr=0 cng=0 gpc=6 gps=5 nf=0 nn=133235
++  6 np=120834 qsp=9902 rpq=2 cbr=0 cng=0 gpc=6 gps=3 nf=2 nn=110921
++  7 np=144888 qsp=26336 rpq=0 cbr=0 cng=0 gpc=8 gps=2 nf=0 nn=118542
+ 
+ As always, this is once again split into "rcu_sched" and "rcu_bh"
+ portions, with CONFIG_TREE_PREEMPT_RCU kernels having an additional
+@@ -284,6 +284,9 @@ o	"np" is the number of times that __rcu_pending() has been invoked
+ o	"qsp" is the number of times that the RCU was waiting for a
+ 	quiescent state from this CPU.
+ 
++o	"rpq" is the number of times that the CPU had passed through
++	a quiescent state, but not yet reported it to RCU.
++
+ o	"cbr" is the number of times that this CPU had RCU callbacks
+ 	that had passed through a grace period, and were thus ready
+ 	to be invoked.
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 595fb83..ec6196f 100644
+index c60fd74..ba69969 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -1938,12 +1938,6 @@ void __init rcu_init(void)
- 	int cpu;
- 
- 	rcu_bootup_announce();
--#ifdef CONFIG_RCU_CPU_STALL_DETECTOR
--	printk(KERN_INFO "RCU-based detection of stalled CPUs is enabled.\n");
--#endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
--#if NUM_RCU_LVL_4 != 0
--	printk(KERN_INFO "Experimental four-level hierarchy is enabled.\n");
--#endif /* #if NUM_RCU_LVL_4 != 0 */
- 	RCU_INIT_FLAVOR(&rcu_sched_state, rcu_sched_data);
- 	RCU_INIT_FLAVOR(&rcu_bh_state, rcu_bh_data);
- 	__rcu_init_preempt();
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index f9bc83a..0ae2339 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -26,6 +26,45 @@
- 
- #include <linux/delay.h>
- 
-+/*
-+ * Check the RCU kernel configuration parameters and print informative
-+ * messages about anything out of the ordinary.  If you like #ifdef, you
-+ * will love this function.
-+ */
-+static void __init rcu_bootup_announce_oddness(void)
-+{
-+#ifdef CONFIG_RCU_TRACE
-+	printk(KERN_INFO "\tRCU debugfs-based tracing is enabled.\n");
-+#endif
-+#if (defined(CONFIG_64BIT) && CONFIG_RCU_FANOUT != 64) || (!defined(CONFIG_64BIT) && CONFIG_RCU_FANOUT != 32)
-+	printk(KERN_INFO "\tCONFIG_RCU_FANOUT set to non-default value of %d\n",
-+	       CONFIG_RCU_FANOUT);
-+#endif
-+#ifdef CONFIG_RCU_FANOUT_EXACT
-+	printk(KERN_INFO "\tHierarchical RCU autobalancing is disabled.\n");
-+#endif
-+#ifdef CONFIG_RCU_FAST_NO_HZ
-+	printk(KERN_INFO
-+	       "\tRCU dyntick-idle grace-period acceleration is enabled.\n");
-+#endif
-+#ifdef CONFIG_PROVE_RCU
-+	printk(KERN_INFO "\tRCU lockdep checking is enabled.\n");
-+#endif
-+#ifdef CONFIG_RCU_TORTURE_TEST_RUNNABLE
-+	printk(KERN_INFO "\tRCU torture testing starts during boot.\n");
-+#endif
-+#ifndef CONFIG_RCU_CPU_STALL_DETECTOR
-+	printk(KERN_INFO
-+	       "\tRCU-based detection of stalled CPUs is disabled.\n");
-+#endif
-+#ifndef CONFIG_RCU_CPU_STALL_VERBOSE
-+	printk(KERN_INFO "\tVerbose stalled-CPUs detection is disabled.\n");
-+#endif
-+#if NUM_RCU_LVL_4 != 0
-+	printk(KERN_INFO "\tExperimental four-level hierarchy is enabled.\n");
-+#endif
-+}
-+
- #ifdef CONFIG_TREE_PREEMPT_RCU
- 
- struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt_state);
-@@ -38,8 +77,8 @@ static int rcu_preempted_readers_exp(struct rcu_node *rnp);
+@@ -1161,8 +1161,6 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
   */
- static void __init rcu_bootup_announce(void)
+ void rcu_check_callbacks(int cpu, int user)
  {
--	printk(KERN_INFO
--	       "Experimental preemptable hierarchical RCU implementation.\n");
-+	printk(KERN_INFO "Preemptable hierarchical RCU implementation.\n");
-+	rcu_bootup_announce_oddness();
+-	if (!rcu_pending(cpu))
+-		return; /* if nothing for RCU to do. */
+ 	if (user ||
+ 	    (idle_cpu(cpu) && rcu_scheduler_active &&
+ 	     !in_softirq() && hardirq_count() <= (1 << HARDIRQ_SHIFT))) {
+@@ -1194,7 +1192,8 @@ void rcu_check_callbacks(int cpu, int user)
+ 		rcu_bh_qs(cpu);
+ 	}
+ 	rcu_preempt_check_callbacks(cpu);
+-	raise_softirq(RCU_SOFTIRQ);
++	if (rcu_pending(cpu))
++		raise_softirq(RCU_SOFTIRQ);
  }
  
- /*
-@@ -757,6 +796,7 @@ void exit_rcu(void)
- static void __init rcu_bootup_announce(void)
- {
- 	printk(KERN_INFO "Hierarchical RCU implementation.\n");
-+	rcu_bootup_announce_oddness();
- }
+ #ifdef CONFIG_SMP
+@@ -1534,18 +1533,20 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+ 	check_cpu_stall(rsp, rdp);
  
- /*
+ 	/* Is the RCU core waiting for a quiescent state from this CPU? */
+-	if (rdp->qs_pending) {
++	if (rdp->qs_pending && !rdp->passed_quiesc) {
+ 
+ 		/*
+ 		 * If force_quiescent_state() coming soon and this CPU
+ 		 * needs a quiescent state, and this is either RCU-sched
+ 		 * or RCU-bh, force a local reschedule.
+ 		 */
++		rdp->n_rp_qs_pending++;
+ 		if (!rdp->preemptable &&
+ 		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
+ 				 jiffies))
+ 			set_need_resched();
+-		rdp->n_rp_qs_pending++;
++	} else if (rdp->qs_pending && rdp->passed_quiesc) {
++		rdp->n_rp_report_qs++;
+ 		return 1;
+ 	}
+ 
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 11f1711..14c040b 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -223,6 +223,7 @@ struct rcu_data {
+ 	/* 5) __rcu_pending() statistics. */
+ 	unsigned long n_rcu_pending;	/* rcu_pending() calls since boot. */
+ 	unsigned long n_rp_qs_pending;
++	unsigned long n_rp_report_qs;
+ 	unsigned long n_rp_cb_ready;
+ 	unsigned long n_rp_cpu_needs_gp;
+ 	unsigned long n_rp_gp_completed;
+diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+index d45db2e..36c95b4 100644
+--- a/kernel/rcutree_trace.c
++++ b/kernel/rcutree_trace.c
+@@ -241,11 +241,13 @@ static const struct file_operations rcugp_fops = {
+ static void print_one_rcu_pending(struct seq_file *m, struct rcu_data *rdp)
+ {
+ 	seq_printf(m, "%3d%cnp=%ld "
+-		   "qsp=%ld cbr=%ld cng=%ld gpc=%ld gps=%ld nf=%ld nn=%ld\n",
++		   "qsp=%ld rpq=%ld cbr=%ld cng=%ld "
++		   "gpc=%ld gps=%ld nf=%ld nn=%ld\n",
+ 		   rdp->cpu,
+ 		   cpu_is_offline(rdp->cpu) ? '!' : ' ',
+ 		   rdp->n_rcu_pending,
+ 		   rdp->n_rp_qs_pending,
++		   rdp->n_rp_report_qs,
+ 		   rdp->n_rp_cb_ready,
+ 		   rdp->n_rp_cpu_needs_gp,
+ 		   rdp->n_rp_gp_completed,
 -- 
 1.7.0
 
