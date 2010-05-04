@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932981Ab0EDAVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 20:21:49 -0400
-Received: from mx1.corp.avencall.com ([91.194.178.12]:51205 "EHLO
+	id S933293Ab0EDAXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 20:23:41 -0400
+Received: from mx1.corp.avencall.com ([91.194.178.12]:51242 "EHLO
 	mx1.corp.avencall.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755584Ab0EDAVs (ORCPT
+	with ESMTP id S932283Ab0EDAXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 20:21:48 -0400
-Date: Tue, 4 May 2010 02:21:42 +0200
+	Mon, 3 May 2010 20:23:39 -0400
+Date: Tue, 4 May 2010 02:23:33 +0200
 From: Guillaume Knispel <gknispel@proformatique.com>
 To: linux-kernel@vger.kernel.org, Linuxppc-dev@lists.ozlabs.org
 Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
@@ -20,8 +20,8 @@ Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
        Randy Dunlap <randy.dunlap@oracle.com>,
        Russell King <linux@arm.linux.org.uk>,
        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCHv2 1/2] genirq: reliably replay pending edge-triggered irq
-Message-Id: <20100504022142.1eb653da.gknispel@proformatique.com>
+Subject: [PATCHv2 2/2] genirq: update doc
+Message-Id: <20100504022333.7dbf61eb.gknispel@proformatique.com>
 In-Reply-To: <20100504021941.ff7579c1.gknispel@proformatique.com>
 References: <20100504021941.ff7579c1.gknispel@proformatique.com>
 X-Mailer: Sylpheed version 2.3.0beta5 (GTK+ 2.8.20; i486-pc-linux-gnu)
@@ -32,67 +32,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following can happen:
-
-CPU 1                           CPU 2
-disable_irq():                  handle_edge_irq():
-LOCK desc->lock (irqsave)
-desc->status |= IRQ_DISABLED;
-desc->chip->disable(irq);/*1*/
-UNLOCK desc->lock (irqrestore)
-                                LOCK desc->lock
-                                desc->status |= (IRQ_PENDING
-                                                 | IRQ_MASKED);
-                                mask_ack_irq(desc, irq);
-                                UNLOCK desc->lock
-
-NOTE /*1*/: ->disable can point to default_disable().
-Since commit:
- 76d2160147f43f982dfe881404cfde9fd0a9da21
- genirq: do not mask interrupts by default
-the delayed interrupt disable mechanism has been activated for every
-user of default_disable() -- which used to mask the interrupt at
-controller level before and is now a noop.  The sequence describing a
-race above will now indeed happen if an interrupt event occurs at any
-time between the effective disable_irq() and the next effective
-enable_irq().
-
-Also note that even if ->disable does a masking, a similar race
-can indeed happen even on a monoprocessor system if an interrupt event
-occurs before just before the masking.
-
-In order to avoid interrupt loss, an IRQ_PENDING interrupt must be
-replayed when enable_irq() is called (or immediately after).
-
-This replay (implemented in kernel/irq/resend.c) used to be reliable
-only if:
-
-  * the interrupt controller driver implements a reliable retrigger()
-    callback
-
-       or
-
-  * CONFIG_HARDIRQS_SW_RESEND is defined (in this case the flow handler
-    can be executed in a tasklet running resend_irqs() )
-
-So CONFIG_HARDIRQS_SW_RESEND was meant to be set on plateforms where it
-exists a risk that edge interrupts are used on an interrupt controller
-that does not support hard retrigger (or at least not reliably).
-
-But CONFIG_HARDIRQS_SW_RESEND was only defined on arm and avr32
-architectures, and other architectures exist which can have controllers
-without a reliable retrigger(). Some examples:
- * arch/powerpc/sysdev/cpm2.c arch/powerpc/sysdev/ipic.c
- * arch/blackfin/mach-common/ints-priority.c
- * arch/mips/alchemy/common/irq.c
- * ...
-
-With the present change, resend_irqs() is unconditionally built, so
-that edge-triggered interrupts can not be lost.
-The CONFIG_HARDIRQS_SW_RESEND option is not used anymore.
-
-See http://lkml.org/lkml/2010/4/19/129 for the first discussion about
-this problem.
+Following "genirq: always build resend_irqs" and previous changes, this
+commit updates the genirq DocBook.
 
 Signed-off-by: Guillaume Knispel <gknispel@proformatique.com>
 CC: linux-kernel@vger.kernel.org
@@ -103,47 +44,147 @@ CC: Haavard Skinnemoen <hskinnemoen@atmel.com>
 CC: Ingo Molnar <mingo@elte.hu>
 CC: Lars-Peter Clausen <lars@metafoo.de>
 CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Peter Zijlstra <peterz@infradead.org>
 CC: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Peter Zijlstra <peterz@infradead.org>
 CC: Russell King <linux@arm.linux.org.uk>
 CC: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/irq/resend.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ Documentation/DocBook/genericirq.tmpl |   73 ++++++++++++++++++--------------
+ 1 files changed, 41 insertions(+), 32 deletions(-)
 
-diff --git a/kernel/irq/resend.c b/kernel/irq/resend.c
-index 090c376..3b20ce1 100644
---- a/kernel/irq/resend.c
-+++ b/kernel/irq/resend.c
-@@ -20,8 +20,6 @@
+diff --git a/Documentation/DocBook/genericirq.tmpl b/Documentation/DocBook/genericirq.tmpl
+index 1448b33..7df5274 100644
+--- a/Documentation/DocBook/genericirq.tmpl
++++ b/Documentation/DocBook/genericirq.tmpl
+@@ -240,8 +240,6 @@ default_enable(irq)
  
- #include "internals.h"
- 
--#ifdef CONFIG_HARDIRQS_SW_RESEND
--
- /* Bitmap to handle software resend of interrupts: */
- static DECLARE_BITMAP(irqs_resend, NR_IRQS);
- 
-@@ -46,8 +44,6 @@ static void resend_irqs(unsigned long arg)
- /* Tasklet to handle resend: */
- static DECLARE_TASKLET(resend_tasklet, resend_irqs, 0);
- 
--#endif
--
- /*
-  * IRQ resend
-  *
-@@ -71,11 +67,9 @@ void check_irq_resend(struct irq_desc *desc, unsigned int irq)
- 		desc->status = (status & ~IRQ_PENDING) | IRQ_REPLAY;
- 
- 		if (!desc->chip->retrigger || !desc->chip->retrigger(irq)) {
--#ifdef CONFIG_HARDIRQS_SW_RESEND
- 			/* Set it pending and activate the softirq: */
- 			set_bit(irq, irqs_resend);
- 			tasklet_schedule(&resend_tasklet);
--#endif
- 		}
- 	}
+ default_disable(irq)
+ {
+-	if (!delay_disable(irq))
+-		desc->chip->mask(irq);
  }
+ 
+ default_ack(irq)
+@@ -264,7 +262,11 @@ noop(irq)
+ }
+ 
+ 		</programlisting>
+-	        </para>
++	        Note: default_disable() is empty so that an edge-triggered
++		interrupt happening between a disable_irq() and an enable_irq()
++		is caught by the kernel for later replay. See
++		<xref linkend="Delayed_interrupt_disable"/> for details.
++		</para>
+ 	    </sect3>
+ 	</sect2>
+ 	<sect2 id="Default_flow_handler_implementations">
+@@ -278,9 +280,14 @@ noop(irq)
+ 		<para>
+ 		The following control flow is implemented (simplified excerpt):
+ 		<programlisting>
+-desc->chip->start();
++desc->chip->mask_ack();
++if (desc->status &amp; inprogress)
++	return;
++desc->status |= inprogress;
+ handle_IRQ_event(desc->action);
+-desc->chip->end();
++desc->status &amp;= inprogress;
++if (!(desc->status &amp; disabled))
++	desc->chip->unmask_ack();
+ 		</programlisting>
+ 		</para>
+    	    </sect3>
+@@ -293,21 +300,23 @@ desc->chip->end();
+ 		<para>
+ 		The following control flow is implemented (simplified excerpt):
+ 		<programlisting>
+-if (desc->status &amp; running) {
+-	desc->chip->hold();
++if (desc->status &amp; (inprogress | disabled)) {
+ 	desc->status |= pending | masked;
++	desc->chip->mask_ack();
+ 	return;
+ }
+-desc->chip->start();
+-desc->status |= running;
++desc->chip->ack();
++desc->status |= inprogress;
+ do {
+-	if (desc->status &amp; masked)
+-		desc->chip->enable();
++	if ((desc->status &amp; (pending | masked | disabled))
++			     == (pending | masked)) {
++		desc->chip->unmask();
++		desc->status &amp;= ~masked;
++	}
+ 	desc->status &amp;= ~pending;
+ 	handle_IRQ_event(desc->action);
+-} while (status &amp; pending);
+-desc->status &amp;= ~running;
+-desc->chip->end();
++} while ((status &amp; (pending | disabled)) == pending);
++desc->status &amp;= inprogress;
+ 		</programlisting>
+ 		</para>
+    	    </sect3>
+@@ -342,9 +351,9 @@ handle_IRQ_event(desc->action);
+ 		<para>
+ 		The following control flow is implemented (simplified excerpt):
+ 		<programlisting>
+-desc->chip->start();
++desc->chip->ack();
+ handle_IRQ_event(desc->action);
+-desc->chip->end();
++desc->chip->eoi();
+ 		</programlisting>
+ 		</para>
+    	    </sect3>
+@@ -361,22 +370,20 @@ desc->chip->end();
+ 	<sect2 id="Delayed_interrupt_disable">
+ 	<title>Delayed interrupt disable</title>
+ 	<para>
+-	This per interrupt selectable feature, which was introduced by Russell
+-	King in the ARM interrupt implementation, does not mask an interrupt
+-	at the hardware level when disable_irq() is called. The interrupt is
+-	kept enabled and is masked in the flow handler when an interrupt event
+-	happens. This prevents losing edge interrupts on hardware which does
+-	not store an edge interrupt event while the interrupt is disabled at
+-	the hardware level. When an interrupt arrives while the IRQ_DISABLED
+-	flag is set, then the interrupt is masked at the hardware level and
+-	the IRQ_PENDING bit is set. When the interrupt is re-enabled by
+-	enable_irq() the pending bit is checked and if it is set, the
+-	interrupt is resent either via hardware or by a software resend
+-	mechanism. (It's necessary to enable CONFIG_HARDIRQS_SW_RESEND when
+-	you want to use the delayed interrupt disable feature and your
+-	hardware is not capable of retriggering	an interrupt.)
+-	The delayed interrupt disable can be runtime enabled, per interrupt,
+-	by setting the IRQ_DELAYED_DISABLE flag in the irq_desc status field.
++	At least when using default_disable as the ->disable() callback of a
++	chip handler, an interrupt is not masked at the hardware level when
++	disable_irq() is called. The interrupt is kept enabled and is masked
++	in the flow handler when an interrupt event happens. This prevents
++	losing edge interrupts on hardware which does not store an edge
++	interrupt event while the interrupt is disabled at the hardware level.
++	This makes use of the replay mechanism that is mandatory anyway to
++	prevent potential race conditions between an interrupt event and a call
++	to disable_irq() at the same time. When an interrupt arrives in
++	handle_edge_irq() while the IRQ_DISABLED flag is set, then the
++	interrupt is masked at the hardware level and the IRQ_PENDING bit is
++	set. When the interrupt is re-enabled by enable_irq() the pending bit
++	is checked and if it is set, the interrupt is resent either via
++	hardware or by a software resend mechanism.
+ 	</para>
+ 	</sect2>
+     </sect1>
+@@ -387,6 +394,8 @@ desc->chip->end();
+ 	contains all the direct chip relevant functions, which
+ 	can be utilized by the irq flow implementations.
+ 	  <itemizedlist>
++	  <listitem><para>disable() - Optional</para></listitem>
++	  <listitem><para>enable() - Optional</para></listitem>
+ 	  <listitem><para>ack()</para></listitem>
+ 	  <listitem><para>mask_ack() - Optional, recommended for performance</para></listitem>
+ 	  <listitem><para>mask()</para></listitem>
 -- 
 1.6.2
