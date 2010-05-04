@@ -1,92 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab0EDKGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 06:06:42 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:50941 "EHLO bamako.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754672Ab0EDKGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 06:06:41 -0400
-Date: Tue, 4 May 2010 12:06:38 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: "Henrik Rydberg" <rydberg@euromail.se>
-Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-       Alex Murray <murray.alex@gmail.com>
-Subject: Re: [PATCH] hwmon: applesmc: Add temperature sensor labels to sysfs
- interface
-Message-ID: <20100504120638.70244e8e@hyperion.delvare>
-In-Reply-To: <1272966929-14501-1-git-send-email-rydberg@euromail.se>
-References: <1272966929-14501-1-git-send-email-rydberg@euromail.se>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756839Ab0EDKOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 06:14:11 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:33955 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab0EDKOK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 06:14:10 -0400
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Bcache: version 4
+From: Andi Kleen <andi@halobates.de>
+References: <20100501001212.GA31135@moria>
+Date: Tue, 04 May 2010 12:14:03 +0200
+In-Reply-To: <20100501001212.GA31135@moria> (Kent Overstreet's message of "Fri, 30 Apr 2010 16:12:13 -0800")
+Message-ID: <87y6g03rf8.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+Kent Overstreet <kent.overstreet@gmail.com> writes:
 
-On Tue,  4 May 2010 11:55:29 +0200, Henrik Rydberg wrote:
-> From: Alex Murray <murray.alex@gmail.com>
-> 
-> The Apple SMC uses a systematic labeling scheme for the hardware
-> temperature sensors. This scheme is currently hidden from
-> userland. Since the sensor set, and consequently the numbering,
-> differs between models, an extensive database of configurations is
-> required for an application such as fan control. This patch adds the
-> SMC labels to the hwmon sysfs interface, allowing applications to use
-> the sensors more intelligibly.
+> I've got some documentation incorporated since the last posting. The
+> user documentation should be sufficient; the code could probably use
+> more but it's hard for me to say what, so I'll try and add whatever
+> people find unclear.
 
-I like the idea.
+I read all of this email now and I still have no clue what exactly
+a 'bcache' is and why anyone would want one (and if one needs
+a large stick to handle it or not)  
 
-> Signed-off-by: Alex Murray <murray.alex@gmail.com>
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
->  drivers/hwmon/applesmc.c |  145 +++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 144 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-> index 36a0d62..8be86ef 100644
-> --- a/drivers/hwmon/applesmc.c
-> +++ b/drivers/hwmon/applesmc.c
-> (...)
-> @@ -1252,6 +1387,9 @@ static struct attribute *temperature_attributes[] = {
->  static const struct attribute_group temperature_attributes_group =
->  	{ .attrs = temperature_attributes };
->  
-> +static const struct attribute_group label_attributes_group = {
-> +	.attrs = label_attributes
-> +};
+Normally the 0/x series of a patch kit is supposed to contain that
+information.
 
-Missing blank like.
+I know it's probably obvious to you, but it's not to most other readers.
 
->  /* Module stuff */
->  
->  /*
-> @@ -1568,7 +1706,8 @@ static int __init applesmc_init(void)
->  	for (i = 0;
->  	     temperature_sensors_sets[applesmc_temperature_set][i] != NULL;
->  	     i++) {
-> -		if (temperature_attributes[i] == NULL) {
-> +		if (temperature_attributes[i] == NULL ||
-> +		    label_attributes[i] == NULL) {
->  			printk(KERN_ERR "applesmc: More temperature sensors "
->  				"in temperature_sensors_sets (at least %i)"
->  				"than available sysfs files in "
-> @@ -1578,6 +1717,8 @@ static int __init applesmc_init(void)
->  		}
->  		ret = sysfs_create_file(&pdev->dev.kobj,
->  						temperature_attributes[i]);
+Consider adding some introduction? 
 
-Missing error handling.
-
-> +		ret = sysfs_create_file(&pdev->dev.kobj,
-> +						label_attributes[i]);
->  		if (ret)
->  			goto out_temperature;
->  	}
-
-Other than that, the patch looks good.
+-Andi
 
 -- 
-Jean Delvare
+ak@linux.intel.com -- Speaking for myself only.
