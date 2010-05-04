@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab0EDSWs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 14:22:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:45630 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760168Ab0EDSWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 14:22:46 -0400
-X-Authority-Analysis: v=1.1 cv=Ebn0m7KaSvUJV60GCOzUqyhjUj7QmnsyUUVbVvk8w6o= c=1 sm=0 a=Ha1kYoaTZc4A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=Pg-sk_kN8vQcpfpBBNIA:9 a=g06kDNDPYKC4rjJkFl8A:7 a=dDESds9ybX9LgQ2iuw2K2qTjr4UA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 04/12] perf: add @rq to perf_event_task_sched_out()
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu, efault@gmx.de,
-       avi@redhat.com, paulus@samba.org, acme@redhat.com,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <4BE057EB.80604@kernel.org>
-References: <1272976724-14312-1-git-send-email-tj@kernel.org>
-	 <1272976724-14312-5-git-send-email-tj@kernel.org>
-	 <1272993090.1642.184.camel@laptop>  <4BE057EB.80604@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Tue, 04 May 2010 14:22:43 -0400
-Message-ID: <1272997363.9739.232.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S932587Ab0EDSYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 14:24:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46922 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932134Ab0EDSYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 14:24:52 -0400
+Message-ID: <4BE06642.6080702@zytor.com>
+Date: Tue, 04 May 2010 11:24:02 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Avi Kivity <avi@redhat.com>, Brian Gerst <brgerst@gmail.com>,
+       "Cui, Dexuan" <dexuan.cui@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86: eliminate TS_XSAVE
+References: <1272812038-32484-1-git-send-email-avi@redhat.com>	 <1272812038-32484-2-git-send-email-avi@redhat.com>	 <u2p73c1f2161005021038gce35c1bbpca6ec119d24e646e@mail.gmail.com>	 <4BDDBA18.3080909@redhat.com> <4BDF4407.8000503@zytor.com>	 <4BDFCF9F.3030600@redhat.com> <1272996927.2833.13.camel@sbs-t61.sc.intel.com>
+In-Reply-To: <1272996927.2833.13.camel@sbs-t61.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-04 at 19:22 +0200, Tejun Heo wrote:
-> Hello,
+On 05/04/2010 11:15 AM, Suresh Siddha wrote:
+> On Tue, 2010-05-04 at 00:41 -0700, Avi Kivity wrote:
+>> On 05/04/2010 12:45 AM, H. Peter Anvin wrote:
+>>>
+>>>> I was trying to avoid a performance regression relative to the current
+>>>> code, as it appears that some care was taken to avoid the memory reference.
+>>>>
+>>>> I agree that it's probably negligible compared to the save/restore
+>>>> code.  If the x86 maintainers agree as well, I'll replace it with
+>>>> cpu_has_xsave.
+>>>>
+>>>>      
+>>> I asked Suresh to comment on this, since he wrote the original code.  He
+>>> did confirm that the intent was to avoid a global memory reference.
+>>>
+>>>    
+>>
+>> Ok, so you're happy with the patch as is?
 > 
-> On 05/04/2010 07:11 PM, Peter Zijlstra wrote:
-> > On Tue, 2010-05-04 at 14:38 +0200, Tejun Heo wrote:
-> >> Add @rq to perf_event_task_sched_out() so that its argument matches
-> >> those of trace_sched_switch().  This will help unifying notifiers in
-> >> sched.
-> > 
-> > The alternative is dropping rq from the trace events, its not like
-> > anybody outside sched.o can do anything sensible with it anyway.
+> As use_xsave() is in the hot context switch path, I would like to go
+> with Avi's proposal.
 > 
-> The comment in include/trace/events/sched.h says...
-> 
->  * (NOTE: the 'rq' argument is not used by generic trace events,
->  *        but used by the latency tracer plugin. )
-> 
-> So, I left it there.  It would be great if all those @rq params can be
-> removed tho.  The latency tracer thing needs it, right?
 
-I believe the rq was used by the original latency tracer code that was
-in the -rt patch set before ftrace. It is most likely there for
-historical purposes. I guess it would be fine to just remove it.
+I would tend to agree.  Saving a likely cache miss in the hot context
+switch path is worthwhile.
 
--- Steve
+I would like to request one change, however.  I would like to see the
+alternatives code to be:
 
+	movb $0,reg
+	movb $1,reg
 
+... instead of using xor (which has to be padded with NOPs, which is of
+course pointless since the slot is a fixed size.)  I would suggest using
+a byte-sized variable instead of a dword-size variable to save a few
+bytes, too.
+
+Once the jump label framework is integrated and has matured, I think we
+should consider using it to save the mov/test/jump.
+
+	-hpa
