@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933296Ab0EDScO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 14:32:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37435 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932269Ab0EDScN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 14:32:13 -0400
-X-Authority-Analysis: v=1.1 cv=OMZqYO3L41gFG4eI735GctFZkIqa2t9YKv4cWfI71LE= c=1 sm=0 a=Ha1kYoaTZc4A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=92wXTOoxxlBlMh_gTWUA:9 a=b2v7DOiTuawWeoiR3VYA:7 a=LsziBkYcsyfi6KROkygR2W4FpCAA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 04/12] perf: add @rq to perf_event_task_sched_out()
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <tj@kernel.org>, mingo@elte.hu, efault@gmx.de, avi@redhat.com,
-       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1272997616.1642.207.camel@laptop>
-References: <1272976724-14312-1-git-send-email-tj@kernel.org>
-	 <1272976724-14312-5-git-send-email-tj@kernel.org>
-	 <1272993090.1642.184.camel@laptop>  <4BE057EB.80604@kernel.org>
-	 <1272997363.9739.232.camel@gandalf.stny.rr.com>
-	 <1272997616.1642.207.camel@laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Tue, 04 May 2010 14:32:10 -0400
-Message-ID: <1272997930.9739.233.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S933377Ab0EDSd6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 14:33:58 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50043 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753600Ab0EDSd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 14:33:56 -0400
+Date: Tue, 4 May 2010 18:33:41 GMT
+From: tip-bot for David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       dhowells@redhat.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       dhowells@redhat.com, tglx@linutronix.de
+In-Reply-To: <20100504124253.30994.79841.stgit@warthog.procyon.org.uk>
+References: <20100504124253.30994.79841.stgit@warthog.procyon.org.uk>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86-64: Use the proper register width in call_rwsem_wait()
+Message-ID: <tip-50db45f2f010e9251dae644c5fb86b321d9ac815@git.kernel.org>
+Git-Commit-ID: 50db45f2f010e9251dae644c5fb86b321d9ac815
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 May 2010 18:33:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-04 at 20:26 +0200, Peter Zijlstra wrote:
-> On Tue, 2010-05-04 at 14:22 -0400, Steven Rostedt wrote:
-> > On Tue, 2010-05-04 at 19:22 +0200, Tejun Heo wrote:
-> > > Hello,
-> > > 
-> > > On 05/04/2010 07:11 PM, Peter Zijlstra wrote:
-> > > > On Tue, 2010-05-04 at 14:38 +0200, Tejun Heo wrote:
-> > > >> Add @rq to perf_event_task_sched_out() so that its argument matches
-> > > >> those of trace_sched_switch().  This will help unifying notifiers in
-> > > >> sched.
-> > > > 
-> > > > The alternative is dropping rq from the trace events, its not like
-> > > > anybody outside sched.o can do anything sensible with it anyway.
-> > > 
-> > > The comment in include/trace/events/sched.h says...
-> > > 
-> > >  * (NOTE: the 'rq' argument is not used by generic trace events,
-> > >  *        but used by the latency tracer plugin. )
-> > > 
-> > > So, I left it there.  It would be great if all those @rq params can be
-> > > removed tho.  The latency tracer thing needs it, right?
-> > 
-> > I believe the rq was used by the original latency tracer code that was
-> > in the -rt patch set before ftrace. It is most likely there for
-> > historical purposes. I guess it would be fine to just remove it.
-> 
-> I'm building the below, so far so good... ;-)
-> 
-> ---
->  include/trace/events/sched.h      |   32 ++++++++++----------------------
->  kernel/sched.c                    |    8 ++++----
->  kernel/trace/trace_sched_wakeup.c |    5 ++---
->  3 files changed, 16 insertions(+), 29 deletions(-)
-> 
-> diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-> index cfceb0b..4f733ec 100644
-> --- a/include/trace/events/sched.h
-> +++ b/include/trace/events/sched.h
-> @@ -51,15 +51,12 @@ TRACE_EVENT(sched_kthread_stop_ret,
->  
->  /*
->   * Tracepoint for waiting on task to unschedule:
-> - *
-> - * (NOTE: the 'rq' argument is not used by generic trace events,
-> - *        but used by the latency tracer plugin. )
->   */
->  TRACE_EVENT(sched_wait_task,
->  
-> -	TP_PROTO(struct rq *rq, struct task_struct *p),
-> +	TP_PROTO(struct task_struct *p),
+Commit-ID:  50db45f2f010e9251dae644c5fb86b321d9ac815
+Gitweb:     http://git.kernel.org/tip/50db45f2f010e9251dae644c5fb86b321d9ac815
+Author:     David Howells <dhowells@redhat.com>
+AuthorDate: Tue, 4 May 2010 13:42:53 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 4 May 2010 10:15:54 -0700
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+x86-64: Use the proper register width in call_rwsem_wait()
 
--- Steve
+The x86_64 call_rwsem_wait() treats the active state counter part of the R/W
+semaphore state as being 16-bit when it's actually 32-bit (it's half of the
+64-bit state).  It should do "decl %edx" not "decw %dx".
 
+[ hpa note: decl %edx will clear the upper half of %rdx, but the value of
+  %rdx is dead after this point so that is OK. ]
 
+Signed-off-by: David Howells <dhowells@redhat.com>
+LKML-Reference: <20100504124253.30994.79841.stgit@warthog.procyon.org.uk>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/lib/rwsem_64.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/lib/rwsem_64.S b/arch/x86/lib/rwsem_64.S
+index 15acecf..41fcf00 100644
+--- a/arch/x86/lib/rwsem_64.S
++++ b/arch/x86/lib/rwsem_64.S
+@@ -60,7 +60,7 @@ ENTRY(call_rwsem_down_write_failed)
+ 	ENDPROC(call_rwsem_down_write_failed)
+ 
+ ENTRY(call_rwsem_wake)
+-	decw %dx    /* do nothing if still outstanding active readers */
++	decl %edx	/* do nothing if still outstanding active readers */
+ 	jnz 1f
+ 	save_common_regs
+ 	movq %rax,%rdi
