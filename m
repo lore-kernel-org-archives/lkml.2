@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933411Ab0EDSgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 14:36:39 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:35547 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760043Ab0EDSgh (ORCPT
+	id S933493Ab0EDSgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 14:36:47 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44010 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760063Ab0EDSgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 14:36:37 -0400
-Date: Tue, 4 May 2010 11:36:04 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-       devel@driverdev.osuosl.org
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Marin Mitov <mitov@issp.bas.bg>
-Subject: Re: linux-next: Tree for May 4 (staging/dt3155v4l)
-Message-Id: <20100504113604.fe00959d.randy.dunlap@oracle.com>
-In-Reply-To: <20100504162305.4a07a18a.sfr@canb.auug.org.au>
-References: <20100504162305.4a07a18a.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 4 May 2010 14:36:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=Tg5qcU5g1oRU+hFlt2Rs33BRqz6ygLi4cY25NxJjyTfI91kR0ykyY3jqIoMwcnF851
+         mKtZ6wH32BcbYs06XvVX7LL/XFOHWklHf2yUBIb2Uo404oE5GP/OU1gn06Di9JsW/jcH
+         XxerAiGGZPeNv+NcxdKBk816SszyouHLzvMlk=
+Message-ID: <4BE06933.9080202@lwfinger.net>
+Date: Tue, 04 May 2010 13:36:35 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: How to write marker info in MMIO trace from kernel
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090203.4BE0691B.0085:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 May 2010 16:23:05 +1000 Stephen Rothwell wrote:
+Stephen,
 
-> Hi all,
-> 
-> Changes since 20100503:
+I hope you are the correct person for this question.
 
+I would like to write information into the MMIO trace file similar to
+what the user space write to /sys/.../trace_marker would accomplish,
+however, I want to do it in place of printk statements in the driver I'm
+tracing. Do you have any suggestions on how to do this? I have tools to
+merge the trace dump with dmesg output, but the latter lags behind and I
+do not get good correlation.
 
-drivers/staging/dt3155v4l/dt3155v4l.c:73: error: implicit declaration of function 'udelay'
-drivers/staging/dt3155v4l/dt3155v4l.c:616: warning: assignment from incompatible pointer type
-drivers/staging/dt3155v4l/dt3155v4l.c:1270: error: implicit declaration of function 'msleep'
+Thanks,
 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Larry
