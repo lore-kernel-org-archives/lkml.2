@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281Ab0EDHyE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 03:54:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4706 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756988Ab0EDHyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 03:54:00 -0400
-Message-ID: <4BDFD295.7000702@redhat.com>
-Date: Tue, 04 May 2010 10:53:57 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1757234Ab0EDHzk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 03:55:40 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:55604 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756402Ab0EDHzi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 03:55:38 -0400
+Date: Tue, 4 May 2010 06:18:50 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Nico Schottelius <nico-linux-20100427@schottelius.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Cc: Linux-pm mailing list <linux-pm@lists.osdl.org>
+Subject: Re: 2.6.33-2.6.34-rc5 suspend issues
+Message-ID: <20100504041849.GA1262@ucw.cz>
+References: <20100427074609.GA3261@ikn.schottelius.org>
+ <20100427083202.GA3143@ikn.schottelius.org>
+ <20100428160935.GA4010@schottelius.org>
+ <20100429191241.GA3407@schottelius.org>
+ <20100501122441.GA3273@schottelius.org>
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/22] KVM: MMU: Track page fault data in struct vcpu
-References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com> <1272364712-17425-17-git-send-email-joerg.roedel@amd.com> <4BD6DF7C.1090203@redhat.com> <20100503163221.GB28950@amd.com>
-In-Reply-To: <20100503163221.GB28950@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100501122441.GA3273@schottelius.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2010 07:32 PM, Joerg Roedel wrote:
-> On Tue, Apr 27, 2010 at 03:58:36PM +0300, Avi Kivity wrote:
->    
->> So we probably need to upgrade gva_t to a u64.  Please send this as
->> a separate patch, and test on i386 hosts.
->>      
-> Are there _any_ regular tests of KVM on i386 hosts? For me this is
-> terribly broken (also after I fixed the issue which gave me a
-> VMEXIT_INVALID at the first vmrun).
->
->    
+On Sat 2010-05-01 14:24:41, Nico Schottelius wrote:
+> Nico Schottelius [Thu, Apr 29, 2010 at 09:12:42PM +0200]:
+> > Nico Schottelius [Wed, Apr 28, 2010 at 06:09:36PM +0200]:
+> > > Nico Schottelius [Tue, Apr 27, 2010 at 10:32:02AM +0200]:
+> > > > 
+> > > > Nico Schottelius [Tue, Apr 27, 2010 at 09:46:09AM +0200]:
+> > > > > [..] 
+> > > > > - suspend & resume works once
+> > > > > - second time system
+> > > > >   b) suspends, but comes up with the bios screen after resume
+> > > > >      and hangs there forever (2.6.34-*)
+...
+> Same happens on 2.6.34-rc5-00340-g79dba2e, now testing
+> 2.6.34-rc6-00063-gbe1066b.
 
-No, apart from the poor users.  I'll try to set something up using nsvm.
+There's one bit that needs to be set to stay in the acpi mode, and
+there's blacklist somewhere...?
+									Pavel
 
 -- 
-error compiling committee.c: too many arguments to function
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
