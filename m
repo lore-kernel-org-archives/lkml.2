@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934140Ab0EDU24 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:28:56 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:35184 "EHLO e4.ny.us.ibm.com"
+	id S934132Ab0EDU2q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:28:46 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:54131 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933759Ab0EDUUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933760Ab0EDUUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 May 2010 16:20:15 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,10 +13,13 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 10/48] rcu: refactor RCU's context-switch handling
-Date: Tue,  4 May 2010 13:19:20 -0700
-Message-Id: <1273004398-19760-10-git-send-email-paulmck@linux.vnet.ibm.com>
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>
+Subject: [PATCH tip/core/rcu 22/48] rcu head remove init
+Date: Tue,  4 May 2010 13:19:32 -0700
+Message-Id: <1273004398-19760-22-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100504201934.GA19234@linux.vnet.ibm.com>
 References: <20100504201934.GA19234@linux.vnet.ibm.com>
@@ -24,193 +27,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The addition of preemptible RCU to treercu resulted in a bit of
-confusion and inefficiency surrounding the handling of context switches
-for RCU-sched and for RCU-preempt.  For RCU-sched, a context switch
-is a quiescent state, pure and simple, just like it always has been.
-For RCU-preempt, a context switch is in no way a quiescent state, but
-special handling is required when a task blocks in an RCU read-side
-critical section.
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-However, the callout from the scheduler and the outer loop in ksoftirqd
-still calls something named rcu_sched_qs(), whose name is no longer
-accurate.  Furthermore, when rcu_check_callbacks() notes an RCU-sched
-quiescent state, it ends up unnecessarily (though harmlessly, aside
-from the performance hit) enqueuing the current task if it happens to
-be running in an RCU-preempt read-side critical section.  This not only
-increases the maximum latency of scheduler_tick(), it also needlessly
-increases the overhead of the next outermost rcu_read_unlock() invocation.
+RCU heads really don't need to be initialized. Their state before call_rcu()
+really does not matter.
 
-This patch addresses this situation by separating the notion of RCU's
-context-switch handling from that of RCU-sched's quiescent states.
-The context-switch handling is covered by rcu_note_context_switch() in
-general and by rcu_preempt_note_context_switch() for preemptible RCU.
-This permits rcu_sched_qs() to handle quiescent states and only quiescent
-states.  It also reduces the maximum latency of scheduler_tick(), though
-probably by much less than a microsecond.  Finally, it means that tasks
-within preemptible-RCU read-side critical sections avoid incurring the
-overhead of queuing unless there really is a context switch.
+We need to keep init/destroy_rcu_head_on_stack() though, since we want
+debugobjects to be able to keep track of these objects.
 
-Suggested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org
+CC: mingo@elte.hu
+CC: laijs@cn.fujitsu.com
+CC: dipankar@in.ibm.com
+CC: josh@joshtriplett.org
+CC: dvhltc@us.ibm.com
+CC: niv@us.ibm.com
+CC: tglx@linutronix.de
+CC: peterz@infradead.org
+CC: rostedt@goodmis.org
+CC: Valdis.Kletnieks@vt.edu
+CC: dhowells@redhat.com
+CC: eric.dumazet@gmail.com
+CC: Alexey Dobriyan <adobriyan@gmail.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- include/linux/rcutiny.h |    4 ++++
- include/linux/rcutree.h |    1 +
- kernel/rcutree.c        |   17 ++++++++++++-----
- kernel/rcutree_plugin.h |   11 +++++++----
- kernel/sched.c          |    2 +-
- kernel/softirq.c        |    2 +-
- 6 files changed, 26 insertions(+), 11 deletions(-)
+ include/linux/rcupdate.h |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index bbeb55b..ff22b97 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -29,6 +29,10 @@
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index b653b4a..3a1a70d 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -73,12 +73,6 @@ extern void rcu_init(void);
+ #error "Unknown RCU implementation specified to kernel configuration"
+ #endif
  
- void rcu_sched_qs(int cpu);
- void rcu_bh_qs(int cpu);
-+static inline void rcu_note_context_switch(int cpu)
-+{
-+	rcu_sched_qs(cpu);
-+}
- 
- #define __rcu_read_lock()	preempt_disable()
- #define __rcu_read_unlock()	preempt_enable()
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index 7484fe6..b9f7460 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -34,6 +34,7 @@ struct notifier_block;
- 
- extern void rcu_sched_qs(int cpu);
- extern void rcu_bh_qs(int cpu);
-+extern void rcu_note_context_switch(int cpu);
- extern int rcu_needs_cpu(int cpu);
- extern int rcu_expedited_torture_stats(char *page);
- 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 86bb949..e336313 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -97,25 +97,32 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
-  */
- void rcu_sched_qs(int cpu)
+-#define RCU_HEAD_INIT	{ .next = NULL, .func = NULL }
+-#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
+-#define INIT_RCU_HEAD(ptr) do { \
+-       (ptr)->next = NULL; (ptr)->func = NULL; \
+-} while (0)
+-
+ static inline void init_rcu_head_on_stack(struct rcu_head *head)
  {
--	struct rcu_data *rdp;
-+	struct rcu_data *rdp = &per_cpu(rcu_sched_data, cpu);
- 
--	rdp = &per_cpu(rcu_sched_data, cpu);
- 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
- 	barrier();
- 	rdp->passed_quiesc = 1;
--	rcu_preempt_note_context_switch(cpu);
  }
- 
- void rcu_bh_qs(int cpu)
- {
--	struct rcu_data *rdp;
-+	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
- 
--	rdp = &per_cpu(rcu_bh_data, cpu);
- 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
- 	barrier();
- 	rdp->passed_quiesc = 1;
- }
- 
-+/*
-+ * Note a context switch.  This is a quiescent state for RCU-sched,
-+ * and requires special handling for preemptible RCU.
-+ */
-+void rcu_note_context_switch(int cpu)
-+{
-+	rcu_sched_qs(cpu);
-+	rcu_preempt_note_context_switch(cpu);
-+}
-+
- #ifdef CONFIG_NO_HZ
- DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
- 	.dynticks_nesting = 1,
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 687c4e9..f9bc83a 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -75,13 +75,19 @@ EXPORT_SYMBOL_GPL(rcu_force_quiescent_state);
-  * that this just means that the task currently running on the CPU is
-  * not in a quiescent state.  There might be any number of tasks blocked
-  * while in an RCU read-side critical section.
-+ *
-+ * Unlike the other rcu_*_qs() functions, callers to this function
-+ * must disable irqs in order to protect the assignment to
-+ * ->rcu_read_unlock_special.
-  */
- static void rcu_preempt_qs(int cpu)
- {
- 	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
-+
- 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
- 	barrier();
- 	rdp->passed_quiesc = 1;
-+	current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
- }
- 
- /*
-@@ -144,9 +150,8 @@ static void rcu_preempt_note_context_switch(int cpu)
- 	 * grace period, then the fact that the task has been enqueued
- 	 * means that we continue to block the current grace period.
- 	 */
--	rcu_preempt_qs(cpu);
- 	local_irq_save(flags);
--	t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
-+	rcu_preempt_qs(cpu);
- 	local_irq_restore(flags);
- }
- 
-@@ -236,7 +241,6 @@ static void rcu_read_unlock_special(struct task_struct *t)
- 	 */
- 	special = t->rcu_read_unlock_special;
- 	if (special & RCU_READ_UNLOCK_NEED_QS) {
--		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
- 		rcu_preempt_qs(smp_processor_id());
- 	}
- 
-@@ -473,7 +477,6 @@ static void rcu_preempt_check_callbacks(int cpu)
- 	struct task_struct *t = current;
- 
- 	if (t->rcu_read_lock_nesting == 0) {
--		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
- 		rcu_preempt_qs(cpu);
- 		return;
- 	}
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3c2a54f..d8a213c 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3706,7 +3706,7 @@ need_resched:
- 	preempt_disable();
- 	cpu = smp_processor_id();
- 	rq = cpu_rq(cpu);
--	rcu_sched_qs(cpu);
-+	rcu_note_context_switch(cpu);
- 	prev = rq->curr;
- 	switch_count = &prev->nivcsw;
- 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 7c1a67e..0db913a 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -716,7 +716,7 @@ static int run_ksoftirqd(void * __bind_cpu)
- 			preempt_enable_no_resched();
- 			cond_resched();
- 			preempt_disable();
--			rcu_sched_qs((long)__bind_cpu);
-+			rcu_note_context_switch((long)__bind_cpu);
- 		}
- 		preempt_enable();
- 		set_current_state(TASK_INTERRUPTIBLE);
 -- 
 1.7.0
 
