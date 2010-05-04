@@ -1,113 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757907Ab0EDLdE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 07:33:04 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39052 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752058Ab0EDLdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 07:33:00 -0400
-Date: Tue, 4 May 2010 13:32:27 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@alien8.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: perf, ftrace and MCEs
-Message-ID: <20100504113227.GA14067@elte.hu>
-References: <20100501181212.GA25352@liondog.tnic>
+	id S1758194Ab0EDLeE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 07:34:04 -0400
+Received: from inca-roads.misterjones.org ([213.251.177.50]:50111 "EHLO
+	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752058Ab0EDLeA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 07:34:00 -0400
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: 2.6.34-rc6 regression: pcmcia no longer compiles
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100501181212.GA25352@liondog.tnic>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Date: Tue, 04 May 2010 13:33:54 +0200
+From: Marc Zyngier <maz@misterjones.org>
+Cc: <rpurdie@rpsys.net>, <lenz@cs.wisc.edu>,
+       kernel list <linux-kernel@vger.kernel.org>, <arminlitzel@web.de>,
+       Cyril Hrubis <metan@ucw.cz>, <thommycheck@gmail.com>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       <dbaryshkov@gmail.com>, <omegamoon@gmail.com>, <eric.y.miao@gmail.com>,
+       <utx@penguin.cz>, <zaurus-devel@www.linuxtogo.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-pcmcia@lists.infradead.org>,
+       <linux@dominikbrodowski.net>
+Organization: Metropolis
+In-Reply-To: <20100504041448.GA2893@ucw.cz>
+References: <20100504041448.GA2893@ucw.cz>
+Message-ID: <c79eb84d24e70983f4422c89a35580ff@localhost>
+User-Agent: RoundCube Webmail/0.3.1
+Content-Type: multipart/mixed;
+	boundary="=_e5a6d83fa019327289c71702b8701836"
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Rcpt-To: pavel@ucw.cz, rpurdie@rpsys.net, lenz@cs.wisc.edu, linux-kernel@vger.kernel.org, arminlitzel@web.de, metan@ucw.cz, thommycheck@gmail.com, linux-arm-kernel@lists.infradead.org, dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com, utx@penguin.cz, zaurus-devel@lists.linuxtogo.org, rjw@sisk.pl, linux-pcmcia@lists.infradead.org, linux@dominikbrodowski.net
+X-SA-Exim-Mail-From: maz@misterjones.org
+X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Borislav Petkov <bp@alien8.de> wrote:
+--=_e5a6d83fa019327289c71702b8701836
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 
-> Hi,
+On Tue, 4 May 2010 06:14:48 +0200, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
 > 
-> so I finally had some spare time to stare at perf/ftrace code and ponder on 
-> how to use those facilities for MCE collecting and reporting. Btw, I have to 
-> say, it took me quite a while to understand what goes where - my suggestion 
-> to anyone who tries to understand how perf/ftrace works is to do make 
-> <file.i> where there is at least one trace_XXX emit record function call and 
-> start untangling code paths from there.
+> -rc5 compiled ok with similar config.
 > 
-> So anyway, here are some questions I had, I just as well may've missed 
-> something so please correct me if I'm wrong:
+> Now I get:
 > 
-> 1. Since machine checks can happen at any time, we need to have the MCE 
-> tracepoint (trace_mce_record() in <include/trace/events/mce.h>) always 
-> enabled. This, in turn, means that we need the ftrace/perf infrastructure 
-> always compiled in (lockless ring buffer, perf_event.c stuff) on any x86 
-> system so that MCEs can be handled at anytime. Is this going to be ok to be 
-> enabled on _all_ machines, hmmm... I dunno, maybe only a subset of those 
-> facilites at least.
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+> make[1]: `include/generated/mach-types.h' is up to date.
+>   CALL    scripts/checksyscalls.sh
+>   CHK     include/generated/compile.h
+>   CC      drivers/pcmcia/pcmcia_ioctl.o
+> drivers/pcmcia/pcmcia_ioctl.c: In function 'ds_open':
+> drivers/pcmcia/pcmcia_ioctl.c:714: error: 'struct <anonymous>' has no
+> member named 'present'
+> drivers/pcmcia/pcmcia_ioctl.c: In function 'ds_read':
+> drivers/pcmcia/pcmcia_ioctl.c:773: error: 'struct <anonymous>' has no
+> member named 'dead'
+> drivers/pcmcia/pcmcia_ioctl.c: In function 'ds_ioctl':
+> drivers/pcmcia/pcmcia_ioctl.c:841: error: 'struct <anonymous>' has no
+> member named 'dead'
+> make[2]: *** [drivers/pcmcia/pcmcia_ioctl.o] Error 1
+> make[1]: *** [drivers/pcmcia] Error 2
+> make: *** [drivers] Error 2
 
-Yeah - and this happens on x86 anyway so you can rely on it.
+Does the attached patch fix it (compile-tested only)?
 
-> 2. Tangential to 1., we need that "thin" software layer prepared for 
-> decoding and reporting them as early as possible. event_trace_init() is an 
-> fs_initcall and executed too late, IMHO. The ->perf_event_enable in the 
-> ftrace_event_call is enabled even later on the perf init path over the 
-> sys_perf_even_open which is at userspace time. In our case, this is going be 
-> executed by the error logging and decoding daemon I guess.
+        M.
+-- 
+Who you jivin' with that Cosmik Debris?
+--=_e5a6d83fa019327289c71702b8701836
+Content-Transfer-Encoding: base64
+Content-Type: text/plain;
+ name*0*="UTF-8''0001-pcmcia-fix-compilation-after-16bit-state-locking-ch"
+ name*1*="a.patch";
+Content-Disposition: attachment;
+ filename*0*="UTF-8''0001-pcmcia-fix-compilation-after-16bit-state-lockin"
+ filename*1*="g-cha.patch";
 
-We could certainly move bits of this initialization earlier.
+RnJvbSA3ZDI4OWY5YjA2MmUxYjE3ZTk4NWM3ODk4Zjg4MjRlMjQxN2Q3ODNjIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBNYXJjIFp5bmdpZXIgPG1hekBtaXN0ZXJqb25lcy5vcmc+CkRh
+dGU6IFR1ZSwgNCBNYXkgMjAxMCAxMjoyMTo1MyArMDEwMApTdWJqZWN0OiBbUEFUQ0hdIHBjbWNp
+YTogZml4IGNvbXBpbGF0aW9uIGFmdGVyIDE2Yml0IHN0YXRlIGxvY2tpbmcgY2hhbmdlcwoKQ29t
+bWl0IDA0ZGUwODE2IChwY21jaWE6IHBjbWNpYV9kZXZfcHJlc2VudCBidWdmaXgpIGJyb2tlIHRo
+ZQpkZXByZWNhdGVkIGlvY3RsIGxheWVyLiBGaXggaXQgYnkgZ2V0dGluZyByaWQgb2YgcmVmZXJl
+bmNlcyB0bwp1bmV4aXN0aW5nIGZpZWxkcy4KClNpZ25lZC1vZmYtYnk6IE1hcmMgWnluZ2llciA8
+bWF6QG1pc3RlcmpvbmVzLm9yZz4KUmVwb3J0ZWQtYnk6IFBhdmVsIE1hY2hlayA8cGF2ZWxAdWN3
+LmN6PgotLS0KIGRyaXZlcnMvcGNtY2lhL3BjbWNpYV9pb2N0bC5jIHwgICAgNyArLS0tLS0tCiAx
+IGZpbGVzIGNoYW5nZWQsIDEgaW5zZXJ0aW9ucygrKSwgNiBkZWxldGlvbnMoLSkKCmRpZmYgLS1n
+aXQgYS9kcml2ZXJzL3BjbWNpYS9wY21jaWFfaW9jdGwuYyBiL2RyaXZlcnMvcGNtY2lhL3BjbWNp
+YV9pb2N0bC5jCmluZGV4IDEwNGU3M2QuLjc2MzFmYWEgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvcGNt
+Y2lhL3BjbWNpYV9pb2N0bC5jCisrKyBiL2RyaXZlcnMvcGNtY2lhL3BjbWNpYV9pb2N0bC5jCkBA
+IC03MTEsNyArNzExLDcgQEAgc3RhdGljIGludCBkc19vcGVuKHN0cnVjdCBpbm9kZSAqaW5vZGUs
+IHN0cnVjdCBmaWxlICpmaWxlKQogCSAgICB3YXJuaW5nX3ByaW50ZWQgPSAxOwogICAgIH0KIAot
+ICAgIGlmIChzLT5wY21jaWFfc3RhdGUucHJlc2VudCkKKyAgICBpZiAoYXRvbWljX3JlYWQoJnMt
+PnByZXNlbnQpKQogCXF1ZXVlX2V2ZW50KHVzZXIsIENTX0VWRU5UX0NBUkRfSU5TRVJUSU9OKTsK
+IG91dDoKICAgICB1bmxvY2tfa2VybmVsKCk7CkBAIC03NzAsOSArNzcwLDYgQEAgc3RhdGljIHNz
+aXplX3QgZHNfcmVhZChzdHJ1Y3QgZmlsZSAqZmlsZSwgY2hhciBfX3VzZXIgKmJ1ZiwKIAlyZXR1
+cm4gLUVJTzsKIAogICAgIHMgPSB1c2VyLT5zb2NrZXQ7Ci0gICAgaWYgKHMtPnBjbWNpYV9zdGF0
+ZS5kZWFkKQotCXJldHVybiAtRUlPOwotCiAgICAgcmV0ID0gd2FpdF9ldmVudF9pbnRlcnJ1cHRp
+YmxlKHMtPnF1ZXVlLCAhcXVldWVfZW1wdHkodXNlcikpOwogICAgIGlmIChyZXQgPT0gMCkKIAly
+ZXQgPSBwdXRfdXNlcihnZXRfcXVldWVkX2V2ZW50KHVzZXIpLCAoaW50IF9fdXNlciAqKWJ1Zikg
+PyAtRUZBVUxUIDogNDsKQEAgLTgzOCw4ICs4MzUsNiBAQCBzdGF0aWMgaW50IGRzX2lvY3RsKHN0
+cnVjdCBpbm9kZSAqaW5vZGUsIHN0cnVjdCBmaWxlICpmaWxlLAogCXJldHVybiAtRUlPOwogCiAg
+ICAgcyA9IHVzZXItPnNvY2tldDsKLSAgICBpZiAocy0+cGNtY2lhX3N0YXRlLmRlYWQpCi0JcmV0
+dXJuIC1FSU87CiAKICAgICBzaXplID0gKGNtZCAmIElPQ1NJWkVfTUFTSykgPj4gSU9DU0laRV9T
+SElGVDsKICAgICBpZiAoc2l6ZSA+IHNpemVvZihkc19pb2N0bF9hcmdfdCkpCi0tIAoxLjcuMC40
+Cgo=
+--=_e5a6d83fa019327289c71702b8701836--
 
-Also we could add the notion of 'persistent' events that dont have a 
-user-space process attached to them - and which would buffer to a certain 
-degree. Such persistent events could be initialized during bootup and the 
-daemon could pick up the events later on.
-
-In-kernel actions/policy could work off the callback mechanism. (See for 
-example how the new NMI watchdog code in tip:perf/nmi makes use of it - or how 
-the hw-breakpoints code utilizes it.) These would work even if there's no 
-user-space daemon attached (or if the daemon has been stopped). So i dont see 
-a significant design problem here - it's all natural extensions of existing 
-perf facilities and could be used for other purposes as well.
-
-> 3. Since we want to listen for MCEs all the time, the concept of enabling 
-> and disabling those events does not apply in the sense of performance 
-> profiling. [...]
-
-Correct.
-
-> [...] IOW, MCEs need to be able to be logged to the ring buffer at any time. 
-> I guess this is easily done - we simply enable MCE events at the earliest 
-> moment possible and disable them on shutdown; done.
-> 
-> So yeah, some food for thought but what do you guys think?
-
-Note that it doesnt _have to_ go to the ftrace ring-buffer. If the daemon (or 
-whatever facility picking up the events) keeps a global (per cpu) MCE perf 
-event enabled all the time then it might be doing that regardless of ftrace.
-
-Some decoupling from ftrace could be done here easily. I'd suggest to not 
-worry about it - once we have the MCE event code we can certainly reshape the 
-underlying support code to be more readily available/configurable. (or even 
-built-in) This is not really a significant design issue.
-
-To start with this, a quick initial prototype could use the 'perf trace' live 
-mode tracing script. (See latest -tip, 'perf trace --script <script-name>' and 
-'perf record -o -' to activate live mode.)
-
-Note that there's also 'perf inject' now, which can be used to simulate rare 
-events and test the daemon's reactions to it. (Right now perf-inject is only 
-used to inject certain special build-id events, but it can be used for the 
-injection of MCE events as well.)
-
-Thanks,
-
-	Ingo
