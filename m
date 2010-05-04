@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933890Ab0EDUUi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:20:38 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:33739 "EHLO e6.ny.us.ibm.com"
+	id S933953Ab0EDUU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:20:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50455 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933739Ab0EDUUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 16:20:12 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 16/48] rcu: permit discontiguous cpu_possible_mask CPU numbering
-Date: Tue,  4 May 2010 13:19:26 -0700
-Message-Id: <1273004398-19760-16-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100504201934.GA19234@linux.vnet.ibm.com>
-References: <20100504201934.GA19234@linux.vnet.ibm.com>
+	id S933927Ab0EDUU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 16:20:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,328,1270450800"; 
+   d="scan'208";a="618867696"
+Date: Tue, 4 May 2010 20:42:36 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, "Greg Kroah-Hartman" <gregkh@suse.de>
+Subject: Re: possible locking bug in tty_open
+Message-ID: <20100504204236.5dc6a34e@linux.intel.com>
+In-Reply-To: <201005022247.33857.arnd@arndb.de>
+References: <201005022247.33857.arnd@arndb.de>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TREE_RCU assumes that CPU numbering is contiguous, but some users need
-large holes in the numbering to better map to hardware layout.  This patch
-makes TREE_RCU (and TREE_PREEMPT_RCU) tolerate large holes in the CPU
-numbering.  However, NR_CPUS must still be greater than the largest
-CPU number.
+On Sun, 2 May 2010 22:47:33 +0200
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutree.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> While playing some more with my TTY BKL patches, I stumbled over
+> what looks like a bug in tty_open, introduced in e8c6210 
+> "tty: push the BKL down into the handlers a bit":
+> 
+> After the "retry_open:" label, we first get the tty_mutex
+> and then the BKL. However a the end of tty_open, we jump
+> back to retry_open with the BKL still held. If we run into
+> this case, the tty_open function will be left with the BKL
+> still held.
+> 
+> It may be impossible to actually trigger this bug, because
+> the path is only taken if a tty driver open function returns
+> -ERESTARTSYS without setting signal_pending().
+> 
+> 	Arnd
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index f391886..c60fd74 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1913,7 +1913,7 @@ static void __init rcu_init_one(struct rcu_state *rsp)
- 
- 	rnp = rsp->level[NUM_RCU_LVLS - 1];
- 	for_each_possible_cpu(i) {
--		if (i > rnp->grphi)
-+		while (i > rnp->grphi)
- 			rnp++;
- 		rsp->rda[i]->mynode = rnp;
- 		rcu_boot_init_percpu_data(i, rsp);
--- 
-1.7.0
+I think all we need is probably this
 
+tty: Fix unbalanced BKL handling in error path
+    
+Arnd noted:
+    
+After the "retry_open:" label, we first get the tty_mutex
+and then the BKL. However a the end of tty_open, we jump
+back to retry_open with the BKL still held. If we run into
+this case, the tty_open function will be left with the BKL
+still held.
+    
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index 6da962c..fe810a7 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -1875,6 +1875,7 @@ got_driver:
+ 		 */
+ 		if (filp->f_op == &hung_up_tty_fops)
+ 			filp->f_op = &tty_fops;
++		unlock_kernel();
+ 		goto retry_open;
+ 	}
+ 	unlock_kernel();
