@@ -1,140 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934005Ab0EDUYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:24:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42980 "EHLO ogre.sisk.pl"
+	id S933974Ab0EDUXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:23:00 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:47748 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933837Ab0EDUWt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 16:22:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Date: Tue, 4 May 2010 22:23:41 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Brian Swetland <swetland@google.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-References: <1272667021-21312-1-git-send-email-arve@android.com> <20100504135907.GA3651@opensource.wolfsonmicro.com> <87r5lrh780.fsf@deeprootsystems.com>
-In-Reply-To: <87r5lrh780.fsf@deeprootsystems.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005042223.41370.rjw@sisk.pl>
+	id S933803Ab0EDUUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 16:20:20 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 18/48] rcu: improve the RCU CPU-stall warning documentation
+Date: Tue,  4 May 2010 13:19:28 -0700
+Message-Id: <1273004398-19760-18-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <20100504201934.GA19234@linux.vnet.ibm.com>
+References: <20100504201934.GA19234@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 May 2010, Kevin Hilman wrote:
-> Mark Brown <broonie@opensource.wolfsonmicro.com> writes:
-> 
-> > On Mon, May 03, 2010 at 05:43:34PM -0700, Brian Swetland wrote:
-> >> On Mon, May 3, 2010 at 5:09 PM, Arve Hjønnevåg <arve@android.com> wrote:
-> >> > On Mon, May 3, 2010 at 4:37 PM, Kevin Hilman
-> >
-> >> >> This last point is especially troubling.  I don't find it a comforting
-> >> >> path to go down if the drivers have to start caring about which PM
-> >> >> policy is currently in use.
-> >
-> >> I'll echo Arve here -- all drivers should seek to be in the lowest
-> >> power state possible at all times.  We've never suggested that
-> >> suspend_block is a substitute for that.
-> >
-> > Looking at this from a subsystem/driver author point of view the problem
-> > I'm faced with is that as a result of using system suspend much more
-> > aggressively the subsystem and driver layers are getting conflicting
-> > instructions about what the lowest power state possible is.
-> 
-> Exactly.
-> 
-> With runtime PM, there is flexibility in choosing the lowest power
-> state at the device/subsystem level, based on activity, timeouts,
-> bitrate, dependencies, latency/throughput constraints, etc.
-> 
-> With opportunistic suspend, all of this flexibility is gone, and the
-> device/subsystem is told to go into the lowest power, highest latency
-> state, period.
+The existing Documentation/RCU/stallwarn.txt has proven unhelpful, so
+rework it a bit.  In particular, show how to interpret the stall-warning
+messages.
 
-Guys, please.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ Documentation/RCU/stallwarn.txt |   94 +++++++++++++++++++++++++++++---------
+ 1 files changed, 71 insertions(+), 23 deletions(-)
 
-The opportunistic suspend feature is _not_ to replace runtime PM by any means!
+diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
+index 1423d25..44c6dcc 100644
+--- a/Documentation/RCU/stallwarn.txt
++++ b/Documentation/RCU/stallwarn.txt
+@@ -3,35 +3,79 @@ Using RCU's CPU Stall Detector
+ The CONFIG_RCU_CPU_STALL_DETECTOR kernel config parameter enables
+ RCU's CPU stall detector, which detects conditions that unduly delay
+ RCU grace periods.  The stall detector's idea of what constitutes
+-"unduly delayed" is controlled by a pair of C preprocessor macros:
++"unduly delayed" is controlled by a set of C preprocessor macros:
+ 
+ RCU_SECONDS_TILL_STALL_CHECK
+ 
+ 	This macro defines the period of time that RCU will wait from
+ 	the beginning of a grace period until it issues an RCU CPU
+-	stall warning.	It is normally ten seconds.
++	stall warning.	This time period is normally ten seconds.
+ 
+ RCU_SECONDS_TILL_STALL_RECHECK
+ 
+ 	This macro defines the period of time that RCU will wait after
+-	issuing a stall warning until it issues another stall warning.
+-	It is normally set to thirty seconds.
++	issuing a stall warning until it issues another stall warning
++	for the same stall.  This time period is normally set to thirty
++	seconds.
+ 
+ RCU_STALL_RAT_DELAY
+ 
+-	The CPU stall detector tries to make the offending CPU rat on itself,
+-	as this often gives better-quality stack traces.  However, if
+-	the offending CPU does not detect its own stall in the number
+-	of jiffies specified by RCU_STALL_RAT_DELAY, then other CPUs will
+-	complain.  This is normally set to two jiffies.
++	The CPU stall detector tries to make the offending CPU print its
++	own warnings, as this often gives better-quality stack traces.
++	However, if the offending CPU does not detect its own stall in
++	the number of jiffies specified by RCU_STALL_RAT_DELAY, then
++	some other CPU will complain.  This delay is normally set to
++	two jiffies.
+ 
+-The following problems can result in an RCU CPU stall warning:
++When a CPU detects that it is stalling, it will print a message similar
++to the following:
++
++INFO: rcu_sched_state detected stall on CPU 5 (t=2500 jiffies)
++
++This message indicates that CPU 5 detected that it was causing a stall,
++and that the stall was affecting RCU-sched.  This message will normally be
++followed by a stack dump of the offending CPU.  On TREE_RCU kernel builds,
++RCU and RCU-sched are implemented by the same underlying mechanism,
++while on TREE_PREEMPT_RCU kernel builds, RCU is instead implemented
++by rcu_preempt_state.
++
++On the other hand, if the offending CPU fails to print out a stall-warning
++message quickly enough, some other CPU will print a message similar to
++the following:
++
++INFO: rcu_bh_state detected stalls on CPUs/tasks: { 3 5 } (detected by 2, 2502 jiffies)
++
++This message indicates that CPU 2 detected that CPUs 3 and 5 were both
++causing stalls, and that the stall was affecting RCU-bh.  This message
++will normally be followed by stack dumps for each CPU.  Please note that
++TREE_PREEMPT_RCU builds can be stalled by tasks as well as by CPUs,
++and that the tasks will be indicated by PID, for example, "P3421".
++It is even possible for a rcu_preempt_state stall to be caused by both
++CPUs -and- tasks, in which case the offending CPUs and tasks will all
++be called out in the list.
++
++Finally, if the grace period ends just as the stall warning starts
++printing, there will be a spurious stall-warning message:
++
++INFO: rcu_bh_state detected stalls on CPUs/tasks: { } (detected by 4, 2502 jiffies)
++
++This is rare, but does happen from time to time in real life.
++
++So your kernel printed an RCU CPU stall warning.  The next question is
++"What caused it?"  The following problems can result in RCU CPU stall
++warnings:
+ 
+ o	A CPU looping in an RCU read-side critical section.
+ 	
+-o	A CPU looping with interrupts disabled.
++o	A CPU looping with interrupts disabled.  This condition can
++	result in RCU-sched and RCU-bh stalls.
+ 
+-o	A CPU looping with preemption disabled.
++o	A CPU looping with preemption disabled.  This condition can
++	result in RCU-sched stalls and, if ksoftirqd is in use, RCU-bh
++	stalls.
++
++o	A CPU looping with bottom halves disabled.  This condition can
++	result in RCU-sched and RCU-bh stalls.
+ 
+ o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
+ 	without invoking schedule().
+@@ -39,20 +83,24 @@ o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
+ o	A bug in the RCU implementation.
+ 
+ o	A hardware failure.  This is quite unlikely, but has occurred
+-	at least once in a former life.  A CPU failed in a running system,
++	at least once in real life.  A CPU failed in a running system,
+ 	becoming unresponsive, but not causing an immediate crash.
+ 	This resulted in a series of RCU CPU stall warnings, eventually
+ 	leading the realization that the CPU had failed.
+ 
+-The RCU, RCU-sched, and RCU-bh implementations have CPU stall warning.
+-SRCU does not do so directly, but its calls to synchronize_sched() will
+-result in RCU-sched detecting any CPU stalls that might be occurring.
+-
+-To diagnose the cause of the stall, inspect the stack traces.  The offending
+-function will usually be near the top of the stack.  If you have a series
+-of stall warnings from a single extended stall, comparing the stack traces
+-can often help determine where the stall is occurring, which will usually
+-be in the function nearest the top of the stack that stays the same from
+-trace to trace.
++The RCU, RCU-sched, and RCU-bh implementations have CPU stall
++warning.  SRCU does not have its own CPU stall warnings, but its
++calls to synchronize_sched() will result in RCU-sched detecting
++RCU-sched-related CPU stalls.  Please note that RCU only detects
++CPU stalls when there is a grace period in progress.  No grace period,
++no CPU stall warnings.
++
++To diagnose the cause of the stall, inspect the stack traces.
++The offending function will usually be near the top of the stack.
++If you have a series of stall warnings from a single extended stall,
++comparing the stack traces can often help determine where the stall
++is occurring, which will usually be in the function nearest the top of
++that portion of the stack which remains the same from trace to trace.
++If you can reliably trigger the stall, ftrace can be quite helpful.
+ 
+ RCU bugs can often be debugged with the help of CONFIG_RCU_TRACE.
+-- 
+1.7.0
 
-However, there are situations in which runtime PM is clearly insufficient.
-The idea behind runtime PM is that subsystems and device drivers will know
-when to put devices into low power states and save energy this way.  Still,
-even if all subsystems do that 100% efficiently, there may be more savings
-possible by putting the entire system into a sleep state (like on ACPI-based
-PCs) and we can reach there by runtime PM alone.
-
-> >> Suspend blockers give us some flexibility on systems where runtime pm
-> >> will not get us all the way there. If you can meet your power needs
-> >> without needing suspend blockers, awesome, you don't need them on that
-> >> platform.  The patchset Arve sent out makes this feature an
-> >> off-by-default kernel configuration option that compiles out to no-ops
-> >> when disabled.
-> >
-> > I think a big part of this for me is that this approach changes the
-> > intended use of the system-wide suspend a bit, complicating it a bit
-> > further than it already is.  We end up doing a suspend (which in the
-> > normal course of affairs means that the driver should shut everything
-> > down) partly as a substitute for runtime PM on the core system devices
-> > and partly because our runtime PM isn't doing as well as it should on
-> > the individual devices.
-> 
-> Agreed, and because of this, part of my concern is that opportunistic
-> suspend will take the place of doing the "right thing" which (IMHO) 
-> would be to improve runtime PM for devices.
-
-It really can't, at least on some platforms.  For example, resuming a PC
-notebook from suspend to RAM takes more than 1s (with an SSD; rotational disks
-add more latency here) which is way too much for such a replacement.
-
-Besides, there also is room for runtime PM in the Android framework, because
-it needs to suspend certain devices without freezing processes, for example.
-
-The freezing of processes is the most important difference to me.  Runtime PM
-works with the assumption that processes are not frozen (hence the name), but
-arguably energy savings you can get without going behind that point are
-naturally limited.
-
-> > I'd be a lot more comfortable with this if it came with a mechanism for
-> > communicating the intended effect of a suspend on a per-device level so
-> > that the drivers have a clear way of figuring out what to do when the
-> > system suspends.  If there isn't one we can add subsystem or driver
-> > specific hooks, of course, but it'd be better to address this at the
-> > system level.
-> 
-> I agree.
-
-I'm not sure.  Why _exactly_ would you need that?
-
-> I think there needs to be more discussion on the indended usage
-> of suspend blockers by drivers/subsystems, especially those PM aware
-> drivers and subsystems already doing runtime PM with constraints etc.
-> 
-> >> In our experience, periodic timers and polling, both userspace side
-> >> and kernelside make suspend blockers a win even on platforms like OMAP
-> >> which have pretty flexible hardware power management.  Going to low
-> >> power states in idle results in higher average power consumption than
-> >> going to the same states in full suspend, at least on Android devices
-> >> shipping today.
-> >
-> > There's definite work to be done here, yes.
-> 
-> And I've admitted this to be the only compelling reason for
-> opportunistic suspend so far.
-> 
-> But the driver/subsystem implications of opportunistic suspend still
-> need some fleshing out IMO.
-
-At the moment, if you're not on Android, there are none.
-
-Thanks,
-Rafael
