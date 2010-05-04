@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab0EDHkx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 03:40:53 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:50123 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923Ab0EDHkw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 03:40:52 -0400
-Subject: Re: [PATCH 3/3] alpha: Implement HW performance events on the EV67
- and later CPUs.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael Cree <mcree@orcon.net.nz>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Richard Henderson <rth@twiddle.net>,
-       Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-       Matt Turner <mattst88@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-alpha@vger.kernel.org
-In-Reply-To: <8e86ca502b675b3730bd58be391e0239e87e176d.1272668361.git.mcree@orcon.net.nz>
-References: <cover.1272668360.git.mcree@orcon.net.nz>
-	 <8e86ca502b675b3730bd58be391e0239e87e176d.1272668361.git.mcree@orcon.net.nz>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 04 May 2010 09:40:08 +0200
-Message-ID: <1272958808.5605.126.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756903Ab0EDHmH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 03:42:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29761 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756132Ab0EDHmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 03:42:05 -0400
+Message-ID: <4BDFCF9F.3030600@redhat.com>
+Date: Tue, 04 May 2010 10:41:19 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Brian Gerst <brgerst@gmail.com>,
+       Dexuan Cui <dexuan.cui@intel.com>, Sheng Yang <sheng@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86: eliminate TS_XSAVE
+References: <1272812038-32484-1-git-send-email-avi@redhat.com>	 <1272812038-32484-2-git-send-email-avi@redhat.com> <u2p73c1f2161005021038gce35c1bbpca6ec119d24e646e@mail.gmail.com> <4BDDBA18.3080909@redhat.com> <4BDF4407.8000503@zytor.com>
+In-Reply-To: <4BDF4407.8000503@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-01 at 11:55 +1200, Michael Cree wrote:
-> +/* I wonder what this is for ??? */
-> +void set_perf_event_pending(void)
-> +{
-> +} 
+On 05/04/2010 12:45 AM, H. Peter Anvin wrote:
+>
+>> I was trying to avoid a performance regression relative to the current
+>> code, as it appears that some care was taken to avoid the memory reference.
+>>
+>> I agree that it's probably negligible compared to the save/restore
+>> code.  If the x86 maintainers agree as well, I'll replace it with
+>> cpu_has_xsave.
+>>
+>>      
+> I asked Suresh to comment on this, since he wrote the original code.  He
+> did confirm that the intent was to avoid a global memory reference.
+>
+>    
 
-If the PMU Interrupt comes in as an NMI we cannot take locks and such
-from its handler. So what we do is queue that work to be ran later. The
-kernel has a fallback to run this stuff from the timer hardirq, but if
-the PMI is IRQ context (like ARM) you can simply call
-perf_event_do_pending() at its tail.
+Ok, so you're happy with the patch as is?
 
-Alternatively you can self-IPI like x86 does and run
-perf_event_do_pending() from there.
-
+-- 
+error compiling committee.c: too many arguments to function
 
