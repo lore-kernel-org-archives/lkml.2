@@ -1,205 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741Ab0EDS1E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 14:27:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57689 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249Ab0EDS1B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 14:27:01 -0400
-Subject: Re: [PATCH 04/12] perf: add @rq to perf_event_task_sched_out()
-From: Peter Zijlstra <peterz@infradead.org>
-To: rostedt@goodmis.org
-Cc: Tejun Heo <tj@kernel.org>, mingo@elte.hu, efault@gmx.de, avi@redhat.com,
-       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1272997363.9739.232.camel@gandalf.stny.rr.com>
-References: <1272976724-14312-1-git-send-email-tj@kernel.org>
-	 <1272976724-14312-5-git-send-email-tj@kernel.org>
-	 <1272993090.1642.184.camel@laptop>  <4BE057EB.80604@kernel.org>
-	 <1272997363.9739.232.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 May 2010 20:26:56 +0200
-Message-ID: <1272997616.1642.207.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S933316Ab0EDS1o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 14:27:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9786 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933199Ab0EDS1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 14:27:41 -0400
+Date: Tue, 4 May 2010 21:22:36 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
+       kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
+       linux-mm@kvack.org, akpm@linux-foundation.org, hpa@zytor.com,
+       gregory.haskins@gmail.com, s.hetze@linux-ag.com,
+       Daniel Walker <dwalker@fifo99.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: virtio: put last_used and last_avail index into ring itself.
+Message-ID: <20100504182236.GA14141@redhat.com>
+References: <cover.1257349249.git.mst@redhat.com> <200911061529.17500.rusty@rustcorp.com.au> <20091108113516.GA19016@redhat.com> <200911091647.29655.rusty@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <200911091647.29655.rusty@rustcorp.com.au>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-04 at 14:22 -0400, Steven Rostedt wrote:
-> On Tue, 2010-05-04 at 19:22 +0200, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On 05/04/2010 07:11 PM, Peter Zijlstra wrote:
-> > > On Tue, 2010-05-04 at 14:38 +0200, Tejun Heo wrote:
-> > >> Add @rq to perf_event_task_sched_out() so that its argument matches
-> > >> those of trace_sched_switch().  This will help unifying notifiers in
-> > >> sched.
-> > > 
-> > > The alternative is dropping rq from the trace events, its not like
-> > > anybody outside sched.o can do anything sensible with it anyway.
-> > 
-> > The comment in include/trace/events/sched.h says...
-> > 
-> >  * (NOTE: the 'rq' argument is not used by generic trace events,
-> >  *        but used by the latency tracer plugin. )
-> > 
-> > So, I left it there.  It would be great if all those @rq params can be
-> > removed tho.  The latency tracer thing needs it, right?
+> virtio: put last_used and last_avail index into ring itself.
 > 
-> I believe the rq was used by the original latency tracer code that was
-> in the -rt patch set before ftrace. It is most likely there for
-> historical purposes. I guess it would be fine to just remove it.
+> Generally, the other end of the virtio ring doesn't need to see where
+> you're up to in consuming the ring.  However, to completely understand
+> what's going on from the outside, this information must be exposed.
+> For example, if you want to save and restore a virtio_ring, but you're
+> not the consumer because the kernel is using it directly.
+> 
+> Fortunately, we have room to expand: the ring is always a whole number
+> of pages and there's hundreds of bytes of padding after the avail ring
+> and the used ring, whatever the number of descriptors (which must be a
+> power of 2).
+> 
+> We add a feature bit so the guest can tell the host that it's writing
+> out the current value there, if it wants to use that.
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-I'm building the below, so far so good... ;-)
+I've been looking at this patch some more (more on why
+later), and I wonder: would it be better to add some
+alignment to the last used index address, so that
+if we later add more stuff at the tail, it all
+fits in a single cache line?
 
----
- include/trace/events/sched.h      |   32 ++++++++++----------------------
- kernel/sched.c                    |    8 ++++----
- kernel/trace/trace_sched_wakeup.c |    5 ++---
- 3 files changed, 16 insertions(+), 29 deletions(-)
+We use a new feature bit anyway, so layout change should not be
+a problem.
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index cfceb0b..4f733ec 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -51,15 +51,12 @@ TRACE_EVENT(sched_kthread_stop_ret,
- 
- /*
-  * Tracepoint for waiting on task to unschedule:
-- *
-- * (NOTE: the 'rq' argument is not used by generic trace events,
-- *        but used by the latency tracer plugin. )
-  */
- TRACE_EVENT(sched_wait_task,
- 
--	TP_PROTO(struct rq *rq, struct task_struct *p),
-+	TP_PROTO(struct task_struct *p),
- 
--	TP_ARGS(rq, p),
-+	TP_ARGS(p),
- 
- 	TP_STRUCT__entry(
- 		__array(	char,	comm,	TASK_COMM_LEN	)
-@@ -79,15 +76,12 @@ TRACE_EVENT(sched_wait_task,
- 
- /*
-  * Tracepoint for waking up a task:
-- *
-- * (NOTE: the 'rq' argument is not used by generic trace events,
-- *        but used by the latency tracer plugin. )
-  */
- DECLARE_EVENT_CLASS(sched_wakeup_template,
- 
--	TP_PROTO(struct rq *rq, struct task_struct *p, int success),
-+	TP_PROTO(struct task_struct *p, int success),
- 
--	TP_ARGS(rq, p, success),
-+	TP_ARGS(p, success),
- 
- 	TP_STRUCT__entry(
- 		__array(	char,	comm,	TASK_COMM_LEN	)
-@@ -111,31 +105,25 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
- );
- 
- DEFINE_EVENT(sched_wakeup_template, sched_wakeup,
--	     TP_PROTO(struct rq *rq, struct task_struct *p, int success),
--	     TP_ARGS(rq, p, success));
-+	     TP_PROTO(struct task_struct *p, int success),
-+	     TP_ARGS(p, success));
- 
- /*
-  * Tracepoint for waking up a new task:
-- *
-- * (NOTE: the 'rq' argument is not used by generic trace events,
-- *        but used by the latency tracer plugin. )
-  */
- DEFINE_EVENT(sched_wakeup_template, sched_wakeup_new,
--	     TP_PROTO(struct rq *rq, struct task_struct *p, int success),
--	     TP_ARGS(rq, p, success));
-+	     TP_PROTO(struct task_struct *p, int success),
-+	     TP_ARGS(p, success));
- 
- /*
-  * Tracepoint for task switches, performed by the scheduler:
-- *
-- * (NOTE: the 'rq' argument is not used by generic trace events,
-- *        but used by the latency tracer plugin. )
-  */
- TRACE_EVENT(sched_switch,
- 
--	TP_PROTO(struct rq *rq, struct task_struct *prev,
-+	TP_PROTO(struct task_struct *prev,
- 		 struct task_struct *next),
- 
--	TP_ARGS(rq, prev, next),
-+	TP_ARGS(prev, next),
- 
- 	TP_STRUCT__entry(
- 		__array(	char,	prev_comm,	TASK_COMM_LEN	)
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 9a0f37c..2642864 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2135,7 +2135,7 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
- 		 * just go back and repeat.
- 		 */
- 		rq = task_rq_lock(p, &flags);
--		trace_sched_wait_task(rq, p);
-+		trace_sched_wait_task(p);
- 		running = task_running(rq, p);
- 		on_rq = p->se.on_rq;
- 		ncsw = 0;
-@@ -2406,7 +2406,7 @@ out_activate:
- 	success = 1;
- 
- out_running:
--	trace_sched_wakeup(rq, p, success);
-+	trace_sched_wakeup(p, success);
- 	check_preempt_curr(rq, p, wake_flags);
- 
- 	p->state = TASK_RUNNING;
-@@ -2580,7 +2580,7 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
- 
- 	rq = task_rq_lock(p, &flags);
- 	activate_task(rq, p, 0);
--	trace_sched_wakeup_new(rq, p, 1);
-+	trace_sched_wakeup_new(p, 1);
- 	check_preempt_curr(rq, p, WF_FORK);
- #ifdef CONFIG_SMP
- 	if (p->sched_class->task_woken)
-@@ -2800,7 +2800,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
- 	struct mm_struct *mm, *oldmm;
- 
- 	prepare_task_switch(rq, prev, next);
--	trace_sched_switch(rq, prev, next);
-+	trace_sched_switch(prev, next);
- 	mm = next->mm;
- 	oldmm = prev->active_mm;
- 	/*
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index 0271742..8052446 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -107,8 +107,7 @@ static void probe_wakeup_migrate_task(struct task_struct *task, int cpu)
- }
- 
- static void notrace
--probe_wakeup_sched_switch(struct rq *rq, struct task_struct *prev,
--	struct task_struct *next)
-+probe_wakeup_sched_switch(struct task_struct *prev, struct task_struct *next)
- {
- 	struct trace_array_cpu *data;
- 	cycle_t T0, T1, delta;
-@@ -200,7 +199,7 @@ static void wakeup_reset(struct trace_array *tr)
- }
- 
- static void
--probe_wakeup(struct rq *rq, struct task_struct *p, int success)
-+probe_wakeup(struct task_struct *p, int success)
- {
- 	struct trace_array_cpu *data;
- 	int cpu = smp_processor_id();
+Since I raised the question of caches: for used ring,
+the ring is not aligned to 64 bit, so on CPUs with 64 bit
+or larger cache lines, used entries will often cross
+cache line boundaries. Am I right and might it
+have been better to align ring entries to cache line boundaries?
 
+What do you think?
 
+> ---
+>  drivers/virtio/virtio_ring.c |   23 +++++++++++++++--------
+>  include/linux/virtio_ring.h  |   12 +++++++++++-
+>  2 files changed, 26 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -71,9 +71,6 @@ struct vring_virtqueue
+>  	/* Number we've added since last sync. */
+>  	unsigned int num_added;
+>  
+> -	/* Last used index we've seen. */
+> -	u16 last_used_idx;
+> -
+>  	/* How to notify other side. FIXME: commonalize hcalls! */
+>  	void (*notify)(struct virtqueue *vq);
+>  
+> @@ -278,12 +275,13 @@ static void detach_buf(struct vring_virt
+>  
+>  static inline bool more_used(const struct vring_virtqueue *vq)
+>  {
+> -	return vq->last_used_idx != vq->vring.used->idx;
+> +	return vring_last_used(&vq->vring) != vq->vring.used->idx;
+>  }
+>  
+>  static void *vring_get_buf(struct virtqueue *_vq, unsigned int *len)
+>  {
+>  	struct vring_virtqueue *vq = to_vvq(_vq);
+> +	struct vring_used_elem *u;
+>  	void *ret;
+>  	unsigned int i;
+>  
+> @@ -300,8 +298,11 @@ static void *vring_get_buf(struct virtqu
+>  		return NULL;
+>  	}
+>  
+> -	i = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].id;
+> -	*len = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].len;
+> +	u = &vq->vring.used->ring[vring_last_used(&vq->vring) % vq->vring.num];
+> +	i = u->id;
+> +	*len = u->len;
+> +	/* Make sure we don't reload i after doing checks. */
+> +	rmb();
+>  
+>  	if (unlikely(i >= vq->vring.num)) {
+>  		BAD_RING(vq, "id %u out of range\n", i);
+> @@ -315,7 +316,8 @@ static void *vring_get_buf(struct virtqu
+>  	/* detach_buf clears data, so grab it now. */
+>  	ret = vq->data[i];
+>  	detach_buf(vq, i);
+> -	vq->last_used_idx++;
+> +	vring_last_used(&vq->vring)++;
+> +
+>  	END_USE(vq);
+>  	return ret;
+>  }
+> @@ -402,7 +404,6 @@ struct virtqueue *vring_new_virtqueue(un
+>  	vq->vq.name = name;
+>  	vq->notify = notify;
+>  	vq->broken = false;
+> -	vq->last_used_idx = 0;
+>  	vq->num_added = 0;
+>  	list_add_tail(&vq->vq.list, &vdev->vqs);
+>  #ifdef DEBUG
+> @@ -413,6 +414,10 @@ struct virtqueue *vring_new_virtqueue(un
+>  
+>  	vq->indirect = virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC);
+>  
+> +	/* We publish indices whether they offer it or not: if not, it's junk
+> +	 * space anyway.  But calling this acknowledges the feature. */
+> +	virtio_has_feature(vdev, VIRTIO_RING_F_PUBLISH_INDICES);
+> +
+>  	/* No callback?  Tell other side not to bother us. */
+>  	if (!callback)
+>  		vq->vring.avail->flags |= VRING_AVAIL_F_NO_INTERRUPT;
+> @@ -443,6 +448,8 @@ void vring_transport_features(struct vir
+>  		switch (i) {
+>  		case VIRTIO_RING_F_INDIRECT_DESC:
+>  			break;
+> +		case VIRTIO_RING_F_PUBLISH_INDICES:
+> +			break;
+>  		default:
+>  			/* We don't understand this bit. */
+>  			clear_bit(i, vdev->features);
+> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+> --- a/include/linux/virtio_ring.h
+> +++ b/include/linux/virtio_ring.h
+> @@ -29,6 +29,9 @@
+>  /* We support indirect buffer descriptors */
+>  #define VIRTIO_RING_F_INDIRECT_DESC	28
+>  
+> +/* We publish our last-seen used index at the end of the avail ring. */
+> +#define VIRTIO_RING_F_PUBLISH_INDICES	29
+> +
+>  /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
+>  struct vring_desc
+>  {
+> @@ -87,6 +90,7 @@ struct vring {
+>   *	__u16 avail_flags;
+>   *	__u16 avail_idx;
+>   *	__u16 available[num];
+> + *	__u16 last_used_idx;
+>   *
+>   *	// Padding to the next align boundary.
+>   *	char pad[];
+> @@ -95,6 +99,7 @@ struct vring {
+>   *	__u16 used_flags;
+>   *	__u16 used_idx;
+>   *	struct vring_used_elem used[num];
+> + *	__u16 last_avail_idx;
+>   * };
+>   */
+>  static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+> @@ -111,9 +116,14 @@ static inline unsigned vring_size(unsign
+>  {
+>  	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
+>  		 + align - 1) & ~(align - 1))
+> -		+ sizeof(__u16) * 2 + sizeof(struct vring_used_elem) * num;
+> +		+ sizeof(__u16) * 2 + sizeof(struct vring_used_elem) * num + 2;
+>  }
+>  
+> +/* We publish the last-seen used index at the end of the available ring, and
+> + * vice-versa.  These are at the end for backwards compatibility. */
+> +#define vring_last_used(vr) ((vr)->avail->ring[(vr)->num])
+> +#define vring_last_avail(vr) (*(__u16 *)&(vr)->used->ring[(vr)->num])
+> +
+>  #ifdef __KERNEL__
+>  #include <linux/irqreturn.h>
+>  struct virtio_device;
