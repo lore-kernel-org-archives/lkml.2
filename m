@@ -1,43 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758529Ab0EDA4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 20:56:38 -0400
-Received: from mail.avellaneda-ba.gov.ar ([200.71.230.2]:48950 "EHLO
-	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755548Ab0EDA4g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 20:56:36 -0400
-Message-ID: <45212.41.206.15.1.1272933712.squirrel@41.206.15.1>
-Date: Mon, 3 May 2010 22:41:52 -0200 (FNT)
-Subject: Email Promo Notification
-From: "MICROSOFT EMAIL PROMOTION" <promo@microsoft.com>
-Reply-To: scott.willkins1@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 1 (Highest)
-Importance: High
-To: undisclosed-recipients:;
+	id S1759342Ab0EDA5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 20:57:52 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:56201 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758109Ab0EDA5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 May 2010 20:57:50 -0400
+Subject: Re: [RFC] ext4: Don't send extra barrier during fsync if there are
+ no dirty pages.
+From: Mingming Cao <cmm@us.ibm.com>
+To: djwong@us.ibm.com
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4 <linux-ext4@vger.kernel.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+In-Reply-To: <20100429235102.GC15607@tux1.beaverton.ibm.com>
+References: <20100429235102.GC15607@tux1.beaverton.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 03 May 2010 17:57:47 -0700
+Message-ID: <1272934667.2544.3.camel@mingming-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Email Promo Notification
+On Thu, 2010-04-29 at 16:51 -0700, Darrick J. Wong wrote:
+> Hmm.  A while ago I was complaining that an evil program that calls fsync() in
+> a loop will send a continuous stream of write barriers to the hard disk.  Ted
+> theorized that it might be possible to set a flag in ext4_writepage and clear
+> it in ext4_sync_file; if we happen to enter ext4_sync_file and the flag isn't
+> set (meaning that nothing has been dirtied since the last fsync()) then we
+> could skip issuing the barrier.
+> 
+> Here's an experimental patch to do something sort of like that.  From a quick
+> run with blktrace, it seems to skip the redundant barriers and improves the ffsb
+> mail server scores.  However, I haven't done extensive power failure testing to
+> see how much data it can destroy.  For that matter I'm not even 100% sure it's
+> correct at what it aims to do.
+> 
+> Just throwing this out there, though.  Nothing's blown up ... yet. :P
+> ---
+> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> ---
+> 
+>  fs/ext4/ext4.h  |    2 ++
+>  fs/ext4/fsync.c |    7 +++++--
+>  fs/ext4/inode.c |    5 +++++
+>  3 files changed, 12 insertions(+), 2 deletions(-)
+> 
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index bf938cf..3b70195 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -1025,6 +1025,8 @@ struct ext4_sb_info {
+> 
+>  	/* workqueue for dio unwritten */
+>  	struct workqueue_struct *dio_unwritten_wq;
+> +
+> +	atomic_t unflushed_writes;
+>  };
+> 
 
-You are hereby notified to contact the claims officer below with your
-information ( Name, Address,Phone,Country,Sex/Gender) as your email
-address has won an approved total sum of  £375,000,00 (Three Hundred and
-Seventy  Five Thousand British Pounds Sterling).
+Just wondering is this per filesystem flag? Thought it is nicer to make
+this per -inode flag, when there is no dirty data in fly for this inode
+(instead of the whole fs), there is no need to call barrier in
+ext4_sync_file(). 
 
-SCOTT WILKINS ( scott.willkins@yahoo.com.hk )
+Mingming
+>  static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
+> diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+> index 0d0c323..441f872 100644
+> --- a/fs/ext4/fsync.c
+> +++ b/fs/ext4/fsync.c
+> @@ -52,7 +52,8 @@ int ext4_sync_file(struct file *file, struct dentry *dentry, int datasync)
+>  {
+>  	struct inode *inode = dentry->d_inode;
+>  	struct ext4_inode_info *ei = EXT4_I(inode);
+> -	journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
+> +	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+> +	journal_t *journal = sbi->s_journal;
+>  	int ret;
+>  	tid_t commit_tid;
+...
 
-Your secret pin code  which is MEP-3461098. Be warned that cases of double
-claims and unwarranted abuse of this program  will be legally pursued.
-
-Yours Faithfully
-MRS CAROL WENSTON
-
+> @@ -102,7 +103,9 @@ int ext4_sync_file(struct file *file, struct dentry *dentry, int datasync)
+>  		    (journal->j_flags & JBD2_BARRIER))
+>  			blkdev_issue_flush(inode->i_sb->s_bdev, NULL);
+>  		jbd2_log_wait_commit(journal, commit_tid);
+> -	} else if (journal->j_flags & JBD2_BARRIER)
+> +	} else if (journal->j_flags & JBD2_BARRIER && atomic_read(&sbi->unflushed_writes)) {
+> +		atomic_set(&sbi->unflushed_writes, 0);
+>  		blkdev_issue_flush(inode->i_sb->s_bdev, NULL);
+> +	}
+>  	return ret;
+>  }
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index 5381802..e501abd 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -2718,6 +2718,7 @@ static int ext4_writepage(struct page *page,
+>  	unsigned int len;
+>  	struct buffer_head *page_bufs = NULL;
+>  	struct inode *inode = page->mapping->host;
+> +	struct ext4_sb_info *sbi = EXT4_SB(page->mapping->host->i_sb);
+> 
+>  	trace_ext4_writepage(inode, page);
+>  	size = i_size_read(inode);
+> @@ -2726,6 +2727,8 @@ static int ext4_writepage(struct page *page,
+>  	else
+>  		len = PAGE_CACHE_SIZE;
+> 
+> +	atomic_set(&sbi->unflushed_writes, 1);
+> +
+>  	if (page_has_buffers(page)) {
+>  		page_bufs = page_buffers(page);
+>  		if (walk_page_buffers(NULL, page_bufs, 0, len, NULL,
+> @@ -2872,6 +2875,8 @@ static int ext4_da_writepages(struct address_space *mapping,
+>  	if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
+>  		range_whole = 1;
+> 
+> +	atomic_set(&sbi->unflushed_writes, 1);
+> +
+>  	range_cyclic = wbc->range_cyclic;
+>  	if (wbc->range_cyclic) {
+>  		index = mapping->writeback_index;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
