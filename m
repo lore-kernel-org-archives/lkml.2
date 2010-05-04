@@ -1,32 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760308Ab0EDWVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 18:21:23 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43705 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756067Ab0EDWVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 18:21:21 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [Bug #15625] BUG: 2.6.34-rc1, RIP is (null)
-Date: Wed, 5 May 2010 00:22:15 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	id S1760318Ab0EDWWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 18:22:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59863 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757124Ab0EDWWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 18:22:43 -0400
+Subject: RE: [Bug #15729] BUG: physmap modprobe & rmmod
+From: David Woodhouse <dwmw2@infradead.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera> <8VO9AsMlpMD.A.rqB.3JJ4LB@chimera> <4BE09B71.30003@oracle.com>
-In-Reply-To: <4BE09B71.30003@oracle.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>
+In-Reply-To: <0D753D10438DA54287A00B0270842697636EB83FB2@AUSP01VMBX24.collaborationhost.net>
+References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera>
+	 <8VO9AsMlpMD.A.-m.4IJ4LB@chimera>
+	 <0D753D10438DA54287A00B0270842697636EB83FB2@AUSP01VMBX24.collaborationhost.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 May 2010 23:22:31 +0100
+Message-ID: <1273011751.31892.5700.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005050022.16064.rjw@sisk.pl>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 May 2010, Randy Dunlap wrote:
-> On 05/04/10 14:21, Rafael J. Wysocki wrote:
+On Tue, 2010-05-04 at 17:15 -0500, H Hartley Sweeten wrote:
+> On Tuesday, May 04, 2010 2:21 PM, Rafael J. Wysocki wrote:
 > > This message has been generated automatically as a part of a summary report
 > > of recent regressions.
 > > 
@@ -35,18 +41,20 @@ On Wednesday 05 May 2010, Randy Dunlap wrote:
 > > know (either way).
 > > 
 > > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15625
-> > Subject		: BUG: 2.6.34-rc1, RIP is (null)
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15729
+> > Subject		: BUG: physmap modprobe & rmmod
 > > Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
-> > Date		: 2010-03-18 22:22 (48 days old)
-> > Message-ID	: <4BA2A7A9.4080503@oracle.com>
-> > References	: http://marc.info/?l=linux-kernel&m=126895098217351&w=2
+> > Date		: 2010-04-02 20:40 (33 days old)
+> > Message-ID	: <20100402134058.c4682716.randy.dunlap@oracle.com>
+> > References	: http://marc.info/?l=linux-kernel&m=127024096210230&w=2
+> > Handled-By	: Hartley Sweeten <hsweeten@visionengravers.com>
+> > Patch		: https://patchwork.kernel.org/patch/90497/
 > 
-> 
-> Let's drop this one as not reproducible.
+> This patch is not yet in Linus' tree, it is in linux-next.  David?
 
-Done.
+Is it a regression? People have been configuring their kernel stupidly
+and then acting surprised when it didn't work for _ages_... what's new?
 
-Thanks,
-Rafael
+-- 
+dwmw2
 
