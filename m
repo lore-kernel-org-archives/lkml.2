@@ -1,154 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758735Ab0EDMjT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 08:39:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51771 "EHLO hera.kernel.org"
+	id S1758848Ab0EDMj0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 08:39:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51783 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755456Ab0EDMjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 08:39:16 -0400
+	id S1758720Ab0EDMjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 08:39:19 -0400
 From: Tejun Heo <tj@kernel.org>
 To: mingo@elte.hu, peterz@infradead.org, efault@gmx.de, avi@redhat.com,
        paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/12] sched: coalesce event notifiers
-Date: Tue,  4 May 2010 14:38:39 +0200
-Message-Id: <1272976724-14312-8-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 10/12] perf: make nr_events an int and add perf_online_mutex to protect it
+Date: Tue,  4 May 2010 14:38:42 +0200
+Message-Id: <1272976724-14312-11-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1272976724-14312-1-git-send-email-tj@kernel.org>
 References: <1272976724-14312-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 May 2010 12:38:57 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 May 2010 12:38:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sched currently hosts three different event notification mechanisms -
-tracepoints, perf_event functions and sched_notifiers.  The previous
-patches modified and moved them around so that they are colocated
-where applicable and share most of the arguments.  This patch
-introduces and uses SCHED_EVENT() and SCHED_EVENT_RQ() to coalesce
-calls to different mechanisms.
+Change nr_events from atomic_t to int and add perf_online_mutex to
+protect it.  Helpers to manipulate the count, perf_inc_nr_events() and
+perf_dec_nr_events(), are added.  The former may fail although it
+doesn't in the current code.
+
+This will be used to make sched perf functions called via tracepoints.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- kernel/sched.c |   51 ++++++++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 40 insertions(+), 11 deletions(-)
+ kernel/perf_event.c |   40 ++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 36 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 0b753f0..1acec30 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1439,6 +1439,39 @@ static inline void fire_sched_notifiers_in(struct task_struct *p)
- 	fire_sched_notifiers(in, p);
- }
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 3f3e328..621d1f1 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -43,7 +43,7 @@ int perf_max_events __read_mostly = 1;
+ static int perf_reserved_percpu __read_mostly;
+ static int perf_overcommit __read_mostly = 1;
  
-+/*
-+ * Sched is watched by three different mechanisms - tracepoint,
-+ * perf_event and sched_notifiers.  SCHED_EVENT*() can be used to
-+ * define all or any part of them at once so that code clutter is kept
-+ * to minimum and optimizations can be applied according to different
-+ * config options.
-+ *
-+ * In SCHED_EVENT(), the first three arguments specify the name of
-+ * tracepoint, perf_event and sched_notifier.  NONE can be used to
-+ * omit any subset of the three.  The last argument is event arguments
-+ * wrapped inside SE_ARGS() macro.
-+ *
-+ * SCHED_EVENT_RQ() is identical except that @rq argument will be
-+ * added to tracepoint and perf calls.
+-static atomic_t nr_events __read_mostly;
++static int nr_events __read_mostly;
+ static atomic_t nr_mmap_events __read_mostly;
+ static atomic_t nr_comm_events __read_mostly;
+ static atomic_t nr_task_events __read_mostly;
+@@ -72,6 +72,26 @@ static atomic64_t perf_event_id;
+ static DEFINE_SPINLOCK(perf_resource_lock);
+ 
+ /*
++ * Lock to protect nr_events and master enable:
 + */
-+#define trace_sched_NONE(args...)		do { } while (0)
-+#define perf_event_task_NONE(args...)		do { } while (0)
-+#define fire_sched_notifiers_NONE(args...)	do { } while (0)
++static DEFINE_MUTEX(perf_online_mutex);
 +
-+#define SE_ARGS(args...)			args
++static int perf_inc_nr_events(void)
++{
++	mutex_lock(&perf_online_mutex);
++	nr_events++;
++	mutex_unlock(&perf_online_mutex);
++	return 0;
++}
 +
-+#define SCHED_EVENT(TP, PERF, SN, args) do {				\
-+	trace_sched_##TP(args);						\
-+	perf_event_task_##PERF(args);					\
-+	fire_sched_notifiers_##SN(args);				\
-+} while (0)
++static void perf_dec_nr_events(void)
++{
++	mutex_lock(&perf_online_mutex);
++	nr_events--;
++	mutex_unlock(&perf_online_mutex);
++}
 +
-+#define SCHED_EVENT_RQ(TP, PERF, SN, rq, args) do {			\
-+	trace_sched_##TP(rq, args);					\
-+	perf_event_task_##PERF(rq, args);				\
-+	fire_sched_notifiers_##SN(args);				\
-+} while (0)
-+
- static inline void inc_cpu_load(struct rq *rq, unsigned long load)
- {
- 	update_load_add(&rq->load, load);
-@@ -2083,8 +2116,7 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
- 			!(task_thread_info(p)->preempt_count & PREEMPT_ACTIVE));
- #endif
++/*
+  * Architecture provided APIs - weak aliases:
+  */
+ extern __weak const struct pmu *hw_perf_event_init(struct perf_event *event)
+@@ -1589,7 +1609,13 @@ void perf_event_task_tick(struct task_struct *curr)
+ 	struct perf_event_context *ctx;
+ 	int rotate = 0;
  
--	trace_sched_migrate_task(p, new_cpu);
--	perf_event_task_migrate(p, new_cpu);
-+	SCHED_EVENT(migrate_task, migrate, NONE, SE_ARGS(p, new_cpu));
+-	if (!atomic_read(&nr_events))
++	/*
++	 * nr_events is incremented before events are enabled and
++	 * decremented after they have been pulled out, so it is
++	 * guaranteed to read as non-zero with any enabled event on
++	 * this cpu.
++	 */
++	if (!nr_events)
+ 		return;
  
- 	if (task_cpu(p) != new_cpu)
- 		p->se.nr_migrations++;
-@@ -2223,7 +2255,7 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
- 		 * just go back and repeat.
- 		 */
- 		rq = task_rq_lock(p, &flags);
--		trace_sched_wait_task(rq, p);
-+		SCHED_EVENT_RQ(wait_task, NONE, NONE, rq, SE_ARGS(p));
- 		running = task_running(rq, p);
- 		on_rq = p->se.on_rq;
- 		ncsw = 0;
-@@ -2515,7 +2547,7 @@ out_activate:
+ 	cpuctx = &__get_cpu_var(perf_cpu_context);
+@@ -1857,7 +1883,7 @@ static void free_event(struct perf_event *event)
+ 	perf_pending_sync(event);
+ 
+ 	if (!event->parent) {
+-		atomic_dec(&nr_events);
++		perf_dec_nr_events();
+ 		if (event->attr.mmap)
+ 			atomic_dec(&nr_mmap_events);
+ 		if (event->attr.comm)
+@@ -4569,6 +4595,12 @@ perf_event_alloc(struct perf_event_attr *attr,
+ 	if (!event)
+ 		return ERR_PTR(-ENOMEM);
+ 
++	err = perf_inc_nr_events();
++	if (err) {
++		kfree(event);
++		return ERR_PTR(err);
++	}
++
+ 	/*
+ 	 * Single events are their own group leaders, with an
+ 	 * empty sibling list:
+@@ -4657,6 +4689,7 @@ done:
+ 	if (err) {
+ 		if (event->ns)
+ 			put_pid_ns(event->ns);
++		perf_dec_nr_events();
+ 		kfree(event);
+ 		return ERR_PTR(err);
  	}
+@@ -4664,7 +4697,6 @@ done:
+ 	event->pmu = pmu;
  
- out_running:
--	trace_sched_wakeup(rq, p, success);
-+	SCHED_EVENT_RQ(wakeup, NONE, NONE, rq, SE_ARGS(p, success));
- 	check_preempt_curr(rq, p, wake_flags);
- 
- 	p->state = TASK_RUNNING;
-@@ -2726,7 +2758,7 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
- 	p->state = TASK_RUNNING;
- 	update_rq_clock(rq);
- 	activate_task(rq, p, 0);
--	trace_sched_wakeup_new(rq, p, 1);
-+	SCHED_EVENT_RQ(wakeup_new, NONE, NONE, rq, SE_ARGS(p, 1));
- 	check_preempt_curr(rq, p, WF_FORK);
- #ifdef CONFIG_SMP
- 	if (p->sched_class->task_woken)
-@@ -2795,8 +2827,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 	finish_arch_switch(prev);
- 	finish_lock_switch(rq, prev);
- 
--	perf_event_task_sched_in(current);
--	fire_sched_notifiers_in(current);
-+	SCHED_EVENT(NONE, sched_in, in, SE_ARGS(current));
- 	if (mm)
- 		mmdrop(mm);
- 	if (unlikely(prev_state == TASK_DEAD)) {
-@@ -3498,7 +3529,7 @@ void scheduler_tick(void)
- 	curr->sched_class->task_tick(rq, curr, 0);
- 	raw_spin_unlock(&rq->lock);
- 
--	perf_event_task_tick(curr);
-+	SCHED_EVENT(NONE, tick, NONE, SE_ARGS(curr));
- 
- #ifdef CONFIG_SMP
- 	rq->idle_at_tick = idle_cpu(cpu);
-@@ -3712,9 +3743,7 @@ need_resched_nonpreemptible:
- 
- 	if (likely(prev != next)) {
- 		sched_info_switch(prev, next);
--		trace_sched_switch(rq, prev, next);
--		perf_event_task_sched_out(rq, prev, next);
--		fire_sched_notifiers_out(prev, next);
-+		SCHED_EVENT_RQ(switch, sched_out, out, rq, SE_ARGS(prev, next));
- 
- 		rq->nr_switches++;
- 		rq->curr = next;
+ 	if (!event->parent) {
+-		atomic_inc(&nr_events);
+ 		if (event->attr.mmap)
+ 			atomic_inc(&nr_mmap_events);
+ 		if (event->attr.comm)
 -- 
 1.6.4.2
 
