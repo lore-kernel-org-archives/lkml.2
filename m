@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab0EDXr6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 19:47:58 -0400
-Received: from fg-out-1718.google.com ([72.14.220.153]:3102 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189Ab0EDXr4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 19:47:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=jXFSQ6T/etuKiFBR08qHI5fB9ZsdfZ/wmxiO6dPFfA6cc+oT+iZrSfUN8+EYWr8lYH
-         csfVKonfWTz+c/lzp5kMtbzOJuBh36BcINciEJeTHFH79GJ7YwuBE+wTT5OaCmG3Mwk/
-         gKLJLWaXxMLZnv6vRLSQkgXH32BJRBarhzKPM=
-Message-ID: <4BE0B225.2080308@gmail.com>
-Date: Tue, 04 May 2010 15:47:49 -0800
-From: Kent Overstreet <kent.overstreet@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10pre) Gecko/20100501 Shredder/3.0.5pre
+	id S1757448Ab0EDXtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 19:49:23 -0400
+Received: from tundra.namei.org ([65.99.196.166]:50023 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754907Ab0EDXtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 19:49:22 -0400
+Date: Wed, 5 May 2010 09:44:56 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+       Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@parisplace.org>
+Subject: Re: [PATCH tip/core/rcu 21/48] remove all rcu head initializations,
+ except on_stack initializations
+In-Reply-To: <1273004398-19760-21-git-send-email-paulmck@linux.vnet.ibm.com>
+Message-ID: <alpine.LRH.2.00.1005050944230.12883@tundra.namei.org>
+References: <20100504201934.GA19234@linux.vnet.ibm.com> <1273004398-19760-21-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andi Kleen <andi@halobates.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Bcache: version 4
-References: <20100501001212.GA31135@moria> <87y6g03rf8.fsf@basil.nowhere.org>
-In-Reply-To: <87y6g03rf8.fsf@basil.nowhere.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2010 02:14 AM, Andi Kleen wrote:
-> I read all of this email now and I still have no clue what exactly
-> a 'bcache' is and why anyone would want one (and if one needs
-> a large stick to handle it or not)
->
-> Normally the 0/x series of a patch kit is supposed to contain that
-> information.
->
-> I know it's probably obvious to you, but it's not to most other readers.
->
-> Consider adding some introduction?
+On Tue, 4 May 2010, Paul E. McKenney wrote:
 
-Ah, whoops. "Block cache" - it uses one block device to cache another, 
-it's intended for SSDs. It's summarized decently in the documentation 
-patch, which if I'd thought harder would've been the first email...
-http://thread.gmane.org/gmane.linux.kernel/979977
-Second patch also has relevant commentary:
-http://thread.gmane.org/gmane.linux.kernel/979978
-http://thread.gmane.org/gmane.linux.kernel/979979
+> From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> 
+> Remove all rcu head inits. We don't care about the RCU head state before passing
+> it to call_rcu() anyway. Only leave the "on_stack" variants so debugobjects can
+> keep track of objects on stack.
+> 
+> This patch applies to current -tip based on 2.6.34-rc2.
 
-Currently all the necessary functionality for read only is close to 
-done, I'm now doing stress testing. I'm hoping to have it Stable For Me 
-and read/write done in a week or two, at which point it should be ready 
-for people to start playing with.
+Reviewed-by: James Morris <jmorris@namei.org>
+
+-- 
+James Morris
+<jmorris@namei.org>
