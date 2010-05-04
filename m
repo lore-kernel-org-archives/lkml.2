@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806Ab0EDRhl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 13:37:41 -0400
-Received: from relay1-d.mail.gandi.net ([217.70.183.193]:42074 "EHLO
-	relay1-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932273Ab0EDRhj (ORCPT
+	id S932330Ab0EDRmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 13:42:43 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:43718 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab0EDRmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 13:37:39 -0400
-X-Originating-IP: 217.70.178.44
-X-Originating-IP: 82.8.179.104
-Subject: Re: [PATCH] Disable i8042 checks on Intel Apple Macs
-From: Bastien Nocera <hadess@hadess.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Vojtech Pavlik <vojtech@suse.cz>,
-       Robert Hancock <hancockrwd@gmail.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>, pjones@redhat.com
-In-Reply-To: <20100504172302.GA29428@core.coreip.homeip.net>
-References: <1264011793.1735.3683.camel@localhost.localdomain>
-	 <4B57A2D4.9030204@gmail.com>
-	 <20100121185544.GB11996@core.coreip.homeip.net>
-	 <51f3faa71001211339t4652700ct34659c37479cd67e@mail.gmail.com>
-	 <20100121221701.GA15293@core.coreip.homeip.net>
-	 <20100125163433.GB31957@suse.cz> <4B5E0DFA.8080705@zytor.com>
-	 <20100125221520.GA30307@core.coreip.homeip.net>
-	 <1272992801.13354.214.camel@localhost.localdomain>
-	 <20100504172302.GA29428@core.coreip.homeip.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 04 May 2010 18:37:31 +0100
-Message-ID: <1272994651.13354.216.camel@localhost.localdomain>
+	Tue, 4 May 2010 13:42:42 -0400
+Subject: Re: [PATCH 04/12] perf: add @rq to perf_event_task_sched_out()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, efault@gmx.de, avi@redhat.com, paulus@samba.org,
+       acme@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <4BE057EB.80604@kernel.org>
+References: <1272976724-14312-1-git-send-email-tj@kernel.org>
+	 <1272976724-14312-5-git-send-email-tj@kernel.org>
+	 <1272993090.1642.184.camel@laptop>  <4BE057EB.80604@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 May 2010 19:42:34 +0200
+Message-ID: <1272994954.1642.204.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.0.1 (2.30.0-3.fc13) 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Dmitry,
+On Tue, 2010-05-04 at 19:22 +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On 05/04/2010 07:11 PM, Peter Zijlstra wrote:
+> > On Tue, 2010-05-04 at 14:38 +0200, Tejun Heo wrote:
+> >> Add @rq to perf_event_task_sched_out() so that its argument matches
+> >> those of trace_sched_switch().  This will help unifying notifiers in
+> >> sched.
+> > 
+> > The alternative is dropping rq from the trace events, its not like
+> > anybody outside sched.o can do anything sensible with it anyway.
+> 
+> The comment in include/trace/events/sched.h says...
+> 
+>  * (NOTE: the 'rq' argument is not used by generic trace events,
+>  *        but used by the latency tracer plugin. )
+> 
+> So, I left it there.  It would be great if all those @rq params can be
+> removed tho.  The latency tracer thing needs it, right?
 
-On Tue, 2010-05-04 at 10:23 -0700, Dmitry Torokhov wrote:
-<snip>
-> Mind resending the original patch? Apparently current situation causes
-> issues and I guess DMI is not the wost way of taking care of it.
-
-Re-sent to linux-input with you on CC:.
-
-Cheers
+I had a quick look but couldn't actually find anything.
 
