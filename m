@@ -1,70 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934450Ab0EDW3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 18:29:18 -0400
-Received: from p01c11o142.mxlogic.net ([208.65.144.65]:57477 "EHLO
-	p01c11o142.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934099Ab0EDW3Q (ORCPT
+	id S934378Ab0EDWbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 18:31:06 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:41388 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754838Ab0EDWbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 18:29:16 -0400
-X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 May 2010 18:29:16 EDT
-X-MXL-Hash: 4be09fbc34cfcec8-367f3ccb35ca55a0ed44e0955f08a541f2322df6
-X-MXL-Hash: 4be09cb7053b5602-60274278d416e91e6bed9bf908661b0bdbcd1453
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       David Woodhouse <dwmw2@infradead.org>
-CC: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Date: Tue, 4 May 2010 17:15:36 -0500
-Subject: RE: [Bug #15729] BUG: physmap modprobe & rmmod
-Thread-Topic: [Bug #15729] BUG: physmap modprobe & rmmod
-Thread-Index: Acrr1ieoyfmtuWQFQfyE5zJLukCkvAAAPbKg
-Message-ID: <0D753D10438DA54287A00B0270842697636EB83FB2@AUSP01VMBX24.collaborationhost.net>
-References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera>
- <8VO9AsMlpMD.A.-m.4IJ4LB@chimera>
-In-Reply-To: <8VO9AsMlpMD.A.-m.4IJ4LB@chimera>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010050401)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.98]
-X-AnalysisOut: [v=1.0 c=1 a=CyGLniF1gukA:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
-X-AnalysisOut: [MA:10 a=IRTT+DMug47mVLgYdXzmDg==:17 a=VwQbUJbxAAAA:8 a=yPC]
-X-AnalysisOut: [of4ZbAAAA:8 a=gu6fZOg2AAAA:8 a=i00gxMtYAAAA:8 a=hA7INtIzO7]
-X-AnalysisOut: [jTU5J-gFwA:9 a=d3tykvge_g_UqhwsNT6mIsj_ypgA:4 a=QEXdDO2ut3]
-X-AnalysisOut: [YA:10 a=7DSvI1NPTFQA:10 a=x1WnkoZAwusA:10]
+	Tue, 4 May 2010 18:31:02 -0400
+Subject: Re: [PATCH] TPM: ACPI/PNP dependency removal
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+       jmorris@namei.org
+In-Reply-To: <20100504150026.907f3ed3.randy.dunlap@oracle.com>
+References: <1273009760.3532.41.camel@blackbox.ibm.com>
+	 <20100504150026.907f3ed3.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 May 2010 18:30:55 -0400
+Message-ID: <1273012255.2530.11.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o44MTXmE027471
 
-On Tuesday, May 04, 2010 2:21 PM, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
+On Tue, 2010-05-04 at 15:00 -0700, Randy Dunlap wrote:
+> On Tue, 04 May 2010 18:49:20 -0300 Rajiv Andrade wrote:
 > 
-> The following bug entry is on the current list of known regressions
-> from 2.6.33.  Please verify if it still should be listed and let the tracking team
-> know (either way).
+> > This patch pushes the ACPI dependency into the device driver code
+> > itself. Now, even without ACPI/PNP enabled, the device can be registered
+> > using the TIS specified memory space. This will however result in the
+> > lack of access to the bios event log, being the only implication of such
+> > ACPI removal.
+> > 
+> > Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+> > Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> > ---
+> >  drivers/char/tpm/Kconfig   |   14 +++++++++++---
+> >  drivers/char/tpm/tpm_tis.c |   42 ++++++++++++++++++++++--------------------
+> >  2 files changed, 33 insertions(+), 23 deletions(-)
+> > 
+> > diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
+> > index f5fc64f..0a9ec0b 100644
+> > --- a/drivers/char/tpm/Kconfig
+> > +++ b/drivers/char/tpm/Kconfig
+> > @@ -17,20 +17,28 @@ menuconfig TCG_TPM
+> >  	  obtained at: <http://sourceforge.net/projects/trousers>.  To 
+> >  	  compile this driver as a module, choose M here; the module 
+> >  	  will be called tpm. If unsure, say N.
+> > -	  Note: For more TPM drivers enable CONFIG_PNP, CONFIG_ACPI
+> > -	  and CONFIG_PNPACPI.
+> > +	  Note: For more TPM drivers and BIOS LOG access enable 
+> > +	  CONFIG_PNP, CONFIG_ACPI and CONFIG_PNPACPI.
+> >  
+> >  if TCG_TPM
+> >  
+> >  config TCG_TIS
+> >  	tristate "TPM Interface Specification 1.2 Interface"
+> > -	depends on PNP
+> >  	---help---
+> >  	  If you have a TPM security chip that is compliant with the
+> >  	  TCG TIS 1.2 TPM specification say Yes and it will be accessible
+> >  	  from within Linux.  To compile this driver as a module, choose
+> >  	  M here; the module will be called tpm_tis.
+> >  
+> > +config TCG_BIOS_LOG
+> > +	bool "TPM bios mesurement log"
 > 
+> 	          BIOS measurement
 > 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15729
-> Subject		: BUG: physmap modprobe & rmmod
-> Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
-> Date		: 2010-04-02 20:40 (33 days old)
-> Message-ID	: <20100402134058.c4682716.randy.dunlap@oracle.com>
-> References	: http://marc.info/?l=linux-kernel&m=127024096210230&w=2
-> Handled-By	: Hartley Sweeten <hsweeten@visionengravers.com>
-> Patch		: https://patchwork.kernel.org/patch/90497/
+> > +	depends on X86
+> > +	select ACPI
+> > +	---help---
+> > +	  ACPI is required for access to bios measurements lists and therefore
+> 
+> 	                                 BIOS
+> 
+> and if I had any say-so, I would Nack this part of the patch.
+> Selecting ACPI adds a huge amount of code, so it should just depend on ACPI IMO.
 
-This patch is not yet in Linus' tree, it is in linux-next.  David?
+Just posted a patch removing the ACPI dependency from IMA, as IMA can
+run with/without ACPI or TPM enabled. However, without ACPI enabled, the
+PCR values can not be verified against the BIOS measurement log.
 
-Regards,
-Hartleyÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Also, ACPI depends on PCI and PM, so if this "select" part remains,
+> this should be more like:
+> 
+> 	  depends on X86 && PCI && PM
+> 
+> (unless that's already enforced somewhere else).
+
+Thanks.
+
+> > +	  to validate the PCR[0] value. So say Yes in case you want this
+> > +	  feature and, consequently, ACPI will be enabled.
+> > +
+> >  config TCG_NSC
+> >  	tristate "National Semiconductor TPM Interface"
+> >  	---help---
+
+Mimi
+
