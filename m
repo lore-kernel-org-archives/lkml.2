@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374Ab0EDQ3k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 12:29:40 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45677 "EHLO mx2.mail.elte.hu"
+	id S1759708Ab0EDQdB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 12:33:01 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59933 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751791Ab0EDQ3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 12:29:38 -0400
-Date: Tue, 4 May 2010 18:29:12 +0200
+	id S1751791Ab0EDQdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 12:33:00 -0400
+Date: Tue, 4 May 2010 18:32:32 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH][GIT PULL] tracing: Convert nop macros to static inlines
-Message-ID: <20100504162912.GA1721@elte.hu>
-References: <1272989828.9739.223.camel@gandalf.stny.rr.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [GIT PULL 0/3] perf fixes (inject, report, record)
+Message-ID: <20100504163232.GB1721@elte.hu>
+References: <1272981607-28723-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1272989828.9739.223.camel@gandalf.stny.rr.com>
+In-Reply-To: <1272981607-28723-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -31,23 +30,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> Ingo,
+> Hi Ingo,
 > 
-> Please pull the latest tip/tracing/core tree, which can be found at:
+> 	Please pull from:
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/tracing/core
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
 > 
+> Regards,
 > 
-> Steven Rostedt (1):
->       tracing: Convert nop macros to static inlines
+> - Arnaldo
 > 
-> ----
->  include/linux/ftrace.h |   30 ++++++++++++++++++------------
->  1 files changed, 18 insertions(+), 12 deletions(-)
+> Anton Blanchard (1):
+>   perf: Fix performance issue with perf report
+> 
+> Arnaldo Carvalho de Melo (1):
+>   perf inject: Add missing bits
+> 
+> Tom Zanussi (1):
+>   perf: record TRACE_INFO only if using tracepoints and SAMPLE_RAW
+> 
+>  tools/perf/Documentation/perf-buildid-cache.txt |    4 +-
+>  tools/perf/Documentation/perf-inject.txt        |   35 +++++++++++++++++++++++
+>  tools/perf/builtin-inject.c                     |    2 +-
+>  tools/perf/builtin-record.c                     |   35 +++++++++++++---------
+>  tools/perf/command-list.txt                     |    1 +
+>  tools/perf/util/event.c                         |    1 +
+>  tools/perf/util/header.c                        |    9 +++++-
+>  tools/perf/util/parse-events.h                  |    1 +
+>  tools/perf/util/trace-event-info.c              |    5 +++
+>  9 files changed, 75 insertions(+), 18 deletions(-)
+>  create mode 100644 tools/perf/Documentation/perf-inject.txt
 
-Pulled, thanks Steve!
+Pulled, thanks Arnaldo!
 
 	Ingo
