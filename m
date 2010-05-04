@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759708Ab0EDQdB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 12:33:01 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59933 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751791Ab0EDQdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 12:33:00 -0400
-Date: Tue, 4 May 2010 18:32:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [GIT PULL 0/3] perf fixes (inject, report, record)
-Message-ID: <20100504163232.GB1721@elte.hu>
-References: <1272981607-28723-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272981607-28723-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1760011Ab0EDQm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 12:42:28 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:55897 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759856Ab0EDQm0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 12:42:26 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,5971"; a="40385997"
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Russell King <rmk@arm.linux.org.uk>
+In-Reply-To: <20100504110725.0b44d877.sfr@canb.auug.org.au>
+References: <20100504110725.0b44d877.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 May 2010 09:42:13 -0700
+Message-ID: <1272991333.4813.1.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-05-04 at 11:07 +1000, Stephen Rothwell wrote:
+> Hi Daniel,
+> 
+> Today's linux-next merge of the msm tree got a conflict in
+> arch/arm/mach-msm/Kconfig between commit
+> 4b53eb4f5d78416456bb969ce30e3bed2731d744 ("arm: msm: allow ARCH_MSM to
+> have v7 cpus") from the arm tree and commit
+> e17047ea51cc2eac3e920e5a669f99efd44f446f ("arm: msm: smd: use either
+> package v3 or v4 not both") from the msm tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Ok .. I'll merge the changes in Russell tree into my tree, that should
+fix it I think.
 
-> Hi Ingo,
-> 
-> 	Please pull from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Anton Blanchard (1):
->   perf: Fix performance issue with perf report
-> 
-> Arnaldo Carvalho de Melo (1):
->   perf inject: Add missing bits
-> 
-> Tom Zanussi (1):
->   perf: record TRACE_INFO only if using tracepoints and SAMPLE_RAW
-> 
->  tools/perf/Documentation/perf-buildid-cache.txt |    4 +-
->  tools/perf/Documentation/perf-inject.txt        |   35 +++++++++++++++++++++++
->  tools/perf/builtin-inject.c                     |    2 +-
->  tools/perf/builtin-record.c                     |   35 +++++++++++++---------
->  tools/perf/command-list.txt                     |    1 +
->  tools/perf/util/event.c                         |    1 +
->  tools/perf/util/header.c                        |    9 +++++-
->  tools/perf/util/parse-events.h                  |    1 +
->  tools/perf/util/trace-event-info.c              |    5 +++
->  9 files changed, 75 insertions(+), 18 deletions(-)
->  create mode 100644 tools/perf/Documentation/perf-inject.txt
+Daniel
 
-Pulled, thanks Arnaldo!
-
-	Ingo
