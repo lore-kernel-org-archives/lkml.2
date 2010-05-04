@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab0EDOAG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 10:00:06 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54237 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932198Ab0EDOAB (ORCPT
+	id S932288Ab0EDOAO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 10:00:14 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58946 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932186Ab0EDOAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 10:00:01 -0400
-Date: Tue, 4 May 2010 09:59:59 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: markgross@thegnar.org
-cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Len Brown <len.brown@intel.com>, <linux-doc@vger.kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Magnus Damm <damm@igel.co.jp>,
-       <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-In-Reply-To: <20100504051256.GC3043@thegnar.org>
-Message-ID: <Pine.LNX.4.44L0.1005040953510.1729-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 4 May 2010 10:00:12 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: [GIT PULL 0/3] perf fixes (inject, report, record)
+Date: Tue,  4 May 2010 11:00:04 -0300
+Message-Id: <1272981607-28723-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 May 2010, mark gross wrote:
+Hi Ingo,
 
-> You know things would be so much easier if the policy was a one-shot
-> styled thing.  i.e. when enabled it does what it does, but upon resume
-> the policy must be re-enabled by user mode to get the opportunistic
-> behavior.  That way we don't need to grab the suspend blocker from the
-> wake up irq handler all the way up to user mode as the example below
-> calls out.  I suppose doing this would put a burden on the user mode code
-> to keep track of if it has no pending blockers registered after a wake
-> up from the suspend.  but that seems nicer to me than sprinkling
-> overlapping blocker critical sections from the mettle up to user mode.
-> 
-> Please consider making the policy a one shot API that needs to be
-> re-enabled after resume by user mode.  That would remove my issue with
-> the design.
+	Please pull from:
 
-This won't work right if a second IRQ arrives while the first is being
-processed.  Suppose the kernel driver for the second IRQ doesn't
-activate a suspend blocker, and suppose all the userspace handlers for
-the first IRQ end (and the opportunistic policy is re-enabled) before
-the userspace handler for the second IRQ can start.  Then the system
-will go back to sleep before userspace can handle the second IRQ.
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
 
-Alan Stern
+Regards,
+
+- Arnaldo
+
+Anton Blanchard (1):
+  perf: Fix performance issue with perf report
+
+Arnaldo Carvalho de Melo (1):
+  perf inject: Add missing bits
+
+Tom Zanussi (1):
+  perf: record TRACE_INFO only if using tracepoints and SAMPLE_RAW
+
+ tools/perf/Documentation/perf-buildid-cache.txt |    4 +-
+ tools/perf/Documentation/perf-inject.txt        |   35 +++++++++++++++++++++++
+ tools/perf/builtin-inject.c                     |    2 +-
+ tools/perf/builtin-record.c                     |   35 +++++++++++++---------
+ tools/perf/command-list.txt                     |    1 +
+ tools/perf/util/event.c                         |    1 +
+ tools/perf/util/header.c                        |    9 +++++-
+ tools/perf/util/parse-events.h                  |    1 +
+ tools/perf/util/trace-event-info.c              |    5 +++
+ 9 files changed, 75 insertions(+), 18 deletions(-)
+ create mode 100644 tools/perf/Documentation/perf-inject.txt
 
