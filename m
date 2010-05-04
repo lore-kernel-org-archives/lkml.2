@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757731Ab0EDJMg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 05:12:36 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:63459 "EHLO bamako.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756211Ab0EDJMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 05:12:34 -0400
-Date: Tue, 4 May 2010 11:12:30 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] i2c fixes for 2.6.34
-Message-ID: <20100504111230.04ffe803@hyperion.delvare>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+	id S1757706Ab0EDJNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 05:13:49 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48769 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756211Ab0EDJNr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 05:13:47 -0400
+Subject: Re: linux-next: manual merge of the crypto tree with the arm tree
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Russell King <rmk@arm.linux.org.uk>,
+       Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+In-Reply-To: <20100504125355.810e6f54.sfr@canb.auug.org.au>
+References: <20100504125355.810e6f54.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 May 2010 10:13:12 +0100
+Message-ID: <1272964392.8533.1.camel@e102144-lin.cambridge.arm.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 May 2010 09:13:16.0445 (UTC) FILETIME=[07DCC4D0:01CAEB6A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Stephen,
 
-Please pull i2c subsystem fixes for Linux 2.6.34 from:
+On Tue, 2010-05-04 at 03:53 +0100, Stephen Rothwell wrote:
+> Today's linux-next merge of the crypto tree got a conflict in
+> arch/arm/mach-omap2/devices.c between commit
+> 883413341e479d4e9f9c69def4884b4c6e1cef4e ("ARM: 6046/1: ARM: OMAP:
+> register PMU IRQs during board initialisation") from the arm tree and
+> commit ee5500c45c4860a84bba502c6d9ef5af6395dad6 ("crypto: omap - Updates
+> omap sham device related platform code") from the crypto tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git i2c-for-linus
+Thanks for fixing this. Looks fine to me.
 
- Documentation/i2c/writing-clients |    5 +++
- drivers/i2c/i2c-core.c            |   63 +++++++++++++++++++++++-------------
- include/linux/i2c.h               |    2 +
- 3 files changed, 47 insertions(+), 23 deletions(-)
+Will
 
----------------
-
-Jean Delvare (2):
-      i2c: Fix probing of FSC hardware monitoring chips
-      i2c-core: Use per-adapter userspace device lists
-
-Wolfram Sang (1):
-      i2c-core: Erase pointer to clientdata on removal
-
-Thanks,
--- 
-Jean Delvare
