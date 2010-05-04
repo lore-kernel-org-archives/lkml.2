@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934438Ab0EDW2d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 18:28:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53284 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753520Ab0EDW2b (ORCPT
+	id S934450Ab0EDW3S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 18:29:18 -0400
+Received: from p01c11o142.mxlogic.net ([208.65.144.65]:57477 "EHLO
+	p01c11o142.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934099Ab0EDW3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 18:28:31 -0400
-Date: Tue, 4 May 2010 15:27:13 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jiri Slaby <jslaby@suse.cz>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Subject: Re: [PATCH v2] fs: use kmalloc() to allocate fdmem if possible
-Message-Id: <20100504152713.0c72a087.akpm@linux-foundation.org>
-In-Reply-To: <1272826920-8899-1-git-send-email-xiaosuo@gmail.com>
-References: <1272826920-8899-1-git-send-email-xiaosuo@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 May 2010 18:29:16 -0400
+X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 May 2010 18:29:16 EDT
+X-MXL-Hash: 4be09fbc34cfcec8-367f3ccb35ca55a0ed44e0955f08a541f2322df6
+X-MXL-Hash: 4be09cb7053b5602-60274278d416e91e6bed9bf908661b0bdbcd1453
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       David Woodhouse <dwmw2@infradead.org>
+CC: Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>
+Date: Tue, 4 May 2010 17:15:36 -0500
+Subject: RE: [Bug #15729] BUG: physmap modprobe & rmmod
+Thread-Topic: [Bug #15729] BUG: physmap modprobe & rmmod
+Thread-Index: Acrr1ieoyfmtuWQFQfyE5zJLukCkvAAAPbKg
+Message-ID: <0D753D10438DA54287A00B0270842697636EB83FB2@AUSP01VMBX24.collaborationhost.net>
+References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera>
+ <8VO9AsMlpMD.A.-m.4IJ4LB@chimera>
+In-Reply-To: <8VO9AsMlpMD.A.-m.4IJ4LB@chimera>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010050401)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [216.166.12.98]
+X-AnalysisOut: [v=1.0 c=1 a=CyGLniF1gukA:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
+X-AnalysisOut: [MA:10 a=IRTT+DMug47mVLgYdXzmDg==:17 a=VwQbUJbxAAAA:8 a=yPC]
+X-AnalysisOut: [of4ZbAAAA:8 a=gu6fZOg2AAAA:8 a=i00gxMtYAAAA:8 a=hA7INtIzO7]
+X-AnalysisOut: [jTU5J-gFwA:9 a=d3tykvge_g_UqhwsNT6mIsj_ypgA:4 a=QEXdDO2ut3]
+X-AnalysisOut: [YA:10 a=7DSvI1NPTFQA:10 a=x1WnkoZAwusA:10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o44MTXmE027471
 
-On Mon,  3 May 2010 03:02:00 +0800
-Changli Gao <xiaosuo@gmail.com> wrote:
-
-> use kmalloc() to allocate fdmem if possible.
+On Tuesday, May 04, 2010 2:21 PM, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
 > 
-> vmalloc() is used as a fallback solution for fdmem allocation. A new helper
-> function __free_fdtable() is introduced to reduce the lines of code.
+> The following bug entry is on the current list of known regressions
+> from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 > 
-> A potential bug, vfree() a memory allocated by kmalloc(), is fixed.
 > 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15729
+> Subject		: BUG: physmap modprobe & rmmod
+> Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
+> Date		: 2010-04-02 20:40 (33 days old)
+> Message-ID	: <20100402134058.c4682716.randy.dunlap@oracle.com>
+> References	: http://marc.info/?l=linux-kernel&m=127024096210230&w=2
+> Handled-By	: Hartley Sweeten <hsweeten@visionengravers.com>
+> Patch		: https://patchwork.kernel.org/patch/90497/
 
-Seems a reasonable thing to do.  It might also be reasonable to make
-vmalloc() try kmalloc() first, but that's a separate exercise.
+This patch is not yet in Linus' tree, it is in linux-next.  David?
 
-> ----
->  fs/file.c |   55 ++++++++++++++++++++++---------------------------------
->  1 file changed, 22 insertions(+), 33 deletions(-)
-> diff --git a/fs/file.c b/fs/file.c
-> index 34bb7f7..9af31ae 100644
-> --- a/fs/file.c
-> +++ b/fs/file.c
-> @@ -39,28 +39,27 @@ int sysctl_nr_open_max = 1024 * 1024; /* raised later */
->   */
->  static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
->  
-> -static inline void * alloc_fdmem(unsigned int size)
-> +static inline void *alloc_fdmem(unsigned int size)
->  {
-> -	if (size <= PAGE_SIZE)
-> -		return kmalloc(size, GFP_KERNEL);
-> -	else
-> -		return vmalloc(size);
-> +	void *data;
-> +
-> +	data = kmalloc(size, GFP_KERNEL);
-
-This most definitely should have __GFP_NOWARN.
-
-> +	if (data != NULL)
-> +		return data;
-> +
-> +	return vmalloc(size);
->  }
->  
-> -static inline void free_fdarr(struct fdtable *fdt)
-> +static inline void free_fdmem(void *ptr)
->  {
-> -	if (fdt->max_fds <= (PAGE_SIZE / sizeof(struct file *)))
-> -		kfree(fdt->fd);
-> -	else
-> -		vfree(fdt->fd);
-> +	is_vmalloc_addr(ptr) ? vfree(ptr) : kfree(ptr);
->  }
->  
-> -static inline void free_fdset(struct fdtable *fdt)
-> +static inline void __free_fdtable(struct fdtable *fdt)
->  {
-> -	if (fdt->max_fds <= (PAGE_SIZE * BITS_PER_BYTE / 2))
-> -		kfree(fdt->open_fds);
-> -	else
-> -		vfree(fdt->open_fds);
-> +	free_fdmem(fdt->fd);
-> +	free_fdmem(fdt->open_fds);
-> +	kfree(fdt);
->  }
-
-And these should be uninlined - they're too large to be inlined.
-
-My version of gcc seems to just uninline them anyway, but forcing them
-to be inlined with __always_inline indeed causes 70-80 bytes more text,
-and we figure that larger text generally causes a slower kernel due to
-cache eviction effects.
-
-
+Regards,
+Hartleyÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
