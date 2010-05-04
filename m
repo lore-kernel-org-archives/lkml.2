@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759889Ab0EDNOh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 09:14:37 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42390 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758534Ab0EDNOf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 09:14:35 -0400
-Subject: Re: [RFC PATCH v2] nohz/sched: disable ilb on !mc_capable()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-       David Miller <davem@davemloft.net>,
-       "suresh.b.siddha" <suresh.b.siddha@intel.com>
-In-Reply-To: <20100426203136.GA1539@comet.dominikbrodowski.net>
-References: <20100426203136.GA1539@comet.dominikbrodowski.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 04 May 2010 15:14:24 +0200
-Message-ID: <1272978864.5605.193.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1759961Ab0EDNRk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 09:17:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29357 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759143Ab0EDNRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 09:17:38 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] KEYS: Fix RCU handling in key_gc_keyring()
+To: torvalds@osdl.org, akpm@linux-foundation.org, serue@us.ibm.com,
+       paulmck@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org,
+       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 04 May 2010 14:16:10 +0100
+Message-ID: <20100504131610.2015.50934.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-26 at 22:31 +0200, Dominik Brodowski wrote:
-> From: Dominik Brodowski <linux@dominikbrodowski.net>
-> Date: Thu, 8 Apr 2010 21:51:18 +0200
-> Subject: [PATCH] nohz/sched: disable ilb on !mc_capable()
-> 
-> On my dual-core, !mc_capbale() CPU, the idle load balancer (ilb) is one
-> of the main reasons ticks are not stopped: Under moderate load (~98 % idle),
-> upt o half of the calls to tick_nohz_top_sched_tick() are aborted due
-> to calls to select_nohz_load_balancer(1).
-> 
-> I suspect this is caused by the following phenomenon:
-> 
->     CPU0				CPU1
->     <active>				<active>
->     tick_nohz_stop_sched_tick(1)
->     select_nohz_load_balancer(1)
->      => CPU0 becomes ilb owner,		<CPU1 becomes idle a bit later>
->         tick is not stopped,		tick_nohz_stop_sched_tick(1)
->         CPU0 goes to sleep for		 => CPU1 isn't the ilb owner,
->         exactly 1 tick.			    tick is stopped.
->     <short sleep>			<long sleep>
->     ---> scheduler_tick()
->     tick_nohz_stop_sched_tick(0)
->     tick_nohz_stop_sched_tick(1)
->      => is ilb owner, all CPUs are
->         idle, CPU0 may go to sleep.
-> 
-> If all CPU cores have hardly anything to do, letting the active CPU do
-> idle load balancing allows us to enter deep sleep states earlier, and for
-> longer periods of time. Furthermore, on !mc_capable() systems, it seems that
-> the ilb algorithm isn't needed at all. Let's show this for a 2-core system:
-> 
-> - if both cores are active, ilb is deactivated
-> - if no core is active, ilb is deactivated
-> - if only one core is active, it attempts to balance its load off to other
->   CPUs on each tick anyway. ilb wouldn't act quicker.
-> 
-> This patch decreases the amount of wakeups on my completely idle notebook by
-> about two thirds.
+key_gc_keyring() needs to either hold the RCU read lock or hold the keyring
+semaphore if it's going to scan the keyring's list.  Given that it only needs
+to read the key list, and it's doing so under a spinlock, the RCU read lock is
+the thing to use.
 
-Right, so I think the !mc_capable() check is buggy, at the very least on
-sparc64 which is 'creative' with its sched_domain maps.
+Furthermore, the RCU check added in e7b0a61b7929632d36cf052d9e2820ef0a9c1bfe is
+incorrect as holding the spinlock on key_serial_lock is not grounds for
+assuming a keyring's pointer list can be read safely.  Instead, a simple
+rcu_dereference() inside of the previously mentioned RCU read lock is what we
+want.
 
-I'm also not sure what a single socket AMD Magny-Cours will do.
+Reported-by: Serge E. Hallyn <serue@us.ibm.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-On a single socket Nehalem we will have a non trivial sched_domain
-because we also have the threads included.
+ security/keys/gc.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-I think we can only do your optimization for machines that end up having
-a single sched_domain that covers the entire machine.
-
-> Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
-> 
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 5a5ea2c..8ad8a03 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -3290,6 +3290,9 @@ int select_nohz_load_balancer(int stop_tick)
->  	if (stop_tick) {
->  		cpu_rq(cpu)->in_nohz_recently = 1;
->  
-> +		if (!mc_capable())
-> +			return 0;
-> +
->  		if (!cpu_active(cpu)) {
->  			if (atomic_read(&nohz.load_balancer) != cpu)
->  				return 0;
-> @@ -3339,6 +3342,9 @@ int select_nohz_load_balancer(int stop_tick)
->  		if (!cpumask_test_cpu(cpu, nohz.cpu_mask))
->  			return 0;
->  
-> +		if (!mc_capable())
-> +			return 0;
-> +
->  		cpumask_clear_cpu(cpu, nohz.cpu_mask);
->  
->  		if (atomic_read(&nohz.load_balancer) == cpu)
+diff --git a/security/keys/gc.c b/security/keys/gc.c
+index 1990231..a46e825 100644
+--- a/security/keys/gc.c
++++ b/security/keys/gc.c
+@@ -77,10 +77,10 @@ static bool key_gc_keyring(struct key *keyring, time_t limit)
+ 		goto dont_gc;
+ 
+ 	/* scan the keyring looking for dead keys */
+-	klist = rcu_dereference_check(keyring->payload.subscriptions,
+-				      lockdep_is_held(&key_serial_lock));
++	rcu_read_lock();
++	klist = rcu_dereference(keyring->payload.subscriptions);
+ 	if (!klist)
+-		goto dont_gc;
++		goto unlock_dont_gc;
+ 
+ 	for (loop = klist->nkeys - 1; loop >= 0; loop--) {
+ 		key = klist->keys[loop];
+@@ -89,11 +89,14 @@ static bool key_gc_keyring(struct key *keyring, time_t limit)
+ 			goto do_gc;
+ 	}
+ 
++unlock_dont_gc:
++	rcu_read_unlock();
+ dont_gc:
+ 	kleave(" = false");
+ 	return false;
+ 
+ do_gc:
++	rcu_read_unlock();
+ 	key_gc_cursor = keyring->serial;
+ 	key_get(keyring);
+ 	spin_unlock(&key_serial_lock);
 
