@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933401Ab0EDPDa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 11:03:30 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:39939 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933278Ab0EDPD0 (ORCPT
+	id S933443Ab0EDPEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 11:04:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:51276 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932861Ab0EDPD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 11:03:26 -0400
-From: Dinh.Nguyen@freescale.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-       linux-usb@vger.kernel.org, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCH 2.6.34-rc6] mxc: gadget: Fix bitfield for calculating maximum packet size
-Date: Tue,  4 May 2010 10:03:01 -0500
-Message-Id: <1272985381-4454-1-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
+	Tue, 4 May 2010 11:03:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Subject: Re: [RFC][PATCH resend 8/12] asm-generic: bitops: introduce le bit offset macro
+Date: Tue, 4 May 2010 17:03:00 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: avi@redhat.com, mtosatti@redhat.com, agraf@suse.de,
+       yoshikawa.takuya@oss.ntt.co.jp, fernando@oss.ntt.co.jp,
+       kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org,
+       tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+       benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <20100504220500.7695cd66.takuya.yoshikawa@gmail.com>
+In-Reply-To: <20100504220500.7695cd66.takuya.yoshikawa@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005041703.00549.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/xvNLctGuTZwJhhcFPAVN+XDnaIMNpYhPyR7b
+ zJShLpQ8q9U3vf0RQsyUi+Wf3rsybGbHwPdAMP7R+fZBvXbl5g
+ 9MFW2MKwJ8UOSWIO50K2Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+On Tuesday 04 May 2010, Takuya Yoshikawa wrote:
+> 
+> Although we can use *_le_bit() helpers to treat bitmaps le arranged,
+> having le bit offset calculation as a seperate macro gives us more freedom.
+> 
+> For example, KVM has le arranged dirty bitmaps for VGA, live-migration
+> and they are used in user space too. To avoid bitmap copies between kernel
+> and user space, we want to update the bitmaps in user space directly.
+> To achive this, le bit offset with *_user() functions help us a lot.
+> 
+> So let us use the le bit offset calculation part by defining it as a new
+> macro: generic_le_bit_offset() .
 
-The max packet length bit mask used for isochronous endpoints
-should be 0x7FF instead of 0x8FF. 0x8FF will actually clear
-higher-order bits in the max packet length field.
+Does this work correctly if your user space is 32 bits (i.e. unsigned long
+is different size in user space and kernel) in both big- and little-endian
+systems?
 
-This patch applies to 2.6.34-rc6.
+I'm not sure about all the details, but I think you cannot in general share
+bitmaps between user space and kernel because of this.
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- drivers/usb/gadget/fsl_udc_core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_udc_core.c
-index fa3d142..08a9a62 100644
---- a/drivers/usb/gadget/fsl_udc_core.c
-+++ b/drivers/usb/gadget/fsl_udc_core.c
-@@ -489,7 +489,7 @@ static int fsl_ep_enable(struct usb_ep *_ep,
- 	case USB_ENDPOINT_XFER_ISOC:
- 		/* Calculate transactions needed for high bandwidth iso */
- 		mult = (unsigned char)(1 + ((max >> 11) & 0x03));
--		max = max & 0x8ff;	/* bit 0~10 */
-+		max = max & 0x7ff;	/* bit 0~10 */
- 		/* 3 transactions at most */
- 		if (mult > 3)
- 			goto en_done;
--- 
-1.6.0.4
-
+	Arnd
