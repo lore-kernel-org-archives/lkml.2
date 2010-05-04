@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933544Ab0EDSla (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 14:41:30 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:58037 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932269Ab0EDSl3 (ORCPT
+	id S933563Ab0EDSnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 14:43:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:46777 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933047Ab0EDSnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 14:41:29 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Fredrick Prashanth John Berchmans <fredrickprashanth@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: nfs accesses of FAT fs folders causes deadlock on lock_super
-References: <x2gd4f60c3c1005032259p8be864bcucff91618016a0eb@mail.gmail.com>
-	<20100504103232.GA25054@infradead.org>
-	<t2gd4f60c3c1005041101o5720e1e4k69b4a7b76296e70f@mail.gmail.com>
-Date: Wed, 05 May 2010 03:41:27 +0900
-In-Reply-To: <t2gd4f60c3c1005041101o5720e1e4k69b4a7b76296e70f@mail.gmail.com>
-	(Fredrick Prashanth John Berchmans's message of "Tue, 4 May 2010
-	11:01:22 -0700")
-Message-ID: <87mxwfy0fc.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.93 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 4 May 2010 14:43:13 -0400
+X-Authority-Analysis: v=1.1 cv=Sj+DEJq9TvmrEz0yYf786F+83+V8ZKDvY/KsKt+Cs/8= c=1 sm=0 a=wjcUkYIaDT4A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=GZqp6Pu3WBXYK-MCyWcA:9 a=QDxgTzb-Hqx4aajGDaXFHUCD7esA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: How to write marker info in MMIO trace from kernel
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4BE06933.9080202@lwfinger.net>
+References: <4BE06933.9080202@lwfinger.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 04 May 2010 14:42:59 -0400
+Message-ID: <1272998579.9739.235.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fredrick Prashanth John Berchmans <fredrickprashanth@gmail.com> writes:
+On Tue, 2010-05-04 at 13:36 -0500, Larry Finger wrote:
+> Stephen,
+> 
+> I hope you are the correct person for this question.
+> 
+> I would like to write information into the MMIO trace file similar to
+> what the user space write to /sys/.../trace_marker would accomplish,
+> however, I want to do it in place of printk statements in the driver I'm
+> tracing. Do you have any suggestions on how to do this? I have tools to
+> merge the trace dump with dmesg output, but the latter lags behind and I
+> do not get good correlation.
 
-> On Tue, May 4, 2010 at 3:32 AM, Christoph Hellwig <hch@infradead.org> wrote:
->> On Mon, May 03, 2010 at 10:59:42PM -0700, Fredrick Prashanth John Berchmans wrote:
->>> The box was running kernel version 2.6.27.10.
->>> But I think the FAT code has not changed much.
->>
->> But the nfsd code has and now doesn't call lookup from the filldir
->> callback anymore.
->>
->>
->
-> I see from nfsd code, it seems the compose_entry_fh still calls
-> lookup_one_len, which is now
-> called from encode_entryplus_baggage instead of entry_encode.
-> Am I right?
+You can use "trace_printk()". I think that is what you are looking for.
 
-As far as I can see, nfsd is buffering the result of readdir, then do
-jobs (encode_fh, etc.) with it on other context of readdir.
+-- Steve
 
-Aren't you missing a buffering of nfsd_buffered_readdir()?
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
