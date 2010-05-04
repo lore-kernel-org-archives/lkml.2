@@ -1,66 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759921Ab0EDDpz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 23:45:55 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36290 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759454Ab0EDDpn (ORCPT
+	id S1759964Ab0EDDqO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 23:46:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41827 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757364Ab0EDDqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 23:45:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=u1UxINFfh8/2HBR56ZjiCxRhmutbl2AZVdc9gyrIv/7FSh1csMXt8GlYNjzhy2g+hI
-         c44OTVwp/bmUJkxYD/TxbXV64RqgpcRysKYqW8z7neJGne357+qNemGBFsCZ+/5iWJXc
-         VGnW3wZC8T+qOTDguSEydkCA0pZLqQL6aj26w=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 3/3] lockdep: No need to disable preemption in debug atomic ops
-Date: Tue,  4 May 2010 05:45:36 +0200
-Message-Id: <1272944736-25141-4-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1272944736-25141-1-git-send-regression-fweisbec@gmail.com>
-References: <1272944736-25141-1-git-send-regression-fweisbec@gmail.com>
+	Mon, 3 May 2010 23:46:06 -0400
+Date: Mon, 3 May 2010 20:48:18 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Willy Tarreau <w@1wt.eu>, Pavel Machek <pavel@ucw.cz>,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
+       cpufreq@vger.kernel.org, riel@redhat.com
+Subject: [PATCH 8/7] cpufreq: make the iowait-is-busy-time a sysfs tunable
+Message-ID: <20100503204818.7b801f43@infradead.org>
+In-Reply-To: <201004271339.34711.trenn@suse.de>
+References: <20100418115949.7b743898@infradead.org>
+	<201004231050.10667.trenn@suse.de>
+	<20100423090819.4273b327@infradead.org>
+	<201004271339.34711.trenn@suse.de>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to disable preemption in the debug_atomic_* ops, as
-we ensure interrupts are disabled already.
+On Tue, 27 Apr 2010 13:39:34 +0200
+Thomas Renninger <trenn@suse.de> wrote:
 
-So let's use the __this_cpu_ops() rather than this_cpu_ops() that
-enclose the ops in a preempt disabled section.
+> On Friday 23 April 2010 06:08:19 pm Arjan van de Ven wrote:
+> > On Fri, 23 Apr 2010 10:50:10 +0200
+> > Thomas Renninger <trenn@suse.de> wrote:
+> >  Especially on battery, users will appreciate some minutes
+> >
+> > > of more battery lifetime and do not care about some ms of IO
+> > > latencies.
+> >
+> > the assumption that power doesn't matter on AC is a huge fiction
+> > that any data center operator would love to get out of everyones
+> > head as quickly as possible.
+> 
+> Have I said power doesn't matter on AC?
+> Do you agree that a datacenter has different performance vs power 
+> tradeoff demands as a battery driven mobile device?
+> 
+> Back to the topic:
+> As you did not answer on my (several) sysfs knob request(s), I expect
+> you agree with it and will add one.
+> 
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+yup it makes sense to have a sysfs knob with a sane default value
+
+From: Arjan van de Ven <arjan@linux.intel.com>
+Subject: [PATCH] cpufreq: make the iowait-is-busy-time a sysfs tunable
+
+Pavel Machek pointed out that not all CPUs have an efficient idle
+at high frequency. Specifically, older Intel and various AMD cpus
+would get a higher power usage when copying files from USB.
+
+Mike Chan pointed out that the same is true for various ARM chips
+as well.
+
+Thomas Renninger suggested to make this a sysfs tunable with a
+reasonable default.
+
+This patch adds a sysfs tunable for the new behavior, and uses
+a very simple function to determine a reasonable default, depending
+on the CPU vendor/type.
+
+Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
 ---
- kernel/lockdep_internals.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/cpufreq/cpufreq_ondemand.c |   46 +++++++++++++++++++++++++++++++++++-
+ 1 files changed, 45 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/lockdep_internals.h b/kernel/lockdep_internals.h
-index 8d929c7..4f560cf 100644
---- a/kernel/lockdep_internals.h
-+++ b/kernel/lockdep_internals.h
-@@ -144,12 +144,12 @@ DECLARE_PER_CPU(struct lockdep_stats, lockdep_stats);
- 
- #define debug_atomic_inc(ptr)			{		\
- 	WARN_ON_ONCE(!irqs_disabled());				\
--	this_cpu_inc(lockdep_stats.ptr);			\
-+	__this_cpu_inc(lockdep_stats.ptr);			\
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index ed472f8..4877e8f 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -109,6 +109,7 @@ static struct dbs_tuners {
+ 	unsigned int down_differential;
+ 	unsigned int ignore_nice;
+ 	unsigned int powersave_bias;
++	unsigned int io_is_busy;
+ } dbs_tuners_ins = {
+ 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
+ 	.down_differential = DEF_FREQUENCY_DOWN_DIFFERENTIAL,
+@@ -260,6 +261,7 @@ static ssize_t show_##file_name						\
+ 	return sprintf(buf, "%u\n", dbs_tuners_ins.object);		\
+ }
+ show_one(sampling_rate, sampling_rate);
++show_one(io_is_busy, io_is_busy);
+ show_one(up_threshold, up_threshold);
+ show_one(ignore_nice_load, ignore_nice);
+ show_one(powersave_bias, powersave_bias);
+@@ -310,6 +312,22 @@ static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
+ 	return count;
  }
  
- #define debug_atomic_dec(ptr)			{		\
- 	WARN_ON_ONCE(!irqs_disabled());				\
--	this_cpu_dec(lockdep_stats.ptr);			\
-+	__this_cpu_dec(lockdep_stats.ptr);			\
++static ssize_t store_io_is_busy(struct kobject *a, struct attribute *b,
++				   const char *buf, size_t count)
++{
++	unsigned int input;
++	int ret;
++	ret = sscanf(buf, "%u", &input);
++	if (ret != 1)
++		return -EINVAL;
++
++	mutex_lock(&dbs_mutex);
++	dbs_tuners_ins.io_is_busy = !!input;
++	mutex_unlock(&dbs_mutex);
++
++	return count;
++}
++
+ static ssize_t store_up_threshold(struct kobject *a, struct attribute *b,
+ 				  const char *buf, size_t count)
+ {
+@@ -392,6 +410,7 @@ static struct global_attr _name = \
+ __ATTR(_name, 0644, show_##_name, store_##_name)
+ 
+ define_one_rw(sampling_rate);
++define_one_rw(io_is_busy);
+ define_one_rw(up_threshold);
+ define_one_rw(ignore_nice_load);
+ define_one_rw(powersave_bias);
+@@ -403,6 +422,7 @@ static struct attribute *dbs_attributes[] = {
+ 	&up_threshold.attr,
+ 	&ignore_nice_load.attr,
+ 	&powersave_bias.attr,
++	&io_is_busy.attr,
+ 	NULL
+ };
+ 
+@@ -527,7 +547,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
+ 		 * from the cpu idle time.
+ 		 */
+ 
+-		if (idle_time >= iowait_time)
++		if (dbs_tuners_ins.io_is_busy && idle_time >= iowait_time)
+ 			idle_time -= iowait_time;
+ 
+ 		if (unlikely(!wall_time || wall_time < idle_time))
+@@ -643,6 +663,29 @@ static inline void dbs_timer_exit(struct cpu_dbs_info_s *dbs_info)
+ 	cancel_delayed_work_sync(&dbs_info->work);
  }
  
- #define debug_atomic_read(ptr)		({				\
++/*
++ * Not all CPUs want IO time to be accounted as busy; this depends on how
++ * efficient idling at a higher frequency/voltage is.
++ * Pavel Machek says this is not so for various generations of AMD and old
++ * Intel systems.
++ * Mike Chan (android.com) says this is also not true for ARM.
++ * Because of this, whitelist specific known (series) of CPUs by default, and
++ * leave all others up to the user.
++ */
++static int should_io_be_busy(void)
++{
++#if defined(CONFIG_X86)
++	/*
++	 * For Intel, Core 2 (model 15) and later have an efficient idle.
++	 */
++	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
++	    boot_cpu_data.x86 == 6 &&
++	    boot_cpu_data.x86_model >= 15)
++		return 1;
++#endif
++	return 0;
++}
++
+ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 				   unsigned int event)
+ {
+@@ -705,6 +748,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 			dbs_tuners_ins.sampling_rate =
+ 				max(min_sampling_rate,
+ 				    latency * LATENCY_MULTIPLIER);
++			dbs_tuners_ins.io_is_busy = should_io_be_busy();
+ 		}
+ 		mutex_unlock(&dbs_mutex);
+ 
 -- 
-1.6.2.3
+1.6.1.3
 
+
+
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
