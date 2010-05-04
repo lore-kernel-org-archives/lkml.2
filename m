@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760005Ab0EDSDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 14:03:06 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48838 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757607Ab0EDSDC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 14:03:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rO0bR/71mqHibG6019pDAhN8E4fvDQ9/7AjCq9XNVVPKxtzOSQmTgT6MQ6piwZDYdc
-         3YAFWTp4+9ugz/sw3Nfarj2SsReUVshkNsyKIXY+nTZLQFntI6pBi+Upe3nV7J6fjuw8
-         eFqfjWXHdGpdYNdUh/GARL0U5yoO8kd9V7Wxs=
-Date: Tue, 4 May 2010 11:02:47 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Disable i8042 checks on Intel Apple Macs
-Message-ID: <20100504180247.GC29428@core.coreip.homeip.net>
-References: <1272994594.13354.215.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272994594.13354.215.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1760083Ab0EDSEm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 14:04:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39151 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757881Ab0EDSEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 14:04:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,328,1270450800"; 
+   d="scan'208";a="618830732"
+Subject: Re: [PATCH 1/2] x86: eliminate TS_XSAVE
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Cui, Dexuan" <dexuan.cui@intel.com>, Sheng Yang <sheng@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+In-Reply-To: <1272812038-32484-2-git-send-email-avi@redhat.com>
+References: <1272812038-32484-1-git-send-email-avi@redhat.com>
+	 <1272812038-32484-2-git-send-email-avi@redhat.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Tue, 04 May 2010 11:03:29 -0700
+Message-Id: <1272996209.2833.1.camel@sbs-t61.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 04, 2010 at 06:36:34PM +0100, Bastien Nocera wrote:
-> As those computers never had any i8042 controllers, and the
-> current lookup code could potentially lock up/hang/wait for
-> timeout for long periods of time.
+On Sun, 2010-05-02 at 07:53 -0700, Avi Kivity wrote:
+> The fpu code currently uses current->thread_info->status & TS_XSAVE as
+> a way to distinguish between XSAVE capable processors and older processors.
+> The decision is not really task specific; instead we use the task status to
+> avoid a global memory reference - the value should be the same across all
+> threads.
 > 
-> Fixes intermittent hangs on boot on a MacbookAir1,1
+> Eliminate this tie-in into the task structure by using an alternative
+> instruction keyed off the XSAVE cpu feature; this results in shorter and
+> faster code, without introducing a global memory reference.
 > 
-> Signed-off-by: Bastien Nocera <hadess@hadess.net>
-> ---
->  drivers/input/serio/i8042.c |   18 ++++++++++++++++++
->  1 files changed, 18 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
-> index d84a36e..2be7207 100644
-> --- a/drivers/input/serio/i8042.c
-> +++ b/drivers/input/serio/i8042.c
+> Signed-off-by: Avi Kivity <avi@redhat.com>
 
-This should go into i8042-x86ia64io.h and used to create PNP whitelist.
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-Thanks.
-
--- 
-Dmitry
