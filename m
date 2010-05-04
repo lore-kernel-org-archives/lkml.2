@@ -1,61 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933945Ab0EDVGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 17:06:11 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39139 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933755Ab0EDVGJ convert rfc822-to-8bit (ORCPT
+	id S933980Ab0EDVMP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 17:12:15 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:40262 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933754Ab0EDVMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 17:06:09 -0400
+	Tue, 4 May 2010 17:12:13 -0400
+Date: Tue, 4 May 2010 22:12:09 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+       Jan Blunck <jblunck@suse.de>
+Subject: Re: [PATCH 17/39] union-mount: Union mounts documentation
+Message-ID: <20100504211209.GC4360@shareable.org>
+References: <1272928358-20854-1-git-send-email-vaurora@redhat.com> <1272928358-20854-18-git-send-email-vaurora@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <87mxwf533b.fsf@basil.nowhere.org>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
-	 <1272667021-21312-2-git-send-email-arve@android.com>
-	 <1272667021-21312-3-git-send-email-arve@android.com>
-	 <1272667021-21312-4-git-send-email-arve@android.com>
-	 <1272667021-21312-5-git-send-email-arve@android.com>
-	 <87mxwf533b.fsf@basil.nowhere.org>
-Date: Tue, 4 May 2010 14:06:07 -0700
-Message-ID: <y2jd6200be21005041406j8f632e90l60941174b4f23c71@mail.gmail.com>
-Subject: Re: [PATCH 4/8] PM: suspend_block: Add debugfs file
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Andi Kleen <andi@halobates.de>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Len Brown <len.brown@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-       Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272928358-20854-18-git-send-email-vaurora@redhat.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/4 Andi Kleen <andi@halobates.de>:
-> Arve Hjønnevåg <arve@android.com> writes:
->>
->> +static int suspend_blocker_stats_show(struct seq_file *m, void *unused)
->> +{
->> +     unsigned long irqflags;
->> +     struct suspend_blocker *blocker;
->> +
->> +     seq_puts(m, "name\tactive\n");
->> +     spin_lock_irqsave(&list_lock, irqflags);
->> +     list_for_each_entry(blocker, &inactive_blockers, link)
->> +             seq_printf(m, "\"%s\"\t0\n", blocker->name);
->> +     list_for_each_entry(blocker, &active_blockers, link)
->> +             seq_printf(m, "\"%s\"\t1\n", blocker->name);
->> +     spin_unlock_irqrestore(&list_lock, irqflags);
->
-> Could you report the pid here too?
->
+Valerie Aurora wrote:
+> +File copyup: Create a file on the top layer that has the same metadata
+> +and contents as the file with the same pathname on the bottom layer.
 
-Most of the suspend blockers are in the kernel, and does not have a pid.
+Can copyup be interrupted?  E.g. if I chmod an 80GB file, will the
+chmod() system call pause for a couple of hours, or can I control-C it?
 
-> The name set by the application might be meaningless or duplicated.
->
+> +This deviation from standard is due to technical limitations of the
+> +union mount implementation.  Specifically, we would need to replace an
+> +open file descriptor from the lower layer with an open file descriptor
+> +for a file with matching pathname and contents on the upper layer,
+> +which is difficult to do.  We avoid this in other system calls by
+> +doing the copyup before the file is opened.  Unionfs doesn't encounter
+> +this problem because it creates a dummy file struct which redirects or
+> +fans out operations to the struct files for the underlying file
+> +systems.
+> +
+> +From an application's point of view, the result of an in-kernel file
+> +copyup is the logical equivalent of another application updating the
+> +file via the rename() pattern: creat() a new file, copy the data over,
+> +make changes the copy, and rename() over the old version.  Any
+> +existing open file descriptors for that file (including those in the
+> +same application) refer to a now invisible object that used to have
+> +the same pathname.  Only opens that occur after the copyup will see
+> +updates to the file.
 
-Currently all the names set by android user-space are unique but the
-pids are not. We can add columns, or extend the name of user space
-suspend blockers in the ioctl interface, later if needed.
+Does it apply the same permission checks that a program doing
+copy+rename would have to pass?  I guess that is just write access to
+the directory.
 
--- 
-Arve Hjønnevåg
+Does it effectively "rename" all hard links referring to the file, to
+point to the new version, or does it only affect the path that was
+used by the writer/modifier, leaving the other links continue to refer
+to the original file?
+
+> + - File copyup on open(O_DIRECT)
+
+Why is O_DIRECT relevant?  O_DIRECT doesn't imply writing, and
+copy+rename behaviour is the same with O_DIRECT as not.
+
+Some programs use O_DIRECT to read very large files, without intending
+they will ever be modified.  For example, qemu using O_DIRECT to
+access a disk image backing file.
+
+> +NFS interaction
+> +===============
+> +
+> +NFS is currently not supported as either type of layer.  NFS as
+> +read-only layer requires support from the server to honor the
+> +read-only guarantee needed for the bottom layer.  To do this, the
+> +server needs to revoke access to clients requesting read-only file
+> +systems if the exported file system is remounted read-write or
+> +unmounted (during which arbitrary changes can occur).  Some recent
+> +discussion:
+> +
+> +http://markmail.org/message/3mkgnvo4pswxd7lp
+> +
+> +NFS as the read-write layer would require implementation of the
+> +->whiteout() and ->fallthru() methods.  DT_WHT directory entries are
+> +theoretically already supported.
+> +
+> +Also, technically the requirement for a readdir() cookie that is
+> +stable across reboots comes only from file systems exported via NFSv2:
+> +
+> +http://oss.oracle.com/pipermail/btrfs-devel/2008-January/000463.html
+> +
+> +Todo:
+> +
+> +- Guarantee really really read-only on NFS exports
+> +- Implement whiteout()/fallthru() for NFS
+
+I'm finding it hard to imagine _guaranteeing_ really read-only.  All
+you can guarantee is that the NFS says it is read-only.
+
+For example, a userspace NFS server cannot prevent the filesystem it's
+serving from changing.
+
+Is this not a problem with other network filesystems like CIFS, P9, FUSE?
+
+> +Known non-POSIX behaviors
+> +-------------------------
+> +
+> +- Link count may be wrong for files on bottom layer with > 1 link count
+
+Can you say a bit more about what will be seen?
+
+> +- File copyup is the logical equivalent of an update via copy +
+> +  rename().  Any existing open file descriptors will continue to refer
+> +  to the read-only copy on the bottom layer and will not see any
+> +  changes that occur after the copy-up.
+
+I can imagine some database-like programs getting confused by that.
+
+Maybe it would be better to fail copyup operations when the file is
+currently open O_RDONLY by anyone, analogous to the way writable
+mounts are refused when any union holds it read-only?
+
+Are there uses likely to be broken by that behaviour?
+
+Thanks,
+-- Jamie
