@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934371Ab0EDWTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 18:19:11 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:48583 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760226Ab0EDWTH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 18:19:07 -0400
-X-Auth-Info: klgDfTrtaRLsaDBHmJ+5isjfMzJNHSdDdWQVybqADas=
-From: Anatolij Gustschin <agust@denx.de>
-To: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@ozlabs.org, grant.likely@secretlab.ca,
-       leonardo.lists@gmail.com, gregkh@suse.de,
-       Anatolij Gustschin <agust@denx.de>
-Subject: [PATCH] serial: mpc52xx_uart: fix null pointer dereference
-Date: Wed,  5 May 2010 00:18:59 +0200
-Message-Id: <1273011539-13994-1-git-send-email-agust@denx.de>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <g2xc2d0b6ec1005041339r9c40822w7a642f9bba976820@mail.gmail.com>
-References: <g2xc2d0b6ec1005041339r9c40822w7a642f9bba976820@mail.gmail.com>
+	id S1760308Ab0EDWVX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 18:21:23 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43705 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756067Ab0EDWVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 18:21:21 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [Bug #15625] BUG: 2.6.34-rc1, RIP is (null)
+Date: Wed, 5 May 2010 00:22:15 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera> <8VO9AsMlpMD.A.rqB.3JJ4LB@chimera> <4BE09B71.30003@oracle.com>
+In-Reply-To: <4BE09B71.30003@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005050022.16064.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6acc6833510db8f72b5ef343296d97480555fda9
-introduced NULL pointer dereference and kernel crash
-on ppc32 machines while booting. Fix this bug now.
+On Wednesday 05 May 2010, Randy Dunlap wrote:
+> On 05/04/10 14:21, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15625
+> > Subject		: BUG: 2.6.34-rc1, RIP is (null)
+> > Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
+> > Date		: 2010-03-18 22:22 (48 days old)
+> > Message-ID	: <4BA2A7A9.4080503@oracle.com>
+> > References	: http://marc.info/?l=linux-kernel&m=126895098217351&w=2
+> 
+> 
+> Let's drop this one as not reproducible.
 
-Reported-by: Leonardo Chiquitto <leonardo.lists@gmail.com>
-Signed-off-by: Anatolij Gustschin <agust@denx.de>
----
- drivers/serial/mpc52xx_uart.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Done.
 
-diff --git a/drivers/serial/mpc52xx_uart.c b/drivers/serial/mpc52xx_uart.c
-index a176ab4..02469c3 100644
---- a/drivers/serial/mpc52xx_uart.c
-+++ b/drivers/serial/mpc52xx_uart.c
-@@ -1467,7 +1467,7 @@ mpc52xx_uart_init(void)
- 	/*
- 	 * Map the PSC FIFO Controller and init if on MPC512x.
- 	 */
--	if (psc_ops->fifoc_init) {
-+	if (psc_ops && psc_ops->fifoc_init) {
- 		ret = psc_ops->fifoc_init();
- 		if (ret)
- 			return ret;
--- 
-1.7.0.4
+Thanks,
+Rafael
 
