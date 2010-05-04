@@ -1,136 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934566Ab0EDWgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 18:36:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:65105 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934508Ab0EDWfA (ORCPT
+	id S934482Ab0EDWjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 18:39:05 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:20097 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760225Ab0EDWjC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 18:35:00 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Greg KH <gregkh@suse.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 06/13] tty: never hold BTM while getting tty_mutex
-Date: Wed,  5 May 2010 00:33:45 +0200
-Message-Id: <1273012433-6125-7-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1273012433-6125-1-git-send-email-arnd@arndb.de>
-References: <1273012433-6125-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19QkdRgjFQxhEbG+3V+bBpVsZgpgEzVTxoQ0oY
- Io1cuECTiiP4HSOk17ibNayNvNsxsZzOQDUPMnaMFOUX0CLzRc
- tHri9oFmWzwtJ9UsBqxhg==
+	Tue, 4 May 2010 18:39:02 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=v+aw7VCjqnZhRfuQND8C4yerTjGnbPVSkTwx4e+p6gidVU9UQhBmxPVqICmBRnzzx
+	Jfb8kUJfLxJ8MQo9SuyXQ==
+MIME-Version: 1.0
+In-Reply-To: <30960.1272976896@redhat.com>
+References: <20100503225105.GA18897@google.com> <30960.1272976896@redhat.com>
+Date: Tue, 4 May 2010 15:38:56 -0700
+Message-ID: <y2p8d20b11a1005041538zc2daea6cg2580e8cc14ccf8ed@mail.gmail.com>
+Subject: Re: x86 rwsem: up_read() does not check active count in fast path
+From: Michel Lespinasse <walken@google.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@google.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tty_mutex is never taken with the BTM held, except for
-two corner cases that are worked around here.
-We give up the BTM before calling tty_release() in the
-error path of tty_open().
-Similarly, we reorder the locking in ptmx_open()
-to get tty_mutex before the BTM.
+On Tue, May 4, 2010 at 5:41 AM, David Howells <dhowells@redhat.com> wrote:
+> Michel Lespinasse <walken@google.com> wrote:
+>
+>> Looking at the x86 rwsem code, I have been wondering about the up_read()
+>> path.  __rwsem_do_wake() comment mentions that one should check the active
+>> count on the way there; however I could not find that check when coming from
+>> up_read().
+>
+> Look in call_rwsem_wake(), which is implemented in assembly in two places in
+> the x86 arch:
+>
+>        arch/x86/lib/rwsem_64.S
+>        arch/x86/lib/semaphore_32.S
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/char/pty.c    |   22 ++++++++--------------
- drivers/char/tty_io.c |   13 +++++++------
- 2 files changed, 15 insertions(+), 20 deletions(-)
+Gah thanks, I had totally missed that part (I knew about these files
+but I had taken these as pure ABI wrappers; I did not notice the one
+nugget of interesting logic hiding in there).
 
-diff --git a/drivers/char/pty.c b/drivers/char/pty.c
-index dbb144b..889de89 100644
---- a/drivers/char/pty.c
-+++ b/drivers/char/pty.c
-@@ -626,7 +626,7 @@ static const struct tty_operations pty_unix98_ops = {
-  *		allocated_ptys_lock handles the list of free pty numbers
-  */
- 
--static int __ptmx_open(struct inode *inode, struct file *filp)
-+static int ptmx_open(struct inode *inode, struct file *filp)
- {
- 	struct tty_struct *tty;
- 	int retval;
-@@ -635,11 +635,14 @@ static int __ptmx_open(struct inode *inode, struct file *filp)
- 	nonseekable_open(inode, filp);
- 
- 	/* find a device that is not in use. */
-+	tty_lock();
- 	index = devpts_new_index(inode);
-+	tty_unlock();
- 	if (index < 0)
- 		return index;
- 
- 	mutex_lock(&tty_mutex);
-+	tty_lock();
- 	tty = tty_init_dev(ptm_driver, index, 1);
- 	mutex_unlock(&tty_mutex);
- 
-@@ -657,24 +660,15 @@ static int __ptmx_open(struct inode *inode, struct file *filp)
- 		goto out1;
- 
- 	retval = ptm_driver->ops->open(tty, filp);
--	if (!retval)
--		return 0;
-+	if (retval)
-+		tty_release(inode, filp);
- out1:
--	tty_release(inode, filp);
-+	tty_unlock();
- 	return retval;
- out:
- 	devpts_kill_index(inode, index);
--	return retval;
--}
--
--static int ptmx_open(struct inode *inode, struct file *filp)
--{
--	int ret;
--
--	tty_lock();
--	ret = __ptmx_open(inode, filp);
- 	tty_unlock();
--	return ret;
-+	return retval;
- }
- 
- static struct file_operations ptmx_fops;
-diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
-index 82c723a..e1b2fca 100644
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -1871,21 +1871,22 @@ got_driver:
- 		printk(KERN_DEBUG "error %d in opening %s...", retval,
- 		       tty->name);
- #endif
-+		tty_unlock(); /* need to call tty_release without BTM */
- 		tty_release(inode, filp);
--		if (retval != -ERESTARTSYS) {
--			tty_unlock();
-+		if (retval != -ERESTARTSYS)
- 			return retval;
--		}
--		if (signal_pending(current)) {
--			tty_unlock();
-+
-+		if (signal_pending(current))
- 			return retval;
--		}
-+
- 		schedule();
- 		/*
- 		 * Need to reset f_op in case a hangup happened.
- 		 */
-+		tty_lock();
- 		if (filp->f_op == &hung_up_tty_fops)
- 			filp->f_op = &tty_fops;
-+		tty_unlock();
- 		goto retry_open;
- 	}
- 	tty_unlock();
+BTW, what's the reason for doing this check in call_rwsem_wake ? The
+check is entirely redundant in the __up_write() case; and in
+__up_read() things might be less confusing if edx was used locally
+rather than in a separate function.
+
 -- 
-1.7.0.4
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
