@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932837Ab0EDO4Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 10:56:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55798 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932366Ab0EDO4O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 10:56:14 -0400
-Date: Tue, 4 May 2010 15:56:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Marek Vasut <marek.vasut@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Remove tosa_battery driver (was: Re: [PATCH]
- tosa_battery: fix FTBFS bug due to driver_data access)
-Message-ID: <20100504145620.GD3651@opensource.wolfsonmicro.com>
-References: <1272374302-9506-1-git-send-email-dbaryshkov@gmail.com>
- <20100427154835.27bdc233.akpm@linux-foundation.org>
- <20100430181349.GA1015@oksana.dev.rtsoft.ru>
- <g2qbc64b4641004301340h3c942f3cn40de735b419b8535@mail.gmail.com>
- <20100502201202.GA18647@oksana.dev.rtsoft.ru>
- <r2pbc64b4641005021352ub65dd07et6c96dfba76dc5103@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <r2pbc64b4641005021352ub65dd07et6c96dfba76dc5103@mail.gmail.com>
-X-Cookie: Snow Day -- stay home.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932934Ab0EDO6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 10:58:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5047 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932366Ab0EDO57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 10:57:59 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100427164517.GC7530@us.ibm.com>
+References: <20100427164517.GC7530@us.ibm.com> <20100427164139.GA7359@us.ibm.com>
+To: "Serge E. Hallyn" <serue@us.ibm.com>
+Cc: dhowells@redhat.com, lkml <linux-kernel@vger.kernel.org>,
+       Ashwin Ganti <ashwin.ganti@gmail.com>, Greg KH <greg@kroah.com>,
+       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
+       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
+       Andrew Morgan <morgan@kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oleg Nesterov <oleg@redhat.com>, Eric Paris <eparis@redhat.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Michael Kerrisk <mtk.manpages@gmail.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Kyle Moffett <kyle@moffetthome.net>, Steve Grubb <sgrubb@redhat.com>
+Subject: Re: [PATCH 3/3] RFC: p9auth: add p9auth fs
+Date: Tue, 04 May 2010 15:57:17 +0100
+Message-ID: <4067.1272985037@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 03, 2010 at 12:52:48AM +0400, Dmitry Eremin-Solenikov wrote:
-> On Mon, May 3, 2010 at 12:12 AM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+Serge E. Hallyn <serue@us.ibm.com> wrote:
 
-> > Eh. I see, thanks for making this clear. I added some changelog
-> > and applied the following patch to battery-2.6.git:
+> +	result = kzalloc(MAX_DIGEST_SIZE, GFP_KERNEL);
+> ...
+> +	ret = crypto_hash_digest(&desc, &sg, plain_text_size, result);
 
-> Thank you. Merging these two drivers is on my goal list, but it won't
-> come in the near future.
+Does result have to be pre-cleared?
 
-TBH I'm not entirely sure it's worth it - I'd be somewhat surprised to
-see users outside of tosa for the more complex functionality.
+> +	user_buf = kzalloc(count+1, GFP_KERNEL);
+> +	if (!user_buf)
+> +		goto out;
+> +
+> +	if (copy_from_user(user_buf, buffer, count)) {
+
+user_buf doesn't need preclearing.  It's just a waste of time.  This occurs
+three times.
+
+David
