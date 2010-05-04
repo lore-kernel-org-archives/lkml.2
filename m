@@ -1,118 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760116Ab0EDSGr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 14:06:47 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34823 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757799Ab0EDSGp convert rfc822-to-8bit (ORCPT
+	id S1760120Ab0EDSH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 14:07:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62626 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757881Ab0EDSH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 14:06:45 -0400
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Brian Swetland <swetland@google.com>,
-       Arve =?iso-8859-1?Q?Hj=F8nnev?= =?iso-8859-1?Q?=E5g?= 
-	<arve@android.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-References: <1272667021-21312-1-git-send-email-arve@android.com>
-	<87wrvl5479.fsf@deeprootsystems.com>
-	<20100503180741.GB2098@rakim.wolfsonmicro.main>
-	<201005032318.35383.rjw@sisk.pl> <87sk68r1zh.fsf@deeprootsystems.com>
-	<s2qd6200be21005031709r28420f0ezf3cf286517ee9114@mail.gmail.com>
-	<w2pa55d774e1005031743x859e82fz401346fae7fe873a@mail.gmail.com>
-	<20100504135907.GA3651@opensource.wolfsonmicro.com>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Tue, 04 May 2010 11:06:39 -0700
-In-Reply-To: <20100504135907.GA3651@opensource.wolfsonmicro.com> (Mark Brown's message of "Tue\, 4 May 2010 14\:59\:07 +0100")
-Message-ID: <87r5lrh780.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 May 2010 14:07:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sib6HvQQFf2RinSfQgWjep59vHHKf5W207pi3LyRvW0fPbgUVeuIhuvdhbNMyM1ihv
+         BQ8dRTa6Xt9rJxr5VxG4U7INvmjVA08U9KVnqU0E1EMtSyILT6opyH8N0Z8tjvJoSagk
+         vsWi20M04tOiNleC+cQh47CyjBmiNIM21bS4w=
+Subject: Re: [PULL] param sysfs oops (simple, leaky) fix, bool arrays fix
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+       Sitsofe Wheeler <sitsofe@yahoo.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>
+In-Reply-To: <201005041154.24658.rusty@rustcorp.com.au>
+References: <200910290902.13724.rusty@rustcorp.com.au>
+	 <1272364305.26036.21.camel@localhost> <1272365604.26036.30.camel@localhost>
+	 <201005041154.24658.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 May 2010 21:07:19 +0300
+Message-Id: <1272996439.2458.0.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown <broonie@opensource.wolfsonmicro.com> writes:
+On Tue, 2010-05-04 at 11:53 +0930, Rusty Russell wrote:
+> On Tue, 27 Apr 2010 08:23:24 pm Artem Bityutskiy wrote:
+> > On Tue, 2010-04-27 at 13:31 +0300, Artem Bityutskiy wrote:
+> > > On Thu, 2009-10-29 at 09:02 +1030, Rusty Russell wrote:
+> > > > (Thanks to Takashi-san, who found the oops and kept reading the code to spot
+> > > >  the others.  A more complete fix is pending, but this works for 2.6.32 and
+> > > >  -stable: see commit message and FIXME in code.)
+> > > > 
+> > > > The following changes since commit 964fe080d94db82a3268443e9b9ece4c60246414:
+> > > >   Linus Torvalds (1):
+> > > >         Merge git://git.kernel.org/.../rusty/linux-2.6-for-linus
+> > > > 
+> > > > are available in the git repository at:
+> > > > 
+> > > >   ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-param-fixes.git master
+> > > > 
+> > > > Rusty Russell (3):
+> > > >       param: fix lots of bugs with writing charp params from sysfs, by leaking mem.
+> > > >       param: fix NULL comparison on oom
+> > > >       param: fix setting arrays of bool
+> > > > 
+> > > >  include/linux/moduleparam.h |    1 -
+> > > >  kernel/params.c             |   17 ++++++-----------
+> > > >  2 files changed, 6 insertions(+), 12 deletions(-)
+> > > > 
+> > > > commit 65afac7d80ab3bc9f81e75eafb71eeb92a3ebdef
+> > > > Author: Rusty Russell <rusty@rustcorp.com.au>
+> > > > Date:   Thu Oct 29 08:56:16 2009 -0600
+> > > > 
+> > > >     param: fix lots of bugs with writing charp params from sysfs, by leaking mem.
+> > > >     
+> > > >     e180a6b7759a "param: fix charp parameters set via sysfs" fixed the case
+> > > >     where charp parameters written via sysfs were freed, leaving drivers
+> > > >     accessing random memory.
+> > > >     
+> > > >     Unfortunately, storing a flag in the kparam struct was a bad idea: it's
+> > > >     rodata so setting it causes an oops on some archs.  But that's not all:
+> > > >     
+> > > >     1) module_param_array() on charp doesn't work reliably, since we use an
+> > > >        uninitialized temporary struct kernel_param.
+> > > >     2) there's a fundamental race if a module uses this parameter and then
+> > > >        it's changed: they will still access the old, freed, memory.
+> > > >     
+> > > >     The simplest fix (ie. for 2.6.32) is to never free the memory.  This
+> > > >     prevents all these problems, at cost of a memory leak.  In practice, there
+> > > >     are only 18 places where a charp is writable via sysfs, and all are
+> > > >     root-only writable.
+> > > 
+> > > Hmm, is it really only about changing the parameters via sysfs? We see
+> > > the following kmemleak complaints in 2.6.32 (I think it will be the same
+> > > in the latest kernel, but I did not check):
+> > > 
+> > > kmemleak: unreferenced object 0xdeff3c80 (size 64):
+> > > kmemleak:   comm "modprobe", pid 788, jiffies 4294933427
+> > > kmemleak:   backtrace:
+> > > kmemleak:     [<c00e59b8>] __save_stack_trace+0x34/0x40
+> > > kmemleak:     [<c00e5ad0>] create_object+0x10c/0x208
+> > > kmemleak:     [<c03ae0ec>] kmemleak_alloc+0x40/0x84
+> > > kmemleak:     [<c00dca74>] __kmalloc_track_caller+0x140/0x154
+> > > kmemleak:     [<c00c47ac>] kstrdup+0x38/0x54
+> > > kmemleak:     [<c0081854>] param_set_charp+0x68/0x94
+> > > kmemleak:     [<c0081108>] parse_args+0x18c/0x280
+> > > kmemleak:     [<c009fc74>] load_module+0x11e8/0x1644
+> > > kmemleak:     [<c00a0130>] sys_init_module+0x60/0x1f4
+> > > kmemleak:     [<c003c040>] ret_fast_syscall+0x0/0x38
+> > > 
+> > > So we are leaking on every insmod/rmmod, AFAICS, not just in the sysfs
+> > > case.
+> > 
+> > Rusty, correct me if I'm wrong, but it looks like the above memleak was
+> > introduced by e180a6b7759a99a28cbcce3547c4c80822cb6c2a, where you added
+> > the kstrdup(). So you kinda fixed the sysfs case (it still memleaks
+> > though), but at the cost of additional insmod/rmmod leak, right?
+> 
+> Yep!
 
-> On Mon, May 03, 2010 at 05:43:34PM -0700, Brian Swetland wrote:
->> On Mon, May 3, 2010 at 5:09 PM, Arve Hj�nnev�g <arve@android.com> wrote:
->> > On Mon, May 3, 2010 at 4:37 PM, Kevin Hilman
->
->> >> This last point is especially troubling. �I don't find it a comforting
->> >> path to go down if the drivers have to start caring about which PM
->> >> policy is currently in use.
->
->> I'll echo Arve here -- all drivers should seek to be in the lowest
->> power state possible at all times.  We've never suggested that
->> suspend_block is a substitute for that.
->
-> Looking at this from a subsystem/driver author point of view the problem
-> I'm faced with is that as a result of using system suspend much more
-> aggressively the subsystem and driver layers are getting conflicting
-> instructions about what the lowest power state possible is.
+Are you working/planning to work on fixing this regression?
 
-Exactly.
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-With runtime PM, there is flexibility in choosing the lowest power
-state at the device/subsystem level, based on activity, timeouts,
-bitrate, dependencies, latency/throughput constraints, etc.
-
-With opportunistic suspend, all of this flexibility is gone, and the
-device/subsystem is told to go into the lowest power, highest latency
-state, period.
-
->> Suspend blockers give us some flexibility on systems where runtime pm
->> will not get us all the way there. If you can meet your power needs
->> without needing suspend blockers, awesome, you don't need them on that
->> platform.  The patchset Arve sent out makes this feature an
->> off-by-default kernel configuration option that compiles out to no-ops
->> when disabled.
->
-> I think a big part of this for me is that this approach changes the
-> intended use of the system-wide suspend a bit, complicating it a bit
-> further than it already is.  We end up doing a suspend (which in the
-> normal course of affairs means that the driver should shut everything
-> down) partly as a substitute for runtime PM on the core system devices
-> and partly because our runtime PM isn't doing as well as it should on
-> the individual devices.
-
-Agreed, and because of this, part of my concern is that opportunistic
-suspend will take the place of doing the "right thing" which (IMHO) 
-would be to improve runtime PM for devices.
-
-> I'd be a lot more comfortable with this if it came with a mechanism for
-> communicating the intended effect of a suspend on a per-device level so
-> that the drivers have a clear way of figuring out what to do when the
-> system suspends.  If there isn't one we can add subsystem or driver
-> specific hooks, of course, but it'd be better to address this at the
-> system level.
-
-I agree.
-
-I think there needs to be more discussion on the indended usage
-of suspend blockers by drivers/subsystems, especially those PM aware
-drivers and subsystems already doing runtime PM with constraints etc.
-
->> In our experience, periodic timers and polling, both userspace side
->> and kernelside make suspend blockers a win even on platforms like OMAP
->> which have pretty flexible hardware power management.  Going to low
->> power states in idle results in higher average power consumption than
->> going to the same states in full suspend, at least on Android devices
->> shipping today.
->
-> There's definite work to be done here, yes.
-
-And I've admitted this to be the only compelling reason for
-opportunistic suspend so far.
-
-But the driver/subsystem implications of opportunistic suspend still
-need some fleshing out IMO.
-
-Kevin
