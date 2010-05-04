@@ -1,57 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934434Ab0EDW1V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 18:27:21 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41484 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933464Ab0EDW1U (ORCPT
+	id S934438Ab0EDW2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 18:28:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53284 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753520Ab0EDW2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 18:27:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=CIEVoTXCbKpwyxsm5eAkFqVvTH8EbY9yY/jXnpxROGWB7P89zu2rmZeAmrDaM3qF4Y
-         kTu/fad5tG7KeEfRTnR0ReWIxJ+VLmjolcqFMC/eOS4XFwIAYuFOtqT4Tq+7OME/hPFu
-         qhjy5O+VBtm1XVzOgQ4nBTSm+KYzNQfeYHhyc=
-Message-ID: <4BE09F42.9070909@lwfinger.net>
-Date: Tue, 04 May 2010 17:27:14 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: How to write marker info in MMIO trace from kernel
-References: <4BE06933.9080202@lwfinger.net> <1272998579.9739.235.camel@gandalf.stny.rr.com>
-In-Reply-To: <1272998579.9739.235.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
+	Tue, 4 May 2010 18:28:31 -0400
+Date: Tue, 4 May 2010 15:27:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jiri Slaby <jslaby@suse.cz>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Subject: Re: [PATCH v2] fs: use kmalloc() to allocate fdmem if possible
+Message-Id: <20100504152713.0c72a087.akpm@linux-foundation.org>
+In-Reply-To: <1272826920-8899-1-git-send-email-xiaosuo@gmail.com>
+References: <1272826920-8899-1-git-send-email-xiaosuo@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2010 01:42 PM, Steven Rostedt wrote:
-> On Tue, 2010-05-04 at 13:36 -0500, Larry Finger wrote:
->> Stephen,
->>
->> I hope you are the correct person for this question.
->>
->> I would like to write information into the MMIO trace file similar to
->> what the user space write to /sys/.../trace_marker would accomplish,
->> however, I want to do it in place of printk statements in the driver I'm
->> tracing. Do you have any suggestions on how to do this? I have tools to
->> merge the trace dump with dmesg output, but the latter lags behind and I
->> do not get good correlation.
+On Mon,  3 May 2010 03:02:00 +0800
+Changli Gao <xiaosuo@gmail.com> wrote:
+
+> use kmalloc() to allocate fdmem if possible.
 > 
-> You can use "trace_printk()". I think that is what you are looking for.
+> vmalloc() is used as a fallback solution for fdmem allocation. A new helper
+> function __free_fdtable() is introduced to reduce the lines of code.
+> 
+> A potential bug, vfree() a memory allocated by kmalloc(), is fixed.
+> 
 
-Thanks for the info. One other question - when I write only mmiotrace to
-the current_tracer, the trace_printk() stuff does not end up in the
-buffer. I can get it by using the "sysprof" tracer, but that has a lot
-of stuff I do not want. Did I miss some configuration? My list of
-available tracers is "blk kmemtrace mmiotrace wakeup_rt wakeup function
-sysprof sched_switch nop".
+Seems a reasonable thing to do.  It might also be reasonable to make
+vmalloc() try kmalloc() first, but that's a separate exercise.
 
-Thanks,
+> ----
+>  fs/file.c |   55 ++++++++++++++++++++++---------------------------------
+>  1 file changed, 22 insertions(+), 33 deletions(-)
+> diff --git a/fs/file.c b/fs/file.c
+> index 34bb7f7..9af31ae 100644
+> --- a/fs/file.c
+> +++ b/fs/file.c
+> @@ -39,28 +39,27 @@ int sysctl_nr_open_max = 1024 * 1024; /* raised later */
+>   */
+>  static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
+>  
+> -static inline void * alloc_fdmem(unsigned int size)
+> +static inline void *alloc_fdmem(unsigned int size)
+>  {
+> -	if (size <= PAGE_SIZE)
+> -		return kmalloc(size, GFP_KERNEL);
+> -	else
+> -		return vmalloc(size);
+> +	void *data;
+> +
+> +	data = kmalloc(size, GFP_KERNEL);
 
-Larry
+This most definitely should have __GFP_NOWARN.
+
+> +	if (data != NULL)
+> +		return data;
+> +
+> +	return vmalloc(size);
+>  }
+>  
+> -static inline void free_fdarr(struct fdtable *fdt)
+> +static inline void free_fdmem(void *ptr)
+>  {
+> -	if (fdt->max_fds <= (PAGE_SIZE / sizeof(struct file *)))
+> -		kfree(fdt->fd);
+> -	else
+> -		vfree(fdt->fd);
+> +	is_vmalloc_addr(ptr) ? vfree(ptr) : kfree(ptr);
+>  }
+>  
+> -static inline void free_fdset(struct fdtable *fdt)
+> +static inline void __free_fdtable(struct fdtable *fdt)
+>  {
+> -	if (fdt->max_fds <= (PAGE_SIZE * BITS_PER_BYTE / 2))
+> -		kfree(fdt->open_fds);
+> -	else
+> -		vfree(fdt->open_fds);
+> +	free_fdmem(fdt->fd);
+> +	free_fdmem(fdt->open_fds);
+> +	kfree(fdt);
+>  }
+
+And these should be uninlined - they're too large to be inlined.
+
+My version of gcc seems to just uninline them anyway, but forcing them
+to be inlined with __always_inline indeed causes 70-80 bytes more text,
+and we figure that larger text generally causes a slower kernel due to
+cache eviction effects.
+
+
