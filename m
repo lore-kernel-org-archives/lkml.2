@@ -1,91 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933167Ab0EDPDO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 11:03:14 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:43449 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754279Ab0EDPDL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 11:03:11 -0400
-Date: Tue, 4 May 2010 16:47:16 +0200
-From: Nico Schottelius <nico-linux-20100427@schottelius.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Nico Schottelius <nico-linux-20100427@schottelius.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.osdl.org>
-Subject: Re: 2.6.33-2.6.34-rc5 suspend issues
-Message-ID: <20100504144714.GA3527@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20100427@schottelius.org>,
-	Pavel Machek <pavel@ucw.cz>, LKML <linux-kernel@vger.kernel.org>,
-	Linux-pm mailing list <linux-pm@lists.osdl.org>
-References: <20100427074609.GA3261@ikn.schottelius.org>
- <20100427083202.GA3143@ikn.schottelius.org>
- <20100428160935.GA4010@schottelius.org>
- <20100429191241.GA3407@schottelius.org>
- <20100501122441.GA3273@schottelius.org>
- <20100504041849.GA1262@ucw.cz>
+	id S933286Ab0EDPD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 11:03:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25754 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933199Ab0EDPDX (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 4 May 2010 11:03:23 -0400
+Date: Tue, 4 May 2010 11:02:59 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       suresh.b.siddha@intel.com, tglx@linutronix.de, prarit@redhat.com
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [LKML] [tip:x86/urgent] x86: Fix NULL pointer access in
+	irq_force_complete_move() for Xen guests
+Message-ID: <20100504150259.GB5667@phenom.dumpdata.com>
+References: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com> <tip-bbd391a15d82e14efe9d69ba64cadb855b061dba@git.kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100504041849.GA1262@ucw.cz>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: kr (Linux 2.6.34-rc5-NS-00340-g79dba2e x86_64)
+In-Reply-To: <tip-bbd391a15d82e14efe9d69ba64cadb855b061dba@git.kernel.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4BE0372E.004E:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 30, 2010 at 09:36:42PM +0000, tip-bot for Prarit Bhargava wrote:
+> Commit-ID:  bbd391a15d82e14efe9d69ba64cadb855b061dba
+> Gitweb:     http://git.kernel.org/tip/bbd391a15d82e14efe9d69ba64cadb855b061dba
+> Author:     Prarit Bhargava <prarit@redhat.com>
+> AuthorDate: Tue, 27 Apr 2010 11:24:42 -0400
+> Committer:  H. Peter Anvin <hpa@zytor.com>
+> CommitDate: Fri, 30 Apr 2010 14:31:38 -0700
+> 
+> x86: Fix NULL pointer access in irq_force_complete_move() for Xen guests
+> 
+> Upstream PV guests fail to boot because of a NULL pointer in
+> irq_force_complete_move().  It is possible that xen guests have
+> irq_desc->chip_data = NULL.
+> 
+> Test for NULL chip_data pointer before attempting to complete an irq move.
+> 
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> LKML-Reference: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com>
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Pavel Machek [Tue, May 04, 2010 at 06:18:50AM +0200]:
-> On Sat 2010-05-01 14:24:41, Nico Schottelius wrote:
-> > Nico Schottelius [Thu, Apr 29, 2010 at 09:12:42PM +0200]:
-> > > Nico Schottelius [Wed, Apr 28, 2010 at 06:09:36PM +0200]:
-> > > > Nico Schottelius [Tue, Apr 27, 2010 at 10:32:02AM +0200]:
-> > > > >=20
-> > > > > Nico Schottelius [Tue, Apr 27, 2010 at 09:46:09AM +0200]:
-> > > > > > [..]=20
-> > > > > > - suspend & resume works once
-> > > > > > - second time system
-> > > > > >   b) suspends, but comes up with the bios screen after resume
-> > > > > >      and hangs there forever (2.6.34-*)
-> ...
-> > Same happens on 2.6.34-rc5-00340-g79dba2e, now testing
-> > 2.6.34-rc6-00063-gbe1066b.
->=20
-> There's one bit that needs to be set to stay in the acpi mode, and
-> there's blacklist somewhere...?
-
-Don't know if I should answer the question, but the problem also happens
-on 2.6.34-rc6-00063-gbe1066b.
-
-Now compiling v2.6.34-rc6-106-gd93ac51.
-
-Cheers,
-
-Nico
-
---=20
-New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
-Please resign, if you signed 9885188C or 8D0E27A4.
-
-Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
-
---pf9I7BMVVzbSWLtt
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvgM3EACgkQ19zI5DGHffAk3QCeKdw7X1a1mcPCca8wLKeU2cgb
-KZkAn0lHQU5g3EmnfNBd0feEeFI64Qq8
-=juR+
------END PGP SIGNATURE-----
-
---pf9I7BMVVzbSWLtt--
+> Cc: <stable@kernel.org> [2.6.33]
+> ---
+>  arch/x86/kernel/apic/io_apic.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 127b871..eb2789c 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -2545,6 +2545,9 @@ void irq_force_complete_move(int irq)
+>  	struct irq_desc *desc = irq_to_desc(irq);
+>  	struct irq_cfg *cfg = desc->chip_data;
+>  
+> +	if (!cfg)
+> +		return;
+> +
+>  	__irq_complete_move(&desc, cfg->vector);
+>  }
+>  #else
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
