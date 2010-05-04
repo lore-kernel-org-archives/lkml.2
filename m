@@ -1,196 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab0EDFns (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 01:43:48 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:60090 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753871Ab0EDFnq (ORCPT
+	id S1753986Ab0EDF7o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 01:59:44 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46999 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab0EDF7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 01:43:46 -0400
-Date: Tue, 4 May 2010 07:43:32 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: Thomas Renninger <trenn@suse.de>, Willy Tarreau <w@1wt.eu>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
-       cpufreq@vger.kernel.org, riel@redhat.com
-Subject: Re: [PATCH 8/7] cpufreq: make the iowait-is-busy-time a sysfs
- tunable
-Message-ID: <20100504054332.GA3130@elf.ucw.cz>
-References: <20100418115949.7b743898@infradead.org>
- <201004231050.10667.trenn@suse.de>
- <20100423090819.4273b327@infradead.org>
- <201004271339.34711.trenn@suse.de>
- <20100503204818.7b801f43@infradead.org>
+	Tue, 4 May 2010 01:59:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=e6SN3i70yw5zsJGFEYDjS4ceLNXnIEc0DkUYpvwhrlLYvP7JKhKqcN1ju8BzpazLy7
+         GasVeRLSgCimNaHz1+2/s+yNCSKLOqpKctznfUVEMue99FMg3ZM2+WbPZcDzjqvLvDfH
+         YXWMC4Pen+cWlI2LC464k89M357p0AnWa70QM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100503204818.7b801f43@infradead.org>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Mon, 3 May 2010 22:59:42 -0700
+Message-ID: <x2gd4f60c3c1005032259p8be864bcucff91618016a0eb@mail.gmail.com>
+Subject: nfs accesses of FAT fs folders causes deadlock on lock_super
+From: Fredrick Prashanth John Berchmans <fredrickprashanth@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: fredrickprashanth@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2010-05-03 20:48:18, Arjan van de Ven wrote:
-> On Tue, 27 Apr 2010 13:39:34 +0200
-> Thomas Renninger <trenn@suse.de> wrote:
-> 
-> > On Friday 23 April 2010 06:08:19 pm Arjan van de Ven wrote:
-> > > On Fri, 23 Apr 2010 10:50:10 +0200
-> > > Thomas Renninger <trenn@suse.de> wrote:
-> > >  Especially on battery, users will appreciate some minutes
-> > >
-> > > > of more battery lifetime and do not care about some ms of IO
-> > > > latencies.
-> > >
-> > > the assumption that power doesn't matter on AC is a huge fiction
-> > > that any data center operator would love to get out of everyones
-> > > head as quickly as possible.
-> > 
-> > Have I said power doesn't matter on AC?
-> > Do you agree that a datacenter has different performance vs power 
-> > tradeoff demands as a battery driven mobile device?
-> > 
-> > Back to the topic:
-> > As you did not answer on my (several) sysfs knob request(s), I expect
-> > you agree with it and will add one.
-> > 
-> 
-> yup it makes sense to have a sysfs knob with a sane default value
-> 
-> From: Arjan van de Ven <arjan@linux.intel.com>
-> Subject: [PATCH] cpufreq: make the iowait-is-busy-time a sysfs tunable
-> 
-> Pavel Machek pointed out that not all CPUs have an efficient idle
-> at high frequency. Specifically, older Intel and various AMD cpus
-> would get a higher power usage when copying files from USB.
-> 
-> Mike Chan pointed out that the same is true for various ARM chips
-> as well.
-> 
-> Thomas Renninger suggested to make this a sysfs tunable with a
-> reasonable default.
-> 
-> This patch adds a sysfs tunable for the new behavior, and uses
-> a very simple function to determine a reasonable default, depending
-> on the CPU vendor/type.
-> 
-> Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+Hi,
 
-ACK.
+A FAT fs folder was shared using nfs. Accessing it over nfs causes
+deadlock on lock_super since
+it is acquired by both __fat_readdir and vfat_lookup in the following
+call chain.
 
-> ---
->  drivers/cpufreq/cpufreq_ondemand.c |   46 +++++++++++++++++++++++++++++++++++-
->  1 files changed, 45 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> index ed472f8..4877e8f 100644
-> --- a/drivers/cpufreq/cpufreq_ondemand.c
-> +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> @@ -109,6 +109,7 @@ static struct dbs_tuners {
->  	unsigned int down_differential;
->  	unsigned int ignore_nice;
->  	unsigned int powersave_bias;
-> +	unsigned int io_is_busy;
->  } dbs_tuners_ins = {
->  	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
->  	.down_differential = DEF_FREQUENCY_DOWN_DIFFERENTIAL,
-> @@ -260,6 +261,7 @@ static ssize_t show_##file_name						\
->  	return sprintf(buf, "%u\n", dbs_tuners_ins.object);		\
->  }
->  show_one(sampling_rate, sampling_rate);
-> +show_one(io_is_busy, io_is_busy);
->  show_one(up_threshold, up_threshold);
->  show_one(ignore_nice_load, ignore_nice);
->  show_one(powersave_bias, powersave_bias);
-> @@ -310,6 +312,22 @@ static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
->  	return count;
->  }
->  
-> +static ssize_t store_io_is_busy(struct kobject *a, struct attribute *b,
-> +				   const char *buf, size_t count)
-> +{
-> +	unsigned int input;
-> +	int ret;
-> +	ret = sscanf(buf, "%u", &input);
-> +	if (ret != 1)
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&dbs_mutex);
-> +	dbs_tuners_ins.io_is_busy = !!input;
-> +	mutex_unlock(&dbs_mutex);
-> +
-> +	return count;
-> +}
-> +
->  static ssize_t store_up_threshold(struct kobject *a, struct attribute *b,
->  				  const char *buf, size_t count)
->  {
-> @@ -392,6 +410,7 @@ static struct global_attr _name = \
->  __ATTR(_name, 0644, show_##_name, store_##_name)
->  
->  define_one_rw(sampling_rate);
-> +define_one_rw(io_is_busy);
->  define_one_rw(up_threshold);
->  define_one_rw(ignore_nice_load);
->  define_one_rw(powersave_bias);
-> @@ -403,6 +422,7 @@ static struct attribute *dbs_attributes[] = {
->  	&up_threshold.attr,
->  	&ignore_nice_load.attr,
->  	&powersave_bias.attr,
-> +	&io_is_busy.attr,
->  	NULL
->  };
->  
-> @@ -527,7 +547,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
->  		 * from the cpu idle time.
->  		 */
->  
-> -		if (idle_time >= iowait_time)
-> +		if (dbs_tuners_ins.io_is_busy && idle_time >= iowait_time)
->  			idle_time -= iowait_time;
->  
->  		if (unlikely(!wall_time || wall_time < idle_time))
-> @@ -643,6 +663,29 @@ static inline void dbs_timer_exit(struct cpu_dbs_info_s *dbs_info)
->  	cancel_delayed_work_sync(&dbs_info->work);
->  }
->  
-> +/*
-> + * Not all CPUs want IO time to be accounted as busy; this depends on how
-> + * efficient idling at a higher frequency/voltage is.
-> + * Pavel Machek says this is not so for various generations of AMD and old
-> + * Intel systems.
-> + * Mike Chan (android.com) says this is also not true for ARM.
-> + * Because of this, whitelist specific known (series) of CPUs by default, and
-> + * leave all others up to the user.
-> + */
-> +static int should_io_be_busy(void)
-> +{
-> +#if defined(CONFIG_X86)
-> +	/*
-> +	 * For Intel, Core 2 (model 15) and later have an efficient idle.
-> +	 */
-> +	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
-> +	    boot_cpu_data.x86 == 6 &&
-> +	    boot_cpu_data.x86_model >= 15)
-> +		return 1;
-> +#endif
-> +	return 0;
-> +}
-> +
->  static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->  				   unsigned int event)
->  {
-> @@ -705,6 +748,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->  			dbs_tuners_ins.sampling_rate =
->  				max(min_sampling_rate,
->  				    latency * LATENCY_MULTIPLIER);
-> +			dbs_tuners_ins.io_is_busy = should_io_be_busy();
->  		}
->  		mutex_unlock(&dbs_mutex);
->  
+Call chain
+#lock_super <----causes deadlock
+#vfat_lookup
+#__lookup_hash
+#lookup_one_len
+#compose_entry_fh
+#encode_entry
+#nfs3svc_encode_entry_plus
+#__fat_readdir <---does lock_super
+#fat_readdir
+#vfs_readdir
+#nfsd_readdir
+#nfsd3_proc_readdirplus
+#nfsd_dispatch
+#svc_process
+#nfsd
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
+Is lock_super needed in the vfat_lookup?
+Can it be removed?
+
+The box was running kernel version 2.6.27.10.
+But I think the FAT code has not changed much.
+
+Thanks,
+Fredrick
