@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab0EDMtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 08:49:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23948 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752958Ab0EDMtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 08:49:13 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100503220420.GA6968@us.ibm.com>
-References: <20100503220420.GA6968@us.ibm.com> <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-Cc: dhowells@redhat.com, torvalds@osdl.org, akpm@linux-foundation.org,
-       keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] KEYS: Fix an RCU warning in the reading of user keys
-Date: Tue, 04 May 2010 13:48:56 +0100
-Message-ID: <31231.1272977336@redhat.com>
+	id S1758918Ab0EDMtx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 08:49:53 -0400
+Received: from keetweej.vanheusden.com ([83.163.219.98]:33452 "EHLO
+	keetweej.vanheusden.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958Ab0EDMtw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 08:49:52 -0400
+Date: Tue, 4 May 2010 14:49:50 +0200
+From: Folkert van Heusden <folkert@vanheusden.com>
+To: linux-kernel@vger.kernel.org
+Subject: [2.6.32] task hung
+Message-ID: <20100504124950.GK29057@vanheusden.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: www.unixexpert.nl
+X-Chameleon-Return-To: folkert@vanheusden.com
+X-Xfmail-Return-To: folkert@vanheusden.com
+X-Phonenumber: +31-6-41278122
+X-URL: http://www.vanheusden.com/
+X-PGP-KeyID: 1F28D8AE
+X-GPG-fingerprint: AC89 09CE 41F2 00B4 FCF2  B174 3019 0E8C 1F28 D8AE
+X-Key: http://pgp.surfnet.nl:11371/pks/lookup?op=get&search=0x1F28D8AE
+Read-Receipt-To: <folkert@vanheusden.com>
+Reply-By: Mon May  3 22:59:23 CEST 2010
+X-Message-Flag: www.unixexpert.nl
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serge E. Hallyn <serue@us.ibm.com> wrote:
+Hi,
 
-> heck it also serves to document it a bit, as looking at the fn
-> itself it's not clear that it is called under key->sem.
+I'm copying 6GB of data onto an NBD device using a simple tool which
+differs from dd/cat in that it measures how long it takes to write each
+block and does a sync after each block.
+Now during that run I get:
 
-Give or take the banner comment on user_read() where it states this explicitly:
+[45480.665074] INFO: task measurecopy:13780 blocked for more than 120 seconds.
+[45480.665086] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[45480.665090] measurecopy   D 0000000000000000     0 13780  30341 0x00000000
+[45480.665102]  ffff8801bf06d4c0 0000000000000082 0000000000000000 ffff8801776d9d04
+[45480.665116]  0000000000000001 ffff88000000f640 000000000000f8a0 ffff8801776d9fd8
+[45480.665129]  00000000000155c0 00000000000155c0 ffff8801a867d4c0 ffff8801a867d7b8
+[45480.665143] Call Trace:
+[45480.665153]  [<ffffffff8106beb9>] ? ktime_get_ts+0x68/0xb2
+[45480.665159]  [<ffffffff81098f06>] ? delayacct_end+0x74/0x7f
+[45480.665168]  [<ffffffff810b3219>] ? sync_page+0x0/0x46
+[45480.665175]  [<ffffffff812edf36>] ? io_schedule+0x73/0xb7
+[45480.665181]  [<ffffffff810b325a>] ? sync_page+0x41/0x46
+[45480.665186]  [<ffffffff812ee436>] ? __wait_on_bit+0x41/0x70
+[45480.665192]  [<ffffffff810b33de>] ? wait_on_page_bit+0x6b/0x71
+[45480.665199]  [<ffffffff81064a84>] ? wake_bit_function+0x0/0x23
+[45480.665206]  [<ffffffff810baf36>] ? pagevec_lookup_tag+0x1a/0x21
+[45480.665212]  [<ffffffff810b3bb4>] ? wait_on_page_writeback_range+0x69/0x11b
+[45480.665218]  [<ffffffff810b3d26>] ? filemap_write_and_wait_range+0x43/0x52
+[45480.665225]  [<ffffffff8110a176>] ? vfs_fsync_range+0x55/0x9e
+[45480.665231]  [<ffffffff8110a23e>] ? do_fsync+0x28/0x39
+[45480.665236]  [<ffffffff8110a25d>] ? sys_fdatasync+0xe/0x13
+[45480.665243]  [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
 
-	/*
-	 * read the key data
-	 * - the key's semaphore is read-locked
-	 */
-	long user_read(const struct key *key, char __user *buffer, size_t buflen)
+command line:
+./measurecopy -i /dev/VG01/LVHOME -o /dev/nbd0 -s -b 1048576
 
-and Documentation/keys.txt where it also states this explicitly:
+http://www.vanheusden.com/measurecopy/
 
- (*) long (*read)(const struct key *key, char __user *buffer, size_t buflen);
 
-     ...
+Folkert van Heusden
 
-     This method will be called with the key's semaphore read-locked. This will
-     prevent the key's payload changing. It is not necessary to use RCU locking
-     when accessing the key's payload. It is safe to sleep in this method, such
-     as might happen when the userspace buffer is accessed.
-
-:-)
-
-David
-
-David
+-- 
+Feeling generous? -> http://www.vanheusden.com/wishlist.php
+----------------------------------------------------------------------
+Phone: +31-6-41278122, PGP-key: 1F28D8AE, www.vanheusden.com
