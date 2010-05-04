@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934547Ab0EDWfm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 18:35:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57129 "EHLO
+	id S934551Ab0EDWf5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 18:35:57 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50352 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934532Ab0EDWfX (ORCPT
+	with ESMTP id S934526Ab0EDWfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 18:35:23 -0400
+	Tue, 4 May 2010 18:35:17 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
@@ -15,291 +15,308 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
        Andrew Morton <akpm@linux-foundation.org>,
        John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 11/13] tty: remove tty_lock_nested
-Date: Wed,  5 May 2010 00:33:50 +0200
-Message-Id: <1273012433-6125-12-git-send-email-arnd@arndb.de>
+Subject: [PATCH 04/13] tty: make termios mutex nest under tty_lock
+Date: Wed,  5 May 2010 00:33:43 +0200
+Message-Id: <1273012433-6125-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1273012433-6125-1-git-send-email-arnd@arndb.de>
 References: <1273012433-6125-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18UW56djERjhiX0D/gYeRaNuNoTXZyqBUjlSbk
- G2QONN2c7fxDEZlsCNGYAF3XAEvCLQZ5HIHio5ju6KRtN0u/il
- zYhHWkdtiyN3RDoKqDhIA==
+X-Provags-ID: V01U2FsdGVkX199Cq2iBrh5yq25IFUgixp9GIUSaYBFpxzTRVf
+ jG7sGwTJEges6zLHt9lWVCohyUc3A9irIKC1pyOZwJ9IB8e9Za
+ Z8elpQSTzarmK/Y+qPEWg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes all remaining users of tty_lock_nested
-to be non-recursive, which lets us kill this function.
-As a consequence, we won't need to keep the lock count
-any more, which allows more simplifications later.
+Most of these are always called without the BTM held.
+Annotate them so we know in the future which places
+to look at. If we can change the code to never
+get termios_mutex while holding the BTM, this
+will solve all lock-order problems between the two.
+
+tty_set_termios_ldisc and tty_reset_termios are currently
+the only functions that always get termios_mutex while
+already holding the BTM.
+
+tty_throttle and tty_unthrottle are called from
+receive_buf which in turn is called from a lot
+of places. It needs more investigation to prove
+that we never hold the BTM while calling these
+two.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/char/pty.c       |    2 +-
- drivers/char/selection.c |    4 ++--
- drivers/char/tty_io.c    |   41 ++++++++++++++++++++---------------------
- drivers/char/tty_ldisc.c |    3 +--
- drivers/char/tty_mutex.c |   15 ---------------
- drivers/serial/crisv10.c |    7 ++++---
- include/linux/tty.h      |   17 +----------------
- 7 files changed, 29 insertions(+), 60 deletions(-)
+ drivers/char/pty.c            |    2 +-
+ drivers/char/tty_io.c         |    4 ++--
+ drivers/char/tty_ioctl.c      |   37 ++++++++++++++++++++-----------------
+ drivers/char/tty_ldisc.c      |    4 ++--
+ drivers/net/irda/irtty-sir.c  |    5 +++--
+ drivers/staging/strip/strip.c |    2 +-
+ 6 files changed, 29 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/char/pty.c b/drivers/char/pty.c
-index 889de89..76de961 100644
+index 384e79f..dbb144b 100644
 --- a/drivers/char/pty.c
 +++ b/drivers/char/pty.c
-@@ -62,7 +62,7 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
- 		if (tty->driver == ptm_driver)
- 			devpts_pty_kill(tty->link);
- #endif
--		tty_vhangup(tty->link);
-+		tty_vhangup_locked(tty->link);
- 	}
- }
+@@ -232,7 +232,7 @@ int pty_resize(struct tty_struct *tty,  struct winsize *ws)
+ 	struct tty_struct *pty = tty->link;
  
-diff --git a/drivers/char/selection.c b/drivers/char/selection.c
-index 85211a3..8e314bb 100644
---- a/drivers/char/selection.c
-+++ b/drivers/char/selection.c
-@@ -313,7 +313,8 @@ int paste_selection(struct tty_struct *tty)
- 	struct  tty_ldisc *ld;
- 	DECLARE_WAITQUEUE(wait, current);
+ 	/* For a PTY we need to lock the tty side */
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	if (!memcmp(ws, &tty->winsize, sizeof(*ws)))
+ 		goto done;
  
--	tty_lock_nested(); /* always called with BTM from vt_ioctl */
-+	/* always called with BTM from vt_ioctl */
-+	WARN_ON(!tty_locked());
- 
- 	acquire_console_sem();
- 	poke_blanked_console();
-@@ -338,6 +339,5 @@ int paste_selection(struct tty_struct *tty)
- 	__set_current_state(TASK_RUNNING);
- 
- 	tty_ldisc_deref(ld);
--	tty_unlock();
- 	return 0;
- }
 diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
-index e1b2fca..4e16b34 100644
+index 8331dd3..b1a40a1 100644
 --- a/drivers/char/tty_io.c
 +++ b/drivers/char/tty_io.c
-@@ -492,10 +492,8 @@ EXPORT_SYMBOL_GPL(tty_wakeup);
-  *		  tasklist_lock to walk task list for hangup event
-  *		    ->siglock to protect ->signal/->sighand
-  */
--static void do_tty_hangup(struct work_struct *work)
-+void tty_vhangup_locked(struct tty_struct *tty)
+@@ -2035,7 +2035,7 @@ static int tiocgwinsz(struct tty_struct *tty, struct winsize __user *arg)
  {
--	struct tty_struct *tty =
--		container_of(work, struct tty_struct, hangup_work);
- 	struct file *cons_filp = NULL;
- 	struct file *filp, *f = NULL;
- 	struct task_struct *p;
-@@ -517,8 +515,6 @@ static void do_tty_hangup(struct work_struct *work)
- 	/* inuse_filps is protected by the single tty lock,
- 	   this really needs to change if we want to flush the
- 	   workqueue with the lock held */
--	tty_lock_nested(); /* called with BTM held from pty_close and
--				others */
- 	check_tty_count(tty, "do_tty_hangup");
+ 	int err;
  
- 	file_list_lock();
-@@ -598,11 +594,20 @@ static void do_tty_hangup(struct work_struct *work)
- 	 */
- 	set_bit(TTY_HUPPED, &tty->flags);
- 	tty_ldisc_enable(tty);
--	tty_unlock();
- 	if (f)
- 		fput(f);
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	err = copy_to_user(arg, &tty->winsize, sizeof(*arg));
+ 	mutex_unlock(&tty->termios_mutex);
+ 
+@@ -2058,7 +2058,7 @@ int tty_do_resize(struct tty_struct *tty, struct winsize *ws)
+ 	unsigned long flags;
+ 
+ 	/* Lock the tty */
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	if (!memcmp(ws, &tty->winsize, sizeof(*ws)))
+ 		goto done;
+ 	/* Get the PID values and reference them so we can
+diff --git a/drivers/char/tty_ioctl.c b/drivers/char/tty_ioctl.c
+index 6bd5f88..4b57e73 100644
+--- a/drivers/char/tty_ioctl.c
++++ b/drivers/char/tty_ioctl.c
+@@ -99,11 +99,14 @@ EXPORT_SYMBOL(tty_driver_flush_buffer);
+  *	Takes the termios mutex to protect against parallel throttle/unthrottle
+  *	and also to ensure the driver can consistently reference its own
+  *	termios data at this point when implementing software flow control.
++ *
++ *	Locking: potentially called with BTM from n_tty_receive_buf, needs
++ *		 investigation.
+  */
+ 
+ void tty_throttle(struct tty_struct *tty)
+ {
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex); /* BTM unknown */
+ 	/* check TTY_THROTTLED first so it indicates our state */
+ 	if (!test_and_set_bit(TTY_THROTTLED, &tty->flags) &&
+ 	    tty->ops->throttle)
+@@ -127,7 +130,7 @@ EXPORT_SYMBOL(tty_throttle);
+ 
+ void tty_unthrottle(struct tty_struct *tty)
+ {
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex); /* BTM unknown */
+ 	if (test_and_clear_bit(TTY_THROTTLED, &tty->flags) &&
+ 	    tty->ops->unthrottle)
+ 		tty->ops->unthrottle(tty);
+@@ -510,7 +513,7 @@ static void change_termios(struct tty_struct *tty, struct ktermios *new_termios)
+ 
+ 	/* FIXME: we need to decide on some locking/ordering semantics
+ 	   for the set_termios notification eventually */
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	old_termios = *tty->termios;
+ 	*tty->termios = *new_termios;
+ 	unset_locked_termios(tty->termios, &old_termios, tty->termios_locked);
+@@ -571,7 +574,7 @@ static int set_termios(struct tty_struct *tty, void __user *arg, int opt)
+ 	if (retval)
+ 		return retval;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	memcpy(&tmp_termios, tty->termios, sizeof(struct ktermios));
+ 	mutex_unlock(&tty->termios_mutex);
+ 
+@@ -625,14 +628,14 @@ static int set_termios(struct tty_struct *tty, void __user *arg, int opt)
+ 
+ static void copy_termios(struct tty_struct *tty, struct ktermios *kterm)
+ {
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	memcpy(kterm, tty->termios, sizeof(struct ktermios));
+ 	mutex_unlock(&tty->termios_mutex);
  }
  
-+static void do_tty_hangup(struct work_struct *work)
-+{
-+	struct tty_struct *tty =
-+		container_of(work, struct tty_struct, hangup_work);
-+
-+	tty_lock();
-+	tty_vhangup_locked(tty);
-+	tty_unlock();
-+}
-+
- /**
-  *	tty_hangup		-	trigger a hangup event
-  *	@tty: tty to hangup
-@@ -638,7 +643,9 @@ void tty_vhangup(struct tty_struct *tty)
- 
- 	printk(KERN_DEBUG "%s vhangup...\n", tty_name(tty, buf));
- #endif
--	do_tty_hangup(&tty->hangup_work);
-+	tty_lock();
-+	tty_vhangup_locked(tty);
-+	tty_unlock();
+ static void copy_termios_locked(struct tty_struct *tty, struct ktermios *kterm)
+ {
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	memcpy(kterm, tty->termios_locked, sizeof(struct ktermios));
+ 	mutex_unlock(&tty->termios_mutex);
  }
- 
- EXPORT_SYMBOL(tty_vhangup);
-@@ -719,10 +726,12 @@ void disassociate_ctty(int on_exit)
- 	tty = get_current_tty();
- 	if (tty) {
- 		tty_pgrp = get_pid(tty->pgrp);
--		tty_lock_nested(); /* see above */
--		if (on_exit && tty->driver->type != TTY_DRIVER_TYPE_PTY)
--			tty_vhangup(tty);
--		tty_unlock();
-+		if (on_exit) {
-+			tty_lock();
-+			if (tty->driver->type != TTY_DRIVER_TYPE_PTY)
-+				tty_vhangup_locked(tty);
-+			tty_unlock();
-+		}
- 		tty_kref_put(tty);
- 	} else if (on_exit) {
- 		struct pid *old_pgrp;
-@@ -1218,18 +1227,14 @@ static int tty_driver_install_tty(struct tty_driver *driver,
- 	int ret;
- 
- 	if (driver->ops->install) {
--		tty_lock_nested(); /* already called with BTM held */
- 		ret = driver->ops->install(driver, tty);
--		tty_unlock();
- 		return ret;
+@@ -681,7 +684,7 @@ static int set_termiox(struct tty_struct *tty, void __user *arg, int opt)
+ 			return -EINTR;
  	}
  
- 	if (tty_init_termios(tty) == 0) {
--		tty_lock_nested();
- 		tty_driver_kref_get(driver);
- 		tty->count++;
- 		driver->ttys[idx] = tty;
--		tty_unlock();
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	if (tty->ops->set_termiox)
+ 		tty->ops->set_termiox(tty, &tnew);
+ 	mutex_unlock(&tty->termios_mutex);
+@@ -719,7 +722,7 @@ static int get_sgttyb(struct tty_struct *tty, struct sgttyb __user *sgttyb)
+ {
+ 	struct sgttyb tmp;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	tmp.sg_ispeed = tty->termios->c_ispeed;
+ 	tmp.sg_ospeed = tty->termios->c_ospeed;
+ 	tmp.sg_erase = tty->termios->c_cc[VERASE];
+@@ -780,7 +783,7 @@ static int set_sgttyb(struct tty_struct *tty, struct sgttyb __user *sgttyb)
+ 	if (copy_from_user(&tmp, sgttyb, sizeof(tmp)))
+ 		return -EFAULT;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	termios = *tty->termios;
+ 	termios.c_cc[VERASE] = tmp.sg_erase;
+ 	termios.c_cc[VKILL] = tmp.sg_kill;
+@@ -801,7 +804,7 @@ static int get_tchars(struct tty_struct *tty, struct tchars __user *tchars)
+ {
+ 	struct tchars tmp;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	tmp.t_intrc = tty->termios->c_cc[VINTR];
+ 	tmp.t_quitc = tty->termios->c_cc[VQUIT];
+ 	tmp.t_startc = tty->termios->c_cc[VSTART];
+@@ -818,7 +821,7 @@ static int set_tchars(struct tty_struct *tty, struct tchars __user *tchars)
+ 
+ 	if (copy_from_user(&tmp, tchars, sizeof(tmp)))
+ 		return -EFAULT;
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	tty->termios->c_cc[VINTR] = tmp.t_intrc;
+ 	tty->termios->c_cc[VQUIT] = tmp.t_quitc;
+ 	tty->termios->c_cc[VSTART] = tmp.t_startc;
+@@ -835,7 +838,7 @@ static int get_ltchars(struct tty_struct *tty, struct ltchars __user *ltchars)
+ {
+ 	struct ltchars tmp;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	tmp.t_suspc = tty->termios->c_cc[VSUSP];
+ 	/* what is dsuspc anyway? */
+ 	tmp.t_dsuspc = tty->termios->c_cc[VSUSP];
+@@ -855,7 +858,7 @@ static int set_ltchars(struct tty_struct *tty, struct ltchars __user *ltchars)
+ 	if (copy_from_user(&tmp, ltchars, sizeof(tmp)))
+ 		return -EFAULT;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	tty->termios->c_cc[VSUSP] = tmp.t_suspc;
+ 	/* what is dsuspc anyway? */
+ 	tty->termios->c_cc[VEOL2] = tmp.t_dsuspc;
+@@ -913,7 +916,7 @@ static int tty_change_softcar(struct tty_struct *tty, int arg)
+ 	int bit = arg ? CLOCAL : 0;
+ 	struct ktermios old;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	old = *tty->termios;
+ 	tty->termios->c_cflag &= ~CLOCAL;
+ 	tty->termios->c_cflag |= bit;
+@@ -1022,7 +1025,7 @@ int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
+ 		if (user_termios_to_kernel_termios(&kterm,
+ 					       (struct termios __user *) arg))
+ 			return -EFAULT;
+-		mutex_lock(&real_tty->termios_mutex);
++		mutex_lock_tty_off(&real_tty->termios_mutex);
+ 		memcpy(real_tty->termios_locked, &kterm, sizeof(struct ktermios));
+ 		mutex_unlock(&real_tty->termios_mutex);
  		return 0;
- 	}
- 	return -ENOMEM;
-@@ -1322,15 +1327,11 @@ struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx,
- 	struct tty_struct *tty;
- 	int retval;
- 
--	tty_lock_nested(); /* always called with tty lock held already */
--
- 	/* Check if pty master is being opened multiple times */
- 	if (driver->subtype == PTY_TYPE_MASTER &&
- 		(driver->flags & TTY_DRIVER_DEVPTS_MEM) && !first_ok) {
--		tty_unlock();
- 		return ERR_PTR(-EIO);
- 	}
--	tty_unlock();
- 
- 	/*
- 	 * First time open is complex, especially for PTY devices.
-@@ -1374,9 +1375,7 @@ release_mem_out:
- 	if (printk_ratelimit())
- 		printk(KERN_INFO "tty_init_dev: ldisc open failed, "
- 				 "clearing slot %d\n", idx);
--	tty_lock_nested();
- 	release_tty(tty, idx);
--	tty_unlock();
- 	return ERR_PTR(retval);
- }
- 
+@@ -1039,7 +1042,7 @@ int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
+ 		if (user_termios_to_kernel_termios_1(&kterm,
+ 					       (struct termios __user *) arg))
+ 			return -EFAULT;
+-		mutex_lock(&real_tty->termios_mutex);
++		mutex_lock_tty_off(&real_tty->termios_mutex);
+ 		memcpy(real_tty->termios_locked, &kterm, sizeof(struct ktermios));
+ 		mutex_unlock(&real_tty->termios_mutex);
+ 		return ret;
+@@ -1049,7 +1052,7 @@ int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
+ 		struct termiox ktermx;
+ 		if (real_tty->termiox == NULL)
+ 			return -EINVAL;
+-		mutex_lock(&real_tty->termios_mutex);
++		mutex_lock_tty_off(&real_tty->termios_mutex);
+ 		memcpy(&ktermx, real_tty->termiox, sizeof(struct termiox));
+ 		mutex_unlock(&real_tty->termios_mutex);
+ 		if (copy_to_user(p, &ktermx, sizeof(struct termiox)))
 diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
-index d4259cf..c71a94a 100644
+index 97681ff..f0efca2 100644
 --- a/drivers/char/tty_ldisc.c
 +++ b/drivers/char/tty_ldisc.c
-@@ -458,9 +458,8 @@ static int tty_ldisc_open(struct tty_struct *tty, struct tty_ldisc *ld)
- 	if (ld->ops->open) {
- 		int ret;
-                 /* BTM here locks versus a hangup event */
--		tty_lock_nested(); /* always held here already */
-+		WARN_ON(!tty_locked());
- 		ret = ld->ops->open(tty);
--		tty_unlock();
- 		return ret;
- 	}
- 	return 0;
-diff --git a/drivers/char/tty_mutex.c b/drivers/char/tty_mutex.c
-index 51e0852..6bd47e1 100644
---- a/drivers/char/tty_mutex.c
-+++ b/drivers/char/tty_mutex.c
-@@ -73,21 +73,6 @@ void __lockfunc tty_lock(void)
+@@ -428,7 +428,7 @@ EXPORT_SYMBOL_GPL(tty_ldisc_flush);
+ 
+ static void tty_set_termios_ldisc(struct tty_struct *tty, int num)
+ {
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_on(&tty->termios_mutex);
+ 	tty->termios->c_line = num;
+ 	mutex_unlock(&tty->termios_mutex);
  }
- EXPORT_SYMBOL(tty_lock);
+@@ -697,7 +697,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
  
--void __lockfunc tty_lock_nested(void)
--{
--	struct task_struct *task = current;
--	int depth = task->tty_lock_depth + 1;
--
--	if (likely(!depth))
--		/*
--		 * No recursion worries - we set up tty_lock_depth _after_
--		 */
--		mutex_lock(&big_tty_mutex);
--
--	task->tty_lock_depth = depth;
--}
--EXPORT_SYMBOL(tty_lock_nested);
--
- void __lockfunc tty_unlock(void)
+ static void tty_reset_termios(struct tty_struct *tty)
  {
- 	struct task_struct *task = current;
-diff --git a/drivers/serial/crisv10.c b/drivers/serial/crisv10.c
-index 9047384..28ff46a 100644
---- a/drivers/serial/crisv10.c
-+++ b/drivers/serial/crisv10.c
-@@ -3254,9 +3254,10 @@ rs_write(struct tty_struct *tty,
- 		 */
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_on(&tty->termios_mutex);
+ 	*tty->termios = tty->driver->init_termios;
+ 	tty->termios->c_ispeed = tty_termios_input_baud_rate(tty->termios);
+ 	tty->termios->c_ospeed = tty_termios_baud_rate(tty->termios);
+diff --git a/drivers/net/irda/irtty-sir.c b/drivers/net/irda/irtty-sir.c
+index ee1dde5..26d8230 100644
+--- a/drivers/net/irda/irtty-sir.c
++++ b/drivers/net/irda/irtty-sir.c
+@@ -34,6 +34,7 @@
+ #include <asm/uaccess.h>
+ #include <linux/delay.h>
+ #include <linux/mutex.h>
++#include <linux/sched.h>
  
- 		/* Sleep until all sent */
--		tty_lock_nested();
--		tty_wait_until_sent_locked(tty, 0);
--		tty_unlock();
-+		if (tty_locked())
-+			tty_wait_until_sent_locked(tty, 0);
-+		else
-+			tty_wait_until_sent(tty, 0);
- #ifdef CONFIG_ETRAX_FAST_TIMER
- 		/* Now sleep a little more so that shift register is empty */
- 		schedule_usleep(info->char_time_usec * 2);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 8ddd952..3cf4556 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -416,6 +416,7 @@ extern int is_ignored(int sig);
- extern int tty_signal(int sig, struct tty_struct *tty);
- extern void tty_hangup(struct tty_struct *tty);
- extern void tty_vhangup(struct tty_struct *tty);
-+extern void tty_vhangup_locked(struct tty_struct *tty);
- extern void tty_vhangup_self(void);
- extern void tty_unhangup(struct file *filp);
- extern int tty_hung_up_p(struct file *filp);
-@@ -575,19 +576,7 @@ extern long vt_compat_ioctl(struct tty_struct *tty, struct file * file,
+ #include <net/irda/irda.h>
+ #include <net/irda/irda_device.h>
+@@ -123,7 +124,7 @@ static int irtty_change_speed(struct sir_dev *dev, unsigned speed)
  
- /* tty_mutex.c */
- /* functions for preparation of BKL removal */
--
--/*
-- * tty_lock_nested get the tty_lock while potentially holding it
-- *
-- * The Big TTY Mutex is a recursive lock, meaning you can take it
-- * from a thread that is already holding it.
-- * This is bad for a number of reasons, so tty_lock_nested should
-- * really be used as rarely as possible. If a code location can
-- * be shown to never get called with this held already, it should
-- * use tty_lock() instead.
-- */ 
- #ifdef CONFIG_TTY_MUTEX
--extern void __lockfunc tty_lock_nested(void) __acquires(tty_lock);
- extern void __lockfunc tty_lock(void) __acquires(tty_lock);
- extern void __lockfunc tty_unlock(void) __releases(tty_lock);
- #define tty_locked()		(current->tty_lock_depth >= 0)
-@@ -602,10 +591,6 @@ void __lockfunc __release_tty_lock(void);
-                 __reacquire_tty_lock() : 0 )
+ 	tty = priv->tty;
  
- #else
--static inline void __lockfunc tty_lock_nested(void) __acquires(kernel_lock)
--{
--	lock_kernel();
--}
- static inline void tty_lock(void) __acquires(kernel_lock)
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	old_termios = *(tty->termios);
+ 	cflag = tty->termios->c_cflag;
+ 	tty_encode_baud_rate(tty, speed, speed);
+@@ -280,7 +281,7 @@ static inline void irtty_stop_receiver(struct tty_struct *tty, int stop)
+ 	struct ktermios old_termios;
+ 	int cflag;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex); /* locked from tty->close */
+ 	old_termios = *(tty->termios);
+ 	cflag = tty->termios->c_cflag;
+ 	
+diff --git a/drivers/staging/strip/strip.c b/drivers/staging/strip/strip.c
+index c976c6b..85e00d9 100644
+--- a/drivers/staging/strip/strip.c
++++ b/drivers/staging/strip/strip.c
+@@ -776,7 +776,7 @@ static void set_baud(struct tty_struct *tty, speed_t baudrate)
  {
- 	WARN_ON(kernel_locked());
+ 	struct ktermios old_termios;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	old_termios =*(tty->termios);
+ 	tty_encode_baud_rate(tty, baudrate, baudrate);
+ 	tty->ops->set_termios(tty, &old_termios);
 -- 
 1.7.0.4
 
