@@ -1,345 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760206Ab0EDSVj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 14:21:39 -0400
-Received: from LION.seas.upenn.edu ([158.130.12.194]:55444 "EHLO
-	lion.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760168Ab0EDSVW (ORCPT
+	id S932286Ab0EDSWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 14:22:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:45630 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760168Ab0EDSWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 14:21:22 -0400
-From: Rafi Rubin <rafi@seas.upenn.edu>
-To: linux-input@vger.kernel.org, jkosina@suse.cz, chatty@enac.fr
-Cc: dmitry.torokhov@gmail.com, micki@n-trig.com, linux-kernel@vger.kernel.org,
-       guy.paradis@n-trig.com, Rafi Rubin <rafi@seas.upenn.edu>
-Subject: [PATCH 3/3] ntrig sysfs access to filter parameters
-Date: Tue,  4 May 2010 14:20:17 -0400
-Message-Id: <1272997217-15335-4-git-send-email-rafi@seas.upenn.edu>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1272997217-15335-1-git-send-email-rafi@seas.upenn.edu>
-References: <1272997217-15335-1-git-send-email-rafi@seas.upenn.edu>
+	Tue, 4 May 2010 14:22:46 -0400
+X-Authority-Analysis: v=1.1 cv=Ebn0m7KaSvUJV60GCOzUqyhjUj7QmnsyUUVbVvk8w6o= c=1 sm=0 a=Ha1kYoaTZc4A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=Pg-sk_kN8vQcpfpBBNIA:9 a=g06kDNDPYKC4rjJkFl8A:7 a=dDESds9ybX9LgQ2iuw2K2qTjr4UA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 04/12] perf: add @rq to perf_event_task_sched_out()
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Tejun Heo <tj@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu, efault@gmx.de,
+       avi@redhat.com, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <4BE057EB.80604@kernel.org>
+References: <1272976724-14312-1-git-send-email-tj@kernel.org>
+	 <1272976724-14312-5-git-send-email-tj@kernel.org>
+	 <1272993090.1642.184.camel@laptop>  <4BE057EB.80604@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 04 May 2010 14:22:43 -0400
+Message-ID: <1272997363.9739.232.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This should make it a little more convenient to tweak the filtering
-parameters on the fly.  Also unlike load-time parameters, this provides
-independent tuning for each device conntected.
+On Tue, 2010-05-04 at 19:22 +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On 05/04/2010 07:11 PM, Peter Zijlstra wrote:
+> > On Tue, 2010-05-04 at 14:38 +0200, Tejun Heo wrote:
+> >> Add @rq to perf_event_task_sched_out() so that its argument matches
+> >> those of trace_sched_switch().  This will help unifying notifiers in
+> >> sched.
+> > 
+> > The alternative is dropping rq from the trace events, its not like
+> > anybody outside sched.o can do anything sensible with it anyway.
+> 
+> The comment in include/trace/events/sched.h says...
+> 
+>  * (NOTE: the 'rq' argument is not used by generic trace events,
+>  *        but used by the latency tracer plugin. )
+> 
+> So, I left it there.  It would be great if all those @rq params can be
+> removed tho.  The latency tracer thing needs it, right?
 
-Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
----
- drivers/hid/hid-ntrig.c |  285 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 285 insertions(+), 0 deletions(-)
+I believe the rq was used by the original latency tracer code that was
+in the -rt patch set before ftrace. It is most likely there for
+historical purposes. I guess it would be fine to just remove it.
 
-diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
-index 18609c1..b6b0cae 100644
---- a/drivers/hid/hid-ntrig.c
-+++ b/drivers/hid/hid-ntrig.c
-@@ -89,6 +89,287 @@ struct ntrig_data {
- 	__u16 sensor_physical_height;
- };
- 
-+
-+static ssize_t show_phys_width(struct device *dev,
-+			       struct device_attribute *attr,
-+			       char *buf)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	return sprintf(buf, "%d\n", nd->sensor_physical_width);
-+}
-+
-+static DEVICE_ATTR(sensor_physical_width, S_IRUGO, show_phys_width, NULL);
-+
-+static ssize_t show_phys_height(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	return sprintf(buf, "%d\n", nd->sensor_physical_height);
-+}
-+
-+static DEVICE_ATTR(sensor_physical_height, S_IRUGO, show_phys_height, NULL);
-+
-+static ssize_t show_log_width(struct device *dev,
-+			      struct device_attribute *attr,
-+			      char *buf)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	return sprintf(buf, "%d\n", nd->sensor_logical_width);
-+}
-+
-+static DEVICE_ATTR(sensor_logical_width, S_IRUGO, show_log_width, NULL);
-+
-+static ssize_t show_log_height(struct device *dev,
-+			       struct device_attribute *attr,
-+			       char *buf)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	return sprintf(buf, "%d\n", nd->sensor_logical_height);
-+}
-+
-+static DEVICE_ATTR(sensor_logical_height, S_IRUGO, show_log_height, NULL);
-+
-+static ssize_t show_min_width(struct device *dev,
-+			      struct device_attribute *attr,
-+			      char *buf)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	return sprintf(buf, "%d\n", nd->min_width *
-+				    nd->sensor_physical_width /
-+				    nd->sensor_logical_width);
-+}
-+
-+static ssize_t set_min_width(struct device *dev,
-+			     struct device_attribute *attr,
-+			     const char *buf, size_t count)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 0, &val))
-+		return -EINVAL;
-+
-+	if (val > nd->sensor_physical_width)
-+		return -EINVAL;
-+
-+	nd->min_width = val * nd->sensor_logical_width /
-+			      nd->sensor_physical_width;
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(min_width, S_IWUSR | S_IRUGO, show_min_width, set_min_width);
-+
-+static ssize_t show_min_height(struct device *dev,
-+			       struct device_attribute *attr,
-+			       char *buf)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	return sprintf(buf, "%d\n", nd->min_height *
-+				    nd->sensor_physical_height /
-+				    nd->sensor_logical_height);
-+}
-+
-+static ssize_t set_min_height(struct device *dev,
-+			      struct device_attribute *attr,
-+			      const char *buf, size_t count)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 0, &val))
-+		return -EINVAL;
-+
-+	if (val > nd->sensor_physical_height)
-+		return -EINVAL;
-+
-+	nd->min_height = val * nd->sensor_logical_height /
-+			       nd->sensor_physical_height;
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(min_height, S_IWUSR | S_IRUGO, show_min_height,
-+		   set_min_height);
-+
-+static ssize_t show_activate_slack(struct device *dev,
-+				   struct device_attribute *attr,
-+				   char *buf)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	return sprintf(buf, "%d\n", nd->activate_slack);
-+}
-+
-+static ssize_t set_activate_slack(struct device *dev,
-+				  struct device_attribute *attr,
-+				  const char *buf, size_t count)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 0, &val))
-+		return -EINVAL;
-+
-+	if (val > 0x7f)
-+		return -EINVAL;
-+
-+	nd->activate_slack = val;
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(activate_slack, S_IWUSR | S_IRUGO, show_activate_slack,
-+		   set_activate_slack);
-+
-+static ssize_t show_activation_width(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	return sprintf(buf, "%d\n", nd->activation_width *
-+				    nd->sensor_physical_width /
-+				    nd->sensor_logical_width);
-+}
-+
-+static ssize_t set_activation_width(struct device *dev,
-+				    struct device_attribute *attr,
-+				    const char *buf, size_t count)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 0, &val))
-+		return -EINVAL;
-+
-+	if (val > nd->sensor_physical_width)
-+		return -EINVAL;
-+
-+	nd->activation_width = val * nd->sensor_logical_width /
-+				     nd->sensor_physical_width;
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(activation_width, S_IWUSR | S_IRUGO, show_activation_width,
-+		   set_activation_width);
-+
-+static ssize_t show_activation_height(struct device *dev,
-+				      struct device_attribute *attr,
-+				      char *buf)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	return sprintf(buf, "%d\n", nd->activation_height *
-+				    nd->sensor_physical_height /
-+				    nd->sensor_logical_height);
-+}
-+
-+static ssize_t set_activation_height(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 0, &val))
-+		return -EINVAL;
-+
-+	if (val > nd->sensor_physical_height)
-+		return -EINVAL;
-+
-+	nd->activation_height = val * nd->sensor_logical_height /
-+				      nd->sensor_physical_height;
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(activation_height, S_IWUSR | S_IRUGO,
-+		   show_activation_height, set_activation_height);
-+
-+static ssize_t show_deactivate_slack(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	return sprintf(buf, "%d\n", -nd->deactivate_slack);
-+}
-+
-+static ssize_t set_deactivate_slack(struct device *dev,
-+				    struct device_attribute *attr,
-+				    const char *buf, size_t count)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct ntrig_data *nd = hid_get_drvdata(hdev);
-+
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 0, &val))
-+		return -EINVAL;
-+
-+	/*
-+	 * No more than 8 terminal frames have been observed so far
-+	 * and higher slack is highly likely to leave the single
-+	 * touch emulation stuck down.
-+	 */
-+	if (val > 7)
-+		return -EINVAL;
-+
-+	nd->deactivate_slack = -val;
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(deactivate_slack, S_IWUSR | S_IRUGO, show_deactivate_slack,
-+		   set_deactivate_slack);
-+
-+static struct attribute *sysfs_attrs[] = {
-+	&dev_attr_sensor_physical_width.attr,
-+	&dev_attr_sensor_physical_height.attr,
-+	&dev_attr_sensor_logical_width.attr,
-+	&dev_attr_sensor_logical_height.attr,
-+	&dev_attr_min_height.attr,
-+	&dev_attr_min_width.attr,
-+	&dev_attr_activate_slack.attr,
-+	&dev_attr_activation_width.attr,
-+	&dev_attr_activation_height.attr,
-+	&dev_attr_deactivate_slack.attr,
-+	NULL
-+};
-+
-+static struct attribute_group ntrig_attribute_group = {
-+	.attrs = sysfs_attrs
-+};
-+
- /*
-  * this driver is aimed at two firmware versions in circulation:
-  *  - dual pen/finger single touch
-@@ -567,6 +848,8 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	if (report)
- 		usbhid_submit_report(hdev, report, USB_DIR_OUT);
- 
-+	ret = sysfs_create_group(&hdev->dev.kobj,
-+			&ntrig_attribute_group);
- 
- 	return 0;
- err_free:
-@@ -576,6 +859,8 @@ err_free:
- 
- static void ntrig_remove(struct hid_device *hdev)
- {
-+	sysfs_remove_group(&hdev->dev.kobj,
-+			&ntrig_attribute_group);
- 	hid_hw_stop(hdev);
- 	kfree(hid_get_drvdata(hdev));
- }
--- 
-1.7.1
+-- Steve
+
 
