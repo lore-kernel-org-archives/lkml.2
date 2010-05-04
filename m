@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab0EDV0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 17:26:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52436 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752880Ab0EDV0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 17:26:51 -0400
-Date: Wed, 5 May 2010 07:26:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Russell King <rmk@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-Message-Id: <20100505072645.abdee42d.sfr@canb.auug.org.au>
-In-Reply-To: <1272991333.4813.1.camel@c-dwalke-linux.qualcomm.com>
-References: <20100504110725.0b44d877.sfr@canb.auug.org.au>
-	<1272991333.4813.1.camel@c-dwalke-linux.qualcomm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1758781Ab0EDV2a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 17:28:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42570 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752880Ab0EDV23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 17:28:29 -0400
+Date: Tue, 4 May 2010 14:26:31 -0700
+From: Stephen Hemminger <shemminger@linux-foundation.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com, Arnd Bergmann <arnd@arndb.de>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [PATCH tip/core/rcu 28/48] net: Make accesses to ->br_port safe
+ for sparse RCU
+Message-ID: <20100504142631.148b52dc@nehalam>
+In-Reply-To: <1273004398-19760-28-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20100504201934.GA19234@linux.vnet.ibm.com>
+	<1273004398-19760-28-git-send-email-paulmck@linux.vnet.ibm.com>
+Organization: Linux Foundation
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__5_May_2010_07_26_45_+1000_A3rjgrnLnqzZSXg6"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_May_2010_07_26_45_+1000_A3rjgrnLnqzZSXg6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue,  4 May 2010 13:19:38 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-Hi Daniel,
+> The new versions of the rcu_dereference() APIs requires that any pointers
+> passed to one of these APIs be fully defined.  The ->br_port field
+> in struct net_device points to a struct net_bridge_port, which is an
+> incomplete type.  This commit therefore changes ->br_port to be a void*,
+> and introduces a br_port() helper function to convert the type to struct
+> net_bridge_port, and applies this new helper function where required.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Stephen Hemminger <shemminger@linux-foundation.org>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
 
-On Tue, 04 May 2010 09:42:13 -0700 Daniel Walker <dwalker@codeaurora.org> w=
-rote:
->
-> On Tue, 2010-05-04 at 11:07 +1000, Stephen Rothwell wrote:
-> >=20
-> > Today's linux-next merge of the msm tree got a conflict in
-> > arch/arm/mach-msm/Kconfig between commit
-> > 4b53eb4f5d78416456bb969ce30e3bed2731d744 ("arm: msm: allow ARCH_MSM to
-> > have v7 cpus") from the arm tree and commit
-> > e17047ea51cc2eac3e920e5a669f99efd44f446f ("arm: msm: smd: use either
-> > package v3 or v4 not both") from the msm tree.
-> >=20
-> > I fixed it up (see below) and can carry the fix as necessary.
->=20
-> Ok .. I'll merge the changes in Russell tree into my tree, that should
-> fix it I think.
-
-OK, thanks.  For simple things like this, I have no problem carrying
-fixes until they are repaired in the normal course of events.  "git
-rerere" does all the work for me.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__5_May_2010_07_26_45_+1000_A3rjgrnLnqzZSXg6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvgkRUACgkQjjKRsyhoI8wM6ACgrVDoBybv6nE5Hsw7xMQVyfm+
-qrgAoLJLF/LUiXcjAFwO9DwPVJUGPiiW
-=MY9O
------END PGP SIGNATURE-----
-
---Signature=_Wed__5_May_2010_07_26_45_+1000_A3rjgrnLnqzZSXg6--
+I would rather make the bridge hook generic and not take a type argument.
