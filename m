@@ -1,128 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933980Ab0EDVMP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 17:12:15 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:40262 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933754Ab0EDVMN (ORCPT
+	id S933998Ab0EDVTb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 17:19:31 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53095 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756563Ab0EDVTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 17:12:13 -0400
-Date: Tue, 4 May 2010 22:12:09 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-       Jan Blunck <jblunck@suse.de>
-Subject: Re: [PATCH 17/39] union-mount: Union mounts documentation
-Message-ID: <20100504211209.GC4360@shareable.org>
-References: <1272928358-20854-1-git-send-email-vaurora@redhat.com> <1272928358-20854-18-git-send-email-vaurora@redhat.com>
+	Tue, 4 May 2010 17:19:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:x-url:user-agent;
+        b=kAS8AQXH6hueu8LlPR213PM8M0Pr8XCg2/tZiu2gSvs9N7VigpPAet5ajyjeLoCyE9
+         GuFoe8GIQkUiYlzfhSgmuH4aCc+wvJ6r8RoLIndUpT9AEqLgssfCPE03/INNNGrEtcG7
+         tUNexqYEhdrlOP3TPFgMTZzoZ4OsTQR8wTNco=
+Date: Tue, 4 May 2010 18:18:43 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/3] perf: record TRACE_INFO only if using tracepoints
+ and SAMPLE_RAW
+Message-ID: <20100504211843.GF970@ghostprotocols.net>
+References: <1272981607-28723-1-git-send-email-acme@infradead.org>
+ <1272981607-28723-2-git-send-email-acme@infradead.org>
+ <20100504170642.GA5427@nowhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1272928358-20854-18-git-send-email-vaurora@redhat.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100504170642.GA5427@nowhere>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Valerie Aurora wrote:
-> +File copyup: Create a file on the top layer that has the same metadata
-> +and contents as the file with the same pathname on the bottom layer.
+Em Tue, May 04, 2010 at 07:06:45PM +0200, Frederic Weisbecker escreveu:
+> On Tue, May 04, 2010 at 11:00:05AM -0300, Arnaldo Carvalho de Melo wrote:
+> > From: Tom Zanussi <tzanussi@gmail.com>
+> > 
+> > The current perf code implicitly assumes SAMPLE_RAW means tracepoints
+> > are being used, but doesn't check for that.  It happily records the
+> > TRACE_INFO even if SAMPLE_RAW is used without tracepoints, but when the
+> > perf data is read it won't go any further when it finds TRACE_INFO but
+> > no tracepoints, and displays misleading errors.
+> > 
+> > This adds a check for both in perf-record, and won't record TRACE_INFO
+> > unless both are true.  This at least allows perf report -D to dump raw
+> > events, and avoids triggering a misleading error condition in perf
+> > trace.  It doesn't actually enable the non-tracepoint raw events to be
+> > displayed in perf trace, since perf trace currently only deals with
+> > tracepoint events.
+> > 
+> > Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+> > Cc: Mike Galbraith <efault@gmx.de>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > LKML-Reference: <1272865861.7932.16.camel@tropicana>
+> > Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+> > Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > ---
+> >  tools/perf/builtin-record.c        |   35 +++++++++++++++++++++--------------
+> >  tools/perf/util/header.c           |    1 -
+> >  tools/perf/util/parse-events.h     |    1 +
+> >  tools/perf/util/trace-event-info.c |    5 +++++
+> >  4 files changed, 27 insertions(+), 15 deletions(-)
+> > 
+> > diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> > index ac989e9..0ff67d1 100644
+> > --- a/tools/perf/builtin-record.c
+> > +++ b/tools/perf/builtin-record.c
+> > @@ -560,11 +560,12 @@ static int __cmd_record(int argc, const char **argv)
+> >  			return err;
+> >  	}
+> >  
+> > -	if (raw_samples) {
+> > +	if (raw_samples && have_tracepoints(attrs, nr_counters)) {
+> >  		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
+> >  	} else {
+> 
+> 
+> 
+> Using get_tracepoints_path() is a bit costly just to check if we use
+> tracepoints as it allocates and fill the paths.
 
-Can copyup be interrupted?  E.g. if I chmod an 80GB file, will the
-chmod() system call pause for a couple of hours, or can I control-C it?
+Can you please send a fix?
 
-> +This deviation from standard is due to technical limitations of the
-> +union mount implementation.  Specifically, we would need to replace an
-> +open file descriptor from the lower layer with an open file descriptor
-> +for a file with matching pathname and contents on the upper layer,
-> +which is difficult to do.  We avoid this in other system calls by
-> +doing the copyup before the file is opened.  Unionfs doesn't encounter
-> +this problem because it creates a dummy file struct which redirects or
-> +fans out operations to the struct files for the underlying file
-> +systems.
-> +
-> +From an application's point of view, the result of an in-kernel file
-> +copyup is the logical equivalent of another application updating the
-> +file via the rename() pattern: creat() a new file, copy the data over,
-> +make changes the copy, and rename() over the old version.  Any
-> +existing open file descriptors for that file (including those in the
-> +same application) refer to a now invisible object that used to have
-> +the same pathname.  Only opens that occur after the copyup will see
-> +updates to the file.
-
-Does it apply the same permission checks that a program doing
-copy+rename would have to pass?  I guess that is just write access to
-the directory.
-
-Does it effectively "rename" all hard links referring to the file, to
-point to the new version, or does it only affect the path that was
-used by the writer/modifier, leaving the other links continue to refer
-to the original file?
-
-> + - File copyup on open(O_DIRECT)
-
-Why is O_DIRECT relevant?  O_DIRECT doesn't imply writing, and
-copy+rename behaviour is the same with O_DIRECT as not.
-
-Some programs use O_DIRECT to read very large files, without intending
-they will ever be modified.  For example, qemu using O_DIRECT to
-access a disk image backing file.
-
-> +NFS interaction
-> +===============
-> +
-> +NFS is currently not supported as either type of layer.  NFS as
-> +read-only layer requires support from the server to honor the
-> +read-only guarantee needed for the bottom layer.  To do this, the
-> +server needs to revoke access to clients requesting read-only file
-> +systems if the exported file system is remounted read-write or
-> +unmounted (during which arbitrary changes can occur).  Some recent
-> +discussion:
-> +
-> +http://markmail.org/message/3mkgnvo4pswxd7lp
-> +
-> +NFS as the read-write layer would require implementation of the
-> +->whiteout() and ->fallthru() methods.  DT_WHT directory entries are
-> +theoretically already supported.
-> +
-> +Also, technically the requirement for a readdir() cookie that is
-> +stable across reboots comes only from file systems exported via NFSv2:
-> +
-> +http://oss.oracle.com/pipermail/btrfs-devel/2008-January/000463.html
-> +
-> +Todo:
-> +
-> +- Guarantee really really read-only on NFS exports
-> +- Implement whiteout()/fallthru() for NFS
-
-I'm finding it hard to imagine _guaranteeing_ really read-only.  All
-you can guarantee is that the NFS says it is read-only.
-
-For example, a userspace NFS server cannot prevent the filesystem it's
-serving from changing.
-
-Is this not a problem with other network filesystems like CIFS, P9, FUSE?
-
-> +Known non-POSIX behaviors
-> +-------------------------
-> +
-> +- Link count may be wrong for files on bottom layer with > 1 link count
-
-Can you say a bit more about what will be seen?
-
-> +- File copyup is the logical equivalent of an update via copy +
-> +  rename().  Any existing open file descriptors will continue to refer
-> +  to the read-only copy on the bottom layer and will not see any
-> +  changes that occur after the copy-up.
-
-I can imagine some database-like programs getting confused by that.
-
-Maybe it would be better to fail copyup operations when the file is
-currently open O_RDONLY by anyone, analogous to the way writable
-mounts are refused when any union holds it read-only?
-
-Are there uses likely to be broken by that behaviour?
-
-Thanks,
--- Jamie
+- Arnaldo
