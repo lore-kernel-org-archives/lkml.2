@@ -1,183 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759875Ab0EDNGd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 09:06:33 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:40880 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751791Ab0EDNG3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 09:06:29 -0400
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 4 May 2010 15:05:51 +0200
-Subject: RE: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
-Thread-Topic: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
-Thread-Index: Acrp0CL/1W5RfXinShWZyjunbGgURgBuaWAA
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A025A636C13@EXDCVYMBSTM006.EQ1STM.local>
-References: <v2se9c3a7c21004071645u8180f4d7p3b4b1f96de11303e@mail.gmail.com>
- <CEE6BB42CAD6E947908279175AF8470A03A50F78@EXDCVYMBSTM006.EQ1STM.local>
- <t2qe9c3a7c21004141815x70ecf123p4364802681417da9@mail.gmail.com>
- <q2o63386a3d1004162158v296379fat2b376d5c4c087378@mail.gmail.com>
- <20100422110025.GC20008@n2100.arm.linux.org.uk>
- <g2qe9c3a7c21005011500l11511d43i12d971775b139c3b@mail.gmail.com>
- <20100501224429.GA17693@n2100.arm.linux.org.uk>
- <x2u63386a3d1005011604kaee33364l880e90a4e2453e0f@mail.gmail.com>
- <20100501232823.GB17693@n2100.arm.linux.org.uk>
- <r2u63386a3d1005011721v66d04172nc0e5163115006267@mail.gmail.com>
- <20100502081844.GA7061@n2100.arm.linux.org.uk>
-In-Reply-To: <20100502081844.GA7061@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1759939Ab0EDNHK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 09:07:10 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58090 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758583Ab0EDNHE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 09:07:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=c6oYmsw3xVJrL75Up56kEt8UDflckuUDE5BmA4Hs8UwOScmKLxXUXV3NuamktMB2R0
+         o1X3hIgxjgtFc+y67hq2jZj8rzANAIGvxhE2l5Dq07Qmofrmkg4hpg0Ifr0MZNyvw1tP
+         PhWxHGsFNCsit8Av194fScf9LzCL5PXfL3u9Y=
+Date: Tue, 4 May 2010 22:07:02 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Cc: avi@redhat.com, mtosatti@redhat.com, agraf@suse.de,
+       yoshikawa.takuya@oss.ntt.co.jp, fernando@oss.ntt.co.jp,
+       kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org,
+       tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+       benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
+       arnd@arndb.de, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC][PATCH RFC 10/12] KVM: move dirty bitmaps to user space
+Message-Id: <20100504220702.f8ba6ccc.takuya.yoshikawa@gmail.com>
+In-Reply-To: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com>
+References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest patchset is now also tested on the ARM-RealView
-PB11MPCore. My best friends over at Ericsson AB helped me
-out by lending me their board for a short session.
+We move dirty bitmaps to user space.
 
-See bootlog below...
+ - Allocation and destruction: we use do_mmap() and do_munmap().
+   The new bitmap space is twice longer than the original one and we
+   use the additional space for double buffering: this makes it
+   possible to update the active bitmap while letting the user space
+   read the other one safely. For x86, we can also remove the vmalloc()
+   in kvm_vm_ioctl_get_dirty_log().
 
-- UART console comes up fine and is interactive
-- MMCI card mounts and you can list and copy files
+ - Bitmap manipulations: we replace all functions which access dirty
+   bitmaps with *_user() functions.
 
-No DMA in use since the PL081 in this machine does not
-have a driver yet, but no regressions in sight.
+ - For ia64: moving the dirty bitmaps of memory slots does not affect
+   ia64 much because it's using a different place to store dirty logs
+   rather than the dirty bitmaps of memory slots: all we have to change
+   are sync and get of dirty log, so we don't need set_bit_user like
+   functions for ia64.
 
-This should be similar to Versatile or Integrator.
+Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+CC: Avi Kivity <avi@redhat.com>
+CC: Alexander Graf <agraf@suse.de>
+---
+ arch/ia64/kvm/kvm-ia64.c  |   15 +++++++++-
+ arch/powerpc/kvm/book3s.c |    5 +++-
+ arch/x86/kvm/x86.c        |   25 ++++++++----------
+ include/linux/kvm_host.h  |    3 +-
+ virt/kvm/kvm_main.c       |   62 +++++++++++++++++++++++++++++++++++++-------
+ 5 files changed, 82 insertions(+), 28 deletions(-)
 
-Is this OK now Russell?
+diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
+index 17fd65c..03503e6 100644
+--- a/arch/ia64/kvm/kvm-ia64.c
++++ b/arch/ia64/kvm/kvm-ia64.c
+@@ -1823,11 +1823,19 @@ static int kvm_ia64_sync_dirty_log(struct kvm *kvm,
+ 	n = kvm_dirty_bitmap_bytes(memslot);
+ 	base = memslot->base_gfn / BITS_PER_LONG;
+ 
++	r = -EFAULT;
++	if (!access_ok(VERIFY_WRITE, memslot->dirty_bitmap, n))
++		goto out;
++
+ 	for (i = 0; i < n/sizeof(long); ++i) {
+ 		if (dirty_bitmap[base + i])
+ 			memslot->is_dirty = true;
+ 
+-		memslot->dirty_bitmap[i] = dirty_bitmap[base + i];
++		if (__put_user(dirty_bitmap[base + i],
++			       &memslot->dirty_bitmap[i])) {
++			r = -EFAULT;
++			goto out;
++		}
+ 		dirty_bitmap[base + i] = 0;
+ 	}
+ 	r = 0;
+@@ -1858,7 +1866,10 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+ 	if (memslot->is_dirty) {
+ 		kvm_flush_remote_tlbs(kvm);
+ 		n = kvm_dirty_bitmap_bytes(memslot);
+-		memset(memslot->dirty_bitmap, 0, n);
++		if (clear_user(memslot->dirty_bitmap, n)) {
++			r = -EFAULT;
++			goto out;
++		}
+ 		memslot->is_dirty = false;
+ 	}
+ 	r = 0;
+diff --git a/arch/powerpc/kvm/book3s.c b/arch/powerpc/kvm/book3s.c
+index 4b074f1..2a31d2f 100644
+--- a/arch/powerpc/kvm/book3s.c
++++ b/arch/powerpc/kvm/book3s.c
+@@ -1210,7 +1210,10 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+ 			kvmppc_mmu_pte_pflush(vcpu, ga, ga_end);
+ 
+ 		n = kvm_dirty_bitmap_bytes(memslot);
+-		memset(memslot->dirty_bitmap, 0, n);
++		if (clear_user(memslot->dirty_bitmap, n)) {
++			r = -EFAULT;
++			goto out;
++		}
+ 		memslot->is_dirty = false;
+ 	}
+ 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 023c7f8..32a3d94 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2760,40 +2760,37 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+ 	/* If nothing is dirty, don't bother messing with page tables. */
+ 	if (memslot->is_dirty) {
+ 		struct kvm_memslots *slots, *old_slots;
+-		unsigned long *dirty_bitmap;
++		unsigned long __user *dirty_bitmap;
++		unsigned long __user *dirty_bitmap_old;
+ 
+ 		spin_lock(&kvm->mmu_lock);
+ 		kvm_mmu_slot_remove_write_access(kvm, log->slot);
+ 		spin_unlock(&kvm->mmu_lock);
+ 
+-		r = -ENOMEM;
+-		dirty_bitmap = vmalloc(n);
+-		if (!dirty_bitmap)
++		dirty_bitmap = memslot->dirty_bitmap;
++		dirty_bitmap_old = memslot->dirty_bitmap_old;
++		r = -EFAULT;
++		if (clear_user(dirty_bitmap_old, n))
+ 			goto out;
+-		memset(dirty_bitmap, 0, n);
+ 
+ 		r = -ENOMEM;
+ 		slots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
+-		if (!slots) {
+-			vfree(dirty_bitmap);
++		if (!slots)
+ 			goto out;
+-		}
++
+ 		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+-		slots->memslots[log->slot].dirty_bitmap = dirty_bitmap;
++		slots->memslots[log->slot].dirty_bitmap = dirty_bitmap_old;
++		slots->memslots[log->slot].dirty_bitmap_old = dirty_bitmap;
+ 		slots->memslots[log->slot].is_dirty = false;
+ 
+ 		old_slots = kvm->memslots;
+ 		rcu_assign_pointer(kvm->memslots, slots);
+ 		synchronize_srcu_expedited(&kvm->srcu);
+-		dirty_bitmap = old_slots->memslots[log->slot].dirty_bitmap;
+ 		kfree(old_slots);
+ 
+ 		r = -EFAULT;
+-		if (copy_to_user(log->dirty_bitmap, dirty_bitmap, n)) {
+-			vfree(dirty_bitmap);
++		if (copy_in_user(log->dirty_bitmap, dirty_bitmap, n))
+ 			goto out;
+-		}
+-		vfree(dirty_bitmap);
+ 	} else {
+ 		r = -EFAULT;
+ 		if (clear_user(log->dirty_bitmap, n))
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 0aa6ecb..c95e2b7 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -116,7 +116,8 @@ struct kvm_memory_slot {
+ 	unsigned long npages;
+ 	unsigned long flags;
+ 	unsigned long *rmap;
+-	unsigned long *dirty_bitmap;
++	unsigned long __user *dirty_bitmap;
++	unsigned long __user *dirty_bitmap_old;
+ 	bool is_dirty;
+ 	struct {
+ 		unsigned long rmap_pde;
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 3e3acad..ddcf65a 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -437,8 +437,20 @@ out_err_nodisable:
+ 
+ static void kvm_destroy_dirty_bitmap(struct kvm_memory_slot *memslot)
+ {
+-	vfree(memslot->dirty_bitmap);
++	unsigned long user_addr;
++	unsigned long n = kvm_dirty_bitmap_bytes(memslot);
++
++	if (!memslot->dirty_bitmap)
++		return;
++
++	user_addr = min((unsigned long)memslot->dirty_bitmap,
++			(unsigned long)memslot->dirty_bitmap_old);
++	down_write(&current->mm->mmap_sem);
++	do_munmap(current->mm, user_addr, 2 * n);
++	up_write(&current->mm->mmap_sem);
++
+ 	memslot->dirty_bitmap = NULL;
++	memslot->dirty_bitmap_old = NULL;
+ }
+ 
+ /*
+@@ -472,8 +484,12 @@ void kvm_free_physmem(struct kvm *kvm)
+ 	int i;
+ 	struct kvm_memslots *slots = kvm->memslots;
+ 
+-	for (i = 0; i < slots->nmemslots; ++i)
++	for (i = 0; i < slots->nmemslots; ++i) {
++		/* VM process will exit: we don't unmap by ourselves. */
++		slots->memslots[i].dirty_bitmap = NULL;
++		slots->memslots[i].dirty_bitmap_old = NULL;
+ 		kvm_free_physmem_slot(&slots->memslots[i], NULL);
++	}
+ 
+ 	kfree(kvm->memslots);
+ }
+@@ -527,14 +543,35 @@ static int kvm_vm_release(struct inode *inode, struct file *filp)
+ 
+ static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
+ {
+-	unsigned long dirty_bytes = kvm_dirty_bitmap_bytes(memslot);
++	int err;
++	unsigned long user_addr;
++	unsigned long n = kvm_dirty_bitmap_bytes(memslot);
+ 
+-	memslot->dirty_bitmap = vmalloc(dirty_bytes);
+-	if (!memslot->dirty_bitmap)
+-		return -ENOMEM;
++	down_write(&current->mm->mmap_sem);
++	user_addr = do_mmap(NULL, 0, 2 * n,
++			    PROT_READ | PROT_WRITE,
++			    MAP_PRIVATE | MAP_ANONYMOUS, 0);
++	up_write(&current->mm->mmap_sem);
++
++	if (IS_ERR((void *)user_addr)) {
++		err = PTR_ERR((void *)user_addr);
++		goto out;
++	}
++
++	memslot->dirty_bitmap = (unsigned long __user *)user_addr;
++	memslot->dirty_bitmap_old = (unsigned long __user *)(user_addr + n);
++	if (clear_user(memslot->dirty_bitmap, 2 * n)) {
++		err = -EFAULT;
++		goto out_unmap;
++	}
+ 
+-	memset(memslot->dirty_bitmap, 0, dirty_bytes);
+ 	return 0;
++out_unmap:
++	down_write(&current->mm->mmap_sem);
++	do_munmap(current->mm, user_addr, 2 * n);
++	up_write(&current->mm->mmap_sem);
++out:
++	return err;
+ }
+ 
+ /*
+@@ -799,7 +836,7 @@ int kvm_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
+ 	n = kvm_dirty_bitmap_bytes(memslot);
+ 
+ 	r = -EFAULT;
+-	if (copy_to_user(log->dirty_bitmap, memslot->dirty_bitmap, n))
++	if (copy_in_user(log->dirty_bitmap, memslot->dirty_bitmap, n))
+ 		goto out;
+ 
+ 	r = 0;
+@@ -1195,11 +1232,16 @@ void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
+ 	gfn = unalias_gfn(kvm, gfn);
+ 	memslot = gfn_to_memslot_unaliased(kvm, gfn);
+ 	if (memslot && memslot->dirty_bitmap) {
+-		unsigned long rel_gfn = gfn - memslot->base_gfn;
++		int nr = generic_le_bit_offset(gfn - memslot->base_gfn);
+ 
+-		generic___set_le_bit(rel_gfn, memslot->dirty_bitmap);
++		if (kvm_set_bit_user(nr, memslot->dirty_bitmap))
++			goto out_fault;
+ 		memslot->is_dirty = true;
+ 	}
++	return;
++
++out_fault:
++	printk(KERN_WARNING "%s: kvm_set_bit_user failed.\n", __func__);
+ }
+ 
+ /*
+-- 
+1.7.0.4
 
-Yours,
-Linus Walleij
-
-
-Uncompressing Linux... done, booting the kernel.
-Linux version 2.6.34-rc6-next-20100503-00033-gc482e92 (linus@fecusia) (gcc vers0
-CPU: ARMv6-compatible processor [410fb020] revision 0 (ARMv7), cr=00c5387f
-CPU: VIPT nonaliasing data cache, VIPT nonaliasing instruction cache
-Machine: ARM-RealView PB11MPCore
-Ignoring unrecognised tag 0x00000000
-Memory policy: ECC disabled, Data cache writeback
-Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 32512
-Kernel command line: root=/dev/nfs nfsroot=192.168.0.3:/export/rootfs/rootfs-ant
-PID hash table entries: 512 (order: -1, 2048 bytes)
-Dentry cache hash table entries: 16384 (order: 4, 65536 bytes)
-Inode-cache hash table entries: 8192 (order: 3, 32768 bytes)
-Memory: 128MB = 128MB total
-Memory: 120360k/120360k available, 10712k reserved, 0K highmem
-Virtual kernel memory layout:
-    vector  : 0xffff0000 - 0xffff1000   (   4 kB)
-    fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
-    DMA     : 0xffc00000 - 0xffe00000   (   2 MB)
-    vmalloc : 0xc8800000 - 0xf8000000   ( 760 MB)
-    lowmem  : 0xc0000000 - 0xc8000000   ( 128 MB)
-    modules : 0xbf000000 - 0xc0000000   (  16 MB)
-      .init : 0xc0008000 - 0xc0672000   (6568 kB)
-      .text : 0xc0672000 - 0xc0909000   (2652 kB)
-      .data : 0xc0922000 - 0xc093d400   ( 109 kB)
-Hierarchical RCU implementation.
-NR_IRQS:128
-Console: colour dummy device 80x30
-Calibrating delay loop... 83.76 BogoMIPS (lpj=418816)
-Mount-cache hash table entries: 512
-CPU: Testing write buffer coherency: ok
-NET: Registered protocol family 16
-L2X0 cache controller enabled
-Serial: AMBA PL011 UART driver
-dev:uart0: ttyAMA0 at MMIO 0x10009000 (irq = 36) is a AMBA/PL011
-console [ttyAMA0] enabled
-dev:uart1: ttyAMA1 at MMIO 0x1000a000 (irq = 37) is a AMBA/PL011
-dev:uart2: ttyAMA2 at MMIO 0x1000b000 (irq = 78) is a AMBA/PL011
-fpga:uart3: ttyAMA3 at MMIO 0x1000c000 (irq = 79) is a AMBA/PL011
-bio: create slab <bio-0> at 0
-Advanced Linux Sound Architecture Driver Version 1.0.23.
-Switching to clocksource timer3
-NET: Registered protocol family 2
-IP route cache hash table entries: 1024 (order: 0, 4096 bytes)
-TCP established hash table entries: 4096 (order: 3, 32768 bytes)
-TCP bind hash table entries: 4096 (order: 2, 16384 bytes)
-TCP: Hash tables configured (established 4096 bind 4096)
-TCP reno registered
-UDP hash table entries: 256 (order: 0, 4096 bytes)
-UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
-NET: Registered protocol family 1
-RPC: Registered udp transport module.
-RPC: Registered tcp transport module.
-RPC: Registered tcp NFSv4.1 backchannel transport module.
-msgmni has been set to 235
-io scheduler noop registered
-io scheduler deadline registered (default)
-CLCD: RealView hardware, XVGA display
-Console: switching to colour frame buffer device 128x48
-armflash.0-0: Found 2 x16 devices at 0x0 in 32-bit bank
- Intel/Sharp Extended Query Table at 0x010A
- Intel/Sharp Extended Query Table at 0x010A
- Intel/Sharp Extended Query Table at 0x010A
- Intel/Sharp Extended Query Table at 0x010A
- Intel/Sharp Extended Query Table at 0x010A
-Using buffer write method
-Using auto-unlock on power-up/resume
-cfi_cmdset_0001: Erase suspend on write enabled
-armflash.0-1: Found 2 x16 devices at 0x0 in 32-bit bank
- Intel/Sharp Extended Query Table at 0x010A
- Intel/Sharp Extended Query Table at 0x010A
- Intel/Sharp Extended Query Table at 0x010A
- Intel/Sharp Extended Query Table at 0x010A
- Intel/Sharp Extended Query Table at 0x010A
-Using buffer write method
-Using auto-unlock on power-up/resume
-cfi_cmdset_0001: Erase suspend on write enabled
-Concatenating MTD devices:
-(0): "armflash.0-0"
-(1): "armflash.0-1"
-into device "armflash.0"
-RedBoot partition parsing not available
-afs partition parsing not available
-smsc911x: Driver version 2008-10-21.
-smsc911x-mdio: probed
-eth0: attached PHY driver [SMSC LAN911x Internal PHY] (mii_bus:phy_addr=0:01, i)
-net eth0: MAC Address: 00:02:f7:00:3a:80
-mice: PS/2 mouse device common for all mice
-mmci-pl18x fpga:mmc0: mmc0: MMCI/PL180 manf 41 rev 0 cfg 00 at 0x000000001000500
-mmci-pl18x fpga:mmc0: IRQ 46, 47 (pio)
-aaci-pl041 fpga:aaci: ARM AC'97 Interface at 0x0000000010004000, irq 32, fifo 52
-ALSA device list:
-  #0: ARM AC'97 Interface at 0x0000000010004000, irq 32
-TCP cubic registered
-NET: Registered protocol family 17
-VFP support v0.3: implementor 41 architecture 1 part 20 variant b rev 3
-mmc0: host does not support reading read-only switch. assuming write-enable.
-mmc0: new SD card at address e624
-mmcblk0: mmc0:e624 SU256 241 MiB
- mmcblk0: p1
-net eth0: SMSC911x/921x identified at 0xc8880000, IRQ: 41
-atkbd serio0: keyboard reset failed on fpga:kmi0
-IP-Config: Complete:
-     device=eth0, addr=192.168.0.4, mask=255.255.255.0, gw=192.168.0.1,
-     host=arm11mpcore, domain=, nis-domain=(none),
-     bootserver=192.168.0.3, rootserver=192.168.0.3, rootpath=
-Warning: unable to open an initial console.
-Freeing init memory: 6568K
-input: AT Raw Set 2 keyboard as /class/input/input0
-
-Please press Enter to activate this console.
-starting pid 342, tty '/dev/ttyAMA0': '/bin/sh -sc ". /etc/profile"'
-root@ME:/
-root@ME:/
-
-Yours,
-Linus Walleij
