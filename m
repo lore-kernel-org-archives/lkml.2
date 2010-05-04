@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934020Ab0EDU1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:27:34 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:33830 "EHLO e1.ny.us.ibm.com"
+	id S933977Ab0EDU1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:27:24 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52347 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933769Ab0EDUUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933770Ab0EDUUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 May 2010 16:20:17 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 01/48] rcu: optionally leave lockdep enabled after RCU lockdep splat
-Date: Tue,  4 May 2010 13:19:11 -0700
-Message-Id: <1273004398-19760-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 09/48] rcu: rename rcutiny rcu_ctrlblk to rcu_sched_ctrlblk
+Date: Tue,  4 May 2010 13:19:19 -0700
+Message-Id: <1273004398-19760-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100504201934.GA19234@linux.vnet.ibm.com>
 References: <20100504201934.GA19234@linux.vnet.ibm.com>
@@ -24,92 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Make naming line up in preparation for CONFIG_TINY_PREEMPT_RCU.
 
-There is no need to disable lockdep after an RCU lockdep splat,
-so remove the debug_lockdeps_off() from lockdep_rcu_dereference().
-To avoid repeated lockdep splats, use a static variable in the inlined
-rcu_dereference_check() and rcu_dereference_protected() macros so that
-a given instance splats only once, but so that multiple instances can
-be detected per boot.
-
-This is controlled by a new config variable CONFIG_PROVE_RCU_REPEATEDLY,
-which is disabled by default.  This provides the normal lockdep behavior
-by default, but permits people who want to find multiple RCU-lockdep
-splats per boot to easily do so.
-
-Requested-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Tested-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |    6 ++----
- kernel/lockdep.c         |    2 ++
- lib/Kconfig.debug        |   12 ++++++++++++
- 3 files changed, 16 insertions(+), 4 deletions(-)
+ kernel/rcutiny.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index a8b2e03..4dca275 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -230,8 +230,7 @@ extern int rcu_my_thread_group_empty(void);
-  */
- #define rcu_dereference_check(p, c) \
- 	({ \
--		if (debug_lockdep_rcu_enabled() && !(c)) \
--			lockdep_rcu_dereference(__FILE__, __LINE__); \
-+		__do_rcu_dereference_check(c); \
- 		rcu_dereference_raw(p); \
- 	})
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 272c6d2..d9f8a62 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -44,9 +44,9 @@ struct rcu_ctrlblk {
+ };
  
-@@ -248,8 +247,7 @@ extern int rcu_my_thread_group_empty(void);
-  */
- #define rcu_dereference_protected(p, c) \
- 	({ \
--		if (debug_lockdep_rcu_enabled() && !(c)) \
--			lockdep_rcu_dereference(__FILE__, __LINE__); \
-+		__do_rcu_dereference_check(c); \
- 		(p); \
- 	})
+ /* Definition for rcupdate control block. */
+-static struct rcu_ctrlblk rcu_ctrlblk = {
+-	.donetail	= &rcu_ctrlblk.rcucblist,
+-	.curtail	= &rcu_ctrlblk.rcucblist,
++static struct rcu_ctrlblk rcu_sched_ctrlblk = {
++	.donetail	= &rcu_sched_ctrlblk.rcucblist,
++	.curtail	= &rcu_sched_ctrlblk.rcucblist,
+ };
  
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 2594e1c..73747b7 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -3801,8 +3801,10 @@ void lockdep_rcu_dereference(const char *file, const int line)
+ static struct rcu_ctrlblk rcu_bh_ctrlblk = {
+@@ -108,7 +108,8 @@ static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
+  */
+ void rcu_sched_qs(int cpu)
  {
- 	struct task_struct *curr = current;
+-	if (rcu_qsctr_help(&rcu_ctrlblk) + rcu_qsctr_help(&rcu_bh_ctrlblk))
++	if (rcu_qsctr_help(&rcu_sched_ctrlblk) +
++	    rcu_qsctr_help(&rcu_bh_ctrlblk))
+ 		raise_softirq(RCU_SOFTIRQ);
+ }
  
-+#ifndef CONFIG_PROVE_RCU_REPEATEDLY
- 	if (!debug_locks_off())
- 		return;
-+#endif /* #ifdef CONFIG_PROVE_RCU_REPEATEDLY */
- 	printk("\n===================================================\n");
- 	printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
- 	printk(  "---------------------------------------------------\n");
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 935248b..94090b4 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -512,6 +512,18 @@ config PROVE_RCU
+@@ -173,7 +174,7 @@ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+  */
+ static void rcu_process_callbacks(struct softirq_action *unused)
+ {
+-	__rcu_process_callbacks(&rcu_ctrlblk);
++	__rcu_process_callbacks(&rcu_sched_ctrlblk);
+ 	__rcu_process_callbacks(&rcu_bh_ctrlblk);
+ }
  
- 	 Say N if you are unsure.
+@@ -221,7 +222,7 @@ static void __call_rcu(struct rcu_head *head,
+  */
+ void call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+ {
+-	__call_rcu(head, func, &rcu_ctrlblk);
++	__call_rcu(head, func, &rcu_sched_ctrlblk);
+ }
+ EXPORT_SYMBOL_GPL(call_rcu);
  
-+config PROVE_RCU_REPEATEDLY
-+	bool "RCU debugging: don't disable PROVE_RCU on first splat"
-+	depends on PROVE_RCU
-+	default n
-+	help
-+	 By itself, PROVE_RCU will disable checking upon issuing the
-+	 first warning (or "splat").  This feature prevents such
-+	 disabling, allowing multiple RCU-lockdep warnings to be printed
-+	 on a single reboot.
-+
-+	 Say N if you are unsure.
-+
- config LOCKDEP
- 	bool
- 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
 -- 
 1.7.0
 
