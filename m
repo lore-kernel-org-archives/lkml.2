@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069Ab0EDLir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 07:38:47 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:51559 "EHLO poutre.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752058Ab0EDLiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 07:38:46 -0400
-Date: Tue, 4 May 2010 13:32:00 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-       Alex Murray <murray.alex@gmail.com>
-Subject: Re: [PATCH] hwmon: applesmc: Add temperature sensor labels to sysfs
-  interface
-Message-ID: <20100504133200.34413e2b@hyperion.delvare>
-In-Reply-To: <4BE001E7.9030605@euromail.se>
-References: <1272966929-14501-1-git-send-email-rydberg@euromail.se>
-	<20100504120638.70244e8e@hyperion.delvare>
-	<4BE001E7.9030605@euromail.se>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754696Ab0EDL4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 07:56:46 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51970 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab0EDL4o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 07:56:44 -0400
+Date: Tue, 4 May 2010 12:56:40 +0100
+From: Eric B Munson <ebmunson@us.ibm.com>
+To: Anton Blanchard <anton@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: Fix performance issue with perf report
+Message-ID: <20100504115640.GA6380@us.ibm.com>
+References: <20100504111915.GB14636@kryten>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
+Content-Disposition: inline
+In-Reply-To: <20100504111915.GB14636@kryten>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 May 2010 13:15:51 +0200, Henrik Rydberg wrote:
-> Jean Delvare wrote:
-> [...]
-> >> @@ -1578,6 +1717,8 @@ static int __init applesmc_init(void)
-> >>  		}
-> >>  		ret = sysfs_create_file(&pdev->dev.kobj,
-> >>  						temperature_attributes[i]);
-> > 
-> > Missing error handling.
-> > 
-> >> +		ret = sysfs_create_file(&pdev->dev.kobj,
-> >> +						label_attributes[i]);
-> >>  		if (ret)
-> >>  			goto out_temperature;
-> >>  	}
-> >
-> 
-> Shoot, my bad review. Will send a new patch. While at it, the same function
-> seems to leak fan attribute groups. Want me to correct such issues (in another
-> patch)?
 
-Yes please. As a bugfix, that would even be a candidate for 2.6.34. I
-have another patch (for asc7621) pending already.
+--5vNYLRcllDrimb99
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Jean Delvare
+On Tue, 04 May 2010, Anton Blanchard wrote:
+
+>=20
+> On a large machine we spend a lot of time in perf_header__find_attr when
+> running perf report.=20
+>=20
+> If we are parsing a file without PERF_SAMPLE_ID then for each sample we c=
+all
+> perf_header__find_attr and loop through all counter IDs, never finding a =
+match.
+> As the machine gets larger there are more per cpu counters and we spend an
+> awful lot of time in there.
+>=20
+> The patch below initialises each sample id to -1ULL and checks for this in
+> perf_header__find_attr. We may need to do something more intelligent even=
+tually
+> (eg a hash lookup from counter id to attr) but this at least fixes the mo=
+st
+> common usage of perf report.
+>=20
+> Signed-off-by: Anton Blanchard <anton@samba.org>
+
+Acked-by: Eric B Munson <ebmunson@us.ibm.com>
+
+--5vNYLRcllDrimb99
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvgC3gACgkQsnv9E83jkzq7CwCgx4I+8S4bERZMmlzgTJ4O9/4u
+shoAoKgGOrEZ8SxcwlPgfH0XM16oAvTB
+=LGRw
+-----END PGP SIGNATURE-----
+
+--5vNYLRcllDrimb99--
