@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab0EDDm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 May 2010 23:42:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59290 "EHLO
+	id S1750958Ab0EDDmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 May 2010 23:42:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58277 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756154Ab0EDDmK (ORCPT
+	with ESMTP id S1754247Ab0EDDmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 May 2010 23:42:10 -0400
-X-Authority-Analysis: v=1.1 cv=m27xf9DC4olkrNDaWzGlhfWN1WyLlD0+t5Z5YaFh7bA= c=1 sm=0 a=U6SRIaGovWMA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=n0Os9h9x7a7lgcQwEwEA:9 a=kni16VCshVR6MMoCxocA:7 a=nd4_45HR-7H2eDR8RZwp0h3Y7qkA:4 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+	Mon, 3 May 2010 23:42:06 -0400
+X-Authority-Analysis: v=1.1 cv=tamp8Om8S85MB4Qj1n2yU9kNzNdU9gdJUe8fX0YwrYg= c=1 sm=0 a=KmS4ZcvDDqsA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=a1hWv7aLrA7bs-OAbi0A:9 a=LpWmBTB0mZv123VX9NAA:7 a=ekEPK3CHHhgDdJTIwSzutQ9nnzkA:4 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
-Message-Id: <20100504034203.393081687@goodmis.org>
+Message-Id: <20100504034045.085822814@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 03 May 2010 23:40:52 -0400
+Date: Mon, 03 May 2010 23:40:45 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -22,332 +22,100 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Mathieu Desnoyers <compudj@krystal.dyndns.org>,
        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [PATCH 7/9 - v2][RFC] tracing: Move print functions into event class
-References: <20100504034045.085822814@goodmis.org>
-Content-Disposition: inline; filename=0007-tracing-Move-print-functions-into-event-class.patch
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 0/9 - v2][RFC] tracing: Lowering the footprint of TRACE_EVENTs
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+[Version 2]
 
-Currently, every event has its own trace_event structure. This is
-fine since the structure is needed anyway. But the print function
-structure (trace_event_functions) is now separate. Since the output
-of the trace event is done by the class (with the exception of events
-defined by DEFINE_EVENT_PRINT), it makes sense to have the class
-define the print functions that all events in the class can use.
+This is an RFC patch set that also affects kprobes and perf.
 
-This makes a bigger deal with the syscall events since all syscall events
-use the same class. The savings here is another 37K.
+At the Linux Collaboration Summit, I talked with Mathieu and others about
+lowering the footprint of trace events. I spent all of last week
+trying to get the size as small as I could.
 
-   text	   data	    bss	    dec	    hex	filename
-5788186	1337252	9351592	16477030	 fb6b66	vmlinux.orig
-5774574	1293204	9351592	16419370	 fa8a2a	vmlinux.init
-5761154	1268356	9351592	16381102	 f9f4ae	vmlinux.print
+Currently, each TRACE_EVENT() macro adds 1 - 5K per tracepoint. I got various
+results by adding a TRACE_EVENT() with the compiler, depending on
+config options that did not seem related. The new tracepoint I added
+would add between 1 and 5K, but I did not investigate enough to
+see what the true size was.
 
-To accomplish this, and to let the class know what event is being
-printed, the event structure is embedded in the ftrace_event_call
-structure. This should not be an issues since the event structure
-was created for each event anyway.
+What was consistent, was the DEFINE_EVENT(). Currently, it adds
+a little over 700 bytes per DEFINE_EVENT().
 
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/ftrace_event.h  |    2 +-
- include/linux/syscalls.h      |   18 +++------------
- include/trace/ftrace.h        |   47 +++++++++++++++++-----------------------
- kernel/trace/trace_events.c   |    6 ++--
- kernel/trace/trace_kprobe.c   |   14 +++++-------
- kernel/trace/trace_syscalls.c |    8 +++++++
- 6 files changed, 42 insertions(+), 53 deletions(-)
+This patch series does not seem to affect TRACE_EVENT() much (had
+the same various sizes), but consistently brings DEFINE_EVENT()s
+down from 700 bytes to 250 bytes per DEFINE_EVENT(). Since syscalls
+use one "class" and are equivalent to DEFINE_EVENT() this can
+be a significant savings.
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 4f77932..b1a007d 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -148,7 +148,7 @@ struct ftrace_event_call {
- 	struct ftrace_event_class *class;
- 	char			*name;
- 	struct dentry		*dir;
--	struct trace_event	*event;
-+	struct trace_event	event;
- 	int			enabled;
- 	int			id;
- 	const char		*print_fmt;
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index f725677..a1a86a5 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -120,24 +120,20 @@ struct perf_event_attr;
- 
- extern struct ftrace_event_class event_class_syscall_enter;
- extern struct ftrace_event_class event_class_syscall_exit;
-+extern struct trace_event_functions enter_syscall_print_funcs;
-+extern struct trace_event_functions exit_syscall_print_funcs;
- 
- #define SYSCALL_TRACE_ENTER_EVENT(sname)				\
- 	static struct syscall_metadata __syscall_meta_##sname;		\
- 	static struct ftrace_event_call					\
- 	__attribute__((__aligned__(4))) event_enter_##sname;		\
--	static struct trace_event_functions enter_syscall_print_funcs_##sname = { \
--		.trace                  = print_syscall_enter,		\
--	};								\
--	static struct trace_event enter_syscall_print_##sname = {	\
--		.funcs                  = &enter_syscall_print_funcs_##sname, \
--	};								\
- 	static struct ftrace_event_call __used				\
- 	  __attribute__((__aligned__(4)))				\
- 	  __attribute__((section("_ftrace_events")))			\
- 	  event_enter_##sname = {					\
- 		.name                   = "sys_enter"#sname,		\
- 		.class			= &event_class_syscall_enter,	\
--		.event                  = &enter_syscall_print_##sname,	\
-+		.event.funcs            = &enter_syscall_print_funcs,	\
- 		.data			= (void *)&__syscall_meta_##sname,\
- 	}
- 
-@@ -145,19 +141,13 @@ extern struct ftrace_event_class event_class_syscall_exit;
- 	static struct syscall_metadata __syscall_meta_##sname;		\
- 	static struct ftrace_event_call					\
- 	__attribute__((__aligned__(4))) event_exit_##sname;		\
--	static struct trace_event_functions exit_syscall_print_funcs_##sname = { \
--		.trace                  = print_syscall_exit,		\
--	};								\
--	static struct trace_event exit_syscall_print_##sname = {	\
--		.funcs                  = &exit_syscall_print_funcs_##sname, \
--	};								\
- 	static struct ftrace_event_call __used				\
- 	  __attribute__((__aligned__(4)))				\
- 	  __attribute__((section("_ftrace_events")))			\
- 	  event_exit_##sname = {					\
- 		.name                   = "sys_exit"#sname,		\
- 		.class			= &event_class_syscall_exit,	\
--		.event                  = &exit_syscall_print_##sname,	\
-+		.event.funcs		= &exit_syscall_print_funcs,	\
- 		.data			= (void *)&__syscall_meta_##sname,\
- 	}
- 
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 78650f7..9765454 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -206,18 +206,22 @@
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
- static notrace enum print_line_t					\
--ftrace_raw_output_id_##call(int event_id, const char *name,		\
--			    struct trace_iterator *iter, int flags)	\
-+ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
-+			 struct trace_event *trace_event)		\
- {									\
-+	struct ftrace_event_call *event;				\
- 	struct trace_seq *s = &iter->seq;				\
- 	struct ftrace_raw_##call *field;				\
- 	struct trace_entry *entry;					\
- 	struct trace_seq *p;						\
- 	int ret;							\
- 									\
-+	event = container_of(trace_event, struct ftrace_event_call,	\
-+			     event);					\
-+									\
- 	entry = iter->ent;						\
- 									\
--	if (entry->type != event_id) {					\
-+	if (entry->type != event->id) {					\
- 		WARN_ON_ONCE(1);					\
- 		return TRACE_TYPE_UNHANDLED;				\
- 	}								\
-@@ -226,7 +230,7 @@ ftrace_raw_output_id_##call(int event_id, const char *name,		\
- 									\
- 	p = &get_cpu_var(ftrace_event_seq);				\
- 	trace_seq_init(p);						\
--	ret = trace_seq_printf(s, "%s: ", name);			\
-+	ret = trace_seq_printf(s, "%s: ", event->name);			\
- 	if (ret)							\
- 		ret = trace_seq_printf(s, print);			\
- 	put_cpu();							\
-@@ -234,17 +238,10 @@ ftrace_raw_output_id_##call(int event_id, const char *name,		\
- 		return TRACE_TYPE_PARTIAL_LINE;				\
- 									\
- 	return TRACE_TYPE_HANDLED;					\
--}
--
--#undef DEFINE_EVENT
--#define DEFINE_EVENT(template, name, proto, args)			\
--static notrace enum print_line_t					\
--ftrace_raw_output_##name(struct trace_iterator *iter, int flags,	\
--			 struct trace_event *event)			\
--{									\
--	return ftrace_raw_output_id_##template(event_##name.id,		\
--					       #name, iter, flags);	\
--}
-+}									\
-+static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
-+	.trace			= ftrace_raw_output_##call,		\
-+};
- 
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, call, proto, args, print)		\
-@@ -277,7 +274,10 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
- 		return TRACE_TYPE_PARTIAL_LINE;				\
- 									\
- 	return TRACE_TYPE_HANDLED;					\
--}
-+}									\
-+static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
-+	.trace			= ftrace_raw_output_##call,		\
-+};
- 
- #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
- 
-@@ -527,17 +527,10 @@ ftrace_raw_event_##call(proto, void *__data)				\
- }
- 
- #undef DEFINE_EVENT
--#define DEFINE_EVENT(template, call, proto, args)			\
--static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
--	.trace			= ftrace_raw_output_##call,		\
--};									\
--static struct trace_event ftrace_event_type_##call = {			\
--	.funcs			= &ftrace_event_type_funcs_##call,	\
--};
-+#define DEFINE_EVENT(template, call, proto, args)
- 
- #undef DEFINE_EVENT_PRINT
--#define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
--	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
-+#define DEFINE_EVENT_PRINT(template, name, proto, args, print)
- 
- #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
- 
-@@ -573,7 +566,7 @@ __attribute__((__aligned__(4)))						\
- __attribute__((section("_ftrace_events"))) event_##call = {		\
- 	.name			= #call,				\
- 	.class			= &event_class_##template,		\
--	.event			= &ftrace_event_type_##call,		\
-+	.event.funcs		= &ftrace_event_type_funcs_##template,	\
- 	.print_fmt		= print_fmt_##template,			\
- }
- 
-@@ -587,7 +580,7 @@ __attribute__((__aligned__(4)))						\
- __attribute__((section("_ftrace_events"))) event_##call = {		\
- 	.name			= #call,				\
- 	.class			= &event_class_##template,		\
--	.event			= &ftrace_event_type_##call,		\
-+	.event.funcs		= &ftrace_event_type_funcs_##call,	\
- 	.print_fmt		= print_fmt_##call,			\
- }
- 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 7cfd91b..82ee590 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -122,7 +122,7 @@ int trace_event_raw_init(struct ftrace_event_call *call)
- {
- 	int id;
- 
--	id = register_ftrace_event(call->event);
-+	id = register_ftrace_event(&call->event);
- 	if (!id)
- 		return -ENODEV;
- 	call->id = id;
-@@ -1071,8 +1071,8 @@ static void remove_subsystem_dir(const char *name)
- static void __trace_remove_event_call(struct ftrace_event_call *call)
- {
- 	ftrace_event_enable_disable(call, 0);
--	if (call->event)
--		__unregister_ftrace_event(call->event);
-+	if (call->event.funcs)
-+		__unregister_ftrace_event(&call->event);
- 	debugfs_remove_recursive(call->dir);
- 	list_del(&call->list);
- 	trace_destroy_fields(call);
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index b989ae2..d8061c3 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -204,7 +204,6 @@ struct trace_probe {
- 	const char		*symbol;	/* symbol name */
- 	struct ftrace_event_class	class;
- 	struct ftrace_event_call	call;
--	struct trace_event		event;
- 	unsigned int		nr_args;
- 	struct probe_arg	args[];
- };
-@@ -1020,7 +1019,7 @@ print_kprobe_event(struct trace_iterator *iter, int flags,
- 	int i;
- 
- 	field = (struct kprobe_trace_entry *)iter->ent;
--	tp = container_of(event, struct trace_probe, event);
-+	tp = container_of(event, struct trace_probe, call.event);
- 
- 	if (!trace_seq_printf(s, "%s: (", tp->call.name))
- 		goto partial;
-@@ -1054,7 +1053,7 @@ print_kretprobe_event(struct trace_iterator *iter, int flags,
- 	int i;
- 
- 	field = (struct kretprobe_trace_entry *)iter->ent;
--	tp = container_of(event, struct trace_probe, event);
-+	tp = container_of(event, struct trace_probe, call.event);
- 
- 	if (!trace_seq_printf(s, "%s: (", tp->call.name))
- 		goto partial;
-@@ -1364,20 +1363,19 @@ static int register_probe_event(struct trace_probe *tp)
- 
- 	/* Initialize ftrace_event_call */
- 	if (probe_is_return(tp)) {
--		tp->event.funcs = &kretprobe_funcs;
- 		INIT_LIST_HEAD(&call->class->fields);
-+		call->event.funcs = &kretprobe_funcs;
- 		call->class->raw_init = probe_event_raw_init;
- 		call->class->define_fields = kretprobe_event_define_fields;
- 	} else {
- 		INIT_LIST_HEAD(&call->class->fields);
--		tp->event.funcs = &kprobe_funcs;
-+		call->event.funcs = &kprobe_funcs;
- 		call->class->raw_init = probe_event_raw_init;
- 		call->class->define_fields = kprobe_event_define_fields;
- 	}
- 	if (set_print_fmt(tp) < 0)
- 		return -ENOMEM;
--	call->event = &tp->event;
--	call->id = register_ftrace_event(&tp->event);
-+	call->id = register_ftrace_event(&call->event);
- 	if (!call->id) {
- 		kfree(call->print_fmt);
- 		return -ENODEV;
-@@ -1389,7 +1387,7 @@ static int register_probe_event(struct trace_probe *tp)
- 	if (ret) {
- 		pr_info("Failed to register kprobe event: %s\n", call->name);
- 		kfree(call->print_fmt);
--		unregister_ftrace_event(&tp->event);
-+		unregister_ftrace_event(&call->event);
- 	}
- 	return ret;
- }
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 6c98162..d8c076b 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -39,6 +39,14 @@ syscall_get_exit_fields(struct ftrace_event_call *call)
- 	return &entry->exit_fields;
- }
- 
-+struct trace_event_functions enter_syscall_print_funcs = {
-+	.trace                  = print_syscall_enter,
-+};
-+
-+struct trace_event_functions exit_syscall_print_funcs = {
-+	.trace                  = print_syscall_exit,
-+};
-+
- struct ftrace_event_class event_class_syscall_enter = {
- 	.system			= "syscalls",
- 	.reg			= syscall_enter_register,
--- 
-1.7.0
+With events and syscalls (82 events and 616 syscalls), before this
+patch series, the size of vmlinux was: 16161794, and afterward: 16058182.
+
+That is 103,612 bytes in savings! (over 100K)
 
 
+Without tracing syscalls (82 events), it brought the size of vmlinux
+down from 1591046 to 15999394.
+
+22,071 bytes in savings.
+
+This is just an RFC (for now), to get peoples opinions on the changes.
+It does a bit of rewriting of the CPP macros, just to warning you ;-)
+
+Changes in v2:
+
+ o  Ported to latest tip/tracing/core
+
+ o  Removed DECLARE_TRACE_DATA() and made DECLARE_TRACE() have
+    the ability to pass a data parameter. This makes DECLARE_TRACE()
+    not work with no args. A new DECLARE_TRACE_NOARGS() has been created
+    that also allows data to be passed, but does is for tracepoint(void).
+
+ o  Made the callbacks be "proto, void *data" and typecast the data
+    within the function.
+
+
+-- Steve
+
+The code can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/tracing/rfc-1
+
+
+Steven Rostedt (9):
+      tracing: Create class struct for events
+      tracing: Let tracepoints have data passed to tracepoint callbacks
+      tracing: Remove per event trace registering
+      tracing: Move fields from event to class structure
+      tracing: Move raw_init from events to class
+      tracing: Allow events to share their print functions
+      tracing: Move print functions into event class
+      tracing: Remove duplicate id information in event structure
+      tracing: Combine event filter_active and enable into single flags field
+
+----
+ include/linux/ftrace_event.h           |   73 ++++++++---
+ include/linux/syscalls.h               |   57 +++------
+ include/linux/tracepoint.h             |   94 +++++++++++---
+ include/trace/ftrace.h                 |  218 ++++++++++----------------------
+ include/trace/syscall.h                |   10 +-
+ kernel/trace/blktrace.c                |   13 ++-
+ kernel/trace/kmemtrace.c               |   28 +++--
+ kernel/trace/trace.c                   |    9 +-
+ kernel/trace/trace.h                   |    5 +-
+ kernel/trace/trace_event_perf.c        |   17 ++-
+ kernel/trace/trace_events.c            |  131 ++++++++++++-------
+ kernel/trace/trace_events_filter.c     |   28 +++--
+ kernel/trace/trace_export.c            |   16 ++-
+ kernel/trace/trace_functions_graph.c   |   13 ++-
+ kernel/trace/trace_kprobe.c            |  104 +++++++++------
+ kernel/trace/trace_output.c            |  137 ++++++++++++++-------
+ kernel/trace/trace_output.h            |    2 +-
+ kernel/trace/trace_syscalls.c          |  113 +++++++++++++++--
+ kernel/tracepoint.c                    |   91 ++++++++------
+ samples/tracepoints/tp-samples-trace.h |    4 +-
+ 20 files changed, 697 insertions(+), 466 deletions(-)
