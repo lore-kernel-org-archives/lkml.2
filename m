@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab0EDRmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 13:42:43 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43718 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab0EDRmm (ORCPT
+	id S1757467Ab0EDRqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 13:46:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42507 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab0EDRqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 13:42:42 -0400
-Subject: Re: [PATCH 04/12] perf: add @rq to perf_event_task_sched_out()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: mingo@elte.hu, efault@gmx.de, avi@redhat.com, paulus@samba.org,
-       acme@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <4BE057EB.80604@kernel.org>
-References: <1272976724-14312-1-git-send-email-tj@kernel.org>
-	 <1272976724-14312-5-git-send-email-tj@kernel.org>
-	 <1272993090.1642.184.camel@laptop>  <4BE057EB.80604@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 May 2010 19:42:34 +0200
-Message-ID: <1272994954.1642.204.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 4 May 2010 13:46:11 -0400
+Date: Tue, 4 May 2010 18:45:07 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: Suspicious compilation warning
+Message-ID: <20100504174507.GI30601@n2100.arm.linux.org.uk>
+References: <k2ncecb6d8f1004191627w3cd36450xf797f746460abb09@mail.gmail.com> <20100420155122.6f2c26eb.akpm@linux-foundation.org> <20100420230719.GB1432@n2100.arm.linux.org.uk> <n2gcecb6d8f1005041035w51dac3c8ke829a4ae8bf7f408@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <n2gcecb6d8f1005041035w51dac3c8ke829a4ae8bf7f408@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-04 at 19:22 +0200, Tejun Heo wrote:
-> Hello,
+On Tue, May 04, 2010 at 02:35:50PM -0300, Marcelo Jimenez wrote:
+> Hi,
 > 
-> On 05/04/2010 07:11 PM, Peter Zijlstra wrote:
-> > On Tue, 2010-05-04 at 14:38 +0200, Tejun Heo wrote:
-> >> Add @rq to perf_event_task_sched_out() so that its argument matches
-> >> those of trace_sched_switch().  This will help unifying notifiers in
-> >> sched.
-> > 
-> > The alternative is dropping rq from the trace events, its not like
-> > anybody outside sched.o can do anything sensible with it anyway.
+> On Tue, Apr 20, 2010 at 20:07, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> >
+> > Well, it'll be about this number on everything using sparsemem extreme:
+> >
+> > #define SECTIONS_PER_ROOT       (PAGE_SIZE / sizeof (struct mem_section))
+> >
+> > and with only 32 sections, this is going to give a NR_SECTION_ROOTS value
+> > of zero.  I think the calculation of NR_SECTIONS_ROOTS is wrong.
+> >
+> > #define NR_SECTION_ROOTS        (NR_MEM_SECTIONS / SECTIONS_PER_ROOT)
+> >
+> > Clearly if we have 1 mem section, we want to have one section root, so
+> > I think this division should round up any fractional part, thusly:
+> >
+> > #define NR_SECTION_ROOTS        ((NR_MEM_SECTIONS + SECTIONS_PER_ROOT - 1) / SECTIONS_PER_ROOT)
 > 
-> The comment in include/trace/events/sched.h says...
-> 
->  * (NOTE: the 'rq' argument is not used by generic trace events,
->  *        but used by the latency tracer plugin. )
-> 
-> So, I left it there.  It would be great if all those @rq params can be
-> removed tho.  The latency tracer thing needs it, right?
+> Seems correct to me, Is there any idea when this gets committed?
 
-I had a quick look but couldn't actually find anything.
-
+What should be asked is whether it has been tested - if not, can we find
+someone who can test and validate the change?
