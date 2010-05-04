@@ -1,81 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759335Ab0EDM5H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 08:57:07 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58071 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958Ab0EDM5E convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 08:57:04 -0400
-Subject: Re: [PATCH V2] lockdep: reduce stack_trace usage
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang@windriver.com>
-Cc: John Kacur <jkacur@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       linux-rt-users <linux-rt-users@vger.kernel.org>,
-       Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-       Clark Williams <williams@redhat.com>,
-       "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Gregory Haskins <ghaskins@novell.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Yong Zhang <yong.zhang0@gmail.com>
-In-Reply-To: <20100504065711.GC10784@windriver.com>
-References: <alpine.LFD.2.00.1004222208310.3155@localhost>
-	 <20100423025850.GA21328@windriver.com>
-	 <alpine.LFD.2.00.1004230907050.4151@localhost>
-	 <1272009915.1646.25.camel@laptop>
-	 <w2v520f0cf11004230131i743c596emfd0e5b8870330a8b@mail.gmail.com>
-	 <20100423134044.GA2777@zhy-desktop>  <20100504065711.GC10784@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 04 May 2010 14:56:51 +0200
-Message-ID: <1272977811.5605.183.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1759095Ab0EDM54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 08:57:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9717 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751432Ab0EDM5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 08:57:53 -0400
+Date: Tue, 4 May 2010 14:56:06 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
+ and rmap_walk() during migration by not migrating temporary stacks
+Message-ID: <20100504125606.GK19891@random.random>
+References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie>
+ <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
+ <20100429162120.GC22108@random.random>
+ <20100504103213.GB20979@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100504103213.GB20979@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-04 at 14:57 +0800, Yong Zhang wrote:
-> From 04395389820e89c0bd4bb57b939ec1882e0bb5da Mon Sep 17 00:00:00 2001
-> From: Yong Zhang <yong.zhang@windriver.com>
-> Date: Tue, 4 May 2010 14:16:48 +0800
-> Subject: [PATCH] lockdep: Reduce stack_trace usage
+On Tue, May 04, 2010 at 11:32:13AM +0100, Mel Gorman wrote:
+> Unfortunately, the same bug triggers after about 18 minutes. The objective of
+> your fix is very simple - have a VMA covering the new range so that rmap can
+> find it. However, no lock is held during move_page_tables() because of the
+> need to call the page allocator. Due to the lack of locking, is it possible
+> that something like the following is happening?
 > 
-> When calling check_prevs_add(), if all validations passed
-> add_lock_to_list() will add new lock to dependency tree and
-> alloc stack_trace for each list_entry. But at this time,
-> we are always on the same stack, so stack_trace for each
-> list_entry has the same value. This is redundant and eats up
-> lots of memory which could lead to warning on low
-> MAX_STACK_TRACE_ENTRIES.
-> Using one copy of stack_trace instead.
+> Exec Process				Migration Process
+> begin move_page_tables
+> 					begin rmap walk
+> 					take anon_vma locks
+> 					find new location of pte (do nothing)
+> copy migration pte to new location
+> #### Bad PTE now in place
+> 					find old location of pte
+> 					remove old migration pte
+> 					release anon_vma locks
+> remove temporary VMA
+> some time later, bug on migration pte
+> 
+> Even with the care taken, a migration PTE got copied and then left behind. What
+> I haven't confirmed at this point is if the ordering of the walk in "migration
+> process" is correct in the above scenario. The order is important for
+> the race as described to happen.
 
-Right, this looks like it ought to do as intended.
+Ok so this seems the ordering dependency on the anon_vma list that
+strikes again, I didn't realize the ordering would matter here, but it
+does as shown above, great catch! The destination vma of the
+move_page_tables has to be at the tail of the anon_vma list like the
+child vma have to be at the end to avoid the equivalent race in
+fork. This has to be a requirement for mremap too. We just want to
+enforce the same invariants that mremap already enforces, to avoid
+adding new special cases to the VM.
 
-I added the below snipped because I know I'll fail to remember and that
-'static' qualifier is fairly easy to miss.
+== for new anon-vma code ==
+Subject: fix race between shift_arg_pages and rmap_walk
 
-Thanks!
+From: Andrea Arcangeli <aarcange@redhat.com>
 
+migrate.c requires rmap to be able to find all ptes mapping a page at
+all times, otherwise the migration entry can be instantiated, but it
+can't be removed if the second rmap_walk fails to find the page.
+
+And split_huge_page() will have the same requirements as migrate.c
+already has.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
 
-Index: linux-2.6/kernel/lockdep.c
-===================================================================
---- linux-2.6.orig/kernel/lockdep.c
-+++ linux-2.6/kernel/lockdep.c
-@@ -1627,6 +1627,13 @@ check_prev_add(struct task_struct *curr,
- 	int ret;
- 	struct lock_list this;
- 	struct lock_list *uninitialized_var(target_entry);
-+	/*
-+	 * Static variable, serialized by the graph_lock().
-+	 *
-+	 * We use this static variable to save the stack trace in case
-+	 * we call into this function multiple times due to encountering
-+	 * trylocks in the held lock stack.
-+	 */
- 	static struct stack_trace trace;
+diff --git a/fs/exec.c b/fs/exec.c
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -55,6 +55,7 @@
+ #include <linux/fsnotify.h>
+ #include <linux/fs_struct.h>
+ #include <linux/pipe_fs_i.h>
++#include <linux/rmap.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+@@ -503,7 +504,9 @@ static int shift_arg_pages(struct vm_are
+ 	unsigned long length = old_end - old_start;
+ 	unsigned long new_start = old_start - shift;
+ 	unsigned long new_end = old_end - shift;
++	unsigned long moved_length;
+ 	struct mmu_gather *tlb;
++	struct vm_area_struct *tmp_vma;
+ 
+ 	BUG_ON(new_start > new_end);
+ 
+@@ -515,17 +518,43 @@ static int shift_arg_pages(struct vm_are
+ 		return -EFAULT;
  
  	/*
++	 * We need to create a fake temporary vma and index it in the
++	 * anon_vma list in order to allow the pages to be reachable
++	 * at all times by the rmap walk for migrate, while
++	 * move_page_tables() is running.
++	 */
++	tmp_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
++	if (!tmp_vma)
++		return -ENOMEM;
++	*tmp_vma = *vma;
++	INIT_LIST_HEAD(&tmp_vma->anon_vma_chain);
++	/*
+ 	 * cover the whole range: [new_start, old_end)
+ 	 */
+-	if (vma_adjust(vma, new_start, old_end, vma->vm_pgoff, NULL))
++	tmp_vma->vm_start = new_start;
++	/*
++	 * The tmp_vma destination of the copy (with the new vm_start)
++	 * has to be at the end of the anon_vma list for the rmap_walk
++	 * to find the moved pages at all times.
++	 */
++	if (unlikely(anon_vma_clone(tmp_vma, vma))) {
++		kmem_cache_free(vm_area_cachep, tmp_vma);
+ 		return -ENOMEM;
++	}
+ 
+ 	/*
+ 	 * move the page tables downwards, on failure we rely on
+ 	 * process cleanup to remove whatever mess we made.
+ 	 */
+-	if (length != move_page_tables(vma, old_start,
+-				       vma, new_start, length))
++	moved_length = move_page_tables(vma, old_start,
++					vma, new_start, length);
++
++	vma->vm_start = new_start;
++	/* rmap walk will already find all pages using the new_start */
++	unlink_anon_vmas(tmp_vma);
++	kmem_cache_free(vm_area_cachep, tmp_vma);
++
++	if (length != moved_length) 
+ 		return -ENOMEM;
+ 
+ 	lru_add_drain();
+@@ -551,7 +580,7 @@ static int shift_arg_pages(struct vm_are
+ 	/*
+ 	 * Shrink the vma to just the new range.  Always succeeds.
+ 	 */
+-	vma_adjust(vma, new_start, new_end, vma->vm_pgoff, NULL);
++	vma->vm_end = new_end;
+ 
+ 	return 0;
+ }
 
+
+== for old anon-vma code ==
+Subject: fix race between shift_arg_pages and rmap_walk
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+migrate.c requires rmap to be able to find all ptes mapping a page at
+all times, otherwise the migration entry can be instantiated, but it
+can't be removed if the second rmap_walk fails to find the page.
+
+And split_huge_page() will have the same requirements as migrate.c
+already has.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+
+diff --git a/fs/exec.c b/fs/exec.c
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -55,6 +55,7 @@
+ #include <linux/fsnotify.h>
+ #include <linux/fs_struct.h>
+ #include <linux/pipe_fs_i.h>
++#include <linux/rmap.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+@@ -502,7 +503,9 @@ static int shift_arg_pages(struct vm_are
+ 	unsigned long length = old_end - old_start;
+ 	unsigned long new_start = old_start - shift;
+ 	unsigned long new_end = old_end - shift;
++	unsigned long moved_length;
+ 	struct mmu_gather *tlb;
++	struct vm_area_struct *tmp_vma;
+ 
+ 	BUG_ON(new_start > new_end);
+ 
+@@ -514,16 +517,41 @@ static int shift_arg_pages(struct vm_are
+ 		return -EFAULT;
+ 
+ 	/*
++	 * We need to create a fake temporary vma and index it in the
++	 * anon_vma list in order to allow the pages to be reachable
++	 * at all times by the rmap walk for migrate, while
++	 * move_page_tables() is running.
++	 */
++	tmp_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
++	if (!tmp_vma)
++		return -ENOMEM;
++	*tmp_vma = *vma;
++
++	/*
+ 	 * cover the whole range: [new_start, old_end)
+ 	 */
+-	vma_adjust(vma, new_start, old_end, vma->vm_pgoff, NULL);
++	tmp_vma->vm_start = new_start;
++
++	/*
++	 * The tmp_vma destination of the copy (with the new vm_start)
++	 * has to be at the end of the anon_vma list for the rmap_walk
++	 * to find the moved pages at all times.
++	 */
++	anon_vma_link(tmp_vma);
+ 
+ 	/*
+ 	 * move the page tables downwards, on failure we rely on
+ 	 * process cleanup to remove whatever mess we made.
+ 	 */
+-	if (length != move_page_tables(vma, old_start,
+-				       vma, new_start, length))
++	moved_length = move_page_tables(vma, old_start,
++					vma, new_start, length);
++
++	vma->vm_start = new_start;
++	/* rmap walk will already find all pages using the new_start */
++	anon_vma_unlink(tmp_vma);
++	kmem_cache_free(vm_area_cachep, tmp_vma);
++
++	if (length != moved_length) 
+ 		return -ENOMEM;
+ 
+ 	lru_add_drain();
+@@ -549,7 +577,7 @@ static int shift_arg_pages(struct vm_are
+ 	/*
+ 	 * shrink the vma to just the new range.
+ 	 */
+-	vma_adjust(vma, new_start, new_end, vma->vm_pgoff, NULL);
++	vma->vm_end = new_end;
+ 
+ 	return 0;
+ }
+
+
+I'll release new THP-23 and THP-23-anon_vma_chain (prerelease is
+already in aa.git but it misses the above bit) soon enough...
