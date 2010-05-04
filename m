@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab0EDJQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 05:16:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37231 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab0EDJQt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 05:16:49 -0400
-Subject: Re: [PATCH] perf: implement recording/reporting per-cpu samples
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arun Sharma <aruns@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-       davem@davemloft.net, fweisbec@gmail.com
-In-Reply-To: <w2u850c51c31005031353x9be8ca7h90c244d64675ce3e@mail.gmail.com>
-References: <20100503203813.GA17886@sharma-home.net>
-	 <1272919356.1642.154.camel@laptop>
-	 <w2u850c51c31005031353x9be8ca7h90c244d64675ce3e@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 04 May 2010 11:16:38 +0200
-Message-ID: <1272964598.5605.133.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1751821Ab0EDJUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 05:20:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8003 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750884Ab0EDJUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 05:20:05 -0400
+Message-ID: <4BDFE6C2.2040601@redhat.com>
+Date: Tue, 04 May 2010 12:20:02 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 16/22] KVM: MMU: Track page fault data in struct vcpu
+References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com> <1272364712-17425-17-git-send-email-joerg.roedel@amd.com> <4BD6DF7C.1090203@redhat.com> <20100503163221.GB28950@amd.com> <4BDFD295.7000702@redhat.com> <20100504091157.GC28950@amd.com>
+In-Reply-To: <20100504091157.GC28950@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-03 at 13:53 -0700, Arun Sharma wrote:
-> On Mon, May 3, 2010 at 1:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > On Mon, 2010-05-03 at 13:38 -0700, Arun Sharma wrote:
-> > > Enable PERF_SAMPLE_CPU by default. Implement --sort cpu.
-> >
-> > Why? The downside is that you unconditionally grow each sample and thus
-> > increase the overhead for something that doesn't make sense for the
-> > normal (task-inherit) case.
-> 
-> In a shared multi-core environment, users want to analyze why their
-> program was slow. In particular, if the code ran slower only on
-> certain CPUs due to interference from other programs or kernel
-> threads, they want to know that.
+On 05/04/2010 12:11 PM, Roedel, Joerg wrote:
+> On Tue, May 04, 2010 at 03:53:57AM -0400, Avi Kivity wrote:
+>    
+>> On 05/03/2010 07:32 PM, Joerg Roedel wrote:
+>>      
+>>> On Tue, Apr 27, 2010 at 03:58:36PM +0300, Avi Kivity wrote:
+>>>
+>>>        
+>>>> So we probably need to upgrade gva_t to a u64.  Please send this as
+>>>> a separate patch, and test on i386 hosts.
+>>>>
+>>>>          
+>>> Are there _any_ regular tests of KVM on i386 hosts? For me this is
+>>> terribly broken (also after I fixed the issue which gave me a
+>>> VMEXIT_INVALID at the first vmrun).
+>>>
+>>>
+>>>        
+>> No, apart from the poor users.  I'll try to set something up using nsvm.
+>>      
+> Ok. I will post an initial fix for the VMEXIT_INVALID bug soon. Apart
+> from that I get a lockdep warning when I try to start a guest. The guest
+> actually boots if it is single-vcpu. SMP guests don't even boot through
+> the BIOS for me.
+>
+>    
 
-But for that you use perf record -a, right? So you record all cpus
-allways -- otherwise there is no telling what was happening to make it
-go slow.
+Strange.  i386 vs x86_64 shouldn't have that much effect!
 
-> But that's just our use case. The patch is mostly about --sort cpu
-> option. If you want to drop the part that enables PERF_SAMPLE_CPU by
-> default, that's fine by me.
-
-Right, it would be very nice if we can avoid growing the default sample
-size. Also, your changelog needs work, please explain the full usecase
-that goes with this feature.
-
-Explain the thing you're wanting to measure, explain the implementation
-and maybe give a short example.
+-- 
+error compiling committee.c: too many arguments to function
 
