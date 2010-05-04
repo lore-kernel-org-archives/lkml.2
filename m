@@ -1,163 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760022Ab0EDVpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 17:45:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56893 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753520Ab0EDVo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 17:44:59 -0400
-Date: Wed, 5 May 2010 00:39:36 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, Arnd Bergmann <arnd@relay.de.ibm.com>,
-       Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH tip/core/rcu 43/48] vhost: add __rcu annotations
-Message-ID: <20100504213936.GB3568@redhat.com>
-References: <20100504201934.GA19234@linux.vnet.ibm.com> <1273004398-19760-43-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273004398-19760-43-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S934210Ab0EDVt0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 17:49:26 -0400
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:32805 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934197Ab0EDVtZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 17:49:25 -0400
+Subject: [PATCH] TPM: ACPI/PNP dependency removal
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org
+Content-Type: text/plain
+Organization: IBM
+Date: Tue, 04 May 2010 18:49:20 -0300
+Message-Id: <1273009760.3532.41.camel@blackbox.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 04, 2010 at 01:19:53PM -0700, Paul E. McKenney wrote:
-> From: Arnd Bergmann <arnd@relay.de.ibm.com>
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> ---
->  drivers/vhost/net.c   |    6 +++---
->  drivers/vhost/vhost.c |   12 ++++++------
->  drivers/vhost/vhost.h |    4 ++--
->  3 files changed, 11 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 9777583..36e8dec 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -364,7 +364,7 @@ static void vhost_net_disable_vq(struct vhost_net *n,
->  static void vhost_net_enable_vq(struct vhost_net *n,
->  				struct vhost_virtqueue *vq)
->  {
-> -	struct socket *sock = vq->private_data;
-> +	struct socket *sock = rcu_dereference(vq->private_data);
+This patch pushes the ACPI dependency into the device driver code
+itself. Now, even without ACPI/PNP enabled, the device can be registered
+using the TIS specified memory space. This will however result in the
+lack of access to the bios event log, being the only implication of such
+ACPI removal.
 
-This should be rcu_dereference_const as well: it is called
-with vq mutex held.
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+---
+ drivers/char/tpm/Kconfig   |   14 +++++++++++---
+ drivers/char/tpm/tpm_tis.c |   42 ++++++++++++++++++++++--------------------
+ 2 files changed, 33 insertions(+), 23 deletions(-)
 
->  	if (!sock)
->  		return;
->  	if (vq == n->vqs + VHOST_NET_VQ_TX) {
-> @@ -380,7 +380,7 @@ static struct socket *vhost_net_stop_vq(struct vhost_net *n,
->  	struct socket *sock;
->  
->  	mutex_lock(&vq->mutex);
-> -	sock = vq->private_data;
-> +	sock = rcu_dereference_const(vq->private_data);
->  	vhost_net_disable_vq(n, vq);
->  	rcu_assign_pointer(vq->private_data, NULL);
->  	mutex_unlock(&vq->mutex);
-> @@ -518,7 +518,7 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
->  	}
->  
->  	/* start polling new socket */
-> -	oldsock = vq->private_data;
-> +	oldsock = rcu_dereference_const(vq->private_data);
->  	if (sock == oldsock)
->  		goto done;
->  
-> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-> index e69d238..fc9bde2 100644
-> --- a/drivers/vhost/vhost.c
-> +++ b/drivers/vhost/vhost.c
-> @@ -180,7 +180,7 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
->  	vhost_dev_cleanup(dev);
->  
->  	memory->nregions = 0;
-> -	dev->memory = memory;
-> +	rcu_assign_pointer(dev->memory, memory);
+diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
+index f5fc64f..0a9ec0b 100644
+--- a/drivers/char/tpm/Kconfig
++++ b/drivers/char/tpm/Kconfig
+@@ -17,20 +17,28 @@ menuconfig TCG_TPM
+ 	  obtained at: <http://sourceforge.net/projects/trousers>.  To 
+ 	  compile this driver as a module, choose M here; the module 
+ 	  will be called tpm. If unsure, say N.
+-	  Note: For more TPM drivers enable CONFIG_PNP, CONFIG_ACPI
+-	  and CONFIG_PNPACPI.
++	  Note: For more TPM drivers and BIOS LOG access enable 
++	  CONFIG_PNP, CONFIG_ACPI and CONFIG_PNPACPI.
+ 
+ if TCG_TPM
+ 
+ config TCG_TIS
+ 	tristate "TPM Interface Specification 1.2 Interface"
+-	depends on PNP
+ 	---help---
+ 	  If you have a TPM security chip that is compliant with the
+ 	  TCG TIS 1.2 TPM specification say Yes and it will be accessible
+ 	  from within Linux.  To compile this driver as a module, choose
+ 	  M here; the module will be called tpm_tis.
+ 
++config TCG_BIOS_LOG
++	bool "TPM bios mesurement log"
++	depends on X86
++	select ACPI
++	---help---
++	  ACPI is required for access to bios measurements lists and therefore
++	  to validate the PCR[0] value. So say Yes in case you want this
++	  feature and, consequently, ACPI will be enabled.
++
+ config TCG_NSC
+ 	tristate "National Semiconductor TPM Interface"
+ 	---help---
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 27e8de4..2423d66 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -597,7 +597,7 @@ out_err:
+ 	tpm_remove_hardware(chip->dev);
+ 	return rc;
+ }
+-
++#ifdef CONFIG_PNP
+ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
+ 				      const struct pnp_device_id *pnp_id)
+ {
+@@ -661,7 +661,7 @@ static struct pnp_driver tis_pnp_driver = {
+ module_param_string(hid, tpm_pnp_tbl[TIS_HID_USR_IDX].id,
+ 		    sizeof(tpm_pnp_tbl[TIS_HID_USR_IDX].id), 0444);
+ MODULE_PARM_DESC(hid, "Set additional specific HID for this driver to probe");
+-
++#endif
+ static int tpm_tis_suspend(struct platform_device *dev, pm_message_t msg)
+ {
+ 	return tpm_pm_suspend(&dev->dev, msg);
+@@ -688,21 +688,21 @@ MODULE_PARM_DESC(force, "Force device probe rather than using ACPI entry");
+ static int __init init_tis(void)
+ {
+ 	int rc;
+-
+-	if (force) {
+-		rc = platform_driver_register(&tis_drv);
+-		if (rc < 0)
+-			return rc;
+-		if (IS_ERR(pdev=platform_device_register_simple("tpm_tis", -1, NULL, 0)))
+-			return PTR_ERR(pdev);
+-		if((rc=tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0)) != 0) {
+-			platform_device_unregister(pdev);
+-			platform_driver_unregister(&tis_drv);
+-		}
++#ifdef CONFIG_PNP
++	if (!force)
++		return pnp_register_driver(&tis_pnp_driver);
++#endif
++		
++	rc = platform_driver_register(&tis_drv);
++	if (rc < 0)
+ 		return rc;
++	if (IS_ERR(pdev=platform_device_register_simple("tpm_tis", -1, NULL, 0)))
++		return PTR_ERR(pdev);
++	if((rc=tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0)) != 0) {
++		platform_device_unregister(pdev);
++		platform_driver_unregister(&tis_drv);
+ 	}
+-
+-	return pnp_register_driver(&tis_pnp_driver);
++	return rc;
+ }
+ 
+ static void __exit cleanup_tis(void)
+@@ -726,12 +726,14 @@ static void __exit cleanup_tis(void)
+ 		list_del(&i->list);
+ 	}
+ 	spin_unlock(&tis_lock);
+-
+-	if (force) {
+-		platform_device_unregister(pdev);
+-		platform_driver_unregister(&tis_drv);
+-	} else
++#ifdef CONFIG_PNP
++	if (!force) {
+ 		pnp_unregister_driver(&tis_pnp_driver);
++		return;
++	}
++#endif
++	platform_device_unregister(pdev);
++	platform_driver_unregister(&tis_drv);
+ }
+ 
+ module_init(init_tis);
+-- 
+1.6.6.1
 
-This is called when there can be no active readers, so the smp_wmb
-inside rcu_assign_pointer isn't really needed.
-Use RCU_INIT_POINTER or something like this instead?
 
->  	return 0;
->  }
->  
-> @@ -212,8 +212,8 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
->  		fput(dev->log_file);
->  	dev->log_file = NULL;
->  	/* No one will access memory at this point */
-> -	kfree(dev->memory);
-> -	dev->memory = NULL;
-> +	kfree(rcu_dereference_const(dev->memory));
-> +	rcu_assign_pointer(dev->memory, NULL);
 
-Same here.
-
->  	if (dev->mm)
->  		mmput(dev->mm);
->  	dev->mm = NULL;
-> @@ -294,14 +294,14 @@ static int vq_access_ok(unsigned int num,
->  /* Caller should have device mutex but not vq mutex */
->  int vhost_log_access_ok(struct vhost_dev *dev)
->  {
-> -	return memory_access_ok(dev, dev->memory, 1);
-> +	return memory_access_ok(dev, rcu_dereference_const(dev->memory), 1);
->  }
->  
->  /* Verify access for write logging. */
->  /* Caller should have vq mutex and device mutex */
->  static int vq_log_access_ok(struct vhost_virtqueue *vq, void __user *log_base)
->  {
-> -	return vq_memory_access_ok(log_base, vq->dev->memory,
-> +	return vq_memory_access_ok(log_base, rcu_dereference(vq->dev->memory),
-
-rcu_dereference_const. This is called under vq mutex and the comment
-above it says as much.
-
->  			    vhost_has_feature(vq->dev, VHOST_F_LOG_ALL)) &&
->  		(!vq->log_used || log_access_ok(log_base, vq->log_addr,
->  					sizeof *vq->used +
-> @@ -342,7 +342,7 @@ static long vhost_set_memory(struct vhost_dev *d, struct vhost_memory __user *m)
->  
->  	if (!memory_access_ok(d, newmem, vhost_has_feature(d, VHOST_F_LOG_ALL)))
->  		return -EFAULT;
-> -	oldmem = d->memory;
-> +	oldmem = rcu_dereference_const(d->memory);
->  	rcu_assign_pointer(d->memory, newmem);
->  	synchronize_rcu();
->  	kfree(oldmem);
-> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> index 44591ba..240396c 100644
-> --- a/drivers/vhost/vhost.h
-> +++ b/drivers/vhost/vhost.h
-> @@ -92,7 +92,7 @@ struct vhost_virtqueue {
->  	 * work item execution acts instead of rcu_read_lock() and the end of
->  	 * work item execution acts instead of rcu_read_lock().
->  	 * Writers use virtqueue mutex. */
-> -	void *private_data;
-> +	void __rcu *private_data;
->  	/* Log write descriptors */
->  	void __user *log_base;
->  	struct vhost_log log[VHOST_NET_MAX_SG];
-> @@ -102,7 +102,7 @@ struct vhost_dev {
->  	/* Readers use RCU to access memory table pointer
->  	 * log base pointer and features.
->  	 * Writers use mutex below.*/
-> -	struct vhost_memory *memory;
-> +	struct vhost_memory __rcu *memory;
->  	struct mm_struct *mm;
->  	struct mutex mutex;
->  	unsigned acked_features;
-> -- 
-> 1.7.0
