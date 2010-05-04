@@ -1,218 +1,500 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759973Ab0EDNsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 09:48:15 -0400
-Received: from ext-fwsm-phx2.redhat.com ([209.132.183.252]:29283 "EHLO
-	test1244.test.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753742Ab0EDNsL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 09:48:11 -0400
-X-Greylist: delayed 17399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 May 2010 09:48:08 EDT
-From: Josef Bacik <josef@redhat.com>
-To: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org
-Cc: Josef Bacik <josef@redhat.com>
-Subject: [PATCH 2/3] direct-io: add a hook for the fs to provide its own submit_bio function
-Date: Mon,  3 May 2010 12:11:04 -0400
-Message-Id: <1272903065-1974-2-git-send-email-josef@redhat.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1272903065-1974-1-git-send-email-josef@redhat.com>
-References: <1272903065-1974-1-git-send-email-josef@redhat.com>
+	id S1760003Ab0EDNsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 09:48:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33307 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759977Ab0EDNsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 09:48:16 -0400
+From: Tejun Heo <tj@kernel.org>
+To: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Dimitri Sivanich <sivanich@sgi.com>
+Subject: [PATCH 1/4] cpu_stop: implement stop_cpu[s]()
+Date: Tue,  4 May 2010 15:47:41 +0200
+Message-Id: <1272980864-27235-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1272980864-27235-1-git-send-email-tj@kernel.org>
+References: <1272980864-27235-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 May 2010 13:47:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because BTRFS can do RAID and such, we need our own submit hook so we can setup
-the bio's in the correct fashion, and handle checksum errors properly.  So there
-are a few changes here
+Implement a simplistic per-cpu maximum priority cpu monopolization
+mechanism.  A non-sleeping callback can be scheduled to run on one or
+multiple cpus with maximum priority monopolozing those cpus.  This is
+primarily to replace and unify RT workqueue usage in stop_machine and
+scheduler migration_thread which currently is serving multiple
+purposes.
 
-1) The submit_io hook.  This is straightforward, just call this instead of
-submit_bio.
+Four functions are provided - stop_one_cpu(), stop_one_cpu_nowait(),
+stop_cpus() and try_stop_cpus().
 
-2) Honor the boundary flag a little more specifically.  BTRFS needs to supply
-the _logical_ offset to the map_bh in it's get_block function so when we go to
-submit the IO we can look up the right checksum information.  In order for this
-to work out, we need to make sure each extent we map through get_block gets sent
-individually.  The direct IO code tries to merge things together that appear to
-be side by side, but since we are using logical offsets, thats always going to
-be the case.  So instead of clearing dio->boundary when we create a new bio,
-save it in a local variable, and submit the io if boundary was set.
+This is to allow clean sharing of resources among stop_cpu and all the
+migration thread users.  One stopper thread per cpu is created which
+is currently named "stopper/CPU".  This will eventually replace the
+migration thread and take on its name.
 
-3) Allow the fs to return -ENOTBLK for reads.  Usually this has only worked for
-writes, since writes can fallback onto buffered IO.  But BTRFS needs the option
-of falling back on buffered IO if it encounters a compressed extent, since we
-need to read the entire extent in and decompress it.  So if we get -ENOTBLK back
-from get_block we'll return back and fallback on buffered just like the write
-case.
+* This facility was originally named cpuhog and lived in separate
+  files but Peter Zijlstra nacked the name and thus got renamed to
+  cpu_stop and moved into stop_machine.c.
 
-I've tested these changes with fsx and everything seems to work.  Thanks,
+* Better reporting of preemption leak as per Peter's suggestion.
 
-Signed-off-by: Josef Bacik <josef@redhat.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Dimitri Sivanich <sivanich@sgi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- fs/direct-io.c     |   32 ++++++++++++++++++++++++++------
- include/linux/fs.h |   19 ++++++++++++++++---
- 2 files changed, 42 insertions(+), 9 deletions(-)
+ include/linux/stop_machine.h |   39 ++++-
+ kernel/stop_machine.c        |  372 +++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 402 insertions(+), 9 deletions(-)
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index e82adc2..3d174df 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -82,6 +82,7 @@ struct dio {
- 	int reap_counter;		/* rate limit reaping */
- 	get_block_t *get_block;		/* block mapping function */
- 	dio_iodone_t *end_io;		/* IO completion function */
-+	dio_submit_t *submit_io;	/* IO submition function */
- 	sector_t final_block_in_bio;	/* current final block in bio + 1 */
- 	sector_t next_block_for_io;	/* next block to be put under IO,
- 					   in dio_blocks units */
-@@ -300,6 +301,17 @@ static void dio_bio_end_io(struct bio *bio, int error)
- 	spin_unlock_irqrestore(&dio->bio_lock, flags);
- }
- 
-+void dio_end_io(struct bio *bio, int error)
-+{
-+	struct dio *dio = bio->bi_private;
+diff --git a/include/linux/stop_machine.h b/include/linux/stop_machine.h
+index baba3a2..efcbd6c 100644
+--- a/include/linux/stop_machine.h
++++ b/include/linux/stop_machine.h
+@@ -1,15 +1,46 @@
+ #ifndef _LINUX_STOP_MACHINE
+ #define _LINUX_STOP_MACHINE
+-/* "Bogolock": stop the entire machine, disable interrupts.  This is a
+-   very heavy lock, which is equivalent to grabbing every spinlock
+-   (and more).  So the "read" side to such a lock is anything which
+-   disables preeempt. */
 +
-+	if (dio->is_async)
-+		dio_bio_end_aio(bio, error);
-+	else
-+		dio_bio_end_io(bio, error);
-+}
-+EXPORT_SYMBOL(dio_end_io);
+ #include <linux/cpu.h>
+ #include <linux/cpumask.h>
++#include <linux/list.h>
+ #include <asm/system.h>
+ 
+ #if defined(CONFIG_STOP_MACHINE) && defined(CONFIG_SMP)
+ 
++/*
++ * stop_cpu[s]() is simplistic per-cpu maximum priority cpu
++ * monopolization mechanism.  The caller can specify a non-sleeping
++ * function to be executed on a single or multiple cpus preempting all
++ * other processes and monopolizing those cpus until it finishes.
++ *
++ * Resources for this mechanism are preallocated when a cpu is brought
++ * up and requests are guaranteed to be served as long as the target
++ * cpus are online.
++ */
 +
- static int
- dio_bio_alloc(struct dio *dio, struct block_device *bdev,
- 		sector_t first_sector, int nr_vecs)
-@@ -340,7 +352,10 @@ static void dio_bio_submit(struct dio *dio)
- 	if (dio->is_async && dio->rw == READ)
- 		bio_set_pages_dirty(bio);
- 
--	submit_bio(dio->rw, bio);
-+	if (!dio->submit_io)
-+		submit_bio(dio->rw, bio);
-+	else
-+		dio->submit_io(dio->rw, bio, dio->inode);
- 
- 	dio->bio = NULL;
- 	dio->boundary = 0;
-@@ -600,6 +615,7 @@ static int dio_bio_add_page(struct dio *dio)
++typedef int (*cpu_stop_fn_t)(void *arg);
++
++struct cpu_stop_work {
++	struct list_head	list;		/* cpu_stopper->works */
++	cpu_stop_fn_t		fn;
++	void			*arg;
++	struct cpu_stop_done	*done;
++};
++
++int stop_one_cpu(unsigned int cpu, cpu_stop_fn_t fn, void *arg);
++void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
++			 struct cpu_stop_work *work_buf);
++int stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg);
++int try_stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg);
++
++/*
++ * stop_machine "Bogolock": stop the entire machine, disable
++ * interrupts.  This is a very heavy lock, which is equivalent to
++ * grabbing every spinlock (and more).  So the "read" side to such a
++ * lock is anything which disables preeempt.
++ */
++
+ /**
+  * stop_machine: freeze the machine on all CPUs and run this function
+  * @fn: the function to run
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 9bb9fb1..7e3f918 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -1,17 +1,379 @@
+-/* Copyright 2008, 2005 Rusty Russell rusty@rustcorp.com.au IBM Corporation.
+- * GPL v2 and any later version.
++/*
++ * kernel/stop_machine.c
++ *
++ * Copyright (C) 2008, 2005	IBM Corporation.
++ * Copyright (C) 2008, 2005	Rusty Russell rusty@rustcorp.com.au
++ * Copyright (C) 2010		SUSE Linux Products GmbH
++ * Copyright (C) 2010		Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2 and any later version.
   */
- static int dio_send_cur_page(struct dio *dio)
- {
-+	int boundary = dio->boundary;
- 	int ret = 0;
++#include <linux/completion.h>
+ #include <linux/cpu.h>
+-#include <linux/err.h>
++#include <linux/init.h>
+ #include <linux/kthread.h>
+ #include <linux/module.h>
++#include <linux/percpu.h>
+ #include <linux/sched.h>
+ #include <linux/stop_machine.h>
+-#include <linux/syscalls.h>
+ #include <linux/interrupt.h>
++#include <linux/kallsyms.h>
  
- 	if (dio->bio) {
-@@ -612,7 +628,7 @@ static int dio_send_cur_page(struct dio *dio)
- 		 * Submit now if the underlying fs is about to perform a
- 		 * metadata read
- 		 */
--		if (dio->boundary)
-+		if (boundary)
- 			dio_bio_submit(dio);
- 	}
- 
-@@ -629,6 +645,8 @@ static int dio_send_cur_page(struct dio *dio)
- 			ret = dio_bio_add_page(dio);
- 			BUG_ON(ret != 0);
- 		}
-+	} else if (boundary) {
-+		dio_bio_submit(dio);
- 	}
- out:
- 	return ret;
-@@ -935,7 +953,7 @@ static ssize_t
- direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode, 
- 	const struct iovec *iov, loff_t offset, unsigned long nr_segs, 
- 	unsigned blkbits, get_block_t get_block, dio_iodone_t end_io,
--	struct dio *dio)
-+	dio_submit_t submit_io, struct dio *dio)
- {
- 	unsigned long user_addr; 
- 	unsigned long flags;
-@@ -952,6 +970,7 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
- 
- 	dio->get_block = get_block;
- 	dio->end_io = end_io;
-+	dio->submit_io = submit_io;
- 	dio->final_block_in_bio = -1;
- 	dio->next_block_for_io = -1;
- 
-@@ -1008,7 +1027,7 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
- 		}
- 	} /* end iovec loop */
- 
--	if (ret == -ENOTBLK && (rw & WRITE)) {
-+	if (ret == -ENOTBLK) {
- 		/*
- 		 * The remaining part of the request will be
- 		 * be handled by buffered I/O when we return
-@@ -1110,7 +1129,7 @@ ssize_t
- __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
- 	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
--	int flags)
-+	dio_submit_t submit_io,	int flags)
- {
- 	int seg;
- 	size_t size;
-@@ -1197,7 +1216,8 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 		(end > i_size_read(inode)));
- 
- 	retval = direct_io_worker(rw, iocb, inode, iov, offset,
--				nr_segs, blkbits, get_block, end_io, dio);
-+				nr_segs, blkbits, get_block, end_io,
-+				submit_io, dio);
- 
- 	/*
- 	 * In case of error extending write may have instantiated a few
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 44f35ae..d56f0be 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2250,10 +2250,14 @@ static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
- #endif
- 
- #ifdef CONFIG_BLOCK
-+struct bio;
-+typedef void (dio_submit_t)(int rw, struct bio *bio, struct inode *inode);
-+void dio_end_io(struct bio *bio, int error);
+ #include <asm/atomic.h>
+-#include <asm/uaccess.h>
 +
- ssize_t __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	struct block_device *bdev, const struct iovec *iov, loff_t offset,
- 	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
--	int lock_type);
-+	dio_submit_t submit_io,	int lock_type);
- 
- enum {
- 	/* need locking between buffered and direct access */
-@@ -2269,7 +2273,7 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
- 	dio_iodone_t end_io)
- {
- 	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
--				    nr_segs, get_block, end_io,
-+				    nr_segs, get_block, end_io, NULL,
- 				    DIO_LOCKING | DIO_SKIP_HOLES);
- }
- 
-@@ -2279,7 +2283,16 @@ static inline ssize_t blockdev_direct_IO_no_locking(int rw, struct kiocb *iocb,
- 	dio_iodone_t end_io)
- {
- 	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
--				nr_segs, get_block, end_io, 0);
-+				    nr_segs, get_block, end_io, NULL, 0);
++/*
++ * Structure to determine completion condition and record errors.  May
++ * be shared by works on different cpus.
++ */
++struct cpu_stop_done {
++	atomic_t		nr_todo;	/* nr left to execute */
++	bool			executed;	/* actually executed? */
++	int			ret;		/* collected return value */
++	struct completion	completion;	/* fired if nr_todo reaches 0 */
++};
++
++/* the actual stopper, one per every possible cpu, enabled on online cpus */
++struct cpu_stopper {
++	spinlock_t		lock;
++	struct list_head	works;		/* list of pending works */
++	struct task_struct	*thread;	/* stopper thread */
++	bool			enabled;	/* is this stopper enabled? */
++};
++
++static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
++
++static void cpu_stop_init_done(struct cpu_stop_done *done, unsigned int nr_todo)
++{
++	memset(done, 0, sizeof(*done));
++	atomic_set(&done->nr_todo, nr_todo);
++	init_completion(&done->completion);
 +}
 +
-+static inline ssize_t blockdev_direct_IO_own_submit(int rw, struct kiocb *iocb,
-+	struct inode *inode, struct block_device *bdev, const struct iovec *iov,
-+	loff_t offset, unsigned long nr_segs, get_block_t get_block,
-+	dio_submit_t submit_io)
++/* signal completion unless @done is NULL */
++static void cpu_stop_signal_done(struct cpu_stop_done *done, bool executed)
 +{
-+	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
-+				    nr_segs, get_block, NULL, submit_io, 0);
- }
- #endif
++	if (done) {
++		if (executed)
++			done->executed = true;
++		if (atomic_dec_and_test(&done->nr_todo))
++			complete(&done->completion);
++	}
++}
++
++/* queue @work to @stopper.  if offline, @work is completed immediately */
++static void cpu_stop_queue_work(struct cpu_stopper *stopper,
++				struct cpu_stop_work *work)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&stopper->lock, flags);
++
++	if (stopper->enabled) {
++		list_add_tail(&work->list, &stopper->works);
++		wake_up_process(stopper->thread);
++	} else
++		cpu_stop_signal_done(work->done, false);
++
++	spin_unlock_irqrestore(&stopper->lock, flags);
++}
++
++/**
++ * stop_one_cpu - stop a cpu
++ * @cpu: cpu to stop
++ * @fn: function to execute
++ * @arg: argument to @fn
++ *
++ * Execute @fn(@arg) on @cpu.  @fn is run in a process context with
++ * the highest priority preempting any task on the cpu and
++ * monopolizing it.  This function returns after the execution is
++ * complete.
++ *
++ * This function doesn't guarantee @cpu stays online till @fn
++ * completes.  If @cpu goes down in the middle, execution may happen
++ * partially or fully on different cpus.  @fn should either be ready
++ * for that or the caller should ensure that @cpu stays online until
++ * this function completes.
++ *
++ * CONTEXT:
++ * Might sleep.
++ *
++ * RETURNS:
++ * -ENOENT if @fn(@arg) was not executed because @cpu was offline;
++ * otherwise, the return value of @fn.
++ */
++int stop_one_cpu(unsigned int cpu, cpu_stop_fn_t fn, void *arg)
++{
++	struct cpu_stop_done done;
++	struct cpu_stop_work work = { .fn = fn, .arg = arg, .done = &done };
++
++	cpu_stop_init_done(&done, 1);
++	cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu), &work);
++	wait_for_completion(&done.completion);
++	return done.executed ? done.ret : -ENOENT;
++}
++
++/**
++ * stop_one_cpu_nowait - stop a cpu but don't wait for completion
++ * @cpu: cpu to stop
++ * @fn: function to execute
++ * @arg: argument to @fn
++ *
++ * Similar to stop_one_cpu() but doesn't wait for completion.  The
++ * caller is responsible for ensuring @work_buf is currently unused
++ * and will remain untouched until stopper starts executing @fn.
++ *
++ * CONTEXT:
++ * Don't care.
++ */
++void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
++			struct cpu_stop_work *work_buf)
++{
++	*work_buf = (struct cpu_stop_work){ .fn = fn, .arg = arg, };
++	cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu), work_buf);
++}
++
++/* static data for stop_cpus */
++static DEFINE_MUTEX(stop_cpus_mutex);
++static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
++
++int __stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
++{
++	struct cpu_stop_work *work;
++	struct cpu_stop_done done;
++	unsigned int cpu;
++
++	/* initialize works and done */
++	for_each_cpu(cpu, cpumask) {
++		work = &per_cpu(stop_cpus_work, cpu);
++		work->fn = fn;
++		work->arg = arg;
++		work->done = &done;
++	}
++	cpu_stop_init_done(&done, cpumask_weight(cpumask));
++
++	/*
++	 * Disable preemption while queueing to avoid getting
++	 * preempted by a stopper which might wait for other stoppers
++	 * to enter @fn which can lead to deadlock.
++	 */
++	preempt_disable();
++	for_each_cpu(cpu, cpumask)
++		cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu),
++				    &per_cpu(stop_cpus_work, cpu));
++	preempt_enable();
++
++	wait_for_completion(&done.completion);
++	return done.executed ? done.ret : -ENOENT;
++}
++
++/**
++ * stop_cpus - stop multiple cpus
++ * @cpumask: cpus to stop
++ * @fn: function to execute
++ * @arg: argument to @fn
++ *
++ * Execute @fn(@arg) on online cpus in @cpumask.  On each target cpu,
++ * @fn is run in a process context with the highest priority
++ * preempting any task on the cpu and monopolizing it.  This function
++ * returns after all executions are complete.
++ *
++ * This function doesn't guarantee the cpus in @cpumask stay online
++ * till @fn completes.  If some cpus go down in the middle, execution
++ * on the cpu may happen partially or fully on different cpus.  @fn
++ * should either be ready for that or the caller should ensure that
++ * the cpus stay online until this function completes.
++ *
++ * All stop_cpus() calls are serialized making it safe for @fn to wait
++ * for all cpus to start executing it.
++ *
++ * CONTEXT:
++ * Might sleep.
++ *
++ * RETURNS:
++ * -ENOENT if @fn(@arg) was not executed at all because all cpus in
++ * @cpumask were offline; otherwise, 0 if all executions of @fn
++ * returned 0, any non zero return value if any returned non zero.
++ */
++int stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
++{
++	int ret;
++
++	/* static works are used, process one request at a time */
++	mutex_lock(&stop_cpus_mutex);
++	ret = __stop_cpus(cpumask, fn, arg);
++	mutex_unlock(&stop_cpus_mutex);
++	return ret;
++}
++
++/**
++ * try_stop_cpus - try to stop multiple cpus
++ * @cpumask: cpus to stop
++ * @fn: function to execute
++ * @arg: argument to @fn
++ *
++ * Identical to stop_cpus() except that it fails with -EAGAIN if
++ * someone else is already using the facility.
++ *
++ * CONTEXT:
++ * Might sleep.
++ *
++ * RETURNS:
++ * -EAGAIN if someone else is already stopping cpus, -ENOENT if
++ * @fn(@arg) was not executed at all because all cpus in @cpumask were
++ * offline; otherwise, 0 if all executions of @fn returned 0, any non
++ * zero return value if any returned non zero.
++ */
++int try_stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
++{
++	int ret;
++
++	/* static works are used, process one request at a time */
++	if (!mutex_trylock(&stop_cpus_mutex))
++		return -EAGAIN;
++	ret = __stop_cpus(cpumask, fn, arg);
++	mutex_unlock(&stop_cpus_mutex);
++	return ret;
++}
++
++static int cpu_stopper_thread(void *data)
++{
++	struct cpu_stopper *stopper = data;
++	struct cpu_stop_work *work;
++	int ret;
++
++repeat:
++	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
++
++	if (kthread_should_stop()) {
++		__set_current_state(TASK_RUNNING);
++		return 0;
++	}
++
++	work = NULL;
++	spin_lock_irq(&stopper->lock);
++	if (!list_empty(&stopper->works)) {
++		work = list_first_entry(&stopper->works,
++					struct cpu_stop_work, list);
++		list_del_init(&work->list);
++	}
++	spin_unlock_irq(&stopper->lock);
++
++	if (work) {
++		cpu_stop_fn_t fn = work->fn;
++		void *arg = work->arg;
++		struct cpu_stop_done *done = work->done;
++		char ksym_buf[KSYM_NAME_LEN];
++
++		__set_current_state(TASK_RUNNING);
++
++		/* cpu stop callbacks are not allowed to sleep */
++		preempt_disable();
++
++		ret = fn(arg);
++		if (ret)
++			done->ret = ret;
++
++		/* restore preemption and check it's still balanced */
++		preempt_enable();
++		WARN_ONCE(preempt_count(),
++			  "cpu_stop: %s(%p) leaked preempt count\n",
++			  kallsyms_lookup((unsigned long)fn, NULL, NULL, NULL,
++					  ksym_buf), arg);
++
++		cpu_stop_signal_done(done, true);
++	} else
++		schedule();
++
++	goto repeat;
++}
++
++/* manage stopper for a cpu, mostly lifted from sched migration thread mgmt */
++static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
++					   unsigned long action, void *hcpu)
++{
++	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
++	unsigned int cpu = (unsigned long)hcpu;
++	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
++	struct cpu_stop_work *work;
++	struct task_struct *p;
++
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_UP_PREPARE:
++		BUG_ON(stopper->thread || stopper->enabled ||
++		       !list_empty(&stopper->works));
++		p = kthread_create(cpu_stopper_thread, stopper, "stopper/%d",
++				   cpu);
++		if (IS_ERR(p))
++			return NOTIFY_BAD;
++		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
++		get_task_struct(p);
++		stopper->thread = p;
++		break;
++
++	case CPU_ONLINE:
++		kthread_bind(stopper->thread, cpu);
++		/* strictly unnecessary, as first user will wake it */
++		wake_up_process(stopper->thread);
++		/* mark enabled */
++		spin_lock_irq(&stopper->lock);
++		stopper->enabled = true;
++		spin_unlock_irq(&stopper->lock);
++		break;
++
++#ifdef CONFIG_HOTPLUG_CPU
++	case CPU_UP_CANCELED:
++	case CPU_DEAD:
++		/* kill the stopper */
++		kthread_stop(stopper->thread);
++		/* drain remaining works */
++		spin_lock_irq(&stopper->lock);
++		list_for_each_entry(work, &stopper->works, list)
++			cpu_stop_signal_done(work->done, false);
++		stopper->enabled = false;
++		spin_unlock_irq(&stopper->lock);
++		/* release the stopper */
++		put_task_struct(stopper->thread);
++		stopper->thread = NULL;
++		break;
++#endif
++	}
++
++	return NOTIFY_OK;
++}
++
++/*
++ * Give it a higher priority so that cpu stopper is available to other
++ * cpu notifiers.  It currently shares the same priority as sched
++ * migration_notifier.
++ */
++static struct notifier_block __cpuinitdata cpu_stop_cpu_notifier = {
++	.notifier_call	= cpu_stop_cpu_callback,
++	.priority	= 10,
++};
++
++static int __init cpu_stop_init(void)
++{
++	void *bcpu = (void *)(long)smp_processor_id();
++	unsigned int cpu;
++	int err;
++
++	for_each_possible_cpu(cpu) {
++		struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
++
++		spin_lock_init(&stopper->lock);
++		INIT_LIST_HEAD(&stopper->works);
++	}
++
++	/* start one for the boot cpu */
++	err = cpu_stop_cpu_callback(&cpu_stop_cpu_notifier, CPU_UP_PREPARE,
++				    bcpu);
++	BUG_ON(err == NOTIFY_BAD);
++	cpu_stop_cpu_callback(&cpu_stop_cpu_notifier, CPU_ONLINE, bcpu);
++	register_cpu_notifier(&cpu_stop_cpu_notifier);
++
++	return 0;
++}
++early_initcall(cpu_stop_init);
  
+ /* This controls the threads on each CPU. */
+ enum stopmachine_state {
 -- 
-1.6.6.1
+1.6.4.2
 
