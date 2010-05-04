@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933977Ab0EDU1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:27:24 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:52347 "EHLO e9.ny.us.ibm.com"
+	id S933828Ab0EDU0U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:26:20 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52349 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933770Ab0EDUUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 16:20:17 -0400
+	id S933772Ab0EDUUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 16:20:18 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 09/48] rcu: rename rcutiny rcu_ctrlblk to rcu_sched_ctrlblk
-Date: Tue,  4 May 2010 13:19:19 -0700
-Message-Id: <1273004398-19760-9-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 02/48] rcu: substitute set_need_resched for sending resched IPIs
+Date: Tue,  4 May 2010 13:19:12 -0700
+Message-Id: <1273004398-19760-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100504201934.GA19234@linux.vnet.ibm.com>
 References: <20100504201934.GA19234@linux.vnet.ibm.com>
@@ -24,58 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make naming line up in preparation for CONFIG_TINY_PREEMPT_RCU.
+This patch adds a check to __rcu_pending() that does a local
+set_need_resched() if the current CPU is holding up the current grace
+period and if force_quiescent_state() will be called soon.  The goal is
+to reduce the probability that force_quiescent_state() will need to do
+smp_send_reschedule(), which sends an IPI and is therefore more expensive
+on most architectures.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutiny.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+ kernel/rcutree.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 272c6d2..d9f8a62 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -44,9 +44,9 @@ struct rcu_ctrlblk {
- };
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 3ec8160..e54c123 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1499,6 +1499,16 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
  
- /* Definition for rcupdate control block. */
--static struct rcu_ctrlblk rcu_ctrlblk = {
--	.donetail	= &rcu_ctrlblk.rcucblist,
--	.curtail	= &rcu_ctrlblk.rcucblist,
-+static struct rcu_ctrlblk rcu_sched_ctrlblk = {
-+	.donetail	= &rcu_sched_ctrlblk.rcucblist,
-+	.curtail	= &rcu_sched_ctrlblk.rcucblist,
- };
- 
- static struct rcu_ctrlblk rcu_bh_ctrlblk = {
-@@ -108,7 +108,8 @@ static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
-  */
- void rcu_sched_qs(int cpu)
- {
--	if (rcu_qsctr_help(&rcu_ctrlblk) + rcu_qsctr_help(&rcu_bh_ctrlblk))
-+	if (rcu_qsctr_help(&rcu_sched_ctrlblk) +
-+	    rcu_qsctr_help(&rcu_bh_ctrlblk))
- 		raise_softirq(RCU_SOFTIRQ);
- }
- 
-@@ -173,7 +174,7 @@ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
-  */
- static void rcu_process_callbacks(struct softirq_action *unused)
- {
--	__rcu_process_callbacks(&rcu_ctrlblk);
-+	__rcu_process_callbacks(&rcu_sched_ctrlblk);
- 	__rcu_process_callbacks(&rcu_bh_ctrlblk);
- }
- 
-@@ -221,7 +222,7 @@ static void __call_rcu(struct rcu_head *head,
-  */
- void call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
- {
--	__call_rcu(head, func, &rcu_ctrlblk);
-+	__call_rcu(head, func, &rcu_sched_ctrlblk);
- }
- EXPORT_SYMBOL_GPL(call_rcu);
- 
+ 	/* Is the RCU core waiting for a quiescent state from this CPU? */
+ 	if (rdp->qs_pending) {
++
++		/*
++		 * If force_quiescent_state() coming soon and this CPU
++		 * needs a quiescent state, and this is either RCU-sched
++		 * or RCU-bh, force a local reschedule.
++		 */
++		if (!rdp->preemptable &&
++		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
++				 jiffies))
++			set_need_resched();
+ 		rdp->n_rp_qs_pending++;
+ 		return 1;
+ 	}
 -- 
 1.7.0
 
