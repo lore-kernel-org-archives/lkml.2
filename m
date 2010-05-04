@@ -1,38 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760318Ab0EDWWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 18:22:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59863 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757124Ab0EDWWn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 18:22:43 -0400
-Subject: RE: [Bug #15729] BUG: physmap modprobe & rmmod
-From: David Woodhouse <dwmw2@infradead.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	id S934429Ab0EDWXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 18:23:11 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43719 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933047Ab0EDWXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 18:23:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [Bug #15729] BUG: physmap modprobe & rmmod
+Date: Wed, 5 May 2010 00:24:15 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-In-Reply-To: <0D753D10438DA54287A00B0270842697636EB83FB2@AUSP01VMBX24.collaborationhost.net>
-References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera>
-	 <8VO9AsMlpMD.A.-m.4IJ4LB@chimera>
-	 <0D753D10438DA54287A00B0270842697636EB83FB2@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 May 2010 23:22:31 +0100
-Message-ID: <1273011751.31892.5700.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+       Hartley Sweeten <hsweeten@visionengravers.com>
+References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera> <8VO9AsMlpMD.A.-m.4IJ4LB@chimera> <4BE09D4A.6040808@oracle.com>
+In-Reply-To: <4BE09D4A.6040808@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Message-Id: <201005050024.15254.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-04 at 17:15 -0500, H Hartley Sweeten wrote:
-> On Tuesday, May 04, 2010 2:21 PM, Rafael J. Wysocki wrote:
+On Wednesday 05 May 2010, Randy Dunlap wrote:
+> On 05/04/10 14:21, Rafael J. Wysocki wrote:
 > > This message has been generated automatically as a part of a summary report
 > > of recent regressions.
 > > 
@@ -50,11 +45,8 @@ On Tue, 2010-05-04 at 17:15 -0500, H Hartley Sweeten wrote:
 > > Handled-By	: Hartley Sweeten <hsweeten@visionengravers.com>
 > > Patch		: https://patchwork.kernel.org/patch/90497/
 > 
-> This patch is not yet in Linus' tree, it is in linux-next.  David?
+> Yes, leave it as open until the patch is merged, please.
 
-Is it a regression? People have been configuring their kernel stupidly
-and then acting surprised when it didn't work for _ages_... what's new?
+Sure (that's the default policy).
 
--- 
-dwmw2
-
+Rafael
