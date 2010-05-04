@@ -1,168 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab0EDGVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 02:21:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32992 "EHLO mga02.intel.com"
+	id S1755690Ab0EDGXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 02:23:13 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59603 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754882Ab0EDGVr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 02:21:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,324,1270450800"; 
-   d="scan'208";a="618652775"
-From: "Pan, Jacob jun" <jacob.jun.pan@intel.com>
-To: Petr Vandrovec <petr@vandrovec.name>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       "Pan, Jacob jun" <jacob.jun.pan@intel.com>
-Date: Mon, 3 May 2010 23:21:44 -0700
-Subject: RE: [PATCH 2.6.34-rcX] Do not expect PCI devices to return zeroes
- in PCIe space
-Thread-Topic: [PATCH 2.6.34-rcX] Do not expect PCI devices to return zeroes
- in PCIe space
-Thread-Index: Acro2Z1v6KFRsr04TkS/xmK5MN+FQgCdiaBQ
-Message-ID: <43F901BD926A4E43B106BF17856F0755A3D633B4@orsmsx508.amr.corp.intel.com>
-References: <20100501025423.GA10671@vana.vc.cvut.cz>
-In-Reply-To: <20100501025423.GA10671@vana.vc.cvut.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755499Ab0EDGXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 02:23:12 -0400
+Date: Tue, 4 May 2010 16:23:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for May 4
+Message-Id: <20100504162305.4a07a18a.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__4_May_2010_16_23_05_+1000_iECEfWSKXCIw70qJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Petr,
+--Signature=_Tue__4_May_2010_16_23_05_+1000_iECEfWSKXCIw70qJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There are other code in the kernel makes similar assumption of accessing pci cfg above 0x100. (but they do not hang in a loop)
-e.g. in drivers/pci/probe.c
-* accesses, or the device is behind a reverse Express bridge.  So we try
- * reading the dword at 0x100 which must either be 0 or a valid extended
- * capability header.
- */
-int pci_cfg_space_size_ext(struct pci_dev *dev)
-{
-	u32 status;
-	int pos = PCI_CFG_SPACE_SIZE;
+Hi all,
 
-	if (pci_read_config_dword(dev, pos, &status) != PCIBIOS_SUCCESSFUL)
-		goto fail;
-	if (status == 0xffffffff)
-		goto fail;
+Changes since 20100503:
 
+Dropped trees: tmio-mmc (long unresolved conflicts and unable to fetch)
+	hwlat (at the maintainer's request)
 
-Back to the problem itself, hpa has suggested a better fix might be using cfg_size for checking in fixed_bar_cap. But we can not use it right now since we have cfg_size set to 0x100 on MRST (due to lack of PCI_CAP_ID_EXP in the PCI shim). I will negotiate with FW guys so that we have the correct return from pci_cfg_space_size() for Moorestown.
+The mem tree gained a conflict against the arm tree.
 
-Until then, your current fix should be good.
+The v4l-dvb tree lost its build failure and conflicts.
 
-Thanks,
+The net tree lost its build failure.
 
-Jacob
-> -----Original Message-----
-> From: Petr Vandrovec [mailto:petr@vandrovec.name]
-> Sent: Friday, April 30, 2010 7:54 PM
-> To: linux-kernel@vger.kernel.org
-> Cc: akpm@linux-foundation.org; Thomas Gleixner; Ingo Molnar; H. Peter
-> Anvin; x86@kernel.org; Pan, Jacob jun; Jesse Barnes
-> Subject: [PATCH 2.6.34-rcX] Do not expect PCI devices to return zeroes
-> in PCIe space
-> 
-> Hello,
->   openSUSE11.3 32bit kernels hang when installed to the VMware's VMs
-> because Moorestown
-> fixed capabilities detection code enters endless loop on Intel's AGP
-> bridges (with
-> device ID=7191).  See https://bugzilla.kernel.org/show_bug.cgi?id=15888
-> for additional
-> details.  arch/x86/pci/mrst.c was introduced after 2.6.33, so only
-> 2.6.34-rcX are
-> affected.
-> 				Thanks,
-> 					Petr Vandrovec
-> 
-> 
-> commit 11a35e56ad8275cbf62882d9c0dc2f17c2b5628b
-> Author: Petr Vandrovec <petr@vandrovec.name>
-> Date:   Fri Apr 30 19:17:43 2010 -0700
-> 
->     Do not expect PCI devices to return zeroes in PCIe space
-> 
->     There is no reason why old pre-PCIe/PCI-X devices should return
-> zeroes when
->     configuration space above 0x100 is accessed.  If these devices
-> decode just
->     low 8 bits of register number, conventional space repeats 15 times
-> in
->     PCIe config space.  And Moorestown parser for fixed bars then can
-> enter
->     endless loop when finding Intel AGP bridge device 0x7191 with
-> secondary
->     latency timer programmed to 0x40 - when such device is encountered,
-> code
->     will enter endless loop of reading registers 0x718 (reading
-> 0x40010100)
->     and 0x400 (reading 0x71918086).
-> 
->     This change adds additional condition to the test: if device
-> id/vendor
->     match first PCIe capability, then device is not really PCIe.  It
-> should
->     not cause any problems: fixed_bar_cap is invoked only on Intel's
-> devices,
->     so only time there is possibilty to have false match would be if
-> first
->     PCIe capability would have ID 0x8086, and even then that address of
->     next capability pointer and capability version will match device ID
-> seems
->     highly unlikely.
-> 
->     This fix unbreaks 32bit 2.6.33+ kernels configured with Moorestown
->     support to boot on AMD rev 10h+ processors under VMware in VMs
-> which
->     lack PCIe support.
-> 
->     Signed-off-by: Petr Vandrovec <petr@vandrovec.name>
-> 
-> diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
-> index 8bf2fcb..cd6c277 100644
-> --- a/arch/x86/pci/mrst.c
-> +++ b/arch/x86/pci/mrst.c
-> @@ -55,12 +55,16 @@ static int fixed_bar_cap(struct pci_bus *bus,
-> unsigned int devfn)
->  {
->  	int pos;
->  	u32 pcie_cap = 0, cap_data;
-> +	u32 devid;
-> 
->  	pos = PCIE_CAP_OFFSET;
-> 
->  	if (!raw_pci_ext_ops)
->  		return 0;
-> 
-> +	if (raw_pci_ops->read(pci_domain_nr(bus), bus->number, devfn, 0,
-> 4, &devid))
-> +		return 0;
-> +
->  	while (pos) {
->  		if (raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
->  					  devfn, pos, 4, &pcie_cap))
-> @@ -69,6 +73,9 @@ static int fixed_bar_cap(struct pci_bus *bus,
-> unsigned int devfn)
->  		if (pcie_cap == 0xffffffff)
->  			return 0;
-> 
-> +		if (pcie_cap == devid && pos == PCIE_CAP_OFFSET)
-> +			return 0;
-> +
->  		if (PCI_EXT_CAP_ID(pcie_cap) == PCI_EXT_CAP_ID_VNDR) {
->  			raw_pci_ext_ops->read(pci_domain_nr(bus), bus-
-> >number,
->  					      devfn, pos + 4, 4, &cap_data);
+The crypto tree lost its conflict but gained another against the arm tree.
 
+The pcmcia tree gained a conflict against the wireless tree.
+
+The usb tree lost its build failure.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 162 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Applying: ar9170: fix for driver-core ABI change
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/for-linus
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Applying: staging: update gfp/slab.h includes
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Applying: arm: update gfp/slab.h includes
+Merging davinci/davinci-next
+Applying: davinci: update gfp/slab.h includes
+Merging i.MX/for-next
+Merging msm/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/Kconfig
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Applying: ocfs2: update gfp/slab.h includes
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+CONFLICT (content): Merge conflict in fs/9p/vfs_super.c
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+CONFLICT (content): Merge conflict in fs/cifs/file.c
+CONFLICT (content): Merge conflict in fs/namei.c
+CONFLICT (content): Merge conflict in fs/nfs/inode.c
+CONFLICT (content): Merge conflict in fs/nfsd/nfs4xdr.c
+CONFLICT (content): Merge conflict in fs/nfsd/vfs.c
+CONFLICT (content): Merge conflict in fs/ufs/inode.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
+CONFLICT (content): Merge conflict in security/tomoyo/realpath.c
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Applying: v4l-dvb: update gfp/slab.h includes
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Applying: acpi: update gfp/slab.h includes
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Applying: kvm: powerpc: use of kzalloc/kfree requires including slab.h
+Merging dlm/next
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/scsi/iscsi_tcp.c
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/libertas_tf/cmd.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/libertas_tf/main=
+.c
+Applying: wireless: update gfp/slab.h includes
+Merging mtd/master
+CONFLICT (content): Merge conflict in drivers/mtd/mtdcore.c
+Applying: mtd: update gfp/slab.h includes
+Merging crypto/master
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+CONFLICT (content): Merge conflict in drivers/net/virtio_net.c
+CONFLICT (content): Merge conflict in include/linux/mod_devicetable.h
+CONFLICT (content): Merge conflict in scripts/mod/file2alias.c
+Merging mmc/next
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in fs/ext3/fsync.c
+CONFLICT (content): Merge conflict in fs/ext4/fsync.c
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+CONFLICT (content): Merge conflict in drivers/net/pcmcia/3c589_cs.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/orinoco/orinoco_=
+cs.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/orinoco/spectrum=
+_cs.c
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Applying: kgdb: update for sysrq handling change
+Applying: kdb: update gfp/slab.h includes
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/dma/Makefile
+CONFLICT (add/add): Merge conflict in drivers/dma/timb_dma.c
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/i915_drv.h
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/r300.c
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+Applying: fsnotify: update gfp/slab.h includes
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging drbd/for-jens
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Applying: vbus: use of kzalloc/kfree requires the include of slab.h
+Applying: vbus: update gfp/slab.h includes
+Merging i7core_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging omap_dss2/for-next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Applying: lockdep: Fix redundant_hardirqs_on incremented with irqs enabled
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+CONFLICT (content): Merge conflict in arch/cris/arch-v10/drivers/ds1302.c
+CONFLICT (content): Merge conflict in drivers/block/pktcdvd.c
+Merging quilt/driver-core
+CONFLICT (content): Merge conflict in drivers/base/platform.c
+CONFLICT (content): Merge conflict in drivers/staging/comedi/drivers/quatec=
+h_daqp_cs.c
+Applying: md: fixup for sysfs_get_dirent API change
+Merging quilt/tty
+CONFLICT (content): Merge conflict in include/linux/tty.h
+Merging quilt/usb
+CONFLICT (content): Merge conflict in drivers/input/tablet/acecad.c
+CONFLICT (content): Merge conflict in drivers/input/tablet/kbtab.c
+CONFLICT (content): Merge conflict in drivers/input/tablet/wacom_sys.c
+CONFLICT (delete/modify): sound/usb/usbaudio.c deleted in HEAD and modified=
+ in quilt/usb. Version quilt/usb of sound/usb/usbaudio.c left in tree.
+$ git rm -f sound/usb/usbaudio.c
+Applying: usb: update gfp/slab.h includes
+Applying: sound: fixup for usb_buffer_alloc/free rename
+Merging staging-next/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/arlan/arlan-main.c
+CONFLICT (content): Merge conflict in drivers/staging/comedi/drivers/cb_das=
+16_cs.c
+CONFLICT (content): Merge conflict in drivers/staging/cx25821/cx25821-alsa.c
+CONFLICT (content): Merge conflict in drivers/staging/dt3155/dt3155_drv.c
+CONFLICT (content): Merge conflict in drivers/staging/netwave/netwave_cs.c
+Merging slabh/slabh
+Merging scsi-post-merge/master
+
+--Signature=_Tue__4_May_2010_16_23_05_+1000_iECEfWSKXCIw70qJ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvfvUkACgkQjjKRsyhoI8x9GQCglfj9FeWzkBjGCHJ8Ojj7rYVe
+xgsAniY2cOHgDzA2UC2UBKkAhQp6auqt
+=nprM
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__4_May_2010_16_23_05_+1000_iECEfWSKXCIw70qJ--
