@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934103Ab0EDXlw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 19:41:52 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43929 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755669Ab0EDXlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 19:41:51 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Date: Wed, 5 May 2010 01:42:41 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Brian Swetland <swetland@google.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-References: <1272667021-21312-1-git-send-email-arve@android.com> <201005042237.56844.rjw@sisk.pl> <87wrvjdztr.fsf@deeprootsystems.com>
-In-Reply-To: <87wrvjdztr.fsf@deeprootsystems.com>
+	id S1755711Ab0EDXr6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 19:47:58 -0400
+Received: from fg-out-1718.google.com ([72.14.220.153]:3102 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab0EDXr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 19:47:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=jXFSQ6T/etuKiFBR08qHI5fB9ZsdfZ/wmxiO6dPFfA6cc+oT+iZrSfUN8+EYWr8lYH
+         csfVKonfWTz+c/lzp5kMtbzOJuBh36BcINciEJeTHFH79GJ7YwuBE+wTT5OaCmG3Mwk/
+         gKLJLWaXxMLZnv6vRLSQkgXH32BJRBarhzKPM=
+Message-ID: <4BE0B225.2080308@gmail.com>
+Date: Tue, 04 May 2010 15:47:49 -0800
+From: Kent Overstreet <kent.overstreet@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10pre) Gecko/20100501 Shredder/3.0.5pre
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Andi Kleen <andi@halobates.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Bcache: version 4
+References: <20100501001212.GA31135@moria> <87y6g03rf8.fsf@basil.nowhere.org>
+In-Reply-To: <87y6g03rf8.fsf@basil.nowhere.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005050142.41537.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 May 2010, Kevin Hilman wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> 
-> > On Tuesday 04 May 2010, Mark Brown wrote:
-> >> On Tue, May 04, 2010 at 11:06:39AM -0700, Kevin Hilman wrote:
-> >> 
-> >> > With opportunistic suspend, all of this flexibility is gone, and the
-> >> > device/subsystem is told to go into the lowest power, highest latency
-> >> > state, period.
-> >> 
-> >> Well, half the problem I have is that unfortunately it's not a case of
-> >> doing that period.  The prime example I'm familiar with is that for
-> >> understandable reasons users become irate when you power down the audio
-> >> CODEC while they're in the middle of a call so if opportunistic PM is in
-> >> use then the audio subsystem needs some additional help interpreting a
-> >> suspend request so that it can figure out how to handle it.  Similar
-> >> issues apply to PMICs, though less pressingly for various reasons.
-> >> 
-> >> Just to be clear, I do understand and mostly agree with the idea that
-> >> opportunistic suspend presents a reasonable workaround for our current
-> >> inability to deliver good power savings with runtime PM methods on many
-> >> important platforms but I do think that if we're going to make this
-> >> standard Linux PM functionality then we need to be clearer about how
-> >> everything is intended to hang together.
-> >
-> > At the moment the rule of thumb is: if you don't need the opportunistic
-> > suspend, don't use it.  It is not going to be enabled by default on anything
-> > other than Android right now.
-> 
-> Sure, but there are driver authors and subsystem maintainers who care
-> about optimal PM in "normal" Linux *and* in Android.
-> 
-> As a PM maintainer for an embedded platform (OMAP) used in both, I
-> certainly care about both, so "disable it if you don't like it" is not
-> really an option.
-> 
-> IMO, driver/subsystem authors should not have to care if the userspace
-> is Android or not.  We should be working towards a world where Android
-> is not a special case.
+On 05/04/2010 02:14 AM, Andi Kleen wrote:
+> I read all of this email now and I still have no clue what exactly
+> a 'bcache' is and why anyone would want one (and if one needs
+> a large stick to handle it or not)
+>
+> Normally the 0/x series of a patch kit is supposed to contain that
+> information.
+>
+> I know it's probably obvious to you, but it's not to most other readers.
+>
+> Consider adding some introduction?
 
-I agree, but "working on towards a world where ..." need not mean "be there
-from day one" IMO.  Also, I guess you'll agree that using the same _binary_
-kernel with Android and non-Android user spaces doesn't necessarily make sense
-(regardless of the fact that Android kernels have hardware-specific board files
-included), so probably you'll still disable opportunistic suspend building the
-kernel for non-Android systems (at least for the time being).
+Ah, whoops. "Block cache" - it uses one block device to cache another, 
+it's intended for SSDs. It's summarized decently in the documentation 
+patch, which if I'd thought harder would've been the first email...
+http://thread.gmane.org/gmane.linux.kernel/979977
+Second patch also has relevant commentary:
+http://thread.gmane.org/gmane.linux.kernel/979978
+http://thread.gmane.org/gmane.linux.kernel/979979
 
-It looks like you're thinking the opportunistic suspend somehow is (or can be
-used as) a replacement for runtime PM, but this is not the case.  The reason
-why it's not the case is that runtime PM works with the assumption that user
-space is not frozen and it works on individual devices.
-
-OTOH, generally, there is a limit on the amount of energy savings you can
-achieve with runtime PM alone and something like the opportunistic suspend is
-necessary to go beyond that limit.
-
-Now, I can easily imagine using suspend blockers and runtime PM in the same
-driver with the general rule that you'll probably want to call suspend_unblock()
-whenever the device is suspended with the help of the runtime PM framework.
-That really depends on the device and the driver in question, though.
-
-Rafael
+Currently all the necessary functionality for read only is close to 
+done, I'm now doing stress testing. I'm hoping to have it Stable For Me 
+and read/write done in a week or two, at which point it should be ready 
+for people to start playing with.
