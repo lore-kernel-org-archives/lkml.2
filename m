@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab0EDElv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 00:41:51 -0400
-Received: from mail-iw0-f202.google.com ([209.85.223.202]:42588 "EHLO
-	mail-iw0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383Ab0EDElt (ORCPT
+	id S1751317Ab0EDEoz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 00:44:55 -0400
+Received: from recombinator.qemfd.net ([216.27.165.184]:60541 "EHLO
+	recombinator.qemfd.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab0EDEoy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 00:41:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lEtYp5siqVXXpIWfbLYIJWKYOiT/XiBxicyVsXY8Q75zZrOIs1icZfzNqrUZgjvHoc
-         /A8ziycOdMBq6yo6bVkPWyYRdnYzBTFnVxkERqiQ+VV9E4VMRcUOyT9uz1UoSXD/fbML
-         kWoZfBkImtZ5UIKYSW7fI0rqub8fn1C2lZC9E=
-Date: Mon, 3 May 2010 21:41:51 -0700
-From: mark gross <640e9920@gmail.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: mgross@linux.intel.com, davidb@quicinc.com, dwalker@codeaurora.org,
-       bruce.w.allan@intel.com, lkml <linux-kernel@vger.kernel.org>,
-       tiwai@suse.de, mcgrof@gmail.com,
-       linux-pm <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH]PM QOS refresh against next-20100430
-Message-ID: <20100504044151.GB3043@thegnar.org>
-Reply-To: markgross@thegnar.org
-References: <20100430212043.GA30315@linux.intel.com>
- <20100503103300.6330e522@bike.lwn.net>
+	Tue, 4 May 2010 00:44:54 -0400
+X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 May 2010 00:44:54 EDT
+Date: Tue, 4 May 2010 00:09:20 -0400
+From: nick black <dank@qemfd.net>
+To: Robert Richter <robert.richter@amd.com>, oprofile-list@lists.sf.net
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Nate Clark <ntclark@cc.gatech.edu>, trivial@kernel.org
+Subject: [PATCH] support Model-30 Corei7 in Oprofile
+Message-ID: <20100504040920.GA15516@qemfd.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100503103300.6330e522@bike.lwn.net>
+Content-Transfer-Encoding: 8BIT
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 03, 2010 at 10:33:00AM -0600, Jonathan Corbet wrote:
-> On Fri, 30 Apr 2010 14:20:43 -0700
-> mark gross <mgross@linux.intel.com> wrote:
-> 
-> > This patch changes the string based list management to a handle base
-> > implementation to help with the hot path use of pm-qos
-> 
-> Having taken a quick look, I think the API change makes a lot of
-> sense.  Hot paths are one thing; avoidance of accidental conflicts
-> would be another.
+Howdy! OProfile doesn't recognize my QM720 Core i7. It knows about Model 26,
+but not Model 30. This one-liner, taken against 2.6.34-rc6, addresses that.
 
-Conflicts? say more please.
- 
-> One question, though...  one clear use of this API is for drivers to
-> say "don't go into C3 or deeper because things go wrong"; I'm about to
-> add another one of those.  It works, but the use of a
-> PM_QOS_CPU_DMA_LATENCY requirement with a hard-coded number that one
-> hopes is small enough seems a bit...indirect.  I wonder if it would be
-> clearer and more robust to add a new requirement^Wrequest type saying
-> "the quality of service I need is shallow sleeps only"?
+Signed-off-by: Nick Black <nickblack@acm.org>
+---
+I sent a very similar patch to DynamoRIO this weekend. Not many Model-30's
+in use yet?
 
-Well, adding such an api to cpuidle could do this for you.  "shallow" is
-hard to define, but one could do what google did and define a
-cpu_wake_lock type of API to block entry into any low power halt/mwait
-type of state.  i.e. shallow would be C0, or just halt in idle.
+diff -uprN linux-2.6.34-rc6/arch/x86/oprofile/nmi_int.c /home/dank/local/linux-2.6.34-rc6//arch/x86/oprofile/nmi_int.c
+--- linux-2.6.34-rc6/arch/x86/oprofile/nmi_int.c	2010-04-29 23:02:05.000000000 -0400
++++ /home/dank/local/linux-2.6.34-rc6//arch/x86/oprofile/nmi_int.c	2010-05-03 23:46:51.018835896 -0400
+@@ -601,6 +601,7 @@ static int __init ppro_init(char **cpu_t
+ 		break;
+ 	case 0x2e:
+ 	case 26:
++	case 30:
+ 		spec = &op_arch_perfmon_spec;
+ 		*cpu_type = "i386/core_i7";
+ 		break;
 
-If such a thing fits a "hotpath" API extention to pm_qos basically
-implementing a low overhead disable lowpower behavior without having to
-walk the pm_qos lists to get an agrigate value.  But, if such an api
-belongs in cpu_idle thats fine too, as the only user of such and API
-really is devices (like spi devices hangining of a clock that goes down
-in the deeper idle states) wanting to block low power idle states, so be
-it.
-
---mgross
-
-> 
-> jon
-> _______________________________________________
-> linux-pm mailing list
-> linux-pm@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/linux-pm
+-- 
+                                       Nick Black <nickblack@linux.com>
+                                  Grad student, GT College of Computing
+                    "np: the class of dashed hopes, and idle dreams..."
