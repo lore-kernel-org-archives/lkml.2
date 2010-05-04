@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933828Ab0EDU0U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:26:20 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:52349 "EHLO e9.ny.us.ibm.com"
+	id S934111Ab0EDU1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:27:52 -0400
+Received: from waste.org ([173.11.57.241]:52109 "EHLO waste.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933772Ab0EDUUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 16:20:18 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 02/48] rcu: substitute set_need_resched for sending resched IPIs
-Date: Tue,  4 May 2010 13:19:12 -0700
-Message-Id: <1273004398-19760-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100504201934.GA19234@linux.vnet.ibm.com>
+	id S934090Ab0EDU1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 16:27:11 -0400
+Subject: Re: [PATCH tip/core/rcu 21/48] remove all rcu head
+ initializations, except on_stack initializations
+From: Matt Mackall <mpm@selenic.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+       Eric Paris <eparis@parisplace.org>
+In-Reply-To: <1273004398-19760-21-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20100504201934.GA19234@linux.vnet.ibm.com>
+	 <1273004398-19760-21-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 May 2010 15:27:03 -0500
+Message-ID: <1273004823.21962.2278.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a check to __rcu_pending() that does a local
-set_need_resched() if the current CPU is holding up the current grace
-period and if force_quiescent_state() will be called soon.  The goal is
-to reduce the probability that force_quiescent_state() will need to do
-smp_send_reschedule(), which sends an IPI and is therefore more expensive
-on most architectures.
+On Tue, 2010-05-04 at 13:19 -0700, Paul E. McKenney wrote:
+> From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> 
+> Remove all rcu head inits. We don't care about the RCU head state before passing
+> it to call_rcu() anyway. Only leave the "on_stack" variants so debugobjects can
+> keep track of objects on stack.
 
-Signed-off-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutree.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+Please document that distinction at the definition of INIT_RCU_HEADS,
+otherwise we're sure to see creep.
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 3ec8160..e54c123 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1499,6 +1499,16 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
- 
- 	/* Is the RCU core waiting for a quiescent state from this CPU? */
- 	if (rdp->qs_pending) {
-+
-+		/*
-+		 * If force_quiescent_state() coming soon and this CPU
-+		 * needs a quiescent state, and this is either RCU-sched
-+		 * or RCU-bh, force a local reschedule.
-+		 */
-+		if (!rdp->preemptable &&
-+		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
-+				 jiffies))
-+			set_need_resched();
- 		rdp->n_rp_qs_pending++;
- 		return 1;
- 	}
 -- 
-1.7.0
+Mathematics is the supreme nostalgia of our time.
+
 
