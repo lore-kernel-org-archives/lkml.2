@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934630Ab0EDXQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 19:16:50 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:57982 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934609Ab0EDXQs convert rfc822-to-8bit (ORCPT
+	id S1760246Ab0EDXZg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 19:25:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53567 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751371Ab0EDXZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 19:16:48 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=PJI0znwNKQZfvup7KZiT/cVFO2T4tneMoAMtTBgkHj8aZBxzwgnGr4HVWL+D39J/S
-	4D907MAAqLF86NZFFS+eA==
-MIME-Version: 1.0
-In-Reply-To: <18849d97-2fee-43a0-a3ea-9132f8163609@default>
-References: <18849d97-2fee-43a0-a3ea-9132f8163609@default>
-Date: Tue, 4 May 2010 16:16:46 -0700
-Message-ID: <m2z3055132f1005041616r2d6a9747i32b8187912049182@mail.gmail.com>
-Subject: Re: [RFC] Exposing TSC "reliability" to userland
-From: Venkatesh Pallipadi <venki@google.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, mingo@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 4 May 2010 19:25:34 -0400
+Date: Tue, 4 May 2010 16:24:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: linux-kernel@vger.kernel.org, Matt Porter <mporter@kernel.crashing.org>,
+       Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+       Thomas Moll <thomas.moll@sysgo.com>
+Subject: Re: [PATCH -mm 4/5] RapidIO: Add switch domain routines
+Message-Id: <20100504162457.0c8d23ba.akpm@linux-foundation.org>
+In-Reply-To: <1272901558-9292-5-git-send-email-alexandre.bounine@idt.com>
+References: <1272901558-9292-1-git-send-email-alexandre.bounine@idt.com>
+	<1272901558-9292-5-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 3, 2010 at 1:21 PM, Dan Magenheimer
-<dan.magenheimer@oracle.com> wrote:
->
-> In a patch posted late last year by Venki:
->
-> http://lkml.org/lkml/2009/12/17/360
->
-> it was noted that some systems that specify the "Invariant TSC"
-> bit in CPUID (on recent processors) are sadly not guaranteed to
-> have synchronized TSCs.  As a result, Ingo's check_tsc_warp() is
-> executed; if the warp test passes, the kernel uses TSC
-> as clocksource and, if it doesn't pass, the kernel marks
-> the TSC as unstable and chooses a different clocksource.
->
-> Whether the kernel deems TSC to be reliable or not is a very
-> useful piece of information to userland, e.g. to certain
-> enterprise apps such the Oracle DB, some JVM's, etc.  If
-> TSC IS reliable, rdtsc can be used by many of these
-> enterprise applications in many situations in place of a
-> gettimeofday call.  Rdtsc can be much faster even than
-> a vsyscall and it is certainly much much faster when,
-> for one reason or another, vsyscall is not enabled.
-> This can make a huge performance difference in real
-> benchmarks when timestamps are frequently taken (10%
-> benchmark performance improvement was measured using
-> rdtsc vs gettimeofday syscall).
->
-> Running a warp test in userland is not nearly as accurate
-> as the warp test run by the kernel.  So it makes sense to expose
-> the results of the kernel warp test to userland, maybe
-> through /sys/devices/system/clocksource/tsc_reliable
->
-> Comments?
+On Mon,  3 May 2010 11:45:57 -0400
+Alexandre Bounine <alexandre.bounine@idt.com> wrote:
 
-[ Sorry if this is a duplicate. I had messed up my mail client format setting ]
+> +static int
+> +idtcps_set_domain(struct rio_mport *mport, u16 destid, u8 hopcount,
+> +		       u8 sw_domain)
+> +{
+> +	/*
+> +	 * Switch domain configuration operates only at global level
+> +	 */
+> +	rio_mport_write_config_32(mport, destid, hopcount,
+> +				  IDTCPS_RIO_DOMAIN, (u32)sw_domain);
+> +	return 0;
+> +}
+> +
+> +static int
+> +idtcps_get_domain(struct rio_mport *mport, u16 destid, u8 hopcount,
+> +		       u8 *sw_domain)
+> +{
+> +	u32 regval;
+> +
+> +	/*
+> +	 * Switch domain configuration operates only at global level
+> +	 */
+> +	rio_mport_read_config_32(mport, destid, hopcount,
+> +				IDTCPS_RIO_DOMAIN, &regval);
+> +
+> +	*sw_domain = (u8)(regval & 0xff);
+> +
+> +	return 0;
+> +}
 
-One option is to remove tsc from
-/sys/devices/system/clocksource/clocksource*/available_clocksource
-when it is detected as unstable.
+This ignores the return values from rio_mport_write_config_*().
 
-That should already be happening with NOHZ or HIGHRES selected. But,
-should be simple to add some code to do this always.
+AFACIT these things always return hard-wired 0 anyway.  Perhaps we
+should give up and change ->cread() and friends to return void.  That
+beats the alternative of adding lots of untestable test-n-return
+unwinding code.
 
-Would that work?
-
-Thanks,
-Venki
