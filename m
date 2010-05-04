@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760258Ab0EDWHL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 18:07:11 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43580 "EHLO ogre.sisk.pl"
+	id S934391Ab0EDWHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 18:07:30 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43592 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934347Ab0EDWGn convert rfc822-to-8bit (ORCPT
+	id S934357Ab0EDWGs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 18:06:43 -0400
+	Tue, 4 May 2010 18:06:48 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Florian Mickler" <fmickler@gmx.de>
+       "Miles Lane" <miles.lane@gmail.com>
 References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera>
 In-Reply-To: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <8VO9AsMlpMD.A.DY.DIJ4LB@chimera>
-Subject: [Bug #15790] Meta-Bug: Regressions
+Message-ID: <8VO9AsMlpMD.A.H-H.kHJ4LB@chimera>
+Subject: [Bug #15863] 2.6.34-rc5-git7 (plus all patches) -- another suspicious rcu_dereference_check() usage.
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue,  4 May 2010 23:21:18 +0200 (CEST)
+Date: Tue,  4 May 2010 23:21:20 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,9 +33,11 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15790
-Subject		: Meta-Bug: Regressions
-Submitter	: Florian Mickler <fmickler@gmx.de>
-Date		: 2010-04-15 18:21 (20 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15863
+Subject		: 2.6.34-rc5-git7 (plus all patches) -- another suspicious rcu_dereference_check() usage.
+Submitter	: Miles Lane <miles.lane@gmail.com>
+Date		: 2010-04-27 0:51 (8 days old)
+Message-ID	: <h2ya44ae5cd1004261751waa5cb65ei3d139cbcfa2cc5cf@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127232949104878&w=2
 
 
