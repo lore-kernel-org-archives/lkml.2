@@ -1,90 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933991Ab0EDUXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:23:36 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:50526 "EHLO e2.ny.us.ibm.com"
+	id S934005Ab0EDUYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:24:10 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42980 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933795Ab0EDUUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 16:20:19 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Arnd Bergmann <arnd@arndb.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH tip/core/rcu 36/48] nfs: __rcu annotations
-Date: Tue,  4 May 2010 13:19:46 -0700
-Message-Id: <1273004398-19760-36-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100504201934.GA19234@linux.vnet.ibm.com>
-References: <20100504201934.GA19234@linux.vnet.ibm.com>
+	id S933837Ab0EDUWt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 16:22:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+Date: Tue, 4 May 2010 22:23:41 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Brian Swetland <swetland@google.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+References: <1272667021-21312-1-git-send-email-arve@android.com> <20100504135907.GA3651@opensource.wolfsonmicro.com> <87r5lrh780.fsf@deeprootsystems.com>
+In-Reply-To: <87r5lrh780.fsf@deeprootsystems.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201005042223.41370.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+On Tuesday 04 May 2010, Kevin Hilman wrote:
+> Mark Brown <broonie@opensource.wolfsonmicro.com> writes:
+> 
+> > On Mon, May 03, 2010 at 05:43:34PM -0700, Brian Swetland wrote:
+> >> On Mon, May 3, 2010 at 5:09 PM, Arve Hjønnevåg <arve@android.com> wrote:
+> >> > On Mon, May 3, 2010 at 4:37 PM, Kevin Hilman
+> >
+> >> >> This last point is especially troubling.  I don't find it a comforting
+> >> >> path to go down if the drivers have to start caring about which PM
+> >> >> policy is currently in use.
+> >
+> >> I'll echo Arve here -- all drivers should seek to be in the lowest
+> >> power state possible at all times.  We've never suggested that
+> >> suspend_block is a substitute for that.
+> >
+> > Looking at this from a subsystem/driver author point of view the problem
+> > I'm faced with is that as a result of using system suspend much more
+> > aggressively the subsystem and driver layers are getting conflicting
+> > instructions about what the lowest power state possible is.
+> 
+> Exactly.
+> 
+> With runtime PM, there is flexibility in choosing the lowest power
+> state at the device/subsystem level, based on activity, timeouts,
+> bitrate, dependencies, latency/throughput constraints, etc.
+> 
+> With opportunistic suspend, all of this flexibility is gone, and the
+> device/subsystem is told to go into the lowest power, highest latency
+> state, period.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
----
- fs/nfs/delegation.h             |    2 +-
- include/linux/nfs_fs.h          |    2 +-
- include/linux/sunrpc/auth_gss.h |    4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+Guys, please.
 
-diff --git a/fs/nfs/delegation.h b/fs/nfs/delegation.h
-index 69e7b81..2978814 100644
---- a/fs/nfs/delegation.h
-+++ b/fs/nfs/delegation.h
-@@ -14,7 +14,7 @@
-  */
- struct nfs_delegation {
- 	struct list_head super_list;
--	struct rpc_cred *cred;
-+	struct rpc_cred __rcu *cred;
- 	struct inode *inode;
- 	nfs4_stateid stateid;
- 	fmode_t type;
-diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
-index 1a0b85a..3cc4fb6 100644
---- a/include/linux/nfs_fs.h
-+++ b/include/linux/nfs_fs.h
-@@ -178,7 +178,7 @@ struct nfs_inode {
- 	struct nfs4_cached_acl	*nfs4_acl;
-         /* NFSv4 state */
- 	struct list_head	open_states;
--	struct nfs_delegation	*delegation;
-+	struct nfs_delegation __rcu *delegation;
- 	fmode_t			 delegation_state;
- 	struct rw_semaphore	rwsem;
- #endif /* CONFIG_NFS_V4*/
-diff --git a/include/linux/sunrpc/auth_gss.h b/include/linux/sunrpc/auth_gss.h
-index d48d4e6..994db5a 100644
---- a/include/linux/sunrpc/auth_gss.h
-+++ b/include/linux/sunrpc/auth_gss.h
-@@ -69,7 +69,7 @@ struct gss_cl_ctx {
- 	enum rpc_gss_proc	gc_proc;
- 	u32			gc_seq;
- 	spinlock_t		gc_seq_lock;
--	struct gss_ctx		*gc_gss_ctx;
-+	struct gss_ctx __rcu	*gc_gss_ctx;
- 	struct xdr_netobj	gc_wire_ctx;
- 	u32			gc_win;
- 	unsigned long		gc_expiry;
-@@ -80,7 +80,7 @@ struct gss_upcall_msg;
- struct gss_cred {
- 	struct rpc_cred		gc_base;
- 	enum rpc_gss_svc	gc_service;
--	struct gss_cl_ctx	*gc_ctx;
-+	struct gss_cl_ctx __rcu	*gc_ctx;
- 	struct gss_upcall_msg	*gc_upcall;
- 	unsigned char		gc_machine_cred : 1;
- };
--- 
-1.7.0
+The opportunistic suspend feature is _not_ to replace runtime PM by any means!
 
+However, there are situations in which runtime PM is clearly insufficient.
+The idea behind runtime PM is that subsystems and device drivers will know
+when to put devices into low power states and save energy this way.  Still,
+even if all subsystems do that 100% efficiently, there may be more savings
+possible by putting the entire system into a sleep state (like on ACPI-based
+PCs) and we can reach there by runtime PM alone.
+
+> >> Suspend blockers give us some flexibility on systems where runtime pm
+> >> will not get us all the way there. If you can meet your power needs
+> >> without needing suspend blockers, awesome, you don't need them on that
+> >> platform.  The patchset Arve sent out makes this feature an
+> >> off-by-default kernel configuration option that compiles out to no-ops
+> >> when disabled.
+> >
+> > I think a big part of this for me is that this approach changes the
+> > intended use of the system-wide suspend a bit, complicating it a bit
+> > further than it already is.  We end up doing a suspend (which in the
+> > normal course of affairs means that the driver should shut everything
+> > down) partly as a substitute for runtime PM on the core system devices
+> > and partly because our runtime PM isn't doing as well as it should on
+> > the individual devices.
+> 
+> Agreed, and because of this, part of my concern is that opportunistic
+> suspend will take the place of doing the "right thing" which (IMHO) 
+> would be to improve runtime PM for devices.
+
+It really can't, at least on some platforms.  For example, resuming a PC
+notebook from suspend to RAM takes more than 1s (with an SSD; rotational disks
+add more latency here) which is way too much for such a replacement.
+
+Besides, there also is room for runtime PM in the Android framework, because
+it needs to suspend certain devices without freezing processes, for example.
+
+The freezing of processes is the most important difference to me.  Runtime PM
+works with the assumption that processes are not frozen (hence the name), but
+arguably energy savings you can get without going behind that point are
+naturally limited.
+
+> > I'd be a lot more comfortable with this if it came with a mechanism for
+> > communicating the intended effect of a suspend on a per-device level so
+> > that the drivers have a clear way of figuring out what to do when the
+> > system suspends.  If there isn't one we can add subsystem or driver
+> > specific hooks, of course, but it'd be better to address this at the
+> > system level.
+> 
+> I agree.
+
+I'm not sure.  Why _exactly_ would you need that?
+
+> I think there needs to be more discussion on the indended usage
+> of suspend blockers by drivers/subsystems, especially those PM aware
+> drivers and subsystems already doing runtime PM with constraints etc.
+> 
+> >> In our experience, periodic timers and polling, both userspace side
+> >> and kernelside make suspend blockers a win even on platforms like OMAP
+> >> which have pretty flexible hardware power management.  Going to low
+> >> power states in idle results in higher average power consumption than
+> >> going to the same states in full suspend, at least on Android devices
+> >> shipping today.
+> >
+> > There's definite work to be done here, yes.
+> 
+> And I've admitted this to be the only compelling reason for
+> opportunistic suspend so far.
+> 
+> But the driver/subsystem implications of opportunistic suspend still
+> need some fleshing out IMO.
+
+At the moment, if you're not on Android, there are none.
+
+Thanks,
+Rafael
