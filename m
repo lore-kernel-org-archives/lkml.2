@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab0EDHx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 03:53:27 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:45184 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757201Ab0EDHx0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 03:53:26 -0400
-Date: Tue, 4 May 2010 06:16:37 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>, mgross@linux.intel.com,
-       aili@codeaurora.org, dwalker@codeaurora.org, tiwai@suse.de,
-       bruce.w.allan@intel.com, davidb@quicinc.com, mcgrof@gmail.com,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]PM QOS refresh against next-20100430
-Message-ID: <20100504041637.GC5326@ucw.cz>
-References: <20100430212043.GA30315@linux.intel.com>
- <20100503103300.6330e522@bike.lwn.net>
- <87y6g1547o.fsf@deeprootsystems.com>
- <20100503104250.7605d2bc@bike.lwn.net>
+	id S1757281Ab0EDHyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 03:54:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756988Ab0EDHyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 03:54:00 -0400
+Message-ID: <4BDFD295.7000702@redhat.com>
+Date: Tue, 04 May 2010 10:53:57 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100503104250.7605d2bc@bike.lwn.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 16/22] KVM: MMU: Track page fault data in struct vcpu
+References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com> <1272364712-17425-17-git-send-email-joerg.roedel@amd.com> <4BD6DF7C.1090203@redhat.com> <20100503163221.GB28950@amd.com>
+In-Reply-To: <20100503163221.GB28950@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2010-05-03 10:42:50, Jonathan Corbet wrote:
-> On Mon, 03 May 2010 09:40:11 -0700
-> Kevin Hilman <khilman@deeprootsystems.com> wrote:
-> 
-> > > One question, though...  one clear use of this API is for drivers to
-> > > say "don't go into C3 or deeper because things go wrong"; I'm about to
-> > > add another one of those.  It works, but the use of a
-> > > PM_QOS_CPU_DMA_LATENCY requirement with a hard-coded number that one
-> > > hopes is small enough seems a bit...indirect.  I wonder if it would be
-> > > clearer and more robust to add a new requirement^Wrequest type saying
-> > > "the quality of service I need is shallow sleeps only"?  
-> > 
-> > The problem with that is portability.
-> > 
-> > What does "shallow" mean?  
-> 
-> Well, shallow could mean that the state lacks the CPUIDLE_FLAG_DEEP
-> flag; that should be relatively portable.  In any case, it seems more
-> so than "if I put in a 55us latency requirement, I'll stay out of C3".
+On 05/03/2010 07:32 PM, Joerg Roedel wrote:
+> On Tue, Apr 27, 2010 at 03:58:36PM +0300, Avi Kivity wrote:
+>    
+>> So we probably need to upgrade gva_t to a u64.  Please send this as
+>> a separate patch, and test on i386 hosts.
+>>      
+> Are there _any_ regular tests of KVM on i386 hosts? For me this is
+> terribly broken (also after I fixed the issue which gave me a
+> VMEXIT_INVALID at the first vmrun).
+>
+>    
 
-While C3 has maximum allowed latency (101usec, iirc), I believe
-there's no minimum, so someone could create platform with really quick
-C3 with perhaps only 10usec to enter...
-
-								Pavel
-
+No, apart from the poor users.  I'll try to set something up using nsvm.
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+error compiling committee.c: too many arguments to function
+
