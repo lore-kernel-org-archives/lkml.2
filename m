@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758606Ab0EDMll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 08:41:41 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51774 "EHLO hera.kernel.org"
+	id S1759574Ab0EDMlz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 08:41:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39849 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824Ab0EDMjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 08:39:17 -0400
-From: Tejun Heo <tj@kernel.org>
-To: mingo@elte.hu, peterz@infradead.org, efault@gmx.de, avi@redhat.com,
-       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf on top of TP
-Date: Tue,  4 May 2010 14:38:32 +0200
-Message-Id: <1272976724-14312-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 May 2010 12:38:52 +0000 (UTC)
+	id S1759492Ab0EDMln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 08:41:43 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100503225105.GA18897@google.com>
+References: <20100503225105.GA18897@google.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: dhowells@redhat.com, Andrew Morton <akpm@google.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: x86 rwsem: up_read() does not check active count in fast path
+Date: Tue, 04 May 2010 13:41:36 +0100
+Message-ID: <30960.1272976896@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, all.
+Michel Lespinasse <walken@google.com> wrote:
 
-This patchset does the following two things.
+> Looking at the x86 rwsem code, I have been wondering about the up_read()
+> path.  __rwsem_do_wake() comment mentions that one should check the active
+> count on the way there; however I could not find that check when coming from
+> up_read().
 
-* 0001-0007: Unify the three tracers (tracepoints, perf_events and
-  preempt/sched notifiers) in scheduler.
+Look in call_rwsem_wake(), which is implemented in assembly in two places in
+the x86 arch:
 
-* 0008-0012: Move perf hooks in sched on top of tracepoints if TPs are
-	     enabled.
+	arch/x86/lib/rwsem_64.S
+	arch/x86/lib/semaphore_32.S
 
-It probably should be two separate patchsets with the first part on
-top of sched/core which then gets pulled into perf branch, on top of
-which the second part is applied but in the spirit of RFC I'm posting
-it as a single chunk on top of mainline+perf/urgent.
+Note that the x86_64 version contains a bug, a patch for which is attached.
 
-This patchset contains the following 12 patches.
+David
+---
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] Fix the x86_64 implementation of call_rwsem_wait()
 
- 0001-sched-drop-cpu-argument-from-sched_in-preempt-notifi.patch
- 0002-sched-rename-preempt_notifiers-to-sched_notifiers-an.patch
- 0003-perf-add-perf_event_task_migrate.patch
- 0004-perf-add-rq-to-perf_event_task_sched_out.patch
- 0005-perf-move-perf_event_task_sched_in-next-to-fire_sche.patch
- 0006-sched-relocate-fire_sched_notifiers_out-and-trace_sc.patch
- 0007-sched-coalesce-event-notifiers.patch
- 0008-sched-add-switch_in-and-tick-tracepoints.patch
- 0009-perf-factor-out-perf_event_switch_clones.patch
- 0010-perf-make-nr_events-an-int-and-add-perf_online_mutex.patch
- 0011-perf-prepare-to-move-sched-perf-functions-on-top-of-.patch
- 0012-perf-move-sched-perf-functions-on-top-of-tracepoints.patch
+The x86_64 call_rwsem_wait() treats the active state counter part of the R/W
+semaphore state as being 16-bit when it's actually 32-bit (it's half of the
+64-bit state).  It should do "decl %edx" not "decw %dx".
 
-0001-0006 move tracers in sched around and massage them here and there
-to bring the related ones together and make them take the same
-arguments.  The only change worth noting would be 0005 where
-perf_event_task_sched_in() is moved after finish_lock_switch() which
-costs the function a pair of local_irq_disable/enable() when switching
-a task context in when there's a context to switch in (the unlikely
-path).
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-0007 implements SCHED_EVENT[_RQ]() macros which can define all or any
-subset of the three at once and uses them to replace all trace calls.
+ arch/x86/lib/rwsem_64.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-0008-0011 prepare to move sched perf functions on top of matching TPs
-and make them enabled on demand.
 
-0012 makes all sched perf functions TP probe functions and
-enable/disable them on-demand.
-
-The whole patchset is more or less straight forward except that the
-on-demand (or rather off-demand?) disabling of perf functions in 0012
-is somewhat complicated because the callback which can determine when
-to turn it off is called under rq lock while unregistering requires a
-thread context.  As rq lock is depended upon by workqueue, tasklet and
-timer, none of those can be used directly.  It's worked around by
-having a periodic timer polling for completion.
-
-This patchset is available in the following git branch.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git sched-trace
-
-The tree is on top of linus#master + sched/urgent for now.  Diffstat
-follows.
-
- arch/ia64/kvm/Kconfig        |    2 
- arch/powerpc/kvm/Kconfig     |    2 
- arch/s390/kvm/Kconfig        |    2 
- arch/x86/kvm/Kconfig         |    2 
- include/linux/kvm_host.h     |    4 
- include/linux/perf_event.h   |   39 ++++-
- include/linux/preempt.h      |   48 -------
- include/linux/sched.h        |   52 +++++++
- include/trace/events/sched.h |   14 ++
- init/Kconfig                 |    2 
- kernel/perf_event.c          |  288 +++++++++++++++++++++++++++++++++++++------
- kernel/sched.c               |  175 ++++++++++++++------------
- virt/kvm/kvm_main.c          |   28 +---
- 13 files changed, 459 insertions(+), 199 deletions(-)
-
-Thanks.
-
---
-tejun
+diff --git a/arch/x86/lib/rwsem_64.S b/arch/x86/lib/rwsem_64.S
+index 15acecf..41fcf00 100644
+--- a/arch/x86/lib/rwsem_64.S
++++ b/arch/x86/lib/rwsem_64.S
+@@ -60,7 +60,7 @@ ENTRY(call_rwsem_down_write_failed)
+ 	ENDPROC(call_rwsem_down_write_failed)
+ 
+ ENTRY(call_rwsem_wake)
+-	decw %dx    /* do nothing if still outstanding active readers */
++	decl %edx	/* do nothing if still outstanding active readers */
+ 	jnz 1f
+ 	save_common_regs
+ 	movq %rax,%rdi
