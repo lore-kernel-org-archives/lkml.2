@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab0EDGl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 02:41:26 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60138 "EHLO hera.kernel.org"
+	id S1756554Ab0EDGmx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 02:42:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54819 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755299Ab0EDGlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 02:41:25 -0400
-Message-ID: <4BDFC16A.8070500@kernel.org>
-Date: Tue, 04 May 2010 08:40:42 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1756154Ab0EDGmu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 02:42:50 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: linux-pm@lists.linux-foundation.org
+Subject: Re: [linux-pm] s2ram slow (radeon) / failing (usb)
+Date: Tue, 4 May 2010 08:42:35 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-0.1-default; KDE/4.3.5; x86_64; ; )
+Cc: Bruno =?utf-8?q?Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+       Jiri Kosina <jkosina@suse.cz>, USB@smtp1.linux-foundation.org,
+       list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>
+References: <20100503214642.67577f91@neptune.home> <20100503225735.6b5e2687@neptune.home> <20100503231154.486c27d6@neptune.home>
+In-Reply-To: <20100503231154.486c27d6@neptune.home>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@elte.hu, linux-kernel@vger.kernel.org, x86@kernel.org,
-       oleg@redhat.com, rusty@rustcorp.com.au, sivanich@sgi.com,
-       heiko.carstens@de.ibm.com, dipankar@in.ibm.com, josh@freedesktop.org,
-       paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-       arjan@linux.intel.com, torvalds@linux-foundation.org
-Subject: Re: [PATCH 1/4] cpu_stop: implement stop_cpu[s]()
-References: <1271952554-22368-1-git-send-email-tj@kernel.org>	 <1271952554-22368-2-git-send-email-tj@kernel.org> <1272893191.5605.121.camel@twins>
-In-Reply-To: <1272893191.5605.121.camel@twins>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 May 2010 06:40:44 +0000 (UTC)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201005040842.35260.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 05/03/2010 03:26 PM, Peter Zijlstra wrote:
-> If you do:
+Am Montag, 3. Mai 2010 23:11:54 schrieb Bruno Prémont:
+> [  477.543304] usb 1-2.1: usb_autosuspend_device: cnt 1 -> 0
+> [  477.543316] usbhid 1-2.1:1.1: __pm_runtime_suspend()!
+> [  477.543326] usbhid 1-2.1:1.1: __pm_runtime_suspend() returns 0!
+> [  477.543380] usbcore: registered new interface driver usbhid
+> [  477.549457] usbhid: USB HID core driver
 > 
->  done = { .ret = -ENOENT, };
+> And suspend is freezing inside of hid_cancel_delayed_stuff(usbhid) call
+> from hid_suspend() in drivers/hid/usbhid/hid-core.c ...
 > 
-> And remove that if()
-> 
->> +		ret = work->fn(work->arg);
->> +		if (ret)
->> +			done->ret = ret;
->> +
-> 
-> You can do away with all the ->executed bits.
+> Is it worth continuing iteration and adding further printk's down there?
+> Jiri, what's your opinion on this?
 
-Oh, I had code piece which wanted to discern between -ENOENT from
-non-excution and -ENOENT return from the work function which seems
-gone now.  I'll check things again and drop ->executed if everything
-looks okay.
+Ugh. That looks like a bug in usbhid that I introduced. A fix is not trivial.
+In short, I did not think the device could be undergoing a queued resumption
+while suspend() is being called. I wonder why this is happening.
 
-Thanks.
-
--- 
-tejun
+	Regards
+		Oliver
