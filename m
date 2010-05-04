@@ -1,97 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932994Ab0EDPCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 11:02:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53329 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932439Ab0EDPCs (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 4 May 2010 11:02:48 -0400
-Date: Tue, 4 May 2010 11:02:14 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com, x86@kernel.org,
-       clalance@redhat.com, drjones@redhat.com
-Subject: Re: [LKML] Re: [LKML] [PATCH] Fix NULL pointer for Xen guests
-Message-ID: <20100504150214.GA5667@phenom.dumpdata.com>
-References: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com> <20100427165816.GA24707@phenom.dumpdata.com> <4BD71A2D.6050309@redhat.com> <20100427183428.GA15385@phenom.dumpdata.com> <4BD73134.1030308@redhat.com> <20100503191634.GA19699@phenom.dumpdata.com>
+	id S933167Ab0EDPDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 11:03:14 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:43449 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754279Ab0EDPDL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 11:03:11 -0400
+Date: Tue, 4 May 2010 16:47:16 +0200
+From: Nico Schottelius <nico-linux-20100427@schottelius.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Nico Schottelius <nico-linux-20100427@schottelius.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.osdl.org>
+Subject: Re: 2.6.33-2.6.34-rc5 suspend issues
+Message-ID: <20100504144714.GA3527@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20100427@schottelius.org>,
+	Pavel Machek <pavel@ucw.cz>, LKML <linux-kernel@vger.kernel.org>,
+	Linux-pm mailing list <linux-pm@lists.osdl.org>
+References: <20100427074609.GA3261@ikn.schottelius.org>
+ <20100427083202.GA3143@ikn.schottelius.org>
+ <20100428160935.GA4010@schottelius.org>
+ <20100429191241.GA3407@schottelius.org>
+ <20100501122441.GA3273@schottelius.org>
+ <20100504041849.GA1262@ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
 Content-Disposition: inline
-In-Reply-To: <20100503191634.GA19699@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090209.4BE0370B.0027:SCFMA4539811,ss=1,fgs=0
+In-Reply-To: <20100504041849.GA1262@ucw.cz>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.34-rc5-NS-00340-g79dba2e x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 03, 2010 at 03:16:34PM -0400, Konrad Rzeszutek Wilk wrote:
-> >> OK, so your control domain is RHEL5. Mine is the Jeremy's xen/next one
-> >> (2.6.32). Let me try to compile RHEL5 under FC11 - any tricks necessary
-> >> to do that?
-> >>    
-> >
-> > I haven't tried it -- it might work :)
-> >
-> > Also, did you try booting with maxvcpus > vcpus as drjones suggested ?
-> 
-> Yes. No luck reproducing the crash/panic. I am just not seeing the failure you
-> guys are seeing.
-> 
-> Let me build once more 2.6.33 vanilla + CONFIG_DEBUG_MARK_RODATA=n) and check
-> this. And also install a vanilla RHEL5 dom0 as it looks impossible to
-> compile a 2.6.18-era kernel under FC11.
 
-Rebuilding everything from scratch did it. I am seeing a similar
-failure where xenctx reports:
+--pf9I7BMVVzbSWLtt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Call Trace:
-  [<ffffffff8107f780>] stop_cpu+0xc6  <--
-  [<ffffffff8105520e>] worker_thread+0x15d 
-  [<ffffffff8107f6ba>] __stop_machine+0x106 
-  [<ffffffff81058afb>] wake_up_bit+0x25 
-  [<ffffffff81038720>] spin_unlock_irqrestore+0x9 
-  [<ffffffff810550b1>] spin_lock_irq+0xb 
-  [<ffffffff810586cb>] kthread+0x7a 
-  [<ffffffff8100a964>] kernel_thread_helper+0x4 
-  [<ffffffff81009d61>] int_ret_from_sys_call+0x7 
-  [<ffffffff814033dd>] retint_restore_args+0x5 
-  [<ffffffff8100a960>] gs_change+0x13 
+Pavel Machek [Tue, May 04, 2010 at 06:18:50AM +0200]:
+> On Sat 2010-05-01 14:24:41, Nico Schottelius wrote:
+> > Nico Schottelius [Thu, Apr 29, 2010 at 09:12:42PM +0200]:
+> > > Nico Schottelius [Wed, Apr 28, 2010 at 06:09:36PM +0200]:
+> > > > Nico Schottelius [Tue, Apr 27, 2010 at 10:32:02AM +0200]:
+> > > > >=20
+> > > > > Nico Schottelius [Tue, Apr 27, 2010 at 09:46:09AM +0200]:
+> > > > > > [..]=20
+> > > > > > - suspend & resume works once
+> > > > > > - second time system
+> > > > > >   b) suspends, but comes up with the bios screen after resume
+> > > > > >      and hangs there forever (2.6.34-*)
+> ...
+> > Same happens on 2.6.34-rc5-00340-g79dba2e, now testing
+> > 2.6.34-rc6-00063-gbe1066b.
+>=20
+> There's one bit that needs to be set to stay in the acpi mode, and
+> there's blacklist somewhere...?
 
-With this guest file:
+Don't know if I should answer the question, but the problem also happens
+on 2.6.34-rc6-00063-gbe1066b.
 
-kernel = "/mnt/lab/vs11/vmlinuz"
-ramdisk = "/mnt/lab/vs11/initramfs.cpio.gz"
-memory = 2048
-maxvcpus = 4
-vcpus = 2
-vif = [ 'mac=00:0F:4B:00:00:71, bridge=switch' ]
-vfb = [ 'vnc=1, vnclisten=0.0.0.0,vncunused=1']
-root = "debug loglevel=10 plymouth:splash=solar plymouth:debug norm console=hvc0 initcall_debug"
+Now compiling v2.6.34-rc6-106-gd93ac51.
 
-This is with the latest linux kernel:
-d93ac51c7a129db7a1431d859a3ef45a0b1f3fc5 (Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client)
+Cheers,
 
-With your patch the PV guests keeps on going.
+Nico
 
-So:
+--=20
+New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+Please resign, if you signed 9885188C or 8D0E27A4.
 
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> The Xen I am using is xen-unstable - so 4.0.1. I know that the IRQ balance
-> code in the Xen hypervisor was fixed in 4.0 (it used to run out of
-> context - now it runs in the IRQ context). Maybe this bug you are seeing
-> (and have the fix for) is just a red-heering?
+Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
 
-Interestingly enough, I couldn't reproduce this on my Intel box, but on
-a AMD box with a very wacked TSC (cpu MHz         : 2795681.405) I can
-reproduce this.
+--pf9I7BMVVzbSWLtt
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvgM3EACgkQ19zI5DGHffAk3QCeKdw7X1a1mcPCca8wLKeU2cgb
+KZkAn0lHQU5g3EmnfNBd0feEeFI64Qq8
+=juR+
+-----END PGP SIGNATURE-----
+
+--pf9I7BMVVzbSWLtt--
