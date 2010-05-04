@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455Ab0EDRfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 13:35:21 -0400
-Received: from kroah.org ([198.145.64.141]:49870 "EHLO coco.kroah.org"
+	id S932669Ab0EDRf5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 13:35:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65401 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757896Ab0EDRfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 13:35:18 -0400
-Date: Tue, 4 May 2010 10:32:49 -0700
-From: Greg KH <greg@kroah.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       Davide Libenzi <davidel@xmailserver.org>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 0/7] The FunctionFS composite function
-Message-ID: <20100504173249.GA20588@kroah.com>
-References: <cover.1271406290.git.mina86@mina86.com>
+	id S932498Ab0EDRfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 13:35:55 -0400
+Date: Tue, 4 May 2010 19:35:15 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 0/2] Fix migration races in rmap_walk() V3
+Message-ID: <20100504173515.GA854@random.random>
+References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie>
+ <20100430182853.GK22108@random.random>
+ <20100501135110.GP20640@cmpxchg.org>
+ <20100503153301.GD19891@random.random>
+ <20100503234132.GK5336@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1271406290.git.mina86@mina86.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100503234132.GK5336@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 11:49:25AM +0200, Michal Nazarewicz wrote:
-> Hello everyone,
-> 
-> 
-> *Changes from Previous Version*
-> 
-> This is the second version of the FunctionFS patchset.
+On Tue, May 04, 2010 at 01:41:32AM +0200, Johannes Weiner wrote:
+> Although not strictly required, it's probably nicer to keep the
+> function signatures in this code alike.  So everything fine with
+> me as it stands :)
 
-Yet your Subject says "v3" :)
-
-Are you resending these again?
-
-thanks,
-
-greg k-h
+Too late I already optimized mincore...
