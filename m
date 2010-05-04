@@ -1,82 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933852Ab0EDU7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:59:38 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49585 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933683Ab0EDU7h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 16:59:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH tip/core/rcu 31/48] rcu: define __rcu address space modifier for sparse
-Date: Tue, 4 May 2010 22:58:19 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.34-rc6-00090-g1509e54-dirty; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, Christopher Li <sparse@chrisli.org>
-References: <20100504201934.GA19234@linux.vnet.ibm.com> <1273004398-19760-31-git-send-email-paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1273004398-19760-31-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1760232Ab0EDVEK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 17:04:10 -0400
+Received: from kroah.org ([198.145.64.141]:58791 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757149Ab0EDVEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 17:04:07 -0400
+Date: Tue, 4 May 2010 14:02:29 -0700
+From: Greg KH <greg@kroah.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Joe Perches <joe@perches.com>, Greg KH <gregkh@suse.de>,
+       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+       "ss@aao.gov.au" <ss@aao.gov.au>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Staging: dt3155: Cleanup memory mapped i/o access
+Message-ID: <20100504210229.GA21128@kroah.com>
+References: <20100503211751.GB21402@kroah.com>
+ <0D753D10438DA54287A00B0270842697636EADE1D2@AUSP01VMBX24.collaborationhost.net>
+ <0D753D10438DA54287A00B0270842697636EADE26A@AUSP01VMBX24.collaborationhost.net>
+ <20100503234123.GC13519@suse.de>
+ <1272931198.30040.218.camel@Joe-Laptop.home>
+ <20100504025430.GA26421@suse.de>
+ <1273000031.4143.56.camel@Joe-Laptop.home>
+ <0D753D10438DA54287A00B0270842697636EB83CE8@AUSP01VMBX24.collaborationhost.net>
+ <20100504201207.GA7096@kroah.com>
+ <0D753D10438DA54287A00B0270842697636EB83E2A@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005042258.20390.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX185fRFyNq/X7X8Q7/dpDXrB1q5RgZSHV3z4sZE
- VllaUBn0LLS6vxyuEL8Mudu/z/ec/IQ64Vvh+UC/lrOgs6ce9Y
- uEv9A9hP8z/CtpN8gWWYQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0D753D10438DA54287A00B0270842697636EB83E2A@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 May 2010 22:19:41 Paul E. McKenney wrote:
-> This patch defines an __rcu annotation that permits sparse to check for
-> correct use of RCU-protected pointers.  If a pointer that is annotated
-> with __rcu is accessed directly (as opposed to via rcu_dereference(),
-> rcu_assign_pointer(), or one of their variants), sparse can be made
-> to complain.  To enable such complaints, use the new default-disabled
-> CONFIG_SPARSE_RCU_POINTER kernel configuration option.  Please note that
-> these sparse complaints are intended to be a debugging aid, -not- a
-> code-style-enforcement mechanism.
+On Tue, May 04, 2010 at 03:53:10PM -0500, H Hartley Sweeten wrote:
+> On Tuesday, May 04, 2010 1:12 PM, Greg KH wrote:
+> >>> I needed to add a git checkout origin/staging-next
+> >> 
+> >> That tree is still missing a couple commits that are in Linus' tree:
+> >> 
+> >> commit 6536560cabab170ed2969b005bf69a496e9c45bf
+> >>     Staging: dt3155: fix 50Hz configuration
+> >> 
+> >> commit 74a920139a0f1119c5a604cef0ce5d6f591dc782
+> >>     staging: fix dt3155 build
+> >
+> > Yes, if you look, the staging-next branch starts on Linus's tree as of
+> > April 8 (just after 2.6.34-rc3).  I don't merge back to Linus's tree a
+> > bunch, because that is not how it should be done.  When I am going to
+> > push these to Linus, then I will merge and handle any fixups if needed.
+> 
+> Ok.
+> 
+> >> Which would probably explain the conflict that occurs in linux-next for
+> >> dt3155_drv.c.
+> >
+> > Yes.  And how easy it is to fix up :)
+> 
+> Ok.
+> 
+> >> commit 9e1bd9a6f8c6ad8b461294a365c49b19212178d9
+> >> Merge: 5382319 e595eea
+> >> Author: Stephen Rothwell <sfr@canb.auug.org.au>
+> >> Date:   Tue May 4 15:42:20 2010 +1000
+> >> 
+> >>     Merge remote branch 'staging-next/staging-next'
+> >>     
+> >>     Conflicts:
+> >>         drivers/staging/arlan/arlan-main.c
+> >>         drivers/staging/comedi/drivers/cb_das16_cs.c
+> >>         drivers/staging/cx25821/cx25821-alsa.c
+> >>         drivers/staging/dt3155/dt3155_drv.c
+> >>         drivers/staging/netwave/netwave_cs.c
+> >
+> > That doesn't explain how you aren't seeing the correct stuff to base
+> > your patches off of though.
+> 
+> I may be seeing the correct stuff now in your staging-next tree just not
+> in linux-next due to the two commits above.
+> 
+> > Are you _sure_ you have the 'staging-next' branch of the tree checked
+> > out?
+> 
+> Am I _sure_...  No...  Do I _think_ so...  Yes... ;-)
 
-To add more background, I was thinking that it might make sense to
-always leave the address space attribute in place but to make part
-part of the checking optional.
+Ah, ok, the issue is the merge is causing your patch to not apply to my
+staging-next tree.  Sorry, now I get it :)
 
-The idea would be that we always make sure that an __rcu annotated
-pointer cannot be dereferenced or cast directly, while we would
-only complain about non-annotated pointers being passed to rcu_dereference
-and rcu_assign_pointer if CONFIG_SPARSE_RCU_POINTER is set.
+> Would you like me to rebase the patch to staging-next to see?
 
-Most of the work I had spent on my tree was about fixing all the
-false positives from that, but more work would be needed to get
-a clean build from it even with the modified CONFIG_SPARSE_RCU_POINTER
-disabled. Since you managed to find the real bugs and fix them,
-your series by itself is probably more useful than the full set
-that I originally had.
+Your patches, yes, I would :)
 
-> +/*
-> + * Helper functions for rcu_dereference_check(), rcu_dereference_protected()
-> + * and rcu_assign_pointer().  Some of these could be folded into their
-> + * callers, but they are left separate in order to ease introduction of
-> + * multiple flavors of pointers to match the multiple flavors of RCU
-> + * (e.g., __rcu_bh, * __rcu_sched, and __srcu), should this make sense in
-> + * the future.
-> + */
-> +#define __rcu_access_pointer(p, space) \
-> +	({ \
-> +		typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
-> +		(void) (((typeof (*p) space *)p) == p); \
-> +		((typeof(*p) __force __kernel *)(_________p1)); \
-> +	})
+> But, will this run into a similar problem with the two commits already in
+> Linus' tree?  If so I can just hold off again until everything catches up.
 
-Do you have specific plans to add these (__rcu_bh etc) back in the future,
-or do you just want to leave the options open?
+No, I can handle that merge when it happens, quite fine.
 
-Anyway, good to see that you found your way through my patches and got them
-into shape. 
+thanks,
 
-	Arnd
+greg k-h
