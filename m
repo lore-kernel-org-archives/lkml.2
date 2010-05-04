@@ -1,34 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab0EDKcf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 06:32:35 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51981 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab0EDKcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 06:32:33 -0400
-Date: Tue, 4 May 2010 06:32:32 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Fredrick Prashanth John Berchmans <fredrickprashanth@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: nfs accesses of FAT fs folders causes deadlock on lock_super
-Message-ID: <20100504103232.GA25054@infradead.org>
-References: <x2gd4f60c3c1005032259p8be864bcucff91618016a0eb@mail.gmail.com>
+	id S1756880Ab0EDKce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 06:32:34 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:50154 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752455Ab0EDKcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 06:32:32 -0400
+Date: Tue, 4 May 2010 11:32:13 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
+	and rmap_walk() during migration by not migrating temporary stacks
+Message-ID: <20100504103213.GB20979@csn.ul.ie>
+References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie> <1272529930-29505-3-git-send-email-mel@csn.ul.ie> <20100429162120.GC22108@random.random>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <x2gd4f60c3c1005032259p8be864bcucff91618016a0eb@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100429162120.GC22108@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 03, 2010 at 10:59:42PM -0700, Fredrick Prashanth John Berchmans wrote:
-> The box was running kernel version 2.6.27.10.
-> But I think the FAT code has not changed much.
+On Thu, Apr 29, 2010 at 06:21:20PM +0200, Andrea Arcangeli wrote:
+> Hi Mel,
+> 
+> did you see my proposed fix?
 
-But the nfsd code has and now doesn't call lookup from the filldir
-callback anymore.
+I did when I got back - sorry for the delay. The patchset I sent out was what
+I had fully tested and was confident worked. I picked up the version of the
+patch that was sent to Linus by Rik for merging.
 
+> I'm running with it applied, I'd be
+> interested if you can test it.
+
+Unfortunately, the same bug triggers after about 18 minutes. The objective of
+your fix is very simple - have a VMA covering the new range so that rmap can
+find it. However, no lock is held during move_page_tables() because of the
+need to call the page allocator. Due to the lack of locking, is it possible
+that something like the following is happening?
+
+Exec Process				Migration Process
+begin move_page_tables
+					begin rmap walk
+					take anon_vma locks
+					find new location of pte (do nothing)
+copy migration pte to new location
+#### Bad PTE now in place
+					find old location of pte
+					remove old migration pte
+					release anon_vma locks
+remove temporary VMA
+some time later, bug on migration pte
+
+Even with the care taken, a migration PTE got copied and then left behind. What
+I haven't confirmed at this point is if the ordering of the walk in "migration
+process" is correct in the above scenario. The order is important for
+the race as described to happen.
+
+If the above is wrong, there is still a race somewhere else.
+
+> Surely it will also work for new
+> anon-vma code in upstream, because at that point there's just 1
+> anon-vma and nothing else attached to the vma.
+> 
+> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commit;h=6efa1dfa5152ef8d7f26beb188d6877525a9dd03
+> 
+> I think it's wrong to try to handle the race in rmap walk by making
+> magic checks on vm_flags VM_GROWSDOWN|GROWSUP and
+> vma->vm_mm->map_count == 1,
+
+How bad is that magic check really? Is there a scenario when it's
+the wrong thing to do?
+
+I agree that migration skipping specific pages of the temporary stack is
+unfortunate and having exec-aware informtion in migration is an odd dependency
+at best. On the other hand, it's not as bad as skipping other regions as exec
+will finish and allow the pages to be moved again. The impact to compaction
+or transparent support would appear to be minimal.
+
+> when we can fix it fully and simply in
+> exec.c by indexing two vmas in the same anon-vma with a different
+> vm_start so the pages will be found at all times by the rmap_walk.
+> 
+
+If it can be simply fixed in exec, then I'll agree. Your patch looked simple
+but unfortunately it doesn't fix the problem and it does introduce another
+call to kmalloc() in the exec path. It's probably something that would only
+be noticed by microbenchmarks though so I'm less concerned about that aspect.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
