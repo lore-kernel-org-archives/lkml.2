@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760246Ab0EDXZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 19:25:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53567 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751371Ab0EDXZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 19:25:34 -0400
-Date: Tue, 4 May 2010 16:24:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: linux-kernel@vger.kernel.org, Matt Porter <mporter@kernel.crashing.org>,
-       Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
-       Thomas Moll <thomas.moll@sysgo.com>
-Subject: Re: [PATCH -mm 4/5] RapidIO: Add switch domain routines
-Message-Id: <20100504162457.0c8d23ba.akpm@linux-foundation.org>
-In-Reply-To: <1272901558-9292-5-git-send-email-alexandre.bounine@idt.com>
-References: <1272901558-9292-1-git-send-email-alexandre.bounine@idt.com>
-	<1272901558-9292-5-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757705Ab0EDXhl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 19:37:41 -0400
+Received: from claw.goop.org ([74.207.240.146]:41821 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754265Ab0EDXhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 19:37:40 -0400
+Message-ID: <4BE0AFC2.2090207@goop.org>
+Date: Tue, 04 May 2010 16:37:38 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+CC: Jeremy Fitzhardinge <jeremy@xensource.com>, akpm@osdl.org,
+       linux-kernel@vger.kernel.org, virtualization@lists.osdl.org,
+       xen-devel@lists.xensource.com, Zachary Amsden <zach@vmware.com>,
+       Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [patch 7/8] Add a bootparameter to reserve high linear address
+ space.
+References: <20060803002510.634721860@xensource.com> <20060803002518.595166293@xensource.com> <19700101001522.GA3999@ucw.cz>
+In-Reply-To: <19700101001522.GA3999@ucw.cz>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  3 May 2010 11:45:57 -0400
-Alexandre Bounine <alexandre.bounine@idt.com> wrote:
+On 12/31/1969 04:15 PM, Pavel Machek wrote:
+> Dynamically loaded hypervisor? Do we really want to support that?
+>   
 
-> +static int
-> +idtcps_set_domain(struct rio_mport *mport, u16 destid, u8 hopcount,
-> +		       u8 sw_domain)
-> +{
-> +	/*
-> +	 * Switch domain configuration operates only at global level
-> +	 */
-> +	rio_mport_write_config_32(mport, destid, hopcount,
-> +				  IDTCPS_RIO_DOMAIN, (u32)sw_domain);
-> +	return 0;
-> +}
-> +
-> +static int
-> +idtcps_get_domain(struct rio_mport *mport, u16 destid, u8 hopcount,
-> +		       u8 *sw_domain)
-> +{
-> +	u32 regval;
-> +
-> +	/*
-> +	 * Switch domain configuration operates only at global level
-> +	 */
-> +	rio_mport_read_config_32(mport, destid, hopcount,
-> +				IDTCPS_RIO_DOMAIN, &regval);
-> +
-> +	*sw_domain = (u8)(regval & 0xff);
-> +
-> +	return 0;
-> +}
+(Missed this because your datestamp was 1969...)
 
-This ignores the return values from rio_mport_write_config_*().
+The idea was that you could boot a guest under VMWare fully virtualized
+then switch it to a VMI guest by loading a module.  I don't think it
+ever worked out - the transition was too trick to get right (especially
+applying all the pvops patching to a live system).
 
-AFACIT these things always return hard-wired 0 anyway.  Perhaps we
-should give up and change ->cread() and friends to return void.  That
-beats the alternative of adding lots of untestable test-n-return
-unwinding code.
-
+    J
