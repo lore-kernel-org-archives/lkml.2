@@ -1,106 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933772Ab0EDUsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:48:16 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:58150 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab0EDUsO convert rfc822-to-8bit (ORCPT
+	id S933961Ab0EDUwB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:52:01 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:38575 "HELO
+	outbound-mail-313.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933657Ab0EDUwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 16:48:14 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=i0cCftgv4t36dLVt2KhGs7A57AdGytHezhWf81Hy+ZlXLTyRcjhv/fTe4vWuSow0Q
-	P8PSTzXPeCRcruMwFChTg==
-MIME-Version: 1.0
-In-Reply-To: <1273004398-19760-33-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20100504201934.GA19234@linux.vnet.ibm.com>
-	 <1273004398-19760-33-git-send-email-paulmck@linux.vnet.ibm.com>
-Date: Tue, 4 May 2010 13:48:10 -0700
-Message-ID: <m2v6599ad831005041348le3a2373fmab4626bd51cfc698@mail.gmail.com>
-Subject: Re: [PATCH tip/core/rcu 33/48] cgroups: __rcu annotations
-From: Paul Menage <menage@google.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, Arnd Bergmann <arnd@arndb.de>,
-       Li Zefan <lizf@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 4 May 2010 16:52:00 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=CDUhd5hLfuWPzxmiSaNGw9ZzTF+vaJHQEx3RL4beT0VhsNTbtXOsuqueCVG77ol5H8+lt/MQnkjVdPPzwva14wfto7lVV9t72q0K8dB1cCTJc74K5OFx98krB7QG22W/;
+Date: Tue, 4 May 2010 13:51:55 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] vgacon: use request_region(), not
+ request_resource(), to set BUSY
+Message-ID: <20100504135155.4a4673a3@jbarnes-x201>
+In-Reply-To: <4BE08013.5060402@zytor.com>
+References: <20100504185801.7244.39173.stgit@bob.kio>
+	<20100504185806.7244.96960.stgit@bob.kio>
+	<alpine.LFD.2.00.1005041207380.5478@i5.linux-foundation.org>
+	<201005041316.51113.bjorn.helgaas@hp.com>
+	<4BE08013.5060402@zytor.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 131.252.210.190 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 4, 2010 at 1:19 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> From: Arnd Bergmann <arnd@arndb.de>
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Paul Menage <menage@google.com>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
+On Tue, 04 May 2010 13:14:11 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-Acked-by: Paul Menage <menage@google.com>
+> On 05/04/2010 12:16 PM, Bjorn Helgaas wrote:
+> > On Tuesday, May 04, 2010 01:09:46 pm Linus Torvalds wrote:
+> >> On Tue, 4 May 2010, Bjorn Helgaas wrote:
+> >>> Drivers normally use request_region() to mark the region busy so
+> >>> it won't be used by anybody else.  Previously, we used
+> >>> request_resource(), which doesn't mark the VGA regions busy.
+> >>>
+> >>> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> >>
+> >> Hmm. I don't object, but unless there is some crazy regression,
+> >> there's no way I will take something like this outside the merge
+> >> window. Who knows what odd frame buffer driver is out there that
+> >> just depended on the fact that it could also register that VGA
+> >> area?
+> >>
+> >> Probably no such thing exists, but it's why I want these kinds of
+> >> things during the merge window. And obviously preferably through
+> >> something like the PCI merge tree, but that's a different issue.
+> > 
+> > Yep, I was intending for after .34.  I couldn't figure out where
+> > to send it, but I'll be happy to send it to Jesse.
+> > 
+> 
+> I would vote for Jesse's tree.  If Jesse doesn't want it I'll take it.
 
-> ---
->  include/linux/cgroup.h |    4 ++--
->  include/linux/sched.h  |    2 +-
->  kernel/cgroup.c        |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index 8f78073..b147fd5 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -75,7 +75,7 @@ struct cgroup_subsys_state {
->
->        unsigned long flags;
->        /* ID for this css, if possible */
-> -       struct css_id *id;
-> +       struct css_id __rcu *id;
->  };
->
->  /* bits in struct cgroup_subsys_state flags field */
-> @@ -205,7 +205,7 @@ struct cgroup {
->        struct list_head children;      /* my children */
->
->        struct cgroup *parent;          /* my parent */
-> -       struct dentry *dentry;          /* cgroup fs entry, RCU protected */
-> +       struct dentry __rcu *dentry;    /* cgroup fs entry, RCU protected */
->
->        /* Private pointers for each registered subsystem */
->        struct cgroup_subsys_state *subsys[CGROUP_SUBSYS_COUNT];
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index dad7f66..7307c74 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1429,7 +1429,7 @@ struct task_struct {
->  #endif
->  #ifdef CONFIG_CGROUPS
->        /* Control Group info protected by css_set_lock */
-> -       struct css_set *cgroups;
-> +       struct css_set __rcu *cgroups;
->        /* cg_list protected by css_set_lock and tsk->alloc_lock */
->        struct list_head cg_list;
->  #endif
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 3a53c77..5cfbc93 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -138,7 +138,7 @@ struct css_id {
->         * is called after synchronize_rcu(). But for safe use, css_is_removed()
->         * css_tryget() should be used for avoiding race.
->         */
-> -       struct cgroup_subsys_state *css;
-> +       struct cgroup_subsys_state __rcu *css;
->        /*
->         * ID of this css.
->         */
-> --
-> 1.7.0
->
->
+I'm happy to stuff it in my -next tree.  Bjorn can you resend?
+
+Thanks,
+Jesse
