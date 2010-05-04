@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933500Ab0EDQIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 12:08:49 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:1848 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932192Ab0EDQIr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 12:08:47 -0400
-From: Frans Pop <elendil@planet.nl>
-To: Valdis.Kletnieks@vt.edu
-Subject: Re: git bisect questions...
-Date: Tue, 4 May 2010 18:08:44 +0200
-User-Agent: KMail/1.9.9
-Cc: linux-kernel@vger.kernel.org
-References: <6677.1272983034@localhost>
-In-reply-To: <6677.1272983034@localhost>
+	id S933576Ab0EDQJI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 12:09:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3621 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933475Ab0EDQJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 12:09:04 -0400
+Message-ID: <4BE04677.4060608@redhat.com>
+Date: Tue, 04 May 2010 19:08:23 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, mtosatti@redhat.com,
+       agraf@suse.de, yoshikawa.takuya@oss.ntt.co.jp, fernando@oss.ntt.co.jp,
+       kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org,
+       tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+       benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH resend 8/12] asm-generic: bitops: introduce le bit
+ offset macro
+References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <20100504220500.7695cd66.takuya.yoshikawa@gmail.com> <201005041703.00549.arnd@arndb.de>
+In-Reply-To: <201005041703.00549.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201005041808.44875.elendil@planet.nl>
-X-OriginalArrivalTime: 04 May 2010 16:08:45.0774 (UTC) FILETIME=[12E67EE0:01CAEBA4]
-X-RecipientDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Valdis.Kletnieks@vt.edu wrote:
-> 1) I look at 'git bisect visualize', and I see a nice merge point that I
-> am fairly sure will (a) bisect as good and (b) trim out a *lot* of
-> ancestor commits in one shot.  If I do a 'git reset --hard <merge
-> commit>', will that make the next 'git bisect' do what I want?
+On 05/04/2010 06:03 PM, Arnd Bergmann wrote:
+> On Tuesday 04 May 2010, Takuya Yoshikawa wrote:
+>    
+>> Although we can use *_le_bit() helpers to treat bitmaps le arranged,
+>> having le bit offset calculation as a seperate macro gives us more freedom.
+>>
+>> For example, KVM has le arranged dirty bitmaps for VGA, live-migration
+>> and they are used in user space too. To avoid bitmap copies between kernel
+>> and user space, we want to update the bitmaps in user space directly.
+>> To achive this, le bit offset with *_user() functions help us a lot.
+>>
+>> So let us use the le bit offset calculation part by defining it as a new
+>> macro: generic_le_bit_offset() .
+>>      
+> Does this work correctly if your user space is 32 bits (i.e. unsigned long
+> is different size in user space and kernel) in both big- and little-endian
+> systems?
+>
+> I'm not sure about all the details, but I think you cannot in general share
+> bitmaps between user space and kernel because of this.
+>    
 
-Yes.
+That's why the bitmaps are defined as little endian u64 aligned, even on 
+big endian 32-bit systems.  Little endian bitmaps are wordsize agnostic, 
+and u64 alignment ensures we can use long-sized bitops on mixed size 
+systems.
 
-> 2) I'm down to the last 100 or so commits, and I have a at least 3 'git
-> bisect skip' in there already because of a (presumably) unrelated oops.
-> I'm pretty sure that commit 10fd883ce384706f88554a0b08cc4d63345e7d8b is
-> the fix - how do I logically move that commit to right after the commit
-> 22dd82a3f5ceef72be19e502418823a2f8801ed0 which introduced the oops, so
-> I can bisect through the 70 or so commits in between?  I know it involves
-> "git cherrypick", but have no clue how to do it...
+-- 
+error compiling committee.c: too many arguments to function
 
-One way is, before *each* compilation after a 'git bisect good/bad', to do
-a 'git cherry-pick 10fd883ce3847'. This means you don't actually move it 
-after the commit that causes the problem, but you do add it on top for 
-your compilation.
-
-But that means that after testing the build you can no longer do a simple
-'git bisect good/bad' as that would tag the cherry-picked commit instead of 
-the one you tested.
-
-So instead you have to do 'git bisect good/bad HEAD^' (assuming you did a 
-single cherry-pick) [1].
-This will automatically "remove" the cherry-picked commit again, which is 
-why you have to add it back for your next iteration.
-
-Cheers,
-FJP
-
-[1] Or you can specify the commit ID of the commit you're really testing.
