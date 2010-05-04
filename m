@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934013Ab0EDUYa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:24:30 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54175 "EHLO e8.ny.us.ibm.com"
+	id S933972Ab0EDUW3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:22:29 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52370 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933791Ab0EDUUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 16:20:19 -0400
+	id S933809Ab0EDUUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 16:20:21 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,12 +13,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Arnd Bergmann <arnd@arndb.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH tip/core/rcu 39/48] notifiers: __rcu annotations
-Date: Tue,  4 May 2010 13:19:49 -0700
-Message-Id: <1273004398-19760-39-git-send-email-paulmck@linux.vnet.ibm.com>
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 05/48] rcu: ignore offline CPUs in last non-dyntick-idle CPU check
+Date: Tue,  4 May 2010 13:19:15 -0700
+Message-Id: <1273004398-19760-5-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100504201934.GA19234@linux.vnet.ibm.com>
 References: <20100504201934.GA19234@linux.vnet.ibm.com>
@@ -26,53 +24,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Offline CPUs are not in nohz_cpu_mask, but can be ignored when checking
+for the last non-dyntick-idle CPU.  This patch therefore only checks
+online CPUs for not being dyntick idle, allowing fast entry into
+full-system dyntick-idle state even when there are some offline CPUs.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
 ---
- include/linux/notifier.h |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ kernel/rcutree_plugin.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-index fee6c2f..f05f5e4 100644
---- a/include/linux/notifier.h
-+++ b/include/linux/notifier.h
-@@ -49,28 +49,28 @@
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 79b53bd..687c4e9 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1016,7 +1016,7 @@ int rcu_needs_cpu(int cpu)
  
- struct notifier_block {
- 	int (*notifier_call)(struct notifier_block *, unsigned long, void *);
--	struct notifier_block *next;
-+	struct notifier_block __rcu *next;
- 	int priority;
- };
- 
- struct atomic_notifier_head {
- 	spinlock_t lock;
--	struct notifier_block *head;
-+	struct notifier_block __rcu *head;
- };
- 
- struct blocking_notifier_head {
- 	struct rw_semaphore rwsem;
--	struct notifier_block *head;
-+	struct notifier_block __rcu *head;
- };
- 
- struct raw_notifier_head {
--	struct notifier_block *head;
-+	struct notifier_block __rcu *head;
- };
- 
- struct srcu_notifier_head {
- 	struct mutex mutex;
- 	struct srcu_struct srcu;
--	struct notifier_block *head;
-+	struct notifier_block __rcu *head;
- };
- 
- #define ATOMIC_INIT_NOTIFIER_HEAD(name) do {	\
+ 	/* Don't bother unless we are the last non-dyntick-idle CPU. */
+ 	for_each_cpu_not(thatcpu, nohz_cpu_mask)
+-		if (thatcpu != cpu) {
++		if (cpu_online(thatcpu) && thatcpu != cpu) {
+ 			per_cpu(rcu_dyntick_drain, cpu) = 0;
+ 			per_cpu(rcu_dyntick_holdoff, cpu) = jiffies - 1;
+ 			return rcu_needs_cpu_quick_check(cpu);
 -- 
 1.7.0
 
