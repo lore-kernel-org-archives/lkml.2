@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab0EDKPr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 06:15:47 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:45938 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab0EDKPq (ORCPT
+	id S1757203Ab0EDKVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 06:21:18 -0400
+Received: from mga10.intel.com ([192.55.52.92]:13502 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756307Ab0EDKVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 06:15:46 -0400
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: perf, ftrace and MCEs
-From: Andi Kleen <andi@halobates.de>
-References: <20100501181212.GA25352@liondog.tnic>
-Date: Tue, 04 May 2010 12:15:44 +0200
-In-Reply-To: <20100501181212.GA25352@liondog.tnic> (Borislav Petkov's message of "Sat, 1 May 2010 20:12:12 +0200")
-Message-ID: <87tyqo3rcf.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 4 May 2010 06:21:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,325,1270450800"; 
+   d="scan'208";a="795241091"
+Date: Tue, 4 May 2010 10:43:05 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, "Greg Kroah-Hartman" <gregkh@suse.de>
+Subject: Re: possible locking bug in tty_open
+Message-ID: <20100504104305.29e7ada7@linux.intel.com>
+In-Reply-To: <201005022247.33857.arnd@arndb.de>
+References: <201005022247.33857.arnd@arndb.de>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov <bp@alien8.de> writes:
+On Sun, 2 May 2010 22:47:33 +0200
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-> so I finally had some spare time to stare at perf/ftrace code and ponder
-> on how to use those facilities for MCE collecting and reporting. Btw, I
+> While playing some more with my TTY BKL patches, I stumbled over
+> what looks like a bug in tty_open, introduced in e8c6210 
+> "tty: push the BKL down into the handlers a bit":
+> 
+> After the "retry_open:" label, we first get the tty_mutex
+> and then the BKL. However a the end of tty_open, we jump
+> back to retry_open with the BKL still held. If we run into
+> this case, the tty_open function will be left with the BKL
+> still held.
+> 
+> It may be impossible to actually trigger this bug, because
+> the path is only taken if a tty driver open function returns
+> -ERESTARTSYS without setting signal_pending().
 
-A good beginning of any such investigations would be to describe
-what exact problems you're trying to solve here.
-
--Andi
-
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+It looks pretty much impossible to trigger but it's definitely a bug.
+I'll send Greg a patch
