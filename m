@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933596Ab0EDTLT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 15:11:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41152 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932993Ab0EDTLS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 15:11:18 -0400
-Date: Tue, 4 May 2010 12:09:46 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 2/2] vgacon: use request_region(), not request_resource(),
- to set BUSY
-In-Reply-To: <20100504185806.7244.96960.stgit@bob.kio>
-Message-ID: <alpine.LFD.2.00.1005041207380.5478@i5.linux-foundation.org>
-References: <20100504185801.7244.39173.stgit@bob.kio> <20100504185806.7244.96960.stgit@bob.kio>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1759430Ab0EDTQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 15:16:34 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:50965 "EHLO poutre.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753893Ab0EDTQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 15:16:33 -0400
+Date: Tue, 4 May 2010 21:16:29 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: "Henrik Rydberg" <rydberg@euromail.se>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+       Alex Murray <murray.alex@gmail.com>
+Subject: Re: [PATCH 2/2] hwmon: applesmc: Add temperature sensor labels to
+ sysfs interface (rev2)
+Message-ID: <20100504211629.40d0d1bf@hyperion.delvare>
+In-Reply-To: <1272980343-3880-2-git-send-email-rydberg@euromail.se>
+References: <1272980343-3880-1-git-send-email-rydberg@euromail.se>
+	<1272980343-3880-2-git-send-email-rydberg@euromail.se>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Henrik,
 
-
-On Tue, 4 May 2010, Bjorn Helgaas wrote:
+On Tue,  4 May 2010 15:39:03 +0200, Henrik Rydberg wrote:
+> From: Alex Murray <murray.alex@gmail.com>
 > 
-> Drivers normally use request_region() to mark the region busy so it won't
-> be used by anybody else.  Previously, we used request_resource(), which
-> doesn't mark the VGA regions busy.
+> The Apple SMC uses a systematic labeling scheme for the hardware
+> temperature sensors. This scheme is currently hidden from
+> userland. Since the sensor set, and consequently the numbering,
+> differs between models, an extensive database of configurations is
+> required for an application such as fan control. This patch adds the
+> SMC labels to the hwmon sysfs interface, allowing applications to use
+> the sensors more intelligibly.
 > 
-> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> [rydberg@euromail.se: fixed error handling]
+> Signed-off-by: Alex Murray <murray.alex@gmail.com>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>  drivers/hwmon/applesmc.c |  148 +++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 147 insertions(+), 1 deletions(-)
+> (...)
 
-Hmm. I don't object, but unless there is some crazy regression, there's no 
-way I will take something like this outside the merge window. Who knows 
-what odd frame buffer driver is out there that just depended on the fact 
-that it could also register that VGA area?
+Applied, thanks.
 
-Probably no such thing exists, but it's why I want these kinds of things 
-during the merge window. And obviously preferably through something like 
-the PCI merge tree, but that's a different issue.
-
-		Linus
+-- 
+Jean Delvare
