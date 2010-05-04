@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932884Ab0EDRgP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 13:36:15 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:38295 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932705Ab0EDRgN convert rfc822-to-8bit (ORCPT
+	id S932806Ab0EDRhl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 13:37:41 -0400
+Received: from relay1-d.mail.gandi.net ([217.70.183.193]:42074 "EHLO
+	relay1-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932273Ab0EDRhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 13:36:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100420230719.GB1432@n2100.arm.linux.org.uk>
-References: <k2ncecb6d8f1004191627w3cd36450xf797f746460abb09@mail.gmail.com> 
-	<20100420155122.6f2c26eb.akpm@linux-foundation.org> <20100420230719.GB1432@n2100.arm.linux.org.uk>
-From: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Date: Tue, 4 May 2010 14:35:50 -0300
-Message-ID: <n2gcecb6d8f1005041035w51dac3c8ke829a4ae8bf7f408@mail.gmail.com>
-Subject: Re: Suspicious compilation warning
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 May 2010 13:37:39 -0400
+X-Originating-IP: 217.70.178.44
+X-Originating-IP: 82.8.179.104
+Subject: Re: [PATCH] Disable i8042 checks on Intel Apple Macs
+From: Bastien Nocera <hadess@hadess.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Vojtech Pavlik <vojtech@suse.cz>,
+       Robert Hancock <hancockrwd@gmail.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>, pjones@redhat.com
+In-Reply-To: <20100504172302.GA29428@core.coreip.homeip.net>
+References: <1264011793.1735.3683.camel@localhost.localdomain>
+	 <4B57A2D4.9030204@gmail.com>
+	 <20100121185544.GB11996@core.coreip.homeip.net>
+	 <51f3faa71001211339t4652700ct34659c37479cd67e@mail.gmail.com>
+	 <20100121221701.GA15293@core.coreip.homeip.net>
+	 <20100125163433.GB31957@suse.cz> <4B5E0DFA.8080705@zytor.com>
+	 <20100125221520.GA30307@core.coreip.homeip.net>
+	 <1272992801.13354.214.camel@localhost.localdomain>
+	 <20100504172302.GA29428@core.coreip.homeip.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 04 May 2010 18:37:31 +0100
+Message-ID: <1272994651.13354.216.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.0.1 (2.30.0-3.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hey Dmitry,
 
-On Tue, Apr 20, 2010 at 20:07, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
->
-> Well, it'll be about this number on everything using sparsemem extreme:
->
-> #define SECTIONS_PER_ROOT       (PAGE_SIZE / sizeof (struct mem_section))
->
-> and with only 32 sections, this is going to give a NR_SECTION_ROOTS value
-> of zero.  I think the calculation of NR_SECTIONS_ROOTS is wrong.
->
-> #define NR_SECTION_ROOTS        (NR_MEM_SECTIONS / SECTIONS_PER_ROOT)
->
-> Clearly if we have 1 mem section, we want to have one section root, so
-> I think this division should round up any fractional part, thusly:
->
-> #define NR_SECTION_ROOTS        ((NR_MEM_SECTIONS + SECTIONS_PER_ROOT - 1) / SECTIONS_PER_ROOT)
+On Tue, 2010-05-04 at 10:23 -0700, Dmitry Torokhov wrote:
+<snip>
+> Mind resending the original patch? Apparently current situation causes
+> issues and I guess DMI is not the wost way of taking care of it.
 
-Seems correct to me, Is there any idea when this gets committed?
+Re-sent to linux-input with you on CC:.
 
-Regards,
-Marcelo.
+Cheers
+
