@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab0EDUZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:25:06 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54165 "EHLO e8.ny.us.ibm.com"
+	id S933991Ab0EDUXg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:23:36 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:50526 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933783Ab0EDUUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 16:20:18 -0400
+	id S933795Ab0EDUUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 16:20:19 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,12 +15,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        Arnd Bergmann <arnd@arndb.de>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH tip/core/rcu 38/48] perf_event: __rcu annotations
-Date: Tue,  4 May 2010 13:19:48 -0700
-Message-Id: <1273004398-19760-38-git-send-email-paulmck@linux.vnet.ibm.com>
+       Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH tip/core/rcu 36/48] nfs: __rcu annotations
+Date: Tue,  4 May 2010 13:19:46 -0700
+Message-Id: <1273004398-19760-36-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100504201934.GA19234@linux.vnet.ibm.com>
 References: <20100504201934.GA19234@linux.vnet.ibm.com>
@@ -32,59 +30,61 @@ From: Arnd Bergmann <arnd@arndb.de>
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- include/linux/perf_event.h |    6 +++---
- include/linux/sched.h      |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ fs/nfs/delegation.h             |    2 +-
+ include/linux/nfs_fs.h          |    2 +-
+ include/linux/sunrpc/auth_gss.h |    4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index c8e3754..48132eb 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -582,7 +582,7 @@ struct perf_event {
- 	int				nr_siblings;
- 	int				group_flags;
- 	struct perf_event		*group_leader;
--	struct perf_event		*output;
-+	struct perf_event __rcu		*output;
- 	const struct pmu		*pmu;
- 
- 	enum perf_event_active_state	state;
-@@ -643,7 +643,7 @@ struct perf_event {
- 	/* mmap bits */
- 	struct mutex			mmap_mutex;
- 	atomic_t			mmap_count;
--	struct perf_mmap_data		*data;
-+	struct perf_mmap_data __rcu	*data;
- 
- 	/* poll related */
- 	wait_queue_head_t		waitq;
-@@ -710,7 +710,7 @@ struct perf_event_context {
- 	 * These fields let us detect when two contexts have both
- 	 * been cloned (inherited) from a common ancestor.
- 	 */
--	struct perf_event_context	*parent_ctx;
-+	struct perf_event_context __rcu *parent_ctx;
- 	u64				parent_gen;
- 	u64				generation;
- 	int				pin_count;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 74b3125..34d28f7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1442,7 +1442,7 @@ struct task_struct {
- 	struct futex_pi_state *pi_state_cache;
- #endif
- #ifdef CONFIG_PERF_EVENTS
--	struct perf_event_context *perf_event_ctxp;
-+	struct perf_event_context __rcu *perf_event_ctxp;
- 	struct mutex perf_event_mutex;
- 	struct list_head perf_event_list;
- #endif
+diff --git a/fs/nfs/delegation.h b/fs/nfs/delegation.h
+index 69e7b81..2978814 100644
+--- a/fs/nfs/delegation.h
++++ b/fs/nfs/delegation.h
+@@ -14,7 +14,7 @@
+  */
+ struct nfs_delegation {
+ 	struct list_head super_list;
+-	struct rpc_cred *cred;
++	struct rpc_cred __rcu *cred;
+ 	struct inode *inode;
+ 	nfs4_stateid stateid;
+ 	fmode_t type;
+diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
+index 1a0b85a..3cc4fb6 100644
+--- a/include/linux/nfs_fs.h
++++ b/include/linux/nfs_fs.h
+@@ -178,7 +178,7 @@ struct nfs_inode {
+ 	struct nfs4_cached_acl	*nfs4_acl;
+         /* NFSv4 state */
+ 	struct list_head	open_states;
+-	struct nfs_delegation	*delegation;
++	struct nfs_delegation __rcu *delegation;
+ 	fmode_t			 delegation_state;
+ 	struct rw_semaphore	rwsem;
+ #endif /* CONFIG_NFS_V4*/
+diff --git a/include/linux/sunrpc/auth_gss.h b/include/linux/sunrpc/auth_gss.h
+index d48d4e6..994db5a 100644
+--- a/include/linux/sunrpc/auth_gss.h
++++ b/include/linux/sunrpc/auth_gss.h
+@@ -69,7 +69,7 @@ struct gss_cl_ctx {
+ 	enum rpc_gss_proc	gc_proc;
+ 	u32			gc_seq;
+ 	spinlock_t		gc_seq_lock;
+-	struct gss_ctx		*gc_gss_ctx;
++	struct gss_ctx __rcu	*gc_gss_ctx;
+ 	struct xdr_netobj	gc_wire_ctx;
+ 	u32			gc_win;
+ 	unsigned long		gc_expiry;
+@@ -80,7 +80,7 @@ struct gss_upcall_msg;
+ struct gss_cred {
+ 	struct rpc_cred		gc_base;
+ 	enum rpc_gss_svc	gc_service;
+-	struct gss_cl_ctx	*gc_ctx;
++	struct gss_cl_ctx __rcu	*gc_ctx;
+ 	struct gss_upcall_msg	*gc_upcall;
+ 	unsigned char		gc_machine_cred : 1;
+ };
 -- 
 1.7.0
 
