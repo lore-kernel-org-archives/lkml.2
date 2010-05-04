@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933531Ab0EDSiF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 14:38:05 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:50936 "EHLO
+	id S933544Ab0EDSla (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 14:41:30 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:58037 "EHLO
 	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932269Ab0EDSiD (ORCPT
+	with ESMTP id S932269Ab0EDSl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 14:38:03 -0400
+	Tue, 4 May 2010 14:41:29 -0400
 From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 To: Fredrick Prashanth John Berchmans <fredrickprashanth@gmail.com>
 Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org
 Subject: Re: nfs accesses of FAT fs folders causes deadlock on lock_super
 References: <x2gd4f60c3c1005032259p8be864bcucff91618016a0eb@mail.gmail.com>
 	<20100504103232.GA25054@infradead.org>
-	<m2id4f60c3c1005040705v2e46547axad496769d4d4dbe8@mail.gmail.com>
-Date: Wed, 05 May 2010 03:37:56 +0900
-In-Reply-To: <m2id4f60c3c1005040705v2e46547axad496769d4d4dbe8@mail.gmail.com>
+	<t2gd4f60c3c1005041101o5720e1e4k69b4a7b76296e70f@mail.gmail.com>
+Date: Wed, 05 May 2010 03:41:27 +0900
+In-Reply-To: <t2gd4f60c3c1005041101o5720e1e4k69b4a7b76296e70f@mail.gmail.com>
 	(Fredrick Prashanth John Berchmans's message of "Tue, 4 May 2010
-	07:05:34 -0700")
-Message-ID: <87r5lry0l7.fsf@devron.myhome.or.jp>
+	11:01:22 -0700")
+Message-ID: <87mxwfy0fc.fsf@devron.myhome.or.jp>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.93 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -38,21 +38,15 @@ Fredrick Prashanth John Berchmans <fredrickprashanth@gmail.com> writes:
 >>
 >>
 >
-> Ah..I just noticed the changes in the nfsd code.
->
-> But in 2.6.27.10, can it be fixed by removing the lock_super in the
-> vfat_lookup.?
+> I see from nfsd code, it seems the compose_entry_fh still calls
+> lookup_one_len, which is now
+> called from encode_entryplus_baggage instead of entry_encode.
+> Am I right?
 
-Basically, yes.
+As far as I can see, nfsd is buffering the result of readdir, then do
+jobs (encode_fh, etc.) with it on other context of readdir.
 
-> Because I saw some discussions long back of regressions due to
-> replacing lock_kernel by lock_super in FAT code.
-
-Yes. Current way is ultra safer side to convert BKL. Another side was
-just to remove BKL. However, at least for now, we are using current way.
-
-So, if current way had a problem, just remove it instead of trying to
-fix (then, review).
+Aren't you missing a buffering of nfsd_buffered_readdir()?
 
 Thanks.
 -- 
