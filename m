@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760107Ab0EDSE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 14:04:56 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:39105 "EHLO
+	id S1760109Ab0EDSFt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 14:05:49 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33180 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760087Ab0EDSEy convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757881Ab0EDSFr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 14:04:54 -0400
-To: Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-References: <1272667021-21312-1-git-send-email-arve@android.com>
-	<87wrvl5479.fsf@deeprootsystems.com>
-	<20100503180741.GB2098@rakim.wolfsonmicro.main>
-	<201005032318.35383.rjw@sisk.pl> <87sk68r1zh.fsf@deeprootsystems.com>
-	<s2qd6200be21005031709r28420f0ezf3cf286517ee9114@mail.gmail.com>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Tue, 04 May 2010 11:04:49 -0700
-In-Reply-To: <s2qd6200be21005031709r28420f0ezf3cf286517ee9114@mail.gmail.com> ("Arve
- =?iso-8859-1?Q?Hj=F8nnev=E5g=22's?= message of "Mon\, 3 May 2010 17\:09\:22
- -0700")
-Message-ID: <87wrvjh7b2.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Tue, 4 May 2010 14:05:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SBmF/NBP/T4XRBSdSus4lhFiYONUKRji0tC81JWmKF5p9zs824MrVYCbplYOWo8QSa
+         f1kbGm4qLyzp8q2wCz54/9Oj7Lfj0bocfG19SH5WpJ19ec58wRadyC/vnxouiCNLQSjy
+         FTA45KUBnV9EFQP2mxlSLQgildyNk2C8Q/CI8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+In-Reply-To: <DCA014BF-2D7C-438B-8191-D8C525A8613B@mit.edu>
+References: <n2i9b1675091005032052wd935041ew5d96f145309af801@mail.gmail.com>
+	 <DCA014BF-2D7C-438B-8191-D8C525A8613B@mit.edu>
+Date: Tue, 4 May 2010 12:05:46 -0600
+Message-ID: <w2z9b1675091005041105gd7788c7sbc827b58cb133576@mail.gmail.com>
+Subject: Re: Flash IO slow 1.5 MB/s
+From: "Trenton D. Adams" <trenton.d.adams@gmail.com>
+To: Theodore Tso <tytso@mit.edu>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arve Hjønnevåg <arve@android.com> writes:
-
-> On Mon, May 3, 2010 at 4:37 PM, Kevin Hilman
-> <khilman@deeprootsystems.com> wrote:
->> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
->>
-
-[...]
-
->>> However, the real question is whether or not the opportunistic suspend feature
->>> is worth adding to the kernel as such and I think it is.
->>>
->>> To me, it doesn't duplicate the runtime PM framework which is aimed at the power
->>> management of individual devices rather than the system as a whole.
->>
->> From the use cases presented, the *usage* of suspend blockers is aimed
->> at power management of individual devices or subsystems, just like
->> usage of runtime PM.
->>
-> No, suspend blockers are mostly used to ensure wakeup events are not
-> ignored, and to ensure tasks triggered by these wakeup events
-> complete.
-
-OK, but my point was that their *usage* is at the level of inidividual
-devices and subsystems, just like runtime PM.  Hence, duplicate work.
-
->> So I still see a large duplication in the usage and the goals of both
->> frameworks.  The goal of both is to always enter lowest-power state
->> except
->>
->>  - if there's activity (runtime PM for devices, CPUidle for CPU)
->>  - if there's a suspend blocker (opportunitic suspend)
->>
->> In addition, it will likely cause duplicate work to be done in
->> drivers.  Presumably, PM aware drivers will want to know if the system
->> is in opportunistic mode.  For example, for many drivers, doing
->> runtime PM may not be worth the effort if the system is in
->> opportunistic mode.
+On Tue, May 4, 2010 at 5:20 AM, Theodore Tso <tytso@mit.edu> wrote:
 >
-> Why? If a device is not in use it should be off regardless of what
-> state the rest of the system is in.
+> On May 3, 2010, at 11:52 PM, Trenton D. Adams wrote:
+>> If I mount my usb key with "sync" option, I get 500kb or less transfer
+>> speeds.  If I use the gnome defaults, I get 60M+ for awhile, and then
+>> it continually drops over time, down to the 500kb/s again.  Gnome
+>> defaults are...
+>>
+>> /dev/sdc1 on /media/FLASH type vfat
+>> (rw,nosuid,nodev,noatime,uhelper=hal,shortname=lower,flush,uid=500)
+>>
+>> I have done similar tests on both Rally2 64G usb stick and sandisk
+>> ultra (15M/s) SDHC 8G cards.  I get lousy performance on both, unless
+>> I set dirty bytes.  These are both FAT 32.  But, as you can see below,
+>> 14 minutes to transfer less than a couple gigs is a little nutty.  The
+>> 3 minutes is a lot nicer.  I am using 2.6.33 with a patch from
+>> https://bugzilla.kernel.org/show_bug.cgi?id=15374
+>>
+>> It really looks like there's a scheduling issue.  It seems as if the
+>> system is IO thrashing on the flash drive, and bounces all over the
+>> place in terms of performance.  Sometimes it's really low, like the
+>> 2.73M/s, and other times it's really fast, like the 28.86M/s.
+>> Although you can't see it there, there were times when rsync was
+>> registering 200kb/s.  None of them are "really" accurate, as
+>> everything is queued for writing, but the final results of 1.5M/s
+>> (calculated from the "real" time) is terrible.
+>>
+>> I have not seen this bad of performance on a normal USB drive, but
+>> only on my USB flash drive, which is FAT32.  In addition, Windows and
+>> Mac systems transfer easily 9M/s write speeds on my rally 2.
+>>
+>> If I do the following...
+>>          echo 16000000 > /proc/sys/vm/dirty_bytes
+>> the performance is 9-12M/s all the way through the transfer....
+>
 
-Not necessarily.
+Ahh, this one didn't get to LKML either, oops.  I don't use gmail often. :P
 
-If a device is not in use, what power state it goes into depends on
-many device/subsystem specific things.  For example, recent activity
-(timeouts), whether it will be busy soon (pending transfers),
-latency/throughput constraints, dependency on other devices, or any
-other device/subsystem specific reason.
+Yeah, I should have mentioned that.  I have 4G.
 
-All of these can be handled with runtime PM.  None of which are taken
-into consideration with opportunistic suspend.
+>
+> dirty_bytes:  Contains the amount of dirty memory at which a process generating disk writes will itself start writeback.  If dirty_bytes is written, dirty_ratio becomes a function of its value (dirty_bytes / the amount of dirtyable system memory).
+>
+> dirty_ratio:  Contains, as a percentage of total system memory, the number of pages at which a process which is generating disk writes will itself start writing out dirty data.
+>
+> Or put another way, what is dirty_ratio after you set dirty_bytes to 16000000?
 
-Kevin
+dirty_ratio goes to 0 whenever I set dirty_bytes to anything, and
+dirty_bytes goes to 0 when I set dirty_ratio.  I even tried setting
+dirty_bytes to ~1G.
 
+>
+> Something else that would be very interesting is blktrace runs with and without dirty_bytes set to 16000000.
+
+tdanotebook linux # zcat /proc/config.gz  | grep DEBUG_FS
+CONFIG_DEBUG_FS=y
+
+tdanotebook linux # mount | grep debug
+none on /sys/kernel/debug type debugfs (rw)
+
+tdanotebook linux # blktrace -d /dev/mmcblk0p1
+BLKTRACESETUP: Inappropriate ioctl for device
+Failed to start trace on /dev/mmcblk0p1
+
+>
+> Also, what was the average size of the files which you were writing out with that rsync command?  Were they all avi files that were tens of megabytes?   Hundreds of megabytes?
+
+Usually hundreds of megabytes.  I can do a few hundred without a
+problem.  Looks like 20% is 800M.
