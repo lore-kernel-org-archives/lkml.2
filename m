@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab0EDHvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 03:51:39 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:44889 "EHLO
+	id S1757171Ab0EDHxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 03:53:09 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:45157 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756532Ab0EDHvi (ORCPT
+	by vger.kernel.org with ESMTP id S1756985Ab0EDHxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 03:51:38 -0400
-Date: Tue, 4 May 2010 06:14:48 +0200
+	Tue, 4 May 2010 03:53:07 -0400
+Date: Tue, 4 May 2010 06:16:19 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-       kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-       Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-       utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pcmcia@lists.infradead.org
-Subject: 2.6.34-rc6 regression: pcmcia no longer compiles
-Message-ID: <20100504041448.GA2893@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Arve Hj?nnev?g <arve@android.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Jim Collar <jim.collar@eqware.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Avi Kivity <avi@redhat.com>, Len Brown <len.brown@intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend
+ blockers from user-space
+Message-ID: <20100504041618.GB5326@ucw.cz>
+References: <Pine.LNX.4.44L0.1005021755320.30701-100000@netrider.rowland.org>
+ <201005031703.11448.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <201005031703.11448.rjw@sisk.pl>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon 2010-05-03 17:03:11, Rafael J. Wysocki wrote:
+> On Sunday 02 May 2010, Alan Stern wrote:
+> > On Sun, 2 May 2010, Rafael J. Wysocki wrote:
+> > 
+> > > Hmm.  It doesn't seem to be possible to create two different suspend blockers
+> > > using the same file handle.  So, what exactly is a process supposed to do to
+> > > use two suspend blockers at the same time?
+> > 
+> > Open the file twice, thereby obtaining two file handles.
+> 
+> Well, that's what I thought.
+> 
+> I must admit I'm not really comfortable with this interface.  IMO it would
+> be better if _open() created the suspend blocker giving it a name based on
+> the name of the process that called it.  Something like
+> "<process name>_<timestamp>" might work at first sight.
+> 
+> Alternatively, "<process_name><number>", where <number> is 0 for the first
+> suspend blocker created by the given process, 1 for the second one etc., also
+> seems to be doable.
 
--rc5 compiled ok with similar config.
-
-Now I get:
-
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-make[1]: `include/generated/mach-types.h' is up to date.
-  CALL    scripts/checksyscalls.sh
-  CHK     include/generated/compile.h
-  CC      drivers/pcmcia/pcmcia_ioctl.o
-drivers/pcmcia/pcmcia_ioctl.c: In function 'ds_open':
-drivers/pcmcia/pcmcia_ioctl.c:714: error: 'struct <anonymous>' has no member named 'present'
-drivers/pcmcia/pcmcia_ioctl.c: In function 'ds_read':
-drivers/pcmcia/pcmcia_ioctl.c:773: error: 'struct <anonymous>' has no member named 'dead'
-drivers/pcmcia/pcmcia_ioctl.c: In function 'ds_ioctl':
-drivers/pcmcia/pcmcia_ioctl.c:841: error: 'struct <anonymous>' has no member named 'dead'
-make[2]: *** [drivers/pcmcia/pcmcia_ioctl.o] Error 1
-make[1]: *** [drivers/pcmcia] Error 2
-make: *** [drivers] Error 2
-
+Yes please.
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
