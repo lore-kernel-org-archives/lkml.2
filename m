@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab0EDGtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 02:49:18 -0400
-Received: from mail-iw0-f202.google.com ([209.85.223.202]:57624 "EHLO
-	mail-iw0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab0EDGtQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 02:49:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=r++LB8gMDhkML7IMx4a6oi/6bfhKcyAICJ6Kpcaj3BtCivgKWR7qV0muxFg7gyH9yv
-         +uDcE8QqmPHKAoxRP62VTbnlJmZI7AUOdNOV3ylYXqnJVkte8Z4idAwsAv212j6lOiKp
-         Bvv/4HOI83WwaWeuu94O9fpBtlx5TVMyLtjmg=
-Date: Mon, 3 May 2010 23:49:05 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+	id S1756593Ab0EDGvK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 02:51:10 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:39023 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754696Ab0EDGvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 02:51:08 -0400
+Date: Tue, 4 May 2010 08:50:50 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Paul Mackerras <paulus@samba.org>, Peter Zijlstra <peterz@infradead.org>,
+       Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] input: mt: Simplify event bypass logic
-Message-ID: <20100504064905.GB17482@core.coreip.homeip.net>
-References: <1272721779-2124-1-git-send-email-rydberg@euromail.se>
+Subject: Re: [PATCH] perf_event: Use UTF-8 copyright symbol instead of \251
+Message-ID: <20100504065050.GD10464@elte.hu>
+References: <20100501002811.GA2610@brick.ozlabs.ibm.com>
+ <alpine.LNX.2.00.1005031541390.9849@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1272721779-2124-1-git-send-email-rydberg@euromail.se>
+In-Reply-To: <alpine.LNX.2.00.1005031541390.9849@pobox.suse.cz>
 User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 01, 2010 at 03:49:39PM +0200, Henrik Rydberg wrote:
-> The input bypass mechanism is only used by the MT events. Since all
-> MT events use bypassing by construction, the current list is a mere
-> duplication of input.h. This patch replaces the bypass list by a
-> simple range test.
+
+* Jiri Kosina <jkosina@suse.cz> wrote:
+
+> On Sat, 1 May 2010, Paul Mackerras wrote:
 > 
+> > As noted by Tejun Heo, the latin-1 copyright character \251 is invalid
+> > in ASCII or UTF-8.  This changes the character to its UTF-8 encoding
+> > in order to avoid problems with editors and other tools.
+> > 
+> > Signed-off-by: Paul Mackerras <paulus@samba.org>
+> > ---
+> > diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> > index 9dbe8cd..d46a277 100644
+> > --- a/kernel/perf_event.c
+> > +++ b/kernel/perf_event.c
+> > @@ -4,7 +4,7 @@
+> >   *  Copyright (C) 2008 Thomas Gleixner <tglx@linutronix.de>
+> >   *  Copyright (C) 2008-2009 Red Hat, Inc., Ingo Molnar
+> >   *  Copyright (C) 2008-2009 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
+> > - *  Copyright  ???  2009 Paul Mackerras, IBM Corp. <paulus@au1.ibm.com>
+> 
+> Umm ... this looks odd.
 
-Henrik,
+Yeah, and it didnt apply when i tried to.
 
-I disagree with the patch. I can not guarantee that we will be able to
-maintain continuous range of ABS_MT_* events and thus current scheme is
-more flexible.
+> > + *  Copyright  ??  2009 Paul Mackerras, IBM Corp. <paulus@au1.ibm.com>
+> 
+> This seems to add \251 again :) Maybe some of your tools got confused 
+> enough?
+> 
+> Anyway, I have dropped the patch from Tejun for now.
 
-Thanks.
+Alternatively you could pick up Paul's patch on top of Tejun's if you have 
+already pushed the commit ID out and want to avoid a rebase.
 
--- 
-Dmitry
+Thanks,
+
+	Ingo
