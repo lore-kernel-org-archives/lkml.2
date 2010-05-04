@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933443Ab0EDPEA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 11:04:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:51276 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932861Ab0EDPD4 (ORCPT
+	id S1759698Ab0EDPNQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 11:13:16 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:35248 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754303Ab0EDPNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 11:03:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Subject: Re: [RFC][PATCH resend 8/12] asm-generic: bitops: introduce le bit offset macro
-Date: Tue, 4 May 2010 17:03:00 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: avi@redhat.com, mtosatti@redhat.com, agraf@suse.de,
-       yoshikawa.takuya@oss.ntt.co.jp, fernando@oss.ntt.co.jp,
-       kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org,
-       tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-       benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <20100504220500.7695cd66.takuya.yoshikawa@gmail.com>
-In-Reply-To: <20100504220500.7695cd66.takuya.yoshikawa@gmail.com>
+	Tue, 4 May 2010 11:13:15 -0400
+To: Matthew Garrett <mjg@redhat.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+References: <1272667021-21312-1-git-send-email-arve@android.com>
+	<87wrvl5479.fsf@deeprootsystems.com>
+	<20100503180741.GB2098@rakim.wolfsonmicro.main>
+	<201005032318.35383.rjw@sisk.pl> <87sk68r1zh.fsf@deeprootsystems.com>
+	<20100504004338.GA22678@srcf.ucam.org>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Tue, 04 May 2010 08:13:09 -0700
+In-Reply-To: <20100504004338.GA22678@srcf.ucam.org> (Matthew Garrett's message of "Tue\, 4 May 2010 01\:43\:38 +0100")
+Message-ID: <878w7zog3e.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005041703.00549.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/xvNLctGuTZwJhhcFPAVN+XDnaIMNpYhPyR7b
- zJShLpQ8q9U3vf0RQsyUi+Wf3rsybGbHwPdAMP7R+fZBvXbl5g
- 9MFW2MKwJ8UOSWIO50K2Q==
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 May 2010, Takuya Yoshikawa wrote:
-> 
-> Although we can use *_le_bit() helpers to treat bitmaps le arranged,
-> having le bit offset calculation as a seperate macro gives us more freedom.
-> 
-> For example, KVM has le arranged dirty bitmaps for VGA, live-migration
-> and they are used in user space too. To avoid bitmap copies between kernel
-> and user space, we want to update the bitmaps in user space directly.
-> To achive this, le bit offset with *_user() functions help us a lot.
-> 
-> So let us use the le bit offset calculation part by defining it as a new
-> macro: generic_le_bit_offset() .
+Matthew Garrett <mjg@redhat.com> writes:
 
-Does this work correctly if your user space is 32 bits (i.e. unsigned long
-is different size in user space and kernel) in both big- and little-endian
-systems?
+> On Mon, May 03, 2010 at 04:37:22PM -0700, Kevin Hilman wrote:
+>
+>> Please forgive the ignorance of ACPI (in embedded, we thankfully live
+>> in magical world without ACPI) but doesn't that already happen with
+>> CPUidle and C-states?  I think of CPUidle as basically runtime PM for
+>> the CPU.  IOW, runtime PM manages the devices, CPUidle manages the CPU
+>> (via C-states), resulting in dynaimc PM for the entire system.  What
+>> am I missing?
+>
+> ACPI doesn't provide any functionality for cutting power to most
+> devices other than shifting into full system suspend. The number of
+> wakeup events available to us on a given machine is usually small
+> and the wakeup latency large, so it's not terribly practical to do
+> this transparently on most hardware.
 
-I'm not sure about all the details, but I think you cannot in general share
-bitmaps between user space and kernel because of this.
+OK, that's a major difference with embedded SoCs where the kernel must
+directly manage the power state of all devices using runtime PM.
 
-	Arnd
+So basically, on ACPI systems, runtime PM doesn't get you any power
+savings for most devices.  
+
+Kevin
