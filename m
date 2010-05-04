@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933793Ab0EDUUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 16:20:19 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54068 "EHLO e8.ny.us.ibm.com"
+	id S933818Ab0EDUWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 16:22:50 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:35222 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933716Ab0EDUUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 16:20:08 -0400
+	id S933806Ab0EDUUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 16:20:20 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,10 +13,12 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 04/48] rcu: move some code from macro to function
-Date: Tue,  4 May 2010 13:19:14 -0700
-Message-Id: <1273004398-19760-4-git-send-email-paulmck@linux.vnet.ibm.com>
+       Arnd Bergmann <arnd@arndb.de>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [PATCH tip/core/rcu 45/48] kvm: add __rcu annotations
+Date: Tue,  4 May 2010 13:19:55 -0700
+Message-Id: <1273004398-19760-45-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100504201934.GA19234@linux.vnet.ibm.com>
 References: <20100504201934.GA19234@linux.vnet.ibm.com>
@@ -24,60 +26,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-Shrink the RCU_INIT_FLAVOR() macro by moving all but the initialization
-of the ->rda[] array to rcu_init_one().  The call to rcu_init_one()
-can then be moved to the end of the RCU_INIT_FLAVOR() macro, which is
-required because rcu_boot_init_percpu_data(), which is now called from
-rcu_init_one(), depends on the initialization of the ->rda[] array.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
 ---
- kernel/rcutree.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+ include/linux/kvm_host.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 6042fb8..86bb949 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1859,6 +1859,14 @@ static void __init rcu_init_one(struct rcu_state *rsp)
- 			INIT_LIST_HEAD(&rnp->blocked_tasks[3]);
- 		}
- 	}
-+
-+	rnp = rsp->level[NUM_RCU_LVLS - 1];
-+	for_each_possible_cpu(i) {
-+		if (i > rnp->grphi)
-+			rnp++;
-+		rsp->rda[i]->mynode = rnp;
-+		rcu_boot_init_percpu_data(i, rsp);
-+	}
- }
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 169d077..08fe794 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -197,7 +197,7 @@ struct kvm {
  
- /*
-@@ -1869,19 +1877,11 @@ static void __init rcu_init_one(struct rcu_state *rsp)
- #define RCU_INIT_FLAVOR(rsp, rcu_data) \
- do { \
- 	int i; \
--	int j; \
--	struct rcu_node *rnp; \
- 	\
--	rcu_init_one(rsp); \
--	rnp = (rsp)->level[NUM_RCU_LVLS - 1]; \
--	j = 0; \
- 	for_each_possible_cpu(i) { \
--		if (i > rnp[j].grphi) \
--			j++; \
--		per_cpu(rcu_data, i).mynode = &rnp[j]; \
- 		(rsp)->rda[i] = &per_cpu(rcu_data, i); \
--		rcu_boot_init_percpu_data(i, rsp); \
- 	} \
-+	rcu_init_one(rsp); \
- } while (0)
- 
- void __init rcu_init(void)
+ 	struct mutex irq_lock;
+ #ifdef CONFIG_HAVE_KVM_IRQCHIP
+-	struct kvm_irq_routing_table *irq_routing;
++	struct kvm_irq_routing_table __rcu *irq_routing;
+ 	struct hlist_head mask_notifier_list;
+ 	struct hlist_head irq_ack_notifier_list;
+ #endif
 -- 
 1.7.0
 
