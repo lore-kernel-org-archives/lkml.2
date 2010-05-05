@@ -1,96 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757667Ab0EEIRm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 04:17:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55497 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab0EEIRj (ORCPT
+	id S932784Ab0EEIVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 04:21:38 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:59263 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854Ab0EEIVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 04:17:39 -0400
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-To: dedekind1@gmail.com
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-       David Woodhouse <dwmw2@infradead.org>, Andi Kleen <ak@linux.intel.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Dmitry Pervushin <dpervushin@embeddedalley.com>,
-       Kevin Cernekee <kpc.mtd@gmail.com>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Date: Wed,  5 May 2010 10:17:25 +0200
-Message-Id: <1273047445-23411-1-git-send-email-mkl@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-X-SA-Exim-Connect-IP: 92.198.50.58
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-Subject: [PATCH V2] ubi: init even if mtd device cannot be attached, if built into kernel
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 5 May 2010 04:21:35 -0400
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+       David Howells <dhowells@redhat.com>,
+       Alexander Shishkin <virtuoso@slind.org>,
+       Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [PATCH v3] mtd: Do not corrupt backing device of device node inode
+Date: Wed,  5 May 2010 11:21:28 +0300
+Message-Id: <1273047688-20947-1-git-send-email-kirill@shutemov.name>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ubi can be built into the kernel or be compiled as a kernel module.
-Further on the command line one can specify mtd devices to be attach to
-ubi while loading. In the current implementation the ubi driver refuses
-to load if one of the mtd devices cannot be attached.
+We cannot modify file->f_mapping->backing_dev_info, because it will corrupt
+backing device of device node inode, since file->f_mapping is equal to
+inode->i_mapping (see __dentry_open() in fs/open.c).
 
-Consider:
-1) ubi compiled into the kernel and
-2) a mtd device specified on the command line and
-3) this mtd device contains bogus data (for whatever reason).
+Let's introduce separate inode for MTD device with appropriate backing
+device.
 
-During init ubi tries to attach the mtd device is this fails the whole
-ubi subsystem isn't initialized. Later the userspace cannot attach any
-mtd to ubi because ubi isn't loaded.
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+Acked-by: Jan Kara <jack@suse.cz>
 
-This patch keeps the current behaviour: if ubi is compiled as a module
-and a mtd device cannot be attached the ubi module cannot be loaded,
-but changes it for the ubi-is-built-into-the-kernel usecase.
-
-If ubi is builtin, a not attachable mtd device doen't stop ubi from
-initializing. This slightly modifies the behaviour if multiple mtd
-devices are specified on the command line. Now every mtd device is
-probed and, if possible, attached, i.e. a faulty mtd device doesn't
-stop the others from being attached.
-
-V2: integrated comments from Artem Bityutskiy:
-    use defines instead of static inline functions
-
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 ---
- drivers/mtd/ubi/build.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+Changelog
+ v2 -> v3:
+  - Rebase to mtd.git.
+ v1 -> v2:
+  - Fix error handling based on comments by Jan Kara.
 
-diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
-index fad40aa..d0447a5 100644
---- a/drivers/mtd/ubi/build.c
-+++ b/drivers/mtd/ubi/build.c
-@@ -49,6 +49,12 @@
- /* Maximum length of the 'mtd=' parameter */
- #define MTD_PARAM_LEN_MAX 64
+---
+ drivers/mtd/mtdchar.c   |   77 ++++++++++++++++++++++++++++++++++++++++++-----
+ drivers/mtd/mtdcore.c   |    3 ++
+ include/linux/mtd/mtd.h |    3 ++
+ 3 files changed, 75 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
+index c355491..a2bb3ce 100644
+--- a/drivers/mtd/mtdchar.c
++++ b/drivers/mtd/mtdchar.c
+@@ -15,12 +15,15 @@
+ #include <linux/smp_lock.h>
+ #include <linux/backing-dev.h>
+ #include <linux/compat.h>
++#include <linux/mount.h>
  
-+#ifdef CONFIG_MTD_UBI_MODULE
-+#define ubi_is_module() 1
-+#else
-+#define ubi_is_module() 0
-+#endif
-+
- /**
-  * struct mtd_dev_param - MTD device parameter description data structure.
-  * @name: MTD character device node path, MTD device name, or MTD device number
-@@ -1240,9 +1246,11 @@ static int __init ubi_init(void)
- 					 p->vid_hdr_offs);
- 		mutex_unlock(&ubi_devices_mutex);
- 		if (err < 0) {
--			put_mtd_device(mtd);
- 			ubi_err("cannot attach mtd%d", mtd->index);
--			goto out_detach;
-+			if (ubi_is_module()) {
-+				put_mtd_device(mtd);
-+				goto out_detach;
-+			}
- 		}
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/compatmac.h>
+ 
+ #include <asm/uaccess.h>
+ 
++#define MTD_INODE_FS_MAGIC 0x11307854
++static struct vfsmount *mtd_inode_mnt __read_mostly;
+ 
+ /*
+  * Data structure to hold the pointer to the mtd device as well
+@@ -85,11 +88,30 @@ static int mtd_open(struct inode *inode, struct file *file)
+ 		goto out;
  	}
  
+-	if (mtd->backing_dev_info)
+-		file->f_mapping->backing_dev_info = mtd->backing_dev_info;
++	if (!mtd->inode) {
++		mtd->inode = new_inode(mtd_inode_mnt->mnt_sb);
++		if (!mtd->inode) {
++			put_mtd_device(mtd);
++			ret = -ENOMEM;
++			goto out;
++		}
++		mtd->inode->i_mode = S_IFCHR;
++		mtd->inode->i_rdev = inode->i_rdev;
++		if (mtd->backing_dev_info) {
++			mtd->inode->i_data.backing_dev_info =
++				mtd->backing_dev_info;
++		}
++	}
++
++	spin_lock(&inode_lock);
++	__iget(mtd->inode);
++	spin_unlock(&inode_lock);
++
++	file->f_mapping = mtd->inode->i_mapping;
+ 
+ 	/* You can't open it RW if it's not a writeable device */
+ 	if ((file->f_mode & FMODE_WRITE) && !(mtd->flags & MTD_WRITEABLE)) {
++		iput(mtd->inode);
+ 		put_mtd_device(mtd);
+ 		ret = -EACCES;
+ 		goto out;
+@@ -97,6 +119,7 @@ static int mtd_open(struct inode *inode, struct file *file)
+ 
+ 	mfi = kzalloc(sizeof(*mfi), GFP_KERNEL);
+ 	if (!mfi) {
++		iput(mtd->inode);
+ 		put_mtd_device(mtd);
+ 		ret = -ENOMEM;
+ 		goto out;
+@@ -122,6 +145,8 @@ static int mtd_close(struct inode *inode, struct file *file)
+ 	if ((file->f_mode & FMODE_WRITE) && mtd->sync)
+ 		mtd->sync(mtd);
+ 
++	iput(mtd->inode);
++
+ 	put_mtd_device(mtd);
+ 	file->private_data = NULL;
+ 	kfree(mfi);
+@@ -951,22 +976,58 @@ static const struct file_operations mtd_fops = {
+ #endif
+ };
+ 
++static int mtd_inodefs_get_sb(struct file_system_type *fs_type, int flags,
++                               const char *dev_name, void *data,
++                               struct vfsmount *mnt)
++{
++        return get_sb_pseudo(fs_type, "mtd_inode:", NULL, MTD_INODE_FS_MAGIC,
++                             mnt);
++}
++
++static struct file_system_type mtd_inodefs_type = {
++       .name = "mtd_inodefs",
++       .get_sb = mtd_inodefs_get_sb,
++       .kill_sb = kill_anon_super,
++};
++
+ static int __init init_mtdchar(void)
+ {
+-	int status;
++	int ret;
+ 
+-	status = __register_chrdev(MTD_CHAR_MAJOR, 0, 1 << MINORBITS,
++	ret = __register_chrdev(MTD_CHAR_MAJOR, 0, 1 << MINORBITS,
+ 				   "mtd", &mtd_fops);
+-	if (status < 0) {
+-		printk(KERN_NOTICE "Can't allocate major number %d for Memory Technology Devices.\n",
+-		       MTD_CHAR_MAJOR);
++	if (ret < 0) {
++		pr_notice("Can't allocate major number %d for "
++				"Memory Technology Devices.\n", MTD_CHAR_MAJOR);
++		return ret;
++	}
++
++	ret = register_filesystem(&mtd_inodefs_type);
++	if (ret) {
++		pr_notice("Can't register mtd_inodefs filesystem: %d\n", ret);
++		goto err_unregister_chdev;
+ 	}
+ 
+-	return status;
++	mtd_inode_mnt = kern_mount(&mtd_inodefs_type);
++	if (IS_ERR(mtd_inode_mnt)) {
++		ret = PTR_ERR(mtd_inode_mnt);
++		pr_notice("Error mounting mtd_inodefs filesystem: %d\n", ret);
++		goto err_unregister_filesystem;
++	}
++
++	return ret;
++
++err_unregister_filesystem:
++	unregister_filesystem(&mtd_inodefs_type);
++err_unregister_chdev:
++	unregister_chrdev(MTD_CHAR_MAJOR, "mtd");
++	return ret;
+ }
+ 
+ static void __exit cleanup_mtdchar(void)
+ {
++	mntput(mtd_inode_mnt);
++	unregister_filesystem(&mtd_inodefs_type);
+ 	__unregister_chrdev(MTD_CHAR_MAJOR, 0, 1 << MINORBITS, "mtd");
+ }
+ 
+diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+index 70a7858..fa424ad 100644
+--- a/drivers/mtd/mtdcore.c
++++ b/drivers/mtd/mtdcore.c
+@@ -369,6 +369,9 @@ int del_mtd_device (struct mtd_info *mtd)
+ 		       mtd->index, mtd->name, mtd->usecount);
+ 		ret = -EBUSY;
+ 	} else {
++		if (mtd->inode)
++			iput(mtd->inode);
++
+ 		device_unregister(&mtd->dev);
+ 
+ 		idr_remove(&mtd_idr, mtd->index);
+diff --git a/include/linux/mtd/mtd.h b/include/linux/mtd/mtd.h
+index 5326435..d66409a 100644
+--- a/include/linux/mtd/mtd.h
++++ b/include/linux/mtd/mtd.h
+@@ -12,6 +12,7 @@
+ #include <linux/uio.h>
+ #include <linux/notifier.h>
+ #include <linux/device.h>
++#include <linux/fs.h>
+ 
+ #include <linux/mtd/compatmac.h>
+ #include <mtd/mtd-abi.h>
+@@ -174,6 +175,8 @@ struct mtd_info {
+ 	 */
+ 	struct backing_dev_info *backing_dev_info;
+ 
++	/* inode for mtd device */
++	struct inode *inode;
+ 
+ 	int (*read) (struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf);
+ 	int (*write) (struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf);
 -- 
-1.7.1
+1.7.0.4
 
