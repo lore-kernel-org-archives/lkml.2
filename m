@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934288Ab0EEAdR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 20:33:17 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:55628 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755144Ab0EEAdQ (ORCPT
+	id S934528Ab0EEAgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 20:36:14 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:34611 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933808Ab0EEAgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 20:33:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=YmGHWxAg8v4R2WVCZ+pbtP7S7vUliaZOpJwJ+AhJR4oH4IYsIR4EU2PwlSKSrnrYC7
-         vToXgrUU52dq8tdL7ItG+N2FHzG8vdnW57Dk8kph6BAGUQawqXMEoPOHQGwdeO/1WERj
-         NjYRTmNISZY04HbfeL1Nbxw9DjDd5LtGFrYXM=
-Message-ID: <4BE0BCC3.1090101@lwfinger.net>
-Date: Tue, 04 May 2010 19:33:07 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.11 Thunderbird/3.0.4
+	Tue, 4 May 2010 20:36:12 -0400
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Greg KH <greg@kroah.com>,
+       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
+       Serge Hallyn <serue@us.ibm.com>, <netdev@vger.kernel.org>,
+       David Miller <davem@davemloft.net>
+From: ebiederm@xmission.com (Eric W. Biederman)
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+Date: Tue, 04 May 2010 17:35:54 -0700
+In-Reply-To: <m1fx3hk6gw.fsf@fess.ebiederm.org> (Eric W. Biederman's message of "Tue\, 30 Mar 2010 11\:30\:23 -0700")
+Message-ID: <m1d3xb4239.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: How to write marker info in MMIO trace from kernel
-References: <4BE06933.9080202@lwfinger.net>	 <1272998579.9739.235.camel@gandalf.stny.rr.com>	 <4BE09F42.9070909@lwfinger.net> <1273013889.22438.8.camel@gandalf.stny.rr.com>
-In-Reply-To: <1273013889.22438.8.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: gregkh@suse.de, davem@davemloft.net, netdev@vger.kernel.org, serue@us.ibm.com, bcrl@lhnet.ca, eric.dumazet@gmail.com, cornelia.huck@de.ibm.com, tj@kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com, kay.sievers@vrfy.org
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@suse.de>
+X-Spam-Relay-Country: 
+X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: [PATCH 0/6] netns support in the kobject layer
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2010 05:58 PM, Steven Rostedt wrote:
-> On Tue, 2010-05-04 at 17:27 -0500, Larry Finger wrote:
-> 
->> Thanks for the info. One other question - when I write only mmiotrace to
->> the current_tracer, the trace_printk() stuff does not end up in the
->> buffer. I can get it by using the "sysprof" tracer, but that has a lot
->> of stuff I do not want. Did I miss some configuration? My list of
->> available tracers is "blk kmemtrace mmiotrace wakeup_rt wakeup function
->> sysprof sched_switch nop".
-> 
-> Ug, that's because the mmiotrace handles its own prints and ignores
-> anything it does not know about. Here, try this patch:
-> 
-> -- Steve
-> 
-> diff --git a/kernel/trace/trace_mmiotrace.c b/kernel/trace/trace_mmiotrace.c
-> index 017fa37..8652f28 100644
-> --- a/kernel/trace/trace_mmiotrace.c
-> +++ b/kernel/trace/trace_mmiotrace.c
-> @@ -282,7 +282,7 @@ static enum print_line_t mmio_print_line(struct trace_iterator *iter)
->  	case TRACE_PRINT:
->  		return mmio_print_mark(iter);
->  	default:
-> -		return TRACE_TYPE_HANDLED; /* ignore unknown entries */
-> +		return TRACE_TYPE_UNHANDLED;
->  	}
->  }
 
-That did the trick.
+With the tagged sysfs support finally merged into Greg's tree,
+it is time for the last little bits of work to get the kobject
+layer and network namespaces to play together properly.
 
-Thanks a lot,
+These patches are roughly evenly divided between network layer work
+and sysfs layer work.  Last time this conundrum came up I believe
+we decided that the easiest way to handle this was for Greg to carry
+all of the patches.  David, Greg does that still make sense?
 
-Larry
+This patchset adds:
+- kobject layer support for sending events in all network namespaces
+- netlink support for filtering broadcast packets based on attributes
+  of the destination socket.
+- Enabling the network namespace support for sysfs and the kobject layer.
+
+ include/linux/kobject.h  |    1 +
+ include/linux/netlink.h  |    4 ++
+ lib/kobject_uevent.c     |  108 +++++++++++++++++++++++++++++++++++++++++-----
+ net/Kconfig              |    8 +++
+ net/core/dev.c           |   28 ++----------
+ net/core/net-sysfs.c     |   62 ++++++++++++++++++++------
+ net/core/net-sysfs.h     |    1 -
+ net/netlink/af_netlink.c |   21 ++++++++-
+ 8 files changed, 181 insertions(+), 52 deletions(-)
