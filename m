@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934282Ab0EEJS7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 05:18:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60373 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934205Ab0EEJS6 (ORCPT
+	id S934304Ab0EEJTo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 05:19:44 -0400
+Received: from mail.windriver.com ([147.11.1.11]:61498 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934205Ab0EEJTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 05:18:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/13] tty: turn ldisc_mutex into a regular mutex
-Date: Wed, 5 May 2010 11:18:51 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-References: <1273012433-6125-1-git-send-email-arnd@arndb.de> <1273012433-6125-14-git-send-email-arnd@arndb.de>
-In-Reply-To: <1273012433-6125-14-git-send-email-arnd@arndb.de>
+	Wed, 5 May 2010 05:19:42 -0400
+Date: Wed, 5 May 2010 17:18:40 +0800
+From: Yong Zhang <yong.zhang@windriver.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: John Kacur <jkacur@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       linux-rt-users <linux-rt-users@vger.kernel.org>,
+       Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+       Clark Williams <williams@redhat.com>,
+       "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Gregory Haskins <ghaskins@novell.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Yong Zhang <yong.zhang0@gmail.com>
+Subject: Re: [PATCH V2] lockdep: reduce stack_trace usage
+Message-ID: <20100505091840.GD20236@windriver.com>
+Reply-To: Yong Zhang <yong.zhang@windriver.com>
+References: <alpine.LFD.2.00.1004222208310.3155@localhost>
+ <20100423025850.GA21328@windriver.com>
+ <alpine.LFD.2.00.1004230907050.4151@localhost>
+ <1272009915.1646.25.camel@laptop>
+ <w2v520f0cf11004230131i743c596emfd0e5b8870330a8b@mail.gmail.com>
+ <20100423134044.GA2777@zhy-desktop>
+ <20100504065711.GC10784@windriver.com>
+ <1272977811.5605.183.camel@twins>
+ <20100505013119.GA20236@windriver.com>
+ <1273050566.1642.230.camel@laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005051118.51479.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/HwONhqGzlQlyCpBkK/dTVfnYCbiy2C1B+1vt
- 87gamG0TJb/uXAOqQicyK6UreXeCrOzdwOi5DQK/5oUQuXblMu
- VgFzRAgf137SbxM4rlgaA==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1273050566.1642.230.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 05 May 2010 09:18:43.0703 (UTC) FILETIME=[F5562070:01CAEC33]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 May 2010, Arnd Bergmann wrote:
-> This fixes the lock order of the BTM and
-> ldisc_mutex so that we never take the BTM
-> while holding ldisc_mutex, which means
-> we no longer have to use mutex_lock_tty
-> when getting ldisc_mutex.
+On Wed, May 05, 2010 at 11:09:26AM +0200, Peter Zijlstra wrote:
+> > BTW, do you need me resend the patch with your comments in?
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> No, I've got it.
 
-Ignore this one, I just realized that we're releasing
-and reacquiring the BTM in tty_ldisc_halt,
-tty_set_termios_ldisc and possibly others.
-
-This patch needs more work to make that possible.
-
-	Arnd
+That's great. Thank you. :)
