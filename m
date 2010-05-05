@@ -1,63 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758477Ab0EEVMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 17:12:05 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40925 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754787Ab0EEVMD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 17:12:03 -0400
-Date: Wed, 5 May 2010 17:12:00 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: mark gross <mgross@linux.intel.com>
-cc: markgross@thegnar.org, Len Brown <len.brown@intel.com>,
-       <linux-doc@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-In-Reply-To: <20100505202826.GB7450@linux.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
+	id S1757972Ab0EEVSA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 17:18:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15269 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754155Ab0EEVR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 17:17:58 -0400
+Message-ID: <4BE1E0A5.705@redhat.com>
+Date: Thu, 06 May 2010 00:18:29 +0300
+From: Dor Laor <dlaor@redhat.com>
+Reply-To: dlaor@redhat.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4 ThunderBrowse/3.2.8.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+       qemu-devel@nongnu.org
+Subject: Re: [PATCH RFC] virtio: put last seen used index into ring itself
+References: <20100505205814.GA7090@redhat.com>
+In-Reply-To: <20100505205814.GA7090@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 May 2010, mark gross wrote:
+On 05/05/2010 11:58 PM, Michael S. Tsirkin wrote:
+> Generally, the Host end of the virtio ring doesn't need to see where
+> Guest is up to in consuming the ring.  However, to completely understand
+> what's going on from the outside, this information must be exposed.
+> For example, host can reduce the number of interrupts by detecting
+> that the guest is currently handling previous buffers.
+>
+> Fortunately, we have room to expand: the ring is always a whole number
+> of pages and there's hundreds of bytes of padding after the avail ring
+> and the used ring, whatever the number of descriptors (which must be a
+> power of 2).
+>
+> We add a feature bit so the guest can tell the host that it's writing
+> out the current value there, if it wants to use that.
+>
+> This is based on a patch by Rusty Russell, with the main difference
+> being that we dedicate a feature bit to guest to tell the host it is
+> writing the used index.  This way we don't need to force host to publish
+> the last available index until we have a use for it.
+>
+> Signed-off-by: Rusty Russell<rusty@rustcorp.com.au>
+> Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
+> ---
+>
+> Rusty,
+> this is a simplified form of a patch you posted in the past.
+> I have a vhost patch that, using this feature, shows external
+> to host bandwidth grow from 5 to 7 GB/s, by avoiding
 
-> > > True, you need an ack back from user mode for when its ok to allow
-> > > suspend to happen.  This ack is device specific and needs to be custom
-> > > built per product to its wake up sources.
-> > 
-> > No and no.  Nothing special is needed.  All userspace needs to do is 
-> > remove the condition that led to the blocker being enabled initially -- 
-> > which is exactly what userspace would do normally anyway.
-> 
-> Oh, like tell the modem that user mode has handled the ring event and
-> its ok to un-block?
+You mean external to guest I guess.
 
-No, that's not how it works.  It would go like this:
+We have a similar issue with virtio-blk - when using very fast 
+multi-spindle storage on the host side, there are too many irq injection 
+events. This patch should probably reduce them allot.
+The principle exactly matches the Xen ring.
 
-	The modem IRQ handler queues its event to the input subsystem.  
-	As it does so the input subsystem enables a suspend blocker, 
-	causing the system to stay awake after the IRQ is done.
-
-	The user program enables its own suspend blocker before reading
-	the input queue.  When the queue is empty, the input subsystem
-	releases its suspend blocker.
-
-	When the user program finishes processing the event, it
-	releases its suspend blocker.  Now the system can go back to
-	sleep.
-
-At no point does the user program have to communicate anything to the 
-modem driver, and at no point does it have to do anything out of the 
-ordinary except to enable and disable a suspend blocker.
-
-Alan Stern
+> an interrupt in the window after previous interrupt
+> was sent and before interrupts were disabled for the vq.
+> With vhost under some external to host loads I see
+> this window being hit about 30% sometimes.
+>
+> I'm finalizing the host bits and plan to send
+> the final version for inclusion when all's ready,
+> but I'd like to hear comments meanwhile.
+>
+>   drivers/virtio/virtio_ring.c |   28 +++++++++++++++++-----------
+>   include/linux/virtio_ring.h  |   14 +++++++++++++-
+>   2 files changed, 30 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> index 1ca8890..7729aba 100644
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -89,9 +89,6 @@ struct vring_virtqueue
+>   	/* Number we've added since last sync. */
+>   	unsigned int num_added;
+>
+> -	/* Last used index we've seen. */
+> -	u16 last_used_idx;
+> -
+>   	/* How to notify other side. FIXME: commonalize hcalls! */
+>   	void (*notify)(struct virtqueue *vq);
+>
+> @@ -285,12 +282,13 @@ static void detach_buf(struct vring_virtqueue *vq, unsigned int head)
+>
+>   static inline bool more_used(const struct vring_virtqueue *vq)
+>   {
+> -	return vq->last_used_idx != vq->vring.used->idx;
+> +	return *vq->vring.last_used_idx != vq->vring.used->idx;
+>   }
+>
+>   void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
+>   {
+>   	struct vring_virtqueue *vq = to_vvq(_vq);
+> +	struct vring_used_elem *u;
+>   	void *ret;
+>   	unsigned int i;
+>
+> @@ -307,12 +305,13 @@ void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
+>   		return NULL;
+>   	}
+>
+> -	/* Only get used array entries after they have been exposed by host. */
+> -	virtio_rmb();
+> -
+> -	i = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].id;
+> -	*len = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].len;
+> +	/* Only get used array entries after they have been exposed by host.
+> +	 * Need mb(), not just rmb() because we write last_used_idx below. */
+> +	virtio_mb();
+>
+> +	u =&vq->vring.used->ring[*vq->vring.last_used_idx % vq->vring.num];
+> +	i = u->id;
+> +	*len = u->len;
+>   	if (unlikely(i>= vq->vring.num)) {
+>   		BAD_RING(vq, "id %u out of range\n", i);
+>   		return NULL;
+> @@ -325,7 +324,8 @@ void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
+>   	/* detach_buf clears data, so grab it now. */
+>   	ret = vq->data[i];
+>   	detach_buf(vq, i);
+> -	vq->last_used_idx++;
+> +	(*vq->vring.last_used_idx)++;
+> +
+>   	END_USE(vq);
+>   	return ret;
+>   }
+> @@ -431,7 +431,7 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+>   	vq->vq.name = name;
+>   	vq->notify = notify;
+>   	vq->broken = false;
+> -	vq->last_used_idx = 0;
+> +	*vq->vring.last_used_idx = 0;
+>   	vq->num_added = 0;
+>   	list_add_tail(&vq->vq.list,&vdev->vqs);
+>   #ifdef DEBUG
+> @@ -440,6 +440,10 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+>
+>   	vq->indirect = virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC);
+>
+> +	/* We publish used index whether Host offers it or not: if not, it's
+> +	 * junk space anyway.  But calling this acknowledges the feature. */
+> +	virtio_has_feature(vdev, VIRTIO_RING_F_PUBLISH_USED);
+> +
+>   	/* No callback?  Tell other side not to bother us. */
+>   	if (!callback)
+>   		vq->vring.avail->flags |= VRING_AVAIL_F_NO_INTERRUPT;
+> @@ -473,6 +477,8 @@ void vring_transport_features(struct virtio_device *vdev)
+>   		switch (i) {
+>   		case VIRTIO_RING_F_INDIRECT_DESC:
+>   			break;
+> +		case VIRTIO_RING_F_PUBLISH_INDICES:
+> +			break;
+>   		default:
+>   			/* We don't understand this bit. */
+>   			clear_bit(i, vdev->features);
+> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+> index e4d144b..9d01de9 100644
+> --- a/include/linux/virtio_ring.h
+> +++ b/include/linux/virtio_ring.h
+> @@ -29,6 +29,9 @@
+>   /* We support indirect buffer descriptors */
+>   #define VIRTIO_RING_F_INDIRECT_DESC	28
+>
+> +/* The Guest publishes last-seen used index at the end of the avail ring. */
+> +#define VIRTIO_RING_F_PUBLISH_USED	29
+> +
+>   /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
+>   struct vring_desc {
+>   	/* Address (guest-physical). */
+> @@ -69,6 +72,8 @@ struct vring {
+>   	struct vring_avail *avail;
+>
+>   	struct vring_used *used;
+> +	/* Last used index seen by the Guest. */
+> +	__u16 *last_used_idx;
+>   };
+>
+>   /* The standard layout for the ring is a continuous chunk of memory which looks
+> @@ -83,6 +88,7 @@ struct vring {
+>    *	__u16 avail_flags;
+>    *	__u16 avail_idx;
+>    *	__u16 available[num];
+> + *	__u16 last_used_idx;
+>    *
+>    *	// Padding to the next align boundary.
+>    *	char pad[];
+> @@ -101,11 +107,17 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+>   	vr->avail = p + num*sizeof(struct vring_desc);
+>   	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + align-1)
+>   			&  ~(align - 1));
+> +	/* We publish the last-seen used index at the end of the available ring.
+> +	 * It is at the end for backwards compatibility. */
+> +	vr->last_used_idx =&(vr)->avail->ring[num];
+> +	/* Verify that last used index does not spill over the used ring. */
+> +	BUG_ON((void *)vr->last_used_idx +
+> +	       sizeof *vr->last_used_idx>  (void *)vr->used);
+>   }
+>
+>   static inline unsigned vring_size(unsigned int num, unsigned long align)
+>   {
+> -	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
+> +	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
+>   		 + align - 1)&  ~(align - 1))
+>   		+ sizeof(__u16) * 2 + sizeof(struct vring_used_elem) * num;
+>   }
 
