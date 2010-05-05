@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934897Ab0EEObK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 10:31:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33920 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933645Ab0EEObF (ORCPT
+	id S934907Ab0EEOb3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 10:31:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:33507 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934196Ab0EEObZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 10:31:05 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/4] perf report: Make dso__calc_col_width agree with hist_entry__dso_snprintf
-Date: Wed,  5 May 2010 11:30:45 -0300
-Message-Id: <1273069848-22934-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1273069848-22934-1-git-send-email-acme@infradead.org>
-References: <1273069848-22934-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Wed, 5 May 2010 10:31:25 -0400
+X-Authority-Analysis: v=1.1 cv=Sj+DEJq9TvmrEz0yYf786F+83+V8ZKDvY/KsKt+Cs/8= c=1 sm=0 a=YcwJHCUm4PYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=iqwmNQvO6rCrzDBlu6YA:9 a=6bEIuhDOUQBfQdbtd8Ybj8yi63MA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: Tracing of power:power_start events doesn't work
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Ronny =?ISO-8859-1?Q?Tsch=FCter?= <Ronny.Tschueter@tu-dresden.de>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <4BE17C90.2020205@tu-dresden.de>
+References: <4BDECD66.2010906@tu-dresden.de>
+	 <1273019517.22438.10.camel@gandalf.stny.rr.com>
+	 <4BE17C90.2020205@tu-dresden.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 05 May 2010 10:31:21 -0400
+Message-ID: <1273069881.22438.17.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Wed, 2010-05-05 at 16:11 +0200, Ronny Tsch�ter wrote:
 
-The first was always using the ->long_name, while the later used
-->short_name if verbose was not set, resulting in the dso column to be
-much wider than needed most of the time.
+>   /*
+>    * Include the apic definitions for x86 to have the APIC timer related 
+> defines
+> @@ -796,6 +797,18 @@ static int acpi_idle_bm_check(void)
+>    */
+>   static inline void acpi_idle_do_entry(struct acpi_processor_cx *cx)
+>   {
+> +    switch (cx->type) {
+> +    case ACPI_STATE_C1:
+> +        trace_power_start(POWER_CSTATE, 1);
+> +        break;
+> +    case ACPI_STATE_C2:
+> +        trace_power_start(POWER_CSTATE, 2);
+> +        break;
+> +    case ACPI_STATE_C3:
+> +        trace_power_start(POWER_CSTATE, 3);
+> +        break;
+> +    }
+> +
 
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/event.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+Depending on gcc, the above can bloat the code since each call to
+trace_power_start() is a macro expanded. Try to call it just once.
+Perhaps one of the following:
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 2477270..23d5dfd 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -626,8 +626,10 @@ static void dso__calc_col_width(struct dso *self)
- 	if (!symbol_conf.col_width_list_str && !symbol_conf.field_sep &&
- 	    (!symbol_conf.dso_list ||
- 	     strlist__has_entry(symbol_conf.dso_list, self->name))) {
--		unsigned int slen = strlen(self->name);
--		if (slen > dsos__col_width)
-+		u16 slen = self->short_name_len;
-+		if (verbose)
-+			slen = self->long_name_len;
-+		if (dsos__col_width < slen)
- 			dsos__col_width = slen;
- 	}
- 
--- 
-1.6.2.5
+
+	trace_power_start(POWER_CSTATE,
+		cx->type == ACPI_STATE_C1 ? 1 :
+		cx->type == ACPI_STATE_C2 ? 2 :
+		3);
+
+Or make a local variable instead, although the above would compile out
+completely if tracing is not enabled.
+
+
+	int type:
+
+	switch (cx->type) {
+	case ACPI_STATE_C1:
+		type = 1;
+		break;
+	case ACPI_STATE_C2:
+		type = 2;
+		break;
+	case ACPI_STATE_C3:
+		type = 3;
+		break;
+	}
+	trace_power_start(POWER_CSTATE, type);
+
+-- Steve
+
+>       /* Don't trace irqs off for idle */
+>       stop_critical_timings();
+>       if (cx->entry_method == ACPI_CSTATE_FFH) {
+> 
+
 
