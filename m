@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934353Ab0EEAcb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 20:32:31 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36117
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933687Ab0EEAc3 (ORCPT
+	id S934288Ab0EEAdR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 20:33:17 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55628 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755144Ab0EEAdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 20:32:29 -0400
-Date: Tue, 04 May 2010 17:32:36 -0700 (PDT)
-Message-Id: <20100504.173236.104064409.davem@davemloft.net>
-To: pthakkar@vmware.com
-Cc: shemminger@vyatta.com, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-       pv-drivers@vmware.com, sbhatewara@vmware.com
-Subject: Re: RFC: Network Plugin Architecture (NPA) for vmxnet3
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100505001857.GQ8323@vmware.com>
-References: <20100504230225.GP8323@vmware.com>
-	<20100504170531.1e7122da@nehalam>
-	<20100505001857.GQ8323@vmware.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 4 May 2010 20:33:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=YmGHWxAg8v4R2WVCZ+pbtP7S7vUliaZOpJwJ+AhJR4oH4IYsIR4EU2PwlSKSrnrYC7
+         vToXgrUU52dq8tdL7ItG+N2FHzG8vdnW57Dk8kph6BAGUQawqXMEoPOHQGwdeO/1WERj
+         NjYRTmNISZY04HbfeL1Nbxw9DjDd5LtGFrYXM=
+Message-ID: <4BE0BCC3.1090101@lwfinger.net>
+Date: Tue, 04 May 2010 19:33:07 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: rostedt@goodmis.org
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: How to write marker info in MMIO trace from kernel
+References: <4BE06933.9080202@lwfinger.net>	 <1272998579.9739.235.camel@gandalf.stny.rr.com>	 <4BE09F42.9070909@lwfinger.net> <1273013889.22438.8.camel@gandalf.stny.rr.com>
+In-Reply-To: <1273013889.22438.8.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pankaj Thakkar <pthakkar@vmware.com>
-Date: Tue, 4 May 2010 17:18:57 -0700
+On 05/04/2010 05:58 PM, Steven Rostedt wrote:
+> On Tue, 2010-05-04 at 17:27 -0500, Larry Finger wrote:
+> 
+>> Thanks for the info. One other question - when I write only mmiotrace to
+>> the current_tracer, the trace_printk() stuff does not end up in the
+>> buffer. I can get it by using the "sysprof" tracer, but that has a lot
+>> of stuff I do not want. Did I miss some configuration? My list of
+>> available tracers is "blk kmemtrace mmiotrace wakeup_rt wakeup function
+>> sysprof sched_switch nop".
+> 
+> Ug, that's because the mmiotrace handles its own prints and ignores
+> anything it does not know about. Here, try this patch:
+> 
+> -- Steve
+> 
+> diff --git a/kernel/trace/trace_mmiotrace.c b/kernel/trace/trace_mmiotrace.c
+> index 017fa37..8652f28 100644
+> --- a/kernel/trace/trace_mmiotrace.c
+> +++ b/kernel/trace/trace_mmiotrace.c
+> @@ -282,7 +282,7 @@ static enum print_line_t mmio_print_line(struct trace_iterator *iter)
+>  	case TRACE_PRINT:
+>  		return mmio_print_mark(iter);
+>  	default:
+> -		return TRACE_TYPE_HANDLED; /* ignore unknown entries */
+> +		return TRACE_TYPE_UNHANDLED;
+>  	}
+>  }
 
-> The purpose of this email is to introduce the architecture and the
-> design principles. The overall project involves more than just
-> changes to vmxnet3 driver and hence we though an overview email
-> would be better. Once people agree to the design in general we
-> intend to provide the code changes to the vmxnet3 driver.
+That did the trick.
 
-Stephen's point is that code talks and bullshit walks.
+Thanks a lot,
 
-Talk about high level designs rarely gets any traction, and often goes
-nowhere.  Give us an example implementation so there is something
-concrete for us to sink our teeth into.
+Larry
