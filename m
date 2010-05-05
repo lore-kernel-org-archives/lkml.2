@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934718Ab0EEKlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 06:41:25 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54802 "EHLO
+	id S934659Ab0EEKlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 06:41:36 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54810 "EHLO
 	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934533Ab0EEKlU (ORCPT
+	with ESMTP id S934730Ab0EEKlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 06:41:20 -0400
+	Wed, 5 May 2010 06:41:31 -0400
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 13/20] tty: serial - fix tty referencing in set_ldisc
+Subject: [PATCH 15/20] tty: Make vt's have a tty_port
 To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de
-Date: Wed, 05 May 2010 11:02:53 +0100
-Message-ID: <20100505100253.3595.6394.stgit@localhost.localdomain>
+Date: Wed, 05 May 2010 11:03:04 +0100
+Message-ID: <20100505100304.3595.26265.stgit@localhost.localdomain>
 In-Reply-To: <20100505100144.3595.65633.stgit@localhost.localdomain>
 References: <20100505100144.3595.65633.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,65 +22,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pass down the ldisc number so that the drivers don't have to peek into the
-tty object themselves. This lets us get rid of another case of back referencing
-port to tty which we don't want (because of races versus hangup/close).
+The vt layer isn't safely handling reference counts to tty object on the input
+side. Add a tty port structure to the vt layer in order to implement this using
+the standard helpers.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/serial/bfin_5xx.c    |    7 ++-----
- drivers/serial/serial_core.c |    2 +-
- include/linux/serial_core.h  |    2 +-
- 3 files changed, 4 insertions(+), 7 deletions(-)
+ drivers/char/vt.c              |    2 ++
+ include/linux/console_struct.h |    2 ++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
 
-diff --git a/drivers/serial/bfin_5xx.c b/drivers/serial/bfin_5xx.c
-index 96f7e74..e0d25ca 100644
---- a/drivers/serial/bfin_5xx.c
-+++ b/drivers/serial/bfin_5xx.c
-@@ -952,15 +952,12 @@ bfin_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
-  * Enable the IrDA function if tty->ldisc.num is N_IRDA.
-  * In other cases, disable IrDA function.
-  */
--static void bfin_serial_set_ldisc(struct uart_port *port)
-+static void bfin_serial_set_ldisc(struct uart_port *port, int ld)
- {
- 	int line = port->line;
- 	unsigned short val;
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index c5e30e3..e5269cc 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -772,6 +772,7 @@ int vc_allocate(unsigned int currcons)	/* return 0 on success */
+ 	    if (!vc)
+ 		return -ENOMEM;
+ 	    vc_cons[currcons].d = vc;
++	    tty_port_init(&vc->port);
+ 	    INIT_WORK(&vc_cons[currcons].SAK_work, vc_SAK);
+ 	    visual_init(vc, currcons, 1);
+ 	    if (!*vc->vc_uni_pagedir_loc)
+@@ -2909,6 +2910,7 @@ static int __init con_init(void)
+ 	for (currcons = 0; currcons < MIN_NR_CONSOLES; currcons++) {
+ 		vc_cons[currcons].d = vc = kzalloc(sizeof(struct vc_data), GFP_NOWAIT);
+ 		INIT_WORK(&vc_cons[currcons].SAK_work, vc_SAK);
++		tty_port_init(&vc->port);
+ 		visual_init(vc, currcons, 1);
+ 		vc->vc_screenbuf = kzalloc(vc->vc_screenbuf_size, GFP_NOWAIT);
+ 		vc_init(vc, vc->vc_rows, vc->vc_cols,
+diff --git a/include/linux/console_struct.h b/include/linux/console_struct.h
+index 38fe59d..57e83f1 100644
+--- a/include/linux/console_struct.h
++++ b/include/linux/console_struct.h
+@@ -21,6 +21,8 @@ struct vt_struct;
+ #define NPAR 16
  
--	if (line >= port->state->port.tty->driver->num)
--		return;
--
--	switch (port->state->port.tty->termios->c_line) {
-+	switch (ld) {
- 	case N_IRDA:
- 		val = UART_GET_GCTL(&bfin_serial_ports[line]);
- 		val |= (IREN | RPOLC);
-diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
-index 12ee7e0..570dca2 100644
---- a/drivers/serial/serial_core.c
-+++ b/drivers/serial/serial_core.c
-@@ -1194,7 +1194,7 @@ static void uart_set_ldisc(struct tty_struct *tty)
- 	struct uart_port *uport = state->uart_port;
- 
- 	if (uport->ops->set_ldisc)
--		uport->ops->set_ldisc(uport);
-+		uport->ops->set_ldisc(uport, tty->termios->c_line);
- }
- 
- static void uart_set_termios(struct tty_struct *tty,
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index ad83996..5c4cbe6 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -216,7 +216,7 @@ struct uart_ops {
- 	void		(*flush_buffer)(struct uart_port *);
- 	void		(*set_termios)(struct uart_port *, struct ktermios *new,
- 				       struct ktermios *old);
--	void		(*set_ldisc)(struct uart_port *);
-+	void		(*set_ldisc)(struct uart_port *, int new);
- 	void		(*pm)(struct uart_port *, unsigned int state,
- 			      unsigned int oldstate);
- 	int		(*set_wake)(struct uart_port *, unsigned int state);
+ struct vc_data {
++	struct tty_port port;			/* Upper level data */
++
+ 	unsigned short	vc_num;			/* Console number */
+ 	unsigned int	vc_cols;		/* [#] Console size */
+ 	unsigned int	vc_rows;
 
