@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934523Ab0EEQAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 12:00:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:36798 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934369Ab0EEQAA (ORCPT
+	id S934564Ab0EEQEU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 12:04:20 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59366 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933497Ab0EEQET convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 12:00:00 -0400
-X-Authority-Analysis: v=1.1 cv=Sj+DEJq9TvmrEz0yYf786F+83+V8ZKDvY/KsKt+Cs/8= c=1 sm=0 a=whUijNTEeaUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=pGLkceISAAAA:8 a=I1KwjzKhOx3TpovsgTgA:9 a=Z6mb_PfyljYgAFZicmQA:7 a=ZMX1doPGXNo0DOX27kJvDm5QupgA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 3/4] trace/trace_output.c: fix "integer as NULL
- pointer" warning.
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Thiago Farina <tfransosi@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1264455631.31321.433.camel@gandalf.stny.rr.com>
-References: <1264349038-1766-1-git-send-email-tfransosi@gmail.com>
-	 <1264349038-1766-3-git-send-email-tfransosi@gmail.com>
-	 <1264455631.31321.433.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Wed, 05 May 2010 11:59:57 -0400
-Message-ID: <1273075197.22438.28.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 5 May 2010 12:04:19 -0400
+From: "Savoy, Pavan" <pavan_savoy@ti.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: greg <gregkh@suse.de>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 5 May 2010 21:34:03 +0530
+Subject: RE: [PATCH] drivers: staging: GPS protocol driver for wl128x
+Thread-Topic: [PATCH] drivers: staging: GPS protocol driver for wl128x
+Thread-Index: AcrsQuYqavZ2mmVdT0WLFH0NSGIRxwAKTFew
+Message-ID: <19F8576C6E063C45BE387C64729E7394044E351AA7@dbde02.ent.ti.com>
+References: <114054.49943.qm@web94916.mail.in2.yahoo.com>
+ <20100505121131.298e9445@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100505121131.298e9445@lxorguk.ukuu.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-01-25 at 16:40 -0500, Steven Rostedt wrote:
-> On Sun, 2010-01-24 at 11:03 -0500, Thiago Farina wrote:
-> > kernel/trace/trace_output.c:256:24: warning: Using plain integer as NULL pointer
-> > 
-> > Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+Alan,
+
+ 
+----------------
+Thanks & Regards,
+Pavan Savoy | x0099669
+ 
+> -----Original Message-----
+> From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
+> Sent: Wednesday, May 05, 2010 6:12 AM
+> To: Savoy, Pavan
+> Cc: greg; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] drivers: staging: GPS protocol driver for wl128x
 > 
-> Is this going through some other tree, or should I just pull it?
-
-I guess this never went through any other tree (never got a response).
-I'll pull it now.
-
--- Steve
-
-> > ---
-> >  kernel/trace/trace_output.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-> > index 8e46b33..2404c12 100644
-> > --- a/kernel/trace/trace_output.c
-> > +++ b/kernel/trace/trace_output.c
-> > @@ -253,7 +253,7 @@ void *trace_seq_reserve(struct trace_seq *s, size_t len)
-> >  	void *ret;
-> >  
-> >  	if (s->full)
-> > -		return 0;
-> > +		return NULL;
-> >  
-> >  	if (len > ((PAGE_SIZE - 1) - s->len)) {
-> >  		s->full = 1;
+> On Tue, 4 May 2010 21:55:43 +0530 (IST)
+> Pavan Savoy <pavan_savoy@ti.com> wrote:
 > 
+> > Greg, Alan,
+> >
+> > Just to complete the circle on N_TI_WL, find below the GPS driver which makes use of the shared transport
+> line discipline.
+> >
+> > This driver provides a TTY line character device to application/middle-ware running on host, as if the
+> device is directly connected over UART to a GPS chip.
+> 
+> This doesn't appear to be a tty device ?
 
+A typo here, I meant "TTY like" character device, and it not certainly a character device.
+
+> 
+> > Almost all actions that can be done on a /dev/ttySx can be done on this /dev/tigps device.
+> 
+> Hardly true. A tty driver has a very precisely defined set of behaviours
+> and a lot of ioctls and interfaces your driver doesn't. Our gps
+> interfaces are only tty drivers because historically they were plugged
+> into serial ports so I'm not sure the 'not a tty' bit actually matters.
+
+Yes. I agree, and hence mentioned almost all.
+
+> Codewise its the same as all the rest - only one instance possible and
+> poking around in globals with no visible or documented locking.
+
+Yes, and this is the reason, I posted this patch.
+BT and GPS had to communicate over a single UART, and this is the reason the N_TI_WL line discipline exists.
+With this sort of architecture, how can I accommodate multi-device support? To avoid this single device limits?
+
+Also, what is that you are exactly looking for regarding locking.
+Please suggest.
+
+Thanks.
 
