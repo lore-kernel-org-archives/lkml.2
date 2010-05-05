@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933449Ab0EEMAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 08:00:39 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:37555 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932234Ab0EEMAi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 08:00:38 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=echWs7NrfMgnqLTpPyeX0qSk0R7fB6nvQ4co4i49skJxxcNXf5n6oHDpItdzPcZS9
-	QFt9HUh+L1K2F+eXyjx3w==
+	id S933791Ab0EEMLI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 08:11:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60840 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932283Ab0EEMLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 08:11:06 -0400
+X-User-Agent: K-9 Mail for Android
+In-Reply-To: <4BE11E8A.2090804@redhat.com>
+References: =?US-ASCII?Q?=3C1272812038-32484-1-git-send-email-avi=40redha?= =?US-ASCII?Q?t=2Ecom=3E=09_=3C1272812038-32484-2-git-send-email-avi?= =?US-ASCII?Q?=40redhat=2Ecom=3E=09_=3Cu2p73c1f2161005021038gce35c1bb?= =?US-ASCII?Q?pca6ec119d24e646e=40mail?= =?US-ASCII?Q?=2Egmail=2Ecom=3E=09_=3C4BDDBA18=2E30?= =?US-ASCII?Q?80909=40redhat=2Ecom=3E_=3C4BDF4407=2E8000503=40zytor=2Eco?= =?US-ASCII?Q?m=3E=09_=3C4BDFCF9F=2E3030600=40?= =?US-ASCII?Q?redhat=2Ecom=3E_=3C1272996927=2E2?= =?US-ASCII?Q?833=2E13=2Ecamel=40sbs-t61=2E?= =?US-ASCII?Q?sc=2Eintel=2Ecom=3E_=3C4BE06642=2E?= =?US-ASCII?Q?6080702=40zytor=2Ecom=3E_=3C4BE?= =?US-ASCII?Q?11E8A=2E2090804=40redhat=2Ecom=3E?=
+Content-Type: multipart/mixed; boundary="----68ELJY5JJBR90F1U2IFQDG83D8VTBQ"
 MIME-Version: 1.0
-In-Reply-To: <20100505110630.GA5754@opensource.wolfsonmicro.com>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
-	 <201005042223.41370.rjw@sisk.pl>
-	 <20100504235644.GA5231@opensource.wolfsonmicro.com>
-	 <201005050222.31038.rjw@sisk.pl>
-	 <20100505110630.GA5754@opensource.wolfsonmicro.com>
-Date: Wed, 5 May 2010 05:00:33 -0700
-Message-ID: <j2xa55d774e1005050500ocaa77b0di8e9eb58ce9c82d58@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-From: Brian Swetland <swetland@google.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Subject: Re: [PATCH 1/2] x86: eliminate TS_XSAVE
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 05 May 2010 05:10:04 -0700
+To: Avi Kivity <avi@redhat.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Brian Gerst <brgerst@gmail.com>,
+       "Cui, Dexuan" <dexuan.cui@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Message-ID: <6ba17d83-676c-4271-86ea-c97294f17b26@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 5, 2010 at 4:06 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Wed, May 05, 2010 at 02:22:30AM +0200, Rafael J. Wysocki wrote:
->> On Wednesday 05 May 2010, Mark Brown wrote:
->
->> > On a mobile phone when the system is in a voice call the data flow for
->> > the call is entirely handled outside the CPU (normally referred to as
->> > Applications Processor or AP here) by the baseband and audio CODEC,
->
->> In that case someone (either a driver or, most likely, user space) will need to
->> keep a suspend blocker active.
->
-> That is not actually what Android systems are doing, and if it is what's
-> supposed to happen then I'd really expect to see a patch to ASoC as part
-> of this series which shows how this is supposed to be integrated - it's
-> the sort of thing I'd expect to see some kernel space management for.
->
-> Honestly I don't think that's a very good solution for actual systems,
-> though.  A part of the reasoning behind designing systems in this way is
-> allowing the AP to go into the lowest possible power state while on a
-> voice call so it doesn't seem at all unreasonable for the system
-> integrator to expect that the AP will be driven into the standard low
-> power state the system uses for it during a call and in a system using
-> opportunistic suspend that's suspend mode.
+------68ELJY5JJBR90F1U2IFQDG83D8VTBQ
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: base64
 
-Yup.  And that's exactly what happens on the platforms we've shipped
-on so far -- the apps side of the world fully suspends while in a
-voice call.  Some events (prox sensor, buttons, modem sending a state
-notification) will wake it up, of course.
+WW91ciBjb2RlIGlzIGZ1bmN0aW9uYWxseSBlcXVpdmFsZW50IHRvIHRoZSBpbW1lZGlhdGUgdmFs
+dWVzIHBhdGNoOyBuZWl0aGVyIHVzZXMgYSBkaXJlY3QgYnJhbmNoIHdoaWNoIHdvdWxkIGJlIG1v
+cmUgZWZmaWNpZW50LgoKIkF2aSBLaXZpdHkiIDxhdmlAcmVkaGF0LmNvbT4gd3JvdGU6Cgo+T24g
+MDUvMDQvMjAxMCAwOToyNCBQTSwgSC4gUGV0ZXIgQW52aW4gd3JvdGU6Cj4+Cj4+IEkgd291bGQg
+bGlrZSB0byByZXF1ZXN0IG9uZSBjaGFuZ2UsIGhvd2V2ZXIuICBJIHdvdWxkIGxpa2UgdG8gc2Vl
+IHRoZQo+PiBhbHRlcm5hdGl2ZXMgY29kZSB0byBiZToKPj4KPj4gCW1vdmIgJDAscmVnCj4+IAlt
+b3ZiICQxLHJlZwo+Pgo+PiAuLi4gaW5zdGVhZCBvZiB1c2luZyB4b3IgKHdoaWNoIGhhcyB0byBi
+ZSBwYWRkZWQgd2l0aCBOT1BzLCB3aGljaCBpcyBvZgo+PiBjb3Vyc2UgcG9pbnRsZXNzIHNpbmNl
+IHRoZSBzbG90IGlzIGEgZml4ZWQgc2l6ZS4pCj4KPlJpZ2h0Lgo+Cj4+IEkgd291bGQgc3VnZ2Vz
+dCB1c2luZwo+PiBhIGJ5dGUtc2l6ZWQgdmFyaWFibGUgaW5zdGVhZCBvZiBhIGR3b3JkLXNpemUg
+dmFyaWFibGUgdG8gc2F2ZSBhIGZldwo+PiBieXRlcywgdG9vLgo+PiAgICAKPgo+SSB1c2VkIGEg
+Ym9vbCwgYW5kIHRoZSBjb2RlIGFscmVhZHkgY29tcGlsZXMgdG8gYSBieXRlIG1vdi4gIFRob3Vn
+aCBpdCAKPmNvdWxkIGJlIGFyZ3VlZCB0aGF0IGEgd29yZCBpbnN0cnVjdGlvbiBpcyBiZXR0ZXIg
+c2luY2UgaXQgYXZvaWRzIGEgCj5mYWxzZSBkZXBlbmRlbmN5LCBhbmQgYWxsb3dzIGEgcHJlY2Vk
+aW5nIGluc3RydWN0aW9uIHRoYXQgbW9kaWZpZXMgJXJlZyAKPnRvIGJlIGV4ZWN1dGVkIGFmdGVy
+IHRoZSBtb3YgaW5zdHJ1Y3Rpb24uCj4KPj4gT25jZSB0aGUganVtcCBsYWJlbCBmcmFtZXdvcmsg
+aXMgaW50ZWdyYXRlZCBhbmQgaGFzIG1hdHVyZWQsIEkgdGhpbmsgd2UKPj4gc2hvdWxkIGNvbnNp
+ZGVyIHVzaW5nIGl0IHRvIHNhdmUgdGhlIG1vdi90ZXN0L2p1bXAuCj4+ICAgIAo+Cj5JSVJDIHRo
+YXQgaGFzIGFuIGltcGxpZWQgdW5saWtlbHkoKSB3aGljaCBpc24ndCBzdWl0YWJsZSBoZXJlPwo+
+Cj5QZXJoYXBzIHRoZSBpbW1lZGlhdGUgdmFsdWVzIHBhdGNoZXMuCj4KPi0tIAo+ZXJyb3IgY29t
+cGlsaW5nIGNvbW1pdHRlZS5jOiB0b28gbWFueSBhcmd1bWVudHMgdG8gZnVuY3Rpb24KPgoKLS0g
+ClNlbnQgZnJvbSBteSBBbmRyb2lkIHBob25lIHdpdGggSy05IE1haWwuIFBsZWFzZSBleGN1c2Ug
+bXkgYnJldml0eS4=
 
-I haven't spent much time looking at alsa/asoc yet, but it's on my
-list for 2010 -- I'm hoping to migrate the very simple audio drivers I
-wrote for the msm platform originally to actually be alsa drivers as
-part of the general "try to use existing interfaces if they fit" plan
-we've been working toward.
+------68ELJY5JJBR90F1U2IFQDG83D8VTBQ--
 
-The suspend_block system gets us what we need today (well what we
-needed three years ago too!) to ship and hit reasonable power targets
-on a number of platforms.  There's been a lot of various handwaving
-about "android kernel forks" and what have you, but here we are again,
-trying to work out perhaps the only "new subsystem" type change that
-our driver code depends on (almost all other contentious stuff is self
-contained and you can take or leave it).
-
-Our hope here is to get something out there in the near term so that
-the various drivers we maintain would "just work" in mainline (your
-choice of if you use suspend_block or not -- it's designed to be an
-option) and we can move forward.  If in the future runtime power
-management or other systems completely obsolete suspend_blockers,
-awesome, we remove 'em.
-
-Brian
