@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934421Ab0EEMwQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 08:52:16 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:50107 "EHLO gir.skynet.ie"
+	id S934693Ab0EEMwV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 08:52:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7802 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752120Ab0EEMwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 08:52:15 -0400
-Date: Wed, 5 May 2010 13:51:56 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH] fix count_vm_event preempt in memory compaction direct
-	reclaim
-Message-ID: <20100505125156.GM20979@csn.ul.ie>
-References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie> <1271797276-31358-13-git-send-email-mel@csn.ul.ie> <20100505121908.GA5835@random.random>
+	id S934498Ab0EEMwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 08:52:18 -0400
+Message-ID: <4BE169FE.3020805@redhat.com>
+Date: Wed, 05 May 2010 15:52:14 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100505121908.GA5835@random.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] KVM MMU: fix race in invlpg code
+References: <4BE16265.7060004@cn.fujitsu.com> <4BE162B9.201@cn.fujitsu.com> <4BE1650B.7080809@redhat.com> <4BE1686D.9000902@cn.fujitsu.com>
+In-Reply-To: <4BE1686D.9000902@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 02:19:08PM +0200, Andrea Arcangeli wrote:
-> On Tue, Apr 20, 2010 at 10:01:14PM +0100, Mel Gorman wrote:
-> > +		if (page) {
-> > +			__count_vm_event(COMPACTSUCCESS);
-> > +			return page;
-> 
-> ==
-> From: Andrea Arcangeli <aarcange@redhat.com>
-> 
-> Preempt is enabled so it must use count_vm_event.
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+On 05/05/2010 03:45 PM, Xiao Guangrong wrote:
+>
+> Avi Kivity wrote:
+>
+>    
+>>>        spin_lock(&vcpu->kvm->mmu_lock);
+>>> +    index = kvm_page_table_hashfn(gfn);
+>>> +    bucket =&vcpu->kvm->arch.mmu_page_hash[index];
+>>> +    hlist_for_each_entry_safe(s, node, tmp, bucket, hash_link)
+>>> +        if (s == sp) {
+>>> +            if (s->gfn == gfn&&   s->role.word == role.word)
+>>> +                live = true;
+>>> +            break;
+>>> +        }
+>>> +
+>>> +    if (!live)
+>>> +        goto unlock_exit;
+>>> +
+>>>
+>>>        
+>> Did you try the root_count method?  I think it's cleaner.
+>>      
+> Avi, Thanks for your idea.
+>
+> I have considered this method, but i'm not sure when it's the good time
+> to real free this page, and i think we also need a way to synchronize the
+> real free path and this path. Do you have any comment for it :-(
+>    
 
-Reviewed-by: Mel Gorman <mel@csn.ul.ie>
+Same as mmu_free_roots():
 
-Andrew, this is a fix to the patch
-mmcompaction-direct-compact-when-a-high-order-allocation-fails.patch
+         --sp->root_count;
+         if (!sp->root_count && sp->role.invalid) {
+                 kvm_mmu_zap_page(vcpu->kvm, sp);
+                 goto unlock_exit;
+         }
 
-Thanks Andrea, well spotted.
-
-> ---
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1768,7 +1768,7 @@ __alloc_pages_direct_compact(gfp_t gfp_m
->  				alloc_flags, preferred_zone,
->  				migratetype);
->  		if (page) {
-> -			__count_vm_event(COMPACTSUCCESS);
-> +			count_vm_event(COMPACTSUCCESS);
->  			return page;
->  		}
->  
-> 
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+error compiling committee.c: too many arguments to function
+
