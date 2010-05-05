@@ -1,73 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933873Ab0EEO1O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 10:27:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51299 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932234Ab0EEO1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 10:27:12 -0400
-Date: Wed, 5 May 2010 16:27:07 +0200
-From: Jan Kara <jack@suse.cz>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-       David Woodhouse <dwmw2@infradead.org>, Jan Kara <jack@suse.cz>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       David Howells <dhowells@redhat.com>,
-       Alexander Shishkin <virtuoso@slind.org>, linux-mtd@lists.infradead.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] mtd: Do not corrupt backing device of device node
- inode
-Message-ID: <20100505142707.GA3938@quack.suse.cz>
-References: <1273047688-20947-1-git-send-email-kirill@shutemov.name>
- <1273069039.3702.188.camel@localhost>
+	id S934883Ab0EEObA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 10:31:00 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41406 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933645Ab0EEOa5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 10:30:57 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 4/4] perf tools: Fixup minor doc formatting issues
+Date: Wed,  5 May 2010 11:30:48 -0300
+Message-Id: <1273069848-22934-5-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1273069848-22934-1-git-send-email-acme@infradead.org>
+References: <1273069848-22934-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273069039.3702.188.camel@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 05-05-10 17:17:19, Artem Bityutskiy wrote:
-> On Wed, 2010-05-05 at 11:21 +0300, Kirill A. Shutemov wrote:
-> > We cannot modify file->f_mapping->backing_dev_info, because it will corrupt
-> > backing device of device node inode, since file->f_mapping is equal to
-> > inode->i_mapping (see __dentry_open() in fs/open.c).
-> > 
-> > Let's introduce separate inode for MTD device with appropriate backing
-> > device.
-> > 
-> > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> > Acked-by: Jan Kara <jack@suse.cz>
-> 
-> I get the following build error:
-> 
-> [dedekind@eru l2-mtd-2.6]$ make -j8
-> O=/home/dedekind/tmp/l2-mtd-2.6-x86_64/
->   GEN     /home/dedekind/tmp/l2-mtd-2.6-x86_64/Makefile
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
->   Using /home/dedekind/git/l2-mtd-2.6 as source for kernel
->   CALL    /home/dedekind/git/l2-mtd-2.6/scripts/checksyscalls.sh
->   CHK     include/generated/compile.h
->   CHK     include/linux/version.h
-> make[3]: `scripts/unifdef' is up to date.
->   Building modules, stage 2.
-> Kernel: arch/x86/boot/bzImage is ready  (#2)
->   MODPOST 146 modules
-> ERROR: "__iget" [drivers/mtd/mtdchar.ko] undefined!
-> ERROR: "inode_lock" [drivers/mtd/mtdchar.ko] undefined!
-> make[2]: *** [__modpost] Error 1
-> make[1]: *** [modules] Error 2
-> make: *** [sub-make] Error 2
-> 
-> __iget and inode_lock are not exported...
-  Ah, right. igrab() should be used instead of __iget inside the
-inode_lock.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-								Honza
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-annotate.txt     |    2 +-
+ tools/perf/Documentation/perf-bench.txt        |    2 +-
+ tools/perf/Documentation/perf-diff.txt         |    2 +-
+ tools/perf/Documentation/perf-kmem.txt         |    2 +-
+ tools/perf/Documentation/perf-trace-python.txt |    2 +-
+ tools/perf/Documentation/perf-trace.txt        |    2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index c9dcade..5164a65 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -1,5 +1,5 @@
+ perf-annotate(1)
+-==============
++================
+ 
+ NAME
+ ----
+diff --git a/tools/perf/Documentation/perf-bench.txt b/tools/perf/Documentation/perf-bench.txt
+index 0181ddd..a3dbadb 100644
+--- a/tools/perf/Documentation/perf-bench.txt
++++ b/tools/perf/Documentation/perf-bench.txt
+@@ -1,5 +1,5 @@
+ perf-bench(1)
+-============
++=============
+ 
+ NAME
+ ----
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index 8974e20..20d97d8 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -1,5 +1,5 @@
+ perf-diff(1)
+-==============
++============
+ 
+ NAME
+ ----
+diff --git a/tools/perf/Documentation/perf-kmem.txt b/tools/perf/Documentation/perf-kmem.txt
+index eac4d85..a52fcde 100644
+--- a/tools/perf/Documentation/perf-kmem.txt
++++ b/tools/perf/Documentation/perf-kmem.txt
+@@ -1,5 +1,5 @@
+ perf-kmem(1)
+-==============
++============
+ 
+ NAME
+ ----
+diff --git a/tools/perf/Documentation/perf-trace-python.txt b/tools/perf/Documentation/perf-trace-python.txt
+index 16a8650..864aac2 100644
+--- a/tools/perf/Documentation/perf-trace-python.txt
++++ b/tools/perf/Documentation/perf-trace-python.txt
+@@ -1,5 +1,5 @@
+ perf-trace-python(1)
+-==================
++====================
+ 
+ NAME
+ ----
+diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
+index 8879299..122ec9d 100644
+--- a/tools/perf/Documentation/perf-trace.txt
++++ b/tools/perf/Documentation/perf-trace.txt
+@@ -1,5 +1,5 @@
+ perf-trace(1)
+-==============
++=============
+ 
+ NAME
+ ----
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.6.2.5
+
