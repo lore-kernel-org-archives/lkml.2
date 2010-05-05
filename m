@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab0EEGLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 02:11:10 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:35088 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755382Ab0EEGLG (ORCPT
+	id S1756096Ab0EEGPf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 02:15:35 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:55133 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106Ab0EEGPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 02:11:06 -0400
-Subject: Re: [PATCH v2] mtd: Do not corrupt backing device of device node
- inode
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: David Woodhouse <dwmw2@infradead.org>, Jan Kara <jack@suse.cz>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       David Howells <dhowells@redhat.com>,
-       Alexander Shishkin <virtuoso@slind.org>, linux-mtd@lists.infradead.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1272922368-18517-1-git-send-email-kirill@shutemov.name>
-References: <1272922368-18517-1-git-send-email-kirill@shutemov.name>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 May 2010 09:04:16 +0300
-Message-ID: <1273039456.3702.59.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 05 May 2010 06:10:29.0258 (UTC) FILETIME=[A95296A0:01CAEC19]
-X-Nokia-AV: Clean
+	Wed, 5 May 2010 02:15:33 -0400
+Date: Wed, 5 May 2010 08:16:20 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Xose Vazquez Perez <xose.vazquez@gmail.com>,
+       Stefan Weinhuber <wein@de.ibm.com>,
+       Horst Hummel <Horst.Hummel@de.ibm.com>,
+       Stefan Haberland <stefan.haberland@de.ibm.com>
+Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: deadline ALWAYS default for dasd devices(s390) ?
+Message-ID: <20100505061620.GA2381@osiris.boeblingen.de.ibm.com>
+References: <4BD58848.8090205@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BD58848.8090205@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-04 at 00:32 +0300, Kirill A. Shutemov wrote:
-> We cannot modify file->f_mapping->backing_dev_info, because it will corrupt
-> backing device of device node inode, since file->f_mapping is equal to
-> inode->i_mapping (see __dentry_open() in fs/open.c).
+On Mon, Apr 26, 2010 at 02:34:16PM +0200, Xose Vazquez Perez wrote:
+> hi,
 > 
-> Let's introduce separate inode for MTD device with appropriate backing
-> device.
+> why is it FORCED ? bypassing a GLOBAL setting and also the kernel command line !!!
 > 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> drivers/s390/block/dasd.c
 > 
-> ---
-> Changelog v1 -> v2:
->  - Fix error handling based on comments by Jan Kara.
+> /*
+>  * Allocate and initialize request queue and default I/O scheduler.
+>  */
+> static int dasd_alloc_queue(struct dasd_block *block)
+> {
+> 	int rc;
+> 
+> 	block->request_queue = blk_init_queue(do_dasd_request,
+> 					       &block->request_queue_lock);
+> 	if (block->request_queue == NULL)
+> 		return -ENOMEM;
+> 
+> 	block->request_queue->queuedata = block;
+> 
+> 	elevator_exit(block->request_queue->elevator);
+> 	block->request_queue->elevator = NULL;
+> 	rc = elevator_init(block->request_queue, "deadline");
+> 	if (rc) {
+> 		blk_cleanup_queue(block->request_queue);
+> 		return rc;
+> 	}
+> 	return 0;
+> }
 
-How about a version of this patch which applies to the mtd-2.6 tree
-
-git://git.infradead.org/mtd-2.6.git
-(webview: http://git.infradead.org/mtd-2.6.git)
-
-This one does not apply:
-
-[dedekind@eru mtd-2.6]$ git am ~/tmp/k
-Applying: mtd: Do not corrupt backing device of device node inode
-error: patch failed: drivers/mtd/mtdchar.c:954
-error: drivers/mtd/mtdchar.c: patch does not apply
-error: patch failed: drivers/mtd/mtdcore.c:383
-error: drivers/mtd/mtdcore.c: patch does not apply
-Patch failed at 0001 mtd: Do not corrupt backing device of device node
-inode
-When you have resolved this problem run "git am --resolved".
-If you would prefer to skip this patch, instead run "git am --skip".
-To restore the original branch and stop patching run "git am --abort".
-[dedekind@eru mtd-2.6]$ patch -p1 < .git/rebase-apply/patch 
-patching file drivers/mtd/mtdchar.c
-Hunk #2 succeeded at 88 (offset -3 lines).
-Hunk #3 succeeded at 119 (offset -3 lines).
-Hunk #4 succeeded at 145 (offset -3 lines).
-Hunk #5 FAILED at 979.
-1 out of 5 hunks FAILED -- saving rejects to file
-drivers/mtd/mtdchar.c.rej
-patching file drivers/mtd/mtdcore.c
-Hunk #1 FAILED at 383.
-1 out of 1 hunk FAILED -- saving rejects to file
-drivers/mtd/mtdcore.c.rej
-patching file include/linux/mtd/mtd.h
-Hunk #2 succeeded at 175 (offset -3 lines).
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+Horst, Stefan W. or Stefan H. should be able to answer your question.
