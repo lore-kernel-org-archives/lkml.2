@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760622Ab0EEPgA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 11:36:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39008 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1760368Ab0EEPf6 (ORCPT
+	id S1760616Ab0EEPio (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 11:38:44 -0400
+Received: from smtp113.biz.mail.sp1.yahoo.com ([69.147.92.226]:42833 "HELO
+	smtp113.biz.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1759427Ab0EEPin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 11:35:58 -0400
-Date: Wed, 5 May 2010 11:35:56 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Brian Swetland <swetland@google.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Paul Walmsley <paul@pwsan.com>, <magnus.damm@gmail.com>,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-In-Reply-To: <20100504235644.GA5231@opensource.wolfsonmicro.com>
-Message-ID: <Pine.LNX.4.44L0.1005051133210.1885-100000@iolanthe.rowland.org>
+	Wed, 5 May 2010 11:38:43 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 May 2010 11:38:43 EDT
+X-Yahoo-SMTP: qGLgp.mswBDSnFfWmYVMF5Rmg6NJ
+X-YMail-OSG: 0wNNOB0VM1lTGg5ve6BUTRcc9gizC_FAVc8u3Xji_.1fVZB424x2u9_Fi5qjAG_XURgEA3aUofXKfZsre27KEDQVlGRrhBVxnqHi7qWMpQP846GqgJWyRYCygeBW9O6o90othJ6KhL.BNoArr8670j9XvBg1hfDTDcDNhu0y.XWtSBLsPgfaFdoJgLtlw4xfoxQvXdRxxt1qoz3v6tBW8kNIdyAj8u2O11mCk3wJJhlJmqVSJqJP4z.Anm9A3Hel0_si9fEreLVtEBxe_XZsglvUTfG0kQYXbz7kKhOs7q9OiodRbuDGZSh8CUCpI7wgFSN8WAFi5.fWXm.6eJ0T
+X-Yahoo-Newman-Property: ymail-3
+From: Steven King <sfking@fdwdc.com>
+To: Jean Delvare <khali@linux-fr.org>
+Subject: Re: [lm-sensors] [PATCH v2] hwmon: driver for TI tmp102 temperature sensor
+Date: Wed, 5 May 2010 08:31:55 -0700
+User-Agent: KMail/1.9.9
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       LM Sensors <lm-sensors@lm-sensors.org>
+References: <201003132000.35840.sfking00@yahoo.com> <20100403092340.52862542@hyperion.delvare> <20100504113655.42623e51@hyperion.delvare>
+In-Reply-To: <20100504113655.42623e51@hyperion.delvare>
+Organization: fdwdc.com
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201005050831.56526.sfking@fdwdc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 May 2010, Mark Brown wrote:
+On Tuesday 04 May 2010 2:36:55 Jean Delvare wrote:
+> Steven,
+>
+> On Sat, 3 Apr 2010 09:23:40 +0200, Jean Delvare wrote:
+> > On Mon, 15 Mar 2010 13:52:17 +0100, Jean Delvare wrote:
+> > > Here's my review. Feel free to pick whatever you like in it and ignore
+> > > the rest. Then submit a final version for upstream integration.
+> >
+> > Any update? Would be great to not lose all the work that both you and
+> > me put in this driver so far.
+>
+> If you do not reply, I will do all the suggested changes myself and
+> push the driver upstream.
 
-> Now, the solution here if we're going to use opportunistic suspend like
-> this is to provide some method for the audio subsystem to figure out
-> that the system doesn't actually want it to suspend when it gets told do
-> do so.  Like I say ideally we'd provide some standard interface in the
-> PM subsystem for userspace to communicate this to subsystems and drivers
-> so that we've got a joined up story when people run into issues in cases
-> like this, though obviously if this goes in then we'll have to put in
-> something subsystem or driver specific for affected areas.  I know what
-> I'd implement generically for audio, but I've held back since the option
-> is fairly messy when not used in conjunction with a deliberate choice to
-> use opportunistic suspend and I was expecting a standard mechanism to
-> slot into to provide control for userspace.
-> 
-> In other words, the issue is that we run into situations where we need
-> an element of suspend control to go along with the opportunistic suspend
-> in order to allow some elements to be kept running - since suspend
-> blocking is taken suspend suppression seems like a reasonable term.
+I'm in the midst of the old '12 hours a day 'til we get this thing off to 
+manufacturing' so I havent had time to do more than a cursory look at your 
+changes and probably wont for a while longer.  Other than a few minor style 
+issues, I didnt see anything I'd take issue with, so if thats what you think is 
+the right thing to do, then please do.
 
-Android must already include some solution to this problem.  Why not 
-use that solution more generally?
-
-Alan Stern
-
+-- 
+Steven King -- sfking at fdwdc dot com
