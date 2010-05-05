@@ -1,110 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757703Ab0EEQwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 12:52:33 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50181 "EHLO hera.kernel.org"
+	id S1757051Ab0EEQ4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 12:56:11 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45789 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753730Ab0EEQwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 12:52:31 -0400
-Date: Wed, 5 May 2010 16:52:01 GMT
-From: tip-bot for Tom Zanussi <tzanussi@gmail.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-       hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-       a.p.zijlstra@chello.nl, efault@gmx.de, fweisbec@gmail.com,
-       tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, acme@redhat.com, tzanussi@gmail.com,
-       a.p.zijlstra@chello.nl, efault@gmx.de, fweisbec@gmail.com,
-       tglx@linutronix.de
-In-Reply-To: <1273030770.6383.6.camel@tropicana>
-References: <1273030770.6383.6.camel@tropicana>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/record: simplify TRACE_INFO tracepoint check
-Message-ID: <tip-db620b1c2fb172346dc54eb62bba9b4a117d173b@git.kernel.org>
-Git-Commit-ID: db620b1c2fb172346dc54eb62bba9b4a117d173b
-X-Mailer: tip-git-log-daemon
+	id S1755344Ab0EEQ4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 12:56:08 -0400
+Date: Wed, 5 May 2010 18:55:32 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, efault@gmx.de, avi@redhat.com,
+       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf
+ on top of TP
+Message-ID: <20100505165532.GC14323@elte.hu>
+References: <1272976724-14312-1-git-send-email-tj@kernel.org>
+ <1272994165.1642.203.camel@laptop>
+ <4BE0FB68.7080403@kernel.org>
+ <1273050400.1642.229.camel@laptop>
+ <4BE13B33.3030709@kernel.org>
+ <1273053073.1642.235.camel@laptop>
+ <4BE1406C.2000400@kernel.org>
+ <1273059488.1642.245.camel@laptop>
+ <4BE1648B.1080709@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 16:52:01 +0000 (UTC)
+In-Reply-To: <4BE1648B.1080709@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  db620b1c2fb172346dc54eb62bba9b4a117d173b
-Gitweb:     http://git.kernel.org/tip/db620b1c2fb172346dc54eb62bba9b4a117d173b
-Author:     Tom Zanussi <tzanussi@gmail.com>
-AuthorDate: Tue, 4 May 2010 22:20:16 -0500
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 5 May 2010 11:12:53 -0300
 
-perf/record: simplify TRACE_INFO tracepoint check
+* Tejun Heo <tj@kernel.org> wrote:
 
-Fix a couple of inefficiencies and redundancies related to
-have_tracepoints() and its use when checking whether to write
-TRACE_INFO.
+> Hello,
+> 
+> On 05/05/2010 01:38 PM, Peter Zijlstra wrote:
+> > As it stands I'd argue to simply drop this whole idea. The SCHED_EVENT()
+> > thing doesn't look like its worth the obfuscation and I'm very much
+> > opposed to making perf and sched_notifiers rely on tracepoints.
+> 
+> Hmmm... okay.  Well, this thing is born out of Ingo's suggestion that for 
+> more sched notifiers to be added notification mechanisms need to be 
+> consolidated.  As long as I can get those two notifiers needed for cmwq, 
+> it's okay with me.  Ingo, what do you think?
 
-First, there's no need to use get_tracepoints_path() in
-have_tracepoints() - we really just want the part that checks whether
-any attributes correspondo to tracepoints.
+I'd much rather see the *_EVENT() APIs used - but enhanced to address Peter's 
+objections. One change would be to add a DEFINE_EVENT_ABI() variant, which 
+would be called via trace_abi_*() calls. That way we always know they are 
+'hardwired' events in the extreme.
 
-Second, we really don't care about raw_samples per se - tracepoints
-are always raw_samples.  In any case, the have_tracepoints() check
-should be sufficient to decide whether or not to write TRACE_INFO.
+That then would allow the software events to be consolidated.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <1273030770.6383.6.camel@tropicana>
-Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c        |   11 +----------
- tools/perf/util/trace-event-info.c |    8 +++++++-
- 2 files changed, 8 insertions(+), 11 deletions(-)
+Peter?
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 0ff67d1..d3981ac 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -560,17 +560,8 @@ static int __cmd_record(int argc, const char **argv)
- 			return err;
- 	}
- 
--	if (raw_samples && have_tracepoints(attrs, nr_counters)) {
-+	if (have_tracepoints(attrs, nr_counters))
- 		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
--	} else {
--		for (i = 0; i < nr_counters; i++) {
--			if (attrs[i].sample_type & PERF_SAMPLE_RAW &&
--				attrs[i].type == PERF_TYPE_TRACEPOINT) {
--				perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
--				break;
--			}
--		}
--	}
- 
- 	atexit(atexit_header);
- 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 0a1fb9d..b157260 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -489,7 +489,13 @@ get_tracepoints_path(struct perf_event_attr *pattrs, int nb_events)
- 
- bool have_tracepoints(struct perf_event_attr *pattrs, int nb_events)
- {
--	return get_tracepoints_path(pattrs, nb_events) ? true : false;
-+	int i;
-+
-+	for (i = 0; i < nb_events; i++)
-+		if (pattrs[i].type == PERF_TYPE_TRACEPOINT)
-+			return true;
-+
-+	return false;
- }
- 
- int read_tracing_data(int fd, struct perf_event_attr *pattrs, int nb_events)
+	Ingo
