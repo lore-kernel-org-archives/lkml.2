@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab0EEU0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 16:26:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57986 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757481Ab0EEU0l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 16:26:41 -0400
-Date: Wed, 5 May 2010 21:26:38 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: tytso@mit.edu, Matthew Garrett <mjg@redhat.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
+	id S1758278Ab0EEU1f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 16:27:35 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48201 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753596Ab0EEU1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 16:27:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
 Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100505202637.GH7139@rakim.wolfsonmicro.main>
-References: <20100505185225.GA4411@srcf.ucam.org>
- <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
- <20100505192208.GB5085@srcf.ucam.org>
- <20100505195249.GC11441@sirena.org.uk>
- <20100505195534.GD18762@thunk.org>
+Date: Wed, 5 May 2010 22:28:19 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Matthew Garrett <mjg@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Brian Swetland <swetland@google.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
+       mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+References: <Pine.LNX.4.44L0.1005051554490.1885-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1005051554490.1885-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100505195534.GD18762@thunk.org>
-X-Cookie: Yow!  I threw up on my window!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005052228.19851.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 03:55:34PM -0400, tytso@mit.edu wrote:
+On Wednesday 05 May 2010, Alan Stern wrote:
+> On Wed, 5 May 2010, Matthew Garrett wrote:
+> 
+> > On Wed, May 05, 2010 at 03:20:40PM -0400, Alan Stern wrote:
+> > 
+> > > One the face of it, a runtime-PM solution would dictate that the
+> > > codec's driver ought to turn off the codec whenever the driver thinks
+> > > it isn't being used.  Ergo, if the driver didn't know when a call was
+> > > in progress, it would use runtime PM to turn off the codec during a
+> > > call.
+> > 
+> > Well, part of the problem is that right now most of our beliefs about 
+> > imposed constraints tend to be based on what userspace is doing - "Don't 
+> > power down the audio codec when userspace has it open", for instance. 
+> > But that goes away with opportunistic suspend. In most cases you don't 
+> > want the audio codec to stay awake just because userspace was using it 
+> > to make bouncing cow noises, especially if you've just frozen userspace. 
+> > So the problem becomes more complicated than it would otherwise be.
+> 
+> It sounds like the problem can be stated simply enough: At the moment, 
+> nobody knows when the codec should be powered down!  Userspace might 
+> have some idea, but even if its ideas are right it has no way of 
+> communicating them to the kernel.
+> 
+> The power/control sysfs attribute was intended for just that purpose,
+> although it was aimed at runtime PM rather than system PM.  
+> Nevertheless, it or something like it could be used.  Of course, there 
+> would still remain the issue of userspace telling the kernel not to 
+> power down the codec while making bouncing cow noises -- but at this 
+> point it's not really a kernel problem any more.
 
-> I confess I've completely lost track of (a) what problem you are
-> trying to solve, and (b) how this might relate to some change that
-> you'd like to see in the suspend block API.  Could you do a quick
-> summary and recap?  I've gone over the entire thread, and it's still
-> not clear what change you're advocating for in suspend blockers.
+We'd need a separate control, I think.  The problem is, though, that the
+Android user space, for example, doesn't use the sysfs attributes of devices,
+so this control wouldn't be particularly useful for it.
 
-The issue isn't suspend blockers, it's the opportunistic suspend stuff
-that goes along with them.  When that is in use the system suspends
-vastly more aggressively, including in situations where a runtime PM
-based approach like mainline had been adopting would not suspend since
-some devices still need to be active, the classic case being keeping the
-audio subsystem and baseband live when in a phone call.  This problem
-did not appear to have been considered as things stood.  
+> P.S.: What happens if a suspend occurs while a call is in progress, so
+> the codec is left powered up, and then the call ends?  Does the system
+> wake up at that point?  Or does it stay suspended with the codec still
+> powered, even though it's not needed any more?
 
-I'm not really advocating a change in what's there.  What I'm looking
-for is some sort of agreement as to how subsystems and drivers that need
-to not act on suspend requests from the core in these situations should
-do that.  If there is a generic solution it'd probably be an additional
-mostly orthogonal interface rather than a change to what's being
-proposed here.
+I guess you end up telling the user that the call ended, so the system wakes up.
+That's only a guess, though.
 
-What we look like we're converging on is a subsystem/driver local
-solution since it doesn't look like a terribly widespread problem.
-That's totally OK, it's just that as I have said I don't want to go off
-and do that without the general PM community being aware of it so we
-avoid anyone running into nasty surprises further down the line.
+Rafael
