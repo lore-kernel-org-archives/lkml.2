@@ -1,91 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab0EEXDi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 19:03:38 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39399 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab0EEXDg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 19:03:36 -0400
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Matthew Garrett <mjg@redhat.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Paul Walmsley <paul@pwsan.com>, <magnus.damm@gmail.com>,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-References: <Pine.LNX.4.44L0.1005051554490.1885-100000@iolanthe.rowland.org>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Wed, 05 May 2010 16:03:32 -0700
-In-Reply-To: <Pine.LNX.4.44L0.1005051554490.1885-100000@iolanthe.rowland.org> (Alan Stern's message of "Wed\, 5 May 2010 16\:04\:00 -0400 \(EDT\)")
-Message-ID: <87fx26ymrf.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755879Ab0EEXEx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 19:04:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9040 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751263Ab0EEXEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 19:04:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,337,1270450800"; 
+   d="scan'208";a="273812738"
+Subject: Re: [RFC PATCH v2] nohz/sched: disable ilb on !mc_capable()
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       David Miller <davem@davemloft.net>
+In-Reply-To: <20100504201359.GA16545@comet.dominikbrodowski.net>
+References: <20100426203136.GA1539@comet.dominikbrodowski.net>
+	 <1272978864.5605.193.camel@twins>
+	 <20100504201359.GA16545@comet.dominikbrodowski.net>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Wed, 05 May 2010 16:03:42 -0700
+Message-Id: <1273100622.2867.26.camel@sbs-t61.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Stern <stern@rowland.harvard.edu> writes:
+On Tue, 2010-05-04 at 13:14 -0700, Dominik Brodowski wrote:
+> On Tue, May 04, 2010 at 03:14:24PM +0200, Peter Zijlstra wrote:
+> > On Mon, 2010-04-26 at 22:31 +0200, Dominik Brodowski wrote:
+> > > From: Dominik Brodowski <linux@dominikbrodowski.net>
+> > > Date: Thu, 8 Apr 2010 21:51:18 +0200
+> > > Subject: [PATCH] nohz/sched: disable ilb on !mc_capable()
+> > > 
+> > > On my dual-core, !mc_capbale() CPU, the idle load balancer (ilb) is one
+> > > of the main reasons ticks are not stopped: Under moderate load (~98 % idle),
+> > > upt o half of the calls to tick_nohz_top_sched_tick() are aborted due
+> > > to calls to select_nohz_load_balancer(1).
+> > > 
+> > > I suspect this is caused by the following phenomenon:
+> > > 
+> > >     CPU0				CPU1
+> > >     <active>				<active>
+> > >     tick_nohz_stop_sched_tick(1)
+> > >     select_nohz_load_balancer(1)
+> > >      => CPU0 becomes ilb owner,		<CPU1 becomes idle a bit later>
+> > >         tick is not stopped,		tick_nohz_stop_sched_tick(1)
+> > >         CPU0 goes to sleep for		 => CPU1 isn't the ilb owner,
+> > >         exactly 1 tick.			    tick is stopped.
+> > >     <short sleep>			<long sleep>
+> > >     ---> scheduler_tick()
+> > >     tick_nohz_stop_sched_tick(0)
+> > >     tick_nohz_stop_sched_tick(1)
+> > >      => is ilb owner, all CPUs are
+> > >         idle, CPU0 may go to sleep.
+> > > 
+> > > If all CPU cores have hardly anything to do, letting the active CPU do
+> > > idle load balancing allows us to enter deep sleep states earlier, and for
+> > > longer periods of time. Furthermore, on !mc_capable() systems, it seems that
+> > > the ilb algorithm isn't needed at all. Let's show this for a 2-core system:
+> > > 
+> > > - if both cores are active, ilb is deactivated
+> > > - if no core is active, ilb is deactivated
+> > > - if only one core is active, it attempts to balance its load off to other
+> > >   CPUs on each tick anyway. ilb wouldn't act quicker.
+> > > 
+> > > This patch decreases the amount of wakeups on my completely idle notebook by
+> > > about two thirds.
+> > 
+> > Right, so I think the !mc_capable() check is buggy, at the very least on
+> > sparc64 which is 'creative' with its sched_domain maps.
+> > 
+> > I'm also not sure what a single socket AMD Magny-Cours will do.
+> > 
+> > On a single socket Nehalem we will have a non trivial sched_domain
+> > because we also have the threads included.
+> > 
+> > I think we can only do your optimization for machines that end up having
+> > a single sched_domain that covers the entire machine.
+> 
+> Is there an easy way to determine there's just a single sched_domain?
 
-> On Wed, 5 May 2010, Matthew Garrett wrote:
->
->> On Wed, May 05, 2010 at 03:20:40PM -0400, Alan Stern wrote:
->> 
->> > One the face of it, a runtime-PM solution would dictate that the
->> > codec's driver ought to turn off the codec whenever the driver thinks
->> > it isn't being used.  Ergo, if the driver didn't know when a call was
->> > in progress, it would use runtime PM to turn off the codec during a
->> > call.
->> 
->> Well, part of the problem is that right now most of our beliefs about 
->> imposed constraints tend to be based on what userspace is doing - "Don't 
->> power down the audio codec when userspace has it open", for instance. 
->> But that goes away with opportunistic suspend. In most cases you don't 
->> want the audio codec to stay awake just because userspace was using it 
->> to make bouncing cow noises, especially if you've just frozen userspace. 
->> So the problem becomes more complicated than it would otherwise be.
->
-> It sounds like the problem can be stated simply enough: At the moment, 
-> nobody knows when the codec should be powered down!  Userspace might 
-> have some idea, but even if its ideas are right it has no way of 
-> communicating them to the kernel.
->
-> The power/control sysfs attribute was intended for just that purpose,
-> although it was aimed at runtime PM rather than system PM.  
-> Nevertheless, it or something like it could be used.  Of course, there 
-> would still remain the issue of userspace telling the kernel not to 
-> power down the codec while making bouncing cow noises -- but at this 
-> point it's not really a kernel problem any more.
+Dominik, We have posted some patches in the past to solve this issue.
 
-I guess what we're talking about here is a set of per-device
-constraints that could be used by both [opportunistic|system] suspend
-and runtime PM.  For lack of a better term, per-device PM QoS (as
-compared to the current system-wide PM QoS.)
+http://lkml.org/lkml/2009/12/10/470
 
-For example, if userspace (or some other device) has communicated that
-it has a constraint on the audio HW, then both the suspend path and the
-runtime PM path could check those constraints before making a decision
-on how to act.  Hopefully the phone app would set a constraint and the
-cow-noise app would not.  :)
+I will be re-posting the cleaned up patches shortly to address this.
 
-On OMAP, we keep track of per-device constraints (currently latency
-and throughput) in order to make proper run-time PM decicions in the
-kernel, but we are realizing that we need a way for userspace to
-communicate these constraints as well, so that userspace can make
-power vs. performance policy decisions instead of the kernel.
+thanks,
+suresh
 
-Probably generalizing these into the LDM is the direction to go so
-userspace can set constraints on a per-device (or per-class?) basis:
-
-/sys/devices/.../power/constraint/throughput
-/sys/devices/.../power/constraint/wakeup_latency
-/sys/devices/.../power/constraint/... ?
-
-Kevin
