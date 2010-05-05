@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab0EEUZg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 16:25:36 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40696 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757481Ab0EEUZc (ORCPT
+	id S1758267Ab0EEU0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 16:26:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57986 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757481Ab0EEU0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 16:25:32 -0400
-Date: Wed, 5 May 2010 22:25:29 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Anders Larsen <al@alarsen.net>
-Cc: patches@arm.linux.org.uk, Andrew Victor <avictor.za@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [at91] Save power by disabling the processor clock when CPU is
-	idle
-Message-ID: <20100505202529.GB25037@pengutronix.de>
-References: <1271156732l.25331l.7l@i-dmzi_al.realan.de>
+	Wed, 5 May 2010 16:26:41 -0400
+Date: Wed, 5 May 2010 21:26:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: tytso@mit.edu, Matthew Garrett <mjg@redhat.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100505202637.GH7139@rakim.wolfsonmicro.main>
+References: <20100505185225.GA4411@srcf.ucam.org>
+ <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
+ <20100505192208.GB5085@srcf.ucam.org>
+ <20100505195249.GC11441@sirena.org.uk>
+ <20100505195534.GD18762@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1271156732l.25331l.7l@i-dmzi_al.realan.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20100505195534.GD18762@thunk.org>
+X-Cookie: Yow!  I threw up on my window!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, May 05, 2010 at 03:55:34PM -0400, tytso@mit.edu wrote:
 
-On Tue, Apr 13, 2010 at 01:05:32PM +0200, Anders Larsen wrote:
-> Disable the processor clock when the CPU is idle.
-> 
-> This saves much more power than merely entering 'Wait for Interrupt' mode.
-> Since JTAG-debugging doesn't work when the processor clock is switched off,
-> make it conditional on CONFIG_DEBUG_KERNEL.
-> 
-> Signed-off-by: Anders Larsen <al@alarsen.net>
-> Cc: Andrew Victor <avictor.za@gmail.com>
-> ---
-> KernelVersion: 2.6.33
-> 
->  arch/arm/mach-at91/include/mach/system.h |    7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> 
-> Index: b/arch/arm/mach-at91/include/mach/system.h
-> ===================================================================
-> --- a/arch/arm/mach-at91/include/mach/system.h
-> +++ b/arch/arm/mach-at91/include/mach/system.h
-> @@ -24,21 +24,24 @@
->  #include <mach/hardware.h>
->  #include <mach/at91_st.h>
->  #include <mach/at91_dbgu.h>
-> +#include <mach/at91_pmc.h>
->  
->  static inline void arch_idle(void)
->  {
-> +#ifndef CONFIG_DEBUG_KERNEL
->  	/*
->  	 * Disable the processor clock.  The processor will be automatically
->  	 * re-enabled by an interrupt or by a reset.
->  	 */
-> -//	at91_sys_write(AT91_PMC_SCDR, AT91_PMC_PCK);
-> -
-> +	at91_sys_write(AT91_PMC_SCDR, AT91_PMC_PCK);
-> +#else
->  	/*
->  	 * Set the processor (CP15) into 'Wait for Interrupt' mode.
->  	 * Unlike disabling the processor clock via the PMC (above)
->  	 *  this allows the processor to be woken via JTAG.
->  	 */
->  	cpu_do_idle();
-> +#endif
+> I confess I've completely lost track of (a) what problem you are
+> trying to solve, and (b) how this might relate to some change that
+> you'd like to see in the suspend block API.  Could you do a quick
+> summary and recap?  I've gone over the entire thread, and it's still
+> not clear what change you're advocating for in suspend blockers.
 
-There is a kernel parameter (IIRC "nohlt") that should take care of
-this?!
+The issue isn't suspend blockers, it's the opportunistic suspend stuff
+that goes along with them.  When that is in use the system suspends
+vastly more aggressively, including in situations where a runtime PM
+based approach like mainline had been adopting would not suspend since
+some devices still need to be active, the classic case being keeping the
+audio subsystem and baseband live when in a phone call.  This problem
+did not appear to have been considered as things stood.  
 
-Best regards
-Uwe
+I'm not really advocating a change in what's there.  What I'm looking
+for is some sort of agreement as to how subsystems and drivers that need
+to not act on suspend requests from the core in these situations should
+do that.  If there is a generic solution it'd probably be an additional
+mostly orthogonal interface rather than a change to what's being
+proposed here.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+What we look like we're converging on is a subsystem/driver local
+solution since it doesn't look like a terribly widespread problem.
+That's totally OK, it's just that as I have said I don't want to go off
+and do that without the general PM community being aware of it so we
+avoid anyone running into nasty surprises further down the line.
