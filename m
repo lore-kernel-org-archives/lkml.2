@@ -1,178 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab0EEE0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 00:26:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52836 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab0EEE0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 00:26:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=W0oIl0JuClGBUIb8DphopSBiy6NFKD3WbuYwva7UaQkrpFza8Oaor/ov9Z1mz4bjdM
-         UNsskc4S/V+//MaYW4urEnAAWoneZHp8yAz1reLf+4DyaOj0eiFPwtFGHe32ihxemg3r
-         jmlJSBl7AagxXdf4hStNNRuA0sVzMr+cQudyw=
-Date: Wed, 5 May 2010 06:26:18 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tom Zanussi <tzanussi@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-       Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/3] perf: record TRACE_INFO only if using tracepoints
-	and SAMPLE_RAW
-Message-ID: <20100505042616.GF5427@nowhere>
-References: <1272981607-28723-1-git-send-email-acme@infradead.org> <1272981607-28723-2-git-send-email-acme@infradead.org> <20100504170642.GA5427@nowhere> <20100504211843.GF970@ghostprotocols.net> <1273030770.6383.6.camel@tropicana>
+	id S1753095Ab0EEEs4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 00:48:56 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51956 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750894Ab0EEEsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 00:48:55 -0400
+Message-ID: <4BE0F882.9080206@kernel.org>
+Date: Wed, 05 May 2010 06:48:02 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1273030770.6383.6.camel@tropicana>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: rostedt@goodmis.org
+CC: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu, efault@gmx.de,
+       avi@redhat.com, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/12] perf: add @rq to perf_event_task_sched_out()
+References: <1272976724-14312-1-git-send-email-tj@kernel.org>	 <1272976724-14312-5-git-send-email-tj@kernel.org>	 <1272993090.1642.184.camel@laptop>  <4BE057EB.80604@kernel.org>	 <1272997363.9739.232.camel@gandalf.stny.rr.com>	 <1272997616.1642.207.camel@laptop> <1272997930.9739.233.camel@gandalf.stny.rr.com>
+In-Reply-To: <1272997930.9739.233.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 04:48:04 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 04, 2010 at 10:39:30PM -0500, Tom Zanussi wrote:
-> On Tue, 2010-05-04 at 18:18 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Tue, May 04, 2010 at 07:06:45PM +0200, Frederic Weisbecker escreveu:
-> > > On Tue, May 04, 2010 at 11:00:05AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > From: Tom Zanussi <tzanussi@gmail.com>
-> > > > 
-> > > > The current perf code implicitly assumes SAMPLE_RAW means tracepoints
-> > > > are being used, but doesn't check for that.  It happily records the
-> > > > TRACE_INFO even if SAMPLE_RAW is used without tracepoints, but when the
-> > > > perf data is read it won't go any further when it finds TRACE_INFO but
-> > > > no tracepoints, and displays misleading errors.
-> > > > 
-> > > > This adds a check for both in perf-record, and won't record TRACE_INFO
-> > > > unless both are true.  This at least allows perf report -D to dump raw
-> > > > events, and avoids triggering a misleading error condition in perf
-> > > > trace.  It doesn't actually enable the non-tracepoint raw events to be
-> > > > displayed in perf trace, since perf trace currently only deals with
-> > > > tracepoint events.
-> > > > 
-> > > > Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-> > > > Cc: Mike Galbraith <efault@gmx.de>
-> > > > Cc: Paul Mackerras <paulus@samba.org>
-> > > > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > > LKML-Reference: <1272865861.7932.16.camel@tropicana>
-> > > > Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
-> > > > Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > > > ---
-> > > >  tools/perf/builtin-record.c        |   35 +++++++++++++++++++++--------------
-> > > >  tools/perf/util/header.c           |    1 -
-> > > >  tools/perf/util/parse-events.h     |    1 +
-> > > >  tools/perf/util/trace-event-info.c |    5 +++++
-> > > >  4 files changed, 27 insertions(+), 15 deletions(-)
-> > > > 
-> > > > diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> > > > index ac989e9..0ff67d1 100644
-> > > > --- a/tools/perf/builtin-record.c
-> > > > +++ b/tools/perf/builtin-record.c
-> > > > @@ -560,11 +560,12 @@ static int __cmd_record(int argc, const char **argv)
-> > > >  			return err;
-> > > >  	}
-> > > >  
-> > > > -	if (raw_samples) {
-> > > > +	if (raw_samples && have_tracepoints(attrs, nr_counters)) {
-> > > >  		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
-> > > >  	} else {
-> > > 
-> > > 
-> > > 
-> > > Using get_tracepoints_path() is a bit costly just to check if we use
-> > > tracepoints as it allocates and fill the paths.
-> > 
-> > Can you please send a fix?
-> > 
+On 05/04/2010 08:32 PM, Steven Rostedt wrote:
+>>> I believe the rq was used by the original latency tracer code that was
+>>> in the -rt patch set before ftrace. It is most likely there for
+>>> historical purposes. I guess it would be fine to just remove it.
+>>
+>> I'm building the below, so far so good... ;-)
 > 
-> Yeah, there's a lot of room for improvement here - thanks for pointing
-> it out, Frederic.  The patch below should make it better...
-> 
-> Tom
-> 
-> From: Tom Zanussi <tzanussi@gmail.com>
-> Date: Tue, 4 May 2010 22:20:16 -0500
-> Subject: [PATCH] perf/record: simplify TRACE_INFO tracepoint check
-> 
-> Fix a couple of inefficiencies and redundancies related to
-> have_tracepoints() and its use when checking whether to write
-> TRACE_INFO.
-> 
-> First, there's no need to use get_tracepoints_path() in
-> have_tracepoints() - we really just want the part that checks whether
-> any attributes correspondo to tracepoints.
-> 
-> Second, we really don't care about raw_samples per se - tracepoints
-> are always raw_samples.  In any case, the have_tracepoints() check
-> should be sufficient to decide whether or not to write TRACE_INFO.
-> 
-> Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
+Cool, then I can remove SCHED_EVENT_RQ() thing then.
 
+Thanks.
 
-Thanks a lot!
-
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-
-
-
-> ---
->  tools/perf/builtin-record.c        |   11 +----------
->  tools/perf/util/trace-event-info.c |    8 +++++++-
->  2 files changed, 8 insertions(+), 11 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 0ff67d1..d3981ac 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -560,17 +560,8 @@ static int __cmd_record(int argc, const char **argv)
->  			return err;
->  	}
->  
-> -	if (raw_samples && have_tracepoints(attrs, nr_counters)) {
-> +	if (have_tracepoints(attrs, nr_counters))
->  		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
-> -	} else {
-> -		for (i = 0; i < nr_counters; i++) {
-> -			if (attrs[i].sample_type & PERF_SAMPLE_RAW &&
-> -				attrs[i].type == PERF_TYPE_TRACEPOINT) {
-> -				perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
-> -				break;
-> -			}
-> -		}
-> -	}
->  
->  	atexit(atexit_header);
->  
-> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-> index 0a1fb9d..b157260 100644
-> --- a/tools/perf/util/trace-event-info.c
-> +++ b/tools/perf/util/trace-event-info.c
-> @@ -489,7 +489,13 @@ get_tracepoints_path(struct perf_event_attr *pattrs, int nb_events)
->  
->  bool have_tracepoints(struct perf_event_attr *pattrs, int nb_events)
->  {
-> -	return get_tracepoints_path(pattrs, nb_events) ? true : false;
-> +	int i;
-> +
-> +	for (i = 0; i < nb_events; i++)
-> +		if (pattrs[i].type == PERF_TYPE_TRACEPOINT)
-> +			return true;
-> +
-> +	return false;
->  }
->  
->  int read_tracing_data(int fd, struct perf_event_attr *pattrs, int nb_events)
-> -- 
-> 1.6.4.GIT
-> 
-> 
-> 
-> 
-> 
-
+-- 
+tejun
