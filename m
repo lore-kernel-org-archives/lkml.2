@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934382Ab0EEJub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 05:50:31 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40510 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934157Ab0EEJu3 (ORCPT
+	id S934390Ab0EEJvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 05:51:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48262 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934157Ab0EEJvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 05:50:29 -0400
-Subject: Re: [PATCH 03/12] perf: add perf_event_task_migrate()
+	Wed, 5 May 2010 05:51:21 -0400
+Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move
+ perf on top of TP
 From: Peter Zijlstra <peterz@infradead.org>
 To: Tejun Heo <tj@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@elte.hu, efault@gmx.de,
-       avi@redhat.com, paulus@samba.org, acme@redhat.com,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <4BE13C76.2010507@kernel.org>
+Cc: mingo@elte.hu, efault@gmx.de, avi@redhat.com, paulus@samba.org,
+       acme@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <4BE13B33.3030709@kernel.org>
 References: <1272976724-14312-1-git-send-email-tj@kernel.org>
-	 <1272976724-14312-4-git-send-email-tj@kernel.org>
-	 <20100505050846.GG5427@nowhere> <1273050684.1642.231.camel@laptop>
-	 <4BE13C76.2010507@kernel.org>
+	 <1272994165.1642.203.camel@laptop>  <4BE0FB68.7080403@kernel.org>
+	 <1273050400.1642.229.camel@laptop>  <4BE13B33.3030709@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 May 2010 11:50:25 +0200
-Message-ID: <1273053025.1642.234.camel@laptop>
+Date: Wed, 05 May 2010 11:51:13 +0200
+Message-ID: <1273053073.1642.235.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -28,22 +27,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-05 at 11:37 +0200, Tejun Heo wrote:
-> On 05/05/2010 11:11 AM, Peter Zijlstra wrote:
-> > On Wed, 2010-05-05 at 07:08 +0200, Frederic Weisbecker wrote:
-> >>
-> >> In fact why not moving both tracing calls under this check.
-> >> This is going to fix the migrate trace event that gets called
-> >> even on "spurious" migrations, and you avoid the duplicate check
-> >> in the perf callback. 
-> > 
-> > I kept the tracepoint out of that because I wanted to see how often it
-> > attempts silly migrations :-)
+On Wed, 2010-05-05 at 11:32 +0200, Tejun Heo wrote:
 > 
-> Do you still need to keep it or is it okay to move it under the
-> silliness check?
+> > Well, I already utterly hate that x86 can't build with !
+> > CONFIG_PERF_EVENTS, also requiring CONFIG_TRACEPOINTS is going the wrong
+> > way.
+> > 
+> > I've always explicitly avoided depending on tracepoints, and I'd very
+> > much like to keep it that way.
+> 
+> I was wondering the other way around - ie. the possibility to make
+> perf optional and maybe even as a module which depends on TPs, which
+> would be nicer than the current situation and make the code less
+> cluttered too. 
 
-I guess you can move it, I often end up adding tons of trace_printk()
-anyway when hunting funnies, might as well add one here when its
-relevant.
+I really really hate making perf rely on tracepoints.
 
