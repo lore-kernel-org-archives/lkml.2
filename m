@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758685Ab0EEVfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 17:35:16 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:32798 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752Ab0EEVfM (ORCPT
+	id S1758789Ab0EEVfe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 17:35:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48992 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758728Ab0EEVfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 17:35:12 -0400
-To: Greg KH <gregkh@suse.de>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>
-References: <20100430163538.7253a9e0.sfr@canb.auug.org.au>
-	<20100430105016.40b51636.randy.dunlap@oracle.com>
-	<20100505091738.7ec27479.randy.dunlap@oracle.com>
-	<20100505162459.GA20296@suse.de>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 05 May 2010 14:35:03 -0700
-In-Reply-To: <20100505162459.GA20296@suse.de> (Greg KH's message of "Wed\, 5 May 2010 09\:24\:59 -0700")
-Message-ID: <m1d3xa1188.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Wed, 5 May 2010 17:35:32 -0400
+Date: Wed, 5 May 2010 17:35:31 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jiri Kosina <jkosina@suse.cz>
+cc: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+       Oliver Neukum <oneukum@suse.de>, <linux-pm@lists.linux-foundation.org>,
+       list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       <jslaby@suse.cz>
+Subject: Re: [linux-pm] s2ram slow (radeon) / failing (usb)
+In-Reply-To: <alpine.LNX.2.00.1005052255350.9849@pobox.suse.cz>
+Message-ID: <Pine.LNX.4.44L0.1005051724260.1885-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.5.249
-X-SA-Exim-Rcpt-To: gregkh@suse.de, sfr@canb.auug.org.au, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, randy.dunlap@oracle.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Greg KH <gregkh@suse.de>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 XM_SPF_Neutral SPF-Neutral
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: Re: linux-next: Tree for April 30 (CONFIG_SYSFS=n)
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@suse.de> writes:
+On Wed, 5 May 2010, Jiri Kosina wrote:
 
-> On Wed, May 05, 2010 at 09:17:38AM -0700, Randy Dunlap wrote:
->> On Fri, 30 Apr 2010 10:50:16 -0700 Randy Dunlap wrote:
->> 
->> > On Fri, 30 Apr 2010 16:35:38 +1000 Stephen Rothwell wrote:
->> > 
->> > > Hi all,
->> > > 
->> > > Changes since 20100429:
->> > 
->> > 
->> > When CONFIG_SYSFS is disabled:
->> > 
->> > include/linux/sysfs.h:330: error: parameter 1 ('type') has incomplete type
->> 
->> 
->> Still have this in linux-next of May 5-2010.
->
-> Eric, this is due to your changes, care to fix it up?
+> > > Ok, I've been digging some further...
+> > > 
+> > > The hid_device_probe properly returns -ENODEV, but:
+> > > 
+> > > Call trace:
+> > > [ 3228.866146]  [<ffffffffa01a00e6>] hid_device_probe+0xd6/0x1f0 [hid]
+> > >     return -ENODEV
+> > > [ 3228.874594]  [<ffffffff8130995a>] driver_probe_device+0xaa/0x1d0
+> > >     calls inlined really_probe from drivers/base/dd.c
+> > >     which ALLWAYS returns 0:
+> > >      dd.c:147 /*
+> > >           148  * Ignore errors returned by ->probe so that the next driver can try
+> > >           149  * its luck.
+> > >           150  */
+> > >           151 ret = 0;
+> > >      and has on line 139 (under same failure label):
+> > >               dev->driver = NULL;
+> > > [ 3228.882758]  [<ffffffff81309b20>] ? __device_attach+0x0/0x50
+> > > [ 3228.890555]  [<ffffffff81309b6b>] __device_attach+0x4b/0x50
+> > >      lets 0 bubble up
+> > > [ 3228.898272]  [<ffffffff81308d28>] bus_for_each_drv+0x68/0x90
+> > >      lets 0 bubble up
+> > > [ 3228.906080]  [<ffffffff81309c3b>] device_attach+0x8b/0xa0
+> > >      lets 0 bubble up
+> > > [ 3228.913603]  [<ffffffff81308b15>] bus_probe_device+0x25/0x40
+> > >      returns void and does WARN_ON(device_attach() < 0)
+> > > [ 3228.921356]  [<ffffffff81307166>] device_add+0x3d6/0x610
+> > >      returns 0 here as there was no local error
+> > > [ 3228.928772]  [<ffffffffa019fc53>] hid_add_device+0x183/0x1e0 [hid]
+> > > [ 3228.937098]  [<ffffffffa01b4a77>] usbhid_probe+0x287/0x420 [usbhid]
+> > > [ 3228.945535]  [<ffffffffa005006d>] usb_probe_interface+0x14d/0x230 [usbcore]
+> > > ...
+> > > 
+> > > So IMHO in hid_add_device() we should also check for hdev->dev.driver
+> > > when device_add() returns 0 and consider that one being NULL as a
+> > > (possible) error.
 
-Apologies for not looking at this earlier.  I just took a look
-at this and I believe this error is the result of a gcc bug.
+Note that it is perfectly normal for devices to be registered on a bus 
+without a driver.  Perhaps the usbhid core doesn't expect this, though, 
+or perhaps it doesn't make sense for HID devices.  Regardless, I don't 
+see how this could cause the problem.
 
+Earlier, Bruno said that the hang occurs in hid_cancel_delayed_stuff(), 
+presumably during one of its cancel_work_sync() calls, and presumably 
+because the workqueue has been frozen.  But as far as I can tell, 
+cancel_work_sync() should work just fine if the workqueue has been 
+frozen.  Maybe this should be investigated more closely.
 
-This appears to the fragment that doesn't compile.
+Bruno, can you confirm that the hang occurs during one of those 
+cancel_work_sync() calls?
 
-enum kobj_ns_type;
-static inline void sysfs_exit_ns(enum kobj_ns_type type, const void *tag)
-{
-}
+Alan Stern
 
-
-I could either include kobject.h or make the fragment:
-static inline void sysfs_exit_ns(int type, const void *tag)
-{
-}
-
-I really don't like either option. 
-
-Does anyone know how to smack gcc up the side of the head and convince
-it has all of the information it needs, and get it to stop complaining?
-
-
-Eric
