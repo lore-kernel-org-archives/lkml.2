@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab0EEVDQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 17:03:16 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57956 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab0EEVDN (ORCPT
+	id S1755348Ab0EEVGy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 17:06:54 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:60966 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab0EEVGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 17:03:13 -0400
-From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-To: mroberto@cpti.cetuc.puc-rio.br, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] MM: Fix NR_SECTION_ROOTS == 0 when using using sparsemem extreme.
-Date: Wed,  5 May 2010 18:02:46 -0300
-Message-Id: <1273093366-3388-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
-X-Mailer: git-send-email 1.7.1
+	Wed, 5 May 2010 17:06:53 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: John Kacur <jkacur@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] fat: convert to unlocked_ioctl
+References: <1273065339-21669-1-git-send-email-jkacur@redhat.com>
+	<alpine.LFD.2.00.1005051927210.6285@localhost.localdomain>
+	<87wrvitd5c.fsf@devron.myhome.or.jp>
+	<201005052155.17249.arnd@arndb.de>
+Date: Thu, 06 May 2010 06:06:45 +0900
+In-Reply-To: <201005052155.17249.arnd@arndb.de> (Arnd Bergmann's message of
+	"Wed, 5 May 2010 21:55:16 +0200")
+Message-ID: <87aaset5wa.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.93 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got this while compiling for ARM/SA1100:
+Arnd Bergmann <arnd@arndb.de> writes:
 
-mm/sparse.c: In function '__section_nr':
-mm/sparse.c:135: warning: 'root' is used uninitialized in this function
+> FAT does not require the BKL in its ioctl function, which is already serialized
+> through a mutex. Since we're already touching the ioctl code, also fix the
+> missing handling of FAT_IOCTL_GET_ATTRIBUTES in the compat code.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-This patch follows Russell King's suggestion for a new calculation for
-NR_SECTION_ROOTS. Thanks also to Sergei Shtylyov for pointing out the
-existence of the macro DIV_ROUND_UP.
+[...]
 
-Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
----
- include/linux/mmzone.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> The only thing the series really needs to do is to remove the
+> usage of the deprecated ->ioctl() operation. This patch makes
+> FAT simply use unlocked_ioctl but does not reintroduce the
+> BKL.
+>
+> Does that look better?
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index cf9e458..e90ad64 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -972,7 +972,7 @@ struct mem_section {
- #endif
- 
- #define SECTION_NR_TO_ROOT(sec)	((sec) / SECTIONS_PER_ROOT)
--#define NR_SECTION_ROOTS	(NR_MEM_SECTIONS / SECTIONS_PER_ROOT)
-+#define NR_SECTION_ROOTS	DIV_ROUND_UP(NR_MEM_SECTIONS, SECTIONS_PER_ROOT)
- #define SECTION_ROOT_MASK	(SECTIONS_PER_ROOT - 1)
- 
- #ifdef CONFIG_SPARSEMEM_EXTREME
+Looks good to me. I'll apply this for next window after some tests.
+
+Thanks.
 -- 
-1.7.1
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
