@@ -1,48 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab0EEJzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 05:55:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39035 "EHLO hera.kernel.org"
+	id S934167Ab0EEJ4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 05:56:08 -0400
+Received: from pelian.caiw.net ([62.45.45.126]:52793 "EHLO pelian.caiw.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756757Ab0EEJzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 05:55:23 -0400
-Message-ID: <4BE1406C.2000400@kernel.org>
-Date: Wed, 05 May 2010 11:54:52 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S934053Ab0EEJ4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 05:56:04 -0400
+X-Greylist: delayed 590 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 May 2010 05:56:04 EDT
+X-ASG-Debug-ID: 1273052771-6a9c01ab0000-xx1T2L
+X-Barracuda-URL: http://62.45.59.6:8000/cgi-bin/mark.cgi
+X-Barracuda-RBL-IP: 83.128.10.113
+Message-ID: <4BE13E63.70601@caiway.nl>
+Date: Wed, 05 May 2010 11:46:11 +0200
+From: "Jan Evert van Grootheest (SDG)" <j.e.van.grootheest@caiway.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@elte.hu, efault@gmx.de, avi@redhat.com, paulus@samba.org,
-       acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf
- on top of TP
-References: <1272976724-14312-1-git-send-email-tj@kernel.org>	 <1272994165.1642.203.camel@laptop>  <4BE0FB68.7080403@kernel.org>	 <1273050400.1642.229.camel@laptop>  <4BE13B33.3030709@kernel.org> <1273053073.1642.235.camel@laptop>
-In-Reply-To: <1273053073.1642.235.camel@laptop>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
+To: Nils Radtke <lkml@Think-Future.de>
+CC: linux-kernel@vger.kernel.org
+X-ASG-Orig-Subj: Re: BUG: unable to handle kernel NULL pointer dereference, i915_gem_object_move_to_active
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference, i915_gem_object_move_to_active
+References: <20100504222216.GW3479@localhost>
+In-Reply-To: <20100504222216.GW3479@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 09:54:53 +0000 (UTC)
+X-Barracuda-Connect: cardassian.caiw.net[62.45.45.125]
+X-Barracuda-Start-Time: 1273052771
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.4878 1.0000 0.0000
+X-Barracuda-Virus-Scanned: by Barracuda Spam Firewall at caiw.net
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=7.0 KILL_LEVEL=1000.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.29115
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Nils,
 
-On 05/05/2010 11:51 AM, Peter Zijlstra wrote:
->> I was wondering the other way around - ie. the possibility to make
->> perf optional and maybe even as a module which depends on TPs, which
->> would be nicer than the current situation and make the code less
->> cluttered too. 
-> 
-> I really really hate making perf rely on tracepoints.
+Op 05-05-10 00:22, Nils Radtke schreef:
+>    Hi,
+>
+> It happens quite often that X crashes for unknown reasons but this time
+>    
+It appears the same is (was) happening to my wifes laptop. But I've 
+never been able to find a reason for it, nor a BUG or WARN. And the same 
+logoff and firefox crashes that you mention, although it has Gnome on it 
+instead of KDE.
+That was going on with Ubuntu Karmic installed (using standard Ubuntu 
+2.6.31 kernel). Yesterday I decided (since she'd be gone for the whole 
+day) to upgrade to Lucid. I'll have to wait and see whether that still 
+happens. I have seen already that on some boots the wireless is not 
+stable (i.e. the connection gets dropped after a few seconds and 
+re-negotiated), but I guess that's not related.
 
-Hmmm.... may I ask why?  Unifying hooking mechanism seems like a good
-idea to me and it's not like it's gonna add any runtime overhead
-although it does complicate init/exit but well that's something you
-have to pay if you wanna do things dynamically and sans the ifdef
-stuff it's like a couple hundred lines of isolated code.
+As for the hw, it's an Acer Aspire 3650: Celeron, ATI SB400, ATI based 
+graphics (using the radeon driver) and Atheros based wireless (using 
+ath5k). So it seems that most of the hw differs except for the wireless.
 
-Thanks.
+-- Jan Evert
 
--- 
-tejun
+> there it's left us a note, this BUG:
+>
+> BUG: unable to handle kernel NULL pointer dereference at 000001e4
+> IP: [<c134ddbc>] i915_gem_object_move_to_active+0x1c/0xa0
+> *pde = 00000000
+> Oops: 0000 [#4] PREEMPT
+> last sysfs file: /sys/devices/pci0000:00/0000:00:1c.1/0000:04:00.0/net/wlan0/wireless/link
+> Modules linked in: wlan_scan_sta ath_rate_sample ath_pci ath_hal option usbserial usb_storage snd_usb_audio snd_usb_lib snd_seq_midi snd_rawmidi uvcvideo wlan_ccmp video1394 raw1394 dv1394 firewire_ohci firewire_core wlan ohci1394 tg3 libphy ieee1394 [last unloaded: ath_hal]
+>
+> Pid: 3328, comm: Xorg Tainted: G      D    2.6.33 #1 Columbia                       /Extensa 5220
+> EIP: 0060:[<c134ddbc>] EFLAGS: 00213282 CPU: 0
+> EIP is at i915_gem_object_move_to_active+0x1c/0xa0
+> EAX: 00000000 EBX: c6679450 ECX: c679fd50 EDX: 00b10a13
+> ESI: 00000000 EDI: 00000000 EBP: 00b10a13 ESP: f51c1cb0
+>   DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+> Process Xorg (pid: 3328, ti=f51c0000 task=f6be5bf0 task.ti=f51c0000)
+> Stack:
+>   c6679450 00000004 00000000 c679fd50 c134e83f 00000002 c17d42ab c16e3b29
+> <0>  c17d71ee 00b10a13 00000004 f7395800 f7318000 f7318e10 c1326450 f7318df8
+> <0>  f6baff20 00b10a13 f7318de8 f7318e10 f7318000 00000004 00000001 f7395800
+> Call Trace:
+>   [<c134e83f>] ? i915_add_request+0x25f/0x370
+>   [<c1326450>] ? agp_flush_chipset+0x10/0x20
+>   [<c1352d55>] ? i915_gem_do_execbuffer+0x1325/0x13a0
+>   [<c102e087>] ? check_preempt_wakeup+0x87/0x160
+>   [<c13530ae>] ? i915_gem_execbuffer+0xee/0x4b0
+>   [<c13531fb>] ? i915_gem_execbuffer+0x23b/0x4b0
+>   [<c1334056>] ? drm_ioctl+0x186/0x380
+>   [<c1352fc0>] ? i915_gem_execbuffer+0x0/0x4b0
+>   [<c10d79dd>] ? do_sync_read+0xad/0xf0
+>   [<c1333ed0>] ? drm_ioctl+0x0/0x380
+>   [<c10e5fcb>] ? vfs_ioctl+0x2b/0xa0
+>   [<c10e61a3>] ? do_vfs_ioctl+0x73/0x5f0
+>   [<c1038229>] ? do_setitimer+0xd9/0x220
+>   [<c1058a93>] ? ktime_get_ts+0xe3/0x100
+>   [<c104e1e0>] ? posix_ktime_get_ts+0x0/0x10
+>   [<c10e6786>] ? sys_ioctl+0x66/0x70
+>   [<c1002c8c>] ? sysenter_do_call+0x12/0x22
+> Code: 8a 8d b4 26 00 00 00 00 8d bc 27 00 00 00 00 83 ec 10 89 c1 89 6c 24 0c 89 d5 89 1c 24 89 74 24 04 89 7c 24 08 8b 40 08 8b 71 50<8b>  b8 e4 01 00 00 8b 46 20 85 c0 74 5f 89 e1 81 e1 00 e0 ff ff
+> EIP: [<c134ddbc>] i915_gem_object_move_to_active+0x1c/0xa0 SS:ESP 0068:f51c1cb0
+> CR2: 00000000000001e4
+> ---[ end trace 13931f32db9a26c3 ]---
+>
+>
+> - Is there any particular meaning for "last sysfs file" shown? I mean, could there
+>    be some link between the crash and "last sysfs file"?
+>
+> - X crashing happens actually a lot on this specific notebook. If it's not X crashing,
+>    then unmotivated kde log-offs or frequent firefox crashes contribute their share.
+>    It's most probably not faulty RAM, it's new, it's been tested thoroughly.
+>
+>
+> Thanks for some answers,
+>
+>    Nils
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>    
+
