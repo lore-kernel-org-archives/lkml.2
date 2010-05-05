@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934533Ab0EEMYn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 08:24:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57775 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932090Ab0EEMYl (ORCPT
+	id S934565Ab0EEMZH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 08:25:07 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:60786 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932090Ab0EEMZC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 08:24:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH v2 00/13] BKL conversion in tty layer
-Date: Wed, 5 May 2010 14:24:35 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-References: <1273012433-6125-1-git-send-email-arnd@arndb.de> <20100505115205.7d2abc4f@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100505115205.7d2abc4f@lxorguk.ukuu.org.uk>
+	Wed, 5 May 2010 08:25:02 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005051424.36024.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/SCxvYjDIFDZe9jhDTBh2LSmbPiDGvhLQYYeN
- 6Gd8DIK+IKyqxH42uDwZmoNTDcrApxIwwC2whXbUfo/DnwqYfd
- XE9VAWNUdImXsSEs6sGyg==
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH -mm 4/5] RapidIO: Add switch domain routines
+Date: Wed, 5 May 2010 05:24:42 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552D7E4D0@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <20100504162457.0c8d23ba.akpm@linux-foundation.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH -mm 4/5] RapidIO: Add switch domain routines
+Thread-Index: Acrr4NpjXxO4c0GJSfCiBlSiUIYiVwAav+Ew
+References: <1272901558-9292-1-git-send-email-alexandre.bounine@idt.com><1272901558-9292-5-git-send-email-alexandre.bounine@idt.com> <20100504162457.0c8d23ba.akpm@linux-foundation.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Andrew Morton" <akpm@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>,
+       "Matt Porter" <mporter@kernel.crashing.org>,
+       "Li Yang" <leoli@freescale.com>,
+       "Kumar Gala" <galak@kernel.crashing.org>,
+       "Thomas Moll" <thomas.moll@sysgo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 May 2010, Alan Cox wrote:
-> On Wed,  5 May 2010 00:33:39 +0200
-> Arnd Bergmann <arnd@arndb.de> wrote:
+On Tuesday, May 04, 2010 7:25 PM
+Andrew Morton [mailto:akpm@linux-foundation.org] wrote:
 > 
-> > This is the second attempt to get the BKL out of the
-> > TTY code. I've updated the patches to be based on top
-> > of Alan's series and improved a number of things.
+> On Mon,  3 May 2010 11:45:57 -0400
+> Alexandre Bounine <alexandre.bounine@idt.com> wrote:
 > 
-> I've updated the patches I first sent out with the fixes for the problems
-> you found and send out a new set.
+> > +static int
+> > +idtcps_set_domain(struct rio_mport *mport, u16 destid, u8 hopcount,
+> > +		       u8 sw_domain)
+> > +{
+> > +	/*
+> > +	 * Switch domain configuration operates only at global level
+> > +	 */
+> > +	rio_mport_write_config_32(mport, destid, hopcount,
+> > +				  IDTCPS_RIO_DOMAIN, (u32)sw_domain);
+> > +	return 0;
+> > +}
+> > +
+> > +static int
+> > +idtcps_get_domain(struct rio_mport *mport, u16 destid, u8 hopcount,
+> > +		       u8 *sw_domain)
+> > +{
+> > +	u32 regval;
+> > +
+> > +	/*
+> > +	 * Switch domain configuration operates only at global level
+> > +	 */
+> > +	rio_mport_read_config_32(mport, destid, hopcount,
+> > +				IDTCPS_RIO_DOMAIN, &regval);
+> > +
+> > +	*sw_domain = (u8)(regval & 0xff);
+> > +
+> > +	return 0;
+> > +}
+> 
+> This ignores the return values from rio_mport_write_config_*().
+> 
+> AFACIT these things always return hard-wired 0 anyway.  Perhaps we
+> should give up and change ->cread() and friends to return void.  That
+> beats the alternative of adding lots of untestable test-n-return
+> unwinding code.
 
-Ok, I've rebased my patches on top of those now and pushed to
-git.kernel.org:/pub/scm/linux/kernel/git/arnd/playground.git#bkl/tty,
-minus my patch 13/13, which I already mentioned was broken.
-
-	Arnd
+We are planning to address this by properly handling return values of
+these functions.
+This is work in progress and we may see it published later (for entire
+RapidIO subsystem).
+At this moment I simply follow established trend.
+    
