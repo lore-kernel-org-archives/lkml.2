@@ -1,631 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934073Ab0EEIpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 04:45:55 -0400
-Received: from mx1.zhaw.ch ([160.85.104.50]:37509 "EHLO mx1.zhaw.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933866Ab0EEIpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 04:45:38 -0400
-X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 May 2010 04:45:37 EDT
-From: Tobias Klauser <tklauser@distanz.ch>
-To: linux-serial@vger.kernel.org, gregkh@suse.de, akpm@linux-foundation.org
-Cc: alan@lxorguk.ukuu.org.uk, sfr@canb.auug.org.au,
-       nios2-dev@sopc.et.ntust.edu.tw, linux-kernel@vger.kernel.org,
-       Tobias Klauser <tklauser@distanz.ch>
-Subject: [PATCH 1/2] serial: Add driver for the Altera JTAG UART
-Date: Wed,  5 May 2010 10:35:22 +0200
-Message-Id: <e83e74abd82079284d5c8f62b78f2417ebc9ee27.1273048151.git.tklauser@distanz.ch>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <cover.1273048151.git.tklauser@distanz.ch>
-References: <cover.1273048151.git.tklauser@distanz.ch>
-In-Reply-To: <cover.1273048151.git.tklauser@distanz.ch>
-References: <cover.1273048151.git.tklauser@distanz.ch>
-X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.5.5.82415
-X-PerlMx-Spam: Gauge=X, Probability=10%, Report='
- TO_IN_SUBJECT 0.5, BODY_SIZE_10000_PLUS 0, TO_NO_NAME 0, __CANPHARM_COPYRIGHT 0, __CP_URI_IN_BODY 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __LINES_OF_YELLING 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NS '
+	id S933716Ab0EEIuX convert rfc822-to-quoted-printable (ORCPT
+	<rfc822;w@1wt.eu>); Wed, 5 May 2010 04:50:23 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:38525 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274Ab0EEIuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 04:50:21 -0400
+Subject: Re: [PULL] param sysfs oops (simple, leaky) fix, bool arrays fix
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, Sitsofe Wheeler <sitsofe@yahoo.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>
+In-Reply-To: <s5hmxwevlm4.wl%tiwai@suse.de>
+References: <200910290902.13724.rusty@rustcorp.com.au>
+	 <201005041154.24658.rusty@rustcorp.com.au>
+	 <1272996439.2458.0.camel@localhost.localdomain>
+	 <201005051503.42289.rusty@rustcorp.com.au>
+	 <1273044314.3702.98.camel@localhost>  <s5hmxwevlm4.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Date: Wed, 05 May 2010 11:49:29 +0300
+Message-ID: <1273049369.3702.127.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+X-OriginalArrivalTime: 05 May 2010 08:49:54.0385 (UTC) FILETIME=[EE952410:01CAEC2F]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an UART driver for the JTAG UART component available as a SOPC
-(System on Programmable Chip) component for Altera FPGAs.
+On Wed, 2010-05-05 at 09:44 +0200, Takashi Iwai wrote:
+> At Wed, 05 May 2010 10:25:14 +0300,
+> Artem Bityutskiy wrote:
+> >=20
+> > On Wed, 2010-05-05 at 15:03 +0930, Rusty Russell wrote:
+> > > On Wed, 5 May 2010 03:37:19 am Artem Bityutskiy wrote:
+> > > > On Tue, 2010-05-04 at 11:53 +0930, Rusty Russell wrote:
+> > > > > On Tue, 27 Apr 2010 08:23:24 pm Artem Bityutskiy wrote:
+> > > > > > Rusty, correct me if I'm wrong, but it looks like the above=
+ memleak was
+> > > > > > introduced by e180a6b7759a99a28cbcce3547c4c80822cb6c2a, whe=
+re you added
+> > > > > > the kstrdup(). So you kinda fixed the sysfs case (it still =
+memleaks
+> > > > > > though), but at the cost of additional insmod/rmmod leak, r=
+ight?
+> > > > >=20
+> > > > > Yep!
+> > > >=20
+> > > > Are you working/planning to work on fixing this regression?
+> > >=20
+> > > I'm still ambivalent on it; I have patches but it's a lot of chur=
+n for not
+> > > much gain.
+> > >=20
+> > > To fix this, we need a way to lock parameters against changing by=
+ sysfs, and
+> > > we need to use it everywhere.  Past experience has demonstrated t=
+hat this will
+> > > never be maintained. =20
+> > >=20
+> > > On the other hand, the leak is trivial.
+> >=20
+> > Well, I am not very concerned with the "changing by sysfs" leak. Th=
+is is
+> > not a big deal, IMHO. I am concerned with the "rmmod" leak, which d=
+id
+> > not exist before your patches, but exists now. People may do a lot =
+of
+> > insmod/rmmod, and on each rmmod they will loose this kstrdup-ed str=
+ing.=20
+>=20
+> I don't think there are so many real cases that actually do leaking.
 
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
----
- drivers/serial/Kconfig           |   21 ++
- drivers/serial/Makefile          |    1 +
- drivers/serial/altera_jtaguart.c |  504 ++++++++++++++++++++++++++++++++++++++
- include/linux/altera_jtaguart.h  |   16 ++
- include/linux/serial_core.h      |    3 +
- 5 files changed, 545 insertions(+), 0 deletions(-)
- create mode 100644 drivers/serial/altera_jtaguart.c
- create mode 100644 include/linux/altera_jtaguart.h
+I am sorry, but let me disagree. Did you count these cases? Why are you
+so sure?
 
-diff --git a/drivers/serial/Kconfig b/drivers/serial/Kconfig
-index 9c2e743..2a36f3f 100644
---- a/drivers/serial/Kconfig
-+++ b/drivers/serial/Kconfig
-@@ -1530,4 +1530,25 @@ config SERIAL_GRLIB_GAISLER_APBUART_CONSOLE
- 	help
- 	Support for running a console on the GRLIB APBUART
- 
-+config SERIAL_ALTERA_JTAGUART
-+	tristate "Altera JTAG UART support"
-+	select SERIAL_CORE
-+	help
-+	  This driver supports the Altera JTAG UART port.
-+
-+config SERIAL_ALTERA_JTAGUART_CONSOLE
-+	bool "Altera JTAG UART console support"
-+	depends on SERIAL_ALTERA_JTAGUART=y
-+	select SERIAL_CORE_CONSOLE
-+	help
-+	  Enable a Altera JTAG UART port to be the system console.
-+
-+config SERIAL_ALTERA_JTAGUART_CONSOLE_BYPASS
-+	bool "Bypass output when no connection"
-+	depends on SERIAL_ALTERA_JTAGUART_CONSOLE
-+	select SERIAL_CORE_CONSOLE
-+	help
-+	  Bypass console output and keep going even if there is no
-+	  JTAG terminal connection with the host.
-+
- endmenu
-diff --git a/drivers/serial/Makefile b/drivers/serial/Makefile
-index 6aa4723..a4b748f 100644
---- a/drivers/serial/Makefile
-+++ b/drivers/serial/Makefile
-@@ -83,3 +83,4 @@ obj-$(CONFIG_KGDB_SERIAL_CONSOLE) += kgdboc.o
- obj-$(CONFIG_SERIAL_QE) += ucc_uart.o
- obj-$(CONFIG_SERIAL_TIMBERDALE)	+= timbuart.o
- obj-$(CONFIG_SERIAL_GRLIB_GAISLER_APBUART) += apbuart.o
-+obj-$(CONFIG_SERIAL_ALTERA_JTAGUART) += altera_jtaguart.o
-diff --git a/drivers/serial/altera_jtaguart.c b/drivers/serial/altera_jtaguart.c
-new file mode 100644
-index 0000000..f9b49b5
---- /dev/null
-+++ b/drivers/serial/altera_jtaguart.c
-@@ -0,0 +1,504 @@
-+/*
-+ * altera_jtaguart.c -- Altera JTAG UART driver
-+ *
-+ * Based on mcf.c -- Freescale ColdFire UART driver
-+ *
-+ * (C) Copyright 2003-2007, Greg Ungerer <gerg@snapgear.com>
-+ * (C) Copyright 2008, Thomas Chou <thomas@wytron.com.tw>
-+ * (C) Copyright 2010, Tobias Klauser <tklauser@distanz.ch>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/console.h>
-+#include <linux/tty.h>
-+#include <linux/tty_flip.h>
-+#include <linux/serial.h>
-+#include <linux/serial_core.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <linux/altera_jtaguart.h>
-+
-+#define DRV_NAME "altera_jtaguart"
-+
-+/*
-+ * Altera JTAG UART register definitions according to the Altera JTAG UART
-+ * datasheet: http://www.altera.com/literature/hb/nios2/n2cpu_nii51009.pdf
-+ */
-+
-+#define ALTERA_JTAGUART_SIZE			8
-+
-+#define ALTERA_JTAGUART_DATA_REG		0
-+
-+#define ALTERA_JTAGUART_DATA_DATA_MSK		0x000000FF
-+#define ALTERA_JTAGUART_DATA_RVALID_MSK		0x00008000
-+#define ALTERA_JTAGUART_DATA_RAVAIL_MSK		0xFFFF0000
-+#define ALTERA_JTAGUART_DATA_RAVAIL_OFF		16
-+
-+#define ALTERA_JTAGUART_CONTROL_REG		4
-+
-+#define ALTERA_JTAGUART_CONTROL_RE_MSK		0x00000001
-+#define ALTERA_JTAGUART_CONTROL_WE_MSK		0x00000002
-+#define ALTERA_JTAGUART_CONTROL_RI_MSK		0x00000100
-+#define ALTERA_JTAGUART_CONTROL_RI_OFF		8
-+#define ALTERA_JTAGUART_CONTROL_WI_MSK		0x00000200
-+#define ALTERA_JTAGUART_CONTROL_AC_MSK		0x00000400
-+#define ALTERA_JTAGUART_CONTROL_WSPACE_MSK	0xFFFF0000
-+#define ALTERA_JTAGUART_CONTROL_WSPACE_OFF	16
-+
-+/*
-+ * Local per-uart structure.
-+ */
-+struct altera_jtaguart {
-+	struct uart_port port;
-+	unsigned int sigs;	/* Local copy of line sigs */
-+	unsigned long imr;	/* Local IMR mirror */
-+};
-+
-+static unsigned int altera_jtaguart_tx_empty(struct uart_port *port)
-+{
-+	return (readl(port->membase + ALTERA_JTAGUART_CONTROL_REG) &
-+		ALTERA_JTAGUART_CONTROL_WSPACE_MSK) ? TIOCSER_TEMT : 0;
-+}
-+
-+static unsigned int altera_jtaguart_get_mctrl(struct uart_port *port)
-+{
-+	return TIOCM_CAR | TIOCM_DSR | TIOCM_CTS;
-+}
-+
-+static void altera_jtaguart_set_mctrl(struct uart_port *port, unsigned int sigs)
-+{
-+}
-+
-+static void altera_jtaguart_start_tx(struct uart_port *port)
-+{
-+	struct altera_jtaguart *pp =
-+	    container_of(port, struct altera_jtaguart, port);
-+
-+	pp->imr |= ALTERA_JTAGUART_CONTROL_WE_MSK;
-+	writel(pp->imr, port->membase + ALTERA_JTAGUART_CONTROL_REG);
-+}
-+
-+static void altera_jtaguart_stop_tx(struct uart_port *port)
-+{
-+	struct altera_jtaguart *pp =
-+	    container_of(port, struct altera_jtaguart, port);
-+
-+	pp->imr &= ~ALTERA_JTAGUART_CONTROL_WE_MSK;
-+	writel(pp->imr, port->membase + ALTERA_JTAGUART_CONTROL_REG);
-+}
-+
-+static void altera_jtaguart_stop_rx(struct uart_port *port)
-+{
-+	struct altera_jtaguart *pp =
-+	    container_of(port, struct altera_jtaguart, port);
-+
-+	pp->imr &= ~ALTERA_JTAGUART_CONTROL_RE_MSK;
-+	writel(pp->imr, port->membase + ALTERA_JTAGUART_CONTROL_REG);
-+}
-+
-+static void altera_jtaguart_break_ctl(struct uart_port *port, int break_state)
-+{
-+}
-+
-+static void altera_jtaguart_enable_ms(struct uart_port *port)
-+{
-+}
-+
-+static void altera_jtaguart_set_termios(struct uart_port *port,
-+					struct ktermios *termios,
-+					struct ktermios *old)
-+{
-+	/* Just copy the old termios settings back */
-+	if (old)
-+		tty_termios_copy_hw(termios, old);
-+}
-+
-+static void altera_jtaguart_rx_chars(struct altera_jtaguart *pp)
-+{
-+	struct uart_port *port = &pp->port;
-+	unsigned char ch, flag;
-+	unsigned long status;
-+
-+	while ((status = readl(port->membase + ALTERA_JTAGUART_DATA_REG)) &
-+	       ALTERA_JTAGUART_DATA_RVALID_MSK) {
-+		ch = status & ALTERA_JTAGUART_DATA_DATA_MSK;
-+		flag = TTY_NORMAL;
-+		port->icount.rx++;
-+
-+		if (uart_handle_sysrq_char(port, ch))
-+			continue;
-+		uart_insert_char(port, 0, 0, ch, flag);
-+	}
-+
-+	tty_flip_buffer_push(port->state->port.tty);
-+}
-+
-+static void altera_jtaguart_tx_chars(struct altera_jtaguart *pp)
-+{
-+	struct uart_port *port = &pp->port;
-+	struct circ_buf *xmit = &port->state->xmit;
-+	unsigned int pending, count;
-+
-+	if (port->x_char) {
-+		/* Send special char - probably flow control */
-+		writel(port->x_char, port->membase + ALTERA_JTAGUART_DATA_REG);
-+		port->x_char = 0;
-+		port->icount.tx++;
-+		return;
-+	}
-+
-+	pending = uart_circ_chars_pending(xmit);
-+	if (pending > 0) {
-+		count = (readl(port->membase + ALTERA_JTAGUART_CONTROL_REG) &
-+				ALTERA_JTAGUART_CONTROL_WSPACE_MSK) >>
-+			ALTERA_JTAGUART_CONTROL_WSPACE_OFF;
-+		if (count > pending)
-+			count = pending;
-+		if (count > 0) {
-+			pending -= count;
-+			while (count--) {
-+				writel(xmit->buf[xmit->tail],
-+				       port->membase + ALTERA_JTAGUART_DATA_REG);
-+				xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
-+				port->icount.tx++;
-+			}
-+			if (pending < WAKEUP_CHARS)
-+				uart_write_wakeup(port);
-+		}
-+	}
-+
-+	if (pending == 0) {
-+		pp->imr &= ~ALTERA_JTAGUART_CONTROL_WE_MSK;
-+		writel(pp->imr, port->membase + ALTERA_JTAGUART_CONTROL_REG);
-+	}
-+}
-+
-+static irqreturn_t altera_jtaguart_interrupt(int irq, void *data)
-+{
-+	struct uart_port *port = data;
-+	struct altera_jtaguart *pp =
-+	    container_of(port, struct altera_jtaguart, port);
-+	unsigned int isr;
-+
-+	isr = (readl(port->membase + ALTERA_JTAGUART_CONTROL_REG) >>
-+	       ALTERA_JTAGUART_CONTROL_RI_OFF) & pp->imr;
-+
-+	spin_lock(&port->lock);
-+
-+	if (isr & ALTERA_JTAGUART_CONTROL_RE_MSK)
-+		altera_jtaguart_rx_chars(pp);
-+	if (isr & ALTERA_JTAGUART_CONTROL_WE_MSK)
-+		altera_jtaguart_tx_chars(pp);
-+
-+	spin_unlock(&port->lock);
-+
-+	return IRQ_RETVAL(isr);
-+}
-+
-+static void altera_jtaguart_config_port(struct uart_port *port, int flags)
-+{
-+	port->type = PORT_ALTERA_JTAGUART;
-+
-+	/* Clear mask, so no surprise interrupts. */
-+	writel(0, port->membase + ALTERA_JTAGUART_CONTROL_REG);
-+}
-+
-+static int altera_jtaguart_startup(struct uart_port *port)
-+{
-+	struct altera_jtaguart *pp =
-+	    container_of(port, struct altera_jtaguart, port);
-+	unsigned long flags;
-+	int ret;
-+
-+	ret = request_irq(port->irq, altera_jtaguart_interrupt, IRQF_DISABLED,
-+			DRV_NAME, port);
-+	if (ret) {
-+		pr_err(DRV_NAME ": unable to attach Altera JTAG UART %d "
-+		       "interrupt vector=%d\n", port->line, port->irq);
-+		return ret;
-+	}
-+
-+	spin_lock_irqsave(&port->lock, flags);
-+
-+	/* Enable RX interrupts now */
-+	pp->imr = ALTERA_JTAGUART_CONTROL_RE_MSK;
-+	writel(pp->imr, port->membase + ALTERA_JTAGUART_CONTROL_REG);
-+
-+	spin_unlock_irqrestore(&port->lock, flags);
-+
-+	return 0;
-+}
-+
-+static void altera_jtaguart_shutdown(struct uart_port *port)
-+{
-+	struct altera_jtaguart *pp =
-+	    container_of(port, struct altera_jtaguart, port);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&port->lock, flags);
-+
-+	/* Disable all interrupts now */
-+	pp->imr = 0;
-+	writel(pp->imr, port->membase + ALTERA_JTAGUART_CONTROL_REG);
-+
-+	spin_unlock_irqrestore(&port->lock, flags);
-+
-+	free_irq(port->irq, port);
-+}
-+
-+static const char *altera_jtaguart_type(struct uart_port *port)
-+{
-+	return (port->type == PORT_ALTERA_JTAGUART) ? "Altera JTAG UART" : NULL;
-+}
-+
-+static int altera_jtaguart_request_port(struct uart_port *port)
-+{
-+	/* UARTs always present */
-+	return 0;
-+}
-+
-+static void altera_jtaguart_release_port(struct uart_port *port)
-+{
-+	/* Nothing to release... */
-+}
-+
-+static int altera_jtaguart_verify_port(struct uart_port *port,
-+				       struct serial_struct *ser)
-+{
-+	if (ser->type != PORT_UNKNOWN && ser->type != PORT_ALTERA_JTAGUART)
-+		return -EINVAL;
-+	return 0;
-+}
-+
-+/*
-+ *	Define the basic serial functions we support.
-+ */
-+static struct uart_ops altera_jtaguart_ops = {
-+	.tx_empty	= altera_jtaguart_tx_empty,
-+	.get_mctrl	= altera_jtaguart_get_mctrl,
-+	.set_mctrl	= altera_jtaguart_set_mctrl,
-+	.start_tx	= altera_jtaguart_start_tx,
-+	.stop_tx	= altera_jtaguart_stop_tx,
-+	.stop_rx	= altera_jtaguart_stop_rx,
-+	.enable_ms	= altera_jtaguart_enable_ms,
-+	.break_ctl	= altera_jtaguart_break_ctl,
-+	.startup	= altera_jtaguart_startup,
-+	.shutdown	= altera_jtaguart_shutdown,
-+	.set_termios	= altera_jtaguart_set_termios,
-+	.type		= altera_jtaguart_type,
-+	.request_port	= altera_jtaguart_request_port,
-+	.release_port	= altera_jtaguart_release_port,
-+	.config_port	= altera_jtaguart_config_port,
-+	.verify_port	= altera_jtaguart_verify_port,
-+};
-+
-+#define ALTERA_JTAGUART_MAXPORTS 1
-+static struct altera_jtaguart altera_jtaguart_ports[ALTERA_JTAGUART_MAXPORTS];
-+
-+#if defined(CONFIG_SERIAL_ALTERA_JTAGUART_CONSOLE)
-+
-+int __init early_altera_jtaguart_setup(struct altera_jtaguart_platform_uart
-+				       *platp)
-+{
-+	struct uart_port *port;
-+	int i;
-+
-+	for (i = 0; i < ALTERA_JTAGUART_MAXPORTS && platp[i].mapbase; i++) {
-+		port = &altera_jtaguart_ports[i].port;
-+
-+		port->line = i;
-+		port->type = PORT_ALTERA_JTAGUART;
-+		port->mapbase = platp[i].mapbase;
-+		port->membase = ioremap(port->mapbase, ALTERA_JTAGUART_SIZE);
-+		port->iotype = SERIAL_IO_MEM;
-+		port->irq = platp[i].irq;
-+		port->flags = ASYNC_BOOT_AUTOCONF;
-+		port->ops = &altera_jtaguart_ops;
-+	}
-+
-+	return 0;
-+}
-+
-+#if defined(CONFIG_SERIAL_ALTERA_JTAGUART_CONSOLE_BYPASS)
-+static void altera_jtaguart_console_putc(struct console *co, const char c)
-+{
-+	struct uart_port *port = &(altera_jtaguart_ports + co->index)->port;
-+	unsigned long status;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&port->lock, flags);
-+	while (((status = readl(port->membase + ALTERA_JTAGUART_CONTROL_REG)) &
-+		ALTERA_JTAGUART_CONTROL_WSPACE_MSK) == 0) {
-+		if ((status & ALTERA_JTAGUART_CONTROL_AC_MSK) == 0) {
-+			spin_unlock_irqrestore(&port->lock, flags);
-+			return;	/* no connection activity */
-+		}
-+		spin_unlock_irqrestore(&port->lock, flags);
-+		cpu_relax();
-+		spin_lock_irqsave(&port->lock, flags);
-+	}
-+	writel(c, port->membase + ALTERA_JTAGUART_DATA_REG);
-+	spin_unlock_irqrestore(&port->lock, flags);
-+}
-+#else
-+static void altera_jtaguart_console_putc(struct console *co, const char c)
-+{
-+	struct uart_port *port = &(altera_jtaguart_ports + co->index)->port;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&port->lock, flags);
-+	while ((readl(port->membase + ALTERA_JTAGUART_CONTROL_REG) &
-+		ALTERA_JTAGUART_CONTROL_WSPACE_MSK) == 0) {
-+		spin_unlock_irqrestore(&port->lock, flags);
-+		cpu_relax();
-+		spin_lock_irqsave(&port->lock, flags);
-+	}
-+	writel(c, port->membase + ALTERA_JTAGUART_DATA_REG);
-+	spin_unlock_irqrestore(&port->lock, flags);
-+}
-+#endif
-+
-+static void altera_jtaguart_console_write(struct console *co, const char *s,
-+					  unsigned int count)
-+{
-+	for (; count; count--, s++) {
-+		altera_jtaguart_console_putc(co, *s);
-+		if (*s == '\n')
-+			altera_jtaguart_console_putc(co, '\r');
-+	}
-+}
-+
-+static int __init altera_jtaguart_console_setup(struct console *co,
-+						char *options)
-+{
-+	struct uart_port *port;
-+
-+	if (co->index < 0 || co->index >= ALTERA_JTAGUART_MAXPORTS)
-+		return -EINVAL;
-+	port = &altera_jtaguart_ports[co->index].port;
-+	if (port->membase == 0)
-+		return -ENODEV;
-+	return 0;
-+}
-+
-+static struct uart_driver altera_jtaguart_driver;
-+
-+static struct console altera_jtaguart_console = {
-+	.name	= "ttyJ",
-+	.write	= altera_jtaguart_console_write,
-+	.device	= uart_console_device,
-+	.setup	= altera_jtaguart_console_setup,
-+	.flags	= CON_PRINTBUFFER,
-+	.index	= -1,
-+	.data	= &altera_jtaguart_driver,
-+};
-+
-+static int __init altera_jtaguart_console_init(void)
-+{
-+	register_console(&altera_jtaguart_console);
-+	return 0;
-+}
-+
-+console_initcall(altera_jtaguart_console_init);
-+
-+#define	ALTERA_JTAGUART_CONSOLE	(&altera_jtaguart_console)
-+
-+#else
-+
-+#define	ALTERA_JTAGUART_CONSOLE	NULL
-+
-+#endif /* CONFIG_ALTERA_JTAGUART_CONSOLE */
-+
-+static struct uart_driver altera_jtaguart_driver = {
-+	.owner		= THIS_MODULE,
-+	.driver_name	= "altera_jtaguart",
-+	.dev_name	= "ttyJ",
-+	.major		= ALTERA_JTAGUART_MAJOR,
-+	.minor		= ALTERA_JTAGUART_MINOR,
-+	.nr		= ALTERA_JTAGUART_MAXPORTS,
-+	.cons		= ALTERA_JTAGUART_CONSOLE,
-+};
-+
-+static int __devinit altera_jtaguart_probe(struct platform_device *pdev)
-+{
-+	struct altera_jtaguart_platform_uart *platp = pdev->dev.platform_data;
-+	struct uart_port *port;
-+	int i;
-+
-+	for (i = 0; i < ALTERA_JTAGUART_MAXPORTS && platp[i].mapbase; i++) {
-+		port = &altera_jtaguart_ports[i].port;
-+
-+		port->line = i;
-+		port->type = PORT_ALTERA_JTAGUART;
-+		port->mapbase = platp[i].mapbase;
-+		port->membase = ioremap(port->mapbase, ALTERA_JTAGUART_SIZE);
-+		port->iotype = SERIAL_IO_MEM;
-+		port->irq = platp[i].irq;
-+		port->ops = &altera_jtaguart_ops;
-+		port->flags = ASYNC_BOOT_AUTOCONF;
-+
-+		uart_add_one_port(&altera_jtaguart_driver, port);
-+	}
-+
-+	return 0;
-+}
-+
-+static int __devexit altera_jtaguart_remove(struct platform_device *pdev)
-+{
-+	struct uart_port *port;
-+	int i;
-+
-+	for (i = 0; i < ALTERA_JTAGUART_MAXPORTS; i++) {
-+		port = &altera_jtaguart_ports[i].port;
-+		if (port)
-+			uart_remove_one_port(&altera_jtaguart_driver, port);
-+	}
-+
-+	return 0;
-+}
-+
-+static struct platform_driver altera_jtaguart_platform_driver = {
-+	.probe	= altera_jtaguart_probe,
-+	.remove	= __devexit_p(altera_jtaguart_remove),
-+	.driver	= {
-+		.name	= DRV_NAME,
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+static int __init altera_jtaguart_init(void)
-+{
-+	int rc;
-+
-+	rc = uart_register_driver(&altera_jtaguart_driver);
-+	if (rc)
-+		return rc;
-+	rc = platform_driver_register(&altera_jtaguart_platform_driver);
-+	if (rc) {
-+		uart_unregister_driver(&altera_jtaguart_driver);
-+		return rc;
-+	}
-+	return 0;
-+}
-+
-+static void __exit altera_jtaguart_exit(void)
-+{
-+	platform_driver_unregister(&altera_jtaguart_platform_driver);
-+	uart_unregister_driver(&altera_jtaguart_driver);
-+}
-+
-+module_init(altera_jtaguart_init);
-+module_exit(altera_jtaguart_exit);
-+
-+MODULE_DESCRIPTION("Altera JTAG UART driver");
-+MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:" DRV_NAME);
-diff --git a/include/linux/altera_jtaguart.h b/include/linux/altera_jtaguart.h
-new file mode 100644
-index 0000000..953b178
---- /dev/null
-+++ b/include/linux/altera_jtaguart.h
-@@ -0,0 +1,16 @@
-+/*
-+ * altera_jtaguart.h -- Altera JTAG UART driver defines.
-+ */
-+
-+#ifndef	__ALTJUART_H
-+#define	__ALTJUART_H
-+
-+#define ALTERA_JTAGUART_MAJOR	204
-+#define ALTERA_JTAGUART_MINOR	186
-+
-+struct altera_jtaguart_platform_uart {
-+	unsigned long mapbase;	/* Physical address base */
-+	unsigned int irq;	/* Interrupt vector */
-+};
-+
-+#endif /* __ALTJUART_H */
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index ad83996..308863a 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -182,6 +182,9 @@
- /* Aeroflex Gaisler GRLIB APBUART */
- #define PORT_APBUART    90
- 
-+/* Altera UARTs */
-+#define PORT_ALTERA_JTAGUART	91
-+
- #ifdef __KERNEL__
- 
- #include <linux/compiler.h>
--- 
-1.6.3.3
+We are one live case. We use drivers/usb/gadget/nokia.c. And this is
+also used in production, in the Nokia N900 phone.=20
 
+IOW, I officially confirm that we are affected by this regression.
+
+And there are many other potential charp users in drivers/usb/gadget.
+Take a look at drivers/usb/gadget/composite.c:
+
+static char *iManufacturer;
+module_param(iManufacturer, charp, 0);
+MODULE_PARM_DESC(iManufacturer, "USB Manufacturer string");
+
+static char *iProduct;
+module_param(iProduct, charp, 0);
+MODULE_PARM_DESC(iProduct, "USB Product string");
+
+static char *iSerialNumber;
+module_param(iSerialNumber, charp, 0);
+MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
+
+This file is included from many other files:
+
+[dedekind@eru gadget]$ pwd
+/home/dedekind/git/linux-2.6-param-fixes/drivers/usb/gadget
+[dedekind@eru gadget]$ grep 'composite.c' *
+audio.c:#include "composite.c"
+cdc2.c:#include "composite.c"
+composite.c: * composite.c - infrastructure for Composite USB Gadgets
+ether.c:#include "composite.c"
+mass_storage.c:#include "composite.c"
+multi.c:#include "composite.c"
+nokia.c:#include "composite.c"
+serial.c:#include "composite.c"
+zero.c:#include "composite.c"
+
+They are potentially affected too.
+
+> This is only for charp type parameters (not string), and no leak
+> happens unless user gives the value explicitly via a module option.
+
+We do use these options. Surely, if they exist, people probably use at
+least some of them, right? Otherwise why would they exist?
+
+And I officially confirm that we load/unload the g_nokia gadget
+(corresponds to nokia.c) many times, and we are not very interested in
+having (even though small) memory leak.
+
+> Fixing in the way of the later upstream is a bit too intrusive as a
+> stable patch.  So, I'm also not sure whether we should take it,
+> too...
+
+To be frank I do not really understand what you mean.
+
+Anyway, I just humbly suggest not to have the "no one uses that, let's
+have a leak" attitude. I do understand that this is a 'it's a lot of
+churn for not much gain'. However, I think the rmmod leak is large
+enough issue.
+
+--=20
+Best Regards,
+Artem Bityutskiy (=D0=90=D1=80=D1=82=D1=91=D0=BC =D0=91=D0=B8=D1=82=D1=8E=
+=D1=86=D0=BA=D0=B8=D0=B9)
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel"=
+ in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
