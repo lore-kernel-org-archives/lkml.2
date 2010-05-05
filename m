@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab0EEENz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 00:13:55 -0400
-Received: from [69.28.251.93] ([69.28.251.93]:41057 "EHLO b32.net"
+	id S1752593Ab0EEEOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 00:14:07 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:41068 "EHLO b32.net"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213Ab0EEENx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 00:13:53 -0400
+	id S1752056Ab0EEEOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 00:14:01 -0400
 From: Kevin Cernekee <cernekee@gmail.com>
-Date: Tue, 4 May 2010 20:58:03 -0700
-Subject: [PATCHv2 1/2] mtd: nand: Extend NAND flash detection to new MLC chips
-Message-Id: <10137ab89de6e6d229798d6f397688b0807024da@localhost.localdomain>
+Date: Tue, 4 May 2010 20:58:10 -0700
+Subject: [PATCHv2 2/2] mtd: nand: Support alternate BB marker locations on MLC
+Message-Id: <73903cdde20c6be375703e18849282bd3f2a2ff1@localhost.localdomain>
 In-Reply-To: <17c88de31cd52bb3794569c28cd2ae51996e6260@localhost.localdomain>
 References: <17c88de31cd52bb3794569c28cd2ae51996e6260@localhost.localdomain>
 To: <dwmw2@infradead.org>
@@ -23,145 +23,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of the newer MLC devices have a 6-byte ID sequence in which
-several field definitions differ from older chips in a manner that is
-not backward compatible.  For instance:
+This is a slightly modified version of a patch submitted last year by
+Reuben Dowle <reuben.dowle@navico.com>.  His original comments follow:
 
-Samsung K9GAG08U0M (5-byte sequence): ec d5 14 b6 74
-4th byte, bits 1:0 encode the page size: 0=1KiB, 1=2KiB, 2=4KiB, 3=8KiB
-4th byte, bits 5:4 encode the block size: 0=64KiB, 1=128KiB, ...
-4th byte, bit 6 encodes the OOB size: 0=8B/512B, 1=16B/512B
+This patch adds support for some MLC NAND flashes that place the BB
+marker in the LAST page of the bad block rather than the FIRST page used
+for SLC NAND and other types of MLC nand.
 
-Samsung K9GAG08U0D (6-byte sequence): ec d5 94 29 34 41
-4th byte, bits 1:0 encode the page size: 0=2KiB, 1=4KiB, 3=8KiB, 4=rsvd
-4th byte, bits 7;5:4 encode the block size: 0=128KiB, 1=256KiB, ...
-4th byte, bits 6;3:2 encode the OOB size: 1=128B/page, 2=218B/page
+Lifted from Samsung datasheet for K9LG8G08U0A (1Gbyte MLC NAND):
+"
+Identifying Initial Invalid Block(s)
+All device locations are erased(FFh) except locations where the initial
+invalid block(s) information is written prior to shipping. The initial
+invalid block(s) status is defined by the 1st byte in the spare area.
+Samsung makes sure that the last page of every initial invalid block has
+non-FFh data at the column address of 2,048.
+...
+"
 
-This patch uses the new 6-byte scheme if the following conditions are
-all true:
+As far as I can tell, this is the same for all Samsung MLC nand, and in
+fact the samsung bsp for the processor used in our project (s3c6410)
+actually contained a hack similar to this patch but less portable to
+enable use of their NAND parts. I discovered this problem when trying to
+use a Micron NAND which does not used this layout - I wish samsung would
+put their stuff in main-line to avoid this type of problem.
 
-1) The ID code wraps around after exactly 6 bytes
-
-2) Manufacturer is Samsung
-
-3) 6th byte is zero
-
-The patch also extends the maximum OOB size from 128B to 256B.
+Currently this patch causes all MLC nand with manufacturer codes from
+Samsung and ST(Numonyx) to use this alternative location, since these
+are the manufactures that I know of that use this layout.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- drivers/mtd/nand/nand_base.c |   64 ++++++++++++++++++++++++++++-------------
- include/linux/mtd/nand.h     |    2 +-
- 2 files changed, 45 insertions(+), 21 deletions(-)
+ drivers/mtd/nand/nand_base.c |   15 +++++++++++++++
+ drivers/mtd/nand/nand_bbt.c  |    3 +++
+ include/linux/mtd/nand.h     |    2 ++
+ 3 files changed, 20 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index b9dc65c..85891dc 100644
+index 85891dc..4a7b864 100644
 --- a/drivers/mtd/nand/nand_base.c
 +++ b/drivers/mtd/nand/nand_base.c
-@@ -2774,8 +2774,8 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
- 						  int busw, int *maf_id,
- 						  struct nand_flash_dev *type)
- {
--	int dev_id, maf_idx;
--	int tmp_id, tmp_manf;
-+	int i, dev_id, maf_idx;
-+	u8 id_data[8];
+@@ -347,6 +347,9 @@ static int nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
+ 	struct nand_chip *chip = mtd->priv;
+ 	u16 bad;
  
- 	/* Select the device */
- 	chip->select_chip(mtd, 0);
-@@ -2801,15 +2801,15 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
++	if (chip->options & NAND_BB_LAST_PAGE)
++		ofs += mtd->erasesize - mtd->writesize;
++
+ 	page = (int)(ofs >> chip->page_shift) & chip->pagemask;
  
- 	chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
+ 	if (getchip) {
+@@ -396,6 +399,9 @@ static int nand_default_block_markbad(struct mtd_info *mtd, loff_t ofs)
+ 	uint8_t buf[2] = { 0, 0 };
+ 	int block, ret;
  
--	/* Read manufacturer and device IDs */
-+	/* Read entire ID string */
++	if (chip->options & NAND_BB_LAST_PAGE)
++		ofs += mtd->erasesize - mtd->writesize;
++
+ 	/* Get block number */
+ 	block = (int)(ofs >> chip->bbt_erase_shift);
+ 	if (chip->bbt)
+@@ -2933,6 +2939,15 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
+ 	if (*maf_id != NAND_MFR_SAMSUNG && !type->pagesize)
+ 		chip->options &= ~NAND_SAMSUNG_LP_OPTIONS;
  
--	tmp_manf = chip->read_byte(mtd);
--	tmp_id = chip->read_byte(mtd);
-+	for (i = 0; i < 8; i++)
-+		id_data[i] = chip->read_byte(mtd);
- 
--	if (tmp_manf != *maf_id || tmp_id != dev_id) {
-+	if (id_data[0] != *maf_id || id_data[1] != dev_id) {
- 		printk(KERN_INFO "%s: second ID read did not match "
- 		       "%02x,%02x against %02x,%02x\n", __func__,
--		       *maf_id, dev_id, tmp_manf, tmp_id);
-+		       *maf_id, dev_id, id_data[0], id_data[1]);
- 		return ERR_PTR(-ENODEV);
++	/*
++	 * Bad block marker is stored in the last page of each block
++	 * on Samsung and Hynix MLC devices
++	 */
++	if ((chip->cellinfo & NAND_CI_CELLTYPE_MSK) &&
++			(*maf_id == NAND_MFR_SAMSUNG ||
++			 *maf_id == NAND_MFR_HYNIX))
++		chip->options |= NAND_BB_LAST_PAGE;
++
+ 	/* Check for AND chips with 4 page planes */
+ 	if (chip->options & NAND_4PAGE_ARRAY)
+ 		chip->erase_cmd = multi_erase_cmd;
+diff --git a/drivers/mtd/nand/nand_bbt.c b/drivers/mtd/nand/nand_bbt.c
+index 387c45c..ad97c0c 100644
+--- a/drivers/mtd/nand/nand_bbt.c
++++ b/drivers/mtd/nand/nand_bbt.c
+@@ -432,6 +432,9 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf,
+ 		from = (loff_t)startblock << (this->bbt_erase_shift - 1);
  	}
  
-@@ -2832,21 +2832,45 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
- 	if (!type->pagesize) {
- 		int extid;
- 		/* The 3rd id byte holds MLC / multichip data */
--		chip->cellinfo = chip->read_byte(mtd);
-+		chip->cellinfo = id_data[2];
- 		/* The 4th id byte is the important one */
--		extid = chip->read_byte(mtd);
--		/* Calc pagesize */
--		mtd->writesize = 1024 << (extid & 0x3);
--		extid >>= 2;
--		/* Calc oobsize */
--		mtd->oobsize = (8 << (extid & 0x01)) * (mtd->writesize >> 9);
--		extid >>= 2;
--		/* Calc blocksize. Blocksize is multiples of 64KiB */
--		mtd->erasesize = (64 * 1024) << (extid & 0x03);
--		extid >>= 2;
--		/* Get buswidth information */
--		busw = (extid & 0x01) ? NAND_BUSWIDTH_16 : 0;
-+		extid = id_data[3];
++	if (this->options & NAND_BB_LAST_PAGE)
++		from += mtd->erasesize - (mtd->writesize * len);
++
+ 	for (i = startblock; i < numblocks;) {
+ 		int ret;
  
-+		/*
-+		 * Field definitions are in the following datasheets:
-+		 * Old style (4,5 byte ID): Samsung K9GAG08U0M (p.32)
-+		 * New style   (6 byte ID): Samsung K9GAG08U0D (p.40)
-+		 *
-+		 * Check for wraparound + Samsung ID + nonzero 6th byte
-+		 * to decide what to do.
-+		 */
-+		if (id_data[0] == id_data[6] && id_data[1] == id_data[7] &&
-+				id_data[0] == NAND_MFR_SAMSUNG &&
-+				id_data[5] != 0x00) {
-+			/* Calc pagesize */
-+			mtd->writesize = 2048 << (extid & 0x03);
-+			extid >>= 2;
-+			/* Calc oobsize */
-+			mtd->oobsize = (extid & 0x03) == 0x01 ? 128 : 218;
-+			extid >>= 2;
-+			/* Calc blocksize */
-+			mtd->erasesize = (128 * 1024) <<
-+				(((extid >> 1) & 0x04) | (extid & 0x03));
-+			busw = 0;
-+		} else {
-+			/* Calc pagesize */
-+			mtd->writesize = 1024 << (extid & 0x03);
-+			extid >>= 2;
-+			/* Calc oobsize */
-+			mtd->oobsize = (8 << (extid & 0x01)) *
-+				(mtd->writesize >> 9);
-+			extid >>= 2;
-+			/* Calc blocksize. Blocksize is multiples of 64KiB */
-+			mtd->erasesize = (64 * 1024) << (extid & 0x03);
-+			extid >>= 2;
-+			/* Get buswidth information */
-+			busw = (extid & 0x01) ? NAND_BUSWIDTH_16 : 0;
-+		}
- 	} else {
- 		/*
- 		 * Old devices have chip data hardcoded in the device id table
 diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index 8bdacb8..50f3aa0 100644
+index 50f3aa0..a81b185 100644
 --- a/include/linux/mtd/nand.h
 +++ b/include/linux/mtd/nand.h
-@@ -53,7 +53,7 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
-  * is supported now. If you add a chip with bigger oobsize/page
-  * adjust this accordingly.
-  */
--#define NAND_MAX_OOBSIZE	128
-+#define NAND_MAX_OOBSIZE	256
- #define NAND_MAX_PAGESIZE	4096
+@@ -181,6 +181,8 @@ typedef enum {
+ #define NAND_NO_READRDY		0x00000100
+ /* Chip does not allow subpage writes */
+ #define NAND_NO_SUBPAGE_WRITE	0x00000200
++/* Chip stores bad block marker on the last page of the eraseblock */
++#define NAND_BB_LAST_PAGE	0x00000400
  
- /*
+ /* Device is one of 'new' xD cards that expose fake nand command set */
+ #define NAND_BROKEN_XD		0x00000400
 -- 
 1.6.5
 
