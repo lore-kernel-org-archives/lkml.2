@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757714Ab0EETUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 15:20:43 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34369 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753457Ab0EETUk (ORCPT
+	id S1758135Ab0EETWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 15:22:39 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41355 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757019Ab0EETWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 15:20:40 -0400
-Date: Wed, 5 May 2010 15:20:40 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: Matthew Garrett <mjg@redhat.com>, Brian Swetland <swetland@google.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Wed, 5 May 2010 15:22:37 -0400
+Date: Wed, 5 May 2010 20:22:08 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
        Kevin Hilman <khilman@deeprootsystems.com>,
        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Paul Walmsley <paul@pwsan.com>, <magnus.damm@gmail.com>,
+       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
        mark gross <mgross@linux.intel.com>,
        Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
+       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
 Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-In-Reply-To: <20100505190758.GG7139@rakim.wolfsonmicro.main>
-Message-ID: <Pine.LNX.4.44L0.1005051515060.1885-100000@iolanthe.rowland.org>
+Message-ID: <20100505192208.GB5085@srcf.ucam.org>
+References: <20100505185225.GA4411@srcf.ucam.org> <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 May 2010, Mark Brown wrote:
+On Wed, May 05, 2010 at 03:13:52PM -0400, Alan Stern wrote:
 
-> > In short, I'm trying to get at how much information drivers _really_ 
-> > need to have about the reason for a system suspend.
+> Should the audio driver be smart enough to know that the codec needs to
+> remain powered up during every opportunistic suspend?
 > 
-> It's not exactly the *reason* that makes the difference, it's more that
-> this aggressive use of suspend makes much more apparent a problem which
-> might exist anyway for this sort of hardware.
+> Or only during opportunistic suspends while a call is in progress?  
 
-Then the underlying problem should be solved -- hopefully in a nice, 
-system-independent way.  But I'm still trying to understand exactly 
-what that underlying problem _is_.
+The latter is obviously preferable...
 
-That means understanding when the codec needs to be shut down and when
-it doesn't, and knowing how much of this information is available to
-the driver.
+> Does it know when a call is in progress?
 
-> When we get runtime PM delviering similar power levels we'll sidestep
-> the problem since we won't need to do a system wide suspend.
+Perhaps you could infer that from the audio routing setup? I don't know 
+enough about embedded codecs.
 
-One the face of it, a runtime-PM solution would dictate that the
-codec's driver ought to turn off the codec whenever the driver thinks
-it isn't being used.  Ergo, if the driver didn't know when a call was
-in progress, it would use runtime PM to turn off the codec during a
-call.
+> Does Android use forced suspends?
 
-For this reason I don't see how using runtime PM instead of suspend
-blockers would solve anything.
+No.
 
-Alan Stern
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
