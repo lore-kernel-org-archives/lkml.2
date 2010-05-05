@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934320Ab0EEJdg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 05:33:36 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37481 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932631Ab0EEJde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 05:33:34 -0400
-Message-ID: <4BE13B33.3030709@kernel.org>
-Date: Wed, 05 May 2010 11:32:35 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S933871Ab0EEJet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 05:34:49 -0400
+Received: from mail-qy0-f191.google.com ([209.85.221.191]:56966 "EHLO
+	mail-qy0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932631Ab0EEJes convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 05:34:48 -0400
+X-Greylist: delayed 340 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 May 2010 05:34:48 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=VJvwQc8w3TIw2x6qUs/RUyN7pGfmsQ5EWIBUeNA6tUwrdi7mBuAWm8xPRSeEbFpggN
+         vkXrX92Wl5nI0z5mp1R9mRaXX09tAKtQ8iKXKXchqU9pwYBYPNu8TmkhXxfODVzOa/Mu
+         hCojGjVvG+BysFDHS2T+KrhRukKBmZECcCqwE=
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@elte.hu, efault@gmx.de, avi@redhat.com, paulus@samba.org,
-       acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf
- on top of TP
-References: <1272976724-14312-1-git-send-email-tj@kernel.org>	 <1272994165.1642.203.camel@laptop>  <4BE0FB68.7080403@kernel.org> <1273050400.1642.229.camel@laptop>
-In-Reply-To: <1273050400.1642.229.camel@laptop>
-X-Enigmail-Version: 1.0.1
+In-Reply-To: <20100505080015.GD30801@buzzloop.caiaq.de>
+References: <4BC8330E.6000503@bitsim.com> <20100416100126.GI30801@buzzloop.caiaq.de> 
+	<4BC84766.5060208@bitsim.com> <4BC8493D.60900@bitsim.com> 
+	<20100416112820.GM30801@buzzloop.caiaq.de> <20100416112931.GN30801@buzzloop.caiaq.de> 
+	<n2mf17812d71005050045x4359dfeu2f563c3ac0a42223@mail.gmail.com> 
+	<20100505080015.GD30801@buzzloop.caiaq.de>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Wed, 5 May 2010 17:28:45 +0800
+Message-ID: <u2nf17812d71005050228x3c19060n9a096d7bcc1db4d6@mail.gmail.com>
+Subject: Re: [PATCH] colibri.h: Fix building for colibri 270...
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Jakob Viketoft <jakob.viketoft@bitsim.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 09:32:36 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, May 5, 2010 at 4:00 PM, Daniel Mack <daniel@caiaq.de> wrote:
+> On Wed, May 05, 2010 at 03:45:34PM +0800, Eric Miao wrote:
+>> On Fri, Apr 16, 2010 at 7:29 PM, Daniel Mack <daniel@caiaq.de> wrote:
+>> > On Fri, Apr 16, 2010 at 01:28:20PM +0200, Daniel Mack wrote:
+>> >> On Fri, Apr 16, 2010 at 01:25:49PM +0200, Jakob Viketoft wrote:
+>> >> > Adding a "#include <mach/mfp.h>" seem to cure this problem. If you
+>> >> > agree I can supply a new patch with the correct solution this time.
+>> >>
+>> >> Ok. Add it to colibri.h, and while at it, you can kick the ax88796.h
+>> >> inclusion. That's a leftover and isn't needed.
+>> >
+>> > And Cc: stable@kernel.org for the backmerge to 2.6.33.
+>> >
+>>
+>> Jakob, any update on this?
+>
+> Jakob provided an updated patch for this:
+>
+>  http://lkml.org/lkml/2010/4/16/100
+>
 
-On 05/05/2010 11:06 AM, Peter Zijlstra wrote:
->> Yeap, it's not the prettiest thing.  I thought about renaming all of
->> them so that they share the same postfix but then again I need a way
->> to tell the script which to enable which is the easiest with
->> specifying postfixes as macro argument.  Any better ideas?
-> 
-> Add more NOP functions for the missing bits I guess, but that gets
-> cumbersome too.
+Looks it didn't make into -stable. And I'm not able to find
+drivers/pcmcia/pxa2xx_colibri.c as well.
 
-Hmm... yeah, we'll need NOP functions for every missing hook.  Might
-as well just spell each one out.
-
->> Hmm... What overhead?
-> 
-> Well, the perf_{inc,dec}_nr_events() stuff, that's massively painful. If
-> that is the price to pay for using tracepoints then I'd rather not.
-
-Ah, okay, you mean the code complexity overhead.  Eh well, if you
-wanna do it on-demand, there's certain amount you need to pay.  As
-long as the runtime overhead on hotpath isn't increased, I don't think
-it's too bad tho.
-
-> Also, the whole magic dance to keep !CONFIG_TRACEPOINTS working doesn't
-> make the code any saner.
-
-Things would have been much prettier if PERF could simply depend on
-TRACEPOINTS.  More on this later.
-
-> Well, in the current code we get the call overhead, but all perf
-> functions bail on !nr_events. We could invert that and have an inline
-> function check nr_events and only then do the call.
-
-The thing is that unifying hooks not only saves the extra check now
-but also makes future optimizations much easier.  ie. Ingo was talking
-about run time patching TPs so that disabled ones just become noops.
-It's far better to have all the tracing stuff on single hooking
-mechanism for optimization efforts like that.
-
-> Right, recent Intel chips seem to do much better at IRQ disable than say
-> P4 and IA64, and poking at the PMU MSRs is way more painful, not sure
-> how it would balance out for PowerPC (or anything other) though.
-
-As I wrote above, here, the problem is mostly cosmetic.  It's just
-that kvm hook needs irq on while perf hook can save one irq flipping
-if called with irq off.  If we call them separately, there's no
-problem.  If we wanna colocate them, it makes sense to pull perf hook
-out of irq disabled section.  This one doesn't really make that much
-of a difference.
-
-> Well, I already utterly hate that x86 can't build with !
-> CONFIG_PERF_EVENTS, also requiring CONFIG_TRACEPOINTS is going the wrong
-> way.
-> 
-> I've always explicitly avoided depending on tracepoints, and I'd very
-> much like to keep it that way.
-
-I was wondering the other way around - ie. the possibility to make
-perf optional and maybe even as a module which depends on TPs, which
-would be nicer than the current situation and make the code less
-cluttered too.
-
-Thanks.
-
--- 
-tejun
+Daniel, any idea?
