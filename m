@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934556Ab0EEQIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 12:08:35 -0400
-Received: from mail-ew0-f222.google.com ([209.85.219.222]:35945 "EHLO
-	mail-ew0-f222.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932593Ab0EEQIe (ORCPT
+	id S934692Ab0EEQLa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 12:11:30 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54592 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934436Ab0EEQL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 12:08:34 -0400
-Message-ID: <4BE1973D.5040206@vflare.org>
-Date: Wed, 05 May 2010 21:35:17 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Wed, 5 May 2010 12:11:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/13] tty: make termios mutex nest under tty_lock
+Date: Wed, 5 May 2010 18:11:22 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+References: <1273012433-6125-1-git-send-email-arnd@arndb.de> <1273012433-6125-5-git-send-email-arnd@arndb.de>
+In-Reply-To: <1273012433-6125-5-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Greg KH <greg@kroah.com>, Minchan Kim <minchan.kim@gmail.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] ramzswap: Eliminate stale data in compressed memory
-References: <1273067156-2574-1-git-send-email-ngupta@vflare.org> <alpine.LFD.2.00.1005050809490.5478@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1005050809490.5478@i5.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005051811.22511.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX18vXef1aZ5hoIZcHxV84IIaxQBd3lUO4xLP1j6
+ xxQiwlpXcmey5IvebrG1OeLNaETF5X714/kqa87eKyk4MXgVmq
+ wA5OuJ+44N//ejTueE32A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2010 08:44 PM, Linus Torvalds wrote:
+On Wednesday 05 May 2010, Arnd Bergmann wrote:
+> Most of these are always called without the BTM held.
+> Annotate them so we know in the future which places
+> to look at. If we can change the code to never
+> get termios_mutex while holding the BTM, this
+> will solve all lock-order problems between the two.
 > 
+> tty_set_termios_ldisc and tty_reset_termios are currently
+> the only functions that always get termios_mutex while
+> already holding the BTM.
 > 
-> On Wed, 5 May 2010, Nitin Gupta wrote:
->>
->> ramzswap driver creates RAM based block devices which can be
->> used (only) as swap disks. Pages swapped to these disks are
->> compressed and stored in memory itself.
+> tty_throttle and tty_unthrottle are called from
+> receive_buf which in turn is called from a lot
+> of places. It needs more investigation to prove
+> that we never hold the BTM while calling these
+> two.
 > 
-> Ok, this patch series looks way better, if only because it looks less 
-> hacky.
-> 
-> That said, I absolutely _hate_ the f*cking notifier model that takes 
-> "type" flags. It's a disgrace. It's a horrible horrible model.
-> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-You mean you didn't like the 'swap type' value passed around by notifier
-calls, as here:
- "blocking_notifier_call_chain(&swapon_notify_list, type, swap_file);" ?
+Update: I have verified that this one is not needed
+at all, because we never take the BTM/BKL while holding
+termios_mutex. This is very helpful and will significantly
+simplify things towards the end.
 
-> I'd much rather bind a nice "swap_operations" structure to the device, and 
-> have that structure have function pointers for the different operations. 
-> No stupid "operation type codes". Real, honest-to-goodness function 
-> pointers.
-> 
+With this patch removed, my patch 13 (ldisc_mutex cleanup)
+can potentially be applied again, I still need to check
+some corner cases with line disciplines calling
+tty_driver_flush_buffer and with v253_open calling tty->ops-write
+under BTM+ldisc_mutex.
 
-I think such 'swap_operations' structure will be have to be part of
-block_device_operations, so we may access it from swap_entry_free()
-where a swap slot is freed. This will also get rid of all this notifier
-stuff.
+If no tty driver ever takes or releases the BTM/BKL in
+their flush_buffer or write functions, things should be
+fine.
 
-The patch you nacked did something similar: it add 'swap_slot_free_callback'
-directly to block_device_operations. Without such change, I could not think
-of any way to do away with notifiers.
-
-
-> The notifier layer is a total piece of sh*t. I'm sorry I ever merged it, 
-> and I'm _doubly_ sorry that it's use is so horribly widespread. It's a 
-> mistake.
-
-Thanks,
-Nitin
+	Arnd
