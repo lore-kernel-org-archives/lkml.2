@@ -1,70 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760539Ab0EECiF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 22:38:05 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53235 "EHLO smtps.tip.net.au"
+	id S933729Ab0EECl6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 22:41:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:5129 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757639Ab0EECiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 22:38:01 -0400
-Date: Wed, 5 May 2010 12:37:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tobias Klauser <tklauser@distanz.ch>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the staging tree
-Message-Id: <20100505123754.16228b09.sfr@canb.auug.org.au>
-In-Reply-To: <20100503161721.GW9489@distanz.ch>
-References: <20100427141224.834a102a.sfr@canb.auug.org.au>
-	<20100427151305.GA7653@kroah.com>
-	<20100428161425.eff4c40a.sfr@canb.auug.org.au>
-	<20100428152809.GF4483@kroah.com>
-	<20100503161721.GW9489@distanz.ch>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__5_May_2010_12_37_54_+1000_cfE+PyVs=l420vaY"
+	id S1757639Ab0EECl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 22:41:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,330,1270450800"; 
+   d="scan'208";a="564202360"
+From: Shane Wang <shane.wang@intel.com>
+To: avi@redhat.com, hpa@zytor.com, mingo@elte.hu, joseph.cihula@intel.com
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: [PATCH][RESEND] intel_txt: enable SMX flag for VMXON in KVM
+Date: Wed,  5 May 2010 06:38:22 -0400
+Message-Id: <1273055902-6923-1-git-send-email-shane.wang@intel.com>
+X-Mailer: git-send-email 1.6.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_May_2010_12_37_54_+1000_cfE+PyVs=l420vaY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Per Intel SDM 3B 20.7, for IA32_FEATURE_CONTROL MSR
+Bit 1 enables VMXON in SMX operation. If the bit is clear, execution of VMXON in SMX operation causes a general-protection exception.
+Bit 2 enables VMXON outside SMX operation. If the bit is clear, execution of VMXON outside SMX operation causes a general-protection exception.
 
-Hi Tobias,
+This patch is to check the correct in/outside-SMX flag when detecting if VMX is disabled by BIOS, and to set in-SMX flag for VMXON after Intel TXT is launched in KVM.
 
-On Mon, 3 May 2010 18:17:21 +0200 Tobias Klauser <tklauser@distanz.ch> wrot=
-e:
->
-> I just built the current linux-next (20100503) with the patches applied
-> (including Greg's Kconfig change) on x86_64 with allmodconfig and wasn't
-> able to reproduce the build failure.
->=20
-> Any pointers on how to reproduce and/or fix this would be appreciated.
+Signed-off-by: Shane Wang <shane.wang@intel.com>
+---
+ arch/x86/include/asm/msr-index.h |    5 ++--
+ arch/x86/kernel/tboot.c          |    1
+ arch/x86/kvm/vmx.c               |   30 ++++++++++++++++++-----------
+ include/linux/tboot.h            |    1
+ 4 files changed, 24 insertions(+), 13 deletions(-)
 
-Of course, if you force this driver to be built in (as Greg's Kconfig
-change presumably did), then you won't get these errors.
-
-The real solution is that SERIAL_ALTERA_JTAGUART_CONSOLE needs to depend
-on SERIAL_ALTERA_JTAGUART=3Dy (instead of just SERIAL_ALTERA_JTAGUART) and
-similarly for the other.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__5_May_2010_12_37_54_+1000_cfE+PyVs=l420vaY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvg2gIACgkQjjKRsyhoI8xuZACggL0kNbcfTjM6xq05vd8WftRZ
-53EAn1IZhqnqnGOeAhT4PFc3P1M+y5wn
-=zB5Z
------END PGP SIGNATURE-----
-
---Signature=_Wed__5_May_2010_12_37_54_+1000_cfE+PyVs=l420vaY--
+diff -r a96602743dbd arch/x86/include/asm/msr-index.h
+--- a/arch/x86/include/asm/msr-index.h	Thu Apr 29 11:49:08 2010 -0400
++++ b/arch/x86/include/asm/msr-index.h	Wed May 05 06:28:36 2010 -0400
+@@ -202,8 +202,9 @@
+ #define MSR_IA32_EBL_CR_POWERON		0x0000002a
+ #define MSR_IA32_FEATURE_CONTROL        0x0000003a
+ 
+-#define FEATURE_CONTROL_LOCKED		(1<<0)
+-#define FEATURE_CONTROL_VMXON_ENABLED	(1<<2)
++#define FEATURE_CONTROL_LOCKED				(1<<0)
++#define FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX	(1<<1)
++#define FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX	(1<<2)
+ 
+ #define MSR_IA32_APICBASE		0x0000001b
+ #define MSR_IA32_APICBASE_BSP		(1<<8)
+diff -r a96602743dbd arch/x86/kernel/tboot.c
+--- a/arch/x86/kernel/tboot.c	Thu Apr 29 11:49:08 2010 -0400
++++ b/arch/x86/kernel/tboot.c	Wed May 05 06:28:36 2010 -0400
+@@ -46,6 +46,7 @@
+ 
+ /* Global pointer to shared data; NULL means no measured launch. */
+ struct tboot *tboot __read_mostly;
++EXPORT_SYMBOL(tboot);
+ 
+ /* timeout for APs (in secs) to enter wait-for-SIPI state during shutdown */
+ #define AP_WAIT_TIMEOUT		1
+diff -r a96602743dbd arch/x86/kvm/vmx.c
+--- a/arch/x86/kvm/vmx.c	Thu Apr 29 11:49:08 2010 -0400
++++ b/arch/x86/kvm/vmx.c	Wed May 05 06:28:36 2010 -0400
+@@ -27,6 +27,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/ftrace_event.h>
+ #include <linux/slab.h>
++#include <linux/tboot.h>
+ #include "kvm_cache_regs.h"
+ #include "x86.h"
+ 
+@@ -1176,9 +1177,14 @@ static __init int vmx_disabled_by_bios(v
+ 	u64 msr;
+ 
+ 	rdmsrl(MSR_IA32_FEATURE_CONTROL, msr);
+-	return (msr & (FEATURE_CONTROL_LOCKED |
+-		       FEATURE_CONTROL_VMXON_ENABLED))
+-	    == FEATURE_CONTROL_LOCKED;
++	if (msr & FEATURE_CONTROL_LOCKED) {
++		if (!(msr & tboot_enabled()
++			? FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX
++			: FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX))
++			return 1;
++	}
++
++	return 0;
+ 	/* locked but not enabled */
+ }
+ 
+@@ -1186,21 +1192,23 @@ static int hardware_enable(void *garbage
+ {
+ 	int cpu = raw_smp_processor_id();
+ 	u64 phys_addr = __pa(per_cpu(vmxarea, cpu));
+-	u64 old;
++	u64 old, test_bits;
+ 
+ 	if (read_cr4() & X86_CR4_VMXE)
+ 		return -EBUSY;
+ 
+ 	INIT_LIST_HEAD(&per_cpu(vcpus_on_cpu, cpu));
+ 	rdmsrl(MSR_IA32_FEATURE_CONTROL, old);
+-	if ((old & (FEATURE_CONTROL_LOCKED |
+-		    FEATURE_CONTROL_VMXON_ENABLED))
+-	    != (FEATURE_CONTROL_LOCKED |
+-		FEATURE_CONTROL_VMXON_ENABLED))
++
++	test_bits = FEATURE_CONTROL_LOCKED;
++	test_bits |= FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX;
++	if (tboot_enabled())
++		test_bits |= FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX;
++
++	if ((old & test_bits) != test_bits) {
+ 		/* enable and lock */
+-		wrmsrl(MSR_IA32_FEATURE_CONTROL, old |
+-		       FEATURE_CONTROL_LOCKED |
+-		       FEATURE_CONTROL_VMXON_ENABLED);
++		wrmsrl(MSR_IA32_FEATURE_CONTROL, old | test_bits);
++	}
+ 	write_cr4(read_cr4() | X86_CR4_VMXE); /* FIXME: not cpu hotplug safe */
+ 	asm volatile (ASM_VMX_VMXON_RAX
+ 		      : : "a"(&phys_addr), "m"(phys_addr)
+diff -r a96602743dbd include/linux/tboot.h
+--- a/include/linux/tboot.h	Thu Apr 29 11:49:08 2010 -0400
++++ b/include/linux/tboot.h	Wed May 05 06:28:36 2010 -0400
+@@ -150,6 +150,7 @@ extern int tboot_force_iommu(void);
+ 
+ #else
+ 
++#define tboot_enabled()			0
+ #define tboot_probe()			do { } while (0)
+ #define tboot_shutdown(shutdown_type)	do { } while (0)
+ #define tboot_sleep(sleep_state, pm1a_control, pm1b_control)	\
