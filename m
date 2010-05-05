@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab0EEH0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 03:26:11 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:54349 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab0EEH0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 03:26:09 -0400
-Subject: Re: [PULL] param sysfs oops (simple, leaky) fix, bool arrays fix
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-       Sitsofe Wheeler <sitsofe@yahoo.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>
-In-Reply-To: <201005051503.42289.rusty@rustcorp.com.au>
-References: <200910290902.13724.rusty@rustcorp.com.au>
-	 <201005041154.24658.rusty@rustcorp.com.au>
-	 <1272996439.2458.0.camel@localhost.localdomain>
-	 <201005051503.42289.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 May 2010 10:25:14 +0300
-Message-ID: <1273044314.3702.98.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 05 May 2010 07:25:33.0330 (UTC) FILETIME=[25F56F20:01CAEC24]
-X-Nokia-AV: Clean
+	id S932853Ab0EEH30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 03:29:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38905 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755446Ab0EEH3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 03:29:25 -0400
+Message-ID: <4BE11E29.6040106@kernel.org>
+Date: Wed, 05 May 2010 09:28:41 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org,
+       Dipankar Sarma <dipankar@in.ibm.com>,
+       Josh Triplett <josh@freedesktop.org>, Oleg Nesterov <oleg@redhat.com>,
+       Dimitri Sivanich <sivanich@sgi.com>
+Subject: Re: [PATCH 3/4] scheduler: replace migration_thread with cpu_stop
+References: <1272980864-27235-1-git-send-email-tj@kernel.org> <1272980864-27235-4-git-send-email-tj@kernel.org> <20100505013351.GN2639@linux.vnet.ibm.com>
+In-Reply-To: <20100505013351.GN2639@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 07:28:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-05 at 15:03 +0930, Rusty Russell wrote:
-> On Wed, 5 May 2010 03:37:19 am Artem Bityutskiy wrote:
-> > On Tue, 2010-05-04 at 11:53 +0930, Rusty Russell wrote:
-> > > On Tue, 27 Apr 2010 08:23:24 pm Artem Bityutskiy wrote:
-> > > > Rusty, correct me if I'm wrong, but it looks like the above memleak was
-> > > > introduced by e180a6b7759a99a28cbcce3547c4c80822cb6c2a, where you added
-> > > > the kstrdup(). So you kinda fixed the sysfs case (it still memleaks
-> > > > though), but at the cost of additional insmod/rmmod leak, right?
-> > > 
-> > > Yep!
-> > 
-> > Are you working/planning to work on fixing this regression?
-> 
-> I'm still ambivalent on it; I have patches but it's a lot of churn for not
-> much gain.
-> 
-> To fix this, we need a way to lock parameters against changing by sysfs, and
-> we need to use it everywhere.  Past experience has demonstrated that this will
-> never be maintained.  
-> 
-> On the other hand, the leak is trivial.
+Hello,
 
-Well, I am not very concerned with the "changing by sysfs" leak. This is
-not a big deal, IMHO. I am concerned with the "rmmod" leak, which did
-not exist before your patches, but exists now. People may do a lot of
-insmod/rmmod, and on each rmmod they will loose this kstrdup-ed string. 
+On 05/05/2010 03:33 AM, Paul E. McKenney wrote:
+> o	Therefore, when CPU 0 queues the work for CPU 1, CPU 1
+> 	loops right around and processes it.  There will be no
+> 	context switch on CPU 1.
 
-I'll take a look at this tree, thank you.
+Yes, that can happen.
 
-> Here's a git tree if you want to look further:
+> 	At first glance, this looks safe because:
 > 
-> The following changes since commit 05ce7bfe547c9fa967d9cab6c37867a9cb6fb3fa:
->   Linus Torvalds (1):
->         Merge branch 'for_linus' of git://git.kernel.org/.../jack/linux-fs-2.6
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/rusty/linux-2.6-param-fixes.git master
+> 	1.	Although there is no context switch, there (presumably)
+> 		can be no RCU read-side critical sections on CPU 1 that
+> 		span this sequence of events.  (As far as I can see,
+> 		any such RCU read-side critical section would be due
+> 		to abuse of rcu_read_lock() and friends.)
 
-Just in case others will clone, the correct URL seems to be
+AFAICS, this must hold; otherwise, synchronize_sched_expedited()
+wouldn't have worked in the first place.  On entry to any cpu_stop
+function, there can be no RCU read-side critical section in progress.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-param-fixes.git master
+> 	2.	CPU 1 will acquire and release stopper->lock, and
+> 		further more will do an atomic_dec_and_test() in
+> 		cpu_stop_signal_done().  The former is a weak
+> 		guarantee, but the latter guarantees a memory
+> 		barrier, so that any subsequent code on CPU 1 will
+> 		be guaranteed to see changes on CPU 0 prior to the
+> 		call to synchronize_sched_expedited().
+> 
+> 		The guarantee required is that there will be a
+> 		full memory barrier on each affected CPU between
+> 		the time that try_stop_cpus() is called and the
+> 		time that it returns.
+
+Ah, right.  I think it would be dangerous to depend on the implicit
+barriers there.  It might work today but it can easily break with
+later implementation detail changes which seem completely unrelated.
+Adding smp_mb() in the cpu_stop function should suffice, right?  It's
+not like the cost of smp_mb() there would mean anything anyway.
+
+Thank you.
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+tejun
