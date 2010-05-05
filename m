@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934271Ab0EEJSM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 05:18:12 -0400
-Received: from relay2-v.mail.gandi.net ([217.70.178.76]:48005 "EHLO
-	relay2-v.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934178Ab0EEJSK (ORCPT
+	id S934282Ab0EEJS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 05:18:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60373 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934205Ab0EEJS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 05:18:10 -0400
-X-Originating-IP: 217.70.178.42
-X-Originating-IP: 82.8.179.104
-Subject: Re: [PATCH] Disable i8042 checks on Intel Apple Macs
-From: Bastien Nocera <hadess@hadess.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100504180247.GC29428@core.coreip.homeip.net>
-References: <1272994594.13354.215.camel@localhost.localdomain>
-	 <20100504180247.GC29428@core.coreip.homeip.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 05 May 2010 10:18:04 +0100
-Message-ID: <1273051084.13354.290.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.0.1 (2.30.0-3.fc13) 
+	Wed, 5 May 2010 05:18:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/13] tty: turn ldisc_mutex into a regular mutex
+Date: Wed, 5 May 2010 11:18:51 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+References: <1273012433-6125-1-git-send-email-arnd@arndb.de> <1273012433-6125-14-git-send-email-arnd@arndb.de>
+In-Reply-To: <1273012433-6125-14-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005051118.51479.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/HwONhqGzlQlyCpBkK/dTVfnYCbiy2C1B+1vt
+ 87gamG0TJb/uXAOqQicyK6UreXeCrOzdwOi5DQK/5oUQuXblMu
+ VgFzRAgf137SbxM4rlgaA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-04 at 11:02 -0700, Dmitry Torokhov wrote:
-> On Tue, May 04, 2010 at 06:36:34PM +0100, Bastien Nocera wrote:
-> > As those computers never had any i8042 controllers, and the
-> > current lookup code could potentially lock up/hang/wait for
-> > timeout for long periods of time.
-> > 
-> > Fixes intermittent hangs on boot on a MacbookAir1,1
-> > 
-> > Signed-off-by: Bastien Nocera <hadess@hadess.net>
-> > ---
-> >  drivers/input/serio/i8042.c |   18 ++++++++++++++++++
-> >  1 files changed, 18 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
-> > index d84a36e..2be7207 100644
-> > --- a/drivers/input/serio/i8042.c
-> > +++ b/drivers/input/serio/i8042.c
+On Wednesday 05 May 2010, Arnd Bergmann wrote:
+> This fixes the lock order of the BTM and
+> ldisc_mutex so that we never take the BTM
+> while holding ldisc_mutex, which means
+> we no longer have to use mutex_lock_tty
+> when getting ldisc_mutex.
 > 
-> This should go into i8042-x86ia64io.h and used to create PNP whitelist.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Sorry, I don't understand what needs to be done here.
+Ignore this one, I just realized that we're releasing
+and reacquiring the BTM in tty_ldisc_halt,
+tty_set_termios_ldisc and possibly others.
 
+This patch needs more work to make that possible.
+
+	Arnd
