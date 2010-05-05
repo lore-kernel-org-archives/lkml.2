@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab0EEXtG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 19:49:06 -0400
-Received: from kroah.org ([198.145.64.141]:60478 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752324Ab0EEXtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 19:49:03 -0400
-Subject: patch usb-gadget-webcam-depends-on-video_dev.patch added to gregkh-2.6 tree
-To: randy.dunlap@oracle.com, dbrownell@users.sourceforge.net, gregkh@suse.de,
-       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-       sfr@canb.auug.org.au
-From: <gregkh@suse.de>
-Date: Wed, 05 May 2010 16:48:22 -0700
-In-Reply-To: <20100505154626.2c036f1d.randy.dunlap@oracle.com>
-Message-ID: <12731033021951@kroah.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ANSI_X3.4-1968
-Content-Transfer-Encoding: 8bit
+	id S1755625Ab0EEXua (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 19:50:30 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48151 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752324Ab0EEXu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 19:50:28 -0400
+Date: Thu, 6 May 2010 00:55:57 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       devel@driverdev.osuosl.org
+Subject: Re: [PATCH -next] staging/rar_register: depends on PCI
+Message-ID: <20100506005557.7d458c7b@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100505154522.c3d7807c.randy.dunlap@oracle.com>
+References: <20100505123409.ed5678a2.sfr@canb.auug.org.au>
+	<20100505154522.c3d7807c.randy.dunlap@oracle.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 5 May 2010 15:45:22 -0700
+Randy Dunlap <randy.dunlap@oracle.com> wrote:
 
-This is a note to let you know that I've just added the patch titled
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> rar_register driver uses PCI interfaces and PCI devices, so it
+> should depend on PCI.
+> 
+> Also format the Kconfig help text as normally done.
+> 
+> drivers/staging/rar_register/rar_register.c:623: error: implicit declaration of function 'pci_dev_get'
+> drivers/staging/rar_register/rar_register.c:623: warning: assignment makes pointer from integer without a cast
+> 
+> Note:  The memrar driver selects this driver's Kconfig symbol, even when
+> PCI is not enabled.  That select could be changed to
+> 	select RAR_REGISTER if PCI
+> but that would still result in build errors when PCI is not enabled, namely:
+> drivers/built-in.o: In function `memrar_fini_rar_resources':
+> memrar_handler.c:(.text+0x2391b7): undefined reference to `unregister_rar'
+> drivers/built-in.o: In function `memrar_registration_callback':
+> memrar_handler.c:(.text+0x23925a): undefined reference to `rar_get_address'
+> drivers/built-in.o: In function `memrar_init':
+> memrar_handler.c:(.init.text+0x12c7b): undefined reference to `register_rar'
+> memrar_handler.c:(.init.text+0x12c97): undefined reference to `register_rar'
+> 
+> Does anyone have suggestions for this?
 
-    Subject: USB: gadget webcam: depends on VIDEO_DEV
+Yes - memrar should depend upon the RAR_REGISTER
 
-to my gregkh-2.6 tree.  Its filename is
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-    usb-gadget-webcam-depends-on-video_dev.patch
-
-This tree can be found at 
-    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
-
-
->From randy.dunlap@oracle.com  Wed May  5 16:12:11 2010
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Wed, 5 May 2010 15:46:26 -0700
-Subject: USB: gadget webcam: depends on VIDEO_DEV
-To: Stephen Rothwell <sfr@canb.auug.org.au>, lud <linux-usb@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de
-Message-ID: <20100505154626.2c036f1d.randy.dunlap@oracle.com>
-
-From: Randy Dunlap <randy.dunlap@oracle.com>
-
-g_webcam uses v4l[2] interfaces, so it should depend on VIDEO_DEV.
-
-ERROR: "v4l2_event_unsubscribe" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "v4l2_event_queue" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "video_device_release" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "video_usercopy" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "v4l2_event_dequeue" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "video_register_device" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "video_device_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "v4l2_event_subscribe" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "video_unregister_device" [drivers/usb/gadget/g_webcam.ko] ndefined!
-ERROR: "v4l2_event_pending" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "v4l2_fh_init" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "v4l2_event_init" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "video_devdata" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "v4l2_event_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "v4l2_fh_add" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "v4l2_fh_del" [drivers/usb/gadget/g_webcam.ko] undefined!
-ERROR: "v4l2_fh_exit" [drivers/usb/gadget/g_webcam.ko] undefined!
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/gadget/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -879,6 +879,7 @@ config USB_G_HID
- # or video class gadget drivers), or specific hardware, here.
- config USB_G_WEBCAM
- 	tristate "USB Webcam Gadget"
-+	depends on VIDEO_DEV
- 	help
- 	  The Webcam Gadget acts as a composite USB Audio and Video Class
- 	  device. It provides a userspace API to process UVC control requests
-
+Acked-by: Alan Cox <alan@linux.intel.com>
