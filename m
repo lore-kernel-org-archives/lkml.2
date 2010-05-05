@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab0EERbZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 13:31:25 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:47287 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab0EERbW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 13:31:22 -0400
-Date: Wed, 5 May 2010 13:31:20 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: pv-drivers@vmware.com, Christoph Hellwig <hch@infradead.org>,
-       Pankaj Thakkar <pthakkar@vmware.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
-Message-ID: <20100505173120.GA1752@infradead.org>
-References: <20100504230225.GP8323@vmware.com> <20100505172316.GA25338@infradead.org> <201005051029.42052.dtor@vmware.com>
+	id S1754478Ab0EERcb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 13:32:31 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:38950 "EHLO mail.issp.bas.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753338Ab0EERc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 13:32:28 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+Organization: Institute of Solid State Physics
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: linux-next: Tree for May 4 (staging/dt3155v4l) [PATCH]
+Date: Wed, 5 May 2010 20:31:38 +0300
+User-Agent: KMail/1.11.4 (Linux/2.6.34-rc6; KDE/4.2.4; x86_64; ; )
+Cc: Greg KH <gregkh@suse.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
+       devel@driverdev.osuosl.org, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>
+References: <20100504162305.4a07a18a.sfr@canb.auug.org.au> <20100504191223.GB13208@suse.de> <4BE07890.8060707@oracle.com>
+In-Reply-To: <4BE07890.8060707@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <201005051029.42052.dtor@vmware.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Message-Id: <201005052031.39043.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 10:29:40AM -0700, Dmitry Torokhov wrote:
-> > We're not going to add any kind of loader for binry blobs into kernel
-> > space, sorry.  Don't even bother wasting your time on this.
+On Tuesday 04 May 2010 10:42:08 pm Randy Dunlap wrote:
+> On 05/04/10 12:12, Greg KH wrote:
+> > On Tue, May 04, 2010 at 11:36:04AM -0700, Randy Dunlap wrote:
+> >> On Tue, 4 May 2010 16:23:05 +1000 Stephen Rothwell wrote:
+> >>
+> >>> Hi all,
+> >>>
+> >>> Changes since 20100503:
+> >>
+> >>
+> >> drivers/staging/dt3155v4l/dt3155v4l.c:73: error: implicit declaration of function 'udelay'
+> >> drivers/staging/dt3155v4l/dt3155v4l.c:616: warning: assignment from incompatible pointer type
+> >> drivers/staging/dt3155v4l/dt3155v4l.c:1270: error: implicit declaration of function 'msleep'
 > > 
+> > Ick.  What arch was this?
 > 
-> It would not be a binary blob but software properly released under GPL.
-> The current plan is for the shell to enforce GPL requirement on the
-> plugin code, similar to what module loaded does for regular kernel
-> modules.
+> That is on x86_64.
+> 
+> The config is attached.
+> 
+It's my fault, sorry.
 
-The mechanism described in the document is loading a binary blob
-coded to an abstract API.
+Here is a patch solving the problem. Compiles with Randy's config, but does not link
 
-That's something entirely different from having normal modules for
-the Virtual Functions, which we already have for various pieces of
-hardware anyway.
+drivers/staging/built-in.o: In function `format_by_fourcc':
+(.text+0x211da): multiple definition of `format_by_fourcc'
+drivers/media/built-in.o:(.text+0x2a744): first defined here
+
+drivers/media/common/saa7146_video.c:struct saa7146_format* format_by_fourcc(struct saa7146_dev *dev, int fourcc)
+drivers/staging/cx25821/cx25821-video.c:struct cx25821_fmt *format_by_fourcc(unsigned int fourcc)
+
+Marin MItov
+
+=========================================
+
+[PATCH] Adding the missing linux/delay.h
+
+The prototypes of udelay() and msleep() are in linux/delay.h,
+so include it.
+
+Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
+
+==========================================================================
+--- a/drivers/staging/dt3155v4l/dt3155v4l.c	2010-05-05 08:55:30.000000000 +0300
++++ b/drivers/staging/dt3155v4l/dt3155v4l.c	2010-05-05 08:57:00.000000000 +0300
+@@ -4,6 +4,7 @@
+ #include <linux/pci.h>
+ #include <linux/version.h>
+ #include <linux/stringify.h>
++#include <linux/delay.h>
+ #include <media/videobuf-dma-contig.h>
+ #include <linux/kthread.h>
+ 
