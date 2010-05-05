@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab0EEUJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 16:09:58 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43602 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755557Ab0EEUJx (ORCPT
+	id S1757971Ab0EEUKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 16:10:34 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:52002 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757481Ab0EEUKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 16:09:53 -0400
-Date: Wed, 5 May 2010 21:09:41 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100505200940.GD11441@sirena.org.uk>
-References: <20100505185225.GA4411@srcf.ucam.org> <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org> <20100505192208.GB5085@srcf.ucam.org> <20100505195249.GC11441@sirena.org.uk> <20100505200243.GA6266@srcf.ucam.org>
+	Wed, 5 May 2010 16:10:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
+Date: Wed, 5 May 2010 22:09:48 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.34-rc6-00090-g1509e54-dirty; KDE/4.4.2; x86_64; ; )
+Cc: Pankaj Thakkar <pthakkar@vmware.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       Dmitry Torokhov <dtor@vmware.com>,
+       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20100504230225.GP8323@vmware.com> <20100505173951.GA8388@infradead.org> <F1354E79A137A24CBA60059AA65CB1B802A235C535@EXCH-MBX-2.vmware.com>
+In-Reply-To: <F1354E79A137A24CBA60059AA65CB1B802A235C535@EXCH-MBX-2.vmware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100505200243.GA6266@srcf.ucam.org>
-X-Cookie: Do not overtax your powers.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005052209.48465.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/g/M07hXck1W3jXBlXWHfFiOUpDVk/2yuubUN
+ mtSh4JcgI3K0o2/mnmiGoXqMYznzexO7OoPZk5MfEEKXtCb2hk
+ Rq71Gq/TFOgJ00qEObN9A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 09:02:43PM +0100, Matthew Garrett wrote:
+On Wednesday 05 May 2010 19:47:10 Pankaj Thakkar wrote:
+> > 
+> > Forget about the licensing.  Loading binary blobs written to a shim
+> > layer is a complete pain in the ass and totally unsupportable, and
+> > also uninteresting because of the overhead.
+> 
+> [PT] Why do you think it is unsupportable? How different is it from any module
+> written against a well maintained interface? What overhead are you talking about?
 
-> One thing that's been mentioned before is that some vendors can swap the 
-> kernel much more easily than they can swap userspace, with the added 
-> constraint that they have little control over the bootloader. So if 
-> there's a userspace interface, it may well also be helpful to provide a 
-> kernel hook to allow the platform setup code to configure things. But 
+We have the right number of module loaders in the kernel: one. If you
+add another one, you're doubling the amount of code that anyone
+working on that code needs to know about.
+ 
+> > If you have any interesting in developing this further, do:
+> > 
+> >  (1) move the limited VF drivers directly into the kernel tree,
+> >      talk to them through a normal ops vector
+> [PT] This assumes that all the VF drivers would always be available.
+> Also we have to support windows and our current design supports it
+> nicely in an OS agnostic manner.
 
-Oh, there's definitely going to be a platform-specific hook to configure
-things.  The platform needs to specify how the devices that make up the
-audio subsystem are interconnected on the board, and that's done in
-kernel since it depends on the hardware and can potentially lead to
-physical damage if done incorrectly.
+Your approach assumes that the plugin is always available, which has
+exactly the same implications.
 
-> otherwise, I think that'd work for audio - the only question is whether 
-> we need it to be more generic.
+> >  (2) get rid of the whole shim crap and instead integrate the limited
+> >      VF driver with the full VF driver we already have, instead of
+> >      duplicating the code
+> [PT] Having a full VF driver adds a lot of dependency on the guest VM
+> and this is what NPA tries to avoid.
 
-Agreed.
+If you have the limited driver for some hardware that does not have
+the real thing, we could still ship just that. I would however guess
+that most vendors are interested in not just running in vmware but
+also other hypervisors that still require the full driver, so that
+case would be rare, especially in the long run.
+
+	Arnd
