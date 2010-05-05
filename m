@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab0EESSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 14:18:07 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:39081 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757724Ab0EESRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 14:17:47 -0400
-Date: Wed, 5 May 2010 19:17:28 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
-	the wrong VMA information
-Message-ID: <20100505181728.GW20979@csn.ul.ie>
-References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie> <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org> <20100505145620.GP20979@csn.ul.ie> <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org> <20100505175311.GU20979@csn.ul.ie> <alpine.LFD.2.00.1005051058380.27218@i5.linux-foundation.org>
+	id S1757713Ab0EESaI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 14:30:08 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33519 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757258Ab0EESaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 14:30:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=sb6f8cdZHvGV50U9dwLXp84FxJM2uEVK4G+5I5awKcbuH2WVwn4n08mubvHL10Dawp
+         406SjaV17rohU60ywQgtPtVQlXdjTyHTlwALccolqxjmW6B/XD1k839DQWPOTvmLLwVB
+         QDdt0wvJM+y/lVzwLyxl3nimh1XK/BHX1fLZk=
+Date: Wed, 5 May 2010 20:30:02 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>, efault@gmx.de,
+       avi@redhat.com, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move
+	perf on top of TP
+Message-ID: <20100505183000.GF6320@nowhere>
+References: <4BE0FB68.7080403@kernel.org> <1273050400.1642.229.camel@laptop> <4BE13B33.3030709@kernel.org> <1273053073.1642.235.camel@laptop> <4BE1406C.2000400@kernel.org> <1273059488.1642.245.camel@laptop> <4BE1648B.1080709@kernel.org> <20100505165532.GC14323@elte.hu> <1273083173.1642.250.camel@laptop> <1273083396.1642.251.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005051058380.27218@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1273083396.1642.251.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 11:02:25AM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Wed, 5 May 2010, Mel Gorman wrote:
+On Wed, May 05, 2010 at 08:16:36PM +0200, Peter Zijlstra wrote:
+> On Wed, 2010-05-05 at 20:15 +0200, Peter Zijlstra wrote:
 > > 
-> > If the same_vma list is properly ordered then maybe something like the
-> > following is allowed?
+> > Well, I'd much rather just see a direct call in the code than having to
+> > reverse engineer wth hangs onto that _EVENT() junk.
 > 
-> Heh. This is the same logic I just sent out. However:
-> 
-> > +	anon_vma = page_rmapping(page);
-> > +	if (!anon_vma)
-> > +		return NULL;
-> > +
-> > +	spin_lock(&anon_vma->lock);
-> 
-> RCU should guarantee that this spin_lock() is valid, but:
-> 
-> > +	/*
-> > +	 * Get the oldest anon_vma on the list by depending on the ordering
-> > +	 * of the same_vma list setup by __page_set_anon_rmap
-> > +	 */
-> > +	avc = list_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
-> 
-> We're not guaranteed that the 'anon_vma->head' list is non-empty.
-> 
-> Somebody could have freed the list and the anon_vma and we have a stale 
-> 'page->anon_vma' (that has just not been _released_ yet). 
-> 
+> And again, I oppose mandating CONFIG_TRACEEVENT.
 
-Ahh, fair point. I asked in the other mail was the empty list check
-necessary - it is. Thanks
 
-> And shouldn't that be 'list_first_entry'? Or &anon_vma->head.next?
-> 
+And me too. But you don't need CONFIG_EVENT_TRACING for that.
+TRACE_EVENT() with !CONFIG_EVENT_TRACING only produces tracepoints
+if CONFIG_TRACEPOINTS.
 
-Should have been list_first_entry.
 
-> How did that line actually work for you? Or was it just a "it boots", but 
-> no actual testing of the rmap walk?
-> 
+In fact, a first progress that would handle these compromizes would
+be to have CONFIG_PERF_EVENT_SW.
 
-It's currently running a migration-related stress test without any
-deadlocks or lockdep wobbly so far.
+For now perf_event_task_sched_in and perf_event_task_sched_out can
+stay as is because they are perf core utils.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+But all the rest (faults, migrations, etc..) could be tracepoints builtin
+only if CONFIG_PERF_EVENT_SW.
+Which means CONFIG_PERF_EVENT_SW depends on CONFIG_TRACEPOINTS.
+
+But nobody is forced to build CONFIG_PERF_EVENT_SW, breakpoints don't need
+it.
+
