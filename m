@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760286Ab0EEOSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 10:18:15 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:62788 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760161Ab0EEOSO (ORCPT
+	id S1760314Ab0EEOTF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 10:19:05 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:45101
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1760161Ab0EEOTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 10:18:14 -0400
-Subject: Re: [PATCH v3] mtd: Do not corrupt backing device of device node
- inode
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: David Woodhouse <dwmw2@infradead.org>, Jan Kara <jack@suse.cz>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       David Howells <dhowells@redhat.com>,
-       Alexander Shishkin <virtuoso@slind.org>, linux-mtd@lists.infradead.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1273047688-20947-1-git-send-email-kirill@shutemov.name>
-References: <1273047688-20947-1-git-send-email-kirill@shutemov.name>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 May 2010 17:17:19 +0300
-Message-ID: <1273069039.3702.188.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 05 May 2010 14:17:47.0663 (UTC) FILETIME=[BCC521F0:01CAEC5D]
-X-Nokia-AV: Clean
+	Wed, 5 May 2010 10:19:01 -0400
+X-SpamScore: -4
+X-BigFish: VPS-4(zz936eMab9bhzz1202hzz6ff19hz32i2a8h87h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L1Y9S1-01-1SQ-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+       Joerg Roedel <joerg.roedel@amd.com>,
+       Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+       <stable@kernel.org>
+Subject: [PATCH 3/5] KVM: SVM: Fix wrong intercept masks on 32 bit
+Date: Wed, 5 May 2010 16:04:43 +0200
+Message-ID: <1273068285-3105-4-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1273068285-3105-1-git-send-email-joerg.roedel@amd.com>
+References: <1273068285-3105-1-git-send-email-joerg.roedel@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-05 at 11:21 +0300, Kirill A. Shutemov wrote:
-> We cannot modify file->f_mapping->backing_dev_info, because it will corrupt
-> backing device of device node inode, since file->f_mapping is equal to
-> inode->i_mapping (see __dentry_open() in fs/open.c).
-> 
-> Let's introduce separate inode for MTD device with appropriate backing
-> device.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> Acked-by: Jan Kara <jack@suse.cz>
+This patch makes KVM on 32 bit SVM working again by
+correcting the masks used for iret interception. With the
+wrong masks the upper 32 bits of the intercepts are masked
+out which leaves vmrun unintercepted. This is not legal on
+svm and the vmrun fails.
+Bug was introduced by commits 95ba827313 and 3cfc3092.
 
-I get the following build error:
+Cc: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: stable@kernel.org
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/kvm/svm.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-[dedekind@eru l2-mtd-2.6]$ make -j8
-O=/home/dedekind/tmp/l2-mtd-2.6-x86_64/
-  GEN     /home/dedekind/tmp/l2-mtd-2.6-x86_64/Makefile
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  Using /home/dedekind/git/l2-mtd-2.6 as source for kernel
-  CALL    /home/dedekind/git/l2-mtd-2.6/scripts/checksyscalls.sh
-  CHK     include/generated/compile.h
-  CHK     include/linux/version.h
-make[3]: `scripts/unifdef' is up to date.
-  Building modules, stage 2.
-Kernel: arch/x86/boot/bzImage is ready  (#2)
-  MODPOST 146 modules
-ERROR: "__iget" [drivers/mtd/mtdchar.ko] undefined!
-ERROR: "inode_lock" [drivers/mtd/mtdchar.ko] undefined!
-make[2]: *** [__modpost] Error 1
-make[1]: *** [modules] Error 2
-make: *** [sub-make] Error 2
-
-__iget and inode_lock are not exported...
-
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 0201b06..74f7b9d 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -2290,7 +2290,7 @@ static int cpuid_interception(struct vcpu_svm *svm)
+ static int iret_interception(struct vcpu_svm *svm)
+ {
+ 	++svm->vcpu.stat.nmi_window_exits;
+-	svm->vmcb->control.intercept &= ~(1UL << INTERCEPT_IRET);
++	svm->vmcb->control.intercept &= ~(1ULL << INTERCEPT_IRET);
+ 	svm->vcpu.arch.hflags |= HF_IRET_MASK;
+ 	return 1;
+ }
+@@ -2824,7 +2824,7 @@ static void svm_inject_nmi(struct kvm_vcpu *vcpu)
+ 
+ 	svm->vmcb->control.event_inj = SVM_EVTINJ_VALID | SVM_EVTINJ_TYPE_NMI;
+ 	vcpu->arch.hflags |= HF_NMI_MASK;
+-	svm->vmcb->control.intercept |= (1UL << INTERCEPT_IRET);
++	svm->vmcb->control.intercept |= (1ULL << INTERCEPT_IRET);
+ 	++vcpu->stat.nmi_injections;
+ }
+ 
+@@ -2891,10 +2891,10 @@ static void svm_set_nmi_mask(struct kvm_vcpu *vcpu, bool masked)
+ 
+ 	if (masked) {
+ 		svm->vcpu.arch.hflags |= HF_NMI_MASK;
+-		svm->vmcb->control.intercept |= (1UL << INTERCEPT_IRET);
++		svm->vmcb->control.intercept |= (1ULL << INTERCEPT_IRET);
+ 	} else {
+ 		svm->vcpu.arch.hflags &= ~HF_NMI_MASK;
+-		svm->vmcb->control.intercept &= ~(1UL << INTERCEPT_IRET);
++		svm->vmcb->control.intercept &= ~(1ULL << INTERCEPT_IRET);
+ 	}
+ }
+ 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+1.7.1
+
 
