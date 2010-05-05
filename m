@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab0EEUPp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 16:15:45 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33069 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062Ab0EEUPm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 16:15:42 -0400
-Date: Wed, 5 May 2010 21:15:36 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Matthew Garrett <mjg@redhat.com>, Brian Swetland <swetland@google.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100505201536.GE11441@sirena.org.uk>
-References: <20100505192811.GA5468@srcf.ucam.org> <Pine.LNX.4.44L0.1005051554490.1885-100000@iolanthe.rowland.org>
+	id S1757759Ab0EEURK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 16:17:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47428 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755812Ab0EEURE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 16:17:04 -0400
+Date: Wed, 5 May 2010 22:16:35 +0200 (CEST)
+From: John Kacur <jkacur@redhat.com>
+X-X-Sender: jkacur@localhost.localdomain
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+cc: lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 3/6] fat: BKL ioctl pushdown
+In-Reply-To: <87wrvitd5c.fsf@devron.myhome.or.jp>
+Message-ID: <alpine.LFD.2.00.1005052139010.6285@localhost.localdomain>
+References: <1273065339-21669-1-git-send-email-jkacur@redhat.com> <1273065339-21669-4-git-send-email-jkacur@redhat.com> <8739y6xrl6.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1005051927210.6285@localhost.localdomain> <87wrvitd5c.fsf@devron.myhome.or.jp>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1005051554490.1885-100000@iolanthe.rowland.org>
-X-Cookie: Do not overtax your powers.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 04:04:00PM -0400, Alan Stern wrote:
 
-> P.S.: What happens if a suspend occurs while a call is in progress, so
-> the codec is left powered up, and then the call ends?  Does the system
-> wake up at that point?  Or does it stay suspended with the codec still
-> powered, even though it's not needed any more?
 
-Call end will be a system wake event in pretty much all systems,
-userspace will want to do some work when the call goes away anyway.
-Anyone who doesn't do that will see the CODEC stay powered, hopefully
-the baseband will send it a nice mute signal instead of popping.
+On Thu, 6 May 2010, OGAWA Hirofumi wrote:
+
+> John Kacur <jkacur@redhat.com> writes:
+> 
+> > On Thu, 6 May 2010, OGAWA Hirofumi wrote:
+> >
+> >> John Kacur <jkacur@redhat.com> writes:
+> >> 
+> >> > Convert fat_generic_ioctl and fat_dir_ioctl to unlocked_ioctls
+> >> > and push down the bkl into those functions.
+> >> 
+> >> I guess this is the part of batch ioctl conversion stuff though, those
+> >> ioctl of FAT don't need BKL at all. Because all of those should already
+> >> be protected by inode->i_mutex.
+> >> 
+> >> Removing BKL and then cleanup after this patch would be almost same with
+> >> reverting this patch. So, could you just convert to unlocked_ioctl
+> >> instead?
+> >
+> > That's probably not a good idea, without a little bit more analysis, 
+> > otherwise it's quite easy to introduce subtle bugs.
+> 
+> What analysis? Who do it? I thought about removing BKL of FAT from
+> several years ago. I was reviewing FAT multiple times, and I'm always
+> testing FAT without BKL.
+
+This patch just makes explicit the hidden BKLs that FAT is already using 
+related to ioctl. We would like to get this step done in time for the next
+merge window, because then we can remove that hidden source.
+
+This step is preparation for removing the BKL from the individual 
+functions we've pushed it down into. In other words, we'll do the analysis 
+to remove it later if you don't want to.
+
+Thanks.
+
+> 
+> If you are going to do, could you do it instead of this patch?
+> 
