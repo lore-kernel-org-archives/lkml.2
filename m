@@ -1,109 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934742Ab0EENLz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 09:11:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19847 "EHLO mx1.redhat.com"
+	id S934750Ab0EENOp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 09:14:45 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49931 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755113Ab0EENLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 09:11:54 -0400
-Date: Wed, 5 May 2010 15:11:12 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
+	id S1755177Ab0EENOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 09:14:43 -0400
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
        Minchan Kim <minchan.kim@gmail.com>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH] fix count_vm_event preempt in memory compaction direct
- reclaim
-Message-ID: <20100505131112.GB5835@random.random>
-References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
- <1271797276-31358-13-git-send-email-mel@csn.ul.ie>
- <20100505121908.GA5835@random.random>
- <20100505125156.GM20979@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100505125156.GM20979@csn.ul.ie>
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing the wrong VMA information
+Date: Wed,  5 May 2010 14:14:40 +0100
+Message-Id: <1273065281-13334-2-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1273065281-13334-1-git-send-email-mel@csn.ul.ie>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 01:51:56PM +0100, Mel Gorman wrote:
-> On Wed, May 05, 2010 at 02:19:08PM +0200, Andrea Arcangeli wrote:
-> > On Tue, Apr 20, 2010 at 10:01:14PM +0100, Mel Gorman wrote:
-> > > +		if (page) {
-> > > +			__count_vm_event(COMPACTSUCCESS);
-> > > +			return page;
-> > 
-> > ==
-> > From: Andrea Arcangeli <aarcange@redhat.com>
-> > 
-> > Preempt is enabled so it must use count_vm_event.
-> > 
-> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> 
-> Reviewed-by: Mel Gorman <mel@csn.ul.ie>
-> 
-> Andrew, this is a fix to the patch
-> mmcompaction-direct-compact-when-a-high-order-allocation-fails.patch
+vma_adjust() is updating anon VMA information without locks being taken.
+In contrast, file-backed mappings use the i_mmap_lock and this lack of
+locking can result in races with users of rmap_walk such as page migration.
+vma_address() can return -EFAULT for an address that will soon be valid.
+For migration, this potentially leaves a dangling migration PTE behind
+which can later cause a BUG_ON to trigger when the page is faulted in.
 
-for Andrew: I'll generate a trivial reject to the exponential backoff.
+With the recent anon_vma changes, there can be more than one anon_vma->lock
+to take in a anon_vma_chain but a second lock cannot be spinned upon in case
+of deadlock. The rmap walker tries to take locks of different anon_vma's
+but if the attempt fails, locks are released and the operation is restarted.
 
-> Thanks Andrea, well spotted.
+For vma_adjust(), the locking behaviour prior to the anon_vma is restored
+so that rmap_walk() can be sure of the integrity of the VMA information and
+lists when the anon_vma lock is held. With this patch, the vma->anon_vma->lock
+is taken if
 
-You're welcome.
+	a) If there is any overlap with the next VMA due to the adjustment
+	b) If there is a new VMA is being inserted into the address space
+	c) If the start of the VMA is being changed so that the
+	   relationship between vm_start and vm_pgoff is preserved
+	   for vma_address()
 
-I updated current aa.git origin/master and origin/anon_vma_chain
-branches (post THP-23*).
-
-There's also another patch I've in my tree that you didn't picked up
-and I wonder what's the issue here. This less a bugfix because it
-seems to only affect lockdep, I don't know why lockdep forbids to call
-migrate_prep with any lock held (in this case the mmap_sem). migrate.c
-is careful to comply with it, compaction.c isn't. It's not mandatory
-to succeed for compaction, so in doubt I just commented it out. It'll
-also decrease the IPI load so I wasn't very concerned to re-enable it.
-
------
-Subject: disable migrate_prep()
-
-From: Andrea Arcangeli <aarcange@redhat.com>
-
-I get trouble from lockdep if I leave it enabled:
-
-=======================================================
-[ INFO: possible circular locking dependency detected ]
-2.6.34-rc3 #50
--------------------------------------------------------
-largepages/4965 is trying to acquire lock:
- (events){+.+.+.}, at: [<ffffffff8105b788>] flush_work+0x38/0x130
-
- but task is already holding lock:
-  (&mm->mmap_sem){++++++}, at: [<ffffffff8141b022>] do_page_fault+0xd2/0x430
-
-
-flush_work apparently wants to run free from lock and it bugs in:
-
-	lock_map_acquire(&cwq->wq->lockdep_map);
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 ---
+ mm/ksm.c  |   22 ++++++++++++++++++++--
+ mm/mmap.c |    9 +++++++++
+ mm/rmap.c |   28 +++++++++++++++++++++++-----
+ 3 files changed, 52 insertions(+), 7 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -383,7 +383,9 @@ static int compact_zone(struct zone *zon
- 	cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
- 	cc->free_pfn &= ~(pageblock_nr_pages-1);
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 3666d43..0c09927 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1668,15 +1668,28 @@ int rmap_walk_ksm(struct page *page, int (*rmap_one)(struct page *,
+ again:
+ 	hlist_for_each_entry(rmap_item, hlist, &stable_node->hlist, hlist) {
+ 		struct anon_vma *anon_vma = rmap_item->anon_vma;
++		struct anon_vma *locked_vma;
+ 		struct anon_vma_chain *vmac;
+ 		struct vm_area_struct *vma;
  
-+#if 0
- 	migrate_prep();
-+#endif
+ 		spin_lock(&anon_vma->lock);
+ 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
+ 			vma = vmac->vma;
++
++			/* See comment in mm/rmap.c#rmap_walk_anon on locking */
++			locked_vma = NULL;
++			if (anon_vma != vma->anon_vma) {
++				locked_vma = vma->anon_vma;
++				if (!spin_trylock(&locked_vma->lock)) {
++					spin_unlock(&anon_vma->lock);
++					goto again;
++				}
++			}
++
+ 			if (rmap_item->address < vma->vm_start ||
+ 			    rmap_item->address >= vma->vm_end)
+-				continue;
++				goto next_vma;
++
+ 			/*
+ 			 * Initially we examine only the vma which covers this
+ 			 * rmap_item; but later, if there is still work to do,
+@@ -1684,9 +1697,14 @@ again:
+ 			 * were forked from the original since ksmd passed.
+ 			 */
+ 			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
+-				continue;
++				goto next_vma;
  
- 	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
- 		unsigned long nr_migrate, nr_remaining;
+ 			ret = rmap_one(page, vma, rmap_item->address, arg);
++
++next_vma:
++			if (locked_vma)
++				spin_unlock(&locked_vma->lock);
++
+ 			if (ret != SWAP_AGAIN) {
+ 				spin_unlock(&anon_vma->lock);
+ 				goto out;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f90ea92..d635132 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -505,6 +505,7 @@ int vma_adjust(struct vm_area_struct *vma, unsigned long start,
+ 	struct vm_area_struct *next = vma->vm_next;
+ 	struct vm_area_struct *importer = NULL;
+ 	struct address_space *mapping = NULL;
++	struct anon_vma *anon_vma = NULL;
+ 	struct prio_tree_root *root = NULL;
+ 	struct file *file = vma->vm_file;
+ 	long adjust_next = 0;
+@@ -578,6 +579,11 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		}
+ 	}
+ 
++	if (vma->anon_vma && (insert || importer || start != vma->vm_start)) {
++		anon_vma = vma->anon_vma;
++		spin_lock(&anon_vma->lock);
++	}
++
+ 	if (root) {
+ 		flush_dcache_mmap_lock(mapping);
+ 		vma_prio_tree_remove(vma, root);
+@@ -620,6 +626,9 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 	if (mapping)
+ 		spin_unlock(&mapping->i_mmap_lock);
+ 
++	if (anon_vma)
++		spin_unlock(&anon_vma->lock);
++
+ 	if (remove_next) {
+ 		if (file) {
+ 			fput(file);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 85f203e..f7ed89f 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1358,7 +1358,7 @@ int try_to_munlock(struct page *page)
+ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+ 		struct vm_area_struct *, unsigned long, void *), void *arg)
+ {
+-	struct anon_vma *anon_vma;
++	struct anon_vma *anon_vma, *locked_vma;
+ 	struct anon_vma_chain *avc;
+ 	int ret = SWAP_AGAIN;
+ 
+@@ -1368,16 +1368,34 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+ 	 * are holding mmap_sem. Users without mmap_sem are required to
+ 	 * take a reference count to prevent the anon_vma disappearing
+ 	 */
++retry:
+ 	anon_vma = page_anon_vma(page);
+ 	if (!anon_vma)
+ 		return ret;
+ 	spin_lock(&anon_vma->lock);
+ 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
+ 		struct vm_area_struct *vma = avc->vma;
+-		unsigned long address = vma_address(page, vma);
+-		if (address == -EFAULT)
+-			continue;
+-		ret = rmap_one(page, vma, address, arg);
++		unsigned long address;
++
++		/*
++		 * Guard against deadlocks by not spinning against
++		 * vma->anon_vma->lock. On contention release and retry
++		 */
++		locked_vma = NULL;
++		if (anon_vma != vma->anon_vma) {
++			locked_vma = vma->anon_vma;
++			if (!spin_trylock(&locked_vma->lock)) {
++				spin_unlock(&anon_vma->lock);
++				goto retry;
++			}
++		}
++		address = vma_address(page, vma);
++		if (address != -EFAULT)
++			ret = rmap_one(page, vma, address, arg);
++
++		if (locked_vma)
++			spin_unlock(&locked_vma->lock);
++
+ 		if (ret != SWAP_AGAIN)
+ 			break;
+ 	}
+-- 
+1.6.5
+
