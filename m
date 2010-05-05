@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760639Ab0EEPol (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 11:44:41 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47739 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1760410Ab0EEPok (ORCPT
+	id S932641Ab0EEPyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 11:54:36 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:37023 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab0EEPyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 11:44:40 -0400
-Date: Wed, 5 May 2010 11:44:39 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: mark gross <mgross@linux.intel.com>
-cc: markgross@thegnar.org, Len Brown <len.brown@intel.com>,
-       <linux-doc@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-In-Reply-To: <20100505015050.GA30591@linux.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1005051136140.1885-100000@iolanthe.rowland.org>
+	Wed, 5 May 2010 11:54:35 -0400
+Date: Wed, 5 May 2010 17:54:24 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Greg KH <gregkh@suse.de>
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+       Jakob Viketoft <jakob.viketoft@bitsim.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] colibri.h: Fix building for colibri 270...
+Message-ID: <20100505155424.GL30801@buzzloop.caiaq.de>
+References: <20100416100126.GI30801@buzzloop.caiaq.de>
+ <4BC84766.5060208@bitsim.com>
+ <4BC8493D.60900@bitsim.com>
+ <20100416112820.GM30801@buzzloop.caiaq.de>
+ <20100416112931.GN30801@buzzloop.caiaq.de>
+ <n2mf17812d71005050045x4359dfeu2f563c3ac0a42223@mail.gmail.com>
+ <20100505080015.GD30801@buzzloop.caiaq.de>
+ <u2nf17812d71005050228x3c19060n9a096d7bcc1db4d6@mail.gmail.com>
+ <20100505094405.GG30801@buzzloop.caiaq.de>
+ <20100505152000.GC16294@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100505152000.GC16294@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 May 2010, mark gross wrote:
-
-> Thanks, I think I'm starting to get it.  From this it seems that the
-> system integrator needs to identify those wake up sources that need to
-> be able to block a suspend, and figure out a way of acknowledging from
-> user mode, that its now ok to allow a suspend to happen.
-
-The second part is easy.  Userspace doesn't need to do anything special 
-to acknowledge that a suspend is now okay; it just has to remove the 
-conditions that led the driver to block suspends in the first place.
-
-For example, if suspends are blocked because some input event has been
-queued, emptying the input event queue should unblock suspends.
-
-> The rev-6 proposed way is for the integrator to implement overlapping
-> blocker sections from ISR up to user mode for selected wake up devices
-> (i.e. the modem)
+On Wed, May 05, 2010 at 08:20:00AM -0700, Greg KH wrote:
+> On Wed, May 05, 2010 at 11:44:05AM +0200, Daniel Mack wrote:
+> > On Wed, May 05, 2010 at 05:28:45PM +0800, Eric Miao wrote:
+> > > On Wed, May 5, 2010 at 4:00 PM, Daniel Mack <daniel@caiaq.de> wrote:
+> > > > On Wed, May 05, 2010 at 03:45:34PM +0800, Eric Miao wrote:
+> > > >> On Fri, Apr 16, 2010 at 7:29 PM, Daniel Mack <daniel@caiaq.de> wrote:
+> > > >> > On Fri, Apr 16, 2010 at 01:28:20PM +0200, Daniel Mack wrote:
+> > > >> >> On Fri, Apr 16, 2010 at 01:25:49PM +0200, Jakob Viketoft wrote:
+> > > >> >> > Adding a "#include <mach/mfp.h>" seem to cure this problem. If you
+> > > >> >> > agree I can supply a new patch with the correct solution this time.
+> > > >> >>
+> > > >> >> Ok. Add it to colibri.h, and while at it, you can kick the ax88796.h
+> > > >> >> inclusion. That's a leftover and isn't needed.
+> > > >> >
+> > > >> > And Cc: stable@kernel.org for the backmerge to 2.6.33.
+> > > >> >
+> > > >>
+> > > >> Jakob, any update on this?
+> > > >
+> > > > Jakob provided an updated patch for this:
+> > > >
+> > > >  http://lkml.org/lkml/2010/4/16/100
+> > > >
+> > > 
+> > > Looks it didn't make into -stable.
+> > 
+> > Greg, stable@kernel.org was in Cc: for the patch in the URL above.
+> > Any chance to get this in?
 > 
-> There *has* to be a better way.
+> Is it in Linus's tree?  If so, what is the git commit id of it?  If you
+> properly tag the patch with "cc: stable <stable@kernel.org>" like you
+> did in the patch, then it will be automatically sent to me when it hits
+> Linus's tree.
 
-Why?  What's wrong with overlapping blockers?  It's a very common
-idiom.  For example, the same sort of thing is used when locking
-subtrees of a tree: You lock the root node, and then use overlapping
-locks on the nodes leading down to the subtree you're interested in.
+I see - thought you were picking them up from the mails.
+Thanks for explaining :)
 
-> Can't we have some notification based thing that supports user mode
-> acks through a misc device or sysfs thing?   Anything to avoid the
-> overlapping blocker sections. 
+> I don't see this one in my queue at the moment.
 
-Userspace acks aren't the issue; the issue is how (and when) kernel 
-drivers should initiate a blocker.  Switching to notifications, misc 
-devices, or sysfs won't help solve this issue.
+It's not there yet. Eric picked it, but I'm not sure whether it will
+still make it to .34. But ok, let's just wait then.
 
-> True, you need an ack back from user mode for when its ok to allow
-> suspend to happen.  This ack is device specific and needs to be custom
-> built per product to its wake up sources.
-
-No and no.  Nothing special is needed.  All userspace needs to do is 
-remove the condition that led to the blocker being enabled initially -- 
-which is exactly what userspace would do normally anyway.
-
-Alan Stern
-
+Thanks,
+Daniel
