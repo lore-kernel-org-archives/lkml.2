@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934876Ab0EEOdh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 10:33:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33283 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754549Ab0EEOdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 10:33:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,333,1270450800"; 
-   d="scan'208";a="619101699"
-Message-ID: <4BE181BD.8010804@linux.intel.com>
-Date: Wed, 05 May 2010 07:33:33 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1760329Ab0EEOiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 10:38:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49426 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754549Ab0EEOiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 10:38:07 -0400
+Date: Wed, 5 May 2010 07:34:37 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+ the wrong VMA information
+In-Reply-To: <1273065281-13334-2-git-send-email-mel@csn.ul.ie>
+Message-ID: <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie> <1273065281-13334-2-git-send-email-mel@csn.ul.ie>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: =?UTF-8?B?Um9ubnkgVHNjaMO8dGVy?= <Ronny.Tschueter@tu-dresden.de>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Tracing of power:power_start events doesn't work
-References: <4BDECD66.2010906@tu-dresden.de>	 <1273019517.22438.10.camel@gandalf.stny.rr.com>	 <4BE17C90.2020205@tu-dresden.de> <1273069881.22438.17.camel@gandalf.stny.rr.com>
-In-Reply-To: <1273069881.22438.17.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/5/2010 7:31, Steven Rostedt wrote:
-> On Wed, 2010-05-05 at 16:11 +0200, Ronny Tsch�ter wrote:
->
->>    /*
->>     * Include the apic definitions for x86 to have the APIC timer related
->> defines
->> @@ -796,6 +797,18 @@ static int acpi_idle_bm_check(void)
->>     */
->>    static inline void acpi_idle_do_entry(struct acpi_processor_cx *cx)
->>    {
->> +    switch (cx->type) {
->> +    case ACPI_STATE_C1:
->> +        trace_power_start(POWER_CSTATE, 1);
->> +        break;
->> +    case ACPI_STATE_C2:
->> +        trace_power_start(POWER_CSTATE, 2);
->> +        break;
->> +    case ACPI_STATE_C3:
->> +        trace_power_start(POWER_CSTATE, 3);
->> +        break;
->> +    }
->> +
->
-> Depending on gcc, the above can bloat the code since each call to
-> trace_power_start() is a macro expanded. Try to call it just once.
-> Perhaps one of the following:
 
-the code is also incorrect fundamentally.
-You need to pass in the mwait value or equivalent; the ACPI STATE type is
-pretty much useless random garbage and should completely be ignored.
+
+On Wed, 5 May 2010, Mel Gorman wrote:
+>
+> With the recent anon_vma changes, there can be more than one anon_vma->lock
+> to take in a anon_vma_chain but a second lock cannot be spinned upon in case
+> of deadlock. The rmap walker tries to take locks of different anon_vma's
+> but if the attempt fails, locks are released and the operation is restarted.
+
+Btw, is this really needed?
+
+Nobody else takes two anon_vma locks at the same time, so in order to 
+avoid ABBA deadlocks all we need to guarantee is that rmap_walk_ksm() and 
+rmap_walk_anon() always lock the anon_vma's in the same order.
+
+And they do, as far as I can tell. How could we ever get a deadlock when 
+we have both cases doing the locking by walking the same_anon_vma list?
+
+	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
+
+So I think the "retry" logic looks unnecessary, and actually opens us up 
+to a possible livelock bug (imagine a long chain, and heavy page fault 
+activity elsewhere that ends up locking some anon_vma in the chain, and 
+just the right behavior that gets us into a lockstep situation), rather 
+than fixing an ABBA deadlock.
+
+Now, if it's true that somebody else _does_ do nested anon_vma locking, 
+I'm obviously wrong. But I don't see such usage.
+
+Comments?
+
+				Linus
