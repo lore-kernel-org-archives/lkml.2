@@ -1,132 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758331Ab0EEUbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 16:31:12 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:46308 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755986Ab0EEUbI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 16:31:08 -0400
-Date: Wed, 5 May 2010 22:30:54 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Oliver Neukum <oneukum@suse.de>, linux-pm@lists.linux-foundation.org,
-       list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] s2ram slow (radeon) / failing (usb)
-Message-ID: <20100505223054.25a0f847@neptune.home>
-In-Reply-To: <alpine.LNX.2.00.1005041028300.9849@pobox.suse.cz>
-References: <20100503214642.67577f91@neptune.home>
-	<20100503225735.6b5e2687@neptune.home>
-	<20100503231154.486c27d6@neptune.home>
-	<201005040842.35260.oneukum@suse.de>
-	<alpine.LNX.2.00.1005041028300.9849@pobox.suse.cz>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758423Ab0EEUb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 16:31:58 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:60763 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755986Ab0EEUbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 16:31:55 -0400
+Date: Wed, 5 May 2010 13:31:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org,
+       Dipankar Sarma <dipankar@in.ibm.com>,
+       Josh Triplett <josh@freedesktop.org>, Oleg Nesterov <oleg@redhat.com>,
+       Dimitri Sivanich <sivanich@sgi.com>
+Subject: Re: [PATCH 3/4 UPDATED] scheduler: replace migration_thread with
+ cpu_stop
+Message-ID: <20100505203149.GA2439@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1272980864-27235-1-git-send-email-tj@kernel.org>
+ <1272980864-27235-4-git-send-email-tj@kernel.org>
+ <20100505013351.GN2639@linux.vnet.ibm.com>
+ <4BE11E29.6040106@kernel.org>
+ <20100505174725.GA6783@linux.vnet.ibm.com>
+ <4BE1B49F.2020404@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BE1B49F.2020404@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 May 2010 Jiri Kosina <jkosina@suse.cz> wrote:
+On Wed, May 05, 2010 at 08:10:39PM +0200, Tejun Heo wrote:
+> Currently migration_thread is serving three purposes - migration
+> pusher, context to execute active_load_balance() and forced context
+> switcher for expedited RCU synchronize_sched.  All three roles are
+> hardcoded into migration_thread() and determining which job is
+> scheduled is slightly messy.
+> 
+> This patch kills migration_thread and replaces all three uses with
+> cpu_stop.  The three different roles of migration_thread() are
+> splitted into three separate cpu_stop callbacks -
+> migration_cpu_stop(), active_load_balance_cpu_stop() and
+> synchronize_sched_expedited_cpu_stop() - and each use case now simply
+> asks cpu_stop to execute the callback as necessary.
+> 
+> synchronize_sched_expedited() was implemented with private
+> preallocated resources and custom multi-cpu queueing and waiting
+> logic, both of which are provided by cpu_stop.
+> synchronize_sched_expedited_count is made atomic and all other shared
+> resources along with the mutex are dropped.
+> 
+> synchronize_sched_expedited() also implemented a check to detect cases
+> where not all the callback got executed on their assigned cpus and
+> fall back to synchronize_sched().  If called with cpu hotplug blocked,
+> cpu_stop already guarantees that and the condition cannot happen;
+> otherwise, stop_machine() would break.  However, this patch preserves
+> the paranoid check using a cpumask to record on which cpus the stopper
+> ran so that it can serve as a bisection point if something actually
+> goes wrong theree.
+> 
+> Because the internal execution state is no longer visible,
+> rcu_expedited_torture_stats() is removed.
+> 
+> This patch also renames cpu_stop threads to from "stopper/%d" to
+> "migration/%d".  The names of these threads ultimately don't matter
+> and there's no reason to make unnecessary userland visible changes.
+> 
+> With this patch applied, stop_machine() and sched now share the same
+> resources.  stop_machine() is faster without wasting any resources and
+> sched migration users are much cleaner.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Dipankar Sarma <dipankar@in.ibm.com>
+> Cc: Josh Triplett <josh@freedesktop.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Dimitri Sivanich <sivanich@sgi.com>
+> ---
+> Alright, smp_mb() and comments added.  Paul, can you please ack this?
 
-> On Tue, 4 May 2010, Oliver Neukum wrote:
-> 
-> > > [  477.543304] usb 1-2.1: usb_autosuspend_device: cnt 1 -> 0
-> > > [  477.543316] usbhid 1-2.1:1.1: __pm_runtime_suspend()!
-> > > [  477.543326] usbhid 1-2.1:1.1: __pm_runtime_suspend() returns 0!
-> > > [  477.543380] usbcore: registered new interface driver usbhid
-> > > [  477.549457] usbhid: USB HID core driver
-> > > 
-> > > And suspend is freezing inside of hid_cancel_delayed_stuff(usbhid) call
-> > > from hid_suspend() in drivers/hid/usbhid/hid-core.c ...
-> > > 
-> > > Is it worth continuing iteration and adding further printk's down there?
-> > > Jiri, what's your opinion on this?
-> > 
-> > Ugh. That looks like a bug in usbhid that I introduced. A fix is not trivial.
-> > In short, I did not think the device could be undergoing a queued resumption
-> > while suspend() is being called. I wonder why this is happening.
-> 
-> Hmmm ... seems to me that in this case, the problem might be that there is 
-> a device hanging in the air, for which the parsing of report descriptor 
-> failed (interface .0002), but it's still somehow there on the bus.
-> 
-> It's a bit strange that we are not seeing 
-> 
-> 	dev_err(&intf->dev, "can't add hid device: %d\n", ret);
-> 
-> message from usbhid_probe(), are we? That would mean, that we are 
-> returning ENODEV from the usb_driver->probe routine properly.
-> 
-> Bruno, could you, for testing purposes, check, whether the patch below 
-> changes the behavior you are seeing (and also check what the actual return 
-> value from device_add() was, see the added printk()).
-> Thanks.
-> 
-> 
-> 
->  drivers/hid/hid-core.c        |    5 +++--
->  drivers/hid/usbhid/hid-core.c |    4 ++--
->  2 files changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 2e2aa75..7186f9f 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1770,10 +1770,11 @@ int hid_add_device(struct hid_device *hdev)
->  		     hdev->vendor, hdev->product, atomic_inc_return(&id));
->  
->  	ret = device_add(&hdev->dev);
-> +	printk(KERN_DEBUG "HID: device_add() returned %d\n", ret);
->  	if (!ret)
->  		hdev->status |= HID_STAT_ADDED;
-> -
-> -	hid_debug_register(hdev, dev_name(&hdev->dev));
-> +	else
-> +		hid_debug_register(hdev, dev_name(&hdev->dev));
->  
->  	return ret;
->  }
+Almost.  With the following patch, I am good with it.
 
-Ok, I've been digging some further...
+							Thanx, Paul
 
-The hid_device_probe properly returns -ENODEV, but:
+------------------------------------------------------------------------
 
-Call trace:
-[ 3228.866146]  [<ffffffffa01a00e6>] hid_device_probe+0xd6/0x1f0 [hid]
-    return -ENODEV
-[ 3228.874594]  [<ffffffff8130995a>] driver_probe_device+0xaa/0x1d0
-    calls inlined really_probe from drivers/base/dd.c
-    which ALLWAYS returns 0:
-     dd.c:147 /*
-          148  * Ignore errors returned by ->probe so that the next driver can try
-          149  * its luck.
-          150  */
-          151 ret = 0;
-     and has on line 139 (under same failure label):
-              dev->driver = NULL;
-[ 3228.882758]  [<ffffffff81309b20>] ? __device_attach+0x0/0x50
-[ 3228.890555]  [<ffffffff81309b6b>] __device_attach+0x4b/0x50
-     lets 0 bubble up
-[ 3228.898272]  [<ffffffff81308d28>] bus_for_each_drv+0x68/0x90
-     lets 0 bubble up
-[ 3228.906080]  [<ffffffff81309c3b>] device_attach+0x8b/0xa0
-     lets 0 bubble up
-[ 3228.913603]  [<ffffffff81308b15>] bus_probe_device+0x25/0x40
-     returns void and does WARN_ON(device_attach() < 0)
-[ 3228.921356]  [<ffffffff81307166>] device_add+0x3d6/0x610
-     returns 0 here as there was no local error
-[ 3228.928772]  [<ffffffffa019fc53>] hid_add_device+0x183/0x1e0 [hid]
-[ 3228.937098]  [<ffffffffa01b4a77>] usbhid_probe+0x287/0x420 [usbhid]
-[ 3228.945535]  [<ffffffffa005006d>] usb_probe_interface+0x14d/0x230 [usbcore]
-...
+commit ab3e147752b1edab4588abd7a66f2505b7b433ed
+Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date:   Wed May 5 13:28:37 2010 -0700
 
-So IMHO in hid_add_device() we should also check for hdev->dev.driver
-when device_add() returns 0 and consider that one being NULL as a
-(possible) error.
+    sched: correctly place paranioa memory barriers in synchronize_sched_expedited()
+    
+    The memory barriers must be in the SMP case, not in the !SMP case.
+    Also add a barrier after the atomic_inc() in order to ensure that other
+    CPUs see post-synchronize_sched_expedited() actions as following the
+    expedited grace period.
+    
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Thanks,
-Bruno
+diff --git a/kernel/sched.c b/kernel/sched.c
+index e9c6d79..155a16d 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8932,6 +8932,15 @@ struct cgroup_subsys cpuacct_subsys = {
+ 
+ void synchronize_sched_expedited(void)
+ {
++}
++EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
++
++#else /* #ifndef CONFIG_SMP */
++
++static atomic_t synchronize_sched_expedited_count = ATOMIC_INIT(0);
++
++static int synchronize_sched_expedited_cpu_stop(void *data)
++{
+ 	/*
+ 	 * There must be a full memory barrier on each affected CPU
+ 	 * between the time that try_stop_cpus() is called and the
+@@ -8943,16 +8952,7 @@ void synchronize_sched_expedited(void)
+ 	 * necessary.  Do smp_mb() anyway for documentation and
+ 	 * robustness against future implementation changes.
+ 	 */
+-	smp_mb();
+-}
+-EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+-
+-#else /* #ifndef CONFIG_SMP */
+-
+-static atomic_t synchronize_sched_expedited_count = ATOMIC_INIT(0);
+-
+-static int synchronize_sched_expedited_cpu_stop(void *data)
+-{
++	smp_mb(); /* See above comment block. */
+ 	return 0;
+ }
+ 
+@@ -8990,6 +8990,7 @@ void synchronize_sched_expedited(void)
+ 		get_online_cpus();
+ 	}
+ 	atomic_inc(&synchronize_sched_expedited_count);
++	smp_mb__after_atomic_inc(); /* ensure post-GP actions seen after GP. */
+ 	put_online_cpus();
+ }
+ EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
