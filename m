@@ -1,87 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760438Ab0EECpl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 22:45:41 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:45477 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756663Ab0EECpk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 22:45:40 -0400
-Date: Tue, 4 May 2010 21:45:38 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] sysfs-namespaces: add a high-level Documentation file
-Message-ID: <20100505024538.GA4690@us.ibm.com>
+	id S1755541Ab0EEC6s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 22:58:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751908Ab0EEC6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 22:58:47 -0400
+Message-ID: <4BE0DFC0.30309@redhat.com>
+Date: Wed, 05 May 2010 11:02:24 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Changli Gao <xiaosuo@gmail.com>
+CC: linux-kernel@vger.kernel.org, Octavian Purdila <opurdila@ixiacom.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       penguin-kernel@i-love.sakura.ne.jp, netdev@vger.kernel.org,
+       Neil Horman <nhorman@tuxdriver.com>, ebiederm@xmission.com,
+       David Miller <davem@davemloft.net>, adobriyan@gmail.com
+Subject: Re: [Patch 1/3] sysctl: refactor integer handling proc code
+References: <20100430082912.5630.82405.sendpatchset@localhost.localdomain> 	<20100430082925.5630.58453.sendpatchset@localhost.localdomain> <u2s412e6f7f1004301549tb0e88a80n4c621e42c0b31015@mail.gmail.com>
+In-Reply-To: <u2s412e6f7f1004301549tb0e88a80n4c621e42c0b31015@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first three paragraphs are almost verbatim taken from Eric's
-commit message on the patch introducing network ns tags.  The next
-two paragraphs I wrote to be a brief high level overview.  The last
-section is taken from the commit message on "Implement sysfs tagged
-directory support", but updated.  Hopefully correctly.
+Changli Gao wrote:
+> On Fri, Apr 30, 2010 at 4:25 PM, Amerigo Wang <amwang@redhat.com> wrote:
+>> +       if (*p == '-' && *size > 1) {
+>> +               *neg = 1;
+> 
+> As neg is bool*, you should use true and false instead of 1 and 0.
+> 
 
-Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
----
- Documentation/filesystems/sysfs-tagging.txt |   42 +++++++++++++++++++++++++++
- 1 files changed, 42 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/filesystems/sysfs-tagging.txt
+Yeah, I only corrected those lines that I touched, I should
+correct them all.
 
-diff --git a/Documentation/filesystems/sysfs-tagging.txt b/Documentation/filesystems/sysfs-tagging.txt
-new file mode 100644
-index 0000000..f1a27bc
---- /dev/null
-+++ b/Documentation/filesystems/sysfs-tagging.txt
-@@ -0,0 +1,42 @@
-+Sysfs tagging
-+-------------
-+
-+(Taken almost verbatim from Eric Biederman's netns tagging patch
-+commit msg)
-+
-+The problem.  Network devices show up in sysfs and with the network
-+namespace active multiple devices with the same name can show up in
-+the same directory, ouch!
-+
-+To avoid that problem and allow existing applications in network
-+namespaces to see the same interface that is currently presented in
-+sysfs, sysfs now has tagging directory support.
-+
-+By using the network namespace pointers as tags to separate out the
-+the sysfs directory entries we ensure that we don't have conflicts
-+in the directories and applications only see a limited set of
-+the network devices.
-+
-+Each sysfs directory entry may be tagged with zero or one
-+namespaces.  A sysfs_dirent is augmented with a void *s_ns.  If a
-+directory entry is tagged, then sysfs_dirent->s_flags will have a
-+flag between KOBJ_NS_TYPE_NONE and KOBJ_NS_TYPES, and s_ns will
-+point to the namespace to which it belongs.  
-+
-+Each sysfs superblock's sysfs_super_info contains an array void
-+*ns[KOBJ_NS_TYPES].  When a a task in a tagging namespace
-+kobj_nstype first mounts sysfs, a new superblock is created.  It
-+will be differentiated from other sysfs mounts by having its
-+s_fs_info->ns[kobj_nstype] set to the new namespace.  Note that
-+through bind mounting and mounts propagation, a task can easily view
-+the contents of other namespaces' sysfs mounts.  Therefore, when a
-+namespace exits, it will call kobj_ns_exit() to invalidate any
-+sysfs_dirent->s_ns pointers pointing to it.
-+
-+Users of this interface:
-+- define a type in the kobj_ns_type enumeration.
-+- call kobj_ns_type_register() with its kobj_ns_type_operations which has
-+  - current_ns() which returns current's namespace
-+  - netlink_ns() which returns a socket's namespace
-+  - initial_ns() which returns the initial namesapce
-+- call kobj_ns_exit() when an individual tag is no longer valid
--- 
-1.7.0.4
+Will fix.
+
+Thanks.
 
