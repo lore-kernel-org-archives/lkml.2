@@ -1,48 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934486Ab0EEKg4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 06:36:56 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:30668 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934369Ab0EEKgx (ORCPT
+	id S934516Ab0EEKkQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 06:40:16 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54754 "EHLO
+	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934369Ab0EEKkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 06:36:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:to:cc:subject:message-id:references:
-	mime-version:content-type:content-disposition:in-reply-to:user-agent:x-system-of-record;
-	b=CYX6eXLnF6m+LU5c7QN9Mtz3ilYzS9mdhs0MuZG3ysXtjpqP7ezmxEhvhrOiPuJgL
-	gbix1vlMrz+hwsU3NO5XQ==
-Date: Wed, 5 May 2010 03:36:46 -0700
-From: Michel Lespinasse <walken@google.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-       Ying Han <yinghan@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: rwsem: down_read_unfair() proposal
-Message-ID: <20100505103646.GA32643@google.com>
-References: <20100505032033.GA19232@google.com> <22933.1273053820@redhat.com>
+	Wed, 5 May 2010 06:40:13 -0400
+From: Alan Cox <alan@linux.intel.com>
+Subject: [PATCH 01/20] stallion: prune lock_kernel calls
+To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de
+Date: Wed, 05 May 2010 11:01:45 +0100
+Message-ID: <20100505100144.3595.65633.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <22933.1273053820@redhat.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-System-Of-Record: true
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 11:03:40AM +0100, David Howells wrote:
-> If the system is as heavily loaded as you say, how do you prevent
-> writer starvation?  Or do things just grind along until sufficient
-> threads are queued waiting for a write lock?
+Remove unneeded tty layer lock kernel bits. Relock the needed bits using the
+port mutex. The istallion still has brd state races but those are not new
+or introduced by the removal of the lock_kernel logic.
 
-Reader/Writer fairness is not disabled in the general case - it only is
-for a few specific readers such as /proc/<pid>/maps. In particular, the
-do_page_fault path, which holds a read lock on mmap_sem for potentially long
-(~disk latency) periods of times, still uses a fair down_read() call.
-In comparison, the /proc/<pid>/maps path which we made unfair does not
-normally hold the mmap_sem for very long (it does not end up hitting disk);
-so it's been working out well for us in practice.
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+ drivers/char/istallion.c |   22 +++++++++++++---------
+ drivers/char/stallion.c  |   20 ++++++++++++--------
+ 2 files changed, 25 insertions(+), 17 deletions(-)
+
+
+diff --git a/drivers/char/istallion.c b/drivers/char/istallion.c
+index 4e395c9..750650c 100644
+--- a/drivers/char/istallion.c
++++ b/drivers/char/istallion.c
+@@ -14,6 +14,7 @@
+  *	the Free Software Foundation; either version 2 of the License, or
+  *	(at your option) any later version.
+  *
++ *	FIXME: brdp->state needs proper locking.
+  */
+ 
+ /*****************************************************************************/
+@@ -4011,6 +4012,7 @@ static int stli_getbrdstats(combrd_t __user *bp)
+ 		return -ENODEV;
+ 
+ 	memset(&stli_brdstats, 0, sizeof(combrd_t));
++
+ 	stli_brdstats.brd = brdp->brdnr;
+ 	stli_brdstats.type = brdp->brdtype;
+ 	stli_brdstats.hwid = 0;
+@@ -4076,10 +4078,13 @@ static int stli_portcmdstats(struct tty_struct *tty, struct stliport *portp)
+ 	if (brdp == NULL)
+ 		return -ENODEV;
+ 
++	mutex_lock(&portp->port.mutex);
+ 	if (brdp->state & BST_STARTED) {
+ 		if ((rc = stli_cmdwait(brdp, portp, A_GETSTATS,
+-		    &stli_cdkstats, sizeof(asystats_t), 1)) < 0)
++		    &stli_cdkstats, sizeof(asystats_t), 1)) < 0) {
++			mutex_unlock(&portp->port.mutex);
+ 			return rc;
++		}
+ 	} else {
+ 		memset(&stli_cdkstats, 0, sizeof(asystats_t));
+ 	}
+@@ -4124,6 +4129,7 @@ static int stli_portcmdstats(struct tty_struct *tty, struct stliport *portp)
+ 	stli_comstats.modem = stli_cdkstats.dcdcnt;
+ 	stli_comstats.hwid = stli_cdkstats.hwid;
+ 	stli_comstats.signals = stli_mktiocm(stli_cdkstats.signals);
++	mutex_unlock(&portp->port.mutex);
+ 
+ 	return 0;
+ }
+@@ -4186,15 +4192,20 @@ static int stli_clrportstats(struct stliport *portp, comstats_t __user *cp)
+ 	if (!brdp)
+ 		return -ENODEV;
+ 
++	mutex_lock(&portp->port.mutex);
++
+ 	if (brdp->state & BST_STARTED) {
+-		if ((rc = stli_cmdwait(brdp, portp, A_CLEARSTATS, NULL, 0, 0)) < 0)
++		if ((rc = stli_cmdwait(brdp, portp, A_CLEARSTATS, NULL, 0, 0)) < 0) {
++			mutex_unlock(&portp->port.mutex);
+ 			return rc;
++		}
+ 	}
+ 
+ 	memset(&stli_comstats, 0, sizeof(comstats_t));
+ 	stli_comstats.brd = portp->brdnr;
+ 	stli_comstats.panel = portp->panelnr;
+ 	stli_comstats.port = portp->portnr;
++	mutex_unlock(&portp->port.mutex);
+ 
+ 	if (copy_to_user(cp, &stli_comstats, sizeof(comstats_t)))
+ 		return -EFAULT;
+@@ -4266,8 +4277,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 	done = 0;
+ 	rc = 0;
+ 
+-	lock_kernel();
+-
+ 	switch (cmd) {
+ 	case COM_GETPORTSTATS:
+ 		rc = stli_getportstats(NULL, NULL, argp);
+@@ -4290,8 +4299,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 		done++;
+ 		break;
+ 	}
+-	unlock_kernel();
+-
+ 	if (done)
+ 		return rc;
+ 
+@@ -4308,8 +4315,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 	if (brdp->state == 0)
+ 		return -ENODEV;
+ 
+-	lock_kernel();
+-
+ 	switch (cmd) {
+ 	case STL_BINTR:
+ 		EBRDINTR(brdp);
+@@ -4332,7 +4337,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 		rc = -ENOIOCTLCMD;
+ 		break;
+ 	}
+-	unlock_kernel();
+ 	return rc;
+ }
+ 
+diff --git a/drivers/char/stallion.c b/drivers/char/stallion.c
+index 6049fd7..f2167f8 100644
+--- a/drivers/char/stallion.c
++++ b/drivers/char/stallion.c
+@@ -807,7 +807,6 @@ static void stl_waituntilsent(struct tty_struct *tty, int timeout)
+ 		timeout = HZ;
+ 	tend = jiffies + timeout;
+ 
+-	lock_kernel();
+ 	while (stl_datastate(portp)) {
+ 		if (signal_pending(current))
+ 			break;
+@@ -815,7 +814,6 @@ static void stl_waituntilsent(struct tty_struct *tty, int timeout)
+ 		if (time_after_eq(jiffies, tend))
+ 			break;
+ 	}
+-	unlock_kernel();
+ }
+ 
+ /*****************************************************************************/
+@@ -1029,6 +1027,8 @@ static int stl_getserial(struct stlport *portp, struct serial_struct __user *sp)
+ 	pr_debug("stl_getserial(portp=%p,sp=%p)\n", portp, sp);
+ 
+ 	memset(&sio, 0, sizeof(struct serial_struct));
++
++	mutex_lock(&portp->port.mutex);
+ 	sio.line = portp->portnr;
+ 	sio.port = portp->ioaddr;
+ 	sio.flags = portp->port.flags;
+@@ -1048,6 +1048,7 @@ static int stl_getserial(struct stlport *portp, struct serial_struct __user *sp)
+ 	brdp = stl_brds[portp->brdnr];
+ 	if (brdp != NULL)
+ 		sio.irq = brdp->irq;
++	mutex_unlock(&portp->port.mutex);
+ 
+ 	return copy_to_user(sp, &sio, sizeof(struct serial_struct)) ? -EFAULT : 0;
+ }
+@@ -1069,12 +1070,15 @@ static int stl_setserial(struct tty_struct *tty, struct serial_struct __user *sp
+ 
+ 	if (copy_from_user(&sio, sp, sizeof(struct serial_struct)))
+ 		return -EFAULT;
++	mutex_lock(&portp->port.mutex);
+ 	if (!capable(CAP_SYS_ADMIN)) {
+ 		if ((sio.baud_base != portp->baud_base) ||
+ 		    (sio.close_delay != portp->close_delay) ||
+ 		    ((sio.flags & ~ASYNC_USR_MASK) !=
+-		    (portp->port.flags & ~ASYNC_USR_MASK)))
++		    (portp->port.flags & ~ASYNC_USR_MASK))) {
++			mutex_unlock(&portp->port.mutex);
+ 			return -EPERM;
++		}
+ 	} 
+ 
+ 	portp->port.flags = (portp->port.flags & ~ASYNC_USR_MASK) |
+@@ -1083,6 +1087,7 @@ static int stl_setserial(struct tty_struct *tty, struct serial_struct __user *sp
+ 	portp->close_delay = sio.close_delay;
+ 	portp->closing_wait = sio.closing_wait;
+ 	portp->custom_divisor = sio.custom_divisor;
++	mutex_unlock(&portp->port.mutex);
+ 	stl_setport(portp, tty->termios);
+ 	return 0;
+ }
+@@ -1147,8 +1152,6 @@ static int stl_ioctl(struct tty_struct *tty, struct file *file, unsigned int cmd
+ 
+ 	rc = 0;
+ 
+-	lock_kernel();
+-
+ 	switch (cmd) {
+ 	case TIOCGSERIAL:
+ 		rc = stl_getserial(portp, argp);
+@@ -1173,7 +1176,6 @@ static int stl_ioctl(struct tty_struct *tty, struct file *file, unsigned int cmd
+ 		rc = -ENOIOCTLCMD;
+ 		break;
+ 	}
+-	unlock_kernel();
+ 	return rc;
+ }
+ 
+@@ -2327,6 +2329,7 @@ static int stl_getportstats(struct tty_struct *tty, struct stlport *portp, comst
+ 			return -ENODEV;
+ 	}
+ 
++	mutex_lock(&portp->port.mutex);
+ 	portp->stats.state = portp->istate;
+ 	portp->stats.flags = portp->port.flags;
+ 	portp->stats.hwid = portp->hwid;
+@@ -2358,6 +2361,7 @@ static int stl_getportstats(struct tty_struct *tty, struct stlport *portp, comst
+ 		(STL_TXBUFSIZE - (tail - head));
+ 
+ 	portp->stats.signals = (unsigned long) stl_getsignals(portp);
++	mutex_unlock(&portp->port.mutex);
+ 
+ 	return copy_to_user(cp, &portp->stats,
+ 			    sizeof(comstats_t)) ? -EFAULT : 0;
+@@ -2382,10 +2386,12 @@ static int stl_clrportstats(struct stlport *portp, comstats_t __user *cp)
+ 			return -ENODEV;
+ 	}
+ 
++	mutex_lock(&portp->port.mutex);
+ 	memset(&portp->stats, 0, sizeof(comstats_t));
+ 	portp->stats.brd = portp->brdnr;
+ 	portp->stats.panel = portp->panelnr;
+ 	portp->stats.port = portp->portnr;
++	mutex_unlock(&portp->port.mutex);
+ 	return copy_to_user(cp, &portp->stats,
+ 			    sizeof(comstats_t)) ? -EFAULT : 0;
+ }
+@@ -2451,7 +2457,6 @@ static long stl_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 		return -ENODEV;
+ 	rc = 0;
+ 
+-	lock_kernel();
+ 	switch (cmd) {
+ 	case COM_GETPORTSTATS:
+ 		rc = stl_getportstats(NULL, NULL, argp);
+@@ -2472,7 +2477,6 @@ static long stl_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 		rc = -ENOIOCTLCMD;
+ 		break;
+ 	}
+-	unlock_kernel();
+ 	return rc;
+ }
+ 
+
