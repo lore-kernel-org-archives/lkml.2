@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934221Ab0EEO4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 10:56:41 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:56362 "EHLO gir.skynet.ie"
+	id S934650Ab0EEPEL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 11:04:11 -0400
+Received: from 8bytes.org ([88.198.83.132]:60189 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753549Ab0EEO4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 10:56:39 -0400
-Date: Wed, 5 May 2010 15:56:20 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
-	the wrong VMA information
-Message-ID: <20100505145620.GP20979@csn.ul.ie>
-References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie> <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org>
+	id S1752421Ab0EEPEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 11:04:09 -0400
+Date: Wed, 5 May 2010 17:04:06 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] KVM: SVM: Allow EFER.LMSLE to be set with nested
+	svm
+Message-ID: <20100505150406.GF14542@8bytes.org>
+References: <1273068285-3105-1-git-send-email-joerg.roedel@amd.com> <1273068285-3105-5-git-send-email-joerg.roedel@amd.com> <4BE184E3.1010508@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4BE184E3.1010508@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 07:34:37AM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Wed, 5 May 2010, Mel Gorman wrote:
-> >
-> > With the recent anon_vma changes, there can be more than one anon_vma->lock
-> > to take in a anon_vma_chain but a second lock cannot be spinned upon in case
-> > of deadlock. The rmap walker tries to take locks of different anon_vma's
-> > but if the attempt fails, locks are released and the operation is restarted.
-> 
-> Btw, is this really needed?
-> 
+On Wed, May 05, 2010 at 05:46:59PM +0300, Avi Kivity wrote:
+> On 05/05/2010 05:04 PM, Joerg Roedel wrote:
+>> This patch enables setting of efer bit 13 which is allowed
+>> in all SVM capable processors. This is necessary for the
+>> SLES11 version of Xen 4.0 to boot with nested svm.
+>>    
+>
+> Interesting, why does it require it?
 
-I could not convince myself that it wasn't. lockdep throws a fit if you try
-but it can be taught about the situation if necessary.
+I don't know. I traced the Xen crash down and found that is gets a #GP
+because it tries to set this bit.
 
-> Nobody else takes two anon_vma locks at the same time, so in order to 
-> avoid ABBA deadlocks all we need to guarantee is that rmap_walk_ksm() and 
-> rmap_walk_anon() always lock the anon_vma's in the same order.
-> 
+> Obviously it isn't needed since it manages to run on Intel without it.
 
-rmap_walk() appears to be the only one that takes multiple locks but it itself
-is not serialised. If there are more than one process calling rmap_walk()
-on different processes sharing the same VMAs, is there a guarantee they walk
-it in the same order? I didn't think so at the time the patch because the
-anon_vma the walk starts from is based on the page being migrated rather
-than any idea of starting from a parent or primary anon_vma.
+I have heard inofficial statements that they set this bit to provide the
+functionality to their guests. And Xen sets this bit together with the
+SVM bit.
 
-> And they do, as far as I can tell. How could we ever get a deadlock when 
-> we have both cases doing the locking by walking the same_anon_vma list?
-> 
+>>   /* Intel MSRs. Some also available on other CPUs */
+>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+>> index 74f7b9d..bc087c7 100644
+>> --- a/arch/x86/kvm/svm.c
+>> +++ b/arch/x86/kvm/svm.c
+>> @@ -610,7 +610,7 @@ static __init int svm_hardware_setup(void)
+>>
+>>   	if (nested) {
+>>   		printk(KERN_INFO "kvm: Nested Virtualization enabled\n");
+>> -		kvm_enable_efer_bits(EFER_SVME);
+>> +		kvm_enable_efer_bits(EFER_SVME | EFER_LMSLE);
+>>   	}
+>>
+>>   	for_each_possible_cpu(cpu) {
+>>    
+>
+> What if the host doesn't have it?
 
-If we always started the list walk in the same place then it'd be fine but
-if they start in different places, it could deadlock.
+It is present in all SVM capable AMD processors.
 
-> 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
-> 
-> So I think the "retry" logic looks unnecessary, and actually opens us up 
-> to a possible livelock bug (imagine a long chain, and heavy page fault 
-> activity elsewhere that ends up locking some anon_vma in the chain, and 
-> just the right behavior that gets us into a lockstep situation),
+> Why enable it only for the nested case?  It's not svm specific (it's  
+> useful for running non-hvm Xen in non-nested mode).
 
-I imagined it and I'm not super-happy about it. It's one of the reasons Rik
-called it "fragile".
+Because there is no cpuid bit for this feature. You can roughly check
+for it using the svm cpuid bit.
 
-> rather than fixing an ABBA deadlock.
-> 
-> Now, if it's true that somebody else _does_ do nested anon_vma locking, 
-> I'm obviously wrong. But I don't see such usage.
-> 
-> Comments?
-> 
 
-Just what I have above. I couldn't convince myself that two callers to
-rmap_walk from pages based on different VMAs on the same_anon_vma list would
-always started in the same place.
+	Joerg
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
