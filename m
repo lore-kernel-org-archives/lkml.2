@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758816Ab0EEVbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 17:31:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:52314 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758670Ab0EEVbr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 17:31:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 10/13] tty: untangle locking of wait_until_sent
-Date: Wed, 5 May 2010 23:31:03 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.34-rc6-00090-g1509e54-dirty; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
+	id S1758618Ab0EEVdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 17:33:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38601 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752752Ab0EEVds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 17:33:48 -0400
+Date: Wed, 5 May 2010 23:33:45 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Greg KH <gregkh@suse.de>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "stable@kernel.org" <stable@kernel.org>,
+       "stable-review@kernel.org" <stable-review@kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-References: <1273012433-6125-1-git-send-email-arnd@arndb.de> <1273012433-6125-11-git-send-email-arnd@arndb.de> <20100505205905.3c87b403@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100505205905.3c87b403@lxorguk.ukuu.org.uk>
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
+       Jiri Benc <jbenc@suse.cz>,
+       "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+       "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>
+Subject: Re: [113/197] x86, cacheinfo: Calculate L3 indices
+In-Reply-To: <20100505180228.GC15804@aftab>
+Message-ID: <alpine.LNX.2.00.1005052328000.9849@pobox.suse.cz>
+References: <20100422190917.467545308@kvm.kroah.org> <alpine.LNX.2.00.1005051736080.9849@pobox.suse.cz> <20100505180228.GC15804@aftab>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005052331.03633.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18TkYqHQd/wPbfo8COKMVSSdfNhnDHYC5z/XeE
- Vy9H1dL3iXhimg9p31ymz9KujpiDUr1By/lehxS+OV8TjbYBQi
- Sw7b0SChhe12NA542Sq1w==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 May 2010 21:59:05 Alan Cox wrote:
-> > Some wait_until_sent versions require the big
-> > tty mutex, others don't and some callers of
-> > wait_until_sent already hold it while other don't.
-> > That leads to recursive use of the BTM in these
-> > functions, which we're trying to get rid of.
+On Wed, 5 May 2010, Borislav Petkov wrote:
+
+> > From: Jiri Kosina <jkosina@suse.cz>
+> > Subject: [PATCH] x86, cacheinfo: fix oops in amd_calc_l3_indices()
+> > 
+> > Commit 048a8774ca4348 ("x86, cacheinfo: Calculate L3 indices") introduced
+> > amd_calc_l3_indices(), but this function doesn't properly handle case
+> > when node_to_k8_nb_misc() returns NULL, causing immediate oops due to
+> > NULL pointer dereference in pci_read_config_dword().
+> > 
+> > Make amd_calc_l3_indices() return -1 in such cases. This is correct
+> > lower bound, as it will make store_cache_disable() return EINVAL in
+> > all such cases.
+> > 
+> > Cc: stable@kernel.org
+> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> > ---
+> >  arch/x86/kernel/cpu/intel_cacheinfo.c |    3 +++
+> >  1 files changed, 3 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+> > index b3eeb66..b9f8dca 100644
+> > --- a/arch/x86/kernel/cpu/intel_cacheinfo.c
+> > +++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+> > @@ -314,6 +314,9 @@ static unsigned int __cpuinit amd_calc_l3_indices(void)
+> >  	unsigned int sc0, sc1, sc2, sc3;
+> >  	u32 val = 0;
+> >  
+> > +	if (!dev)
+> > +		return -1;
+> > +
 > 
-> I don't believe any of the currently live ones do.
+> This won't fly since the function returns an unsigned value and the L3
+> code would still be entered, which is what you don't want actually when
+> k8_northbridges initialization has somehow failed.
 
-Ok, that simplifies things, at least we can call
-tty->ops->wait_until_sent(tty, timeout) while holding
-the BTM then, even with the next patch that makes it
-non-recursive.
+Yeah, you are right, returning -1 is bogus as well.
 
-> >  drivers/char/hvc_console.c    |    2 +-
-> >  drivers/char/hvcs.c           |    2 +-
+The point is though, that we really should be checking for return value of 
+node_to_k8_nb_misc() as it can legitimately return NULL, can't it? (and 
+other places, such as show_cache_disable() and store_cache_disable(), are 
+checking for this being NULL properly).
+
+> Rather, we have a fix already which should take care of your issue too,
+> see http://git.kernel.org/tip/f2b20e41407fccfcfacf927ff91ec888832a37af
 > 
-> Doesn't seemn to need it
+> I was waiting for it to hit mainline before I backport it to stable and
+> it would be helpful if you could verify that it works for you along with
+> 0e152cd7c16832bd5cadee0c2e41d9959bc9b6f9 you sent earlier.
 
-These, and most of the others in this patch call tty_wait_until_sent()
-from their close() function. That contains the lines
+Will let you know.
 
-        if (wait_event_interruptible_timeout(tty->write_wait,
-                        !tty_chars_in_buffer(tty), timeout) >= 0) {
+Thanks,
 
-Part of what my patch does is to give up the BTM when already
-holding it, to mimic the BKL behavior.
-If you can confirm that this wait_event never blocks indefinitely
-or has to wait for the BTM from another function, that could just
-be removed. Otherwise, it probably needs to become something ugly
-like
-
-	if (tty_chars_in_buffer(tty)) {
-		if (tty_locked()) {
-			tty_unlock();
-			wait = wait_event_interruptible_timeout(tty->write_wait,
-	                        !tty_chars_in_buffer(tty), timeout) >= 0);
-			tty_lock();
-		} else {
-			wait = wait_event_interruptible_timeout(tty->write_wait,
-	                        !tty_chars_in_buffer(tty), timeout) >= 0);
-		}
-		if (wait && tty->ops->wait_until_sent)
-			tty->ops->wait_until_sent(tty, timeout);
-	}
-
-I already had to introduce a few of these constructs to make the BTM
-non-recursive, but I'd prefer to keep the number as low as possible
-for obvious reasons.
-
-> >  drivers/char/specialix.c      |    2 +-
-> 
-> Broken
-
-> This makes me think that now might be a good time to consign the broken
-> crap to the bitbucket unless someone stands up with hardware and who
-> wants to maintain it.
-
-Fine with me.
-While I technically own a 16-port specialix card somewhere in my
-parents' basement, I'm not exactly interested in maintaining the
-driver.
-
-	Arnd
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
