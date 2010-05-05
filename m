@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934776Ab0EEQRB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 12:17:01 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55615 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932818Ab0EEQQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 12:16:59 -0400
-Date: Wed, 5 May 2010 09:15:53 -0700
-From: Greg KH <gregkh@suse.de>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: Eric Miao <eric.y.miao@gmail.com>,
-       Jakob Viketoft <jakob.viketoft@bitsim.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] colibri.h: Fix building for colibri 270...
-Message-ID: <20100505161553.GA8462@suse.de>
-References: <4BC84766.5060208@bitsim.com>
- <4BC8493D.60900@bitsim.com>
- <20100416112820.GM30801@buzzloop.caiaq.de>
- <20100416112931.GN30801@buzzloop.caiaq.de>
- <n2mf17812d71005050045x4359dfeu2f563c3ac0a42223@mail.gmail.com>
- <20100505080015.GD30801@buzzloop.caiaq.de>
- <u2nf17812d71005050228x3c19060n9a096d7bcc1db4d6@mail.gmail.com>
- <20100505094405.GG30801@buzzloop.caiaq.de>
- <20100505152000.GC16294@suse.de>
- <20100505155424.GL30801@buzzloop.caiaq.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100505155424.GL30801@buzzloop.caiaq.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759416Ab0EEQR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 12:17:59 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:25222 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755489Ab0EEQR5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 12:17:57 -0400
+Date: Wed, 5 May 2010 09:17:38 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Eric Biederman <ebiederm@xmission.com>, gregkh@suse.de
+Subject: Re: linux-next: Tree for April 30 (CONFIG_SYSFS=n)
+Message-Id: <20100505091738.7ec27479.randy.dunlap@oracle.com>
+In-Reply-To: <20100430105016.40b51636.randy.dunlap@oracle.com>
+References: <20100430163538.7253a9e0.sfr@canb.auug.org.au>
+	<20100430105016.40b51636.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0208.4BE19A2B.0001:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 05:54:24PM +0200, Daniel Mack wrote:
-> On Wed, May 05, 2010 at 08:20:00AM -0700, Greg KH wrote:
-> > On Wed, May 05, 2010 at 11:44:05AM +0200, Daniel Mack wrote:
-> > > On Wed, May 05, 2010 at 05:28:45PM +0800, Eric Miao wrote:
-> > > > On Wed, May 5, 2010 at 4:00 PM, Daniel Mack <daniel@caiaq.de> wrote:
-> > > > > On Wed, May 05, 2010 at 03:45:34PM +0800, Eric Miao wrote:
-> > > > >> On Fri, Apr 16, 2010 at 7:29 PM, Daniel Mack <daniel@caiaq.de> wrote:
-> > > > >> > On Fri, Apr 16, 2010 at 01:28:20PM +0200, Daniel Mack wrote:
-> > > > >> >> On Fri, Apr 16, 2010 at 01:25:49PM +0200, Jakob Viketoft wrote:
-> > > > >> >> > Adding a "#include <mach/mfp.h>" seem to cure this problem. If you
-> > > > >> >> > agree I can supply a new patch with the correct solution this time.
-> > > > >> >>
-> > > > >> >> Ok. Add it to colibri.h, and while at it, you can kick the ax88796.h
-> > > > >> >> inclusion. That's a leftover and isn't needed.
-> > > > >> >
-> > > > >> > And Cc: stable@kernel.org for the backmerge to 2.6.33.
-> > > > >> >
-> > > > >>
-> > > > >> Jakob, any update on this?
-> > > > >
-> > > > > Jakob provided an updated patch for this:
-> > > > >
-> > > > >  http://lkml.org/lkml/2010/4/16/100
-> > > > >
-> > > > 
-> > > > Looks it didn't make into -stable.
-> > > 
-> > > Greg, stable@kernel.org was in Cc: for the patch in the URL above.
-> > > Any chance to get this in?
+On Fri, 30 Apr 2010 10:50:16 -0700 Randy Dunlap wrote:
+
+> On Fri, 30 Apr 2010 16:35:38 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
 > > 
-> > Is it in Linus's tree?  If so, what is the git commit id of it?  If you
-> > properly tag the patch with "cc: stable <stable@kernel.org>" like you
-> > did in the patch, then it will be automatically sent to me when it hits
-> > Linus's tree.
+> > Changes since 20100429:
 > 
-> I see - thought you were picking them up from the mails.
-> Thanks for explaining :)
 > 
-> > I don't see this one in my queue at the moment.
+> When CONFIG_SYSFS is disabled:
 > 
-> It's not there yet. Eric picked it, but I'm not sure whether it will
-> still make it to .34. But ok, let's just wait then.
+> include/linux/sysfs.h:330: error: parameter 1 ('type') has incomplete type
 
-I _CAN_NOT_ take patches into the stable tree before they go into
-Linus's tree, so even if I was picking them up from emails, this could
-not be accepted.
 
-Please read the file, Documentation/stable_kernel_rules.txt for how the
-process works.
+Still have this in linux-next of May 5-2010.
 
-thanks,
 
-greg k-h
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
