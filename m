@@ -1,53 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934734Ab0EENKO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 09:10:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53165 "EHLO hera.kernel.org"
+	id S934742Ab0EENLz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 09:11:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19847 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755113Ab0EENKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 09:10:11 -0400
-Message-ID: <4BE16DFA.3070204@kernel.org>
-Date: Wed, 05 May 2010 15:09:14 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1755113Ab0EENLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 09:11:54 -0400
+Date: Wed, 5 May 2010 15:11:12 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH] fix count_vm_event preempt in memory compaction direct
+ reclaim
+Message-ID: <20100505131112.GB5835@random.random>
+References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
+ <1271797276-31358-13-git-send-email-mel@csn.ul.ie>
+ <20100505121908.GA5835@random.random>
+ <20100505125156.GM20979@csn.ul.ie>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu, efault@gmx.de,
-       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf
- on top of TP
-References: <1272976724-14312-1-git-send-email-tj@kernel.org>	 <1272994165.1642.203.camel@laptop>  <4BE0FB68.7080403@kernel.org>	 <1273050400.1642.229.camel@laptop>  <4BE13B33.3030709@kernel.org>	 <1273053073.1642.235.camel@laptop>  <4BE1406C.2000400@kernel.org> <1273059488.1642.245.camel@laptop> <4BE165B0.1070300@redhat.com>
-In-Reply-To: <4BE165B0.1070300@redhat.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 13:09:16 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100505125156.GM20979@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 05/05/2010 02:33 PM, Avi Kivity wrote:
-> On 05/05/2010 02:38 PM, Peter Zijlstra wrote:
->> As it stands I'd argue to simply drop this whole idea. The SCHED_EVENT()
->> thing doesn't look like its worth the obfuscation and I'm very much
->> opposed to making perf and sched_notifiers rely on tracepoints.
+On Wed, May 05, 2010 at 01:51:56PM +0100, Mel Gorman wrote:
+> On Wed, May 05, 2010 at 02:19:08PM +0200, Andrea Arcangeli wrote:
+> > On Tue, Apr 20, 2010 at 10:01:14PM +0100, Mel Gorman wrote:
+> > > +		if (page) {
+> > > +			__count_vm_event(COMPACTSUCCESS);
+> > > +			return page;
+> > 
+> > ==
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > Preempt is enabled so it must use count_vm_event.
+> > 
+> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 > 
-> We can make perf rely on sched_notifiers, I think it's exactly the same
-> case as kvm - extra cpu state that needs switching at context switch
-> time.  We could also make fpu switching use sched_notifiers, but that's
-> pushing it a bit.
+> Reviewed-by: Mel Gorman <mel@csn.ul.ie>
+> 
+> Andrew, this is a fix to the patch
+> mmcompaction-direct-compact-when-a-high-order-allocation-fails.patch
 
-Oh, that was my first attempt too.  The difference between TPs and
-sched_notifiers is the enable condition.  TP is system-wide while
-sched_notifier is per-task.  The thing is that for perf hooks,
-system-wide enable condition works much better.  Also, w/
-sched_notifiers, there's the problem that no one else but self can
-enable/disable it (which can be changed but doing it without causing
-call time overhead requires a bit of effort).
+for Andrew: I'll generate a trivial reject to the exponential backoff.
 
-Thanks.
+> Thanks Andrea, well spotted.
 
--- 
-tejun
+You're welcome.
+
+I updated current aa.git origin/master and origin/anon_vma_chain
+branches (post THP-23*).
+
+There's also another patch I've in my tree that you didn't picked up
+and I wonder what's the issue here. This less a bugfix because it
+seems to only affect lockdep, I don't know why lockdep forbids to call
+migrate_prep with any lock held (in this case the mmap_sem). migrate.c
+is careful to comply with it, compaction.c isn't. It's not mandatory
+to succeed for compaction, so in doubt I just commented it out. It'll
+also decrease the IPI load so I wasn't very concerned to re-enable it.
+
+-----
+Subject: disable migrate_prep()
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+I get trouble from lockdep if I leave it enabled:
+
+=======================================================
+[ INFO: possible circular locking dependency detected ]
+2.6.34-rc3 #50
+-------------------------------------------------------
+largepages/4965 is trying to acquire lock:
+ (events){+.+.+.}, at: [<ffffffff8105b788>] flush_work+0x38/0x130
+
+ but task is already holding lock:
+  (&mm->mmap_sem){++++++}, at: [<ffffffff8141b022>] do_page_fault+0xd2/0x430
+
+
+flush_work apparently wants to run free from lock and it bugs in:
+
+	lock_map_acquire(&cwq->wq->lockdep_map);
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -383,7 +383,9 @@ static int compact_zone(struct zone *zon
+ 	cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
+ 	cc->free_pfn &= ~(pageblock_nr_pages-1);
+ 
++#if 0
+ 	migrate_prep();
++#endif
+ 
+ 	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
+ 		unsigned long nr_migrate, nr_remaining;
