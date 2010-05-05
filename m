@@ -1,79 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757876Ab0EETkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 15:40:22 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:55682 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754980Ab0EETkS (ORCPT
+	id S932111Ab0EEToT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 15:44:19 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:37676 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754980Ab0EEToR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 15:40:18 -0400
-Date: Wed, 5 May 2010 20:39:52 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Matthew Garrett <mjg@redhat.com>, Brian Swetland <swetland@google.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100505193951.GB11441@sirena.org.uk>
-References: <20100505185225.GA4411@srcf.ucam.org> <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
+	Wed, 5 May 2010 15:44:17 -0400
+Date: Wed, 5 May 2010 12:44:17 -0700
+From: Pankaj Thakkar <pthakkar@vmware.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+       Shreyas Bhatewara <sbhatewara@vmware.com>
+Subject: Re: RFC: Network Plugin Architecture (NPA) for vmxnet3
+Message-ID: <20100505194417.GV8323@vmware.com>
+References: <20100504230225.GP8323@vmware.com>
+ <4BE1B217.80600@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
-X-Cookie: Do not overtax your powers.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <4BE1B217.80600@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 03:13:52PM -0400, Alan Stern wrote:
+On Wed, May 05, 2010 at 10:59:51AM -0700, Avi Kivity wrote:
+> Date: Wed, 5 May 2010 10:59:51 -0700
+> From: Avi Kivity <avi@redhat.com>
+> To: Pankaj Thakkar <pthakkar@vmware.com>
+> CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+> 	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+> 	"virtualization@lists.linux-foundation.org"
+>  <virtualization@lists.linux-foundation.org>,
+> 	"pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+> 	Shreyas Bhatewara <sbhatewara@vmware.com>
+> Subject: Re: RFC: Network Plugin Architecture (NPA) for vmxnet3
+> 
+> On 05/05/2010 02:02 AM, Pankaj Thakkar wrote:
+> > 2. Hypervisor control: All control operations from the guest such as programming
+> > MAC address go through the hypervisor layer and hence can be subjected to
+> > hypervisor policies. The PF driver can be further used to put policy decisions
+> > like which VLAN the guest should be on.
+> >    
+> 
+> Is this enforced?  Since you pass the hardware through, you can't rely 
+> on the guest actually doing this, yes?
 
-> Should the audio driver be smart enough to know that the codec needs to
-> remain powered up during every opportunistic suspend?
+We don't pass the whole VF to the guest. Only the BAR which is responsible for
+TX/RX/intr is mapped into guest space. The interface between the shell and
+plugin only allows to do operations related to TX and RX such as send a packet
+to the VF, allocate RX buffers, indicate a packet upto the shell. All control
+operations are handled by the shell and the shell does what the existing
+vmxnet3 drivers does (touch a specific register and let the device emulation do
+the work). When a VF is mapped to the guest the hypervisor knows this and
+programs the h/w accordingly on behalf of the shell. So for example if the VM
+does a MAC address change inside the guest, the shell would write to
+VMXNET3_REG_MAC{L|H} registers which would trigger the device emulation to read
+the new mac address and update its internal virtual port information for the
+virtual switch and if the VF is mapped it would also program the embedded
+switch RX filters to reflect the new mac address.
 
-> Or only during opportunistic suspends while a call is in progress?  
+> 
+> > The plugin image is provided by the IHVs along with the PF driver and is
+> > packaged in the hypervisor. The plugin image is OS agnostic and can be loaded
+> > either into a Linux VM or a Windows VM. The plugin is written against the Shell
+> > API interface which the shell is responsible for implementing. The API
+> > interface allows the plugin to do TX and RX only by programming the hardware
+> > rings (along with things like buffer allocation and basic initialization). The
+> > virtual machine comes up in paravirtualized/emulated mode when it is booted.
+> > The hypervisor allocates the VF and other resources and notifies the shell of
+> > the availability of the VF. The hypervisor injects the plugin into memory
+> > location specified by the shell. The shell initializes the plugin by calling
+> > into a known entry point and the plugin initializes the data path. The control
+> > path is already initialized by the PF driver when the VF is allocated. At this
+> > point the shell switches to using the loaded plugin to do all further TX and RX
+> > operations. The guest networking stack does not participate in these operations
+> > and continues to function normally. All the control operations continue being
+> > trapped by the hypervisor and are directed to the PF driver as needed. For
+> > example, if the MAC address changes the hypervisor updates its internal state
+> > and changes the state of the embedded switch as well through the PF control
+> > API.
+> >    
+> 
+> This is essentially a miniature network stack with a its own mini 
+> bonding layer, mini hotplug, and mini API, except s/API/ABI/.  Is this a 
+> correct view?
 
-I think for simplicity and maximum flexibility we should just ignore the
-reason for suspend here, if I'm adding support for this in the drivers
-the suspend reason is not going to be terribly useful and it makes the
-feature more widely useful should people come up with other applications.
+To some extent yes but there is no complicated bonding nor there is any thing
+like a PCI hotplug. The shell interface is small and the OS always interacts
+with the shell as the main driver. Based on the underlying VF the plugin
+changes and this plugin as well is really small. Our vmxnet3 s/w plugin is
+about 1300 lines with whitespaces and comments and the Intel Kawela plugin is
+about 1100 lines with whitspaces and comments. The design principle is to put
+more of the complexity related to initialization/control into the PF driver
+rather than in plugin.
 
-Note that we already have advanced runtime PM for embedded audio which
-will drive modern CODECs into full off state when the device is idle
-anyway, independently of any suspend or runtime PM that the system does.
-Older CODECs need their bias levels maintaining but we can ignore the
-difference there from this point of view.
+> 
+> If so, the Linuxy approach would be to use the ordinary drivers and the 
+> Linux networking API, and hide the bond setup using namespaces.  The 
+> bond driver, or perhaps a new, similar, driver can be enhanced to 
+> propagate ethtool commands to its (hidden) components, and to have a 
+> control channel with the hypervisor.
+> 
+> This would make the approach hypervisor agnostic, you're just pairing 
+> two devices and presenting them to the rest of the stack as a single device.
+> 
+> > We have reworked our existing Linux vmxnet3 driver to accomodate NPA by
+> > splitting the driver into two parts: Shell and Plugin. The new split driver is
+> >    
+> 
+> So the Shell would be the reworked or new bond driver, and Plugins would 
+> be ordinary Linux network drivers.
 
-> Does it know when a call is in progress?
+In NPA we do not rely on the guest OS to provide any of these services like
+bonding or PCI hotplug. We don't rely on the guest OS to unmap a VF and switch
+a VM out of passthrough. In a bonding approach that becomes an issue you can't
+just yank a device from underneath, you have to wait for the OS to process the
+request and switch from using VF to the emulated device and this makes the
+hypervisor dependent on the guest OS. Also we don't rely on the presence of all
+the drivers inside the guest OS (be it Linux or Windows), the ESX hypervisor
+carries all the plugins and the PF drivers and injects the right one as needed.
+These plugins are guest agnostic and the IHVs do not have to write plugins for
+different OS.
 
-Not at present.  This is relatively straightforward to add within ASoC,
-especially for analogue links, if not completely trivial.  Digital
-basebands are a bit more fun but not insurmountable (and need cleaning
-up anyway, there's some ongoing work which should hit soon).
 
-We currently drive everything into off state when we're told to suspend
-since it's the right thing to do for most non-phone devices.  We'll
-still need to drive some of the system into an off state (eg, some of
-the drivers in the CPU) even when this is handled.
+Thanks,
 
-> Does Android use forced suspends?
+-pankaj
 
-Pass, but it's not been an issue users have raised with me - but then
-we can't tell why the suspend happens and need to handle opportunistic
-suspend anyway.
-
-> If it does, are they supposed to shut down the codec?
-
-I suspect it's a non-issue; if we're not actually using audio then ASoC
-will drive a modern CODEC into power off anyway as part of its runtime
-PM.  However, I believe some non-Android phone stacks are doing
-something along that line.
+ 
