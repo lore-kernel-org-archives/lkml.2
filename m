@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760336Ab0EEAB7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 20:01:59 -0400
-Received: from tundra.namei.org ([65.99.196.166]:58583 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757667Ab0EEAB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 20:01:58 -0400
-Date: Wed, 5 May 2010 10:01:54 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, Jean-Christophe Dubois <jcd@tribudubois.net>,
-       Serge Hallyn <serue@us.ibm.com>,
-       Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-       Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH] ima: remove ACPI dependency
-In-Reply-To: <1273011390-6090-1-git-send-email-zohar@linux.vnet.ibm.com>
-Message-ID: <alpine.LRH.2.00.1005051001420.12883@tundra.namei.org>
-References: <1273011390-6090-1-git-send-email-zohar@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1760360Ab0EEACw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 20:02:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60516 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756607Ab0EEACt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 20:02:49 -0400
+Date: Tue, 4 May 2010 17:00:32 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>
+Subject: Re: 2.6.34-rc6-git2: Reported regressions from 2.6.33
+In-Reply-To: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera>
+Message-ID: <alpine.LFD.2.00.1005041654400.5478@i5.linux-foundation.org>
+References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 May 2010, Mimi Zohar wrote:
 
-> The ACPI dependency moved to the TPM, where it belongs.  Although
-> IMA per-se does not require access to the bios measurement log,
-> verifying the IMA boot aggregate does, which requires ACPI.
+
+On Tue, 4 May 2010, Rafael J. Wysocki wrote:
 > 
-> This patch prereq's 'TPM: ACPI/PNP dependency removal'
-> http://lkml.org/lkml/2010/5/4/378.
+> Unresolved regressions
+> ----------------------
 > 
-> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> Reported-by: Jean-Christophe Dubois <jcd@tribudubois.net>
-> Acked-by: Serge Hallyn <serue@us.ibm.com>
-> Tested-by: Serge Hallyn <serue@us.ibm.com>
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15880
+> Subject		: Very bad regression from 2.6.33 as of 1600f9def
+> Submitter	: Alex Elsayed <eternaleye@gmail.com>
+> Date		: 2010-04-29 2:28 (6 days old)
+> Message-ID	: <loom.20100429T041908-663@post.gmane.org>
+> References	: http://marc.info/?l=linux-kernel&m=127250825306178&w=2
 
+This looks like it wasn't a regression, but some other compile/install 
+issue. See
 
-Applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
+	http://marc.info/?l=linux-kernel&m=127274294422719&w=2
 
+where he reports that his self-compiled 2.6.33 doesn't boot either. 
 
--- 
-James Morris
-<jmorris@namei.org>
+There's some confusion about .config, but it might well be an install 
+problem too (in fact, that sounds more likely - the original bug-report 
+seems to reboot before the kernel has really even booted - it apparently 
+hasn't done the graphics mode switch by the early bootloader)
+
+		Linus
