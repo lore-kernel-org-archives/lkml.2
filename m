@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934244Ab0EEJ5w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 05:57:52 -0400
-Received: from mail-ew0-f222.google.com ([209.85.219.222]:58138 "EHLO
-	mail-ew0-f222.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932412Ab0EEJ5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 05:57:51 -0400
-Message-ID: <4BE140F3.3070901@ru.mvista.com>
-Date: Wed, 05 May 2010 13:57:07 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S934290Ab0EEJ65 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 05:58:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54989 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932412Ab0EEJ64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 05:58:56 -0400
+Message-ID: <4BE14141.9020006@kernel.org>
+Date: Wed, 05 May 2010 11:58:25 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-CC: paulius.zaleckas@gmail.com, linux@arm.linux.org.uk,
-       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: Gemini: fix compiler error in copypage-fa.c
-References: <1272983655-18408-1-git-send-email-ulli.kroll@googlemail.com>
-In-Reply-To: <1272983655-18408-1-git-send-email-ulli.kroll@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: rostedt@goodmis.org
+CC: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu, efault@gmx.de,
+       avi@redhat.com, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/12] perf: add @rq to perf_event_task_sched_out()
+References: <1272976724-14312-1-git-send-email-tj@kernel.org>	 <1272976724-14312-5-git-send-email-tj@kernel.org>	 <1272993090.1642.184.camel@laptop>  <4BE057EB.80604@kernel.org>	 <1272997363.9739.232.camel@gandalf.stny.rr.com>	 <1272997616.1642.207.camel@laptop> <1272997930.9739.233.camel@gandalf.stny.rr.com>
+In-Reply-To: <1272997930.9739.233.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 09:58:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 05/04/2010 08:32 PM, Steven Rostedt wrote:
+>> ---
+>>  include/trace/events/sched.h      |   32 ++++++++++----------------------
+>>  kernel/sched.c                    |    8 ++++----
+>>  kernel/trace/trace_sched_wakeup.c |    5 ++---
+>>  3 files changed, 16 insertions(+), 29 deletions(-)
+> 
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Hans Ulli Kroll wrote:
+Peter, can I include this patch into my series?  If so, can you please
+post a patch w/ description?
 
-> Fix compiler error in copypage-fs.c
->   
+Thanks.
 
-   You've called it copypage-fa.c in the subject.
-
-> missing struct vm_area_struct *vma in function
-> fa_copy_user_highpage
->
-> Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-> ---
->  arch/arm/mm/copypage-fa.c |    2 +-
->   
-
-   And the file name is indeed copypage-fa.c...
-
-WBR, Sergei
-
+-- 
+tejun
