@@ -1,210 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934744Ab0EEQQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 12:16:39 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55601 "EHLO mx1.suse.de"
+	id S934776Ab0EEQRB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 12:17:01 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55615 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932818Ab0EEQQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 12:16:38 -0400
-Date: Thu, 6 May 2010 02:16:32 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+	id S932818Ab0EEQQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 12:16:59 -0400
+Date: Wed, 5 May 2010 09:15:53 -0700
+From: Greg KH <gregkh@suse.de>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+       Jakob Viketoft <jakob.viketoft@bitsim.com>,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cache last free vmap_area to avoid restarting beginning
-Message-ID: <20100505161632.GB5378@laptop>
-References: <1271262948.2233.14.camel@barrios-desktop>
- <1271320388.2537.30.camel@localhost>
- <1271350270.2013.29.camel@barrios-desktop>
- <1271427056.7196.163.camel@localhost.localdomain>
- <1271603649.2100.122.camel@barrios-desktop>
- <1271681929.7196.175.camel@localhost.localdomain>
- <h2g28c262361004190712v131bf7a3q2a82fd1168faeefe@mail.gmail.com>
- <1272548602.7196.371.camel@localhost.localdomain>
- <1272821394.2100.224.camel@barrios-desktop>
- <1273063728.7196.385.camel@localhost.localdomain>
+Subject: Re: [PATCH] colibri.h: Fix building for colibri 270...
+Message-ID: <20100505161553.GA8462@suse.de>
+References: <4BC84766.5060208@bitsim.com>
+ <4BC8493D.60900@bitsim.com>
+ <20100416112820.GM30801@buzzloop.caiaq.de>
+ <20100416112931.GN30801@buzzloop.caiaq.de>
+ <n2mf17812d71005050045x4359dfeu2f563c3ac0a42223@mail.gmail.com>
+ <20100505080015.GD30801@buzzloop.caiaq.de>
+ <u2nf17812d71005050228x3c19060n9a096d7bcc1db4d6@mail.gmail.com>
+ <20100505094405.GG30801@buzzloop.caiaq.de>
+ <20100505152000.GC16294@suse.de>
+ <20100505155424.GL30801@buzzloop.caiaq.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1273063728.7196.385.camel@localhost.localdomain>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100505155424.GL30801@buzzloop.caiaq.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 01:48:48PM +0100, Steven Whitehouse wrote:
-> Hi,
-> 
-> On Mon, 2010-05-03 at 02:29 +0900, Minchan Kim wrote:
-> > Hi, Steven. 
+On Wed, May 05, 2010 at 05:54:24PM +0200, Daniel Mack wrote:
+> On Wed, May 05, 2010 at 08:20:00AM -0700, Greg KH wrote:
+> > On Wed, May 05, 2010 at 11:44:05AM +0200, Daniel Mack wrote:
+> > > On Wed, May 05, 2010 at 05:28:45PM +0800, Eric Miao wrote:
+> > > > On Wed, May 5, 2010 at 4:00 PM, Daniel Mack <daniel@caiaq.de> wrote:
+> > > > > On Wed, May 05, 2010 at 03:45:34PM +0800, Eric Miao wrote:
+> > > > >> On Fri, Apr 16, 2010 at 7:29 PM, Daniel Mack <daniel@caiaq.de> wrote:
+> > > > >> > On Fri, Apr 16, 2010 at 01:28:20PM +0200, Daniel Mack wrote:
+> > > > >> >> On Fri, Apr 16, 2010 at 01:25:49PM +0200, Jakob Viketoft wrote:
+> > > > >> >> > Adding a "#include <mach/mfp.h>" seem to cure this problem. If you
+> > > > >> >> > agree I can supply a new patch with the correct solution this time.
+> > > > >> >>
+> > > > >> >> Ok. Add it to colibri.h, and while at it, you can kick the ax88796.h
+> > > > >> >> inclusion. That's a leftover and isn't needed.
+> > > > >> >
+> > > > >> > And Cc: stable@kernel.org for the backmerge to 2.6.33.
+> > > > >> >
+> > > > >>
+> > > > >> Jakob, any update on this?
+> > > > >
+> > > > > Jakob provided an updated patch for this:
+> > > > >
+> > > > >  http://lkml.org/lkml/2010/4/16/100
+> > > > >
+> > > > 
+> > > > Looks it didn't make into -stable.
+> > > 
+> > > Greg, stable@kernel.org was in Cc: for the patch in the URL above.
+> > > Any chance to get this in?
 > > 
-> > Sorry for lazy response.
-> > I wanted to submit the patch which implement Nick's request whole.
-> > And unfortunately, I am so busy now. 
-> > But if it's urgent, I want to submit this one firstly and 
-> > at next version, maybe I will submit remained TODO things 
-> > after middle of May.
-> > 
-> > I think this patch can't make regression other usages.
-> > Nick. What do you think about?
-> > 
-> I guess the question is whether the remaining items are essential for
-> correct functioning of this patch, or whether they are "it would be nice
-> if" items. I suspect that they are the latter (I'm not a VM expert, but
-> from the brief descriptions it looks like that to me) in which case I'd
-> suggest send the currently existing patch first and the following up
-> with the remaining changes later.
+> > Is it in Linus's tree?  If so, what is the git commit id of it?  If you
+> > properly tag the patch with "cc: stable <stable@kernel.org>" like you
+> > did in the patch, then it will be automatically sent to me when it hits
+> > Linus's tree.
 > 
-> We have got a nice speed up with your current patch and so far as I'm
-> aware not introduced any new bugs or regressions with it.
+> I see - thought you were picking them up from the mails.
+> Thanks for explaining :)
 > 
-> Nick, does that sound ok?
+> > I don't see this one in my queue at the moment.
+> 
+> It's not there yet. Eric picked it, but I'm not sure whether it will
+> still make it to .34. But ok, let's just wait then.
 
-Just got around to looking at it again. I definitely agree we need to
-fix the regression, however I'm concerned about introducing other
-possible problems while doing that.
+I _CAN_NOT_ take patches into the stable tree before they go into
+Linus's tree, so even if I was picking them up from emails, this could
+not be accepted.
 
-The following patch should (modulo bugs, but it's somewhat tested) give
-no difference in the allocation patterns, so won't introduce virtual
-memory layout changes.
+Please read the file, Documentation/stable_kernel_rules.txt for how the
+process works.
 
-Any chance you could test it?
+thanks,
 
----
- mm/vmalloc.c |   49 +++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 35 insertions(+), 14 deletions(-)
-
-Index: linux-2.6/mm/vmalloc.c
-===================================================================
---- linux-2.6.orig/mm/vmalloc.c
-+++ linux-2.6/mm/vmalloc.c
-@@ -262,8 +262,13 @@ struct vmap_area {
- };
- 
- static DEFINE_SPINLOCK(vmap_area_lock);
--static struct rb_root vmap_area_root = RB_ROOT;
- static LIST_HEAD(vmap_area_list);
-+static struct rb_root vmap_area_root = RB_ROOT;
-+
-+static struct rb_node *free_vmap_cache;
-+static unsigned long cached_hole_size;
-+static unsigned long cached_start;
-+
- static unsigned long vmap_area_pcpu_hole;
- 
- static struct vmap_area *__find_vmap_area(unsigned long addr)
-@@ -332,6 +337,7 @@ static struct vmap_area *alloc_vmap_area
- 	struct rb_node *n;
- 	unsigned long addr;
- 	int purged = 0;
-+	struct vmap_area *first;
- 
- 	BUG_ON(!size);
- 	BUG_ON(size & ~PAGE_MASK);
-@@ -348,11 +354,23 @@ retry:
- 	if (addr + size - 1 < addr)
- 		goto overflow;
- 
--	/* XXX: could have a last_hole cache */
--	n = vmap_area_root.rb_node;
--	if (n) {
--		struct vmap_area *first = NULL;
-+	if (size <= cached_hole_size || addr < cached_start || !free_vmap_cache) {
-+		cached_hole_size = 0;
-+		cached_start = addr;
-+		free_vmap_cache = NULL;
-+	}
- 
-+	/* find starting point for our search */
-+	if (free_vmap_cache) {
-+		first = rb_entry(free_vmap_cache, struct vmap_area, rb_node);
-+		addr = ALIGN(first->va_end + PAGE_SIZE, align);
-+
-+	} else {
-+		n = vmap_area_root.rb_node;
-+		if (!n)
-+			goto found;
-+
-+		first = NULL;
- 		do {
- 			struct vmap_area *tmp;
- 			tmp = rb_entry(n, struct vmap_area, rb_node);
-@@ -369,26 +387,36 @@ retry:
- 		if (!first)
- 			goto found;
- 
--		if (first->va_end < addr) {
-+		if (first->va_start < addr) {
-+			BUG_ON(first->va_end < addr);
- 			n = rb_next(&first->rb_node);
-+			addr = ALIGN(first->va_end + PAGE_SIZE, align);
- 			if (n)
- 				first = rb_entry(n, struct vmap_area, rb_node);
- 			else
- 				goto found;
- 		}
-+		BUG_ON(first->va_start < addr);
-+		if (addr + cached_hole_size < first->va_start)
-+			cached_hole_size = first->va_start - addr;
-+	}
- 
--		while (addr + size > first->va_start && addr + size <= vend) {
--			addr = ALIGN(first->va_end + PAGE_SIZE, align);
--			if (addr + size - 1 < addr)
--				goto overflow;
-+	/* from the starting point, walk areas until a suitable hole is found */
- 
--			n = rb_next(&first->rb_node);
--			if (n)
--				first = rb_entry(n, struct vmap_area, rb_node);
--			else
--				goto found;
--		}
-+	while (addr + size > first->va_start && addr + size <= vend) {
-+		if (addr + cached_hole_size < first->va_start)
-+			cached_hole_size = first->va_start - addr;
-+		addr = ALIGN(first->va_end + PAGE_SIZE, align);
-+		if (addr + size - 1 < addr)
-+			goto overflow;
-+
-+		n = rb_next(&first->rb_node);
-+		if (n)
-+			first = rb_entry(n, struct vmap_area, rb_node);
-+		else
-+			goto found;
- 	}
-+
- found:
- 	if (addr + size > vend) {
- overflow:
-@@ -412,6 +440,7 @@ overflow:
- 	va->va_end = addr + size;
- 	va->flags = 0;
- 	__insert_vmap_area(va);
-+	free_vmap_cache = &va->rb_node;
- 	spin_unlock(&vmap_area_lock);
- 
- 	return va;
-@@ -427,6 +456,21 @@ static void rcu_free_va(struct rcu_head
- static void __free_vmap_area(struct vmap_area *va)
- {
- 	BUG_ON(RB_EMPTY_NODE(&va->rb_node));
-+
-+	if (free_vmap_cache) {
-+		if (va->va_end < cached_start) {
-+			cached_hole_size = 0;
-+			cached_start = 0;
-+			free_vmap_cache = NULL;
-+		} else {
-+			struct vmap_area *cache;
-+			cache = rb_entry(free_vmap_cache, struct vmap_area, rb_node);
-+			if (va->va_start <= cache->va_start) {
-+				free_vmap_cache = rb_prev(&va->rb_node);
-+				cache = rb_entry(free_vmap_cache, struct vmap_area, rb_node);
-+			}
-+		}
-+	}
- 	rb_erase(&va->rb_node, &vmap_area_root);
- 	RB_CLEAR_NODE(&va->rb_node);
- 	list_del_rcu(&va->list);
+greg k-h
