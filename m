@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758786Ab0EEVbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 17:31:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50836 "EHLO mx1.redhat.com"
+	id S1758807Ab0EEVbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 17:31:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33422 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758625Ab0EEV3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758623Ab0EEV3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 May 2010 17:29:39 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com
-Subject: [PATCH v3 5/8] export paravirtual cpuid flags in KVM_GET_SUPPORTED_CPUID
-Date: Wed,  5 May 2010 17:27:16 -0400
-Message-Id: <1273094839-18655-6-git-send-email-glommer@redhat.com>
-In-Reply-To: <1273094839-18655-5-git-send-email-glommer@redhat.com>
+Subject: [PATCH v3 4/8] add new KVMCLOCK cpuid feature
+Date: Wed,  5 May 2010 17:27:15 -0400
+Message-Id: <1273094839-18655-5-git-send-email-glommer@redhat.com>
+In-Reply-To: <1273094839-18655-4-git-send-email-glommer@redhat.com>
 References: <1273094839-18655-1-git-send-email-glommer@redhat.com>
  <1273094839-18655-2-git-send-email-glommer@redhat.com>
  <1273094839-18655-3-git-send-email-glommer@redhat.com>
  <1273094839-18655-4-git-send-email-glommer@redhat.com>
- <1273094839-18655-5-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now, we were using individual KVM_CAP entities to communicate
-userspace about which cpuids we support. This is suboptimal, since it
-generates a delay between the feature arriving in the host, and
-being available at the guest.
-
-A much better mechanism is to list para features in KVM_GET_SUPPORTED_CPUID.
-This makes userspace automatically aware of what we provide. And if we
-ever add a new cpuid bit in the future, we have to do that again,
-which create some complexity and delay in feature adoption.
+This cpuid, KVM_CPUID_CLOCKSOURCE2, will indicate to the guest
+that kvmclock is available through a new set of MSRs. The old ones
+are deprecated.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
 ---
- arch/x86/kvm/x86.c |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/kvm_para.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index eb84947..9295198 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1971,6 +1971,23 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 		}
- 		break;
- 	}
-+	case KVM_CPUID_SIGNATURE: {
-+		char signature[12] = "KVMKVMKVM\0\0";
-+		u32 *sigptr = (u32 *)signature;
-+		entry->eax = 1;
-+		entry->ebx = sigptr[0];
-+		entry->ecx = sigptr[1];
-+		entry->edx = sigptr[2];
-+		break;
-+	}
-+	case KVM_CPUID_FEATURES:
-+		entry->eax = (1 << KVM_FEATURE_CLOCKSOURCE) |
-+			     (1 << KVM_FEATURE_NOP_IO_DELAY) |
-+			     (1 << KVM_FEATURE_CLOCKSOURCE2);
-+		entry->ebx = 0;
-+		entry->ecx = 0;
-+		entry->edx = 0;
-+		break;
- 	case 0x80000000:
- 		entry->eax = min(entry->eax, 0x8000001a);
- 		break;
-@@ -2017,6 +2034,19 @@ static int kvm_dev_ioctl_get_supported_cpuid(struct kvm_cpuid2 *cpuid,
- 	for (func = 0x80000001; func <= limit && nent < cpuid->nent; ++func)
- 		do_cpuid_ent(&cpuid_entries[nent], func, 0,
- 			     &nent, cpuid->nent);
-+
-+	
-+
-+	r = -E2BIG;
-+	if (nent >= cpuid->nent)
-+		goto out_free;
-+
-+	do_cpuid_ent(&cpuid_entries[nent], KVM_CPUID_SIGNATURE, 0, &nent,
-+		     cpuid->nent);
-+
-+	do_cpuid_ent(&cpuid_entries[nent], KVM_CPUID_FEATURES, 0, &nent,
-+		     cpuid->nent);
-+
- 	r = -E2BIG;
- 	if (nent >= cpuid->nent)
- 		goto out_free;
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 9734808..f019f8c 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -16,6 +16,10 @@
+ #define KVM_FEATURE_CLOCKSOURCE		0
+ #define KVM_FEATURE_NOP_IO_DELAY	1
+ #define KVM_FEATURE_MMU_OP		2
++/* This indicates that the new set of kvmclock msrs
++ * are available. The use of 0x11 and 0x12 is deprecated
++ */
++#define KVM_FEATURE_CLOCKSOURCE2        3
+ 
+ #define MSR_KVM_WALL_CLOCK  0x11
+ #define MSR_KVM_SYSTEM_TIME 0x12
 -- 
 1.6.2.2
 
