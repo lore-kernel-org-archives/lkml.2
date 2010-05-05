@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934699Ab0EEKlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 06:41:07 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54790 "EHLO
+	id S934766Ab0EEKlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 06:41:46 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54818 "EHLO
 	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934690Ab0EEKlC (ORCPT
+	with ESMTP id S934639Ab0EEKlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 06:41:02 -0400
+	Wed, 5 May 2010 06:41:42 -0400
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 10/20] synclink: reworking locking a bit
+Subject: [PATCH 17/20] serial: Change the wait for carrier locking
 To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de
-Date: Wed, 05 May 2010 11:02:36 +0100
-Message-ID: <20100505100236.3595.27264.stgit@localhost.localdomain>
+Date: Wed, 05 May 2010 11:03:16 +0100
+Message-ID: <20100505100316.3595.61756.stgit@localhost.localdomain>
 In-Reply-To: <20100505100144.3595.65633.stgit@localhost.localdomain>
 References: <20100505100144.3595.65633.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,129 +22,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the port mutex and port lock to fix the various races. The locking
-still isn't totally consistent but its better than before. Wants switching
-to the port helpers.
+We want to push the lock/unlock into the helper functions so that we
+can prepare to move to using the tty_port helper. The expansion initially
+comes out a bit ugly but its worth the temporary expansion IMHO just so
+we can produce a nice testable series of changes.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/char/synclink_gt.c |   12 +++++++++++-
- drivers/char/synclinkmp.c  |    9 ++++++++-
- 2 files changed, 19 insertions(+), 2 deletions(-)
+ drivers/serial/serial_core.c |   44 +++++++++++++++++++++++++++++++++---------
+ 1 files changed, 35 insertions(+), 9 deletions(-)
 
 
-diff --git a/drivers/char/synclink_gt.c b/drivers/char/synclink_gt.c
-index d0f81f5..c56b70a 100644
---- a/drivers/char/synclink_gt.c
-+++ b/drivers/char/synclink_gt.c
-@@ -675,12 +675,14 @@ static int open(struct tty_struct *tty, struct file *filp)
- 		goto cleanup;
- 	}
- 
-+	mutex_lock(&info->port.mutex);
- 	info->port.tty->low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	spin_lock_irqsave(&info->netlock, flags);
- 	if (info->netcount) {
- 		retval = -EBUSY;
- 		spin_unlock_irqrestore(&info->netlock, flags);
-+		mutex_unlock(&info->port.mutex);
- 		goto cleanup;
- 	}
- 	info->port.count++;
-@@ -692,7 +694,7 @@ static int open(struct tty_struct *tty, struct file *filp)
- 		if (retval < 0)
- 			goto cleanup;
- 	}
--
-+	mutex_unlock(&info->port.mutex);
- 	retval = block_til_ready(tty, filp, info);
- 	if (retval) {
- 		DBGINFO(("%s block_til_ready rc=%d\n", info->device_name, retval));
-@@ -724,12 +726,14 @@ static void close(struct tty_struct *tty, struct file *filp)
- 	if (tty_port_close_start(&info->port, tty, filp) == 0)
- 		goto cleanup;
- 
-+	mutex_lock(&info->port.mutex);
-  	if (info->port.flags & ASYNC_INITIALIZED)
-  		wait_until_sent(tty, info->timeout);
- 	flush_buffer(tty);
- 	tty_ldisc_flush(tty);
- 
- 	shutdown(info);
-+	mutex_unlock(&info->port.mutex);
- 
- 	tty_port_close_end(&info->port, tty);
- 	info->port.tty = NULL;
-@@ -740,17 +744,23 @@ cleanup:
- static void hangup(struct tty_struct *tty)
- {
- 	struct slgt_info *info = tty->driver_data;
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index 570dca2..424b1c7 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -1272,6 +1272,7 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 	struct uart_state *state = tty->driver_data;
+ 	struct tty_port *port;
+ 	struct uart_port *uport;
 +	unsigned long flags;
  
- 	if (sanity_check(info, tty->name, "hangup"))
- 		return;
- 	DBGINFO(("%s hangup\n", info->device_name));
+ 	BUG_ON(!kernel_locked());
  
- 	flush_buffer(tty);
-+
-+	mutex_lock(&info->port.mutex);
- 	shutdown(info);
+@@ -1284,9 +1285,12 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 	pr_debug("uart_close(%d) called\n", uport->line);
  
-+	spin_lock_irqsave(&info->port.lock, flags);
- 	info->port.count = 0;
- 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	info->port.tty = NULL;
-+	spin_unlock_irqrestore(&info->port.lock, flags);
-+	mutex_unlock(&info->port.mutex);
+ 	mutex_lock(&port->mutex);
++	spin_lock_irqsave(&port->lock, flags);
  
- 	wake_up_interruptible(&info->port.open_wait);
- }
-diff --git a/drivers/char/synclinkmp.c b/drivers/char/synclinkmp.c
-index 8da976b..cfa581e 100644
---- a/drivers/char/synclinkmp.c
-+++ b/drivers/char/synclinkmp.c
-@@ -812,13 +812,15 @@ static void close(struct tty_struct *tty, struct file *filp)
+-	if (tty_hung_up_p(filp))
++	if (tty_hung_up_p(filp)) {
++		spin_unlock_irqrestore(&port->lock, flags);
+ 		goto done;
++	}
  
- 	if (tty_port_close_start(&info->port, tty, filp) == 0)
- 		goto cleanup;
--		
-+
-+	mutex_lock(&info->port.mutex);		
-  	if (info->port.flags & ASYNC_INITIALIZED)
-  		wait_until_sent(tty, info->timeout);
+ 	if ((tty->count == 1) && (port->count != 1)) {
+ 		/*
+@@ -1305,8 +1309,10 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 		       tty->name, port->count);
+ 		port->count = 0;
+ 	}
+-	if (port->count)
++	if (port->count) {
++		spin_unlock_irqrestore(&port->lock, flags);
+ 		goto done;
++	}
  
- 	flush_buffer(tty);
+ 	/*
+ 	 * Now we wait for the transmit buffer to clear; and we notify
+@@ -1314,6 +1320,7 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 	 * setting tty->closing.
+ 	 */
+ 	tty->closing = 1;
++	spin_unlock_irqrestore(&port->lock, flags);
+ 
+ 	if (port->closing_wait != ASYNC_CLOSING_WAIT_NONE)
+ 		tty_wait_until_sent(tty, msecs_to_jiffies(port->closing_wait));
+@@ -1340,20 +1347,26 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 
  	tty_ldisc_flush(tty);
- 	shutdown(info);
-+	mutex_unlock(&info->port.mutex);		
  
- 	tty_port_close_end(&info->port, tty);
- 	info->port.tty = NULL;
-@@ -834,6 +836,7 @@ cleanup:
- static void hangup(struct tty_struct *tty)
+-	tty->closing = 0;
+ 	tty_port_tty_set(port, NULL);
++	spin_lock_irqsave(&port->lock, flags);
++	tty->closing = 0;
+ 
+ 	if (port->blocked_open) {
++		spin_unlock_irqrestore(&port->lock, flags);
+ 		if (port->close_delay)
+ 			msleep_interruptible(port->close_delay);
++		spin_lock_irqsave(&port->lock, flags);
+ 	} else if (!uart_console(uport)) {
++		spin_unlock_irqrestore(&port->lock, flags);
+ 		uart_change_pm(state, 3);
++		spin_lock_irqsave(&port->lock, flags);
+ 	}
+ 
+ 	/*
+ 	 * Wake up anyone trying to open this port.
+ 	 */
+ 	clear_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
++	spin_unlock_irqrestore(&port->lock, flags);
+ 	wake_up_interruptible(&port->open_wait);
+ 
+ done:
+@@ -1429,6 +1442,7 @@ static void uart_hangup(struct tty_struct *tty)
  {
- 	SLMP_INFO *info = tty->driver_data;
+ 	struct uart_state *state = tty->driver_data;
+ 	struct tty_port *port = &state->port;
 +	unsigned long flags;
  
- 	if (debug_level >= DEBUG_LEVEL_INFO)
- 		printk("%s(%d):%s hangup()\n",
-@@ -842,12 +845,16 @@ static void hangup(struct tty_struct *tty)
- 	if (sanity_check(info, tty->name, "hangup"))
- 		return;
+ 	BUG_ON(!kernel_locked());
+ 	pr_debug("uart_hangup(%d)\n", state->uart_port->line);
+@@ -1437,8 +1451,10 @@ static void uart_hangup(struct tty_struct *tty)
+ 	if (port->flags & ASYNC_NORMAL_ACTIVE) {
+ 		uart_flush_buffer(tty);
+ 		uart_shutdown(tty, state);
++		spin_lock_irqsave(&port->lock, flags);
+ 		port->count = 0;
+ 		clear_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
++		spin_unlock_irqrestore(&port->lock, flags);
+ 		tty_port_tty_set(port, NULL);
+ 		wake_up_interruptible(&port->open_wait);
+ 		wake_up_interruptible(&port->delta_msr_wait);
+@@ -1496,9 +1512,13 @@ uart_block_til_ready(struct file *filp, struct uart_state *state)
+ 	struct uart_port *uport = state->uart_port;
+ 	struct tty_port *port = &state->port;
+ 	unsigned int mctrl;
++	unsigned long flags;
  
-+	mutex_lock(&info->port.mutex);		
- 	flush_buffer(tty);
- 	shutdown(info);
++	spin_lock_irqsave(&port->lock, flags);
++	if (!tty_hung_up_p(filp))
++		port->count--;
+ 	port->blocked_open++;
+-	port->count--;
++	spin_unlock_irqrestore(&port->lock, flags);
  
-+	spin_lock_irqsave(&info->port.lock, flags);
- 	info->port.count = 0;
- 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	info->port.tty = NULL;
-+	spin_unlock_irqrestore(&info->port.lock, flags);
-+	mutex_unlock(&info->port.mutex);		
+ 	add_wait_queue(&port->open_wait, &wait);
+ 	while (1) {
+@@ -1535,23 +1555,26 @@ uart_block_til_ready(struct file *filp, struct uart_state *state)
+ 		 * not set RTS here - we want to make sure we catch
+ 		 * the data from the modem.
+ 		 */
+-		if (port->tty->termios->c_cflag & CBAUD)
++		if (port->tty->termios->c_cflag & CBAUD) {
++			mutex_lock(&port->mutex);
+ 			uart_set_mctrl(uport, TIOCM_DTR);
++			mutex_unlock(&port->mutex);
++		}
  
- 	wake_up_interruptible(&info->port.open_wait);
- }
+ 		/*
+ 		 * and wait for the carrier to indicate that the
+ 		 * modem is ready for us.
+ 		 */
++		mutex_lock(&port->mutex);
+ 		spin_lock_irq(&uport->lock);
+ 		uport->ops->enable_ms(uport);
+ 		mctrl = uport->ops->get_mctrl(uport);
+ 		spin_unlock_irq(&uport->lock);
++		mutex_unlock(&port->mutex);
+ 		if (mctrl & TIOCM_CAR)
+ 			break;
+ 
+-		mutex_unlock(&port->mutex);
+ 		schedule();
+-		mutex_lock(&port->mutex);
+ 
+ 		if (signal_pending(current))
+ 			break;
+@@ -1559,8 +1582,11 @@ uart_block_til_ready(struct file *filp, struct uart_state *state)
+ 	set_current_state(TASK_RUNNING);
+ 	remove_wait_queue(&port->open_wait, &wait);
+ 
+-	port->count++;
++	spin_lock_irqsave(&port->lock, flags);
++	if (!tty_hung_up_p(filp))
++		port->count++;
+ 	port->blocked_open--;
++	spin_unlock_irqrestore(&port->lock, flags);
+ 
+ 	if (signal_pending(current))
+ 		return -ERESTARTSYS;
+@@ -1677,9 +1703,9 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
+ 	/*
+ 	 * If we succeeded, wait until the port is ready.
+ 	 */
++	mutex_unlock(&port->mutex);
+ 	if (retval == 0)
+ 		retval = uart_block_til_ready(filp, state);
+-	mutex_unlock(&port->mutex);
+ 
+ 	/*
+ 	 * If this is the first open to succeed, adjust things to suit.
 
