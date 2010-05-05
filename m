@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758498Ab0EEWB6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 18:01:58 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:46381 "EHLO e4.ny.us.ibm.com"
+	id S1758701Ab0EEWEF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 18:04:05 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:46312 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751256Ab0EEWB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 18:01:57 -0400
-Date: Wed, 5 May 2010 17:01:50 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
-       netdev@vger.kernel.org, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 2/6] netns: Teach network device kobjects which
- namespace they are in.
-Message-ID: <20100505220150.GA11595@us.ibm.com>
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
- <1273019809-16472-2-git-send-email-ebiederm@xmission.com>
- <20100505151746.GA15654@us.ibm.com>
- <m14oim2kcm.fsf@fess.ebiederm.org>
+	id S1756320Ab0EEWEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 18:04:00 -0400
+Date: Wed, 5 May 2010 15:03:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Hemminger <shemminger@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com, David Miller <davem@davemloft.net>
+Subject: Re: [PATCH tip/core/rcu 28/48] net: Make accesses to ->br_port
+ safe for sparse RCU
+Message-ID: <20100505220355.GA20938@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100504201934.GA19234@linux.vnet.ibm.com>
+ <1273004398-19760-28-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20100504142631.148b52dc@nehalam>
+ <201005042341.49480.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m14oim2kcm.fsf@fess.ebiederm.org>
+In-Reply-To: <201005042341.49480.arnd@arndb.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> "Serge E. Hallyn" <serue@us.ibm.com> writes:
+On Tue, May 04, 2010 at 11:41:49PM +0200, Arnd Bergmann wrote:
+> On Tuesday 04 May 2010 23:26:31 Stephen Hemminger wrote:
+> > > The new versions of the rcu_dereference() APIs requires that any pointers
+> > > passed to one of these APIs be fully defined.  The ->br_port field
+> > > in struct net_device points to a struct net_bridge_port, which is an
+> > > incomplete type.  This commit therefore changes ->br_port to be a void*,
+> > > and introduces a br_port() helper function to convert the type to struct
+> > > net_bridge_port, and applies this new helper function where required.
+> > 
+> > I would rather make the bridge hook generic and not take a type argument.
 > 
-> > Quoting Eric W. Biederman (ebiederm@xmission.com):
-> >> diff --git a/net/Kconfig b/net/Kconfig
-> >> index 041c35e..265e33b 100644
-> >> --- a/net/Kconfig
-> >> +++ b/net/Kconfig
-> >> @@ -45,6 +45,14 @@ config COMPAT_NETLINK_MESSAGES
-> >> 
-> >>  menu "Networking options"
-> >> 
-> >> +config NET_NS
-> >> +	bool "Network namespace support"
-> >> +	default n
-> >> +	depends on EXPERIMENTAL && NAMESPACES
-> >> +	help
-> >> +	  Allow user space to create what appear to be multiple instances
-> >> +	  of the network stack.
-> >> +
-> >
-> > Hi Eric,
-> >
-> > I'm confused - NET_NS is defined in init/Kconfig right now.  Is the tree
-> > you're working from very different from mine, or is this the unfortunate
-> > rekult of the patches sitting so long?
+> Not sure if you were confused by the comment in the same way that I was.
 > 
-> Old patches, nothing that complains when you make a mistake like this,
-> and apparently I have a blind spot in my personal code review.
+> The bridge hook is not impacted by this at all, since we can either pass
+> a void* or a struct net_bridge_port* to it. The br_port() helper
+> is used for all the places where we actually want to dereference 
+> dev->br_port and access its contents.
 
-haha, we all know about that.
+What should I change in the commit message to clear this up?
 
-> At one point it was not possible to enable the network namespace until
-> the sysfs stuff was enabled, but things have been going on long enough
-> that we worked around that restriction.
+Of course, if the code needs to change, please let me know what should
+change there as well.
 
-Yeah, I remember that, and leaving this wouldn't break anything.
-
-> >>  int netdev_kobject_init(void)
-> >>  {
-> >> +	kobj_ns_type_register(&net_ns_type_operations);
-> >> +#ifdef CONFIG_SYSFS
-> >> +	register_pernet_subsys(&sysfs_net_ops);
-> >> +#endif
-> >>  	return class_register(&net_class);
-> >
-> > I think the kobj_ns_type_register() needs to be under
-> > ifdef CONFIG_SYSFS as well, bc net_ns_type_operations is defined
-> > under ifdef CONFIG_SYSFS.
-> 
-> kobj_ns_type_register should not be under CONFIG_SYSFS.  Which means
-> that kobj_ns_type_operations needs not to be under CONFIG_SYSFS as
-> well.  That you for spotting that bug.
-
-np - outside of that,
-
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-
-I saw no problems with the other patches, just don't feel qualified
-to give an ack.
-
-thanks,
--serge
+							Thanx, Paul
