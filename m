@@ -1,126 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933914Ab0EEAVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 20:21:44 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44053 "EHLO ogre.sisk.pl"
+	id S934146Ab0EEAWl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 20:22:41 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44068 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932188Ab0EEAVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 20:21:42 -0400
+	id S932188Ab0EEAWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 20:22:38 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Date: Wed, 5 May 2010 02:22:30 +0200
+To: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
+Date: Wed, 5 May 2010 02:23:48 +0200
 User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-       Brian Swetland <swetland@google.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-References: <1272667021-21312-1-git-send-email-arve@android.com> <201005042223.41370.rjw@sisk.pl> <20100504235644.GA5231@opensource.wolfsonmicro.com>
-In-Reply-To: <20100504235644.GA5231@opensource.wolfsonmicro.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "Christian Kujau" <lists@nerdbynature.de>, linux-media@vger.kernel.org
+References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera> <8VO9AsMlpMD.A.IFC.aKJ4LB@chimera> <201005050218.02620.s.L-H@gmx.de>
+In-Reply-To: <201005050218.02620.s.L-H@gmx.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005050222.31038.rjw@sisk.pl>
+Message-Id: <201005050223.48237.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 May 2010, Mark Brown wrote:
-> On Tue, May 04, 2010 at 10:23:41PM +0200, Rafael J. Wysocki wrote:
-> > On Tuesday 04 May 2010, Kevin Hilman wrote:
-> > > Mark Brown <broonie@opensource.wolfsonmicro.com> writes:
+On Wednesday 05 May 2010, Stefan Lippers-Hollmann wrote:
+> Hi
 > 
-> > Guys, please.
+> On Wednesday 05 May 2010, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15589
+> > Subject		: 2.6.34-rc1: Badness at fs/proc/generic.c:316
+> > Submitter	: Christian Kujau <lists@nerdbynature.de>
+> > Date		: 2010-03-13 23:53 (53 days old)
+> > Message-ID	: <alpine.DEB.2.01.1003131544340.5493@bogon.housecafe.de>
+> > References	: http://marc.info/?l=linux-kernel&m=126852442903680&w=2
 > 
-> > The opportunistic suspend feature is _not_ to replace runtime PM by any means!
+> Still valid for b2c2_flexcop_pci in 2.6.34-rc6-git2:
 > 
-> Certainly in my case and I think Kevin's I agree with the need for the
-> bodge at the minute if we can get a clearer idea of how it's supposed to
-> work.
-> 
-> > when to put devices into low power states and save energy this way.  Still,
-> > even if all subsystems do that 100% efficiently, there may be more savings
-> > possible by putting the entire system into a sleep state (like on ACPI-based
-> > PCs) and we can reach there by runtime PM alone.
-> 
-> Right, this is likely to be a win for PCs - for embedded systems we
-> rarely have other software to interoperate with so if you can make the
-> hardware do it then it's unlikely there would be any fundamental issue
-> with Linux doing it at runtime.
+> [    8.736930] Linux video capture interface: v2.00
+> [    8.809720] b2c2-flexcop: B2C2 FlexcopII/II(b)/III digital TV receiver chip loaded successfully
+> [    8.818680] flexcop-pci: will use the HW PID filter.
+> [    8.818685] flexcop-pci: card revision 2
+> [    8.818694] b2c2_flexcop_pci 0000:06:01.0: PCI INT A -> GSI 19 (level, low) -> IRQ 19
+> [    8.818794] ------------[ cut here ]------------
+> [    8.818799] WARNING: at /tmp/buildd/linux-sidux-2.6-2.6.34~rc6-git2/debian/build/source_amd64_none/fs/proc/generic.c:317 __xlate_proc_name+0xb5/0xd0()
+> [    8.818801] Hardware name: EP45-DS3
+> [    8.818802] name 'Technisat/B2C2 FlexCop II/IIb/III Digital TV PCI Driver'
+> [    8.818804] Modules linked in: b2c2_flexcop_pci(+) cx88xx b2c2_flexcop rfkill v4l2_common ir_common videodev drm snd_pcm snd_seq rtc_cmos snd_timer rtc_core snd_seq_device rtc_lib v4l1_compat tveeprom v4l2_compat_ioctl32 ir_core dvb_core snd videobuf_dma_sg cx24123 cx24113 videobuf_core s5h1420 tpm_tis led_class btcx_risc tpm i2c_i801 i2c_algo_bit tpm_bios i2c_core evdev intel_agp soundcore snd_page_alloc button processor ext4 mbcache jbd2 crc16 dm_mod sg sr_mod cdrom sd_mod usbhid hid uhci_hcd ahci firewire_ohci libata firewire_core crc_itu_t ehci_hcd r8169 mii scsi_mod thermal usbcore nls_base [last unloaded: scsi_wait_scan]
+> [    8.818832] Pid: 1064, comm: modprobe Not tainted 2.6.34-rc6-sidux-amd64 #1
+> [    8.818833] Call Trace:
+> [    8.818837]  [<ffffffff8104ba83>] ? warn_slowpath_common+0x73/0xb0
+> [    8.818839]  [<ffffffff8104bb20>] ? warn_slowpath_fmt+0x40/0x50
+> [    8.818842]  [<ffffffff8114f545>] ? __xlate_proc_name+0xb5/0xd0
+> [    8.818844]  [<ffffffff8114fb2e>] ? __proc_create+0x7e/0x150
+> [    8.818846]  [<ffffffff811504e7>] ? proc_mkdir_mode+0x27/0x60
+> [    8.818849]  [<ffffffff8109fb55>] ? register_handler_proc+0x115/0x130
+> [    8.818852]  [<ffffffff8109d4c1>] ? __setup_irq+0x1d1/0x330
+> [    8.818855]  [<ffffffffa03bc160>] ? flexcop_pci_isr+0x0/0x190 [b2c2_flexcop_pci]
+> [    8.818858]  [<ffffffff8109d735>] ? request_threaded_irq+0x115/0x1b0
+> [    8.818860]  [<ffffffffa03bc495>] ? flexcop_pci_probe+0x1a5/0x330 [b2c2_flexcop_pci]
+> [    8.818864]  [<ffffffff811ceef2>] ? local_pci_probe+0x12/0x20
+> [    8.818867]  [<ffffffff811d02ca>] ? pci_device_probe+0x10a/0x130
+> [    8.818870]  [<ffffffff8125cdda>] ? driver_sysfs_add+0x5a/0x80
+> [    8.818872]  [<ffffffff8125cf03>] ? driver_probe_device+0x93/0x190
+> [    8.818874]  [<ffffffff8125d093>] ? __driver_attach+0x93/0xa0
+> [    8.818876]  [<ffffffff8125d000>] ? __driver_attach+0x0/0xa0
+> [    8.818878]  [<ffffffff8125c638>] ? bus_for_each_dev+0x58/0x80
+> [    8.818880]  [<ffffffff8125be70>] ? bus_add_driver+0xb0/0x250
+> [    8.818882]  [<ffffffff8125d38a>] ? driver_register+0x6a/0x130
+> [    8.818884]  [<ffffffff811d056c>] ? __pci_register_driver+0x4c/0xc0
+> [    8.818887]  [<ffffffffa03bf000>] ? flexcop_pci_module_init+0x0/0x20 [b2c2_flexcop_pci]
+> [    8.818890]  [<ffffffff81002044>] ? do_one_initcall+0x34/0x1a0
+> [    8.818893]  [<ffffffff8107d15f>] ? sys_init_module+0xdf/0x260
+> [    8.818896]  [<ffffffff81009f42>] ? system_call_fastpath+0x16/0x1b
+> [    8.818897] ---[ end trace 46b5c98323696f39 ]---
+> [    8.822389] DVB: registering new adapter (FlexCop Digital TV device)
+> [    8.823874] b2c2-flexcop: MAC address = 00:d0:d7:0c:83:d6
 
-Evidently, the Android developers had a problem with that.  Of course, you can
-argue that they didn't consider using runtime PM for this purpose, but the real
-question is how much time it would take to achieve the same level of energy
-saving using runtime PM without opportunistic suspend.
-
-> > > > I'd be a lot more comfortable with this if it came with a mechanism for
-> > > > communicating the intended effect of a suspend on a per-device level so
-> > > > that the drivers have a clear way of figuring out what to do when the
-> > > > system suspends.  If there isn't one we can add subsystem or driver
-> > > > specific hooks, of course, but it'd be better to address this at the
-> > > > system level.
-> 
-> > > I agree.
-> 
-> > I'm not sure.  Why _exactly_ would you need that?
-> 
-> The use case that causes serious issues with this at the minute in the
-> domains I work is this:
-> 
-> On a mobile phone when the system is in a voice call the data flow for
-> the call is entirely handled outside the CPU (normally referred to as
-> Applications Processor or AP here) by the baseband and audio CODEC,
-> which are either integrated or directly connected by analogue or digital
-> audio links on the board.  If the user has the phone to their ear and is
-> talking away with the screen blanked then the AP is just waiting for
-> input, will appear idle and so trigger an opportunistic suspend.  If the
-> audio CODEC is managed by Linux (as is standard) then running through
-> the suspend process will as things stand cause the audio subsystem to be
-> suspended.  Since in the normal course of affairs suspend means power
-> down that's what will happen, but this is clearly highly undesirable in
-> this situation.
-
-In that case someone (either a driver or, most likely, user space) will need to
-keep a suspend blocker active.
-
-> Now, the solution here if we're going to use opportunistic suspend like
-> this is to provide some method for the audio subsystem to figure out
-> that the system doesn't actually want it to suspend when it gets told do
-> do so.  Like I say ideally we'd provide some standard interface in the
-> PM subsystem for userspace to communicate this to subsystems and drivers
-> so that we've got a joined up story when people run into issues in cases
-> like this, though obviously if this goes in then we'll have to put in
-> something subsystem or driver specific for affected areas.
-
-My understanding is that on Android suspend blockers are used for this
-purpose.
-
-> I know what I'd implement generically for audio, but I've held back since
-> the option is fairly messy when not used in conjunction with a deliberate
-> choice to use opportunistic suspend and I was expecting a standard mechanism
-> to slot into to provide control for userspace.
-> 
-> In other words, the issue is that we run into situations where we need
-> an element of suspend control to go along with the opportunistic suspend
-> in order to allow some elements to be kept running - since suspend
-> blocking is taken suspend suppression seems like a reasonable term.
-
-Suspend really is a sledgehammer thing.  Either you suspend the whole system
-or you don't suspend at all.  You can prevent opportunistic suspend from
-happening using suspend blockers (that's what they are for), but that's pretty
-much everything you can do about it.  If you want power savings while some
-parts of the system are active, use runtime PM for that.
-
-What I'd use opportunistic suspend for is not the saving of energy when there's
-a call in progress, because in that case some parts of the system need to be
-active, but to save energy when the device is completely idle, ie. the user
-interface is not used, music is not played "in the background" etc. (my phone
-is in such a state 90% of the time at least).
+Thanks for the update.
 
 Rafael
