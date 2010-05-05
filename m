@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934916Ab0EEQ1V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 12:27:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55865 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934813Ab0EEQ1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 12:27:18 -0400
-Date: Wed, 5 May 2010 09:24:59 -0700
-From: Greg KH <gregkh@suse.de>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Eric Biederman <ebiederm@xmission.com>
-Subject: Re: linux-next: Tree for April 30 (CONFIG_SYSFS=n)
-Message-ID: <20100505162459.GA20296@suse.de>
-References: <20100430163538.7253a9e0.sfr@canb.auug.org.au>
- <20100430105016.40b51636.randy.dunlap@oracle.com>
- <20100505091738.7ec27479.randy.dunlap@oracle.com>
+	id S934939Ab0EEQ17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 12:27:59 -0400
+Received: from mail.nawaloka.lk ([203.143.27.155]:52487 "EHLO mail.nawaloka.lk"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755751Ab0EEQ14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 12:27:56 -0400
+X-Greylist: delayed 11602 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 May 2010 12:27:56 EDT
+Message-ID: <1908.82.128.15.130.1273060418.squirrel@mail.nawaloka.lk>
+Date: Wed, 5 May 2010 17:23:38 +0530 (IST)
+Subject: 
+From: "SOLID FINANCE CORPORATION" <email@solidf.com>
+Reply-To: home.solid1@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.9a
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100505091738.7ec27479.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-MailScanner-ID: C2175AEF6B.AF2AC
+X-unconfigured-debian-site-MailScanner: Found to be clean
+X-unconfigured-debian-site-MailScanner-SpamCheck: not spam,
+	SpamAssassin (cached, score=-0.037, required 5, ALL_TRUSTED -1.80,
+	BAYES_50 0.00, MISSING_SUBJECT 1.76)
+X-unconfigured-debian-site-MailScanner-From: email@solidf.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 09:17:38AM -0700, Randy Dunlap wrote:
-> On Fri, 30 Apr 2010 10:50:16 -0700 Randy Dunlap wrote:
-> 
-> > On Fri, 30 Apr 2010 16:35:38 +1000 Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > Changes since 20100429:
-> > 
-> > 
-> > When CONFIG_SYSFS is disabled:
-> > 
-> > include/linux/sysfs.h:330: error: parameter 1 ('type') has incomplete type
-> 
-> 
-> Still have this in linux-next of May 5-2010.
+This is Solid Finance Corporation.We are currently offering loan for just
+3% interest rate.Contact us now with Contact us now with the following
+information.Names,Address,Age,Country,Phone Number,Amount Needed As Loan
+and Duration Of Loan.
 
-Eric, this is due to your changes, care to fix it up?
 
-thanks,
-
-greg k-h
