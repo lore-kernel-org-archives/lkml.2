@@ -1,112 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab0EEWxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 18:53:39 -0400
-Received: from forward8.mail.yandex.net ([77.88.61.38]:43094 "EHLO
-	forward8.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755007Ab0EEWxh (ORCPT
+	id S1755498Ab0EEW4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 18:56:51 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:59596 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab0EEW4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 18:53:37 -0400
-X-Greylist: delayed 516 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 May 2010 18:53:36 EDT
-X-Yandex-Spam: 1
-X-Yandex-Front: web86.yandex.ru 
-X-Yandex-TimeMark: 1273099499 
-From: Vitaliy Gusev <gblond@yandex.ru>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: xemul@openvz.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100427155416.4d3436fa.akpm@linux-foundation.org>
-References: <20100427155416.4d3436fa.akpm@linux-foundation.org>
-Subject: Re: Fw: Re: [PATCH] bsdacct: delete timer with sync intension
-MIME-Version: 1.0
-Message-Id: <71161273099498@web86.yandex.ru>
-Date: Thu, 06 May 2010 02:44:58 +0400
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+	Wed, 5 May 2010 18:56:49 -0400
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, Jun.Li@freescale.com,
+       xiao-lizhang@freescale.com
+Subject: PATCHv1 2.6.34-rc6 0/3-Enable usb gadget on freescale mx51 babbage hw
+Date: Wed,  5 May 2010 17:56:08 -0500
+Message-Id: <1273100171-3235-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,  Andrew!
+This series of 3 patches is part of enabling usb gadget on freescale mx51 babbage hw.
 
-27.04.10, 15:54, "Andrew Morton" <akpm@linux-foundation.org>:
->  On Thu, 25 Mar 2010 17:35:10 +0300
->  Vitaliy Gusev  wrote:
->  
->  > acct_exit_ns --> acct_file_reopen deletes timer without
->  > check timer execution on other CPUs. So acct_timeout() can
->  > change an unmapped memory.
->  > 
->  
->  That sounds ugly.
->  
->  > 
->  > ---
->  >  kernel/acct.c |   17 +++++++++--------
->  >  1 files changed, 9 insertions(+), 8 deletions(-)
->  > 
->  > diff --git a/kernel/acct.c b/kernel/acct.c
->  > index a6605ca..6ac80ca 100644
->  > --- a/kernel/acct.c
->  > +++ b/kernel/acct.c
->  > @@ -353,17 +353,18 @@ restart:
->  >  
->  >  void acct_exit_ns(struct pid_namespace *ns)
->  >  {
->  > - struct bsd_acct_struct *acct;
->  > + struct bsd_acct_struct *acct = ns->bacct;
->  >  
->  > - spin_lock(&acct_lock);
->  > - acct = ns->bacct;
->  > - if (acct != NULL) {
->  > - if (acct->file != NULL)
->  > - acct_file_reopen(acct, NULL, NULL);
->  > + if (acct == NULL)
->  > + return;
->  >  
->  > - kfree(acct);
->  > - }
->  > + del_timer_sync(&acct->timer);
->  > + spin_lock(&acct_lock);
->  > + if (acct->file != NULL)
->  > + acct_file_reopen(acct, NULL, NULL);
->  >   spin_unlock(&acct_lock);
->  > +
->  > + kfree(acct);
->  >  }
->  >  
->  
->  Is this sufficient?  acct_file_reopen() does a del_timer(), so
->  acct_timeout() could be running concurrently with acct_file_reopen(),
->  but acct_file_reopen() is merrily altering data at *acct.
+PATCH 1/3
+There is a conditional if statement for the usb clock to be 60MHz +/-1kHz in the 
+mxc gadget driver, this requirement is not needed on mx51 because the usb core 
+is clocked at 66.5MHz or any other frequency that are not multiples of 60MHz.
 
-Yes, It is sufficient. Don't mind about concurency acct_file_reopen() with
-acct_timeout(). It is safe. Even if acct_timeout occurs after del_timer, then
-only one bad thing can be  - set needcheck at valid *acct.
+PATCH 2/3
+PLL3 can be used for TVE output and/or USB. No need to turn on a whole PLL 
+just for USB. Using PLL2 is a better source for the usb clock.
 
->  
->  Perhaps acct_file_reopen() should be using del_timer_sync()?
+PATCH 3/3
+Defines device structure for gadget on OTG port and registers it in the board file.
+Defines the appropriate clock.
+Defines KCONFIG option for enabling OTG port for EHCI or Gadget.
+Conditionalizes the OTG port for EHCI or Gadget feature.
 
-acct_file_reopen() is called within locked &acct_lock, and unlock/lock will
-bring another race.
+git diff --stat for all 3 patches:
+arch/arm/mach-mx5/board-mx51_babbage.c |   11 +++++++++++
+arch/arm/mach-mx5/clock-mx51.c         |    4 +++-
+arch/arm/mach-mx5/devices.c            |   12 ++++++++++++
+arch/arm/mach-mx5/devices.h            |    1 +
+drivers/usb/gadget/fsl_mx3_udc.c       |   14 ++++++++------
+drivers/usb/host/Kconfig               |    8 ++++++++
+6 files changed, 43 insertions(+), 7 deletions(-)
 
+Thanks,
+Dinh Nguyen
 
->  
->  check_free_space() is doing a similar thing:
->  
->           del_timer(&acct->timer);
->           acct->needcheck = 0;
->  
->  the currently-running timer handler now goes and sets needcheck again!
-
-check_free_space() is called only for active task in pid_namespace.  But acct_exit_ns()
-is called when there is no any  thread in pid_namespace. Thus timer handler will no set again.
-
-
->  
->  Methinks the whole thing needs a bit of a rethink, bearing in mind how
->  del_timer() actually works.
-> 
-
---
-Vitaliy Gusev
