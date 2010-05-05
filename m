@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934602Ab0EEKke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 06:40:34 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54762 "EHLO
+	id S934699Ab0EEKlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 06:41:07 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54790 "EHLO
 	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934533Ab0EEKkX (ORCPT
+	with ESMTP id S934690Ab0EEKlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 06:40:23 -0400
+	Wed, 5 May 2010 06:41:02 -0400
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 03/20] riscom8: kill use of lock_kernel
+Subject: [PATCH 10/20] synclink: reworking locking a bit
 To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de
-Date: Wed, 05 May 2010 11:01:57 +0100
-Message-ID: <20100505100156.3595.84007.stgit@localhost.localdomain>
+Date: Wed, 05 May 2010 11:02:36 +0100
+Message-ID: <20100505100236.3595.27264.stgit@localhost.localdomain>
 In-Reply-To: <20100505100144.3595.65633.stgit@localhost.localdomain>
 References: <20100505100144.3595.65633.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,87 +22,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The riscom8 board uses lock_kernel to protect bits of the port setting
-ioctl logic. We can use the port mutex for this as the logic is internal
-and will also lock set versus open (a locking property that has been lost
-somewhere along the way)
+Use the port mutex and port lock to fix the various races. The locking
+still isn't totally consistent but its better than before. Wants switching
+to the port helpers.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/char/riscom8.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ drivers/char/synclink_gt.c |   12 +++++++++++-
+ drivers/char/synclinkmp.c  |    9 ++++++++-
+ 2 files changed, 19 insertions(+), 2 deletions(-)
 
 
-diff --git a/drivers/char/riscom8.c b/drivers/char/riscom8.c
-index b02332a..af4de1f 100644
---- a/drivers/char/riscom8.c
-+++ b/drivers/char/riscom8.c
-@@ -47,7 +47,6 @@
- #include <linux/init.h>
- #include <linux/delay.h>
- #include <linux/tty_flip.h>
--#include <linux/smp_lock.h>
- #include <linux/spinlock.h>
- #include <linux/device.h>
- 
-@@ -1184,6 +1183,7 @@ static int rc_set_serial_info(struct tty_struct *tty, struct riscom_port *port,
- 	if (copy_from_user(&tmp, newinfo, sizeof(tmp)))
- 		return -EFAULT;
- 
-+	mutex_lock(&port->port.mutex);
- 	change_speed = ((port->port.flags & ASYNC_SPD_MASK) !=
- 			(tmp.flags & ASYNC_SPD_MASK));
- 
-@@ -1191,8 +1191,10 @@ static int rc_set_serial_info(struct tty_struct *tty, struct riscom_port *port,
- 		if ((tmp.close_delay != port->port.close_delay) ||
- 		    (tmp.closing_wait != port->port.closing_wait) ||
- 		    ((tmp.flags & ~ASYNC_USR_MASK) !=
--		     (port->port.flags & ~ASYNC_USR_MASK)))
-+		     (port->port.flags & ~ASYNC_USR_MASK))) {
-+			mutex_unlock(&port->port.mutex);
- 			return -EPERM;
-+		}
- 		port->port.flags = ((port->port.flags & ~ASYNC_USR_MASK) |
- 			       (tmp.flags & ASYNC_USR_MASK));
- 	} else  {
-@@ -1208,6 +1210,7 @@ static int rc_set_serial_info(struct tty_struct *tty, struct riscom_port *port,
- 		rc_change_speed(tty, bp, port);
- 		spin_unlock_irqrestore(&riscom_lock, flags);
+diff --git a/drivers/char/synclink_gt.c b/drivers/char/synclink_gt.c
+index d0f81f5..c56b70a 100644
+--- a/drivers/char/synclink_gt.c
++++ b/drivers/char/synclink_gt.c
+@@ -675,12 +675,14 @@ static int open(struct tty_struct *tty, struct file *filp)
+ 		goto cleanup;
  	}
-+	mutex_unlock(&port->port.mutex);
- 	return 0;
- }
  
-@@ -1220,12 +1223,15 @@ static int rc_get_serial_info(struct riscom_port *port,
- 	memset(&tmp, 0, sizeof(tmp));
- 	tmp.type = PORT_CIRRUS;
- 	tmp.line = port - rc_port;
++	mutex_lock(&info->port.mutex);
+ 	info->port.tty->low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
+ 
+ 	spin_lock_irqsave(&info->netlock, flags);
+ 	if (info->netcount) {
+ 		retval = -EBUSY;
+ 		spin_unlock_irqrestore(&info->netlock, flags);
++		mutex_unlock(&info->port.mutex);
+ 		goto cleanup;
+ 	}
+ 	info->port.count++;
+@@ -692,7 +694,7 @@ static int open(struct tty_struct *tty, struct file *filp)
+ 		if (retval < 0)
+ 			goto cleanup;
+ 	}
+-
++	mutex_unlock(&info->port.mutex);
+ 	retval = block_til_ready(tty, filp, info);
+ 	if (retval) {
+ 		DBGINFO(("%s block_til_ready rc=%d\n", info->device_name, retval));
+@@ -724,12 +726,14 @@ static void close(struct tty_struct *tty, struct file *filp)
+ 	if (tty_port_close_start(&info->port, tty, filp) == 0)
+ 		goto cleanup;
+ 
++	mutex_lock(&info->port.mutex);
+  	if (info->port.flags & ASYNC_INITIALIZED)
+  		wait_until_sent(tty, info->timeout);
+ 	flush_buffer(tty);
+ 	tty_ldisc_flush(tty);
+ 
+ 	shutdown(info);
++	mutex_unlock(&info->port.mutex);
+ 
+ 	tty_port_close_end(&info->port, tty);
+ 	info->port.tty = NULL;
+@@ -740,17 +744,23 @@ cleanup:
+ static void hangup(struct tty_struct *tty)
+ {
+ 	struct slgt_info *info = tty->driver_data;
++	unsigned long flags;
+ 
+ 	if (sanity_check(info, tty->name, "hangup"))
+ 		return;
+ 	DBGINFO(("%s hangup\n", info->device_name));
+ 
+ 	flush_buffer(tty);
 +
-+	mutex_lock(&port->port.mutex);
- 	tmp.port = bp->base;
- 	tmp.irq  = bp->irq;
- 	tmp.flags = port->port.flags;
- 	tmp.baud_base = (RC_OSCFREQ + CD180_TPC/2) / CD180_TPC;
- 	tmp.close_delay = port->port.close_delay * HZ/100;
- 	tmp.closing_wait = port->port.closing_wait * HZ/100;
-+	mutex_unlock(&port->port.mutex);
- 	tmp.xmit_fifo_size = CD180_NFIFO;
- 	return copy_to_user(retinfo, &tmp, sizeof(tmp)) ? -EFAULT : 0;
- }
-@@ -1242,14 +1248,10 @@ static int rc_ioctl(struct tty_struct *tty, struct file *filp,
++	mutex_lock(&info->port.mutex);
+ 	shutdown(info);
  
- 	switch (cmd) {
- 	case TIOCGSERIAL:
--		lock_kernel();
- 		retval = rc_get_serial_info(port, argp);
--		unlock_kernel();
- 		break;
- 	case TIOCSSERIAL:
--		lock_kernel();
- 		retval = rc_set_serial_info(tty, port, argp);
--		unlock_kernel();
- 		break;
- 	default:
- 		retval = -ENOIOCTLCMD;
++	spin_lock_irqsave(&info->port.lock, flags);
+ 	info->port.count = 0;
+ 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
+ 	info->port.tty = NULL;
++	spin_unlock_irqrestore(&info->port.lock, flags);
++	mutex_unlock(&info->port.mutex);
+ 
+ 	wake_up_interruptible(&info->port.open_wait);
+ }
+diff --git a/drivers/char/synclinkmp.c b/drivers/char/synclinkmp.c
+index 8da976b..cfa581e 100644
+--- a/drivers/char/synclinkmp.c
++++ b/drivers/char/synclinkmp.c
+@@ -812,13 +812,15 @@ static void close(struct tty_struct *tty, struct file *filp)
+ 
+ 	if (tty_port_close_start(&info->port, tty, filp) == 0)
+ 		goto cleanup;
+-		
++
++	mutex_lock(&info->port.mutex);		
+  	if (info->port.flags & ASYNC_INITIALIZED)
+  		wait_until_sent(tty, info->timeout);
+ 
+ 	flush_buffer(tty);
+ 	tty_ldisc_flush(tty);
+ 	shutdown(info);
++	mutex_unlock(&info->port.mutex);		
+ 
+ 	tty_port_close_end(&info->port, tty);
+ 	info->port.tty = NULL;
+@@ -834,6 +836,7 @@ cleanup:
+ static void hangup(struct tty_struct *tty)
+ {
+ 	SLMP_INFO *info = tty->driver_data;
++	unsigned long flags;
+ 
+ 	if (debug_level >= DEBUG_LEVEL_INFO)
+ 		printk("%s(%d):%s hangup()\n",
+@@ -842,12 +845,16 @@ static void hangup(struct tty_struct *tty)
+ 	if (sanity_check(info, tty->name, "hangup"))
+ 		return;
+ 
++	mutex_lock(&info->port.mutex);		
+ 	flush_buffer(tty);
+ 	shutdown(info);
+ 
++	spin_lock_irqsave(&info->port.lock, flags);
+ 	info->port.count = 0;
+ 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
+ 	info->port.tty = NULL;
++	spin_unlock_irqrestore(&info->port.lock, flags);
++	mutex_unlock(&info->port.mutex);		
+ 
+ 	wake_up_interruptible(&info->port.open_wait);
+ }
 
