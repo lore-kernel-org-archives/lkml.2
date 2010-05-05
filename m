@@ -1,94 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934003Ab0EECJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 22:09:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36926 "EHLO hera.kernel.org"
+	id S934179Ab0EECJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 22:09:18 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36932 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932993Ab0EECJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 22:09:02 -0400
-Date: Wed, 5 May 2010 02:08:29 GMT
+	id S932993Ab0EECJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 22:09:11 -0400
+Date: Wed, 5 May 2010 02:08:46 GMT
 From: "tip-bot for Eric W. Biederman" <ebiederm@xmission.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
        tglx@linutronix.de, ebiederm@xmission.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
        tglx@linutronix.de, ebiederm@xmission.com
-In-Reply-To: <1269936436-7039-7-git-send-email-ebiederm@xmission.com>
-References: <1269936436-7039-7-git-send-email-ebiederm@xmission.com>
+In-Reply-To: <1269936436-7039-8-git-send-email-ebiederm@xmission.com>
+References: <1269936436-7039-8-git-send-email-ebiederm@xmission.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/irq] x86, ioapic: Fix io_apic_redir_entries to return the number of entries.
-Message-ID: <tip-4b6b19a1c7302477653d799a53d48063dd53d555@git.kernel.org>
-Git-Commit-ID: 4b6b19a1c7302477653d799a53d48063dd53d555
+Subject: [tip:x86/irq] x86, ioapic: Fix the types of gsi values
+Message-ID: <tip-eddb0c55a14074d6bac8c2ef169aefd7e2c6f139@git.kernel.org>
+Git-Commit-ID: eddb0c55a14074d6bac8c2ef169aefd7e2c6f139
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 02:08:29 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 02:08:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4b6b19a1c7302477653d799a53d48063dd53d555
-Gitweb:     http://git.kernel.org/tip/4b6b19a1c7302477653d799a53d48063dd53d555
+Commit-ID:  eddb0c55a14074d6bac8c2ef169aefd7e2c6f139
+Gitweb:     http://git.kernel.org/tip/eddb0c55a14074d6bac8c2ef169aefd7e2c6f139
 Author:     Eric W. Biederman <ebiederm@xmission.com>
-AuthorDate: Tue, 30 Mar 2010 01:07:08 -0700
+AuthorDate: Tue, 30 Mar 2010 01:07:09 -0700
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 4 May 2010 13:34:48 -0700
+CommitDate: Tue, 4 May 2010 13:34:52 -0700
 
-x86, ioapic: Fix io_apic_redir_entries to return the number of entries.
+x86, ioapic: Fix the types of gsi values
 
-io_apic_redir_entries has a huge conceptual bug.  It returns the maximum
-redirection entry not the number of redirection entries.  Which simply
-does not match what the name of the function.  This just caught me
-and it caught  Feng Tang, and  Len Brown when they wrote sfi_parse_ioapic.
+This patches fixes the types of gsi_base and gsi_end values in
+struct mp_ioapic_gsi, and the gsi parameter of mp_find_ioapic
+and mp_find_ioapic_pin
 
-Modify io_apic_redir_entries to actually return the number of redirection
-entries, and fix the callers so that they properly handle receiving the
-number of the number of redirection table entries, instead of the
-number of redirection table entries less one.
-
-While the usage in sfi.c does not show up in this patch it is fixed
-by virtue of the fact that io_apic_redir_entries now has the semantics
-sfi_parse_ioapic most reasonably expects.
+A gsi is cannonically a u32, not an int.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-LKML-Reference: <1269936436-7039-7-git-send-email-ebiederm@xmission.com>
+LKML-Reference: <1269936436-7039-8-git-send-email-ebiederm@xmission.com>
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/kernel/apic/io_apic.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/io_apic.h |   10 +++++-----
+ arch/x86/kernel/apic/io_apic.c |    4 ++--
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 35832a0..feeaf0d 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -180,12 +180,12 @@ extern void ioapic_write_entry(int apic, int pin,
+ extern void setup_ioapic_ids_from_mpc(void);
+ 
+ struct mp_ioapic_gsi{
+-	int gsi_base;
+-	int gsi_end;
++	u32 gsi_base;
++	u32 gsi_end;
+ };
+ extern struct mp_ioapic_gsi  mp_gsi_routing[];
+-int mp_find_ioapic(int gsi);
+-int mp_find_ioapic_pin(int ioapic, int gsi);
++int mp_find_ioapic(u32 gsi);
++int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
+ extern void __init pre_init_apic_IRQ0(void);
+ 
+@@ -197,7 +197,7 @@ static const int timer_through_8259 = 0;
+ static inline void ioapic_init_mappings(void)	{ }
+ static inline void ioapic_insert_resources(void) { }
+ static inline void probe_nr_irqs_gsi(void)	{ }
+-static inline int mp_find_ioapic(int gsi) { return 0; }
++static inline int mp_find_ioapic(u32 gsi) { return 0; }
+ 
+ struct io_apic_irq_attr;
+ static inline int io_apic_set_pci_routing(struct device *dev, int irq,
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 73ec928..0a053e6 100644
+index 0a053e6..9ab9762 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3855,7 +3855,11 @@ int __init io_apic_get_redir_entries (int ioapic)
- 	reg_01.raw = io_apic_read(ioapic, 1);
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
- 
--	return reg_01.bits.entries;
-+	/* The register returns the maximum index redir index
-+	 * supported, which is one less than the total number of redir
-+	 * entries.
-+	 */
-+	return reg_01.bits.entries + 1;
+@@ -4247,7 +4247,7 @@ void __init ioapic_insert_resources(void)
+ 	}
  }
  
- void __init probe_nr_irqs_gsi(void)
-@@ -3871,7 +3875,7 @@ void __init probe_nr_irqs_gsi(void)
+-int mp_find_ioapic(int gsi)
++int mp_find_ioapic(u32 gsi)
+ {
+ 	int i = 0;
  
- 		nr = 0;
- 		for (idx = 0; idx < nr_ioapics; idx++)
--			nr += io_apic_get_redir_entries(idx) + 1;
-+			nr += io_apic_get_redir_entries(idx);
+@@ -4262,7 +4262,7 @@ int mp_find_ioapic(int gsi)
+ 	return -1;
+ }
  
- 		if (nr > nr_irqs_gsi)
- 			nr_irqs_gsi = nr;
-@@ -4306,7 +4310,7 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- 	 */
- 	mp_gsi_routing[idx].gsi_base = gsi_base;
- 	mp_gsi_routing[idx].gsi_end = gsi_base +
--	    io_apic_get_redir_entries(idx);
-+	    io_apic_get_redir_entries(idx) - 1;
- 
- 	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
- 	       "GSI %d-%d\n", idx, mp_ioapics[idx].apicid,
+-int mp_find_ioapic_pin(int ioapic, int gsi)
++int mp_find_ioapic_pin(int ioapic, u32 gsi)
+ {
+ 	if (WARN_ON(ioapic == -1))
+ 		return -1;
