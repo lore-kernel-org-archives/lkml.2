@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884Ab0EETw6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 15:52:58 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59456 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab0EETw4 (ORCPT
+	id S1754365Ab0EETyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 15:54:31 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42861 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750701Ab0EETya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 15:52:56 -0400
-Date: Wed, 5 May 2010 20:52:50 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100505195249.GC11441@sirena.org.uk>
-References: <20100505185225.GA4411@srcf.ucam.org> <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org> <20100505192208.GB5085@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100505192208.GB5085@srcf.ucam.org>
-X-Cookie: Do not overtax your powers.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Wed, 5 May 2010 15:54:30 -0400
+Date: Wed, 5 May 2010 20:59:05 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 10/13] tty: untangle locking of wait_until_sent
+Message-ID: <20100505205905.3c87b403@lxorguk.ukuu.org.uk>
+In-Reply-To: <1273012433-6125-11-git-send-email-arnd@arndb.de>
+References: <1273012433-6125-1-git-send-email-arnd@arndb.de>
+	<1273012433-6125-11-git-send-email-arnd@arndb.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 08:22:08PM +0100, Matthew Garrett wrote:
-> On Wed, May 05, 2010 at 03:13:52PM -0400, Alan Stern wrote:
+> Some wait_until_sent versions require the big
+> tty mutex, others don't and some callers of
+> wait_until_sent already hold it while other don't.
+> That leads to recursive use of the BTM in these
+> functions, which we're trying to get rid of.
 
-> > Does it know when a call is in progress?
+I don't believe any of the currently live ones do.
 
-> Perhaps you could infer that from the audio routing setup? I don't know 
-> enough about embedded codecs.
+>  drivers/char/amiserial.c      |    6 +++---
+>  drivers/char/generic_serial.c |    2 +-
 
-Yes, you can providing we extract a bit more information from the
-machine drivers and/or userspace - we already do our power management
-based on paths.  The implementation I'd do here is to provide a facility
-for marking some of the path endpoints as suspend insensitive then on
-suspend leave those endpoints in their current state, force the other
-endpoints off temporarily and re-run the standard power checks.
+Both ex drivers
 
-One thing I'll need to have a bit of a think about is if we need to
-provide the ability to offer control to userspace for the suspend state
-of path endpoints separately to their runtime state; I suspect the
-answer is yes.
+>  drivers/char/hvc_console.c    |    2 +-
+>  drivers/char/hvcs.c           |    2 +-
+
+Doesn't seemn to need it
+
+>  drivers/char/ip2/ip2main.c    |   20 +++++++++++++++++---
+
+I don't think we care - the driver is a mess, its probably not been used
+in years
+
+>  drivers/char/serial167.c      |    6 +++---
+
+Historical value only and broken
+
+>  drivers/char/specialix.c      |    2 +-
+
+Broken
+
+>  drivers/serial/68328serial.c  |    2 +-
+>  drivers/serial/68360serial.c  |    5 ++---
+
+Both defunct
+
+>  drivers/serial/crisv10.c      |   12 +++++++-----
+
+Defunct
+
+>  net/irda/ircomm/ircomm_tty.c  |    2 +-
+
+Semi-defunct at best
+
+This makes me think that now might be a good time to consign the broken
+crap to the bitbucket unless someone stands up with hardware and who
+wants to maintain it.
+
+
