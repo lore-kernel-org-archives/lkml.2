@@ -1,39 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab0EEHaf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 03:30:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38971 "EHLO hera.kernel.org"
+	id S1757757Ab0EEHah (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 03:30:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39959 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752519Ab0EEHae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 03:30:34 -0400
-Message-ID: <4BE11E8E.7090600@kernel.org>
-Date: Wed, 05 May 2010 09:30:22 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752519Ab0EEHaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 03:30:35 -0400
+Message-ID: <4BE11E8A.2090804@redhat.com>
+Date: Wed, 05 May 2010 10:30:18 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET sched/core] cpu_stop: implement and use cpu_stop, take#2
-References: <1272980864-27235-1-git-send-email-tj@kernel.org> <1272999172.1642.208.camel@laptop>
-In-Reply-To: <1272999172.1642.208.camel@laptop>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Brian Gerst <brgerst@gmail.com>,
+       "Cui, Dexuan" <dexuan.cui@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86: eliminate TS_XSAVE
+References: <1272812038-32484-1-git-send-email-avi@redhat.com>	 <1272812038-32484-2-git-send-email-avi@redhat.com>	 <u2p73c1f2161005021038gce35c1bbpca6ec119d24e646e@mail.gmail.com>	 <4BDDBA18.3080909@redhat.com> <4BDF4407.8000503@zytor.com>	 <4BDFCF9F.3030600@redhat.com> <1272996927.2833.13.camel@sbs-t61.sc.intel.com> <4BE06642.6080702@zytor.com>
+In-Reply-To: <4BE06642.6080702@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 07:30:24 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2010 08:52 PM, Peter Zijlstra wrote:
-> On Tue, 2010-05-04 at 15:47 +0200, Tejun Heo wrote:
->>
->> Peter, if you ack the series, I'll add refresh the patches w/ your ACK
->> and request pull into sched/core to Ingo. 
-> 
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On 05/04/2010 09:24 PM, H. Peter Anvin wrote:
+>
+> I would like to request one change, however.  I would like to see the
+> alternatives code to be:
+>
+> 	movb $0,reg
+> 	movb $1,reg
+>
+> ... instead of using xor (which has to be padded with NOPs, which is of
+> course pointless since the slot is a fixed size.)
 
-Great, thank you.  As soon as Paul's comment is resolved, I'll push it
-to Ingo.
+Right.
+
+> I would suggest using
+> a byte-sized variable instead of a dword-size variable to save a few
+> bytes, too.
+>    
+
+I used a bool, and the code already compiles to a byte mov.  Though it 
+could be argued that a word instruction is better since it avoids a 
+false dependency, and allows a preceding instruction that modifies %reg 
+to be executed after the mov instruction.
+
+> Once the jump label framework is integrated and has matured, I think we
+> should consider using it to save the mov/test/jump.
+>    
+
+IIRC that has an implied unlikely() which isn't suitable here?
+
+Perhaps the immediate values patches.
 
 -- 
-tejun
+error compiling committee.c: too many arguments to function
+
