@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933771Ab0EEI3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 04:29:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19081 "EHLO mx1.redhat.com"
+	id S933795Ab0EEIkB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 04:40:01 -0400
+Received: from symlink.to.noone.org ([85.10.207.172]:43570 "EHLO sym.noone.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932931Ab0EEI3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 04:29:15 -0400
-Message-ID: <4BE12C58.6040101@redhat.com>
-Date: Wed, 05 May 2010 11:29:12 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S932189Ab0EEIj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 04:39:59 -0400
+Date: Wed, 5 May 2010 10:39:58 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the staging tree
+Message-ID: <20100505083958.GY9489@distanz.ch>
+References: <20100427141224.834a102a.sfr@canb.auug.org.au> <20100427151305.GA7653@kroah.com> <20100428161425.eff4c40a.sfr@canb.auug.org.au> <20100428152809.GF4483@kroah.com> <20100503161721.GW9489@distanz.ch> <20100505123754.16228b09.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, zamsden@redhat.com,
-       Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH v2 1/7] Enable pvclock flags in vcpu_time_info structure
-References: <1272901927-829-1-git-send-email-glommer@redhat.com> <1272901927-829-2-git-send-email-glommer@redhat.com>
-In-Reply-To: <1272901927-829-2-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100505123754.16228b09.sfr@canb.auug.org.au>
+X-Editor: Vi IMproved 7.1
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2010 06:52 PM, Glauber Costa wrote:
-> This patch removes one padding byte and transform it into a flags
-> field. New versions of guests using pvclock will query these flags
-> upon each read.
->
-> Flags, however, will only be interpreted when the guest decides to.
-> It uses the pvclock_valid_flags function to signal that a specific
-> set of flags should be taken into consideration. Which flags are valid
-> are usually devised via HV negotiation.
->
-> Signed-off-by: Glauber Costa<glommer@redhat.com>
-> CC: Jeremy Fitzhardinge<jeremy@goop.org>
-> ---
->   arch/x86/include/asm/pvclock-abi.h |    3 ++-
->   arch/x86/include/asm/pvclock.h     |    1 +
->   arch/x86/kernel/pvclock.c          |    9 +++++++++
->   3 files changed, 12 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
-> index 6d93508..ec5c41a 100644
-> --- a/arch/x86/include/asm/pvclock-abi.h
-> +++ b/arch/x86/include/asm/pvclock-abi.h
-> @@ -29,7 +29,8 @@ struct pvclock_vcpu_time_info {
->   	u64   system_time;
->   	u32   tsc_to_system_mul;
->   	s8    tsc_shift;
-> -	u8    pad[3];
-> +	u8    flags;
-> +	u8    pad[2];
->   } __attribute__((__packed__)); /* 32 bytes */
->
->   struct pvclock_wall_clock {
-> diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
-> index 53235fd..cd02f32 100644
-> --- a/arch/x86/include/asm/pvclock.h
-> +++ b/arch/x86/include/asm/pvclock.h
-> @@ -6,6 +6,7 @@
->
->   /* some helper functions for xen and kvm pv clock sources */
->   cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src);
-> +void pvclock_set_flags(u8 flags);
->   unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src);
->   void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
->   			    struct pvclock_vcpu_time_info *vcpu,
-> diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-> index 03801f2..aa2262b 100644
-> --- a/arch/x86/kernel/pvclock.c
-> +++ b/arch/x86/kernel/pvclock.c
-> @@ -31,8 +31,16 @@ struct pvclock_shadow_time {
->   	u32 tsc_to_nsec_mul;
->   	int tsc_shift;
->   	u32 version;
-> +	u8  flags;
->   };
->
-> +static u8 valid_flags = 0;
-> +
->    
+Hi Stephen,
 
-Minor optimization: __read_mostly.
+On 2010-05-05 at 04:37:54 +0200, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> On Mon, 3 May 2010 18:17:21 +0200 Tobias Klauser <tklauser@distanz.ch> wrote:
+> >
+> > I just built the current linux-next (20100503) with the patches applied
+> > (including Greg's Kconfig change) on x86_64 with allmodconfig and wasn't
+> > able to reproduce the build failure.
+> > 
+> > Any pointers on how to reproduce and/or fix this would be appreciated.
+> 
+> Of course, if you force this driver to be built in (as Greg's Kconfig
+> change presumably did), then you won't get these errors.
+> 
+> The real solution is that SERIAL_ALTERA_JTAGUART_CONSOLE needs to depend
+> on SERIAL_ALTERA_JTAGUART=y (instead of just SERIAL_ALTERA_JTAGUART) and
+> similarly for the other.
 
--- 
-error compiling committee.c: too many arguments to function
+Thanks for your help! I resubmitted an updated version of the patches
+([1], [2]) including the changes pointed out above (compile tested
+against linux-next as of 20100505 with allmodconfig on x86_64).
 
+[1] Message-Id:
+095aab012b2a6b3bbf4c7bc04294bb9c19316318.1273048151.git.tklauser@distanz.ch
+[2] Message-Id:
+e83e74abd82079284d5c8f62b78f2417ebc9ee27.1273048151.git.tklauser@distanz.ch
+
+Cheers,
+Tobias
