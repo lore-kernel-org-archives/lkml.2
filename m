@@ -1,178 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934669Ab0EEAiS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 20:38:18 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:46815 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934614Ab0EEAhF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 20:37:05 -0400
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
-       Serge Hallyn <serue@us.ibm.com>, <netdev@vger.kernel.org>,
-       David Miller <davem@davemloft.net>,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Tue,  4 May 2010 17:36:44 -0700
-Message-Id: <1273019809-16472-1-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.6.5.2.143.g8cc62
-In-Reply-To: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.5.249
-X-SA-Exim-Rcpt-To: gregkh@suse.de, kay.sievers@vrfy.org, linux-kernel@vger.kernel.org, tj@kernel.org, cornelia.huck@de.ibm.com, eric.dumazet@gmail.com, bcrl@lhnet.ca, serue@us.ibm.com, netdev@vger.kernel.org, davem@davemloft.net, ebiederm@xmission.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@suse.de>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
-	*  0.0 XM_SPF_Neutral SPF-Neutral
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: [PATCH 1/6] kobject: Send hotplug events in all network namespaces
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	id S934671Ab0EEAjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 20:39:46 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:36344 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934067Ab0EEAjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 20:39:44 -0400
+Date: Tue, 4 May 2010 17:39:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com, Arnd Bergmann <arnd@relay.de.ibm.com>,
+       Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH tip/core/rcu 43/48] vhost: add __rcu annotations
+Message-ID: <20100505003939.GK2639@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100504201934.GA19234@linux.vnet.ibm.com>
+ <1273004398-19760-43-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20100504213936.GB3568@redhat.com>
+ <20100504235750.GH2639@linux.vnet.ibm.com>
+ <20100504235954.GA21573@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100504235954.GA21573@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric W. Biederman <ebiederm@xmission.com>
+On Wed, May 05, 2010 at 02:59:56AM +0300, Michael S. Tsirkin wrote:
+> On Tue, May 04, 2010 at 04:57:50PM -0700, Paul E. McKenney wrote:
+> > On Wed, May 05, 2010 at 12:39:36AM +0300, Michael S. Tsirkin wrote:
+> > > On Tue, May 04, 2010 at 01:19:53PM -0700, Paul E. McKenney wrote:
+> > > > From: Arnd Bergmann <arnd@relay.de.ibm.com>
+> > > > 
+> > > > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> > > > ---
+> > > >  drivers/vhost/net.c   |    6 +++---
+> > > >  drivers/vhost/vhost.c |   12 ++++++------
+> > > >  drivers/vhost/vhost.h |    4 ++--
+> > > >  3 files changed, 11 insertions(+), 11 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> > > > index 9777583..36e8dec 100644
+> > > > --- a/drivers/vhost/net.c
+> > > > +++ b/drivers/vhost/net.c
+> > > > @@ -364,7 +364,7 @@ static void vhost_net_disable_vq(struct vhost_net *n,
+> > > >  static void vhost_net_enable_vq(struct vhost_net *n,
+> > > >  				struct vhost_virtqueue *vq)
+> > > >  {
+> > > > -	struct socket *sock = vq->private_data;
+> > > > +	struct socket *sock = rcu_dereference(vq->private_data);
+> > > 
+> > > This should be rcu_dereference_const as well: it is called
+> > > with vq mutex held.
+> > 
+> > How about the following?
+> > 
+> > 	struct socket *sock;
+> > 	
+> > 	sock = rcu_dereference_protected(vq->private_data,
+> > 					 lockdep_is_held(&vq->mutex));
+> > 
+> > This could be used for some (though not all) of these situations.
+> > 
+> > And just so you know...  The fact that this is here in the first
+> > place is actually my mistake -- my intention was to include the __rcu
+> > annotations and nothing else, then follow up with bug fixes.  In fact,
+> > the alert reader will have noted that there is in fact no such thing
+> > as rcu_dereference_const().  And have concluded that none of my test
+> > machines use vhost.  :-/
+> > 
+> > But as long as we are here, might as well complete the annotation...
+> > 
+> > So I have inserted guesses for the lockdep_is_held() expressions below
+> > for your amusement.  Please let me know what I should be using instead.
+> 
+> I'll go over it. Could you point me to documentation to the API
+> I should use with this patch?
 
-Open a copy of the uevent kernel socket in each network
-namespace so we can send uevents in all network namespaces.
+Documentation/RCU/whatisRCU.txt in current mainline lists the APIs.
+This patchset, especially 31/48, gets the in-kernel docbook into
+shape.
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- lib/kobject_uevent.c |   68 ++++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 60 insertions(+), 8 deletions(-)
+> > > >  	if (!sock)
+> > > >  		return;
+> > > >  	if (vq == n->vqs + VHOST_NET_VQ_TX) {
+> > > > @@ -380,7 +380,7 @@ static struct socket *vhost_net_stop_vq(struct vhost_net *n,
+> > > >  	struct socket *sock;
+> > > >  
+> > > >  	mutex_lock(&vq->mutex);
+> > > > -	sock = vq->private_data;
+> > > > +	sock = rcu_dereference_const(vq->private_data);
+> > 
+> > 	sock = rcu_dereference_protected(vq->private_data,
+> > 					 lockdep_is_held(&vq->mutex));
+> > 
+> > > >  	vhost_net_disable_vq(n, vq);
+> > > >  	rcu_assign_pointer(vq->private_data, NULL);
+> > > >  	mutex_unlock(&vq->mutex);
+> > > > @@ -518,7 +518,7 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+> > > >  	}
+> > > >  
+> > > >  	/* start polling new socket */
+> > > > -	oldsock = vq->private_data;
+> > > > +	oldsock = rcu_dereference_const(vq->private_data);
+> > 
+> > 	oldsock = rcu_dereference_protected(vq->private_data,
+> > 					    lockdep_is_held(&vq->mutex));
+> > 
+> > Though I can't say I see where this lock is actually acquired in this
+> > case...
+> 
+> Just above:
+> 
+>        mutex_lock(&vq->mutex);
+> 
+>         /* Verify that ring has been setup correctly. */
+>         if (!vhost_vq_access_ok(vq)) {
+>                 r = -EFAULT;
+>                 goto err_vq;
+>         }
+>         sock = get_socket(fd);
+>         if (IS_ERR(sock)) {
+>                 r = PTR_ERR(sock);
+>                 goto err_vq;
+>         }
+> 
+>         /* start polling new socket */
 
-diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
-index c9d3a3e..3f5f17b 100644
---- a/lib/kobject_uevent.c
-+++ b/lib/kobject_uevent.c
-@@ -23,13 +23,19 @@
- #include <linux/skbuff.h>
- #include <linux/netlink.h>
- #include <net/sock.h>
-+#include <net/net_namespace.h>
- 
- 
- u64 uevent_seqnum;
- char uevent_helper[UEVENT_HELPER_PATH_LEN] = CONFIG_UEVENT_HELPER_PATH;
- static DEFINE_SPINLOCK(sequence_lock);
--#if defined(CONFIG_NET)
--static struct sock *uevent_sock;
-+#ifdef CONFIG_NET
-+struct uevent_sock {
-+	struct list_head list;
-+	struct sock *sk;
-+};
-+static LIST_HEAD(uevent_sock_list);
-+static DEFINE_MUTEX(uevent_sock_mutex);
- #endif
- 
- /* the strings here must match the enum in include/linux/kobject.h */
-@@ -99,6 +105,9 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
- 	u64 seq;
- 	int i = 0;
- 	int retval = 0;
-+#ifdef CONFIG_NET
-+	struct uevent_sock *ue_sk;
-+#endif
- 
- 	pr_debug("kobject: '%s' (%p): %s\n",
- 		 kobject_name(kobj), kobj, __func__);
-@@ -210,7 +219,9 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
- 
- #if defined(CONFIG_NET)
- 	/* send netlink message */
--	if (uevent_sock) {
-+	mutex_lock(&uevent_sock_mutex);
-+	list_for_each_entry(ue_sk, &uevent_sock_list, list) {
-+		struct sock *uevent_sock = ue_sk->sk;
- 		struct sk_buff *skb;
- 		size_t len;
- 
-@@ -240,6 +251,7 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
- 		} else
- 			retval = -ENOMEM;
- 	}
-+	mutex_unlock(&uevent_sock_mutex);
- #endif
- 
- 	/* call uevent_helper, usually only enabled during early boot */
-@@ -319,18 +331,58 @@ int add_uevent_var(struct kobj_uevent_env *env, const char *format, ...)
- EXPORT_SYMBOL_GPL(add_uevent_var);
- 
- #if defined(CONFIG_NET)
--static int __init kobject_uevent_init(void)
-+static int uevent_net_init(struct net *net)
- {
--	uevent_sock = netlink_kernel_create(&init_net, NETLINK_KOBJECT_UEVENT,
--					    1, NULL, NULL, THIS_MODULE);
--	if (!uevent_sock) {
-+	struct uevent_sock *ue_sk;
-+
-+	ue_sk = kzalloc(sizeof(*ue_sk), GFP_KERNEL);
-+	if (!ue_sk)
-+		return -ENOMEM;
-+
-+	ue_sk->sk = netlink_kernel_create(net, NETLINK_KOBJECT_UEVENT,
-+					  1, NULL, NULL, THIS_MODULE);
-+	if (!ue_sk->sk) {
- 		printk(KERN_ERR
- 		       "kobject_uevent: unable to create netlink socket!\n");
- 		return -ENODEV;
- 	}
--	netlink_set_nonroot(NETLINK_KOBJECT_UEVENT, NL_NONROOT_RECV);
-+	mutex_lock(&uevent_sock_mutex);
-+	list_add_tail(&ue_sk->list, &uevent_sock_list);
-+	mutex_unlock(&uevent_sock_mutex);
- 	return 0;
- }
- 
-+static void uevent_net_exit(struct net *net)
-+{
-+	struct uevent_sock *ue_sk;
-+
-+	mutex_lock(&uevent_sock_mutex);
-+	list_for_each_entry(ue_sk, &uevent_sock_list, list) {
-+		if (sock_net(ue_sk->sk) == net)
-+			goto found;
-+	}
-+	mutex_unlock(&uevent_sock_mutex);
-+	return;
-+
-+found:
-+	list_del(&ue_sk->list);
-+	mutex_unlock(&uevent_sock_mutex);
-+
-+	netlink_kernel_release(ue_sk->sk);
-+	kfree(ue_sk);
-+}
-+
-+static struct pernet_operations uevent_net_ops = {
-+	.init	= uevent_net_init,
-+	.exit	= uevent_net_exit,
-+};
-+
-+static int __init kobject_uevent_init(void)
-+{
-+	netlink_set_nonroot(NETLINK_KOBJECT_UEVENT, NL_NONROOT_RECV);
-+	return register_pernet_subsys(&uevent_net_ops);
-+}
-+
-+
- postcore_initcall(kobject_uevent_init);
- #endif
--- 
-1.6.5.2.143.g8cc62
+Ah!  Color me blind, as usual!  ;-)
 
+							Thanx, Paul
+
+> > > >  	if (sock == oldsock)
+> > > >  		goto done;
+> > > >  
+> > > > diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> > > > index e69d238..fc9bde2 100644
+> > > > --- a/drivers/vhost/vhost.c
+> > > > +++ b/drivers/vhost/vhost.c
+> > > > @@ -180,7 +180,7 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
+> > > >  	vhost_dev_cleanup(dev);
+> > > >  
+> > > >  	memory->nregions = 0;
+> > > > -	dev->memory = memory;
+> > > > +	rcu_assign_pointer(dev->memory, memory);
+> > > 
+> > > This is called when there can be no active readers, so the smp_wmb
+> > > inside rcu_assign_pointer isn't really needed.
+> > > Use RCU_INIT_POINTER or something like this instead?
+> > 
+> > Good point!  Fixed.
+> > 
+> > > >  	return 0;
+> > > >  }
+> > > >  
+> > > > @@ -212,8 +212,8 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+> > > >  		fput(dev->log_file);
+> > > >  	dev->log_file = NULL;
+> > > >  	/* No one will access memory at this point */
+> > > > -	kfree(dev->memory);
+> > > > -	dev->memory = NULL;
+> > > > +	kfree(rcu_dereference_const(dev->memory));
+> > 
+> > 	kfree(rcu_dereference_protected(dev->memory,
+> > 					lockdep_is_held(&dev->mutex));
+> > 
+> > > > +	rcu_assign_pointer(dev->memory, NULL);
+> > > 
+> > > Same here.
+> > 
+> > Fixed -- any in any case, we can always use RCU_INIT_POINTER() when
+> > assigning NULL.
+> > 
+> > > >  	if (dev->mm)
+> > > >  		mmput(dev->mm);
+> > > >  	dev->mm = NULL;
+> > > > @@ -294,14 +294,14 @@ static int vq_access_ok(unsigned int num,
+> > > >  /* Caller should have device mutex but not vq mutex */
+> > > >  int vhost_log_access_ok(struct vhost_dev *dev)
+> > > >  {
+> > > > -	return memory_access_ok(dev, dev->memory, 1);
+> > > > +	return memory_access_ok(dev, rcu_dereference_const(dev->memory), 1);
+> > 
+> > 	return memory_access_ok(dev, rcu_dereference_protected(dev->memory, lockdep_is_held(&dev->mutex)), 1);
+> > 
+> > And yes, we do need an rcu_dereference_vqdev() wrapper function, but just
+> > want to identify the mutexes for the moment.
+> > 
+> > Maybe a separate rcu_dereference_vq() as well -- but you tell me!
+> > 
+> > > >  }
+> > > >  
+> > > >  /* Verify access for write logging. */
+> > > >  /* Caller should have vq mutex and device mutex */
+> > > >  static int vq_log_access_ok(struct vhost_virtqueue *vq, void __user *log_base)
+> > > >  {
+> > > > -	return vq_memory_access_ok(log_base, vq->dev->memory,
+> > > > +	return vq_memory_access_ok(log_base, rcu_dereference(vq->dev->memory),
+> > > 
+> > > rcu_dereference_const. This is called under vq mutex and the comment
+> > > above it says as much.
+> > 
+> > 	return memory_access_ok(dev, rcu_dereference_protected(dev->memory, lockdep_is_held(&dev->mutex)),
+> > 
+> > > >  			    vhost_has_feature(vq->dev, VHOST_F_LOG_ALL)) &&
+> > > >  		(!vq->log_used || log_access_ok(log_base, vq->log_addr,
+> > > >  					sizeof *vq->used +
+> > > > @@ -342,7 +342,7 @@ static long vhost_set_memory(struct vhost_dev *d, struct vhost_memory __user *m)
+> > > >  
+> > > >  	if (!memory_access_ok(d, newmem, vhost_has_feature(d, VHOST_F_LOG_ALL)))
+> > > >  		return -EFAULT;
+> > > > -	oldmem = d->memory;
+> > > > +	oldmem = rcu_dereference_const(d->memory);
+> > 
+> > 	oldmem = rcu_dereference_protected(d->memory,
+> > 					   lockdep_is_held(&d->mutex));
+> > 
+> > > >  	rcu_assign_pointer(d->memory, newmem);
+> > > >  	synchronize_rcu();
+> > > >  	kfree(oldmem);
+> > > > diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> > > > index 44591ba..240396c 100644
+> > > > --- a/drivers/vhost/vhost.h
+> > > > +++ b/drivers/vhost/vhost.h
+> > > > @@ -92,7 +92,7 @@ struct vhost_virtqueue {
+> > > >  	 * work item execution acts instead of rcu_read_lock() and the end of
+> > > >  	 * work item execution acts instead of rcu_read_lock().
+> > > >  	 * Writers use virtqueue mutex. */
+> > > > -	void *private_data;
+> > > > +	void __rcu *private_data;
+> > > >  	/* Log write descriptors */
+> > > >  	void __user *log_base;
+> > > >  	struct vhost_log log[VHOST_NET_MAX_SG];
+> > > > @@ -102,7 +102,7 @@ struct vhost_dev {
+> > > >  	/* Readers use RCU to access memory table pointer
+> > > >  	 * log base pointer and features.
+> > > >  	 * Writers use mutex below.*/
+> > > > -	struct vhost_memory *memory;
+> > > > +	struct vhost_memory __rcu *memory;
+> > > >  	struct mm_struct *mm;
+> > > >  	struct mutex mutex;
+> > > >  	unsigned acked_features;
+> > > > -- 
+> > > > 1.7.0
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
