@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab0EERXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 13:23:46 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44122 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab0EERXo (ORCPT
+	id S1753583Ab0EER3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 13:29:45 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:29887 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753405Ab0EER3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 13:23:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=DKSFqZqCih/3sLuFrlxexUN0387MHweHgeQGxWeiGm1bnLcrQaQX1M/B1gETWSAlqz
-         dyab/yULwxHEZDe9/8xoWTopXLCq32W1OENYD5NlUQME2OQ8YLw+D1RfFKtF7iiYZfBu
-         jlFYjvdzBMLMAHdg78sCd+hhDhVcvV9CItIUQ=
-Date: Wed, 5 May 2010 19:23:42 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ronny =?iso-8859-1?Q?Tsch=FCter?= <Ronny.Tschueter@tu-dresden.de>
-Cc: rostedt@goodmis.org, Arjan van de Ven <arjan@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Tracing of power:power_start events doesn't work
-Message-ID: <20100505172339.GC6320@nowhere>
-References: <4BDECD66.2010906@tu-dresden.de> <1273019517.22438.10.camel@gandalf.stny.rr.com> <4BE11169.3010602@tu-dresden.de>
+	Wed, 5 May 2010 13:29:43 -0400
+From: Dmitry Torokhov <dtor@vmware.com>
+Organization: VMware, Inc.
+To: pv-drivers@vmware.com
+Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
+Date: Wed, 5 May 2010 10:29:40 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.34-rc5; KDE/4.4.2; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>,
+       Pankaj Thakkar <pthakkar@vmware.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+References: <20100504230225.GP8323@vmware.com> <20100505172316.GA25338@infradead.org>
+In-Reply-To: <20100505172316.GA25338@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4BE11169.3010602@tu-dresden.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005051029.42052.dtor@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 08:34:17AM +0200, Ronny Tschüter wrote:
-> On Wed 2010-05-05 02:31, Steven Rostedt wrote:
->> On Mon, 2010-05-03 at 15:19 +0200, Ronny Tschüter wrote:
->>    
->>> Hello,
->>>
->>> i use kernel version 2.6.33.2 (x86-64, Core 2 Duo) and the perf events
->>> to track frequency and c states of my cpu. But if i want to trace
->>> power:power_start events, it does not work. After typing
->>>
->>> echo "power:power_start" | sudo tee set_event
->>>
->>> on the console, the trace doesn't contain such events.
->>> power:power_frequency and power:power_end events are reported correctly
->>> by the system. I read in the mailing list that Robert Schoene had a
->>> similiar problem, but with power:power_end events. Is there a known bug
->>> regarding to trace_power_start methods in process.c?
->>>      
->> Is this for perf or ftrace? I'm assuming you did this from the debugfs
->> tracing directory. The set_event file is for ftrace not perf.
->>    
-> It is for perf - i'm interested in event tracing. I used the event  
-> tracing system like it is described in Documentation/trace/events.txt.  
-> In addition i wrote a program which uses syscall(__NR_perf_counter_open,  
-> ... ) to trace power events. But the result is the same -  
-> power:power_end events are reported, power:power_start events not.
->
-> Bye Ronny
+On Wednesday 05 May 2010 10:23:16 am Christoph Hellwig wrote:
+> On Tue, May 04, 2010 at 04:02:25PM -0700, Pankaj Thakkar wrote:
+> > The plugin image is provided by the IHVs along with the PF driver and is
+> > packaged in the hypervisor. The plugin image is OS agnostic and can be
+> > loaded either into a Linux VM or a Windows VM. The plugin is written
+> > against the Shell API interface which the shell is responsible for
+> > implementing. The API
+> 
+> We're not going to add any kind of loader for binry blobs into kernel
+> space, sorry.  Don't even bother wasting your time on this.
+> 
 
+It would not be a binary blob but software properly released under GPL.
+The current plan is for the shell to enforce GPL requirement on the
+plugin code, similar to what module loaded does for regular kernel
+modules.
 
-Hi, can you please compare the perf and ftrace output to
-see if ftrace works while perf doesn't for example?
-
-In perf:
-	perf record -f -c 1 -a -e power:power_start
-	^C
-	perf report
-
-In ftrace:
-	echo 1 > $DEBUGFS/tracing/events/power/power_start/enable
-	cat $DEBUGFS/trace_pipe
-
-Thanks.
-
+-- 
+Dmitry
