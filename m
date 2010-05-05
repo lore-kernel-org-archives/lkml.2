@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab0EESgO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 14:36:14 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50872 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757556Ab0EESgL (ORCPT
+	id S1757948Ab0EESgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 14:36:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52229 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757276Ab0EESg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 14:36:11 -0400
-Date: Wed, 5 May 2010 14:36:10 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Matthew Garrett <mjg@redhat.com>
-cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Paul Walmsley <paul@pwsan.com>, <magnus.damm@gmail.com>,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-In-Reply-To: <20100505173337.GA1671@srcf.ucam.org>
-Message-ID: <Pine.LNX.4.44L0.1005051432120.1885-100000@iolanthe.rowland.org>
+	Wed, 5 May 2010 14:36:29 -0400
+Date: Wed, 5 May 2010 11:34:05 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+ the wrong VMA information
+In-Reply-To: <20100505181456.GV20979@csn.ul.ie>
+Message-ID: <alpine.LFD.2.00.1005051118540.27218@i5.linux-foundation.org>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie> <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org> <20100505145620.GP20979@csn.ul.ie> <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org>
+ <20100505155454.GT20979@csn.ul.ie> <alpine.LFD.2.00.1005051007140.27218@i5.linux-foundation.org> <20100505181456.GV20979@csn.ul.ie>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 May 2010, Matthew Garrett wrote:
 
-> On Wed, May 05, 2010 at 02:56:22PM +0100, Mark Brown wrote:
+
+On Wed, 5 May 2010, Mel Gorman wrote:
 > 
-> > If the conclusion is that we don't have anything generic within the
-> > kernel then it'd be good to at least have this explicitly spelled out so
-> > that we're clear what everyone thinks is going on here and how things
-> > are supposed to work.  At the minute it doesn't feel like we've had the
-> > discussion so we could end up working at cross purposes.  I don't want
-> > to end up in the situation where I have to work around the APIs I'm
-> > using without the relevant maintainers having sight of that since that
-> > not only am I likely to be missing some existing solution to the problem
-> > but is also prone to causing problems maintaining the underlying API.
+> In the direction I was taking, only rmap_walk took the deepest lock (I called
+> it oldest but hey) and would take other anon_vma locks as well. The objective
+> was to make sure the order the locks were taken in was correct.
+>
+> I think you are suggesting that any anon_vma lock that is taken should always
+> take the deepest lock. Am I right and is that necessary? The downsides is that
+> there is a single lock that is hotter. The upside is that rmap_walk no longer
+> has different semantics as vma_adjust and friends because it's the same lock.
+
+I could personally go either way, I don't really care that deeply.
+
+I think you could easily just take the root lock in the rmap_walk_anon/ksm 
+paths, and _also_ take the individual locks as you walk it (safe, since 
+now the root lock avoids the ABBA issue - you only need to compare the 
+individual lock against the root lock to not take it twice, of course).
+
+Or you could take the "heavy lock" approach that Andrea was arguing for, 
+but rather than iterating you'd just take the root lock.
+
+I absolutely _hated_ the "iterate over all locks in the normal case" idea, 
+but with the root lock it's much more targeted and no longer is about 
+nested locks of the same type.
+
+So the things I care about are just:
+
+ - I hate that "retry" logic that made things more complex and had the 
+   livelock problem.
+
+   The "root lock" helper function certainly wouldn't be any fewer lines 
+   than your retry version, but it's a clearly separate locking function, 
+   rather than mixed in with the walking code. And it doesn't do livelock.
+
+ - I detest "take all locks" in normal paths. I'm ok with it for special 
+   case code (and I think the migrate code counts as special case), but I 
+   think it was really horribly and fundamentally wrong in that "mm: Take 
+   all anon_vma locks in anon_vma_lock" patch I saw.
+
+but whether we want to take the root lock in "anon_vma_lock()" or not is 
+just a "detail" as far as I'm concerned. It's no longer "horribly wrong". 
+It might have scalability issues etc, of course, but likely only under 
+insane loads.
+
+So either way works for me. 
+
+> > 	if (!list_empty(&anon_vma->head)) {
 > 
-> We seem to have ended up managing most of our PM infrastructure 
-> iteratively. If the concern is more about best practices than intrinsic 
-> incompatibilities, I'd lean towards us being better off merging this now 
-> and then working things out over the next few releases as we get a 
-> better understanding of the implications. The main thing that we have to 
-> get right in the short term is the userspace API - everything else is 
-> easier to fix up as we go along.
+> Can it be empty? I didn't think it was possible as the anon_vma must
+> have at least it's own chain.
 
-This particular question could use a little more discussion.  I'm
-interested to know, for example, under what conditions you would or
-would not want to shut down an autonomous codec while going into system 
-suspend on a cell phone.
+Ok, so that was answered in the other email - I think it's necessary in 
+the general case, although depending on exactly _how_ the page was looked 
+up, that may not be true.
 
-Clearly if there's a call in progress you don't want to shut the codec
-down.  Are there any other circumstances?  Would they vary according to
-whether the suspend was forced or opportunistic?
+If you have guarantees that the page is still mapped (thanks for page 
+table lock or something) and the anon_vma can't go away (just a read lock 
+on a mm_sem that was used to look up the page would also be sufficient), 
+that list_empty() check is unnecessary.
 
-In short, I'm trying to get at how much information drivers _really_ 
-need to have about the reason for a system suspend.
+So it's a bit context-dependent.
 
-Alan Stern
-
+			Linus
