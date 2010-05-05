@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760546Ab0EEPUa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 11:20:30 -0400
-Received: from mail.gmx.net ([213.165.64.20]:39872 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1760008Ab0EEPU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 11:20:27 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18pY/R/rIIpJ9uiu2JJcJX/dK/00VibGwhRrrD3Pf
-	UT28aMR26MyiFu
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>, linuxppc-dev@ozlabs.org
-Subject: [PATCH] media/IR: Add missing include file to rc-map.c
-Date: Wed, 5 May 2010 17:20:21 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
-Cc: "David =?iso-8859-1?q?H=E4rdeman?=" <david@hardeman.nu>,
-       linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-sh@vger.kernel.org, linux-mips@linux-mips.org,
-       linux-m68k@vger.kernel.org
+	id S1760572Ab0EEPU7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 11:20:59 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:49415 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760442Ab0EEPU4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 11:20:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=xFdIxlFfQddmTOAqgfGCSp+VlTE9rvjmxTUPwHemElwCjHT9D69620ccbtiuZi3/Ip
+         LoK+HCOdMUH+ckenGO3Qrnm6dUTqYnwymXemPLp95gGyI/t1VgxSyIoUhpw54qqW8AHY
+         uuU98LhdQ7A7DkLK9wHrPNdp0J89aWG1XpiDI=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005051720.22617.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+In-Reply-To: <4BE11FA0.20703@parrot.com>
+References: <17c88de31cd52bb3794569c28cd2ae51996e6260@localhost.localdomain>
+	 <10137ab89de6e6d229798d6f397688b0807024da@localhost.localdomain>
+	 <4BE11FA0.20703@parrot.com>
+Date: Wed, 5 May 2010 08:20:53 -0700
+Message-ID: <w2y347733d51005050820obdcea4e7k7564550723ef7c24@mail.gmail.com>
+Subject: Re: [PATCHv2 1/2] mtd: nand: Extend NAND flash detection to new MLC 
+	chips
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Matthieu CASTET <matthieu.castet@parrot.com>
+Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+       "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Reuben.Dowle@navico.com" <Reuben.Dowle@navico.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+On Wed, May 5, 2010 at 12:34 AM, Matthieu CASTET
+<matthieu.castet@parrot.com> wrote:
+> Doesn't these nand support ONFI "Read Parameter Page" (cmd 0xec) ?
+> If yes it will be a more generic way to detect new nand features.
 
-This patch adds a missing include linux/delay.h to prevent
-build failures[1-5]
+Unfortunately, Samsung and Toshiba do not support ONFI:
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-KernelVersion: linux-next-20100505
+http://onfi.org/membership/
 
-References:
-[1] http://kisskb.ellerman.id.au/kisskb/buildresult/2571452/
-[2] http://kisskb.ellerman.id.au/kisskb/buildresult/2571188/
-[3] http://kisskb.ellerman.id.au/kisskb/buildresult/2571479/
-[4] http://kisskb.ellerman.id.au/kisskb/buildresult/2571429/
-[5] http://kisskb.ellerman.id.au/kisskb/buildresult/2571432/
-
-drivers/media/IR/rc-map.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/media/IR/rc-map.c b/drivers/media/IR/rc-map.c
-index caf6a27..46a8f15 100644
---- a/drivers/media/IR/rc-map.c
-+++ b/drivers/media/IR/rc-map.c
-@@ -14,6 +14,7 @@
- 
- #include <media/ir-core.h>
- #include <linux/spinlock.h>
-+#include <linux/delay.h>
- 
- /* Used to handle IR raw handler extensions */
- static LIST_HEAD(rc_map_list);
--- 
-1.6.4.4
-
+http://www.hantat.com/News-Read-281-1.html
