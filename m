@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab0EEGea (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 02:34:30 -0400
-Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:43483 "EHLO
-	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755713Ab0EEGe3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 02:34:29 -0400
-Message-ID: <4BE11169.3010602@tu-dresden.de>
-Date: Wed, 05 May 2010 08:34:17 +0200
-From: =?ISO-8859-15?Q?Ronny_Tsch=FCter?= <Ronny.Tschueter@tu-dresden.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
+	id S1756713Ab0EEGll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 02:41:41 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:38065 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755352Ab0EEGli (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 02:41:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=OedLcX9/CSHxCQlgTUR6pU1tVb4DlIpDOiYl6FFZwHKj+k9bF4LG1tBDuZKaWF2zeh
+         rO8y0z8xgp7x5lmauHoXFa8/MgL/sf2aF8lBrDZ+34kcD2NNReWv9+AhJLRPHMxX4xhX
+         gR/wZ/kQp68HcIdNjsQWIALqWfYT7NQa+2Guw=
+Date: Tue, 4 May 2010 23:41:34 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 2.6.34-rc6
+Message-ID: <20100505064133.GA12329@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Tracing of power:power_start events doesn't work
-References: <4BDECD66.2010906@tu-dresden.de> <1273019517.22438.10.camel@gandalf.stny.rr.com>
-In-Reply-To: <1273019517.22438.10.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2010-05-05 02:31, Steven Rostedt wrote:
-> On Mon, 2010-05-03 at 15:19 +0200, Ronny Tschüter wrote:
->    
->> Hello,
->>
->> i use kernel version 2.6.33.2 (x86-64, Core 2 Duo) and the perf events
->> to track frequency and c states of my cpu. But if i want to trace
->> power:power_start events, it does not work. After typing
->>
->> echo "power:power_start" | sudo tee set_event
->>
->> on the console, the trace doesn't contain such events.
->> power:power_frequency and power:power_end events are reported correctly
->> by the system. I read in the mailing list that Robert Schoene had a
->> similiar problem, but with power:power_end events. Is there a known bug
->> regarding to trace_power_start methods in process.c?
->>      
-> Is this for perf or ftrace? I'm assuming you did this from the debugfs
-> tracing directory. The set_event file is for ftrace not perf.
->    
-It is for perf - i'm interested in event tracing. I used the event 
-tracing system like it is described in Documentation/trace/events.txt. 
-In addition i wrote a program which uses syscall(__NR_perf_counter_open, 
-... ) to trace power events. But the result is the same - 
-power:power_end events are reported, power:power_start events not.
+Hi Linus,
 
-Bye Ronny
+Please pull from:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem. Nothing super exciting but
+owners of newer touchpads will get a bit happier.
+
+Changelog:
+---------
+
+Christoph Fritz (1):
+      Input: joydev - allow binding to button-only devices
+
+Daniel Mack (1):
+      Input: eeti_ts - cancel pending work when going to suspend
+
+Dmitry Torokhov (2):
+      Input: psmouse - ignore parity error for basic protocols
+      Revert "Input: ALPS - add signature for HP Pavilion dm3 laptops"
+
+Florian Ragwitz (3):
+      Input: elantech - fix firmware version check
+      Input: elantech - allow forcing Elantech protocol
+      Input: elantech - ignore high bits in the position coordinates
+
+Jarod Wilson (1):
+      Input: ati_remote - add some missing devices from lirc_atiusb
+
+Takashi Iwai (1):
+      Input: Add support of Synaptics Clickpad device
+
+
+Diffstat:
+--------
+
+ Documentation/input/elantech.txt    |    8 ++--
+ drivers/input/joydev.c              |   18 +++++++
+ drivers/input/misc/ati_remote.c     |   14 ++++--
+ drivers/input/mouse/alps.c          |    1 -
+ drivers/input/mouse/elantech.c      |   84 +++++++++++++++++++++++------------
+ drivers/input/mouse/psmouse-base.c  |   18 ++++++-
+ drivers/input/mouse/psmouse.h       |    1 +
+ drivers/input/mouse/synaptics.c     |   35 ++++++++++++--
+ drivers/input/mouse/synaptics.h     |    4 ++
+ drivers/input/touchscreen/eeti_ts.c |   56 +++++++++++++++++++----
+ 10 files changed, 183 insertions(+), 56 deletions(-)
+
+-- 
+Dmitry
+
