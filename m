@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934930Ab0EEObt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 10:31:49 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41412 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933775Ab0EEOa6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 10:30:58 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Nick Black <dank@qemfd.net>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: [GIT PULL 0/4] perf fixes and improvements
-Date: Wed,  5 May 2010 11:30:44 -0300
-Message-Id: <1273069848-22934-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S934876Ab0EEOdh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 10:33:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33283 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754549Ab0EEOdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 10:33:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,333,1270450800"; 
+   d="scan'208";a="619101699"
+Message-ID: <4BE181BD.8010804@linux.intel.com>
+Date: Wed, 05 May 2010 07:33:33 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: rostedt@goodmis.org
+CC: =?UTF-8?B?Um9ubnkgVHNjaMO8dGVy?= <Ronny.Tschueter@tu-dresden.de>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Tracing of power:power_start events doesn't work
+References: <4BDECD66.2010906@tu-dresden.de>	 <1273019517.22438.10.camel@gandalf.stny.rr.com>	 <4BE17C90.2020205@tu-dresden.de> <1273069881.22438.17.camel@gandalf.stny.rr.com>
+In-Reply-To: <1273069881.22438.17.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On 5/5/2010 7:31, Steven Rostedt wrote:
+> On Wed, 2010-05-05 at 16:11 +0200, Ronny Tsch�ter wrote:
+>
+>>    /*
+>>     * Include the apic definitions for x86 to have the APIC timer related
+>> defines
+>> @@ -796,6 +797,18 @@ static int acpi_idle_bm_check(void)
+>>     */
+>>    static inline void acpi_idle_do_entry(struct acpi_processor_cx *cx)
+>>    {
+>> +    switch (cx->type) {
+>> +    case ACPI_STATE_C1:
+>> +        trace_power_start(POWER_CSTATE, 1);
+>> +        break;
+>> +    case ACPI_STATE_C2:
+>> +        trace_power_start(POWER_CSTATE, 2);
+>> +        break;
+>> +    case ACPI_STATE_C3:
+>> +        trace_power_start(POWER_CSTATE, 3);
+>> +        break;
+>> +    }
+>> +
+>
+> Depending on gcc, the above can bloat the code since each call to
+> trace_power_start() is a macro expanded. Try to call it just once.
+> Perhaps one of the following:
 
-Hi Ingo,
-
-        Please pull from:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
-
-Regards,
-
-Arnaldo Carvalho de Melo (3):
-  perf report: Make dso__calc_col_width agree with hist_entry__dso_snprintf
-  perf list: Add explanation about raw hardware event descriptors
-  perf tools: Fixup minor doc formatting issues
-
-Tom Zanussi (1):
-  perf/record: simplify TRACE_INFO tracepoint check
-
- tools/perf/Documentation/perf-annotate.txt     |    2 +-
- tools/perf/Documentation/perf-bench.txt        |    2 +-
- tools/perf/Documentation/perf-diff.txt         |    2 +-
- tools/perf/Documentation/perf-kmem.txt         |    2 +-
- tools/perf/Documentation/perf-list.txt         |   18 ++++++++++++++++++
- tools/perf/Documentation/perf-trace-python.txt |    2 +-
- tools/perf/Documentation/perf-trace.txt        |    2 +-
- tools/perf/builtin-record.c                    |   11 +----------
- tools/perf/util/event.c                        |    6 ++++--
- tools/perf/util/parse-events.c                 |    2 +-
- tools/perf/util/trace-event-info.c             |    8 +++++++-
- 11 files changed, 37 insertions(+), 20 deletions(-)
-
+the code is also incorrect fundamentally.
+You need to pass in the mwait value or equivalent; the ACPI STATE type is
+pretty much useless random garbage and should completely be ignored.
