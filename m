@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab0EEGll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 02:41:41 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:38065 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab0EEGli (ORCPT
+	id S1756834Ab0EEGtA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 02:49:00 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:45203 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137Ab0EEGs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 02:41:38 -0400
+	Wed, 5 May 2010 02:48:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:mime-version:content-type
          :content-disposition:user-agent;
-        b=OedLcX9/CSHxCQlgTUR6pU1tVb4DlIpDOiYl6FFZwHKj+k9bF4LG1tBDuZKaWF2zeh
-         rO8y0z8xgp7x5lmauHoXFa8/MgL/sf2aF8lBrDZ+34kcD2NNReWv9+AhJLRPHMxX4xhX
-         gR/wZ/kQp68HcIdNjsQWIALqWfYT7NQa+2Guw=
-Date: Tue, 4 May 2010 23:41:34 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 2.6.34-rc6
-Message-ID: <20100505064133.GA12329@core.coreip.homeip.net>
-MIME-Version: 1.0
+        b=n5kqIQ5Ydtkv9fajRv5T32FkYSBHveGdD72kmJ7A+IKVYKyThbtv92FPydtIcd/mOe
+         8f9pzB27HYNP4S9W5+xrAXmDw4gTPClUhgZJPSQIEik50YnD1CjfNsSGtqaiyEiHkgdz
+         tpvAvwOxXA0WxVRwQS17dkoguOLyFAOkxgvJo=
+Date: Wed, 5 May 2010 14:56:52 +0800
+From: wzt.wzt@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: devel@driverdev.osuosl.org, gregkh@suse.de
+Subject: [PATCH] Staging: Check kmalloc return value before use the buffer in ieee80211_softmac.c
+Message-ID: <20100505065652.GB7495@localhost.localdomain>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Check kmalloc return value before use the buffer.
 
-Please pull from:
+Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+---
+ .../staging/rtl8192u/ieee80211/ieee80211_softmac.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-to receive updates for the input subsystem. Nothing super exciting but
-owners of newer touchpads will get a bit happier.
-
-Changelog:
----------
-
-Christoph Fritz (1):
-      Input: joydev - allow binding to button-only devices
-
-Daniel Mack (1):
-      Input: eeti_ts - cancel pending work when going to suspend
-
-Dmitry Torokhov (2):
-      Input: psmouse - ignore parity error for basic protocols
-      Revert "Input: ALPS - add signature for HP Pavilion dm3 laptops"
-
-Florian Ragwitz (3):
-      Input: elantech - fix firmware version check
-      Input: elantech - allow forcing Elantech protocol
-      Input: elantech - ignore high bits in the position coordinates
-
-Jarod Wilson (1):
-      Input: ati_remote - add some missing devices from lirc_atiusb
-
-Takashi Iwai (1):
-      Input: Add support of Synaptics Clickpad device
-
-
-Diffstat:
---------
-
- Documentation/input/elantech.txt    |    8 ++--
- drivers/input/joydev.c              |   18 +++++++
- drivers/input/misc/ati_remote.c     |   14 ++++--
- drivers/input/mouse/alps.c          |    1 -
- drivers/input/mouse/elantech.c      |   84 +++++++++++++++++++++++------------
- drivers/input/mouse/psmouse-base.c  |   18 ++++++-
- drivers/input/mouse/psmouse.h       |    1 +
- drivers/input/mouse/synaptics.c     |   35 ++++++++++++--
- drivers/input/mouse/synaptics.h     |    4 ++
- drivers/input/touchscreen/eeti_ts.c |   56 +++++++++++++++++++----
- 10 files changed, 183 insertions(+), 56 deletions(-)
-
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
+index 27d9257..8718ac9 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
+@@ -1579,6 +1579,8 @@ static inline u16 auth_parse(struct sk_buff *skb, u8** challenge, int *chlen)
+ 		if(*(t++) == MFIE_TYPE_CHALLENGE){
+ 			*chlen = *(t++);
+ 			*challenge = (u8*)kmalloc(*chlen, GFP_ATOMIC);
++			if (!*challenge)
++				return -ENOMEM;
+ 			memcpy(*challenge, t, *chlen);
+ 		}
+ 	}
 -- 
-Dmitry
+1.6.5.3
 
