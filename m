@@ -1,162 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760057Ab0EENtn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 09:49:43 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:44502 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758456Ab0EENti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 09:49:38 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-To: Greg KH <greg@kroah.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] ramzswap: Register for swap event notifiers and callback
-Date: Wed,  5 May 2010 19:15:56 +0530
-Message-Id: <1273067156-2574-4-git-send-email-ngupta@vflare.org>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1273067156-2574-1-git-send-email-ngupta@vflare.org>
-References: <1273067156-2574-1-git-send-email-ngupta@vflare.org>
+	id S1757566Ab0EENz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 09:55:58 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:35012 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755274Ab0EENz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 09:55:57 -0400
+Date: Wed, 5 May 2010 14:55:38 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH] fix count_vm_event preempt in memory compaction direct
+	reclaim
+Message-ID: <20100505135537.GO20979@csn.ul.ie>
+References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie> <1271797276-31358-13-git-send-email-mel@csn.ul.ie> <20100505121908.GA5835@random.random> <20100505125156.GM20979@csn.ul.ie> <20100505131112.GB5835@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100505131112.GB5835@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SWAPON handler sets callback which frees memory associated
-with given swap slot, eliminating any stale data in corresponding
-ramzswap device.
+On Wed, May 05, 2010 at 03:11:12PM +0200, Andrea Arcangeli wrote:
+> On Wed, May 05, 2010 at 01:51:56PM +0100, Mel Gorman wrote:
+> > On Wed, May 05, 2010 at 02:19:08PM +0200, Andrea Arcangeli wrote:
+> > > On Tue, Apr 20, 2010 at 10:01:14PM +0100, Mel Gorman wrote:
+> > > > +		if (page) {
+> > > > +			__count_vm_event(COMPACTSUCCESS);
+> > > > +			return page;
+> > > 
+> > > ==
+> > > From: Andrea Arcangeli <aarcange@redhat.com>
+> > > 
+> > > Preempt is enabled so it must use count_vm_event.
+> > > 
+> > > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > Reviewed-by: Mel Gorman <mel@csn.ul.ie>
+> > 
+> > Andrew, this is a fix to the patch
+> > mmcompaction-direct-compact-when-a-high-order-allocation-fails.patch
+> 
+> for Andrew: I'll generate a trivial reject to the exponential backoff.
+> 
+> > Thanks Andrea, well spotted.
+> 
+> You're welcome.
+> 
+> I updated current aa.git origin/master and origin/anon_vma_chain
+> branches (post THP-23*).
+> 
 
-Without this callback, ramzswap device does not get any notification
-when a swap slot is freed. Thus, stale data can quickly accumulate in
-(compressed) memory which can defeat the whole purpose of such a device.
-With this callback, the device can free memory as soon as corresponding
-swap slot is freed.
+Ok.
 
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
----
- drivers/staging/ramzswap/TODO           |    5 --
- drivers/staging/ramzswap/ramzswap_drv.c |   79 ++++++++++++++++++++++++++++++-
- 2 files changed, 78 insertions(+), 6 deletions(-)
- delete mode 100644 drivers/staging/ramzswap/TODO
+> There's also another patch I've in my tree that you didn't picked up
+> and I wonder what's the issue here.
 
-diff --git a/drivers/staging/ramzswap/TODO b/drivers/staging/ramzswap/TODO
-deleted file mode 100644
-index 8d64e28..0000000
---- a/drivers/staging/ramzswap/TODO
-+++ /dev/null
-@@ -1,5 +0,0 @@
--TODO:
--	- Add support for swap notifiers
--
--Please send patches to Greg Kroah-Hartman <greg@kroah.com> and
--Nitin Gupta <ngupta@vflare.org>
-diff --git a/drivers/staging/ramzswap/ramzswap_drv.c b/drivers/staging/ramzswap/ramzswap_drv.c
-index ee5eb12..4be5bf7 100644
---- a/drivers/staging/ramzswap/ramzswap_drv.c
-+++ b/drivers/staging/ramzswap/ramzswap_drv.c
-@@ -1300,6 +1300,76 @@ static struct block_device_operations ramzswap_devops = {
- 	.owner = THIS_MODULE,
- };
- 
-+/*
-+ * Returns ramzswap device for the given swap file. Also caches
-+ * struct ramzswap in file->private_data.
-+ *
-+ * Returns NULL if the given file is not a ramzswap device.
-+ */
-+static struct ramzswap *ramzswap_find_device(struct file *swap_file)
-+{
-+	int i;
-+	struct inode *inode;
-+	struct ramzswap *rzs;
-+	struct block_device *bdev;
-+
-+	inode =	swap_file->f_mapping->host;
-+	bdev = I_BDEV(inode);
-+	rzs = bdev->bd_disk->private_data;
-+
-+	for (i = 0; i < num_devices; i++) {
-+		if (rzs == &devices[i])
-+			break;
-+	}
-+
-+	if (i == num_devices) {
-+		rzs = NULL;
-+		goto out;
-+	}
-+
-+out:
-+	return rzs;
-+}
-+
-+void ramzswap_slot_free_notify(struct block_device *bdev, unsigned long index)
-+{
-+	struct ramzswap *rzs = bdev->bd_disk->private_data;
-+	ramzswap_free_page(rzs, index);
-+	rzs_stat64_inc(rzs, &rzs->stats.notify_free);
-+}
-+
-+int ramzswap_swapon_notify(struct notifier_block *nb, unsigned long type,
-+							void *swap_file)
-+{
-+	int ret = -EINVAL;
-+
-+	if (ramzswap_find_device(swap_file)) {
-+		set_ramzswap_slot_free_notify(type, ramzswap_slot_free_notify);
-+		ret = 0;
-+	}
-+	return ret;
-+}
-+
-+int ramzswap_swapoff_notify(struct notifier_block *nb, unsigned long type,
-+							void *swap_file)
-+{
-+	int ret = -EINVAL;
-+
-+	if (ramzswap_find_device(swap_file)) {
-+		set_ramzswap_slot_free_notify(type, NULL);
-+		ret = 0;
-+	}
-+	return ret;
-+}
-+
-+static struct notifier_block ramzswap_swapon_nb = {
-+	.notifier_call = ramzswap_swapon_notify,
-+};
-+
-+static struct notifier_block ramzswap_swapoff_nb = {
-+	.notifier_call = ramzswap_swapoff_notify,
-+};
-+
- static int create_device(struct ramzswap *rzs, int device_id)
- {
- 	int ret = 0;
-@@ -1401,8 +1471,11 @@ static int __init ramzswap_init(void)
- 			goto free_devices;
- 	}
- 
--	return 0;
-+	register_swap_event_notifier(&ramzswap_swapon_nb, SWAP_EVENT_SWAPON);
-+	register_swap_event_notifier(&ramzswap_swapoff_nb,
-+							SWAP_EVENT_SWAPOFF);
- 
-+	return 0;
- free_devices:
- 	while (dev_id)
- 		destroy_device(&devices[--dev_id]);
-@@ -1417,6 +1490,10 @@ static void __exit ramzswap_exit(void)
- 	int i;
- 	struct ramzswap *rzs;
- 
-+	unregister_swap_event_notifier(&ramzswap_swapon_nb, SWAP_EVENT_SWAPON);
-+	unregister_swap_event_notifier(&ramzswap_swapoff_nb,
-+							SWAP_EVENT_SWAPOFF);
-+
- 	for (i = 0; i < num_devices; i++) {
- 		rzs = &devices[i];
- 
+Simple, I didn't spot it. If you pointed it out to me, I didn't take
+note of it and it got lost. Sorry if you did.
+
+> This less a bugfix because it
+> seems to only affect lockdep, I don't know why lockdep forbids to call
+> migrate_prep with any lock held (in this case the mmap_sem).
+
+I haven't seen this problem. The testing I'd have been doing with compaction
+were stress tests allocating huge pages but not from the fault path.
+
+> migrate.c
+> is careful to comply with it, compaction.c isn't. It's not mandatory
+> to succeed for compaction, so in doubt I just commented it out.
+
+It's not mandatory but the LRU lists should be drained so they can be properly
+isolated. It'd make a slight difference to success rates as there will be
+pages that cannot be isolated because they are on some pagevec.
+
+> It'll
+> also decrease the IPI load so I wasn't very concerned to re-enable it.
+> 
+
+While true, is compaction density that high under normal workloads? I guess
+it would be if a scanner was constantly trying to promote pages.  If the
+IPI load is out of hand, I'm ok with disabling in some cases. For example,
+I'd be ok with it being skipped if it was part of a daemon doing speculative
+promotion but I'd prefer it to still be used if the static hugetlbfs pool
+was being resized if that was possible.
+
+> -----
+> Subject: disable migrate_prep()
+> 
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> I get trouble from lockdep if I leave it enabled:
+> 
+> =======================================================
+> [ INFO: possible circular locking dependency detected ]
+> 2.6.34-rc3 #50
+> -------------------------------------------------------
+> largepages/4965 is trying to acquire lock:
+>  (events){+.+.+.}, at: [<ffffffff8105b788>] flush_work+0x38/0x130
+> 
+>  but task is already holding lock:
+>   (&mm->mmap_sem){++++++}, at: [<ffffffff8141b022>] do_page_fault+0xd2/0x430
+> 
+
+Hmm, I'm not seeing where in the fault path flush_work is getting called
+from. Can you point it out to me please?
+
+We already do some IPI work in the page allocator although it happens after
+direct reclaim and only for high-order pages. What happens there and what
+happens in migrate_prep are very similar so if there was a problem with IPI
+and fault paths, I'd have expected to see it from hugetlbfs at some stage.
+
+> flush_work apparently wants to run free from lock and it bugs in:
+> 
+> 	lock_map_acquire(&cwq->wq->lockdep_map);
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> ---
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -383,7 +383,9 @@ static int compact_zone(struct zone *zon
+>  	cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
+>  	cc->free_pfn &= ~(pageblock_nr_pages-1);
+>  
+> +#if 0
+>  	migrate_prep();
+> +#endif
+>  
+>  	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
+>  		unsigned long nr_migrate, nr_remaining;
+> 
+
 -- 
-1.6.6.1
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
