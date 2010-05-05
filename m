@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760314Ab0EEOTF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 10:19:05 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:45101
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760161Ab0EEOTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 10:19:01 -0400
-X-SpamScore: -4
-X-BigFish: VPS-4(zz936eMab9bhzz1202hzz6ff19hz32i2a8h87h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L1Y9S1-01-1SQ-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-       Joerg Roedel <joerg.roedel@amd.com>,
-       Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-       <stable@kernel.org>
-Subject: [PATCH 3/5] KVM: SVM: Fix wrong intercept masks on 32 bit
-Date: Wed, 5 May 2010 16:04:43 +0200
-Message-ID: <1273068285-3105-4-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1273068285-3105-1-git-send-email-joerg.roedel@amd.com>
-References: <1273068285-3105-1-git-send-email-joerg.roedel@amd.com>
+	id S932816Ab0EEO0r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 10:26:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18482 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932234Ab0EEO0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 10:26:46 -0400
+Message-ID: <4BE18020.50506@redhat.com>
+Date: Wed, 05 May 2010 17:26:40 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: unknown
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] KVM MMU: do not intercept invlpg if 'oos_shadow'
+ is disabled
+References: <4BDA9C37.9070602@cn.fujitsu.com> <4BDA9C86.8080204@cn.fujitsu.com> <4BDA9CD0.6070501@cn.fujitsu.com> <4BDA9D58.6030407@cn.fujitsu.com> <4BDAA94A.8050407@redhat.com> <4BE16A82.4080807@cn.fujitsu.com>
+In-Reply-To: <4BE16A82.4080807@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes KVM on 32 bit SVM working again by
-correcting the masks used for iret interception. With the
-wrong masks the upper 32 bits of the intercepts are masked
-out which leaves vmrun unintercepted. This is not legal on
-svm and the vmrun fails.
-Bug was introduced by commits 95ba827313 and 3cfc3092.
+On 05/05/2010 03:54 PM, Xiao Guangrong wrote:
+>
+> Avi Kivity wrote:
+>    
+>> On 04/30/2010 12:05 PM, Xiao Guangrong wrote:
+>>      
+>>> If 'oos_shadow' == 0, intercepting invlpg command is really
+>>> unnecessary.
+>>>
+>>> And it's good for us to compare the performance between enable
+>>> 'oos_shadow'
+>>> and disable 'oos_shadow'
+>>>
+>>> @@ -74,8 +74,9 @@ static int dbg = 0;
+>>>    module_param(dbg, bool, 0644);
+>>>    #endif
+>>>
+>>> -static int oos_shadow = 1;
+>>> +int __read_mostly oos_shadow = 1;
+>>>    module_param(oos_shadow, bool, 0644);
+>>> +EXPORT_SYMBOL_GPL(oos_shadow);
+>>>
+>>>        
+>> Please rename to kvm_oos_shadow to reduce potential for conflict with
+>> other global names.
+>>
+>> But really, this is a debug option, I don't expect people to run with
+>> oos_shadow=0, so there's not much motivation to optimize it.
+>>      
+> Agreed, but, 'oos_shadow' option is document in Documentation/kernel-parameters.txt,
+> if it's just a debug option, i think we do better not document it.
+>    
 
-Cc: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: stable@kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/kvm/svm.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+It has to be documented, otherwise people complain :)
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 0201b06..74f7b9d 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -2290,7 +2290,7 @@ static int cpuid_interception(struct vcpu_svm *svm)
- static int iret_interception(struct vcpu_svm *svm)
- {
- 	++svm->vcpu.stat.nmi_window_exits;
--	svm->vmcb->control.intercept &= ~(1UL << INTERCEPT_IRET);
-+	svm->vmcb->control.intercept &= ~(1ULL << INTERCEPT_IRET);
- 	svm->vcpu.arch.hflags |= HF_IRET_MASK;
- 	return 1;
- }
-@@ -2824,7 +2824,7 @@ static void svm_inject_nmi(struct kvm_vcpu *vcpu)
- 
- 	svm->vmcb->control.event_inj = SVM_EVTINJ_VALID | SVM_EVTINJ_TYPE_NMI;
- 	vcpu->arch.hflags |= HF_NMI_MASK;
--	svm->vmcb->control.intercept |= (1UL << INTERCEPT_IRET);
-+	svm->vmcb->control.intercept |= (1ULL << INTERCEPT_IRET);
- 	++vcpu->stat.nmi_injections;
- }
- 
-@@ -2891,10 +2891,10 @@ static void svm_set_nmi_mask(struct kvm_vcpu *vcpu, bool masked)
- 
- 	if (masked) {
- 		svm->vcpu.arch.hflags |= HF_NMI_MASK;
--		svm->vmcb->control.intercept |= (1UL << INTERCEPT_IRET);
-+		svm->vmcb->control.intercept |= (1ULL << INTERCEPT_IRET);
- 	} else {
- 		svm->vcpu.arch.hflags &= ~HF_NMI_MASK;
--		svm->vmcb->control.intercept &= ~(1UL << INTERCEPT_IRET);
-+		svm->vmcb->control.intercept &= ~(1ULL << INTERCEPT_IRET);
- 	}
- }
- 
+Anyway the variable name and the option name don't have to be the same 
+(I think).
+
 -- 
-1.7.1
-
+error compiling committee.c: too many arguments to function
 
