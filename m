@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757759Ab0EEURK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 16:17:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47428 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755812Ab0EEURE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 16:17:04 -0400
-Date: Wed, 5 May 2010 22:16:35 +0200 (CEST)
-From: John Kacur <jkacur@redhat.com>
-X-X-Sender: jkacur@localhost.localdomain
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-cc: lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 3/6] fat: BKL ioctl pushdown
-In-Reply-To: <87wrvitd5c.fsf@devron.myhome.or.jp>
-Message-ID: <alpine.LFD.2.00.1005052139010.6285@localhost.localdomain>
-References: <1273065339-21669-1-git-send-email-jkacur@redhat.com> <1273065339-21669-4-git-send-email-jkacur@redhat.com> <8739y6xrl6.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1005051927210.6285@localhost.localdomain> <87wrvitd5c.fsf@devron.myhome.or.jp>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758024Ab0EEUVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 16:21:30 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45450 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755902Ab0EEUV1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 16:21:27 -0400
+Date: Wed, 5 May 2010 21:21:07 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: mark gross <mgross@linux.intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+Message-ID: <20100505202107.GA6655@srcf.ucam.org>
+References: <20100504160346.GA27938@linux.intel.com> <Pine.LNX.4.44L0.1005041252480.1729-100000@iolanthe.rowland.org> <20100505015050.GA30591@linux.intel.com> <20100505133131.GA24477@srcf.ucam.org> <20100505200906.GA7450@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100505200906.GA7450@linux.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 6 May 2010, OGAWA Hirofumi wrote:
-
-> John Kacur <jkacur@redhat.com> writes:
-> 
-> > On Thu, 6 May 2010, OGAWA Hirofumi wrote:
+On Wed, May 05, 2010 at 01:09:06PM -0700, mark gross wrote:
+> On Wed, May 05, 2010 at 02:31:31PM +0100, Matthew Garrett wrote:
+> > But nobody has reasonably proposed one and demonstrated that it works. 
+> > We've had over a year to do so and failed, and I think it's pretty 
+> > unreasonable to ask Google to attempt to rearchitect based on a 
+> > hypothetical.
 > >
-> >> John Kacur <jkacur@redhat.com> writes:
-> >> 
-> >> > Convert fat_generic_ioctl and fat_dir_ioctl to unlocked_ioctls
-> >> > and push down the bkl into those functions.
-> >> 
-> >> I guess this is the part of batch ioctl conversion stuff though, those
-> >> ioctl of FAT don't need BKL at all. Because all of those should already
-> >> be protected by inode->i_mutex.
-> >> 
-> >> Removing BKL and then cleanup after this patch would be almost same with
-> >> reverting this patch. So, could you just convert to unlocked_ioctl
-> >> instead?
-> >
-> > That's probably not a good idea, without a little bit more analysis, 
-> > otherwise it's quite easy to introduce subtle bugs.
 > 
-> What analysis? Who do it? I thought about removing BKL of FAT from
-> several years ago. I was reviewing FAT multiple times, and I'm always
-> testing FAT without BKL.
+> These are not new issues being raised. They've had over a year to
+> address them, and all thats really happened was some sed script changes
+> from wake_lock to suspend_blocker.  Nothing is really different
+> here.
 
-This patch just makes explicit the hidden BKLs that FAT is already using 
-related to ioctl. We would like to get this step done in time for the next
-merge window, because then we can remove that hidden source.
+Our issues haven't been addressed because we've given no indication as 
+to how they can be addressed. For better or worse, our runtime 
+powermanagement story isn't sufficient to satisfy Google's usecases. 
+That would be fine, if we could tell them what changes needed to be made 
+to satisfy their usecases. The Android people have said that they don't 
+see a cleaner way of doing this. Are we seriously saying that they 
+should prove themselves wrong, and if they can't they don't get their 
+code in the kernel? This seems... problematic.
 
-This step is preparation for removing the BKL from the individual 
-functions we've pushed it down into. In other words, we'll do the analysis 
-to remove it later if you don't want to.
-
-Thanks.
-
-> 
-> If you are going to do, could you do it instead of this patch?
-> 
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
