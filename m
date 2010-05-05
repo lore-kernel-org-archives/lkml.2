@@ -1,78 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab0EEFBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 01:01:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52832 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751728Ab0EEFBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 01:01:23 -0400
-Message-ID: <4BE0FB68.7080403@kernel.org>
-Date: Wed, 05 May 2010 07:00:24 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1753612Ab0EEFIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 01:08:52 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:36522 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518Ab0EEFIv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 01:08:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=QqhjWmwJD/dcxWwTUQG6R7rCs2f+C19FbOoeukl9DSvy3YRp0eXmuTJG+GW3jkRFnS
+         HSX9RDSMRq9Sndv0YgSTmt1w6/nl4tpgELNeHZlB4Uxp/NBRF3/oQdA3o7ObWyghIkiI
+         BtSDYrxtQ6b8azAIBnIeVyNMmKRD6OCN3zL0I=
+Date: Wed, 5 May 2010 07:08:48 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, peterz@infradead.org, efault@gmx.de, avi@redhat.com,
+       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 03/12] perf: add perf_event_task_migrate()
+Message-ID: <20100505050846.GG5427@nowhere>
+References: <1272976724-14312-1-git-send-email-tj@kernel.org> <1272976724-14312-4-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@elte.hu, efault@gmx.de, avi@redhat.com, paulus@samba.org,
-       acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf
- on top of TP
-References: <1272976724-14312-1-git-send-email-tj@kernel.org> <1272994165.1642.203.camel@laptop>
-In-Reply-To: <1272994165.1642.203.camel@laptop>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 05:00:26 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272976724-14312-4-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 05/04/2010 07:29 PM, Peter Zijlstra wrote:
->> * 0001-0007: Unify the three tracers (tracepoints, perf_events and
->>   preempt/sched notifiers) in scheduler.
+On Tue, May 04, 2010 at 02:38:35PM +0200, Tejun Heo wrote:
+> Instead of calling perf_sw_event() directly from set_task_cpu(),
+> implement perf_event_task_migrate() which takes the same arguments as
+> trace_sched_migrate_task() and invokes perf_sw_event() is the task is
+> really migrating (cur_cpu != new_cpu).  This will help unifying
+> notifiers in sched.
 > 
-> Right, so I really don't like the SCHED_EVENT() thing much, esp the 3
-> different function postfixes.
-
-Yeap, it's not the prettiest thing.  I thought about renaming all of
-them so that they share the same postfix but then again I need a way
-to tell the script which to enable which is the easiest with
-specifying postfixes as macro argument.  Any better ideas?
-
->> * 0008-0012: Move perf hooks in sched on top of tracepoints if TPs are
->>              enabled.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  include/linux/perf_event.h |    3 +++
+>  kernel/perf_event.c        |   11 +++++++++++
+>  kernel/sched.c             |    5 ++---
+>  3 files changed, 16 insertions(+), 3 deletions(-)
 > 
-> This seems to add a terrible amount of overhead for no particular
-> reason.
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index c8e3754..a5eec48 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -754,6 +754,7 @@ extern int perf_max_events;
+>  
+>  extern const struct pmu *hw_perf_event_init(struct perf_event *event);
+>  
+> +extern void perf_event_task_migrate(struct task_struct *task, int new_cpu);
+>  extern void perf_event_task_sched_in(struct task_struct *task);
+>  extern void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next);
+>  extern void perf_event_task_tick(struct task_struct *task);
+> @@ -949,6 +950,8 @@ extern void perf_event_enable(struct perf_event *event);
+>  extern void perf_event_disable(struct perf_event *event);
+>  #else
+>  static inline void
+> +perf_event_task_migrate(struct task_struct *task, int new_cpu)		{ }
+> +static inline void
+>  perf_event_task_sched_in(struct task_struct *task)			{ }
+>  static inline void
+>  perf_event_task_sched_out(struct task_struct *task,
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index 3d1552d..a01ba31 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -1148,6 +1148,17 @@ static void perf_event_sync_stat(struct perf_event_context *ctx,
+>  }
+>  
+>  /*
+> + * Called from scheduler set_task_cpu() to notify migration events.
+> + * If the task is moving to a different cpu, generate a migration sw
+> + * event.
+> + */
+> +void perf_event_task_migrate(struct task_struct *task, int new_cpu)
+> +{
+> +	if (task_cpu(task) != new_cpu)
+> +		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, 1, NULL, 0);
+> +}
 
-Hmm... What overhead?
 
-What matters more here is avoiding the overhead when perf or whatever
-tracing mechanism is disabled.  When both perf and TPs are compiled in
-but not enabled, moving perf hooks on top of TPs means that the sched
-core code doesn't have to call into extra functions for perf and TPs
-can be nooped.  ie. less overhead.  Also, even when perf is enabled,
-there isn't any inherent extra runtime overhead other than during
-enabling/disabling which again is a much colder path.
 
-The only place where noticeable overhead is added is the extra pair of
-irq enable/disable that I added for sched_out hook.  After glancing
-through what perf does during context switch, I thought that overhead
-wouldn't be anything noticeable but if it is, they can definitely be
-separated.  The only purpose of that change was colocating sched
-notifiers and perf hooks.
+This needs to be static and inline (I haven't seem external users in this
+patchset).
 
-Also, if a few more perf hooks are converted to use the same
-mechanism, it would be possible to put perf properly on top of TPs
-other than init/exit code paths which will be cleaner for the rest of
-the kernel and there won't be any extra runtime overhead.
+And we want it to be inlined because we save the caller address and the frame
+pointer from perf_sw_event(), and a new level of call is not wanted here.
 
-The code will be much cleaner if perf depends on TPs.  With perf hooks
-completely removed, there won't be much point in SCHED_EVENT and the
-messy ifdefs in perf can also go away.  Would this be a possibility?
+
+
+> +
+> +/*
+>   * Called from scheduler to remove the events of the current task,
+>   * with interrupts disabled.
+>   *
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index c20fd31..2568911 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -2084,11 +2084,10 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+>  #endif
+>  
+>  	trace_sched_migrate_task(p, new_cpu);
+> +	perf_event_task_migrate(p, new_cpu);
+>  
+> -	if (task_cpu(p) != new_cpu) {
+> +	if (task_cpu(p) != new_cpu)
+
+
+
+In fact why not moving both tracing calls under this check.
+This is going to fix the migrate trace event that gets called
+even on "spurious" migrations, and you avoid the duplicate check
+in the perf callback.
 
 Thanks.
 
--- 
-tejun
+
+>  		p->se.nr_migrations++;
+> -		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, 1, NULL, 0);
+> -	}
+>  
+>  	__set_task_cpu(p, new_cpu);
+>  }
+> -- 
+> 1.6.4.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
