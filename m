@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934276Ab0EEKFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 06:05:14 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41755 "EHLO mx2.mail.elte.hu"
+	id S934348Ab0EEKGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 06:06:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62777 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932398Ab0EEKFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 06:05:12 -0400
-Date: Wed, 5 May 2010 12:05:00 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Eric Biederman <ebiederm@aristanetworks.com>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, ebiederm@xmission.com,
-       Yinghai Lu <yinghai@kernel.org>, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/irq] x86, acpi/irq: Handle isa irqs that are not
- identity mapped to gsi's.
-Message-ID: <20100505100500.GA12693@elte.hu>
-References: <1269936436-7039-14-git-send-email-ebiederm@xmission.com>
- <tip-988856ee1623bd37e384105f7bb2b7fe44c009f6@git.kernel.org>
- <20100505085629.GA16278@elte.hu>
- <j2taca0ce8b1005050236z8448bb27wacebbb2cf2de0fd4@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <j2taca0ce8b1005050236z8448bb27wacebbb2cf2de0fd4@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S932398Ab0EEKGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 06:06:50 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100505032033.GA19232@google.com>
+References: <20100505032033.GA19232@google.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: dhowells@redhat.com, Andrew Morton <akpm@google.com>,
+       Linux-MM <linux-mm@kvack.org>, Ying Han <yinghan@google.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: rwsem: down_read_unfair() proposal
+Date: Wed, 05 May 2010 11:06:44 +0100
+Message-ID: <22994.1273054004@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Michel Lespinasse <walken@google.com> wrote:
 
-* Eric Biederman <ebiederm@aristanetworks.com> wrote:
+> and looks like it's doable with the x86 rwsem implementation as well in a
+> way that would only involve changes to the rwsem spinlock-protected slow
+> paths in lib/rwsem.c .
 
-> On Wed, May 5, 2010 at 1:56 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * tip-bot for Eric W. Biederman <ebiederm@xmission.com> wrote:
-> >
-> >> Commit-ID: ?988856ee1623bd37e384105f7bb2b7fe44c009f6
-> >> Gitweb: ? ? http://git.kernel.org/tip/988856ee1623bd37e384105f7bb2b7fe44c009f6
-> >> Author: ? ? Eric W. Biederman <ebiederm@xmission.com>
-> >> AuthorDate: Tue, 30 Mar 2010 01:07:15 -0700
-> >> Committer: ?H. Peter Anvin <hpa@zytor.com>
-> >> CommitDate: Tue, 4 May 2010 13:35:17 -0700
-> >>
-> >> x86, acpi/irq: Handle isa irqs that are not identity mapped to gsi's.
-> >
-> > FYI, the patchset causes this build error with certain configs:
-> >
-> > arch/x86/kernel/acpi/boot.c:122: error: 'gsi_end' undeclared (first use in this function)
-> > arch/x86/kernel/acpi/boot.c:122: error: (Each undeclared identifier is reported only once
-> > arch/x86/kernel/acpi/boot.c:122: error: for each function it appears in.)
-> > arch/x86/kernel/acpi/boot.c:133: error: 'gsi_end' undeclared (first use in this function)
-> 
-> What configuration supports acpi and doesn't support ioapics?
+It's not as easy as it seems.  Once an XADD-based rwsem is contended, you
+cannot necessarily tell without looking at the queue whether the rwsem is
+currently write-locked or read-locked.
 
-an UP kernel with ACPI turned on for example.
-
-	Ingo
+David
