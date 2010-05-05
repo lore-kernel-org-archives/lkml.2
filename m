@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab0EENth (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 09:49:37 -0400
+	id S1760057Ab0EENtn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 09:49:43 -0400
 Received: from mail-pv0-f174.google.com ([74.125.83.174]:44502 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760115Ab0EENtb (ORCPT
+	with ESMTP id S1758456Ab0EENti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 09:49:31 -0400
+	Wed, 5 May 2010 09:49:38 -0400
 From: Nitin Gupta <ngupta@vflare.org>
 To: Greg KH <greg@kroah.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
@@ -14,9 +14,9 @@ Cc: Minchan Kim <minchan.kim@gmail.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        driverdev <devel@driverdev.osuosl.org>,
        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] Send callback when a swap slot is freed
-Date: Wed,  5 May 2010 19:15:55 +0530
-Message-Id: <1273067156-2574-3-git-send-email-ngupta@vflare.org>
+Subject: [PATCH 3/3] ramzswap: Register for swap event notifiers and callback
+Date: Wed,  5 May 2010 19:15:56 +0530
+Message-Id: <1273067156-2574-4-git-send-email-ngupta@vflare.org>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1273067156-2574-1-git-send-email-ngupta@vflare.org>
 References: <1273067156-2574-1-git-send-email-ngupta@vflare.org>
@@ -24,91 +24,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This callback is required when RAM based devices are used as swap disks.
-One such device is ramzswap[1] which is used as compressed in-memory swap
-disk. For such devices, we need a callback as soon as a swap slot is no
-longer used to allow freeing memory allocated for this slot. Without this
-callback, stale data can quickly accumulate in memory defeating the whole
-purpose of such devices.
+The SWAPON handler sets callback which frees memory associated
+with given swap slot, eliminating any stale data in corresponding
+ramzswap device.
 
-Signed-off-by: Nitin Gupta <ngupta@vvflare.org>
+Without this callback, ramzswap device does not get any notification
+when a swap slot is freed. Thus, stale data can quickly accumulate in
+(compressed) memory which can defeat the whole purpose of such a device.
+With this callback, the device can free memory as soon as corresponding
+swap slot is freed.
+
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 ---
- include/linux/swap.h |    6 ++++++
- mm/swapfile.c        |   19 +++++++++++++++++++
- 2 files changed, 25 insertions(+), 0 deletions(-)
+ drivers/staging/ramzswap/TODO           |    5 --
+ drivers/staging/ramzswap/ramzswap_drv.c |   79 ++++++++++++++++++++++++++++++-
+ 2 files changed, 78 insertions(+), 6 deletions(-)
+ delete mode 100644 drivers/staging/ramzswap/TODO
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index f3c7378..ffe0063 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -8,6 +8,7 @@
- #include <linux/memcontrol.h>
- #include <linux/sched.h>
- #include <linux/node.h>
-+#include <linux/blkdev.h>
- 
- #include <asm/atomic.h>
- #include <asm/page.h>
-@@ -20,6 +21,9 @@ struct bio;
- #define SWAP_FLAG_PRIO_MASK	0x7fff
- #define SWAP_FLAG_PRIO_SHIFT	0
- 
-+typedef void (ramzswap_slot_free_notify_fn)(struct block_device *,
-+						unsigned long);
-+
- static inline int current_is_kswapd(void)
- {
- 	return current->flags & PF_KSWAPD;
-@@ -185,6 +189,7 @@ struct swap_info_struct {
- 	struct swap_extent *curr_swap_extent;
- 	struct swap_extent first_swap_extent;
- 	struct block_device *bdev;	/* swap device or bdev of swap file */
-+	ramzswap_slot_free_notify_fn *ramzswap_slot_free_notify_fn;
- 	struct file *swap_file;		/* seldom referenced */
- 	unsigned int old_block_size;	/* seldom referenced */
+diff --git a/drivers/staging/ramzswap/TODO b/drivers/staging/ramzswap/TODO
+deleted file mode 100644
+index 8d64e28..0000000
+--- a/drivers/staging/ramzswap/TODO
++++ /dev/null
+@@ -1,5 +0,0 @@
+-TODO:
+-	- Add support for swap notifiers
+-
+-Please send patches to Greg Kroah-Hartman <greg@kroah.com> and
+-Nitin Gupta <ngupta@vflare.org>
+diff --git a/drivers/staging/ramzswap/ramzswap_drv.c b/drivers/staging/ramzswap/ramzswap_drv.c
+index ee5eb12..4be5bf7 100644
+--- a/drivers/staging/ramzswap/ramzswap_drv.c
++++ b/drivers/staging/ramzswap/ramzswap_drv.c
+@@ -1300,6 +1300,76 @@ static struct block_device_operations ramzswap_devops = {
+ 	.owner = THIS_MODULE,
  };
-@@ -338,6 +343,7 @@ extern int register_swap_event_notifier(struct notifier_block *nb,
- 				enum swap_event event);
- extern int unregister_swap_event_notifier(struct notifier_block *nb,
- 				enum swap_event event);
-+extern void set_ramzswap_slot_free_notify(int, ramzswap_slot_free_notify_fn *);
- struct backing_dev_info;
  
- /* linux/mm/thrash.c */
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index aa474f3..aaea63d 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -586,6 +586,8 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
- 			swap_list.next = p->type;
- 		nr_swap_pages++;
- 		p->inuse_pages--;
-+		if (p->ramzswap_slot_free_notify_fn)
-+			p->ramzswap_slot_free_notify_fn(p->bdev, offset);
++/*
++ * Returns ramzswap device for the given swap file. Also caches
++ * struct ramzswap in file->private_data.
++ *
++ * Returns NULL if the given file is not a ramzswap device.
++ */
++static struct ramzswap *ramzswap_find_device(struct file *swap_file)
++{
++	int i;
++	struct inode *inode;
++	struct ramzswap *rzs;
++	struct block_device *bdev;
++
++	inode =	swap_file->f_mapping->host;
++	bdev = I_BDEV(inode);
++	rzs = bdev->bd_disk->private_data;
++
++	for (i = 0; i < num_devices; i++) {
++		if (rzs == &devices[i])
++			break;
++	}
++
++	if (i == num_devices) {
++		rzs = NULL;
++		goto out;
++	}
++
++out:
++	return rzs;
++}
++
++void ramzswap_slot_free_notify(struct block_device *bdev, unsigned long index)
++{
++	struct ramzswap *rzs = bdev->bd_disk->private_data;
++	ramzswap_free_page(rzs, index);
++	rzs_stat64_inc(rzs, &rzs->stats.notify_free);
++}
++
++int ramzswap_swapon_notify(struct notifier_block *nb, unsigned long type,
++							void *swap_file)
++{
++	int ret = -EINVAL;
++
++	if (ramzswap_find_device(swap_file)) {
++		set_ramzswap_slot_free_notify(type, ramzswap_slot_free_notify);
++		ret = 0;
++	}
++	return ret;
++}
++
++int ramzswap_swapoff_notify(struct notifier_block *nb, unsigned long type,
++							void *swap_file)
++{
++	int ret = -EINVAL;
++
++	if (ramzswap_find_device(swap_file)) {
++		set_ramzswap_slot_free_notify(type, NULL);
++		ret = 0;
++	}
++	return ret;
++}
++
++static struct notifier_block ramzswap_swapon_nb = {
++	.notifier_call = ramzswap_swapon_notify,
++};
++
++static struct notifier_block ramzswap_swapoff_nb = {
++	.notifier_call = ramzswap_swapoff_notify,
++};
++
+ static int create_device(struct ramzswap *rzs, int device_id)
+ {
+ 	int ret = 0;
+@@ -1401,8 +1471,11 @@ static int __init ramzswap_init(void)
+ 			goto free_devices;
  	}
  
- 	return usage;
-@@ -2538,3 +2540,20 @@ int unregister_swap_event_notifier(struct notifier_block *nb,
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(unregister_swap_event_notifier);
+-	return 0;
++	register_swap_event_notifier(&ramzswap_swapon_nb, SWAP_EVENT_SWAPON);
++	register_swap_event_notifier(&ramzswap_swapoff_nb,
++							SWAP_EVENT_SWAPOFF);
+ 
++	return 0;
+ free_devices:
+ 	while (dev_id)
+ 		destroy_device(&devices[--dev_id]);
+@@ -1417,6 +1490,10 @@ static void __exit ramzswap_exit(void)
+ 	int i;
+ 	struct ramzswap *rzs;
+ 
++	unregister_swap_event_notifier(&ramzswap_swapon_nb, SWAP_EVENT_SWAPON);
++	unregister_swap_event_notifier(&ramzswap_swapoff_nb,
++							SWAP_EVENT_SWAPOFF);
 +
-+/*
-+ * Called from ramzswap driver. Sets swap slot free callback for
-+ * the given ramzswap device. This callback will be given a more
-+ * generic name if it finds more users.
-+ */
-+void set_ramzswap_slot_free_notify(int type, ramzswap_slot_free_notify_fn *fn)
-+{
-+	struct swap_info_struct *sis;
-+
-+	spin_lock(&swap_lock);
-+	sis = swap_info[type];
-+	sis->ramzswap_slot_free_notify_fn = fn;
-+	spin_unlock(&swap_lock);
-+}
-+EXPORT_SYMBOL_GPL(set_ramzswap_slot_free_notify);
-+
+ 	for (i = 0; i < num_devices; i++) {
+ 		rzs = &devices[i];
+ 
 -- 
 1.6.6.1
 
