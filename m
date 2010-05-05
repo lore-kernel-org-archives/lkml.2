@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796Ab0EESdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 14:33:44 -0400
-Received: from mail-va3.bigfish.com ([216.32.180.112]:35748 "EHLO
-	mail100-va3-R.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753028Ab0EESdn (ORCPT
+	id S1757850Ab0EESgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 14:36:14 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50872 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757556Ab0EESgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 14:33:43 -0400
-X-Greylist: delayed 1852 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 May 2010 14:33:43 EDT
-X-SpamScore: -15
-X-BigFish: VPS-15(zz1102K1432P936eMab9bhzz1202hzz6ff19h6d525hz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-MS-Exchange-Organization-Antispam-Report: OrigIP: 163.181.251.8;Service: EHS
-X-WSS-ID: 0L1YKSC-02-0IR-02
-X-M-MSG: 
-Date: Wed, 5 May 2010 20:02:28 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Greg KH <gregkh@suse.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "stable@kernel.org" <stable@kernel.org>,
-       "stable-review@kernel.org" <stable-review@kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
-       Jiri Benc <jbenc@suse.cz>,
-       "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-       "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>
-Subject: Re: [113/197] x86, cacheinfo: Calculate L3 indices
-Message-ID: <20100505180228.GC15804@aftab>
-References: <20100422190917.467545308@kvm.kroah.org>
- <alpine.LNX.2.00.1005051736080.9849@pobox.suse.cz>
+	Wed, 5 May 2010 14:36:11 -0400
+Date: Wed, 5 May 2010 14:36:10 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Matthew Garrett <mjg@redhat.com>
+cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Paul Walmsley <paul@pwsan.com>, <magnus.damm@gmail.com>,
+       mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+In-Reply-To: <20100505173337.GA1671@srcf.ucam.org>
+Message-ID: <Pine.LNX.4.44L0.1005051432120.1885-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1005051736080.9849@pobox.suse.cz>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Kosina <jkosina@suse.cz>
-Date: Wed, May 05, 2010 at 12:26:19PM -0400
+On Wed, 5 May 2010, Matthew Garrett wrote:
 
-> Please consider applying the patch below, both for 2.6.34 and all the 
-> -stable kernels this patch has hit.
+> On Wed, May 05, 2010 at 02:56:22PM +0100, Mark Brown wrote:
 > 
+> > If the conclusion is that we don't have anything generic within the
+> > kernel then it'd be good to at least have this explicitly spelled out so
+> > that we're clear what everyone thinks is going on here and how things
+> > are supposed to work.  At the minute it doesn't feel like we've had the
+> > discussion so we could end up working at cross purposes.  I don't want
+> > to end up in the situation where I have to work around the APIs I'm
+> > using without the relevant maintainers having sight of that since that
+> > not only am I likely to be missing some existing solution to the problem
+> > but is also prone to causing problems maintaining the underlying API.
 > 
-> 
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] x86, cacheinfo: fix oops in amd_calc_l3_indices()
-> 
-> Commit 048a8774ca4348 ("x86, cacheinfo: Calculate L3 indices") introduced
-> amd_calc_l3_indices(), but this function doesn't properly handle case
-> when node_to_k8_nb_misc() returns NULL, causing immediate oops due to
-> NULL pointer dereference in pci_read_config_dword().
-> 
-> Make amd_calc_l3_indices() return -1 in such cases. This is correct
-> lower bound, as it will make store_cache_disable() return EINVAL in
-> all such cases.
-> 
-> Cc: stable@kernel.org
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  arch/x86/kernel/cpu/intel_cacheinfo.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-> index b3eeb66..b9f8dca 100644
-> --- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-> +++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-> @@ -314,6 +314,9 @@ static unsigned int __cpuinit amd_calc_l3_indices(void)
->  	unsigned int sc0, sc1, sc2, sc3;
->  	u32 val = 0;
->  
-> +	if (!dev)
-> +		return -1;
-> +
+> We seem to have ended up managing most of our PM infrastructure 
+> iteratively. If the concern is more about best practices than intrinsic 
+> incompatibilities, I'd lean towards us being better off merging this now 
+> and then working things out over the next few releases as we get a 
+> better understanding of the implications. The main thing that we have to 
+> get right in the short term is the userspace API - everything else is 
+> easier to fix up as we go along.
 
-This won't fly since the function returns an unsigned value and the L3
-code would still be entered, which is what you don't want actually when
-k8_northbridges initialization has somehow failed.
+This particular question could use a little more discussion.  I'm
+interested to know, for example, under what conditions you would or
+would not want to shut down an autonomous codec while going into system 
+suspend on a cell phone.
 
-Rather, we have a fix already which should take care of your issue too,
-see http://git.kernel.org/tip/f2b20e41407fccfcfacf927ff91ec888832a37af
+Clearly if there's a call in progress you don't want to shut the codec
+down.  Are there any other circumstances?  Would they vary according to
+whether the suspend was forced or opportunistic?
 
-I was waiting for it to hit mainline before I backport it to stable and
-it would be helpful if you could verify that it works for you along with
-0e152cd7c16832bd5cadee0c2e41d9959bc9b6f9 you sent earlier.
+In short, I'm trying to get at how much information drivers _really_ 
+need to have about the reason for a system suspend.
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
+Alan Stern
 
