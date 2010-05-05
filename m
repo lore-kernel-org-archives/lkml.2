@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934774Ab0EEKlz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 06:41:55 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54822 "EHLO
+	id S934779Ab0EEKmG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 06:42:06 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54830 "EHLO
 	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934639Ab0EEKlt (ORCPT
+	with ESMTP id S934639Ab0EEKl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 06:41:49 -0400
+	Wed, 5 May 2010 06:41:59 -0400
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 18/20] serial: add port helpers
+Subject: [PATCH 20/20] serial: Use block_til_ready helper
 To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de
-Date: Wed, 05 May 2010 11:03:21 +0100
-Message-ID: <20100505100321.3595.41635.stgit@localhost.localdomain>
+Date: Wed, 05 May 2010 11:03:33 +0100
+Message-ID: <20100505100332.3595.32453.stgit@localhost.localdomain>
 In-Reply-To: <20100505100144.3595.65633.stgit@localhost.localdomain>
 References: <20100505100144.3595.65633.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,111 +22,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can make this the same as the ones that will be needed by the tty_port
-helper logic that we want to move to but still call them from the existing
-code base.
+Our code now rather closely resembles the helper, so switch to it.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/serial/serial_core.c |   51 ++++++++++++++++++++++++++++++------------
- 1 files changed, 37 insertions(+), 14 deletions(-)
+ drivers/serial/serial_core.c |   87 ------------------------------------------
+ 1 files changed, 1 insertions(+), 86 deletions(-)
 
 
 diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
-index 424b1c7..2379045 100644
+index 0603e0d..a55751a 100644
 --- a/drivers/serial/serial_core.c
 +++ b/drivers/serial/serial_core.c
-@@ -1501,6 +1501,34 @@ static void uart_update_termios(struct tty_struct *tty,
- 	}
+@@ -1526,91 +1526,6 @@ static void uart_dtr_rts(struct tty_port *port, int onoff)
+ 		uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
  }
  
-+static int uart_carrier_raised(struct tty_port *port)
-+{
-+	struct uart_state *state = container_of(port, struct uart_state, port);
-+	struct uart_port *uport = state->uart_port;
-+	int mctrl;
-+	mutex_lock(&port->mutex);
-+	spin_lock_irq(&uport->lock);
-+	uport->ops->enable_ms(uport);
-+	mctrl = uport->ops->get_mctrl(uport);
-+	spin_unlock_irq(&uport->lock);
-+	mutex_unlock(&port->mutex);
-+	if (mctrl & TIOCM_CAR)
-+		return 1;
-+	return 0;
-+}
-+
-+static void uart_dtr_rts(struct tty_port *port, int onoff)
-+{
-+	struct uart_state *state = container_of(port, struct uart_state, port);
-+	struct uart_port *uport = state->uart_port;
-+	mutex_lock(&port->mutex);
-+	if (onoff)
-+		uart_set_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
-+	else
-+		uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
-+	mutex_unlock(&port->mutex);
-+}
-+
- /*
-  * Block the open until the port is ready.  We must be called with
-  * the per-port semaphore held.
-@@ -1509,9 +1537,7 @@ static int
- uart_block_til_ready(struct file *filp, struct uart_state *state)
+-/*
+- * Block the open until the port is ready.  We must be called with
+- * the per-port semaphore held.
+- */
+-static int
+-uart_block_til_ready(struct file *filp, struct uart_state *state)
+-{
+-	DECLARE_WAITQUEUE(wait, current);
+-	struct tty_port *port = &state->port;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&port->lock, flags);
+-	if (!tty_hung_up_p(filp))
+-		port->count--;
+-	port->blocked_open++;
+-	spin_unlock_irqrestore(&port->lock, flags);
+-
+-	add_wait_queue(&port->open_wait, &wait);
+-	while (1) {
+-		set_current_state(TASK_INTERRUPTIBLE);
+-
+-		/*
+-		 * If we have been hung up, tell userspace/restart open.
+-		 */
+-		if (tty_hung_up_p(filp) || port->tty == NULL)
+-			break;
+-
+-		/*
+-		 * If the port has been closed, tell userspace/restart open.
+-		 */
+-		if (!(port->flags & ASYNC_INITIALIZED))
+-			break;
+-
+-		/*
+-		 * If non-blocking mode is set, or CLOCAL mode is set,
+-		 * we don't want to wait for the modem status lines to
+-		 * indicate that the port is ready.
+-		 *
+-		 * Also, if the port is not enabled/configured, we want
+-		 * to allow the open to succeed here.  Note that we will
+-		 * have set TTY_IO_ERROR for a non-existant port.
+-		 */
+-		if ((filp->f_flags & O_NONBLOCK) ||
+-		    (port->tty->termios->c_cflag & CLOCAL) ||
+-		    (port->tty->flags & (1 << TTY_IO_ERROR)))
+-			break;
+-
+-		/*
+-		 * Set DTR to allow modem to know we're waiting.  Do
+-		 * not set RTS here - we want to make sure we catch
+-		 * the data from the modem.
+-		 */
+-		if (port->tty->termios->c_cflag & CBAUD)
+-			tty_port_raise_dtr_rts(port);
+-
+-		/*
+-		 * and wait for the carrier to indicate that the
+-		 * modem is ready for us.
+-		 */
+-		if (tty_port_carrier_raised(port))
+-			break;
+-
+-		schedule();
+-
+-		if (signal_pending(current))
+-			break;
+-	}
+-	set_current_state(TASK_RUNNING);
+-	remove_wait_queue(&port->open_wait, &wait);
+-
+-	spin_lock_irqsave(&port->lock, flags);
+-	if (!tty_hung_up_p(filp))
+-		port->count++;
+-	port->blocked_open--;
+-	spin_unlock_irqrestore(&port->lock, flags);
+-
+-	if (signal_pending(current))
+-		return -ERESTARTSYS;
+-
+-	if (!port->tty || tty_hung_up_p(filp))
+-		return -EAGAIN;
+-
+-	return 0;
+-}
+-
+ static struct uart_state *uart_get(struct uart_driver *drv, int line)
  {
- 	DECLARE_WAITQUEUE(wait, current);
--	struct uart_port *uport = state->uart_port;
- 	struct tty_port *port = &state->port;
--	unsigned int mctrl;
- 	unsigned long flags;
+ 	struct uart_state *state;
+@@ -1719,7 +1634,7 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
+ 	 */
+ 	mutex_unlock(&port->mutex);
+ 	if (retval == 0)
+-		retval = uart_block_til_ready(filp, state);
++		retval = tty_port_block_til_ready(port, tty, filp);
  
- 	spin_lock_irqsave(&port->lock, flags);
-@@ -1555,23 +1581,14 @@ uart_block_til_ready(struct file *filp, struct uart_state *state)
- 		 * not set RTS here - we want to make sure we catch
- 		 * the data from the modem.
- 		 */
--		if (port->tty->termios->c_cflag & CBAUD) {
--			mutex_lock(&port->mutex);
--			uart_set_mctrl(uport, TIOCM_DTR);
--			mutex_unlock(&port->mutex);
--		}
-+		if (port->tty->termios->c_cflag & CBAUD)
-+			tty_port_raise_dtr_rts(port);
- 
- 		/*
- 		 * and wait for the carrier to indicate that the
- 		 * modem is ready for us.
- 		 */
--		mutex_lock(&port->mutex);
--		spin_lock_irq(&uport->lock);
--		uport->ops->enable_ms(uport);
--		mctrl = uport->ops->get_mctrl(uport);
--		spin_unlock_irq(&uport->lock);
--		mutex_unlock(&port->mutex);
--		if (mctrl & TIOCM_CAR)
-+		if (tty_port_carrier_raised(port))
- 			break;
- 
- 		schedule();
-@@ -2349,6 +2366,11 @@ static const struct tty_operations uart_ops = {
- #endif
- };
- 
-+static const struct tty_port_operations uart_port_ops = {
-+	.carrier_raised = uart_carrier_raised,
-+	.dtr_rts	= uart_dtr_rts,
-+};
-+
- /**
-  *	uart_register_driver - register a driver with the uart core layer
-  *	@drv: low level driver structure
-@@ -2405,6 +2427,7 @@ int uart_register_driver(struct uart_driver *drv)
- 		struct tty_port *port = &state->port;
- 
- 		tty_port_init(port);
-+		port->ops = &uart_port_ops;
- 		port->close_delay     = 500;	/* .5 seconds */
- 		port->closing_wait    = 30000;	/* 30 seconds */
- 		tasklet_init(&state->tlet, uart_tasklet_action,
+ 	/*
+ 	 * If this is the first open to succeed, adjust things to suit.
 
