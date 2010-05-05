@@ -1,243 +1,711 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934749Ab0EEKyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 06:54:50 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:63625 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753291Ab0EEKxF (ORCPT
+	id S1760064Ab0EEKzO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 06:55:14 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:47836 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898Ab0EEKxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 06:53:05 -0400
-Date: Wed, 05 May 2010 12:53:10 +0200
+	Wed, 5 May 2010 06:53:04 -0400
+Date: Wed, 05 May 2010 12:53:13 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv4 0/8] The FunctionFS composite function
+Subject: [PATCHv4 3/8] USB: gadget: __init and __exit tags removed
+In-reply-to: <4a74b9dde6495da76354f8caca267a57cf440a12.1273054945.git.mina86@mina86.com>
 To: linux-usb@vger.kernel.org
-Cc: Michal Nazarewicz <mina86@mina86.com>, Greg KH <greg@kroah.com>,
+Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, Greg KH <greg@kroah.com>,
        Kyungmin Park <kyungmin.park@samsung.com>,
        Marek Szyprowski <m.szyprowski@samsung.com>,
-       Davide Libenzi <davidel@xmailserver.org>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Message-id: <cover.1273054944.git.mina86@mina86.com>
+Message-id: <989d26541d5d1ef75f71576f6f295796dcaf0af8.1273054945.git.mina86@mina86.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.1
-Content-type: TEXT/PLAIN; CHARSET=EUC-KR
-Content-transfer-encoding: 8BIT
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <cover.1273054944.git.mina86@mina86.com>
+ <11f2d7a2b97b514b33b0f92d9456d0c6e1d7501e.1273054945.git.mina86@mina86.com>
+ <4a74b9dde6495da76354f8caca267a57cf440a12.1273054945.git.mina86@mina86.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+__init, __initdata and __exit tags have have been removed from
+various files to make it possible for gadgets that do not use
+the __init/__exit tags to use those.
 
-Hello everyone,
+Files in question are related to:
+* the core composite framework,
+* the mass storage function (fixing a section mismatch) and
+* ethernet driver (ACM, ECM, RNDIS).
 
-Yet another version of the FunctionFS patchset.
-
-The code has been tested with a user-space MTP driver and there was no
-problems including with setup requests.  As such, it is believed that
-the data transfers are reliable.
-
-
-*Changes from Previous Version*
-
-1. Minor bug fixes and clean-ups.
-
-2. More verbose error messages when user space driver provides invalid
-   descriptors.  This makes it easier to find what FunctionFS things
-   is wrong with descriptors when wirte() returns EINVAL.
-
-3. g_ffs now has total of three possible configurations and all may
-   be included in the driver -- this is configured via Kconfig -- rather
-   then a single configuration which may or may not have ECM depending
-   on Kconfig.
-
-4. __cold removed as per Greg's comment.  Previously I replaced __init
-   and __exit with __cold but Greg didn't seem impressed. ;)
-
-
-*Request for Comments and Future Work*
-
-Regarding presented version there are following aspects I'd like to
-discuss.
-
-1. First of all, the current code uses similar approach GadgetFS
-   used -- there is a single file ("ep0" in case of FunctionFS and
-   named after the controller in case of GadgetFS) that is used to
-   receive events from kernel and handle ep0 communication.
-
-   I think it is not the best approach as it'd be simpler and cleaner
-   if there were two files: one for receiving events and another for
-   handling ep0 communication.
-
-   What do you think? Should I keep the current version or change to
-   code to use two files?
-
-2. Descriptors and strings are transferred using two writes.  I'm
-   wondering, whether it was better to use a single write to
-   transfer all the data.  This should simplify driver's logic
-   a bit and I believe also user-space driver but maybe there are
-   some cases, where it is better to have to writes?
-
-3. What still needs to be implemented is a mechanism allowing double
-   buffering (and in effect transmission without pauses) and maybe
-   single-thread user-space driver implementation.
-
-   I'd like to ask what would be the best way to achieve this.
-   GadgetFS implements asynchronous I/O -- is it still the best
-   option?
-
-   There was some work by Felipe Balbi which parts of may be ported
-   and used with FunctionFS but it cannot be used as the only
-   mechanism as it introduces buffering and thus interferes with
-   control of flow of packets and requests.
-
-
-*The Patches*
-
-The first patch creates a new wait_event_interruptible_locked()
-interface for waiting on events.  While holding the wait queue's lock.
-Refer to the commit message for usage.
-
-The second patch makes use of the new interface in fs/timerfd.c file
-replacing some 20 lines by a single macro call.
-
-Next three patches implement the FunctionFS and a composite gadget
-that uses FunctionFS and Ethernet function (with the later function
-optionally disabled via Kconfig).
-
-The last three patches provide a testing code for the FunctionFS.
-My original intend was to provide those just for anyone who'd like to
-test the code and not to include them in the Linux source tree but if
-that seems appropriate then why not?
-
-
-*How FunctionFS works*
-
-(Copied from third patch commit message.)
-
->From kernel point of view it is just a composite function with some
-unique behaviour.  It may be added to an USB configuration only after
-the user space driver has registered by writing descriptors and
-strings (the user space program has to provide the same information
-that kernel level composite functions provide when they are added to
-the configuration).
-
-This in particular means that the composite initialisation functions
-may not be in init section (ie. may not use the __init tag) hence the
-first and fourth patch in the series.
-
-
->From user space point of view it is a file system which when
-mounted provide an "ep0" file.  User space driver need to
-write descriptors and strings to that file.  It does not need
-to worry about endpoints, interfaces or strings numbers but
-simply provide descriptors such as if the function was the
-only one (endpoints and strings numbers starting from one and
-interface numbers starting from core).  The FunctionFS changes
-numbers of those as needed also handling situation when
-numbers differ in different configurations.
-
-When descriptors and strings are written "ep#" files appear
-(one for each declared endpoint) which handle communication on
-a single endpoint.  Again, FunctionFS takes care of the real
-numbers and changing of the configuration (which means that
-"ep1" file may be really mapped to (say) endpoint 3 (and when
-configuration changes to (say) endpoint 2)).  "ep0" is used
-for receiving events and handling setup requests.
-
-When all files are closed the function disables itself.
-
-
-What I also want to mention is that the FunctionFS is designed in such
-a way that with a little work it will be able to mount it several
-times so in the end a gadget could use several FunctionFS functions.
-The idea is that each FunctionFS instance is identified by the device
-name used when mounting.
-
-One can imagine a gadget that has an Ethernet, MTP and HID interfaces
-where the last two are implemented via FunctionFS.  On user space
-level it would look like this:
-
-$ modprobe g_foo
-$ mkdir /dev/ffs-mtp && mount -t functionfs mtp /dev/ffs-mtp
-$ ( cd /dev/ffs-mtp && mtp-daemon ) &
-$ mkdir /dev/ffs-hid && mount -t functionfs hid /dev/ffs-hid
-$ ( cd /dev/ffs-hid && hid-daemon ) &
-
-On kernel level the gadget would check ffs_data->dev_name to identify
-whether it's FunctionFS designed for MTP ("mtp") or HID ("hid").
-
-
-*Testing*
-
-The fifth patch implement a simple source/sink FunctionFS driver based
-on similar driver for GadgetFS by David Brownell
-(<http://www.linux-usb.org/gadget/usb.c>).  It registers a dual-speed
-function with a single IN and single OUT endpoints.
-
-The sixth and seventh patch provide a host-side testing code.  This is
-what David Brownell has created a while back
-(<http://www.linux-usb.org/usbtest/testusb.c>) with a simple fix to
-make the tool detect the number of our source/sink interface.
-
-Still, you will need to configure the gadget to report idProduct ==
-0xa4a4 (an "echo 0xa4a4 >/sys/module/g_ffs/parameters/usb_product"
-should suffice) or configure host to handle 0x0525:0xa4ac devices
-using the usbtest driver.
-
-Hence, the simplest way to run the test is to do the following:
-
-* On target (machine that runs has the gadget) as root:
-  $ echo 0xa4a4 >/sys/module/g_ffs/parameters/usb_product &&
-  $ mkdir /dev/ffs &&
-  $ mount -t functionfs ffs /dev/ffs &&
-  $ cd /dev/ffs &&
-  $ /path/to/ffs-test
-* On host (as root):
-  $ testusb -a
-
-At this point I have to admit that communication on EP0 has not yet
-been tested, so beware of bugs there.
-
-
-David Brownell (1):
-  USB: testusb: an USB testing application
-
-Michal Nazarewicz (7):
-  wait_event_interruptible_locked() interface
-  fs/timerfd.c: make use of wait_event_interruptible_locked_irq()
-  USB: gadget: __init and __exit tags removed
-  USB: f_fs: the FunctionFS driver
-  USB: g_ffs: the FunctionFS gadget driver
-  USB: ffs-test: FunctionFS testing program
-  USB: testusb: testusb compatibility with FunctionFS gadget
-
- drivers/usb/gadget/Kconfig          |   37 +
- drivers/usb/gadget/Makefile         |    2 +
- drivers/usb/gadget/composite.c      |   21 +-
- drivers/usb/gadget/config.c         |    4 +-
- drivers/usb/gadget/epautoconf.c     |   12 +-
- drivers/usb/gadget/f_acm.c          |   32 +-
- drivers/usb/gadget/f_ecm.c          |   33 +-
- drivers/usb/gadget/f_fs.c           | 2441 +++++++++++++++++++++++++++++++++++
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ drivers/usb/gadget/composite.c      |   21 ++++++++++-----------
+ drivers/usb/gadget/config.c         |    4 ++--
+ drivers/usb/gadget/epautoconf.c     |   12 ++++++------
+ drivers/usb/gadget/f_acm.c          |   32 ++++++++++++++++----------------
+ drivers/usb/gadget/f_ecm.c          |   33 +++++++++++++++++----------------
  drivers/usb/gadget/f_mass_storage.c |    2 +-
- drivers/usb/gadget/f_rndis.c        |   33 +-
- drivers/usb/gadget/g_ffs.c          |  427 ++++++
- drivers/usb/gadget/u_ether.c        |    4 +-
- fs/timerfd.c                        |   25 +-
- include/linux/usb/functionfs.h      |  199 +++
- include/linux/wait.h                |  149 +++
- kernel/sched.c                      |    1 +
- tools/usb/ffs-test.c                |  554 ++++++++
- tools/usb/testusb.c                 |  547 ++++++++
- 18 files changed, 4432 insertions(+), 91 deletions(-)
- create mode 100644 drivers/usb/gadget/f_fs.c
- create mode 100644 drivers/usb/gadget/g_ffs.c
- create mode 100644 include/linux/usb/functionfs.h
- create mode 100644 tools/usb/ffs-test.c
- create mode 100644 tools/usb/testusb.c
+ drivers/usb/gadget/f_rndis.c        |   33 +++++++++++++++++----------------
+ drivers/usb/gadget/u_ether.c        |    4 ++--
+ 8 files changed, 71 insertions(+), 70 deletions(-)
 
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index f9aff1b..dd6d190 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -85,7 +85,7 @@ MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
+  * This function returns the value of the function's bind(), which is
+  * zero for success else a negative errno value.
+  */
+-int __init usb_add_function(struct usb_configuration *config,
++int usb_add_function(struct usb_configuration *config,
+ 		struct usb_function *function)
+ {
+ 	int	value = -EINVAL;
+@@ -215,7 +215,7 @@ int usb_function_activate(struct usb_function *function)
+  * Returns the interface ID which was allocated; or -ENODEV if no
+  * more interface IDs can be allocated.
+  */
+-int __init usb_interface_id(struct usb_configuration *config,
++int usb_interface_id(struct usb_configuration *config,
+ 		struct usb_function *function)
+ {
+ 	unsigned id = config->next_interface_id;
+@@ -480,7 +480,7 @@ done:
+  * assigns global resources including string IDs, and per-configuration
+  * resources such as interface IDs and endpoints.
+  */
+-int __init usb_add_config(struct usb_composite_dev *cdev,
++int usb_add_config(struct usb_composite_dev *cdev,
+ 		struct usb_configuration *config)
+ {
+ 	int				status = -EINVAL;
+@@ -677,7 +677,7 @@ static int get_string(struct usb_composite_dev *cdev,
+  * ensure that for example different functions don't wrongly assign
+  * different meanings to the same identifier.
+  */
+-int __init usb_string_id(struct usb_composite_dev *cdev)
++int usb_string_id(struct usb_composite_dev *cdev)
+ {
+ 	if (cdev->next_string_id < 254) {
+ 		/* string id 0 is reserved */
+@@ -910,7 +910,7 @@ static ssize_t composite_show_suspended(struct device *dev,
+ 
+ static DEVICE_ATTR(suspended, 0444, composite_show_suspended, NULL);
+ 
+-static void /* __init_or_exit */
++static void
+ composite_unbind(struct usb_gadget *gadget)
+ {
+ 	struct usb_composite_dev	*cdev = get_gadget_data(gadget);
+@@ -960,7 +960,7 @@ composite_unbind(struct usb_gadget *gadget)
+ 	composite = NULL;
+ }
+ 
+-static void __init
++static void
+ string_override_one(struct usb_gadget_strings *tab, u8 id, const char *s)
+ {
+ 	struct usb_string		*str = tab->strings;
+@@ -973,7 +973,7 @@ string_override_one(struct usb_gadget_strings *tab, u8 id, const char *s)
+ 	}
+ }
+ 
+-static void __init
++static void
+ string_override(struct usb_gadget_strings **tab, u8 id, const char *s)
+ {
+ 	while (*tab) {
+@@ -982,7 +982,7 @@ string_override(struct usb_gadget_strings **tab, u8 id, const char *s)
+ 	}
+ }
+ 
+-static int __init composite_bind(struct usb_gadget *gadget)
++static int composite_bind(struct usb_gadget *gadget)
+ {
+ 	struct usb_composite_dev	*cdev;
+ 	int				status = -ENOMEM;
+@@ -1113,7 +1113,6 @@ static struct usb_gadget_driver composite_driver = {
+ 	.speed		= USB_SPEED_HIGH,
+ 
+ 	.bind		= composite_bind,
+-	/* .unbind		= __exit_p(composite_unbind), */
+ 	.unbind		= composite_unbind,
+ 
+ 	.setup		= composite_setup,
+@@ -1142,7 +1141,7 @@ static struct usb_gadget_driver composite_driver = {
+  * while it was binding.  That would usually be done in order to wait for
+  * some userspace participation.
+  */
+-int __init usb_composite_register(struct usb_composite_driver *driver)
++int usb_composite_register(struct usb_composite_driver *driver)
+ {
+ 	if (!driver || !driver->dev || !driver->bind || composite)
+ 		return -EINVAL;
+@@ -1163,7 +1162,7 @@ int __init usb_composite_register(struct usb_composite_driver *driver)
+  * This function is used to unregister drivers using the composite
+  * driver framework.
+  */
+-void /* __exit */ usb_composite_unregister(struct usb_composite_driver *driver)
++void usb_composite_unregister(struct usb_composite_driver *driver)
+ {
+ 	if (composite != driver)
+ 		return;
+diff --git a/drivers/usb/gadget/config.c b/drivers/usb/gadget/config.c
+index 47e8e72..09084fd 100644
+--- a/drivers/usb/gadget/config.c
++++ b/drivers/usb/gadget/config.c
+@@ -128,7 +128,7 @@ int usb_gadget_config_buf(
+  * with identifiers (for interfaces, strings, endpoints, and more)
+  * as needed by a given function instance.
+  */
+-struct usb_descriptor_header **__init
++struct usb_descriptor_header **
+ usb_copy_descriptors(struct usb_descriptor_header **src)
+ {
+ 	struct usb_descriptor_header **tmp;
+@@ -175,7 +175,7 @@ usb_copy_descriptors(struct usb_descriptor_header **src)
+  * intended use is to help remembering the endpoint descriptor to use
+  * when enabling a given endpoint.
+  */
+-struct usb_endpoint_descriptor *__init
++struct usb_endpoint_descriptor *
+ usb_find_endpoint(
+ 	struct usb_descriptor_header **src,
+ 	struct usb_descriptor_header **copy,
+diff --git a/drivers/usb/gadget/epautoconf.c b/drivers/usb/gadget/epautoconf.c
+index 3568de2..8a83248 100644
+--- a/drivers/usb/gadget/epautoconf.c
++++ b/drivers/usb/gadget/epautoconf.c
+@@ -34,12 +34,12 @@
+ 
+ 
+ /* we must assign addresses for configurable endpoints (like net2280) */
+-static __initdata unsigned epnum;
++static unsigned epnum;
+ 
+ // #define MANY_ENDPOINTS
+ #ifdef MANY_ENDPOINTS
+ /* more than 15 configurable endpoints */
+-static __initdata unsigned in_epnum;
++static unsigned in_epnum;
+ #endif
+ 
+ 
+@@ -59,7 +59,7 @@ static __initdata unsigned in_epnum;
+  * NOTE:  each endpoint is unidirectional, as specified by its USB
+  * descriptor; and isn't specific to a configuration or altsetting.
+  */
+-static int __init
++static int
+ ep_matches (
+ 	struct usb_gadget		*gadget,
+ 	struct usb_ep			*ep,
+@@ -187,7 +187,7 @@ ep_matches (
+ 	return 1;
+ }
+ 
+-static struct usb_ep * __init
++static struct usb_ep *
+ find_ep (struct usb_gadget *gadget, const char *name)
+ {
+ 	struct usb_ep	*ep;
+@@ -229,7 +229,7 @@ find_ep (struct usb_gadget *gadget, const char *name)
+  *
+  * On failure, this returns a null endpoint descriptor.
+  */
+-struct usb_ep * __init usb_ep_autoconfig (
++struct usb_ep *usb_ep_autoconfig (
+ 	struct usb_gadget		*gadget,
+ 	struct usb_endpoint_descriptor	*desc
+ )
+@@ -304,7 +304,7 @@ struct usb_ep * __init usb_ep_autoconfig (
+  * state such as ep->driver_data and the record of assigned endpoints
+  * used by usb_ep_autoconfig().
+  */
+-void __init usb_ep_autoconfig_reset (struct usb_gadget *gadget)
++void usb_ep_autoconfig_reset (struct usb_gadget *gadget)
+ {
+ 	struct usb_ep	*ep;
+ 
+diff --git a/drivers/usb/gadget/f_acm.c b/drivers/usb/gadget/f_acm.c
+index 400e1eb..d47a123 100644
+--- a/drivers/usb/gadget/f_acm.c
++++ b/drivers/usb/gadget/f_acm.c
+@@ -116,7 +116,7 @@ acm_iad_descriptor = {
+ };
+ 
+ 
+-static struct usb_interface_descriptor acm_control_interface_desc __initdata = {
++static struct usb_interface_descriptor acm_control_interface_desc = {
+ 	.bLength =		USB_DT_INTERFACE_SIZE,
+ 	.bDescriptorType =	USB_DT_INTERFACE,
+ 	/* .bInterfaceNumber = DYNAMIC */
+@@ -127,7 +127,7 @@ static struct usb_interface_descriptor acm_control_interface_desc __initdata = {
+ 	/* .iInterface = DYNAMIC */
+ };
+ 
+-static struct usb_interface_descriptor acm_data_interface_desc __initdata = {
++static struct usb_interface_descriptor acm_data_interface_desc = {
+ 	.bLength =		USB_DT_INTERFACE_SIZE,
+ 	.bDescriptorType =	USB_DT_INTERFACE,
+ 	/* .bInterfaceNumber = DYNAMIC */
+@@ -138,7 +138,7 @@ static struct usb_interface_descriptor acm_data_interface_desc __initdata = {
+ 	/* .iInterface = DYNAMIC */
+ };
+ 
+-static struct usb_cdc_header_desc acm_header_desc __initdata = {
++static struct usb_cdc_header_desc acm_header_desc = {
+ 	.bLength =		sizeof(acm_header_desc),
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_HEADER_TYPE,
+@@ -146,7 +146,7 @@ static struct usb_cdc_header_desc acm_header_desc __initdata = {
+ };
+ 
+ static struct usb_cdc_call_mgmt_descriptor
+-acm_call_mgmt_descriptor __initdata = {
++acm_call_mgmt_descriptor = {
+ 	.bLength =		sizeof(acm_call_mgmt_descriptor),
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_CALL_MANAGEMENT_TYPE,
+@@ -154,14 +154,14 @@ acm_call_mgmt_descriptor __initdata = {
+ 	/* .bDataInterface = DYNAMIC */
+ };
+ 
+-static struct usb_cdc_acm_descriptor acm_descriptor __initdata = {
++static struct usb_cdc_acm_descriptor acm_descriptor = {
+ 	.bLength =		sizeof(acm_descriptor),
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_ACM_TYPE,
+ 	.bmCapabilities =	USB_CDC_CAP_LINE,
+ };
+ 
+-static struct usb_cdc_union_desc acm_union_desc __initdata = {
++static struct usb_cdc_union_desc acm_union_desc = {
+ 	.bLength =		sizeof(acm_union_desc),
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_UNION_TYPE,
+@@ -171,7 +171,7 @@ static struct usb_cdc_union_desc acm_union_desc __initdata = {
+ 
+ /* full speed support: */
+ 
+-static struct usb_endpoint_descriptor acm_fs_notify_desc __initdata = {
++static struct usb_endpoint_descriptor acm_fs_notify_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 	.bEndpointAddress =	USB_DIR_IN,
+@@ -180,21 +180,21 @@ static struct usb_endpoint_descriptor acm_fs_notify_desc __initdata = {
+ 	.bInterval =		1 << GS_LOG2_NOTIFY_INTERVAL,
+ };
+ 
+-static struct usb_endpoint_descriptor acm_fs_in_desc __initdata = {
++static struct usb_endpoint_descriptor acm_fs_in_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 	.bEndpointAddress =	USB_DIR_IN,
+ 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+ };
+ 
+-static struct usb_endpoint_descriptor acm_fs_out_desc __initdata = {
++static struct usb_endpoint_descriptor acm_fs_out_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 	.bEndpointAddress =	USB_DIR_OUT,
+ 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+ };
+ 
+-static struct usb_descriptor_header *acm_fs_function[] __initdata = {
++static struct usb_descriptor_header *acm_fs_function[] = {
+ 	(struct usb_descriptor_header *) &acm_iad_descriptor,
+ 	(struct usb_descriptor_header *) &acm_control_interface_desc,
+ 	(struct usb_descriptor_header *) &acm_header_desc,
+@@ -210,7 +210,7 @@ static struct usb_descriptor_header *acm_fs_function[] __initdata = {
+ 
+ /* high speed support: */
+ 
+-static struct usb_endpoint_descriptor acm_hs_notify_desc __initdata = {
++static struct usb_endpoint_descriptor acm_hs_notify_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 	.bEndpointAddress =	USB_DIR_IN,
+@@ -219,21 +219,21 @@ static struct usb_endpoint_descriptor acm_hs_notify_desc __initdata = {
+ 	.bInterval =		GS_LOG2_NOTIFY_INTERVAL+4,
+ };
+ 
+-static struct usb_endpoint_descriptor acm_hs_in_desc __initdata = {
++static struct usb_endpoint_descriptor acm_hs_in_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+ 	.wMaxPacketSize =	cpu_to_le16(512),
+ };
+ 
+-static struct usb_endpoint_descriptor acm_hs_out_desc __initdata = {
++static struct usb_endpoint_descriptor acm_hs_out_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+ 	.wMaxPacketSize =	cpu_to_le16(512),
+ };
+ 
+-static struct usb_descriptor_header *acm_hs_function[] __initdata = {
++static struct usb_descriptor_header *acm_hs_function[] = {
+ 	(struct usb_descriptor_header *) &acm_iad_descriptor,
+ 	(struct usb_descriptor_header *) &acm_control_interface_desc,
+ 	(struct usb_descriptor_header *) &acm_header_desc,
+@@ -571,7 +571,7 @@ static int acm_send_break(struct gserial *port, int duration)
+ /*-------------------------------------------------------------------------*/
+ 
+ /* ACM function driver setup/binding */
+-static int __init
++static int
+ acm_bind(struct usb_configuration *c, struct usb_function *f)
+ {
+ 	struct usb_composite_dev *cdev = c->cdev;
+@@ -719,7 +719,7 @@ static inline bool can_support_cdc(struct usb_configuration *c)
+  * handle all the ones it binds.  Caller is also responsible
+  * for calling @gserial_cleanup() before module unload.
+  */
+-int __init acm_bind_config(struct usb_configuration *c, u8 port_num)
++int acm_bind_config(struct usb_configuration *c, u8 port_num)
+ {
+ 	struct f_acm	*acm;
+ 	int		status;
+diff --git a/drivers/usb/gadget/f_ecm.c b/drivers/usb/gadget/f_ecm.c
+index 4e59532..544257a 100644
+--- a/drivers/usb/gadget/f_ecm.c
++++ b/drivers/usb/gadget/f_ecm.c
+@@ -113,7 +113,7 @@ static inline unsigned ecm_bitrate(struct usb_gadget *g)
+ 
+ /* interface descriptor: */
+ 
+-static struct usb_interface_descriptor ecm_control_intf __initdata = {
++static struct usb_interface_descriptor ecm_control_intf = {
+ 	.bLength =		sizeof ecm_control_intf,
+ 	.bDescriptorType =	USB_DT_INTERFACE,
+ 
+@@ -126,7 +126,7 @@ static struct usb_interface_descriptor ecm_control_intf __initdata = {
+ 	/* .iInterface = DYNAMIC */
+ };
+ 
+-static struct usb_cdc_header_desc ecm_header_desc __initdata = {
++static struct usb_cdc_header_desc ecm_header_desc = {
+ 	.bLength =		sizeof ecm_header_desc,
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_HEADER_TYPE,
+@@ -134,7 +134,7 @@ static struct usb_cdc_header_desc ecm_header_desc __initdata = {
+ 	.bcdCDC =		cpu_to_le16(0x0110),
+ };
+ 
+-static struct usb_cdc_union_desc ecm_union_desc __initdata = {
++static struct usb_cdc_union_desc ecm_union_desc = {
+ 	.bLength =		sizeof(ecm_union_desc),
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_UNION_TYPE,
+@@ -142,7 +142,7 @@ static struct usb_cdc_union_desc ecm_union_desc __initdata = {
+ 	/* .bSlaveInterface0 =	DYNAMIC */
+ };
+ 
+-static struct usb_cdc_ether_desc ecm_desc __initdata = {
++static struct usb_cdc_ether_desc ecm_desc = {
+ 	.bLength =		sizeof ecm_desc,
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_ETHERNET_TYPE,
+@@ -157,7 +157,7 @@ static struct usb_cdc_ether_desc ecm_desc __initdata = {
+ 
+ /* the default data interface has no endpoints ... */
+ 
+-static struct usb_interface_descriptor ecm_data_nop_intf __initdata = {
++static struct usb_interface_descriptor ecm_data_nop_intf = {
+ 	.bLength =		sizeof ecm_data_nop_intf,
+ 	.bDescriptorType =	USB_DT_INTERFACE,
+ 
+@@ -172,7 +172,7 @@ static struct usb_interface_descriptor ecm_data_nop_intf __initdata = {
+ 
+ /* ... but the "real" data interface has two bulk endpoints */
+ 
+-static struct usb_interface_descriptor ecm_data_intf __initdata = {
++static struct usb_interface_descriptor ecm_data_intf = {
+ 	.bLength =		sizeof ecm_data_intf,
+ 	.bDescriptorType =	USB_DT_INTERFACE,
+ 
+@@ -187,7 +187,7 @@ static struct usb_interface_descriptor ecm_data_intf __initdata = {
+ 
+ /* full speed support: */
+ 
+-static struct usb_endpoint_descriptor fs_ecm_notify_desc __initdata = {
++static struct usb_endpoint_descriptor fs_ecm_notify_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -197,7 +197,7 @@ static struct usb_endpoint_descriptor fs_ecm_notify_desc __initdata = {
+ 	.bInterval =		1 << LOG2_STATUS_INTERVAL_MSEC,
+ };
+ 
+-static struct usb_endpoint_descriptor fs_ecm_in_desc __initdata = {
++static struct usb_endpoint_descriptor fs_ecm_in_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -205,7 +205,7 @@ static struct usb_endpoint_descriptor fs_ecm_in_desc __initdata = {
+ 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+ };
+ 
+-static struct usb_endpoint_descriptor fs_ecm_out_desc __initdata = {
++static struct usb_endpoint_descriptor fs_ecm_out_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -213,7 +213,7 @@ static struct usb_endpoint_descriptor fs_ecm_out_desc __initdata = {
+ 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+ };
+ 
+-static struct usb_descriptor_header *ecm_fs_function[] __initdata = {
++static struct usb_descriptor_header *ecm_fs_function[] = {
+ 	/* CDC ECM control descriptors */
+ 	(struct usb_descriptor_header *) &ecm_control_intf,
+ 	(struct usb_descriptor_header *) &ecm_header_desc,
+@@ -231,7 +231,7 @@ static struct usb_descriptor_header *ecm_fs_function[] __initdata = {
+ 
+ /* high speed support: */
+ 
+-static struct usb_endpoint_descriptor hs_ecm_notify_desc __initdata = {
++static struct usb_endpoint_descriptor hs_ecm_notify_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -240,7 +240,7 @@ static struct usb_endpoint_descriptor hs_ecm_notify_desc __initdata = {
+ 	.wMaxPacketSize =	cpu_to_le16(ECM_STATUS_BYTECOUNT),
+ 	.bInterval =		LOG2_STATUS_INTERVAL_MSEC + 4,
+ };
+-static struct usb_endpoint_descriptor hs_ecm_in_desc __initdata = {
++static struct usb_endpoint_descriptor hs_ecm_in_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -249,7 +249,7 @@ static struct usb_endpoint_descriptor hs_ecm_in_desc __initdata = {
+ 	.wMaxPacketSize =	cpu_to_le16(512),
+ };
+ 
+-static struct usb_endpoint_descriptor hs_ecm_out_desc __initdata = {
++static struct usb_endpoint_descriptor hs_ecm_out_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -258,7 +258,7 @@ static struct usb_endpoint_descriptor hs_ecm_out_desc __initdata = {
+ 	.wMaxPacketSize =	cpu_to_le16(512),
+ };
+ 
+-static struct usb_descriptor_header *ecm_hs_function[] __initdata = {
++static struct usb_descriptor_header *ecm_hs_function[] = {
+ 	/* CDC ECM control descriptors */
+ 	(struct usb_descriptor_header *) &ecm_control_intf,
+ 	(struct usb_descriptor_header *) &ecm_header_desc,
+@@ -597,7 +597,7 @@ static void ecm_close(struct gether *geth)
+ 
+ /* ethernet function driver setup/binding */
+ 
+-static int __init
++static int
+ ecm_bind(struct usb_configuration *c, struct usb_function *f)
+ {
+ 	struct usb_composite_dev *cdev = c->cdev;
+@@ -763,7 +763,8 @@ ecm_unbind(struct usb_configuration *c, struct usb_function *f)
+  * Caller must have called @gether_setup().  Caller is also responsible
+  * for calling @gether_cleanup() before module unload.
+  */
+-int __init ecm_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
++int
++ecm_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
+ {
+ 	struct f_ecm	*ecm;
+ 	int		status;
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index c904aa3..6cfd2f4 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -2967,7 +2967,7 @@ static void fsg_unbind(struct usb_configuration *c, struct usb_function *f)
+ }
+ 
+ 
+-static int __init fsg_bind(struct usb_configuration *c, struct usb_function *f)
++static int fsg_bind(struct usb_configuration *c, struct usb_function *f)
+ {
+ 	struct fsg_dev		*fsg = fsg_from_func(f);
+ 	struct usb_gadget	*gadget = c->cdev->gadget;
+diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
+index 56b0221..882484a 100644
+--- a/drivers/usb/gadget/f_rndis.c
++++ b/drivers/usb/gadget/f_rndis.c
+@@ -122,7 +122,7 @@ static unsigned int bitrate(struct usb_gadget *g)
+ 
+ /* interface descriptor: */
+ 
+-static struct usb_interface_descriptor rndis_control_intf __initdata = {
++static struct usb_interface_descriptor rndis_control_intf = {
+ 	.bLength =		sizeof rndis_control_intf,
+ 	.bDescriptorType =	USB_DT_INTERFACE,
+ 
+@@ -135,7 +135,7 @@ static struct usb_interface_descriptor rndis_control_intf __initdata = {
+ 	/* .iInterface = DYNAMIC */
+ };
+ 
+-static struct usb_cdc_header_desc header_desc __initdata = {
++static struct usb_cdc_header_desc header_desc = {
+ 	.bLength =		sizeof header_desc,
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_HEADER_TYPE,
+@@ -143,7 +143,7 @@ static struct usb_cdc_header_desc header_desc __initdata = {
+ 	.bcdCDC =		cpu_to_le16(0x0110),
+ };
+ 
+-static struct usb_cdc_call_mgmt_descriptor call_mgmt_descriptor __initdata = {
++static struct usb_cdc_call_mgmt_descriptor call_mgmt_descriptor = {
+ 	.bLength =		sizeof call_mgmt_descriptor,
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_CALL_MANAGEMENT_TYPE,
+@@ -152,7 +152,7 @@ static struct usb_cdc_call_mgmt_descriptor call_mgmt_descriptor __initdata = {
+ 	.bDataInterface =	0x01,
+ };
+ 
+-static struct usb_cdc_acm_descriptor rndis_acm_descriptor __initdata = {
++static struct usb_cdc_acm_descriptor rndis_acm_descriptor = {
+ 	.bLength =		sizeof rndis_acm_descriptor,
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_ACM_TYPE,
+@@ -160,7 +160,7 @@ static struct usb_cdc_acm_descriptor rndis_acm_descriptor __initdata = {
+ 	.bmCapabilities =	0x00,
+ };
+ 
+-static struct usb_cdc_union_desc rndis_union_desc __initdata = {
++static struct usb_cdc_union_desc rndis_union_desc = {
+ 	.bLength =		sizeof(rndis_union_desc),
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_UNION_TYPE,
+@@ -170,7 +170,7 @@ static struct usb_cdc_union_desc rndis_union_desc __initdata = {
+ 
+ /* the data interface has two bulk endpoints */
+ 
+-static struct usb_interface_descriptor rndis_data_intf __initdata = {
++static struct usb_interface_descriptor rndis_data_intf = {
+ 	.bLength =		sizeof rndis_data_intf,
+ 	.bDescriptorType =	USB_DT_INTERFACE,
+ 
+@@ -198,7 +198,7 @@ rndis_iad_descriptor = {
+ 
+ /* full speed support: */
+ 
+-static struct usb_endpoint_descriptor fs_notify_desc __initdata = {
++static struct usb_endpoint_descriptor fs_notify_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -208,7 +208,7 @@ static struct usb_endpoint_descriptor fs_notify_desc __initdata = {
+ 	.bInterval =		1 << LOG2_STATUS_INTERVAL_MSEC,
+ };
+ 
+-static struct usb_endpoint_descriptor fs_in_desc __initdata = {
++static struct usb_endpoint_descriptor fs_in_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -216,7 +216,7 @@ static struct usb_endpoint_descriptor fs_in_desc __initdata = {
+ 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+ };
+ 
+-static struct usb_endpoint_descriptor fs_out_desc __initdata = {
++static struct usb_endpoint_descriptor fs_out_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -224,7 +224,7 @@ static struct usb_endpoint_descriptor fs_out_desc __initdata = {
+ 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+ };
+ 
+-static struct usb_descriptor_header *eth_fs_function[] __initdata = {
++static struct usb_descriptor_header *eth_fs_function[] = {
+ 	(struct usb_descriptor_header *) &rndis_iad_descriptor,
+ 	/* control interface matches ACM, not Ethernet */
+ 	(struct usb_descriptor_header *) &rndis_control_intf,
+@@ -242,7 +242,7 @@ static struct usb_descriptor_header *eth_fs_function[] __initdata = {
+ 
+ /* high speed support: */
+ 
+-static struct usb_endpoint_descriptor hs_notify_desc __initdata = {
++static struct usb_endpoint_descriptor hs_notify_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -251,7 +251,7 @@ static struct usb_endpoint_descriptor hs_notify_desc __initdata = {
+ 	.wMaxPacketSize =	cpu_to_le16(STATUS_BYTECOUNT),
+ 	.bInterval =		LOG2_STATUS_INTERVAL_MSEC + 4,
+ };
+-static struct usb_endpoint_descriptor hs_in_desc __initdata = {
++static struct usb_endpoint_descriptor hs_in_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -260,7 +260,7 @@ static struct usb_endpoint_descriptor hs_in_desc __initdata = {
+ 	.wMaxPacketSize =	cpu_to_le16(512),
+ };
+ 
+-static struct usb_endpoint_descriptor hs_out_desc __initdata = {
++static struct usb_endpoint_descriptor hs_out_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -269,7 +269,7 @@ static struct usb_endpoint_descriptor hs_out_desc __initdata = {
+ 	.wMaxPacketSize =	cpu_to_le16(512),
+ };
+ 
+-static struct usb_descriptor_header *eth_hs_function[] __initdata = {
++static struct usb_descriptor_header *eth_hs_function[] = {
+ 	(struct usb_descriptor_header *) &rndis_iad_descriptor,
+ 	/* control interface matches ACM, not Ethernet */
+ 	(struct usb_descriptor_header *) &rndis_control_intf,
+@@ -594,7 +594,7 @@ static void rndis_close(struct gether *geth)
+ 
+ /* ethernet function driver setup/binding */
+ 
+-static int __init
++static int
+ rndis_bind(struct usb_configuration *c, struct usb_function *f)
+ {
+ 	struct usb_composite_dev *cdev = c->cdev;
+@@ -786,7 +786,8 @@ static inline bool can_support_rndis(struct usb_configuration *c)
+  * Caller must have called @gether_setup().  Caller is also responsible
+  * for calling @gether_cleanup() before module unload.
+  */
+-int __init rndis_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
++int
++rndis_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
+ {
+ 	struct f_rndis	*rndis;
+ 	int		status;
+diff --git a/drivers/usb/gadget/u_ether.c b/drivers/usb/gadget/u_ether.c
+index 07f4178..1da755a 100644
+--- a/drivers/usb/gadget/u_ether.c
++++ b/drivers/usb/gadget/u_ether.c
+@@ -715,7 +715,7 @@ static u8 __init nibble(unsigned char c)
+ 	return 0;
+ }
+ 
+-static int __init get_ether_addr(const char *str, u8 *dev_addr)
++static int get_ether_addr(const char *str, u8 *dev_addr)
+ {
+ 	if (str) {
+ 		unsigned	i;
+@@ -764,7 +764,7 @@ static struct device_type gadget_type = {
+  *
+  * Returns negative errno, or zero on success
+  */
+-int __init gether_setup(struct usb_gadget *g, u8 ethaddr[ETH_ALEN])
++int gether_setup(struct usb_gadget *g, u8 ethaddr[ETH_ALEN])
+ {
+ 	struct eth_dev		*dev;
+ 	struct net_device	*net;
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+1.7.1
+
