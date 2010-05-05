@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab0EESAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 14:00:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42543 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753214Ab0EESAJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 14:00:09 -0400
-Date: Wed, 5 May 2010 10:57:18 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
- the wrong VMA information
-In-Reply-To: <alpine.LFD.2.00.1005051007140.27218@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1005051050590.27218@i5.linux-foundation.org>
-References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie> <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org> <20100505145620.GP20979@csn.ul.ie> <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org>
- <20100505155454.GT20979@csn.ul.ie> <alpine.LFD.2.00.1005051007140.27218@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757002Ab0EESAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 14:00:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62596 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753214Ab0EESAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 14:00:31 -0400
+Message-ID: <4BE1B217.80600@redhat.com>
+Date: Wed, 05 May 2010 20:59:51 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Pankaj Thakkar <pthakkar@vmware.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
+       sbhatewara@vmware.com
+Subject: Re: RFC: Network Plugin Architecture (NPA) for vmxnet3
+References: <20100504230225.GP8323@vmware.com>
+In-Reply-To: <20100504230225.GP8323@vmware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/05/2010 02:02 AM, Pankaj Thakkar wrote:
+> 2. Hypervisor control: All control operations from the guest such as programming
+> MAC address go through the hypervisor layer and hence can be subjected to
+> hypervisor policies. The PF driver can be further used to put policy decisions
+> like which VLAN the guest should be on.
+>    
+
+Is this enforced?  Since you pass the hardware through, you can't rely 
+on the guest actually doing this, yes?
+
+> The plugin image is provided by the IHVs along with the PF driver and is
+> packaged in the hypervisor. The plugin image is OS agnostic and can be loaded
+> either into a Linux VM or a Windows VM. The plugin is written against the Shell
+> API interface which the shell is responsible for implementing. The API
+> interface allows the plugin to do TX and RX only by programming the hardware
+> rings (along with things like buffer allocation and basic initialization). The
+> virtual machine comes up in paravirtualized/emulated mode when it is booted.
+> The hypervisor allocates the VF and other resources and notifies the shell of
+> the availability of the VF. The hypervisor injects the plugin into memory
+> location specified by the shell. The shell initializes the plugin by calling
+> into a known entry point and the plugin initializes the data path. The control
+> path is already initialized by the PF driver when the VF is allocated. At this
+> point the shell switches to using the loaded plugin to do all further TX and RX
+> operations. The guest networking stack does not participate in these operations
+> and continues to function normally. All the control operations continue being
+> trapped by the hypervisor and are directed to the PF driver as needed. For
+> example, if the MAC address changes the hypervisor updates its internal state
+> and changes the state of the embedded switch as well through the PF control
+> API.
+>    
+
+This is essentially a miniature network stack with a its own mini 
+bonding layer, mini hotplug, and mini API, except s/API/ABI/.  Is this a 
+correct view?
+
+If so, the Linuxy approach would be to use the ordinary drivers and the 
+Linux networking API, and hide the bond setup using namespaces.  The 
+bond driver, or perhaps a new, similar, driver can be enhanced to 
+propagate ethtool commands to its (hidden) components, and to have a 
+control channel with the hypervisor.
+
+This would make the approach hypervisor agnostic, you're just pairing 
+two devices and presenting them to the rest of the stack as a single device.
+
+> We have reworked our existing Linux vmxnet3 driver to accomodate NPA by
+> splitting the driver into two parts: Shell and Plugin. The new split driver is
+>    
+
+So the Shell would be the reworked or new bond driver, and Plugins would 
+be ordinary Linux network drivers.
 
 
-On Wed, 5 May 2010, Linus Torvalds wrote:
-> 
-> From the vma, it's simply
-> 	avc = list_entry(vma->anon_vma_chain.prev, struct anon_vma_chain, same_vma);
-> 	anon_vma = avc->anon_vma;
-> 
-> and once you take that lock, you know you've gotten the lock for all 
-> chains related to that page. We _know_ that every single vma that is 
-> associated with that anon_vma must have a chain that eventually ends in 
-> that entry.
+-- 
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
 
-To clarify: here "is associated with that anon_vma" is basically about the 
-whole forest of anon_vma/vma links. Different vma's can be associated with 
-different anon_vma's, and pages can be associated with anon_vma's that can 
-in turn reach other anon_vma's and many other vma's.
-
-But regardless of _how_ you walk the chains between anon_vma's and vma's 
-(including walking "back-pointers" that don't even exist except 
-conceptually for the pointer going the other way), any relationship will 
-have started at _some_ root vma.
-
-IOW, the root anon_vma is directly 1:1 related to "do these vma/anon_vma's 
-relate in _any_ way". If it's the same root anon_vma, then there is a 
-historical relationship. And if the root anon_vma's are different, then 
-there cannot be any relationship at all.
-
-So locking the root anon_vma is both minimal _and_ sufficient. Any locking 
-scheme (traversing the lists) would eventually end up hitting that root 
-entry (minimal locking), and at the same time that root entry is also 
-guaranteed to be the same for all related entities (ie it's sufficient to 
-lock the root entry if everybody else also looks up their root and locks 
-it).
-
-I think. Tell me if I'm wrong.
-
-			Linus
