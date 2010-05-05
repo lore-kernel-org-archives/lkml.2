@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758831Ab0EEWEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 18:04:23 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48559 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756064Ab0EEWES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 18:04:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Date: Thu, 6 May 2010 00:05:01 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
-Cc: tytso@mit.edu, Matthew Garrett <mjg@redhat.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Brian Swetland <swetland@google.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "Arve Hj?nnev?g" <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
-References: <20100505185225.GA4411@srcf.ucam.org> <201005052244.03225.rjw@sisk.pl> <20100505215711.GA4838@opensource.wolfsonmicro.com>
-In-Reply-To: <20100505215711.GA4838@opensource.wolfsonmicro.com>
+	id S1755489Ab0EEWFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 18:05:40 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:58394 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751145Ab0EEWFj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 18:05:39 -0400
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+To: Arnd Bergmann <arnd@arndb.de>, Dmitry Torokhov <dtor@vmware.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+       Pankaj Thakkar <pthakkar@vmware.com>
+Date: Wed, 5 May 2010 15:05:37 -0700
+Subject: RE: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
+Thread-Topic: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
+Thread-Index: AcrsnXZHfCzcBb5GR+COtROFMlz8vwAAIsdg
+Message-ID: <89E2752CFA8EC044846EB8499819134102AF2896F5@EXCH-MBX-4.vmware.com>
+References: <20100504230225.GP8323@vmware.com>
+	<201005052209.48465.arnd@arndb.de>	<201005051336.32712.dtor@vmware.com>
+ <201005052353.16544.arnd@arndb.de>
+In-Reply-To: <201005052353.16544.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005060005.01215.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 May 2010, Mark Brown wrote:
-> On Wed, May 05, 2010 at 10:44:03PM +0200, Rafael J. Wysocki wrote:
+
+
+> -----Original Message-----
+> From: pv-drivers-bounces@vmware.com [mailto:pv-drivers-
+> bounces@vmware.com] On Behalf Of Arnd Bergmann
+> Sent: Wednesday, May 05, 2010 2:53 PM
+> To: Dmitry Torokhov
+> Cc: Christoph Hellwig; pv-drivers@vmware.com; netdev@vger.kernel.org;
+> linux-kernel@vger.kernel.org; virtualization@lists.linux-
+> foundation.org; Pankaj Thakkar
+> Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for
+> vmxnet3
 > 
-> > To me, the above may be summarized that in your opinion some components of
-> > the system will generally need to stay powered when it's suspended
-> > opportunistically, so we need an interface to specify which components they are.
-> > Is that correct?
+> On Wednesday 05 May 2010 22:36:31 Dmitry Torokhov wrote:
+> >
+> > On Wednesday 05 May 2010 01:09:48 pm Arnd Bergmann wrote:
+> > > > > If you have any interesting in developing this further, do:
+> > > > >
+> > > > >  (1) move the limited VF drivers directly into the kernel tree,
+> > > > >      talk to them through a normal ops vector
+> > > >
+> > > > [PT] This assumes that all the VF drivers would always be
+> available.
+> > > > Also we have to support windows and our current design supports
+> it
+> > > > nicely in an OS agnostic manner.
+> > >
+> > > Your approach assumes that the plugin is always available, which
+> has
+> > > exactly the same implications.
+> >
+> > Since plugin[s] are carried by the host they are indeed always
+> > available.
 > 
-> Yes, though I think I'd be inclined to treat the problem orthogonally to
-> opportunistic suspend to allow more flexibility in use and since
-> treating it as part of opportunistic suspend would imply that there's
-> some meaningful difference between the end result of that and a manual
-> suspend which AIUI there isn't.
+> But what makes you think that you can build code that can be linked
+> into arbitrary future kernel versions? The kernel does not define any
+> calling conventions that are stable across multiple versions or
+> configurations. For example, you'd have to provide different binaries
+> for each combination of
 
-No, there's no such difference.
 
-So, gnerenally, we may need a mechanism to specify which components of the
-system need to stay powered while the whole system is suspended (in addition to
-wakeup devices, that is).
+The plugin image is not linked against Linux kernel. It is OS agnostic infact (Eg. same plugin works for Linux and Windows VMs)
+Plugin is built against the shell API interface. It is loaded by hypervisor in a set of pages provided by shell. Guest OS specific tasks (like allocation of pages for plugin to load) are handled by shell and this is the one which will be upstreamed in Linux kernel. Maintenance of shell is the same as for any other driver currently existing in Linux kernel.
 
-That certainly I can agree with.
 
-I'm not sure, however, in what way this is relevant to the $subject patchset.
+->Shreyas
 
-Rafael
+
+> 
+> - 32/64 bit code
+> - gcc -mregparm=?
+> - lockdep
+> - tracepoints
+> - stackcheck
+> - NOMMU
+> - highmem
+> - whatever new gets merged
+> 
+> If you build the plugins only for specific versions of "enterprise"
+> Linux
+> kernels, the code becomes really hard to debug and maintain.
+> If you wrap everything in your own version of the existing interfaces,
+> your
+> code gets bloated to the point of being unmaintainable.
+> 
+> So I have to correct myself: this is very different from assuming the
+> driver is available in the guest, it's actually much worse.
+> 
+> 	Arnd
+> _______________________________________________
+> Pv-drivers mailing list
+> Pv-drivers@vmware.com
+> http://mailman2.vmware.com/mailman/listinfo/pv-drivers
