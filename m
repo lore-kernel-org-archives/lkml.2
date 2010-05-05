@@ -1,53 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498Ab0EEW4v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 18:56:51 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:59596 "EHLO
+	id S1756338Ab0EEW46 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 18:56:58 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:59600 "EHLO
 	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab0EEW4t (ORCPT
+	with ESMTP id S1754680Ab0EEW4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 18:56:49 -0400
+	Wed, 5 May 2010 18:56:50 -0400
 From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
        s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
        grant.likely@secretlab.ca, bryan.wu@canonical.com,
        amit.kucheria@canonical.com, Jun.Li@freescale.com,
-       xiao-lizhang@freescale.com
-Subject: PATCHv1 2.6.34-rc6 0/3-Enable usb gadget on freescale mx51 babbage hw
-Date: Wed,  5 May 2010 17:56:08 -0500
-Message-Id: <1273100171-3235-1-git-send-email-Dinh.Nguyen@freescale.com>
+       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv1 2.6.34-rc6 3/3] mx5: enable usb gadget for freescale mx51 babbage board
+Date: Wed,  5 May 2010 17:56:11 -0500
+Message-Id: <1273100171-3235-4-git-send-email-Dinh.Nguyen@freescale.com>
 X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1273100171-3235-3-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1273100171-3235-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1273100171-3235-2-git-send-email-Dinh.Nguyen@freescale.com>
+ <1273100171-3235-3-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of 3 patches is part of enabling usb gadget on freescale mx51 babbage hw.
+This patch enables usb gadget for freescale mx51 babbage hw. It adds
+a kconfig condition for enabling either host or gadget on the OTG
+port.
 
-PATCH 1/3
-There is a conditional if statement for the usb clock to be 60MHz +/-1kHz in the 
-mxc gadget driver, this requirement is not needed on mx51 because the usb core 
-is clocked at 66.5MHz or any other frequency that are not multiples of 60MHz.
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/board-mx51_babbage.c |   11 +++++++++++
+ arch/arm/mach-mx5/clock-mx51.c         |    2 ++
+ arch/arm/mach-mx5/devices.c            |   12 ++++++++++++
+ arch/arm/mach-mx5/devices.h            |    1 +
+ drivers/usb/host/Kconfig               |    8 ++++++++
+ 5 files changed, 34 insertions(+), 0 deletions(-)
 
-PATCH 2/3
-PLL3 can be used for TVE output and/or USB. No need to turn on a whole PLL 
-just for USB. Using PLL2 is a better source for the usb clock.
-
-PATCH 3/3
-Defines device structure for gadget on OTG port and registers it in the board file.
-Defines the appropriate clock.
-Defines KCONFIG option for enabling OTG port for EHCI or Gadget.
-Conditionalizes the OTG port for EHCI or Gadget feature.
-
-git diff --stat for all 3 patches:
-arch/arm/mach-mx5/board-mx51_babbage.c |   11 +++++++++++
-arch/arm/mach-mx5/clock-mx51.c         |    4 +++-
-arch/arm/mach-mx5/devices.c            |   12 ++++++++++++
-arch/arm/mach-mx5/devices.h            |    1 +
-drivers/usb/gadget/fsl_mx3_udc.c       |   14 ++++++++------
-drivers/usb/host/Kconfig               |    8 ++++++++
-6 files changed, 43 insertions(+), 7 deletions(-)
-
-Thanks,
-Dinh Nguyen
+diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
+index 99f7ea9..fac8ce0 100644
+--- a/arch/arm/mach-mx5/board-mx51_babbage.c
++++ b/arch/arm/mach-mx5/board-mx51_babbage.c
+@@ -15,6 +15,7 @@
+ #include <linux/gpio.h>
+ #include <linux/delay.h>
+ #include <linux/io.h>
++#include <linux/fsl_devices.h>
+ 
+ #include <mach/common.h>
+ #include <mach/hardware.h>
+@@ -179,6 +180,11 @@ static struct mxc_usbh_platform_data dr_utmi_config = {
+ 	.flags	= MXC_EHCI_INTERNAL_PHY,
+ };
+ 
++static struct fsl_usb2_platform_data usb_pdata = {
++	.operating_mode	= FSL_USB2_DR_DEVICE,
++	.phy_mode	= FSL_USB2_PHY_UTMI_WIDE,
++};
++
+ static struct mxc_usbh_platform_data usbh1_config = {
+ 	.init		= initialize_usbh1_port,
+ 	.portsc	= MXC_EHCI_MODE_ULPI,
+@@ -197,7 +203,12 @@ static void __init mxc_board_init(void)
+ 	mxc_init_imx_uart();
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
+ 
++#if defined(CONFIG_USB_EHCI_MXC_OTG)
+ 	mxc_register_device(&mxc_usbdr_host_device, &dr_utmi_config);
++#elif defined(CONFIG_USB_GADGET_FSL_USB2)
++	initialize_otg_port(NULL);
++	mxc_register_device(&mxc_usbdr_udc_device, &usb_pdata);
++#endif
+ 
+ 	gpio_usbh1_active();
+ 	mxc_register_device(&mxc_usbh1_device, &usbh1_config);
+diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
+index 933c0d1..ff15424 100644
+--- a/arch/arm/mach-mx5/clock-mx51.c
++++ b/arch/arm/mach-mx5/clock-mx51.c
+@@ -786,6 +786,8 @@ static struct clk_lookup lookups[] = {
+ 	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
+ 	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
+ 	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
++	_REGISTER_CLOCK("fsl-usb2-udc", "usb", usboh3_clk)
++	_REGISTER_CLOCK("fsl-usb2-udc", "usb_ahb", ahb_clk)
+ };
+ 
+ static void clk_tree_init(void)
+diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
+index e6262f3..23850e6 100644
+--- a/arch/arm/mach-mx5/devices.c
++++ b/arch/arm/mach-mx5/devices.c
+@@ -107,6 +107,18 @@ static struct resource usbotg_resources[] = {
+ 	},
+ };
+ 
++/* OTG gadget device */
++struct platform_device mxc_usbdr_udc_device = {
++	.name		= "fsl-usb2-udc",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(usbotg_resources),
++	.resource	= usbotg_resources,
++	.dev		= {
++		.dma_mask		= &usb_dma_mask,
++		.coherent_dma_mask	= DMA_BIT_MASK(32),
++	},
++};
++
+ struct platform_device mxc_usbdr_host_device = {
+ 	.name = "mxc-ehci",
+ 	.id = 0,
+diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
+index 95c45f9..0494d6b 100644
+--- a/arch/arm/mach-mx5/devices.h
++++ b/arch/arm/mach-mx5/devices.h
+@@ -4,3 +4,4 @@ extern struct platform_device mxc_uart_device2;
+ extern struct platform_device mxc_fec_device;
+ extern struct platform_device mxc_usbdr_host_device;
+ extern struct platform_device mxc_usbh1_device;
++extern struct platform_device mxc_usbdr_udc_device;
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 8d3df03..da58a2e 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -123,6 +123,14 @@ config USB_EHCI_MXC
+ 	---help---
+ 	  Variation of ARC USB block used in some Freescale chips.
+ 
++config USB_EHCI_MXC_OTG
++	bool "Support for DR host port on Freescale controller"
++	depends on USB_EHCI_MXC	&& (ARCH_MX51)
++	---help---
++	  Enable support for the USB OTG port in HS/FS Host mode.
++	  NOTE: Unless the OTG feature is enabled, EHCI and Gadget feature
++	  for the OTG port should be mutually exclusive.
++
+ config USB_EHCI_HCD_PPC_OF
+ 	bool "EHCI support for PPC USB controller on OF platform bus"
+ 	depends on USB_EHCI_HCD && PPC_OF
+-- 
+1.6.0.4
 
