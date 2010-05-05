@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758695Ab0EEV3q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 17:29:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19860 "EHLO mx1.redhat.com"
+	id S1758711Ab0EEVaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 17:30:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13834 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758612Ab0EEV3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 17:29:35 -0400
+	id S1758655Ab0EEV3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 17:29:42 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com,
-       Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [PATCH v3 1/8] Enable pvclock flags in vcpu_time_info structure
-Date: Wed,  5 May 2010 17:27:12 -0400
-Message-Id: <1273094839-18655-2-git-send-email-glommer@redhat.com>
-In-Reply-To: <1273094839-18655-1-git-send-email-glommer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com
+Subject: [PATCH v3 8/8] Tell the guest we'll warn it about tsc stability
+Date: Wed,  5 May 2010 17:27:19 -0400
+Message-Id: <1273094839-18655-9-git-send-email-glommer@redhat.com>
+In-Reply-To: <1273094839-18655-8-git-send-email-glommer@redhat.com>
 References: <1273094839-18655-1-git-send-email-glommer@redhat.com>
+ <1273094839-18655-2-git-send-email-glommer@redhat.com>
+ <1273094839-18655-3-git-send-email-glommer@redhat.com>
+ <1273094839-18655-4-git-send-email-glommer@redhat.com>
+ <1273094839-18655-5-git-send-email-glommer@redhat.com>
+ <1273094839-18655-6-git-send-email-glommer@redhat.com>
+ <1273094839-18655-7-git-send-email-glommer@redhat.com>
+ <1273094839-18655-8-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes one padding byte and transform it into a flags
-field. New versions of guests using pvclock will query these flags
-upon each read.
-
-Flags, however, will only be interpreted when the guest decides to.
-It uses the pvclock_valid_flags function to signal that a specific
-set of flags should be taken into consideration. Which flags are valid
-are usually devised via HV negotiation.
-
-Signed-off-by: Glauber Costa <glommer@redhat.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>
+This patch puts up the flag that tells the guest that we'll warn it
+about the tsc being trustworthy or not. By now, we also say
+it is not.
 ---
- arch/x86/include/asm/pvclock-abi.h |    3 ++-
- arch/x86/include/asm/pvclock.h     |    1 +
- arch/x86/kernel/pvclock.c          |    9 +++++++++
- 3 files changed, 12 insertions(+), 1 deletions(-)
+ arch/x86/kvm/x86.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
-index 6d93508..ec5c41a 100644
---- a/arch/x86/include/asm/pvclock-abi.h
-+++ b/arch/x86/include/asm/pvclock-abi.h
-@@ -29,7 +29,8 @@ struct pvclock_vcpu_time_info {
- 	u64   system_time;
- 	u32   tsc_to_system_mul;
- 	s8    tsc_shift;
--	u8    pad[3];
-+	u8    flags;
-+	u8    pad[2];
- } __attribute__((__packed__)); /* 32 bytes */
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 9295198..ddf997e 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -855,6 +855,8 @@ static void kvm_write_guest_time(struct kvm_vcpu *v)
+ 	vcpu->hv_clock.system_time = ts.tv_nsec +
+ 				     (NSEC_PER_SEC * (u64)ts.tv_sec) + v->kvm->arch.kvmclock_offset;
  
- struct pvclock_wall_clock {
-diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
-index 53235fd..cd02f32 100644
---- a/arch/x86/include/asm/pvclock.h
-+++ b/arch/x86/include/asm/pvclock.h
-@@ -6,6 +6,7 @@
- 
- /* some helper functions for xen and kvm pv clock sources */
- cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src);
-+void pvclock_set_flags(u8 flags);
- unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src);
- void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
- 			    struct pvclock_vcpu_time_info *vcpu,
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 03801f2..f7fdd56 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -31,8 +31,16 @@ struct pvclock_shadow_time {
- 	u32 tsc_to_nsec_mul;
- 	int tsc_shift;
- 	u32 version;
-+	u8  flags;
- };
- 
-+static u8 valid_flags __read_mostly = 0;
++	vcpu->hv_clock.flags = 0;
 +
-+void pvclock_set_flags(u8 flags)
-+{
-+	valid_flags = flags;
-+}
-+
- /*
-  * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
-  * yielding a 64-bit result.
-@@ -91,6 +99,7 @@ static unsigned pvclock_get_time_values(struct pvclock_shadow_time *dst,
- 		dst->system_timestamp  = src->system_time;
- 		dst->tsc_to_nsec_mul   = src->tsc_to_system_mul;
- 		dst->tsc_shift         = src->tsc_shift;
-+		dst->flags             = src->flags;
- 		rmb();		/* test version after fetching data */
- 	} while ((src->version & 1) || (dst->version != src->version));
- 
+ 	/*
+ 	 * The interface expects us to write an even number signaling that the
+ 	 * update is finished. Since the guest won't see the intermediate
+@@ -1983,7 +1985,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 	case KVM_CPUID_FEATURES:
+ 		entry->eax = (1 << KVM_FEATURE_CLOCKSOURCE) |
+ 			     (1 << KVM_FEATURE_NOP_IO_DELAY) |
+-			     (1 << KVM_FEATURE_CLOCKSOURCE2);
++			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
++			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
+ 		entry->ebx = 0;
+ 		entry->ecx = 0;
+ 		entry->edx = 0;
 -- 
 1.6.2.2
 
