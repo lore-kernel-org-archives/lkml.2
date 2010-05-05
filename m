@@ -1,256 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933872Ab0EEDUq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 23:20:46 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:31126 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757386Ab0EEDUo (ORCPT
+	id S1760202Ab0EEDjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 23:39:35 -0400
+Received: from mail-iw0-f203.google.com ([209.85.223.203]:37690 "EHLO
+	mail-iw0-f203.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755559Ab0EEDjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 23:20:44 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:to:cc:subject:message-id:mime-version:
-	content-type:content-disposition:user-agent:x-system-of-record;
-	b=ivW2Dwj6bt4asSrEcuPEApWJQ2QgvdA7SwyLaTSbPh72qiV096OxOsPX8GiAZW7BO
-	0UpEbRY+gqCfsJ9xzz1lQ==
-Date: Tue, 4 May 2010 20:20:33 -0700
-From: Michel Lespinasse <walken@google.com>
-To: David Howells <dhowells@redhat.com>, Andrew Morton <akpm@google.com>,
-       Linux-MM <linux-mm@kvack.org>
-Cc: Ying Han <yinghan@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: rwsem: down_read_unfair() proposal
-Message-ID: <20100505032033.GA19232@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-System-Of-Record: true
+	Tue, 4 May 2010 23:39:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=NdufOmSBwI4+b5t6CPJtns2x44MuKq1mTMgxYAIN+1FP/vwxXiNE0yhyws72MZu8cJ
+         ONQHN2iN1UzPPsTT+GV03atwEGg8i4Yb1NXPjlmV09sjkwVQQfOYNxLqZG7Ur3sgD8xO
+         EHz/mi2cP59tQ1RqXQNDeP/KYG03AGbeveA1k=
+Subject: Re: [PATCH 1/3] perf: record TRACE_INFO only if using tracepoints
+ and SAMPLE_RAW
+From: Tom Zanussi <tzanussi@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <20100504211843.GF970@ghostprotocols.net>
+References: <1272981607-28723-1-git-send-email-acme@infradead.org>
+	 <1272981607-28723-2-git-send-email-acme@infradead.org>
+	 <20100504170642.GA5427@nowhere>  <20100504211843.GF970@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 May 2010 22:39:30 -0500
+Message-Id: <1273030770.6383.6.camel@tropicana>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2010-05-04 at 18:18 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, May 04, 2010 at 07:06:45PM +0200, Frederic Weisbecker escreveu:
+> > On Tue, May 04, 2010 at 11:00:05AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > From: Tom Zanussi <tzanussi@gmail.com>
+> > > 
+> > > The current perf code implicitly assumes SAMPLE_RAW means tracepoints
+> > > are being used, but doesn't check for that.  It happily records the
+> > > TRACE_INFO even if SAMPLE_RAW is used without tracepoints, but when the
+> > > perf data is read it won't go any further when it finds TRACE_INFO but
+> > > no tracepoints, and displays misleading errors.
+> > > 
+> > > This adds a check for both in perf-record, and won't record TRACE_INFO
+> > > unless both are true.  This at least allows perf report -D to dump raw
+> > > events, and avoids triggering a misleading error condition in perf
+> > > trace.  It doesn't actually enable the non-tracepoint raw events to be
+> > > displayed in perf trace, since perf trace currently only deals with
+> > > tracepoint events.
+> > > 
+> > > Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+> > > Cc: Mike Galbraith <efault@gmx.de>
+> > > Cc: Paul Mackerras <paulus@samba.org>
+> > > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > LKML-Reference: <1272865861.7932.16.camel@tropicana>
+> > > Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+> > > Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > > ---
+> > >  tools/perf/builtin-record.c        |   35 +++++++++++++++++++++--------------
+> > >  tools/perf/util/header.c           |    1 -
+> > >  tools/perf/util/parse-events.h     |    1 +
+> > >  tools/perf/util/trace-event-info.c |    5 +++++
+> > >  4 files changed, 27 insertions(+), 15 deletions(-)
+> > > 
+> > > diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> > > index ac989e9..0ff67d1 100644
+> > > --- a/tools/perf/builtin-record.c
+> > > +++ b/tools/perf/builtin-record.c
+> > > @@ -560,11 +560,12 @@ static int __cmd_record(int argc, const char **argv)
+> > >  			return err;
+> > >  	}
+> > >  
+> > > -	if (raw_samples) {
+> > > +	if (raw_samples && have_tracepoints(attrs, nr_counters)) {
+> > >  		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
+> > >  	} else {
+> > 
+> > 
+> > 
+> > Using get_tracepoints_path() is a bit costly just to check if we use
+> > tracepoints as it allocates and fill the paths.
+> 
+> Can you please send a fix?
+> 
 
-I am looking at ways to solve the following problem:
+Yeah, there's a lot of room for improvement here - thanks for pointing
+it out, Frederic.  The patch below should make it better...
 
-Some cluster monitoring software we use at Google periodically accesses
-files such as /proc/<pid>/exe or /proc/<pid>/maps, which requires
-acquiring that pid's mmap_sem for read. Sometimes when the machines get
-loaded enough, this acquisition can take a long time - typically this
-happens when thread A acquires mmap_sem for reads in do_page_fault and
-gets blocked (either trying to allocate a page or trying to read from
-disk); then thread B tries to acquire mmap_sem for write and gets queued
-behind A; then the monitoring software tries to read /proc/<pid>/maps
-and gets queued behind B due to rwlock fair behavior.
+Tom
 
-We have been using patches that address these issues by allowing the
-/proc/<pid>/exe and /proc/<pid>/maps code paths to acquire the mmap_sem
-for reading in an unfair way, thus allowing the monitoring software to
-bypass thread B and acquire mmap_sem concurrently with thread A.
+From: Tom Zanussi <tzanussi@gmail.com>
+Date: Tue, 4 May 2010 22:20:16 -0500
+Subject: [PATCH] perf/record: simplify TRACE_INFO tracepoint check
 
-This was easy to implement with the generic rwsem, and looks like it's
-doable with the x86 rwsem implementation as well in a way that would only
-involve changes to the rwsem spinlock-protected slow paths in lib/rwsem.c .
-We are still working on that code but I thought we should ask first how
-the developer community feels about the general idea.
+Fix a couple of inefficiencies and redundancies related to
+have_tracepoints() and its use when checking whether to write
+TRACE_INFO.
 
-For reference, here is one patch we have (against 2.6.33) using
-down_read_unfair() in such a way (but with no x86 specific rwsem
-implementation yet)
+First, there's no need to use get_tracepoints_path() in
+have_tracepoints() - we really just want the part that checks whether
+any attributes correspondo to tracepoints.
 
+Second, we really don't care about raw_samples per se - tracepoints
+are always raw_samples.  In any case, the have_tracepoints() check
+should be sufficient to decide whether or not to write TRACE_INFO.
 
-Author: Ying Han <yinghan@google.com>
+Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+---
+ tools/perf/builtin-record.c        |   11 +----------
+ tools/perf/util/trace-event-info.c |    8 +++++++-
+ 2 files changed, 8 insertions(+), 11 deletions(-)
 
-    Introduce down_read_unfair()
-    
-    In down_read_unfair(), reader is not waiting non-exclusive lock
-    even a writer on the queue. Apply it to maps & exes in procfs where
-    monitoring program reads frequently.
-    
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 58324c2..d51bc55 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1367,7 +1367,7 @@ struct file *get_mm_exe_file(struct mm_struct *mm)
- 
- 	/* We need mmap_sem to protect against races with removal of
- 	 * VM_EXECUTABLE vmas */
--	down_read(&mm->mmap_sem);
-+	down_read_unfair(&mm->mmap_sem);
- 	exe_file = mm->exe_file;
- 	if (exe_file)
- 		get_file(exe_file);
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index f277c4a..118e0cd 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -119,7 +119,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
- 	mm = mm_for_maps(priv->task);
- 	if (!mm)
- 		return NULL;
--	down_read(&mm->mmap_sem);
-+	down_read_unfair(&mm->mmap_sem);
- 
- 	tail_vma = get_gate_vma(priv->task);
- 	priv->tail_vma = tail_vma;
-diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
-index 5d9fd64..2ab484b 100644
---- a/fs/proc/task_nommu.c
-+++ b/fs/proc/task_nommu.c
-@@ -193,7 +193,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
- 		priv->task = NULL;
- 		return NULL;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 0ff67d1..d3981ac 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -560,17 +560,8 @@ static int __cmd_record(int argc, const char **argv)
+ 			return err;
  	}
--	down_read(&mm->mmap_sem);
-+	down_read_unfair(&mm->mmap_sem);
  
- 	/* start from the Nth VMA */
- 	for (p = rb_first(&mm->mm_rb); p; p = rb_next(p))
-diff --git a/include/linux/rwsem-spinlock.h b/include/linux/rwsem-spinlock.h
-index bdfcc25..48199db 100644
---- a/include/linux/rwsem-spinlock.h
-+++ b/include/linux/rwsem-spinlock.h
-@@ -60,7 +60,8 @@ do {								\
- 	__init_rwsem((sem), #sem, &__key);			\
- } while (0)
+-	if (raw_samples && have_tracepoints(attrs, nr_counters)) {
++	if (have_tracepoints(attrs, nr_counters))
+ 		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
+-	} else {
+-		for (i = 0; i < nr_counters; i++) {
+-			if (attrs[i].sample_type & PERF_SAMPLE_RAW &&
+-				attrs[i].type == PERF_TYPE_TRACEPOINT) {
+-				perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
+-				break;
+-			}
+-		}
+-	}
  
--extern void __down_read(struct rw_semaphore *sem);
-+extern void __down_read_fair(struct rw_semaphore *sem);
-+extern void __down_read_unfair(struct rw_semaphore *sem);
- extern int __down_read_trylock(struct rw_semaphore *sem);
- extern void __down_write(struct rw_semaphore *sem);
- extern void __down_write_nested(struct rw_semaphore *sem, int subclass);
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index efd348f..65d666e 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -20,6 +20,7 @@ struct rw_semaphore;
- #include <linux/rwsem-spinlock.h> /* use a generic implementation */
- #else
- #include <asm/rwsem.h> /* use an arch-specific implementation */
-+#error "Missing down_read_unfair support."
- #endif
+ 	atexit(atexit_header);
  
- /*
-@@ -28,6 +29,11 @@ struct rw_semaphore;
- extern void down_read(struct rw_semaphore *sem);
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 0a1fb9d..b157260 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -489,7 +489,13 @@ get_tracepoints_path(struct perf_event_attr *pattrs, int nb_events)
  
- /*
-+ * lock for reading - skip waitting writers
-+ */
-+extern void down_read_unfair(struct rw_semaphore *sem);
-+
-+/*
-  * trylock for reading -- returns 1 if successful, 0 if contention
-  */
- extern int down_read_trylock(struct rw_semaphore *sem);
-diff --git a/kernel/rwsem.c b/kernel/rwsem.c
-index cae050b..24578c5 100644
---- a/kernel/rwsem.c
-+++ b/kernel/rwsem.c
-@@ -21,12 +21,25 @@ void __sched down_read(struct rw_semaphore *sem)
- 	might_sleep();
- 	rwsem_acquire_read(&sem->dep_map, 0, 0, _RET_IP_);
- 
--	LOCK_CONTENDED(sem, __down_read_trylock, __down_read);
-+	LOCK_CONTENDED(sem, __down_read_trylock, __down_read_fair);
- }
- 
- EXPORT_SYMBOL(down_read);
- 
- /*
-+ * lock for reading - skip waitting writers
-+ */
-+void __sched down_read_unfair(struct rw_semaphore *sem)
-+{
-+	might_sleep();
-+	rwsem_acquire_read(&sem->dep_map, 0, 0, _RET_IP_);
-+
-+	LOCK_CONTENDED(sem, __down_read_trylock, __down_read_unfair);
-+}
-+
-+EXPORT_SYMBOL(down_read_unfair);
-+
-+/*
-  * trylock for reading -- returns 1 if successful, 0 if contention
-  */
- int down_read_trylock(struct rw_semaphore *sem)
-@@ -112,7 +125,7 @@ void down_read_nested(struct rw_semaphore *sem, int subclass)
- 	might_sleep();
- 	rwsem_acquire_read(&sem->dep_map, subclass, 0, _RET_IP_);
- 
--	LOCK_CONTENDED(sem, __down_read_trylock, __down_read);
-+	LOCK_CONTENDED(sem, __down_read_trylock, __down_read_fair);
- }
- 
- EXPORT_SYMBOL(down_read_nested);
-@@ -121,7 +134,7 @@ void down_read_non_owner(struct rw_semaphore *sem)
+ bool have_tracepoints(struct perf_event_attr *pattrs, int nb_events)
  {
- 	might_sleep();
- 
--	__down_read(sem);
-+	__down_read_fair(sem);
+-	return get_tracepoints_path(pattrs, nb_events) ? true : false;
++	int i;
++
++	for (i = 0; i < nb_events; i++)
++		if (pattrs[i].type == PERF_TYPE_TRACEPOINT)
++			return true;
++
++	return false;
  }
  
- EXPORT_SYMBOL(down_read_non_owner);
-diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
-index ccf95bf..8c44c08 100644
---- a/lib/rwsem-spinlock.c
-+++ b/lib/rwsem-spinlock.c
-@@ -139,14 +139,14 @@ __rwsem_wake_one_writer(struct rw_semaphore *sem)
- /*
-  * get a read lock on the semaphore
-  */
--void __sched __down_read(struct rw_semaphore *sem)
-+void __sched __down_read(struct rw_semaphore *sem, int unfair)
- {
- 	struct rwsem_waiter waiter;
- 	struct task_struct *tsk;
- 
- 	spin_lock_irq(&sem->wait_lock);
- 
--	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
-+	if (sem->activity >= 0 && (unfair || list_empty(&sem->wait_list))) {
- 		/* granted */
- 		sem->activity++;
- 		spin_unlock_irq(&sem->wait_lock);
-@@ -161,7 +161,11 @@ void __sched __down_read(struct rw_semaphore *sem)
- 	waiter.flags = RWSEM_WAITING_FOR_READ;
- 	get_task_struct(tsk);
- 
--	list_add_tail(&waiter.list, &sem->wait_list);
-+	if (unfair) {
-+		list_add(&waiter.list, &sem->wait_list);
-+	} else {
-+		list_add_tail(&waiter.list, &sem->wait_list);
-+	}
- 
- 	/* we don't need to touch the semaphore struct anymore */
- 	spin_unlock_irq(&sem->wait_lock);
-@@ -180,6 +184,22 @@ void __sched __down_read(struct rw_semaphore *sem)
- }
- 
- /*
-+ * wrapper for fair __down_read
-+ */
-+void __sched __down_read_fair(struct rw_semaphore *sem)
-+{
-+	__down_read(sem, 0);
-+}
-+
-+/*
-+ * wrapper for unfair __down_read
-+ */
-+void __sched __down_read_unfair(struct rw_semaphore *sem)
-+{
-+	__down_read(sem, 1);
-+}
-+
-+/*
-  * trylock for reading -- returns 1 if successful, 0 if contention
-  */
- int __down_read_trylock(struct rw_semaphore *sem)
-
-
+ int read_tracing_data(int fd, struct perf_event_attr *pattrs, int nb_events)
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.6.4.GIT
+
+
+
+
+
