@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934266Ab0EEJRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 05:17:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48361 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934216Ab0EEJRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 05:17:09 -0400
-Message-ID: <4BE13872.6050500@redhat.com>
-Date: Wed, 05 May 2010 17:20:50 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
-MIME-Version: 1.0
-To: Changli Gao <xiaosuo@gmail.com>
-CC: linux-kernel@vger.kernel.org, Octavian Purdila <opurdila@ixiacom.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       penguin-kernel@i-love.sakura.ne.jp, netdev@vger.kernel.org,
-       Neil Horman <nhorman@tuxdriver.com>, ebiederm@xmission.com,
-       adobriyan@gmail.com, David Miller <davem@davemloft.net>
-Subject: Re: [Patch 2/3] sysctl: add proc_do_large_bitmap
-References: <20100430082912.5630.82405.sendpatchset@localhost.localdomain> 	<20100430082936.5630.67682.sendpatchset@localhost.localdomain> <v2y412e6f7f1004301541yb1ede589t8c446966743ca138@mail.gmail.com> <4BE0E27C.7040200@redhat.com>
-In-Reply-To: <4BE0E27C.7040200@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S934271Ab0EEJSM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 05:18:12 -0400
+Received: from relay2-v.mail.gandi.net ([217.70.178.76]:48005 "EHLO
+	relay2-v.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934178Ab0EEJSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 05:18:10 -0400
+X-Originating-IP: 217.70.178.42
+X-Originating-IP: 82.8.179.104
+Subject: Re: [PATCH] Disable i8042 checks on Intel Apple Macs
+From: Bastien Nocera <hadess@hadess.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100504180247.GC29428@core.coreip.homeip.net>
+References: <1272994594.13354.215.camel@localhost.localdomain>
+	 <20100504180247.GC29428@core.coreip.homeip.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 05 May 2010 10:18:04 +0100
+Message-ID: <1273051084.13354.290.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.0.1 (2.30.0-3.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cong Wang wrote:
-> Changli Gao wrote:
->>                      add the following lines to let "echo 1-10 >>
->> /proc/..." work as normal.
+On Tue, 2010-05-04 at 11:02 -0700, Dmitry Torokhov wrote:
+> On Tue, May 04, 2010 at 06:36:34PM +0100, Bastien Nocera wrote:
+> > As those computers never had any i8042 controllers, and the
+> > current lookup code could potentially lock up/hang/wait for
+> > timeout for long periods of time.
+> > 
+> > Fixes intermittent hangs on boot on a MacbookAir1,1
+> > 
+> > Signed-off-by: Bastien Nocera <hadess@hadess.net>
+> > ---
+> >  drivers/input/serio/i8042.c |   18 ++++++++++++++++++
+> >  1 files changed, 18 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
+> > index d84a36e..2be7207 100644
+> > --- a/drivers/input/serio/i8042.c
+> > +++ b/drivers/input/serio/i8042.c
 > 
-> Hmm, I haven't tested this, what did you see if we append
-> lines into it?
-> 
-> Also, do we need appending lines to this /proc file when design it?
-> Octavian? Eric?
-> 
+> This should go into i8042-x86ia64io.h and used to create PNP whitelist.
 
-Hmm, currently this behaves like other /proc files, IOW,
-echo 'foo' >> /proc/XXX is the same with echo 'foo' > /proc/XXX.
+Sorry, I don't understand what needs to be done here.
 
-I think it is reasonable for bitmap /proc files to have
-echo 'foo' >> /proc/XXX behaves like non-proc files, that is
-appending numbers into that file, like what Changli mentioned.
-
-Any objections?
-
-Thanks.
