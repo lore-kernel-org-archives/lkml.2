@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934157Ab0EEPzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 11:55:50 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55322 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932407Ab0EEPzs (ORCPT
+	id S934523Ab0EEQAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 12:00:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:36798 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934369Ab0EEQAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 11:55:48 -0400
-Date: Wed, 5 May 2010 11:55:47 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Du, Alek" <alek.du@intel.com>
-cc: Ondrej Zary <linux@rainbow-software.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       USB list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
- (WKOC_E) and disconnect (WKDISC_E)
-In-Reply-To: <20100505111245.2c480ea1@dxy2>
-Message-ID: <Pine.LNX.4.44L0.1005051144490.1885-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 5 May 2010 12:00:00 -0400
+X-Authority-Analysis: v=1.1 cv=Sj+DEJq9TvmrEz0yYf786F+83+V8ZKDvY/KsKt+Cs/8= c=1 sm=0 a=whUijNTEeaUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=pGLkceISAAAA:8 a=I1KwjzKhOx3TpovsgTgA:9 a=Z6mb_PfyljYgAFZicmQA:7 a=ZMX1doPGXNo0DOX27kJvDm5QupgA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 3/4] trace/trace_output.c: fix "integer as NULL
+ pointer" warning.
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Thiago Farina <tfransosi@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1264455631.31321.433.camel@gandalf.stny.rr.com>
+References: <1264349038-1766-1-git-send-email-tfransosi@gmail.com>
+	 <1264349038-1766-3-git-send-email-tfransosi@gmail.com>
+	 <1264455631.31321.433.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 05 May 2010 11:59:57 -0400
+Message-ID: <1273075197.22438.28.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 May 2010, Du, Alek wrote:
-
-> On Fri, 30 Apr 2010 01:45:33 +0800
-> Alan Stern <stern@rowland.harvard.edu> wrote:
-> 
-> 
-> > This patch fixes the problem on my system.  Does it work for you?
-> > I still think that disabling wakeup at the PCI or platform level should 
-> > override the port wakeup flags, but apparently it doesn't.
+On Mon, 2010-01-25 at 16:40 -0500, Steven Rostedt wrote:
+> On Sun, 2010-01-24 at 11:03 -0500, Thiago Farina wrote:
+> > kernel/trace/trace_output.c:256:24: warning: Using plain integer as NULL pointer
 > > 
-> > Alek, can you confirm that the changes in this patch are okay for the
-> > Moorestown EHCI controller?  I had to guess at how to handle the
-> > HOSTPCx register settings.
+> > Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+> 
+> Is this going through some other tree, or should I just pull it?
+
+I guess this never went through any other tree (never got a response).
+I'll pull it now.
+
+-- Steve
+
+> > ---
+> >  kernel/trace/trace_output.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
 > > 
-> > Alan Stern
+> > diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+> > index 8e46b33..2404c12 100644
+> > --- a/kernel/trace/trace_output.c
+> > +++ b/kernel/trace/trace_output.c
+> > @@ -253,7 +253,7 @@ void *trace_seq_reserve(struct trace_seq *s, size_t len)
+> >  	void *ret;
+> >  
+> >  	if (s->full)
+> > -		return 0;
+> > +		return NULL;
+> >  
+> >  	if (len > ((PAGE_SIZE - 1) - s->len)) {
+> >  		s->full = 1;
 > 
-> 
-> Alan,
-> 
-> As I tested, the patch breaks phy low power mode, the EHCI works, but it never
-> enter phy low power mode when suspending port...
-> 
-> I guess this part of the diff breaks it.
-> 
-> 
->  -			/* only enable appropriate wake bits, otherwise the
->  -			 * hardware can not go phy low power mode. If a race
->  -			 * condition happens here(connection change during bits
->  -			 * set), the port change detection will finally fix it.
->  -			 */
->  -			if (t1 & PORT_CONNECT) {
->  -				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
->  -				t2 &= ~PORT_WKCONN_E;
->  -			} else {
->  -				t2 |= PORT_WKOC_E | PORT_WKCONN_E;
->  -				t2 &= ~PORT_WKDISC_E;
->  -			}
 
-That seems very odd.  Why should removing code that enables wakeup bits
-cause the suspend to fail?  Can't the phy go into low-power mode when
-all the wakeup bits are disabled?
-
-Does applying this additional patch on top of the previous one help?
-
-Alan Stern
-
-
-
-Index: usb-2.6/drivers/usb/host/ehci-hub.c
-===================================================================
---- usb-2.6.orig/drivers/usb/host/ehci-hub.c
-+++ usb-2.6/drivers/usb/host/ehci-hub.c
-@@ -200,7 +200,7 @@ static int ehci_bus_suspend (struct usb_
- 	while (port--) {
- 		u32 __iomem	*reg = &ehci->regs->port_status [port];
- 		u32		t1 = ehci_readl(ehci, reg) & ~PORT_RWC_BITS;
--		u32		t2 = t1;
-+		u32		t2;
- 
- 		if (ehci->has_hostpc)
- 			hostpc_reg = (u32 __iomem *)((u8 *)ehci->regs
-@@ -209,6 +209,7 @@ static int ehci_bus_suspend (struct usb_
- 		if (t1 & PORT_OWNER)
- 			set_bit(port, &ehci->owned_ports);
- 		else if ((t1 & PORT_PE) && !(t1 & PORT_SUSPEND)) {
-+			t2 = t1 & ~PORT_WAKE_BITS;
- 			t2 |= PORT_SUSPEND;
- 			set_bit(port, &ehci->bus_suspended);
- 			ehci_vdbg (ehci, "port %d, %08x -> %08x\n",
 
