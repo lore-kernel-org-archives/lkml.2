@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab0EEW5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 18:57:13 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:59623 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756807Ab0EEW5G (ORCPT
+	id S1757483Ab0EEXDi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 19:03:38 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39399 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009Ab0EEXDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 18:57:06 -0400
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-       grant.likely@secretlab.ca, bryan.wu@canonical.com,
-       amit.kucheria@canonical.com, Jun.Li@freescale.com,
-       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv1 2.6.34-rc6 1/3] mxc: gadget: remove 60mhz clock requirement for freescale mx51 usb core
-Date: Wed,  5 May 2010 17:56:09 -0500
-Message-Id: <1273100171-3235-2-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1273100171-3235-1-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1273100171-3235-1-git-send-email-Dinh.Nguyen@freescale.com>
+	Wed, 5 May 2010 19:03:36 -0400
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Matthew Garrett <mjg@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Paul Walmsley <paul@pwsan.com>, <magnus.damm@gmail.com>,
+       mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+References: <Pine.LNX.4.44L0.1005051554490.1885-100000@iolanthe.rowland.org>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Wed, 05 May 2010 16:03:32 -0700
+In-Reply-To: <Pine.LNX.4.44L0.1005051554490.1885-100000@iolanthe.rowland.org> (Alan Stern's message of "Wed\, 5 May 2010 16\:04\:00 -0400 \(EDT\)")
+Message-ID: <87fx26ymrf.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-for mx51, usb core is clocked from sources that are not 60mhz.
+Alan Stern <stern@rowland.harvard.edu> writes:
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- drivers/usb/gadget/fsl_mx3_udc.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+> On Wed, 5 May 2010, Matthew Garrett wrote:
+>
+>> On Wed, May 05, 2010 at 03:20:40PM -0400, Alan Stern wrote:
+>> 
+>> > One the face of it, a runtime-PM solution would dictate that the
+>> > codec's driver ought to turn off the codec whenever the driver thinks
+>> > it isn't being used.  Ergo, if the driver didn't know when a call was
+>> > in progress, it would use runtime PM to turn off the codec during a
+>> > call.
+>> 
+>> Well, part of the problem is that right now most of our beliefs about 
+>> imposed constraints tend to be based on what userspace is doing - "Don't 
+>> power down the audio codec when userspace has it open", for instance. 
+>> But that goes away with opportunistic suspend. In most cases you don't 
+>> want the audio codec to stay awake just because userspace was using it 
+>> to make bouncing cow noises, especially if you've just frozen userspace. 
+>> So the problem becomes more complicated than it would otherwise be.
+>
+> It sounds like the problem can be stated simply enough: At the moment, 
+> nobody knows when the codec should be powered down!  Userspace might 
+> have some idea, but even if its ideas are right it has no way of 
+> communicating them to the kernel.
+>
+> The power/control sysfs attribute was intended for just that purpose,
+> although it was aimed at runtime PM rather than system PM.  
+> Nevertheless, it or something like it could be used.  Of course, there 
+> would still remain the issue of userspace telling the kernel not to 
+> power down the codec while making bouncing cow noises -- but at this 
+> point it's not really a kernel problem any more.
 
-diff --git a/drivers/usb/gadget/fsl_mx3_udc.c b/drivers/usb/gadget/fsl_mx3_udc.c
-index 20a802e..d0b8bde 100644
---- a/drivers/usb/gadget/fsl_mx3_udc.c
-+++ b/drivers/usb/gadget/fsl_mx3_udc.c
-@@ -50,12 +50,14 @@ int fsl_udc_clk_init(struct platform_device *pdev)
- 		goto egusb;
- 	}
- 
--	freq = clk_get_rate(mxc_usb_clk);
--	if (pdata->phy_mode != FSL_USB2_PHY_ULPI &&
--	    (freq < 59999000 || freq > 60001000)) {
--		dev_err(&pdev->dev, "USB_CLK=%lu, should be 60MHz\n", freq);
--		ret = -EINVAL;
--		goto eclkrate;
-+	if (!cpu_is_mx51()) {
-+		freq = clk_get_rate(mxc_usb_clk);
-+		if (pdata->phy_mode != FSL_USB2_PHY_ULPI &&
-+		    (freq < 59999000 || freq > 60001000)) {
-+			dev_err(&pdev->dev, "USB_CLK=%lu, should be 60MHz\n", freq);
-+			ret = -EINVAL;
-+			goto eclkrate;
-+		}
- 	}
- 
- 	ret = clk_enable(mxc_usb_clk);
--- 
-1.6.0.4
+I guess what we're talking about here is a set of per-device
+constraints that could be used by both [opportunistic|system] suspend
+and runtime PM.  For lack of a better term, per-device PM QoS (as
+compared to the current system-wide PM QoS.)
 
+For example, if userspace (or some other device) has communicated that
+it has a constraint on the audio HW, then both the suspend path and the
+runtime PM path could check those constraints before making a decision
+on how to act.  Hopefully the phone app would set a constraint and the
+cow-noise app would not.  :)
+
+On OMAP, we keep track of per-device constraints (currently latency
+and throughput) in order to make proper run-time PM decicions in the
+kernel, but we are realizing that we need a way for userspace to
+communicate these constraints as well, so that userspace can make
+power vs. performance policy decisions instead of the kernel.
+
+Probably generalizing these into the LDM is the direction to go so
+userspace can set constraints on a per-device (or per-class?) basis:
+
+/sys/devices/.../power/constraint/throughput
+/sys/devices/.../power/constraint/wakeup_latency
+/sys/devices/.../power/constraint/... ?
+
+Kevin
