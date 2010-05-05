@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760335Ab0EEOrG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 10:47:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30264 "EHLO mx1.redhat.com"
+	id S934816Ab0EEOuW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 10:50:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52780 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754549Ab0EEOrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 10:47:02 -0400
-Message-ID: <4BE184E3.1010508@redhat.com>
-Date: Wed, 05 May 2010 17:46:59 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1757494Ab0EEOuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 10:50:19 -0400
+Date: Wed, 5 May 2010 16:48:13 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH] fix count_vm_event preempt in memory compaction direct
+ reclaim
+Message-ID: <20100505144813.GI5835@random.random>
+References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
+ <1271797276-31358-13-git-send-email-mel@csn.ul.ie>
+ <20100505121908.GA5835@random.random>
+ <20100505125156.GM20979@csn.ul.ie>
+ <20100505131112.GB5835@random.random>
+ <20100505135537.GO20979@csn.ul.ie>
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] KVM: SVM: Allow EFER.LMSLE to be set with nested
- svm
-References: <1273068285-3105-1-git-send-email-joerg.roedel@amd.com> <1273068285-3105-5-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1273068285-3105-5-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100505135537.GO20979@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2010 05:04 PM, Joerg Roedel wrote:
-> This patch enables setting of efer bit 13 which is allowed
-> in all SVM capable processors. This is necessary for the
-> SLES11 version of Xen 4.0 to boot with nested svm.
->    
+On Wed, May 05, 2010 at 02:55:38PM +0100, Mel Gorman wrote:
+> I haven't seen this problem. The testing I'd have been doing with compaction
+> were stress tests allocating huge pages but not from the fault path.
 
-Interesting, why does it require it?
+That explains it! But anything can call alloc_pages(order>0) with some
+semaphore held.
 
-Obviously it isn't needed since it manages to run on Intel without it.
+> It's not mandatory but the LRU lists should be drained so they can be properly
+> isolated. It'd make a slight difference to success rates as there will be
+> pages that cannot be isolated because they are on some pagevec.
 
->   /* Intel MSRs. Some also available on other CPUs */
-> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> index 74f7b9d..bc087c7 100644
-> --- a/arch/x86/kvm/svm.c
-> +++ b/arch/x86/kvm/svm.c
-> @@ -610,7 +610,7 @@ static __init int svm_hardware_setup(void)
->
->   	if (nested) {
->   		printk(KERN_INFO "kvm: Nested Virtualization enabled\n");
-> -		kvm_enable_efer_bits(EFER_SVME);
-> +		kvm_enable_efer_bits(EFER_SVME | EFER_LMSLE);
->   	}
->
->   	for_each_possible_cpu(cpu) {
->    
+Yes success rate will be slightly worse but this also applies to all
+regular vmscan paths that don't send IPI but they only flush the local
+queue with lru_add_drain, simply pages won't be freed until there will
+be some other cpu holding the refcount on them, it is not specific to
+compaction.c but it applies to vmscan.c and vmscan likely not wanting
+to send an IPI flood because it could too if it wanted.
 
-What if the host doesn't have it?
+But I guess I should at least use lru_add_drain() in replacement of
+migrate_prep...
 
-Why enable it only for the nested case?  It's not svm specific (it's 
-useful for running non-hvm Xen in non-nested mode).
+> While true, is compaction density that high under normal workloads? I guess
+> it would be if a scanner was constantly trying to promote pages.  If the
+> IPI load is out of hand, I'm ok with disabling in some cases. For example,
+> I'd be ok with it being skipped if it was part of a daemon doing speculative
+> promotion but I'd prefer it to still be used if the static hugetlbfs pool
+> was being resized if that was possible.
 
-Isn't there a cpuid bit for it?  If so, it should be exposed to 
-userspace, and the feature should depend on it.
+I don't know if IPI is measurable, but it usually is...
 
--- 
-error compiling committee.c: too many arguments to function
+> > -----
+> > Subject: disable migrate_prep()
+> > 
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > I get trouble from lockdep if I leave it enabled:
+> > 
+> > =======================================================
+> > [ INFO: possible circular locking dependency detected ]
+> > 2.6.34-rc3 #50
+> > -------------------------------------------------------
+> > largepages/4965 is trying to acquire lock:
+> >  (events){+.+.+.}, at: [<ffffffff8105b788>] flush_work+0x38/0x130
+> > 
+> >  but task is already holding lock:
+> >   (&mm->mmap_sem){++++++}, at: [<ffffffff8141b022>] do_page_fault+0xd2/0x430
+> > 
+> 
+> Hmm, I'm not seeing where in the fault path flush_work is getting called
+> from. Can you point it out to me please?
 
+lru_add_drain_all->schedule_on_each_cpu->flush_work
+
+> We already do some IPI work in the page allocator although it happens after
+> direct reclaim and only for high-order pages. What happens there and what
+> happens in migrate_prep are very similar so if there was a problem with IPI
+> and fault paths, I'd have expected to see it from hugetlbfs at some stage.
+
+Where? I never triggered other issues in the page allocator with
+lockdep, just this one pops up.
