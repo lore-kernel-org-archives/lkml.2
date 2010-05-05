@@ -1,140 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760532Ab0EECNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 22:13:15 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37125 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760518Ab0EECNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 22:13:08 -0400
-Date: Wed, 5 May 2010 02:10:46 GMT
-From: "tip-bot for Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       tglx@linutronix.de, ebiederm@xmission.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, ebiederm@xmission.com
-In-Reply-To: <1269936436-7039-15-git-send-email-ebiederm@xmission.com>
-References: <1269936436-7039-15-git-send-email-ebiederm@xmission.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/irq] x86, irq: Kill io_apic_renumber_irq
-Message-ID: <tip-7b20bd5fb902088579af4e70f7f802b93181a628@git.kernel.org>
-Git-Commit-ID: 7b20bd5fb902088579af4e70f7f802b93181a628
-X-Mailer: tip-git-log-daemon
+	id S1760444Ab0EECcg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 22:32:36 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35182 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757070Ab0EECcf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 22:32:35 -0400
+Date: Wed, 5 May 2010 10:32:20 +0800
+From: Yong Zhang <yong.zhang@windriver.com>
+To: CaT <cat@zip.com.au>
+Cc: lkml@zip.com.au, mtosatti@redhat.com, kvm@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Avi Kivity <avi@redhat.com>
+Subject: Re: 2.6.33.3: possible recursive locking detected
+Message-ID: <20100505023220.GC20236@windriver.com>
+Reply-To: Yong Zhang <yong.zhang@windriver.com>
+References: <20100504070334.GN2657@zip.com.au>
+ <4BDFDCD1.70202@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 02:10:46 +0000 (UTC)
+In-Reply-To: <4BDFDCD1.70202@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 05 May 2010 02:32:22.0938 (UTC) FILETIME=[31449FA0:01CAEBFB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7b20bd5fb902088579af4e70f7f802b93181a628
-Gitweb:     http://git.kernel.org/tip/7b20bd5fb902088579af4e70f7f802b93181a628
-Author:     Eric W. Biederman <ebiederm@xmission.com>
-AuthorDate: Tue, 30 Mar 2010 01:07:16 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 4 May 2010 13:35:20 -0700
+On Tue, May 04, 2010 at 11:37:37AM +0300, Avi Kivity wrote:
+> On 05/04/2010 10:03 AM, CaT wrote:
+> >I'm currently running 2.6.33.3 in a KVM instance emulating a core2duo
+> >on 1 cpu with virtio HDs running on top of a core2duo host running 2.6.33.3.
+> >qemu-kvm version 0.12.3.
 
-x86, irq: Kill io_apic_renumber_irq
+Can you try commit 6992f5334995af474c2b58d010d08bc597f0f2fe in the latest
+kernel?
 
-Now that the generic irq layer is performing the exact same remapping as
-io_apic_renumber_irq we can kill this weird  es7000 specific function.
-
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-LKML-Reference: <1269936436-7039-15-git-send-email-ebiederm@xmission.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/include/asm/io_apic.h   |    1 -
- arch/x86/kernel/acpi/boot.c      |    5 -----
- arch/x86/kernel/apic/es7000_32.c |   19 -------------------
- arch/x86/kernel/apic/io_apic.c   |    6 ------
- 4 files changed, 0 insertions(+), 31 deletions(-)
-
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 37b0f2b..9da192a 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -159,7 +159,6 @@ struct io_apic_irq_attr;
- extern int io_apic_set_pci_routing(struct device *dev, int irq,
- 		 struct io_apic_irq_attr *irq_attr);
- void setup_IO_APIC_irq_extra(u32 gsi);
--extern int (*ioapic_renumber_irq)(int ioapic, int irq);
- extern void ioapic_init_mappings(void);
- extern void ioapic_insert_resources(void);
- 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 325fbba..9a5ed58 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -1117,11 +1117,6 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- 
- 	ioapic_pin = mp_find_ioapic_pin(ioapic, gsi);
- 
--#ifdef CONFIG_X86_32
--	if (ioapic_renumber_irq)
--		gsi = ioapic_renumber_irq(ioapic, gsi);
--#endif
--
- 	if (ioapic_pin > MP_MAX_IOAPIC_PIN) {
- 		printk(KERN_ERR "Invalid reference to IOAPIC pin "
- 		       "%d-%d\n", mp_ioapics[ioapic].apicid,
-diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
-index 03ba1b8..425e53a 100644
---- a/arch/x86/kernel/apic/es7000_32.c
-+++ b/arch/x86/kernel/apic/es7000_32.c
-@@ -131,24 +131,6 @@ int					es7000_plat;
- 
- static unsigned int			base;
- 
--static int
--es7000_rename_gsi(int ioapic, int gsi)
--{
--	if (es7000_plat == ES7000_ZORRO)
--		return gsi;
--
--	if (!base) {
--		int i;
--		for (i = 0; i < nr_ioapics; i++)
--			base += nr_ioapic_registers[i];
--	}
--
--	if (!ioapic && (gsi < 16))
--		gsi += base;
--
--	return gsi;
--}
--
- static int __cpuinit wakeup_secondary_cpu_via_mip(int cpu, unsigned long eip)
- {
- 	unsigned long vect = 0, psaival = 0;
-@@ -190,7 +172,6 @@ static void setup_unisys(void)
- 		es7000_plat = ES7000_ZORRO;
- 	else
- 		es7000_plat = ES7000_CLASSIC;
--	ioapic_renumber_irq = es7000_rename_gsi;
- }
- 
- /*
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 594827c..d174d88 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1016,7 +1016,6 @@ static inline int irq_trigger(int idx)
- 	return MPBIOS_trigger(idx);
- }
- 
--int (*ioapic_renumber_irq)(int ioapic, int irq);
- static int pin_2_irq(int idx, int apic, int pin)
- {
- 	int irq;
-@@ -1032,11 +1031,6 @@ static int pin_2_irq(int idx, int apic, int pin)
- 		irq = mp_irqs[idx].srcbusirq;
- 	} else {
- 		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
--		/*
--                 * For MPS mode, so far only needed by ES7000 platform
--                 */
--		if (ioapic_renumber_irq)
--			gsi = ioapic_renumber_irq(apic, gsi);
- 
- 		if (gsi >= NR_IRQS_LEGACY)
- 			irq = gsi;
+> 
+> Doesn't appear to be related to kvm.  Copying lkml.
+> 
+> >When doing:
+> >
+> >echo noop>/sys/block/vdd/queue/scheduler
+> >
+> >I got:
+> >
+> >[ 1424.438241] =============================================
+> >[ 1424.439588] [ INFO: possible recursive locking detected ]
+> >[ 1424.440368] 2.6.33.3-moocow.20100429-142641 #2
+> >[ 1424.440960] ---------------------------------------------
+> >[ 1424.440960] bash/2186 is trying to acquire lock:
+> >[ 1424.440960]  (s_active){++++.+}, at: [<ffffffff811046b8>] sysfs_remove_dir+0x75/0x88
+> >[ 1424.440960]
+> >[ 1424.440960] but task is already holding lock:
+> >[ 1424.440960]  (s_active){++++.+}, at: [<ffffffff81104849>] sysfs_get_active_two+0x1f/0x46
+> >[ 1424.440960]
+> >[ 1424.440960] other info that might help us debug this:
+> >[ 1424.440960] 4 locks held by bash/2186:
+> >[ 1424.440960]  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff8110317f>] sysfs_write_file+0x39/0x126
+> >[ 1424.440960]  #1:  (s_active){++++.+}, at: [<ffffffff81104849>] sysfs_get_active_two+0x1f/0x46
+> >[ 1424.440960]  #2:  (s_active){++++.+}, at: [<ffffffff81104856>] sysfs_get_active_two+0x2c/0x46
+> >[ 1424.440960]  #3:  (&q->sysfs_lock){+.+.+.}, at: [<ffffffff8119c3f0>] queue_attr_store+0x44/0x85
+> >[ 1424.440960]
+> >[ 1424.440960] stack backtrace:
+> >[ 1424.440960] Pid: 2186, comm: bash Not tainted 2.6.33.3-moocow.20100429-142641 #2
+> >[ 1424.440960] Call Trace:
+> >[ 1424.440960]  [<ffffffff8105e775>] __lock_acquire+0xf9f/0x178e
+> >[ 1424.440960]  [<ffffffff8100d3ec>] ? save_stack_trace+0x2a/0x48
+> >[ 1424.440960]  [<ffffffff8105b46c>] ? lockdep_init_map+0x9f/0x52f
+> >[ 1424.440960]  [<ffffffff8105b46c>] ? lockdep_init_map+0x9f/0x52f
+> >[ 1424.440960]  [<ffffffff8105cb56>] ? trace_hardirqs_on+0xd/0xf
+> >[ 1424.440960]  [<ffffffff8105f02e>] lock_acquire+0xca/0xef
+> >[ 1424.440960]  [<ffffffff811046b8>] ? sysfs_remove_dir+0x75/0x88
+> >[ 1424.440960]  [<ffffffff8110458d>] sysfs_addrm_finish+0xc8/0x13a
+> >[ 1424.440960]  [<ffffffff811046b8>] ? sysfs_remove_dir+0x75/0x88
+> >[ 1424.440960]  [<ffffffff8105cb25>] ? trace_hardirqs_on_caller+0x110/0x134
+> >[ 1424.440960]  [<ffffffff811046b8>] sysfs_remove_dir+0x75/0x88
+> >[ 1424.440960]  [<ffffffff811ab312>] kobject_del+0x16/0x37
+> >[ 1424.440960]  [<ffffffff81195489>] elv_iosched_store+0x10a/0x214
+> >[ 1424.440960]  [<ffffffff8119c416>] queue_attr_store+0x6a/0x85
+> >[ 1424.440960]  [<ffffffff81103237>] sysfs_write_file+0xf1/0x126
+> >[ 1424.440960]  [<ffffffff810b747f>] vfs_write+0xae/0x14a
+> >[ 1424.440960]  [<ffffffff810b75df>] sys_write+0x47/0x6e
+> >[ 1424.440960]  [<ffffffff81002202>] system_call_fastpath+0x16/0x1b
+> >
+> >Original scheduler was cfq.
+> >
+> >Having rebooted and defaulted to noop I tried
+> >
+> >echo noop>/sys/block/vdd/queue/scheduler
+> >
+> >and got:
+> >
+> >[  311.294464] =============================================
+> >[  311.295820] [ INFO: possible recursive locking detected ]
+> >[  311.296603] 2.6.33.3-moocow.20100429-142641 #2
+> >[  311.296833] ---------------------------------------------
+> >[  311.296833] bash/2190 is trying to acquire lock:
+> >[  311.296833]  (s_active){++++.+}, at: [<ffffffff81104630>] remove_dir+0x31/0x39
+> >[  311.296833]
+> >[  311.296833] but task is already holding lock:
+> >[  311.296833]  (s_active){++++.+}, at: [<ffffffff81104849>] sysfs_get_active_two+0x1f/0x46
+> >[  311.296833]
+> >[  311.296833] other info that might help us debug this:
+> >[  311.296833] 4 locks held by bash/2190:
+> >[  311.296833]  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff8110317f>] sysfs_write_file+0x39/0x126
+> >[  311.296833]  #1:  (s_active){++++.+}, at: [<ffffffff81104849>] sysfs_get_active_two+0x1f/0x46
+> >[  311.296833]  #2:  (s_active){++++.+}, at: [<ffffffff81104856>] sysfs_get_active_two+0x2c/0x46
+> >[  311.296833]  #3:  (&q->sysfs_lock){+.+.+.}, at: [<ffffffff8119c3f0>] queue_attr_store+0x44/0x85
+> >[  311.296833]
+> >[  311.296833] stack backtrace:
+> >[  311.296833] Pid: 2190, comm: bash Not tainted 2.6.33.3-moocow.20100429-142641 #2
+> >[  311.296833] Call Trace:
+> >[  311.296833]  [<ffffffff8105e775>] __lock_acquire+0xf9f/0x178e
+> >[  311.296833]  [<ffffffff8105b46c>] ? lockdep_init_map+0x9f/0x52f
+> >[  311.296833]  [<ffffffff8105b46c>] ? lockdep_init_map+0x9f/0x52f
+> >[  311.296833]  [<ffffffff8105cb56>] ? trace_hardirqs_on+0xd/0xf
+> >[  311.296833]  [<ffffffff8105f02e>] lock_acquire+0xca/0xef
+> >[  311.296833]  [<ffffffff81104630>] ? remove_dir+0x31/0x39
+> >[  311.296833]  [<ffffffff8110458d>] sysfs_addrm_finish+0xc8/0x13a
+> >[  311.296833]  [<ffffffff81104630>] ? remove_dir+0x31/0x39
+> >[  311.296833]  [<ffffffff8105cb25>] ? trace_hardirqs_on_caller+0x110/0x134
+> >[  311.296833]  [<ffffffff81104630>] remove_dir+0x31/0x39
+> >[  311.296833]  [<ffffffff811046c0>] sysfs_remove_dir+0x7d/0x88
+> >[  311.296833]  [<ffffffff811ab312>] kobject_del+0x16/0x37
+> >[  311.296833]  [<ffffffff81195489>] elv_iosched_store+0x10a/0x214
+> >[  311.296833]  [<ffffffff8119c416>] queue_attr_store+0x6a/0x85
+> >[  311.296833]  [<ffffffff81103237>] sysfs_write_file+0xf1/0x126
+> >[  311.296833]  [<ffffffff810b747f>] vfs_write+0xae/0x14a
+> >[  311.296833]  [<ffffffff810b75df>] sys_write+0x47/0x6e
+> >[  311.296833]  [<ffffffff81002202>] system_call_fastpath+0x16/0x1b
+> >
+> >Changing back to noop (or, in the initial case to cfq) did not
+> >reproduce the message.
+> >
+> >This does not happen when the elevator is explicitly set on bootup as
+> >part of the kernel's commandline. Compiled-in default is cfq.
+> >
+> 
+> 
+> -- 
+> error compiling committee.c: too many arguments to function
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
