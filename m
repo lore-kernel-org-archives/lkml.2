@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934440Ab0EEKxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 06:53:06 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:63625 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab0EEKxE (ORCPT
+	id S934588Ab0EEKxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 06:53:10 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:47836 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759893Ab0EEKxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 06:53:04 -0400
-Date: Wed, 05 May 2010 12:53:12 +0200
+	Wed, 5 May 2010 06:53:06 -0400
+Date: Wed, 05 May 2010 12:53:11 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv4 2/8] fs/timerfd.c: make use of
- wait_event_interruptible_locked_irq()
-In-reply-to: <11f2d7a2b97b514b33b0f92d9456d0c6e1d7501e.1273054945.git.mina86@mina86.com>
+Subject: [PATCHv4 1/8] wait_event_interruptible_locked() interface
+In-reply-to: <cover.1273054944.git.mina86@mina86.com>
 To: linux-usb@vger.kernel.org
 Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, Greg KH <greg@kroah.com>,
        Kyungmin Park <kyungmin.park@samsung.com>,
@@ -19,68 +18,248 @@ Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, Greg KH <greg@kroah.com>,
        Davide Libenzi <davidel@xmailserver.org>,
        Thomas Gleixner <tglx@linutronix.de>, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Message-id: <4a74b9dde6495da76354f8caca267a57cf440a12.1273054945.git.mina86@mina86.com>
+Message-id: <11f2d7a2b97b514b33b0f92d9456d0c6e1d7501e.1273054945.git.mina86@mina86.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.1
 Content-type: TEXT/PLAIN
 Content-transfer-encoding: 7BIT
 References: <cover.1273054944.git.mina86@mina86.com>
- <11f2d7a2b97b514b33b0f92d9456d0c6e1d7501e.1273054945.git.mina86@mina86.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies the fs/timerfd.c to use the newly created
-wait_event_interruptible_locked_irq() macro.  This replaces an open
-code implementation with a single macro call.
+New wait_event_interruptible{,_exclusive}_locked{,_irq} macros added.
+They work just like versions without _locked* suffix but require the
+wait queue's lock to be held.  Also __wake_up_locked() is now exported
+as to pair it with the above macros.
+
+The use case of this new facility is when one uses wait queue's lock
+to  protect a data structure.  This may be advantageous if the
+structure needs to be protected by a spinlock anyway.  In particular,
+with additional spinlock the following code has to be used to wait
+for a condition:
+
+spin_lock(&data.lock);
+...
+for (ret = 0; !ret && !(condition); ) {
+	spin_unlock(&data.lock);
+	ret = wait_event_interruptible(data.wqh, (condition));
+	spin_lock(&data.lock);
+}
+...
+spin_unlock(&data.lock);
+
+This looks bizarre plus wait_event_interruptible() locks the wait
+queue's lock anyway so there is a unlock+lock sequence where it could
+be avoided.
+
+To avoid those problems and benefit from wait queue's lock, a code
+similar to the following should be used:
+
+/* Waiting */
+spin_lock(&data.wqh.lock);
+...
+ret = wait_event_interruptible_locked(data.wqh, (condition));
+...
+spin_unlock(&data.wqh.lock);
+
+/* Waiting exclusively */
+spin_lock(&data.whq.lock);
+...
+ret = wait_event_interruptible_exclusive_locked(data.whq, (condition));
+...
+spin_unlock(&data.whq.lock);
+
+/* Waking up */
+spin_lock(&data.wqh.lock);
+...
+wake_up_locked(&data.wqh);
+...
+spin_unlock(&data.wqh.lock);
+
+When spin_lock_irq() is used matching versions of macros need to be
+used (*_locked_irq()).
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- fs/timerfd.c |   25 ++++---------------------
- 1 files changed, 4 insertions(+), 21 deletions(-)
+ include/linux/wait.h |  149 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched.c       |    1 +
+ 2 files changed, 150 insertions(+), 0 deletions(-)
 
-diff --git a/fs/timerfd.c b/fs/timerfd.c
-index 98158de..b86ab8e 100644
---- a/fs/timerfd.c
-+++ b/fs/timerfd.c
-@@ -110,31 +110,14 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
- 	struct timerfd_ctx *ctx = file->private_data;
- 	ssize_t res;
- 	u64 ticks = 0;
--	DECLARE_WAITQUEUE(wait, current);
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index a48e16b..fc3c040 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -362,6 +362,155 @@ do {									\
+ 	__ret;								\
+ })
  
- 	if (count < sizeof(ticks))
- 		return -EINVAL;
- 	spin_lock_irq(&ctx->wqh.lock);
--	res = -EAGAIN;
--	if (!ctx->ticks && !(file->f_flags & O_NONBLOCK)) {
--		__add_wait_queue(&ctx->wqh, &wait);
--		for (res = 0;;) {
--			set_current_state(TASK_INTERRUPTIBLE);
--			if (ctx->ticks) {
--				res = 0;
--				break;
--			}
--			if (signal_pending(current)) {
--				res = -ERESTARTSYS;
--				break;
--			}
--			spin_unlock_irq(&ctx->wqh.lock);
--			schedule();
--			spin_lock_irq(&ctx->wqh.lock);
--		}
--		__remove_wait_queue(&ctx->wqh, &wait);
--		__set_current_state(TASK_RUNNING);
--	}
-+	if (file->f_flags & O_NONBLOCK)
-+		res = -EAGAIN;
-+	else
-+		res = wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks);
- 	if (ctx->ticks) {
- 		ticks = ctx->ticks;
- 		if (ctx->expired && ctx->tintv.tv64) {
++
++#define __wait_event_interruptible_locked(wq, condition, exclusive, irq) \
++({									\
++	int __ret = 0;							\
++	DEFINE_WAIT(__wait);						\
++	if (exclusive)							\
++		__wait.flags |= WQ_FLAG_EXCLUSIVE;			\
++	do {								\
++		if (likely(list_empty(&__wait.task_list)))		\
++			__add_wait_queue_tail(&(wq), &__wait);		\
++		set_current_state(TASK_INTERRUPTIBLE);			\
++		if (signal_pending(current)) {				\
++			__ret = -ERESTARTSYS;				\
++			break;						\
++		}							\
++		if (irq)						\
++			spin_unlock_irq(&(wq).lock);			\
++		else							\
++			spin_unlock(&(wq).lock);			\
++		schedule();						\
++		if (irq)						\
++			spin_lock_irq(&(wq).lock);			\
++		else							\
++			spin_lock(&(wq).lock);				\
++	} while (!(condition));						\
++	__remove_wait_queue(&(wq), &__wait);				\
++	__set_current_state(TASK_RUNNING);				\
++	__ret;								\
++})
++
++
++/**
++ * wait_event_interruptible_locked - sleep until a condition gets true
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or a signal is received.
++ * The @condition is checked each time the waitqueue @wq is woken up.
++ *
++ * It must be called with wq.lock being held.  This spinlock is
++ * unlocked while sleeping but @condition testing is done while lock
++ * is held and when this macro exits the lock is held.
++ *
++ * The lock is locked/unlocked using spin_lock()/spin_unlock()
++ * functions which must match the way they are locked/unlocked outside
++ * of this macro.
++ *
++ * wake_up_locked() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * The function will return -ERESTARTSYS if it was interrupted by a
++ * signal and 0 if @condition evaluated to true.
++ */
++#define wait_event_interruptible_locked(wq, condition)			\
++	((condition)							\
++	 ? 0 : __wait_event_interruptible_locked(wq, condition, 0, 0))
++
++/**
++ * wait_event_interruptible_locked_irq - sleep until a condition gets true
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or a signal is received.
++ * The @condition is checked each time the waitqueue @wq is woken up.
++ *
++ * It must be called with wq.lock being held.  This spinlock is
++ * unlocked while sleeping but @condition testing is done while lock
++ * is held and when this macro exits the lock is held.
++ *
++ * The lock is locked/unlocked using spin_lock_irq()/spin_unlock_irq()
++ * functions which must match the way they are locked/unlocked outside
++ * of this macro.
++ *
++ * wake_up_locked() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * The function will return -ERESTARTSYS if it was interrupted by a
++ * signal and 0 if @condition evaluated to true.
++ */
++#define wait_event_interruptible_locked_irq(wq, condition)		\
++	((condition)							\
++	 ? 0 : __wait_event_interruptible_locked(wq, condition, 0, 1))
++
++/**
++ * wait_event_interruptible_exclusive_locked - sleep exclusively until a condition gets true
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or a signal is received.
++ * The @condition is checked each time the waitqueue @wq is woken up.
++ *
++ * It must be called with wq.lock being held.  This spinlock is
++ * unlocked while sleeping but @condition testing is done while lock
++ * is held and when this macro exits the lock is held.
++ *
++ * The lock is locked/unlocked using spin_lock()/spin_unlock()
++ * functions which must match the way they are locked/unlocked outside
++ * of this macro.
++ *
++ * The process is put on the wait queue with an WQ_FLAG_EXCLUSIVE flag
++ * set thus when other process waits process on the list if this
++ * process is awaken further processes are not considered.
++ *
++ * wake_up_locked() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * The function will return -ERESTARTSYS if it was interrupted by a
++ * signal and 0 if @condition evaluated to true.
++ */
++#define wait_event_interruptible_exclusive_locked(wq, condition)	\
++	((condition)							\
++	 ? 0 : __wait_event_interruptible_locked(wq, condition, 1, 0))
++
++/**
++ * wait_event_interruptible_exclusive_locked_irq - sleep until a condition gets true
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or a signal is received.
++ * The @condition is checked each time the waitqueue @wq is woken up.
++ *
++ * It must be called with wq.lock being held.  This spinlock is
++ * unlocked while sleeping but @condition testing is done while lock
++ * is held and when this macro exits the lock is held.
++ *
++ * The lock is locked/unlocked using spin_lock_irq()/spin_unlock_irq()
++ * functions which must match the way they are locked/unlocked outside
++ * of this macro.
++ *
++ * The process is put on the wait queue with an WQ_FLAG_EXCLUSIVE flag
++ * set thus when other process waits process on the list if this
++ * process is awaken further processes are not considered.
++ *
++ * wake_up_locked() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * The function will return -ERESTARTSYS if it was interrupted by a
++ * signal and 0 if @condition evaluated to true.
++ */
++#define wait_event_interruptible_exclusive_locked_irq(wq, condition)	\
++	((condition)							\
++	 ? 0 : __wait_event_interruptible_locked(wq, condition, 1, 1))
++
++
++
+ #define __wait_event_killable(wq, condition, ret)			\
+ do {									\
+ 	DEFINE_WAIT(__wait);						\
+diff --git a/kernel/sched.c b/kernel/sched.c
+index c76ba43..20afbe6 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3861,6 +3861,7 @@ void __wake_up_locked(wait_queue_head_t *q, unsigned int mode)
+ {
+ 	__wake_up_common(q, mode, 1, 0, NULL);
+ }
++EXPORT_SYMBOL_GPL(__wake_up_locked);
+ 
+ void __wake_up_locked_key(wait_queue_head_t *q, unsigned int mode, void *key)
+ {
 -- 
 1.7.1
 
