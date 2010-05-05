@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab0EERcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 13:32:31 -0400
-Received: from mail.issp.bas.bg ([195.96.236.10]:38950 "EHLO mail.issp.bas.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753338Ab0EERc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 13:32:28 -0400
-From: Marin Mitov <mitov@issp.bas.bg>
-Organization: Institute of Solid State Physics
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: linux-next: Tree for May 4 (staging/dt3155v4l) [PATCH]
-Date: Wed, 5 May 2010 20:31:38 +0300
-User-Agent: KMail/1.11.4 (Linux/2.6.34-rc6; KDE/4.2.4; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
-       devel@driverdev.osuosl.org, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-References: <20100504162305.4a07a18a.sfr@canb.auug.org.au> <20100504191223.GB13208@suse.de> <4BE07890.8060707@oracle.com>
-In-Reply-To: <4BE07890.8060707@oracle.com>
+	id S1754573Ab0EERec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 13:34:32 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54957 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670Ab0EEReb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 13:34:31 -0400
+Date: Wed, 5 May 2010 18:33:37 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100505173337.GA1671@srcf.ucam.org>
+References: <1272667021-21312-1-git-send-email-arve@android.com> <201005042223.41370.rjw@sisk.pl> <20100504235644.GA5231@opensource.wolfsonmicro.com> <201005050222.31038.rjw@sisk.pl> <20100505110630.GA5754@opensource.wolfsonmicro.com> <j2xa55d774e1005050500ocaa77b0di8e9eb58ce9c82d58@mail.gmail.com> <20100505135621.GB7139@rakim.wolfsonmicro.main>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201005052031.39043.mitov@issp.bas.bg>
+In-Reply-To: <20100505135621.GB7139@rakim.wolfsonmicro.main>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 May 2010 10:42:08 pm Randy Dunlap wrote:
-> On 05/04/10 12:12, Greg KH wrote:
-> > On Tue, May 04, 2010 at 11:36:04AM -0700, Randy Dunlap wrote:
-> >> On Tue, 4 May 2010 16:23:05 +1000 Stephen Rothwell wrote:
-> >>
-> >>> Hi all,
-> >>>
-> >>> Changes since 20100503:
-> >>
-> >>
-> >> drivers/staging/dt3155v4l/dt3155v4l.c:73: error: implicit declaration of function 'udelay'
-> >> drivers/staging/dt3155v4l/dt3155v4l.c:616: warning: assignment from incompatible pointer type
-> >> drivers/staging/dt3155v4l/dt3155v4l.c:1270: error: implicit declaration of function 'msleep'
-> > 
-> > Ick.  What arch was this?
-> 
-> That is on x86_64.
-> 
-> The config is attached.
-> 
-It's my fault, sorry.
+On Wed, May 05, 2010 at 02:56:22PM +0100, Mark Brown wrote:
 
-Here is a patch solving the problem. Compiles with Randy's config, but does not link
+> If the conclusion is that we don't have anything generic within the
+> kernel then it'd be good to at least have this explicitly spelled out so
+> that we're clear what everyone thinks is going on here and how things
+> are supposed to work.  At the minute it doesn't feel like we've had the
+> discussion so we could end up working at cross purposes.  I don't want
+> to end up in the situation where I have to work around the APIs I'm
+> using without the relevant maintainers having sight of that since that
+> not only am I likely to be missing some existing solution to the problem
+> but is also prone to causing problems maintaining the underlying API.
 
-drivers/staging/built-in.o: In function `format_by_fourcc':
-(.text+0x211da): multiple definition of `format_by_fourcc'
-drivers/media/built-in.o:(.text+0x2a744): first defined here
+We seem to have ended up managing most of our PM infrastructure 
+iteratively. If the concern is more about best practices than intrinsic 
+incompatibilities, I'd lean towards us being better off merging this now 
+and then working things out over the next few releases as we get a 
+better understanding of the implications. The main thing that we have to 
+get right in the short term is the userspace API - everything else is 
+easier to fix up as we go along.
 
-drivers/media/common/saa7146_video.c:struct saa7146_format* format_by_fourcc(struct saa7146_dev *dev, int fourcc)
-drivers/staging/cx25821/cx25821-video.c:struct cx25821_fmt *format_by_fourcc(unsigned int fourcc)
-
-Marin MItov
-
-=========================================
-
-[PATCH] Adding the missing linux/delay.h
-
-The prototypes of udelay() and msleep() are in linux/delay.h,
-so include it.
-
-Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
-
-==========================================================================
---- a/drivers/staging/dt3155v4l/dt3155v4l.c	2010-05-05 08:55:30.000000000 +0300
-+++ b/drivers/staging/dt3155v4l/dt3155v4l.c	2010-05-05 08:57:00.000000000 +0300
-@@ -4,6 +4,7 @@
- #include <linux/pci.h>
- #include <linux/version.h>
- #include <linux/stringify.h>
-+#include <linux/delay.h>
- #include <media/videobuf-dma-contig.h>
- #include <linux/kthread.h>
- 
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
