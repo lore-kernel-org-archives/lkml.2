@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760428Ab0EECEk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 22:04:40 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:42521 "EHLO gir.skynet.ie"
+	id S1760475Ab0EECIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 22:08:06 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34937 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756698Ab0EECEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 22:04:39 -0400
-Date: Wed, 5 May 2010 03:04:20 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: [git pull] drm + gpu fixes
-Message-ID: <alpine.DEB.2.00.1005050302190.16004@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1760425Ab0EECIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 May 2010 22:08:00 -0400
+Date: Wed, 5 May 2010 02:07:21 GMT
+From: "tip-bot for Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       tglx@linutronix.de, ebiederm@xmission.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, ebiederm@xmission.com
+In-Reply-To: <1269936436-7039-3-git-send-email-ebiederm@xmission.com>
+References: <1269936436-7039-3-git-send-email-ebiederm@xmission.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/irq] x86, acpi/irq: pci device dev->irq is an isa irq not a gsi
+Message-ID: <tip-414d3448dbcb40807a1265ace64b2576ef919fbe@git.kernel.org>
+Git-Commit-ID: 414d3448dbcb40807a1265ace64b2576ef919fbe
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1905677848-1273025060=:16004"
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 02:07:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Commit-ID:  414d3448dbcb40807a1265ace64b2576ef919fbe
+Gitweb:     http://git.kernel.org/tip/414d3448dbcb40807a1265ace64b2576ef919fbe
+Author:     Eric W. Biederman <ebiederm@xmission.com>
+AuthorDate: Tue, 30 Mar 2010 01:07:04 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 4 May 2010 13:34:30 -0700
 
---29444707-1905677848-1273025060=:16004
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+x86, acpi/irq: pci device dev->irq is an isa irq not a gsi
 
+Strictly speaking on x86 (where acpi is used) dev->irq must be
+a dual i8259 irq input aka an isa irq.  Therefore we should translate
+that isa irq into a gsi before passing it to a function that
+takes a gsi.
 
-Some misc gpu/drm core fixes for off-by-one and exit paths,
-2 radeon modesetting fix + one command strem parser fix + one fix for an 
-oops for an odd combo of config flags.
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+LKML-Reference: <1269936436-7039-3-git-send-email-ebiederm@xmission.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ drivers/acpi/pci_irq.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-The following changes since commit 88b045077a1462a47503137fd4ca0c31772819ca:
-  David Miller (1):
-        drm/radeon: Fix sparc regression in r300_scratch()
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-linus
-
-Alex Deucher (2):
-      drm/radeon/kms: fix panel scaling adjusted mode setup
-      drm/radeon/kms/legacy: only enable load detection property on DVI-I
-
-Dan Carpenter (4):
-      drivers/gpu/drm/via/via_video.c: fix off by one issue
-      drivers/gpu/drm/drm_memory.c: fix check for end of loop
-      drivers/gpu/drm/radeon/radeon_atombios.c: range check issues
-      drivers/gpu/drm/drm_sysfs.c: sysfs files error handling
-
-Jiri Slaby (1):
-      gpu: vga_switcheroo, fix lock imbalance
-
-Marek Ol¨ák (1):
-      drm/radeon/kms: r300 fix CS checker to allow zbuffer-only fastfill
-
-Robert Fitzsimons (1):
-      drm/radeon/kms/agp The wrong AGP chipset can cause a NULL pointer dereference
-
- drivers/gpu/drm/drm_memory.c                    |    2 +-
- drivers/gpu/drm/drm_sysfs.c                     |   21 +++++---
- drivers/gpu/drm/radeon/atombios.h               |    2 +-
- drivers/gpu/drm/radeon/r100.c                   |    2 +-
- drivers/gpu/drm/radeon/r100_track.h             |    2 +-
- drivers/gpu/drm/radeon/r300.c                   |    2 +-
- drivers/gpu/drm/radeon/radeon_agp.c             |   10 ++--
- drivers/gpu/drm/radeon/radeon_atombios.c        |    4 +-
- drivers/gpu/drm/radeon/radeon_connectors.c      |    2 +
- drivers/gpu/drm/radeon/radeon_encoders.c        |   61 ++++++++++++++++++-----
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c |   12 +----
- drivers/gpu/drm/radeon/radeon_mode.h            |    2 +
- drivers/gpu/drm/via/via_video.c                 |    2 +-
- drivers/gpu/vga/vga_switcheroo.c                |    6 ++-
- 14 files changed, 83 insertions(+), 47 deletions(-)
---29444707-1905677848-1273025060=:16004--
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index b0a71ec..e4804fb 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -401,11 +401,13 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 	 * driver reported one, then use it. Exit in any case.
+ 	 */
+ 	if (gsi < 0) {
++		u32 dev_gsi;
+ 		dev_warn(&dev->dev, "PCI INT %c: no GSI", pin_name(pin));
+ 		/* Interrupt Line values above 0xF are forbidden */
+-		if (dev->irq > 0 && (dev->irq <= 0xF)) {
+-			printk(" - using IRQ %d\n", dev->irq);
+-			acpi_register_gsi(&dev->dev, dev->irq,
++		if (dev->irq > 0 && (dev->irq <= 0xF) &&
++		    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
++			printk(" - using ISA IRQ %d\n", dev->irq);
++			acpi_register_gsi(&dev->dev, dev_gsi,
+ 					  ACPI_LEVEL_SENSITIVE,
+ 					  ACPI_ACTIVE_LOW);
+ 			return 0;
