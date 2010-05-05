@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758248Ab0EEL2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 07:28:21 -0400
-Received: from mail9.surf-town.net ([212.97.132.49]:43274 "EHLO
-	mailgw6.surf-town.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754286Ab0EEL2T (ORCPT
+	id S1758963Ab0EELiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 07:38:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47882 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755463Ab0EELiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 07:28:19 -0400
-X-Greylist: delayed 1550 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 May 2010 07:28:19 EDT
-X-Spam-Score: 0.1
-Message-ID: <4BE1503A.7020702@viketoft.se>
-Date: Wed, 05 May 2010 13:02:18 +0200
-From: Jakob Viketoft <jakob@viketoft.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: eric.y.miao@gmail.com
-CC: Daniel Mack <daniel@caiaq.de>, linux-kernel@vger.kernel.org,
-       Greg KH <gregkh@suse.de>, minimumlaw@rambler.ru
-Subject: Re: [PATCH] colibri.h: Fix building for colibri 270...
-References: <20100416100126.GI30801@buzzloop.caiaq.de> <4BC8493D.60900@bitsim.com> 	<20100416112820.GM30801@buzzloop.caiaq.de> <20100416112931.GN30801@buzzloop.caiaq.de> 	<n2mf17812d71005050045x4359dfeu2f563c3ac0a42223@mail.gmail.com> 	<20100505080015.GD30801@buzzloop.caiaq.de> <u2nf17812d71005050228x3c19060n9a096d7bcc1db4d6@mail.gmail.com> 	<20100505094405.GG30801@buzzloop.caiaq.de> <j2tf17812d71005050247ybaf95719l27a9f1f403436b7f@mail.gmail.com> 	<20100505095339.GH30801@buzzloop.caiaq.de> <z2jf17812d71005050321m2520f76cv95801b0539800db5@mail.gmail.com>
-In-Reply-To: <z2jf17812d71005050321m2520f76cv95801b0539800db5@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 5 May 2010 07:38:12 -0400
+Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move
+ perf on top of TP
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, efault@gmx.de, avi@redhat.com, paulus@samba.org,
+       acme@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <4BE1406C.2000400@kernel.org>
+References: <1272976724-14312-1-git-send-email-tj@kernel.org>
+	 <1272994165.1642.203.camel@laptop>  <4BE0FB68.7080403@kernel.org>
+	 <1273050400.1642.229.camel@laptop>  <4BE13B33.3030709@kernel.org>
+	 <1273053073.1642.235.camel@laptop>  <4BE1406C.2000400@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 May 2010 13:38:08 +0200
+Message-ID: <1273059488.1642.245.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
-
-I didn't see this first as the e-mail address jakob.viketoft@bitsim.com 
-is being shut down (changing jobs).
-
-Eric Miao wrote:
-> On Wed, May 5, 2010 at 5:53 PM, Daniel Mack <daniel@caiaq.de> wrote:
->> On Wed, May 05, 2010 at 05:47:14PM +0800, Eric Miao wrote:
->>> On Wed, May 5, 2010 at 5:44 PM, Daniel Mack <daniel@caiaq.de> wrote:
->>>>> And I'm not able to find
->>>>> drivers/pcmcia/pxa2xx_colibri.c as well.
->>>> Erm - how is that related to the patch in question?
->>>>
->>> The error seems to be (as in previous mail):
->>>
->>>  CC      drivers/pcmcia/pxa2xx_colibri.o
->>> In file included from drivers/pcmcia/pxa2xx_colibri.c:25:
->>> arch/arm/mach-pxa/include/mach/colibri.h:13: error: expected ')'
->>> before '*' token
->>> make[2]: *** [drivers/pcmcia/pxa2xx_colibri.o] Error 1
->>> make[1]: *** [drivers/pcmcia] Error 2
->>> make: *** [drivers] Error 2
->> Ah, sorry.
-
-The pcmcia-patch isn't my work, but that of Alex A. Mihaylov 
-(minimumlaw@rambler.ru). I was hoping that he would be pushing those 
-bits upstream separately, but I think some things needs to me shifted 
-around a bit to be accepted.
-
->>
->>> And actually, inclusion of <mach/mfp.h> is better to be placed where it's
->>> used, i.e. drivers/pcmcia/pxa2xx_colibri.c.
->> In general I agree, but in this case, mfp_t is used in this header file,
->> so every piece of code which includes colibri.h will need both
->> <mach/mfp.h> and <net/ax88796.h>. And as this is a rule for all users, I
->> think the right place for the inclusion is the header file?
->>
+On Wed, 2010-05-05 at 11:54 +0200, Tejun Heo wrote:
+> Hello,
 > 
-> I see.
+> On 05/05/2010 11:51 AM, Peter Zijlstra wrote:
+> >> I was wondering the other way around - ie. the possibility to make
+> >> perf optional and maybe even as a module which depends on TPs, which
+> >> would be nicer than the current situation and make the code less
+> >> cluttered too. 
+> > 
+> > I really really hate making perf rely on tracepoints.
 > 
-> Acked-by: Eric Miao <eric.y.miao@gmail.com>
+> Hmmm.... may I ask why? 
 
-Thanks.
+Because it will bloat the kernel for no reason. And I don't like the
+endless indirections either.
 
-> 
-> 
->> Apart from that, this fix will work for both mainline and -stable, which
->> makes things easier :)
->>
-> 
-> I'll take it to -pxa then.
+Like said, I already really dislike x86 won't even build without
+CONFIG_PERF_EVENTS, adding a hard requirement on TRACEEVENTS will only
+make the whole thing even worse.
 
-Sounds good!
+Sure, most distro configs will include both perf and tracepoints, but I
+don't want to burden everybody who wants to use perf with the tracepoint
+overhead.
 
-	/Jakob
+As it stands I'd argue to simply drop this whole idea. The SCHED_EVENT()
+thing doesn't look like its worth the obfuscation and I'm very much
+opposed to making perf and sched_notifiers rely on tracepoints.
+
+I don't see the few direct functions calls we have now as a big problem
+and it sure as hell is a lot easier to read than the whole tracepoint
+indirection mess.
+
+If you care about the call overhead of the perf hooks, we can do the
+same immediate value optimization to them as would be done to the
+tracepoints.
+
 
