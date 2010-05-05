@@ -1,139 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934254Ab0EEMNE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 08:13:04 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:45085 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934114Ab0EEMM7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 08:12:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=S1wVy+Gccd08Onaqwrr9BpdrUkhC2O0bpPNjnl71PxjlhPbztL52gCtu784X/96gf5
-         zGvqIqUcFfr6vpGHWUrxthOBrU2kDGjVgHY6+4E9t1jM2fI1HC5/Uho3NL85E3cB1rUg
-         qQndnLtqJBrZ3zlQKpd+gZw3XFP16StlwS6ck=
-Message-ID: <4BE160C6.90404@gmail.com>
-Date: Wed, 05 May 2010 14:12:54 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.5pre) Gecko/20100430 SUSE/3.1b2-7.1 Thunderbird/3.1b2
+	id S934357Ab0EEMNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 08:13:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60881 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934264Ab0EEMNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 08:13:09 -0400
+X-User-Agent: K-9 Mail for Android
+In-Reply-To: <4BE11E8A.2090804@redhat.com>
+References: =?US-ASCII?Q?=3C1272812038-32484-1-git-send-email-avi=40redha?= =?US-ASCII?Q?t=2Ecom=3E=09_=3C1272812038-32484-2-git-send-email-avi?= =?US-ASCII?Q?=40redhat=2Ecom=3E=09_=3Cu2p73c1f2161005021038gce35c1bb?= =?US-ASCII?Q?pca6ec119d24e646e=40mail?= =?US-ASCII?Q?=2Egmail=2Ecom=3E=09_=3C4BDDBA18=2E30?= =?US-ASCII?Q?80909=40redhat=2Ecom=3E_=3C4BDF4407=2E8000503=40zytor=2Eco?= =?US-ASCII?Q?m=3E=09_=3C4BDFCF9F=2E3030600=40?= =?US-ASCII?Q?redhat=2Ecom=3E_=3C1272996927=2E2?= =?US-ASCII?Q?833=2E13=2Ecamel=40sbs-t61=2E?= =?US-ASCII?Q?sc=2Eintel=2Ecom=3E_=3C4BE06642=2E?= =?US-ASCII?Q?6080702=40zytor=2Ecom=3E_=3C4BE?= =?US-ASCII?Q?11E8A=2E2090804=40redhat=2Ecom=3E?=
+Content-Type: multipart/mixed; boundary="----Y7FVY1JO6VB3J2FQHXBNF2ER9H2WNG"
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       Neil Horman <nhorman@tuxdriver.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Resource limits interface proposal [was: pull request for writable
- limits]
-References: <4B1D32D1.4090404@gmail.com> <4B9136F4.4010007@gmail.com> <alpine.LFD.2.00.1003201207160.18017@i5.linux-foundation.org> <20100321060607.GA4062@x200> <alpine.LFD.2.00.1003211128520.18017@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1003211128520.18017@i5.linux-foundation.org>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 1/2] x86: eliminate TS_XSAVE
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 05 May 2010 05:12:11 -0700
+To: Avi Kivity <avi@redhat.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Brian Gerst <brgerst@gmail.com>,
+       "Cui, Dexuan" <dexuan.cui@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Message-ID: <04186ca0-c685-4a12-a3d2-112e8d1abf28@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+------Y7FVY1JO6VB3J2FQHXBNF2ER9H2WNG
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: base64
 
-On 03/21/2010 07:38 PM, Linus Torvalds wrote:
-> Or even just _one_ system call that takes two pointers, and can do an 
-> atomic replace-and-return-the-old-value, like 'sigaction()' does, ie 
-> something like
-> 
-> 	int prlimit64(pid, limit, const struct rlimit64 *new, struct rlimit64 *old);
-> 
-> wouldn't that be a nice generic interface?
+WW91IGRvbid0IHdhbnQgdG8gdXNlIGJvb2wgc2luY2Ugc29tZSBnY2MgdmVyc2lvbnMgZG9uJ3Qg
+aGFuZGxlIGJvb2wgaW4gYXNtIHdlbGw7IHVzZSBhIHU4IGluc3RlYWQuIAoKIkF2aSBLaXZpdHki
+IDxhdmlAcmVkaGF0LmNvbT4gd3JvdGU6Cgo+T24gMDUvMDQvMjAxMCAwOToyNCBQTSwgSC4gUGV0
+ZXIgQW52aW4gd3JvdGU6Cj4+Cj4+IEkgd291bGQgbGlrZSB0byByZXF1ZXN0IG9uZSBjaGFuZ2Us
+IGhvd2V2ZXIuICBJIHdvdWxkIGxpa2UgdG8gc2VlIHRoZQo+PiBhbHRlcm5hdGl2ZXMgY29kZSB0
+byBiZToKPj4KPj4gCW1vdmIgJDAscmVnCj4+IAltb3ZiICQxLHJlZwo+Pgo+PiAuLi4gaW5zdGVh
+ZCBvZiB1c2luZyB4b3IgKHdoaWNoIGhhcyB0byBiZSBwYWRkZWQgd2l0aCBOT1BzLCB3aGljaCBp
+cyBvZgo+PiBjb3Vyc2UgcG9pbnRsZXNzIHNpbmNlIHRoZSBzbG90IGlzIGEgZml4ZWQgc2l6ZS4p
+Cj4KPlJpZ2h0Lgo+Cj4+IEkgd291bGQgc3VnZ2VzdCB1c2luZwo+PiBhIGJ5dGUtc2l6ZWQgdmFy
+aWFibGUgaW5zdGVhZCBvZiBhIGR3b3JkLXNpemUgdmFyaWFibGUgdG8gc2F2ZSBhIGZldwo+PiBi
+eXRlcywgdG9vLgo+PiAgICAKPgo+SSB1c2VkIGEgYm9vbCwgYW5kIHRoZSBjb2RlIGFscmVhZHkg
+Y29tcGlsZXMgdG8gYSBieXRlIG1vdi4gIFRob3VnaCBpdCAKPmNvdWxkIGJlIGFyZ3VlZCB0aGF0
+IGEgd29yZCBpbnN0cnVjdGlvbiBpcyBiZXR0ZXIgc2luY2UgaXQgYXZvaWRzIGEgCj5mYWxzZSBk
+ZXBlbmRlbmN5LCBhbmQgYWxsb3dzIGEgcHJlY2VkaW5nIGluc3RydWN0aW9uIHRoYXQgbW9kaWZp
+ZXMgJXJlZyAKPnRvIGJlIGV4ZWN1dGVkIGFmdGVyIHRoZSBtb3YgaW5zdHJ1Y3Rpb24uCj4KPj4g
+T25jZSB0aGUganVtcCBsYWJlbCBmcmFtZXdvcmsgaXMgaW50ZWdyYXRlZCBhbmQgaGFzIG1hdHVy
+ZWQsIEkgdGhpbmsgd2UKPj4gc2hvdWxkIGNvbnNpZGVyIHVzaW5nIGl0IHRvIHNhdmUgdGhlIG1v
+di90ZXN0L2p1bXAuCj4+ICAgIAo+Cj5JSVJDIHRoYXQgaGFzIGFuIGltcGxpZWQgdW5saWtlbHko
+KSB3aGljaCBpc24ndCBzdWl0YWJsZSBoZXJlPwo+Cj5QZXJoYXBzIHRoZSBpbW1lZGlhdGUgdmFs
+dWVzIHBhdGNoZXMuCj4KPi0tIAo+ZXJyb3IgY29tcGlsaW5nIGNvbW1pdHRlZS5jOiB0b28gbWFu
+eSBhcmd1bWVudHMgdG8gZnVuY3Rpb24KPgoKLS0gClNlbnQgZnJvbSBteSBBbmRyb2lkIHBob25l
+IHdpdGggSy05IE1haWwuIFBsZWFzZSBleGN1c2UgbXkgYnJldml0eS4=
 
-So I ended up with thinking about these possibilities:
+------Y7FVY1JO6VB3J2FQHXBNF2ER9H2WNG--
 
-1) internal representation of limits will stay as is in signal_struct,
-i.e. long limits with infinity being ~0ul. This is the least intrusive
-solution. The new prlimit64 will convert rlimit64 to rlimit and pass
-down to do_prlimit. With setrlimit and getrilimit just as wrappers it
-will look like:
-prlimit64(pid, resource, new64, old64) ->
-    new = convert_to_rlim(new64)
-    tsk = find_task(pid)
-    do_prlimit(tsk, resource, new, old)
-    old64 = convert_to_rlim64(old)
-setrlimit(resource, rlim) ->
-    do_prlimit(current, resource, rlim, NULL)
-getrlimit(resource, rlim) ->
-    do_prlimit(current, resource, NULL, rlim)
-with appropriate copy_{from,to}_user. (And setrlimit+getrlimit will be
-scheduled for removal with all the compat crap around them.)
-
-It may also be that rlimit64 will contain flags like:
-#define RLIM64_CUR_INFINITY     0x00000001
-#define RLIM64_MAX_INFINITY     0x00000002
-struct rlimit64 {
-        __u64 rlim_cur;
-        __u64 rlim_max;
-        __u32 flags;
-};
-if I understood Alexey correctly to separate limits values from
-infinity? flags then will be converted to ~0ul when converting from
-rlimit64 to rlimit above too.
-
-The drawback is when a 32-bit user passes down a value >= (1 << 32),
-EINVAL shall occur.
-
-The pros are, no locking, no magic, longs are naturally atomic. Still
-with arch-independent parameter for sys_prlimit64.
-
-
-2) Introduce an rlimit lock and move every user to the rlimit helpers
-which appropriately lock the accesses. And making locking a nop when
-BITS_PER_LONG == 64. Then we can have rlimit64 in signal_struct and
-everything will happen on 64-bit limit values.
-
-If we decide to separate infinity from value with the flags above, we
-should also reconsider what infinity will be. Much code just counts with
-rlimit.rlim_{cur,max} being the highest possible value and doesn't count
-with something like rlimit64.flags. This will result in locks not-being
-a nop on 64-bit, because we want fresh rlim_cur+flags and rlim_max+flags
-pairs. We could also have the flags solely in the syscall interface and
-~0ULL count as infty internally.
-
-In this case the situation will be
-prlimit64(pid, resource, new64, old64) ->
-    tsk = find_task(pid)
-    do_prlimit(tsk, resource, new64, old64)
-setrlimit(resource, rlim) ->
-    rlim64 = convert_to_rlim64(rlim)
-    do_prlimit(current, resource, rlim64, NULL)
-getrlimit(resource, rlim) ->
-    do_prlimit(current, resource, NULL, rlim64)
-    rlim = convert_to_rlim(rlim64)
-
-We cannot fail in prlimit64 due to limited space in longs on 32-bit,
-however we added locking which may slow things down. I have no idea how
-contended the lock will be, but as rlimits are used in the scheduler and
-filesystem core, it might affect performance. I might measure if this is
-of interest.
-
-
-3) [inspired by Jan Kara's idea who knows how inode handling works] It's
-some kind of similar to 2), we just avoid locks similarly to
-inode->i_size accessors.
-
-It doesn't solve the case of separate flags though.
-
-
-
-Just a side note, we cannot use the rlimit64 name which is already
-reserved in glibc headers for limits handling.
-
-I will appreciate any comments.
-
-thanks,
--- 
-js
-
--- 
-js
-suse labs
-
--- 
-js
