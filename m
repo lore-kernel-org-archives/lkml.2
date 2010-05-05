@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab0EEXua (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 19:50:30 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48151 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752324Ab0EEXu2 (ORCPT
+	id S1754092Ab0EEX4t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 19:56:49 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:48334 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753133Ab0EEX4r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 19:50:28 -0400
-Date: Thu, 6 May 2010 00:55:57 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       devel@driverdev.osuosl.org
-Subject: Re: [PATCH -next] staging/rar_register: depends on PCI
-Message-ID: <20100506005557.7d458c7b@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100505154522.c3d7807c.randy.dunlap@oracle.com>
-References: <20100505123409.ed5678a2.sfr@canb.auug.org.au>
-	<20100505154522.c3d7807c.randy.dunlap@oracle.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 5 May 2010 19:56:47 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=tGIhilUXKJUmqYHMxhhIR3OXJwgIP1fgk2md4YDUbE6nitsopg6XkyQli6VPsVTPp
+	pAdWzIlbsyl01EKJuTyZw==
+MIME-Version: 1.0
+In-Reply-To: <20100505234755.GI29604@atomide.com>
+References: <20100505202826.GB7450@linux.intel.com>
+	 <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
+	 <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
+	 <20100505234755.GI29604@atomide.com>
+Date: Wed, 5 May 2010 16:56:39 -0700
+Message-ID: <l2ra55d774e1005051656wbf4f3d7cr8cc9de0478e509f1@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+From: Brian Swetland <swetland@google.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 May 2010 15:45:22 -0700
-Randy Dunlap <randy.dunlap@oracle.com> wrote:
+On Wed, May 5, 2010 at 4:47 PM, Tony Lindgren <tony@atomide.com> wrote:
+> * Brian Swetland <swetland@google.com> [100505 14:34]:
+>> On Wed, May 5, 2010 at 2:12 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> >>
+>> >> Oh, like tell the modem that user mode has handled the ring event and
+>> >> its ok to un-block?
+>> >
+>> > No, that's not how it works.  It would go like this:
+>> >
+>> >        The modem IRQ handler queues its event to the input subsystem.
+>> >        As it does so the input subsystem enables a suspend blocker,
+>> >        causing the system to stay awake after the IRQ is done.
+>
+> How about instead the modem driver fails to suspend until it's done?
+>
+> Each driver could have a suspend_policy sysfs entry with options such
+> as [ forced | safe ]. The default would be forced. Forced would
+> be the current behaviour, while safe would refuse suspend until the
+> driver is done processing.
+>
+>> >        The user program enables its own suspend blocker before reading
+>> >        the input queue.  When the queue is empty, the input subsystem
+>> >        releases its suspend blocker.
+>
+> And also the input layer could refuse to suspend until it's done.
+>
+>> >        When the user program finishes processing the event, it
+>> >        releases its suspend blocker.  Now the system can go back to
+>> >        sleep.
+>
+> And here the user space just tries to suspend again when it's done?
+> It's not like you're trying to suspend all the time, so it should be
+> OK to retry a few times.
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> rar_register driver uses PCI interfaces and PCI devices, so it
-> should depend on PCI.
-> 
-> Also format the Kconfig help text as normally done.
-> 
-> drivers/staging/rar_register/rar_register.c:623: error: implicit declaration of function 'pci_dev_get'
-> drivers/staging/rar_register/rar_register.c:623: warning: assignment makes pointer from integer without a cast
-> 
-> Note:  The memrar driver selects this driver's Kconfig symbol, even when
-> PCI is not enabled.  That select could be changed to
-> 	select RAR_REGISTER if PCI
-> but that would still result in build errors when PCI is not enabled, namely:
-> drivers/built-in.o: In function `memrar_fini_rar_resources':
-> memrar_handler.c:(.text+0x2391b7): undefined reference to `unregister_rar'
-> drivers/built-in.o: In function `memrar_registration_callback':
-> memrar_handler.c:(.text+0x23925a): undefined reference to `rar_get_address'
-> drivers/built-in.o: In function `memrar_init':
-> memrar_handler.c:(.init.text+0x12c7b): undefined reference to `register_rar'
-> memrar_handler.c:(.init.text+0x12c97): undefined reference to `register_rar'
-> 
-> Does anyone have suggestions for this?
+We actually are trying to suspend all the time -- that's our basic
+model -- suspend whenever we can when something doesn't prevent it.
 
-Yes - memrar should depend upon the RAR_REGISTER
+>> > At no point does the user program have to communicate anything to the
+>> > modem driver, and at no point does it have to do anything out of the
+>> > ordinary except to enable and disable a suspend blocker.
+>>
+>> Exactly -- and you can use the same style of overlapping suspend
+>> blockers with other drivers than input, if the input interface is not
+>> suitable for the particular interaction.
+>
+> Would the suspend blockers still be needed somewhere in the example
+> above?
 
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+How often would we retry suspending?
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+If we fail to suspend, don't we have to resume all the drivers that
+suspended before the one that failed?  (Maybe I'm mistaken here)
+
+With the suspend block model we know the moment we're capable of
+suspending and then can suspend at that moment.  Continually trying to
+suspend seems like it'd be inefficient power-wise (we're going to be
+doing a lot more work as we try to suspend over and over, or we're
+going to retry after a timeout and spend extra time not suspended).
+
+We can often spend minutes (possibly many) at a time preventing
+suspend when the system is doing work that would be interrupted by a
+full suspend.
+
+Brian
