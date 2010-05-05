@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758821Ab0EEVg3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 17:36:29 -0400
-Received: from mail.profilenamibia.com ([41.198.34.138]:27453 "EHLO
-	pr000001.ProfileSafaris.local" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752752Ab0EEVg1 (ORCPT
+	id S1758838Ab0EEVhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 17:37:46 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:57750 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758381Ab0EEVho convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 17:36:27 -0400
-X-Greylist: delayed 15421 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 May 2010 17:36:27 EDT
-Reply-To: <ksparts0003@gmail.com>
-From: "kelly Joe" <ksparts0003@gmail.com>
-Subject: Order Enquires Below
-Date: Wed, 5 May 2010 16:34:40 +0100
+	Wed, 5 May 2010 17:37:44 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=PdCTd5LPkuT+DkCZri1TbMvsvwwmUYxXlz+Zf+Sg1x++vuOaltxb2qFcZUU/APeqm
+	uBxnkg1AlID+yVyIezgGg==
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <PR000001haOCHfBrhNn000008b3@pr000001.ProfileSafaris.local>
-X-OriginalArrivalTime: 05 May 2010 15:34:48.0946 (UTC) FILETIME=[7F44F520:01CAEC68]
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
+References: <20100505202826.GB7450@linux.intel.com>
+	 <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
+Date: Wed, 5 May 2010 14:37:39 -0700
+Message-ID: <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+From: Brian Swetland <swetland@google.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 5, 2010 at 2:12 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>>
+>> Oh, like tell the modem that user mode has handled the ring event and
+>> its ok to un-block?
+>
+> No, that's not how it works.  It would go like this:
+>
+>        The modem IRQ handler queues its event to the input subsystem.
+>        As it does so the input subsystem enables a suspend blocker,
+>        causing the system to stay awake after the IRQ is done.
+>
+>        The user program enables its own suspend blocker before reading
+>        the input queue.  When the queue is empty, the input subsystem
+>        releases its suspend blocker.
+>
+>        When the user program finishes processing the event, it
+>        releases its suspend blocker.  Now the system can go back to
+>        sleep.
+>
+> At no point does the user program have to communicate anything to the
+> modem driver, and at no point does it have to do anything out of the
+> ordinary except to enable and disable a suspend blocker.
 
+Exactly -- and you can use the same style of overlapping suspend
+blockers with other drivers than input, if the input interface is not
+suitable for the particular interaction.
 
-Hello,
-
-Please check for prices and availability for the Items numbers below for me:
-
-(1)	Fargo  DTC550 Dual Sided ID Card Printers
-(2)	GPS FURUNO 32 #43
-(3)	fargo 86200 YMCKO Color Ribbon - 500 Images - DTC550
-(4)	HP OEM INKJET CARTRIDGES C6578DN 
-(5)	HP OEM TONER CARTRIDGES C9733A
-(6)	Motorola cp 200 Vhf & uhf 16 channel
-
-
-
-Payment is prepaid via credit card.  As soon as I receive your full quote I will email you with my credit card details.
-
-email full quote to  (ksparts0003@gmail.com)
-
-Kelly joe
-KSP & Mechanical Equipment Inc
-83 Jericho Road,
-Middlebury, CT 06762
-Tel-800-765-3434
-Fax- 866-420-2257
-Email-  ksparts0003@gmail.com
+Brian
