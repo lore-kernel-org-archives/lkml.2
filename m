@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934385Ab0EEKHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 06:07:31 -0400
-Received: from ey-out-2122.google.com ([74.125.78.25]:59301 "EHLO
-	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932398Ab0EEKH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 06:07:29 -0400
-Message-ID: <4BE14335.10702@ru.mvista.com>
-Date: Wed, 05 May 2010 14:06:45 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: Suspicious compilation warning
-References: <k2ncecb6d8f1004191627w3cd36450xf797f746460abb09@mail.gmail.com>	<20100420155122.6f2c26eb.akpm@linux-foundation.org> <20100420230719.GB1432@n2100.arm.linux.org.uk>
-In-Reply-To: <20100420230719.GB1432@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758964Ab0EEKPK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 06:15:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27964 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120Ab0EEKPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 06:15:06 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1273004398-19760-36-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <1273004398-19760-36-git-send-email-paulmck@linux.vnet.ibm.com> <20100504201934.GA19234@linux.vnet.ibm.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+       laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com,
+       Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH tip/core/rcu 36/48] nfs: __rcu annotations
+Date: Wed, 05 May 2010 11:14:03 +0100
+Message-ID: <23175.1273054443@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Russell King - ARM Linux wrote:
+>  struct nfs_delegation {
+>  	struct list_head super_list;
+> -	struct rpc_cred *cred;
+> +	struct rpc_cred __rcu *cred;
+>  	struct inode *inode;
+>  	nfs4_stateid stateid;
+>  	fmode_t type;
 
->>> I get this warning while compiling for ARM/SA1100:
->>>
->>> mm/sparse.c: In function '__section_nr':
->>> mm/sparse.c:135: warning: 'root' is used uninitialized in this function
->>>
->>> With a small patch in fs/proc/meminfo.c, I find that NR_SECTION_ROOTS
->>> is zero, which certainly explains the warning.
->>>
->>> # cat /proc/meminfo
->>> NR_SECTION_ROOTS=0
->>> NR_MEM_SECTIONS=32
->>> SECTIONS_PER_ROOT=512
->>> SECTIONS_SHIFT=5
->>> MAX_PHYSMEM_BITS=32
->>>       
->> hm, who owns sparsemem nowadays? Nobody identifiable.
->>
->> Does it make physical sense to have SECTIONS_PER_ROOT > NR_MEM_SECTIONS?
->>     
->
-> Well, it'll be about this number on everything using sparsemem extreme:
->
-> #define SECTIONS_PER_ROOT       (PAGE_SIZE / sizeof (struct mem_section))
->
-> and with only 32 sections, this is going to give a NR_SECTION_ROOTS value
-> of zero.  I think the calculation of NR_SECTIONS_ROOTS is wrong.
->
-> #define NR_SECTION_ROOTS        (NR_MEM_SECTIONS / SECTIONS_PER_ROOT)
->
-> Clearly if we have 1 mem section, we want to have one section root, so
-> I think this division should round up any fractional part, thusly:
->
-> #define NR_SECTION_ROOTS        ((NR_MEM_SECTIONS + SECTIONS_PER_ROOT - 1) / SECTIONS_PER_ROOT)
->   
+That's unnecessary.  I posted a patch that removed the usage of RCU on that
+pointer:
 
-   There's DIV_ROUND_UP() macro for this kind of calculation.
+	Date: Tue, 20 Apr 2010 11:26:13 +0100
+	Subject: NFS: Fix RCU issues in the NFSv4 delegation code
 
-WBR, Sergei
+Did Trond take it?
 
+David
