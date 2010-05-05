@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab0EEXss (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 19:48:48 -0400
-Received: from kroah.org ([198.145.64.141]:60418 "EHLO coco.kroah.org"
+	id S1755966Ab0EEXtG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 19:49:06 -0400
+Received: from kroah.org ([198.145.64.141]:60478 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043Ab0EEXsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 19:48:46 -0400
-Date: Wed, 5 May 2010 16:42:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4.1 5/8] USB: g_ffs: the FunctionFS gadget driver
-Message-ID: <20100505234206.GA10165@kroah.com>
-References: <cover.1273054944.git.mina86@mina86.com>
- <11f2d7a2b97b514b33b0f92d9456d0c6e1d7501e.1273054945.git.mina86@mina86.com>
- <4a74b9dde6495da76354f8caca267a57cf440a12.1273054945.git.mina86@mina86.com>
- <989d26541d5d1ef75f71576f6f295796dcaf0af8.1273054945.git.mina86@mina86.com>
- <81b16ab751d2b6075ec6358e355909f6087f4d23.1273054945.git.mina86@mina86.com>
- <19153ae5a33bfe27dd66f83ff1ea88cfd039fba7.1273054945.git.mina86@mina86.com>
- <2dfc60eedd6b15c55c33d462db51f775657e8120.1273061972.git.mina86@mina86.com>
+	id S1752324Ab0EEXtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 19:49:03 -0400
+Subject: patch usb-gadget-webcam-depends-on-video_dev.patch added to gregkh-2.6 tree
+To: randy.dunlap@oracle.com, dbrownell@users.sourceforge.net, gregkh@suse.de,
+       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+       sfr@canb.auug.org.au
+From: <gregkh@suse.de>
+Date: Wed, 05 May 2010 16:48:22 -0700
+In-Reply-To: <20100505154626.2c036f1d.randy.dunlap@oracle.com>
+Message-ID: <12731033021951@kroah.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2dfc60eedd6b15c55c33d462db51f775657e8120.1273061972.git.mina86@mina86.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=ANSI_X3.4-1968
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 02:25:55PM +0200, Michal Nazarewicz wrote:
-> The Function Filesystem (FunctioFS) lets one create USB
-> composite functions in user space in the same way as GadgetFS
-> lets one create USB gadgets in user space.  This allows
-> creation of composite gadgets such that some of the functions
-> are implemented in kernel space (for instance Ethernet, serial
-> or mass storage) and other are implemented in user space.
-> 
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
-> There was a trivial bug in my previous patch.  The delta is:
-> 
-> diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
-> index bed3641..4b0e4a0 100644
-> --- a/drivers/usb/gadget/g_ffs.c
-> +++ b/drivers/usb/gadget/g_ffs.c
-> @@ -369,9 +369,8 @@ static int gfs_unbind(struct usb_composite_dev *cdev)
->  
->  
->  static int __gfs_do_config(struct usb_configuration *c,
-> -			   int (*eth)(struct usb_configuration *c,
-> -				      u8 ethaddr[ETH_ALEN]),
-> -			   u8 ethaddr[ETH_ALEN])
-> +			   int (*eth)(struct usb_configuration *c, u8 *ethaddr),
-> +			   u8 *ethaddr)
->  {
->  	int ret;
-> 
-> ETH_ALEN is not defined if g_ffs is configured not to include ECM nor RNDIS.
-> 
-> Sorry about the confusion.
 
-No problem, I merged it with the previous patch.
+This is a note to let you know that I've just added the patch titled
 
-thanks,
+    Subject: USB: gadget webcam: depends on VIDEO_DEV
 
-greg k-h
+to my gregkh-2.6 tree.  Its filename is
+
+    usb-gadget-webcam-depends-on-video_dev.patch
+
+This tree can be found at 
+    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
+
+
+>From randy.dunlap@oracle.com  Wed May  5 16:12:11 2010
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Date: Wed, 5 May 2010 15:46:26 -0700
+Subject: USB: gadget webcam: depends on VIDEO_DEV
+To: Stephen Rothwell <sfr@canb.auug.org.au>, lud <linux-usb@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de
+Message-ID: <20100505154626.2c036f1d.randy.dunlap@oracle.com>
+
+From: Randy Dunlap <randy.dunlap@oracle.com>
+
+g_webcam uses v4l[2] interfaces, so it should depend on VIDEO_DEV.
+
+ERROR: "v4l2_event_unsubscribe" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "v4l2_event_queue" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "video_device_release" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "video_usercopy" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "v4l2_event_dequeue" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "video_register_device" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "video_device_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "v4l2_event_subscribe" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "video_unregister_device" [drivers/usb/gadget/g_webcam.ko] ndefined!
+ERROR: "v4l2_event_pending" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "v4l2_fh_init" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "v4l2_event_init" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "video_devdata" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "v4l2_event_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "v4l2_fh_add" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "v4l2_fh_del" [drivers/usb/gadget/g_webcam.ko] undefined!
+ERROR: "v4l2_fh_exit" [drivers/usb/gadget/g_webcam.ko] undefined!
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/usb/gadget/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -879,6 +879,7 @@ config USB_G_HID
+ # or video class gadget drivers), or specific hardware, here.
+ config USB_G_WEBCAM
+ 	tristate "USB Webcam Gadget"
++	depends on VIDEO_DEV
+ 	help
+ 	  The Webcam Gadget acts as a composite USB Audio and Video Class
+ 	  device. It provides a userspace API to process UVC control requests
+
