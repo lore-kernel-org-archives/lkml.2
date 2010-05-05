@@ -1,99 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759042Ab0EEWrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 18:47:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64682 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759002Ab0EEWrd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 18:47:33 -0400
-Date: Wed, 5 May 2010 15:45:22 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       devel@driverdev.osuosl.org
-Subject: [PATCH -next] staging/rar_register: depends on PCI
-Message-Id: <20100505154522.c3d7807c.randy.dunlap@oracle.com>
-In-Reply-To: <20100505123409.ed5678a2.sfr@canb.auug.org.au>
-References: <20100505123409.ed5678a2.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4BE1F57D.0152:SCFMA922111,ss=1,fgs=0
+	id S1754993Ab0EEWxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 18:53:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40479 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751009Ab0EEWxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 18:53:18 -0400
+Date: Wed, 5 May 2010 15:51:39 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 10/13] tty: untangle locking of wait_until_sent
+Message-ID: <20100505225139.GA19163@suse.de>
+References: <1273012433-6125-1-git-send-email-arnd@arndb.de>
+ <1273012433-6125-11-git-send-email-arnd@arndb.de>
+ <20100505205905.3c87b403@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100505205905.3c87b403@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, May 05, 2010 at 08:59:05PM +0100, Alan Cox wrote:
+> > Some wait_until_sent versions require the big
+> > tty mutex, others don't and some callers of
+> > wait_until_sent already hold it while other don't.
+> > That leads to recursive use of the BTM in these
+> > functions, which we're trying to get rid of.
+> 
+> I don't believe any of the currently live ones do.
+> 
+> >  drivers/char/amiserial.c      |    6 +++---
+> >  drivers/char/generic_serial.c |    2 +-
+> 
+> Both ex drivers
+> 
+> >  drivers/char/hvc_console.c    |    2 +-
+> >  drivers/char/hvcs.c           |    2 +-
+> 
+> Doesn't seemn to need it
+> 
+> >  drivers/char/ip2/ip2main.c    |   20 +++++++++++++++++---
+> 
+> I don't think we care - the driver is a mess, its probably not been used
+> in years
+> 
+> >  drivers/char/serial167.c      |    6 +++---
+> 
+> Historical value only and broken
+> 
+> >  drivers/char/specialix.c      |    2 +-
+> 
+> Broken
+> 
+> >  drivers/serial/68328serial.c  |    2 +-
+> >  drivers/serial/68360serial.c  |    5 ++---
+> 
+> Both defunct
+> 
+> >  drivers/serial/crisv10.c      |   12 +++++++-----
+> 
+> Defunct
+> 
+> >  net/irda/ircomm/ircomm_tty.c  |    2 +-
+> 
+> Semi-defunct at best
+> 
+> This makes me think that now might be a good time to consign the broken
+> crap to the bitbucket unless someone stands up with hardware and who
+> wants to maintain it.
 
-rar_register driver uses PCI interfaces and PCI devices, so it
-should depend on PCI.
+I will be glad to do this, moving these drivers to the staging tree so
+that they can be removed in 6-8 months, much like some wireless drivers
+are about to have happen to them.
 
-Also format the Kconfig help text as normally done.
+So, which ones should I move?  How about to start with the ones you
+listed above:
+	drivers/char/amiserial.c
+	drivers/char/generic_serial.c
+	drivers/char/ip2/ip2main.c
+	drivers/char/serial167.c
+	drivers/char/specialix.c
+	drivers/serial/68328serial.c
+	drivers/serial/68360serial.c
+	drivers/serial/crisv10.c
 
-drivers/staging/rar_register/rar_register.c:623: error: implicit declaration of function 'pci_dev_get'
-drivers/staging/rar_register/rar_register.c:623: warning: assignment makes pointer from integer without a cast
+Any others you want to see move out of the tree?
 
-Note:  The memrar driver selects this driver's Kconfig symbol, even when
-PCI is not enabled.  That select could be changed to
-	select RAR_REGISTER if PCI
-but that would still result in build errors when PCI is not enabled, namely:
-drivers/built-in.o: In function `memrar_fini_rar_resources':
-memrar_handler.c:(.text+0x2391b7): undefined reference to `unregister_rar'
-drivers/built-in.o: In function `memrar_registration_callback':
-memrar_handler.c:(.text+0x23925a): undefined reference to `rar_get_address'
-drivers/built-in.o: In function `memrar_init':
-memrar_handler.c:(.init.text+0x12c7b): undefined reference to `register_rar'
-memrar_handler.c:(.init.text+0x12c97): undefined reference to `register_rar'
+thanks,
 
-Does anyone have suggestions for this?
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/staging/rar_register/Kconfig |   28 ++++++++++++-------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
-
---- linux-next-20100505.orig/drivers/staging/rar_register/Kconfig
-+++ linux-next-20100505/drivers/staging/rar_register/Kconfig
-@@ -8,23 +8,23 @@ menu "RAR Register Driver"
- #
- config RAR_REGISTER
- 	tristate "Restricted Access Region Register Driver"
-+	depends on PCI
- 	default n
- 	---help---
--		This driver allows other kernel drivers access to the
--		contents of the restricted access region control
--		registers.
-+	  This driver allows other kernel drivers access to the
-+	  contents of the restricted access region control registers.
- 
--		The restricted access region control registers
--		(rar_registers) are used to pass address and
--		locking information on restricted access regions
--		to other drivers that use restricted access regions
-+	  The restricted access region control registers
-+	  (rar_registers) are used to pass address and
-+	  locking information on restricted access regions
-+	  to other drivers that use restricted access regions.
- 
--		The restricted access regions are regions of memory
--		on the Intel MID Platform that are not accessible to
--		the x86 processor, but are accessible to dedicated
--		processors on board peripheral devices.
-+	  The restricted access regions are regions of memory
-+	  on the Intel MID Platform that are not accessible to
-+	  the x86 processor, but are accessible to dedicated
-+	  processors on board peripheral devices.
- 
--		The purpose of the restricted access regions is to
--		protect sensitive data from compromise by unauthorized
--		programs running on the x86 processor.
-+	  The purpose of the restricted access regions is to
-+	  protect sensitive data from compromise by unauthorized
-+	  programs running on the x86 processor.
- endmenu
+greg k-h
