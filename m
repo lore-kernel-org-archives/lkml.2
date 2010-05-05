@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934269Ab0EEJ4r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 05:56:47 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39060 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934053Ab0EEJ4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 05:56:46 -0400
-Message-ID: <4BE140C3.8020602@kernel.org>
-Date: Wed, 05 May 2010 11:56:19 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S934244Ab0EEJ5w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 05:57:52 -0400
+Received: from mail-ew0-f222.google.com ([209.85.219.222]:58138 "EHLO
+	mail-ew0-f222.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932412Ab0EEJ5v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 05:57:51 -0400
+Message-ID: <4BE140F3.3070901@ru.mvista.com>
+Date: Wed, 05 May 2010 13:57:07 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, mingo@elte.hu, efault@gmx.de,
-       avi@redhat.com, paulus@samba.org, acme@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/12] perf: add perf_event_task_migrate()
-References: <1272976724-14312-1-git-send-email-tj@kernel.org>	 <1272976724-14312-4-git-send-email-tj@kernel.org>	 <20100505050846.GG5427@nowhere> <1273050684.1642.231.camel@laptop>	 <4BE13C76.2010507@kernel.org> <1273053025.1642.234.camel@laptop>
-In-Reply-To: <1273053025.1642.234.camel@laptop>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
+To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+CC: paulius.zaleckas@gmail.com, linux@arm.linux.org.uk,
+       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Gemini: fix compiler error in copypage-fa.c
+References: <1272983655-18408-1-git-send-email-ulli.kroll@googlemail.com>
+In-Reply-To: <1272983655-18408-1-git-send-email-ulli.kroll@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 May 2010 09:56:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2010 11:50 AM, Peter Zijlstra wrote:
-> I guess you can move it, I often end up adding tons of trace_printk()
-> anyway when hunting funnies, might as well add one here when its
-> relevant.
+Hello.
 
-Great, will do so.
+Hans Ulli Kroll wrote:
 
-Thanks.
+> Fix compiler error in copypage-fs.c
+>   
 
--- 
-tejun
+   You've called it copypage-fa.c in the subject.
+
+> missing struct vm_area_struct *vma in function
+> fa_copy_user_highpage
+>
+> Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+> ---
+>  arch/arm/mm/copypage-fa.c |    2 +-
+>   
+
+   And the file name is indeed copypage-fa.c...
+
+WBR, Sergei
+
