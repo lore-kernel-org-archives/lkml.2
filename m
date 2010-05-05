@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab0EEVxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 17:53:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62376 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754774Ab0EEVxX (ORCPT
+	id S1757686Ab0EEVyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 17:54:09 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:41197 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752161Ab0EEVyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 17:53:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dmitry Torokhov <dtor@vmware.com>
-Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
-Date: Wed, 5 May 2010 23:53:15 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.34-rc6-00090-g1509e54-dirty; KDE/4.4.2; x86_64; ; )
-Cc: "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-       Pankaj Thakkar <pthakkar@vmware.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20100504230225.GP8323@vmware.com> <201005052209.48465.arnd@arndb.de> <201005051336.32712.dtor@vmware.com>
-In-Reply-To: <201005051336.32712.dtor@vmware.com>
+	Wed, 5 May 2010 17:54:05 -0400
+To: Greg KH <gregkh@suse.de>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       Stephen Rothwell <sfr@canb.auug.org.au>
+References: <20100430163538.7253a9e0.sfr@canb.auug.org.au>
+	<20100430105016.40b51636.randy.dunlap@oracle.com>
+	<20100505091738.7ec27479.randy.dunlap@oracle.com>
+	<20100505162459.GA20296@suse.de>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Wed, 05 May 2010 14:54:00 -0700
+In-Reply-To: <20100505162459.GA20296@suse.de> (Greg KH's message of "Wed\, 5 May 2010 09\:24\:59 -0700")
+Message-ID: <m18w7y10cn.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005052353.16544.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19L3MInH9w2nK/cjCsmMepZEGwNTyPtBMGaec1
- 9CJX/ardiHWvA9cbVvWHdUU69uoRlWSznV1QAKiWoJmMrtnW7L
- oLC/fovHrn4zdF9PtXpQQ==
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: gregkh@suse.de, sfr@canb.auug.org.au, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, randy.dunlap@oracle.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Greg KH <gregkh@suse.de>
+X-Spam-Relay-Country: 
+X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: [PATCH] sysfs: Don't use enums in inline function declaration.
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 May 2010 22:36:31 Dmitry Torokhov wrote:
-> 
-> On Wednesday 05 May 2010 01:09:48 pm Arnd Bergmann wrote:
-> > > > If you have any interesting in developing this further, do:
-> > > > 
-> > > >  (1) move the limited VF drivers directly into the kernel tree,
-> > > >      talk to them through a normal ops vector
-> > > 
-> > > [PT] This assumes that all the VF drivers would always be available.
-> > > Also we have to support windows and our current design supports it
-> > > nicely in an OS agnostic manner.
-> > 
-> > Your approach assumes that the plugin is always available, which has
-> > exactly the same implications.
-> 
-> Since plugin[s] are carried by the host they are indeed always
-> available.
 
-But what makes you think that you can build code that can be linked
-into arbitrary future kernel versions? The kernel does not define any
-calling conventions that are stable across multiple versions or
-configurations. For example, you'd have to provide different binaries
-for each combination of
+It appears gcc can't cope with using an enum that is only declared in
+an inline function declaration, that doesn't even use the variable
+that is so declared.
 
-- 32/64 bit code
-- gcc -mregparm=?
-- lockdep
-- tracepoints
-- stackcheck
-- NOMMU
-- highmem
-- whatever new gets merged
+Avoid the silliness and replace the enum with an int, and make gcc
+happy.
 
-If you build the plugins only for specific versions of "enterprise" Linux
-kernels, the code becomes really hard to debug and maintain.
-If you wrap everything in your own version of the existing interfaces, your
-code gets bloated to the point of being unmaintainable.
+Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+---
+ include/linux/sysfs.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-So I have to correct myself: this is very different from assuming the
-driver is available in the guest, it's actually much worse.
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index e58ca1c..17cbeb7 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -318,7 +318,7 @@ static inline void sysfs_put(struct sysfs_dirent *sd)
+ {
+ }
+ 
+-static inline void sysfs_exit_ns(enum kobj_ns_type type, const void *tag)
++static inline void sysfs_exit_ns(int type, const void *tag)
+ {
+ }
+ 
+-- 
+1.6.6.1
 
-	Arnd
