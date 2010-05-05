@@ -1,171 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529Ab0EEUz6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 16:55:58 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35262 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754650Ab0EEUzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 16:55:55 -0400
-Date: Wed, 5 May 2010 22:55:53 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Oliver Neukum <oneukum@suse.de>, linux-pm@lists.linux-foundation.org,
-       list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Alan Stern <stern@rowland.harvard.edu>, jslaby@suse.cz
-Subject: Re: [linux-pm] s2ram slow (radeon) / failing (usb)
-In-Reply-To: <20100505225329.622633d0@neptune.home>
-Message-ID: <alpine.LNX.2.00.1005052255350.9849@pobox.suse.cz>
-References: <20100503214642.67577f91@neptune.home> <20100503225735.6b5e2687@neptune.home> <20100503231154.486c27d6@neptune.home> <201005040842.35260.oneukum@suse.de> <alpine.LNX.2.00.1005041028300.9849@pobox.suse.cz> <20100505223054.25a0f847@neptune.home>
- <20100505225329.622633d0@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757951Ab0EEU4T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 16:56:19 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:42606 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757890Ab0EEU4O convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 16:56:14 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=jTEvpdUlnFfbZQ9rMTFXZXNrlT8Ybm3BiYAWVf3JacgIJh99FcwaI01Z1Q62LbMuB
+	O2JcMCxvXsy5fnYSJ81Ug==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
+In-Reply-To: <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
+References: <20100505185225.GA4411@srcf.ucam.org>
+	 <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
+Date: Wed, 5 May 2010 13:56:07 -0700
+Message-ID: <m2oa55d774e1005051356n3610d780ra42200c1785e02bd@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+From: Brian Swetland <swetland@google.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Matthew Garrett <mjg@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
+       mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Jiri Slaby added to CC ]
+On Wed, May 5, 2010 at 12:13 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Wed, 5 May 2010, Matthew Garrett wrote:
+>
+>> > Clearly if there's a call in progress you don't want to shut the codec
+>> > down.  Are there any other circumstances?  Would they vary according to
+>> > whether the suspend was forced or opportunistic?
+>>
+>> Yeah, ok. We probably do need to figure this out.
+>>
+>> (Cc:ing Rebecca to see how this got handled on Droid)
+>>
+>> The current state of affairs is that a system suspend request is
+>> expected to put the device in as low a power state as possible given the
+>> required wakeup events. Runtime power management is expected to put the
+>> device in as low a power state as possible given its usage constraints.
+>> If opportunistic suspend does the former then it'll tear down devices
+>> that may be in use, but we don't have any real way to indicate usage
+>> constraints other than the phone app taking a wakelock - and that means
+>> leaving userspace running during calls, which seems excessive.
+>>
+>> Mark's right in that the only case I can think of that's really relevant
+>> right now is the audio hardware, so the inelegant solution is that this
+>> is something that could be provided at the audio level. Is this
+>> something we want a generic solution for? If so, what should it look
+>> like?
+>
+> Should the audio driver be smart enough to know that the codec needs to
+> remain powered up during every opportunistic suspend?
+>
+> Or only during opportunistic suspends while a call is in progress?
+>
+> Does it know when a call is in progress?
 
-On Wed, 5 May 2010, Bruno Prémont wrote:
+>From my point of view, the codec should be powered up while audio is
+playing and powered down when it's not -- that's the approach I've
+taken on MSM, regardless of suspend state.  I don't view suspend as
+something that stops audio playback in progress.  Sort of similar to
+how the modem doesn't power off down when the system is in suspend,
+etc.
 
-> On Wed, 05 May 2010 Bruno Prémont <bonbons@linux-vserver.org> wrote:
-> 
-> > On Tue, 04 May 2010 Jiri Kosina <jkosina@suse.cz> wrote:
-> > 
-> > > On Tue, 4 May 2010, Oliver Neukum wrote:
-> > > 
-> > > > > [  477.543304] usb 1-2.1: usb_autosuspend_device: cnt 1 -> 0
-> > > > > [  477.543316] usbhid 1-2.1:1.1: __pm_runtime_suspend()!
-> > > > > [  477.543326] usbhid 1-2.1:1.1: __pm_runtime_suspend() returns 0!
-> > > > > [  477.543380] usbcore: registered new interface driver usbhid
-> > > > > [  477.549457] usbhid: USB HID core driver
-> > > > > 
-> > > > > And suspend is freezing inside of hid_cancel_delayed_stuff(usbhid) call
-> > > > > from hid_suspend() in drivers/hid/usbhid/hid-core.c ...
-> > > > > 
-> > > > > Is it worth continuing iteration and adding further printk's down there?
-> > > > > Jiri, what's your opinion on this?
-> > > > 
-> > > > Ugh. That looks like a bug in usbhid that I introduced. A fix is not trivial.
-> > > > In short, I did not think the device could be undergoing a queued resumption
-> > > > while suspend() is being called. I wonder why this is happening.
-> > > 
-> > > Hmmm ... seems to me that in this case, the problem might be that there is 
-> > > a device hanging in the air, for which the parsing of report descriptor 
-> > > failed (interface .0002), but it's still somehow there on the bus.
-> > > 
-> > > It's a bit strange that we are not seeing 
-> > > 
-> > > 	dev_err(&intf->dev, "can't add hid device: %d\n", ret);
-> > > 
-> > > message from usbhid_probe(), are we? That would mean, that we are 
-> > > returning ENODEV from the usb_driver->probe routine properly.
-> > > 
-> > > Bruno, could you, for testing purposes, check, whether the patch below 
-> > > changes the behavior you are seeing (and also check what the actual return 
-> > > value from device_add() was, see the added printk()).
-> > > Thanks.
-> > > 
-> > > 
-> > > 
-> > >  drivers/hid/hid-core.c        |    5 +++--
-> > >  drivers/hid/usbhid/hid-core.c |    4 ++--
-> > >  2 files changed, 5 insertions(+), 4 deletions(-)
-> > > 
-> > > diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> > > index 2e2aa75..7186f9f 100644
-> > > --- a/drivers/hid/hid-core.c
-> > > +++ b/drivers/hid/hid-core.c
-> > > @@ -1770,10 +1770,11 @@ int hid_add_device(struct hid_device *hdev)
-> > >  		     hdev->vendor, hdev->product, atomic_inc_return(&id));
-> > >  
-> > >  	ret = device_add(&hdev->dev);
-> > > +	printk(KERN_DEBUG "HID: device_add() returned %d\n", ret);
-> > >  	if (!ret)
-> > >  		hdev->status |= HID_STAT_ADDED;
-> > > -
-> > > -	hid_debug_register(hdev, dev_name(&hdev->dev));
-> > > +	else
-> > > +		hid_debug_register(hdev, dev_name(&hdev->dev));
-> > >  
-> > >  	return ret;
-> > >  }
-> > 
-> > Ok, I've been digging some further...
-> > 
-> > The hid_device_probe properly returns -ENODEV, but:
-> > 
-> > Call trace:
-> > [ 3228.866146]  [<ffffffffa01a00e6>] hid_device_probe+0xd6/0x1f0 [hid]
-> >     return -ENODEV
-> > [ 3228.874594]  [<ffffffff8130995a>] driver_probe_device+0xaa/0x1d0
-> >     calls inlined really_probe from drivers/base/dd.c
-> >     which ALLWAYS returns 0:
-> >      dd.c:147 /*
-> >           148  * Ignore errors returned by ->probe so that the next driver can try
-> >           149  * its luck.
-> >           150  */
-> >           151 ret = 0;
-> >      and has on line 139 (under same failure label):
-> >               dev->driver = NULL;
-> > [ 3228.882758]  [<ffffffff81309b20>] ? __device_attach+0x0/0x50
-> > [ 3228.890555]  [<ffffffff81309b6b>] __device_attach+0x4b/0x50
-> >      lets 0 bubble up
-> > [ 3228.898272]  [<ffffffff81308d28>] bus_for_each_drv+0x68/0x90
-> >      lets 0 bubble up
-> > [ 3228.906080]  [<ffffffff81309c3b>] device_attach+0x8b/0xa0
-> >      lets 0 bubble up
-> > [ 3228.913603]  [<ffffffff81308b15>] bus_probe_device+0x25/0x40
-> >      returns void and does WARN_ON(device_attach() < 0)
-> > [ 3228.921356]  [<ffffffff81307166>] device_add+0x3d6/0x610
-> >      returns 0 here as there was no local error
-> > [ 3228.928772]  [<ffffffffa019fc53>] hid_add_device+0x183/0x1e0 [hid]
-> > [ 3228.937098]  [<ffffffffa01b4a77>] usbhid_probe+0x287/0x420 [usbhid]
-> > [ 3228.945535]  [<ffffffffa005006d>] usb_probe_interface+0x14d/0x230 [usbcore]
-> > ...
-> > 
-> > So IMHO in hid_add_device() we should also check for hdev->dev.driver
-> > when device_add() returns 0 and consider that one being NULL as a
-> > (possible) error.
-> 
-> Something like the delow diff causes the HID registration to fail
-> gracefully and `echo devices > pm_test` suspend attempt to pass.
-> 
-> (note, to be manually applied, is edited copy from console, so does
->  not preserve tabs and line numbers may not match due to debug printks
->  added all over the place)
-> 
-> 
-> I don't know what impact it could have on auto-probing of device
-> if a specialized HID driver that would fix reports or whatever was
-> loaded later on when device is already plugged into USB.
-> 
-> Thanks,
-> Bruno
-> 
-> 
-> @@ -1770,11 +1779,13 @@ int hid_add_device(struct hid_device *hdev)
->                      hdev->vendor, hdev->product, atomic_inc_return(&id));
->  
->         ret = device_add(&hdev->dev);
-> -       if (!ret)
-> +       if (ret == 0 && !hdev->dev.driver) {
-> +               device_del(&hdev->dev);
-> +               ret = -ENODEV;
-> +       } else {
->                 hdev->status |= HID_STAT_ADDED;
-> -
-> -       hid_debug_register(hdev, dev_name(&hdev->dev));
-> -
-> +               hid_debug_register(hdev, dev_name(&hdev->dev));
-> +       }
->         return ret;
->  }
->  EXPORT_SYMBOL_GPL(hid_add_device);
-> 
+In effect, we have followed a sort of runtime pm model of
+clocking/powering peripherals at the lowest possible level at all
+times, which is why I've never viewed suspend_block as somehow
+competing with runtime pm -- we always want all drivers/peripherals in
+the lowers power state.  Sometimes the lowest power state possible is
+higher than "full suspend" (for example when we can't meet latency
+requirements on audio on 7201A) and suspend_blockers cover that case.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Brian
