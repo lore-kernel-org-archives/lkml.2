@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758701Ab0EEWEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 18:04:05 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:46312 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756320Ab0EEWEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 18:04:00 -0400
-Date: Wed, 5 May 2010 15:03:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Hemminger <shemminger@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH tip/core/rcu 28/48] net: Make accesses to ->br_port
- safe for sparse RCU
-Message-ID: <20100505220355.GA20938@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100504201934.GA19234@linux.vnet.ibm.com>
- <1273004398-19760-28-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100504142631.148b52dc@nehalam>
- <201005042341.49480.arnd@arndb.de>
+	id S1758743Ab0EEWEH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 18:04:07 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:3898 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753501Ab0EEWEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 18:04:01 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=cvur/AcQQmkUL41Lct8dO3Xd8JBfLzGH3UHeVF3+j7aAVJbIUcipfyq2G4uKjr5hT
+	5bb3XuFUmtl/Ybqrx61Kw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005042341.49480.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100505215711.GA4838@opensource.wolfsonmicro.com>
+References: <20100505185225.GA4411@srcf.ucam.org>
+	 <20100505195534.GD18762@thunk.org>
+	 <20100505202637.GH7139@rakim.wolfsonmicro.main>
+	 <201005052244.03225.rjw@sisk.pl>
+	 <20100505215711.GA4838@opensource.wolfsonmicro.com>
+Date: Wed, 5 May 2010 15:03:55 -0700
+Message-ID: <g2ua55d774e1005051503m232aa409pd2c9a12a2d4888ba@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+From: Brian Swetland <swetland@google.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, tytso@mit.edu,
+       Matthew Garrett <mjg@redhat.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "Arve Hj?nnev?g" <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
+       mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 04, 2010 at 11:41:49PM +0200, Arnd Bergmann wrote:
-> On Tuesday 04 May 2010 23:26:31 Stephen Hemminger wrote:
-> > > The new versions of the rcu_dereference() APIs requires that any pointers
-> > > passed to one of these APIs be fully defined.  The ->br_port field
-> > > in struct net_device points to a struct net_bridge_port, which is an
-> > > incomplete type.  This commit therefore changes ->br_port to be a void*,
-> > > and introduces a br_port() helper function to convert the type to struct
-> > > net_bridge_port, and applies this new helper function where required.
-> > 
-> > I would rather make the bridge hook generic and not take a type argument.
-> 
-> Not sure if you were confused by the comment in the same way that I was.
-> 
-> The bridge hook is not impacted by this at all, since we can either pass
-> a void* or a struct net_bridge_port* to it. The br_port() helper
-> is used for all the places where we actually want to dereference 
-> dev->br_port and access its contents.
+On Wed, May 5, 2010 at 2:57 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Wed, May 05, 2010 at 10:44:03PM +0200, Rafael J. Wysocki wrote:
+>
+>> To me, the above may be summarized that in your opinion some components of
+>> the system will generally need to stay powered when it's suspended
+>> opportunistically, so we need an interface to specify which components they are.
+>> Is that correct?
+>
+> Yes, though I think I'd be inclined to treat the problem orthogonally to
+> opportunistic suspend to allow more flexibility in use and since
+> treating it as part of opportunistic suspend would imply that there's
+> some meaningful difference between the end result of that and a manual
+> suspend which AIUI there isn't.
 
-What should I change in the commit message to clear this up?
+I'd agree with this.  This is one of the reasons I haven't felt
+opportunistic suspend is a big departure from other work here -- there
+are always some cases in which drivers will need to keep external
+resources active even when suspended.  Also, as I mentioned earlier,
+we (Android at least, but hopefully this is non-controversial) would
+always like drivers to put everything in the lowest possible power
+state they can get away with.  Every little savings adds up.
 
-Of course, if the code needs to change, please let me know what should
-change there as well.
-
-							Thanx, Paul
+Brian
