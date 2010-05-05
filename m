@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758278Ab0EEU1f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 16:27:35 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48201 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753596Ab0EEU1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 16:27:33 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Date: Wed, 5 May 2010 22:28:19 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Matthew Garrett <mjg@redhat.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Brian Swetland <swetland@google.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-References: <Pine.LNX.4.44L0.1005051554490.1885-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1005051554490.1885-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005052228.19851.rjw@sisk.pl>
+	id S1758301Ab0EEU2I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 16:28:08 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47676 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758049Ab0EEU2C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 16:28:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=x+M+j6GV93Q3FQDVwnjHhTfyE0YZnQjSqWxBE8XQQggW7LAT2vQLZhyQE9z12cHrux
+         KnqZE/eYf6L1u2q9GGTN4vB3L68b2DHejSptXOGK5ydMR0vOcPro3qqxs+PuWfOQkfrz
+         PEDpw8bMtXxULNisGF2QXJiBh4uEOwrI6/Sns=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH] perf: Fix static strings treated like dynamic ones
+Date: Wed,  5 May 2010 22:27:59 +0200
+Message-Id: <1273091279-14891-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 May 2010, Alan Stern wrote:
-> On Wed, 5 May 2010, Matthew Garrett wrote:
-> 
-> > On Wed, May 05, 2010 at 03:20:40PM -0400, Alan Stern wrote:
-> > 
-> > > One the face of it, a runtime-PM solution would dictate that the
-> > > codec's driver ought to turn off the codec whenever the driver thinks
-> > > it isn't being used.  Ergo, if the driver didn't know when a call was
-> > > in progress, it would use runtime PM to turn off the codec during a
-> > > call.
-> > 
-> > Well, part of the problem is that right now most of our beliefs about 
-> > imposed constraints tend to be based on what userspace is doing - "Don't 
-> > power down the audio codec when userspace has it open", for instance. 
-> > But that goes away with opportunistic suspend. In most cases you don't 
-> > want the audio codec to stay awake just because userspace was using it 
-> > to make bouncing cow noises, especially if you've just frozen userspace. 
-> > So the problem becomes more complicated than it would otherwise be.
-> 
-> It sounds like the problem can be stated simply enough: At the moment, 
-> nobody knows when the codec should be powered down!  Userspace might 
-> have some idea, but even if its ideas are right it has no way of 
-> communicating them to the kernel.
-> 
-> The power/control sysfs attribute was intended for just that purpose,
-> although it was aimed at runtime PM rather than system PM.  
-> Nevertheless, it or something like it could be used.  Of course, there 
-> would still remain the issue of userspace telling the kernel not to 
-> power down the codec while making bouncing cow noises -- but at this 
-> point it's not really a kernel problem any more.
+The raw_field_ptr() helper, used to retrieve the address of a field
+inside a trace event, treats every strings as if they were dynamic
+ie: having a secondary level of indirection to retrieve their
+contents.
 
-We'd need a separate control, I think.  The problem is, though, that the
-Android user space, for example, doesn't use the sysfs attributes of devices,
-so this control wouldn't be particularly useful for it.
+FIELD_IS_STRING doesn't mean FIELD_IS_DYNAMIC, we only need to
+compute the secondary dereference for the latter case.
 
-> P.S.: What happens if a suspend occurs while a call is in progress, so
-> the codec is left powered up, and then the call ends?  Does the system
-> wake up at that point?  Or does it stay suspended with the codec still
-> powered, even though it's not needed any more?
+This fixes perf sched segfaults, bad cmdline report and may be
+some other bugs.
 
-I guess you end up telling the user that the call ended, so the system wakes up.
-That's only a guess, though.
+Reported-by: Jason Baron <jbaron@redhat.com>
+Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+---
+ tools/perf/util/trace-event-parse.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Rafael
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 069f261..73a0222 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -1937,7 +1937,7 @@ void *raw_field_ptr(struct event *event, const char *name, void *data)
+ 	if (!field)
+ 		return NULL;
+ 
+-	if (field->flags & FIELD_IS_STRING) {
++	if (field->flags & FIELD_IS_DYNAMIC) {
+ 		int offset;
+ 
+ 		offset = *(int *)(data + field->offset);
+-- 
+1.6.2.3
+
