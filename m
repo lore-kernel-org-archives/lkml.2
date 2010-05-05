@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757757Ab0EEHah (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 03:30:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39959 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752519Ab0EEHaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 03:30:35 -0400
-Message-ID: <4BE11E8A.2090804@redhat.com>
-Date: Wed, 05 May 2010 10:30:18 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>, Brian Gerst <brgerst@gmail.com>,
-       "Cui, Dexuan" <dexuan.cui@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86: eliminate TS_XSAVE
-References: <1272812038-32484-1-git-send-email-avi@redhat.com>	 <1272812038-32484-2-git-send-email-avi@redhat.com>	 <u2p73c1f2161005021038gce35c1bbpca6ec119d24e646e@mail.gmail.com>	 <4BDDBA18.3080909@redhat.com> <4BDF4407.8000503@zytor.com>	 <4BDFCF9F.3030600@redhat.com> <1272996927.2833.13.camel@sbs-t61.sc.intel.com> <4BE06642.6080702@zytor.com>
-In-Reply-To: <4BE06642.6080702@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757526Ab0EEHdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 03:33:15 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:34644 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab0EEHdN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 03:33:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=wI/RtDzKgXDEzv/opg9pJJFCKkUV7ER1VSw/5/AU/8HT7WP/XpquHQNXGkflTnW8bU
+         Fmaaqg2b4+lWDPWConXs+rNd1hfOwKDrvJ4xWbQJjmWIkbVjLCklF1zg3CvF0gwZ8LUd
+         WV13lnU8yCKLOSD3ZZWga+s1O+k6qQQDbDJaA=
+Subject: Re: [PATCH v2] fs: use kmalloc() to allocate fdmem if possible
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Changli Gao <xiaosuo@gmail.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+In-Reply-To: <4BE11BD0.8040703@suse.cz>
+References: <1272826920-8899-1-git-send-email-xiaosuo@gmail.com>
+	 <20100504152713.0c72a087.akpm@linux-foundation.org>
+	 <4BE11BD0.8040703@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 May 2010 09:33:08 +0200
+Message-ID: <1273044788.2367.1.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2010 09:24 PM, H. Peter Anvin wrote:
->
-> I would like to request one change, however.  I would like to see the
-> alternatives code to be:
->
-> 	movb $0,reg
-> 	movb $1,reg
->
-> ... instead of using xor (which has to be padded with NOPs, which is of
-> course pointless since the slot is a fixed size.)
+Le mercredi 05 mai 2010 à 09:18 +0200, Jiri Slaby a écrit :
+> On 05/05/2010 12:27 AM, Andrew Morton wrote:
+> > On Mon,  3 May 2010 03:02:00 +0800
+> > Changli Gao <xiaosuo@gmail.com> wrote:
+> > 
+> >> use kmalloc() to allocate fdmem if possible.
+> >>
+> >> vmalloc() is used as a fallback solution for fdmem allocation. A new helper
+> >> function __free_fdtable() is introduced to reduce the lines of code.
+> >>
+> >> A potential bug, vfree() a memory allocated by kmalloc(), is fixed.
+> >>
+> > 
+> > Seems a reasonable thing to do.
+> 
+> Hi,
+> 
+> So didn't we converge to something like this:
+> http://lkml.org/lkml/2010/5/3/53
+> instead of this patch?
+> 
+> This
+> 
+> >  It might also be reasonable to make
+> > vmalloc() try kmalloc() first, but that's a separate exercise.
+> 
+> and this
+> 
+> > This most definitely should have __GFP_NOWARN.
+> 
+> is discussed there too btw.
+> 
+> thanks,
 
-Right.
+Its a start, I guess we also need some NUMA capability as well.
 
-> I would suggest using
-> a byte-sized variable instead of a dword-size variable to save a few
-> bytes, too.
->    
+For example, iptables could use such an allocator only if it is NUMA
+enabled.
 
-I used a bool, and the code already compiles to a byte mov.  Though it 
-could be argued that a word instruction is better since it avoids a 
-false dependency, and allows a preceding instruction that modifies %reg 
-to be executed after the mov instruction.
 
-> Once the jump label framework is integrated and has matured, I think we
-> should consider using it to save the mov/test/jump.
->    
-
-IIRC that has an implied unlikely() which isn't suitable here?
-
-Perhaps the immediate values patches.
-
--- 
-error compiling committee.c: too many arguments to function
 
