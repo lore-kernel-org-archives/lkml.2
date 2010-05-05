@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab0EEHSr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 03:18:47 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:50933 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816Ab0EEHSp (ORCPT
+	id S1756875Ab0EEH0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 03:26:11 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:54349 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab0EEH0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 03:18:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=sYp9QUUOgF2Jvihe/mwoa4IrsvVtKZR2dVqb1h+b6G7y0+owSF0xjmMqkUO/zVTznH
-         Oqyj3HLGlsatbH8nTiB+tIUYauXbFpUm2Hl5gn52HXP0TfmNvj1tQJnxIuqtwS8yir+x
-         eXtxZ4+fu/Ctuwx2UV2ISmzZNBGrgmjvcXutM=
-Message-ID: <4BE11BD0.8040703@suse.cz>
-Date: Wed, 05 May 2010 09:18:40 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.5pre) Gecko/20100430 SUSE/3.1b2-7.1 Thunderbird/3.1b2
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Changli Gao <xiaosuo@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-       eric.dumazet@gmail.com
-Subject: Re: [PATCH v2] fs: use kmalloc() to allocate fdmem if possible
-References: <1272826920-8899-1-git-send-email-xiaosuo@gmail.com> <20100504152713.0c72a087.akpm@linux-foundation.org>
-In-Reply-To: <20100504152713.0c72a087.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 5 May 2010 03:26:09 -0400
+Subject: Re: [PULL] param sysfs oops (simple, leaky) fix, bool arrays fix
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+       Sitsofe Wheeler <sitsofe@yahoo.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>
+In-Reply-To: <201005051503.42289.rusty@rustcorp.com.au>
+References: <200910290902.13724.rusty@rustcorp.com.au>
+	 <201005041154.24658.rusty@rustcorp.com.au>
+	 <1272996439.2458.0.camel@localhost.localdomain>
+	 <201005051503.42289.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 May 2010 10:25:14 +0300
+Message-ID: <1273044314.3702.98.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 05 May 2010 07:25:33.0330 (UTC) FILETIME=[25F56F20:01CAEC24]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2010 12:27 AM, Andrew Morton wrote:
-> On Mon,  3 May 2010 03:02:00 +0800
-> Changli Gao <xiaosuo@gmail.com> wrote:
+On Wed, 2010-05-05 at 15:03 +0930, Rusty Russell wrote:
+> On Wed, 5 May 2010 03:37:19 am Artem Bityutskiy wrote:
+> > On Tue, 2010-05-04 at 11:53 +0930, Rusty Russell wrote:
+> > > On Tue, 27 Apr 2010 08:23:24 pm Artem Bityutskiy wrote:
+> > > > Rusty, correct me if I'm wrong, but it looks like the above memleak was
+> > > > introduced by e180a6b7759a99a28cbcce3547c4c80822cb6c2a, where you added
+> > > > the kstrdup(). So you kinda fixed the sysfs case (it still memleaks
+> > > > though), but at the cost of additional insmod/rmmod leak, right?
+> > > 
+> > > Yep!
+> > 
+> > Are you working/planning to work on fixing this regression?
 > 
->> use kmalloc() to allocate fdmem if possible.
->>
->> vmalloc() is used as a fallback solution for fdmem allocation. A new helper
->> function __free_fdtable() is introduced to reduce the lines of code.
->>
->> A potential bug, vfree() a memory allocated by kmalloc(), is fixed.
->>
+> I'm still ambivalent on it; I have patches but it's a lot of churn for not
+> much gain.
 > 
-> Seems a reasonable thing to do.
+> To fix this, we need a way to lock parameters against changing by sysfs, and
+> we need to use it everywhere.  Past experience has demonstrated that this will
+> never be maintained.  
+> 
+> On the other hand, the leak is trivial.
 
-Hi,
+Well, I am not very concerned with the "changing by sysfs" leak. This is
+not a big deal, IMHO. I am concerned with the "rmmod" leak, which did
+not exist before your patches, but exists now. People may do a lot of
+insmod/rmmod, and on each rmmod they will loose this kstrdup-ed string. 
 
-So didn't we converge to something like this:
-http://lkml.org/lkml/2010/5/3/53
-instead of this patch?
+I'll take a look at this tree, thank you.
 
-This
+> Here's a git tree if you want to look further:
+> 
+> The following changes since commit 05ce7bfe547c9fa967d9cab6c37867a9cb6fb3fa:
+>   Linus Torvalds (1):
+>         Merge branch 'for_linus' of git://git.kernel.org/.../jack/linux-fs-2.6
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/rusty/linux-2.6-param-fixes.git master
 
->  It might also be reasonable to make
-> vmalloc() try kmalloc() first, but that's a separate exercise.
+Just in case others will clone, the correct URL seems to be
 
-and this
+git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-param-fixes.git master
 
-> This most definitely should have __GFP_NOWARN.
-
-is discussed there too btw.
-
-thanks,
 -- 
-js
-suse labs
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
