@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757695Ab0EEWTt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 18:19:49 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:62714 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755085Ab0EEWTs (ORCPT
+	id S1758892Ab0EEWUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 18:20:08 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:34687 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758868Ab0EEWUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 18:19:48 -0400
+	Wed, 5 May 2010 18:20:04 -0400
+Date: Wed, 5 May 2010 15:25:53 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Oren Laadan <orenl@cs.columbia.edu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
+       Pavel Emelyanov <xemul@openvz.org>, linux-api@vger.kernel.org,
+       x86@kernel.org, linux-s390@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH v21 011/100] eclone (11/11): Document sys_eclone
+Message-ID: <20100505222553.GA6555@us.ibm.com>
+References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu> <1272723382-19470-12-git-send-email-orenl@cs.columbia.edu> <20100505141447.fc2397f6.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <1273093366-3388-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
-References: <1273093366-3388-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
-From: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Date: Wed, 5 May 2010 19:19:27 -0300
-Message-ID: <n2pcecb6d8f1005051519ze48b22a0t8548311839f510b0@mail.gmail.com>
-Subject: Re: [PATCH] MM: Fix NR_SECTION_ROOTS == 0 when using using sparsemem 
-	extreme.
-To: mroberto@cpti.cetuc.puc-rio.br, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100505141447.fc2397f6.randy.dunlap@oracle.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have done a limited test of the patch, I don't think the actual code
-has been reached, any help would be appreciated.
+Randy Dunlap [randy.dunlap@oracle.com] wrote:
+| > +		base of the region allocated for stack. These architectures
+| > +		must pass in the size of the stack-region in ->child_stack_size.
+| 
+| 		                             stack region
+| 
+| Seems unfortunate that different architectures use the fields differently.
 
-I did a small patch to /proc/meminfo to check that NR_SECTION_ROOTS is
-now non-zero:
+Yes and no. The field still has a single purpose, just that some architectures
+may not need it. We enforce that if unused on an architecture, the field must
+be 0. It looked like the easiest way to keep the API common across
+architectures.
 
-$ cat /proc/meminfo
-NR_SECTION_ROOTS=1
-NR_MEM_SECTIONS=32
-SECTIONS_PER_ROOT=512
-SECTIONS_SHIFT=5
-MAX_PHYSMEM_BITS=32
-SECTION_SIZE_BITS=27
-...
+| 
+| Is this example program meant to build only on i386?
 
-On Wed, May 5, 2010 at 18:02, Marcelo Roberto Jimenez
-<mroberto@cpti.cetuc.puc-rio.br> wrote:
-> Got this while compiling for ARM/SA1100:
->
-> mm/sparse.c: In function '__section_nr':
-> mm/sparse.c:135: warning: 'root' is used uninitialized in this function
->
-> This patch follows Russell King's suggestion for a new calculation for
-> NR_SECTION_ROOTS. Thanks also to Sergei Shtylyov for pointing out the
-> existence of the macro DIV_ROUND_UP.
->
-> Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Yes. Will add a pointer to the clone*.[chS] and libeclone.a files in
+
+	git://git.ncl.cs.columbia.edu/pub/git/user-cr.git
+
+for other architectures (currently x86_64, ppc, s390).
+
+Thanks for the review. Will fix the errors and repost.
+
+Sukadev
