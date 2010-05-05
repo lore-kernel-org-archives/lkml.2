@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab0EEX4t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 19:56:49 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:48334 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab0EEX4r convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 19:56:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=tGIhilUXKJUmqYHMxhhIR3OXJwgIP1fgk2md4YDUbE6nitsopg6XkyQli6VPsVTPp
-	pAdWzIlbsyl01EKJuTyZw==
+	id S1755157Ab0EEX6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 19:58:25 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48888 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752984Ab0EEX6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 19:58:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: mgross@linux.intel.com
+Subject: Re: [PATCH]PM QOS refresh against next-20100430
+Date: Thu, 6 May 2010 01:59:10 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Kevin Hilman <khilman@deeprootsystems.com>, aili@codeaurora.org,
+       dwalker@codeaurora.org, tiwai@suse.de, bruce.w.allan@intel.com,
+       davidb@quicinc.com, mcgrof@gmail.com, pavel@ucw.cz,
+       "linux-pm" <linux-pm@lists.linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>, NetDev <netdev@vger.kernel.org>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       Len Brown <lenb@kernel.org>,
+       "John W. Linville" <linville@tuxdriver.com>
+References: <20100430212043.GA30315@linux.intel.com> <201005010108.28593.rjw@sisk.pl> <20100504143043.GA27927@linux.intel.com>
+In-Reply-To: <20100504143043.GA27927@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20100505234755.GI29604@atomide.com>
-References: <20100505202826.GB7450@linux.intel.com>
-	 <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
-	 <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
-	 <20100505234755.GI29604@atomide.com>
-Date: Wed, 5 May 2010 16:56:39 -0700
-Message-ID: <l2ra55d774e1005051656wbf4f3d7cr8cc9de0478e509f1@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-From: Brian Swetland <swetland@google.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
-       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005060159.10224.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 5, 2010 at 4:47 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Brian Swetland <swetland@google.com> [100505 14:34]:
->> On Wed, May 5, 2010 at 2:12 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->> >>
->> >> Oh, like tell the modem that user mode has handled the ring event and
->> >> its ok to un-block?
->> >
->> > No, that's not how it works.  It would go like this:
->> >
->> >        The modem IRQ handler queues its event to the input subsystem.
->> >        As it does so the input subsystem enables a suspend blocker,
->> >        causing the system to stay awake after the IRQ is done.
->
-> How about instead the modem driver fails to suspend until it's done?
->
-> Each driver could have a suspend_policy sysfs entry with options such
-> as [ forced | safe ]. The default would be forced. Forced would
-> be the current behaviour, while safe would refuse suspend until the
-> driver is done processing.
->
->> >        The user program enables its own suspend blocker before reading
->> >        the input queue.  When the queue is empty, the input subsystem
->> >        releases its suspend blocker.
->
-> And also the input layer could refuse to suspend until it's done.
->
->> >        When the user program finishes processing the event, it
->> >        releases its suspend blocker.  Now the system can go back to
->> >        sleep.
->
-> And here the user space just tries to suspend again when it's done?
-> It's not like you're trying to suspend all the time, so it should be
-> OK to retry a few times.
+On Tuesday 04 May 2010, mark gross wrote:
+> On Sat, May 01, 2010 at 01:08:28AM +0200, Rafael J. Wysocki wrote:
+> > On Saturday 01 May 2010, mark gross wrote:
+> > > On Sat, May 01, 2010 at 12:13:16AM +0200, Rafael J. Wysocki wrote:
+> > > > On Friday 30 April 2010, mark gross wrote:
+> > > > > The following is a refresh of the PM_QOS implementation, this patch
+> > > > > updates some documentation input I got from Randy.
+> > > > > 
+> > > > > This patch changes the string based list management to a handle base
+> > > > > implementation to help with the hot path use of pm-qos, it also renames
+> > > > > much of the API to use "request" as opposed to "requirement" that was
+> > > > > used in the initial implementation.  I did this because request more
+> > > > > accurately represents what it actually does.
+> > > > > 
+> > > > > Also, I added a string based ABI for users wanting to use a string
+> > > > > interface.  So if the user writes 0xDDDDDDDD formatted hex it will be
+> > > > > accepted by the interface.  (someone asked me for it and I don't think
+> > > > > it hurts anything.)
+> > > > > 
+> > > > > I really would like to get this refresh taken care of.  Its been taking
+> > > > > me too long to close this.  please review or include it in next.
+> > > > > 
+> > > > > Thanks!
+> > > > 
+> > > > Well, I'd take it to suspend-2.6/linux-next, but first, it touches
+> > > > subsystems whose maintainers were not in the Cc list, like the network
+> > > > drivers, wireless and ACPI.  The changes are trivial, so I hope they don't
+> > > > mind.
+> > > > 
+> > > > Second, my tree is based on the Linus' tree rather than linux-next and
+> > > > the change in net/mac80211/scan.c doesn't seem to match that.  Please tell me
+> > > > what I'm supposed to do about that.
+> > > 
+> > > You can waite for monday and I'll send a rebased version to linus' tree.
+> > > 
+> > > I thought linux-next was where folks wanted me to put it.
+> > > 
+> > > I'll email out a new one monday.
+> > 
+> > Great, thanks!
+> > 
+> > Rafael
+> 
+> Sorry I'm late, 
+> 
+> 
+> Signed-off-by: markgross <mgross@linux.intel.com>
 
-We actually are trying to suspend all the time -- that's our basic
-model -- suspend whenever we can when something doesn't prevent it.
+Applied to suspend-2.6/linux-next.  Please verify the changelog.
 
->> > At no point does the user program have to communicate anything to the
->> > modem driver, and at no point does it have to do anything out of the
->> > ordinary except to enable and disable a suspend blocker.
->>
->> Exactly -- and you can use the same style of overlapping suspend
->> blockers with other drivers than input, if the input interface is not
->> suitable for the particular interaction.
->
-> Would the suspend blockers still be needed somewhere in the example
-> above?
-
-How often would we retry suspending?
-
-If we fail to suspend, don't we have to resume all the drivers that
-suspended before the one that failed?  (Maybe I'm mistaken here)
-
-With the suspend block model we know the moment we're capable of
-suspending and then can suspend at that moment.  Continually trying to
-suspend seems like it'd be inefficient power-wise (we're going to be
-doing a lot more work as we try to suspend over and over, or we're
-going to retry after a timeout and spend extra time not suspended).
-
-We can often spend minutes (possibly many) at a time preventing
-suspend when the system is doing work that would be interrupted by a
-full suspend.
-
-Brian
+Rafael
