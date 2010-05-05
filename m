@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759991Ab0EEC67 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 22:58:59 -0400
-Received: from mail-qy0-f187.google.com ([209.85.221.187]:52517 "EHLO
-	mail-qy0-f187.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756563Ab0EEC64 (ORCPT
+	id S933687Ab0EEC7f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 22:59:35 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:63166 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754343Ab0EEC7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 22:58:56 -0400
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 May 2010 22:58:56 EDT
+	Tue, 4 May 2010 22:59:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=nDt5wW/hKKAIEMqKvM1We/dC4oUw9o+cLBoxn4p0wh0GqI+lN5V+N4HkvRdLa8eMDF
-         dU2d3a5eFceSPBVDakBan+O0jhPMBTB+Ja2c34QsSZgrSE1A/FjpV8hEwL0K8olyT/64
-         hzq2AYQ8edCDugRLxQ1I6eQdCIhZNWHi0kgYY=
-MIME-Version: 1.0
-In-Reply-To: <20100505023220.GC20236@windriver.com>
-References: <20100504070334.GN2657@zip.com.au> <4BDFDCD1.70202@redhat.com>
-	 <20100505023220.GC20236@windriver.com>
-Date: Wed, 5 May 2010 10:52:50 +0800
-Message-ID: <h2p2375c9f91005041952k422e7701vf7e726fc5440e953@mail.gmail.com>
-Subject: Re: 2.6.33.3: possible recursive locking detected
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Yong Zhang <yong.zhang@windriver.com>
-Cc: CaT <cat@zip.com.au>, lkml@zip.com.au, mtosatti@redhat.com,
-       kvm@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-       Avi Kivity <avi@redhat.com>, Greg KH <gregkh@suse.de>
-Content-Type: text/plain; charset=UTF-8
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=EHudmkkGBSkpcZD2YmhZmzRbIlWhlnpH/JZnw5mZlJmQ/y8THtyrYfAZZwfddiODWC
+         odWN/ZCW6GDdsWHssa56yIyLjfCUZhfRu627LCajIfMmE1kvI+PnBYZNQRMnEg8koU4E
+         6tqk0RySbN78LGWDisX9pH3r0Xmi67vOX/Ff0=
+Date: Wed, 5 May 2010 11:59:24 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, mtosatti@redhat.com, agraf@suse.de,
+       yoshikawa.takuya@oss.ntt.co.jp, fernando@oss.ntt.co.jp,
+       kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org,
+       tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+       benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH resend 8/12] asm-generic: bitops: introduce le bit
+ offset macro
+Message-Id: <20100505115924.7bb92036.takuya.yoshikawa@gmail.com>
+In-Reply-To: <4BE04677.4060608@redhat.com>
+References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com>
+	<20100504220500.7695cd66.takuya.yoshikawa@gmail.com>
+	<201005041703.00549.arnd@arndb.de>
+	<4BE04677.4060608@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 5, 2010 at 10:32 AM, Yong Zhang <yong.zhang@windriver.com> wrote:
-> On Tue, May 04, 2010 at 11:37:37AM +0300, Avi Kivity wrote:
->> On 05/04/2010 10:03 AM, CaT wrote:
->> >I'm currently running 2.6.33.3 in a KVM instance emulating a core2duo
->> >on 1 cpu with virtio HDs running on top of a core2duo host running 2.6.33.3.
->> >qemu-kvm version 0.12.3.
->
-> Can you try commit 6992f5334995af474c2b58d010d08bc597f0f2fe in the latest
-> kernel?
->
+On Tue, 04 May 2010 19:08:23 +0300
+Avi Kivity <avi@redhat.com> wrote:
 
-Hmm, 2.6.33 -stable has commit 846f99749ab68bbc7f75c74fec305de675b1a1bf?
+> On 05/04/2010 06:03 PM, Arnd Bergmann wrote:
+> > On Tuesday 04 May 2010, Takuya Yoshikawa wrote:
+...
+> >> So let us use the le bit offset calculation part by defining it as a new
+> >> macro: generic_le_bit_offset() .
+> >>      
+> > Does this work correctly if your user space is 32 bits (i.e. unsigned long
+> > is different size in user space and kernel) in both big- and little-endian
+> > systems?
+> >
+> > I'm not sure about all the details, but I think you cannot in general share
+> > bitmaps between user space and kernel because of this.
+> >    
+> 
+> That's why the bitmaps are defined as little endian u64 aligned, even on 
+> big endian 32-bit systems.  Little endian bitmaps are wordsize agnostic, 
+> and u64 alignment ensures we can use long-sized bitops on mixed size 
+> systems.
 
-Actually, these 3 commits fixed it:
+There was a suggestion to propose set_le_bit_user() kind of macros.
+But what I thought was these have a constraint you two explained and seemed to be
+a little bit specific to some area, like KVM.
 
-6992f5334995af474c2b58d010d08bc597f0f2fe sysfs: Use one lockdep class
-per sysfs ttribute.
-a2db6842873c8e5a70652f278d469128cb52db70 sysfs: Only take active
-references on attributes.
-e72ceb8ccac5f770b3e696e09bb673dca7024b20 sysfs: Remove sysfs_get/put_active_two
+So I decided to propose just the offset calculation macro.
 
-However, there are many other patches needed to amend these, so I think
-it's not suitable for -stable to include, perhaps a revert of
-846f99749ab68bbc7f75c74fec305de675b1a1bf is better.
-
-Adding Greg into Cc.
-
-Thanks.
+  Thanks, Takuya
