@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758742Ab0EEVae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 17:30:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28449 "EHLO mx1.redhat.com"
+	id S1758678Ab0EEV3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 17:29:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2552 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758647Ab0EEV3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 17:29:40 -0400
+	id S1758616Ab0EEV3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 17:29:36 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com
-Subject: [PATCH v3 7/8] don't compute pvclock adjustments if we trust the tsc
-Date: Wed,  5 May 2010 17:27:18 -0400
-Message-Id: <1273094839-18655-8-git-send-email-glommer@redhat.com>
-In-Reply-To: <1273094839-18655-7-git-send-email-glommer@redhat.com>
+Subject: [PATCH v3 3/8] change msr numbers for kvmclock
+Date: Wed,  5 May 2010 17:27:14 -0400
+Message-Id: <1273094839-18655-4-git-send-email-glommer@redhat.com>
+In-Reply-To: <1273094839-18655-3-git-send-email-glommer@redhat.com>
 References: <1273094839-18655-1-git-send-email-glommer@redhat.com>
  <1273094839-18655-2-git-send-email-glommer@redhat.com>
  <1273094839-18655-3-git-send-email-glommer@redhat.com>
- <1273094839-18655-4-git-send-email-glommer@redhat.com>
- <1273094839-18655-5-git-send-email-glommer@redhat.com>
- <1273094839-18655-6-git-send-email-glommer@redhat.com>
- <1273094839-18655-7-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the HV told us we can fully trust the TSC, skip any
-correction
+Avi pointed out a while ago that those MSRs falls into the pentium
+PMU range. So the idea here is to add new ones, and after a while,
+deprecate the old ones.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
 ---
- arch/x86/include/asm/kvm_para.h    |    5 +++++
- arch/x86/include/asm/pvclock-abi.h |    1 +
- arch/x86/kernel/kvmclock.c         |    3 +++
- arch/x86/kernel/pvclock.c          |    4 ++++
- 4 files changed, 13 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/kvm_para.h |    4 ++++
+ arch/x86/kvm/x86.c              |    7 ++++++-
+ 2 files changed, 10 insertions(+), 1 deletions(-)
 
 diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index f019f8c..05eba5e 100644
+index ffae142..9734808 100644
 --- a/arch/x86/include/asm/kvm_para.h
 +++ b/arch/x86/include/asm/kvm_para.h
-@@ -21,6 +21,11 @@
-  */
- #define KVM_FEATURE_CLOCKSOURCE2        3
- 
-+/* The last 8 bits are used to indicate how to interpret the flags field
-+ * in pvclock structure. If no bits are set, all flags are ignored.
-+ */
-+#define KVM_FEATURE_CLOCKSOURCE_STABLE_BIT	24
-+
+@@ -20,6 +20,10 @@
  #define MSR_KVM_WALL_CLOCK  0x11
  #define MSR_KVM_SYSTEM_TIME 0x12
  
-diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
-index ec5c41a..35f2d19 100644
---- a/arch/x86/include/asm/pvclock-abi.h
-+++ b/arch/x86/include/asm/pvclock-abi.h
-@@ -39,5 +39,6 @@ struct pvclock_wall_clock {
- 	u32   nsec;
- } __attribute__((__packed__));
- 
-+#define PVCLOCK_TSC_STABLE_BIT	(1 << 0)
- #endif /* __ASSEMBLY__ */
- #endif /* _ASM_X86_PVCLOCK_ABI_H */
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index 59c740f..eb9b76c 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -215,4 +215,7 @@ void __init kvmclock_init(void)
- 	clocksource_register(&kvm_clock);
- 	pv_info.paravirt_enabled = 1;
- 	pv_info.name = "KVM";
++/* Custom MSRs falls in the range 0x4b564d00-0x4b564dff */
++#define MSR_KVM_WALL_CLOCK_NEW  0x4b564d00
++#define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
 +
-+	if (kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE_STABLE_BIT))
-+		pvclock_set_flags(PVCLOCK_TSC_STABLE_BIT);
- }
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index f5bc40e..239427c 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -135,6 +135,10 @@ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
- 		barrier();
- 	} while (version != src->version);
+ #define KVM_MAX_MMU_OP_BATCH           32
  
-+	if ((valid_flags & PVCLOCK_TSC_STABLE_BIT) &&
-+		(shadow.flags & PVCLOCK_TSC_STABLE_BIT))
-+		return ret;
-+
- 	/*
- 	 * Assumption here is that last_value, a global accumulator, always goes
- 	 * forward. If we are less than that, we should not be much smaller.
+ /* Operations for KVM_HC_MMU_OP */
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 6b2ce1d..eb84947 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -664,9 +664,10 @@ static inline u32 bit(int bitno)
+  * kvm-specific. Those are put in the beginning of the list.
+  */
+ 
+-#define KVM_SAVE_MSRS_BEGIN	5
++#define KVM_SAVE_MSRS_BEGIN	7
+ static u32 msrs_to_save[] = {
+ 	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
++	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
+ 	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
+ 	HV_X64_MSR_APIC_ASSIST_PAGE,
+ 	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
+@@ -1192,10 +1193,12 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 	case MSR_IA32_MISC_ENABLE:
+ 		vcpu->arch.ia32_misc_enable_msr = data;
+ 		break;
++	case MSR_KVM_WALL_CLOCK_NEW:
+ 	case MSR_KVM_WALL_CLOCK:
+ 		vcpu->kvm->arch.wall_clock = data;
+ 		kvm_write_wall_clock(vcpu->kvm, data);
+ 		break;
++	case MSR_KVM_SYSTEM_TIME_NEW:
+ 	case MSR_KVM_SYSTEM_TIME: {
+ 		if (vcpu->arch.time_page) {
+ 			kvm_release_page_dirty(vcpu->arch.time_page);
+@@ -1467,9 +1470,11 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+ 		data = vcpu->arch.efer;
+ 		break;
+ 	case MSR_KVM_WALL_CLOCK:
++	case MSR_KVM_WALL_CLOCK_NEW:
+ 		data = vcpu->kvm->arch.wall_clock;
+ 		break;
+ 	case MSR_KVM_SYSTEM_TIME:
++	case MSR_KVM_SYSTEM_TIME_NEW:
+ 		data = vcpu->arch.time;
+ 		break;
+ 	case MSR_IA32_P5_MC_ADDR:
 -- 
 1.6.2.2
 
