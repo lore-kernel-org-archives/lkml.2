@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934708Ab0EEAie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 May 2010 20:38:34 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:63277 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934633Ab0EEAiW (ORCPT
+	id S934636Ab0EEAi2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 May 2010 20:38:28 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:46816 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934506Ab0EEAhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 May 2010 20:38:22 -0400
-Date: Tue, 4 May 2010 17:38:22 -0700
-From: Pankaj Thakkar <pthakkar@vmware.com>
-To: David Miller <davem@davemloft.net>
-Cc: "shemminger@vyatta.com" <shemminger@vyatta.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-       Shreyas Bhatewara <sbhatewara@vmware.com>
-Subject: Re: RFC: Network Plugin Architecture (NPA) for vmxnet3
-Message-ID: <20100505003822.GR8323@vmware.com>
-References: <20100504230225.GP8323@vmware.com>
- <20100504170531.1e7122da@nehalam>
- <20100505001857.GQ8323@vmware.com>
- <20100504.173236.104064409.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100504.173236.104064409.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 4 May 2010 20:37:05 -0400
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
+       Serge Hallyn <serue@us.ibm.com>, <netdev@vger.kernel.org>,
+       David Miller <davem@davemloft.net>,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Tue,  4 May 2010 17:36:48 -0700
+Message-Id: <1273019809-16472-5-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.6.5.2.143.g8cc62
+In-Reply-To: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: gregkh@suse.de, kay.sievers@vrfy.org, linux-kernel@vger.kernel.org, tj@kernel.org, cornelia.huck@de.ibm.com, eric.dumazet@gmail.com, bcrl@lhnet.ca, serue@us.ibm.com, netdev@vger.kernel.org, davem@davemloft.net, ebiederm@xmission.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@suse.de>
+X-Spam-Relay-Country: 
+X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: [PATCH 5/6] hotplug: netns aware uevent_helper
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sure. We have been working on NPA for a while and have the code internally up
-and running. Let me sync up internally on how and when we can provide the
-vmxnet3 driver code so that people can look at it.
+From: Eric W. Biederman <ebiederm@xmission.com>
 
+It only makes sense for uevent_helper to get events
+in the intial namespaces.  It's invocation is not
+per namespace and it is not clear how we could make
+it's invocation namespace aware.
 
-On Tue, May 04, 2010 at 05:32:36PM -0700, David Miller wrote:
-> Date: Tue, 4 May 2010 17:32:36 -0700
-> From: David Miller <davem@davemloft.net>
-> To: Pankaj Thakkar <pthakkar@vmware.com>
-> CC: "shemminger@vyatta.com" <shemminger@vyatta.com>,
-> 	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-> 	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-> 	"virtualization@lists.linux-foundation.org"
->  <virtualization@lists.linux-foundation.org>,
-> 	"pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-> 	Shreyas Bhatewara <sbhatewara@vmware.com>
-> Subject: Re: RFC: Network Plugin Architecture (NPA) for vmxnet3
-> 
-> From: Pankaj Thakkar <pthakkar@vmware.com>
-> Date: Tue, 4 May 2010 17:18:57 -0700
-> 
-> > The purpose of this email is to introduce the architecture and the
-> > design principles. The overall project involves more than just
-> > changes to vmxnet3 driver and hence we though an overview email
-> > would be better. Once people agree to the design in general we
-> > intend to provide the code changes to the vmxnet3 driver.
-> 
-> Stephen's point is that code talks and bullshit walks.
-> 
-> Talk about high level designs rarely gets any traction, and often goes
-> nowhere.  Give us an example implementation so there is something
-> concrete for us to sink our teeth into.
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ lib/kobject_uevent.c |   18 +++++++++++++++++-
+ 1 files changed, 17 insertions(+), 1 deletions(-)
+
+diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
+index 9057ec1..1b3dbab 100644
+--- a/lib/kobject_uevent.c
++++ b/lib/kobject_uevent.c
+@@ -18,6 +18,7 @@
+ #include <linux/string.h>
+ #include <linux/kobject.h>
+ #include <linux/module.h>
++#include <linux/user_namespace.h>
+ 
+ #include <linux/socket.h>
+ #include <linux/skbuff.h>
+@@ -98,6 +99,21 @@ static int kobj_bcast_filter(struct sock *dsk, struct sk_buff *skb, void *data)
+ 	return 0;
+ }
+ 
++static int kobj_usermode_filter(struct kobject *kobj)
++{
++	const struct kobj_ns_type_operations *ops;
++
++	ops = kobj_ns_ops(kobj);
++	if (ops) {
++		const void *init_ns, *ns;
++		ns = kobj->ktype->namespace(kobj);
++		init_ns = ops->initial_ns();
++		return ns != init_ns;
++	}
++
++	return 0;
++}
++
+ /**
+  * kobject_uevent_env - send an uevent with environmental data
+  *
+@@ -273,7 +289,7 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
+ #endif
+ 
+ 	/* call uevent_helper, usually only enabled during early boot */
+-	if (uevent_helper[0]) {
++	if (uevent_helper[0] && !kobj_usermode_filter(kobj)) {
+ 		char *argv [3];
+ 
+ 		argv [0] = uevent_helper;
+-- 
+1.6.5.2.143.g8cc62
+
