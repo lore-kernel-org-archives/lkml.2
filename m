@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab0EFITv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 04:19:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50323 "EHLO mx1.redhat.com"
+	id S1758857Ab0EFPfG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 11:35:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59938 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754564Ab0EFITr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 04:19:47 -0400
-Date: Thu, 6 May 2010 11:19:33 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Pankaj Thakkar <pthakkar@vmware.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Dmitry Torokhov <dtor@vmware.com>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
-Message-ID: <20100506081933.GF10044@redhat.com>
-References: <20100504230225.GP8323@vmware.com>
- <201005051029.42052.dtor@vmware.com>
- <20100505173120.GA1752@infradead.org>
- <201005051035.29831.dtor@vmware.com>
- <20100505173951.GA8388@infradead.org>
- <F1354E79A137A24CBA60059AA65CB1B802A235C535@EXCH-MBX-2.vmware.com>
+	id S1752618Ab0EFPfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 11:35:04 -0400
+Message-ID: <4BE2E167.2030806@redhat.com>
+Date: Thu, 06 May 2010 11:33:59 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F1354E79A137A24CBA60059AA65CB1B802A235C535@EXCH-MBX-2.vmware.com>
+To: Mel Gorman <mel@csn.ul.ie>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm,compaction: Do not schedule work on other CPUs for
+ compaction
+References: <20100506150808.GC8704@csn.ul.ie>
+In-Reply-To: <20100506150808.GC8704@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 10:47:10AM -0700, Pankaj Thakkar wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Christoph Hellwig [mailto:hch@infradead.org]
-> > Sent: Wednesday, May 05, 2010 10:40 AM
-> > To: Dmitry Torokhov
-> > Cc: Christoph Hellwig; pv-drivers@vmware.com; Pankaj Thakkar;
-> > netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > virtualization@lists.linux-foundation.org
-> > Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for
-> > vmxnet3
-> > 
-> > On Wed, May 05, 2010 at 10:35:28AM -0700, Dmitry Torokhov wrote:
-> > > Yes, with the exception that the only body of code that will be
-> > > accepted by the shell should be GPL-licensed and thus open and
-> > available
-> > > for examining. This is not different from having a standard kernel
-> > > module that is loaded normally and plugs into a certain subsystem.
-> > > The difference is that the binary resides not on guest filesystem
-> > > but elsewhere.
-> > 
-> > Forget about the licensing.  Loading binary blobs written to a shim
-> > layer is a complete pain in the ass and totally unsupportable, and
-> > also uninteresting because of the overhead.
-> 
-> [PT] Why do you think it is unsupportable? How different is it from any module
-> written against a well maintained interface? What overhead are you talking about?
-> 
-Overhead of interpreting bytecode plugin is written in. Or are you
-saying plugin is x86 assembly (32bit or 64bit btw?) and other arches
-will have to have in kernel x86 emulator to use the plugin (like some
-of them had for vgabios)? 
+On 05/06/2010 11:08 AM, Mel Gorman wrote:
+> Migration normally requires a call to migrate_prep() as a preparation
+> step. This schedules work on all CPUs for pagevecs to be drained. This
+> makes sense for move_pages and memory hot-remove but is unnecessary
+> for memory compaction.
+>
+> To avoid queueing work on multiple CPUs, this patch introduces
+> migrate_prep_local() which drains just local pagevecs.
+>
+> This patch can be either merged with mmcompaction-memory-compaction-core.patch
+> or placed immediately after it to clarify why migrate_prep_local() was
+> introduced.
+>
+> Signed-off-by: Mel Gorman<mel@csn.ul.ie>
 
---
-			Gleb.
+Reviewed-by: Rik van Riel <riel@redhat.com>
