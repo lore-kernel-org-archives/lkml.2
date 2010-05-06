@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab0EFB45 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 21:56:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64594 "EHLO mx1.redhat.com"
+	id S1752555Ab0EFB7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 21:59:11 -0400
+Received: from mail.perches.com ([173.55.12.10]:1935 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751040Ab0EFB44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 21:56:56 -0400
-Date: Wed, 5 May 2010 21:56:42 -0400
-From: Josef Bacik <josef@redhat.com>
-To: liubo <liubo2009@cn.fujitsu.com>
-Cc: jim owens <owens6336@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Chris Mason <chris.mason@oracle.com>, Josef Bacik <josef@redhat.com>,
-       linux-btrfs@vger.kernel.org, "Yan, Zheng" <zheng.yan@oracle.com>
-Subject: Re: [BUG] btrfs: report a direct-IO bug
-Message-ID: <20100506015641.GA5672@localhost.localdomain>
-References: <4BE21FC1.1010901@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BE21FC1.1010901@cn.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1751011Ab0EFB7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 21:59:09 -0400
+Subject: RE: [PATCH 1/1] staging: hv: Add Time Sync feature to hv_utils
+ module
+From: Joe Perches <joe@perches.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+       "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+       "gregkh@suse.de" <gregkh@suse.de>,
+       Hank Janssen <hjanssen@microsoft.com>
+In-Reply-To: <1FB5E1D5CA062146B38059374562DF72662A6F52@TK5EX14MBXC130.redmond.corp.microsoft.com>
+References: <1FB5E1D5CA062146B38059374562DF72662A6D3B@TK5EX14MBXC130.redmond.corp.microsoft.com>
+	 ,<1273107494.1735.87.camel@Joe-Laptop.home>
+	 <1FB5E1D5CA062146B38059374562DF72662A6F52@TK5EX14MBXC130.redmond.corp.microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 May 2010 18:59:07 -0700
+Message-ID: <1273111147.1735.90.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 09:47:45AM +0800, liubo wrote:
-> When we tested the series of jim owens' direct-IO patch, a bug occured.
-> 
-> It could be reproduced on a 2.6.34-rc6 kernel with
-> direct-IO patch by the following steps...
-> 
-> # mkfs.btrfs /dev/sdb
-> # mount /dev/sdb /home/btrfsdisk
-> # cd /home/btrfsdisk
-> # create test.c
-> # dd if=/dev/zero of=file bs=7K count=1
-> # gcc test.c -o test
-> # ./test
-> 
+On Thu, 2010-05-06 at 01:42 +0000, Haiyang Zhang wrote:
+> > Why a maximum of 50 samples?
+> After reboot the flag ICTIMESYNCFLAG_SYNC is included in the 
+> first time message after the timesync channel is opened. Since the 
+> hv_utils module is loaded after hv_vmbus, the first message is usually
+> missed. The other thing is, systime is automatically set to emulated 
+> hardware clock which may not be UTC time or the same time 
+> zone. So, to override these effects, we use the first 50 time samples 
+> for initial system time setting.
 
-I'm in the middle of re-working the DIO code.  You can pull from my git tree
+I suggest putting that in a commit message or a code comment.
 
-http://git.kernel.org/?p=linux/kernel/git/josef/btrfs-unstable-josef.git;a=summary
+cheers, Joe
 
-Pull from the my-dio branch.  It survives fsx, but it fails on 5 out of 7 AIO
-tests in xfstests, which I'm tracking down.  Thanks,
 
-Josef
