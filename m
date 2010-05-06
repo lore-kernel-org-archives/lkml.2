@@ -1,111 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803Ab0EFP0y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 11:26:54 -0400
-Received: from fg-out-1718.google.com ([72.14.220.153]:47750 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754449Ab0EFP0w (ORCPT
+	id S1755764Ab0EFSLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 14:11:42 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45802 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab0EFSLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 11:26:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bMtksAxHz1EmmxMLZCvAQlmHqYnOPUAwWbXzj8VBcwBNeFf6ZLDNH/VsN4FPxTm02m
-         i7fI63lPM8+sMsZCtwGnnSEeUdgLBGA/F/m6dPbfBD1piXUSvQOabWqozD93YccuuzPT
-         SpvRE51Opo1vyGXWrE2+DKuOADfNouT9uZV5c=
-Date: Thu, 6 May 2010 19:26:46 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH -tip] x86,perf: P4 PMU -- protect sensible procedures
-	from preemption
-Message-ID: <20100506152646.GC5583@lenovo>
-References: <20100505150740.GB5686@lenovo> <20100505165731.GA6320@nowhere> <20100505174234.GH5686@lenovo> <20100506064453.GI1172@elte.hu> <w2vaa79d98a1005060039ua7dd1b0t952fcd8662d4d759@mail.gmail.com> <20100506074231.GA8625@elte.hu> <n2maa79d98a1005060045ke0f87f4aw8b86da0440a019b3@mail.gmail.com> <1273153525.22438.39.camel@gandalf.stny.rr.com> <20100506144854.GB5583@lenovo>
+	Thu, 6 May 2010 14:11:41 -0400
+Date: Thu, 6 May 2010 19:01:14 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+       ysato@users.sourceforge.jp, tony.luck@intel.com, dhowells@redhat.com,
+       kyle@mcmartin.ca, benh@kernel.crashing.org, schwidefsky@de.ibm.com,
+       jgarzik@pobox.com, hare@suse.de, felipe.balbi@nokia.com
+Subject: Re: [PATCH] removing redundant ifdefs
+Message-ID: <20100506180114.GB15797@n2100.arm.linux.org.uk>
+References: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100506144854.GB5583@lenovo>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 06:48:54PM +0400, Cyrill Gorcunov wrote:
-> On Thu, May 06, 2010 at 09:45:24AM -0400, Steven Rostedt wrote:
-> ...
-> > > > We want the one with the least runtime overhead. These are instrumentation
-> > > > routines, so we want to optimize them as much as possible.
-> > 
-> > 
-> > Yeah, my point was either disable preemption or keep the checks. In
-> > other words, if you don't disable preemption, do not use
-> > raw_smp_procesor_id(), because then we will not catch it if it changes
-> > in the future.
-> > 
-> > > ok, Ingo, dont apply this patch then for a while.
-> > 
-> > Send another patch, I'll test it again ;-)
-> > 
-> > -- Steve
-> > 
-> > 
-> 
-> Ingo, Steven, it seems we have potential preemtion available
-> in perf_event.c:validate_group:x86_pmu.schedule_events() which
-> is reached via syscall from userspace perf_event_open() call,
-> so get_cpu is still needed. But I'm a bit messed with call
-> graph at the moment :(
-> 
-> 	-- Cyrill
+On Thu, May 06, 2010 at 07:36:04PM +0200, Jiri Olsa wrote:
+>  arch/arm/include/asm/processor.h              |    2 --
+>  arch/arm/mach-ixp23xx/include/mach/platform.h |    3 ---
+>  arch/arm/plat-omap/include/plat/clock.h       |    5 -----
 
-Steve, while I'm diving through call graph could you give this
-patch a shot? If preemtion happens -- it'll trigger it fast.
+I've not received any patches relating to the above, but I seem to
+have received everything else, including stuff for PPC and x86.
 
-	-- Cyrill
----
- arch/x86/kernel/cpu/perf_event_p4.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-=====================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -421,7 +421,7 @@ static u64 p4_pmu_event_map(int hw_event
- 
- static int p4_hw_config(struct perf_event *event)
- {
--	int cpu = raw_smp_processor_id();
-+	int cpu = get_cpu();
- 	u32 escr, cccr;
- 
- 	/*
-@@ -440,7 +440,7 @@ static int p4_hw_config(struct perf_even
- 		event->hw.config = p4_set_ht_bit(event->hw.config);
- 
- 	if (event->attr.type != PERF_TYPE_RAW)
--		return 0;
-+		goto out;
- 
- 	/*
- 	 * We don't control raw events so it's up to the caller
-@@ -455,6 +455,8 @@ static int p4_hw_config(struct perf_even
- 		(p4_config_pack_escr(P4_ESCR_MASK_HT) |
- 		 p4_config_pack_cccr(P4_CCCR_MASK_HT));
- 
-+out:
-+	put_cpu();
- 	return 0;
- }
- 
-@@ -741,7 +743,7 @@ static int p4_pmu_schedule_events(struct
- {
- 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
- 	unsigned long escr_mask[BITS_TO_LONGS(ARCH_P4_TOTAL_ESCR)];
--	int cpu = raw_smp_processor_id();
-+	int cpu = smp_processor_id();
- 	struct hw_perf_event *hwc;
- 	struct p4_event_bind *bind;
- 	unsigned int i, thread, num;
+Maybe you've negated the list of people to send patches to?
