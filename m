@@ -1,49 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab0EFHAO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 03:00:14 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:47632 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab0EFHAI (ORCPT
+	id S1756832Ab0EFJgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 05:36:14 -0400
+Received: from mail-yx0-f191.google.com ([209.85.210.191]:36082 "EHLO
+	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416Ab0EFJgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 03:00:08 -0400
-Date: Thu, 6 May 2010 15:59:32 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] [RESEND] sh updates for 2.6.34-rc7
-Message-ID: <20100506065932.GD25493@linux-sh.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Thu, 6 May 2010 05:36:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=X/IA4rzvU7NagG54Vq/gR704lY7/wPs1xtt8DEurDxzhnAO4wtgZgP1mXLazC1SWcB
+         AsK+trgF1qtsdUxNb2G8EFMBFrdqjWaEBKU7AcvTcabMnHZyotQ3iUzWOSTphvONqyyv
+         rBRhMxB9Zijzol32UXVrEvDeZRN5WlE/Rp5wA=
+From: Mark <reodge@gmail.com>
+To: gregkh@suse.de, mithlesh@linsyssoft.com, wfp5p@virginia.edu,
+       andrea.gelmini@gelma.net
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Mark <reodge@gmail.com>
+Subject: [PATCH] Staging: comedi: Fixed printk call lengths and log levels
+Date: Thu,  6 May 2010 17:36:38 +0800
+Message-Id: <1273138598-7364-1-git-send-email-reodge@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a resend of the pull request for 2.6.34-rc6 with the addition of
-an lcdcfb patch. It hasn't been rebased, so if you've already pulled the
-previous changes then you should just get that patch.
+This is a patch to include log levels and fix some over length lines in
+printk calls in drivers.c
 
-Please pull from:
+Signed-off-by: Mark Rankilor <reodge@gmail.com>
+---
+ drivers/staging/comedi/drivers.c |   16 ++++++++++------
+ 1 files changed, 10 insertions(+), 6 deletions(-)
 
-	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh/for-2.6.34
+diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+index 1f48b6d..ffb0ad4 100644
+--- a/drivers/staging/comedi/drivers.c
++++ b/drivers/staging/comedi/drivers.c
+@@ -95,7 +95,8 @@ static void __comedi_device_detach(struct comedi_device *dev)
+ 	if (dev->driver)
+ 		dev->driver->detach(dev);
+ 	else
+-		printk(KERN_WARNING "BUG: dev->driver=NULL in comedi_device_detach()\n");
++		printk(KERN_WARNING
++		       "BUG: dev->driver=NULL in comedi_device_detach()\n");
+ 	cleanup_device(dev);
+ }
+ 
+@@ -148,7 +149,8 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/*  report valid board names before returning error */
+ 	for (driv = comedi_drivers; driv; driv = driv->next) {
+ 		if (!try_module_get(driv->module)) {
+-			printk(KERN_INFO "comedi: failed to increment module count\n");
++			printk(KERN_INFO 
++			       "comedi: failed to increment module count\n");
+ 			continue;
+ 		}
+ 		comedi_report_boards(driv);
+@@ -250,7 +252,8 @@ static int postconfig(struct comedi_device *dev)
+ 			async =
+ 			    kzalloc(sizeof(struct comedi_async), GFP_KERNEL);
+ 			if (async == NULL) {
+-				printk(KERN_INFO "failed to allocate async struct\n");
++				printk(KERN_INFO
++				       "failed to allocate async struct\n");
+ 				return -ENOMEM;
+ 			}
+ 			init_waitqueue_head(&async->wait_head);
+@@ -560,7 +563,8 @@ static unsigned int comedi_buf_munge(struct comedi_async *async,
+ 
+ 		block_size = num_bytes - count;
+ 		if (block_size < 0) {
+-			printk(KERN_WARNING "%s: %s: bug! block_size is negative\n",
++			printk(KERN_WARNING
++			       "%s: %s: bug! block_size is negative\n",
+ 			       __FILE__, __func__);
+ 			break;
+ 		}
+@@ -679,8 +683,8 @@ unsigned comedi_buf_read_free(struct comedi_async *async, unsigned int nbytes)
+ 	smp_mb();
+ 	if ((int)(async->buf_read_count + nbytes -
+ 		  async->buf_read_alloc_count) > 0) {
+-		printk
+-		    ("comedi: attempted to read-free more bytes than have been read-allocated.\n");
++		printk(KERN_INFO
++		       "comedi: attempted to read-free more bytes than have been read-allocated.\n");
+ 		nbytes = async->buf_read_alloc_count - async->buf_read_count;
+ 	}
+ 	async->buf_read_count += nbytes;
+-- 
+1.7.0.5
 
-Which contains:
-
-Guennadi Liakhovetski (3):
-      SH: fix TS field shift calculation for DMA drivers
-      SH: fix error paths in DMA driver
-      sh: fix a number of Oopses and leaks in SH framebuffer driver
-
-Magnus Damm (2):
-      sh: Fix maximum number of SCIF ports in R2D defconfigs
-      sh: sh7751 pci controller io port fix
-
- arch/sh/configs/rts7751r2d1_defconfig      |    2 +-
- arch/sh/configs/rts7751r2dplus_defconfig   |    2 +-
- arch/sh/drivers/pci/pci-sh7751.c           |    5 +++--
- arch/sh/include/cpu-sh4/cpu/dma-register.h |    2 +-
- drivers/dma/shdma.c                        |   27 +++++++++++++++++++++------
- drivers/video/sh_mobile_lcdcfb.c           |   27 +++++++++++++--------------
- 6 files changed, 40 insertions(+), 25 deletions(-)
