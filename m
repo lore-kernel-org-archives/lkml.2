@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab0EFKHW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 06:07:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41252 "EHLO hera.kernel.org"
+	id S1759171Ab0EFQxR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 12:53:17 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40678 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751818Ab0EFKHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 06:07:21 -0400
-Date: Thu, 6 May 2010 10:07:00 GMT
-From: "tip-bot for Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-       ebiederm@xmission.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       yinghai@kernel.org, tglx@linutronix.de, ebiederm@xmission.com,
-       mingo@elte.hu
-In-Reply-To: <m1tyqm14la.fsf_-_@fess.ebiederm.org>
-References: <m1tyqm14la.fsf_-_@fess.ebiederm.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/irq] x86, acpi/irq: Define gsi_end when X86_IO_APIC is undefined
-Message-ID: <tip-4f47b4c9f0b711bf84adb8c27774ae80d346b628@git.kernel.org>
-Git-Commit-ID: 4f47b4c9f0b711bf84adb8c27774ae80d346b628
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 06 May 2010 10:07:01 +0000 (UTC)
+	id S1756341Ab0EFQxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 12:53:16 -0400
+From: Tejun Heo <tj@kernel.org>
+To: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org,
+       paulmck@linux.vnet.ibm.com
+Subject: [GIT PULL sched/core] cpu_stop: implement and use cpu_stop, take#3
+Date: Thu,  6 May 2010 18:52:47 +0200
+Message-Id: <1273164772-19149-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 06 May 2010 16:52:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4f47b4c9f0b711bf84adb8c27774ae80d346b628
-Gitweb:     http://git.kernel.org/tip/4f47b4c9f0b711bf84adb8c27774ae80d346b628
-Author:     Eric W. Biederman <ebiederm@xmission.com>
-AuthorDate: Wed, 5 May 2010 13:22:25 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 6 May 2010 08:17:51 +0200
+Hello, Ingo.
 
-x86, acpi/irq: Define gsi_end when X86_IO_APIC is undefined
+Please pull from the following branch to receive cpu_stop patches.
 
-My recent changes introducing a global gsi_end variable
-failed to take into account the case of using acpi on a system
-not built to support IO_APICs, causing the build to fail.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cpu_stop
 
-Define gsi_end to 15 when CONFIG_X86_IO_APIC is not set to avoid
-compile errors.
+Adding mb()'s in synchronize_sched_expedited() is the only change
+since the last take[2].  Both Peter and Paul have acked the patchset.
+I'll post the patchset as replies to this message.
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <m1tyqm14la.fsf_-_@fess.ebiederm.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/io_apic.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+This patchset is on top of the current sched/core (99bd5e2f) and
+contains the following changes.
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 9da192a..63cb409 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -197,6 +197,7 @@ static const int timer_through_8259 = 0;
- static inline void ioapic_init_mappings(void)	{ }
- static inline void ioapic_insert_resources(void) { }
- static inline void probe_nr_irqs_gsi(void)	{ }
-+#define gsi_end (NR_IRQS_LEGACY - 1)
- static inline int mp_find_ioapic(u32 gsi) { return 0; }
- 
- struct io_apic_irq_attr;
+Paul E. McKenney (1):
+      scheduler: correctly place paranioa memory barriers in synchronize_sched_expedited()
+
+Tejun Heo (4):
+      cpu_stop: implement stop_cpu[s]()
+      stop_machine: reimplement using cpu_stop
+      scheduler: replace migration_thread with cpu_stop
+      scheduler: kill paranoia check in synchronize_sched_expedited()
+
+ Documentation/RCU/torture.txt |   10 -
+ arch/s390/kernel/time.c       |    1 -
+ drivers/xen/manage.c          |   14 +-
+ include/linux/rcutiny.h       |    2 -
+ include/linux/rcutree.h       |    1 -
+ include/linux/stop_machine.h  |   59 +++--
+ kernel/cpu.c                  |    8 -
+ kernel/module.c               |   14 +-
+ kernel/rcutorture.c           |    2 +-
+ kernel/sched.c                |  284 +++++-----------------
+ kernel/sched_fair.c           |   48 +++-
+ kernel/stop_machine.c         |  530 +++++++++++++++++++++++++++++++----------
+ 12 files changed, 538 insertions(+), 435 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[L] http://thread.gmane.org/gmane.linux.kernel/980893
