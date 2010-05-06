@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757646Ab0EFTx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 15:53:57 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40540 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757182Ab0EFTx4 (ORCPT
+	id S1757699Ab0EFUI7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 16:08:59 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:33050 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757097Ab0EFUI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 15:53:56 -0400
-Date: Thu, 6 May 2010 15:53:54 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Anton Vorontsov <avorontsov@mvista.com>
-cc: Greg Kroah-Hartman <gregkh@suse.de>,
-       Sebastian Siewior <bigeasy@linutronix.de>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Bryan Wu <cooloney@kernel.org>, <linux-usb@vger.kernel.org>,
-       <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB: isp1760: Soften DW3 X/transaction error bit handling
-In-Reply-To: <20100506191532.GA11365@oksana.dev.rtsoft.ru>
-Message-ID: <Pine.LNX.4.44L0.1005061543421.1708-100000@iolanthe.rowland.org>
+	Thu, 6 May 2010 16:08:57 -0400
+Date: Thu, 6 May 2010 16:08:54 -0400
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Kyle McMartin <kyle@mcmartin.ca>, wzt.wzt@gmail.com,
+       linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+       deller@gmx.de, jejb@parisc-linux.org
+Subject: Re: [PATCH] Parisc: Check kmalloc return value before use the
+	buffer in ccio-dma.c
+Message-ID: <20100506200854.GG4902@bombadil.infradead.org>
+References: <20100506024208.GB15956@localhost.localdomain> <20100506040331.GC4902@bombadil.infradead.org> <20100506105948.GV6747@parisc-linux.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100506105948.GV6747@parisc-linux.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010, Anton Vorontsov wrote:
-
-> It appears that the 'pehcd' driver checks the X bit only if the
-> transaction is halted, otherwise the error is so far
-> insignificant.
+On Thu, May 06, 2010 at 04:59:48AM -0600, Matthew Wilcox wrote:
+> On Thu, May 06, 2010 at 12:03:31AM -0400, Kyle McMartin wrote:
+> > We can change it to GFP_ATOMIC|__GFP_NOFAIL so it will retry infinitely,
+> > or we can panic in the error path with a nice error message so the users
+> > knows why his machine isn't going to work.
 > 
-> I didn't find where exactly ISP1760 spec mandates 'H && X'
-> handling (maybe it's in the EHCI spec?),
+> If we can't initialise the IOMMU, can we even get a panic message out to
+> the user?
+> 
 
-Yes, it is described implicitly in the EHCI spec, section 4.10.3.
-Transaction errors cause the status field to be updated to reflect the
-type of error, but the transaction continues to be retried until the
-Active bit is set to 0.  When the error counter reaches 0, the Halt bit
-is set and the Active bit is cleared.
+Excellent question! I'm not sure. IODC console will still be working up
+until it gets bonked, so early_console is probably still functional up
+until that point.
 
-Alan Stern
-
+--Kyle
