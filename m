@@ -1,42 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364Ab0EFCst (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 22:48:49 -0400
-Received: from tundra.namei.org ([65.99.196.166]:55984 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751025Ab0EFCss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 22:48:48 -0400
-Date: Thu, 6 May 2010 12:45:56 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: David Howells <dhowells@redhat.com>
-cc: torvalds@osdl.org, Andrew Morton <akpm@linux-foundation.org>,
-       keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-       linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH 1/7] KEYS: Fix an RCU warning in the reading of user
- keys
-In-Reply-To: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
-Message-ID: <alpine.LRH.2.00.1005061242540.23351@tundra.namei.org>
-References: <20100430133208.2126.56765.stgit@warthog.procyon.org.uk>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753352Ab0EFCyK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 22:54:10 -0400
+Received: from mail-yx0-f191.google.com ([209.85.210.191]:51049 "EHLO
+	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab0EFCyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 22:54:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=UzgqZCHNQ9mHVTzP13i23yVWEBTiAUtKjPRHkn08EWFWdmCxNeQMEzKOApYxPe+ONl
+         0moJJzJMG5FLdGOWpvnln5C9NRW9mQnHzLCHKfaQ2NCLfsyLdjWe8wfWxxOk6Ayzuvrl
+         wpkGNoiOcK2Uce8PLqgguQVRtmfN7PUSUr19g=
+Subject: [PATCH] mc13783-regulator: fix vaild voltage range checking for
+	mc13783_fixed_regulator_set_voltage
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Sascha Hauer <s.hauer@pengutronix.de>
+Content-Type: text/plain
+Date: Thu, 06 May 2010 10:54:29 +0800
+Message-Id: <1273114469.24703.3.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Okay... patches 1-4 have gone into -linus, along with 'KEYS: Fix RCU 
-handling in key_gc_keyring()'
+In the case of "min_uV == max_uV == mc13783_regulators[id].voltages[0]",
+mc13783_fixed_regulator_set_voltage should return 0 instead of -EINVAL.
 
-The should probably all be in -stable (see the most recent 'keys' patches 
-in -linus).
+This patch also adds a missing ">" character for MODULE_AUTHOR, a
+trivial fix.
 
-Patches 5 & 6 are in:
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+---
+ drivers/regulator/mc13783-regulator.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-The final patch does not apply to my tree -- please rebase it.
-
-
-- James
+diff --git a/drivers/regulator/mc13783-regulator.c
+b/drivers/regulator/mc13783-regulator.c
+index ad036dd..4597d50 100644
+--- a/drivers/regulator/mc13783-regulator.c
++++ b/drivers/regulator/mc13783-regulator.c
+@@ -440,8 +440,8 @@ static int
+mc13783_fixed_regulator_set_voltage(struct regulator_dev *rdev,
+ 	dev_dbg(rdev_get_dev(rdev), "%s id: %d min_uV: %d max_uV: %d\n",
+ 		__func__, id, min_uV, max_uV);
+ 
+-	if (min_uV > mc13783_regulators[id].voltages[0] &&
+-	    max_uV < mc13783_regulators[id].voltages[0])
++	if (min_uV >= mc13783_regulators[id].voltages[0] &&
++	    max_uV <= mc13783_regulators[id].voltages[0])
+ 		return 0;
+ 	else
+ 		return -EINVAL;
+@@ -649,6 +649,6 @@ static void __exit mc13783_regulator_exit(void)
+ module_exit(mc13783_regulator_exit);
+ 
+ MODULE_LICENSE("GPL v2");
+-MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de");
++MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
+ MODULE_DESCRIPTION("Regulator Driver for Freescale MC13783 PMIC");
+ MODULE_ALIAS("platform:mc13783-regulator");
 -- 
-James Morris
-<jmorris@namei.org>
+1.5.4.3
+
+
+
