@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab0EFFrb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 01:47:31 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50737 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab0EFFra (ORCPT
+	id S1752529Ab0EFF7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 01:59:09 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:51196 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab0EFF7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 01:47:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=bBwxqYudj78jQcvs2xCHRs7fciv1LLtvNNgNpPH14CDw/GaOFTDmXLJlnRx9l+mHut
-         p6edSrWeydOAKuPcc3fAqJSMUAl52+sZIhwS6IyHoB3vZQKKNpGJgen3GMJ8zYRq6PQ0
-         2PCZ+z/EJofHua+U+PxgVWtkj+InHS7SGywPU=
-Message-ID: <4BE257EF.9050904@gmail.com>
-Date: Thu, 06 May 2010 08:47:27 +0300
-From: roma1390 <roma1390@gmail.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: stable@kernel.org
-Subject: nfs kernel server causes: kernel BUG at include/linux/module.h:386!
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 6 May 2010 01:59:07 -0400
+Date: Thu, 6 May 2010 14:57:58 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Randy Dunlap <rdunlap@xenotime.net>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: mmotm-2010-0428: swapper_space error
+Message-Id: <20100506145758.84ff7199.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100506134248.aaba5d0f.nishimura@mxp.nes.nec.co.jp>
+References: <20100501084927.2f6c88f6.rdunlap@xenotime.net>
+	<20100506134248.aaba5d0f.nishimura@mxp.nes.nec.co.jp>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 6 May 2010 13:42:48 +0900, Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> sorry...
+> 
+> I'll re-check my build test script and prepare a patch as soon as possible.
+> 
+This is a fix for memcg-move-charge-of-file-pages.patch.
 
-after some nfs server start/stop i hit kernel bug on 2.6.26. There is hope[1] 
-that this bug is fixed[2], and fix is merged[3] into 2.6.29. But there is 
-missing bugfix for older stable kernels.
+After this patch, it passed the build test for all the configs with possible
+combinations of SWAP, SHMEM, MEM_RES_CTLR and MEM_RES_CTLR_SWAP.
 
-Reports for this bug can also be found on distro bug systems[4][5][6][7]. 
-Sadly these bugs are still open.
+===
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-Please backport fix for stable kernels too.
+Build fix for !CONFIG_SWAP case.
 
-roma1390
+mm/built-in.o: In function `mem_cgroup_get_shmem_target':
+(.text+0xde06): undefined reference to `swapper_space'
 
-1. http://linux-nfs.org/pipermail/nfsv4/2009-March/010018.html
-2. 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=22945e4a1c7454c97f5d8aee1ef526c83fef3223
-3. 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=713404d6082fee34a829a0c6d511e4aec72d7654
-4. http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=516376
-5. http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=519348
-6. http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=532561
-7. http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=538000
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+---
+ mm/shmem.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 6f183ef..6517bbd 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2591,10 +2591,12 @@ void mem_cgroup_get_shmem_target(struct inode *inode, pgoff_t pgoff,
+ 
+ 	spin_lock(&info->lock);
+ 	ptr = shmem_swp_entry(info, pgoff, NULL);
++#ifdef CONFIG_SWAP
+ 	if (ptr && ptr->val) {
+ 		entry.val = ptr->val;
+ 		page = find_get_page(&swapper_space, entry.val);
+ 	} else
++#endif
+ 		page = find_get_page(inode->i_mapping, pgoff);
+ 	if (ptr)
+ 		shmem_swp_unmap(ptr);
+-- 
+1.6.5.2
 
