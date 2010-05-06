@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758525Ab0EFODl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 10:03:41 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:27709 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758465Ab0EFODj (ORCPT
+	id S1758819Ab0EFPXs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 11:23:48 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:31162 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab0EFPXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 10:03:39 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:date:message-id:subject:from:to:cc:
-	content-type:x-system-of-record;
-	b=LFTH94PBCZpYJsG37kr5sAjBPmFkqV2Efd02fWRJOr6DUuaJvxaLvFGReiaZBCPQv
-	doPIBsFzyV86nJFs7mnjg==
+	Thu, 6 May 2010 11:23:44 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzzz32i2a8h87h43h65h)
+X-Spam-TCS-SCL: 4:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L20834-02-2QV-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+       oprofile-list <oprofile-list@lists.sourceforge.net>
+Subject: [PATCH 0/7] oprofile/x86: fix cpu hotplug
+Date: Thu, 6 May 2010 15:26:07 +0200
+Message-ID: <1273152374-9392-1-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.0.3
 MIME-Version: 1.0
-Date: Thu, 6 May 2010 16:03:26 +0200
-Message-ID: <AANLkTikQCkR2K438llKOh43yEgW-Bw7j0f8GoXR50A0V@mail.gmail.com>
-Subject: [RFC] perf_events: ctx_flexible_sched_in() not maximizing PMU 
-	utilization
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-       Paul Mackerras <paulus@samba.org>,
-       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>, perfmon2-devel@lists.sf.net
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch series fixes oprofile cpu hotplug. The code was broken and
+causing crashes due to uninitialized counter usage. This can be only
+fixed with a code rework. The first patch is to avoid kernel crashes
+during cpu hotplug. This is a small fix for linux-stable.
 
-Looking at ctx_flexible_sched_in(), the logic is that if  group_sched_in()
-fails for a HW group, then no other HW group in the list is even tried.
-I don't understand this restriction. Groups are independent of each other.
-The failure of one group should not block others from being scheduled,
-otherwise you under-utilize the PMU.
+Ingo, I will send a separate pull request.
 
-What is the reason for this restriction? Can we lift it somehow?
+-Robert
 
-static void
-ctx_flexible_sched_in(struct perf_event_context *ctx,
-                      struct perf_cpu_context *cpuctx)
-{
-        struct perf_event *event;
-        int can_add_hw = 1;
 
-        list_for_each_entry(event, &ctx->flexible_groups, group_entry) {
-                /* Ignore events in OFF or ERROR state */
-                if (event->state <= PERF_EVENT_STATE_OFF)
-                        continue;
-                /*
-                 * Listen to the 'cpu' scheduling filter constraint
-                 * of events:
-                 */
-                if (event->cpu != -1 && event->cpu != smp_processor_id())
-                        continue;
-
-                if (group_can_go_on(event, cpuctx, can_add_hw))
-                        if (group_sched_in(event, cpuctx, ctx))
-                                can_add_hw = 0;
-        }
-}
