@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab0EFEZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 00:25:21 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46600 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012Ab0EFEZT convert rfc822-to-8bit (ORCPT
+	id S1752148Ab0EFEoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 00:44:19 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:37639 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab0EFEoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 00:25:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100505234025.GB4838@opensource.wolfsonmicro.com>
-References: <20100505185225.GA4411@srcf.ucam.org>
-	 <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
-	 <m2oa55d774e1005051356n3610d780ra42200c1785e02bd@mail.gmail.com>
-	 <20100505234025.GB4838@opensource.wolfsonmicro.com>
-Date: Wed, 5 May 2010 21:25:18 -0700
-Message-ID: <l2kd6200be21005052125rc43217a2r8c65bc98e7a5d3d4@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Matthew Garrett <mjg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 May 2010 00:44:18 -0400
+Date: Thu, 6 May 2010 13:42:48 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: mmotm-2010-0428: swapper_space error
+Message-Id: <20100506134248.aaba5d0f.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100501084927.2f6c88f6.rdunlap@xenotime.net>
+References: <20100501084927.2f6c88f6.rdunlap@xenotime.net>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 5, 2010 at 4:40 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Wed, May 05, 2010 at 01:56:07PM -0700, Brian Swetland wrote:
-...
->> taken on MSM, regardless of suspend state.  I don't view suspend as
->> something that stops audio playback in progress.  Sort of similar to
->> how the modem doesn't power off down when the system is in suspend,
->> etc.
->
-> This really does depend heavily on system design and the intended
-> function of the suspend on the part of the initiator.  In many systems
-> suspend will remove sufficient power to stop audio running even if it
-> were desired, and there's the idea with existing manually initiated
-> suspends that the system should stop what it's doing and go into a low
-> power, low responsiveness state.  Some systems will initiate a suspend
-> with active audio paths (especially those to or from the AP) which they
-> expect to be stopped.
->
+sorry...
 
-You can support both in the same driver in some cases (without a
-switch). If the hardware cannot wake the system when it needs more
-audio buffers, then the driver needs to block suspend while audio is
-playing. Since suspend blockers only block opportunistic suspend, the
-driver can also implement suspend to stop audio playback and it will
-only be called for forced suspend.
+I'll re-check my build test script and prepare a patch as soon as possible.
 
--- 
-Arve Hjønnevåg
+On Sat, 1 May 2010 08:49:27 -0700, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> mm/built-in.o: In function `mem_cgroup_get_shmem_target':
+> (.text+0x1f681): undefined reference to `swapper_space'
+> 
+> .config attached.
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> 
