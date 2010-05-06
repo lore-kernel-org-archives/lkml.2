@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab0EFUwb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 16:52:31 -0400
-Received: from mail.perches.com ([173.55.12.10]:1956 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932558Ab0EFUwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 16:52:30 -0400
-Subject: Re: indiscriminate get_maintainer.pl usage
-From: Joe Perches <joe@perches.com>
-To: Davide Libenzi <davidel@xmailserver.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-       Changli Gao <xiaosuo@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1005061056300.2642@makko.or.mcafeemobile.com>
-References: <1273111054-10141-1-git-send-email-xiaosuo@gmail.com>
-	 <4BE25AE8.1060607@s5r6.in-berlin.de>
-	 <s2t412e6f7f1005052319sdbf3fdfbg256d11b983c4f304@mail.gmail.com>
-	 <4BE26472.6040805@s5r6.in-berlin.de>
-	 <alpine.DEB.2.00.1005060826460.10407@makko.or.mcafeemobile.com>
-	 <1273164755.1537.40.camel@Joe-Laptop.home>
-	 <alpine.DEB.2.00.1005061056300.2642@makko.or.mcafeemobile.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 May 2010 13:52:28 -0700
-Message-ID: <1273179148.1537.145.camel@Joe-Laptop.home>
+	id S1752139Ab0EFU7j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 16:59:39 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:41659 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab0EFU7i convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 16:59:38 -0400
+Date: Thu, 6 May 2010 22:59:24 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
+       <linux-pm@lists.linux-foundation.org>, list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       <jslaby@suse.cz>
+Subject: Re: [linux-pm] s2ram slow (radeon) / failing (usb)
+Message-ID: <20100506225924.3131a5ea@neptune.home>
+In-Reply-To: <Pine.LNX.4.44L0.1005061426160.1708-100000@iolanthe.rowland.org>
+References: <20100506194711.75979d22@neptune.home>
+	<Pine.LNX.4.44L0.1005061426160.1708-100000@iolanthe.rowland.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-06 at 10:59 -0700, Davide Libenzi wrote:
-> > Right now, the default for # of git commits signed to be
-> > added to the CC list is 1.  It's possible to change the default.
-> >     --git-min-signatures => number of signatures required (default: 1)
-> >     --git-max-maintainers => maximum maintainers to add (default: 5)
-> >     --git-min-percent => minimum percentage of commits required (default: 5)
-> > Maybe some fine-tuning of the defaults could be useful.
-> > Suggestions?
-> (not knowing the get_maintainers internals ...)
-> Maybe if you weigh each contributor by the amount (in terms of diffstat 
-> modulo) of changes, you can get more accurate results.
+On Thu, 06 May 2010 Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Thu, 6 May 2010, Bruno [UTF-8] Prémont wrote:
+> 
+> > > Bruno, can you confirm that the hang occurs during one of those 
+> > > cancel_work_sync() calls?
+> > 
+> > No, it's not one of the cancel_work_sync() that hangs but it's the
+> > del_timer_sync() right before them that hangs!
+> > (del_timer_sync() also hangs if I put it last, so the cancel_work_sync()
+> > don't hang anything)
+> > 
+> > static void hid_cancel_delayed_stuff(struct usbhid_device *usbhid)
+> > {
+> > 	del_timer_sync(&usbhid->io_retry); /* this one never returns */
+> > 	cancel_work_sync(&usbhid->restart_work);
+> > 	cancel_work_sync(&usbhid->reset_work);
+> > }
+> 
+> Okay, I see what the problem is.  In usbhid_start() there's a bunch of
+> statements initializing parts of the usbhid structure.  When probing
+> fails those statements don't get executed, so the timer and workqueue
+> things aren't set up properly.
+> 
+> This patch should fix it.
 
-That might tend to overweight cleanup against actual logic patches,
-especially as the period for commits tracked is defaulted to 1 year. 
+This very much reminds me the resume issue with the same keyboard on a
+!CONFIG_SMP system back in February when the fix was to copy/move 
+usbhid->intf = intf; from usbhid_start() to usbhid_probe()!
 
-> Part of the weight might be related to the time distance
-> (relative to current time) since the changeset.
-
-Which is kind of what activity alone does.
-
-I think get_maintainer with --git (the default):
-
-Without a named MAINTAINER:
-
-For relatively active files: works moderately well.
-
-For relatively inactive files: might work less well.
-
-It tends to hide the original developer and show people
-that submit cleanup or fix patches.
-
-Maybe the --git portion could be reduce the number of
-commit signers added when files have named MAINTAINERS.
-
-Without named MAINTAINERS, maybe the file should be
-inspected for author info and those persons added.
-
-If the original commit is after Linus' first wholesale
-commit of 2.6.12, maybe the first git author should be
-added.
-
-Dunno.  I think any of those might be slight improvements,
-but get_maintainers isn't really that much of an issue
-as-is.  I think it more important to get the correct
-MAINTAINERS entries and file patterns.
+Hopefully these are all those initializations that need to be taken
+care of...
 
 
+With this patch system now it passes "devices" level pm_test as well as
+full suspend process, even multiple times in a row (though it's still
+damn slow to resume IF no_console_suspend is passed to kernel - radeon
+KMS?, but that's a new branch from start of this thread)
+
+Reported-by: Bruno Prémont <bonbons@linux-vserver.org>
+Tested-By: Bruno Prémont <bonbons@linux-vserver.org>
+
+
+Now it can continue hunting the next issues preventing smooth S3
+experience...
+
+Thanks,
+Bruno
+
+> Index: usb-2.6/drivers/hid/usbhid/hid-core.c
+> ===================================================================
+> --- usb-2.6.orig/drivers/hid/usbhid/hid-core.c
+> +++ usb-2.6/drivers/hid/usbhid/hid-core.c
+> @@ -998,13 +998,6 @@ static int usbhid_start(struct hid_devic
+>  		}
+>  	}
+>  
+> -	init_waitqueue_head(&usbhid->wait);
+> -	INIT_WORK(&usbhid->reset_work, hid_reset);
+> -	INIT_WORK(&usbhid->restart_work, __usbhid_restart_queues);
+> -	setup_timer(&usbhid->io_retry, hid_retry_timeout, (unsigned long) hid);
+> -
+> -	spin_lock_init(&usbhid->lock);
+> -
+>  	usbhid->urbctrl = usb_alloc_urb(0, GFP_KERNEL);
+>  	if (!usbhid->urbctrl) {
+>  		ret = -ENOMEM;
+> @@ -1180,6 +1173,12 @@ static int usbhid_probe(struct usb_inter
+>  	usbhid->intf = intf;
+>  	usbhid->ifnum = interface->desc.bInterfaceNumber;
+>  
+> +	init_waitqueue_head(&usbhid->wait);
+> +	INIT_WORK(&usbhid->reset_work, hid_reset);
+> +	INIT_WORK(&usbhid->restart_work, __usbhid_restart_queues);
+> +	setup_timer(&usbhid->io_retry, hid_retry_timeout, (unsigned long) hid);
+> +	spin_lock_init(&usbhid->lock);
+> +
+>  	ret = hid_add_device(hid);
+>  	if (ret) {
+>  		if (ret != -ENODEV)
+> 
