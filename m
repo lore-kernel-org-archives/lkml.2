@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab0EFHqD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 03:46:03 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48734 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557Ab0EFHqA convert rfc822-to-8bit (ORCPT
+	id S1753381Ab0EFOlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 10:41:51 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:43366 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837Ab0EFOlu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 03:46:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fv/GUb/VzwMfd1qA3ngZU27B704uwezDRrnq9prj0FL3GeUO/ZekRIzC+e3skPnizg
-         yQpVlZEOp/Xf2/Lp+50neokUIbP/7FpbbtbLWG4AyBO4adLGxJobsP+LJrAfJGQNXFQN
-         VB7mqUFYXqkCuotOJ+zl4lN2A9ZmAUckLVflE=
+	Thu, 6 May 2010 10:41:50 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=HLzqDOoRw6JVmgSi3quwt8tLil8kwnt+Deg/e+vQMYZkMJiTibluhYSidBIVG55uJ
+	pTHXnjbBzGH5Sd3rqfcXA==
 MIME-Version: 1.0
-In-Reply-To: <20100506074231.GA8625@elte.hu>
-References: <20100505150740.GB5686@lenovo> <20100505165731.GA6320@nowhere>
-	 <20100505174234.GH5686@lenovo> <20100506064453.GI1172@elte.hu>
-	 <w2vaa79d98a1005060039ua7dd1b0t952fcd8662d4d759@mail.gmail.com>
-	 <20100506074231.GA8625@elte.hu>
-Date: Thu, 6 May 2010 11:45:56 +0400
-Message-ID: <n2maa79d98a1005060045ke0f87f4aw8b86da0440a019b3@mail.gmail.com>
-Subject: Re: [PATCH -tip] x86,perf: P4 PMU -- protect sensible procedures from 
-	preemption
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1273155640.5605.300.camel@twins>
+References: <AANLkTikQCkR2K438llKOh43yEgW-Bw7j0f8GoXR50A0V@mail.gmail.com>
+	 <1273155640.5605.300.camel@twins>
+Date: Thu, 6 May 2010 16:41:46 +0200
+Message-ID: <AANLkTilOw0L-Uersi1weuQDuyFAGKV2zb7Nqmiav2kej@mail.gmail.com>
+Subject: Re: [RFC] perf_events: ctx_flexible_sched_in() not maximizing PMU 
+	utilization
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
+       Paul Mackerras <paulus@samba.org>,
+       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 6, 2010, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->
->> On Thursday, May 6, 2010, Ingo Molnar <mingo@elte.hu> wrote:
->> >
->> > * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->> >
->> >> On Wed, May 05, 2010 at 06:57:34PM +0200, Frederic Weisbecker wrote:
->> >> ...
->> >> > > @@ -741,7 +743,7 @@ static int p4_pmu_schedule_events(struct
->> >> > > ?{
->> >> > > ? unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
->> >> > > ? unsigned long escr_mask[BITS_TO_LONGS(ARCH_P4_TOTAL_ESCR)];
->> >> > > - int cpu = raw_smp_processor_id();
->> >> > > + int cpu = get_cpu();
->> >> > > ? struct hw_perf_event *hwc;
->> >> > > ? struct p4_event_bind *bind;
->> >> > > ? unsigned int i, thread, num;
->> >> > > @@ -777,6 +779,7 @@ reserve:
->> >> > > ? }
->> >> > >
->> >> > > ?done:
->> >> > > + put_cpu();
->> >> > > ? return num ? -ENOSPC : 0;
->> >> > > ?}
->> >> >
->> >> > That's no big deal. But I think the schedule_events() is called on
->> >> > pmu::enable() time, when preemption is already disabled.
->> >> >
->> >>
->> >> We'll be on a safe side using get/put_cpu here (ie in case
->> >> if something get changed one day).
->> >
->> > hm, when 'something gets changed one day' we'll see a warning when using
->> > unsafe primitives.
->> >
->> > So if preemption is always off here we really should not add extra runtime
->> > overhead via get_cpu()/put_cpu().
->> >
->> > So wouldnt it be better (and faster) to disable preemption in
->> > hw_perf_event_init(), which seems to be the bit missing?
->> >
->> >  ? ? ? ?Ingo
->> >
+On Thu, May 6, 2010 at 4:20 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2010-05-06 at 16:03 +0200, Stephane Eranian wrote:
+>> Hi,
 >>
->> the thing are that p4 is only snippet here which is sensible to preemtion,
->> and hw_perf_event_init is executing with preemtion off (but i could miss the
->> details here, dont have code under my hands at moment, so PeterZ help is
->> needed ;) but more important reason why i've saved get/put here is that
->> otherwise i would not have rights to put tested-by tag, since it would not
->> be the patch Steven has tested. We could make a patch on top of this one, or
->> we could drop this one, make new with explicit preemt off in caller and use
->> smp_processor_id in p4 schedule routine. What is preferred?
+>> Looking at ctx_flexible_sched_in(), the logic is that if Â group_sched_in()
+>> fails for a HW group, then no other HW group in the list is even tried.
+>> I don't understand this restriction. Groups are independent of each other.
+>> The failure of one group should not block others from being scheduled,
+>> otherwise you under-utilize the PMU.
+>>
+>> What is the reason for this restriction? Can we lift it somehow?
 >
-> We want the one with the least runtime overhead. These are instrumentation
-> routines, so we want to optimize them as much as possible.
+> Sure, but it will make scheduling much more expensive. The current
+> scheme will only ever check the first N events because it stops at the
+> first that fails, and since you can max fix N events on the PMU its
+> constant time.
 >
-> Thanks,
->
->         Ingo
+You may fail not because the PMU is full but because an event is incompatible
+with the others, i.e., there may still be room for more evens. By relying on the
+RR to get coverage for all events, you also increase blind spots for
+events which
+have been skipped. Longer blind spots implies less accuracy when you scale.
+
+> To fix this issue you'd have to basically always iterate all events and
+> only stop once the PMU is fully booked, which reduces to an O(n) worst
+> case algorithm.
 >
 
-ok, Ingo, dont apply this patch then for a while.
+Yes, but if you have X events and you don't know if you have at least N
+that are compatible with each other, then you have to scan the whole list.
+
+> But yeah, I did think of making the thing an RB-tree and basically
+> schedule on service received, that should fix the lop-sided RR we get
+> with constrained events.
+>
