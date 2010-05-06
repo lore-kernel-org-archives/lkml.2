@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab0EFHMc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 03:12:32 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50611 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264Ab0EFHMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 03:12:31 -0400
-Date: Thu, 6 May 2010 09:11:53 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <tj@kernel.org>, efault@gmx.de, avi@redhat.com, paulus@samba.org,
-       acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf
- on top of TP
-Message-ID: <20100506071153.GA3626@elte.hu>
-References: <1273050400.1642.229.camel@laptop>
- <4BE13B33.3030709@kernel.org>
- <1273053073.1642.235.camel@laptop>
- <4BE1406C.2000400@kernel.org>
- <1273059488.1642.245.camel@laptop>
- <4BE1648B.1080709@kernel.org>
- <20100505165532.GC14323@elte.hu>
- <1273083173.1642.250.camel@laptop>
- <20100506063116.GE1172@elte.hu>
- <1273129464.5605.228.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273129464.5605.228.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752785Ab0EFHBa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 03:01:30 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38311 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026Ab0EFHB2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 03:01:28 -0400
+Subject: Re: sched: arch_scale_freq_power (and other cpu_power / sched
+ related  questions)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Chan <mike@android.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <s2i8bb80c381005051935zd5334eeby28865e9fdb206e55@mail.gmail.com>
+References: <s2i8bb80c381005051935zd5334eeby28865e9fdb206e55@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 06 May 2010 09:01:21 +0200
+Message-ID: <1273129281.5605.225.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Thu, 2010-05-06 at 08:31 +0200, Ingo Molnar wrote:
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > Well, I'd much rather just see a direct call in the code than having to 
-> > > reverse engineer wth hangs onto that _EVENT() junk.
-> > 
-> > Direct calls into code were fine 10 years ago, but since then we got:
-> > 
-> >  - preempt notifiers
+On Wed, 2010-05-05 at 19:35 -0700, Mike Chan wrote:
+> Before I end up duplicating a bunch of work in the scheduler / cpufreq
+> / power tracking. I wanted avoid such an figure out what exactly all
+> this existing code is doing. Right now I am just interested in how the
+> kernel is accounting for cpu power, and less on the actual load
+> balancing work. In particular, total power consumed over the lifetime
+> of the system, instead of what seems to be a diminished weighted scale
+> used for all the scheduler cpu_power calculations.
 > 
-> Are per task an no good for driving perf.
-
-No, but they could be expressed via tracepoints.
-
-> >  - sw events
-> >  - tracepoints
+> kernel/sched.c
 > 
-> Are unrelated to the core perf scheduler calls.
-
-Still they pose 3 different types of callback regimes, all for a slightly 
-different purpose.
-
-> > Which add up to a lot more than just a plain call into code.
-> > 
-> > Also, with the jump-optimizations we will have tracepoints that are 
-> > _cheaper_ than a plain function call.
+> First, the arch_scale_freq_power() hooks, what are the units that all
+> these calculations are based off of?
+> In update_cup_power() It seems "power" gets multiplied by
+> SCHED_LOAD_SCALE, then >> by SCHED_LOAD_SHIFT. (1024 *=1024) >> 10.
 > 
-> Which can just as easily be used on the core perf hooks.
+> For Android, at least with omap, msm, tegra platforms I am attempting
+> to get cpu power tracking (with cpufreq support) and it looks like
+> there is some half-way support with x86.
 > 
-> > > Also, we don't need ABI muck for this.
-> > 
-> > we already have an ABIs in place here - this would just properly unify and 
-> > enumerate it.
-> 
-> I'm not getting it, this is about in-kernel stuff, there are _NO_ in kernel 
-> ABIs.
+> It seems that for x86 the kernel returns the default value, which is
+> SCHED_LOAD_SCALE (1 << 10). Does anyone know how the magic number 1024
+> translates to cpu power consumption (with frequency scaling) in
+> relative or absolute power numbers.
 
-Yes - but the callbacks i mentioned do include ABIs, such as the sw event 
-callbacks.
+It doesn't.
 
-So my point is to have one coherent callback mechanism for it.
+All the cpu_power stuff is for SMP load-balancing, and basically means
+work-capacity. We normalize the per cpu runqueue weights with the
+cpu_power to get an even (fair) distribution.
 
-That said, i agree with you that turning the basic perf scheduling calls into 
-events goes one step too far. But all the _other_ 3 types of callbacks (and we 
-might as well add a fourth type as well: the butt-ugly hotplug event notifier 
-chains) should be consolidated really.
+Say one cpu only has half the capacity of another cpu, then its not fair
+to given them equal weight, because the tasks on the 'slow' cpu would
+only progress at half the speed of those on the other.
 
-	Ingo
+The cpufreq hooks are there if someone were to peg one cpu at a lower
+frequency than others. Ondemand like thing would still have the capacity
+of the highest frequency (since clearly it would increase the speed once
+there was demand).
+
+Now what exactly are you trying to do? 
+
+We have no way of actually accounting the actual power consumed, afaik
+(on x86) there simply is no means of actually measuring the cpu power
+consumption (with recent ACPI-4 there are (optional?) calls to measure
+system power consumption, but that's no good).
+
+
