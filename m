@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105Ab0EFD5I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 23:57:08 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55526 "EHLO
+	id S1751016Ab0EFEDh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 00:03:37 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45432 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab0EFD5G (ORCPT
+	with ESMTP id S1750699Ab0EFEDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 23:57:06 -0400
-Date: Wed, 5 May 2010 23:57:04 -0400
+	Thu, 6 May 2010 00:03:35 -0400
+Date: Thu, 6 May 2010 00:03:31 -0400
 From: Kyle McMartin <kyle@mcmartin.ca>
-To: Tammy <tammy000@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Git Bad Object
-Message-ID: <20100506035704.GB4902@bombadil.infradead.org>
-References: <w2s7fcc02551005052051s7c1810c1kad9cc44f3fb3ff5d@mail.gmail.com>
+To: wzt.wzt@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+       kyle@mcmartin.ca, deller@gmx.de, jejb@parisc-linux.org
+Subject: Re: [PATCH] Parisc: Check kmalloc return value before use the
+	buffer in ccio-dma.c
+Message-ID: <20100506040331.GC4902@bombadil.infradead.org>
+References: <20100506024208.GB15956@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <w2s7fcc02551005052051s7c1810c1kad9cc44f3fb3ff5d@mail.gmail.com>
+In-Reply-To: <20100506024208.GB15956@localhost.localdomain>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 11:51:40PM -0400, Tammy wrote:
-> Hi,
-> 
-> I was looking at the commits in
-> http://www.kernel.org/pub/linux/kernel/v2.6/ChangeLog-2.6.20.14. Seems
-> all the commits are not in the current git.
-> 
-> For example, if I run 'git show
-> 0b7da0500bbf612fc532358c90aad4497309d61a', I got 'fatal: bad object
-> 0b7da0500bbf612fc532358c90aad4497309d61a'. Why is this the case? I
-> thought all these commits are committed into the git repository. Thank
-> you!
-> 
+On Thu, May 06, 2010 at 10:42:08AM +0800, wzt.wzt@gmail.com wrote:
+> +	if (!name) {
+> +		printk(KERN_ERR "%s() failed to get enough memory\n", __func__);
+> +		return ;
+> +	}
+> +
+>  	snprintf(name, 14, "GSC Bus [%d/]", ioc->hw_path);
 
-They aren't all in Linus' git tree, because the stable kernels are not
-maintained by him, but by a team of people in another git tree.
+This code can't fail, since the failure case won't be handled by the
+probe function, and will continue along without properly initializing
+the resources and will fail later. While we could add proper error
+handling, if these functions are called, the ccio IOMMU exists on the
+machine, and without it, we can't do any DMA (amongst other things.)
+So in that case, if this kmalloc fails (which it really shouldn't...)
+we're pretty much screwed.
 
-The stable aggregate tree will have all those commits in it here:
-http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6-stable.git;a=summary
+We can change it to GFP_ATOMIC|__GFP_NOFAIL so it will retry infinitely,
+or we can panic in the error path with a nice error message so the users
+knows why his machine isn't going to work.
+
+I suggest the latter since you'll have the test to squelch gcc warnings
+and such.
 
 regards, Kyle
+
