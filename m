@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab0EFG75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 02:59:57 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:16817 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171Ab0EFG7z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 02:59:55 -0400
-Subject: Re: [PATCH v4] mtd: Do not corrupt backing device of device node
- inode
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: David Woodhouse <dwmw2@infradead.org>, Jan Kara <jack@suse.cz>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       David Howells <dhowells@redhat.com>,
-       Alexander Shishkin <virtuoso@slind.org>, linux-mtd@lists.infradead.org,
-       linux-fsdevel@vger.kernel.org, stable@kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <1273074054-11849-1-git-send-email-kirill@shutemov.name>
-References: <1273074054-11849-1-git-send-email-kirill@shutemov.name>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 May 2010 09:39:19 +0300
-Message-ID: <1273127959.3702.200.camel@localhost>
+	id S932539Ab0EFSB5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 14:01:57 -0400
+Received: from outbound-mail.dca.untd.com ([64.136.47.15]:42947 "HELO
+	outbound-mail.dca.untd.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932497Ab0EFSBz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 14:01:55 -0400
+X-UNTD-OriginStamp: GmNWB/6mZOPJnljh7SbH9J0fP/iMKWDmToqrkzQQ81MvsFV0PZi6v9hciWAFyl5w
+X-Originating-IP: [41.214.104.23]
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 06 May 2010 06:39:59.0685 (UTC) FILETIME=[F2FE0F50:01CAECE6]
-X-Nokia-AV: Clean
+From: "astuzokaya@netzero.net" <astuzokaya@netzero.net>
+Date: Thu, 6 May 2010 15:28:10 GMT
+Subject: astuzokaya@yahoo.co.uk
+X-Mailer: Webmail Version 6.1_P2
+Message-Id: <20100506.082810.21444.76@webmail07.dca.untd.com>
+Content-Transfer-Encoding: 7BIT
+Content-Disposition: inline
+Content-Type: text/plain; charset=US-ASCII
+To: Undisclosed-recipients:;
+X-UNTD-BodySize: 625
+X-UNTD-SIGN-INFO: 1fc4f42199b541f46d7945dded403845d115b965243131a494b46d5454406d40406d0db9609dc1809da19d0d
+X-ContentStamp: 3:5:2410780603
+X-MAIL-INFO: 1f6d353980d9c1c1f171449130c4c180cd9091e4cd290dc00941f03d64e1e454cdc0f4f9a0
+X-UNTD-Peer-Info: 10.171.12.147|webmail07.dca.untd.com|outbound-bu1.dca.untd.com|astuzokaya@netzero.net
+X-UNTD-STORE-INFO: URL_DOMAIN:astuzokaya@yahoo.co.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-05 at 18:40 +0300, Kirill A. Shutemov wrote:
-> We cannot modify file->f_mapping->backing_dev_info, because it will corrupt
-> backing device of device node inode, since file->f_mapping is equal to
-> inode->i_mapping (see __dentry_open() in fs/open.c).
-> 
-> Let's introduce separate inode for MTD device with appropriate backing
-> device.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> ---
-> Changelog:
->  v3 -> v4:
->   - Use igrab() instead of __iget inside the inode_lock;
->   - Add stable@ to CC list.
->  v2 -> v3:
->   - Rebase to mtd-2.6.git.
->  v1 -> v2:
->   - Fix error handling based on comments by Jan Kara.
+HELLO,
+my name is Miss astu.
+It gives me great pleasure by seeing your mail.i felt very happy for having a net 
+friend.i will be greatfulif we continue our relationship as long as it goes.after seeing 
+your mail,so that i can send my pictures to you;i felt more interested in knowing more 
+about you in person & personal life.As far as i am concerned, being a normal person 
+leading a normal life presently residing .
+Hope so you will reply soon with my private email asddress so that i will get back to you;
+                   (  astuzokaya@yahoo.co.uk   )
+with regard's
 
-Pushed to l2-mtd-2.6.git / dunno
-
-Also added Jan's ack which disappeared in v4
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Your's loving friend
+Astu  love.
 
