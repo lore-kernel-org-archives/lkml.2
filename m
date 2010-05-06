@@ -1,179 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab0EFQRW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 12:17:22 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:39459 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932293Ab0EFQRU convert rfc822-to-8bit
+	id S1758070Ab0EFMyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 08:54:09 -0400
+Received: from outbound-mail.dca.untd.com ([64.136.47.15]:41281 "HELO
+	outbound-mail.dca.untd.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752238Ab0EFMyH convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 12:17:20 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>,
-       "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
-CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-       "'akpm@osdl.org'" <akpm@osdl.org>,
-       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Thu, 6 May 2010 10:17:01 -0600
-Subject: [PATCH 5/7] scsi: megaraid_sas - Add input parameter for
- max_sectors 
-Thread-Topic: [PATCH 5/7] scsi: megaraid_sas - Add input parameter for
- max_sectors 
-Thread-Index: Aco28IhK0BCwqEkwToSTDcG+BIA9kwDb1hagAACJvwADF6mW4AvxomIAHahLLtAAA1nlIA==
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3CDB80C1A@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>
- <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 6 May 2010 08:54:07 -0400
+X-UNTD-OriginStamp: GmNWB/6mZOPJnljh7SbH9J0fP/iMKWDmDLfijz4V7GhMxoKfea17o7CFVgWYDdTu
+X-Originating-IP: [41.208.136.104]
+Mime-Version: 1.0
+From: "astuzokaya@netzero.net" <astuzokaya@netzero.net>
+Date: Thu, 6 May 2010 11:56:26 GMT
+Subject: astuzokaya@yahoo.co.uk
+X-Mailer: Webmail Version 6.1_P2
+Message-Id: <20100506.045626.22819.79@webmail20.dca.untd.com>
+Content-Transfer-Encoding: 7BIT
+Content-Disposition: inline
+Content-Type: text/plain; charset=US-ASCII
+To: Undisclosed-recipients:;
+X-UNTD-BodySize: 625
+X-UNTD-SIGN-INFO: 109ce8a1c1b1ace889798c5d1cc5e98c15cc29c988b5b5719159894d4dc589c5c58941298d656d0165bd6541
+X-ContentStamp: 3:5:2410780603
+X-MAIL-INFO: 10896878012d6d6dd145e1ed0d9c6d0185cded9d8581412849ac5c2c3d7c9d4d8528e81811
+X-UNTD-Peer-Info: 10.171.12.160|webmail20.dca.untd.com|outbound-bu1.dca.untd.com|astuzokaya@netzero.net
+X-UNTD-STORE-INFO: SENDER:astuzokaya@netzero.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver add the input parameters support for max_sectors for our gen2 chip.  Customer can
-Set the max_sectors support to 1MB for gen2 chip during the driver load.
+HELLO,
+my name is Miss astu.
+It gives me great pleasure by seeing your mail.i felt very happy for having a net 
+friend.i will be greatfulif we continue our relationship as long as it goes.after seeing 
+your mail,so that i can send my pictures to you;i felt more interested in knowing more 
+about you in person & personal life.As far as i am concerned, being a normal person 
+leading a normal life presently residing .
+Hope so you will reply soon with my private email asddress so that i will get back to you;
+                   (  astuzokaya@yahoo.co.uk   )
+with regard's
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+Your's loving friend
+Astu  love.
 
----
-megaraid_sas.c |   74 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-megaraid_sas.h |    1
- 2 files changed, 75 insertions(+)
-
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
---- old/drivers/scsi/megaraid/megaraid_sas.c	2010-05-03 05:50:40.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-05-03 09:55:58.000000000 -0400
-@@ -57,6 +57,15 @@ module_param_named(poll_mode_io, poll_mo
- MODULE_PARM_DESC(poll_mode_io,
- 	"Complete cmds from IO path, (default=0)");
- 
-+/*
-+ * Number of sectors per IO command
-+ * Will be set in megasas_init_mfi if user does not provide
-+ */
-+static unsigned int max_sectors = 0;
-+module_param_named(max_sectors, max_sectors, int, 0);
-+MODULE_PARM_DESC(max_sectors,
-+	"Maximum number of sectors per IO command");
-+
- MODULE_LICENSE("GPL");
- MODULE_VERSION(MEGASAS_VERSION);
- MODULE_AUTHOR("megaraidlinux@lsi.com");
-@@ -3566,6 +3575,32 @@ static int megasas_start_aen(struct mega
- 				    class_locale.word);
- }
- 
-+static ssize_t
-+sysfs_max_sectors_read(struct kobject *kobj, struct bin_attribute *bin_attr, 
-+			char *buf, loff_t off, size_t count)
-+{
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	
-+	struct Scsi_Host *host = class_to_shost(dev);
-+
-+	struct megasas_instance *instance = 
-+				(struct megasas_instance *)host->hostdata;
-+
-+	count = sprintf(buf,"%u\n", instance->max_sectors_per_req);
-+
-+	return count+1;
-+}
-+
-+static struct bin_attribute sysfs_max_sectors_attr = {
-+	.attr = {
-+		.name = "max_sectors",
-+		.mode = S_IRUSR|S_IRGRP|S_IROTH,
-+		.owner = THIS_MODULE,
-+	},
-+	.size = 7,
-+	.read = sysfs_max_sectors_read,
-+};
-+
- /**
-  * megasas_io_attach -	Attaches this driver to SCSI mid-layer
-  * @instance:		Adapter soft state
-@@ -3573,6 +3608,7 @@ static int megasas_start_aen(struct mega
- static int megasas_io_attach(struct megasas_instance *instance)
- {
- 	struct Scsi_Host *host = instance->host;
-+	u32		error;
- 
- 	/*
- 	 * Export parameters required by SCSI mid-layer
-@@ -3588,6 +3624,27 @@ static int megasas_io_attach(struct mega
- 			instance->max_fw_cmds - MEGASAS_INT_CMDS;
- 	host->this_id = instance->init_id;
- 	host->sg_tablesize = instance->max_num_sge;
-+	/*
-+	 * Check if the module parameter value for max_sectors can be used
-+	 */
-+	if (max_sectors && max_sectors < instance->max_sectors_per_req)
-+		instance->max_sectors_per_req = max_sectors;
-+	else {
-+		if (max_sectors) {
-+			if (((instance->pdev->device ==
-+				PCI_DEVICE_ID_LSI_SAS1078GEN2) ||
-+				(instance->pdev->device == 
-+				PCI_DEVICE_ID_LSI_SAS0079GEN2)) && 
-+				(max_sectors <= MEGASAS_MAX_SECTORS)) {
-+					instance->max_sectors_per_req = max_sectors;
-+			} else {
-+				printk(KERN_INFO "megasas: max_sectors should be > 0 and"
-+			 		"<= %d (or < 1MB for GEN2 controller)\n",
-+					instance->max_sectors_per_req);
-+			}
-+		}
-+	}
-+
- 	host->max_sectors = instance->max_sectors_per_req;
- 	host->cmd_per_lun = 128;
- 	host->max_channel = MEGASAS_MAX_CHANNELS - 1;
-@@ -3604,10 +3661,27 @@ static int megasas_io_attach(struct mega
- 	}
- 
- 	/*
-+	 * Create sysfs entries for module paramaters
-+	 */
-+	error = sysfs_create_bin_file(&instance->host->shost_dev.kobj,
-+			&sysfs_max_sectors_attr);
-+	
-+	if (error) {
-+		printk(KERN_INFO "megasas: Error in creating the sysfs entry"
-+				" max_sectors.\n");
-+		goto out_remove_host;
-+	}
-+
-+	/*
- 	 * Trigger SCSI to scan our drives
- 	 */
- 	scsi_scan_host(host);
- 	return 0;
-+
-+out_remove_host:
-+        scsi_remove_host(host);
-+        return error;
-+
- }
- 
- static int
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.h new/drivers/scsi/megaraid/megaraid_sas.h
---- old/drivers/scsi/megaraid/megaraid_sas.h	2010-05-03 05:50:40.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.h	2010-05-03 09:56:08.000000000 -0400
-@@ -706,6 +706,7 @@ struct megasas_ctrl_info {
- #define MEGASAS_MAX_LD_IDS			(MEGASAS_MAX_LD_CHANNELS * \
- 						MEGASAS_MAX_DEV_PER_CHANNEL)
- 
-+#define MEGASAS_MAX_SECTORS                    (2*1024)
- #define MEGASAS_DBG_LVL				1
- 
- #define MEGASAS_FW_BUSY				1
