@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758071Ab0EFMwn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 08:52:43 -0400
-Received: from outbound-mail.dca.untd.com ([64.136.47.15]:37704 "HELO
-	outbound-mail.dca.untd.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756983Ab0EFMwm convert rfc822-to-8bit
+	id S1753325Ab0EFSj5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 14:39:57 -0400
+Received: from web51006.mail.re2.yahoo.com ([206.190.38.137]:40604 "HELO
+	web51006.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751324Ab0EFSj4 convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 08:52:42 -0400
-X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 May 2010 08:52:42 EDT
-X-UNTD-OriginStamp: GmNWB/6mZOPJnljh7SbH9J0fP/iMKWDmG2ttm7/M0WcP5ONKHTw2Wt7Y8XBdrvaC
-X-Originating-IP: [41.208.136.104]
-Mime-Version: 1.0
-From: "astuzokaya@netzero.net" <astuzokaya@netzero.net>
-Date: Thu, 6 May 2010 11:56:59 GMT
-Subject: astuzokaya@yahoo.co.uk
-X-Mailer: Webmail Version 6.1_P2
-Message-Id: <20100506.045659.22819.80@webmail20.dca.untd.com>
-Content-Transfer-Encoding: 7BIT
-Content-Disposition: inline
-Content-Type: text/plain; charset=US-ASCII
-To: Undisclosed-recipients:;
-X-UNTD-BodySize: 625
-X-UNTD-SIGN-INFO: 301d0141793d490100313c0c8dbd813c29b8adfcb119197d4508002121bd00bdbd0095ad5c057c2805f50595
-X-ContentStamp: 3:5:2410780603
-X-MAIL-INFO: 3000659928bc7c7c9cb938c1a51d7c2888b5c16988619515dd495ddcc94d6921881501ace8
-X-UNTD-Peer-Info: 10.171.12.160|webmail20.dca.untd.com|outbound-bu1.dca.untd.com|astuzokaya@netzero.net
-X-UNTD-STORE-INFO: SENDER:astuzokaya@netzero.net
+	Thu, 6 May 2010 14:39:56 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=mH3zW/IhEef2g5VX3j2SPjDmexpSbOEDgqcYuzYLasEGTE6qwugSpZemRI+pTj6GP2gr08aHP1lVVwdDs/ZO+bEQ9DCofFI9VdrV0g4j3TuFY05Khy29CpYzcuavzSF9RZlTd1jArzT2IE3oc9Ko+pqryfKgVZo/9cM3jFN3cyw=;
+Message-ID: <501887.6368.qm@web51006.mail.re2.yahoo.com>
+X-YMail-OSG: dcKZIGQVM1nDI2.cZHbZP13lvWC0Y4NUR2FRTHAPOsR86q_
+ dYAFdzj_uT3qEOKw9PoGSl0FVxXJzrffHUoIRxoDwlfysQwuGAni.NamhmNN
+ gOyjEzfdHKItgOXKJ4zRBHi7qyZ0iUuCPH7F6PeAwML13ADP6XWp40tGbFMh
+ fdwzIIVdTIqeniRaHDYEv5NksiVJi4xcvLev3m4CwOQnsuH9Lpw8soG2tZn0
+ 1NH1ASVObr8yNwcMROFsTZVA8qevCZTkSErvmFK4BUoLhcUh.Sy_U_qn9EB0
+ GI7r89idDJeGYOEeoan4PcXXpuOpr0cRlzU0Btih7A7lJwacf6Jo-
+X-Mailer: YahooMailClassic/10.1.11 YahooMailWebService/0.8.103.269680
+Date: Thu, 6 May 2010 11:33:15 -0700 (PDT)
+From: Fabio Estevam <fabioestevam@yahoo.com>
+Subject: Re: [PATCHv1 2.6.34-rc6 1/3] mxc: gadget: remove 60mhz clock requirement for freescale mx51 usb core
+To: linux-kernel@vger.kernel.org, Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Cc: amit.kucheria@canonical.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>,
+       s.hauer@pengutronix.de, linux-usb@vger.kernel.org, Jun.Li@freescale.com,
+       grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
+       daniel@caiaq.de, bryan.wu@canonical.com, xiao-lizhang@freescale.com,
+       valentin.longchamp@epfl.ch
+In-Reply-To: <1273100171-3235-2-git-send-email-Dinh.Nguyen@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HELLO,
-my name is Miss astu.
-It gives me great pleasure by seeing your mail.i felt very happy for having a net 
-friend.i will be greatfulif we continue our relationship as long as it goes.after seeing 
-your mail,so that i can send my pictures to you;i felt more interested in knowing more 
-about you in person & personal life.As far as i am concerned, being a normal person 
-leading a normal life presently residing .
-Hope so you will reply soon with my private email asddress so that i will get back to you;
-                   (  astuzokaya@yahoo.co.uk   )
-with regard's
 
-Your's loving friend
-Astu  love.
 
+--- On Wed, 5/5/10, Dinh Nguyen <Dinh.Nguyen@freescale.com> wrote:
+
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> Subject: [PATCHv1 2.6.34-rc6 1/3] mxc: gadget: remove 60mhz clock requirement for freescale mx51 usb core
+> To: linux-kernel@vger.kernel.org
+> Cc: amit.kucheria@canonical.com, "Dinh Nguyen" <Dinh.Nguyen@freescale.com>, s.hauer@pengutronix.de, linux-usb@vger.kernel.org, Jun.Li@freescale.com, grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org, daniel@caiaq.de, bryan.wu@canonical.com, xiao-lizhang@freescale.com, valentin.longchamp@epfl.ch
+> Date: Wednesday, May 5, 2010, 7:56 PM
+> for mx51, usb core is clocked from
+> sources that are not 60mhz.
+> 
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  drivers/usb/gadget/fsl_mx3_udc.c |   14
+> ++++++++------
+>  1 files changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/fsl_mx3_udc.c
+> b/drivers/usb/gadget/fsl_mx3_udc.c
+> index 20a802e..d0b8bde 100644
+> --- a/drivers/usb/gadget/fsl_mx3_udc.c
+> +++ b/drivers/usb/gadget/fsl_mx3_udc.c
+
+Shouldn't this file be renamed to fsl_mx_udc.c ?
+
+fsl_mx3_udc.c suggests that it applies for MX31/MX35 processors.
+
+Regards,
+
+Fabio Estevam
+
+
+      
