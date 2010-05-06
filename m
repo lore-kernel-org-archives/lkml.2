@@ -1,131 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab0EFV2d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 17:28:33 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:42765 "EHLO
-	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab0EFV2b (ORCPT
+	id S1752856Ab0EFVan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 17:30:43 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:3204 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171Ab0EFVam convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 17:28:31 -0400
-Message-ID: <4BE333B0.1010003@cs.columbia.edu>
-Date: Thu, 06 May 2010 17:25:04 -0400
-From: Oren Laadan <orenl@cs.columbia.edu>
-Organization: Columbia University
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Lightning/1.0b1 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Cedric Le Goater <legoater@free.fr>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH v21 015/100] cgroup freezer: Update stale locking comments
-References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu> <1272723382-19470-16-git-send-email-orenl@cs.columbia.edu> <201005062140.19821.rjw@sisk.pl>
-In-Reply-To: <201005062140.19821.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-No-Spam-Score: Local
+	Thu, 6 May 2010 17:30:42 -0400
+X-IronPort-AV: E=Sophos;i="4.52,343,1270450800"; 
+   d="scan'208";a="355788460"
+Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Robert Wimmer <kernel@tauceti.net>
+Cc: mst@redhat.com, Avi Kivity <avi@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       bugzilla-daemon@bugzilla.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4BE33259.3000609@tauceti.net>
+References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net>
+	 <20100419131718.GB16918@redhat.com>
+	 <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net>
+	 <20100421094249.GC30855@redhat.com>
+	 <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net>
+	 <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net>
+	 <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net>
+	 <20100425204916.GA12686@redhat.com>
+	 <1272284154.4252.34.camel@localhost.localdomain>
+	 <4BD5F6C5.8080605@tauceti.net>
+	 <1272315854.8984.125.camel@localhost.localdomain>
+	 <4BD61147.40709@tauceti.net>
+	 <1272324536.16814.45.camel@localhost.localdomain>
+	 <4BD76B81.2070606@tauceti.net>
+	 <be8a0f012ebb2ae02522998591e6f1a5@tauceti.net>
+	 <4BE33259.3000609@tauceti.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Thu, 06 May 2010 17:30:38 -0400
+Message-ID: <1273181438.22155.26.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-OriginalArrivalTime: 06 May 2010 21:30:40.0016 (UTC) FILETIME=[5FE97100:01CAED63]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry. I've been caught up in work in the past few days.
 
-On 05/06/2010 03:40 PM, Rafael J. Wysocki wrote:
-> On Saturday 01 May 2010, Oren Laadan wrote:
->> From: Matt Helsley <matthltc@us.ibm.com>
->>
->> Update stale comments regarding locking order and add a little more detail
->> so it's easier to follow the locking between the cgroup freezer and the
->> power management freezer code.
-> 
-> I guess these three patches are for me.
-> 
-> Do you want me to handle them?
+I can certainly help with the soft lockup if you are able to supply
+either a dump that includes all threads stuck in the NFS, or a (binary)
+wireshark dump that shows the NFSv4 traffic between the client and
+server around the time of the hang.
 
-Yes, please, that would be great.
+Cheers
+  Trond
 
-Thanks,
+On Thu, 2010-05-06 at 23:19 +0200, Robert Wimmer wrote: 
+> I don't know if someone is still interested in this
+> but I think Trond isn't further interested because
+> the last error was of cource a "page allocation
+> failure" and not a "soft lookup" which Trond was
+> trying to solve. But the patch was for 2.6.34 and
+> the "soft lookup" comes up only with some 2.6.30 and
+> maybe some 2.6.31 kernel versions. But the first error
+> I reported was a "page allocation failure" which
+> all kernels >= 2.6.32 produces with this configuration
+> I use (NFSv4).
+> 
+> Michael suggested to first solve the "soft lookup"
+> before further investigating the "page allocation
+> failure". We know that the "soft lookup" only
+> pop's up with NFSv4 and not v3. I really want to
+> use v4 but since I'm not a kernel hacker someone
+> must guide me what to try next.
+> 
+> I know that you're all have a lot of other work to
+> do but if there're no ideas left what to do next
+> it's maybe best to close the bug for now and I stay with
+> kernel 2.6.30 for now or go back to NFS v3 if I
+> upgrade to a newer kernel. Maybe the error will
+> be fixed "by accident" in >= 2.6.35 ;-) 
+> 
+> Thanks!
+> Robert
+> 
+> 
+> 
+> On 05/03/10 10:11, kernel@tauceti.net wrote:
+> > Anything we can do to investigate this further?
+> >
+> > Thanks!
+> > Robert
+> >
+> >
+> > On Wed, 28 Apr 2010 00:56:01 +0200, Robert Wimmer <kernel@tauceti.net>
+> > wrote:
+> >   
+> >> I've applied the patch against the kernel which I got
+> >> from "git clone ...." resulted in a kernel 2.6.34-rc5.
+> >>
+> >> The stack trace after mounting NFS is here:
+> >> https://bugzilla.kernel.org/attachment.cgi?id=26166
+> >> /var/log/messages after soft lockup:
+> >> https://bugzilla.kernel.org/attachment.cgi?id=26167
+> >>
+> >> I hope that there is any usefull information in there.
+> >>
+> >> Thanks!
+> >> Robert
+> >>
+> >> On 04/27/10 01:28, Trond Myklebust wrote:
+> >>     
+> >>> On Tue, 2010-04-27 at 00:18 +0200, Robert Wimmer wrote: 
+> >>>   
+> >>>       
+> >>>>> Sure. In addition to what you did above, please do
+> >>>>>
+> >>>>> mount -t debugfs none /sys/kernel/debug
+> >>>>>
+> >>>>> and then cat the contents of the pseudofile at
+> >>>>>
+> >>>>> /sys/kernel/debug/tracing/stack_trace
+> >>>>>
+> >>>>> Please do this more or less immediately after you've finished
+> >>>>>           
+> > mounting
+> >   
+> >>>>> the NFSv4 client.
+> >>>>>   
+> >>>>>       
+> >>>>>           
+> >>>> I've uploaded the stack trace. It was generated
+> >>>> directly after mounting. Here are the stacks:
+> >>>>
+> >>>> After mounting:
+> >>>> https://bugzilla.kernel.org/attachment.cgi?id=26153
+> >>>> After the soft lockup:
+> >>>> https://bugzilla.kernel.org/attachment.cgi?id=26154
+> >>>> The dmesg output of the soft lockup:
+> >>>> https://bugzilla.kernel.org/attachment.cgi?id=26155
+> >>>>
+> >>>>     
+> >>>>         
+> >>>>> Does your server have the 'crossmnt' or 'nohide' flags set, or does
+> >>>>>           
+> > it
+> >   
+> >>>>> use the 'refer' export option anywhere? If so, then we might have to
+> >>>>> test further, since those may trigger the NFSv4 submount feature.
+> >>>>>   
+> >>>>>       
+> >>>>>           
+> >>>> The server has the following settings:
+> >>>> rw,nohide,insecure,async,no_subtree_check,no_root_squash
+> >>>>
+> >>>> Thanks!
+> >>>> Robert
+> >>>>
+> >>>>
+> >>>>     
+> >>>>         
+> >>> That second trace is more than 5.5K deep, more than half of which is
+> >>> socket overhead :-(((.
+> >>>
+> >>> The process stack does not appear to have overflowed, however that
+> >>>       
+> > trace
+> >   
+> >>> doesn't include any IRQ stack overhead.
+> >>>
+> >>> OK... So what happens if we get rid of half of that trace by forcing
+> >>> asynchronous tasks such as this to run entirely in rpciod instead of
+> >>> first trying to run in the process context?
+> >>>
+> >>> See the attachment...
+> >>>
+> >>>       
+> 
 
-Oren.
 
-> 
-> Rafael
-> 
-> 
->> Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
->> Cc: Oren Laadan <orenl@cs.columbia.edu>
->> Cc: Cedric Le Goater <legoater@free.fr>
->> Cc: Paul Menage <menage@google.com>
->> Cc: Li Zefan <lizf@cn.fujitsu.com>
->> Cc: Rafael J. Wysocki <rjw@sisk.pl>
->> Cc: linux-pm@lists.linux-foundation.org
->> ---
->>  kernel/cgroup_freezer.c |   21 +++++++++++++--------
->>  1 files changed, 13 insertions(+), 8 deletions(-)
->>
->> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
->> index da5e139..85f19cc 100644
->> --- a/kernel/cgroup_freezer.c
->> +++ b/kernel/cgroup_freezer.c
->> @@ -89,10 +89,10 @@ struct cgroup_subsys freezer_subsys;
->>  
->>  /* Locks taken and their ordering
->>   * ------------------------------
->> - * css_set_lock
->>   * cgroup_mutex (AKA cgroup_lock)
->> - * task->alloc_lock (AKA task_lock)
->>   * freezer->lock
->> + * css_set_lock
->> + * task->alloc_lock (AKA task_lock)
->>   * task->sighand->siglock
->>   *
->>   * cgroup code forces css_set_lock to be taken before task->alloc_lock
->> @@ -100,33 +100,38 @@ struct cgroup_subsys freezer_subsys;
->>   * freezer_create(), freezer_destroy():
->>   * cgroup_mutex [ by cgroup core ]
->>   *
->> - * can_attach():
->> - * cgroup_mutex
->> + * freezer_can_attach():
->> + * cgroup_mutex (held by caller of can_attach)
->>   *
->> - * cgroup_frozen():
->> + * cgroup_freezing_or_frozen():
->>   * task->alloc_lock (to get task's cgroup)
->>   *
->>   * freezer_fork() (preserving fork() performance means can't take cgroup_mutex):
->> - * task->alloc_lock (to get task's cgroup)
->>   * freezer->lock
->>   *  sighand->siglock (if the cgroup is freezing)
->>   *
->>   * freezer_read():
->>   * cgroup_mutex
->>   *  freezer->lock
->> + *   write_lock css_set_lock (cgroup iterator start)
->> + *    task->alloc_lock
->>   *   read_lock css_set_lock (cgroup iterator start)
->>   *
->>   * freezer_write() (freeze):
->>   * cgroup_mutex
->>   *  freezer->lock
->> + *   write_lock css_set_lock (cgroup iterator start)
->> + *    task->alloc_lock
->>   *   read_lock css_set_lock (cgroup iterator start)
->> - *    sighand->siglock
->> + *    sighand->siglock (fake signal delivery inside freeze_task())
->>   *
->>   * freezer_write() (unfreeze):
->>   * cgroup_mutex
->>   *  freezer->lock
->> + *   write_lock css_set_lock (cgroup iterator start)
->> + *    task->alloc_lock
->>   *   read_lock css_set_lock (cgroup iterator start)
->> - *    task->alloc_lock (to prevent races with freeze_task())
->> + *    task->alloc_lock (inside thaw_process(), prevents race with refrigerator())
->>   *     sighand->siglock
->>   */
->>  static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
->>
-> 
-> 
