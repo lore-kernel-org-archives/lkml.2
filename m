@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab0EFKov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 06:44:51 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60811 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab0EFKot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 06:44:49 -0400
-Date: Thu, 6 May 2010 12:44:39 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Miller <davem@davemloft.net>
-Cc: david.choi@micrel.com, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: tip: origin tree boot crash (in the new micrel phy driver)
-Message-ID: <20100506104439.GA29100@elte.hu>
-References: <20100505.012750.246538504.davem@davemloft.net>
- <20100506095940.GA12711@elte.hu>
- <20100506.031040.186321896.davem@davemloft.net>
- <20100506.031435.235688827.davem@davemloft.net>
+	id S1758345Ab0EFODJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 10:03:09 -0400
+Received: from mail.redflag-linux.com ([219.237.229.196]:54944 "EHLO
+	mail.redflag-linux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab0EFODH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 10:03:07 -0400
+X-Greylist: delayed 1561 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 May 2010 10:03:07 EDT
+Message-ID: <4BE2C5D5.2050207@redflag-linux.com>
+Date: Thu, 06 May 2010 21:36:21 +0800
+From: =?GB2312?B?IsXLzsDGvShQZXRlciBQYW4pIg==?= <wppan@redflag-linux.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100324 RedFlag/3.0.1-1rf2.dt8 Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100506.031435.235688827.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: tj@kernel.org, Christoph Lameter <cl@linux-foundation.org>, hch@lst.de,
+       akpm@linux-foundation.org, adilger@sun.com
+CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH] ext2/ext3:useless code for return value
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* David Miller <davem@davemloft.net> wrote:
+When rsv is the right hand side of goal, we should return NULL,
+because now rsv's prev is NULL, or we return rsv.
 
-> From: David Miller <davem@davemloft.net>
-> Date: Thu, 06 May 2010 03:10:40 -0700 (PDT)
-> 
-> > From: Ingo Molnar <mingo@elte.hu>
-> > Date: Thu, 6 May 2010 11:59:40 +0200
-> > 
-> >> I bisected it back to the following commit:
-> >> 
-> >> d05070091849015f8c5b7d55cd75b86ebb61b3ec is the first bad commit
-> >> commit d05070091849015f8c5b7d55cd75b86ebb61b3ec
-> >> Author: David J. Choi <david.choi@micrel.com>
-> >> Date:   Thu Apr 29 06:12:41 2010 +0000
-> >> 
-> >>     drivers/net/phy: micrel phy driver
->  ...
-> >> Disabling the driver fixes the crash.
-> > 
-> > David please fix this crash, thanks.
-> 
-> Nevermind, Ingo please test this fix:
-> 
-> diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
-> index 0cd80e4..e67691d 100644
-> --- a/drivers/net/phy/micrel.c
-> +++ b/drivers/net/phy/micrel.c
-> @@ -32,6 +32,7 @@ static int kszphy_config_init(struct phy_device *phydev)
->  
->  static struct phy_driver ks8001_driver = {
->  	.phy_id		= PHY_ID_KS8001,
-> +	.name		= "Micrel KS8001",
->  	.phy_id_mask	= 0x00fffff0,
->  	.features	= PHY_BASIC_FEATURES,
->  	.flags		= PHY_POLL,
+Signed-off-by: Peter Pan(екнюф╫) <wppan@redflag-linux.com>
 
-This fixes the crash, thanks Dave!
+---
+ fs/ext2/balloc.c |    6 +-----
+ fs/ext3/balloc.c |    6 +-----
+ 2 files changed, 2 insertions(+), 10 deletions(-)
 
-Tested-by: Ingo Molnar <mingo@elte.hu>
+diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
+index 3cf038c..023990f 100644
+--- a/fs/ext2/balloc.c
++++ b/fs/ext2/balloc.c
+@@ -323,11 +323,7 @@ search_reserve_window(struct rb_root *root,
+ext2_fsblk_t goal)
+ 	 * side of the interval containing the goal.  If it's the RHS,
+ 	 * we need to back up one.
+ 	 */
+-	if (rsv->rsv_start > goal) {
+-		n = rb_prev(&rsv->rsv_node);
+-		rsv = rb_entry(n, struct ext2_reserve_window_node, rsv_node);
+-	}
+-	return rsv;
++    return (rsv->rsv_start < goal) ? rsv : NULL;
+ }
 
-	Ingo
+ /*
+diff --git a/fs/ext3/balloc.c b/fs/ext3/balloc.c
+index a177122..bfa62e9 100644
+--- a/fs/ext3/balloc.c
++++ b/fs/ext3/balloc.c
+@@ -310,11 +310,7 @@ search_reserve_window(struct rb_root *root,
+ext3_fsblk_t goal)
+ 	 * side of the interval containing the goal.  If it's the RHS,
+ 	 * we need to back up one.
+ 	 */
+-	if (rsv->rsv_start > goal) {
+-		n = rb_prev(&rsv->rsv_node);
+-		rsv = rb_entry(n, struct ext3_reserve_window_node, rsv_node);
+-	}
+-	return rsv;
++    return (rsv->rsv_start < goal) ? rsv : NULL;
+ }
+
+ /**
+-- 
+1.6.6
+
+
+-- 
+Peter Pan(екнюф╫)
+Red Flag Software Co.,Ltd
