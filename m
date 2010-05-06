@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab0EFIq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 04:46:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39094 "EHLO mx1.redhat.com"
+	id S1754959Ab0EFITv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 04:19:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50323 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756312Ab0EFIqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 04:46:24 -0400
-From: Avi Kivity <avi@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Brian Gerst <brgerst@gmail.com>, Dexuan Cui <dexuan.cui@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH v3 0/2] x86 FPU API
-Date: Thu,  6 May 2010 11:45:44 +0300
-Message-Id: <1273135546-29690-1-git-send-email-avi@redhat.com>
+	id S1754564Ab0EFITr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 04:19:47 -0400
+Date: Thu, 6 May 2010 11:19:33 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Pankaj Thakkar <pthakkar@vmware.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Dmitry Torokhov <dtor@vmware.com>,
+       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
+Message-ID: <20100506081933.GF10044@redhat.com>
+References: <20100504230225.GP8323@vmware.com>
+ <201005051029.42052.dtor@vmware.com>
+ <20100505173120.GA1752@infradead.org>
+ <201005051035.29831.dtor@vmware.com>
+ <20100505173951.GA8388@infradead.org>
+ <F1354E79A137A24CBA60059AA65CB1B802A235C535@EXCH-MBX-2.vmware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F1354E79A137A24CBA60059AA65CB1B802A235C535@EXCH-MBX-2.vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently all fpu accessors are wedded to task_struct.  However kvm also uses
-the fpu in a different context.  Introduce an FPU API, and replace the
-current uses with the new API.
+On Wed, May 05, 2010 at 10:47:10AM -0700, Pankaj Thakkar wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Christoph Hellwig [mailto:hch@infradead.org]
+> > Sent: Wednesday, May 05, 2010 10:40 AM
+> > To: Dmitry Torokhov
+> > Cc: Christoph Hellwig; pv-drivers@vmware.com; Pankaj Thakkar;
+> > netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > virtualization@lists.linux-foundation.org
+> > Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for
+> > vmxnet3
+> > 
+> > On Wed, May 05, 2010 at 10:35:28AM -0700, Dmitry Torokhov wrote:
+> > > Yes, with the exception that the only body of code that will be
+> > > accepted by the shell should be GPL-licensed and thus open and
+> > available
+> > > for examining. This is not different from having a standard kernel
+> > > module that is loaded normally and plugs into a certain subsystem.
+> > > The difference is that the binary resides not on guest filesystem
+> > > but elsewhere.
+> > 
+> > Forget about the licensing.  Loading binary blobs written to a shim
+> > layer is a complete pain in the ass and totally unsupportable, and
+> > also uninteresting because of the overhead.
+> 
+> [PT] Why do you think it is unsupportable? How different is it from any module
+> written against a well maintained interface? What overhead are you talking about?
+> 
+Overhead of interpreting bytecode plugin is written in. Or are you
+saying plugin is x86 assembly (32bit or 64bit btw?) and other arches
+will have to have in kernel x86 emulator to use the plugin (like some
+of them had for vgabios)? 
 
-While this patchset is oriented towards deeper changes, as a first step it
-simlifies xsave for kvm.
-
-v3:
-	use u8 instead of bool in asm to avoid bad code generation on older
-        gccs.
-
-v2:
-	eliminate useless padding in use_xsave() by using a larger instruction
-
-Avi Kivity (2):
-  x86: eliminate TS_XSAVE
-  x86: Introduce 'struct fpu' and related API
-
- arch/x86/include/asm/i387.h        |  135 +++++++++++++++++++++++++++---------
- arch/x86/include/asm/processor.h   |    6 ++-
- arch/x86/include/asm/thread_info.h |    1 -
- arch/x86/include/asm/xsave.h       |    7 +-
- arch/x86/kernel/cpu/common.c       |    5 +-
- arch/x86/kernel/i387.c             |  107 ++++++++++++++---------------
- arch/x86/kernel/process.c          |   20 +++---
- arch/x86/kernel/process_32.c       |    2 +-
- arch/x86/kernel/process_64.c       |    2 +-
- arch/x86/kernel/xsave.c            |    8 +-
- arch/x86/math-emu/fpu_aux.c        |    6 +-
- 11 files changed, 181 insertions(+), 118 deletions(-)
-
+--
+			Gleb.
