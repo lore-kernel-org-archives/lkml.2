@@ -1,37 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab0EFSLm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 14:11:42 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45802 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab0EFSLl (ORCPT
+	id S1754867Ab0EFKOa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 06:14:30 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46499
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751360Ab0EFKO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 14:11:41 -0400
-Date: Thu, 6 May 2010 19:01:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-       ysato@users.sourceforge.jp, tony.luck@intel.com, dhowells@redhat.com,
-       kyle@mcmartin.ca, benh@kernel.crashing.org, schwidefsky@de.ibm.com,
-       jgarzik@pobox.com, hare@suse.de, felipe.balbi@nokia.com
-Subject: Re: [PATCH] removing redundant ifdefs
-Message-ID: <20100506180114.GB15797@n2100.arm.linux.org.uk>
-References: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 6 May 2010 06:14:28 -0400
+Date: Thu, 06 May 2010 03:14:35 -0700 (PDT)
+Message-Id: <20100506.031435.235688827.davem@davemloft.net>
+To: mingo@elte.hu
+Cc: david.choi@micrel.com, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: tip: origin tree boot crash (in the new micrel phy driver)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100506.031040.186321896.davem@davemloft.net>
+References: <20100505.012750.246538504.davem@davemloft.net>
+	<20100506095940.GA12711@elte.hu>
+	<20100506.031040.186321896.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 07:36:04PM +0200, Jiri Olsa wrote:
->  arch/arm/include/asm/processor.h              |    2 --
->  arch/arm/mach-ixp23xx/include/mach/platform.h |    3 ---
->  arch/arm/plat-omap/include/plat/clock.h       |    5 -----
+From: David Miller <davem@davemloft.net>
+Date: Thu, 06 May 2010 03:10:40 -0700 (PDT)
 
-I've not received any patches relating to the above, but I seem to
-have received everything else, including stuff for PPC and x86.
+> From: Ingo Molnar <mingo@elte.hu>
+> Date: Thu, 6 May 2010 11:59:40 +0200
+> 
+>> I bisected it back to the following commit:
+>> 
+>> d05070091849015f8c5b7d55cd75b86ebb61b3ec is the first bad commit
+>> commit d05070091849015f8c5b7d55cd75b86ebb61b3ec
+>> Author: David J. Choi <david.choi@micrel.com>
+>> Date:   Thu Apr 29 06:12:41 2010 +0000
+>> 
+>>     drivers/net/phy: micrel phy driver
+ ...
+>> Disabling the driver fixes the crash.
+> 
+> David please fix this crash, thanks.
 
-Maybe you've negated the list of people to send patches to?
+Nevermind, Ingo please test this fix:
+
+diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
+index 0cd80e4..e67691d 100644
+--- a/drivers/net/phy/micrel.c
++++ b/drivers/net/phy/micrel.c
+@@ -32,6 +32,7 @@ static int kszphy_config_init(struct phy_device *phydev)
+ 
+ static struct phy_driver ks8001_driver = {
+ 	.phy_id		= PHY_ID_KS8001,
++	.name		= "Micrel KS8001",
+ 	.phy_id_mask	= 0x00fffff0,
+ 	.features	= PHY_BASIC_FEATURES,
+ 	.flags		= PHY_POLL,
