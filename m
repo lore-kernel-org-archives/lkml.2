@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334Ab0EFBYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 21:24:09 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:51030 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab0EFBYH convert rfc822-to-8bit (ORCPT
+	id S1752903Ab0EFB0B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 21:26:01 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40356 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab0EFBZ7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 21:24:07 -0400
+	Wed, 5 May 2010 21:25:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=TORaDhX6gIB+LUtdt+SVqbFPgta3ebN2YbuVkhlR6y88yNc1mvyUYl/e6RhwGcSm+z
-         rj277yy/mnFhuFLfMNmyJQdN4O2eIxwJ9+5pvdwHkZK21PsqgH8buuJFrkcbJqp3aMPV
-         Lha941XUGoXNn40+I9X/6/rOIXQoZNa3AEc+c=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ar9hZ15ua1M5tFKnFtsS9aOjWEHTZyMJKXJcZAbLAqmIuT3+m29OTrkRJFM9vxx5J8
+         bHt10flF25HqtJw+5VI0vi/OTho9ywAwBFvdE3iKY5U4iAY60GhJjOfg9fuJ6thiG8T7
+         vS4fDmt9HLHyryO2iF8FS5c7/pSUQi3EmJchs=
 MIME-Version: 1.0
-In-Reply-To: <4BE14335.10702@ru.mvista.com>
-References: <k2ncecb6d8f1004191627w3cd36450xf797f746460abb09@mail.gmail.com>
-	 <20100420155122.6f2c26eb.akpm@linux-foundation.org>
-	 <20100420230719.GB1432@n2100.arm.linux.org.uk>
-	 <4BE14335.10702@ru.mvista.com>
-Date: Thu, 6 May 2010 10:24:06 +0900
-X-Google-Sender-Auth: 467a1779f6601799
-Message-ID: <p2g9c9fda241005051824k54e70136v8324d135b44c71b5@mail.gmail.com>
-Subject: Re: Suspicious compilation warning
-From: Kyungmin Park <kmpark@infradead.org>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Yinghai Lu <yinghai@kernel.org>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com>
+References: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Thu, 6 May 2010 09:25:38 +0800
+Message-ID: <y2p412e6f7f1005051825g84b801bcx44e26ca58d0239c4@mail.gmail.com>
+Subject: Re: [RFC] mm: generic adaptive large memory allocation APIs
+To: akpm@linux-foundation.org
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+       Changli Gao <xiaosuo@gmail.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 5, 2010 at 7:06 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
-> Hello.
+On Thu, May 6, 2010 at 8:30 AM, Changli Gao <xiaosuo@gmail.com> wrote:
+> kvmalloc() will try to allocate physically contiguous memory first, and try
+> vmalloc to allocate virtually contiguous memory when the former allocation
+> fails.
 >
-> Russell King - ARM Linux wrote:
+> kvfree() is used to free the memory allocated by kvmalloc(). It can't be used
+> in atomic context. If the callers are in atomic contex, they can use
+> kvfree_inatomic() instead.
 >
->>>> I get this warning while compiling for ARM/SA1100:
->>>>
->>>> mm/sparse.c: In function '__section_nr':
->>>> mm/sparse.c:135: warning: 'root' is used uninitialized in this function
->>>>
->>>> With a small patch in fs/proc/meminfo.c, I find that NR_SECTION_ROOTS
->>>> is zero, which certainly explains the warning.
->>>>
->>>> # cat /proc/meminfo
->>>> NR_SECTION_ROOTS=0
->>>> NR_MEM_SECTIONS=32
->>>> SECTIONS_PER_ROOT=512
->>>> SECTIONS_SHIFT=5
->>>> MAX_PHYSMEM_BITS=32
->>>>
->>>
->>> hm, who owns sparsemem nowadays? Nobody identifiable.
->>>
->>> Does it make physical sense to have SECTIONS_PER_ROOT > NR_MEM_SECTIONS?
->>>
->>
->> Well, it'll be about this number on everything using sparsemem extreme:
->>
->> #define SECTIONS_PER_ROOT       (PAGE_SIZE / sizeof (struct mem_section))
->>
->> and with only 32 sections, this is going to give a NR_SECTION_ROOTS value
->> of zero.  I think the calculation of NR_SECTIONS_ROOTS is wrong.
->>
->> #define NR_SECTION_ROOTS        (NR_MEM_SECTIONS / SECTIONS_PER_ROOT)
->>
->> Clearly if we have 1 mem section, we want to have one section root, so
->> I think this division should round up any fractional part, thusly:
->>
->> #define NR_SECTION_ROOTS        ((NR_MEM_SECTIONS + SECTIONS_PER_ROOT - 1)
->> / SECTIONS_PER_ROOT)
->>
+> There is much duplicate code to do such things in kernel, so I generate the
+> above APIs.
 >
->  There's DIV_ROUND_UP() macro for this kind of calculation.
+> Thank Eric Dumazet for the "kv" prefix. :)
+>
+> #include <linux/kernel.h>
+> #include <linux/module.h>
+> #include <linux/mm.h>
+> #include <linux/init.h>
+> #include <linux/slab.h>
+> #include <linux/vmalloc.h>
+> #include <linux/interrupt.h>
+>
+> void *kvmalloc(size_t size)
+> {
+> Â  Â  Â  Â void *ptr;
+>
+> Â  Â  Â  Â if (size < PAGE_SIZE)
+> Â  Â  Â  Â  Â  Â  Â  Â return kmalloc(PAGE_SIZE, GFP_KERNEL);
 
-Hi,
+typo mistake, should be kmalloc(size, GFP_KERNEL), thank Tetsuo Handa
+<penguin-kernel@i-love.sakura.ne.jp>.
 
-It tested with my board and working.
-Just curious. If NR_SECTION_ROOTS is zero and uninitialized then
-what's problem? Since we boot and working without patch.
 
-Thank you,
-Kyungmin Park
+
+-- 
+Regardsï¼Œ
+Changli Gao(xiaosuo@gmail.com)
