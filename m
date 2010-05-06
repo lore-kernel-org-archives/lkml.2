@@ -1,122 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758777Ab0EFPUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 11:20:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:15569 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751524Ab0EFPUS convert rfc822-to-8bit (ORCPT
+	id S1757487Ab0EFKB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 06:01:59 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:64282 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab0EFKB4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 11:20:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,341,1270450800"; 
-   d="scan'208";a="515670504"
-From: "Du, Alek" <alek.du@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Ondrej Zary <linux@rainbow-software.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       USB list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>
-Date: Thu, 6 May 2010 23:20:11 +0800
-Subject: RE: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
- (WKOC_E) and disconnect (WKDISC_E)
-Thread-Topic: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
- (WKOC_E) and disconnect (WKDISC_E)
-Thread-Index: AcrtKvZ+Uuja7AaBQPK1OjbdDTkpEwAAfIWQ
-Message-ID: <1865303E0DED764181A9D882DEF65FB61A82A6DAFD@shsmsx502.ccr.corp.intel.com>
-References: <1865303E0DED764181A9D882DEF65FB61A82A6DA3B@shsmsx502.ccr.corp.intel.com>
- <Pine.LNX.4.44L0.1005061013510.1708-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1005061013510.1708-100000@iolanthe.rowland.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 May 2010 06:01:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=AHaoSWdOFcemSdT+KQtZHzNkS/zyfCQuOCdTq+YzGo9DP3P6gstfknKUAy0ZkoMttP
+         t7hLMKJpRpnJ1pbV73marQgDRUto9ousAwhgSNMmqr3dl1xoPHTO2f348FiHT2Pa4jyN
+         BSSmudEcWtELIbbOMDcN9uuqxWzc8oUc93kRg=
 MIME-Version: 1.0
+In-Reply-To: <20100506095422.GA20979@csn.ul.ie>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie>
+	 <1273065281-13334-2-git-send-email-mel@csn.ul.ie>
+	 <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org>
+	 <20100505145620.GP20979@csn.ul.ie>
+	 <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org>
+	 <20100505175311.GU20979@csn.ul.ie>
+	 <alpine.LFD.2.00.1005051058380.27218@i5.linux-foundation.org>
+	 <20100506002255.GY20979@csn.ul.ie>
+	 <p2s28c262361005060247m2983625clff01aeaa1668402f@mail.gmail.com>
+	 <20100506095422.GA20979@csn.ul.ie>
+Date: Thu, 6 May 2010 19:01:54 +0900
+Message-ID: <j2z28c262361005060301gf504daa3r13081561d4effc90@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing the 
+	wrong VMA information
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Thu, May 6, 2010 at 6:54 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> On Thu, May 06, 2010 at 06:47:12PM +0900, Minchan Kim wrote:
+>> On Thu, May 6, 2010 at 9:22 AM, Mel Gorman <mel@csn.ul.ie> wrote:
+>> > On Wed, May 05, 2010 at 11:02:25AM -0700, Linus Torvalds wrote:
+>> >>
+>> >>
+>> >> On Wed, 5 May 2010, Mel Gorman wrote:
+>> >> >
+>> >> > If the same_vma list is properly ordered then maybe something like the
+>> >> > following is allowed?
+>> >>
+>> >> Heh. This is the same logic I just sent out. However:
+>> >>
+>> >> > +   anon_vma = page_rmapping(page);
+>> >> > +   if (!anon_vma)
+>> >> > +           return NULL;
+>> >> > +
+>> >> > +   spin_lock(&anon_vma->lock);
+>> >>
+>> >> RCU should guarantee that this spin_lock() is valid, but:
+>> >>
+>> >> > +   /*
+>> >> > +    * Get the oldest anon_vma on the list by depending on the ordering
+>> >> > +    * of the same_vma list setup by __page_set_anon_rmap
+>> >> > +    */
+>> >> > +   avc = list_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
+>> >>
+>> >> We're not guaranteed that the 'anon_vma->head' list is non-empty.
+>> >>
+>> >> Somebody could have freed the list and the anon_vma and we have a stale
+>> >> 'page->anon_vma' (that has just not been _released_ yet).
+>> >>
+>> >> And shouldn't that be 'list_first_entry'? Or &anon_vma->head.next?
+>> >>
+>> >> How did that line actually work for you? Or was it just a "it boots", but
+>> >> no actual testing of the rmap walk?
+>> >>
+>> >
+>> > This is what I just started testing on a 4-core machine. Lockdep didn't
+>> > complain but there are two potential sources of badness in anon_vma_lock_root
+>> > marked with XXX. The second is the most important because I can't see how the
+>> > local and root anon_vma locks can be safely swapped - i.e. release local and
+>> > get the root without the root disappearing. I haven't considered the other
+>> > possibilities yet such as always locking the root anon_vma. Going to
+>> > sleep on it.
+>> >
+>> > Any comments?
+>>
+>> <snip>
+>> > +/* Given an anon_vma, find the root of the chain, lock it and return the root */
+>> > +struct anon_vma *anon_vma_lock_root(struct anon_vma *anon_vma)
+>> > +{
+>> > +       struct anon_vma *root_anon_vma;
+>> > +       struct anon_vma_chain *avc, *root_avc;
+>> > +       struct vm_area_struct *vma;
+>> > +
+>> > +       /* Lock the same_anon_vma list and make sure we are on a chain */
+>> > +       spin_lock(&anon_vma->lock);
+>> > +       if (list_empty(&anon_vma->head)) {
+>> > +               spin_unlock(&anon_vma->lock);
+>> > +               return NULL;
+>> > +       }
+>> > +
+>> > +       /*
+>> > +        * Get the root anon_vma on the list by depending on the ordering
+>> > +        * of the same_vma list setup by __page_set_anon_rmap. Basically
+>> > +        * we are doing
+>> > +        *
+>> > +        * local anon_vma -> local vma -> deepest vma -> anon_vma
+>> > +        */
+>> > +       avc = list_first_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
+>>
+>> Dumb question.
+>>
+>> I can't understand why we should use list_first_entry.
+>>
+>> I looked over the code.
+>> anon_vma_chain_link uses list_add_tail so I think that's right.
+>> But anon_vma_prepare uses list_add. So it's not consistent.
+>> How do we make sure list_first_entry returns deepest vma?
+>>
+>
+> list_first_entry is not getting the root (what you called deepest but lets
+> pick a name and stick with it or this will be worse than it already is). That
+> list_first entry is what gets us from
+>
+> local anon_vma -> avc for the local anon_vma -> local vma
+>
 
->With this patch, _none_ of the wakeup bits are enabled.  That should
->work, right?
->
-I guess so, but if no wakeup bits set, how to handle remote wakeup case? Seems you removed remote wakeup case?
+Yes. Sorry for confusing word. :)
+Let's have a question again. What I have a question is that why we
+have to use list_first_entry not list_entry for getting local_vma?
 
->But it leads to another question: Later on, when the controller is put
->is put into low-power mode, I wanted to check with you about it.
->
->> I think the problem is: For the original code, once t2 != t1, the HCD
->> will try to put into phy low power mode. While after the patch, the
->> HCD will only enter phy low power mode if PORT_PE is set and
->> PORT_SUSPEND is not set.
->
->Okay, I understand.  Then consider _this_ patch on top of the first
->one.  It sets the hostpc register for every port that wasn't already
->suspended, so each phy should end up in low-power mode.
->
->Alan Stern
 
-I will test this patch ...
+>> Sorry if I am missing.
+>>
+>
+> Not at all. The more people that look at this the better.
 
-Thanks,
-Alek
+Thanks. Mel.
 
+> --
+> Mel Gorman
+> Part-time Phd Student                          Linux Technology Center
+> University of Limerick                         IBM Dublin Software Lab
 >
->
->
->Index: usb-2.6/drivers/usb/host/ehci-hub.c
->===================================================================
->--- usb-2.6.orig/drivers/usb/host/ehci-hub.c
->+++ usb-2.6/drivers/usb/host/ehci-hub.c
->@@ -152,7 +152,6 @@ static int ehci_bus_suspend (struct usb_
-> 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
-> 	int			port;
-> 	int			mask;
->-	u32 __iomem		*hostpc_reg = NULL;
->
-> 	ehci_dbg(ehci, "suspend root hub\n");
->
->@@ -200,23 +199,25 @@ static int ehci_bus_suspend (struct usb_
-> 	while (port--) {
-> 		u32 __iomem	*reg = &ehci->regs->port_status [port];
-> 		u32		t1 = ehci_readl(ehci, reg) & ~PORT_RWC_BITS;
->-		u32		t2 = t1;
->+		u32		t2 = t1 & ~PORT_WAKE_BITS;
->
->-		if (ehci->has_hostpc)
->-			hostpc_reg = (u32 __iomem *)((u8 *)ehci->regs
->-				+ HOSTPC0 + 4 * (port & 0xff));
-> 		/* keep track of which ports we suspend */
->-		if (t1 & PORT_OWNER)
->-			set_bit(port, &ehci->owned_ports);
->-		else if ((t1 & PORT_PE) && !(t1 & PORT_SUSPEND)) {
->-			t2 |= PORT_SUSPEND;
->-			set_bit(port, &ehci->bus_suspended);
->-			ehci_vdbg (ehci, "port %d, %08x -> %08x\n",
->-				port + 1, t1, t2);
->-			ehci_writel(ehci, t2, reg);
->-			if (hostpc_reg) {
->-				u32	t3;
->+		if (!(t1 & PORT_SUSPEND)) {
->+			if (t1 & PORT_OWNER) {
->+				set_bit(port, &ehci->owned_ports);
->+			} else if (t1 & PORT_PE) {
->+				t2 |= PORT_SUSPEND;
->+				set_bit(port, &ehci->bus_suspended);
->+				ehci_vdbg (ehci, "port %d, %08x -> %08x\n",
->+					port + 1, t1, t2);
->+				ehci_writel(ehci, t2, reg);
->+			}
->+			if (ehci->has_hostpc) {
->+				u32 __iomem	*hostpc_reg;
->+				u32		t3;
->
->+				hostpc_reg = (u32 __iomem *)((u8 *)ehci->regs
->+					+ HOSTPC0 + 4 * (port & 0xff));
-> 				spin_unlock_irq(&ehci->lock);
-> 				msleep(5);/* 5ms for HCD enter low pwr mode */
-> 				spin_lock_irq(&ehci->lock);
 
+
+
+-- 
+Kind regards,
+Minchan Kim
