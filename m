@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab0EFAwV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 20:52:21 -0400
-Received: from ozlabs.org ([203.10.76.45]:53635 "EHLO ozlabs.org"
+	id S1752324Ab0EFA6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 20:58:18 -0400
+Received: from mail.perches.com ([173.55.12.10]:1931 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388Ab0EFAwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 20:52:20 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: virtio: put last_used and last_avail index into ring itself.
-Date: Thu, 6 May 2010 10:22:12 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       linux-mm@kvack.org, akpm@linux-foundation.org, hpa@zytor.com,
-       gregory.haskins@gmail.com, s.hetze@linux-ag.com,
-       Daniel Walker <dwalker@fifo99.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>
-References: <cover.1257349249.git.mst@redhat.com> <200911091647.29655.rusty@rustcorp.com.au> <20100504182236.GA14141@redhat.com>
-In-Reply-To: <20100504182236.GA14141@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1751025Ab0EFA6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 20:58:16 -0400
+Subject: Re: [PATCH 1/1] staging: hv: Add Time Sync feature to hv_utils
+ module
+From: Joe Perches <joe@perches.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+       "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+       "gregkh@suse.de" <gregkh@suse.de>,
+       Hank Janssen <hjanssen@microsoft.com>
+In-Reply-To: <1FB5E1D5CA062146B38059374562DF72662A6D3B@TK5EX14MBXC130.redmond.corp.microsoft.com>
+References: <1FB5E1D5CA062146B38059374562DF72662A6D3B@TK5EX14MBXC130.redmond.corp.microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 May 2010 17:58:14 -0700
+Message-ID: <1273107494.1735.87.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005061022.13815.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 May 2010 03:52:36 am Michael S. Tsirkin wrote:
-> > virtio: put last_used and last_avail index into ring itself.
-> > 
-> > Generally, the other end of the virtio ring doesn't need to see where
-> > you're up to in consuming the ring.  However, to completely understand
-> > what's going on from the outside, this information must be exposed.
-> > For example, if you want to save and restore a virtio_ring, but you're
-> > not the consumer because the kernel is using it directly.
-> > 
-> > Fortunately, we have room to expand: the ring is always a whole number
-> > of pages and there's hundreds of bytes of padding after the avail ring
-> > and the used ring, whatever the number of descriptors (which must be a
-> > power of 2).
-> > 
-> > We add a feature bit so the guest can tell the host that it's writing
-> > out the current value there, if it wants to use that.
-> > 
-> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+On Wed, 2010-05-05 at 19:23 +0000, Haiyang Zhang wrote:
+> From: Haiyang Zhang <haiyangz@microsoft.com>
 > 
-> I've been looking at this patch some more (more on why
-> later), and I wonder: would it be better to add some
-> alignment to the last used index address, so that
-> if we later add more stuff at the tail, it all
-> fits in a single cache line?
+> Subject: Add Time Sync feature to hv_utils module.
+> The Time Sync feature synchronizes guest time to host UTC time after reboot,
+> and restore from saved/paused state.
+> +static void adj_guesttime(winfiletime_t hosttime, u8 flags)
+> +{
+> +	s64 host_tns;
+> +	struct timespec host_ts;
+> +	static s32 scnt = 50;
 
-In theory, but not in practice.  We don't have many rings, so the
-difference between 1 and 2 cache lines is not very much.
+Why a maximum of 50 samples?
 
-> We use a new feature bit anyway, so layout change should not be
-> a problem.
-> 
-> Since I raised the question of caches: for used ring,
-> the ring is not aligned to 64 bit, so on CPUs with 64 bit
-> or larger cache lines, used entries will often cross
-> cache line boundaries. Am I right and might it
-> have been better to align ring entries to cache line boundaries?
-> 
-> What do you think?
+> +	host_tns = (hosttime - WLTIMEDELTA) * 100;
+> +	host_ts = ns_to_timespec(host_tns);
+> +
+> +	if ((flags & ICTIMESYNCFLAG_SYNC) != 0) {
+> +		do_settimeofday(&host_ts);
+> +		return;
+> +	}
+> +
+> +	if ((flags & ICTIMESYNCFLAG_SAMPLE) != 0 &&
+> +	    scnt > 0) {
+> +		scnt--;
+> +		do_settimeofday(&host_ts);
+> +	}
 
-I think everyone is settled on 128 byte cache lines for the forseeable
-future, so it's not really an issue.
+It might be better to do something like this
+so the ns_to_timespec isn't performe when unnecessary.
 
-Cheers,
-Rusty.
+static void settimeofday(winfiletime_t hosttime)
+{
+	s64 host_tns = (hosttime - WLTIMEDELTA) * 100;
+	struct timespec host_ts = ns_to_timespec(host_tns);
+	do_settimeofday(&host_ts);
+}
+
+static void adj_guesttime(winfiletime_t hosttime, u8 flags)
+{
+	static s32 scnt = 50;
+
+	if ((flags & ICTIMESYNCFLAG_SYNC) != 0) {
+		settimeofday(hosttime);
+		return;
+	}
+
+	if ((flags & ICTIMESYNCFLAG_SAMPLE) != 0 && scnt > 0) {
+		scnt--;
+		settimeofday(hosttime);
+	}
+}
+
+
+
