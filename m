@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab0EFXqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 19:46:45 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39365 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751725Ab0EFXqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 19:46:44 -0400
-Date: Fri, 7 May 2010 09:46:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: =?UTF-8?B?IkrDtnJuIEVuZ2VsIg==?= <joern@logfs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the logfs tree
-Message-Id: <20100507094638.11351234.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1753142Ab0EFXq7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 19:46:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63495 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752486Ab0EFXq5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 19:46:57 -0400
+Date: Thu, 6 May 2010 16:45:10 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       devel@driverdev.osuosl.org
+Subject: [PATCH -next] staging: fix ti-st, depends on RFKILL
+Message-Id: <20100506164510.06340a50.randy.dunlap@oracle.com>
+In-Reply-To: <20100506151502.f97afe54.sfr@canb.auug.org.au>
+References: <20100506151502.f97afe54.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__7_May_2010_09_46_38_+1000_fH_9Wwb6poBiU193"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4BE354EB.0039:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__7_May_2010_09_46_38_+1000_fH_9Wwb6poBiU193
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Hi J=C3=B6rn,
+Fix build errors.  st_kim.c uses rfkill*() interfaces, so it
+should depend on RFKILL.
 
-After merging the logfs tree, today's linux-next build (x86_64 allmodconfig)
-produced this warning:
+st_kim.c:(.text+0x291b21): undefined reference to `rfkill_unregister'
+st_kim.c:(.text+0x291b31): undefined reference to `rfkill_destroy'
+st_kim.c:(.text+0x291d8a): undefined reference to `rfkill_alloc'
+st_kim.c:(.text+0x291db9): undefined reference to `rfkill_init_sw_state'
+st_kim.c:(.text+0x291dc9): undefined reference to `rfkill_register'
+st_kim.c:(.text+0x291e07): undefined reference to `rfkill_unregister'
+(.text+0x291e85): undefined reference to `rfkill_set_hw_state'
+(.text+0x292072): undefined reference to `rfkill_set_hw_state'
+(.text+0x2920e1): undefined reference to `rfkill_set_hw_state
 
-fs/logfs/file.c: In function 'logfs_fsync':
-fs/logfs/file.c:225: warning: unused variable 'super'
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/staging/ti-st/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Introduced by commit c0c79c31c9d5fcc19812c6c35f842baf50ee788a ("logfs:
-fix sync").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__7_May_2010_09_46_38_+1000_fH_9Wwb6poBiU193
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvjVN4ACgkQjjKRsyhoI8xSFgCgs8K0FiLPkgmiIRva5lgo1NJk
-T4EAmgMVDo9lL7hAClj9xXYhGG/g7liY
-=xowy
------END PGP SIGNATURE-----
-
---Signature=_Fri__7_May_2010_09_46_38_+1000_fH_9Wwb6poBiU193--
+--- linux-next-20100506.orig/drivers/staging/ti-st/Kconfig
++++ linux-next-20100506/drivers/staging/ti-st/Kconfig
+@@ -5,6 +5,7 @@
+ menu "Texas Instruments shared transport line discipline"
+ config TI_ST
+ 	tristate "shared transport core driver"
++	depends on RFKILL
+ 	select FW_LOADER
+ 	help
+ 	  This enables the shared transport core driver for TI
