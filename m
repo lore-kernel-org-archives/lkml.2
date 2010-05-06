@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab0EFHLr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 03:11:47 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54057 "EHLO hera.kernel.org"
+	id S1753570Ab0EFGpV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 02:45:21 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46211 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264Ab0EFHLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 03:11:44 -0400
-Message-ID: <4BE26B96.4040007@kernel.org>
-Date: Thu, 06 May 2010 09:11:18 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752683Ab0EFGpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 02:45:19 -0400
+Date: Thu, 6 May 2010 08:44:53 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH -tip] x86,perf: P4 PMU -- protect sensible procedures
+ from preemption
+Message-ID: <20100506064453.GI1172@elte.hu>
+References: <20100505150740.GB5686@lenovo>
+ <20100505165731.GA6320@nowhere>
+ <20100505174234.GH5686@lenovo>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>, efault@gmx.de, avi@redhat.com,
-       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf
- on top of TP
-References: <1273050400.1642.229.camel@laptop> <4BE13B33.3030709@kernel.org> <1273053073.1642.235.camel@laptop> <4BE1406C.2000400@kernel.org> <1273059488.1642.245.camel@laptop> <4BE1648B.1080709@kernel.org> <20100505165532.GC14323@elte.hu> <1273083173.1642.250.camel@laptop> <1273083396.1642.251.camel@laptop> <20100505183000.GF6320@nowhere> <20100506062855.GD1172@elte.hu>
-In-Reply-To: <20100506062855.GD1172@elte.hu>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 06 May 2010 07:11:19 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100505174234.GH5686@lenovo>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On 05/06/2010 08:28 AM, Ingo Molnar wrote:
-> ( They are also under intense optimization - the jump-tracepoints patch makes 
->   them probably even cheaper than preempt notifiers, in the off case. )
+* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-I mostly agree on other points but TPs and sched_notifiers are
-inherently different in how they are enabled/disabled.
-sched_notifiers are enabled/disabled per-task and at least w/ cmwq,
-there will always be some tasks with active sched_notifiers so code
-level optimizations aren't really useful.
+> On Wed, May 05, 2010 at 06:57:34PM +0200, Frederic Weisbecker wrote:
+> ...
+> > > @@ -741,7 +743,7 @@ static int p4_pmu_schedule_events(struct
+> > >  {
+> > >  	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+> > >  	unsigned long escr_mask[BITS_TO_LONGS(ARCH_P4_TOTAL_ESCR)];
+> > > -	int cpu = raw_smp_processor_id();
+> > > +	int cpu = get_cpu();
+> > >  	struct hw_perf_event *hwc;
+> > >  	struct p4_event_bind *bind;
+> > >  	unsigned int i, thread, num;
+> > > @@ -777,6 +779,7 @@ reserve:
+> > >  	}
+> > >  
+> > >  done:
+> > > +	put_cpu();
+> > >  	return num ? -ENOSPC : 0;
+> > >  }
+> > 
+> > That's no big deal. But I think the schedule_events() is called on
+> > pmu::enable() time, when preemption is already disabled.
+> > 
+> 
+> We'll be on a safe side using get/put_cpu here (ie in case
+> if something get changed one day).
 
-Thanks.
+hm, when 'something gets changed one day' we'll see a warning when using 
+unsafe primitives.
 
--- 
-tejun
+So if preemption is always off here we really should not add extra runtime 
+overhead via get_cpu()/put_cpu().
+
+So wouldnt it be better (and faster) to disable preemption in 
+hw_perf_event_init(), which seems to be the bit missing?
+
+	Ingo
