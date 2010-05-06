@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106Ab0EFJYR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 05:24:17 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:59446 "EHLO
+	id S1758525Ab0EFODl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 10:03:41 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:27709 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab0EFJYP (ORCPT
+	with ESMTP id S1758465Ab0EFODj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 05:24:15 -0400
+	Thu, 6 May 2010 10:03:39 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=tGQv9AQysHExu3nnMS0uU3vKI5ap25afSzLMq107Mo/O8H91/YRcmxT27ndiQcUo5
-	oNde0KiSt4EnHLfY8j1cg==
-Date: Thu, 6 May 2010 02:24:06 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@elte.hu>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       x86@kernel.org, linux-kernel@vger.kernel.org,
-       Yinghai Lu <yinghai@kernel.org>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [patch] x86: fix fake apicid to node mapping for numa
- emulation
-In-Reply-To: <20100506070732.GA32002@elte.hu>
-Message-ID: <alpine.DEB.2.00.1005060222560.19473@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1005041659400.13683@chino.kir.corp.google.com> <20100506070732.GA32002@elte.hu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	h=mime-version:date:message-id:subject:from:to:cc:
+	content-type:x-system-of-record;
+	b=LFTH94PBCZpYJsG37kr5sAjBPmFkqV2Efd02fWRJOr6DUuaJvxaLvFGReiaZBCPQv
+	doPIBsFzyV86nJFs7mnjg==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 6 May 2010 16:03:26 +0200
+Message-ID: <AANLkTikQCkR2K438llKOh43yEgW-Bw7j0f8GoXR50A0V@mail.gmail.com>
+Subject: [RFC] perf_events: ctx_flexible_sched_in() not maximizing PMU 
+	utilization
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
+       Paul Mackerras <paulus@samba.org>,
+       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>, perfmon2-devel@lists.sf.net
+Content-Type: text/plain; charset=UTF-8
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010, Ingo Molnar wrote:
+Hi,
 
-> > apicids must be mapped to the lowest node ids to maintain generic kernel use 
-> > of functions such as cpu_to_node() that determine device affinity.
-> > 
-> > Signed-off-by: David Rientjes <rientjes@google.com>
-> > ---
-> >  Third resend of the same patch.
-> > 
-> >  arch/x86/mm/srat_64.c |    3 ++-
-> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> There's no info in the changelog about what negative effects this bug had when 
-> it was found, on what hardware it occured, and what the general urgency of the 
-> patch is.
-> 
+Looking at ctx_flexible_sched_in(), the logic is that if  group_sched_in()
+fails for a HW group, then no other HW group in the list is even tried.
+I don't understand this restriction. Groups are independent of each other.
+The failure of one group should not block others from being scheduled,
+otherwise you under-utilize the PMU.
 
-Ah, true.  Given the relative obscurity of using NUMA emulation to being 
-with, it would probably benefit from being even more verbose as well.  
-I'll rewrite the changelog and reply to this message with it.
+What is the reason for this restriction? Can we lift it somehow?
 
-Thanks.
+static void
+ctx_flexible_sched_in(struct perf_event_context *ctx,
+                      struct perf_cpu_context *cpuctx)
+{
+        struct perf_event *event;
+        int can_add_hw = 1;
+
+        list_for_each_entry(event, &ctx->flexible_groups, group_entry) {
+                /* Ignore events in OFF or ERROR state */
+                if (event->state <= PERF_EVENT_STATE_OFF)
+                        continue;
+                /*
+                 * Listen to the 'cpu' scheduling filter constraint
+                 * of events:
+                 */
+                if (event->cpu != -1 && event->cpu != smp_processor_id())
+                        continue;
+
+                if (group_can_go_on(event, cpuctx, can_add_hw))
+                        if (group_sched_in(event, cpuctx, ctx))
+                                can_add_hw = 0;
+        }
+}
