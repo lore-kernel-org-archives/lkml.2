@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab0EFSvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 14:51:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755448Ab0EFSvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 14:51:22 -0400
-Date: Thu, 6 May 2010 15:00:13 -0400
-From: Josef Bacik <josef@redhat.com>
-To: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 1/3] fs: allow short direct-io reads to be completed via
-	buffered IO V2
-Message-ID: <20100506190012.GB13974@dhcp231-156.rdu.redhat.com>
+	id S1758507Ab0EFOIQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 10:08:16 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:56051 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754738Ab0EFOIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 10:08:14 -0400
+Date: Thu, 6 May 2010 10:08:14 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Brian Swetland <swetland@google.com>
+cc: Kevin Hilman <khilman@deeprootsystems.com>,
+       Matthew Garrett <mjg@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+       <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Paul Walmsley <paul@pwsan.com>, <magnus.damm@gmail.com>,
+       mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+In-Reply-To: <h2va55d774e1005051642m6159aadclfda9d1c77cb10cda@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1005061007050.1708-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V1->V2: Check to see if our current ppos is >= i_size after a short DIO read,
-just in case it was actually a short read and we need to just return.
+On Wed, 5 May 2010, Brian Swetland wrote:
 
-This is similar to what already happens in the write case.  If we have a short
-read while doing O_DIRECT, instead of just returning, fallthrough and try to
-read the rest via buffered IO.  BTRFS needs this because if we encounter a
-compressed or inline extent during DIO, we need to fallback on buffered.  If the
-extent is compressed we need to read the entire thing into memory and
-de-compress it into the users pages.  I have tested this with fsx and everything
-works great.  Thanks,
+> > Probably generalizing these into the LDM is the direction to go so
+> > userspace can set constraints on a per-device (or per-class?) basis:
+> >
+> > /sys/devices/.../power/constraint/throughput
+> > /sys/devices/.../power/constraint/wakeup_latency
+> > /sys/devices/.../power/constraint/... ?
+> 
+> The constraint stuff is definitely something I'd love to talk about in
+> detail.  It's a problem that I think is common to every SoC I've
+> worked with.  Having a general solution for this problem (of
+> specifying and observing various constraints for clock, power, qos,
+> etc) kernel-wide would seem like a big win.
+> 
+> Might be worth kicking some design ideas around and getting a bunch of
+> the interested parties together at some of the upcoming linux
+> conference things this fall on the east coast?
 
-Signed-off-by: Josef Bacik <josef@redhat.com>
----
- mm/filemap.c |   36 +++++++++++++++++++++++++++++++-----
- 1 files changed, 31 insertions(+), 5 deletions(-)
+The Linux Power-Management Summit is scheduled for August 9, at the 
+start of the LinuxCon meeting in Boston.  This would make an excellent 
+topic for discussion.
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 140ebda..829ac9c 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1263,7 +1263,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- {
- 	struct file *filp = iocb->ki_filp;
- 	ssize_t retval;
--	unsigned long seg;
-+	unsigned long seg = 0;
- 	size_t count;
- 	loff_t *ppos = &iocb->ki_pos;
- 
-@@ -1290,21 +1290,47 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 				retval = mapping->a_ops->direct_IO(READ, iocb,
- 							iov, pos, nr_segs);
- 			}
--			if (retval > 0)
-+			if (retval > 0) {
- 				*ppos = pos + retval;
--			if (retval) {
-+				count -= retval;
-+			}
-+
-+			/*
-+			 * Btrfs can have a short DIO read if we encounter
-+			 * compressed extents, so if there was an error, or if
-+			 * we've already read everything we wanted to, or if
-+			 * there was a short read because we hit EOF, go ahead
-+			 * and return.  Otherwise fallthrough to buffered io for
-+			 * the rest of the read.
-+			 */
-+			if (retval < 0 || !count || *ppos >= size) {
- 				file_accessed(filp);
- 				goto out;
- 			}
- 		}
- 	}
- 
-+	count = retval;
- 	for (seg = 0; seg < nr_segs; seg++) {
- 		read_descriptor_t desc;
-+		loff_t offset = 0;
-+
-+		/*
-+		 * If we did a short DIO read we need to skip the section of the
-+		 * iov that we've already read data into.
-+		 */
-+		if (count) {
-+			if (count > iov[seg].iov_len) {
-+				count -= iov[seg].iov_len;
-+				continue;
-+			}
-+			offset = count;
-+			count = 0;
-+		}
- 
- 		desc.written = 0;
--		desc.arg.buf = iov[seg].iov_base;
--		desc.count = iov[seg].iov_len;
-+		desc.arg.buf = iov[seg].iov_base + offset;
-+		desc.count = iov[seg].iov_len - offset;
- 		if (desc.count == 0)
- 			continue;
- 		desc.error = 0;
--- 
-1.6.6.1
+Alan Stern
 
