@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758597Ab0EFRj2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:39:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53993 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759368Ab0EFRiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:38:12 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: kernel-janitors@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-       ysato@users.sourceforge.jp, tony.luck@intel.com, dhowells@redhat.com,
-       kyle@mcmartin.ca, benh@kernel.crashing.org, schwidefsky@de.ibm.com,
-       jgarzik@pobox.com, hare@suse.de, felipe.balbi@nokia.com,
-       Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 12/13] drivers/usb/musb: removing redundant ifdefs
-Date: Thu,  6 May 2010 19:36:16 +0200
-Message-Id: <1273167377-14270-13-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
-References: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
+	id S1758803Ab0EFP0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 11:26:54 -0400
+Received: from fg-out-1718.google.com ([72.14.220.153]:47750 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754449Ab0EFP0w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 11:26:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bMtksAxHz1EmmxMLZCvAQlmHqYnOPUAwWbXzj8VBcwBNeFf6ZLDNH/VsN4FPxTm02m
+         i7fI63lPM8+sMsZCtwGnnSEeUdgLBGA/F/m6dPbfBD1piXUSvQOabWqozD93YccuuzPT
+         SpvRE51Opo1vyGXWrE2+DKuOADfNouT9uZV5c=
+Date: Thu, 6 May 2010 19:26:46 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH -tip] x86,perf: P4 PMU -- protect sensible procedures
+	from preemption
+Message-ID: <20100506152646.GC5583@lenovo>
+References: <20100505150740.GB5686@lenovo> <20100505165731.GA6320@nowhere> <20100505174234.GH5686@lenovo> <20100506064453.GI1172@elte.hu> <w2vaa79d98a1005060039ua7dd1b0t952fcd8662d4d759@mail.gmail.com> <20100506074231.GA8625@elte.hu> <n2maa79d98a1005060045ke0f87f4aw8b86da0440a019b3@mail.gmail.com> <1273153525.22438.39.camel@gandalf.stny.rr.com> <20100506144854.GB5583@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100506144854.GB5583@lenovo>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wbr,
-jirka
+On Thu, May 06, 2010 at 06:48:54PM +0400, Cyrill Gorcunov wrote:
+> On Thu, May 06, 2010 at 09:45:24AM -0400, Steven Rostedt wrote:
+> ...
+> > > > We want the one with the least runtime overhead. These are instrumentation
+> > > > routines, so we want to optimize them as much as possible.
+> > 
+> > 
+> > Yeah, my point was either disable preemption or keep the checks. In
+> > other words, if you don't disable preemption, do not use
+> > raw_smp_procesor_id(), because then we will not catch it if it changes
+> > in the future.
+> > 
+> > > ok, Ingo, dont apply this patch then for a while.
+> > 
+> > Send another patch, I'll test it again ;-)
+> > 
+> > -- Steve
+> > 
+> > 
+> 
+> Ingo, Steven, it seems we have potential preemtion available
+> in perf_event.c:validate_group:x86_pmu.schedule_events() which
+> is reached via syscall from userspace perf_event_open() call,
+> so get_cpu is still needed. But I'm a bit messed with call
+> graph at the moment :(
+> 
+> 	-- Cyrill
 
+Steve, while I'm diving through call graph could you give this
+patch a shot? If preemtion happens -- it'll trigger it fast.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+	-- Cyrill
 ---
- drivers/usb/musb/musb_core.h |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+ arch/x86/kernel/cpu/perf_event_p4.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-index ac17b00..8ddcd41 100644
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -468,10 +468,7 @@ struct musb_csr_regs {
- };
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -421,7 +421,7 @@ static u64 p4_pmu_event_map(int hw_event
  
- struct musb_context_registers {
--
--#ifdef CONFIG_PM
- 	u32 otg_sysconfig, otg_forcestandby;
--#endif
- 	u8 power;
- 	u16 intrtxe, intrrxe;
- 	u8 intrusbe;
-@@ -483,16 +480,10 @@ struct musb_context_registers {
- 	struct musb_csr_regs index_regs[MUSB_C_NUM_EPS];
- };
+ static int p4_hw_config(struct perf_event *event)
+ {
+-	int cpu = raw_smp_processor_id();
++	int cpu = get_cpu();
+ 	u32 escr, cccr;
  
--#ifdef CONFIG_PM
- extern void musb_platform_save_context(struct musb *musb,
- 		struct musb_context_registers *musb_context);
- extern void musb_platform_restore_context(struct musb *musb,
- 		struct musb_context_registers *musb_context);
--#else
--#define musb_platform_save_context(m, x)	do {} while (0)
--#define musb_platform_restore_context(m, x)	do {} while (0)
--#endif
--
- #endif
+ 	/*
+@@ -440,7 +440,7 @@ static int p4_hw_config(struct perf_even
+ 		event->hw.config = p4_set_ht_bit(event->hw.config);
  
- static inline void musb_set_vbus(struct musb *musb, int is_on)
--- 
-1.6.6.1
-
+ 	if (event->attr.type != PERF_TYPE_RAW)
+-		return 0;
++		goto out;
+ 
+ 	/*
+ 	 * We don't control raw events so it's up to the caller
+@@ -455,6 +455,8 @@ static int p4_hw_config(struct perf_even
+ 		(p4_config_pack_escr(P4_ESCR_MASK_HT) |
+ 		 p4_config_pack_cccr(P4_CCCR_MASK_HT));
+ 
++out:
++	put_cpu();
+ 	return 0;
+ }
+ 
+@@ -741,7 +743,7 @@ static int p4_pmu_schedule_events(struct
+ {
+ 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+ 	unsigned long escr_mask[BITS_TO_LONGS(ARCH_P4_TOTAL_ESCR)];
+-	int cpu = raw_smp_processor_id();
++	int cpu = smp_processor_id();
+ 	struct hw_perf_event *hwc;
+ 	struct p4_event_bind *bind;
+ 	unsigned int i, thread, num;
