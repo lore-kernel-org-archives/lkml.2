@@ -1,56 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512Ab0EFRip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:38:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932387Ab0EFRiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:38:16 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: kernel-janitors@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-       ysato@users.sourceforge.jp, tony.luck@intel.com, dhowells@redhat.com,
-       kyle@mcmartin.ca, benh@kernel.crashing.org, schwidefsky@de.ibm.com,
-       jgarzik@pobox.com, hare@suse.de, felipe.balbi@nokia.com,
-       Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 13/13] drivers/ata: removing redundant ifdef
-Date: Thu,  6 May 2010 19:36:17 +0200
-Message-Id: <1273167377-14270-14-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
-References: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
+	id S1759040Ab0EFQES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 12:04:18 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:52957 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753258Ab0EFQEQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 12:04:16 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+       "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+       "'akpm@osdl.org'" <akpm@osdl.org>,
+       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+       "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Date: Thu, 6 May 2010 10:04:02 -0600
+Subject: [PATCH 4/7] scsi: megaraid_sas - support devices update flag
+Thread-Topic: [PATCH 4/7] scsi: megaraid_sas - support devices update flag
+Thread-Index: Aco28IhK0BCwqEkwToSTDcG+BIA9kwDb1hagAACJvwADF6mW4AvxomIAHahLLtAAAvN9QA==
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3CDB80BFF@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>
+ <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wbr,
-jirka
+Driver added the Device update flag to tell LSI application driver will do the device
+Update.  LSI MegaRAID SAS application will check this flag to decide if it is need to
+update the Device or not. 
 
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- drivers/ata/ahci.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+--- 
+megaraid_sas.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 8b502f4..5326af2 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -3179,7 +3179,6 @@ static bool ahci_broken_online(struct pci_dev *pdev)
- #ifdef CONFIG_ATA_ACPI
- static void ahci_gtf_filter_workaround(struct ata_host *host)
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
+--- old/drivers/scsi/megaraid/megaraid_sas.c	2010-05-03 03:50:44.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-05-03 05:46:37.000000000 -0400
+@@ -99,6 +99,7 @@ static int megasas_poll_wait_aen;
+ static DECLARE_WAIT_QUEUE_HEAD(megasas_poll_wait);
+ static u32 support_poll_for_event;
+ static u32 megasas_dbg_lvl;
++static u32 support_device_change;
+ 
+ /* define lock for aen poll */
+ spinlock_t poll_aen_lock;
+@@ -4660,6 +4661,15 @@ megasas_sysfs_show_support_poll_for_even
+ static DRIVER_ATTR(support_poll_for_event, S_IRUGO,
+ 			megasas_sysfs_show_support_poll_for_event, NULL);
+ 
++ static ssize_t
++megasas_sysfs_show_support_device_change(struct device_driver *dd, char *buf)
++{
++	return sprintf(buf, "%u\n", support_device_change);
++}
++
++static DRIVER_ATTR(support_device_change, S_IRUGO,
++			megasas_sysfs_show_support_device_change, NULL);
++
+ static ssize_t
+ megasas_sysfs_show_dbg_lvl(struct device_driver *dd, char *buf)
  {
--#ifdef CONFIG_ATA_ACPI
- 	static const struct dmi_system_id sysids[] = {
- 		/*
- 		 * Aspire 3810T issues a bunch of SATA enable commands
-@@ -3220,7 +3219,6 @@ static void ahci_gtf_filter_workaround(struct ata_host *host)
- 			ata_for_each_dev(dev, link, ALL)
- 				dev->gtf_filter |= filter;
- 	}
--#endif
- }
- #else
- static inline void ahci_gtf_filter_workaround(struct ata_host *host)
--- 
-1.6.6.1
+@@ -4980,6 +4990,7 @@ static int __init megasas_init(void)
+ 	       MEGASAS_EXT_VERSION);
+ 
+ 	support_poll_for_event = 2;
++	support_device_change = 1;
+ 
+ 	memset(&megasas_mgmt_info, 0, sizeof(megasas_mgmt_info));
+ 
+@@ -5028,8 +5039,17 @@ static int __init megasas_init(void)
+ 	if (rval)
+ 		goto err_dcf_poll_mode_io;
+ 
++	rval = driver_create_file(&megasas_pci_driver.driver,
++				&driver_attr_support_device_change);
++	if (rval)
++		goto err_dcf_support_device_change;
++
+ 	return rval;
+ 
++err_dcf_support_device_change:
++	driver_remove_file(&megasas_pci_driver.driver,
++		  &driver_attr_poll_mode_io);
++
+ err_dcf_poll_mode_io:
+ 	driver_remove_file(&megasas_pci_driver.driver,
+ 			   &driver_attr_dbg_lvl);
+@@ -5060,6 +5080,10 @@ static void __exit megasas_exit(void)
+ 	driver_remove_file(&megasas_pci_driver.driver,
+ 			   &driver_attr_dbg_lvl);
+ 	driver_remove_file(&megasas_pci_driver.driver,
++			&driver_attr_support_poll_for_event);
++	driver_remove_file(&megasas_pci_driver.driver,
++			&driver_attr_support_device_change);
++	driver_remove_file(&megasas_pci_driver.driver,
+ 			   &driver_attr_release_date);
+ 	driver_remove_file(&megasas_pci_driver.driver, &driver_attr_version);
+
 
