@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab0EFPXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 11:23:50 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:58405 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758792Ab0EFPXo (ORCPT
+	id S1753491Ab0EFG75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 02:59:57 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:16817 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab0EFG7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 11:23:44 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzab9bhzz1202hzz6ff19hz32i87h2a8h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L20836-01-HH1-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-       oprofile-list <oprofile-list@lists.sourceforge.net>,
-       Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 2/7] oprofile/x86: remove CONFIG_SMP macros
-Date: Thu, 6 May 2010 15:26:09 +0200
-Message-ID: <1273152374-9392-3-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.0.3
-In-Reply-To: <1273152374-9392-1-git-send-email-robert.richter@amd.com>
-References: <1273152374-9392-1-git-send-email-robert.richter@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Thu, 6 May 2010 02:59:55 -0400
+Subject: Re: [PATCH v4] mtd: Do not corrupt backing device of device node
+ inode
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: David Woodhouse <dwmw2@infradead.org>, Jan Kara <jack@suse.cz>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       David Howells <dhowells@redhat.com>,
+       Alexander Shishkin <virtuoso@slind.org>, linux-mtd@lists.infradead.org,
+       linux-fsdevel@vger.kernel.org, stable@kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1273074054-11849-1-git-send-email-kirill@shutemov.name>
+References: <1273074054-11849-1-git-send-email-kirill@shutemov.name>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 May 2010 09:39:19 +0300
+Message-ID: <1273127959.3702.200.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 06 May 2010 06:39:59.0685 (UTC) FILETIME=[F2FE0F50:01CAECE6]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPU notifier register functions also exist if CONFIG_SMP is
-disabled. This change is part of hotplug code rework and also
-necessary for later patches.
+On Wed, 2010-05-05 at 18:40 +0300, Kirill A. Shutemov wrote:
+> We cannot modify file->f_mapping->backing_dev_info, because it will corrupt
+> backing device of device node inode, since file->f_mapping is equal to
+> inode->i_mapping (see __dentry_open() in fs/open.c).
+> 
+> Let's introduce separate inode for MTD device with appropriate backing
+> device.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> ---
+> Changelog:
+>  v3 -> v4:
+>   - Use igrab() instead of __iget inside the inode_lock;
+>   - Add stable@ to CC list.
+>  v2 -> v3:
+>   - Rebase to mtd-2.6.git.
+>  v1 -> v2:
+>   - Fix error handling based on comments by Jan Kara.
 
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/oprofile/nmi_int.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+Pushed to l2-mtd-2.6.git / dunno
 
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 2458204..c5df8ee 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -471,7 +471,6 @@ static int nmi_create_files(struct super_block *sb, struct dentry *root)
- 	return 0;
- }
- 
--#ifdef CONFIG_SMP
- static int oprofile_cpu_notifier(struct notifier_block *b, unsigned long action,
- 				 void *data)
- {
-@@ -491,7 +490,6 @@ static int oprofile_cpu_notifier(struct notifier_block *b, unsigned long action,
- static struct notifier_block oprofile_cpu_nb = {
- 	.notifier_call = oprofile_cpu_notifier
- };
--#endif
- 
- #ifdef CONFIG_PM
- 
-@@ -701,9 +699,8 @@ int __init op_nmi_init(struct oprofile_operations *ops)
- 		return -ENODEV;
- 	}
- 
--#ifdef CONFIG_SMP
- 	register_cpu_notifier(&oprofile_cpu_nb);
--#endif
-+
- 	/* default values, can be overwritten by model */
- 	ops->create_files	= nmi_create_files;
- 	ops->setup		= nmi_setup;
-@@ -732,9 +729,7 @@ void op_nmi_exit(void)
- {
- 	if (using_nmi) {
- 		exit_sysfs();
--#ifdef CONFIG_SMP
- 		unregister_cpu_notifier(&oprofile_cpu_nb);
--#endif
- 	}
- 	if (model->exit)
- 		model->exit();
+Also added Jan's ack which disappeared in v4
+
 -- 
-1.7.0.3
-
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
