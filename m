@@ -1,43 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756972Ab0EFJsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 05:48:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58366 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751801Ab0EFJso (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 05:48:44 -0400
-Date: Thu, 6 May 2010 10:48:42 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH RESEND] mc13783-regulator: fix vaild voltage range
- checking for mc13783_fixed_regulator_set_voltage
-Message-ID: <20100506094842.GA30491@rakim.wolfsonmicro.main>
-References: <1273116816.26133.1.camel@mola>
+	id S1756782Ab0EFJdw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 05:33:52 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59595 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756579Ab0EFJdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 05:33:49 -0400
+Message-ID: <4BE28C40.2060501@cn.fujitsu.com>
+Date: Thu, 06 May 2010 17:30:40 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273116816.26133.1.camel@mola>
-X-Cookie: Do not stamp.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4 2/9] KVM MMU: don't write-protect if have new mapping to
+ unsync page
+References: <4BE2818A.5000301@cn.fujitsu.com>
+In-Reply-To: <4BE2818A.5000301@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 11:33:36AM +0800, Axel Lin wrote:
-> In the case of "min_uV == max_uV == mc13783_regulators[id].voltages[0]",
-> mc13783_fixed_regulator_set_voltage should return 0 instead of -EINVAL.
-> 
-> This patch also adds a missing ">" character for MODULE_AUTHOR, a trivial fix.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+Two cases maybe happen in kvm_mmu_get_page() function:
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+- one case is, the goal sp is already in cache, if the sp is unsync,
+  we only need update it to assure this mapping is valid, but not
+  mark it sync and not write-protect sp->gfn since it not broke unsync
+  rule(one shadow page for a gfn)
 
-Better to send two patches for two separate fixes, especially where
-there's no overlap in the code.
+- another case is, the goal sp not existed, we need create a new sp
+  for gfn, i.e, gfn (may)has another shadow page, to keep unsync rule,
+  we should sync(mark sync and write-protect) gfn's unsync shadow page.
+  After enabling multiple unsync shadows, we sync those shadow pages
+  only when the new sp not allow to become unsync(also for the unsyc
+  rule, the new rule is: allow all pte page become unsync)
+
+Changlog:
+- fix for forget to mark parent's unsync_children bit when mapping a new
+  parent to unsync shadow page
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |   18 ++++++++++++++----
+ 1 files changed, 14 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 72238ec..1dbb96e 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1333,7 +1333,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 	unsigned index;
+ 	unsigned quadrant;
+ 	struct hlist_head *bucket;
+-	struct kvm_mmu_page *sp;
++	struct kvm_mmu_page *sp, *unsync_sp = NULL;
+ 	struct hlist_node *node, *tmp;
+ 
+ 	role = vcpu->arch.mmu.base_role;
+@@ -1352,20 +1352,30 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 	hlist_for_each_entry_safe(sp, node, tmp, bucket, hash_link)
+ 		if (sp->gfn == gfn) {
+ 			if (sp->unsync)
+-				if (kvm_sync_page(vcpu, sp))
+-					continue;
++				unsync_sp = sp;
+ 
+ 			if (sp->role.word != role.word)
+ 				continue;
+ 
++			if (!direct && unsync_sp &&
++			      kvm_sync_page_transient(vcpu, unsync_sp)) {
++				unsync_sp = NULL;
++				break;
++			}
++
+ 			mmu_page_add_parent_pte(vcpu, sp, parent_pte);
+ 			if (sp->unsync_children) {
+ 				set_bit(KVM_REQ_MMU_SYNC, &vcpu->requests);
+ 				kvm_mmu_mark_parents_unsync(sp);
+-			}
++			} else if (sp->unsync)
++				kvm_mmu_mark_parents_unsync(sp);
++
+ 			trace_kvm_mmu_get_page(sp, false);
+ 			return sp;
+ 		}
++	if (!direct && unsync_sp)
++		kvm_sync_page(vcpu, unsync_sp);
++
+ 	++vcpu->kvm->stat.mmu_cache_miss;
+ 	sp = kvm_mmu_alloc_page(vcpu, parent_pte);
+ 	if (!sp)
+-- 
+1.6.1.2
+
+
+
