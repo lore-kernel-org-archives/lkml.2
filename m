@@ -1,148 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710Ab0EFKKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 06:10:41 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:56786 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757669Ab0EFKKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 06:10:38 -0400
-Date: Thu, 6 May 2010 11:10:19 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
-	the wrong VMA information
-Message-ID: <20100506101019.GC20979@csn.ul.ie>
-References: <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org> <20100505145620.GP20979@csn.ul.ie> <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org> <20100505175311.GU20979@csn.ul.ie> <alpine.LFD.2.00.1005051058380.27218@i5.linux-foundation.org> <20100506002255.GY20979@csn.ul.ie> <p2s28c262361005060247m2983625clff01aeaa1668402f@mail.gmail.com> <20100506095422.GA20979@csn.ul.ie> <j2z28c262361005060301gf504daa3r13081561d4effc90@mail.gmail.com>
+	id S1757098Ab0EFJef (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 05:34:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56565 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757025Ab0EFJec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 05:34:32 -0400
+Message-ID: <4BE28C6B.8010505@cn.fujitsu.com>
+Date: Thu, 06 May 2010 17:31:23 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <j2z28c262361005060301gf504daa3r13081561d4effc90@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4 6/9] KVM MMU: support keeping sp live while it's out of
+ protection
+References: <4BE2818A.5000301@cn.fujitsu.com>
+In-Reply-To: <4BE2818A.5000301@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 07:01:54PM +0900, Minchan Kim wrote:
-> On Thu, May 6, 2010 at 6:54 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> > On Thu, May 06, 2010 at 06:47:12PM +0900, Minchan Kim wrote:
-> >> On Thu, May 6, 2010 at 9:22 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> >> > On Wed, May 05, 2010 at 11:02:25AM -0700, Linus Torvalds wrote:
-> >> >>
-> >> >>
-> >> >> On Wed, 5 May 2010, Mel Gorman wrote:
-> >> >> >
-> >> >> > If the same_vma list is properly ordered then maybe something like the
-> >> >> > following is allowed?
-> >> >>
-> >> >> Heh. This is the same logic I just sent out. However:
-> >> >>
-> >> >> > +   anon_vma = page_rmapping(page);
-> >> >> > +   if (!anon_vma)
-> >> >> > +           return NULL;
-> >> >> > +
-> >> >> > +   spin_lock(&anon_vma->lock);
-> >> >>
-> >> >> RCU should guarantee that this spin_lock() is valid, but:
-> >> >>
-> >> >> > +   /*
-> >> >> > +    * Get the oldest anon_vma on the list by depending on the ordering
-> >> >> > +    * of the same_vma list setup by __page_set_anon_rmap
-> >> >> > +    */
-> >> >> > +   avc = list_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
-> >> >>
-> >> >> We're not guaranteed that the 'anon_vma->head' list is non-empty.
-> >> >>
-> >> >> Somebody could have freed the list and the anon_vma and we have a stale
-> >> >> 'page->anon_vma' (that has just not been _released_ yet).
-> >> >>
-> >> >> And shouldn't that be 'list_first_entry'? Or &anon_vma->head.next?
-> >> >>
-> >> >> How did that line actually work for you? Or was it just a "it boots", but
-> >> >> no actual testing of the rmap walk?
-> >> >>
-> >> >
-> >> > This is what I just started testing on a 4-core machine. Lockdep didn't
-> >> > complain but there are two potential sources of badness in anon_vma_lock_root
-> >> > marked with XXX. The second is the most important because I can't see how the
-> >> > local and root anon_vma locks can be safely swapped - i.e. release local and
-> >> > get the root without the root disappearing. I haven't considered the other
-> >> > possibilities yet such as always locking the root anon_vma. Going to
-> >> > sleep on it.
-> >> >
-> >> > Any comments?
-> >>
-> >> <snip>
-> >> > +/* Given an anon_vma, find the root of the chain, lock it and return the root */
-> >> > +struct anon_vma *anon_vma_lock_root(struct anon_vma *anon_vma)
-> >> > +{
-> >> > +       struct anon_vma *root_anon_vma;
-> >> > +       struct anon_vma_chain *avc, *root_avc;
-> >> > +       struct vm_area_struct *vma;
-> >> > +
-> >> > +       /* Lock the same_anon_vma list and make sure we are on a chain */
-> >> > +       spin_lock(&anon_vma->lock);
-> >> > +       if (list_empty(&anon_vma->head)) {
-> >> > +               spin_unlock(&anon_vma->lock);
-> >> > +               return NULL;
-> >> > +       }
-> >> > +
-> >> > +       /*
-> >> > +        * Get the root anon_vma on the list by depending on the ordering
-> >> > +        * of the same_vma list setup by __page_set_anon_rmap. Basically
-> >> > +        * we are doing
-> >> > +        *
-> >> > +        * local anon_vma -> local vma -> deepest vma -> anon_vma
-> >> > +        */
-> >> > +       avc = list_first_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
-> >>
-> >> Dumb question.
-> >>
-> >> I can't understand why we should use list_first_entry.
-> >>
-> >> I looked over the code.
-> >> anon_vma_chain_link uses list_add_tail so I think that's right.
-> >> But anon_vma_prepare uses list_add. So it's not consistent.
-> >> How do we make sure list_first_entry returns deepest vma?
-> >>
-> >
-> > list_first_entry is not getting the root (what you called deepest but lets
-> > pick a name and stick with it or this will be worse than it already is).
+If we want to keep sp live while it it's out of kvm->mmu_lock protection,
+we can increase sp->active_count.
 
-Of course, I have to clean out my own references to "deepest" :/
+Then, the invalid page is not only for active root but also unsync sp, we
+should filter those out when we make a page to unsync.
 
-> That
-> > list_first entry is what gets us from
-> >
-> > local anon_vma -> avc for the local anon_vma -> local vma
-> >
-> 
-> Yes. Sorry for confusing word. :)
-> Let's have a question again. What I have a question is that why we
-> have to use list_first_entry not list_entry for getting local_vma?
-> 
+And move 'hlist_del(&sp->hash_link)' into kvm_mmu_free_page() then we can
+free the invalid unsync page to call kvm_mmu_free_page directly.
 
-Nothing other than it's easier to read and a bit more self-documenting
-than;
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
 
-avc = list_entry(anon_vma->head.next, struct anon_vma_chain, same_anon_vma);
-
-> 
-> >> Sorry if I am missing.
-> >>
-> >
-> > Not at all. The more people that look at this the better.
-> 
-> Thanks. Mel.
-> 
-
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 58cf0f1..8ab1a49 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -894,6 +894,7 @@ static int is_empty_shadow_page(u64 *spt)
+ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ {
+ 	ASSERT(is_empty_shadow_page(sp->spt));
++	hlist_del(&sp->hash_link);
+ 	list_del(&sp->link);
+ 	__free_page(virt_to_page(sp->spt));
+ 	__free_page(virt_to_page(sp->gfns));
+@@ -1539,13 +1540,14 @@ static int kvm_mmu_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ 		unaccount_shadowed(kvm, sp->gfn);
+ 	if (sp->unsync)
+ 		kvm_unlink_unsync_page(kvm, sp);
+-	if (!sp->active_count) {
+-		hlist_del(&sp->hash_link);
++	if (!sp->active_count)
+ 		kvm_mmu_free_page(kvm, sp);
+-	} else {
++	else {
+ 		sp->role.invalid = 1;
+ 		list_move(&sp->link, &kvm->arch.active_mmu_pages);
+-		kvm_reload_remote_mmus(kvm);
++		/* No need reload mmu if it's unsync page zapped */
++		if (sp->role.level != PT_PAGE_TABLE_LEVEL)
++			kvm_reload_remote_mmus(kvm);
+ 	}
+ 	kvm_mmu_reset_last_pte_updated(kvm);
+ 	return ret;
+@@ -1781,7 +1783,8 @@ static void kvm_unsync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
+ 	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
+ 
+ 	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
+-		if (s->gfn != gfn || s->role.direct || s->unsync)
++		if (s->gfn != gfn || s->role.direct || s->unsync ||
++		      s->role.invalid)
+ 			continue;
+ 		WARN_ON(s->role.level != PT_PAGE_TABLE_LEVEL);
+ 		__kvm_unsync_page(vcpu, s);
+@@ -1806,7 +1809,7 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
+ 		if (s->role.level != PT_PAGE_TABLE_LEVEL)
+ 			return 1;
+ 
+-		if (!need_unsync && !s->unsync) {
++		if (!need_unsync && !s->unsync && !s->role.invalid) {
+ 			if (!can_unsync || !oos_shadow)
+ 				return 1;
+ 			need_unsync = true;
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.6.1.2
+
+
+
+
+
+
