@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034Ab0EFMrc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 08:47:32 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:34123 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757988Ab0EFMr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 08:47:29 -0400
-Message-ID: <4BE2BA55.6060109@mev.co.uk>
-Date: Thu, 6 May 2010 13:47:17 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100422 Thunderbird/3.0.4
+	id S932553Ab0EFRoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 13:44:06 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:57894 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932534Ab0EFRoA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 13:44:00 -0400
+Date: Thu, 6 May 2010 18:43:31 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+Message-ID: <20100506174331.GA29103@srcf.ucam.org>
+References: <20100505202826.GB7450@linux.intel.com> <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org> <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com> <20100505234755.GI29604@atomide.com> <20100506134015.GA23426@srcf.ucam.org> <20100506170151.GA30928@atomide.com> <20100506170956.GA28104@srcf.ucam.org> <20100506171453.GC30928@atomide.com> <20100506172201.GA28578@srcf.ucam.org> <20100506173807.GD30928@atomide.com>
 MIME-Version: 1.0
-To: Tobias Klauser <klto@zhaw.ch>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-       "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-       "gregkh@suse.de" <gregkh@suse.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-       "nios2-dev@sopc.et.ntust.edu.tw" <nios2-dev@sopc.et.ntust.edu.tw>
-Subject: Re: [Nios2-dev] [PATCH 2/2] serial: Add driver for the Altera UART
-References: <cover.1273048151.git.tklauser@distanz.ch>	<095aab012b2a6b3bbf4c7bc04294bb9c19316318.1273048151.git.tklauser@distanz.ch> <1273142684.3477.22.camel@gentoo-ija64.mev.local> <4BE2B02B.4010209@zhaw.ch>
-In-Reply-To: <4BE2B02B.4010209@zhaw.ch>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100506173807.GD30928@atomide.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tobias,
+On Thu, May 06, 2010 at 10:38:08AM -0700, Tony Lindgren wrote:
 
-On 06/05/10 13:03, Tobias Klauser wrote:
-> I also noticed, that altera_uart_break_ctl takes the lock which might be
-> not necessary as the caller in serial_core.c already takes port->mutex
-> which should be enough. Or am I wrong?
+> If your userspace keeps polling and has runaway timers, then you
+> could suspend it's parent process to idle the system?
 
-It's not enough.  The spin lock is needed to protect modification of
-pp->imr and writing this modified value to the control register.  Not
-all paths that modify pp->imr and the control register grab port->mutex
-beforehand (for example, the interrupt routine doesn't and can't).
+If your userspace is suspended, how does it process the events that 
+generated a system wakeup? If we had a good answer to that then suspend 
+blockers would be much less necessary.
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+Matthew Garrett | mjg59@srcf.ucam.org
