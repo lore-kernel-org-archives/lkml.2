@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab0EFRJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:09:49 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:49381 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189Ab0EFRJs (ORCPT
+	id S1757530Ab0EFKJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 06:09:04 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:58052 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab0EFKJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:09:48 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Jerome Glisse <jglisse@redhat.com>
-Cc: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org,
-       dri-devel@lists.freedesktop.org
-Subject: Re: linux-next - drm/ttm versus nouveau - WARNING and dead driver.
-In-Reply-To: Your message of "Thu, 06 May 2010 18:56:10 +0200."
-             <20100506165610.GB8934@barney.localdomain>
-From: Valdis.Kletnieks@vt.edu
-References: <7841.1273161966@localhost> <j2gb170af451005060916of64cbd20x12ea697de19931b2@mail.gmail.com>
-            <20100506165610.GB8934@barney.localdomain>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1273165755_4094P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 06 May 2010 13:09:15 -0400
-Message-ID: <4162.1273165755@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020201.4BE2F7BC.00FB,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	Thu, 6 May 2010 06:09:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=SaweZGTNl2Kd/UY+1+8i0wcjkRsi3qndvGCNK3pdMCkn3aynkK8aW6ILAdjXkxpHBZ
+         ejXxb1IwCLpsCmKZFalUFN/iguSAE53aKWw7JnszO7vwcwJzj/Ily91XEFoHogZb8wou
+         OvHhp+721/XwjN5Nd4Q25lo/z8UUQEGa5UZC8=
+From: Mark <reodge@gmail.com>
+To: gregkh@suse.de, berndporr@f2s.com, revent82@gmail.com,
+       shawn.bohrer@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Mark <reodge@gmail.com>
+Subject: [PATCH] Staging: comedi: Fixed long line lengths in comedi.h
+Date: Thu,  6 May 2010 18:07:44 +0800
+Message-Id: <1273140464-9384-1-git-send-email-reodge@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1273165755_4094P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+This patches fixes some of the long line lengths that checkpatch.pl was
+complaining about in comedi.h
 
-On Thu, 06 May 2010 18:56:10 +0200, Jerome Glisse said:
-> On Thu, May 06, 2010 at 06:16:26PM +0200, Rafał Miłecki wrote:
-> > 2010/5/6  <Valdis.Kletnieks=40vt.edu>:
-> > > Bisected down to:
-> > >
-> > > 82c5da6bf8b55a931b042fb531083863d26c8020 is the first bad commit
-> > > commit 82c5da6bf8b55a931b042fb531083863d26c8020
-> > > Author: Jerome Glisse <jglisse=40redhat.com>
-> > > Date: =A0 Fri Apr 9 14:39:23 2010 +0200
-> > >
-> > > =A0 =A0drm/ttm: ttm_fault callback to allow driver to handle bo pla=
-cement V6
-> >=20
-> > Can this be duplicate of https://bugs.freedesktop.org/show_bug.cgi?id=
-=3D27822
- ?
-> >=20
-> > --=20
-> > Rafał
->=20
-> Yes this is a duplicate of :
-> https://bugs.freedesktop.org/show_bug.cgi?id=3D27822
->=20
-> The patch attached in the bug should fix your issue. Sorry for the
-> trouble.
+Signed-off-by: Mark Rankilor <reodge@gmail.com>
+---
+ drivers/staging/comedi/comedi.h |   26 +++++++++++++++++---------
+ 1 files changed, 17 insertions(+), 9 deletions(-)
 
-Confirming that the patch does fix the problem, thanks.
-
---==_Exmh_1273165755_4094P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFL4ve7cC3lWbTT17ARAmvHAKCbuGrmFsasGqvRyKTPWZ+9YCYj1wCfW6Ew
-B1Ik//NjrvCT3jMIP/KTpu0=
-=nITH
------END PGP SIGNATURE-----
-
---==_Exmh_1273165755_4094P--
+diff --git a/drivers/staging/comedi/comedi.h b/drivers/staging/comedi/comedi.h
+index 8e4caaa..20a6fee 100644
+--- a/drivers/staging/comedi/comedi.h
++++ b/drivers/staging/comedi/comedi.h
+@@ -46,8 +46,10 @@
+ #define COMEDI_DEVCONF_AUX_DATA2_LENGTH		26
+ #define COMEDI_DEVCONF_AUX_DATA1_LENGTH		27
+ #define COMEDI_DEVCONF_AUX_DATA0_LENGTH		28
+-#define COMEDI_DEVCONF_AUX_DATA_HI		29	/* most significant 32 bits of pointer address (if needed) */
+-#define COMEDI_DEVCONF_AUX_DATA_LO		30	/* least significant 32 bits of pointer address */
++/* most significant 32 bits of pointer address (if needed) */
++#define COMEDI_DEVCONF_AUX_DATA_HI		29
++/* least significant 32 bits of pointer address */
++#define COMEDI_DEVCONF_AUX_DATA_LO		30
+ #define COMEDI_DEVCONF_AUX_DATA_LENGTH		31	/* total data length */
+ 
+ /* max length of device and driver names */
+@@ -55,8 +57,10 @@
+ 
+ /* packs and unpacks a channel/range number */
+ 
+-#define CR_PACK(chan, rng, aref)		((((aref)&0x3)<<24) | (((rng)&0xff)<<16) | (chan))
+-#define CR_PACK_FLAGS(chan, range, aref, flags)	(CR_PACK(chan, range, aref) | ((flags) & CR_FLAGS_MASK))
++#define CR_PACK(chan, rng, aref)					\
++	((((aref)&0x3)<<24) | (((rng)&0xff)<<16) | (chan))
++#define CR_PACK_FLAGS(chan, range, aref, flags)				\
++	(CR_PACK(chan, range, aref) | ((flags) & CR_FLAGS_MASK))
+ 
+ #define CR_CHAN(a)	((a)&0xffff)
+ #define CR_RANGE(a)	(((a)>>16)&0xff)
+@@ -125,7 +129,8 @@
+ /* command flags */
+ /* These flags are used in comedi_cmd structures */
+ 
+-#define CMDF_PRIORITY		0x00000008	/* try to use a real-time interrupt while performing command */
++/* try to use a real-time interrupt while performing command */
++#define CMDF_PRIORITY		0x00000008
+ 
+ #define TRIG_RT		CMDF_PRIORITY	/* compatibility definition */
+ 
+@@ -242,15 +247,18 @@
+ 		INSN_CONFIG_DISARM = 32,
+ 		INSN_CONFIG_GET_COUNTER_STATUS = 33,
+ 		INSN_CONFIG_RESET = 34,
+-		INSN_CONFIG_GPCT_SINGLE_PULSE_GENERATOR = 1001,	/* Use CTR as single pulsegenerator */
+-		INSN_CONFIG_GPCT_PULSE_TRAIN_GENERATOR = 1002,	/* Use CTR as pulsetraingenerator */
+-		INSN_CONFIG_GPCT_QUADRATURE_ENCODER = 1003,	/* Use the counter as encoder */
++		/* Use CTR as single pulsegenerator */
++		INSN_CONFIG_GPCT_SINGLE_PULSE_GENERATOR = 1001,
++		/* Use CTR as pulsetraingenerator */
++		INSN_CONFIG_GPCT_PULSE_TRAIN_GENERATOR = 1002,
++		/* Use the counter as encoder */
++		INSN_CONFIG_GPCT_QUADRATURE_ENCODER = 1003,
+ 		INSN_CONFIG_SET_GATE_SRC = 2001,	/* Set gate source */
+ 		INSN_CONFIG_GET_GATE_SRC = 2002,	/* Get gate source */
+ 		INSN_CONFIG_SET_CLOCK_SRC = 2003,	/* Set master clock source */
+ 		INSN_CONFIG_GET_CLOCK_SRC = 2004,	/* Get master clock source */
+ 		INSN_CONFIG_SET_OTHER_SRC = 2005,	/* Set other source */
+-		/*	INSN_CONFIG_GET_OTHER_SRC = 2006,*//* Get other source */
++		/* INSN_CONFIG_GET_OTHER_SRC = 2006,*//* Get other source */
+ 		INSN_CONFIG_GET_HARDWARE_BUFFER_SIZE = 2006,	/* Get size in bytes of
+ 								   subdevice's on-board
+ 								   fifos used during
+-- 
+1.7.0.5
 
