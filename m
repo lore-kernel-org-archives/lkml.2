@@ -1,142 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab0EFREh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:04:37 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60028 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab0EFREg (ORCPT
+	id S1758616Ab0EFOKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 10:10:01 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:49855 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757585Ab0EFOJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:04:36 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 69.181.193.102
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX191r1JsitM8b6qj6fiIW7Oz
-Date: Thu, 6 May 2010 10:04:21 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
-Cc: Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
-       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100506170420.GB30928@atomide.com>
-References: <20100505202826.GB7450@linux.intel.com>
- <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
- <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
- <20100505234755.GI29604@atomide.com>
- <l2ra55d774e1005051656wbf4f3d7cr8cc9de0478e509f1@mail.gmail.com>
- <20100506000552.GJ29604@atomide.com>
- <g2yd6200be21005052116n5dd8708fk33eaf8944379bfc2@mail.gmail.com>
+	Thu, 6 May 2010 10:09:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH tip/core/rcu 28/48] net: Make accesses to ->br_port safe for sparse RCU
+Date: Thu, 6 May 2010 16:09:25 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Hemminger <shemminger@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com, David Miller <davem@davemloft.net>
+References: <20100504201934.GA19234@linux.vnet.ibm.com> <201005042341.49480.arnd@arndb.de> <20100505220355.GA20938@linux.vnet.ibm.com>
+In-Reply-To: <20100505220355.GA20938@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <g2yd6200be21005052116n5dd8708fk33eaf8944379bfc2@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005061609.25960.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1956ban1hPnv54qI4W5+zn3ifUIh+5nt7MZEjA
+ ul++D8CUMdGn4MVJ28ACFot71k6y8FRC+L4LOyODGK4xqSBomL
+ vuLi2S50deNcMn+UMzGGg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arve Hjønnevåg <arve@android.com> [100505 21:11]:
-> On Wed, May 5, 2010 at 5:05 PM, Tony Lindgren <tony@atomide.com> wrote:
-> > * Brian Swetland <swetland@google.com> [100505 16:51]:
-> >> On Wed, May 5, 2010 at 4:47 PM, Tony Lindgren <tony@atomide.com> wrote:
-> >> > * Brian Swetland <swetland@google.com> [100505 14:34]:
-> >> >> On Wed, May 5, 2010 at 2:12 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> >> >> >>
-> >> >> >> Oh, like tell the modem that user mode has handled the ring event and
-> >> >> >> its ok to un-block?
-> >> >> >
-> >> >> > No, that's not how it works.  It would go like this:
-> >> >> >
-> >> >> >        The modem IRQ handler queues its event to the input subsystem.
-> >> >> >        As it does so the input subsystem enables a suspend blocker,
-> >> >> >        causing the system to stay awake after the IRQ is done.
-> >> >
-> >> > How about instead the modem driver fails to suspend until it's done?
-> >> >
-> >> > Each driver could have a suspend_policy sysfs entry with options such
-> >> > as [ forced | safe ]. The default would be forced. Forced would
-> >> > be the current behaviour, while safe would refuse suspend until the
-> >> > driver is done processing.
-> >> >
-> >> >> >        The user program enables its own suspend blocker before reading
-> >> >> >        the input queue.  When the queue is empty, the input subsystem
-> >> >> >        releases its suspend blocker.
-> >> >
-> >> > And also the input layer could refuse to suspend until it's done.
-> >> >
-> >> >> >        When the user program finishes processing the event, it
-> >> >> >        releases its suspend blocker.  Now the system can go back to
-> >> >> >        sleep.
-> >> >
-> >> > And here the user space just tries to suspend again when it's done?
-> >> > It's not like you're trying to suspend all the time, so it should be
-> >> > OK to retry a few times.
-> >>
-> >> We actually are trying to suspend all the time -- that's our basic
-> >> model -- suspend whenever we can when something doesn't prevent it.
-> >
-> > Maybe that state could be kept in some userspace suspend policy manager?
-> >
-> >> >> > At no point does the user program have to communicate anything to the
-> >> >> > modem driver, and at no point does it have to do anything out of the
-> >> >> > ordinary except to enable and disable a suspend blocker.
-> >> >>
-> >> >> Exactly -- and you can use the same style of overlapping suspend
-> >> >> blockers with other drivers than input, if the input interface is not
-> >> >> suitable for the particular interaction.
-> >> >
-> >> > Would the suspend blockers still be needed somewhere in the example
-> >> > above?
-> >>
-> >> How often would we retry suspending?
-> >
-> > Well based on some timer, the same way the screen blanks? Or five
-> > seconds of no audio play? So if the suspend fails, then reset whatever
-> > userspace suspend policy timers.
-> >
-> >> If we fail to suspend, don't we have to resume all the drivers that
-> >> suspended before the one that failed?  (Maybe I'm mistaken here)
-> >
-> > Sure, but I guess that should be a rare event that only happens when
-> > you try to suspend and something interrupts the suspend.
-> >
+On Thursday 06 May 2010, Paul E. McKenney wrote:
+> On Tue, May 04, 2010 at 11:41:49PM +0200, Arnd Bergmann wrote:
+> > On Tuesday 04 May 2010 23:26:31 Stephen Hemminger wrote:
+> > > > The new versions of the rcu_dereference() APIs requires that any pointers
+> > > > passed to one of these APIs be fully defined.  The ->br_port field
+> > > > in struct net_device points to a struct net_bridge_port, which is an
+> > > > incomplete type.  This commit therefore changes ->br_port to be a void*,
+> > > > and introduces a br_port() helper function to convert the type to struct
+> > > > net_bridge_port, and applies this new helper function where required.
+> > > 
+> > > I would rather make the bridge hook generic and not take a type argument.
+> > 
+> > Not sure if you were confused by the comment in the same way that I was.
+> > 
+> > The bridge hook is not impacted by this at all, since we can either pass
+> > a void* or a struct net_bridge_port* to it. The br_port() helper
+> > is used for all the places where we actually want to dereference 
+> > dev->br_port and access its contents.
 > 
-> This is not a rare event. For example, the matrix keypad driver blocks
-> suspend when a key is down so it can scan the matrix.
-
-Sure, but how many times per day are you suspending?
- 
-> >> With the suspend block model we know the moment we're capable of
-> >> suspending and then can suspend at that moment.  Continually trying to
-> >> suspend seems like it'd be inefficient power-wise (we're going to be
-> >> doing a lot more work as we try to suspend over and over, or we're
-> >> going to retry after a timeout and spend extra time not suspended).
-> >>
-> >> We can often spend minutes (possibly many) at a time preventing
-> >> suspend when the system is doing work that would be interrupted by a
-> >> full suspend.
-> >
-> > Maybe you a userspace suspend policy manager would do the trick if
-> > it knows when the screen is blanked and no audio has been played for
-> > five seconds etc?
-> >
+> What should I change in the commit message to clear this up?
 > 
-> If user space has to initiate every suspend attempt, then you are
-> forcing it to poll whenever a driver needs to block suspend.
+> Of course, if the code needs to change, please let me know what should
+> change there as well.
 
-Hmm I don't follow you. If the userspace policy daemon timer times
-out, the device suspends. If the device does not suspend because of
-a blocking driver, then the timers get reset and you try again based
-on some event such as when the screen blanks.
+I think it's both ok, I was mostly confused by the discussion we had earlier.
+Maybe add a sentence like:
 
-Regards,
+ The br_handle_frame_hook now needs a forward declaration of struct net_bridge_port.
 
-Tony
+Or you just change br_handle_frame_hook to take a void* to avoid the forward
+declaration. Not sure what Stephen was referring to really.
+
+	Arnd
