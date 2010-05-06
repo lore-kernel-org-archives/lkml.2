@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab0EFU1e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 16:27:34 -0400
-Received: from kroah.org ([198.145.64.141]:58407 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932183Ab0EFU1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 16:27:33 -0400
-Date: Thu, 6 May 2010 13:04:04 -0700
-From: Greg KH <greg@kroah.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
-       Serge Hallyn <serue@us.ibm.com>, netdev@vger.kernel.org,
-       David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 0/6] netns support in the kobject layer
-Message-ID: <20100506200404.GA21805@kroah.com>
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
- <m1d3xb4239.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1d3xb4239.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759042Ab0EFU3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 16:29:49 -0400
+Received: from vms173019pub.verizon.net ([206.46.173.19]:36231 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758851Ab0EFU3r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 16:29:47 -0400
+Date: Thu, 06 May 2010 16:29:42 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org,
+       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 6 (acpi: PCI=n)
+In-reply-to: <20100506080722.3b724475.randy.dunlap@oracle.com>
+Message-id: <alpine.LFD.2.00.1005061628070.12696@localhost.localdomain>
+References: <20100506151502.f97afe54.sfr@canb.auug.org.au>
+ <20100506080722.3b724475.randy.dunlap@oracle.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 04, 2010 at 05:35:54PM -0700, Eric W. Biederman wrote:
+> When CONFIG_PCI is not enabled:
 > 
-> With the tagged sysfs support finally merged into Greg's tree,
-> it is time for the last little bits of work to get the kobject
-> layer and network namespaces to play together properly.
+> arch/x86/kernel/acpi/boot.c:1034: error: 'pci_bus_type' undeclared
 > 
-> These patches are roughly evenly divided between network layer work
-> and sysfs layer work.  Last time this conundrum came up I believe
-> we decided that the easiest way to handle this was for Greg to carry
-> all of the patches.  David, Greg does that still make sense?
+> drivers/acpi/reboot.c:30: error:implicit declaration of function 'pci_find_bus'
+> drivers/acpi/reboot.c:30: warning: assignment makes pointer from integer without a cast
+> drivers/acpi/reboot.c:38: error:implicit declaration of function 'pci_bus_write_config_byte'
 
-That's fine, if I get David's ack on these.
+CONFIG_ACPI depends on CONFIG_PCI, so this file should not be build with 
+CONFIG_PCI=n.
+
+Please let me know how you were able to generate this illegal 
+configuration.
 
 thanks,
+Len Brown, Intel Open Source Technology Center
 
-greg k-h
