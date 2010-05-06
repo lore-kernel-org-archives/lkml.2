@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083Ab0EFRWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:22:32 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:50169 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab0EFRWa (ORCPT
+	id S1758677Ab0EFPHs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 11:07:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63991 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754676Ab0EFPHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:22:30 -0400
-Date: Thu, 6 May 2010 18:22:01 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
-       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100506172201.GA28578@srcf.ucam.org>
-References: <20100505202826.GB7450@linux.intel.com> <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org> <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com> <20100505234755.GI29604@atomide.com> <20100506134015.GA23426@srcf.ucam.org> <20100506170151.GA30928@atomide.com> <20100506170956.GA28104@srcf.ucam.org> <20100506171453.GC30928@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100506171453.GC30928@atomide.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Thu, 6 May 2010 11:07:45 -0400
+Date: Thu, 6 May 2010 08:07:22 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 6 (acpi: PCI=n)
+Message-Id: <20100506080722.3b724475.randy.dunlap@oracle.com>
+In-Reply-To: <20100506151502.f97afe54.sfr@canb.auug.org.au>
+References: <20100506151502.f97afe54.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4BE2DB3E.0024:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 10:14:53AM -0700, Tony Lindgren wrote:
+On Thu, 6 May 2010 15:15:02 +1000 Stephen Rothwell wrote:
 
-> Why would you need to constantly try to suspend in that case?
+> Hi all,
+> 
+> Changes since 20100505:
 
-Because otherwise you're awake for longer than you need to be.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+When CONFIG_PCI is not enabled:
+
+arch/x86/kernel/acpi/boot.c:1034: error: 'pci_bus_type' undeclared
+
+drivers/acpi/reboot.c:30: error:implicit declaration of function 'pci_find_bus'
+drivers/acpi/reboot.c:30: warning: assignment makes pointer from integer without a cast
+drivers/acpi/reboot.c:38: error:implicit declaration of function 'pci_bus_write_config_byte'
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
