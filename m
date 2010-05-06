@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab0EFGli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 02:41:38 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38532 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab0EFGlh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 02:41:37 -0400
-Date: Thu, 6 May 2010 08:41:35 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH] mc13783-regulator: fix vaild voltage range checking
-	for mc13783_fixed_regulator_set_voltage
-Message-ID: <20100506064135.GM31199@pengutronix.de>
-References: <1273114469.24703.3.camel@mola>
+	id S1752963Ab0EFGnk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 02:43:40 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:57274 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752331Ab0EFGni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 02:43:38 -0400
+Date: Thu, 6 May 2010 08:43:36 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       a.p.zijlstra@chello.nl, tglx@linutronix.de
+Subject: Re: [GIT PULL] Additional RCU fixes for 2.6.34
+Message-ID: <20100506064336.GP27497@kernel.dk>
+References: <20100506002838.GA31818@linux.vnet.ibm.com> <20100506062250.GC1172@elte.hu> <20100506062552.GN27497@kernel.dk> <20100506063948.GG1172@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273114469.24703.3.camel@mola>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:41:17 up 10 days, 7 min, 19 users,  load average: 0.35, 0.24,
-	0.32
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20100506063948.GG1172@elte.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 10:54:29AM +0800, Axel Lin wrote:
-> In the case of "min_uV == max_uV == mc13783_regulators[id].voltages[0]",
-> mc13783_fixed_regulator_set_voltage should return 0 instead of -EINVAL.
+On Thu, May 06 2010, Ingo Molnar wrote:
 > 
-> This patch also adds a missing ">" character for MODULE_AUTHOR, a
-> trivial fix.
+> * Jens Axboe <jens.axboe@oracle.com> wrote:
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+> > On Thu, May 06 2010, Ingo Molnar wrote:
+> > > 
+> > > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > Hello, Ingo,
+> > > > 
+> > > > Here are three more RCU-lockdep fixes for 2.6.34:
+> > > > 
+> > > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+> > > > 
+> > > > 							Thanx, Paul
+> > > > 
+> > > > ------------------>
+> > > > Vivek Goyal <vgoyal@redhat.com> (1)
+> > > > 	blk-cgroup: Fix RCU correctness warning in cfq_init_queue()
+> > > > 
+> > > > Paul E. McKenney <paulmck@linux.vnet.ibm.com> (2)
+> > > > 	vfs: fix RCU-lockdep false positive due to /proc access
+> > > > 	memcg: css_id() must be called under rcu_read_lock()
+> > > > 
+> > > >  block/cfq-iosched.c      |    2 ++
+> > > >  include/linux/fdtable.h  |    3 ++-
+> > > >  include/linux/rcupdate.h |   11 +++++++++++
+> > > >  kernel/rcupdate.c        |   11 +++++++++++
+> > > >  mm/memcontrol.c          |   21 ++++++++++++++++-----
+> > > >  5 files changed, 42 insertions(+), 6 deletions(-)
+> > > 
+> > > Pulled, thanks Paul!
+> > > 
+> > > Jens, is that blk-cgroup fix from Vivek fine to you via this route?
+> > 
+> > Sure, I did think it was a bit odd to funnel it through that route, but it's 
+> > no big deal.
+> 
+> I havent pushed the tree out yet, wanted to wait for your feedback before 
+> doing anything permanent. You can still apply it to the block tree.
+> 
+> You were Cc:-ed 3 days ago to this patch, when RCU fixes got posted. These are 
+> basically the leftover PROVE_RCU fix patches that didnt get picked up by 
+> subsystem trees.
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+Yes I read it then, and Paul said he'd applied it. So I didn't touch it,
+it was trivial enough that the path to the kernel wasn't that big of a
+problem. And it didn't cause me any merge issues, so no harm done.
 
-> ---
->  drivers/regulator/mc13783-regulator.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/regulator/mc13783-regulator.c
-> b/drivers/regulator/mc13783-regulator.c
-> index ad036dd..4597d50 100644
-> --- a/drivers/regulator/mc13783-regulator.c
-> +++ b/drivers/regulator/mc13783-regulator.c
-> @@ -440,8 +440,8 @@ static int
-> mc13783_fixed_regulator_set_voltage(struct regulator_dev *rdev,
->  	dev_dbg(rdev_get_dev(rdev), "%s id: %d min_uV: %d max_uV: %d\n",
->  		__func__, id, min_uV, max_uV);
->  
-> -	if (min_uV > mc13783_regulators[id].voltages[0] &&
-> -	    max_uV < mc13783_regulators[id].voltages[0])
-> +	if (min_uV >= mc13783_regulators[id].voltages[0] &&
-> +	    max_uV <= mc13783_regulators[id].voltages[0])
->  		return 0;
->  	else
->  		return -EINVAL;
-> @@ -649,6 +649,6 @@ static void __exit mc13783_regulator_exit(void)
->  module_exit(mc13783_regulator_exit);
->  
->  MODULE_LICENSE("GPL v2");
-> -MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de");
-> +MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
->  MODULE_DESCRIPTION("Regulator Driver for Freescale MC13783 PMIC");
->  MODULE_ALIAS("platform:mc13783-regulator");
-> -- 
-> 1.5.4.3
-> 
-> 
-> 
-> 
+I can easily pull it in since I have a fix or two for .34 left yet, but
+if you already have it stashed and ready to submit, lets just leave it
+there.
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Jens Axboe
+
