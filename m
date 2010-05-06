@@ -1,95 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360Ab0EFJ7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 05:59:50 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60769 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751665Ab0EFJ7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 05:59:48 -0400
-Date: Thu, 6 May 2010 11:59:40 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "David J. Choi" <david.choi@micrel.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: tip: origin tree boot crash (in the new micrel phy driver)
-Message-ID: <20100506095940.GA12711@elte.hu>
-References: <20100505.012750.246538504.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100505.012750.246538504.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1759532Ab0EFSDS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 14:03:18 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49189 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759458Ab0EFSDK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 14:03:10 -0400
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 06 May 2010 23:33:06 +0530
+Message-Id: <20100506180306.28877.6385.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20100506180139.28877.81699.sendpatchset@localhost6.localdomain6>
+References: <20100506180139.28877.81699.sendpatchset@localhost6.localdomain6>
+Subject: [PATCH v3 7/10] samples: Uprobes samples
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+samples.patch
 
-* David Miller <davem@davemloft.net> wrote:
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
->       drivers/net/phy: micrel phy driver
+Uprobes Samples
 
-FYI, -tip testing started triggering this boot crash today (x86, 64-bit):
+This provides an example uprobes module in the samples directory.
 
-bus: 'mdio_bus': add driver STe101p
-initcall ste10Xp_init+0x0/0x22 returned 0 after 52 usecs
-calling  ksphy_init+0x0/0x5e @ 1
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffff813b1e98>] strcmp+0x6/0x21
-PGD 0
-Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-last sysfs file:
-CPU 1
-Pid: 1, comm: swapper Not tainted 2.6.34-rc5 #3328 A8N-E/System Product
-Name
-RIP: 0010:[<ffffffff813b1e98>]  [<ffffffff813b1e98>] strcmp+0x6/0x21
-RSP: 0018:ffff88003f33fe00  EFLAGS: 00010286
-Call Trace:
- [<ffffffff813ae59d>] kset_find_obj+0x3d/0x81
- [<ffffffff814e664f>] driver_find+0x1f/0x32
- [<ffffffff814e6732>] driver_register+0x64/0x103
- [<ffffffff83ca853f>] ? ksphy_init+0x0/0x5e
- [<ffffffff816adcf1>] phy_driver_register+0x3e/0x92
- [<ffffffff83ca853f>] ? ksphy_init+0x0/0x5e
- [<ffffffff83ca8553>] ksphy_init+0x14/0x5e
- [<ffffffff810001f9>] do_one_initcall+0x5e/0x15e
- [<ffffffff83c706bb>] kernel_init+0x17d/0x206
- [<ffffffff81002f24>] kernel_thread_helper+0x4/0x10
- [<ffffffff81d8d450>] ? restore_args+0x0/0x30
- [<ffffffff83c7053e>] ? kernel_init+0x0/0x206
- [<ffffffff81002f20>] ? kernel_thread_helper+0x0/0x10
-Code: c1 80 39 00 75 f8 eb 0d 48 ff c1 48 ff ca 75 05 c6 01 00 eb 0e 40 8a 3e 48 ff c6 40 84 ff 40 88 39 75 e5 c9 c3 55 48 89 e5 8a 07 <8a> 16 48 ff c7 48 ff c6 38 d0 74 07 19 c0 83 c8 01 eb 06 84 c0
-RIP  [<ffffffff813b1e98>] strcmp+0x6/0x21
- RSP <ffff88003f33fe00>
-CR2: 0000000000000000
----[ end trace 73aaba243cb4fa42 ]---
+To run this module run (as root)
+ insmod uprobe_example.ko vaddr=<vaddr> pid=<pid>
+	 Where <vaddr> is the address where we want to place the probe.
+		<pid> is the pid of the process we are interested to probe.
 
-I bisected it back to the following commit:
+ example: -
+# cd samples/uprobes
 
-d05070091849015f8c5b7d55cd75b86ebb61b3ec is the first bad commit
-commit d05070091849015f8c5b7d55cd75b86ebb61b3ec
-Author: David J. Choi <david.choi@micrel.com>
-Date:   Thu Apr 29 06:12:41 2010 +0000
+[get the virtual address to place the probe.]
+# vaddr=0x$(objdump -T /bin/bash |awk '/echo_builtin/ {print $1}')
 
-    drivers/net/phy: micrel phy driver
-    
-    This is the first version of phy driver from Micrel Inc.
-    
-    Signed-off-by: David J. Choi <david.choi@micrel.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
+[Run a bash shell in the background; have it echo 4 lines.]
+# (sleep 10; echo 1; echo 2; echo 3; echo 4) &
+[Probe calls echo_builtin() in the background bash process.]
 
-the config had:
+# insmod uprobe_example.ko vaddr=$vaddr pid=$!
+# sleep 10
+# rmmod uprobe_example
+# dmesg | tail -n 3
+Registering uprobe on pid 10875, vaddr 0x45aa30
+Unregistering uprobe on pid 10875, vaddr 0x45aa30
+Probepoint was hit 4 times
+#
+[ Output shows that echo_builtin function was hit 4 times. ]
 
-  CONFIG_MICREL_PHY=y
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
 
-Disabling the driver fixes the crash.
+ samples/Kconfig                  |    7 +++
+ samples/Makefile                 |    2 -
+ samples/uprobes/Makefile         |   17 ++++++++
+ samples/uprobes/uprobe_example.c |   83 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 108 insertions(+), 1 deletions(-)
+ create mode 100644 samples/uprobes/Makefile
+ create mode 100644 samples/uprobes/uprobe_example.c
 
-Thanks,
 
-	Ingo
+diff --git a/samples/Kconfig b/samples/Kconfig
+index 8924f72..50b8b1c 100644
+--- a/samples/Kconfig
++++ b/samples/Kconfig
+@@ -44,4 +44,11 @@ config SAMPLE_HW_BREAKPOINT
+ 	help
+ 	  This builds kernel hardware breakpoint example modules.
+ 
++config SAMPLE_UPROBES
++	tristate "Build uprobes example -- loadable module only"
++	depends on UPROBES && m
++	help
++	  This builds uprobes example module.
++
++
+ endif # SAMPLES
+diff --git a/samples/Makefile b/samples/Makefile
+index 0f15e6d..c8fe6f9 100644
+--- a/samples/Makefile
++++ b/samples/Makefile
+@@ -1,4 +1,4 @@
+ # Makefile for Linux samples code
+ 
+ obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ tracepoints/ trace_events/ \
+-			   hw_breakpoint/
++			   hw_breakpoint/ uprobes/
+diff --git a/samples/uprobes/Makefile b/samples/uprobes/Makefile
+new file mode 100644
+index 0000000..f535f6f
+--- /dev/null
++++ b/samples/uprobes/Makefile
+@@ -0,0 +1,17 @@
++# builds the uprobes example kernel modules;
++# then to use one (as root):
++# insmod <module_name.ko> vaddr=<vaddr> pid=<pid>
++#
++#
++# example: -
++# vaddr=0x$(objdump -T /bin/bash |awk '/echo_builtin/ print $1}')
++# (sleep 10; echo 1; echo 2; echo 3; echo 4) &
++# insmod uprobe_example.ko vaddr=$vaddr pid=$!
++# sleep 10
++# rmmod uprobe_example
++# dmesg | tail -n 3
++#	Registering uprobe on pid 3920, vaddr 0x45aa30
++#	Unregistering uprobe on pid 3920, vaddr 0x45aa30
++#	Probepoint was hit 4 times
++
++obj-$(CONFIG_SAMPLE_UPROBES) += uprobe_example.o
+diff --git a/samples/uprobes/uprobe_example.c b/samples/uprobes/uprobe_example.c
+new file mode 100644
+index 0000000..f625bae
+--- /dev/null
++++ b/samples/uprobes/uprobe_example.c
+@@ -0,0 +1,83 @@
++/*
++ * Uprobes Example
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2008-2010
++ * Authors:
++ *	Srikar Dronamraju
++ *	Jim Keniston
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/uprobes.h>
++
++/*
++ * Usage: insmod uprobe_example.ko pid=<pid> vaddr=<address> [verbose=0]
++ * where <pid> identifies the probed process and <address> is the virtual
++ * address of the probed instruction.
++ */
++
++static int pid;
++module_param(pid, int, 0);
++MODULE_PARM_DESC(pid, "pid");
++
++static int verbose;
++module_param(verbose, int, 0);
++MODULE_PARM_DESC(verbose, "verbose");
++
++static long vaddr;
++module_param(vaddr, long, 0);
++MODULE_PARM_DESC(vaddr, "vaddr");
++
++static int nhits;
++static struct uprobe usp;
++
++static void uprobe_handler(struct uprobe *u, struct pt_regs *regs)
++{
++	nhits++;
++	if (verbose)
++		printk(KERN_INFO "Hit #%d on probepoint at %#lx\n",
++			nhits, u->vaddr);
++}
++
++int __init init_module(void)
++{
++	int ret;
++	usp.pid = pid;
++	usp.vaddr = vaddr;
++	usp.handler = uprobe_handler;
++	printk(KERN_INFO "Registering uprobe on pid %d, vaddr %#lx\n",
++		usp.pid, usp.vaddr);
++	ret = register_uprobe(&usp);
++	if (ret != 0) {
++		printk(KERN_ERR "register_uprobe() failed, returned %d\n", ret);
++		printk(KERN_ERR "Usage: insmod uprobe_example.ko pid=<pid> "
++						"vaddr=<address>\n");
++		return ret;
++	}
++	return 0;
++}
++
++void __exit cleanup_module(void)
++{
++	printk(KERN_INFO "Unregistering uprobe on pid %d, vaddr %#lx\n",
++		usp.pid, usp.vaddr);
++	printk(KERN_INFO "Probepoint was hit %d times\n", nhits);
++	unregister_uprobe(&usp);
++}
++MODULE_LICENSE("GPL");
