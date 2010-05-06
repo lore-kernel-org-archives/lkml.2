@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759405Ab0EFSAI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 14:00:08 -0400
-Received: from x35.xmailserver.org ([64.71.152.41]:35320 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759158Ab0EFSAG (ORCPT
+	id S1754583Ab0EFOtE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 10:49:04 -0400
+Received: from fg-out-1718.google.com ([72.14.220.153]:19980 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229Ab0EFOtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 14:00:06 -0400
-X-AuthUser: davidel@xmailserver.org
-Date: Thu, 6 May 2010 10:59:44 -0700 (PDT)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@makko.or.mcafeemobile.com
-To: Joe Perches <joe@perches.com>
-cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-       Changli Gao <xiaosuo@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: indiscriminate get_maintainer.pl usage
-In-Reply-To: <1273164755.1537.40.camel@Joe-Laptop.home>
-Message-ID: <alpine.DEB.2.00.1005061056300.2642@makko.or.mcafeemobile.com>
-References: <1273111054-10141-1-git-send-email-xiaosuo@gmail.com>  <4BE25AE8.1060607@s5r6.in-berlin.de>  <s2t412e6f7f1005052319sdbf3fdfbg256d11b983c4f304@mail.gmail.com>  <4BE26472.6040805@s5r6.in-berlin.de>  <alpine.DEB.2.00.1005060826460.10407@makko.or.mcafeemobile.com>
- <1273164755.1537.40.camel@Joe-Laptop.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+	Thu, 6 May 2010 10:49:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=wEPQX45SSVSVKMJ8cG736qbEAppuVIzbu/kNBdmdmHFDXKVKPYiS/b/K+vMdyQw0oW
+         A61wNeymhuZzkkF9nn9+Al9zTrzyPedCZVnhaUzoxHE+zuEY1Z6LBMA+vIJsfxpozZqq
+         6zeScMUqSL7jYyZjHQyDEBE/p0t1T3ORaZ5zU=
+Date: Thu, 6 May 2010 18:48:54 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH -tip] x86,perf: P4 PMU -- protect sensible procedures
+	from preemption
+Message-ID: <20100506144854.GB5583@lenovo>
+References: <20100505150740.GB5686@lenovo> <20100505165731.GA6320@nowhere> <20100505174234.GH5686@lenovo> <20100506064453.GI1172@elte.hu> <w2vaa79d98a1005060039ua7dd1b0t952fcd8662d4d759@mail.gmail.com> <20100506074231.GA8625@elte.hu> <n2maa79d98a1005060045ke0f87f4aw8b86da0440a019b3@mail.gmail.com> <1273153525.22438.39.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273153525.22438.39.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010, Joe Perches wrote:
-
-> There is also the --git-blame option for patches, but blame
-> is also only a semi-useful tool, as it could show cleanup patches
-> on individual as authors.
+On Thu, May 06, 2010 at 09:45:24AM -0400, Steven Rostedt wrote:
+...
+> > > We want the one with the least runtime overhead. These are instrumentation
+> > > routines, so we want to optimize them as much as possible.
 > 
-> Another option to get_maintainers is --file-emails which looks
-> inside a file for email addresses.
 > 
-> Right now, the default for # of git commits signed to be
-> added to the CC list is 1.  It's possible to change the default.
+> Yeah, my point was either disable preemption or keep the checks. In
+> other words, if you don't disable preemption, do not use
+> raw_smp_procesor_id(), because then we will not catch it if it changes
+> in the future.
 > 
->     --git-min-signatures => number of signatures required (default: 1)
->     --git-max-maintainers => maximum maintainers to add (default: 5)
->     --git-min-percent => minimum percentage of commits required (default: 5)
+> > ok, Ingo, dont apply this patch then for a while.
 > 
-> Maybe some fine-tuning of the defaults could be useful.
+> Send another patch, I'll test it again ;-)
 > 
-> Suggestions?
+> -- Steve
+> 
+> 
 
-(not knowing the get_maintainers internals ...)
-Maybe if you weigh each contributor by the amount (in terms of diffstat 
-modulo) of changes, you can get more accurate results.
-Part of the weight might be related to the time distance (relative to 
-current time) since the changeset.
+Ingo, Steven, it seems we have potential preemtion available
+in perf_event.c:validate_group:x86_pmu.schedule_events() which
+is reached via syscall from userspace perf_event_open() call,
+so get_cpu is still needed. But I'm a bit messed with call
+graph at the moment :(
 
-
-- Davide
-
-
+	-- Cyrill
