@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075Ab0EFNqL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 09:46:11 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:43004 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758222Ab0EFNqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 09:46:09 -0400
-Date: Thu, 6 May 2010 14:45:51 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
-	the wrong VMA information
-Message-ID: <20100506134550.GA8704@csn.ul.ie>
-References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie> <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org> <20100505145620.GP20979@csn.ul.ie> <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org> <20100505155454.GT20979@csn.ul.ie> <alpine.LFD.2.00.1005051007140.27218@i5.linux-foundation.org> <4BE2C6E8.2030609@redhat.com>
+	id S1756550Ab0EFJbq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 05:31:46 -0400
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:54157 "EHLO
+	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755272Ab0EFJbo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 05:31:44 -0400
+Message-ID: <4BE28C8D.8000408@dcl.info.waseda.ac.jp>
+Date: Thu, 06 May 2010 18:31:57 +0900
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4BE2C6E8.2030609@redhat.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Subject: Re: [PATCH v3] perf lock: add "info" subcommand for dumping misc
+ information
+References: <4BDE5AFD.6040603@dcl.info.waseda.ac.jp> <1272863520-16179-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <20100505211053.GG6320@nowhere>
+In-Reply-To: <20100505211053.GG6320@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 09:40:56AM -0400, Rik van Riel wrote:
-> On 05/05/2010 01:34 PM, Linus Torvalds wrote:
->
->>   - you always lock the _deepest_ anon_vma you can find.
->
-> The emphasis should be on "always" :)
->
->> That means just a single lock. And the "deepest" anon_vma is well-defined
->> for all anon_vma's, because each same_anon_vma chain is always rooted in
->> the original anon_vma that caused it.
->
-> It should work, but only if we always take the deepest
-> anon_vma lock.
->
-> Not just in the migration code, but also in mmap, munmap,
-> mprotect (for split_vma), expand_stack, etc...
->
-> Otherwise we will still not provide exclusion of migrate
-> vs. those events.
->
+On 05/06/10 06:10, Frederic Weisbecker wrote:
+ > On Mon, May 03, 2010 at 02:12:00PM +0900, Hitoshi Mitake wrote:
+ >> Hi Frederic,
+ >>
+ >> I added "info" subcommand to perf lock,
+ >> this can be used as dumping metadata like thread or address of lock 
+instances.
+ >> "map" was removed because info should do the work of it.
+ >>
+ >> This will be useful not only for debugging but also for ordinary 
+analyzing.
+ >>
+ >> I made this patch on perf/core of your tree, could you queue this?
+ >>
+ >> v2: adding example of usage
+ >> % sudo ./perf lock info -t
+ >>   | Thread ID: comm
+ >>   | 	 0: swapper
+ >>   |         1: init
+ >>   |        18: migration/5
+ >>   |        29: events/2
+ >>   |        32: events/5
+ >>   |        33: events/6
+ >> ...
+ >>
+ >> % sudo ./perf lock info -m
+ >> | Address of instance: name of class
+ >> |  0xffff8800b95adae0:&(&sighand->siglock)->rlock
+ >> |  0xffff8800bbb41ae0:&(&sighand->siglock)->rlock
+ >> |  0xffff8800bf165ae0:&(&sighand->siglock)->rlock
+ >> |  0xffff8800b9576a98:&p->cred_guard_mutex
+ >> |  0xffff8800bb890a08:&(&p->alloc_lock)->rlock
+ >> |  0xffff8800b9522a08:&(&p->alloc_lock)->rlock
+ >> |  0xffff8800bb8aaa08:&(&p->alloc_lock)->rlock
+ >> |  0xffff8800bba72a08:&(&p->alloc_lock)->rlock
+ >> |  0xffff8800bf18ea08:&(&p->alloc_lock)->rlock
+ >> |  0xffff8800b8a0d8a0:&(&ip->i_lock)->mr_lock
+ >> |  0xffff88009bf818a0:&(&ip->i_lock)->mr_lock
+ >> |  0xffff88004c66b8a0:&(&ip->i_lock)->mr_lock
+ >> |  0xffff8800bb6478a0:&(shost->host_lock)->rlock
+ >>
+ >> v3: fixed some problems Frederic pointed out
+ >>   * better rbtree tracking in dump_threads()
+ >>   * removed printf() and used pr_info() and pr_debug()
+ >
+ >
+ >
+ > Applied, thanks Hitoshi!
+ >
 
-Are you sure?
+Thanks Frederic!
 
-I thought this as well but considered a situation something like
+And I prepared another patch for tracking only specified threads.
 
-root anon_vma          <--- rmap_walk starts here
-     anon_vma a
-     anon_vma b
-     anon_vma c        <--- an munmap/mmap/mprotect/etc here
-     anon_vma d
-     anon_vma e
+I'll send the new patch in this thread later.
+But, the new one is not so big and hardly depends on "info -t" patch.
+If you think the new patch and previous one should be in single patch,
+please tell me. I'll merge them.
 
-The rmap_walk takes the root lock and then locks a, b, c, d and e as it
-walks along.
-
-The mSomething event happens on c and takes the lock
-
-if rmap_walk gets there first, it takes the lock and the mSomething
-event waits until the full rmap_walk is complete (delayed slightly but
-no biggie).
-
-if mSomething gets there first, rmap_walk will wait on taking the lock.
-Again, there could be some delays but no biggie.
-
-What am I missing?
-
-> I'm guessing that means changing both anon_vma_lock and
-> page_lock_anon_vma to always take the deepest anon_vma
-> lock - not introducing a new function that is only called
-> by the migration code.
->
-
-That would be the case all right but I'd prefer to have PeterZ's patches
-that do full reference counting of anon_vma first instead of introducing
-RCU to those paths.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Thanks,
+	Hitoshi
