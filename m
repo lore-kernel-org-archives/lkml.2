@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab0EFJYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 05:24:43 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:50589 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754032Ab0EFJYl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 05:24:41 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=CDUPAsN9RT4favJG8Z6EL54Y/SvQowQePDoqnfjv4SBhnf+74ME1WoPCYk2WnqRLN
-	bHSPur16iwpfZayoWdUIA==
-Date: Thu, 6 May 2010 02:24:34 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@elte.hu>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       x86@kernel.org, linux-kernel@vger.kernel.org,
-       Yinghai Lu <yinghai@kernel.org>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [patch v2] x86: fix fake apicid to node mapping for numa emulation
-In-Reply-To: <alpine.DEB.2.00.1005060222560.19473@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1005060224140.19473@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1005041659400.13683@chino.kir.corp.google.com> <20100506070732.GA32002@elte.hu> <alpine.DEB.2.00.1005060222560.19473@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756383Ab0EFI7H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 04:59:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25192 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751546Ab0EFI7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 04:59:03 -0400
+Message-ID: <4BE284CE.7010808@redhat.com>
+Date: Thu, 06 May 2010 11:58:54 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Pankaj Thakkar <pthakkar@vmware.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+       Shreyas Bhatewara <sbhatewara@vmware.com>
+Subject: Re: RFC: Network Plugin Architecture (NPA) for vmxnet3
+References: <20100504230225.GP8323@vmware.com> <4BE1B217.80600@redhat.com> <20100505194417.GV8323@vmware.com>
+In-Reply-To: <20100505194417.GV8323@vmware.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With NUMA emulation, it's possible for a single cpu to be bound to
-multiple nodes since more than one may have affinity if allocated on a
-physical node that is local to the cpu.
+On 05/05/2010 10:44 PM, Pankaj Thakkar wrote:
+> On Wed, May 05, 2010 at 10:59:51AM -0700, Avi Kivity wrote:
+>    
+>> Date: Wed, 5 May 2010 10:59:51 -0700
+>> From: Avi Kivity<avi@redhat.com>
+>> To: Pankaj Thakkar<pthakkar@vmware.com>
+>> CC: "linux-kernel@vger.kernel.org"<linux-kernel@vger.kernel.org>,
+>> 	"netdev@vger.kernel.org"<netdev@vger.kernel.org>,
+>> 	"virtualization@lists.linux-foundation.org"
+>>   <virtualization@lists.linux-foundation.org>,
+>> 	"pv-drivers@vmware.com"<pv-drivers@vmware.com>,
+>> 	Shreyas Bhatewara<sbhatewara@vmware.com>
+>> Subject: Re: RFC: Network Plugin Architecture (NPA) for vmxnet3
+>>
+>> On 05/05/2010 02:02 AM, Pankaj Thakkar wrote:
+>>      
+>>> 2. Hypervisor control: All control operations from the guest such as programming
+>>> MAC address go through the hypervisor layer and hence can be subjected to
+>>> hypervisor policies. The PF driver can be further used to put policy decisions
+>>> like which VLAN the guest should be on.
+>>>
+>>>        
+>> Is this enforced?  Since you pass the hardware through, you can't rely
+>> on the guest actually doing this, yes?
+>>      
+> We don't pass the whole VF to the guest. Only the BAR which is responsible for
+> TX/RX/intr is mapped into guest space.
 
-APIC ids must therefore be mapped to the lowest node ids to maintain
-generic kernel use of functions such as cpu_to_node() that determine
-device affinity.  For example, if a device has proximity to physical node
-1, for instance, and a cpu happens to be mapped to a higher emulated node
-id 8, the proximity may not be correctly determined by comparison in
-generic code even though the cpu may be truly local and allocated on
-physical node 1.  When this happens, the true topology of the machine
-isn't accurately represented in the emulated environment; although this
-isn't critical to the system's uptime, any generic code that is NUMA
-aware benefits from the physical topology being accurated represented.
+Does the SR/IOV spec guarantee that you will have such a separation?
 
-This can affect any system that maps multiple APIC ids to a single node
-and is booted with numa=fake=N where N is greater than the number of
-physical nodes.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/x86/mm/srat_64.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -461,7 +461,8 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
- 		 * node, it must now point to the fake node ID.
- 		 */
- 		for (j = 0; j < MAX_LOCAL_APIC; j++)
--			if (apicid_to_node[j] == nid)
-+			if (apicid_to_node[j] == nid &&
-+			    fake_apicid_to_node[j] == NUMA_NO_NODE)
- 				fake_apicid_to_node[j] = i;
- 	}
- 	for (i = 0; i < num_nodes; i++)
+>
+>>
+>>> We have reworked our existing Linux vmxnet3 driver to accomodate NPA by
+>>> splitting the driver into two parts: Shell and Plugin. The new split driver is
+>>>
+>>>        
+>> So the Shell would be the reworked or new bond driver, and Plugins would
+>> be ordinary Linux network drivers.
+>>      
+> In NPA we do not rely on the guest OS to provide any of these services like
+> bonding or PCI hotplug.
+
+Well the Shell does some sort of bonding (there are two links and the 
+shell selects which one to exercise) and some sort of hotplug.  Since 
+the Shell is part of the guest OS, you do rely on it.
+
+It's certainly simpler than PCI hotplug or ordinary bonding.
+
+> We don't rely on the guest OS to unmap a VF and switch
+> a VM out of passthrough. In a bonding approach that becomes an issue you can't
+> just yank a device from underneath, you have to wait for the OS to process the
+> request and switch from using VF to the emulated device and this makes the
+> hypervisor dependent on the guest OS.
+
+How can you unmap the VF without guest cooperation?  If you're executing 
+Plugin code, you can't yank anything out.
+
+Are plugins executed with preemption/interrupts disabled?
+
+> Also we don't rely on the presence of all
+> the drivers inside the guest OS (be it Linux or Windows), the ESX hypervisor
+> carries all the plugins and the PF drivers and injects the right one as needed.
+> These plugins are guest agnostic and the IHVs do not have to write plugins for
+> different OS.
+>    
+
+What ISAs do those plugins support?
+
+-- 
+error compiling committee.c: too many arguments to function
+
