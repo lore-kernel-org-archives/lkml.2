@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759317Ab0EFRhu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:37:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48371 "EHLO mx1.redhat.com"
+	id S932397Ab0EFQXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 12:23:39 -0400
+Received: from mx1.sophos.com ([195.166.81.52]:54338 "EHLO mx1.sophos.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759158Ab0EFRhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:37:47 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: kernel-janitors@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-       ysato@users.sourceforge.jp, tony.luck@intel.com, dhowells@redhat.com,
-       kyle@mcmartin.ca, benh@kernel.crashing.org, schwidefsky@de.ibm.com,
-       jgarzik@pobox.com, hare@suse.de, felipe.balbi@nokia.com,
-       Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 08/13] powerpc: removing redundant ifdefs
-Date: Thu,  6 May 2010 19:36:12 +0200
-Message-Id: <1273167377-14270-9-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
-References: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
+	id S932311Ab0EFQXh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 12:23:37 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Mikulas Patocka <mpatocka@redhat.com>
+Subject: Re: Testers needed - Maxtor performance degradation
+Date: Thu, 6 May 2010 17:23:31 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "dm-devel@redhat.com" <dm-devel@redhat.com>,
+       "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+References: <Pine.LNX.4.64.1005051433080.30185@hs20-bc2-1.build.redhat.com>
+In-Reply-To: <Pine.LNX.4.64.1005051433080.30185@hs20-bc2-1.build.redhat.com>
+MIME-Version: 1.0
+Message-ID: <201005061723.31390.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 06/05/2010 17:23:31,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 06/05/2010 17:23:32,
+	Serialize complete at 06/05/2010 17:23:32
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wbr,
-jirka
+On Thursday 06 May 2010 17:15:58 Mikulas Patocka wrote:
+[snip]
+> I'd like to ask other people with Maxtor disks to run this script (with
+> "sda", "sdb", etc. as an argument ... without "/dev/" prefix). The script
+> measures read rate as a function of request size. Report the results, so
+> that it can be determined which disks are buggy and which not and the
+> default transfer size could be reduced to 256kB for the buggy ones.
 
+Here is one:
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- arch/powerpc/include/asm/vdso_datapage.h |    2 --
- arch/powerpc/kernel/traps.c              |    2 --
- 2 files changed, 0 insertions(+), 4 deletions(-)
+MAXTOR ATLAS10K5_073SAS BP00
+64 kB: 86.7 MB/s
+128 kB: 86.6 MB/s
+192 kB: 86.6 MB/s
+256 kB: 86.1 MB/s
+320 kB: 39.9 MB/s
+384 kB: 41.1 MB/s
+448 kB: 41.3 MB/s
+512 kB: 44.2 MB/s
+576 kB: 49.7 MB/s
+640 kB: 42.8 MB/s
+704 kB: 47.0 MB/s
+768 kB: 46.4 MB/s
+832 kB: 59.1 MB/s
+896 kB: 55.6 MB/s
+960 kB: 57.2 MB/s
+1024 kB: 59.3 MB/s
 
-diff --git a/arch/powerpc/include/asm/vdso_datapage.h b/arch/powerpc/include/asm/vdso_datapage.h
-index 13c2c28..7c9cfe9 100644
---- a/arch/powerpc/include/asm/vdso_datapage.h
-+++ b/arch/powerpc/include/asm/vdso_datapage.h
-@@ -114,9 +114,7 @@ struct vdso_data {
- 
- #endif /* CONFIG_PPC64 */
- 
--#ifdef __KERNEL__
- extern struct vdso_data *vdso_data;
--#endif
- 
- #endif /* __ASSEMBLY__ */
- 
-diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
-index 29d128e..f472ecf 100644
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -1140,14 +1140,12 @@ void __kprobes DebugException(struct pt_regs *regs, unsigned long debug_status)
- 
- 		if (user_mode(regs)) {
- 			current->thread.dbcr0 &= ~DBCR0_IC;
--#ifdef CONFIG_PPC_ADV_DEBUG_REGS
- 			if (DBCR_ACTIVE_EVENTS(current->thread.dbcr0,
- 					       current->thread.dbcr1))
- 				regs->msr |= MSR_DE;
- 			else
- 				/* Make sure the IDM bit is off */
- 				current->thread.dbcr0 &= ~DBCR0_IDM;
--#endif
- 		}
- 
- 		_exception(SIGTRAP, regs, TRAP_TRACE, regs->nip);
--- 
-1.6.6.1
-
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
