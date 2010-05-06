@@ -1,33 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab0EFGba (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 02:31:30 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51277 "EHLO mx3.mail.elte.hu"
+	id S1752852Ab0EFHIE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 03:08:04 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57708 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752026Ab0EFGb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 02:31:29 -0400
-Date: Thu, 6 May 2010 08:31:16 +0200
+	id S1751108Ab0EFHIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 03:08:01 -0400
+Date: Thu, 6 May 2010 09:07:32 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <tj@kernel.org>, efault@gmx.de, avi@redhat.com, paulus@samba.org,
-       acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf
- on top of TP
-Message-ID: <20100506063116.GE1172@elte.hu>
-References: <1272994165.1642.203.camel@laptop>
- <4BE0FB68.7080403@kernel.org>
- <1273050400.1642.229.camel@laptop>
- <4BE13B33.3030709@kernel.org>
- <1273053073.1642.235.camel@laptop>
- <4BE1406C.2000400@kernel.org>
- <1273059488.1642.245.camel@laptop>
- <4BE1648B.1080709@kernel.org>
- <20100505165532.GC14323@elte.hu>
- <1273083173.1642.250.camel@laptop>
+To: David Rientjes <rientjes@google.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       x86@kernel.org, linux-kernel@vger.kernel.org,
+       Yinghai Lu <yinghai@kernel.org>,
+       Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [patch] x86: fix fake apicid to node mapping for numa emulation
+Message-ID: <20100506070732.GA32002@elte.hu>
+References: <alpine.DEB.2.00.1005041659400.13683@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273083173.1642.250.camel@laptop>
+In-Reply-To: <alpine.DEB.2.00.1005041659400.13683@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -41,25 +33,22 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+* David Rientjes <rientjes@google.com> wrote:
 
-> Well, I'd much rather just see a direct call in the code than having to 
-> reverse engineer wth hangs onto that _EVENT() junk.
+> apicids must be mapped to the lowest node ids to maintain generic kernel use 
+> of functions such as cpu_to_node() that determine device affinity.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  Third resend of the same patch.
+> 
+>  arch/x86/mm/srat_64.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 
-Direct calls into code were fine 10 years ago, but since then we got:
+There's no info in the changelog about what negative effects this bug had when 
+it was found, on what hardware it occured, and what the general urgency of the 
+patch is.
 
- - preempt notifiers
- - sw events
- - tracepoints
-
-Which add up to a lot more than just a plain call into code.
-
-Also, with the jump-optimizations we will have tracepoints that are _cheaper_ 
-than a plain function call.
-
-> Also, we don't need ABI muck for this.
-
-we already have an ABIs in place here - this would just properly unify and 
-enumerate it.
+Thanks,
 
 	Ingo
