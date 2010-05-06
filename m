@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759268Ab0EFS0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 14:26:25 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56756 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577Ab0EFS0X convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 14:26:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=JPt/qEfCnt0tc3ku9fbrxfJVm4h4J/AmIH43Q6K4o1y4SFefDlRVZJDxXgfiPX1pY+
-         cwwg5EDXesDUcmPkyefT9K8IAAqHmV8iR8kJbouLs6KOwynEah1y5UJyuYLBeGoEYJHL
-         YZJS4BUScGQ6n9lacpZIDXoh7Dz/NM4fYPlwg=
-MIME-Version: 1.0
-In-Reply-To: <1273142265-11929-1-git-send-email-os@emlix.com>
-References: <1273142265-11929-1-git-send-email-os@emlix.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 6 May 2010 14:26:00 -0400
-Message-ID: <n2j8bd0f97a1005061126h7fecc32btad9986c0e38246f2@mail.gmail.com>
-Subject: Re: [PATCH] ad7877: fix spi word size to 16 bit
-To: Oskar Schirmer <os@emlix.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       =?UTF-8?Q?Daniel_Gl=C3=B6ckner?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>,
-       Michael Hennerich <michael.hennerich@analog.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932582Ab0EFSCT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 14:02:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4367 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932558Ab0EFSCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 14:02:10 -0400
+Date: Thu, 6 May 2010 14:01:51 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+       Jan Blunck <jblunck@suse.de>, David Woodhouse <dwmw2@infradead.org>,
+       linux-nfs@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: [PATCH 05/39] whiteout/NFSD: Don't return information about whiteouts to userspace
+Message-ID: <20100506180151.GA21062@shell>
+References: <1272928358-20854-1-git-send-email-vaurora@redhat.com> <1272928358-20854-6-git-send-email-vaurora@redhat.com> <20100504093731.3a45ff5f@notabene.brown>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100504093731.3a45ff5f@notabene.brown>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 6, 2010 at 06:37, Oskar Schirmer wrote:
-> --- a/drivers/input/touchscreen/ad7877.c
-> +++ b/drivers/input/touchscreen/ad7877.c
-> @@ -669,6 +669,8 @@ static int __devinit ad7877_probe(struct spi_device *spi)
->                dev_dbg(&spi->dev, "SPI CLK %d Hz?\n",spi->max_speed_hz);
->                return -EINVAL;
->        }
-> +       spi->bits_per_word = 16;
-> +       spi_setup(spi);
+On Tue, May 04, 2010 at 09:37:31AM +1000, Neil Brown wrote:
+> On Mon,  3 May 2010 16:12:04 -0700
+> Valerie Aurora <vaurora@redhat.com> wrote:
+> 
+> > From: Jan Blunck <jblunck@suse.de>
+> > 
+> > Userspace isn't ready for handling another file type, so silently drop
+> > whiteout directory entries before they leave the kernel.
+> 
+> Feels very intrusive doesn't it....
+> 
+> Have you considered something like the following?
 
-i think it'd be a better idea to do something like:
-  if (spi->bits_per_word != 16) {
-    if (spi->bits_per_word) {
-      dev_err(&spi->dev, "Invalid SPI settings; bits_per_word must be 16\n");
-      return -EINVAL;
-    }
-    spi->bits_per_word = 16;
-    spi_setup(spi);
-  }
--mike
+Hrm, I see how that could be more elegant, but I'd rather avoid yet
+another layer of function pointer passing around.  This code is
+already hard enough to review...
+
+-VAL
+
+> NeilBrown
+> 
+> diff --git a/fs/readdir.c b/fs/readdir.c
+> index 7723401..4c5b347 100644
+> --- a/fs/readdir.c
+> +++ b/fs/readdir.c
+> @@ -19,10 +19,26 @@
+>  
+>  #include <asm/uaccess.h>
+>  
+> +struct readdir_info {
+> +	filldir_t filler;
+> +	void *data;
+> +};
+> +
+> +static int white_out(void *vrdi, const char *name, int namlen,
+> +		     loff_t offset, u64 ino, unsigned int d_type)
+> +{
+> +	struct readdir_info *rdi = vrdi;
+> +	if (d_type == DT_WHT)
+> +		return 0;
+> +	return rdi->filler(rdi->data, name, namlen, offset, info, d_type);
+> +}
+> +
+>  int vfs_readdir(struct file *file, filldir_t filler, void *buf)
+>  {
+>  	struct inode *inode = file->f_path.dentry->d_inode;
+>  	int res = -ENOTDIR;
+> +	struct readir_info rdi = { filler, buf };
+> +
+>  	if (!file->f_op || !file->f_op->readdir)
+>  		goto out;
+>  
+> @@ -36,7 +52,7 @@ int vfs_readdir(struct file *file, filldir_t filler, void *buf)
+>  
+>  	res = -ENOENT;
+>  	if (!IS_DEADDIR(inode)) {
+> -		res = file->f_op->readdir(file, buf, filler);
+> +		res = file->f_op->readdir(file, &rdi, white_out);
+>  		file_accessed(file);
+>  	}
+>  	mutex_unlock(&inode->i_mutex);
