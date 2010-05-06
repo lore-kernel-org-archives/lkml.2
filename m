@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758782Ab0EFPXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 11:23:43 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:20573 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab0EFPXm (ORCPT
+	id S1758906Ab0EFPgI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 11:36:08 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:47654 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084Ab0EFPgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 11:23:42 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzab9bhzz1202hzz6ff19hz32i2a8h87h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L20836-01-HH0-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-       oprofile-list <oprofile-list@lists.sourceforge.net>,
-       Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 6/7] oprofile/x86: notify cpus only when daemon is running
-Date: Thu, 6 May 2010 15:26:13 +0200
-Message-ID: <1273152374-9392-7-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.0.3
-In-Reply-To: <1273152374-9392-1-git-send-email-robert.richter@amd.com>
-References: <1273152374-9392-1-git-send-email-robert.richter@amd.com>
+	Thu, 6 May 2010 11:36:04 -0400
+Date: Thu, 6 May 2010 16:35:46 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: akpm@linux-foundation.org, Eric Dumazet <eric.dumazet@gmail.com>,
+       Jiri Slaby <jslaby@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Subject: Re: [RFC] mm: generic adaptive large memory allocation APIs
+Message-ID: <20100506153546.GC28512@shareable.org>
+References: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves the cpu notifier registration from nmi_init() to
-nmi_setup(). The corresponding unregistration function is now in
-nmi_shutdown(). Thus, the hotplug code is only active, if the oprofile
-daemon is running.
+Changli Gao wrote:
+> kvmalloc() will try to allocate physically contiguous memory first, and try 
+> vmalloc to allocate virtually contiguous memory when the former allocation
+> fails.
 
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/oprofile/nmi_int.c |   16 +++-------------
- 1 files changed, 3 insertions(+), 13 deletions(-)
+Note that converting users from vmalloc() to kvmalloc() may increase
+fragmentation problems for other parts of the kernel, because it will
+tend to use up more of the available large blocks.  Especially users
+who allocate large blocks and often.  That's worth a mention
+somewhere.
 
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 7de0572..2a08672 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -504,6 +504,7 @@ static int nmi_setup(void)
- 		goto fail;
- 
- 	get_online_cpus();
-+	register_cpu_notifier(&oprofile_cpu_nb);
- 	on_each_cpu(nmi_cpu_setup, NULL, 1);
- 	nmi_enabled = 1;
- 	put_online_cpus();
-@@ -519,6 +520,7 @@ static void nmi_shutdown(void)
- 	struct op_msrs *msrs;
- 
- 	get_online_cpus();
-+	unregister_cpu_notifier(&oprofile_cpu_nb);
- 	on_each_cpu(nmi_cpu_shutdown, NULL, 1);
- 	nmi_enabled = 0;
- 	ctr_running = 0;
-@@ -739,12 +741,6 @@ int __init op_nmi_init(struct oprofile_operations *ops)
- 		return -ENODEV;
- 	}
- 
--	get_online_cpus();
--	register_cpu_notifier(&oprofile_cpu_nb);
--	nmi_enabled = 0;
--	ctr_running = 0;
--	put_online_cpus();
--
- 	/* default values, can be overwritten by model */
- 	ops->create_files	= nmi_create_files;
- 	ops->setup		= nmi_setup;
-@@ -771,14 +767,8 @@ int __init op_nmi_init(struct oprofile_operations *ops)
- 
- void op_nmi_exit(void)
- {
--	if (using_nmi) {
-+	if (using_nmi)
- 		exit_sysfs();
--		get_online_cpus();
--		unregister_cpu_notifier(&oprofile_cpu_nb);
--		nmi_enabled = 0;
--		ctr_running = 0;
--		put_online_cpus();
--	}
- 	if (model->exit)
- 		model->exit();
- }
--- 
-1.7.0.3
+On the other hand, this API could make it easier to convert some kmalloc()
+calls to kvmalloc(), reducing fragmentation problems. :-)
 
+Since the caller is indicating they don't mind which happens, then
+anti-fragmentation heuristics (such as checking watermarks) could be
+added to kvmalloc() at some future time, if needed.
 
+-- Jamie
