@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab0EFHZa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 03:25:30 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:4474 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755121Ab0EFHZ0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 03:25:26 -0400
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-To: Scott Feldman <scofeldm@cisco.com>, Arnd Bergmann <arnd@arndb.de>,
-       Dmitry Torokhov <dtor@vmware.com>
-CC: Christoph Hellwig <hch@infradead.org>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-       Pankaj Thakkar <pthakkar@vmware.com>
-Date: Thu, 6 May 2010 00:25:24 -0700
-Subject: RE: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
-Thread-Topic: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
-Thread-Index: AcrsnXZHfCzcBb5GR+COtROFMlz8vwAAIsdgAAiX7GgACwVbwA==
-Message-ID: <89E2752CFA8EC044846EB8499819134102AF2D23E6@EXCH-MBX-4.vmware.com>
-References: <89E2752CFA8EC044846EB8499819134102AF2896F5@EXCH-MBX-4.vmware.com>
- <C807719A.2E910%scofeldm@cisco.com>
-In-Reply-To: <C807719A.2E910%scofeldm@cisco.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1756909Ab0EFRad (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 13:30:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35897 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab0EFRac (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 13:30:32 -0400
+Subject: Re: [RFC] perf_events: ctx_flexible_sched_in() not maximizing PMU
+ utilization
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+       mingo@elte.hu, Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <20100506171141.GA5562@nowhere>
+References: <AANLkTikQCkR2K438llKOh43yEgW-Bw7j0f8GoXR50A0V@mail.gmail.com>
+	 <1273155640.5605.300.camel@twins>  <20100506171141.GA5562@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 May 2010 19:30:24 +0200
+Message-ID: <1273167024.1642.256.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-05-06 at 19:11 +0200, Frederic Weisbecker wrote:
 
+> > But yeah, I did think of making the thing an RB-tree and basically
+> > schedule on service received, that should fix the lop-sided RR we get
+> > with constrained events.
 
-> -----Original Message-----
-> From: Scott Feldman [mailto:scofeldm@cisco.com]
-> Sent: Wednesday, May 05, 2010 7:04 PM
-> To: Shreyas Bhatewara; Arnd Bergmann; Dmitry Torokhov
-> Cc: Christoph Hellwig; pv-drivers@vmware.com; netdev@vger.kernel.org;
-> linux-kernel@vger.kernel.org; virtualization@lists.linux-
-> foundation.org; Pankaj Thakkar
-> Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for
-> vmxnet3
-> 
-> On 5/5/10 10:29 AM, "Dmitry Torokhov" <dtor@vmware.com> wrote:
-> 
-> > It would not be a binary blob but software properly released under
-> GPL.
-> > The current plan is for the shell to enforce GPL requirement on the
-> > plugin code, similar to what module loaded does for regular kernel
-> > modules.
-> 
-> On 5/5/10 3:05 PM, "Shreyas Bhatewara" <sbhatewara@vmware.com> wrote:
-> 
-> > The plugin image is not linked against Linux kernel. It is OS
-> agnostic infact
-> > (Eg. same plugin works for Linux and Windows VMs)
-> 
-> Are there any issues with injecting the GPL-licensed plug-in into the
-> Windows vmxnet3 NDIS driver?
-> 
-> -scott
+> I don't understand what you mean by schedule on service received, and why
+> an rbtree would solve that.
+
+Schedule those events that got scheduled least, if because of
+constraints we didn't fully utilize the PMU it is very likely that
+strict RR (like we do now) will not end up giving equal service to each
+counter/group.
+
+Therefore, if you sort them in a tree, based on the amount of time they
+got on the PMU, and always schedule the leftmost, you do get fairness.
+
+Sure you can go add weights to them, but that's not the immediate goal.
 
