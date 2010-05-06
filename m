@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab0EFGY6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 02:24:58 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:42779 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab0EFGY4 (ORCPT
+	id S1753459Ab0EFGZJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 02:25:09 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:39410 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364Ab0EFGZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 02:24:56 -0400
+	Thu, 6 May 2010 02:25:03 -0400
 From: Darren Hart <dvhltc@us.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Darren Hart <dvhltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -20,9 +20,9 @@ Cc: Darren Hart <dvhltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
        John Cooper <john.cooper@third-harmonic.com>,
        Chris Wright <chrisw@sous-sol.org>, Ulrich Drepper <drepper@gmail.com>,
        Alan Cox <alan@lxorguk.ukuu.org.uk>, Avi Kivity <avi@redhat.com>
-Subject: [PATCH 2/4] futex: add futex_q static initializer
-Date: Wed,  5 May 2010 23:24:18 -0700
-Message-Id: <1273127060-30375-3-git-send-email-dvhltc@us.ibm.com>
+Subject: [PATCH 3/4] futex: refactor futex_lock_pi_atomic
+Date: Wed,  5 May 2010 23:24:19 -0700
+Message-Id: <1273127060-30375-4-git-send-email-dvhltc@us.ibm.com>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1273127060-30375-1-git-send-email-dvhltc@us.ibm.com>
 References: <1273127060-30375-1-git-send-email-dvhltc@us.ibm.com>
@@ -30,91 +30,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The futex_q struct has grown considerably over the last year or so. I
-believe it now merits a static initializer to avoid uninitialized data
-errors (having just spent more time than I care to admit debugging
-an uninitialized q.bitset in an experimental new op code).
+Prepare for FUTEX_LOCK by refactoring futex_lock_pi_atomic() into
+lock_futex_atomic() and lock_pi_futex_atomic(). The name change is meant to
+reflect the naming convention in futex.c that futex_*() functions map directly
+to futex op codes and the others are internal helper functions.
 
-I originally planned on following the __THING_INITIALIZER/DECLARE_THING
-method, but since we already had FUTEX_KEY_INIT, and I personally prefer
-that method, I went that route.
+V6: Whitespace cleanup
 
 Signed-off-by: Darren Hart <dvhltc@us.ibm.com>
+
+===================================================================
 ---
- kernel/futex.c |   19 +++++++++----------
- 1 files changed, 9 insertions(+), 10 deletions(-)
+ kernel/futex.c |   79 +++++++++++++++++++++++++++++++++++++------------------
+ 1 files changed, 53 insertions(+), 26 deletions(-)
 
 diff --git a/kernel/futex.c b/kernel/futex.c
-index ab3fb7c..f06bd97 100644
+index f06bd97..75c87fc 100644
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
-@@ -130,6 +130,12 @@ struct futex_q {
- 	u32 bitset;
- };
+@@ -625,30 +625,23 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ }
  
-+#define FUTEX_Q_INIT \
-+	{ /* list gets initialized in queue_me()*/ \
-+	  .task = NULL, NULL, FUTEX_KEY_INIT \
-+	, NULL, NULL, NULL, FUTEX_BITSET_MATCH_ANY }
-+
-+
- /*
-  * Hash buckets are shared by all the futex_keys that hash to the same
-  * location.  Each key may have multiple futex_q structures, one for each task
-@@ -1799,16 +1805,13 @@ static int futex_wait(u32 __user *uaddr, int flags, u32 val, ktime_t *abs_time,
- 	struct hrtimer_sleeper timeout, *to = NULL;
- 	struct restart_block *restart;
- 	struct futex_hash_bucket *hb;
--	struct futex_q q;
-+	struct futex_q q = FUTEX_Q_INIT;
- 	int ret;
- 
- 	if (!bitset)
- 		return -EINVAL;
- 
--	q.pi_state = NULL;
- 	q.bitset = bitset;
--	q.rt_waiter = NULL;
--	q.requeue_pi_key = NULL;
- 
- 	if (abs_time) {
- 		to = &timeout;
-@@ -1899,7 +1902,7 @@ static int futex_lock_pi(u32 __user *uaddr, int flags, int detect,
+ /**
+- * futex_lock_pi_atomic() - Atomic work required to acquire a pi aware futex
+- * @uaddr:		the pi futex user address
+- * @hb:			the pi futex hash bucket
+- * @key:		the futex key associated with uaddr and hb
+- * @ps:			the pi_state pointer where we store the result of the
+- *			lookup
+- * @task:		the task to perform the atomic lock work for.  This will
+- *			be "current" except in the case of requeue pi.
+- * @set_waiters:	force setting the FUTEX_WAITERS bit (1) or not (0)
++ * lock_futex_atomic() - Try to acquire the futex lock atomically
++ * @uaddr:       user address of the futex
++ * @task:        the task to perform the atomic lock work for.
++ * @set_waiters: force setting the FUTEX_WAITERS bit (1) or not (0)
++ *
++ * The hb->lock shall be held by the caller.
+  *
+  * Returns:
+  *  0 - ready to wait
+  *  1 - acquired the lock
+  * <0 - error
+- *
+- * The hb->lock and futex_key refs shall be held by the caller.
+  */
+-static int futex_lock_pi_atomic(u32 __user *uaddr, struct futex_hash_bucket *hb,
+-				union futex_key *key,
+-				struct futex_pi_state **ps,
+-				struct task_struct *task, int set_waiters)
++static int lock_futex_atomic(u32 __user *uaddr, struct task_struct *task,
++			     int set_waiters)
  {
- 	struct hrtimer_sleeper timeout, *to = NULL;
- 	struct futex_hash_bucket *hb;
--	struct futex_q q;
-+	struct futex_q q = FUTEX_Q_INIT;
- 	int res, ret;
+-	int lock_taken, ret, ownerdied = 0;
+ 	u32 uval, newval, curval;
++	int lock_taken, ret;
  
- 	if (refill_pi_state_cache())
-@@ -1913,9 +1916,6 @@ static int futex_lock_pi(u32 __user *uaddr, int flags, int detect,
- 		hrtimer_set_expires(&to->timer, *time);
+ retry:
+ 	ret = lock_taken = 0;
+@@ -695,10 +688,10 @@ retry:
+ 	 *
+ 	 * This is safe as we are protected by the hash bucket lock !
+ 	 */
+-	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
++	if (unlikely((curval & FUTEX_OWNER_DIED) ||
++		     !(curval & FUTEX_TID_MASK))) {
+ 		/* Keep the OWNER_DIED bit */
+ 		newval = (curval & ~FUTEX_TID_MASK) | task_pid_vnr(task);
+-		ownerdied = 0;
+ 		lock_taken = 1;
  	}
  
--	q.pi_state = NULL;
--	q.rt_waiter = NULL;
--	q.requeue_pi_key = NULL;
- retry:
- 	q.key = FUTEX_KEY_INIT;
- 	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
-@@ -2206,7 +2206,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int flags,
- 	struct rt_mutex *pi_mutex = NULL;
- 	struct futex_hash_bucket *hb;
- 	union futex_key key2;
--	struct futex_q q;
-+	struct futex_q q = FUTEX_Q_INIT;
- 	int res, ret;
+@@ -715,10 +708,46 @@ retry:
+ 	if (unlikely(lock_taken))
+ 		return 1;
  
- 	if (!bitset)
-@@ -2234,7 +2234,6 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int flags,
- 	if (unlikely(ret != 0))
- 		goto out;
++	return ret;
++}
++
++/**
++ * lock_pi_futex_atomic() - Atomic work required to acquire a pi aware futex
++ * @uaddr:		the pi futex user address
++ * @hb:			the pi futex hash bucket
++ * @key:		the futex key associated with uaddr and hb
++ * @ps:			the pi_state pointer where we store the result of the
++ *			lookup
++ * @task:		the task to perform the atomic lock work for.  This will
++ *			be "current" except in the case of requeue pi.
++ * @set_waiters:	force setting the FUTEX_WAITERS bit (1) or not (0)
++ *
++ * Returns:
++ *  0 - ready to wait
++ *  1 - acquired the lock
++ * <0 - error
++ *
++ * The hb->lock and futex_key refs shall be held by the caller.
++ */
++static int lock_pi_futex_atomic(u32 __user *uaddr, struct futex_hash_bucket *hb,
++				union futex_key *key,
++				struct futex_pi_state **ps,
++				struct task_struct *task, int set_waiters)
++{
++	u32 uval;
++	int ret;
++
++retry:
++	ret = lock_futex_atomic(uaddr, task, set_waiters);
++	if (ret)
++		return ret;
++
+ 	/*
+ 	 * We dont have the lock. Look up the PI state (or create it if
+ 	 * we are the first waiter):
+ 	 */
++	if (get_futex_value_locked(&uval, uaddr))
++		return -EFAULT;
+ 	ret = lookup_pi_state(uval, hb, key, ps);
  
--	q.pi_state = NULL;
- 	q.bitset = bitset;
- 	q.rt_waiter = &rt_waiter;
- 	q.requeue_pi_key = &key2;
+ 	if (unlikely(ret)) {
+@@ -729,7 +758,7 @@ retry:
+ 			 * OWNER_DIED bit is set to figure out whether
+ 			 * this is a robust futex or not.
+ 			 */
+-			if (get_futex_value_locked(&curval, uaddr))
++			if (get_futex_value_locked(&uval, uaddr))
+ 				return -EFAULT;
+ 
+ 			/*
+@@ -737,10 +766,8 @@ retry:
+ 			 * futex. The code above will take the futex
+ 			 * and return happy.
+ 			 */
+-			if (curval & FUTEX_OWNER_DIED) {
+-				ownerdied = 1;
++			if (uval & FUTEX_OWNER_DIED)
+ 				goto retry;
+-			}
+ 		default:
+ 			break;
+ 		}
+@@ -1100,7 +1127,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
+  *
+  * Try and get the lock on behalf of the top waiter if we can do it atomically.
+  * Wake the top waiter if we succeed.  If the caller specified set_waiters,
+- * then direct futex_lock_pi_atomic() to force setting the FUTEX_WAITERS bit.
++ * then direct lock_pi_futex_atomic() to force setting the FUTEX_WAITERS bit.
+  * hb1 and hb2 must be held by the caller.
+  *
+  * Returns:
+@@ -1124,7 +1151,7 @@ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
+ 	/*
+ 	 * Find the top_waiter and determine if there are additional waiters.
+ 	 * If the caller intends to requeue more than 1 waiter to pifutex,
+-	 * force futex_lock_pi_atomic() to set the FUTEX_WAITERS bit now,
++	 * force lock_pi_futex_atomic() to set the FUTEX_WAITERS bit now,
+ 	 * as we have means to handle the possible fault.  If not, don't set
+ 	 * the bit unecessarily as it will force the subsequent unlock to enter
+ 	 * the kernel.
+@@ -1144,7 +1171,7 @@ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
+ 	 * the contended case or if set_waiters is 1.  The pi_state is returned
+ 	 * in ps in contended cases.
+ 	 */
+-	ret = futex_lock_pi_atomic(pifutex, hb2, key2, ps, top_waiter->task,
++	ret = lock_pi_futex_atomic(pifutex, hb2, key2, ps, top_waiter->task,
+ 				   set_waiters);
+ 	if (ret == 1)
+ 		requeue_pi_wake_futex(top_waiter, key2, hb2);
+@@ -1925,7 +1952,7 @@ retry:
+ retry_private:
+ 	hb = queue_lock(&q);
+ 
+-	ret = futex_lock_pi_atomic(uaddr, hb, &q.key, &q.pi_state, current, 0);
++	ret = lock_pi_futex_atomic(uaddr, hb, &q.key, &q.pi_state, current, 0);
+ 	if (unlikely(ret)) {
+ 		switch (ret) {
+ 		case 1:
 -- 
 1.6.3.3
 
