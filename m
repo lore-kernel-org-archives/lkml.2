@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab0EFQ7h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 12:59:37 -0400
-Received: from p01c11o144.mxlogic.net ([208.65.144.67]:59774 "EHLO
-	p01c11o144.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab0EFQ7f convert rfc822-to-8bit (ORCPT
+	id S1759268Ab0EFS0Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 14:26:25 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56756 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753577Ab0EFS0X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 12:59:35 -0400
-X-MXL-Hash: 4be2f57716baf4c2-3d0a7685ac220a4f401fc56f980a84a4b5232dc9
-X-MXL-Hash: 4be2f56403ab568f-8d66c5c4ec21024a202a11122ec30aebc089aad5
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg KH <greg@kroah.com>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-       "ss@aao.gov.au" <ss@aao.gov.au>, Greg KH <gregkh@suse.de>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 6 May 2010 11:59:03 -0500
-Subject: RE: Staging: dt3155: Cleanup memory mapped i/o access
-Thread-Topic: Staging: dt3155: Cleanup memory mapped i/o access
-Thread-Index: AcrrzVnGlPVK+abARvq4qHcYDK7nTAAAbAfQAFuFByA=
-Message-ID: <0D753D10438DA54287A00B0270842697636ECB4D7B@AUSP01VMBX24.collaborationhost.net>
-References: <20100503211751.GB21402@kroah.com>
-	<0D753D10438DA54287A00B0270842697636EADE1D2@AUSP01VMBX24.collaborationhost.net>
-	<0D753D10438DA54287A00B0270842697636EADE26A@AUSP01VMBX24.collaborationhost.net>
-	<20100503234123.GC13519@suse.de>
-	<1272931198.30040.218.camel@Joe-Laptop.home>
-	<20100504025430.GA26421@suse.de>	<1273000031.4143.56.camel@Joe-Laptop.home>
-	<0D753D10438DA54287A00B0270842697636EB83CE8@AUSP01VMBX24.collaborationhost.net>
-	<20100504201207.GA7096@kroah.com>
-	<0D753D10438DA54287A00B0270842697636EB83E2A@AUSP01VMBX24.collaborationhost.net>
-	<20100504210229.GA21128@kroah.com>
- <0D753D10438DA54287A00B0270842697636EB83EC9@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <0D753D10438DA54287A00B0270842697636EB83EC9@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 May 2010 14:26:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=JPt/qEfCnt0tc3ku9fbrxfJVm4h4J/AmIH43Q6K4o1y4SFefDlRVZJDxXgfiPX1pY+
+         cwwg5EDXesDUcmPkyefT9K8IAAqHmV8iR8kJbouLs6KOwynEah1y5UJyuYLBeGoEYJHL
+         YZJS4BUScGQ6n9lacpZIDXoh7Dz/NM4fYPlwg=
 MIME-Version: 1.0
-X-Spam: [F=0.2694214079; CM=0.500; S=0.269(2010050402)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.97]
-X-AnalysisOut: [v=1.0 c=1 a=n2LqRRw_DHMA:10 a=VphdPIyG4kEA:10 a=kj9zAlcOel]
-X-AnalysisOut: [0A:10 a=qhvANl0glaz90f+3g7Keqg==:17 a=i00gxMtYAAAA:8 a=83S]
-X-AnalysisOut: [pfD-y7EInmUnQUOIA:9 a=j_6EKV-xf3ZYaalE1YGraMhEVs0A:4 a=Cju]
-X-AnalysisOut: [IK1q_8ugA:10 a=x1WnkoZAwusA:10 a=0kPLrQdw3YYA:10]
+In-Reply-To: <1273142265-11929-1-git-send-email-os@emlix.com>
+References: <1273142265-11929-1-git-send-email-os@emlix.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 6 May 2010 14:26:00 -0400
+Message-ID: <n2j8bd0f97a1005061126h7fecc32btad9986c0e38246f2@mail.gmail.com>
+Subject: Re: [PATCH] ad7877: fix spi word size to 16 bit
+To: Oskar Schirmer <os@emlix.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       =?UTF-8?Q?Daniel_Gl=C3=B6ckner?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>,
+       Michael Hennerich <michael.hennerich@analog.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 04, 2010 2:23 PM, H Hartley Sweeten wrote:
->
-> The macros ReadMReg and WriteMReg are really just private versions of
-> the kernel's readl and writel functions.  Use the kernel's functions
-> instead.  And since ioremap returns a (void __iomem *) not a (u8 *),
-> change all the uses of dt3155_lbase to reflect this.
->
-> While here, make dt3155_lbase static since it is only used in the
-> dt3155_drv.c file.  Also, remove the global variable dt3155_bbase
-> since it is not used anywhere in the code.
->
-> Where is makes sense, create a local 'mmio' variable instead of using
-> dt3155_lbase[minor] to make the code more readable.
->
-> This change also affects the {Read|Write}I2C functions so they are
-> also modified as needed.
->
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Scott Smedley <ss@aao.gov.au>
->
+On Thu, May 6, 2010 at 06:37, Oskar Schirmer wrote:
+> --- a/drivers/input/touchscreen/ad7877.c
+> +++ b/drivers/input/touchscreen/ad7877.c
+> @@ -669,6 +669,8 @@ static int __devinit ad7877_probe(struct spi_device *spi)
+>                dev_dbg(&spi->dev, "SPI CLK %d Hz?\n",spi->max_speed_hz);
+>                return -EINVAL;
+>        }
+> +       spi->bits_per_word = 16;
+> +       spi_setup(spi);
 
-Greg,
-
-Did this patch fair any better when trying to merge it?
-
-If there is still an issue I will wait until Linus' tree, linux-next,
-and your staging-next branch appear to be more in sync.
-
-Regards,
-Hartley
+i think it'd be a better idea to do something like:
+  if (spi->bits_per_word != 16) {
+    if (spi->bits_per_word) {
+      dev_err(&spi->dev, "Invalid SPI settings; bits_per_word must be 16\n");
+      return -EINVAL;
+    }
+    spi->bits_per_word = 16;
+    spi_setup(spi);
+  }
+-mike
