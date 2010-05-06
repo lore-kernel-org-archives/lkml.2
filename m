@@ -1,81 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758219Ab0EFNgh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 09:36:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61872 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab0EFNgd convert rfc822-to-8bit (ORCPT
+	id S1759202Ab0EFRga (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 13:36:30 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:47141 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758729Ab0EFRg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 09:36:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=VDm8Hafb8Yw7Cdhk/aPl66ISwB1fQF3wNi2K/af+4rimsswA+sQeHhWkke+6oKsS+0
-         Ge8LmqCtQ4W+8WUwUMErcZ8KGK4CUyglMPXFe8rwaBaROoePan0dV5aq8UVGPRuxhP1C
-         afsh4TfOq36/YVHF3AII09k0G6+cw/yjs+zos=
-MIME-Version: 1.0
-In-Reply-To: <1273151844.23208.48.camel@mulgrave.site>
-References: <1273096160.23208.35.camel@mulgrave.site>
-	 <p2x10f740e81005052347x9430657fua98b8982e860bd2d@mail.gmail.com>
-	 <1273151844.23208.48.camel@mulgrave.site>
-Date: Thu, 6 May 2010 15:36:31 +0200
-X-Google-Sender-Auth: c0eff55d107477fe
-Message-ID: <y2j10f740e81005060636ra458212bt4352ca0b6b7df7fe@mail.gmail.com>
-Subject: Re: kbuild: fixing the select problem
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-       Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 May 2010 13:36:27 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       "David S. Miller" <davem@davemloft.net>,
+       "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-wireless@vger.kernel.org
+Subject: 2.6.34-rc5-mmotm0428 - 2 RCU whinges in mac80211
+From: Valdis.Kletnieks@vt.edu
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1273167313_4094P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 06 May 2010 13:35:13 -0400
+Message-ID: <5820.1273167313@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020206.4BE2FDD2.0253,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 6, 2010 at 15:17, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Thu, 2010-05-06 at 08:47 +0200, Geert Uytterhoeven wrote:
->> On Wed, May 5, 2010 at 23:49, James Bottomley
->> <James.Bottomley@hansenpartnership.com> wrote:
->> > [Sam: I know you don't maintain kbuild anymore, but since you have the
->> > most experience, if you could find time to comment, I'd be grateful]
->> >
->> > The select problem is that the kbuild select directive will turn a
->> > symbol on without reference to its dependencies.  This, in turn, means
->> > that either selected symbols must select their dependencies, or that
->> > people using select have to be aware of the selected symbol's dependency
->> > and build those dependencies into their symbol (leading to duplication
->> > and the possibility of getting the dependencies out of sync).  We use
->> > select for the scsi transport classes, so we run into this problem in
->> > SCSI quite a lot.
->> >
->> > I think the correct fix is to make a symbol that selects another symbol
->> > automatically inherit all of the selected symbol's dependencies.
->>
->> What if there's a good reason the selected symbol has this dependency?
->> E.g. it depends on a critical feature not available? Like CONFIG_HAS_IOMEM?
->
-> I don't quite understand the question.  If a selected symbol has a
-> critical dependency which is config'd to N then the build usually
-> breaks ... that's what I'm calling the select problem.  I thought
-> CONFIG_HAS_IOMEM was usually selected by the architecture, though.  In
-> the new proposal, we wouldn't be able to generate the invalid
-> configuration in the first place.
+--==_Exmh_1273167313_4094P
+Content-Type: text/plain; charset=us-ascii
 
-Sorry, my fault, -EREPLY_TOO_EARLY_AFTER_WAKEUP.
-Upon rereading what you actually wrote, it made complete sense, and my
-question didn't.
+Spotted these in my dmesg, hopefully somebody is interested...
 
-Gr{oetje,eeting}s,
+[   54.076863] wlan0: deauthenticating from 00:11:20:a4:4c:11 by local choice (reason=3)
+[   54.080580] 
+[   54.080581] ===================================================
+[   54.080584] [ INFO: suspicious rcu_dereference_check() usage. ]
+[   54.080586] ---------------------------------------------------
+[   54.080589] net/mac80211/sta_info.c:858 invoked rcu_dereference_check() without protection!
+[   54.080591] 
+[   54.080591] other info that might help us debug this:
+[   54.080592] 
+[   54.080594] 
+[   54.080595] rcu_scheduler_active = 1, debug_locks = 1
+[   54.080597] no locks held by hald/3362.
+[   54.080599] 
+[   54.080599] stack backtrace:
+[   54.080602] Pid: 3362, comm: hald Not tainted 2.6.34-rc5-mmotm0428 #1
+[   54.080604] Call Trace:
+[   54.080607]  <IRQ>  [<ffffffff81064eb9>] lockdep_rcu_dereference+0x9d/0xa5
+[   54.080619]  [<ffffffff815649f9>] ieee80211_find_sta_by_hw+0x46/0x10f
+[   54.080623]  [<ffffffff81564ad9>] ieee80211_find_sta+0x17/0x19
+[   54.080628]  [<ffffffff8136e1ee>] iwlagn_tx_queue_reclaim+0xe7/0x1bd
+[   54.080632]  [<ffffffff81371da3>] iwlagn_rx_reply_tx+0x4e9/0x5a6
+[   54.080638]  [<ffffffff8136501f>] iwl_rx_handle+0x268/0x3fe
+[   54.080642]  [<ffffffff813664ea>] iwl_irq_tasklet+0x2d3/0x3e4
+[   54.080647]  [<ffffffff8103e337>] tasklet_action+0x79/0xd7
+[   54.080651]  [<ffffffff8103fd54>] __do_softirq+0x15a/0x2a2
+[   54.080656]  [<ffffffff8100358c>] call_softirq+0x1c/0x34
+[   54.080659]  [<ffffffff81004ad8>] do_softirq+0x44/0xf0
+[   54.080663]  [<ffffffff8103f3ba>] irq_exit+0x4a/0xb3
+[   54.080667]  [<ffffffff81004211>] do_IRQ+0xa7/0xbe
+[   54.080671]  [<ffffffff8159cd93>] ret_from_intr+0x0/0xf
+[   54.080673]  <EOI> 
+[   54.114898] wlan0: authenticate with 00:11:20:a4:4c:11 (try 1)
+[   54.122103] wlan0: authenticated
+[   54.122472] wlan0: associate with 00:11:20:a4:4c:11 (try 1)
+[   54.128267] wlan0: RX AssocResp from 00:11:20:a4:4c:11 (capab=0x31 status=0 aid=10)
+[   54.128271] wlan0: associated
+[   54.132990] ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
+[   54.133333] cfg80211: Calling CRDA for country: US
+[   54.135752] 
+[   54.135753] ===================================================
+[   54.135756] [ INFO: suspicious rcu_dereference_check() usage. ]
+[   54.135758] ---------------------------------------------------
+[   54.135760] net/mac80211/sta_info.c:858 invoked rcu_dereference_check() without protection!
+[   54.135763] 
+[   54.135763] other info that might help us debug this:
+[   54.135764] 
+[   54.135766] 
+[   54.135767] rcu_scheduler_active = 1, debug_locks = 1
+[   54.135769] 1 lock held by udevd/2933:
+[   54.135771]  #0:  (policy_rwlock){.+.+..}, at: [<ffffffff811d4f60>] security_compute_av+0x29/0x259
+[   54.135781] 
+[   54.135782] stack backtrace:
+[   54.135785] Pid: 2933, comm: udevd Not tainted 2.6.34-rc5-mmotm0428 #1
+[   54.135787] Call Trace:
+[   54.135790]  <IRQ>  [<ffffffff81064eb9>] lockdep_rcu_dereference+0x9d/0xa5
+[   54.135800]  [<ffffffff81564a49>] ieee80211_find_sta_by_hw+0x96/0x10f
+[   54.135804]  [<ffffffff81564ad9>] ieee80211_find_sta+0x17/0x19
+[   54.135809]  [<ffffffff8136e1ee>] iwlagn_tx_queue_reclaim+0xe7/0x1bd
+[   54.135813]  [<ffffffff81371da3>] iwlagn_rx_reply_tx+0x4e9/0x5a6
+[   54.135819]  [<ffffffff8136501f>] iwl_rx_handle+0x268/0x3fe
+[   54.135823]  [<ffffffff813664ea>] iwl_irq_tasklet+0x2d3/0x3e4
+[   54.135828]  [<ffffffff8103e337>] tasklet_action+0x79/0xd7
+[   54.135832]  [<ffffffff8103fd54>] __do_softirq+0x15a/0x2a2
+[   54.135837]  [<ffffffff8100358c>] call_softirq+0x1c/0x34
+[   54.135841]  [<ffffffff81004ad8>] do_softirq+0x44/0xf0
+[   54.135844]  [<ffffffff8103f3ba>] irq_exit+0x4a/0xb3
+[   54.135847]  [<ffffffff81004211>] do_IRQ+0xa7/0xbe
+[   54.135852]  [<ffffffff8159cd93>] ret_from_intr+0x0/0xf
+[   54.135854]  <EOI>  [<ffffffff811ce48b>] ? avtab_search_node+0x6c/0x7b
+[   54.135862]  [<ffffffff811d4cdb>] context_struct_compute_av+0x136/0x271
+[   54.135867]  [<ffffffff811d506b>] security_compute_av+0x134/0x259
+[   54.135872]  [<ffffffff811c2560>] avc_has_perm_noaudit+0x22e/0x537
+[   54.135876]  [<ffffffff811c289f>] avc_has_perm+0x36/0x69
+[   54.135880]  [<ffffffff810c52cd>] ? __do_fault+0x254/0x3f1
+[   54.135885]  [<ffffffff811c4bca>] current_has_perm+0x3a/0x3f
+[   54.135888]  [<ffffffff811c4c7d>] selinux_task_create+0x17/0x19
+[   54.135893]  [<ffffffff811beced>] security_task_create+0x11/0x13
+[   54.135898]  [<ffffffff81036dae>] copy_process+0x8d/0x11ed
+[   54.135901]  [<ffffffff810c5434>] ? __do_fault+0x3bb/0x3f1
+[   54.135905]  [<ffffffff8107c26b>] ? rcu_read_lock+0x0/0x35
+[   54.135909]  [<ffffffff810380b2>] do_fork+0x1a4/0x3b5
+[   54.135913]  [<ffffffff8107c2c1>] ? rcu_read_unlock+0x21/0x23
+[   54.135917]  [<ffffffff8107dc56>] ? audit_filter_syscall+0xb4/0xc8
+[   54.135921]  [<ffffffff81059044>] ? up_read+0x1e/0x36
+[   54.135924]  [<ffffffff8105d760>] ? current_kernel_time+0x28/0x50
+[   54.135929]  [<ffffffff81009705>] sys_clone+0x23/0x25
+[   54.135933]  [<ffffffff810029d3>] stub_clone+0x13/0x20
+[   54.135936]  [<ffffffff8100266b>] ? system_call_fastpath+0x16/0x1b
 
-						Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+--==_Exmh_1273167313_4094P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFL4v3RcC3lWbTT17ARAshDAKCFiBojOS41qx3hPXB++zZVAn5TvwCg77HD
+H0rtTAidfFc1nQ6+QzyL370=
+=hvy8
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1273167313_4094P--
+
