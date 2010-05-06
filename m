@@ -1,64 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397Ab0EFQXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 12:23:39 -0400
-Received: from mx1.sophos.com ([195.166.81.52]:54338 "EHLO mx1.sophos.com"
+	id S1759272Ab0EFQyP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 12:54:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51706 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932311Ab0EFQXh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 12:23:37 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: Mikulas Patocka <mpatocka@redhat.com>
-Subject: Re: Testers needed - Maxtor performance degradation
-Date: Thu, 6 May 2010 17:23:31 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "dm-devel@redhat.com" <dm-devel@redhat.com>,
-       "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-References: <Pine.LNX.4.64.1005051433080.30185@hs20-bc2-1.build.redhat.com>
-In-Reply-To: <Pine.LNX.4.64.1005051433080.30185@hs20-bc2-1.build.redhat.com>
-MIME-Version: 1.0
-Message-ID: <201005061723.31390.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 06/05/2010 17:23:31,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 06/05/2010 17:23:32,
-	Serialize complete at 06/05/2010 17:23:32
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
+	id S932459Ab0EFQxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 12:53:51 -0400
+From: Tejun Heo <tj@kernel.org>
+To: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org,
+       paulmck@linux.vnet.ibm.com
+Cc: Tejun Heo <tj@kernel.org>, Dipankar Sarma <dipankar@in.ibm.com>,
+       Josh Triplett <josh@freedesktop.org>, Oleg Nesterov <oleg@redhat.com>,
+       Dimitri Sivanich <sivanich@sgi.com>
+Subject: [PATCH 4/5] sched: kill paranoia check in synchronize_sched_expedited()
+Date: Thu,  6 May 2010 18:52:51 +0200
+Message-Id: <1273164772-19149-5-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1273164772-19149-1-git-send-email-tj@kernel.org>
+References: <1273164772-19149-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 06 May 2010 16:53:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 06 May 2010 17:15:58 Mikulas Patocka wrote:
-[snip]
-> I'd like to ask other people with Maxtor disks to run this script (with
-> "sda", "sdb", etc. as an argument ... without "/dev/" prefix). The script
-> measures read rate as a function of request size. Report the results, so
-> that it can be determined which disks are buggy and which not and the
-> default transfer size could be reduced to 256kB for the buggy ones.
+The paranoid check which verifies that the cpu_stop callback is
+actually called on all online cpus is completely superflous.  It's
+guaranteed by cpu_stop facility and if it didn't work as advertised
+other things would go horribly wrong and trying to recover using
+synchronize_sched() wouldn't be very meaningful.
 
-Here is one:
+Kill the paranoid check.  Removal of this feature is done as a
+separate step so that it can serve as a bisection point if something
+actually goes wrong.
 
-MAXTOR ATLAS10K5_073SAS BP00
-64 kB: 86.7 MB/s
-128 kB: 86.6 MB/s
-192 kB: 86.6 MB/s
-256 kB: 86.1 MB/s
-320 kB: 39.9 MB/s
-384 kB: 41.1 MB/s
-448 kB: 41.3 MB/s
-512 kB: 44.2 MB/s
-576 kB: 49.7 MB/s
-640 kB: 42.8 MB/s
-704 kB: 47.0 MB/s
-768 kB: 46.4 MB/s
-832 kB: 59.1 MB/s
-896 kB: 55.6 MB/s
-960 kB: 57.2 MB/s
-1024 kB: 59.3 MB/s
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>
+Cc: Josh Triplett <josh@freedesktop.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Dimitri Sivanich <sivanich@sgi.com>
+---
+ kernel/sched.c |   40 +++-------------------------------------
+ 1 files changed, 3 insertions(+), 37 deletions(-)
 
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+diff --git a/kernel/sched.c b/kernel/sched.c
+index f1d577a..e9c6d79 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8953,14 +8953,6 @@ static atomic_t synchronize_sched_expedited_count = ATOMIC_INIT(0);
+ 
+ static int synchronize_sched_expedited_cpu_stop(void *data)
+ {
+-	static DEFINE_SPINLOCK(done_mask_lock);
+-	struct cpumask *done_mask = data;
+-
+-	if (done_mask) {
+-		spin_lock(&done_mask_lock);
+-		cpumask_set_cpu(smp_processor_id(), done_mask);
+-		spin_unlock(&done_mask_lock);
+-	}
+ 	return 0;
+ }
+ 
+@@ -8976,55 +8968,29 @@ static int synchronize_sched_expedited_cpu_stop(void *data)
+  */
+ void synchronize_sched_expedited(void)
+ {
+-	cpumask_var_t done_mask_var;
+-	struct cpumask *done_mask = NULL;
+ 	int snap, trycount = 0;
+ 
+-	/*
+-	 * done_mask is used to check that all cpus actually have
+-	 * finished running the stopper, which is guaranteed by
+-	 * stop_cpus() if it's called with cpu hotplug blocked.  Keep
+-	 * the paranoia for now but it's best effort if cpumask is off
+-	 * stack.
+-	 */
+-	if (zalloc_cpumask_var(&done_mask_var, GFP_ATOMIC))
+-		done_mask = done_mask_var;
+-
+ 	smp_mb();  /* ensure prior mod happens before capturing snap. */
+ 	snap = atomic_read(&synchronize_sched_expedited_count) + 1;
+ 	get_online_cpus();
+ 	while (try_stop_cpus(cpu_online_mask,
+ 			     synchronize_sched_expedited_cpu_stop,
+-			     done_mask) == -EAGAIN) {
++			     NULL) == -EAGAIN) {
+ 		put_online_cpus();
+ 		if (trycount++ < 10)
+ 			udelay(trycount * num_online_cpus());
+ 		else {
+ 			synchronize_sched();
+-			goto free_out;
++			return;
+ 		}
+ 		if (atomic_read(&synchronize_sched_expedited_count) - snap > 0) {
+ 			smp_mb(); /* ensure test happens before caller kfree */
+-			goto free_out;
++			return;
+ 		}
+ 		get_online_cpus();
+ 	}
+ 	atomic_inc(&synchronize_sched_expedited_count);
+-	if (done_mask)
+-		cpumask_xor(done_mask, done_mask, cpu_online_mask);
+ 	put_online_cpus();
+-
+-	/* paranoia - this can't happen */
+-	if (done_mask && cpumask_weight(done_mask)) {
+-		char buf[80];
+-
+-		cpulist_scnprintf(buf, sizeof(buf), done_mask);
+-		WARN_ONCE(1, "synchronize_sched_expedited: cpu online and done masks disagree on %d cpus: %s\n",
+-			  cpumask_weight(done_mask), buf);
+-		synchronize_sched();
+-	}
+-free_out:
+-	free_cpumask_var(done_mask_var);
+ }
+ EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+ 
+-- 
+1.6.4.2
+
