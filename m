@@ -1,47 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751379Ab0EFXyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 19:54:52 -0400
-Received: from kroah.org ([198.145.64.141]:38406 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944Ab0EFXyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 19:54:50 -0400
-Date: Thu, 6 May 2010 16:54:33 -0700
-From: Greg KH <greg@kroah.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-       Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH] drivers: staging: dream: fix smd in makefile
-Message-ID: <20100506235433.GA4477@kroah.com>
-References: <1273189739-1710-1-git-send-email-dwalker@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273189739-1710-1-git-send-email-dwalker@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751549Ab0EFX41 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 19:56:27 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34740 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab0EFX4Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 19:56:25 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 7 May 2010 08:52:19 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+ the wrong VMA information
+Message-Id: <20100507085219.5821f721.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100506094621.GZ20979@csn.ul.ie>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie>
+	<1273065281-13334-2-git-send-email-mel@csn.ul.ie>
+	<20100506163837.bf6587ef.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100506094621.GZ20979@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 04:48:59PM -0700, Daniel Walker wrote:
-> Not sure about this one.. Cause if you apply this then some SMD files
-> don't compile anymore. There's some missing config options related to
-> AMSS.
+On Thu, 6 May 2010 10:46:21 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
+
+> On Thu, May 06, 2010 at 04:38:37PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Wed,  5 May 2010 14:14:40 +0100
+> > Mel Gorman <mel@csn.ul.ie> wrote:
+> > 
+> > > vma_adjust() is updating anon VMA information without locks being taken.
+> > > In contrast, file-backed mappings use the i_mmap_lock and this lack of
+> > > locking can result in races with users of rmap_walk such as page migration.
+> > > vma_address() can return -EFAULT for an address that will soon be valid.
+> > > For migration, this potentially leaves a dangling migration PTE behind
+> > > which can later cause a BUG_ON to trigger when the page is faulted in.
+> > > 
+> > > With the recent anon_vma changes, there can be more than one anon_vma->lock
+> > > to take in a anon_vma_chain but a second lock cannot be spinned upon in case
+> > > of deadlock. The rmap walker tries to take locks of different anon_vma's
+> > > but if the attempt fails, locks are released and the operation is restarted.
+> > > 
+> > > For vma_adjust(), the locking behaviour prior to the anon_vma is restored
+> > > so that rmap_walk() can be sure of the integrity of the VMA information and
+> > > lists when the anon_vma lock is held. With this patch, the vma->anon_vma->lock
+> > > is taken if
+> > > 
+> > > 	a) If there is any overlap with the next VMA due to the adjustment
+> > > 	b) If there is a new VMA is being inserted into the address space
+> > > 	c) If the start of the VMA is being changed so that the
+> > > 	   relationship between vm_start and vm_pgoff is preserved
+> > > 	   for vma_address()
+> > > 
+> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > 
+> > I'm sorry I couldn't catch all details but can I make a question ?
 > 
-> NOT-Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
+> Of course.
+> 
+> > Why seq_counter is bad finally ? I can't understand why we have
+> > to lock anon_vma with risks of costs, which is mysterious struct now.
+> > 
+> > Adding a new to mm_struct is too bad ?
+> > 
+> 
+> It's not the biggest problem. I'm not totally against this approach but
+> some of the problems I had were;
+> 
+> 1. It introduced new locking. anon_vmas would be covered by RCU,
+>    spinlocks and seqlock - each of which is used in different
+>    circumstances. The last patch I posted doesn't drastically
+>    alter the locking. It just says that if you are taking multiple
+>    locks, you must start from the "root" anon_vma.
+> 
+ok. I just thought a lock-system which we have to find "which lock should I
+take" is not very good.
 
-Heh, I'm not going to apply this then :)
 
-> CC: Greg KH <greg@kroah.com>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> ---
->  drivers/staging/dream/Makefile |    3 ++-
+> 2. I wasn't sure if it was usable by transparent hugepage support.
+>    Andrea?
 
-With the recent progression of your arch tree, and the
-wakelock/suspend-blocker stuff, what's the need for these files to still
-be in the staging directory at all?  Can't it be deleted and it go
-through your tree?
+Hmm.
 
-thanks,
+> 
+> 3. I had similar concerns about it livelocking like the
+>    trylock-and-retry although it's not terrible.
+> 
+Agreed.
 
-greg k-h
+> 4. I couldn't convince myself at the time that it wasn't possible for
+>    someone to manipulate the list while it was being walked and a VMA would be
+>    missed. For example, if fork() was called while rmap_walk was happening,
+>    were we guaranteed to find the VMAs added to the list?  I admit I didn't
+>    fully investigate this question at the time as I was still getting to
+>    grips with anon_vma. I can reinvestigate if you think the "lock the root
+>    anon_vma first when taking multiple locks" has a bad cost that is
+>    potentially resolved with seqcounter
+> 
+If no regressions in measurement, I have no objections.
+
+> 5. It added a field to mm_struct. It's the smallest of concerns though.
+> 
+> Do you think it's a better approach and should be revisited?
+> 
+> 
+
+If everyone think seqlock is simple, I think it should be. But it seems you all are
+going ahead with anon_vma->lock approach. 
+(Basically, it's ok to me if it works. We may be able to make it better in later.)
+
+I'll check your V7.
+
+Thank you for answering.
+
+Regards,
+-Kame
+
+
+
