@@ -1,238 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463Ab0EFEFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 00:05:49 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57999 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750699Ab0EFEFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 00:05:48 -0400
-Date: Thu, 6 May 2010 14:05:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Prashant P. Shah" <pshah.mumbai@gmail.com>,
-       Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
-       <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the staging-next tree with the net tree
-Message-Id: <20100506140543.d6f3841f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751578Ab0EFEQV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 00:16:21 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:54627 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012Ab0EFEQT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 00:16:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100506000552.GJ29604@atomide.com>
+References: <20100505202826.GB7450@linux.intel.com>
+	 <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
+	 <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
+	 <20100505234755.GI29604@atomide.com>
+	 <l2ra55d774e1005051656wbf4f3d7cr8cc9de0478e509f1@mail.gmail.com>
+	 <20100506000552.GJ29604@atomide.com>
+Date: Wed, 5 May 2010 21:16:18 -0700
+Message-ID: <g2yd6200be21005052116n5dd8708fk33eaf8944379bfc2@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Wed, May 5, 2010 at 5:05 PM, Tony Lindgren <tony@atomide.com> wrote:
+> * Brian Swetland <swetland@google.com> [100505 16:51]:
+>> On Wed, May 5, 2010 at 4:47 PM, Tony Lindgren <tony@atomide.com> wrote:
+>> > * Brian Swetland <swetland@google.com> [100505 14:34]:
+>> >> On Wed, May 5, 2010 at 2:12 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> >> >>
+>> >> >> Oh, like tell the modem that user mode has handled the ring event and
+>> >> >> its ok to un-block?
+>> >> >
+>> >> > No, that's not how it works.  It would go like this:
+>> >> >
+>> >> >        The modem IRQ handler queues its event to the input subsystem.
+>> >> >        As it does so the input subsystem enables a suspend blocker,
+>> >> >        causing the system to stay awake after the IRQ is done.
+>> >
+>> > How about instead the modem driver fails to suspend until it's done?
+>> >
+>> > Each driver could have a suspend_policy sysfs entry with options such
+>> > as [ forced | safe ]. The default would be forced. Forced would
+>> > be the current behaviour, while safe would refuse suspend until the
+>> > driver is done processing.
+>> >
+>> >> >        The user program enables its own suspend blocker before reading
+>> >> >        the input queue.  When the queue is empty, the input subsystem
+>> >> >        releases its suspend blocker.
+>> >
+>> > And also the input layer could refuse to suspend until it's done.
+>> >
+>> >> >        When the user program finishes processing the event, it
+>> >> >        releases its suspend blocker.  Now the system can go back to
+>> >> >        sleep.
+>> >
+>> > And here the user space just tries to suspend again when it's done?
+>> > It's not like you're trying to suspend all the time, so it should be
+>> > OK to retry a few times.
+>>
+>> We actually are trying to suspend all the time -- that's our basic
+>> model -- suspend whenever we can when something doesn't prevent it.
+>
+> Maybe that state could be kept in some userspace suspend policy manager?
+>
+>> >> > At no point does the user program have to communicate anything to the
+>> >> > modem driver, and at no point does it have to do anything out of the
+>> >> > ordinary except to enable and disable a suspend blocker.
+>> >>
+>> >> Exactly -- and you can use the same style of overlapping suspend
+>> >> blockers with other drivers than input, if the input interface is not
+>> >> suitable for the particular interaction.
+>> >
+>> > Would the suspend blockers still be needed somewhere in the example
+>> > above?
+>>
+>> How often would we retry suspending?
+>
+> Well based on some timer, the same way the screen blanks? Or five
+> seconds of no audio play? So if the suspend fails, then reset whatever
+> userspace suspend policy timers.
+>
+>> If we fail to suspend, don't we have to resume all the drivers that
+>> suspended before the one that failed?  (Maybe I'm mistaken here)
+>
+> Sure, but I guess that should be a rare event that only happens when
+> you try to suspend and something interrupts the suspend.
+>
 
-Today's linux-next merge of the staging-next tree got a conflict in
-drivers/staging/arlan/arlan-main.c between commit
-22bedad3ce112d5ca1eaf043d4990fa2ed698c87 ("net: convert multicast list to
-list_head") from the net tree and commit
-dd730b627cf8ff0b9d20df94fd31b6192b188710 ("Staging: arlan: fixed
-unnecessary whitespace style issue in arlan-main.c") from the
-staging-next tree.
+This is not a rare event. For example, the matrix keypad driver blocks
+suspend when a key is down so it can scan the matrix.
 
-I fixed it up (see below - this is bigger than is would otherwise be
-because there is a conflict with another patch that was previously
-reported) and can carry the fix as necessary.
+>> With the suspend block model we know the moment we're capable of
+>> suspending and then can suspend at that moment.  Continually trying to
+>> suspend seems like it'd be inefficient power-wise (we're going to be
+>> doing a lot more work as we try to suspend over and over, or we're
+>> going to retry after a timeout and spend extra time not suspended).
+>>
+>> We can often spend minutes (possibly many) at a time preventing
+>> suspend when the system is doing work that would be interrupted by a
+>> full suspend.
+>
+> Maybe you a userspace suspend policy manager would do the trick if
+> it knows when the screen is blanked and no audio has been played for
+> five seconds etc?
+>
+
+If user space has to initiate every suspend attempt, then you are
+forcing it to poll whenever a driver needs to block suspend.
+
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/staging/arlan/arlan-main.c
-index 8028452,301b979..0000000
---- a/drivers/staging/arlan/arlan-main.c
-+++ b/drivers/staging/arlan/arlan-main.c
-@@@ -1438,105 -1336,99 +1336,99 @@@ static void arlan_rx_interrupt(struct n
-  		priv->in_time10 = jiffies;
-  	}
-  	DEBUGSHM(1, "arlan rcv pkt rxStatus= %d ", arlan->rxStatus, u_char);
-- 	switch (rxStatus)
-+ 	switch (rxStatus) {
-+ 	case 1:
-+ 	case 2:
-+ 	case 3:
-  	{
-- 		case 1:
-- 		case 2:
-- 		case 3:
-- 		{
-- 			/* Malloc up new buffer. */
-- 			struct sk_buff *skb;
-+ 		/* Malloc up new buffer. */
-+ 		struct sk_buff *skb;
-  
-- 			DEBUGSHM(50, "arlan recv pkt offs=%d\n", arlan->rxOffset, u_short);
-- 			DEBUGSHM(1, "arlan rxFrmType = %d \n", arlan->rxFrmType, u_char);
-- 			DEBUGSHM(1, KERN_INFO "arlan rx scrambled = %d \n", arlan->scrambled, u_char);
-+ 		DEBUGSHM(50, "arlan recv pkt offs=%d\n", arlan->rxOffset, u_short);
-+ 		DEBUGSHM(1, "arlan rxFrmType = %d\n", arlan->rxFrmType, u_char);
-+ 		DEBUGSHM(1, KERN_INFO "arlan rx scrambled = %d\n", arlan->scrambled, u_char);
-  
-- 			/* here we do multicast filtering to avoid slow 8-bit memcopy */
-+ 		/* here we do multicast filtering to avoid slow 8-bit memcopy */
-  #ifdef ARLAN_MULTICAST
-- 			if (!(dev->flags & IFF_ALLMULTI) &&
-- 				!(dev->flags & IFF_PROMISC) &&
-- 				!netdev_mc_empty(dev))
-- 			{
-- 				char hw_dst_addr[6];
-- 				struct netdev_hw_addr *ha;
-- 				int i;
-- 
-- 				memcpy_fromio(hw_dst_addr, arlan->ultimateDestAddress, 6);
-- 				if (hw_dst_addr[0] == 0x01)
-- 				{
-- 					if (mdebug)
-- 						if (hw_dst_addr[1] == 0x00)
-- 							printk(KERN_ERR "%s mcast 0x0100 \n", dev->name);
-- 						else if (hw_dst_addr[1] == 0x40)
-- 							printk(KERN_ERR "%s m/bcast 0x0140 \n", dev->name);
-- 					netdev_for_each_mc_entry(ha, dev) {
-- 						if (arlan_debug & ARLAN_DEBUG_HEADER_DUMP)
-- 							printk(KERN_ERR "%s mcl %pM\n",
-- 							       dev->name,
-- 							       ha->addr);
-- 						for (i = 0; i < 6; i++)
-- 							if (ha->addr[i] != hw_dst_addr[i])
-- 								break;
-- 						if (i == 6)
-+ 		if (!(dev->flags & IFF_ALLMULTI) &&
-+ 			!(dev->flags & IFF_PROMISC) &&
-+ 			!netdev_mc_empty(dev)) {
-+ 			char hw_dst_addr[6];
- -			struct dev_mc_list *dmi;
-++			struct netdev_hw_addr *ha;
-+ 			int i;
-+ 
-+ 			memcpy_fromio(hw_dst_addr, arlan->ultimateDestAddress, 6);
-+ 			if (hw_dst_addr[0] == 0x01) {
-+ 				if (mdebug)
-+ 					if (hw_dst_addr[1] == 0x00)
-+ 						printk(KERN_ERR "%s mcast 0x0100\n", dev->name);
-+ 					else if (hw_dst_addr[1] == 0x40)
-+ 						printk(KERN_ERR "%s m/bcast 0x0140\n", dev->name);
- -				netdev_for_each_mc_entry(dmi, dev) {
-++				netdev_for_each_mc_entry(ha, dev) {
-+ 					if (arlan_debug & ARLAN_DEBUG_HEADER_DUMP)
-+ 						printk(KERN_ERR "%s mcl %pM\n",
- -						       dev->name, dmi->dmi_addr);
-++						       dev->name, ha->addr);
-+ 					for (i = 0; i < 6; i++)
- -						if (dmi->dmi_addr[i] != hw_dst_addr[i])
-++						if (ha->addr[i] != hw_dst_addr[i])
-  							break;
-- 					}
-- 					/* we reach here if multicast filtering is on and packet 
-- 					 * is multicast and not for receive */
-- 					goto end_of_interrupt;
-+ 					if (i == 6)
-+ 						break;
-  				}
-+ 				/* we reach here if multicast filtering is on and packet */
-+ 				/* is multicast and not for receive */
-+ 				goto end_of_interrupt;
-  			}
-- #endif				// ARLAN_MULTICAST
-- 			/* multicast filtering ends here */
-- 			pkt_len += ARLAN_FAKE_HDR_LEN;
-- 
-- 			skb = dev_alloc_skb(pkt_len + 4);
-- 			if (skb == NULL)
-- 			{
-- 				printk(KERN_ERR "%s: Memory squeeze, dropping packet.\n", dev->name);
-- 				dev->stats.rx_dropped++;
-- 				break;
-- 			}
-- 			skb_reserve(skb, 2);
-- 			skbtmp = skb_put(skb, pkt_len);
-+ 		}
-+ #endif	/* ARLAN_MULTICAST */
-+ 		/* multicast filtering ends here */
-+ 		pkt_len += ARLAN_FAKE_HDR_LEN;
-+ 
-+ 		skb = dev_alloc_skb(pkt_len + 4);
-+ 		if (skb == NULL) {
-+ 			printk(KERN_ERR "%s: Memory squeeze, dropping packet.\n", dev->name);
-+ 			dev->stats.rx_dropped++;
-+ 			break;
-+ 		}
-+ 		skb_reserve(skb, 2);
-+ 		skbtmp = skb_put(skb, pkt_len);
-  
-- 			memcpy_fromio(skbtmp + ARLAN_FAKE_HDR_LEN, ((char __iomem *) arlan) + rxOffset, pkt_len - ARLAN_FAKE_HDR_LEN);
-- 			memcpy_fromio(skbtmp, arlan->ultimateDestAddress, 6);
-- 			memcpy_fromio(skbtmp + 6, arlan->rxSrc, 6);
-- 			WRITESHMB(arlan->rxStatus, 0x00);
-- 			arlan_command(dev, ARLAN_COMMAND_RX);
-+ 		memcpy_fromio(skbtmp + ARLAN_FAKE_HDR_LEN, ((char __iomem *) arlan) + rxOffset, pkt_len - ARLAN_FAKE_HDR_LEN);
-+ 		memcpy_fromio(skbtmp, arlan->ultimateDestAddress, 6);
-+ 		memcpy_fromio(skbtmp + 6, arlan->rxSrc, 6);
-+ 		WRITESHMB(arlan->rxStatus, 0x00);
-+ 		arlan_command(dev, ARLAN_COMMAND_RX);
-  
-- 			IFDEBUG(ARLAN_DEBUG_HEADER_DUMP)
-- 			{
-- 				char immedDestAddress[6];
-- 				char immedSrcAddress[6];
-- 				memcpy_fromio(immedDestAddress, arlan->immedDestAddress, 6);
-- 				memcpy_fromio(immedSrcAddress, arlan->immedSrcAddress, 6);
-- 
-- 				printk(KERN_WARNING "%s t %pM f %pM imd %pM ims %pM\n",
-- 				       dev->name, skbtmp,
-- 				       &skbtmp[6],
-- 				       immedDestAddress,
-- 				       immedSrcAddress);
-- 			}
-- 			skb->protocol = eth_type_trans(skb, dev);
-- 			IFDEBUG(ARLAN_DEBUG_HEADER_DUMP)
-- 				if (skb->protocol != 0x608 && skb->protocol != 0x8)
-- 				{
-- 					for (i = 0; i <= 22; i++)
-- 						printk("%02x:", (u_char) skbtmp[i + 12]);
-- 					printk(KERN_ERR "\n");
-- 					printk(KERN_WARNING "arlan kernel pkt type trans %x \n", skb->protocol);
-- 				}
-- 			netif_rx(skb);
-- 			dev->stats.rx_packets++;
-- 			dev->stats.rx_bytes += pkt_len;
-+ 		IFDEBUG(ARLAN_DEBUG_HEADER_DUMP)
-+ 		{
-+ 			char immedDestAddress[6];
-+ 			char immedSrcAddress[6];
-+ 			memcpy_fromio(immedDestAddress, arlan->immedDestAddress, 6);
-+ 			memcpy_fromio(immedSrcAddress, arlan->immedSrcAddress, 6);
-+ 
-+ 			printk(KERN_WARNING "%s t %pM f %pM imd %pM ims %pM\n",
-+ 			       dev->name, skbtmp,
-+ 			       &skbtmp[6],
-+ 			       immedDestAddress,
-+ 			       immedSrcAddress);
-  		}
-+ 		skb->protocol = eth_type_trans(skb, dev);
-+ 		IFDEBUG(ARLAN_DEBUG_HEADER_DUMP)
-+ 			if (skb->protocol != 0x608 && skb->protocol != 0x8) {
-+ 				for (i = 0; i <= 22; i++)
-+ 					printk("%02x:", (u_char) skbtmp[i + 12]);
-+ 				printk(KERN_ERR "\n");
-+ 				printk(KERN_WARNING "arlan kernel pkt type trans %x\n", skb->protocol);
-+ 			}
-+ 		netif_rx(skb);
-+ 		dev->stats.rx_packets++;
-+ 		dev->stats.rx_bytes += pkt_len;
-+ 	}
-+ 	break;
-+ 
-+ 	default:
-+ 		printk(KERN_ERR "arlan intr: received unknown status\n");
-+ 		dev->stats.rx_crc_errors++;
-  		break;
-- 		
-- 		default:
-- 			printk(KERN_ERR "arlan intr: received unknown status\n");
-- 			dev->stats.rx_crc_errors++;
-- 			break;
-  	}
-  	ARLAN_DEBUG_EXIT("arlan_rx_interrupt");
-  }
+Arve Hjønnevåg
