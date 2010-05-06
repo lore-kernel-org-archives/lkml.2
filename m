@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab0EFSdA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 14:33:00 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:61197 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584Ab0EFSc5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 14:32:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=PE0oLmbQ8Kjk4ifRHXaHl+Uan+v5tB1lNBGuIM0LemkYf6Ql9UgEZVgrqoejRpPoyn
-         pWFrM0oxom4BL/wXL8ZkLfrOX7CMMnsIOzRd92FgeF7HAyqzvisOYpcZ2aqvOWzvQbey
-         +T+msd/ZUcCi0+5/5Sc+nddZv5OdhRQktOVlk=
-Date: Thu, 6 May 2010 20:32:50 +0200
-From: Paolo Ornati <ornati@gmail.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-       linux-scsi@vger.kernel.org
-Subject: Re: Testers needed - Maxtor performance degradation
-Message-ID: <20100506203250.76f559cd@gmail.com>
-In-Reply-To: <Pine.LNX.4.64.1005051433080.30185@hs20-bc2-1.build.redhat.com>
-References: <Pine.LNX.4.64.1005051433080.30185@hs20-bc2-1.build.redhat.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756390Ab0EFIq1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 04:46:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39094 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756312Ab0EFIqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 04:46:24 -0400
+From: Avi Kivity <avi@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Brian Gerst <brgerst@gmail.com>, Dexuan Cui <dexuan.cui@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: [PATCH v3 0/2] x86 FPU API
+Date: Thu,  6 May 2010 11:45:44 +0300
+Message-Id: <1273135546-29690-1-git-send-email-avi@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010 12:15:58 -0400 (EDT)
-Mikulas Patocka <mpatocka@redhat.com> wrote:
+Currently all fpu accessors are wedded to task_struct.  However kvm also uses
+the fpu in a different context.  Introduce an FPU API, and replace the
+current uses with the new API.
 
-> I'd like to ask other people with Maxtor disks to run this script (with 
-> "sda", "sdb", etc. as an argument ... without "/dev/" prefix). The script 
-> measures read rate as a function of request size. Report the results, so 
-> that it can be determined which disks are buggy and which not and the 
-> default transfer size could be reduced to 256kB for the buggy ones.
+While this patchset is oriented towards deeper changes, as a first step it
+simlifies xsave for kvm.
 
-ATA MAXTOR STM316021 3.AA
-64 kB: 78.9 MB/s
-128 kB: 79.1 MB/s
-192 kB: 79.1 MB/s
-256 kB: 78.6 MB/s
-320 kB: 79.1 MB/s
-384 kB: 78.9 MB/s
-448 kB: 79.0 MB/s
-512 kB: 79.1 MB/s
-576 kB: 79.0 MB/s
-640 kB: 79.1 MB/s
-704 kB: 79.0 MB/s
-768 kB: 79.1 MB/s
-832 kB: 79.0 MB/s
-896 kB: 79.0 MB/s
-960 kB: 79.1 MB/s
-1024 kB: 78.8 MB/s
+v3:
+	use u8 instead of bool in asm to avoid bad code generation on older
+        gccs.
 
--- 
-	Paolo Ornati
-	Linux 2.6.34-rc6-00063-gbe1066b on x86_64
+v2:
+	eliminate useless padding in use_xsave() by using a larger instruction
+
+Avi Kivity (2):
+  x86: eliminate TS_XSAVE
+  x86: Introduce 'struct fpu' and related API
+
+ arch/x86/include/asm/i387.h        |  135 +++++++++++++++++++++++++++---------
+ arch/x86/include/asm/processor.h   |    6 ++-
+ arch/x86/include/asm/thread_info.h |    1 -
+ arch/x86/include/asm/xsave.h       |    7 +-
+ arch/x86/kernel/cpu/common.c       |    5 +-
+ arch/x86/kernel/i387.c             |  107 ++++++++++++++---------------
+ arch/x86/kernel/process.c          |   20 +++---
+ arch/x86/kernel/process_32.c       |    2 +-
+ arch/x86/kernel/process_64.c       |    2 +-
+ arch/x86/kernel/xsave.c            |    8 +-
+ arch/x86/math-emu/fpu_aux.c        |    6 +-
+ 11 files changed, 181 insertions(+), 118 deletions(-)
+
