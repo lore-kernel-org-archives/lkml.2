@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab0EFSkM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 14:40:12 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:53291 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753851Ab0EFSkH (ORCPT
+	id S1758999Ab0EFPqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 11:46:19 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:36839 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758934Ab0EFPqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 14:40:07 -0400
-Date: Thu, 6 May 2010 14:40:06 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-cc: Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
-       <linux-pm@lists.linux-foundation.org>, list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       <jslaby@suse.cz>
-Subject: Re: [linux-pm] s2ram slow (radeon) / failing (usb)
-In-Reply-To: <20100506194711.75979d22@neptune.home>
-Message-ID: <Pine.LNX.4.44L0.1005061426160.1708-100000@iolanthe.rowland.org>
+	Thu, 6 May 2010 11:46:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=F+dzPUunF3mjWmOcMBq7Y9nF+B5ORHgNAv/2A5H56+DtxQ3N9WgY9E7C/cSZ2msPxR
+         5CP9QonO6TDH5uF4i8nB7qT0zDPT0brLx6jJk+Y39XkYaC5ZCk4/6TLnCadkKejgLW4T
+         IqgkwRkzx8rzBAPOniOljs+Y3v2BR/arkcuzc=
+Message-ID: <4BE2E444.9020108@gmail.com>
+Date: Thu, 06 May 2010 17:46:12 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.5pre) Gecko/20100430 SUSE/3.1b2-7.1 Thunderbird/3.1b2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Neil Horman <nhorman@tuxdriver.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: Resource limits interface proposal [was: pull request for writable
+ limits]
+References: <4B1D32D1.4090404@gmail.com> <4B9136F4.4010007@gmail.com> <alpine.LFD.2.00.1003201207160.18017@i5.linux-foundation.org> <20100321060607.GA4062@x200> <alpine.LFD.2.00.1003211128520.18017@i5.linux-foundation.org> <4BE160C6.90404@gmail.com> <alpine.LFD.2.00.1005050757370.5478@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1005050757370.5478@i5.linux-foundation.org>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010, Bruno [UTF-8] Prémont wrote:
-
-> > Bruno, can you confirm that the hang occurs during one of those 
-> > cancel_work_sync() calls?
+On 05/05/2010 05:08 PM, Linus Torvalds wrote:
+> On Wed, 5 May 2010, Jiri Slaby wrote:
+>> The drawback is when a 32-bit user passes down a value >= (1 << 32),
+>> EINVAL shall occur.
 > 
-> No, it's not one of the cancel_work_sync() that hangs but it's the
-> del_timer_sync() right before them that hangs!
-> (del_timer_sync() also hangs if I put it last, so the cancel_work_sync()
-> don't hang anything)
+> I'd almost prefer to just turn them into RLIMIT_MAX. If somebody asks for 
+> a really huge limit that is bigger than the max we already have, doesn't 
+> RLIMIT_MAX sound like the right thing?
+
+Yes, silently setting the highest possible value (INFINITY) is OK too
+(as we cannot do better anyway).
+
+>> Just a side note, we cannot use the rlimit64 name which is already
+>> reserved in glibc headers for limits handling.
 > 
-> static void hid_cancel_delayed_stuff(struct usbhid_device *usbhid)
-> {
-> 	del_timer_sync(&usbhid->io_retry); /* this one never returns */
-> 	cancel_work_sync(&usbhid->restart_work);
-> 	cancel_work_sync(&usbhid->reset_work);
-> }
+> What does the glibc 'struct rlimit64' look like? It's the structure name 
+> that matters, since the system call name would presumably be 'prlimit64()' 
+> due to the pid thing.
+> 
+> And if the glibc rlimit64 matches what we would use, I think we can decide 
+> to just re-use it.
 
-Okay, I see what the problem is.  In usbhid_start() there's a bunch of
-statements initializing parts of the usbhid structure.  When probing
-fails those statements don't get executed, so the timer and workqueue
-things aren't set up properly.
+With glibc-2.11.1 which I have includes from:
+#ifdef __USE_LARGEFILE64
+struct rlimit64
+  {
+    /* The current (soft) limit.  */
+    rlim64_t rlim_cur;
+    /* The hard limit.  */
+    rlim64_t rlim_max;
+ };
+#endif
 
-This patch should fix it.
+where rlim64_t expands to __u_quad_t which is
+#if __WORDSIZE == 64
+typedef unsigned long int __u_quad_t;
+#elif defined __GLIBC_HAVE_LONG_LONG
+__extension__ typedef unsigned long long int __u_quad_t;
+#endif
 
-Alan Stern
+so something like our u64. The structure is the same to what we are
+about to use. If nobody objects?
 
-
-
-Index: usb-2.6/drivers/hid/usbhid/hid-core.c
-===================================================================
---- usb-2.6.orig/drivers/hid/usbhid/hid-core.c
-+++ usb-2.6/drivers/hid/usbhid/hid-core.c
-@@ -998,13 +998,6 @@ static int usbhid_start(struct hid_devic
- 		}
- 	}
- 
--	init_waitqueue_head(&usbhid->wait);
--	INIT_WORK(&usbhid->reset_work, hid_reset);
--	INIT_WORK(&usbhid->restart_work, __usbhid_restart_queues);
--	setup_timer(&usbhid->io_retry, hid_retry_timeout, (unsigned long) hid);
--
--	spin_lock_init(&usbhid->lock);
--
- 	usbhid->urbctrl = usb_alloc_urb(0, GFP_KERNEL);
- 	if (!usbhid->urbctrl) {
- 		ret = -ENOMEM;
-@@ -1180,6 +1173,12 @@ static int usbhid_probe(struct usb_inter
- 	usbhid->intf = intf;
- 	usbhid->ifnum = interface->desc.bInterfaceNumber;
- 
-+	init_waitqueue_head(&usbhid->wait);
-+	INIT_WORK(&usbhid->reset_work, hid_reset);
-+	INIT_WORK(&usbhid->restart_work, __usbhid_restart_queues);
-+	setup_timer(&usbhid->io_retry, hid_retry_timeout, (unsigned long) hid);
-+	spin_lock_init(&usbhid->lock);
-+
- 	ret = hid_add_device(hid);
- 	if (ret) {
- 		if (ret != -ENODEV)
-
+-- 
+js
