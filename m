@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758642Ab0EFOYS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 10:24:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34847 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915Ab0EFOYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 10:24:16 -0400
-Message-ID: <4BE2D10D.4070706@suse.cz>
-Date: Thu, 06 May 2010 16:24:13 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.11 Thunderbird/3.0.4
+	id S1753784Ab0EFH4c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 03:56:32 -0400
+Received: from perceval.irobotique.be ([92.243.18.41]:44473 "EHLO
+	perceval.irobotique.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab0EFH4a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 03:56:30 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [PATCH -next] usb gadget webcam: depends on VIDEO_DEV
+Date: Thu, 6 May 2010 09:57:13 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.33; KDE/4.4.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, lud <linux-usb@vger.kernel.org>,
+       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de
+References: <20100505123409.ed5678a2.sfr@canb.auug.org.au> <20100505154626.2c036f1d.randy.dunlap@oracle.com>
+In-Reply-To: <20100505154626.2c036f1d.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-       Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Vegard Nossum <vegard.nossum@gmail.com>
-Subject: Re: kbuild: fixing the select problem
-References: <1273096160.23208.35.camel@mulgrave.site>
-In-Reply-To: <1273096160.23208.35.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005060957.13833.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5.5.2010 23:49, James Bottomley wrote:
-> [Sam: I know you don't maintain kbuild anymore, but since you have the
-> most experience, if you could find time to comment, I'd be grateful]
+Hi Randy,
+
+On Thursday 06 May 2010 00:46:26 Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
 > 
-> The select problem is that the kbuild select directive will turn a
-> symbol on without reference to its dependencies.  This, in turn, means
-> that either selected symbols must select their dependencies, or that
-> people using select have to be aware of the selected symbol's dependency
-> and build those dependencies into their symbol (leading to duplication
-> and the possibility of getting the dependencies out of sync).  We use
-> select for the scsi transport classes, so we run into this problem in
-> SCSI quite a lot.
+> g_webcam uses v4l[2] interfaces, so it should depend on VIDEO_DEV.
 > 
-> I think the correct fix is to make a symbol that selects another symbol
-> automatically inherit all of the selected symbol's dependencies.
-> 
-> There seems to be a fairly easy way to do this in kbuild.  Right at the
-> moment, select is handled as additional symbol values as the last point
-> in the symbol tree evaluation process.  Instead, what I propose doing is
-> for every select symbol, we add an extra unconditional default for the
-> selected symbol of the selecting symbol's current value (this breaks a
-> possible dependency cycle) and add to the dependencies of the selecting
-> symbol, the symbol it's currently selecting.
+> ERROR: "v4l2_event_unsubscribe" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_event_queue" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_device_release" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_usercopy" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_event_dequeue" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_register_device" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_device_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_event_subscribe" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_unregister_device" [drivers/usb/gadget/g_webcam.ko] ndefined!
+> ERROR: "v4l2_event_pending" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_fh_init" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_event_init" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_devdata" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_event_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_fh_add" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_fh_del" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_fh_exit" [drivers/usb/gadget/g_webcam.ko] undefined!
 
-Nice trick :-).
+Oops, my bad. Thanks for the patch.
 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-> There's one wrinkle to all of this in that the current parser for
-> default values stops when it finds the first valid (i.e. whose if clause
-> evaluates to true) default.  To make the above scheme work, I need to
-> modify the default parser so it takes the highest tristate of all the
-> valid defaults (and bumps m to y for bool).
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-We should check if some Kconfig file doesn't rely on this "first hit"
-behavior and fix it to explicitly list the condition for a given
-default. Another option would be to add
-default SYM1 || SYM2
-to a symbol selected by SYM1 and SYM2.
+-- 
+Regards,
 
-
-> Does this look acceptable to people?  I think it should give the desired
-> result and has the added benefit that we can then strip the extra select
-> overlay out of the kbuild system (making the parser slightly simpler).
-> 
-> If this looks like a good idea to people, I think I can code up a quick
-> patch.
-
-Other than the above, right now I don't see any issues with such approach.
-
-On a related note, I see Vegard's GSoC project to use a sat solver for
-kconfig got accepted [1]. Vegard, how is the project progressing?
-
-[1]
-http://socghop.appspot.com/gsoc/student_project/show/google/gsoc2010/psu_home/t127230762803
-
-Michal
+Laurent Pinchart
