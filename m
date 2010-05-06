@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757954Ab0EFMjT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 08:39:19 -0400
-Received: from outbound-mail.dca.untd.com ([64.136.47.15]:59628 "HELO
-	outbound-mail.dca.untd.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752372Ab0EFMjR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 08:39:17 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 May 2010 08:39:17 EDT
-X-UNTD-OriginStamp: Xw1gZfSLQuTgUQGJJ2YhSPcNPvbmOYGlbgkA9AEvAORiBxD53EIqCoZh1nybMTCD
-X-Originating-IP: [41.208.137.219]
-Mime-Version: 1.0
-From: "maimonas01@netzero.net" <maimonas01@netzero.net>
-Date: Thu, 6 May 2010 11:27:21 GMT
-To: abiword-dev@abisource.com
-Subject: Hello!!!
-X-Mailer: Webmail Version 6.1_P2
-Message-Id: <20100506.042721.13676.105@webmail18.dca.untd.com>
-Content-Transfer-Encoding: 7BIT
-Content-Disposition: inline
-Content-Type: text/plain; charset=US-ASCII
-X-UNTD-BodySize: 435
-X-ContentStamp: 2:2:1886160025
-X-MAIL-INFO: 453f83ab73dbcb934f4f635f2b4e8757738ba38e436b27a7e70f
-X-UNTD-Peer-Info: 10.171.12.158|webmail18.dca.untd.com|outbound-bu1.dca.untd.com|maimonas01@netzero.net
-X-UNTD-STORE-INFO: URL_DOMAIN:maimonas03@yahoo.co.uk
+	id S1753961Ab0EFGrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 02:47:45 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:50071 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab0EFGrn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 02:47:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=LAm5EUH9U7y+ocXiOPdd0Ja8GhVEb45xlDquw+mlb4HSoahEZjvgp7BoP38z3LLLCf
+         ZJVldke8fXYPcWauAu28W+/w444ePiDS+zLaeQBX5ISDNh63+DJWwD+67PuDBqMqPpz0
+         STeW6yoKqt9CFch71XDSn29ogUR6bLJQYXKyc=
+MIME-Version: 1.0
+In-Reply-To: <1273096160.23208.35.camel@mulgrave.site>
+References: <1273096160.23208.35.camel@mulgrave.site>
+Date: Thu, 6 May 2010 08:47:39 +0200
+X-Google-Sender-Auth: 99bf05a63f417d78
+Message-ID: <p2x10f740e81005052347x9430657fua98b8982e860bd2d@mail.gmail.com>
+Subject: Re: kbuild: fixing the select problem
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+       Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
+       Randy Dunlap <randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!!!
+On Wed, May 5, 2010 at 23:49, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> [Sam: I know you don't maintain kbuild anymore, but since you have the
+> most experience, if you could find time to comment, I'd be grateful]
+>
+> The select problem is that the kbuild select directive will turn a
+> symbol on without reference to its dependencies.  This, in turn, means
+> that either selected symbols must select their dependencies, or that
+> people using select have to be aware of the selected symbol's dependency
+> and build those dependencies into their symbol (leading to duplication
+> and the possibility of getting the dependencies out of sync).  We use
+> select for the scsi transport classes, so we run into this problem in
+> SCSI quite a lot.
+>
+> I think the correct fix is to make a symbol that selects another symbol
+> automatically inherit all of the selected symbol's dependencies.
 
-My name is Maimonas and i hope you are doing fine today, i am delighted to contact you and i hope you will be the honest and caring friend that i long to meet,  i will appreciate if you will respond to this mail through my private email address
+What if there's a good reason the selected symbol has this dependency?
+E.g. it depends on a critical feature not available? Like CONFIG_HAS_IOMEM?
 
-maimonas03@yahoo.co.uk
+Gr{oetje,eeting}s,
 
-To enable me tell you more more about me and also send you my photo as soon as i receive your reply through my email address
+						Geert
 
-Regards,
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Maimonas.
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
