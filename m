@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab0EFXlw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 19:41:52 -0400
-Received: from xenotime.net ([72.52.115.56]:41418 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751101Ab0EFXlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 19:41:50 -0400
-Date: Thu, 6 May 2010 16:41:44 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       linux-media@vger.kernel.org
-Subject: [PATCH -next] IR: add header file to fix build
-Message-Id: <20100506164144.f2e176c3.rdunlap@xenotime.net>
-In-Reply-To: <20100506151502.f97afe54.sfr@canb.auug.org.au>
-References: <20100506151502.f97afe54.sfr@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752305Ab0EFXnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 19:43:13 -0400
+Received: from mail-qy0-f183.google.com ([209.85.221.183]:38188 "EHLO
+	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab0EFXnL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 19:43:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=OAPAS9zH5UbnLRvE9/PHLLwTLVbAIU8P+BVRCL/v3v/Cs+SNrYM0aerGk1dc6jklvu
+         sxaTEzyJJK6rE6Us4ROLDSa2w3FK2jgaa80tWh3ytSaqU9CyqYXI2BojOn9qbP3vSZF0
+         BczKUx+rzjymn2xLMPXa2CNe6OlBVhygBzRGU=
+MIME-Version: 1.0
+Date: Thu, 6 May 2010 18:43:10 -0500
+Message-ID: <l2v524f69651005061643vcdc9f7c1h780344e30c123646@mail.gmail.com>
+Subject: Sparse warning: "initializer entry defined twice"
+From: Steve French <smfrench@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Sparse, but not gcc, throws a warning ("make modules C=1") as follows
+on the first two lines of the following array of booleans
 
-Fix build error:
-drivers/media/IR/rc-map.c:51: error: implicit declaration of function 'msleep'
+  CHECK   fs/smb2/misc.c
+fs/smb2/misc.c:456:23: warning: Initializer entry defined twice
+fs/smb2/misc.c:457:27:   also defined here
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
----
- drivers/media/IR/rc-map.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- linux-next-20100506.orig/drivers/media/IR/rc-map.c
-+++ linux-next-20100506/drivers/media/IR/rc-map.c
-@@ -13,6 +13,7 @@
-  */
- 
- #include <media/ir-core.h>
-+#include <linux/delay.h>
- #include <linux/spinlock.h>
- 
- /* Used to handle IR raw handler extensions */
+static const bool has_smb2_data_area[NUMBER_OF_SMB2_COMMANDS] = {
+    /* SMB2_NEGOTIATE */ true,
+    /* SMB2_SESSION_SETUP */ true,
+    /* SMB2_LOGOFF */ false,
+    /* SMB2_TREE_CONNECT */    false,
+    /* SMB2_TREE_DISCONNECT */ false,
+    /* SMB2_CREATE */ true,
+    /* SMB2_CLOSE */ false,
+    /* SMB2_FLUSH */ false,
+    /* SMB2_READ */    true,
+    /* SMB2_WRITE */ false,
+    /* SMB2_LOCK */    false,
+    /* SMB2_IOCTL */ true,
+    /* SMB2_CANCEL */ false, /* BB CHECK this not listed in documentation */
+    /* SMB2_ECHO */ false,
+    /* SMB2_QUERY_DIRECTORY */ true,
+    /* SMB2_CHANGE_NOTIFY */ true,
+    /* SMB2_QUERY_INFO */ true,
+    /* SMB2_SET_INFO */ false,
+    /* SMB2_OPLOCK_BREAK */ false
+};
+
+
+Any idea why sparse is complaining about the first two lines of the
+arry of booleans? Is this just a sparse bug?
+
+--
+Thanks,
+
+Steve
