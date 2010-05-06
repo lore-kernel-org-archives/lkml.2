@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758616Ab0EFOKB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 10:10:01 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:49855 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757585Ab0EFOJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 10:09:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH tip/core/rcu 28/48] net: Make accesses to ->br_port safe for sparse RCU
-Date: Thu, 6 May 2010 16:09:25 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Hemminger <shemminger@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, David Miller <davem@davemloft.net>
-References: <20100504201934.GA19234@linux.vnet.ibm.com> <201005042341.49480.arnd@arndb.de> <20100505220355.GA20938@linux.vnet.ibm.com>
-In-Reply-To: <20100505220355.GA20938@linux.vnet.ibm.com>
+	id S1755032Ab0EFLCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 07:02:54 -0400
+Received: from mx1.emlix.com ([193.175.82.87]:49000 "EHLO mx1.emlix.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751987Ab0EFLCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 07:02:52 -0400
+X-Greylist: delayed 1495 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 May 2010 07:02:52 EDT
+From: "Oskar Schirmer" <os@emlix.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Mike Frysinger <vapier@gentoo.org>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Oskar Schirmer <os@emlix.com>,
+       =?utf-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>
+Subject: [PATCH] ad7877: fix spi word size to 16 bit
+Date: Thu,  6 May 2010 12:37:44 +0200
+Message-Id: <1273142265-11929-1-git-send-email-os@emlix.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005061609.25960.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1956ban1hPnv54qI4W5+zn3ifUIh+5nt7MZEjA
- ul++D8CUMdGn4MVJ28ACFot71k6y8FRC+L4LOyODGK4xqSBomL
- vuLi2S50deNcMn+UMzGGg==
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Organization: emlix gmbh, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 06 May 2010, Paul E. McKenney wrote:
-> On Tue, May 04, 2010 at 11:41:49PM +0200, Arnd Bergmann wrote:
-> > On Tuesday 04 May 2010 23:26:31 Stephen Hemminger wrote:
-> > > > The new versions of the rcu_dereference() APIs requires that any pointers
-> > > > passed to one of these APIs be fully defined.  The ->br_port field
-> > > > in struct net_device points to a struct net_bridge_port, which is an
-> > > > incomplete type.  This commit therefore changes ->br_port to be a void*,
-> > > > and introduces a br_port() helper function to convert the type to struct
-> > > > net_bridge_port, and applies this new helper function where required.
-> > > 
-> > > I would rather make the bridge hook generic and not take a type argument.
-> > 
-> > Not sure if you were confused by the comment in the same way that I was.
-> > 
-> > The bridge hook is not impacted by this at all, since we can either pass
-> > a void* or a struct net_bridge_port* to it. The br_port() helper
-> > is used for all the places where we actually want to dereference 
-> > dev->br_port and access its contents.
-> 
-> What should I change in the commit message to clear this up?
-> 
-> Of course, if the code needs to change, please let me know what should
-> change there as well.
+With no word size given in the users platform data,
+a generic spi host controller driver will assume a default
+word size of eight bit. This causes transmission to be
+performed bytewise, which will fail on little endian
+machines for sure. Failure on big endian depends on usage
+of slave select to mark word boundaries.
 
-I think it's both ok, I was mostly confused by the discussion we had earlier.
-Maybe add a sentence like:
+Anyway, ad7877 is specified to work with 16 bit per word,
+so unconditionally set the word size accordingly.
 
- The br_handle_frame_hook now needs a forward declaration of struct net_bridge_port.
+Signed-off-by: Oskar Schirmer <os@emlix.com>
+Signed-off-by: Daniel Glöckner <dg@emlix.com>
+Signed-off-by: Oliver Schneidewind <osw@emlix.com>
+---
+ drivers/input/touchscreen/ad7877.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Or you just change br_handle_frame_hook to take a void* to avoid the forward
-declaration. Not sure what Stephen was referring to really.
+diff --git a/drivers/input/touchscreen/ad7877.c b/drivers/input/touchscreen/ad7877.c
+index e019d53..92acd85 100644
+--- a/drivers/input/touchscreen/ad7877.c
++++ b/drivers/input/touchscreen/ad7877.c
+@@ -669,6 +669,8 @@ static int __devinit ad7877_probe(struct spi_device *spi)
+ 		dev_dbg(&spi->dev, "SPI CLK %d Hz?\n",spi->max_speed_hz);
+ 		return -EINVAL;
+ 	}
++	spi->bits_per_word = 16;
++	spi_setup(spi);
+ 
+ 	ts = kzalloc(sizeof(struct ad7877), GFP_KERNEL);
+ 	input_dev = input_allocate_device();
+-- 
+1.5.3.7
 
-	Arnd
