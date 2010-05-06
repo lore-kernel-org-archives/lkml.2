@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab0EFHD6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 03:03:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56509 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753189Ab0EFHD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 03:03:56 -0400
-Message-ID: <4BE269D4.9090108@cn.fujitsu.com>
-Date: Thu, 06 May 2010 15:03:48 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+	id S932337Ab0EFQGp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 12:06:45 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43705 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754119Ab0EFQGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 12:06:34 -0400
+Date: Thu, 6 May 2010 12:06:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Du, Alek" <alek.du@intel.com>
+cc: Ondrej Zary <linux@rainbow-software.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>
+Subject: RE: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
+ (WKOC_E) and disconnect (WKDISC_E)
+In-Reply-To: <1865303E0DED764181A9D882DEF65FB61A82A6DAFD@shsmsx502.ccr.corp.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1005061204000.1708-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm mmu: reduce 50% memory usage
-References: <4BD8228D.7090708@cn.fujitsu.com> <20100429180955.GA17909@amt.cnet> <4BD9D35C.5090403@redhat.com> <20100430154427.GA32340@amt.cnet>
-In-Reply-To: <20100430154427.GA32340@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marcelo Tosatti wrote:
-> On Thu, Apr 29, 2010 at 09:43:40PM +0300, Avi Kivity wrote:
->> On 04/29/2010 09:09 PM, Marcelo Tosatti wrote:
->>> You missed quadrant on 4mb large page emulation with shadow (see updated
->>> patch below).
->> Good catch.
->>
->>> Also for some reason i can't understand the assumption
->>> does not hold for large sptes with TDP, so reverted for now.
->> It's unrelated to TDP, same issue with shadow.  I think the
->> calculation is correct.  For example the 4th spte for a level=2 page
->> will yield gfn=4*512.
+On Thu, 6 May 2010, Du, Alek wrote:
+
+> Hi Alan,
 > 
-> Under testing i see sp at level 2, with sp->gfn == 4096, mmu_set_spte
-> setting index 8 to gfn 4096 (whereas kvm_mmu_page_get_gfn returns 4096 +
-> 8*512).
-> 
-> Lai, can you please take a look at it? You should see the
-> kvm_mmu_page_set_gfn BUG_ON by using -mem-path on hugetlbfs.
-> 
+> >With this patch, _none_ of the wakeup bits are enabled.  That should
+> >work, right?
+> >
+> I guess so, but if no wakeup bits set, how to handle remote wakeup case? Seems you removed remote wakeup case?
 
-Could you tell me how you test it? It will be better if I follow
-your test steps.
+The wakeup bits get set later, in ehci_set_wakeup_flags().
 
-I also hit the kvm_mmu_page_set_gfn BUG_ON, It is because
-FNAME(fetch)() set sp->gfn wrong. The patch:
-[PATCH] kvm: calculate correct gfn for small host pages which emulates large guest pages
-fix it.
+The point is that the wakeup bits take effect only when the controller 
+leaves D0.  But ehci_bus_suspend() is called when the root hub is 
+suspended, which happens first.  So at that time the wakeup bits aren't 
+needed.
 
-I can not hit kvm_mmu_page_set_gfn BUG_ON after this patch also
-applied.
+Alan Stern
 
-So could you tell me your test steps:
-The host: ept/npt enabled? 64bit? testing codes in host?
-The guest: OS? PAE? 32bit? 64bit? testing codes in guest?
-
-Lai
