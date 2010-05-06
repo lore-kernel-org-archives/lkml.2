@@ -1,58 +1,501 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab0EFImQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 04:42:16 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37462 "EHLO hera.kernel.org"
+	id S1759100Ab0EFQx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 12:53:56 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51704 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191Ab0EFImO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 04:42:14 -0400
-Message-ID: <4BE280AA.6020304@kernel.org>
-Date: Thu, 06 May 2010 10:41:14 +0200
+	id S932451Ab0EFQxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 12:53:51 -0400
 From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>, efault@gmx.de, avi@redhat.com,
-       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf
- on top of TP
-References: <1273053073.1642.235.camel@laptop> <4BE1406C.2000400@kernel.org> <1273059488.1642.245.camel@laptop> <4BE1648B.1080709@kernel.org> <20100505165532.GC14323@elte.hu> <1273083173.1642.250.camel@laptop> <1273083396.1642.251.camel@laptop> <20100505183000.GF6320@nowhere> <20100506062855.GD1172@elte.hu> <4BE26B96.4040007@kernel.org> <20100506082714.GA2036@elte.hu>
-In-Reply-To: <20100506082714.GA2036@elte.hu>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 06 May 2010 08:41:15 +0000 (UTC)
+To: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org,
+       paulmck@linux.vnet.ibm.com
+Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Dimitri Sivanich <sivanich@sgi.com>
+Subject: [PATCH 1/5] cpu_stop: implement stop_cpu[s]()
+Date: Thu,  6 May 2010 18:52:48 +0200
+Message-Id: <1273164772-19149-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1273164772-19149-1-git-send-email-tj@kernel.org>
+References: <1273164772-19149-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 06 May 2010 16:52:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo.
+Implement a simplistic per-cpu maximum priority cpu monopolization
+mechanism.  A non-sleeping callback can be scheduled to run on one or
+multiple cpus with maximum priority monopolozing those cpus.  This is
+primarily to replace and unify RT workqueue usage in stop_machine and
+scheduler migration_thread which currently is serving multiple
+purposes.
 
-On 05/06/2010 10:27 AM, Ingo Molnar wrote:
-> Note that preempt notifiers used to modify scheduling behavior/semantics i'm 
-> really against. Please get that functionality into the scheduler - especially 
-> if it's essentially always-on.
+Four functions are provided - stop_one_cpu(), stop_one_cpu_nowait(),
+stop_cpus() and try_stop_cpus().
 
-Okay.  Well, cmwq's usage of it isn't that hairy.  It's used for two
-things.
+This is to allow clean sharing of resources among stop_cpu and all the
+migration thread users.  One stopper thread per cpu is created which
+is currently named "stopper/CPU".  This will eventually replace the
+migration thread and take on its name.
 
-1. to count the number of currently running workers which I think is
-   fine for such hooks.
+* This facility was originally named cpuhog and lived in separate
+  files but Peter Zijlstra nacked the name and thus got renamed to
+  cpu_stop and moved into stop_machine.c.
 
-2. to wake up another worker.  I don't think this falls in the
-   category of "behavior/semantics" change.  It just does
-   try_to_wake_up() with the only caveat being it's called under the
-   rq lock so requires a different API.  There's nothing which alters
-   the scheduler behavior in any pervasive way.  It just looks at the
-   counter and wakes up another task if the condition is right
-   *before* beginning any of real scheduling work.
+* Better reporting of preemption leak as per Peter's suggestion.
 
-But, anyways, making a dedicated fixed function calls certainly isn't
-a problem and might as well be slightly cheaper as it's always gonna
-be there anyway.  If that's preferred, I'll happily take that path.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Dimitri Sivanich <sivanich@sgi.com>
+---
+ include/linux/stop_machine.h |   39 ++++-
+ kernel/stop_machine.c        |  372 +++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 402 insertions(+), 9 deletions(-)
 
-Thanks.
-
+diff --git a/include/linux/stop_machine.h b/include/linux/stop_machine.h
+index baba3a2..efcbd6c 100644
+--- a/include/linux/stop_machine.h
++++ b/include/linux/stop_machine.h
+@@ -1,15 +1,46 @@
+ #ifndef _LINUX_STOP_MACHINE
+ #define _LINUX_STOP_MACHINE
+-/* "Bogolock": stop the entire machine, disable interrupts.  This is a
+-   very heavy lock, which is equivalent to grabbing every spinlock
+-   (and more).  So the "read" side to such a lock is anything which
+-   disables preeempt. */
++
+ #include <linux/cpu.h>
+ #include <linux/cpumask.h>
++#include <linux/list.h>
+ #include <asm/system.h>
+ 
+ #if defined(CONFIG_STOP_MACHINE) && defined(CONFIG_SMP)
+ 
++/*
++ * stop_cpu[s]() is simplistic per-cpu maximum priority cpu
++ * monopolization mechanism.  The caller can specify a non-sleeping
++ * function to be executed on a single or multiple cpus preempting all
++ * other processes and monopolizing those cpus until it finishes.
++ *
++ * Resources for this mechanism are preallocated when a cpu is brought
++ * up and requests are guaranteed to be served as long as the target
++ * cpus are online.
++ */
++
++typedef int (*cpu_stop_fn_t)(void *arg);
++
++struct cpu_stop_work {
++	struct list_head	list;		/* cpu_stopper->works */
++	cpu_stop_fn_t		fn;
++	void			*arg;
++	struct cpu_stop_done	*done;
++};
++
++int stop_one_cpu(unsigned int cpu, cpu_stop_fn_t fn, void *arg);
++void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
++			 struct cpu_stop_work *work_buf);
++int stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg);
++int try_stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg);
++
++/*
++ * stop_machine "Bogolock": stop the entire machine, disable
++ * interrupts.  This is a very heavy lock, which is equivalent to
++ * grabbing every spinlock (and more).  So the "read" side to such a
++ * lock is anything which disables preeempt.
++ */
++
+ /**
+  * stop_machine: freeze the machine on all CPUs and run this function
+  * @fn: the function to run
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 9bb9fb1..7e3f918 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -1,17 +1,379 @@
+-/* Copyright 2008, 2005 Rusty Russell rusty@rustcorp.com.au IBM Corporation.
+- * GPL v2 and any later version.
++/*
++ * kernel/stop_machine.c
++ *
++ * Copyright (C) 2008, 2005	IBM Corporation.
++ * Copyright (C) 2008, 2005	Rusty Russell rusty@rustcorp.com.au
++ * Copyright (C) 2010		SUSE Linux Products GmbH
++ * Copyright (C) 2010		Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2 and any later version.
+  */
++#include <linux/completion.h>
+ #include <linux/cpu.h>
+-#include <linux/err.h>
++#include <linux/init.h>
+ #include <linux/kthread.h>
+ #include <linux/module.h>
++#include <linux/percpu.h>
+ #include <linux/sched.h>
+ #include <linux/stop_machine.h>
+-#include <linux/syscalls.h>
+ #include <linux/interrupt.h>
++#include <linux/kallsyms.h>
+ 
+ #include <asm/atomic.h>
+-#include <asm/uaccess.h>
++
++/*
++ * Structure to determine completion condition and record errors.  May
++ * be shared by works on different cpus.
++ */
++struct cpu_stop_done {
++	atomic_t		nr_todo;	/* nr left to execute */
++	bool			executed;	/* actually executed? */
++	int			ret;		/* collected return value */
++	struct completion	completion;	/* fired if nr_todo reaches 0 */
++};
++
++/* the actual stopper, one per every possible cpu, enabled on online cpus */
++struct cpu_stopper {
++	spinlock_t		lock;
++	struct list_head	works;		/* list of pending works */
++	struct task_struct	*thread;	/* stopper thread */
++	bool			enabled;	/* is this stopper enabled? */
++};
++
++static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
++
++static void cpu_stop_init_done(struct cpu_stop_done *done, unsigned int nr_todo)
++{
++	memset(done, 0, sizeof(*done));
++	atomic_set(&done->nr_todo, nr_todo);
++	init_completion(&done->completion);
++}
++
++/* signal completion unless @done is NULL */
++static void cpu_stop_signal_done(struct cpu_stop_done *done, bool executed)
++{
++	if (done) {
++		if (executed)
++			done->executed = true;
++		if (atomic_dec_and_test(&done->nr_todo))
++			complete(&done->completion);
++	}
++}
++
++/* queue @work to @stopper.  if offline, @work is completed immediately */
++static void cpu_stop_queue_work(struct cpu_stopper *stopper,
++				struct cpu_stop_work *work)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&stopper->lock, flags);
++
++	if (stopper->enabled) {
++		list_add_tail(&work->list, &stopper->works);
++		wake_up_process(stopper->thread);
++	} else
++		cpu_stop_signal_done(work->done, false);
++
++	spin_unlock_irqrestore(&stopper->lock, flags);
++}
++
++/**
++ * stop_one_cpu - stop a cpu
++ * @cpu: cpu to stop
++ * @fn: function to execute
++ * @arg: argument to @fn
++ *
++ * Execute @fn(@arg) on @cpu.  @fn is run in a process context with
++ * the highest priority preempting any task on the cpu and
++ * monopolizing it.  This function returns after the execution is
++ * complete.
++ *
++ * This function doesn't guarantee @cpu stays online till @fn
++ * completes.  If @cpu goes down in the middle, execution may happen
++ * partially or fully on different cpus.  @fn should either be ready
++ * for that or the caller should ensure that @cpu stays online until
++ * this function completes.
++ *
++ * CONTEXT:
++ * Might sleep.
++ *
++ * RETURNS:
++ * -ENOENT if @fn(@arg) was not executed because @cpu was offline;
++ * otherwise, the return value of @fn.
++ */
++int stop_one_cpu(unsigned int cpu, cpu_stop_fn_t fn, void *arg)
++{
++	struct cpu_stop_done done;
++	struct cpu_stop_work work = { .fn = fn, .arg = arg, .done = &done };
++
++	cpu_stop_init_done(&done, 1);
++	cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu), &work);
++	wait_for_completion(&done.completion);
++	return done.executed ? done.ret : -ENOENT;
++}
++
++/**
++ * stop_one_cpu_nowait - stop a cpu but don't wait for completion
++ * @cpu: cpu to stop
++ * @fn: function to execute
++ * @arg: argument to @fn
++ *
++ * Similar to stop_one_cpu() but doesn't wait for completion.  The
++ * caller is responsible for ensuring @work_buf is currently unused
++ * and will remain untouched until stopper starts executing @fn.
++ *
++ * CONTEXT:
++ * Don't care.
++ */
++void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
++			struct cpu_stop_work *work_buf)
++{
++	*work_buf = (struct cpu_stop_work){ .fn = fn, .arg = arg, };
++	cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu), work_buf);
++}
++
++/* static data for stop_cpus */
++static DEFINE_MUTEX(stop_cpus_mutex);
++static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
++
++int __stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
++{
++	struct cpu_stop_work *work;
++	struct cpu_stop_done done;
++	unsigned int cpu;
++
++	/* initialize works and done */
++	for_each_cpu(cpu, cpumask) {
++		work = &per_cpu(stop_cpus_work, cpu);
++		work->fn = fn;
++		work->arg = arg;
++		work->done = &done;
++	}
++	cpu_stop_init_done(&done, cpumask_weight(cpumask));
++
++	/*
++	 * Disable preemption while queueing to avoid getting
++	 * preempted by a stopper which might wait for other stoppers
++	 * to enter @fn which can lead to deadlock.
++	 */
++	preempt_disable();
++	for_each_cpu(cpu, cpumask)
++		cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu),
++				    &per_cpu(stop_cpus_work, cpu));
++	preempt_enable();
++
++	wait_for_completion(&done.completion);
++	return done.executed ? done.ret : -ENOENT;
++}
++
++/**
++ * stop_cpus - stop multiple cpus
++ * @cpumask: cpus to stop
++ * @fn: function to execute
++ * @arg: argument to @fn
++ *
++ * Execute @fn(@arg) on online cpus in @cpumask.  On each target cpu,
++ * @fn is run in a process context with the highest priority
++ * preempting any task on the cpu and monopolizing it.  This function
++ * returns after all executions are complete.
++ *
++ * This function doesn't guarantee the cpus in @cpumask stay online
++ * till @fn completes.  If some cpus go down in the middle, execution
++ * on the cpu may happen partially or fully on different cpus.  @fn
++ * should either be ready for that or the caller should ensure that
++ * the cpus stay online until this function completes.
++ *
++ * All stop_cpus() calls are serialized making it safe for @fn to wait
++ * for all cpus to start executing it.
++ *
++ * CONTEXT:
++ * Might sleep.
++ *
++ * RETURNS:
++ * -ENOENT if @fn(@arg) was not executed at all because all cpus in
++ * @cpumask were offline; otherwise, 0 if all executions of @fn
++ * returned 0, any non zero return value if any returned non zero.
++ */
++int stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
++{
++	int ret;
++
++	/* static works are used, process one request at a time */
++	mutex_lock(&stop_cpus_mutex);
++	ret = __stop_cpus(cpumask, fn, arg);
++	mutex_unlock(&stop_cpus_mutex);
++	return ret;
++}
++
++/**
++ * try_stop_cpus - try to stop multiple cpus
++ * @cpumask: cpus to stop
++ * @fn: function to execute
++ * @arg: argument to @fn
++ *
++ * Identical to stop_cpus() except that it fails with -EAGAIN if
++ * someone else is already using the facility.
++ *
++ * CONTEXT:
++ * Might sleep.
++ *
++ * RETURNS:
++ * -EAGAIN if someone else is already stopping cpus, -ENOENT if
++ * @fn(@arg) was not executed at all because all cpus in @cpumask were
++ * offline; otherwise, 0 if all executions of @fn returned 0, any non
++ * zero return value if any returned non zero.
++ */
++int try_stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
++{
++	int ret;
++
++	/* static works are used, process one request at a time */
++	if (!mutex_trylock(&stop_cpus_mutex))
++		return -EAGAIN;
++	ret = __stop_cpus(cpumask, fn, arg);
++	mutex_unlock(&stop_cpus_mutex);
++	return ret;
++}
++
++static int cpu_stopper_thread(void *data)
++{
++	struct cpu_stopper *stopper = data;
++	struct cpu_stop_work *work;
++	int ret;
++
++repeat:
++	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
++
++	if (kthread_should_stop()) {
++		__set_current_state(TASK_RUNNING);
++		return 0;
++	}
++
++	work = NULL;
++	spin_lock_irq(&stopper->lock);
++	if (!list_empty(&stopper->works)) {
++		work = list_first_entry(&stopper->works,
++					struct cpu_stop_work, list);
++		list_del_init(&work->list);
++	}
++	spin_unlock_irq(&stopper->lock);
++
++	if (work) {
++		cpu_stop_fn_t fn = work->fn;
++		void *arg = work->arg;
++		struct cpu_stop_done *done = work->done;
++		char ksym_buf[KSYM_NAME_LEN];
++
++		__set_current_state(TASK_RUNNING);
++
++		/* cpu stop callbacks are not allowed to sleep */
++		preempt_disable();
++
++		ret = fn(arg);
++		if (ret)
++			done->ret = ret;
++
++		/* restore preemption and check it's still balanced */
++		preempt_enable();
++		WARN_ONCE(preempt_count(),
++			  "cpu_stop: %s(%p) leaked preempt count\n",
++			  kallsyms_lookup((unsigned long)fn, NULL, NULL, NULL,
++					  ksym_buf), arg);
++
++		cpu_stop_signal_done(done, true);
++	} else
++		schedule();
++
++	goto repeat;
++}
++
++/* manage stopper for a cpu, mostly lifted from sched migration thread mgmt */
++static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
++					   unsigned long action, void *hcpu)
++{
++	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
++	unsigned int cpu = (unsigned long)hcpu;
++	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
++	struct cpu_stop_work *work;
++	struct task_struct *p;
++
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_UP_PREPARE:
++		BUG_ON(stopper->thread || stopper->enabled ||
++		       !list_empty(&stopper->works));
++		p = kthread_create(cpu_stopper_thread, stopper, "stopper/%d",
++				   cpu);
++		if (IS_ERR(p))
++			return NOTIFY_BAD;
++		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
++		get_task_struct(p);
++		stopper->thread = p;
++		break;
++
++	case CPU_ONLINE:
++		kthread_bind(stopper->thread, cpu);
++		/* strictly unnecessary, as first user will wake it */
++		wake_up_process(stopper->thread);
++		/* mark enabled */
++		spin_lock_irq(&stopper->lock);
++		stopper->enabled = true;
++		spin_unlock_irq(&stopper->lock);
++		break;
++
++#ifdef CONFIG_HOTPLUG_CPU
++	case CPU_UP_CANCELED:
++	case CPU_DEAD:
++		/* kill the stopper */
++		kthread_stop(stopper->thread);
++		/* drain remaining works */
++		spin_lock_irq(&stopper->lock);
++		list_for_each_entry(work, &stopper->works, list)
++			cpu_stop_signal_done(work->done, false);
++		stopper->enabled = false;
++		spin_unlock_irq(&stopper->lock);
++		/* release the stopper */
++		put_task_struct(stopper->thread);
++		stopper->thread = NULL;
++		break;
++#endif
++	}
++
++	return NOTIFY_OK;
++}
++
++/*
++ * Give it a higher priority so that cpu stopper is available to other
++ * cpu notifiers.  It currently shares the same priority as sched
++ * migration_notifier.
++ */
++static struct notifier_block __cpuinitdata cpu_stop_cpu_notifier = {
++	.notifier_call	= cpu_stop_cpu_callback,
++	.priority	= 10,
++};
++
++static int __init cpu_stop_init(void)
++{
++	void *bcpu = (void *)(long)smp_processor_id();
++	unsigned int cpu;
++	int err;
++
++	for_each_possible_cpu(cpu) {
++		struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
++
++		spin_lock_init(&stopper->lock);
++		INIT_LIST_HEAD(&stopper->works);
++	}
++
++	/* start one for the boot cpu */
++	err = cpu_stop_cpu_callback(&cpu_stop_cpu_notifier, CPU_UP_PREPARE,
++				    bcpu);
++	BUG_ON(err == NOTIFY_BAD);
++	cpu_stop_cpu_callback(&cpu_stop_cpu_notifier, CPU_ONLINE, bcpu);
++	register_cpu_notifier(&cpu_stop_cpu_notifier);
++
++	return 0;
++}
++early_initcall(cpu_stop_init);
+ 
+ /* This controls the threads on each CPU. */
+ enum stopmachine_state {
 -- 
-tejun
+1.6.4.2
+
