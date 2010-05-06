@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab0EFSCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 14:02:10 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:38258 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504Ab0EFSCA (ORCPT
+	id S1753431Ab0EFSg1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 14:36:27 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60822 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab0EFSgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 14:02:00 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Thu, 06 May 2010 23:31:53 +0530
-Message-Id: <20100506180153.28877.34636.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20100506180139.28877.81699.sendpatchset@localhost6.localdomain6>
-References: <20100506180139.28877.81699.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v3 1/10] X86 instruction analysis: Move Macro W to insn.h
+	Thu, 6 May 2010 14:36:25 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 69.181.193.102
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19H81LY2zUkk2MqIFgb8DTH
+Date: Thu, 6 May 2010 11:36:05 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+Message-ID: <20100506183605.GF30928@atomide.com>
+References: <20100505202826.GB7450@linux.intel.com>
+ <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
+ <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
+ <20100505234755.GI29604@atomide.com>
+ <20100506134015.GA23426@srcf.ucam.org>
+ <20100506170151.GA30928@atomide.com>
+ <20100506170956.GA28104@srcf.ucam.org>
+ <20100506171453.GC30928@atomide.com>
+ <1273167311.20494.13.camel@c-dwalke-linux.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273167311.20494.13.camel@c-dwalke-linux.qualcomm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-move_W_to_insn.patch
+* Daniel Walker <dwalker@fifo99.com> [100506 10:30]:
+> On Thu, 2010-05-06 at 10:14 -0700, Tony Lindgren wrote:
+> > * Matthew Garrett <mjg@redhat.com> [100506 10:05]:
+> > > On Thu, May 06, 2010 at 10:01:51AM -0700, Tony Lindgren wrote:
+> > > 
+> > > > Or are you suspending constantly, tens of times per minute even if
+> > > > there's no user activity?
+> > > 
+> > > In this case you'd be repeatedly trying to suspend until the modem 
+> > > driver stopped blocking it. It's pretty much a waste.
+> > 
+> > But then the userspace knows you're getting data from the modem, and
+> > it can kick some inactivity timer that determines when to try to
+> > suspend next.
+> 
+> If the idle thread was doing the suspending then the inactivity timer by
+> it's self could block suspend. As long as the idle thread was setup to
+> check for timers. I'm sure that _isn't_ the point your trying to make.
+> It just makes gobs more sense to me that the idle thread does the
+> suspending .. Your idle, so depending on how long your idle then you
+> suspend.
 
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+The alternative logic I'm suggesting is get the GUI into idle mode as
+soon as possible, then limp along with off-while-idle or
+retention-while-idle until some timer expires, then suspend the whole
+device.
 
-Move Macro W to asm/insn.h
-
-Macro W used to know if the instructions are valid for
-user-space/kernel space.  This macro is used by kprobes and
-user_bkpt. (i.e user space breakpoint assistance layer.) So moving it
-to a common header file asm/insn.h.
-
-TODO: replace macro W with bits in inat table. (suggested by Masami Hiramatsu)
-
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
-
- arch/x86/include/asm/insn.h |    7 +++++++
- arch/x86/kernel/kprobes.c   |    7 -------
- 2 files changed, 7 insertions(+), 7 deletions(-)
-
-
-diff --git a/arch/x86/include/asm/insn.h b/arch/x86/include/asm/insn.h
-index 96c2e0a..8586820 100644
---- a/arch/x86/include/asm/insn.h
-+++ b/arch/x86/include/asm/insn.h
-@@ -23,6 +23,13 @@
- /* insn_attr_t is defined in inat.h */
- #include <asm/inat.h>
- 
-+#define W(row, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, ba, bb, bc, bd, be, bf)\
-+	(((b0##UL << 0x0)|(b1##UL << 0x1)|(b2##UL << 0x2)|(b3##UL << 0x3) |   \
-+	  (b4##UL << 0x4)|(b5##UL << 0x5)|(b6##UL << 0x6)|(b7##UL << 0x7) |   \
-+	  (b8##UL << 0x8)|(b9##UL << 0x9)|(ba##UL << 0xa)|(bb##UL << 0xb) |   \
-+	  (bc##UL << 0xc)|(bd##UL << 0xd)|(be##UL << 0xe)|(bf##UL << 0xf))    \
-+	 << (row % 32))
-+
- struct insn_field {
- 	union {
- 		insn_value_t value;
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index b43bbae..4379b40 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -66,12 +66,6 @@ DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
- 
- #define stack_addr(regs) ((unsigned long *)kernel_stack_pointer(regs))
- 
--#define W(row, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, ba, bb, bc, bd, be, bf)\
--	(((b0##UL << 0x0)|(b1##UL << 0x1)|(b2##UL << 0x2)|(b3##UL << 0x3) |   \
--	  (b4##UL << 0x4)|(b5##UL << 0x5)|(b6##UL << 0x6)|(b7##UL << 0x7) |   \
--	  (b8##UL << 0x8)|(b9##UL << 0x9)|(ba##UL << 0xa)|(bb##UL << 0xb) |   \
--	  (bc##UL << 0xc)|(bd##UL << 0xd)|(be##UL << 0xe)|(bf##UL << 0xf))    \
--	 << (row % 32))
- 	/*
- 	 * Undefined/reserved opcodes, conditional jump, Opcode Extension
- 	 * Groups, and some special opcodes can not boost.
-@@ -98,7 +92,6 @@ static const u32 twobyte_is_boostable[256 / 32] = {
- 	/*      -----------------------------------------------         */
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f          */
- };
--#undef W
- 
- struct kretprobe_blackpoint kretprobe_blacklist[] = {
- 	{"__switch_to", }, /* This function switches only current task, but
+Tony
