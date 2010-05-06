@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741Ab0EFIhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 04:37:12 -0400
-Received: from de01.mail.all-tld.net ([195.140.232.8]:64128 "EHLO
-	de01.mail.all-tld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab0EFIhJ convert rfc822-to-8bit (ORCPT
+	id S1755439Ab0EFH3Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 03:29:25 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57715
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751296Ab0EFH3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 04:37:09 -0400
-Date: Thu, 06 May 2010 10:36:58 +0200
-From: Anders Larsen <al@alarsen.net>
-Subject: Re: [at91] Save power by disabling the processor clock when CPU is
- idle
-To: =?iso-8859-1?q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Andrew Victor <avictor.za@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20100505202529.GB25037@pengutronix.de> (from
-	u.kleine-koenig@pengutronix.de on Wed May  5 22:25:29 2010)
-X-Mailer: Balsa 2.3.14
-Message-Id: <1273135018l.10732l.0l@i-dmzi_al.realan.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-References: <20100505202529.GB25037@pengutronix.de>
-X-ALL-TLD-GmbH-Information: AEV Virus and Spam Secure Mail System
-X-ALL-TLD-GmbH-VirusScanner: Found to be clean
-X-ALL-TLD-GmbH-SpamCheck: 
-X-MailScanner-From: al@alarsen.net
+	Thu, 6 May 2010 03:29:23 -0400
+Date: Thu, 06 May 2010 00:29:30 -0700 (PDT)
+Message-Id: <20100506.002930.91336110.davem@davemloft.net>
+To: mst@redhat.com
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] amended: first round of vhost-net enhancements for
+ net-next
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100504112100.GA22172@redhat.com>
+References: <20100504112100.GA22172@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Tue, 4 May 2010 14:21:01 +0300
 
-On 2010-05-05 22:25:29, Uwe Kleine-König wrote:
-> There is a kernel parameter (IIRC "nohlt") that should take care of
-> this?!
+> This is an amended pull request: I have rebased the tree to the
+> correct patches. This has been through basic tests and seems
+> to work fine here.
+> 
+> The following tree includes a couple of enhancements that help vhost-net.
+> Please pull them for net-next. Another set of patches is under
+> debugging/testing and I hope to get them ready in time for 2.6.35,
+> so there may be another pull request later.
 
-I hadn't noticed that one (it's operating several layers above the piece
-of code I modified).
-
-So it seems we could do way with the #else clause completely (requiring
-the user to set 'nohlt' when debugging with JTAG)?
-
-Cheers
-Anders
--- 
-happy 'ptxdist' user
+Pulled, thanks Michael.
