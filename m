@@ -1,114 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab0EFOwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 10:52:42 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36329 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753700Ab0EFOwj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 10:52:39 -0400
-Subject: Re: kbuild: fixing the select problem
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-arch@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-       Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Vegard Nossum <vegard.nossum@gmail.com>
-In-Reply-To: <4BE2D10D.4070706@suse.cz>
-References: <1273096160.23208.35.camel@mulgrave.site>
-	 <4BE2D10D.4070706@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 May 2010 09:52:34 -0500
-Message-ID: <1273157554.23208.69.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1757387Ab0EFJym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 05:54:42 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:55141 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751818Ab0EFJyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 05:54:41 -0400
+Date: Thu, 6 May 2010 10:54:22 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+	the wrong VMA information
+Message-ID: <20100506095422.GA20979@csn.ul.ie>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie> <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org> <20100505145620.GP20979@csn.ul.ie> <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org> <20100505175311.GU20979@csn.ul.ie> <alpine.LFD.2.00.1005051058380.27218@i5.linux-foundation.org> <20100506002255.GY20979@csn.ul.ie> <p2s28c262361005060247m2983625clff01aeaa1668402f@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <p2s28c262361005060247m2983625clff01aeaa1668402f@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-06 at 16:24 +0200, Michal Marek wrote:
-> On 5.5.2010 23:49, James Bottomley wrote:
-> > [Sam: I know you don't maintain kbuild anymore, but since you have the
-> > most experience, if you could find time to comment, I'd be grateful]
-> > 
-> > The select problem is that the kbuild select directive will turn a
-> > symbol on without reference to its dependencies.  This, in turn, means
-> > that either selected symbols must select their dependencies, or that
-> > people using select have to be aware of the selected symbol's dependency
-> > and build those dependencies into their symbol (leading to duplication
-> > and the possibility of getting the dependencies out of sync).  We use
-> > select for the scsi transport classes, so we run into this problem in
-> > SCSI quite a lot.
-> > 
-> > I think the correct fix is to make a symbol that selects another symbol
-> > automatically inherit all of the selected symbol's dependencies.
-> > 
-> > There seems to be a fairly easy way to do this in kbuild.  Right at the
-> > moment, select is handled as additional symbol values as the last point
-> > in the symbol tree evaluation process.  Instead, what I propose doing is
-> > for every select symbol, we add an extra unconditional default for the
-> > selected symbol of the selecting symbol's current value (this breaks a
-> > possible dependency cycle) and add to the dependencies of the selecting
-> > symbol, the symbol it's currently selecting.
+On Thu, May 06, 2010 at 06:47:12PM +0900, Minchan Kim wrote:
+> On Thu, May 6, 2010 at 9:22 AM, Mel Gorman <mel@csn.ul.ie> wrote:
+> > On Wed, May 05, 2010 at 11:02:25AM -0700, Linus Torvalds wrote:
+> >>
+> >>
+> >> On Wed, 5 May 2010, Mel Gorman wrote:
+> >> >
+> >> > If the same_vma list is properly ordered then maybe something like the
+> >> > following is allowed?
+> >>
+> >> Heh. This is the same logic I just sent out. However:
+> >>
+> >> > +   anon_vma = page_rmapping(page);
+> >> > +   if (!anon_vma)
+> >> > +           return NULL;
+> >> > +
+> >> > +   spin_lock(&anon_vma->lock);
+> >>
+> >> RCU should guarantee that this spin_lock() is valid, but:
+> >>
+> >> > +   /*
+> >> > +    * Get the oldest anon_vma on the list by depending on the ordering
+> >> > +    * of the same_vma list setup by __page_set_anon_rmap
+> >> > +    */
+> >> > +   avc = list_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
+> >>
+> >> We're not guaranteed that the 'anon_vma->head' list is non-empty.
+> >>
+> >> Somebody could have freed the list and the anon_vma and we have a stale
+> >> 'page->anon_vma' (that has just not been _released_ yet).
+> >>
+> >> And shouldn't that be 'list_first_entry'? Or &anon_vma->head.next?
+> >>
+> >> How did that line actually work for you? Or was it just a "it boots", but
+> >> no actual testing of the rmap walk?
+> >>
+> >
+> > This is what I just started testing on a 4-core machine. Lockdep didn't
+> > complain but there are two potential sources of badness in anon_vma_lock_root
+> > marked with XXX. The second is the most important because I can't see how the
+> > local and root anon_vma locks can be safely swapped - i.e. release local and
+> > get the root without the root disappearing. I haven't considered the other
+> > possibilities yet such as always locking the root anon_vma. Going to
+> > sleep on it.
+> >
+> > Any comments?
 > 
-> Nice trick :-).
+> <snip>
+> > +/* Given an anon_vma, find the root of the chain, lock it and return the root */
+> > +struct anon_vma *anon_vma_lock_root(struct anon_vma *anon_vma)
+> > +{
+> > +       struct anon_vma *root_anon_vma;
+> > +       struct anon_vma_chain *avc, *root_avc;
+> > +       struct vm_area_struct *vma;
+> > +
+> > +       /* Lock the same_anon_vma list and make sure we are on a chain */
+> > +       spin_lock(&anon_vma->lock);
+> > +       if (list_empty(&anon_vma->head)) {
+> > +               spin_unlock(&anon_vma->lock);
+> > +               return NULL;
+> > +       }
+> > +
+> > +       /*
+> > +        * Get the root anon_vma on the list by depending on the ordering
+> > +        * of the same_vma list setup by __page_set_anon_rmap. Basically
+> > +        * we are doing
+> > +        *
+> > +        * local anon_vma -> local vma -> deepest vma -> anon_vma
+> > +        */
+> > +       avc = list_first_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
 > 
+> Dumb question.
 > 
-> > There's one wrinkle to all of this in that the current parser for
-> > default values stops when it finds the first valid (i.e. whose if clause
-> > evaluates to true) default.  To make the above scheme work, I need to
-> > modify the default parser so it takes the highest tristate of all the
-> > valid defaults (and bumps m to y for bool).
+> I can't understand why we should use list_first_entry.
 > 
-> We should check if some Kconfig file doesn't rely on this "first hit"
-> behavior and fix it to explicitly list the condition for a given
-> default.
-
-I actually asked kconfig to generate the list of symbols (in my config)
-with multiple defaults.  It's pretty small and the default y seems to be
-the thing with multiple if clauses, so they act like or statements.
-
-The list is
-
-USB_ARCH_HAS_HCD has 4 defaults
-DEFCONFIG_LIST has 5 defaults
-MAC80211_RC_DEFAULT has 2 defaults
-X86_L1_CACHE_SHIFT has 2 defaults
-SPLIT_PTLOCK_CPUS has 2 defaults
-X86_MINIMUM_CPU_FAMILY has 3 defaults
-DEFAULT_TCP_CONG has 2 defaults
-DEFCONFIG_LIST has 5 defaults
-USB_ARCH_HAS_HCD has 4 defaults
-X86_L1_CACHE_SHIFT has 2 defaults
-X86_MINIMUM_CPU_FAMILY has 3 defaults
-SPLIT_PTLOCK_CPUS has 2 defaults
-DEFAULT_TCP_CONG has 2 defaults
-MAC80211_RC_DEFAULT has 2 defaults
-
->  Another option would be to add
-> default SYM1 || SYM2
-> to a symbol selected by SYM1 and SYM2.
-
-Well, that's effectively what the proposal does (it or's the states).
-
-> > Does this look acceptable to people?  I think it should give the desired
-> > result and has the added benefit that we can then strip the extra select
-> > overlay out of the kbuild system (making the parser slightly simpler).
-> > 
-> > If this looks like a good idea to people, I think I can code up a quick
-> > patch.
+> I looked over the code.
+> anon_vma_chain_link uses list_add_tail so I think that's right.
+> But anon_vma_prepare uses list_add. So it's not consistent.
+> How do we make sure list_first_entry returns deepest vma?
 > 
-> Other than the above, right now I don't see any issues with such approach.
-> 
-> On a related note, I see Vegard's GSoC project to use a sat solver for
-> kconfig got accepted [1]. Vegard, how is the project progressing?
-> 
-> [1]
-> http://socghop.appspot.com/gsoc/student_project/show/google/gsoc2010/psu_home/t127230762803
-> 
-> Michal
 
-James
+list_first_entry is not getting the root (what you called deepest but lets
+pick a name and stick with it or this will be worse than it already is). That
+list_first entry is what gets us from
 
+local anon_vma -> avc for the local anon_vma -> local vma
 
+It's the ordering of the same_vma list hanging off the local_vma that is
+important according to this comment in __page_set_anon_rmap
+
+                /*
+                 * The page may be shared between multiple processes.
+                 * We must use the _oldest_ possible anon_vma for the
+                 * page mapping!  That anon_vma is guaranteed to be
+                 * present in all processes that could share this page.
+                 *
+                 * So take the last AVC chain entry in the vma, which is the
+                 * deepest ancestor, and use the anon_vma from that.
+                 */
+                avc = list_entry(vma->anon_vma_chain.prev, struct anon_vma_chain, same_vma);
+                anon_vma = avc->anon_vma;
+        }
+
+> Sorry if I am missing.
+> 
+
+Not at all. The more people that look at this the better.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
