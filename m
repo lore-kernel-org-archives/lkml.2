@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab0EFNYr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 09:24:47 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:62920 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab0EFNYp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 09:24:45 -0400
+	id S1757052Ab0EFLDE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 07:03:04 -0400
+Received: from mx1.emlix.com ([193.175.82.87]:40124 "EHLO mx1.emlix.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755938Ab0EFLC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 07:02:59 -0400
+From: "Oskar Schirmer" <os@emlix.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Mike Frysinger <vapier@gentoo.org>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Oskar Schirmer <os@emlix.com>,
+       =?utf-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>
+Subject: [PATCH] ad7877: keep dma rx buffers in seperate cache lines
+Date: Thu,  6 May 2010 12:37:45 +0200
+Message-Id: <1273142265-11929-2-git-send-email-os@emlix.com>
+In-Reply-To: <1273142265-11929-1-git-send-email-os@emlix.com>
+References: <1273142265-11929-1-git-send-email-os@emlix.com>
 MIME-Version: 1.0
-In-Reply-To: <p2g9c9fda241005051824k54e70136v8324d135b44c71b5@mail.gmail.com>
-References: <k2ncecb6d8f1004191627w3cd36450xf797f746460abb09@mail.gmail.com> 
-	<20100420155122.6f2c26eb.akpm@linux-foundation.org> <20100420230719.GB1432@n2100.arm.linux.org.uk> 
-	<4BE14335.10702@ru.mvista.com> <p2g9c9fda241005051824k54e70136v8324d135b44c71b5@mail.gmail.com>
-From: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Date: Thu, 6 May 2010 10:24:23 -0300
-Message-ID: <n2ycecb6d8f1005060624y8ada0c03yc4fab915b3d13a0a@mail.gmail.com>
-Subject: Re: Suspicious compilation warning
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Yinghai Lu <yinghai@kernel.org>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Organization: emlix gmbh, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kyungmin,
+With dma based spi transmission, data corruption
+is observed occasionally. With dma buffers located
+right next to msg and xfer fields, cache lines
+correctly flushed in preparation for dma usage
+may be polluted again when writing to fields
+in the same cache line.
 
-On Wed, May 5, 2010 at 22:24, Kyungmin Park <kmpark@infradead.org> wrote:
->
-> Hi,
->
-> It tested with my board and working.
-> Just curious. If NR_SECTION_ROOTS is zero and uninitialized then
-> what's problem? Since we boot and working without patch.
+Make sure cache fields used with dma do not
+share cache lines with fields changed during
+dma handling. As both fields are part of a
+struct that is allocated via kzalloc, thus
+cache aligned, moving the fields to the 1st
+position and insert padding for alignment
+does the job.
 
-The original compiler error message was:
+Signed-off-by: Oskar Schirmer <os@emlix.com>
+Signed-off-by: Daniel Glöckner <dg@emlix.com>
+Signed-off-by: Oliver Schneidewind <osw@emlix.com>
+Signed-off-by: Johannes Weiner <jw@emlix.com>
+---
+ drivers/input/touchscreen/ad7877.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-mm/sparse.c: In function '__section_nr':
-mm/sparse.c:135: warning: 'root' is used uninitialized in this function
+diff --git a/drivers/input/touchscreen/ad7877.c b/drivers/input/touchscreen/ad7877.c
+index 92acd85..9719368 100644
+--- a/drivers/input/touchscreen/ad7877.c
++++ b/drivers/input/touchscreen/ad7877.c
+@@ -153,15 +153,21 @@ enum {
+  */
+ 
+ struct ser_req {
++	u16			sample;
++	char			__padalign[L1_CACHE_BYTES - sizeof(u16)];
++
+ 	u16			reset;
+ 	u16			ref_on;
+ 	u16			command;
+-	u16			sample;
+ 	struct spi_message	msg;
+ 	struct spi_transfer	xfer[6];
+ };
+ 
+ struct ad7877 {
++	u16			conversion_data[AD7877_NR_SENSE];
++	char			__padalign[L1_CACHE_BYTES
++					- AD7877_NR_SENSE * sizeof(u16)];
++
+ 	struct input_dev	*input;
+ 	char			phys[32];
+ 
+@@ -182,8 +188,6 @@ struct ad7877 {
+ 	u8			averaging;
+ 	u8			pen_down_acc_interval;
+ 
+-	u16			conversion_data[AD7877_NR_SENSE];
+-
+ 	struct spi_transfer	xfer[AD7877_NR_SENSE + 2];
+ 	struct spi_message	msg;
+ 
+-- 
+1.5.3.7
 
-Leaving a variable to be used uninitialized is the issue here.
-
-> Thank you,
-> Kyungmin Park
-
-Regards,
-Marcelo.
