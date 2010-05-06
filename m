@@ -1,15 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976Ab0EFRKa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:10:30 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38477 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab0EFRK3 (ORCPT
+	id S1754616Ab0EFREh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 13:04:37 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60028 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab0EFREg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:10:29 -0400
-Date: Thu, 6 May 2010 18:09:56 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Tony Lindgren <tony@atomide.com>
+	Thu, 6 May 2010 13:04:36 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 69.181.193.102
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX191r1JsitM8b6qj6fiIW7Oz
+Date: Thu, 6 May 2010 10:04:21 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
 Cc: Brian Swetland <swetland@google.com>,
        Alan Stern <stern@rowland.harvard.edu>,
        mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
@@ -21,27 +25,118 @@ Cc: Brian Swetland <swetland@google.com>,
        Wu Fengguang <fengguang.wu@intel.com>,
        Andrew Morton <akpm@linux-foundation.org>
 Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100506170956.GA28104@srcf.ucam.org>
-References: <20100505202826.GB7450@linux.intel.com> <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org> <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com> <20100505234755.GI29604@atomide.com> <20100506134015.GA23426@srcf.ucam.org> <20100506170151.GA30928@atomide.com>
+Message-ID: <20100506170420.GB30928@atomide.com>
+References: <20100505202826.GB7450@linux.intel.com>
+ <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
+ <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
+ <20100505234755.GI29604@atomide.com>
+ <l2ra55d774e1005051656wbf4f3d7cr8cc9de0478e509f1@mail.gmail.com>
+ <20100506000552.GJ29604@atomide.com>
+ <g2yd6200be21005052116n5dd8708fk33eaf8944379bfc2@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100506170151.GA30928@atomide.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <g2yd6200be21005052116n5dd8708fk33eaf8944379bfc2@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 10:01:51AM -0700, Tony Lindgren wrote:
+* Arve Hjønnevåg <arve@android.com> [100505 21:11]:
+> On Wed, May 5, 2010 at 5:05 PM, Tony Lindgren <tony@atomide.com> wrote:
+> > * Brian Swetland <swetland@google.com> [100505 16:51]:
+> >> On Wed, May 5, 2010 at 4:47 PM, Tony Lindgren <tony@atomide.com> wrote:
+> >> > * Brian Swetland <swetland@google.com> [100505 14:34]:
+> >> >> On Wed, May 5, 2010 at 2:12 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> >> >> >>
+> >> >> >> Oh, like tell the modem that user mode has handled the ring event and
+> >> >> >> its ok to un-block?
+> >> >> >
+> >> >> > No, that's not how it works.  It would go like this:
+> >> >> >
+> >> >> >        The modem IRQ handler queues its event to the input subsystem.
+> >> >> >        As it does so the input subsystem enables a suspend blocker,
+> >> >> >        causing the system to stay awake after the IRQ is done.
+> >> >
+> >> > How about instead the modem driver fails to suspend until it's done?
+> >> >
+> >> > Each driver could have a suspend_policy sysfs entry with options such
+> >> > as [ forced | safe ]. The default would be forced. Forced would
+> >> > be the current behaviour, while safe would refuse suspend until the
+> >> > driver is done processing.
+> >> >
+> >> >> >        The user program enables its own suspend blocker before reading
+> >> >> >        the input queue.  When the queue is empty, the input subsystem
+> >> >> >        releases its suspend blocker.
+> >> >
+> >> > And also the input layer could refuse to suspend until it's done.
+> >> >
+> >> >> >        When the user program finishes processing the event, it
+> >> >> >        releases its suspend blocker.  Now the system can go back to
+> >> >> >        sleep.
+> >> >
+> >> > And here the user space just tries to suspend again when it's done?
+> >> > It's not like you're trying to suspend all the time, so it should be
+> >> > OK to retry a few times.
+> >>
+> >> We actually are trying to suspend all the time -- that's our basic
+> >> model -- suspend whenever we can when something doesn't prevent it.
+> >
+> > Maybe that state could be kept in some userspace suspend policy manager?
+> >
+> >> >> > At no point does the user program have to communicate anything to the
+> >> >> > modem driver, and at no point does it have to do anything out of the
+> >> >> > ordinary except to enable and disable a suspend blocker.
+> >> >>
+> >> >> Exactly -- and you can use the same style of overlapping suspend
+> >> >> blockers with other drivers than input, if the input interface is not
+> >> >> suitable for the particular interaction.
+> >> >
+> >> > Would the suspend blockers still be needed somewhere in the example
+> >> > above?
+> >>
+> >> How often would we retry suspending?
+> >
+> > Well based on some timer, the same way the screen blanks? Or five
+> > seconds of no audio play? So if the suspend fails, then reset whatever
+> > userspace suspend policy timers.
+> >
+> >> If we fail to suspend, don't we have to resume all the drivers that
+> >> suspended before the one that failed?  (Maybe I'm mistaken here)
+> >
+> > Sure, but I guess that should be a rare event that only happens when
+> > you try to suspend and something interrupts the suspend.
+> >
+> 
+> This is not a rare event. For example, the matrix keypad driver blocks
+> suspend when a key is down so it can scan the matrix.
 
-> Or are you suspending constantly, tens of times per minute even if
-> there's no user activity?
+Sure, but how many times per day are you suspending?
+ 
+> >> With the suspend block model we know the moment we're capable of
+> >> suspending and then can suspend at that moment.  Continually trying to
+> >> suspend seems like it'd be inefficient power-wise (we're going to be
+> >> doing a lot more work as we try to suspend over and over, or we're
+> >> going to retry after a timeout and spend extra time not suspended).
+> >>
+> >> We can often spend minutes (possibly many) at a time preventing
+> >> suspend when the system is doing work that would be interrupted by a
+> >> full suspend.
+> >
+> > Maybe you a userspace suspend policy manager would do the trick if
+> > it knows when the screen is blanked and no audio has been played for
+> > five seconds etc?
+> >
+> 
+> If user space has to initiate every suspend attempt, then you are
+> forcing it to poll whenever a driver needs to block suspend.
 
-In this case you'd be repeatedly trying to suspend until the modem 
-driver stopped blocking it. It's pretty much a waste.
+Hmm I don't follow you. If the userspace policy daemon timer times
+out, the device suspends. If the device does not suspend because of
+a blocking driver, then the timers get reset and you try again based
+on some event such as when the screen blanks.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Regards,
+
+Tony
