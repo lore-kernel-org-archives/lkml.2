@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab0EFWfW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 18:35:22 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:39981 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab0EFWfV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 18:35:21 -0400
-Date: Thu, 6 May 2010 15:34:57 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Oren Laadan <orenl@cs.columbia.edu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Serge Hallyn <serue@us.ibm.com>, Pavel Emelyanov <xemul@openvz.org>,
-       Cedric Le Goater <legoater@free.fr>, Paul Menage <menage@google.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH v21 015/100] cgroup freezer: Update stale locking
- comments
-Message-ID: <20100506223457.GN31830@count0.beaverton.ibm.com>
-References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
- <1272723382-19470-16-git-send-email-orenl@cs.columbia.edu>
- <201005062140.19821.rjw@sisk.pl>
- <20100506203117.GM31830@count0.beaverton.ibm.com>
+	id S1753877Ab0EFWzW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 18:55:22 -0400
+Received: from kroah.org ([198.145.64.141]:43030 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751875Ab0EFWzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 18:55:21 -0400
+Date: Thu, 6 May 2010 15:44:29 -0700
+From: Greg KH <greg@kroah.com>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: Greg KH <gregkh@suse.de>,
+       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, trenn@suse.de,
+       hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: Re: [2.6.31.13] Build failure at arch/x86/kernel/apic/io_apic.c
+Message-ID: <20100506224429.GC7600@kroah.com>
+References: <201004120230.o3C2UhfQ050532@www262.sakura.ne.jp>
+ <20100412024446.GA28141@suse.de>
+ <201004120410.o3C4Axwe066941@www262.sakura.ne.jp>
+ <20100501180715.GA7745@suse.de>
+ <4BDF04D6.7040003@oracle.com>
+ <20100503174422.GC11676@suse.de>
+ <4BDF0CF1.5070006@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100506203117.GM31830@count0.beaverton.ibm.com>
+In-Reply-To: <4BDF0CF1.5070006@oracle.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 01:31:17PM -0700, Matt Helsley wrote:
-> On Thu, May 06, 2010 at 09:40:19PM +0200, Rafael J. Wysocki wrote:
-> > On Saturday 01 May 2010, Oren Laadan wrote:
-> > > From: Matt Helsley <matthltc@us.ibm.com>
-> > > 
-> > > Update stale comments regarding locking order and add a little more detail
-> > > so it's easier to follow the locking between the cgroup freezer and the
-> > > power management freezer code.
+On Mon, May 03, 2010 at 10:50:41AM -0700, Yinghai wrote:
+> On 05/03/2010 10:44 AM, Greg KH wrote:
+> > On Mon, May 03, 2010 at 10:16:06AM -0700, Yinghai wrote:
+> >> On 05/01/2010 11:07 AM, Greg KH wrote:
+> >>> On Mon, Apr 12, 2010 at 01:10:59PM +0900, Tetsuo Handa wrote:
+> >>>> Commit d539e5576605d048e6aeb21cbe3a8e71dc5eea81 "x86: Fix SCI on IOAPIC != 0"
+> >>>> introduced "void setup_IO_APIC_irq_extra(u32 gsi)" which calls
+> >>>> mp_find_ioapic() and mp_find_ioapic_pin().
+> >>>>
+> >>>> This commit does not compile if CONFIG_X86_IO_APIC=y and CONFIG_ACPI=n .
+> >>>
+> >>> Why would you want to build without ACPI on any modern system?  Anyway,
+> >>> have a fix for this?
+> >>>
+> >> maybe just put #ifdef CONFIG_ACPI around the callee etc?
 > > 
-> > I guess these three patches are for me.
+> > Ick.  How was it solved upstream?
 > > 
-> > Do you want me to handle them?
-> > 
-> > Rafael
 > 
-> Hi Rafael,
+> those two functions are moved to arch/x86/kernel/apic/io_apic.c
 > 
-> 	I think you can take 15 as it's an update to the comments.
-> 
-> 16 and 17 are specific to checkpoint/restart. There are no other in-kernel
-> uses, that we've identified, for them. So I was under the impression that it's
-> inappropriate to add them without also adding the checkpoint/restart patches
-> that use them.
+> maybe you can put that patch to 2.6.31.xx?
 
-Of course, assuming I'm wrong about the dependency on checkpoint/restart, I
-have no objection to your taking them.
+In looking at it further, that patch is just too big for .31 at this
+point in time, sorry.  Just select ACPI as a config option, and you
+should be fine.
 
-Thanks again!
+Actually, use .32 or .33, I wouldn't recommend using .31 anymore anyway.
 
-Cheers,
-	-Matt Helsley
+thanks,
+
+greg k-h
