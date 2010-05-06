@@ -1,177 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab0EFW6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 18:58:21 -0400
-Received: from p01c11o149.mxlogic.net ([208.65.144.72]:33288 "EHLO
-	p01c11o149.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639Ab0EFW6T convert rfc822-to-8bit (ORCPT
+	id S1754320Ab0EFXAY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 19:00:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55617 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753957Ab0EFXAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 18:58:19 -0400
-X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 May 2010 18:58:19 EDT
-X-MXL-Hash: 4be3498b704fbb3c-75f2bd4af5e9571610f8994577a829bdb0ea9550
-X-MXL-Hash: 4be347b762de229b-9742cfbb519f9e03e73e1694f5fa50e4b346c7b1
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
+	Thu, 6 May 2010 19:00:23 -0400
+Date: Thu, 6 May 2010 15:59:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kyle Hubert <khubert@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: race condition between udevd and modprobe (mtrr_add)
+Message-Id: <20100506155951.af7b3ded.akpm@linux-foundation.org>
+In-Reply-To: <p2n9a158e2e1005032230u2cb21e6do40ae0b58e746b75f@mail.gmail.com>
+References: <p2n9a158e2e1005032230u2cb21e6do40ae0b58e746b75f@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: [PATCH 2.6.34-rc6] net: Improve ks8851 snl transmit performance
-Date: Thu, 6 May 2010 15:50:27 -0700
-Message-ID: <14385191E87B904DBD836449AA30269D021A64@MORGANITE.micrel.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 2.6.34-rc6] net: Improve ks8851 snl transmit performance
-Thread-Index: AcrtboWeBzoU+Bp2RryGc5lv2EoDow==
-From: "Ha, Tristram" <Tristram.Ha@Micrel.Com>
-To: "Ben Dooks" <ben@simtec.co.uk>
-Cc: "David Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
-       <linux-kernel@vger.kernel.org>, "Abraham Arce" <x0066660@ti.com>,
-       "Sebastien Jan" <s-jan@ti.com>
-X-OriginalArrivalTime: 06 May 2010 22:50:28.0164 (UTC) FILETIME=[85DED840:01CAED6E]
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010050402)]
-X-MAIL-FROM: <tristram.ha@micrel.com>
-X-SOURCE-IP: [65.218.208.2]
-X-AnalysisOut: [v=1.0 c=1 a=PtFC98OL0gsA:10 a=VphdPIyG4kEA:10 a=8nJEP1OIZ-]
-X-AnalysisOut: [IA:10 a=J3BOMSfJb05aRia9DmE+FQ==:17 a=Q4n7fi2PAAAA:8 a=5_B]
-X-AnalysisOut: [fxKqGAAAA:8 a=n_gKLxJF7mRgItm5okYA:9 a=Uurqc88YCP9JpK-CWY8]
-X-AnalysisOut: [A:7 a=jTSarMrDBjnkk6Yp9bIyS2CjoKMA:4 a=wPNLvfGTeEIA:10 a=y]
-X-AnalysisOut: [JsD6ztlz_8A:10 a=ROlRQLf3JFUA:10]
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tristram Ha <Tristram.Ha@micrel.com>
+On Mon, 3 May 2010 22:30:01 -0700
+Kyle Hubert <khubert@gmail.com> wrote:
 
-Under heavy transmission the driver will put 4 1514-byte packets in queue and stop the device transmit queue.  Only the last packet triggers the transmit done interrupt and wakes up the device transmit queue.  That means a bit of time is wasted when the CPU cannot send any more packet.
+> Hi, while booting an initrd image built off of BusyBox on a thousand
+> nodes, we hit a race on a couple of nodes. They hang during the boot
+> process with the stack traces listed below. The really simple init
+> script in the initrd does a 'udevd --daemon' and then modprobe of a
+> device. The device needs to assign an mtrr to the pci resource, and
+> instead the whole node hangs. Putting a 'sleep 1' in between these two
+> calls prevents any hangs.
+> 
+> mtrr_add_page and the buddy allocator code don't appear to share any
+> semaphores, and there isn't an obvious way in which this can hang.
+> Possibly the smp_call_function IPI isn't being handled by the other
+> cores... That's the best guess. Can anyone help sort this mess out?
+> 
+> Also, is there a better way to test that udevd is fully up? A 'sleep
+> 1' is not the preferred solution here.
+> 
+> Thanks for your time,
+> 
 
-The new implementation triggers the transmit interrupt when the transmit buffer left is less than 3 packets.  The maximum transmit buffer size is 6144 bytes.  This allows the device transmit queue to be restarted sooner so that CPU can send more packets.
+What kernel version are you using here?  It looks old - pre 2.6.31.
 
-For TCP receiving it also has the benefit of not triggering any transmit interrupt at all.
+> 
+> >> ps
+>               ADDR    UID    PID   PPID  STATE     FLAGS CPU  NAME
+> ===============================================================================
+> ...
+> 0xffff88061d26c720      0   1036      1      0  0x400140   -  udevd
+> 0xffff88021e05c480      0   1037      1      0  0x400100   -  modprobe
+> 0xffff88081d072440      0   1116   1036      0  0x400040   -  udevd
+> ===============================================================================
+> 135 active task structs found
+> >> bt 0xffff88021e05c480
+> ================================================================
+> STACK TRACE FOR TASK: 0xffff88021e05c480(modprobe)
+> 
+>  0 <schedule?> [0x0]
+>  1 mtrr_add_page+494 [0xffffffff80219d9e]
+>  2 <unknown?>+<ERROR> [0xffffffffa0009a08]
+> ================================================================
+> >> bt 0xffff88061d25f420
+> ================================================================
+> STACK TRACE FOR TASK: 0xffff88061d25f420(udevd)
+> 
+>  0 <schedule?> [0x0]
+>  1 __alloc_pages_internal+241 [0xffffffff80292731]
+>  2 rmqueue_bulk+89 [0xffffffff80291b19]
+>  3 get_page_from_freelist+1430 [0xffffffff802922e6]
+>  4 __alloc_pages_internal+241 [0xffffffff80292731]
+>  5 alloc_pages_current+168 [0xffffffff802b0898]
+>  6 pte_alloc_one+49 [0xffffffff80229271]
+>  7 __pte_alloc+67 [0xffffffff8029e7d3]
+>  8 copy_page_range+1269 [0xffffffff802a11c5]
+>  9 alloc_pid+744 [0xffffffff80250a18]
+> 10 copy_process+3057 [0xffffffff8023bcf1]
+> 11 do_fork+118 [0xffffffff8023c4d6]
+> 12 sys_clone+35 [0xffffffff80209c23]
+> 13 ptregscall_common+103 [0xffffffff8020bda7]
 
-There is a driver option no_tx_opt so that the driver can revert to original implementation.  This allows user to verify if the transmit performance actually improves.
+These traces look odd - the kernel shouldn't be calling schedule() from
+below rmqueue_bulk()!
 
-Signed-off-by: Tristram Ha <Tristram.Ha@micrel.com>
----
-This replaces the [patch 01/13] patch I submitted and was objected by David.
+If possible, please try a more recent kernel.  If the problem occurs
+there and if we manage to fix it, the fix can be backported into
+whatever-kernel-version-you're-using.
 
-Other users with Micrel KSZ8851 SNL chip please verify the transmit performance does improve or not.
+Can you get a better trace?  The sysrq-T output would be good.  That's
+known to work sufficiently well.  Please avoid wordwrapping it when sending.
 
---- a/drivers/net/ks8851.c	2010-04-29 20:02:05.000000000 -0700
-+++ b/drivers/net/ks8851.c	2010-05-06 15:30:40.000000000 -0700
-@@ -74,6 +74,9 @@ union ks8851_tx_hdr {
-  * @rxd: Space for receiving SPI data, in DMA-able space.
-  * @txd: Space for transmitting SPI data, in DMA-able space.
-  * @msg_enable: The message flags controlling driver output (see ethtool).
-+ * @tx_space: The current available transmit buffer size.
-+ * @tx_avail: The maximum available transmit buffer size.
-+ * @tx_chk_cnt: Used to indicate how often to check the transmit buffer.
-  * @fid: Incrementing frame id tag.
-  * @rc_ier: Cached copy of KS_IER.
-  * @rc_rxqcr: Cached copy of KS_RXQCR.
-@@ -103,6 +106,8 @@ struct ks8851_net {
- 
- 	u32			msg_enable ____cacheline_aligned;
- 	u16			tx_space;
-+	u16			tx_avail;
-+	u8			tx_chk_cnt;
- 	u8			fid;
- 
- 	u16			rc_ier;
-@@ -124,6 +129,7 @@ struct ks8851_net {
- };
- 
- static int msg_enable;
-+static int no_tx_opt;
- 
- #define ks_info(_ks, _msg...) dev_info(&(_ks)->spidev->dev, _msg)
- #define ks_warn(_ks, _msg...) dev_warn(&(_ks)->spidev->dev, _msg)
-@@ -580,10 +586,21 @@ static void ks8851_irq_work(struct work_
- 
- 		/* update our idea of how much tx space is available to the
- 		 * system */
-+		ks->tx_chk_cnt = 0;
- 		ks->tx_space = ks8851_rdreg16(ks, KS_TXMIR);
- 
- 		if (netif_msg_intr(ks))
- 			ks_dbg(ks, "%s: txspace %d\n", __func__, ks->tx_space);
-+
-+	/* Update tx space when packets are being transmitted. */
-+	} else if (ks->tx_space < ks->tx_avail) {
-+		ks->tx_chk_cnt++;
-+
-+		/* Read the transmit buffer register every 4th rx interrupt. */
-+		if (4 == ks->tx_chk_cnt) {
-+			ks->tx_chk_cnt = 0;
-+			ks->tx_space = ks8851_rdreg16(ks, KS_TXMIR);
-+		}
- 	}
- 
- 	if (status & IRQ_RXI)
-@@ -715,6 +732,7 @@ static void ks8851_tx_work(struct work_s
- 	struct ks8851_net *ks = container_of(work, struct ks8851_net, tx_work);
- 	struct sk_buff *txb;
- 	bool last = skb_queue_empty(&ks->txq);
-+	bool tx_irq;
- 
- 	mutex_lock(&ks->lock);
- 
-@@ -724,7 +742,11 @@ static void ks8851_tx_work(struct work_s
- 
- 		if (txb != NULL) {
- 			ks8851_wrreg16(ks, KS_RXQCR, ks->rc_rxqcr | RXQCR_SDA);
--			ks8851_wrpkt(ks, txb, last);
-+			if (ks->tx_avail)
-+				tx_irq = (CHECKSUM_UNNECESSARY == txb->ip_summed);
-+			else
-+				tx_irq = last;
-+			ks8851_wrpkt(ks, txb, tx_irq);
- 			ks8851_wrreg16(ks, KS_RXQCR, ks->rc_rxqcr);
- 			ks8851_wrreg16(ks, KS_TXQCR, TXQCR_METFE);
- 
-@@ -917,11 +939,17 @@ static netdev_tx_t ks8851_start_xmit(str
- 		ret = NETDEV_TX_BUSY;
- 	} else {
- 		ks->tx_space -= needed;
-+		/*
-+		 * Indicate to enable transmit done interrupt when transmit
-+		 * buffer is less than a certain size.
-+		 */
-+		if (ks->tx_avail && ks->tx_space < 1514 * 3)
-+			skb->ip_summed = CHECKSUM_UNNECESSARY;
- 		skb_queue_tail(&ks->txq, skb);
-+		schedule_work(&ks->tx_work);
- 	}
- 
- 	spin_unlock(&ks->statelock);
--	schedule_work(&ks->tx_work);
- 
- 	return ret;
- }
-@@ -1224,7 +1252,6 @@ static int __devinit ks8851_probe(struct
- 
- 	ks->netdev = ndev;
- 	ks->spidev = spi;
--	ks->tx_space = 6144;
- 
- 	mutex_init(&ks->lock);
- 	spin_lock_init(&ks->statelock);
-@@ -1279,6 +1306,10 @@ static int __devinit ks8851_probe(struct
- 		goto err_id;
- 	}
- 
-+	ks->tx_space = ks8851_rdreg16(ks, KS_TXMIR);
-+	if (!no_tx_opt)
-+		ks->tx_avail = ks->tx_space;
-+
- 	ks8851_read_selftest(ks);
- 	ks8851_init_mac(ks);
- 
-@@ -1351,6 +1382,8 @@ MODULE_DESCRIPTION("KS8851 Network drive
- MODULE_AUTHOR("Ben Dooks <ben@simtec.co.uk>");
- MODULE_LICENSE("GPL");
- 
-+module_param(no_tx_opt, int, 0);
-+MODULE_PARM_DESC(message, "No TX optimization");
- module_param_named(message, msg_enable, int, 0);
- MODULE_PARM_DESC(message, "Message verbosity level (0=none, 31=all)");
- MODULE_ALIAS("spi:ks8851");
