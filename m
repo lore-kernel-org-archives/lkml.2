@@ -1,120 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab0EFOqu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 10:46:50 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43451 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753333Ab0EFOqs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 10:46:48 -0400
-Date: Thu, 6 May 2010 10:46:47 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Du, Alek" <alek.du@intel.com>
-cc: Ondrej Zary <linux@rainbow-software.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       USB list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>
-Subject: RE: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
- (WKOC_E) and disconnect (WKDISC_E)
-In-Reply-To: <1865303E0DED764181A9D882DEF65FB61A82A6DA3B@shsmsx502.ccr.corp.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1005061013510.1708-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757297Ab0EFJvl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 05:51:41 -0400
+Received: from mx1.zhaw.ch ([160.85.104.50]:36636 "EHLO mx1.zhaw.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753302Ab0EFJvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 05:51:40 -0400
+From: Tobias Klauser <tklauser@distanz.ch>
+To: benh@kernel.crashing.org
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+       Tobias Klauser <tklauser@distanz.ch>
+Subject: [PATCH] powerpc/BSR: Use resource_size
+Date: Thu,  6 May 2010 11:51:37 +0200
+Message-Id: <1273139497-25961-1-git-send-email-tklauser@distanz.ch>
+X-Mailer: git-send-email 1.6.3.3
+X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.5.6.94214
+X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_800_899 0, TO_NO_NAME 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010, Du, Alek wrote:
+Use the resource_size function instead of manually calculating the
+resource size.  This reduces the chance of introducing off-by-one
+errors.
 
-> Alan,
-> 
-> This would be better, but before entering phy low power mode, the HW
-> need the exact wakeup bits to be set, that's why we have:
-> 
-> 			/* only enable appropriate wake bits, otherwise the
-> 			 * hardware can not go phy low power mode. If a race
-> 			 * condition happens here(connection change during bits
-> 			 * set), the port change detection will finally fix it.
-> 			 */
-> In the code. When port is connected, we must only enable PORT_WKOC_E
-> | PORT_WKDISC_E, and when port is disconnected, we must only enable
-> PORT_WKOC_E | PORT_WKCONN_E. Enable all wakeup bits won't work.
+Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+---
+ drivers/char/bsr.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-With this patch, _none_ of the wakeup bits are enabled.  That should
-work, right?
-
-But it leads to another question: Later on, when the controller is put
-into D3hot, the new code will try to turn on wakeup bits for ports that
-have already been suspended.  It should be safe because
-ehci_set_wakeup_flags() will enable PORT_WKDISC_E | PORT_WKOC_E for
-connected ports, and PORT_WKCONN_E | PORT_WKOC_E for unconnected ports.  
-Still, since this happens _after_ the ports are suspended and the phy
-is put into low-power mode, I wanted to check with you about it.
-
-> I think the problem is: For the original code, once t2 != t1, the HCD
-> will try to put into phy low power mode. While after the patch, the
-> HCD will only enter phy low power mode if PORT_PE is set and
-> PORT_SUSPEND is not set.
-
-Okay, I understand.  Then consider _this_ patch on top of the first 
-one.  It sets the hostpc register for every port that wasn't already 
-suspended, so each phy should end up in low-power mode.
-
-Alan Stern
-
-
-
-Index: usb-2.6/drivers/usb/host/ehci-hub.c
-===================================================================
---- usb-2.6.orig/drivers/usb/host/ehci-hub.c
-+++ usb-2.6/drivers/usb/host/ehci-hub.c
-@@ -152,7 +152,6 @@ static int ehci_bus_suspend (struct usb_
- 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
- 	int			port;
- 	int			mask;
--	u32 __iomem		*hostpc_reg = NULL;
+diff --git a/drivers/char/bsr.c b/drivers/char/bsr.c
+index 89d871e..aadc78b 100644
+--- a/drivers/char/bsr.c
++++ b/drivers/char/bsr.c
+@@ -210,7 +210,7 @@ static int bsr_add_node(struct device_node *bn)
  
- 	ehci_dbg(ehci, "suspend root hub\n");
- 
-@@ -200,23 +199,25 @@ static int ehci_bus_suspend (struct usb_
- 	while (port--) {
- 		u32 __iomem	*reg = &ehci->regs->port_status [port];
- 		u32		t1 = ehci_readl(ehci, reg) & ~PORT_RWC_BITS;
--		u32		t2 = t1;
-+		u32		t2 = t1 & ~PORT_WAKE_BITS;
- 
--		if (ehci->has_hostpc)
--			hostpc_reg = (u32 __iomem *)((u8 *)ehci->regs
--				+ HOSTPC0 + 4 * (port & 0xff));
- 		/* keep track of which ports we suspend */
--		if (t1 & PORT_OWNER)
--			set_bit(port, &ehci->owned_ports);
--		else if ((t1 & PORT_PE) && !(t1 & PORT_SUSPEND)) {
--			t2 |= PORT_SUSPEND;
--			set_bit(port, &ehci->bus_suspended);
--			ehci_vdbg (ehci, "port %d, %08x -> %08x\n",
--				port + 1, t1, t2);
--			ehci_writel(ehci, t2, reg);
--			if (hostpc_reg) {
--				u32	t3;
-+		if (!(t1 & PORT_SUSPEND)) {
-+			if (t1 & PORT_OWNER) {
-+				set_bit(port, &ehci->owned_ports);
-+			} else if (t1 & PORT_PE) {
-+				t2 |= PORT_SUSPEND;
-+				set_bit(port, &ehci->bus_suspended);
-+				ehci_vdbg (ehci, "port %d, %08x -> %08x\n",
-+					port + 1, t1, t2);
-+				ehci_writel(ehci, t2, reg);
-+			}
-+			if (ehci->has_hostpc) {
-+				u32 __iomem	*hostpc_reg;
-+				u32		t3;
- 
-+				hostpc_reg = (u32 __iomem *)((u8 *)ehci->regs
-+					+ HOSTPC0 + 4 * (port & 0xff));
- 				spin_unlock_irq(&ehci->lock);
- 				msleep(5);/* 5ms for HCD enter low pwr mode */
- 				spin_lock_irq(&ehci->lock);
+ 		cur->bsr_minor  = i + total_bsr_devs;
+ 		cur->bsr_addr   = res.start;
+-		cur->bsr_len    = res.end - res.start + 1;
++		cur->bsr_len    = resource_size(&res);
+ 		cur->bsr_bytes  = bsr_bytes[i];
+ 		cur->bsr_stride = bsr_stride[i];
+ 		cur->bsr_dev    = MKDEV(bsr_major, i + total_bsr_devs);
+-- 
+1.6.3.3
 
