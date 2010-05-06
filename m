@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932539Ab0EFSB5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 14:01:57 -0400
-Received: from outbound-mail.dca.untd.com ([64.136.47.15]:42947 "HELO
-	outbound-mail.dca.untd.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932497Ab0EFSBz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 14:01:55 -0400
-X-UNTD-OriginStamp: GmNWB/6mZOPJnljh7SbH9J0fP/iMKWDmToqrkzQQ81MvsFV0PZi6v9hciWAFyl5w
-X-Originating-IP: [41.214.104.23]
-Mime-Version: 1.0
-From: "astuzokaya@netzero.net" <astuzokaya@netzero.net>
-Date: Thu, 6 May 2010 15:28:10 GMT
-Subject: astuzokaya@yahoo.co.uk
-X-Mailer: Webmail Version 6.1_P2
-Message-Id: <20100506.082810.21444.76@webmail07.dca.untd.com>
-Content-Transfer-Encoding: 7BIT
+	id S1754224Ab0EFSm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 14:42:57 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:39315 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751228Ab0EFSm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 14:42:56 -0400
+Date: Thu, 6 May 2010 11:42:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org,
+       Dipankar Sarma <dipankar@in.ibm.com>,
+       Josh Triplett <josh@freedesktop.org>, Oleg Nesterov <oleg@redhat.com>,
+       Dimitri Sivanich <sivanich@sgi.com>
+Subject: Re: [PATCH 3/4 UPDATED] scheduler: replace migration_thread with
+ cpu_stop
+Message-ID: <20100506184252.GC2325@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1272980864-27235-1-git-send-email-tj@kernel.org>
+ <1272980864-27235-4-git-send-email-tj@kernel.org>
+ <20100505013351.GN2639@linux.vnet.ibm.com>
+ <4BE11E29.6040106@kernel.org>
+ <20100505174725.GA6783@linux.vnet.ibm.com>
+ <4BE1B49F.2020404@kernel.org>
+ <20100505203149.GA2439@linux.vnet.ibm.com>
+ <4BE2EEB0.6020402@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset=US-ASCII
-To: Undisclosed-recipients:;
-X-UNTD-BodySize: 625
-X-UNTD-SIGN-INFO: 1fc4f42199b541f46d7945dded403845d115b965243131a494b46d5454406d40406d0db9609dc1809da19d0d
-X-ContentStamp: 3:5:2410780603
-X-MAIL-INFO: 1f6d353980d9c1c1f171449130c4c180cd9091e4cd290dc00941f03d64e1e454cdc0f4f9a0
-X-UNTD-Peer-Info: 10.171.12.147|webmail07.dca.untd.com|outbound-bu1.dca.untd.com|astuzokaya@netzero.net
-X-UNTD-STORE-INFO: URL_DOMAIN:astuzokaya@yahoo.co.uk
+In-Reply-To: <4BE2EEB0.6020402@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HELLO,
-my name is Miss astu.
-It gives me great pleasure by seeing your mail.i felt very happy for having a net 
-friend.i will be greatfulif we continue our relationship as long as it goes.after seeing 
-your mail,so that i can send my pictures to you;i felt more interested in knowing more 
-about you in person & personal life.As far as i am concerned, being a normal person 
-leading a normal life presently residing .
-Hope so you will reply soon with my private email asddress so that i will get back to you;
-                   (  astuzokaya@yahoo.co.uk   )
-with regard's
+On Thu, May 06, 2010 at 06:30:40PM +0200, Tejun Heo wrote:
+> On 05/05/2010 10:31 PM, Paul E. McKenney wrote:
+> > Almost.  With the following patch, I am good with it.
+> 
+> Ah, right.  What was I thinking?  I'll include your patch and push it
+> to Ingo.  Thanks.
 
-Your's loving friend
-Astu  love.
+And of course, I overdid it in my patch when I removed smp_mb() from
+the !SMP version of synchronize_sched_expedited().  :-/
 
+If synchronize_sched_expedited() is ever to be invoked from within
+kernel/sched.c in a UP kernel, there needs to be a "barrier()" in the
+!SMP version.  So please see the following patch.
+
+							Thanx, Paul
+
+commit 0eab52c0eeeb8507a83bdb37cc8f690b1c4f4a2c
+Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date:   Thu May 6 11:40:17 2010 -0700
+
+    rcu: need barrier() in UP synchronize_sched_expedited()
+    
+    If synchronize_sched_expedited() is ever to be called from within
+    kernel/sched.c in a !SMP PREEMPT kernel, the !SMP implementation needs
+    a barrier().
+    
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 155a16d..fbaf312 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8932,6 +8932,7 @@ struct cgroup_subsys cpuacct_subsys = {
+ 
+ void synchronize_sched_expedited(void)
+ {
++	barrier();
+ }
+ EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+ 
