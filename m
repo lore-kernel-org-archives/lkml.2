@@ -1,66 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab0EFI1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 04:27:48 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:51395 "EHLO mx2.mail.elte.hu"
+	id S1757710Ab0EFKKl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 06:10:41 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:56786 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755275Ab0EFI1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 04:27:45 -0400
-Date: Thu, 6 May 2010 10:27:14 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>, efault@gmx.de, avi@redhat.com,
-       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf
- on top of TP
-Message-ID: <20100506082714.GA2036@elte.hu>
-References: <1273053073.1642.235.camel@laptop>
- <4BE1406C.2000400@kernel.org>
- <1273059488.1642.245.camel@laptop>
- <4BE1648B.1080709@kernel.org>
- <20100505165532.GC14323@elte.hu>
- <1273083173.1642.250.camel@laptop>
- <1273083396.1642.251.camel@laptop>
- <20100505183000.GF6320@nowhere>
- <20100506062855.GD1172@elte.hu>
- <4BE26B96.4040007@kernel.org>
+	id S1757669Ab0EFKKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 06:10:38 -0400
+Date: Thu, 6 May 2010 11:10:19 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+	the wrong VMA information
+Message-ID: <20100506101019.GC20979@csn.ul.ie>
+References: <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org> <20100505145620.GP20979@csn.ul.ie> <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org> <20100505175311.GU20979@csn.ul.ie> <alpine.LFD.2.00.1005051058380.27218@i5.linux-foundation.org> <20100506002255.GY20979@csn.ul.ie> <p2s28c262361005060247m2983625clff01aeaa1668402f@mail.gmail.com> <20100506095422.GA20979@csn.ul.ie> <j2z28c262361005060301gf504daa3r13081561d4effc90@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4BE26B96.4040007@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <j2z28c262361005060301gf504daa3r13081561d4effc90@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 06, 2010 at 07:01:54PM +0900, Minchan Kim wrote:
+> On Thu, May 6, 2010 at 6:54 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> > On Thu, May 06, 2010 at 06:47:12PM +0900, Minchan Kim wrote:
+> >> On Thu, May 6, 2010 at 9:22 AM, Mel Gorman <mel@csn.ul.ie> wrote:
+> >> > On Wed, May 05, 2010 at 11:02:25AM -0700, Linus Torvalds wrote:
+> >> >>
+> >> >>
+> >> >> On Wed, 5 May 2010, Mel Gorman wrote:
+> >> >> >
+> >> >> > If the same_vma list is properly ordered then maybe something like the
+> >> >> > following is allowed?
+> >> >>
+> >> >> Heh. This is the same logic I just sent out. However:
+> >> >>
+> >> >> > +   anon_vma = page_rmapping(page);
+> >> >> > +   if (!anon_vma)
+> >> >> > +           return NULL;
+> >> >> > +
+> >> >> > +   spin_lock(&anon_vma->lock);
+> >> >>
+> >> >> RCU should guarantee that this spin_lock() is valid, but:
+> >> >>
+> >> >> > +   /*
+> >> >> > +    * Get the oldest anon_vma on the list by depending on the ordering
+> >> >> > +    * of the same_vma list setup by __page_set_anon_rmap
+> >> >> > +    */
+> >> >> > +   avc = list_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
+> >> >>
+> >> >> We're not guaranteed that the 'anon_vma->head' list is non-empty.
+> >> >>
+> >> >> Somebody could have freed the list and the anon_vma and we have a stale
+> >> >> 'page->anon_vma' (that has just not been _released_ yet).
+> >> >>
+> >> >> And shouldn't that be 'list_first_entry'? Or &anon_vma->head.next?
+> >> >>
+> >> >> How did that line actually work for you? Or was it just a "it boots", but
+> >> >> no actual testing of the rmap walk?
+> >> >>
+> >> >
+> >> > This is what I just started testing on a 4-core machine. Lockdep didn't
+> >> > complain but there are two potential sources of badness in anon_vma_lock_root
+> >> > marked with XXX. The second is the most important because I can't see how the
+> >> > local and root anon_vma locks can be safely swapped - i.e. release local and
+> >> > get the root without the root disappearing. I haven't considered the other
+> >> > possibilities yet such as always locking the root anon_vma. Going to
+> >> > sleep on it.
+> >> >
+> >> > Any comments?
+> >>
+> >> <snip>
+> >> > +/* Given an anon_vma, find the root of the chain, lock it and return the root */
+> >> > +struct anon_vma *anon_vma_lock_root(struct anon_vma *anon_vma)
+> >> > +{
+> >> > +       struct anon_vma *root_anon_vma;
+> >> > +       struct anon_vma_chain *avc, *root_avc;
+> >> > +       struct vm_area_struct *vma;
+> >> > +
+> >> > +       /* Lock the same_anon_vma list and make sure we are on a chain */
+> >> > +       spin_lock(&anon_vma->lock);
+> >> > +       if (list_empty(&anon_vma->head)) {
+> >> > +               spin_unlock(&anon_vma->lock);
+> >> > +               return NULL;
+> >> > +       }
+> >> > +
+> >> > +       /*
+> >> > +        * Get the root anon_vma on the list by depending on the ordering
+> >> > +        * of the same_vma list setup by __page_set_anon_rmap. Basically
+> >> > +        * we are doing
+> >> > +        *
+> >> > +        * local anon_vma -> local vma -> deepest vma -> anon_vma
+> >> > +        */
+> >> > +       avc = list_first_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
+> >>
+> >> Dumb question.
+> >>
+> >> I can't understand why we should use list_first_entry.
+> >>
+> >> I looked over the code.
+> >> anon_vma_chain_link uses list_add_tail so I think that's right.
+> >> But anon_vma_prepare uses list_add. So it's not consistent.
+> >> How do we make sure list_first_entry returns deepest vma?
+> >>
+> >
+> > list_first_entry is not getting the root (what you called deepest but lets
+> > pick a name and stick with it or this will be worse than it already is).
 
-* Tejun Heo <tj@kernel.org> wrote:
+Of course, I have to clean out my own references to "deepest" :/
 
-> Hello,
+> That
+> > list_first entry is what gets us from
+> >
+> > local anon_vma -> avc for the local anon_vma -> local vma
+> >
 > 
-> On 05/06/2010 08:28 AM, Ingo Molnar wrote:
-> > ( They are also under intense optimization - the jump-tracepoints patch makes 
-> >   them probably even cheaper than preempt notifiers, in the off case. )
+> Yes. Sorry for confusing word. :)
+> Let's have a question again. What I have a question is that why we
+> have to use list_first_entry not list_entry for getting local_vma?
 > 
-> I mostly agree on other points but TPs and sched_notifiers are inherently 
-> different in how they are enabled/disabled. sched_notifiers are 
-> enabled/disabled per-task and at least w/ cmwq, there will always be some 
-> tasks with active sched_notifiers so code level optimizations aren't really 
-> useful.
 
-Note that preempt notifiers used to modify scheduling behavior/semantics i'm 
-really against. Please get that functionality into the scheduler - especially 
-if it's essentially always-on.
+Nothing other than it's easier to read and a bit more self-documenting
+than;
 
-Preempt notifiers are for things like KVM which want to do extended context 
-saving. They are _NOT_ 'hooks' into the scheduler.
+avc = list_entry(anon_vma->head.next, struct anon_vma_chain, same_anon_vma);
 
-	Ingo
+> 
+> >> Sorry if I am missing.
+> >>
+> >
+> > Not at all. The more people that look at this the better.
+> 
+> Thanks. Mel.
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
