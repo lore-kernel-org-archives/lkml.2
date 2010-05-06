@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439Ab0EFUWq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 16:22:46 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:56305 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932183Ab0EFUWo (ORCPT
+	id S932426Ab0EFU0Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 16:26:25 -0400
+Received: from vms173011pub.verizon.net ([206.46.173.11]:58805 "EHLO
+	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757810Ab0EFU0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 16:22:44 -0400
-Subject: Re: [BUG] perf_events: PERF_FORMAT_GROUP not working correctly
- when monitoring another task
-From: Peter Zijlstra <peterz@infradead.org>
-To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Carl Love <carll@us.ibm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       stephane eranian <eranian@googlemail.com>
-In-Reply-To: <4BE321F8.1050309@linux.vnet.ibm.com>
-References: <4BDF8118.3090200@linux.vnet.ibm.com>
-	 <1273160566.5605.404.camel@twins>  <4BE321F8.1050309@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 May 2010 22:22:40 +0200
-Message-ID: <1273177360.1642.280.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 6 May 2010 16:26:24 -0400
+Date: Thu, 06 May 2010 16:26:13 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       linux-pm@lists.linux-foundation.org, linux-acpi@vger.kernel.org,
+       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] linux-next: Tree for May 6 (acpi: PM=n)
+In-reply-to: <20100506080538.b566f50e.randy.dunlap@oracle.com>
+Message-id: <alpine.LFD.2.00.1005061623060.15286@localhost.localdomain>
+References: <20100506151502.f97afe54.sfr@canb.auug.org.au>
+ <20100506080538.b566f50e.randy.dunlap@oracle.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-06 at 13:09 -0700, Corey Ashford wrote:
-> The patch works with the test case I provided, but for some reason it 
-> breaks the normal operation of the libpfm4 "task" utility.  If I put 
-> more than one event in a group, I get zero counts on all but the first 
-> event.  That's even if I don't use the PERF_FORMAT_GROUP option.
+> When CONFIG_PM is not set:
+> 
+> drivers/built-in.o: In function `acpi_init':
+> bus.c:(.init.text+0x2d84): undefined reference to `pm_flags'
+> bus.c:(.init.text+0x2d91): undefined reference to `pm_flags'
 
-Bugger,.. weird though, I can't see how it would affect the state before
-the counters get detached from their context (exit() / close()).
+CONFIG_ACPI depends on CONFIG_PM,
+so acpi/bus.c should not be compiled for CONFIG_PM=n
 
-> So something appears to be messed up.  I will see if I can construct an 
-> arch-independent test case which demonstrates the problem.
+Hmm, is is somebody doing something strange, like "select ACPI"
+without guaranteeing that all of ACPI's dependencies are satisfied?
 
-That would be awesome, thanks!
-
+thanks,
+Len Brown, Intel Open Source Technology Center
 
