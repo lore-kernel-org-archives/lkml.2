@@ -1,91 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab0EFG3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 02:29:10 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35264 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751100Ab0EFG3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 02:29:07 -0400
-Date: Thu, 6 May 2010 08:28:55 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-       efault@gmx.de, avi@redhat.com, paulus@samba.org, acme@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move perf
- on top of TP
-Message-ID: <20100506062855.GD1172@elte.hu>
-References: <1273050400.1642.229.camel@laptop>
- <4BE13B33.3030709@kernel.org>
- <1273053073.1642.235.camel@laptop>
- <4BE1406C.2000400@kernel.org>
- <1273059488.1642.245.camel@laptop>
- <4BE1648B.1080709@kernel.org>
- <20100505165532.GC14323@elte.hu>
- <1273083173.1642.250.camel@laptop>
- <1273083396.1642.251.camel@laptop>
- <20100505183000.GF6320@nowhere>
+	id S1753385Ab0EFGa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 02:30:27 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:36007 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752694Ab0EFGaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 02:30:25 -0400
+X-Sasl-enc: cq9VLwe25Uoh0OkBj6QoOKpJIryGlDzCnn/q9Ie9To9w 1273127423
+Message-ID: <4BE261FE.60109@ladisch.de>
+Date: Thu, 06 May 2010 08:30:22 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: "dhprince.devel@yahoo" <dhprince.devel@yahoo.co.uk>
+CC: linux-input@vger.kernel.org, alsa-devel@alsa-project.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH 2.6.34-rc5] HID: Prodikeys PC-MIDI HID Driver
+References: <4BE1A2E2.1040801@yahoo.co.uk>
+In-Reply-To: <4BE1A2E2.1040801@yahoo.co.uk>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100505183000.GF6320@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+dhprince.devel@yahoo wrote:
+> A specialised HID driver for the CreativeLabs Prodikeys PC-MIDI USB 
+> Keyboard.
+> ...
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+I cannot comment on the input stuff, but the sound stuff looks good
+overall.
 
-> On Wed, May 05, 2010 at 08:16:36PM +0200, Peter Zijlstra wrote:
-> > On Wed, 2010-05-05 at 20:15 +0200, Peter Zijlstra wrote:
-> > > 
-> > > Well, I'd much rather just see a direct call in the code than having to
-> > > reverse engineer wth hangs onto that _EVENT() junk.
-> > 
-> > And again, I oppose mandating CONFIG_TRACEEVENT.
-> 
-> 
-> And me too. But you don't need CONFIG_EVENT_TRACING for that. TRACE_EVENT() 
-> with !CONFIG_EVENT_TRACING only produces tracepoints if CONFIG_TRACEPOINTS.
-> 
-> In fact, a first progress that would handle these compromizes would be to 
-> have CONFIG_PERF_EVENT_SW.
-> 
-> For now perf_event_task_sched_in and perf_event_task_sched_out can stay as 
-> is because they are perf core utils.
-> 
-> But all the rest (faults, migrations, etc..) could be tracepoints builtin 
-> only if CONFIG_PERF_EVENT_SW. Which means CONFIG_PERF_EVENT_SW depends on 
-> CONFIG_TRACEPOINTS.
-> 
-> But nobody is forced to build CONFIG_PERF_EVENT_SW, breakpoints don't need 
-> it.
+> +What:        /sys/bus/hid/drivers/prodikeys/.../channel
+> +Date:        April 2010
+> +KernelVersion:    2.6.34
+> +Contact:    Don Prince <dhprince.devel@yahoo.co.uk>
+> +Descripts/checkpatch.plscription:
 
-Yep. Also, most of the default distro kernels will have 3 sets of facilities:
+Huh?
 
- - preempt notifiers
- - tracepoints
- - sw events
+> +What:        /sys/bus/hid/drivers/prodikeys/.../sustain
+> +Description:
+> +        Allows control (via software) the sustain duration of a
+> +        note held by the pc-midi driver.
 
-which is crazy. We can just standardize on using the tracepoint interface 
-definition methods - they are properly typed, widespread and well-known enough 
-to be perfect for this.
+Why is this feature needed?  Does the device report key releases
+incorrectly?
 
-( They are also under intense optimization - the jump-tracepoints patch makes 
-  them probably even cheaper than preempt notifiers, in the off case. )
+These three sysfs controls could also be implemented as mixer controls.
+This would allow them to be automatically saved and restored when the
+computer is shut down.
 
-So lets get over this and consolidate our crazy hookery, and stand behind a 
-single facility.
+> +    { HID_USB_DEVICE(USB_VENDOR_ID_CREATIVELABS, 
+> USB_DEVICE_ID_PRODIKEYS_PCMIDI) },
 
-I'm also all for slimming down the trace events facilities by not requiring 
-the /debug/tracing/ bits to be present.
+Your mailer wrapped long lines and killed the tabs.
+Please see <Documentation/email-clients.txt>.
 
-	Ingo
+And your code looks as if it does not use eight-column tabs for
+indention.
+
+> +static void pcmidi_send_note(struct pcmidi_snd *pm,
+> ...
+> +    res = snd_rawmidi_receive(pm->in_substream, buffer, 3);
+
+This return value is never used.
+
+> +                    if (!atomic_read(&pms->in_use)) {
+> +                        pms->status = status;
+> +                        pms->note = note;
+> +                        pms->velocity = velocity;
+> +                        atomic_set(&pms->in_use, 1);
+
+If you're using the atomic variable to protect against some concurrently
+executing code, then you have a race condition in the time interval
+between the read and the set.
+
+> +static void pcmidi_out_tasklet(unsigned long data)
+> ...
+> +    while (1) {
+> +        /* just read them and drop them */
+> +        u8 b;
+> +        if (snd_rawmidi_transmit(pm->out_substream, &b, 1) != 1) {
+> +            pm->out_active = 0;
+> +            break;
+> +        }
+
+This isn't quite how output ports are supposed to be implemented.  :-)
+
+I'd guess you want to remove the OUTPUT and DUPLEX flags and to drop all
+output-related functions.
+
+> +static void pcmidi_in_trigger(struct snd_rawmidi_substream *substream, 
+> int up)
+> ...
+> +    if (up)
+> +        set_bit(substream->number, &pm->in_triggered);
+> +    else
+> +        clear_bit(substream->number, &pm->in_triggered);
+
+You have only one substream, a boolean variable would suffice.
+
+> +int pcmidi_snd_initialise(struct pcmidi_snd *pm)
+> ...
+> +    int out_ports = 1;
+> +    int in_ports = 1;
+
+These variables are not variable and therefore not needed.
+
+> +    snd_component_add(card, "MIDI");
+
+This function is intended for sound cards that are composed of several
+components, and the component name is usually a chip name.  I think
+you don't need to call this function at all.
+
+> +    err = snd_card_register(card);
+> ...
+> +    /* create sysfs variables */
+> +    err = device_create_file(&pm->pk->hdev->dev,
+> +                 sysfs_device_attr_channel);
+> ...
+> +    spin_lock_init(&pm->rawmidi_in_lock);
+> +
+> +    init_sustain_timers(pm);
+
+snd_card_register() makes all sound interfaces available to userspace.
+Initializations for any data that might be accessed from userspace must
+be done before that call.
+
+
+Regards,
+Clemens
