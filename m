@@ -1,238 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab0EFTIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 15:08:48 -0400
-Received: from kroah.org ([198.145.64.141]:38367 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752123Ab0EFTIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 15:08:47 -0400
-Date: Thu, 6 May 2010 12:08:41 -0700
-From: Greg KH <greg@kroah.com>
-To: asdf@kroah.com, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Vadim Rozenfeld <vrozenfe@redhat.com>,
-       Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Haiyang Zhang <haiyangz@microsoft.com>,
-       Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH] x86: detect running on a HyperV system
-Message-ID: <20100506190841.GA1605@kroah.com>
+	id S1757553Ab0EFLSm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 07:18:42 -0400
+Received: from nwd2mail11.analog.com ([137.71.25.57]:61509 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105Ab0EFLSk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 07:18:40 -0400
+X-IronPort-AV: E=Sophos;i="4.52,340,1270440000"; 
+   d="scan'208";a="16298404"
+From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+To: Oskar Schirmer <os@emlix.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Mike Frysinger <vapier@gentoo.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       =?utf-8?B?RGFuaWVsIEdsw7Zja25lcg==?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>
+Date: Thu, 6 May 2010 12:18:35 +0100
+Subject: RE: [PATCH] ad7877: fix spi word size to 16 bit
+Thread-Topic: [PATCH] ad7877: fix spi word size to 16 bit
+Thread-Index: AcrtC68NC8ptfpY4StKS1+5pQ44XwAAAgGcw
+Message-ID: <544AC56F16B56944AEC3BD4E3D5917712E568A07DD@LIMKCMBX1.ad.analog.com>
+References: <1273142265-11929-1-git-send-email-os@emlix.com>
+In-Reply-To: <1273142265-11929-1-git-send-email-os@emlix.com>
+Accept-Language: de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o46IcfaS001354
 
-From: Ky Srinivasan <ksrinivasan@novell.com>
+Oskar Schirmer wrote on 2010-05-06:
+> With no word size given in the users platform data, a generic spi host
+> controller driver will assume a default word size of eight bit. This
+> causes transmission to be performed bytewise, which will fail on
+> little endian machines for sure. Failure on big endian depends on
+> usage of slave select to mark word boundaries.
+>
+> Anyway, ad7877 is specified to work with 16 bit per word, so
+> unconditionally set the word size accordingly.
+>
+> Signed-off-by: Oskar Schirmer <os@emlix.com>
+> Signed-off-by: Daniel Gl√∂ckner <dg@emlix.com>
+> Signed-off-by: Oliver Schneidewind <osw@emlix.com>
 
-This patch integrates HyperV detection within the framework currently
-used by VmWare. With this patch, we can avoid having to replicate the
-HyperV detection code in each of the Microsoft HyperV drivers.
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
 
-Reworked and tweaked by Greg K-H to build properly.
+> ---
+>  drivers/input/touchscreen/ad7877.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> diff --git a/drivers/input/touchscreen/ad7877.c
+> b/drivers/input/touchscreen/ad7877.c index e019d53..92acd85 100644 ---
+> a/drivers/input/touchscreen/ad7877.c +++
+> b/drivers/input/touchscreen/ad7877.c @@ -669,6 +669,8 @@ static int
+> __devinit ad7877_probe(struct spi_device *spi)
+>               dev_dbg(&spi->dev, "SPI CLK %d Hz?\n",spi->max_speed_hz);
+>               return -EINVAL;
+>       }
+> +     spi->bits_per_word = 16;
+> +     spi_setup(spi);
+>
+>       ts = kzalloc(sizeof(struct ad7877), GFP_KERNEL);
+>       input_dev = input_allocate_device();
 
-Signed-off-by: K. Y. Srinivasan <ksrinivasan@novell.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vadim Rozenfeld <vrozenfe@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: "K.Prasad" <prasad@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
+Greetings,
+Michael
 
-KY, I fixed up the patch so it would build properly (the old one did not
-anymore)  I also renamed the .c and .h file to "mshyperv.h".  I really
-don't care about the name, but it shouldn't be "hyperv.h" as that is
-already used by the kernel.  Hank, KY, any preference for the name?
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft Muenchen, Registergericht Muenchen HRB 4036 Geschaeftsfuehrer Thomas Wessel, William A. Martin, Margaret Seif
 
-x86-maintainers, we need this patch in the tree to get a -staging driver
-to work properly.  If you don't object, can I take it through the
-staging tree?  Or do you want to take it in -tip?
-
- arch/x86/include/asm/hyperv.h    |    6 +++
- arch/x86/include/asm/mshyperv.h  |    7 ++++
- arch/x86/include/asm/processor.h |    3 +
- arch/x86/kernel/cpu/Makefile     |    2 -
- arch/x86/kernel/cpu/hypervisor.c |   10 ++++-
- arch/x86/kernel/cpu/mshyperv.c   |   67 +++++++++++++++++++++++++++++++++++++++
- 6 files changed, 91 insertions(+), 4 deletions(-)
-
---- a/arch/x86/include/asm/hyperv.h
-+++ b/arch/x86/include/asm/hyperv.h
-@@ -14,6 +14,9 @@
- #define HYPERV_CPUID_ENLIGHTMENT_INFO		0x40000004
- #define HYPERV_CPUID_IMPLEMENT_LIMITS		0x40000005
- 
-+#define HYPERV_HYPERVISOR_PRESENT_BIT		0x80000000
-+#define HYPERV_CPUID_MIN			0x40000005
-+
- /*
-  * Feature identification. EAX indicates which features are available
-  * to the partition based upon the current partition privileges.
-@@ -129,6 +132,9 @@
- /* MSR used to provide vcpu index */
- #define HV_X64_MSR_VP_INDEX			0x40000002
- 
-+/* MSR used to read the per-partition time reference counter */
-+#define HV_X64_MSR_TIME_REF_COUNT		0x40000020
-+
- /* Define the virtual APIC registers */
- #define HV_X64_MSR_EOI				0x40000070
- #define HV_X64_MSR_ICR				0x40000071
---- /dev/null
-+++ b/arch/x86/include/asm/mshyperv.h
-@@ -0,0 +1,7 @@
-+#ifndef ASM_X86__MSHYPER_H
-+#define ASM_X86__MSHYPER_H
-+
-+int ms_hyperv_platform(void);
-+void __cpuinit ms_hyperv_set_feature_bits(struct cpuinfo_x86 *c);
-+
-+#endif
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -114,6 +114,8 @@ struct cpuinfo_x86 {
- 	u16			cpu_index;
- #endif
- 	unsigned int		x86_hyper_vendor;
-+	/* The layout of this field is hypervisor specific */
-+	unsigned int		x86_hyper_features;
- } __attribute__((__aligned__(SMP_CACHE_BYTES)));
- 
- #define X86_VENDOR_INTEL	0
-@@ -129,6 +131,7 @@ struct cpuinfo_x86 {
- 
- #define X86_HYPER_VENDOR_NONE  0
- #define X86_HYPER_VENDOR_VMWARE 1
-+#define X86_HYPER_VENDOR_MSFT	2
- 
- /*
-  * capabilities of CPUs
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -14,7 +14,7 @@ CFLAGS_common.o		:= $(nostackp)
- 
- obj-y			:= intel_cacheinfo.o addon_cpuid_features.o
- obj-y			+= proc.o capflags.o powerflags.o common.o
--obj-y			+= vmware.o hypervisor.o sched.o
-+obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
- 
- obj-$(CONFIG_X86_32)	+= bugs.o cmpxchg.o
- obj-$(CONFIG_X86_64)	+= bugs_64.o
---- a/arch/x86/kernel/cpu/hypervisor.c
-+++ b/arch/x86/kernel/cpu/hypervisor.c
-@@ -23,6 +23,7 @@
- 
- #include <asm/processor.h>
- #include <asm/vmware.h>
-+#include <asm/mshyperv.h>
- #include <asm/hypervisor.h>
- 
- static inline void __cpuinit
-@@ -30,6 +31,8 @@ detect_hypervisor_vendor(struct cpuinfo_
- {
- 	if (vmware_platform())
- 		c->x86_hyper_vendor = X86_HYPER_VENDOR_VMWARE;
-+	else if (ms_hyperv_platform())
-+		c->x86_hyper_vendor = X86_HYPER_VENDOR_MSFT;
- 	else
- 		c->x86_hyper_vendor = X86_HYPER_VENDOR_NONE;
- }
-@@ -37,10 +40,11 @@ detect_hypervisor_vendor(struct cpuinfo_
- static inline void __cpuinit
- hypervisor_set_feature_bits(struct cpuinfo_x86 *c)
- {
--	if (boot_cpu_data.x86_hyper_vendor == X86_HYPER_VENDOR_VMWARE) {
-+	if (boot_cpu_data.x86_hyper_vendor == X86_HYPER_VENDOR_VMWARE)
- 		vmware_set_feature_bits(c);
--		return;
--	}
-+	else if (boot_cpu_data.x86_hyper_vendor == X86_HYPER_VENDOR_MSFT)
-+		ms_hyperv_set_feature_bits(c);
-+	return;
- }
- 
- void __cpuinit init_hypervisor(struct cpuinfo_x86 *c)
---- /dev/null
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -0,0 +1,67 @@
-+/*
-+ * HyperV  Detection code.
-+ *
-+ * Copyright (C) 2010, Novell, Inc.
-+ * Author : K. Y. Srinivasan <ksrinivasan@novell.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ */
-+
-+#include <linux/types.h>
-+#include <asm/processor.h>
-+#include <asm/hyperv.h>
-+#include <asm/mshyperv.h>
-+
-+
-+int ms_hyperv_platform(void)
-+{
-+	u32 eax, ebx, ecx, edx;
-+	char hyp_signature[13];
-+
-+	cpuid(1, &eax, &ebx, &ecx, &edx);
-+	if (!(ecx & HYPERV_HYPERVISOR_PRESENT_BIT))
-+		return 0;
-+
-+	cpuid(HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS, &eax, &ebx, &ecx, &edx);
-+	*(u32 *)(hyp_signature + 0) = ebx;
-+	*(u32 *)(hyp_signature + 4) = ecx;
-+	*(u32 *)(hyp_signature + 8) = edx;
-+
-+	if ((eax < HYPERV_CPUID_MIN) || (memcmp("Microsoft Hv", hyp_signature, 12)))
-+		return 0;
-+	return 1;
-+}
-+
-+void __cpuinit ms_hyperv_set_feature_bits(struct cpuinfo_x86 *c)
-+{
-+	u32 eax, ebx, ecx, edx;
-+
-+	c->x86_hyper_features = 0;
-+	/*
-+	 * Extract the features, recommendations etc.
-+	 * The first 9 bits will be used to track hypervisor features.
-+	 * The next 6 bits will be used to track the hypervisor
-+	 * recommendations.
-+	 */
-+	cpuid(HYPERV_CPUID_FEATURES, &eax, &ebx, &ecx, &edx);
-+	c->x86_hyper_features |= (eax & 0x1ff);
-+
-+	cpuid(HYPERV_CPUID_ENLIGHTMENT_INFO, &eax, &ebx, &ecx, &edx);
-+	c->x86_hyper_features |= ((eax & 0x3f) << 9);
-+	printk(KERN_INFO "Detected HyperV with features: %x\n",
-+		c->x86_hyper_features);
-+}
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
