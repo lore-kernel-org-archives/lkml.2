@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab0EFJ7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 05:59:00 -0400
-Received: from mx1.zhaw.ch ([160.85.104.50]:37525 "EHLO mx1.zhaw.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751360Ab0EFJ66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 05:58:58 -0400
-From: Tobias Klauser <tklauser@distanz.ch>
-To: dan.j.williams@intel.com
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-       Tobias Klauser <tklauser@distanz.ch>
-Subject: [PATCH] dmaengine: mpc512x: Use resource_size
-Date: Thu,  6 May 2010 11:58:55 +0200
-Message-Id: <1273139935-26789-1-git-send-email-tklauser@distanz.ch>
-X-Mailer: git-send-email 1.6.3.3
-X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.5.6.94514
-X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_700_799 0, TO_NO_NAME 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
+	id S1755089Ab0EFHZX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 03:25:23 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:4468 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754422Ab0EFHZV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 03:25:21 -0400
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+To: Scott Feldman <scofeldm@cisco.com>, Arnd Bergmann <arnd@arndb.de>,
+       Dmitry Torokhov <dtor@vmware.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+       Pankaj Thakkar <pthakkar@vmware.com>
+Date: Thu, 6 May 2010 00:25:20 -0700
+Subject: RE: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
+Thread-Topic: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
+Thread-Index: AcrsnXZHfCzcBb5GR+COtROFMlz8vwAAIsdgAAiX7GgACwer4A==
+Message-ID: <89E2752CFA8EC044846EB8499819134102AF2D23E5@EXCH-MBX-4.vmware.com>
+References: <89E2752CFA8EC044846EB8499819134102AF2896F5@EXCH-MBX-4.vmware.com>
+ <C807719A.2E910%scofeldm@cisco.com>
+In-Reply-To: <C807719A.2E910%scofeldm@cisco.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the resource_size function instead of manually calculating the
-resource size.  This reduces the chance of introducing off-by-one
-errors.
+> -----Original Message-----
+> From: Scott Feldman [mailto:scofeldm@cisco.com]
+> Sent: Wednesday, May 05, 2010 7:04 PM
+> To: Shreyas Bhatewara; Arnd Bergmann; Dmitry Torokhov
+> Cc: Christoph Hellwig; pv-drivers@vmware.com; netdev@vger.kernel.org;
+> linux-kernel@vger.kernel.org; virtualization@lists.linux-
+> foundation.org; Pankaj Thakkar
+> Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for
+> vmxnet3
+> 
+> On 5/5/10 10:29 AM, "Dmitry Torokhov" <dtor@vmware.com> wrote:
+> 
+> > It would not be a binary blob but software properly released under
+> GPL.
+> > The current plan is for the shell to enforce GPL requirement on the
+> > plugin code, similar to what module loaded does for regular kernel
+> > modules.
+> 
+> On 5/5/10 3:05 PM, "Shreyas Bhatewara" <sbhatewara@vmware.com> wrote:
+> 
+> > The plugin image is not linked against Linux kernel. It is OS
+> agnostic infact
+> > (Eg. same plugin works for Linux and Windows VMs)
+> 
+> Are there any issues with injecting the GPL-licensed plug-in into the
+> Windows vmxnet3 NDIS driver?
+> 
+> -scott
 
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
----
- drivers/dma/mpc512x_dma.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Scott,
+Thanks for pointing out. This issue can be resolved by adding exception to the plugin license which allows it to link to a non-free program .(http://www.gnu.org/licenses/gpl-faq.html#GPLPluginsInNF)
 
-diff --git a/drivers/dma/mpc512x_dma.c b/drivers/dma/mpc512x_dma.c
-index 84326c9..201e6e1 100644
---- a/drivers/dma/mpc512x_dma.c
-+++ b/drivers/dma/mpc512x_dma.c
-@@ -658,7 +658,7 @@ static int __devinit mpc_dma_probe(struct of_device *op,
- 	}
- 
- 	regs_start = res.start;
--	regs_size = res.end - res.start + 1;
-+	regs_size = resource_size(&res);
- 
- 	if (!devm_request_mem_region(dev, regs_start, regs_size, DRV_NAME)) {
- 		dev_err(dev, "Error requesting memory region!\n");
--- 
-1.6.3.3
-
+->Shreyas
