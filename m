@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878Ab0EFRLq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:11:46 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61951 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755800Ab0EFRLo (ORCPT
+	id S1755008Ab0EFSot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 14:44:49 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54553 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab0EFSos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:11:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DWlHQz8UEDWsjEUMc88hwVak9iYrHrdQkQa2tLdgeppEKB+cyMnNUlyz0qTxmbdrLF
-         ICLmfeECPlRO7U2qTwFLsILQcR+K7xLwNL9VAqWSBoGTH6TqacdPPl0CvYRII+mGvadc
-         Dj4LvldSlta5qcs4dMMgUsjOTSAWDytX7yFyk=
-Date: Thu, 6 May 2010 19:11:43 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
-       mingo@elte.hu, Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFC] perf_events: ctx_flexible_sched_in() not maximizing PMU
-	utilization
-Message-ID: <20100506171141.GA5562@nowhere>
-References: <AANLkTikQCkR2K438llKOh43yEgW-Bw7j0f8GoXR50A0V@mail.gmail.com> <1273155640.5605.300.camel@twins>
+	Thu, 6 May 2010 14:44:48 -0400
+Date: Thu, 6 May 2010 19:44:18 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+Message-ID: <20100506184418.GA30669@srcf.ucam.org>
+References: <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com> <20100505234755.GI29604@atomide.com> <20100506134015.GA23426@srcf.ucam.org> <20100506170151.GA30928@atomide.com> <20100506170956.GA28104@srcf.ucam.org> <20100506171453.GC30928@atomide.com> <20100506172201.GA28578@srcf.ucam.org> <20100506173807.GD30928@atomide.com> <20100506174331.GA29103@srcf.ucam.org> <20100506183335.GE30928@atomide.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273155640.5605.300.camel@twins>
+In-Reply-To: <20100506183335.GE30928@atomide.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 04:20:40PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-05-06 at 16:03 +0200, Stephane Eranian wrote:
-> > Hi,
+On Thu, May 06, 2010 at 11:33:35AM -0700, Tony Lindgren wrote:
+> * Matthew Garrett <mjg@redhat.com> [100506 10:39]:
+> > On Thu, May 06, 2010 at 10:38:08AM -0700, Tony Lindgren wrote:
 > > 
-> > Looking at ctx_flexible_sched_in(), the logic is that if  group_sched_in()
-> > fails for a HW group, then no other HW group in the list is even tried.
-> > I don't understand this restriction. Groups are independent of each other.
-> > The failure of one group should not block others from being scheduled,
-> > otherwise you under-utilize the PMU.
+> > > If your userspace keeps polling and has runaway timers, then you
+> > > could suspend it's parent process to idle the system?
 > > 
-> > What is the reason for this restriction? Can we lift it somehow?
+> > If your userspace is suspended, how does it process the events that 
+> > generated a system wakeup? If we had a good answer to that then suspend 
+> > blockers would be much less necessary.
 > 
-> Sure, but it will make scheduling much more expensive. The current
-> scheme will only ever check the first N events because it stops at the
-> first that fails, and since you can max fix N events on the PMU its
-> constant time.
-> 
-> To fix this issue you'd have to basically always iterate all events and
-> only stop once the PMU is fully booked, which reduces to an O(n) worst
-> case algorithm.
-> 
-> But yeah, I did think of making the thing an RB-tree and basically
-> schedule on service received, that should fix the lop-sided RR we get
-> with constrained events.
+> Well if your hardware runs off-while-idle or even just
+> retention-while-idle, then the basic shell works just fine waking up
+> every few seconds or so.
 
+And the untrusted userspace code that's waiting for a network packet? 
+Adding a few seconds of latency isn't an option here.
 
-I don't understand what you mean by schedule on service received, and why
-an rbtree would solve that.
-
-Unless you think about giving a weight to a group that has hardware events.
-This weight is the number of "slots" a group would use in the hardware pmu
-and you can compare this weight against the available remaining slots
-in the pmu?
-
-So yeah, if the hw group of events are sorted by weight, once one fails,
-we know the following will fail too. But that doesn't seem a right solution
-as it is going to always give more chances to low weight groups and very
-fewer opportunities for the heavy ones to be scheduled.
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
