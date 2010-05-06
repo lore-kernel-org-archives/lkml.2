@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758288Ab0EFNjU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 09:39:20 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:64328 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab0EFNjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 09:39:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Subject: Re: [RFC][PATCH resend 8/12] asm-generic: bitops: introduce le bit offset macro
-Date: Thu, 6 May 2010 15:38:54 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com, agraf@suse.de,
-       yoshikawa.takuya@oss.ntt.co.jp, fernando@oss.ntt.co.jp,
-       kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org,
-       tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-       benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <4BE04677.4060608@redhat.com> <20100505115924.7bb92036.takuya.yoshikawa@gmail.com>
-In-Reply-To: <20100505115924.7bb92036.takuya.yoshikawa@gmail.com>
+	id S932075Ab0EFNqL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 09:46:11 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:43004 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758222Ab0EFNqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 09:46:09 -0400
+Date: Thu, 6 May 2010 14:45:51 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+	the wrong VMA information
+Message-ID: <20100506134550.GA8704@csn.ul.ie>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie> <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org> <20100505145620.GP20979@csn.ul.ie> <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org> <20100505155454.GT20979@csn.ul.ie> <alpine.LFD.2.00.1005051007140.27218@i5.linux-foundation.org> <4BE2C6E8.2030609@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005061538.54326.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18/iTQvsLwXxvqdQKVGUJ1Ol/oaK4BYk1/VY2l
- e/UQSKtANNsQjuInvjnWoyEZr9SqT+bvpI2XPREEdonixSgpwL
- ER8Z75afBAVdrtUyxxv/Q==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4BE2C6E8.2030609@redhat.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 May 2010, Takuya Yoshikawa wrote:
-> Date: 
-> Yesterday 04:59:24
-> > That's why the bitmaps are defined as little endian u64 aligned, even on 
-> > big endian 32-bit systems.  Little endian bitmaps are wordsize agnostic, 
-> > and u64 alignment ensures we can use long-sized bitops on mixed size 
-> > systems.
+On Thu, May 06, 2010 at 09:40:56AM -0400, Rik van Riel wrote:
+> On 05/05/2010 01:34 PM, Linus Torvalds wrote:
+>
+>>   - you always lock the _deepest_ anon_vma you can find.
+>
+> The emphasis should be on "always" :)
+>
+>> That means just a single lock. And the "deepest" anon_vma is well-defined
+>> for all anon_vma's, because each same_anon_vma chain is always rooted in
+>> the original anon_vma that caused it.
+>
+> It should work, but only if we always take the deepest
+> anon_vma lock.
+>
+> Not just in the migration code, but also in mmap, munmap,
+> mprotect (for split_vma), expand_stack, etc...
+>
+> Otherwise we will still not provide exclusion of migrate
+> vs. those events.
+>
 
-Ok, I see.
+Are you sure?
 
-> There was a suggestion to propose set_le_bit_user() kind of macros.
-> But what I thought was these have a constraint you two explained and seemed to be
-> a little bit specific to some area, like KVM.
-> 
-> So I decided to propose just the offset calculation macro.
+I thought this as well but considered a situation something like
 
-I'm not sure I understand how this macro is going to be used though.
-If you are just using this in kernel space, that's fine, please go for
-it.
+root anon_vma          <--- rmap_walk starts here
+     anon_vma a
+     anon_vma b
+     anon_vma c        <--- an munmap/mmap/mprotect/etc here
+     anon_vma d
+     anon_vma e
 
-However, if the intention is to use the same macro in user space, putting
-it into asm-generic/bitops/* is not going to help, because those headers
-are not available in user space, and I wouldn't want to change that.
+The rmap_walk takes the root lock and then locks a, b, c, d and e as it
+walks along.
 
-The definition of the macro is not part of the ABI, so just duplicate
-it in KVM if you need it there.
+The mSomething event happens on c and takes the lock
 
-	Arnd
+if rmap_walk gets there first, it takes the lock and the mSomething
+event waits until the full rmap_walk is complete (delayed slightly but
+no biggie).
+
+if mSomething gets there first, rmap_walk will wait on taking the lock.
+Again, there could be some delays but no biggie.
+
+What am I missing?
+
+> I'm guessing that means changing both anon_vma_lock and
+> page_lock_anon_vma to always take the deepest anon_vma
+> lock - not introducing a new function that is only called
+> by the migration code.
+>
+
+That would be the case all right but I'd prefer to have PeterZ's patches
+that do full reference counting of anon_vma first instead of introducing
+RCU to those paths.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
