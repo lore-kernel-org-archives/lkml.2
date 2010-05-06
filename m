@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab0EFTN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 15:13:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49153 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756139Ab0EFTN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 15:13:57 -0400
-Message-ID: <4BE314CD.6060701@zytor.com>
-Date: Thu, 06 May 2010 12:13:17 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1755645Ab0EFTPi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 15:15:38 -0400
+Received: from imap.ru.mvista.com ([213.79.90.228]:57654 "EHLO
+	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752824Ab0EFTPg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 15:15:36 -0400
+Date: Thu, 6 May 2010 23:15:32 +0400
+From: Anton Vorontsov <avorontsov@mvista.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Sebastian Siewior <bigeasy@linutronix.de>,
+       Catalin Marinas <catalin.marinas@arm.com>,
+       Bryan Wu <cooloney@kernel.org>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] USB: isp1760: Soften DW3 X/transaction error bit handling
+Message-ID: <20100506191532.GA11365@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: asdf@kroah.com, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-       linux-kernel@vger.kernel.org, Vadim Rozenfeld <vrozenfe@redhat.com>,
-       Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Haiyang Zhang <haiyangz@microsoft.com>,
-       Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH] x86: detect running on a HyperV system
-References: <20100506190841.GA1605@kroah.com>
-In-Reply-To: <20100506190841.GA1605@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2010 12:08 PM, Greg KH wrote:
-> 
-> x86-maintainers, we need this patch in the tree to get a -staging driver
-> to work properly.  If you don't object, can I take it through the
-> staging tree?  Or do you want to take it in -tip?
-> 
+There were some reports[1] of isp1760 USB driver malfunctioning
+with high speed devices, noticed on Blackfin and PowerPC targets.
+These reports indicated that the original Philips 'pehcd'[2]
+driver worked fine.
 
-I'd prefer to take it in -tip, partly because I would like to rework a
-few things -- including preexisting braindamage like c->x86_hyper_vendor
-(since when was hypervisor vendor a per-cpu property!?)
+We've noticed the same issue with an ARM RealView platform. This
+happens under load (with only some mass storage devices, not all,
+just as in another report[3]):
 
-I'll try to get to it today, if not feel free to bug me.
+  error bit is set in DW3
+  error bit is set in DW3
+  error bit is set in DW3
+  usb 1-1.2: device descriptor read/64, error -32
 
-	-hpa
+It appears that the 'pehcd' driver checks the X bit only if the
+transaction is halted, otherwise the error is so far
+insignificant.
 
+I didn't find where exactly ISP1760 spec mandates 'H && X'
+handling (maybe it's in the EHCI spec?), but the approach that
+is used in the original driver (and in the EHCI driver, FWIW)
+fixes the issue.
+
+[1] http://markmail.org/message/lx4qrlbrs2uhcnly
+[2] svn co svn://sources.blackfin.uclinux.org/linux-kernel/trunk/drivers/usb/host -r 5494
+    See pehci.c:pehci_hcd_update_error_status().
+[3] http://blackfin.uclinux.org/gf/project/uclinux-dist/tracker/?action=TrackerItemEdit&tracker_item_id=5148
+
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+---
+
+Note that this isn't related to the recent cache issues on ARM
+platforms, as the kernel I'm running has commit 3f54ccf38eb51
+'isp1760: Flush the D-cache for the pipe-in transfer buffers'.
+
+ drivers/usb/host/isp1760-hcd.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/host/isp1760-hcd.c b/drivers/usb/host/isp1760-hcd.c
+index 9f01293..9989c0b 100644
+--- a/drivers/usb/host/isp1760-hcd.c
++++ b/drivers/usb/host/isp1760-hcd.c
+@@ -713,12 +713,11 @@ static int check_error(struct ptd *ptd)
+ 	u32 dw3;
+ 
+ 	dw3 = le32_to_cpu(ptd->dw3);
+-	if (dw3 & DW3_HALT_BIT)
++	if (dw3 & DW3_HALT_BIT) {
+ 		error = -EPIPE;
+ 
+-	if (dw3 & DW3_ERROR_BIT) {
+-		printk(KERN_ERR "error bit is set in DW3\n");
+-		error = -EPIPE;
++		if (dw3 & DW3_ERROR_BIT)
++			pr_err("error bit is set in DW3\n");
+ 	}
+ 
+ 	if (dw3 & DW3_QTD_ACTIVE) {
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+1.7.0.5
