@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab0EFGXF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 02:23:05 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42095 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab0EFGXB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 02:23:01 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 6 May 2010 15:18:58 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: balbir@linux.vnet.ibm.com, nishimura@mxp.nes.nec.co.jp,
-       akpm@linux-foundation.org, kirill@shutemov.name, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm: memcontrol - uninitialised return value
-Message-Id: <20100506151858.cf3a5fe7.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1273058509-16625-2-git-send-email-ext-phil.2.carmody@nokia.com>
-References: <1273058509-16625-1-git-send-email-ext-phil.2.carmody@nokia.com>
-	<1273058509-16625-2-git-send-email-ext-phil.2.carmody@nokia.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752963Ab0EFGX3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 02:23:29 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45825 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751191Ab0EFGX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 02:23:28 -0400
+Date: Thu, 6 May 2010 08:22:50 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Jens Axboe <jens.axboe@oracle.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       a.p.zijlstra@chello.nl, tglx@linutronix.de
+Subject: Re: [GIT PULL] Additional RCU fixes for 2.6.34
+Message-ID: <20100506062250.GC1172@elte.hu>
+References: <20100506002838.GA31818@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100506002838.GA31818@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 May 2010 14:21:49 +0300
-Phil Carmody <ext-phil.2.carmody@nokia.com> wrote:
 
-> From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+
+> Hello, Ingo,
 > 
-> Only an out of memory error will cause ret to be set.
+> Here are three more RCU-lockdep fixes for 2.6.34:
 > 
-> Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
-> Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+> 
+> 							Thanx, Paul
+> 
+> ------------------>
+> Vivek Goyal <vgoyal@redhat.com> (1)
+> 	blk-cgroup: Fix RCU correctness warning in cfq_init_queue()
+> 
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> (2)
+> 	vfs: fix RCU-lockdep false positive due to /proc access
+> 	memcg: css_id() must be called under rcu_read_lock()
+> 
+>  block/cfq-iosched.c      |    2 ++
+>  include/linux/fdtable.h  |    3 ++-
+>  include/linux/rcupdate.h |   11 +++++++++++
+>  kernel/rcupdate.c        |   11 +++++++++++
+>  mm/memcontrol.c          |   21 ++++++++++++++++-----
+>  5 files changed, 42 insertions(+), 6 deletions(-)
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Pulled, thanks Paul!
 
+Jens, is that blk-cgroup fix from Vivek fine to you via this route?
+
+Thanks,
+
+	Ingo
