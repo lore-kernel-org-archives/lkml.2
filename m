@@ -1,34 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab0EFUVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 16:21:30 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.31.37]:50938 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932183Ab0EFUV2 (ORCPT
+	id S932439Ab0EFUWq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 16:22:46 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:56305 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932183Ab0EFUWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 16:21:28 -0400
-References: <1273122377-12137-1-git-send-email-rkc@chromium.org> <t2w1cd529021005052244sdefc0247n8d0b40a6612a3438@mail.gmail.com>
-Message-ID: <cone.1273176533.938023.17424.1000@deskpiie>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <pfe@piie.net>
-To: Rahul Chaturvedi <rkc@chromium.org>
-Cc: linux-kernel@vger.kernel.org, msb@chromium.org
-Subject: Re: [PATCH] CHROMIUM: acerhdf: fix bug when running on Qemu
-Date: Thu, 06 May 2010 22:08:53 +0200
+	Thu, 6 May 2010 16:22:44 -0400
+Subject: Re: [BUG] perf_events: PERF_FORMAT_GROUP not working correctly
+ when monitoring another task
+From: Peter Zijlstra <peterz@infradead.org>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Carl Love <carll@us.ibm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       stephane eranian <eranian@googlemail.com>
+In-Reply-To: <4BE321F8.1050309@linux.vnet.ibm.com>
+References: <4BDF8118.3090200@linux.vnet.ibm.com>
+	 <1273160566.5605.404.camel@twins>  <4BE321F8.1050309@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 May 2010 22:22:40 +0200
+Message-ID: <1273177360.1642.280.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
-Content-Disposition: inline
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: 404094
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rahul Chaturvedi writes:
+On Thu, 2010-05-06 at 13:09 -0700, Corey Ashford wrote:
+> The patch works with the test case I provided, but for some reason it 
+> breaks the normal operation of the libpfm4 "task" utility.  If I put 
+> more than one event in a group, I get zero counts on all but the first 
+> event.  That's even if I don't use the PERF_FORMAT_GROUP option.
 
-> BTW, the CHROMIUM in the subject is just used for internal bookeeping
-> for patches not yet accepted upstream.
+Bugger,.. weird though, I can't see how it would affect the state before
+the counters get detached from their context (exit() / close()).
 
-What does it mean? Should I take care about getting it upstream?
+> So something appears to be messed up.  I will see if I can construct an 
+> arch-independent test case which demonstrates the problem.
 
---peter;
+That would be awesome, thanks!
+
+
