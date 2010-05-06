@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab0EFJgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 05:36:14 -0400
-Received: from mail-yx0-f191.google.com ([209.85.210.191]:36082 "EHLO
-	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab0EFJgM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 05:36:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=X/IA4rzvU7NagG54Vq/gR704lY7/wPs1xtt8DEurDxzhnAO4wtgZgP1mXLazC1SWcB
-         AsK+trgF1qtsdUxNb2G8EFMBFrdqjWaEBKU7AcvTcabMnHZyotQ3iUzWOSTphvONqyyv
-         rBRhMxB9Zijzol32UXVrEvDeZRN5WlE/Rp5wA=
-From: Mark <reodge@gmail.com>
-To: gregkh@suse.de, mithlesh@linsyssoft.com, wfp5p@virginia.edu,
-       andrea.gelmini@gelma.net
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Mark <reodge@gmail.com>
-Subject: [PATCH] Staging: comedi: Fixed printk call lengths and log levels
-Date: Thu,  6 May 2010 17:36:38 +0800
-Message-Id: <1273138598-7364-1-git-send-email-reodge@gmail.com>
-X-Mailer: git-send-email 1.7.0.5
+	id S1754181Ab0EFKh0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 06:37:26 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:50135 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751873Ab0EFKhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 06:37:24 -0400
+Date: Thu, 6 May 2010 11:37:05 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+	the wrong VMA information
+Message-ID: <20100506103705.GD20979@csn.ul.ie>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie> <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org> <20100505145620.GP20979@csn.ul.ie> <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org> <20100505155454.GT20979@csn.ul.ie> <20100505161319.GQ5835@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100505161319.GQ5835@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to include log levels and fix some over length lines in
-printk calls in drivers.c
+On Wed, May 05, 2010 at 06:13:19PM +0200, Andrea Arcangeli wrote:
+> On Wed, May 05, 2010 at 04:54:54PM +0100, Mel Gorman wrote:
+> > I'm still thinking of the ordering but one possibility would be to use a mutex
+> 
+> I can't take mutex in split_huge_page... so I'd need to use an other solution.
+> 
+> > Not yet.
+> 
+> Rik's patch that takes the locks in the faster path is preferable to
+> me, it's just simpler, you know the really "strong" long is the
+> page->mapping/anon_vma->lock and nothing else.
 
-Signed-off-by: Mark Rankilor <reodge@gmail.com>
----
- drivers/staging/comedi/drivers.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+The hatchet-job mutex is off the table so it's down to
 
-diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-index 1f48b6d..ffb0ad4 100644
---- a/drivers/staging/comedi/drivers.c
-+++ b/drivers/staging/comedi/drivers.c
-@@ -95,7 +95,8 @@ static void __comedi_device_detach(struct comedi_device *dev)
- 	if (dev->driver)
- 		dev->driver->detach(dev);
- 	else
--		printk(KERN_WARNING "BUG: dev->driver=NULL in comedi_device_detach()\n");
-+		printk(KERN_WARNING
-+		       "BUG: dev->driver=NULL in comedi_device_detach()\n");
- 	cleanup_device(dev);
- }
- 
-@@ -148,7 +149,8 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	/*  report valid board names before returning error */
- 	for (driv = comedi_drivers; driv; driv = driv->next) {
- 		if (!try_module_get(driv->module)) {
--			printk(KERN_INFO "comedi: failed to increment module count\n");
-+			printk(KERN_INFO 
-+			       "comedi: failed to increment module count\n");
- 			continue;
- 		}
- 		comedi_report_boards(driv);
-@@ -250,7 +252,8 @@ static int postconfig(struct comedi_device *dev)
- 			async =
- 			    kzalloc(sizeof(struct comedi_async), GFP_KERNEL);
- 			if (async == NULL) {
--				printk(KERN_INFO "failed to allocate async struct\n");
-+				printk(KERN_INFO
-+				       "failed to allocate async struct\n");
- 				return -ENOMEM;
- 			}
- 			init_waitqueue_head(&async->wait_head);
-@@ -560,7 +563,8 @@ static unsigned int comedi_buf_munge(struct comedi_async *async,
- 
- 		block_size = num_bytes - count;
- 		if (block_size < 0) {
--			printk(KERN_WARNING "%s: %s: bug! block_size is negative\n",
-+			printk(KERN_WARNING
-+			       "%s: %s: bug! block_size is negative\n",
- 			       __FILE__, __func__);
- 			break;
- 		}
-@@ -679,8 +683,8 @@ unsigned comedi_buf_read_free(struct comedi_async *async, unsigned int nbytes)
- 	smp_mb();
- 	if ((int)(async->buf_read_count + nbytes -
- 		  async->buf_read_alloc_count) > 0) {
--		printk
--		    ("comedi: attempted to read-free more bytes than have been read-allocated.\n");
-+		printk(KERN_INFO
-+		       "comedi: attempted to read-free more bytes than have been read-allocated.\n");
- 		nbytes = async->buf_read_alloc_count - async->buf_read_count;
- 	}
- 	async->buf_read_count += nbytes;
+start-with-root-anon_vma-and-lock-in-order-when-walking-list (what I last posted)
+take-all-anon_vma-locks-when-changing-vmas (Rik's)
+use-seq-counter-to-spot-changes-to-VMAs-when-walking-list (Kamezawa-san's approach)
+
+Any strong preference?
+
+I still haven't read the other comments Linus made so I don't have a strong
+preference yet. Either Rik's or the patch I posted should be enough for
+migration to not get tripped up as far as I can see.
+
+> You've a page, you take
+> that lock, you're done for that very page.
+> 
+> Sure that means updating vm_start/vm_pgoff then requires locking all
+> anon_vmas that the vma registered into, but that's conceptually
+> simpler and it doesn't alter the page_lock_anon_vma semantics. Now I
+> wonder if you said the same_anon_vma is in order, but the same_vma is
+> not, if it's safe to lock the same_vma in list order in anon_vma_lock,
+> I didn't experience problems on the anon_vma_chain branch but
+> anon_vma_lock disables all lockdep lock inversion checking.
+> 
+
 -- 
-1.7.0.5
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
