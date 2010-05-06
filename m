@@ -1,143 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387Ab0EFJym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 05:54:42 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:55141 "EHLO gir.skynet.ie"
+	id S1756176Ab0EFSvq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 14:51:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43187 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751818Ab0EFJyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 05:54:41 -0400
-Date: Thu, 6 May 2010 10:54:22 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
-	the wrong VMA information
-Message-ID: <20100506095422.GA20979@csn.ul.ie>
-References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie> <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org> <20100505145620.GP20979@csn.ul.ie> <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org> <20100505175311.GU20979@csn.ul.ie> <alpine.LFD.2.00.1005051058380.27218@i5.linux-foundation.org> <20100506002255.GY20979@csn.ul.ie> <p2s28c262361005060247m2983625clff01aeaa1668402f@mail.gmail.com>
+	id S1752498Ab0EFSvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 14:51:44 -0400
+Date: Thu, 6 May 2010 15:00:38 -0400
+From: Josef Bacik <josef@redhat.com>
+To: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 2/3] direct-io: add a hook for the fs to provide its own
+	submit_bio function
+Message-ID: <20100506190037.GC13974@dhcp231-156.rdu.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <p2s28c262361005060247m2983625clff01aeaa1668402f@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 06:47:12PM +0900, Minchan Kim wrote:
-> On Thu, May 6, 2010 at 9:22 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> > On Wed, May 05, 2010 at 11:02:25AM -0700, Linus Torvalds wrote:
-> >>
-> >>
-> >> On Wed, 5 May 2010, Mel Gorman wrote:
-> >> >
-> >> > If the same_vma list is properly ordered then maybe something like the
-> >> > following is allowed?
-> >>
-> >> Heh. This is the same logic I just sent out. However:
-> >>
-> >> > +   anon_vma = page_rmapping(page);
-> >> > +   if (!anon_vma)
-> >> > +           return NULL;
-> >> > +
-> >> > +   spin_lock(&anon_vma->lock);
-> >>
-> >> RCU should guarantee that this spin_lock() is valid, but:
-> >>
-> >> > +   /*
-> >> > +    * Get the oldest anon_vma on the list by depending on the ordering
-> >> > +    * of the same_vma list setup by __page_set_anon_rmap
-> >> > +    */
-> >> > +   avc = list_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
-> >>
-> >> We're not guaranteed that the 'anon_vma->head' list is non-empty.
-> >>
-> >> Somebody could have freed the list and the anon_vma and we have a stale
-> >> 'page->anon_vma' (that has just not been _released_ yet).
-> >>
-> >> And shouldn't that be 'list_first_entry'? Or &anon_vma->head.next?
-> >>
-> >> How did that line actually work for you? Or was it just a "it boots", but
-> >> no actual testing of the rmap walk?
-> >>
-> >
-> > This is what I just started testing on a 4-core machine. Lockdep didn't
-> > complain but there are two potential sources of badness in anon_vma_lock_root
-> > marked with XXX. The second is the most important because I can't see how the
-> > local and root anon_vma locks can be safely swapped - i.e. release local and
-> > get the root without the root disappearing. I haven't considered the other
-> > possibilities yet such as always locking the root anon_vma. Going to
-> > sleep on it.
-> >
-> > Any comments?
-> 
-> <snip>
-> > +/* Given an anon_vma, find the root of the chain, lock it and return the root */
-> > +struct anon_vma *anon_vma_lock_root(struct anon_vma *anon_vma)
-> > +{
-> > +       struct anon_vma *root_anon_vma;
-> > +       struct anon_vma_chain *avc, *root_avc;
-> > +       struct vm_area_struct *vma;
-> > +
-> > +       /* Lock the same_anon_vma list and make sure we are on a chain */
-> > +       spin_lock(&anon_vma->lock);
-> > +       if (list_empty(&anon_vma->head)) {
-> > +               spin_unlock(&anon_vma->lock);
-> > +               return NULL;
-> > +       }
-> > +
-> > +       /*
-> > +        * Get the root anon_vma on the list by depending on the ordering
-> > +        * of the same_vma list setup by __page_set_anon_rmap. Basically
-> > +        * we are doing
-> > +        *
-> > +        * local anon_vma -> local vma -> deepest vma -> anon_vma
-> > +        */
-> > +       avc = list_first_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
-> 
-> Dumb question.
-> 
-> I can't understand why we should use list_first_entry.
-> 
-> I looked over the code.
-> anon_vma_chain_link uses list_add_tail so I think that's right.
-> But anon_vma_prepare uses list_add. So it's not consistent.
-> How do we make sure list_first_entry returns deepest vma?
-> 
+Because BTRFS can do RAID and such, we need our own submit hook so we can setup
+the bio's in the correct fashion, and handle checksum errors properly.  So there
+are a few changes here
 
-list_first_entry is not getting the root (what you called deepest but lets
-pick a name and stick with it or this will be worse than it already is). That
-list_first entry is what gets us from
+1) The submit_io hook.  This is straightforward, just call this instead of
+submit_bio.
 
-local anon_vma -> avc for the local anon_vma -> local vma
+2) Honor the boundary flag a little more specifically.  BTRFS needs to supply
+the _logical_ offset to the map_bh in it's get_block function so when we go to
+submit the IO we can look up the right checksum information.  In order for this
+to work out, we need to make sure each extent we map through get_block gets sent
+individually.  The direct IO code tries to merge things together that appear to
+be side by side, but since we are using logical offsets, thats always going to
+be the case.  So instead of clearing dio->boundary when we create a new bio,
+save it in a local variable, and submit the io if boundary was set.
 
-It's the ordering of the same_vma list hanging off the local_vma that is
-important according to this comment in __page_set_anon_rmap
+3) Allow the fs to return -ENOTBLK for reads.  Usually this has only worked for
+writes, since writes can fallback onto buffered IO.  But BTRFS needs the option
+of falling back on buffered IO if it encounters a compressed extent, since we
+need to read the entire extent in and decompress it.  So if we get -ENOTBLK back
+from get_block we'll return back and fallback on buffered just like the write
+case.
 
-                /*
-                 * The page may be shared between multiple processes.
-                 * We must use the _oldest_ possible anon_vma for the
-                 * page mapping!  That anon_vma is guaranteed to be
-                 * present in all processes that could share this page.
-                 *
-                 * So take the last AVC chain entry in the vma, which is the
-                 * deepest ancestor, and use the anon_vma from that.
-                 */
-                avc = list_entry(vma->anon_vma_chain.prev, struct anon_vma_chain, same_vma);
-                anon_vma = avc->anon_vma;
-        }
+I've tested these changes with fsx and everything seems to work.  Thanks,
 
-> Sorry if I am missing.
-> 
+Signed-off-by: Josef Bacik <josef@redhat.com>
+---
+ fs/direct-io.c     |   32 ++++++++++++++++++++++++++------
+ include/linux/fs.h |   19 ++++++++++++++++---
+ 2 files changed, 42 insertions(+), 9 deletions(-)
 
-Not at all. The more people that look at this the better.
-
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index e82adc2..3d174df 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -82,6 +82,7 @@ struct dio {
+ 	int reap_counter;		/* rate limit reaping */
+ 	get_block_t *get_block;		/* block mapping function */
+ 	dio_iodone_t *end_io;		/* IO completion function */
++	dio_submit_t *submit_io;	/* IO submition function */
+ 	sector_t final_block_in_bio;	/* current final block in bio + 1 */
+ 	sector_t next_block_for_io;	/* next block to be put under IO,
+ 					   in dio_blocks units */
+@@ -300,6 +301,17 @@ static void dio_bio_end_io(struct bio *bio, int error)
+ 	spin_unlock_irqrestore(&dio->bio_lock, flags);
+ }
+ 
++void dio_end_io(struct bio *bio, int error)
++{
++	struct dio *dio = bio->bi_private;
++
++	if (dio->is_async)
++		dio_bio_end_aio(bio, error);
++	else
++		dio_bio_end_io(bio, error);
++}
++EXPORT_SYMBOL(dio_end_io);
++
+ static int
+ dio_bio_alloc(struct dio *dio, struct block_device *bdev,
+ 		sector_t first_sector, int nr_vecs)
+@@ -340,7 +352,10 @@ static void dio_bio_submit(struct dio *dio)
+ 	if (dio->is_async && dio->rw == READ)
+ 		bio_set_pages_dirty(bio);
+ 
+-	submit_bio(dio->rw, bio);
++	if (!dio->submit_io)
++		submit_bio(dio->rw, bio);
++	else
++		dio->submit_io(dio->rw, bio, dio->inode);
+ 
+ 	dio->bio = NULL;
+ 	dio->boundary = 0;
+@@ -600,6 +615,7 @@ static int dio_bio_add_page(struct dio *dio)
+  */
+ static int dio_send_cur_page(struct dio *dio)
+ {
++	int boundary = dio->boundary;
+ 	int ret = 0;
+ 
+ 	if (dio->bio) {
+@@ -612,7 +628,7 @@ static int dio_send_cur_page(struct dio *dio)
+ 		 * Submit now if the underlying fs is about to perform a
+ 		 * metadata read
+ 		 */
+-		if (dio->boundary)
++		if (boundary)
+ 			dio_bio_submit(dio);
+ 	}
+ 
+@@ -629,6 +645,8 @@ static int dio_send_cur_page(struct dio *dio)
+ 			ret = dio_bio_add_page(dio);
+ 			BUG_ON(ret != 0);
+ 		}
++	} else if (boundary) {
++		dio_bio_submit(dio);
+ 	}
+ out:
+ 	return ret;
+@@ -935,7 +953,7 @@ static ssize_t
+ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode, 
+ 	const struct iovec *iov, loff_t offset, unsigned long nr_segs, 
+ 	unsigned blkbits, get_block_t get_block, dio_iodone_t end_io,
+-	struct dio *dio)
++	dio_submit_t submit_io, struct dio *dio)
+ {
+ 	unsigned long user_addr; 
+ 	unsigned long flags;
+@@ -952,6 +970,7 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
+ 
+ 	dio->get_block = get_block;
+ 	dio->end_io = end_io;
++	dio->submit_io = submit_io;
+ 	dio->final_block_in_bio = -1;
+ 	dio->next_block_for_io = -1;
+ 
+@@ -1008,7 +1027,7 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
+ 		}
+ 	} /* end iovec loop */
+ 
+-	if (ret == -ENOTBLK && (rw & WRITE)) {
++	if (ret == -ENOTBLK) {
+ 		/*
+ 		 * The remaining part of the request will be
+ 		 * be handled by buffered I/O when we return
+@@ -1110,7 +1129,7 @@ ssize_t
+ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
+ 	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
+-	int flags)
++	dio_submit_t submit_io,	int flags)
+ {
+ 	int seg;
+ 	size_t size;
+@@ -1197,7 +1216,8 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 		(end > i_size_read(inode)));
+ 
+ 	retval = direct_io_worker(rw, iocb, inode, iov, offset,
+-				nr_segs, blkbits, get_block, end_io, dio);
++				nr_segs, blkbits, get_block, end_io,
++				submit_io, dio);
+ 
+ 	/*
+ 	 * In case of error extending write may have instantiated a few
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 44f35ae..d56f0be 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2250,10 +2250,14 @@ static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
+ #endif
+ 
+ #ifdef CONFIG_BLOCK
++struct bio;
++typedef void (dio_submit_t)(int rw, struct bio *bio, struct inode *inode);
++void dio_end_io(struct bio *bio, int error);
++
+ ssize_t __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	struct block_device *bdev, const struct iovec *iov, loff_t offset,
+ 	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
+-	int lock_type);
++	dio_submit_t submit_io,	int lock_type);
+ 
+ enum {
+ 	/* need locking between buffered and direct access */
+@@ -2269,7 +2273,7 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
+ 	dio_iodone_t end_io)
+ {
+ 	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
+-				    nr_segs, get_block, end_io,
++				    nr_segs, get_block, end_io, NULL,
+ 				    DIO_LOCKING | DIO_SKIP_HOLES);
+ }
+ 
+@@ -2279,7 +2283,16 @@ static inline ssize_t blockdev_direct_IO_no_locking(int rw, struct kiocb *iocb,
+ 	dio_iodone_t end_io)
+ {
+ 	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
+-				nr_segs, get_block, end_io, 0);
++				    nr_segs, get_block, end_io, NULL, 0);
++}
++
++static inline ssize_t blockdev_direct_IO_own_submit(int rw, struct kiocb *iocb,
++	struct inode *inode, struct block_device *bdev, const struct iovec *iov,
++	loff_t offset, unsigned long nr_segs, get_block_t get_block,
++	dio_submit_t submit_io)
++{
++	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
++				    nr_segs, get_block, NULL, submit_io, 0);
+ }
+ #endif
+ 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.6.6.1
+
