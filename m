@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab0EFXYK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 19:24:10 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:36322 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab0EFXYI (ORCPT
+	id S1751379Ab0EFX06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 19:26:58 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14030 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab0EFX05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 19:24:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=cfG7ZVkOGFQwAIiC8xJOH55pSyj1eVfzLsW3lva5XWlKT8sQQw3FniLoLMuLNDzLuI
-         B4lDRWjD9vMWrvtweHF/SGJIvwizF93B7HCcST6AiL0XUoKWGci0itb9VQJSxGxjL7r1
-         MRR2JvLkHRXwlgioQ3DtQepDrcCm+W+a1M3HY=
-Message-ID: <4BE34FA5.8070906@gmail.com>
-Date: Thu, 06 May 2010 16:24:21 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Thu, 6 May 2010 19:26:57 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:date:from:user-agent:mime-version:newsgroups:to:cc:
+	subject:references:in-reply-to:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=eRT32WBCMjUxzGRqUH34wuqXuylPlboCwON+TmYPMh1Epmzcq6B6oB0fix83p53mw
+	YkK0QJHwCT6xbyheaSkSg==
+Message-ID: <4BE3503A.2000309@google.com>
+Date: Thu, 06 May 2010 16:26:50 -0700
+From: Mike Waychison <mikew@google.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Michel Lespinasse <walken@google.com>
 CC: David Howells <dhowells@redhat.com>,
-       Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Subject: Re: linux-next: manual merge of the security-testing tree with Linus'
- tree
-References: <20100506123049.082e98cc.sfr@canb.auug.org.au> <7197.1273142988@redhat.com> <alpine.LRH.2.00.1005070908230.31779@tundra.namei.org>
-In-Reply-To: <alpine.LRH.2.00.1005070908230.31779@tundra.namei.org>
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, Ying Han <yinghan@google.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: rwsem: down_read_unfair() proposal
+References: <20100505032033.GA19232@google.com> <22933.1273053820@redhat.com> <20100505103646.GA32643@google.com>
+In-Reply-To: <20100505103646.GA32643@google.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2010 04:10 PM, James Morris wrote:
-> On Thu, 6 May 2010, David Howells wrote:
->
->>
->> Stephen Rothwell<sfr@canb.auug.org.au>  wrote:
->>
->>> I just used the version from Linus' tree.
->>
->> Okay.
->>
->> However, I'd like to NAK some bits of c5b60b5e67af8be4c58d3ffcc36894f69c4fbdc1
->> now that I see it...
->
-> Will a patch -R of below be correct enough for you?  Otherwise, please
-> send me a new patch.
->
-> (This is one of the reasons why I'm not so keen on whitespace fixes, also
-> having to resolve merge conflicts, peturbing the history of the code etc.)
->
->
->>
->> 	@@ -1282,16 +1282,16 @@ long keyctl_session_to_parent(void)
->> 	
->> 	        /* the parent must have the same effective ownership and mustn't be
->> 	         * SUID/SGID */
->> 	-       if (pcred->  uid != mycred->euid ||
->> 	+       if (pcred->uid  != mycred->euid ||
->> 	            pcred->euid != mycred->euid ||
->> 	            pcred->suid != mycred->euid ||
->> 	-           pcred->  gid != mycred->egid ||
->> 	+           pcred->gid  != mycred->egid ||
->> 	            pcred->egid != mycred->egid ||
->> 	            pcred->sgid != mycred->egid)
->> 	                goto not_permitted;
->> 	
->> 	        /* the keyrings must have the same UID */
->> 	-       if (pcred ->tgcred->session_keyring->uid != mycred->euid ||
->> 	+       if (pcred->tgcred->session_keyring->uid != mycred->euid ||
->> 	            mycred->tgcred->session_keyring->uid != mycred->euid)
->> 	                goto not_permitted;
->>
->> _Please_ don't do either of these.  The whole point is to line stuff up so
->> that as the eye scans down the lines, it can easily pick out the differences
->> in stuff that's otherwise greatly repetitive.
->>
->> David
->>
->
+Michel Lespinasse wrote:
+> On Wed, May 05, 2010 at 11:03:40AM +0100, David Howells wrote:
+>> If the system is as heavily loaded as you say, how do you prevent
+>> writer starvation?  Or do things just grind along until sufficient
+>> threads are queued waiting for a write lock?
+> 
+> Reader/Writer fairness is not disabled in the general case - it only is
+> for a few specific readers such as /proc/<pid>/maps. In particular, the
+> do_page_fault path, which holds a read lock on mmap_sem for potentially long
+> (~disk latency) periods of times, still uses a fair down_read() call.
+> In comparison, the /proc/<pid>/maps path which we made unfair does not
+> normally hold the mmap_sem for very long (it does not end up hitting disk);
+> so it's been working out well for us in practice.
+> 
 
-I never would of thought this. So the != has to be lined
-up so things don't break?!
+FWIW, these sorts of block-ups are usually really pronounce on machines 
+with harddrives that take _forever_ to respond to SMART commands (which 
+are done via PIO, and which can serialize many drives when they are 
+hidden behind a port multiplier).  We've seen cases where hard faults 
+can take unusually long on an otherwise non-busy machines (~10 seconds?).
 
-Justin P. Mattock
+The other case we have problems with mmap_sem from a cluster monitoring 
+perspective occurs when we get blocked up behind a task that is having 
+problems dying from oom.  We have a variety of hacks used internally to 
+cover these cases, though I think we (David and I?) figured that it'd 
+make more sense to fix the dependencies on down_read(&current->mmap_sem) 
+in the do_exit() path.  For instance, it really makes no sense to 
+coredump when we are being oom killed (and thus we should be able to 
+skip the mmap_sem dependency there..).
+
+Mike Waychison
