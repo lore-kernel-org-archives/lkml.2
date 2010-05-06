@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab0EFC2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 22:28:19 -0400
-Received: from ozlabs.org ([203.10.76.45]:52231 "EHLO ozlabs.org"
+	id S1754057Ab0EFCa5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 22:30:57 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39076 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305Ab0EFC2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 22:28:17 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: dedekind1@gmail.com
-Subject: Re: [PULL] param sysfs oops (simple, leaky) fix, bool arrays fix
-Date: Thu, 6 May 2010 11:58:12 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: Takashi Iwai <tiwai@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, Sitsofe Wheeler <sitsofe@yahoo.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>
-References: <200910290902.13724.rusty@rustcorp.com.au> <s5hmxwevlm4.wl%tiwai@suse.de> <1273049369.3702.127.camel@localhost>
-In-Reply-To: <1273049369.3702.127.camel@localhost>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005061158.13098.rusty@rustcorp.com.au>
+	id S1753305Ab0EFCaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 22:30:55 -0400
+Date: Thu, 6 May 2010 12:30:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Morris <jmorris@namei.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>,
+       David Howells <dhowells@redhat.com>,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: linux-next: manual merge of the security-testing tree with Linus'
+ tree
+Message-Id: <20100506123049.082e98cc.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__6_May_2010_12_30_49_+1000_=icsQtVAix_kd2xT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 May 2010 06:19:29 pm Artem Bityutskiy wrote:
-> > Fixing in the way of the later upstream is a bit too intrusive as a
-> > stable patch.  So, I'm also not sure whether we should take it,
-> > too...
-> 
-> To be frank I do not really understand what you mean.
-> 
-> Anyway, I just humbly suggest not to have the "no one uses that, let's
-> have a leak" attitude. I do understand that this is a 'it's a lot of
-> churn for not much gain'. However, I think the rmmod leak is large
-> enough issue.
+--Signature=_Thu__6_May_2010_12_30_49_+1000_=icsQtVAix_kd2xT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks Artem, that's exactly the kind of feedback we need.
+Hi James,
 
-For most people, module parameters are rare, and module removal is rare.
-So the amount of leak is less than the size of the code we would add to fix
-it.
+Today's linux-next merge of the security-testing tree got a conflict in
+security/keys/keyring.c between commit
+cea7daa3589d6b550546a8c8963599f7c1a3ae5c ("KEYS: find_keyring_by_name()
+can gain access to a freed keyring") from Linus' tree and commit
+c5b60b5e67af8be4c58d3ffcc36894f69c4fbdc1 ("security: whitespace coding
+style fixes") from the security-testing tree.
 
-If this is hitting you, it clearly changes the priorities.  I will include
-the patches now.
+I just used the version from Linus' tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Thanks!
-Rusty.
+--Signature=_Thu__6_May_2010_12_30_49_+1000_=icsQtVAix_kd2xT
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkviKdkACgkQjjKRsyhoI8xkYQCfeq9InynYIUjh3rbynXF4Me3N
+aI4Anix1PNYSmE1ekvVbxXSF80AVr2kR
+=fIII
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__6_May_2010_12_30_49_+1000_=icsQtVAix_kd2xT--
