@@ -1,98 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab0EFOAI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 10:00:08 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:34713 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab0EFOAG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 10:00:06 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Frans Pop <elendil@planet.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: git bisect questions...
-In-Reply-To: Your message of "Tue, 04 May 2010 18:08:44 +0200."
-             <201005041808.44875.elendil@planet.nl>
-From: Valdis.Kletnieks@vt.edu
-References: <6677.1272983034@localhost>
-            <201005041808.44875.elendil@planet.nl>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1273154402_3911P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1759072Ab0EFQbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 12:31:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53238 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754824Ab0EFQbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 12:31:14 -0400
+Message-ID: <4BE2EEB0.6020402@kernel.org>
+Date: Thu, 06 May 2010 18:30:40 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org,
+       Dipankar Sarma <dipankar@in.ibm.com>,
+       Josh Triplett <josh@freedesktop.org>, Oleg Nesterov <oleg@redhat.com>,
+       Dimitri Sivanich <sivanich@sgi.com>
+Subject: Re: [PATCH 3/4 UPDATED] scheduler: replace migration_thread with
+ cpu_stop
+References: <1272980864-27235-1-git-send-email-tj@kernel.org> <1272980864-27235-4-git-send-email-tj@kernel.org> <20100505013351.GN2639@linux.vnet.ibm.com> <4BE11E29.6040106@kernel.org> <20100505174725.GA6783@linux.vnet.ibm.com> <4BE1B49F.2020404@kernel.org> <20100505203149.GA2439@linux.vnet.ibm.com>
+In-Reply-To: <20100505203149.GA2439@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Thu, 06 May 2010 10:00:03 -0400
-Message-ID: <24885.1273154403@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020205.4BE2CB64.001E,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 06 May 2010 16:30:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1273154402_3911P
-Content-Type: text/plain; charset=us-ascii
+On 05/05/2010 10:31 PM, Paul E. McKenney wrote:
+> Almost.  With the following patch, I am good with it.
 
-On Tue, 04 May 2010 18:08:44 +0200, Frans Pop said:
-> Valdis.Kletnieks@vt.edu wrote:
-> > 1) I look at 'git bisect visualize', and I see a nice merge point that I
-> > am fairly sure will (a) bisect as good and (b) trim out a *lot* of
-> > ancestor commits in one shot.  If I do a 'git reset --hard <merge
-> > commit>', will that make the next 'git bisect' do what I want?
-> 
-> Yes.
-> 
-> > 2) I'm down to the last 100 or so commits, and I have a at least 3 'git
-> > bisect skip' in there already because of a (presumably) unrelated oops.
-> > I'm pretty sure that commit 10fd883ce384706f88554a0b08cc4d63345e7d8b is
-> > the fix - how do I logically move that commit to right after the commit
-> > 22dd82a3f5ceef72be19e502418823a2f8801ed0 which introduced the oops, so
-> > I can bisect through the 70 or so commits in between?  I know it involves
-> > "git cherrypick", but have no clue how to do it...
-> 
-> One way is, before *each* compilation after a 'git bisect good/bad', to do
-> a 'git cherry-pick 10fd883ce3847'. This means you don't actually move it 
-> after the commit that causes the problem, but you do add it on top for 
-> your compilation.
-> 
-> But that means that after testing the build you can no longer do a simple
-> 'git bisect good/bad' as that would tag the cherry-picked commit instead of 
-> the one you tested.
-> 
-> So instead you have to do 'git bisect good/bad HEAD^' (assuming you did a 
-> single cherry-pick) [1].
-> This will automatically "remove" the cherry-picked commit again, which is 
-> why you have to add it back for your next iteration.
+Ah, right.  What was I thinking?  I'll include your patch and push it
+to Ingo.  Thanks.
 
-Thanks muchly - after 2 well-chosen 'git resets' and 3 cherry-picks, I'm now
-well on my way to bisect down to the offending commit with no further issues
-(other than getting interrupted by other tasks, but that's my problem not
-lkml's). If you're ever in this corner of rural Virginia, I owe you a
-beverage-of-choice. ;)
-
-
-
---==_Exmh_1273154402_3911P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFL4sticC3lWbTT17ARAnbcAKDkRZvwtqHfW2LIpopWpK+1c+plTQCeKJEL
-xMOcN+wGLkSn03f0j1WcRFQ=
-=zCMQ
------END PGP SIGNATURE-----
-
---==_Exmh_1273154402_3911P--
-
+-- 
+tejun
