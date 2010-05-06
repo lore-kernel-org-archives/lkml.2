@@ -1,128 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab0EFN3Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 09:29:24 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65448 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab0EFN3W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 09:29:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bosdBph0tY8GNzmv1zUgMWgoQFyRmWfsuLs6V4xuZbWKGwwF//mW0R27hlnFAMB0kZ
-         puWVP0tzoc0UJkpw3zOLwPUczgJ1mldpNOQnS2B90f4ovHDAx+qEQBnvg0WAqu8GXyBe
-         E8fffEr3Z/kVYsgxH0iUT2oVhViE6WBE5eFm0=
-Date: Thu, 6 May 2010 16:31:02 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [Bug #15704] [r8169] WARNING: at net/sched/sch_generic.c
-Message-ID: <20100506133102.GA3331@swordfish>
-References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera>
- <8VO9AsMlpMD.A.zHB.NJJ4LB@chimera>
+	id S1757980Ab0EFM0u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 08:26:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757161Ab0EFM0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 08:26:48 -0400
+Date: Thu, 6 May 2010 08:26:19 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Oren Laadan <orenl@cs.columbia.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
+       Pavel Emelyanov <xemul@openvz.org>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v21 019/100] Make file_pos_read/write() public and
+	export kernel_write()
+Message-ID: <20100506122618.GA2327@localhost.localdomain>
+References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu> <1272723382-19470-20-git-send-email-orenl@cs.columbia.edu>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jI8keyz6grp/JLjh"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8VO9AsMlpMD.A.zHB.NJJ4LB@chimera>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1272723382-19470-20-git-send-email-orenl@cs.columbia.edu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, May 01, 2010 at 10:15:01AM -0400, Oren Laadan wrote:
+> These three are used in a subsequent patch to allow the kernel c/r
+> code to call vfs_read/write() to read and write data to and from the
+> checkpoint image.
+> 
+> This patch makes the following changes:
+> 
+> 1) Move kernel_write() from fs/splice.c to fs/exec.c to be near
+> kernel_read()
+> 
+> 2) Make kernel_read/write() iterate if they face partial reads or
+> writes, and retry if they face -EAGAIN.
+> 
+> 3) Adjust prototypes of kernel_read/write() to use size_t and ssize_t
+> 
+> 4) Move file_pos_read/write() to include/linux/fs.h
+> 
+> Changelog [ckpt-v21]
+>   - Introduce kernel_write(), fix kernel_read()
+> 
+> Cc: linux-fsdevel@vger.kernel.org
+> Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
+> Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+> ---
+>  fs/exec.c          |   69 ++++++++++++++++++++++++++++++++++++++++++++++++----
+>  fs/read_write.c    |   10 -------
+>  fs/splice.c        |   17 +------------
+>  include/linux/fs.h |   13 +++++++++-
+>  4 files changed, 77 insertions(+), 32 deletions(-)
+> 
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 49cdaa1..7bacb6a 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -693,23 +693,82 @@ exit:
+>  }
+>  EXPORT_SYMBOL(open_exec);
+>  
+> -int kernel_read(struct file *file, loff_t offset,
+> -		char *addr, unsigned long count)
+> +static ssize_t _kernel_read(struct file *file, loff_t offset,
+> +			    char __user *ubuf, size_t count)
+>  {
+> -	mm_segment_t old_fs;
+> +	ssize_t nread;
+> +	size_t nleft;
+>  	loff_t pos = offset;
+> -	int result;
+> +
+> +	for (nleft = count; nleft; nleft -= nread) {
+> +		nread = vfs_read(file, ubuf, nleft, &pos);
+> +		if (nread <= 0) {
+> +			if (nread == -EAGAIN) {
+> +				nread = 0;
+> +				continue;
+> +			} else if (nread == 0)
+> +				break;
+> +			else
+> +				return nread;
+> +		}
+> +		ubuf += nread;
+> +	}
+> +	return count - nleft;
+> +}
+> +
+> +ssize_t kernel_read(struct file *file, loff_t offset,
+> +		    char *addr, size_t count)
+> +{
+> +	mm_segment_t old_fs;
+> +	ssize_t result;
+>  
+>  	old_fs = get_fs();
+>  	set_fs(get_ds());
+>  	/* The cast to a user pointer is valid due to the set_fs() */
+> -	result = vfs_read(file, (void __user *)addr, count, &pos);
+> +	result = _kernel_read(file, offset, (void __user *)addr, count);
+>  	set_fs(old_fs);
+>  	return result;
+>  }
+>  
+>  EXPORT_SYMBOL(kernel_read);
+>  
+> +static ssize_t _kernel_write(struct file *file, loff_t offset,
+> +			     const char __user *ubuf, size_t count)
+> +{
+> +	ssize_t nwrite;
+> +	size_t nleft;
+> +	loff_t pos = offset;
+> +
+> +	for (nleft = count; nleft; nleft -= nwrite) {
+> +		nwrite = vfs_write(file, ubuf, nleft, &pos);
+> +		if (nwrite < 0) {
+> +			if (nwrite == -EAGAIN) {
+> +				nwrite = 0;
+> +				continue;
+> +			} else
+> +				return nwrite;
+> +		}
+> +		ubuf += nwrite;
+> +	}
+> +	return count - nleft;
+> +}
 
---jI8keyz6grp/JLjh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'm not entirely sure if this can happen, but if vfs_write doesn't write
+anything, but doesn't have an error, we could end up in an infinite loop.  Like
+I said I'm not sure if thats even possible, but its definitely one of those
+things that if it is possible some random security guy is going to figure out
+how to exploit it at some point down the line.
 
-Hello,
+> +
+> +ssize_t kernel_write(struct file *file, loff_t offset,
+> +		     const char *addr, size_t count)
+> +{
+> +	mm_segment_t old_fs;
+> +	ssize_t result;
+> +
+> +	old_fs = get_fs();
+> +	set_fs(get_ds());
+> +	/* The cast to a user pointer is valid due to the set_fs() */
+> +	result = _kernel_write(file, offset, (void __user *)addr, count);
+> +	set_fs(old_fs);
+> +	return result;
+> +}
+> +
+> +EXPORT_SYMBOL(kernel_write);
+> +
+>  static int exec_mmap(struct mm_struct *mm)
+>  {
+>  	struct task_struct *tsk;
+> diff --git a/fs/read_write.c b/fs/read_write.c
+> index 113386d..67b7d83 100644
+> --- a/fs/read_write.c
+> +++ b/fs/read_write.c
+> @@ -361,16 +361,6 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
+>  
+>  EXPORT_SYMBOL(vfs_write);
+>  
+> -static inline loff_t file_pos_read(struct file *file)
+> -{
+> -	return file->f_pos;
+> -}
+> -
+> -static inline void file_pos_write(struct file *file, loff_t pos)
+> -{
+> -	file->f_pos = pos;
+> -}
+> -
+>  SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+>  {
+>  	struct file *file;
+> diff --git a/fs/splice.c b/fs/splice.c
+> index 9313b61..188e17d 100644
+> --- a/fs/splice.c
+> +++ b/fs/splice.c
+> @@ -538,21 +538,6 @@ static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
+>  	return res;
+>  }
+>  
+> -static ssize_t kernel_write(struct file *file, const char *buf, size_t count,
+> -			    loff_t pos)
+> -{
+> -	mm_segment_t old_fs;
+> -	ssize_t res;
+> -
+> -	old_fs = get_fs();
+> -	set_fs(get_ds());
+> -	/* The cast to a user pointer is valid due to the set_fs() */
+> -	res = vfs_write(file, (const char __user *)buf, count, &pos);
+> -	set_fs(old_fs);
+> -
+> -	return res;
+> -}
+> -
+>  ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
+>  				 struct pipe_inode_info *pipe, size_t len,
+>  				 unsigned int flags)
+> @@ -1011,7 +996,7 @@ static int write_pipe_buf(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+>  		return ret;
+>  
+>  	data = buf->ops->map(pipe, buf, 0);
+> -	ret = kernel_write(sd->u.file, data + buf->offset, sd->len, sd->pos);
+> +	ret = kernel_write(sd->u.file, sd->pos, data + buf->offset, sd->len);
+>  	buf->ops->unmap(pipe, buf, data);
+>  
+>  	return ret;
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 39d57bc..9e8b171 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1548,6 +1548,16 @@ ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
+>  				struct iovec *fast_pointer,
+>  				struct iovec **ret_pointer);
+>  
+> +static inline loff_t file_pos_read(struct file *file)
+> +{
+> +	return file->f_pos;
+> +}
+> +
+> +static inline void file_pos_write(struct file *file, loff_t pos)
+> +{
+> +	file->f_pos = pos;
+> +}
+> +
+>  extern ssize_t vfs_read(struct file *, char __user *, size_t, loff_t *);
+>  extern ssize_t vfs_write(struct file *, const char __user *, size_t, loff_t *);
+>  extern ssize_t vfs_readv(struct file *, const struct iovec __user *,
+> @@ -2127,7 +2137,8 @@ extern struct file *do_filp_open(int dfd, const char *pathname,
+>  		int open_flag, int mode, int acc_mode);
+>  extern int may_open(struct path *, int, int);
+>  
+> -extern int kernel_read(struct file *, loff_t, char *, unsigned long);
+> +extern ssize_t kernel_read(struct file *, loff_t, char *, size_t);
+> +extern ssize_t kernel_write(struct file *, loff_t, const char *, size_t);
+>  extern struct file * open_exec(const char *);
+>   
+>  /* fs/dcache.c -- generic fs support functions */
+> -- 
 
-On (05/04/10 23:21), Rafael J. Wysocki wrote:
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D15704
-> Subject		: [r8169] WARNING: at net/sched/sch_generic.c
-> Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Date		: 2010-03-31 10:21 (35 days old)
-> Message-ID	: <<20100331102142.GA3294@swordfish.minsk.epam.com>>
-> References	: http://marc.info/?l=3Dlinux-kernel&m=3D127003090406108&w=3D2
->=20
->=20
+I'd say fix that little nit I had above and you can add
 
-=2E34-rc6-git5
+Reviewed-by: Josef Bacik <josef@redhat.com>
 
-kernel: [ 1176.647885] pktgen 2.72: Packet Generator for packet performance=
- testing.
-kernel: [ 1210.999903] ------------[ cut here ]------------
-kernel: [ 1210.999914] WARNING: at net/sched/sch_generic.c:256 dev_watchdog=
-+0xc1/0x129()
-kernel: [ 1210.999918] Hardware name: F3JC               =20
-kernel: [ 1210.999921] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 time=
-d out
-kernel: [ 1210.999924] Modules linked in: pktgen ppp_async crc_ccitt ipv6 p=
-pp_generic slhc asus_laptop sparse_keymap snd_hwdep sdhci_pci sdhci snd_hda=
-_codec_si3054 mmc_core led_class snd_hda_codec_realtek snd_hda_intel snd_hd=
-a_codec
-snd_pcm rng_core snd_timer snd_page_alloc psmouse snd evdev soundcore sg r8=
-169 serio_raw mii i2c_i801 usbhid hid uhci_hcd sr_mod ehci_hcd cdrom usbcor=
-e sd_mod ata_piix
-kernel: [ 1210.999983] Pid: 3819, comm: kpktgend_0 Not tainted 2.6.34-rc6-d=
-bg-git5 #109
-kernel: [ 1210.999987] Call Trace:
-kernel: [ 1210.999994]  [<c102e1c6>] warn_slowpath_common+0x65/0x7c
-kernel: [ 1210.999999]  [<c12690a5>] ? dev_watchdog+0xc1/0x129
-kernel: [ 1211.000005]  [<c102e211>] warn_slowpath_fmt+0x24/0x27
-kernel: [ 1211.000010]  [<c12690a5>] dev_watchdog+0xc1/0x129
-kernel: [ 1211.000017]  [<c1040039>] ? __kfifo_from_user_generic+0x18/0x5c
-kernel: [ 1211.000024]  [<c1036af7>] ? run_timer_softirq+0x136/0x203
-kernel: [ 1211.000029]  [<c1036b50>] run_timer_softirq+0x18f/0x203
-kernel: [ 1211.000034]  [<c1036af7>] ? run_timer_softirq+0x136/0x203
-kernel: [ 1211.000039]  [<c1268fe4>] ? dev_watchdog+0x0/0x129
-kernel: [ 1211.000046]  [<c1032a86>] __do_softirq+0x88/0x10c
-kernel: [ 1211.000051]  [<c1032b39>] do_softirq+0x2f/0x47
-kernel: [ 1211.000059]  [<f80a3488>] ? pktgen_xmit+0xd3e/0xe0b [pktgen]
-kernel: [ 1211.000064]  [<c1032d1c>] _local_bh_enable_ip+0x8b/0xb3
-kernel: [ 1211.000070]  [<c1032d4c>] local_bh_enable_ip+0x8/0xa
-kernel: [ 1211.000076]  [<c12c4858>] _raw_spin_unlock_bh+0x2f/0x32
-kernel: [ 1211.000082]  [<f80a3488>] pktgen_xmit+0xd3e/0xe0b [pktgen]
-kernel: [ 1211.000088]  [<c1044654>] ? sched_clock_cpu+0x121/0x131
-kernel: [ 1211.000098]  [<fd1e75e9>] ? rtl8169_start_xmit+0x0/0x2f9 [r8169]
-kernel: [ 1211.000104]  [<c1044691>] ? cpu_clock+0x2d/0x4e
-kernel: [ 1211.000111]  [<c104d20f>] ? put_lock_stats+0xd/0x21
-kernel: [ 1211.000116]  [<c104d2d8>] ? lock_release_holdtime+0xb5/0xba
-kernel: [ 1211.000122]  [<f80a3793>] ? pktgen_thread_worker+0xd9/0x5e8 [pkt=
-gen]
-kernel: [ 1211.000129]  [<f80a382a>] pktgen_thread_worker+0x170/0x5e8 [pktg=
-en]
-kernel: [ 1211.000135]  [<c103fa5e>] ? autoremove_wake_function+0x0/0x2f
-kernel: [ 1211.000141]  [<c103fa5e>] ? autoremove_wake_function+0x0/0x2f
-kernel: [ 1211.000147]  [<f80a36ba>] ? pktgen_thread_worker+0x0/0x5e8 [pktg=
-en]
-kernel: [ 1211.000152]  [<c103f782>] kthread+0x6a/0x6f
-kernel: [ 1211.000158]  [<c103f718>] ? kthread+0x0/0x6f
-kernel: [ 1211.000163]  [<c1002dc2>] kernel_thread_helper+0x6/0x10
-kernel: [ 1211.000167] ---[ end trace adf7c4da01cca262 ]---
-kernel: [ 1211.013760] r8169 0000:02:00.0: eth0: link up
+Thanks,
 
-
-	Sergey
-
---jI8keyz6grp/JLjh
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkvixJYACgkQfKHnntdSXjRbvgQAuY6OpYbJqiYP4WUOXMszJbl0
-CPB3JEMzBa6kgcYlRpv+8xS5GZDYUOqRDYALTOegcCin2zync0FM6yazvZ2sNZ9i
-BD87CgKjzRQG9UcBEa/yVyKynW7TvcyTPAqe/6Du9TmvwXQ09tlAt6B+rfnnbMhL
-Jqg6cZhQIKJ+72gm6nY=
-=gPtv
------END PGP SIGNATURE-----
-
---jI8keyz6grp/JLjh--
+Josef
