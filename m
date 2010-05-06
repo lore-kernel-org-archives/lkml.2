@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab0EFKuG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 06:50:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18466 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754636Ab0EFKuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 06:50:02 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100506123049.082e98cc.sfr@canb.auug.org.au>
-References: <20100506123049.082e98cc.sfr@canb.auug.org.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: dhowells@redhat.com, James Morris <jmorris@namei.org>,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Subject: Re: linux-next: manual merge of the security-testing tree with Linus' tree
-Date: Thu, 06 May 2010 11:49:48 +0100
-Message-ID: <7197.1273142988@redhat.com>
+	id S1756047Ab0EFIoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 04:44:21 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:50771 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab0EFIoT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 04:44:19 -0400
+Date: Thu, 06 May 2010 10:44:39 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv4 0/8] The FunctionFS composite function
+In-reply-to: <cover.1273054944.git.mina86@mina86.com>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-usb@vger.kernel.org
+Cc: Michal Nazarewicz <mina86@mina86.com>, Greg KH <greg@kroah.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Message-id: <op.vb9zwpwj7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.10 (Linux)
+References: <cover.1273054944.git.mina86@mina86.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 05 May 2010 12:53:10 +0200, Michal Nazarewicz <m.nazarewicz@samsung.com> wrote:
+> The code has been tested with a user-space MTP driver and there was no
+> problems including with setup requests.  As such, it is believed that
+> the data transfers are reliable.
 
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> I just used the version from Linus' tree.
+> At this point I have to admit that communication on EP0 has not yet
+> been tested, so beware of bugs there.
 
-Okay.
+This last sentence is of course incorrect.  EP0 has been tested as well
+as the first sentence implies.  Again forgot to edit the whole cover
+letter.  Sorry about the confusion.
 
-However, I'd like to NAK some bits of c5b60b5e67af8be4c58d3ffcc36894f69c4fbdc1
-now that I see it...
-
-	@@ -1282,16 +1282,16 @@ long keyctl_session_to_parent(void)
-	 
-	        /* the parent must have the same effective ownership and mustn't be
-	         * SUID/SGID */
-	-       if (pcred-> uid != mycred->euid ||
-	+       if (pcred->uid  != mycred->euid ||
-	            pcred->euid != mycred->euid ||
-	            pcred->suid != mycred->euid ||
-	-           pcred-> gid != mycred->egid ||
-	+           pcred->gid  != mycred->egid ||
-	            pcred->egid != mycred->egid ||
-	            pcred->sgid != mycred->egid)
-	                goto not_permitted;
-	 
-	        /* the keyrings must have the same UID */
-	-       if (pcred ->tgcred->session_keyring->uid != mycred->euid ||
-	+       if (pcred->tgcred->session_keyring->uid != mycred->euid ||
-	            mycred->tgcred->session_keyring->uid != mycred->euid)
-	                goto not_permitted;
-
-_Please_ don't do either of these.  The whole point is to line stuff up so
-that as the eye scans down the lines, it can easily pick out the differences
-in stuff that's otherwise greatly repetitive.
-
-David
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
