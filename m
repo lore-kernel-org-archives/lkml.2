@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab0EFCdj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 22:33:39 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52340 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab0EFCdh (ORCPT
+	id S1754765Ab0EFCeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 22:34:14 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37566 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031Ab0EFCeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 22:33:37 -0400
-Message-ID: <4BE22A2D.8070301@oracle.com>
-Date: Wed, 05 May 2010 19:32:13 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       devel@driverdev.osuosl.org
-Subject: Re: [PATCH -next] staging/rar_register: depends on PCI
-References: <20100505123409.ed5678a2.sfr@canb.auug.org.au>	<20100505154522.c3d7807c.randy.dunlap@oracle.com> <20100506005557.7d458c7b@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100506005557.7d458c7b@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090209.4BE22A70.0169:SCFMA4539811,ss=1,fgs=0
+	Wed, 5 May 2010 22:34:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=BK32y++tl68+6pMTTlltllFPqyaBZu7mWGjhk/QF/bcrgyys1DRfNHnYwGGacdMHq+
+         sVLAZ3LZkoX72n8b7+gDmmJl9r+FV2HINSZSsqX2X16tWakpb9bk8W/aLzXBjRJDm7QF
+         fap1mz8MaI/AgQL3/i5gVueKKSFs/cjPEhL+Q=
+Date: Thu, 6 May 2010 10:42:08 +0800
+From: wzt.wzt@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-parisc@vger.kernel.org, kyle@mcmartin.ca, deller@gmx.de,
+       jejb@parisc-linux.org
+Subject: [PATCH] Parisc: Check kmalloc return value before use the buffer in ccio-dma.c
+Message-ID: <20100506024208.GB15956@localhost.localdomain>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/10 16:55, Alan Cox wrote:
-> On Wed, 5 May 2010 15:45:22 -0700
-> Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> 
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->>
->> rar_register driver uses PCI interfaces and PCI devices, so it
->> should depend on PCI.
->>
->> Also format the Kconfig help text as normally done.
->>
->> drivers/staging/rar_register/rar_register.c:623: error: implicit declaration of function 'pci_dev_get'
->> drivers/staging/rar_register/rar_register.c:623: warning: assignment makes pointer from integer without a cast
->>
->> Note:  The memrar driver selects this driver's Kconfig symbol, even when
->> PCI is not enabled.  That select could be changed to
->> 	select RAR_REGISTER if PCI
->> but that would still result in build errors when PCI is not enabled, namely:
->> drivers/built-in.o: In function `memrar_fini_rar_resources':
->> memrar_handler.c:(.text+0x2391b7): undefined reference to `unregister_rar'
->> drivers/built-in.o: In function `memrar_registration_callback':
->> memrar_handler.c:(.text+0x23925a): undefined reference to `rar_get_address'
->> drivers/built-in.o: In function `memrar_init':
->> memrar_handler.c:(.init.text+0x12c7b): undefined reference to `register_rar'
->> memrar_handler.c:(.init.text+0x12c97): undefined reference to `register_rar'
->>
->> Does anyone have suggestions for this?
-> 
-> Yes - memrar should depend upon the RAR_REGISTER
+Check kmalloc return value before use the buffer.
 
-memrar currently selects RAR_REGISTER, but I'll be happy to change
-that to depends on...
+Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
+---
+ drivers/parisc/ccio-dma.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/parisc/ccio-dma.c b/drivers/parisc/ccio-dma.c
+index f511e70..f465417 100644
+--- a/drivers/parisc/ccio-dma.c
++++ b/drivers/parisc/ccio-dma.c
+@@ -1407,6 +1407,11 @@ static void __init ccio_init_resources(struct ioc *ioc)
+ 	struct resource *res = ioc->mmio_region;
+ 	char *name = kmalloc(14, GFP_KERNEL);
+ 
++	if (!name) {
++		printk(KERN_ERR "%s() failed to get enough memory\n", __func__);
++		return ;
++	}
++
+ 	snprintf(name, 14, "GSC Bus [%d/]", ioc->hw_path);
+ 
+ 	ccio_init_resource(res, name, &ioc->ioc_regs->io_io_low);
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.6.5.3
+
