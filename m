@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab0EFSg1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 14:36:27 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60822 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab0EFSgZ (ORCPT
+	id S1754592Ab0EFHOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 03:14:19 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37198 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754479Ab0EFHOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 14:36:25 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 69.181.193.102
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19H81LY2zUkk2MqIFgb8DTH
-Date: Thu, 6 May 2010 11:36:05 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
-       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100506183605.GF30928@atomide.com>
-References: <20100505202826.GB7450@linux.intel.com>
- <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
- <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
- <20100505234755.GI29604@atomide.com>
- <20100506134015.GA23426@srcf.ucam.org>
- <20100506170151.GA30928@atomide.com>
- <20100506170956.GA28104@srcf.ucam.org>
- <20100506171453.GC30928@atomide.com>
- <1273167311.20494.13.camel@c-dwalke-linux.qualcomm.com>
+	Thu, 6 May 2010 03:14:17 -0400
+Date: Thu, 6 May 2010 09:14:15 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org, valentin.longchamp@epfl.ch,
+       daniel@caiaq.de, grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, Jun.Li@freescale.com,
+       xiao-lizhang@freescale.com
+Subject: Re: [PATCHv1 2.6.34-rc6 2/3] mx5: change usb clock source from
+	pll3 to pll2
+Message-ID: <20100506071415.GO31199@pengutronix.de>
+References: <1273100171-3235-1-git-send-email-Dinh.Nguyen@freescale.com> <1273100171-3235-2-git-send-email-Dinh.Nguyen@freescale.com> <1273100171-3235-3-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273167311.20494.13.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1273100171-3235-3-git-send-email-Dinh.Nguyen@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:59:11 up 10 days, 25 min, 19 users,  load average: 0.06, 0.12,
+	0.30
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Daniel Walker <dwalker@fifo99.com> [100506 10:30]:
-> On Thu, 2010-05-06 at 10:14 -0700, Tony Lindgren wrote:
-> > * Matthew Garrett <mjg@redhat.com> [100506 10:05]:
-> > > On Thu, May 06, 2010 at 10:01:51AM -0700, Tony Lindgren wrote:
-> > > 
-> > > > Or are you suspending constantly, tens of times per minute even if
-> > > > there's no user activity?
-> > > 
-> > > In this case you'd be repeatedly trying to suspend until the modem 
-> > > driver stopped blocking it. It's pretty much a waste.
-> > 
-> > But then the userspace knows you're getting data from the modem, and
-> > it can kick some inactivity timer that determines when to try to
-> > suspend next.
+On Wed, May 05, 2010 at 05:56:10PM -0500, Dinh Nguyen wrote:
+> For power management reasons, pll2 should be used to source the USBOH3
+> clock for mx51. PLL3 can be completely gated off when USB is not used.
 > 
-> If the idle thread was doing the suspending then the inactivity timer by
-> it's self could block suspend. As long as the idle thread was setup to
-> check for timers. I'm sure that _isn't_ the point your trying to make.
-> It just makes gobs more sense to me that the idle thread does the
-> suspending .. Your idle, so depending on how long your idle then you
-> suspend.
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  arch/arm/mach-mx5/clock-mx51.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
+> index dcca330..933c0d1 100644
+> --- a/arch/arm/mach-mx5/clock-mx51.c
+> +++ b/arch/arm/mach-mx5/clock-mx51.c
+> @@ -763,7 +763,7 @@ DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
+>  
+>  /* USB */
+>  DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
+> -	NULL, NULL, &pll3_sw_clk, NULL);
+> +	NULL, NULL, &pll2_sw_clk, NULL);
 
-The alternative logic I'm suggesting is get the GUI into idle mode as
-soon as possible, then limp along with off-while-idle or
-retention-while-idle until some timer expires, then suspend the whole
-device.
+The commit message suggests that the parent is changed in this patch.
+The only thing this patch changes is that when usboh3_clk is enabled,
+pll2 instead of pll3 gets enabled. The real parent of this clock
+is defined by the status quo of the CSCMR1/usboh3_clk_sel bits.
 
-Tony
+So the solution here is to initialize the parent field during runtime
+according to the bits in hardware or to change the hardware bits
+according to the parent field. Either way, please make sure that
+hardware and state of the clock tree are consistent.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
