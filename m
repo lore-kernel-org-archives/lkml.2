@@ -1,170 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab0EFUal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 16:30:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49074 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757530Ab0EFUaj convert rfc822-to-8bit (ORCPT
+	id S1758936Ab0EFU2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 16:28:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54212 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757597Ab0EFU2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 16:30:39 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: greg <gregkh@suse.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Menon, Nishanth" <nm@ti.com>
-Date: Fri, 7 May 2010 02:00:16 +0530
-Subject: RE: [PATCH] drivers: staging: GPS protocol driver for wl128x
-Thread-Topic: [PATCH] drivers: staging: GPS protocol driver for wl128x
-Thread-Index: AcrsQuYqavZ2mmVdT0WLFH0NSGIRxwAKTFewADsPA4A=
-Message-ID: <19F8576C6E063C45BE387C64729E7394044E351E54@dbde02.ent.ti.com>
-References: <114054.49943.qm@web94916.mail.in2.yahoo.com>
- <20100505121131.298e9445@lxorguk.ukuu.org.uk> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 May 2010 16:28:47 -0400
+Message-ID: <4BE32640.8010402@oracle.com>
+Date: Thu, 06 May 2010 13:27:44 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
+To: Oren Laadan <orenl@cs.columbia.edu>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
+       Pavel Emelyanov <xemul@openvz.org>, linux-api@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+       netdev@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH v21 020/100] c/r: documentation
+References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>	<1272723382-19470-21-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1272723382-19470-21-git-send-email-orenl@cs.columbia.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090202.4BE32663.00A0:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat,  1 May 2010 10:15:02 -0400 Oren Laadan wrote:
 
-Alan,
- 
-> -----Original Message-----
-> From: Savoy, Pavan
-> Sent: Wednesday, May 05, 2010 11:04 AM
-> To: 'Alan Cox'
-> Cc: greg; linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH] drivers: staging: GPS protocol driver for wl128x
+> Covers application checkpoint/restart, overall design, interfaces,
+> usage, shared objects, and and checkpoint image format.
 > 
-> Alan,
-> 
-> 
-> ----------------
-> Thanks & Regards,
-> Pavan Savoy | x0099669
-> 
-> > -----Original Message-----
-> > From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
-> > Sent: Wednesday, May 05, 2010 6:12 AM
-> > To: Savoy, Pavan
-> > Cc: greg; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH] drivers: staging: GPS protocol driver for wl128x
-> >
-> > On Tue, 4 May 2010 21:55:43 +0530 (IST)
-> > Pavan Savoy <pavan_savoy@ti.com> wrote:
-> >
-> > > Greg, Alan,
-> > >
-> > > Just to complete the circle on N_TI_WL, find below the GPS driver which makes use of the shared
-> transport
-> > line discipline.
-> > >
-> > > This driver provides a TTY line character device to application/middle-ware running on host, as if the
-> > device is directly connected over UART to a GPS chip.
-> >
-> > This doesn't appear to be a tty device ?
-> 
-> A typo here, I meant "TTY like" character device, and it not certainly a character device.
-> 
-> >
-> > > Almost all actions that can be done on a /dev/ttySx can be done on this /dev/tigps device.
-> >
-> > Hardly true. A tty driver has a very precisely defined set of behaviours
-> > and a lot of ioctls and interfaces your driver doesn't. Our gps
-> > interfaces are only tty drivers because historically they were plugged
-> > into serial ports so I'm not sure the 'not a tty' bit actually matters.
-> 
-> Yes. I agree, and hence mentioned almost all.
-> 
-> > Codewise its the same as all the rest - only one instance possible and
-> > poking around in globals with no visible or documented locking.
+> Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+> Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+> ---
+>  Documentation/checkpoint/checkpoint.c      |   38 +++
+>  Documentation/checkpoint/readme.txt        |  370 ++++++++++++++++++++++++++++
+>  Documentation/checkpoint/self_checkpoint.c |   69 +++++
+>  Documentation/checkpoint/self_restart.c    |   40 +++
+>  Documentation/checkpoint/usage.txt         |  247 +++++++++++++++++++
+>  5 files changed, 764 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/checkpoint/checkpoint.c
+>  create mode 100644 Documentation/checkpoint/readme.txt
+>  create mode 100644 Documentation/checkpoint/self_checkpoint.c
+>  create mode 100644 Documentation/checkpoint/self_restart.c
+>  create mode 100644 Documentation/checkpoint/usage.txt
 
-To support this multiple device thingy and avoid the single device limit, I plan to do something like this,
+> diff --git a/Documentation/checkpoint/readme.txt b/Documentation/checkpoint/readme.txt
+> new file mode 100644
+> index 0000000..4fa5560
+> --- /dev/null
+> +++ b/Documentation/checkpoint/readme.txt
+> @@ -0,0 +1,370 @@
+> +
+...
+> +In contrast, when checkpointing a subtree of a container it is up to
+> +the user to ensure that dependencies either don't exist or can be
+> +safely ignored. This is useful, for instance, for HPC scenarios or
+> +even a user that would like to periodically checkpoint a long-running
 
-The ST driver would be platform_device - as it is already. ST's probe would do the ldisc registration, and also do the dev_set_drvdata of all the internal data (Tx queues, locks, list of protocols) on this device.
+               who
 
-Apart from this the BT, FM and GPS would also further be platform devices, and then,
-In the dev.platform_data of each of these BT, FM and GPS devices, I will enter the "parent ST device", these protocols want to attach themselves to.
+> +batch job.
+> +
+...
 
-And in probe of the driver for each of these BT, FM and GPS devices, I will do the same "st_register" where in now I can access the ST related data by retrieving the internal using the parent device.
+> +
+> +Checkpoint image format
+> +=======================
+> +
+...
 
-Examples:
-Here are the 2 ST platform devices,
-struct platform_device st_device_0 = {
-        .name = "ST_DEV_0",
-        .id = -1,
-        .dev.platform_data = &array,
-        .dev.release = any_device_release,
-};
-struct platform_device st_device_1 = {
-        .name = "ST_DEV_1",
-        .id = -1,
-        .dev.platform_data = &array,
-        .dev.release = any_device_release,
-};
+> +
+> +The container configuration section containers information that is
 
-BT attaching itself to ST_DEV_0,
-static struct protocol_platform_data bt_data = {
-        .parent_dev = &st_device_0,
-        .name = "BT",
-};
+                                       contains
 
-static struct platform_device bt_device = {
-        .name = "BT",
-        .id = -1,
-        .dev.platform_data = &bt_data,
-        .dev.release = bt_device_release,
-};
+> +global to the container. Security (LSM) configuration is one example.
+> +Network configuration and container-wide mounts may also go here, so
+> +that the userspace restart coordinator can re-create a suitable
+> +environment.
+> +
+...
 
-And FM attaching itself to - ST_DEV_1,
-static struct protocol_platform_data fm_data = {
-        .parent_dev = &st_device_1,
-        .name = "FM",
-};
-static struct platform_device fm_device = {
-        .name = "FM",
-        .id = -1,
-        .dev.platform_data = &fm_data,
-        .dev.release = fm_device_release,
-};
+> +
+> +Then the state of all tasks is saved, in the order that they appear in
+> +the tasks array above. For each state, we save data like task_struct,
+> +namespaces, open files, memory layout, memory contents, cpu state,
 
-My "ST_REGISTER" would now look like,
-int st_register(struct protocol_platform_data *data)
-{
-        struct st_data_s *st_data;
-        struct platform_device *parent = data->parent_dev;
+                                                           CPU (throughout, please)
 
-        st_data = dev_get_drvdata(&parent->dev);
+> +signals and signal handlers, etc. For resources that are shared among
+> +multiple processes, we first checkpoint said resource (and only once),
+> +and in the task data we give a reference to it. More about shared
+> +resources below.
+> +
+...
 
-        printk("%s registering into %s\n", data->name, parent->name);
+> +
+> +Shared objects
+> +==============
+> +
+> +Many resources may be shared by multiple tasks (e.g. file descriptors,
+> +memory address space, etc), or even have multiple references from
 
-        printk("data got is %s\n", st_data->name);
-        st_data->name = "Changed Name";
-        return 0;
-}
-EXPORT_SYMBOL(st_register);
+                         etc.),
+
+> +other resources (e.g. a single inode that represents two ends of a
+> +pipe).
+> +
+...
+
+> +Memory contents format
+> +======================
+> +
+> +The memory contents of a given memory address space (->mm) is dumped
+
+                                                              are (I think)
+
+> +as a sequence of vma objects, represented by 'struct ckpt_hdr_vma'.
+> +This header details the vma properties, and a reference to a file
+> +(if file backed) or an inode (or shared memory) object.
+> +
+> +The vma header is followed by the actual contents - but only those
+> +pages that need to be saved, i.e. dirty pages. They are written in
+> +chunks of data, where each chunks contains a header that indicates
+
+                              chunk
+
+> +that number of pages in the chunk, followed by an array of virtual
+
+   the
+
+> +addresses and then an array of actual page contents. The last chunk
+> +holds zero pages.
+> +
+...
+
+> +Kernel interfaces
+> +=================
+> +
+> +* To checkpoint a vma, the 'struct vm_operations_struct' needs to
+> +  provide a method ->checkpoint:
+> +    int checkpoint(struct ckpt_ctx *, struct vma_struct *)
+> +  Restart requires a matching (exported) restore:
+> +    int restore(struct ckpt_ctx *, struct mm_struct *, struct ckpt_hdr_vma *)
+> +
+> +* To checkpoint a file, the 'struct file_operations' needs to provide
+> +  the methods ->checkpoint and ->collect:
+> +    int checkpoint(struct ckpt_ctx *, struct file *)
+> +    int collect(struct ckpt_ctx *, struct file *)
+> +  Restart requires a matching (exported) restore:
+> +    int restore(struct ckpt_ctx *, struct ckpt_hdr_file *)
+> +  For most file systems, generic_file_{checkpoint,restore}() can be
+> +  used.
+> +
+> +* To checkpoint a socket, the 'struct proto_ops' needs to provide
+
+     To checkpoint/restart a socket,
+
+> +  the methods ->checkpoint, ->collect and ->restore:
+> +    int checkpoint(struct ckpt_ctx *ctx, struct socket *sock);
+> +    int collect(struct ckpt_ctx *ctx, struct socket *sock);
+> +    int restore(struct ckpt_ctx *, struct socket *sock, struct ckpt_hdr_socket *h)
 
 
-However, I would need to have a ST platform driver for each of my such ST platform devices (ST_DEV_0, ST_DEV_1).
+> diff --git a/Documentation/checkpoint/usage.txt b/Documentation/checkpoint/usage.txt
+> new file mode 100644
+> index 0000000..c6fc045
+> --- /dev/null
+> +++ b/Documentation/checkpoint/usage.txt
+> @@ -0,0 +1,247 @@
+> +
+> +	      How to use Checkpoint-Restart
+> +	=========================================
+> +
+> +
+> +API
+> +===
+> +
+> +The API consists of three new system calls:
+> +
+> +* long checkpoint(pid_t pid, int fd, unsigned long flag, int logfd);
 
-It does seem a big-re-write of the probing/registration logic..
-So, How does this sound?
+                                                      flags,
 
-Please suggest.
+> +
+> + Checkpoint a (sub-)container whose root task is identified by @pid,
+> + to the open file indicated by @fd. If @logfd isn't -1, it indicates
+> + an open file to which error and debug messages are written. @flags
+> + may be one or more of:
+> +   - CHECKPOINT_SUBTREE : allow checkpoint of sub-container
+> + (other value are not allowed).
+> +
+> + Returns: a positive checkpoint identifier (ckptid) upon success, 0 if
+> + it returns from a restart, and -1 if an error occurs. The ckptid will
+> + uniquely identify a checkpoint image, for as long as the checkpoint
+> + is kept in the kernel (e.g. if one wishes to keep a checkpoint, or a
+> + partial checkpoint, residing in kernel memory).
+> +
+> +* long sys_restart(pid_t pid, int fd, unsigned long flags, int logfd);
+> +
+> + Restart a process hierarchy from a checkpoint image that is read from
+> + the blob stored in the file indicated by @fd.  If @logfd isn't -1, it
+> + indicates an open file to which error and debug messages are written.
+> + @flags will have future meaning (must be 0 for now). @pid indicates
+> + the root of the hierarchy as seen in the coordinator's pid-namespace,
+> + and is expected to be a child of the coordinator. @flags may be one
+> + or more of:
+> +   - RESTART_TASKSELF : (self) restart of a single process
+> +   - RESTART_FROEZN : processes remain frozen once restart completes
 
+                FROZEN ?
 
-> Yes, and this is the reason, I posted this patch.
-> BT and GPS had to communicate over a single UART, and this is the reason the N_TI_WL line discipline exists.
-> With this sort of architecture, how can I accommodate multi-device support? To avoid this single device
-> limits?
-> 
-> Also, what is that you are exactly looking for regarding locking.
-> Please suggest.
-> 
-> Thanks.
+> +   - RESTART_GHOST : process is a ghost (placeholder for a pid)
 
+about @flags:  Above says both of these:
+a) @flags will have future meaning (must be 0 for now)
+b) @flags may be one or more of:
+
+so please decide which one it is ;)
+
+> + (Note that this argument may mean 'ckptid' to identify an in-kernel
+> + checkpoint image, with some @flags in the future).
+> +
+> + Returns: -1 if an error occurs, 0 on success when restarting from a
+> + "self" checkpoint, and return value of system call at the time of the
+> + checkpoint when restarting from an "external" checkpoint.
+> +
+...
+> +
+> +Sysctl/proc
+> +===========
+> +
+> +/proc/sys/kernel/ckpt_unpriv_allowed		[default = 1]
+> +  controls whether c/r operation is allowed for unprivileged users
+
+                      C/R
+
+> +
+> +
+> +Operation
+> +=========
+> +
+> +The granularity of a checkpoint usually is a process hierarchy. The
+> +'pid' argument is interpreted in the caller's pid namespace. So to
+> +checkpoint a container whose init task (pid 1 in that pidns) appears
+> +as pid 3497 the caller's pidns, the caller must use pid 3497. Passing
+> +pid 1 will attempt to checkpoint the caller's container, and if the
+> +caller isn't privileged and init is owned by root, it will fail.
+> +
+> +Unless the CHECKPOINT_SUBTREE flag is set, if the caller passes a pid
+> +which does not refer to a container's init task, then sys_checkpoint()
+> +would return -EINVAL.
+
+   returns -EINVAL.
+
+...
+
+> +
+> +
+> +User tools
+> +==========
+> +
+> +* checkpoint(1): a tool to perform a checkpoint of a container/subtree
+> +* restart(1): a tool to restart a container/subtree
+> +* ckptinfo: a tool to examine a checkpoint image
+> +
+> +It is best to use the dedicated user tools for checkpoint and restart.
+> +
+> +If you insist, then here is a code snippet that illustrates how a
+> +checkpoint is initiated by a process inside a container - the logic is
+> +similar to fork():
+> +	...
+> +	ckptid = checkpoint(0, ...);
+> +	switch (crid) {
+
+	       (ckptid) ?
+
+> +	case -1:
+> +		perror("checkpoint failed");
+> +		break;
+> +	default:
+> +		fprintf(stderr, "checkpoint succeeded, CRID=%d\n", ret);
+
+s/ret/ckptid/ ?
+
+> +		/* proceed with execution after checkpoint */
+> +		...
+> +		break;
+> +	case 0:
+> +		fprintf(stderr, "returned after restart\n");
+> +		/* proceed with action required following a restart */
+> +		...
+> +		break;
+> +	}
+> +	...
+> +
+> +And to initiate a restart, the process in an empty container can use
+> +logic similar to execve():
+> +	...
+> +	if (restart(pid, ...) < 0)
+> +		perror("restart failed");
+> +	/* only get here if restart failed */
+> +	...
+> +
+> +Note, that the code also supports "self" checkpoint, where a process
+
+   Note that
+
+> +can checkpoint itself. This mode does not capture the relationships of
+> +the task with other tasks, or any shared resources. It is useful for
+> +application that wish to be able to save and restore their state.
+
+   applications
+
+> +They will either not use (or care about) shared resources, or they
+> +will be aware of the operations and adapt suitably after a restart.
+> +The code above can also be used for "self" checkpoint.
+> +
+> +
+> +You may find the following sample programs useful:
+> +
+> +* checkpoint.c: accepts a 'pid' and checkpoint that task to stdout
+
+                                       checkpoints
+
+> +* self_checkpoint.c: a simple test program doing self-checkpoint
+> +* self_restart.c: restarts a (self-) checkpoint image from stdin
+> +
+> +See also the utilities 'checkpoint' and 'restart' (from user-cr).
+> +
+> +
+> +"External" checkpoint
+> +=====================
+> +
+> +To do "external" checkpoint, you need to first freeze that other task
+> +either using the freezer cgroup.
+
+eh?  cannot parse that.
+
+> +
+> +Restart does not preserve the original PID yet, (because we haven't
+> +solved yet the fork-with-specific-pid issue). In a real scenario, you
+> +probably want to first create a new names space, and have the init
+
+                                       namespace,
+
+> +task there call 'sys_restart()'.
+> +
+> +I tested it this way:
+
+...
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
