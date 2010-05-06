@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab0EFPmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 11:42:55 -0400
-Received: from x35.xmailserver.org ([64.71.152.41]:49564 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932203Ab0EFPmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 11:42:54 -0400
-X-AuthUser: davidel@xmailserver.org
-Date: Thu, 6 May 2010 08:42:51 -0700 (PDT)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@makko.or.mcafeemobile.com
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-cc: Changli Gao <xiaosuo@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: indiscriminate get_maintainer.pl usage
-In-Reply-To: <4BE26472.6040805@s5r6.in-berlin.de>
-Message-ID: <alpine.DEB.2.00.1005060826460.10407@makko.or.mcafeemobile.com>
-References: <1273111054-10141-1-git-send-email-xiaosuo@gmail.com>  <4BE25AE8.1060607@s5r6.in-berlin.de> <s2t412e6f7f1005052319sdbf3fdfbg256d11b983c4f304@mail.gmail.com> <4BE26472.6040805@s5r6.in-berlin.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+	id S1754039Ab0EFHD6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 03:03:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56509 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753189Ab0EFHD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 03:03:56 -0400
+Message-ID: <4BE269D4.9090108@cn.fujitsu.com>
+Date: Thu, 06 May 2010 15:03:48 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm mmu: reduce 50% memory usage
+References: <4BD8228D.7090708@cn.fujitsu.com> <20100429180955.GA17909@amt.cnet> <4BD9D35C.5090403@redhat.com> <20100430154427.GA32340@amt.cnet>
+In-Reply-To: <20100430154427.GA32340@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010, Stefan Richter wrote:
-
-> > I should add --nogit option.
+Marcelo Tosatti wrote:
+> On Thu, Apr 29, 2010 at 09:43:40PM +0300, Avi Kivity wrote:
+>> On 04/29/2010 09:09 PM, Marcelo Tosatti wrote:
+>>> You missed quadrant on 4mb large page emulation with shadow (see updated
+>>> patch below).
+>> Good catch.
+>>
+>>> Also for some reason i can't understand the assumption
+>>> does not hold for large sptes with TDP, so reverted for now.
+>> It's unrelated to TDP, same issue with shadow.  I think the
+>> calculation is correct.  For example the 4th spte for a level=2 page
+>> will yield gfn=4*512.
 > 
-> The script does get some useful information out of git (but obviously
-> also some questionable).
+> Under testing i see sp at level 2, with sp->gfn == 4096, mmu_set_spte
+> setting index 8 to gfn 4096 (whereas kvm_mmu_page_get_gfn returns 4096 +
+> 8*512).
 > 
-> --roles and --rolestats give away some more data...
+> Lai, can you please take a look at it? You should see the
+> kvm_mmu_page_set_gfn BUG_ON by using -mem-path on hugetlbfs.
 > 
-> $ scripts/get_maintainer.pl --rolestats -f fs/eventpoll.c
-> Alexander Viro <viro@zeniv.linux.org.uk> (maintainer:FILESYSTEMS (VFS...)
-> Andrew Morton <akpm@linux-foundation.org> (commit_signer:2/6=33%)
-> "Eric W. Biederman" <ebiederm@xmission.com> (commit_signer:2/6=33%)
-> Davide Libenzi <davidel@xmailserver.org> (commit_signer:2/6=33%)
-> Roland Dreier <rolandd@cisco.com> (commit_signer:1/6=17%)
-> Stefan Richter <stefanr@s5r6.in-berlin.de> (commit_signer:1/6=17%)
-> linux-fsdevel@vger.kernel.org (open list:FILESYSTEMS (VFS...)
-> linux-kernel@vger.kernel.org (open list)
-> 
-> ...but still don't distinguish between signed-off-by or reviewed-by on
-> one hand, and reported-by and tested-by on the other hand.  Cc'ing a
-> reporter or tester would only make sense if the patch changes something
-> that directly affects the reporter's/ tester's setup, e.g. reworks a
-> provisional fix.
 
-I have always maintained that code w/out the need of explicit entry in the 
-MAINTAINERS file.  For isolated files people usually include the copyright 
-owners and the ones listed in the comment header in general.
-No problem in being explicitly listed if this causes noise during bug 
-reporting.
+Could you tell me how you test it? It will be better if I follow
+your test steps.
 
+I also hit the kvm_mmu_page_set_gfn BUG_ON, It is because
+FNAME(fetch)() set sp->gfn wrong. The patch:
+[PATCH] kvm: calculate correct gfn for small host pages which emulates large guest pages
+fix it.
 
-- Davide
+I can not hit kvm_mmu_page_set_gfn BUG_ON after this patch also
+applied.
 
+So could you tell me your test steps:
+The host: ept/npt enabled? 64bit? testing codes in host?
+The guest: OS? PAE? 32bit? 64bit? testing codes in guest?
 
+Lai
