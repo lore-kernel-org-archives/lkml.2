@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758345Ab0EFODJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 10:03:09 -0400
-Received: from mail.redflag-linux.com ([219.237.229.196]:54944 "EHLO
-	mail.redflag-linux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab0EFODH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 10:03:07 -0400
-X-Greylist: delayed 1561 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 May 2010 10:03:07 EDT
-Message-ID: <4BE2C5D5.2050207@redflag-linux.com>
-Date: Thu, 06 May 2010 21:36:21 +0800
-From: =?GB2312?B?IsXLzsDGvShQZXRlciBQYW4pIg==?= <wppan@redflag-linux.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100324 RedFlag/3.0.1-1rf2.dt8 Thunderbird/3.0.1
-MIME-Version: 1.0
-To: tj@kernel.org, Christoph Lameter <cl@linux-foundation.org>, hch@lst.de,
-       akpm@linux-foundation.org, adilger@sun.com
-CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH] ext2/ext3:useless code for return value
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+	id S932544Ab0EFRjW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 13:39:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49035 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932387Ab0EFRi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 13:38:57 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: kernel-janitors@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+       ysato@users.sourceforge.jp, tony.luck@intel.com, dhowells@redhat.com,
+       kyle@mcmartin.ca, benh@kernel.crashing.org, schwidefsky@de.ibm.com,
+       jgarzik@pobox.com, hare@suse.de, felipe.balbi@nokia.com,
+       Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 04/13] x86: removing redundant ifdef
+Date: Thu,  6 May 2010 19:36:08 +0200
+Message-Id: <1273167377-14270-5-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
+References: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+wbr,
+jirka
 
-When rsv is the right hand side of goal, we should return NULL,
-because now rsv's prev is NULL, or we return rsv.
 
-Signed-off-by: Peter Pan(екнюф╫) <wppan@redflag-linux.com>
-
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- fs/ext2/balloc.c |    6 +-----
- fs/ext3/balloc.c |    6 +-----
- 2 files changed, 2 insertions(+), 10 deletions(-)
+ arch/x86/kernel/early-quirks.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
-index 3cf038c..023990f 100644
---- a/fs/ext2/balloc.c
-+++ b/fs/ext2/balloc.c
-@@ -323,11 +323,7 @@ search_reserve_window(struct rb_root *root,
-ext2_fsblk_t goal)
- 	 * side of the interval containing the goal.  If it's the RHS,
- 	 * we need to back up one.
- 	 */
--	if (rsv->rsv_start > goal) {
--		n = rb_prev(&rsv->rsv_node);
--		rsv = rb_entry(n, struct ext2_reserve_window_node, rsv_node);
--	}
--	return rsv;
-+    return (rsv->rsv_start < goal) ? rsv : NULL;
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index ebdb85c..76b8cd9 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -97,7 +97,6 @@ static void __init nvidia_bugs(int num, int slot, int func)
  }
-
- /*
-diff --git a/fs/ext3/balloc.c b/fs/ext3/balloc.c
-index a177122..bfa62e9 100644
---- a/fs/ext3/balloc.c
-+++ b/fs/ext3/balloc.c
-@@ -310,11 +310,7 @@ search_reserve_window(struct rb_root *root,
-ext3_fsblk_t goal)
- 	 * side of the interval containing the goal.  If it's the RHS,
- 	 * we need to back up one.
- 	 */
--	if (rsv->rsv_start > goal) {
--		n = rb_prev(&rsv->rsv_node);
--		rsv = rb_entry(n, struct ext3_reserve_window_node, rsv_node);
--	}
--	return rsv;
-+    return (rsv->rsv_start < goal) ? rsv : NULL;
+ 
+ #if defined(CONFIG_ACPI) && defined(CONFIG_X86_IO_APIC)
+-#if defined(CONFIG_ACPI) && defined(CONFIG_X86_IO_APIC)
+ static u32 __init ati_ixp4x0_rev(int num, int slot, int func)
+ {
+ 	u32 d;
+@@ -115,7 +114,6 @@ static u32 __init ati_ixp4x0_rev(int num, int slot, int func)
+ 	d &= 0xff;
+ 	return d;
  }
-
- /**
+-#endif
+ 
+ static void __init ati_bugs(int num, int slot, int func)
+ {
 -- 
-1.6.6
+1.6.6.1
 
-
--- 
-Peter Pan(екнюф╫)
-Red Flag Software Co.,Ltd
