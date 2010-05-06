@@ -1,207 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759042Ab0EFPrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 11:47:53 -0400
-Received: from mail-va3.bigfish.com ([216.32.180.114]:48220 "EHLO
-	mail180-va3-R.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755727Ab0EFPrw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 11:47:52 -0400
-X-Greylist: delayed 1448 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 May 2010 11:47:51 EDT
-X-SpamScore: 1
-X-BigFish: VPS1(zzab9bhzz1202hzz6ff19hz32i2a8h87h63h)
-X-Spam-TCS-SCL: 2:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-MS-Exchange-Organization-Antispam-Report: OrigIP: 163.181.251.22;Service: EHS
-X-WSS-ID: 0L20838-01-HH7-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-       oprofile-list <oprofile-list@lists.sourceforge.net>,
-       Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 5/7] oprofile/x86: reordering some functions
-Date: Thu, 6 May 2010 15:26:12 +0200
-Message-ID: <1273152374-9392-6-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.0.3
-In-Reply-To: <1273152374-9392-1-git-send-email-robert.richter@amd.com>
-References: <1273152374-9392-1-git-send-email-robert.richter@amd.com>
+	id S932324Ab0EFQQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 12:16:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40656 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932175Ab0EFQQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 12:16:07 -0400
+Date: Thu, 6 May 2010 12:15:58 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: linux-kernel@vger.kernel.org
+cc: dm-devel@redhat.com, linux-scsi@vger.kernel.org
+Subject: Testers needed - Maxtor performance degradation
+Message-ID: <Pine.LNX.4.64.1005051433080.30185@hs20-bc2-1.build.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reordering some functions. Necessary for the next patch. No functional
-changes.
+Hi
 
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/oprofile/nmi_int.c |  134 +++++++++++++++++++++---------------------
- 1 files changed, 67 insertions(+), 67 deletions(-)
+When I was examining a reported performance degradation, I found out that 
+the reason was buggy firmware in Maxtor Atlas 15K2 SCSI disks. If the 
+requests are larger than 256kB, read rate drops excessively, even to one 
+half of the normal read rate.
 
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 94b5481..7de0572 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -364,56 +364,6 @@ static struct notifier_block profile_exceptions_nb = {
- 	.priority = 2
- };
- 
--static int nmi_setup(void)
--{
--	int err = 0;
--	int cpu;
--
--	if (!allocate_msrs())
--		return -ENOMEM;
--
--	/* We need to serialize save and setup for HT because the subset
--	 * of msrs are distinct for save and setup operations
--	 */
--
--	/* Assume saved/restored counters are the same on all CPUs */
--	err = model->fill_in_addresses(&per_cpu(cpu_msrs, 0));
--	if (err)
--		goto fail;
--
--	for_each_possible_cpu(cpu) {
--		if (!cpu)
--			continue;
--
--		memcpy(per_cpu(cpu_msrs, cpu).counters,
--		       per_cpu(cpu_msrs, 0).counters,
--		       sizeof(struct op_msr) * model->num_counters);
--
--		memcpy(per_cpu(cpu_msrs, cpu).controls,
--		       per_cpu(cpu_msrs, 0).controls,
--		       sizeof(struct op_msr) * model->num_controls);
--
--		mux_clone(cpu);
--	}
--
--	nmi_enabled = 0;
--	ctr_running = 0;
--	barrier();
--	err = register_die_notifier(&profile_exceptions_nb);
--	if (err)
--		goto fail;
--
--	get_online_cpus();
--	on_each_cpu(nmi_cpu_setup, NULL, 1);
--	nmi_enabled = 1;
--	put_online_cpus();
--
--	return 0;
--fail:
--	free_msrs();
--	return err;
--}
--
- static void nmi_cpu_restore_registers(struct op_msrs *msrs)
- {
- 	struct op_msr *counters = msrs->counters;
-@@ -449,23 +399,6 @@ static void nmi_cpu_shutdown(void *dummy)
- 	nmi_cpu_restore_registers(msrs);
- }
- 
--static void nmi_shutdown(void)
--{
--	struct op_msrs *msrs;
--
--	get_online_cpus();
--	on_each_cpu(nmi_cpu_shutdown, NULL, 1);
--	nmi_enabled = 0;
--	ctr_running = 0;
--	put_online_cpus();
--	barrier();
--	unregister_die_notifier(&profile_exceptions_nb);
--	msrs = &get_cpu_var(cpu_msrs);
--	model->shutdown(msrs);
--	free_msrs();
--	put_cpu_var(cpu_msrs);
--}
--
- static void nmi_cpu_up(void *dummy)
- {
- 	if (nmi_enabled)
-@@ -531,6 +464,73 @@ static struct notifier_block oprofile_cpu_nb = {
- 	.notifier_call = oprofile_cpu_notifier
- };
- 
-+static int nmi_setup(void)
-+{
-+	int err = 0;
-+	int cpu;
-+
-+	if (!allocate_msrs())
-+		return -ENOMEM;
-+
-+	/* We need to serialize save and setup for HT because the subset
-+	 * of msrs are distinct for save and setup operations
-+	 */
-+
-+	/* Assume saved/restored counters are the same on all CPUs */
-+	err = model->fill_in_addresses(&per_cpu(cpu_msrs, 0));
-+	if (err)
-+		goto fail;
-+
-+	for_each_possible_cpu(cpu) {
-+		if (!cpu)
-+			continue;
-+
-+		memcpy(per_cpu(cpu_msrs, cpu).counters,
-+		       per_cpu(cpu_msrs, 0).counters,
-+		       sizeof(struct op_msr) * model->num_counters);
-+
-+		memcpy(per_cpu(cpu_msrs, cpu).controls,
-+		       per_cpu(cpu_msrs, 0).controls,
-+		       sizeof(struct op_msr) * model->num_controls);
-+
-+		mux_clone(cpu);
-+	}
-+
-+	nmi_enabled = 0;
-+	ctr_running = 0;
-+	barrier();
-+	err = register_die_notifier(&profile_exceptions_nb);
-+	if (err)
-+		goto fail;
-+
-+	get_online_cpus();
-+	on_each_cpu(nmi_cpu_setup, NULL, 1);
-+	nmi_enabled = 1;
-+	put_online_cpus();
-+
-+	return 0;
-+fail:
-+	free_msrs();
-+	return err;
-+}
-+
-+static void nmi_shutdown(void)
-+{
-+	struct op_msrs *msrs;
-+
-+	get_online_cpus();
-+	on_each_cpu(nmi_cpu_shutdown, NULL, 1);
-+	nmi_enabled = 0;
-+	ctr_running = 0;
-+	put_online_cpus();
-+	barrier();
-+	unregister_die_notifier(&profile_exceptions_nb);
-+	msrs = &get_cpu_var(cpu_msrs);
-+	model->shutdown(msrs);
-+	free_msrs();
-+	put_cpu_var(cpu_msrs);
-+}
-+
- #ifdef CONFIG_PM
- 
- static int nmi_suspend(struct sys_device *dev, pm_message_t state)
--- 
-1.7.0.3
+Performance on these disks improves if the request size is limited with
+echo 256 >/sys/block/sdc/queue/max_sectors_kb
+
+I remember seeing similar problem (increased transfer size => decreased 
+performance) with IDE and SATA Maxtor disks some times ago, but I don't 
+have any such disk to test currently.
+
+I'd like to ask other people with Maxtor disks to run this script (with 
+"sda", "sdb", etc. as an argument ... without "/dev/" prefix). The script 
+measures read rate as a function of request size. Report the results, so 
+that it can be determined which disks are buggy and which not and the 
+default transfer size could be reduced to 256kB for the buggy ones.
+
+My results are:
+MAXTOR ATLAS15K2_146WLS HPM5
+64 kB: 96,1 MB/s	448 kB: 54,3 MB/s	832 kB: 69,3 MB/s
+128 kB: 95,9 MB/s	512 kB: 61,6 MB/s	896 kB: 72,8 MB/s
+192 kB: 96,2 MB/s	576 kB: 63,4 MB/s	960 kB: 73,6 MB/s
+256 kB: 96,4 MB/s	640 kB: 43,0 MB/s	1024 kB: 73,2 MB/s
+320 kB: 47,3 MB/s	704 kB: 59,0 MB/s
+384 kB: 47,5 MB/s	768 kB: 55,3 MB/s
+
+MAXTOR ATLAS15K2_146WLS HPM7
+64 kB: 95,8 MB/s	448 kB: 54,3 MB/s	832 kB: 67,7 MB/s
+128 kB: 95,5 MB/s	512 kB: 60,2 MB/s	896 kB: 73,1 MB/s
+192 kB: 95,8 MB/s	576 kB: 62,8 MB/s	960 kB: 72,8 MB/s
+256 kB: 96,3 MB/s	640 kB: 44,3 MB/s	1024 kB: 73,2 MB/s
+320 kB: 47,2 MB/s	704 kB: 58,3 MB/s
+384 kB: 48,3 MB/s	768 kB: 54,2 MB/s
+
+Note: fiddling with caching mode page (chaning DPTL, MAPF and MAPFC to -1) 
+improved performance for large requests somehow (to 70-80MB/s), but I 
+couldn't find a combination of settings that would restore 95MB/s rate, as 
+for <= 256kB request. Thus, the correct workaround for these disks is to 
+never send > 256kB requests.
+
+Mikulas
 
 
+#!/bin/sh
+DISK="$1"
+echo 1024 >/sys/block/$DISK/queue/max_sectors_kb
+echo `cat /sys/block/$DISK/device/vendor /sys/block/$DISK/device/model /sys/block/$DISK/device/rev /sys/block/$DISK/device/firmware 2>/dev/null`
+for i in `seq 64 64 1024`; do
+	blocks=`expr 200000 / $i`
+	echo -n "$i kB: "
+	dd if=/dev/$DISK of=/dev/null iflag=direct bs=$i"k" count=$blocks 2>&1 | sed -n 's/.*s, //p'
+done
