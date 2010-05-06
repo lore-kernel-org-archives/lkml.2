@@ -1,49 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758700Ab0EFUVR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 16:21:17 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58255 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932142Ab0EFUVP (ORCPT
+	id S932406Ab0EFUVa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 16:21:30 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.31.37]:50938 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932183Ab0EFUV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 16:21:15 -0400
-Date: Thu, 6 May 2010 16:21:13 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Dmitry Torokhov <dtor@vmware.com>, Christoph Hellwig <hch@infradead.org>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-       Pankaj Thakkar <pthakkar@vmware.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
-Message-ID: <20100506202113.GC17922@infradead.org>
-References: <20100504230225.GP8323@vmware.com> <201005051029.42052.dtor@vmware.com> <20100505173120.GA1752@infradead.org> <201005051035.29831.dtor@vmware.com> <20100505173951.GA8388@infradead.org> <20100505105253.0a8bc465@nehalam>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 6 May 2010 16:21:28 -0400
+References: <1273122377-12137-1-git-send-email-rkc@chromium.org> <t2w1cd529021005052244sdefc0247n8d0b40a6612a3438@mail.gmail.com>
+Message-ID: <cone.1273176533.938023.17424.1000@deskpiie>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <pfe@piie.net>
+To: Rahul Chaturvedi <rkc@chromium.org>
+Cc: linux-kernel@vger.kernel.org, msb@chromium.org
+Subject: Re: [PATCH] CHROMIUM: acerhdf: fix bug when running on Qemu
+Date: Thu, 06 May 2010 22:08:53 +0200
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
 Content-Disposition: inline
-In-Reply-To: <20100505105253.0a8bc465@nehalam>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: 404094
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 10:52:53AM -0700, Stephen Hemminger wrote:
-> Let me put it bluntly. Any design that allows external code to run
-> in the kernel is not going to be accepted.  Out of tree kernel modules are enough
-> of a pain already, why do you expect the developers to add another
-> interface.
+Rahul Chaturvedi writes:
 
-Exactly.  Until our friends at VMware get this basic fact it's useless
-to continue arguing.
+> BTW, the CHROMIUM in the subject is just used for internal bookeeping
+> for patches not yet accepted upstream.
 
-Pankaj and Dmitry: you're fine to waste your time on this, but it's not
-going to go anywhere until you address that fundamental problem.  The
-first thing you need to fix in your archicture is to integrate the VF
-function code into the kernel tree, and we can work from there.
+What does it mean? Should I take care about getting it upstream?
 
-Please post patches doing this if you want to resume the discussion.
-
+--peter;
