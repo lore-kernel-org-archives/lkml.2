@@ -1,82 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab0EFGkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 02:40:22 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34938 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091Ab0EFGkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 02:40:20 -0400
-Date: Thu, 6 May 2010 08:39:48 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de
-Subject: Re: [GIT PULL] Additional RCU fixes for 2.6.34
-Message-ID: <20100506063948.GG1172@elte.hu>
-References: <20100506002838.GA31818@linux.vnet.ibm.com>
- <20100506062250.GC1172@elte.hu>
- <20100506062552.GN27497@kernel.dk>
+	id S1757131Ab0EFJrQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 05:47:16 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:55486 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab0EFJrN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 05:47:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Jg0b05Q9Ry4tCVSXJOv3Xp5M+bVoM2hVT3R40VMtSJYSynvNdVC6tb36uxKgeU2Rp3
+         V2Q5Ez1Iv7b/h4LDmZg5ZxUNOx/DVL6YzybGgX0PUMAEVqzTEUa7MGFYfVTy9RIkSP3k
+         GA93bJXrff/SY2e6fwQr7ajdtuXsPkh38eq6A=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100506062552.GN27497@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100506002255.GY20979@csn.ul.ie>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie>
+	 <1273065281-13334-2-git-send-email-mel@csn.ul.ie>
+	 <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org>
+	 <20100505145620.GP20979@csn.ul.ie>
+	 <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org>
+	 <20100505175311.GU20979@csn.ul.ie>
+	 <alpine.LFD.2.00.1005051058380.27218@i5.linux-foundation.org>
+	 <20100506002255.GY20979@csn.ul.ie>
+Date: Thu, 6 May 2010 18:47:12 +0900
+Message-ID: <p2s28c262361005060247m2983625clff01aeaa1668402f@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing the 
+	wrong VMA information
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 6, 2010 at 9:22 AM, Mel Gorman <mel@csn.ul.ie> wrote:
+> On Wed, May 05, 2010 at 11:02:25AM -0700, Linus Torvalds wrote:
+>>
+>>
+>> On Wed, 5 May 2010, Mel Gorman wrote:
+>> >
+>> > If the same_vma list is properly ordered then maybe something like the
+>> > following is allowed?
+>>
+>> Heh. This is the same logic I just sent out. However:
+>>
+>> > +   anon_vma = page_rmapping(page);
+>> > +   if (!anon_vma)
+>> > +           return NULL;
+>> > +
+>> > +   spin_lock(&anon_vma->lock);
+>>
+>> RCU should guarantee that this spin_lock() is valid, but:
+>>
+>> > +   /*
+>> > +    * Get the oldest anon_vma on the list by depending on the ordering
+>> > +    * of the same_vma list setup by __page_set_anon_rmap
+>> > +    */
+>> > +   avc = list_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
+>>
+>> We're not guaranteed that the 'anon_vma->head' list is non-empty.
+>>
+>> Somebody could have freed the list and the anon_vma and we have a stale
+>> 'page->anon_vma' (that has just not been _released_ yet).
+>>
+>> And shouldn't that be 'list_first_entry'? Or &anon_vma->head.next?
+>>
+>> How did that line actually work for you? Or was it just a "it boots", but
+>> no actual testing of the rmap walk?
+>>
+>
+> This is what I just started testing on a 4-core machine. Lockdep didn't
+> complain but there are two potential sources of badness in anon_vma_lock_root
+> marked with XXX. The second is the most important because I can't see how the
+> local and root anon_vma locks can be safely swapped - i.e. release local and
+> get the root without the root disappearing. I haven't considered the other
+> possibilities yet such as always locking the root anon_vma. Going to
+> sleep on it.
+>
+> Any comments?
 
-* Jens Axboe <jens.axboe@oracle.com> wrote:
+<snip>
+> +/* Given an anon_vma, find the root of the chain, lock it and return the root */
+> +struct anon_vma *anon_vma_lock_root(struct anon_vma *anon_vma)
+> +{
+> +       struct anon_vma *root_anon_vma;
+> +       struct anon_vma_chain *avc, *root_avc;
+> +       struct vm_area_struct *vma;
+> +
+> +       /* Lock the same_anon_vma list and make sure we are on a chain */
+> +       spin_lock(&anon_vma->lock);
+> +       if (list_empty(&anon_vma->head)) {
+> +               spin_unlock(&anon_vma->lock);
+> +               return NULL;
+> +       }
+> +
+> +       /*
+> +        * Get the root anon_vma on the list by depending on the ordering
+> +        * of the same_vma list setup by __page_set_anon_rmap. Basically
+> +        * we are doing
+> +        *
+> +        * local anon_vma -> local vma -> deepest vma -> anon_vma
+> +        */
+> +       avc = list_first_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
 
-> On Thu, May 06 2010, Ingo Molnar wrote:
-> > 
-> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > > Hello, Ingo,
-> > > 
-> > > Here are three more RCU-lockdep fixes for 2.6.34:
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
-> > > 
-> > > 							Thanx, Paul
-> > > 
-> > > ------------------>
-> > > Vivek Goyal <vgoyal@redhat.com> (1)
-> > > 	blk-cgroup: Fix RCU correctness warning in cfq_init_queue()
-> > > 
-> > > Paul E. McKenney <paulmck@linux.vnet.ibm.com> (2)
-> > > 	vfs: fix RCU-lockdep false positive due to /proc access
-> > > 	memcg: css_id() must be called under rcu_read_lock()
-> > > 
-> > >  block/cfq-iosched.c      |    2 ++
-> > >  include/linux/fdtable.h  |    3 ++-
-> > >  include/linux/rcupdate.h |   11 +++++++++++
-> > >  kernel/rcupdate.c        |   11 +++++++++++
-> > >  mm/memcontrol.c          |   21 ++++++++++++++++-----
-> > >  5 files changed, 42 insertions(+), 6 deletions(-)
-> > 
-> > Pulled, thanks Paul!
-> > 
-> > Jens, is that blk-cgroup fix from Vivek fine to you via this route?
-> 
-> Sure, I did think it was a bit odd to funnel it through that route, but it's 
-> no big deal.
+Dumb question.
 
-I havent pushed the tree out yet, wanted to wait for your feedback before 
-doing anything permanent. You can still apply it to the block tree.
+I can't understand why we should use list_first_entry.
 
-You were Cc:-ed 3 days ago to this patch, when RCU fixes got posted. These are 
-basically the leftover PROVE_RCU fix patches that didnt get picked up by 
-subsystem trees.
+I looked over the code.
+anon_vma_chain_link uses list_add_tail so I think that's right.
+But anon_vma_prepare uses list_add. So it's not consistent.
+How do we make sure list_first_entry returns deepest vma?
 
-Thanks,
+Sorry if I am missing.
 
-	Ingo
+
+-- 
+Kind regards,
+Minchan Kim
