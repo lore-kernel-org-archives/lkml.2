@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab0EFOlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 10:41:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:43366 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab0EFOlu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 10:41:50 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=HLzqDOoRw6JVmgSi3quwt8tLil8kwnt+Deg/e+vQMYZkMJiTibluhYSidBIVG55uJ
-	pTHXnjbBzGH5Sd3rqfcXA==
+	id S1758034Ab0EFMrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 08:47:32 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:34123 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757988Ab0EFMr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 08:47:29 -0400
+Message-ID: <4BE2BA55.6060109@mev.co.uk>
+Date: Thu, 6 May 2010 13:47:17 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100422 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1273155640.5605.300.camel@twins>
-References: <AANLkTikQCkR2K438llKOh43yEgW-Bw7j0f8GoXR50A0V@mail.gmail.com>
-	 <1273155640.5605.300.camel@twins>
-Date: Thu, 6 May 2010 16:41:46 +0200
-Message-ID: <AANLkTilOw0L-Uersi1weuQDuyFAGKV2zb7Nqmiav2kej@mail.gmail.com>
-Subject: Re: [RFC] perf_events: ctx_flexible_sched_in() not maximizing PMU 
-	utilization
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
-       Paul Mackerras <paulus@samba.org>,
-       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Tobias Klauser <klto@zhaw.ch>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+       "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+       "gregkh@suse.de" <gregkh@suse.de>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+       "nios2-dev@sopc.et.ntust.edu.tw" <nios2-dev@sopc.et.ntust.edu.tw>
+Subject: Re: [Nios2-dev] [PATCH 2/2] serial: Add driver for the Altera UART
+References: <cover.1273048151.git.tklauser@distanz.ch>	<095aab012b2a6b3bbf4c7bc04294bb9c19316318.1273048151.git.tklauser@distanz.ch> <1273142684.3477.22.camel@gentoo-ija64.mev.local> <4BE2B02B.4010209@zhaw.ch>
+In-Reply-To: <4BE2B02B.4010209@zhaw.ch>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 6, 2010 at 4:20 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-05-06 at 16:03 +0200, Stephane Eranian wrote:
->> Hi,
->>
->> Looking at ctx_flexible_sched_in(), the logic is that if  group_sched_in()
->> fails for a HW group, then no other HW group in the list is even tried.
->> I don't understand this restriction. Groups are independent of each other.
->> The failure of one group should not block others from being scheduled,
->> otherwise you under-utilize the PMU.
->>
->> What is the reason for this restriction? Can we lift it somehow?
->
-> Sure, but it will make scheduling much more expensive. The current
-> scheme will only ever check the first N events because it stops at the
-> first that fails, and since you can max fix N events on the PMU its
-> constant time.
->
-You may fail not because the PMU is full but because an event is incompatible
-with the others, i.e., there may still be room for more evens. By relying on the
-RR to get coverage for all events, you also increase blind spots for
-events which
-have been skipped. Longer blind spots implies less accuracy when you scale.
+Hi Tobias,
 
-> To fix this issue you'd have to basically always iterate all events and
-> only stop once the PMU is fully booked, which reduces to an O(n) worst
-> case algorithm.
->
+On 06/05/10 13:03, Tobias Klauser wrote:
+> I also noticed, that altera_uart_break_ctl takes the lock which might be
+> not necessary as the caller in serial_core.c already takes port->mutex
+> which should be enough. Or am I wrong?
 
-Yes, but if you have X events and you don't know if you have at least N
-that are compatible with each other, then you have to scan the whole list.
+It's not enough.  The spin lock is needed to protect modification of
+pp->imr and writing this modified value to the control register.  Not
+all paths that modify pp->imr and the control register grab port->mutex
+beforehand (for example, the interrupt routine doesn't and can't).
 
-> But yeah, I did think of making the thing an RB-tree and basically
-> schedule on service received, that should fix the lop-sided RR we get
-> with constrained events.
->
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
