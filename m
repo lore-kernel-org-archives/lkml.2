@@ -1,64 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab0EFAG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 20:06:29 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34443 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755275Ab0EFAGZ (ORCPT
+	id S1755741Ab0EFALn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 20:11:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:54496 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751349Ab0EFALl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 20:06:25 -0400
-Subject: kbuild: fixing the select problem
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: linux-arch@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 May 2010 17:49:20 -0400
-Message-ID: <1273096160.23208.35.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 5 May 2010 20:11:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,337,1270450800"; 
+   d="scan'208";a="795838577"
+From: "Du, Alek" <alek.du@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Ondrej Zary <linux@rainbow-software.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>
+Date: Thu, 6 May 2010 08:11:08 +0800
+Subject: RE: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
+ (WKOC_E) and disconnect (WKDISC_E)
+Thread-Topic: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
+ (WKOC_E) and disconnect (WKDISC_E)
+Thread-Index: Acrsa3NkIypAdifSR/S1kp/yKXCntAARFQGQ
+Message-ID: <1865303E0DED764181A9D882DEF65FB61A82A6D6F9@shsmsx502.ccr.corp.intel.com>
+References: <20100505111245.2c480ea1@dxy2>
+ <Pine.LNX.4.44L0.1005051144490.1885-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1005051144490.1885-100000@iolanthe.rowland.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Sam: I know you don't maintain kbuild anymore, but since you have the
-most experience, if you could find time to comment, I'd be grateful]
+>-----Original Message-----
+>From: Alan Stern [mailto:stern@rowland.harvard.edu]
+>Sent: Wednesday, May 05, 2010 11:56 PM
+>To: Du, Alek
+>Cc: Ondrej Zary; Linux-pm mailing list; USB list; Kernel development list
+>Subject: Re: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
+>(WKOC_E) and disconnect (WKDISC_E)
+>
+>On Wed, 5 May 2010, Du, Alek wrote:
+>
+>> On Fri, 30 Apr 2010 01:45:33 +0800
+>> Alan Stern <stern@rowland.harvard.edu> wrote:
+>>
+>>
+>> > This patch fixes the problem on my system.  Does it work for you?
+>> > I still think that disabling wakeup at the PCI or platform level should
+>> > override the port wakeup flags, but apparently it doesn't.
+>> >
+>> > Alek, can you confirm that the changes in this patch are okay for the
+>> > Moorestown EHCI controller?  I had to guess at how to handle the
+>> > HOSTPCx register settings.
+>> >
+>> > Alan Stern
+>>
+>>
+>> Alan,
+>>
+>> As I tested, the patch breaks phy low power mode, the EHCI works, but it
+>never
+>> enter phy low power mode when suspending port...
+>>
+>> I guess this part of the diff breaks it.
+>>
+>>
+>>  -			/* only enable appropriate wake bits, otherwise the
+>>  -			 * hardware can not go phy low power mode. If a race
+>>  -			 * condition happens here(connection change during bits
+>>  -			 * set), the port change detection will finally fix it.
+>>  -			 */
+>>  -			if (t1 & PORT_CONNECT) {
+>>  -				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+>>  -				t2 &= ~PORT_WKCONN_E;
+>>  -			} else {
+>>  -				t2 |= PORT_WKOC_E | PORT_WKCONN_E;
+>>  -				t2 &= ~PORT_WKDISC_E;
+>>  -			}
+>
+>That seems very odd.  Why should removing code that enables wakeup bits
+>cause the suspend to fail?  Can't the phy go into low-power mode when
+>all the wakeup bits are disabled?
+>
+>Does applying this additional patch on top of the previous one help?
+>
+>Alan Stern
+>
+>
+>
+>Index: usb-2.6/drivers/usb/host/ehci-hub.c
+>===================================================================
+>--- usb-2.6.orig/drivers/usb/host/ehci-hub.c
+>+++ usb-2.6/drivers/usb/host/ehci-hub.c
+>@@ -200,7 +200,7 @@ static int ehci_bus_suspend (struct usb_
+> 	while (port--) {
+> 		u32 __iomem	*reg = &ehci->regs->port_status [port];
+> 		u32		t1 = ehci_readl(ehci, reg) & ~PORT_RWC_BITS;
+>-		u32		t2 = t1;
+>+		u32		t2;
+>
+> 		if (ehci->has_hostpc)
+> 			hostpc_reg = (u32 __iomem *)((u8 *)ehci->regs
+>@@ -209,6 +209,7 @@ static int ehci_bus_suspend (struct usb_
+> 		if (t1 & PORT_OWNER)
+> 			set_bit(port, &ehci->owned_ports);
+> 		else if ((t1 & PORT_PE) && !(t1 & PORT_SUSPEND)) {
+>+			t2 = t1 & ~PORT_WAKE_BITS;
+> 			t2 |= PORT_SUSPEND;
+> 			set_bit(port, &ehci->bus_suspended);
+> 			ehci_vdbg (ehci, "port %d, %08x -> %08x\n",
 
-The select problem is that the kbuild select directive will turn a
-symbol on without reference to its dependencies.  This, in turn, means
-that either selected symbols must select their dependencies, or that
-people using select have to be aware of the selected symbol's dependency
-and build those dependencies into their symbol (leading to duplication
-and the possibility of getting the dependencies out of sync).  We use
-select for the scsi transport classes, so we run into this problem in
-SCSI quite a lot.
+Alan,
 
-I think the correct fix is to make a symbol that selects another symbol
-automatically inherit all of the selected symbol's dependencies.
+This would be better, but before entering phy low power mode, the HW need the exact wakeup bits to be set, that's why we have:
 
-There seems to be a fairly easy way to do this in kbuild.  Right at the
-moment, select is handled as additional symbol values as the last point
-in the symbol tree evaluation process.  Instead, what I propose doing is
-for every select symbol, we add an extra unconditional default for the
-selected symbol of the selecting symbol's current value (this breaks a
-possible dependency cycle) and add to the dependencies of the selecting
-symbol, the symbol it's currently selecting.
+			/* only enable appropriate wake bits, otherwise the
+			 * hardware can not go phy low power mode. If a race
+			 * condition happens here(connection change during bits
+			 * set), the port change detection will finally fix it.
+			 */
+In the code. When port is connected, we must only enable PORT_WKOC_E | PORT_WKDISC_E, and when port is disconnected, we must only enable PORT_WKOC_E | PORT_WKCONN_E. Enable all wakeup bits won't work.
 
-There's one wrinkle to all of this in that the current parser for
-default values stops when it finds the first valid (i.e. whose if clause
-evaluates to true) default.  To make the above scheme work, I need to
-modify the default parser so it takes the highest tristate of all the
-valid defaults (and bumps m to y for bool).
-
-Does this look acceptable to people?  I think it should give the desired
-result and has the added benefit that we can then strip the extra select
-overlay out of the kbuild system (making the parser slightly simpler).
-
-If this looks like a good idea to people, I think I can code up a quick
-patch.
-
-James
-
-
+Thanks,
+Alek
 
