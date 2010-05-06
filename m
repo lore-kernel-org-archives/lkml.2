@@ -1,68 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab0EFVOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 17:14:05 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:48446 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab0EFVOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 17:14:01 -0400
-Date: Thu, 6 May 2010 17:14:01 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] Btrfs: add basic DIO read support
-Message-ID: <20100506211400.GE2997@infradead.org>
-References: <20100506190101.GD13974@dhcp231-156.rdu.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100506190101.GD13974@dhcp231-156.rdu.redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752280Ab0EFVSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 17:18:22 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50249 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751026Ab0EFVSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 17:18:20 -0400
+Date: Fri, 7 May 2010 07:18:08 +1000
+From: Neil Brown <neilb@suse.de>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+       Jan Blunck <jblunck@suse.de>, David Woodhouse <dwmw2@infradead.org>,
+       linux-nfs@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: [PATCH 05/39] whiteout/NFSD: Don't return information about
+ whiteouts to userspace
+Message-ID: <20100507071808.20028458@notabene.brown>
+In-Reply-To: <20100506180151.GA21062@shell>
+References: <1272928358-20854-1-git-send-email-vaurora@redhat.com>
+	<1272928358-20854-6-git-send-email-vaurora@redhat.com>
+	<20100504093731.3a45ff5f@notabene.brown>
+	<20100506180151.GA21062@shell>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +struct btrfs_dio_private {
-> +	struct inode *inode;
-> +	u64 logical_offset;
-> +	u32 *csums;
-> +	void *private;
-> +};
-> +
-> +static void btrfs_endio_direct(struct bio *bio, int err)
-> +{
-> +	struct bio_vec *bvec_end = bio->bi_io_vec + bio->bi_vcnt - 1;
-> +	struct bio_vec *bvec = bio->bi_io_vec;
-> +	struct btrfs_dio_private *dip = bio->bi_private;
-> +	struct inode *inode = dip->inode;
-> +	struct btrfs_root *root = BTRFS_I(inode)->root;
-> +	u64 start;
-> +	u32 *private = dip->csums;
-> +
-> +	start = dip->logical_offset;
-> +	do {
-> +		if (!(BTRFS_I(inode)->flags & BTRFS_INODE_NODATASUM)) {
-> +			struct page *page = bvec->bv_page;
-> +			char *kaddr;
-> +			u32 csum = ~(u32)0;
-> +
-> +			kaddr = kmap_atomic(page, KM_USER0);
+On Thu, 6 May 2010 14:01:51 -0400
+Valerie Aurora <vaurora@redhat.com> wrote:
 
-KM_USER0 seems wrong given that the bio completion callback can and
-usually will be called from some kind of IRQ context.
+> On Tue, May 04, 2010 at 09:37:31AM +1000, Neil Brown wrote:
+> > On Mon,  3 May 2010 16:12:04 -0700
+> > Valerie Aurora <vaurora@redhat.com> wrote:
+> > 
+> > > From: Jan Blunck <jblunck@suse.de>
+> > > 
+> > > Userspace isn't ready for handling another file type, so silently drop
+> > > whiteout directory entries before they leave the kernel.
+> > 
+> > Feels very intrusive doesn't it....
+> > 
+> > Have you considered something like the following?
+> 
+> Hrm, I see how that could be more elegant, but I'd rather avoid yet
+> another layer of function pointer passing around.  This code is
+> already hard enough to review...
 
-> +	ret = blockdev_direct_IO_own_submit(rw, iocb, inode, NULL, iov,
-> +					    offset, nr_segs,
-> +					    btrfs_get_blocks_direct,
-> +					    btrfs_submit_direct);
+ Yes, the extra indirection is a bit of a negative, but I don't think this
+ patch is harder to review than the alternate.
+ From a numerical perspective, with this patch you only need to look at the
+ various places that ->readdir is called to be sure it is always correct.
+ There are about 3.  With the original you need to look at ever filldir
+ function.  Jan has found 9.  
 
-Don't you need to do some alignment checks of your own given that you
-don't pass in a block device?
+ And from a maintainability perspective, I think my approach is safer.  Given
+ that there are 9 filldir functions already, the chance that a need will be
+ found for another seems good, and the chance that the coder will know to
+ check for DT_WHT is a best even.  Conversely if another call to ->readdir
+ were added it is likely that nothing would need to be done.
 
-Btw, passing in the bdev here is a really horrible API, I'd much rather
-move this to the callers..
+ Of course just counting things doesn't give a completely picture but I think
+ it can be indicative.
+
+NeilBrown
+
+
+> 
+> -VAL
+> 
+> > NeilBrown
+> > 
+> > diff --git a/fs/readdir.c b/fs/readdir.c
+> > index 7723401..4c5b347 100644
+> > --- a/fs/readdir.c
+> > +++ b/fs/readdir.c
+> > @@ -19,10 +19,26 @@
+> >  
+> >  #include <asm/uaccess.h>
+> >  
+> > +struct readdir_info {
+> > +	filldir_t filler;
+> > +	void *data;
+> > +};
+> > +
+> > +static int white_out(void *vrdi, const char *name, int namlen,
+> > +		     loff_t offset, u64 ino, unsigned int d_type)
+> > +{
+> > +	struct readdir_info *rdi = vrdi;
+> > +	if (d_type == DT_WHT)
+> > +		return 0;
+> > +	return rdi->filler(rdi->data, name, namlen, offset, info, d_type);
+> > +}
+> > +
+> >  int vfs_readdir(struct file *file, filldir_t filler, void *buf)
+> >  {
+> >  	struct inode *inode = file->f_path.dentry->d_inode;
+> >  	int res = -ENOTDIR;
+> > +	struct readir_info rdi = { filler, buf };
+> > +
+> >  	if (!file->f_op || !file->f_op->readdir)
+> >  		goto out;
+> >  
+> > @@ -36,7 +52,7 @@ int vfs_readdir(struct file *file, filldir_t filler, void *buf)
+> >  
+> >  	res = -ENOENT;
+> >  	if (!IS_DEADDIR(inode)) {
+> > -		res = file->f_op->readdir(file, buf, filler);
+> > +		res = file->f_op->readdir(file, &rdi, white_out);
+> >  		file_accessed(file);
+> >  	}
+> >  	mutex_unlock(&inode->i_mutex);
 
