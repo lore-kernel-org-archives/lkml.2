@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759344Ab0EFRh6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:37:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14857 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759320Ab0EFRh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:37:56 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: kernel-janitors@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-       ysato@users.sourceforge.jp, tony.luck@intel.com, dhowells@redhat.com,
-       kyle@mcmartin.ca, benh@kernel.crashing.org, schwidefsky@de.ibm.com,
-       jgarzik@pobox.com, hare@suse.de, felipe.balbi@nokia.com,
-       Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 10/13] drivers/scsi: removing redundant ifdef
-Date: Thu,  6 May 2010 19:36:14 +0200
-Message-Id: <1273167377-14270-11-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
-References: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
+	id S1756065Ab0EFHqD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 03:46:03 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:48734 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754557Ab0EFHqA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 03:46:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fv/GUb/VzwMfd1qA3ngZU27B704uwezDRrnq9prj0FL3GeUO/ZekRIzC+e3skPnizg
+         yQpVlZEOp/Xf2/Lp+50neokUIbP/7FpbbtbLWG4AyBO4adLGxJobsP+LJrAfJGQNXFQN
+         VB7mqUFYXqkCuotOJ+zl4lN2A9ZmAUckLVflE=
+MIME-Version: 1.0
+In-Reply-To: <20100506074231.GA8625@elte.hu>
+References: <20100505150740.GB5686@lenovo> <20100505165731.GA6320@nowhere>
+	 <20100505174234.GH5686@lenovo> <20100506064453.GI1172@elte.hu>
+	 <w2vaa79d98a1005060039ua7dd1b0t952fcd8662d4d759@mail.gmail.com>
+	 <20100506074231.GA8625@elte.hu>
+Date: Thu, 6 May 2010 11:45:56 +0400
+Message-ID: <n2maa79d98a1005060045ke0f87f4aw8b86da0440a019b3@mail.gmail.com>
+Subject: Re: [PATCH -tip] x86,perf: P4 PMU -- protect sensible procedures from 
+	preemption
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wbr,
-jirka
+On Thursday, May 6, 2010, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>
+>> On Thursday, May 6, 2010, Ingo Molnar <mingo@elte.hu> wrote:
+>> >
+>> > * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>> >
+>> >> On Wed, May 05, 2010 at 06:57:34PM +0200, Frederic Weisbecker wrote:
+>> >> ...
+>> >> > > @@ -741,7 +743,7 @@ static int p4_pmu_schedule_events(struct
+>> >> > > ?{
+>> >> > > ? unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+>> >> > > ? unsigned long escr_mask[BITS_TO_LONGS(ARCH_P4_TOTAL_ESCR)];
+>> >> > > - int cpu = raw_smp_processor_id();
+>> >> > > + int cpu = get_cpu();
+>> >> > > ? struct hw_perf_event *hwc;
+>> >> > > ? struct p4_event_bind *bind;
+>> >> > > ? unsigned int i, thread, num;
+>> >> > > @@ -777,6 +779,7 @@ reserve:
+>> >> > > ? }
+>> >> > >
+>> >> > > ?done:
+>> >> > > + put_cpu();
+>> >> > > ? return num ? -ENOSPC : 0;
+>> >> > > ?}
+>> >> >
+>> >> > That's no big deal. But I think the schedule_events() is called on
+>> >> > pmu::enable() time, when preemption is already disabled.
+>> >> >
+>> >>
+>> >> We'll be on a safe side using get/put_cpu here (ie in case
+>> >> if something get changed one day).
+>> >
+>> > hm, when 'something gets changed one day' we'll see a warning when using
+>> > unsafe primitives.
+>> >
+>> > So if preemption is always off here we really should not add extra runtime
+>> > overhead via get_cpu()/put_cpu().
+>> >
+>> > So wouldnt it be better (and faster) to disable preemption in
+>> > hw_perf_event_init(), which seems to be the bit missing?
+>> >
+>> >  ? ? ? ?Ingo
+>> >
+>>
+>> the thing are that p4 is only snippet here which is sensible to preemtion,
+>> and hw_perf_event_init is executing with preemtion off (but i could miss the
+>> details here, dont have code under my hands at moment, so PeterZ help is
+>> needed ;) but more important reason why i've saved get/put here is that
+>> otherwise i would not have rights to put tested-by tag, since it would not
+>> be the patch Steven has tested. We could make a patch on top of this one, or
+>> we could drop this one, make new with explicit preemt off in caller and use
+>> smp_processor_id in p4 schedule routine. What is preferred?
+>
+> We want the one with the least runtime overhead. These are instrumentation
+> routines, so we want to optimize them as much as possible.
+>
+> Thanks,
+>
+>         Ingo
+>
 
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- drivers/scsi/aic7xxx_old.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/aic7xxx_old.c b/drivers/scsi/aic7xxx_old.c
-index 93984c9..c0953be 100644
---- a/drivers/scsi/aic7xxx_old.c
-+++ b/drivers/scsi/aic7xxx_old.c
-@@ -9655,9 +9655,7 @@ aic7xxx_detect(struct scsi_host_template *template)
-           found++;
- 	  continue;
- skip_pci_controller:
--#ifdef CONFIG_PCI
- 	  pci_release_regions(temp_p->pdev);
--#endif
- 	  kfree(temp_p);
-         }  /* Found an Adaptec PCI device. */
-         else /* Well, we found one, but we couldn't get any memory */
--- 
-1.6.6.1
-
+ok, Ingo, dont apply this patch then for a while.
