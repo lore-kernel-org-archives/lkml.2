@@ -1,253 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757980Ab0EFM0u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 08:26:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33017 "EHLO mx1.redhat.com"
+	id S932515Ab0EFRny (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 13:43:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48770 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757161Ab0EFM0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 08:26:48 -0400
-Date: Thu, 6 May 2010 08:26:19 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v21 019/100] Make file_pos_read/write() public and
-	export kernel_write()
-Message-ID: <20100506122618.GA2327@localhost.localdomain>
-References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu> <1272723382-19470-20-git-send-email-orenl@cs.columbia.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272723382-19470-20-git-send-email-orenl@cs.columbia.edu>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756668Ab0EFRnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 13:43:51 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: kernel-janitors@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+       ysato@users.sourceforge.jp, tony.luck@intel.com, dhowells@redhat.com,
+       kyle@mcmartin.ca, benh@kernel.crashing.org, schwidefsky@de.ibm.com,
+       jgarzik@pobox.com, hare@suse.de, felipe.balbi@nokia.com,
+       Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 11/13] drivers/video: removing redundant ifdefs
+Date: Thu,  6 May 2010 19:36:15 +0200
+Message-Id: <1273167377-14270-12-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
+References: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 01, 2010 at 10:15:01AM -0400, Oren Laadan wrote:
-> These three are used in a subsequent patch to allow the kernel c/r
-> code to call vfs_read/write() to read and write data to and from the
-> checkpoint image.
-> 
-> This patch makes the following changes:
-> 
-> 1) Move kernel_write() from fs/splice.c to fs/exec.c to be near
-> kernel_read()
-> 
-> 2) Make kernel_read/write() iterate if they face partial reads or
-> writes, and retry if they face -EAGAIN.
-> 
-> 3) Adjust prototypes of kernel_read/write() to use size_t and ssize_t
-> 
-> 4) Move file_pos_read/write() to include/linux/fs.h
-> 
-> Changelog [ckpt-v21]
->   - Introduce kernel_write(), fix kernel_read()
-> 
-> Cc: linux-fsdevel@vger.kernel.org
-> Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-> Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-> ---
->  fs/exec.c          |   69 ++++++++++++++++++++++++++++++++++++++++++++++++----
->  fs/read_write.c    |   10 -------
->  fs/splice.c        |   17 +------------
->  include/linux/fs.h |   13 +++++++++-
->  4 files changed, 77 insertions(+), 32 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index 49cdaa1..7bacb6a 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -693,23 +693,82 @@ exit:
->  }
->  EXPORT_SYMBOL(open_exec);
->  
-> -int kernel_read(struct file *file, loff_t offset,
-> -		char *addr, unsigned long count)
-> +static ssize_t _kernel_read(struct file *file, loff_t offset,
-> +			    char __user *ubuf, size_t count)
->  {
-> -	mm_segment_t old_fs;
-> +	ssize_t nread;
-> +	size_t nleft;
->  	loff_t pos = offset;
-> -	int result;
-> +
-> +	for (nleft = count; nleft; nleft -= nread) {
-> +		nread = vfs_read(file, ubuf, nleft, &pos);
-> +		if (nread <= 0) {
-> +			if (nread == -EAGAIN) {
-> +				nread = 0;
-> +				continue;
-> +			} else if (nread == 0)
-> +				break;
-> +			else
-> +				return nread;
-> +		}
-> +		ubuf += nread;
-> +	}
-> +	return count - nleft;
-> +}
-> +
-> +ssize_t kernel_read(struct file *file, loff_t offset,
-> +		    char *addr, size_t count)
-> +{
-> +	mm_segment_t old_fs;
-> +	ssize_t result;
->  
->  	old_fs = get_fs();
->  	set_fs(get_ds());
->  	/* The cast to a user pointer is valid due to the set_fs() */
-> -	result = vfs_read(file, (void __user *)addr, count, &pos);
-> +	result = _kernel_read(file, offset, (void __user *)addr, count);
->  	set_fs(old_fs);
->  	return result;
->  }
->  
->  EXPORT_SYMBOL(kernel_read);
->  
-> +static ssize_t _kernel_write(struct file *file, loff_t offset,
-> +			     const char __user *ubuf, size_t count)
-> +{
-> +	ssize_t nwrite;
-> +	size_t nleft;
-> +	loff_t pos = offset;
-> +
-> +	for (nleft = count; nleft; nleft -= nwrite) {
-> +		nwrite = vfs_write(file, ubuf, nleft, &pos);
-> +		if (nwrite < 0) {
-> +			if (nwrite == -EAGAIN) {
-> +				nwrite = 0;
-> +				continue;
-> +			} else
-> +				return nwrite;
-> +		}
-> +		ubuf += nwrite;
-> +	}
-> +	return count - nleft;
-> +}
+wbr,
+jirka
 
-I'm not entirely sure if this can happen, but if vfs_write doesn't write
-anything, but doesn't have an error, we could end up in an infinite loop.  Like
-I said I'm not sure if thats even possible, but its definitely one of those
-things that if it is possible some random security guy is going to figure out
-how to exploit it at some point down the line.
 
-> +
-> +ssize_t kernel_write(struct file *file, loff_t offset,
-> +		     const char *addr, size_t count)
-> +{
-> +	mm_segment_t old_fs;
-> +	ssize_t result;
-> +
-> +	old_fs = get_fs();
-> +	set_fs(get_ds());
-> +	/* The cast to a user pointer is valid due to the set_fs() */
-> +	result = _kernel_write(file, offset, (void __user *)addr, count);
-> +	set_fs(old_fs);
-> +	return result;
-> +}
-> +
-> +EXPORT_SYMBOL(kernel_write);
-> +
->  static int exec_mmap(struct mm_struct *mm)
->  {
->  	struct task_struct *tsk;
-> diff --git a/fs/read_write.c b/fs/read_write.c
-> index 113386d..67b7d83 100644
-> --- a/fs/read_write.c
-> +++ b/fs/read_write.c
-> @@ -361,16 +361,6 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
->  
->  EXPORT_SYMBOL(vfs_write);
->  
-> -static inline loff_t file_pos_read(struct file *file)
-> -{
-> -	return file->f_pos;
-> -}
-> -
-> -static inline void file_pos_write(struct file *file, loff_t pos)
-> -{
-> -	file->f_pos = pos;
-> -}
-> -
->  SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
->  {
->  	struct file *file;
-> diff --git a/fs/splice.c b/fs/splice.c
-> index 9313b61..188e17d 100644
-> --- a/fs/splice.c
-> +++ b/fs/splice.c
-> @@ -538,21 +538,6 @@ static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
->  	return res;
->  }
->  
-> -static ssize_t kernel_write(struct file *file, const char *buf, size_t count,
-> -			    loff_t pos)
-> -{
-> -	mm_segment_t old_fs;
-> -	ssize_t res;
-> -
-> -	old_fs = get_fs();
-> -	set_fs(get_ds());
-> -	/* The cast to a user pointer is valid due to the set_fs() */
-> -	res = vfs_write(file, (const char __user *)buf, count, &pos);
-> -	set_fs(old_fs);
-> -
-> -	return res;
-> -}
-> -
->  ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
->  				 struct pipe_inode_info *pipe, size_t len,
->  				 unsigned int flags)
-> @@ -1011,7 +996,7 @@ static int write_pipe_buf(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
->  		return ret;
->  
->  	data = buf->ops->map(pipe, buf, 0);
-> -	ret = kernel_write(sd->u.file, data + buf->offset, sd->len, sd->pos);
-> +	ret = kernel_write(sd->u.file, sd->pos, data + buf->offset, sd->len);
->  	buf->ops->unmap(pipe, buf, data);
->  
->  	return ret;
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 39d57bc..9e8b171 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1548,6 +1548,16 @@ ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
->  				struct iovec *fast_pointer,
->  				struct iovec **ret_pointer);
->  
-> +static inline loff_t file_pos_read(struct file *file)
-> +{
-> +	return file->f_pos;
-> +}
-> +
-> +static inline void file_pos_write(struct file *file, loff_t pos)
-> +{
-> +	file->f_pos = pos;
-> +}
-> +
->  extern ssize_t vfs_read(struct file *, char __user *, size_t, loff_t *);
->  extern ssize_t vfs_write(struct file *, const char __user *, size_t, loff_t *);
->  extern ssize_t vfs_readv(struct file *, const struct iovec __user *,
-> @@ -2127,7 +2137,8 @@ extern struct file *do_filp_open(int dfd, const char *pathname,
->  		int open_flag, int mode, int acc_mode);
->  extern int may_open(struct path *, int, int);
->  
-> -extern int kernel_read(struct file *, loff_t, char *, unsigned long);
-> +extern ssize_t kernel_read(struct file *, loff_t, char *, size_t);
-> +extern ssize_t kernel_write(struct file *, loff_t, const char *, size_t);
->  extern struct file * open_exec(const char *);
->   
->  /* fs/dcache.c -- generic fs support functions */
-> -- 
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ drivers/video/atafb.c                   |    2 --
+ drivers/video/matrox/matroxfb_DAC1064.c |    5 +----
+ 2 files changed, 1 insertions(+), 6 deletions(-)
 
-I'd say fix that little nit I had above and you can add
+diff --git a/drivers/video/atafb.c b/drivers/video/atafb.c
+index f3aada2..5b2b5ef 100644
+--- a/drivers/video/atafb.c
++++ b/drivers/video/atafb.c
+@@ -1718,11 +1718,9 @@ static int falcon_setcolreg(unsigned int regno, unsigned int red,
+ 			(((red & 0xe000) >> 13) | ((red & 0x1000) >> 12) << 8) |
+ 			(((green & 0xe000) >> 13) | ((green & 0x1000) >> 12) << 4) |
+ 			((blue & 0xe000) >> 13) | ((blue & 0x1000) >> 12);
+-#ifdef ATAFB_FALCON
+ 		((u32 *)info->pseudo_palette)[regno] = ((red & 0xf800) |
+ 						       ((green & 0xfc00) >> 5) |
+ 						       ((blue & 0xf800) >> 11));
+-#endif
+ 	}
+ 	return 0;
+ }
+diff --git a/drivers/video/matrox/matroxfb_DAC1064.c b/drivers/video/matrox/matroxfb_DAC1064.c
+index f9fa0fd..1717623 100644
+--- a/drivers/video/matrox/matroxfb_DAC1064.c
++++ b/drivers/video/matrox/matroxfb_DAC1064.c
+@@ -869,12 +869,9 @@ static int MGAG100_preinit(struct matrox_fb_info *minfo)
+ 	minfo->capable.plnwt = minfo->devflags.accelerator == FB_ACCEL_MATROX_MGAG100
+ 			? minfo->devflags.sgram : 1;
+ 
+-#ifdef CONFIG_FB_MATROX_G
+ 	if (minfo->devflags.g450dac) {
+ 		minfo->outputs[0].output = &g450out;
+-	} else
+-#endif
+-	{
++	} else {
+ 		minfo->outputs[0].output = &m1064;
+ 	}
+ 	minfo->outputs[0].src = minfo->outputs[0].default_src;
+-- 
+1.6.6.1
 
-Reviewed-by: Josef Bacik <josef@redhat.com>
-
-Thanks,
-
-Josef
