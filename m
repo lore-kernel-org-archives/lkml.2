@@ -1,95 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab0EFVJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 17:09:28 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55237 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab0EFVJ0 (ORCPT
+	id S1752381Ab0EFVJb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 17:09:31 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54927 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab0EFVJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 17:09:26 -0400
-Date: Thu, 6 May 2010 17:09:25 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] direct-io: add a hook for the fs to provide its
-	own submit_bio function
-Message-ID: <20100506210925.GC2997@infradead.org>
-References: <20100506190037.GC13974@dhcp231-156.rdu.redhat.com>
+	Thu, 6 May 2010 17:09:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=CCu63uhksCV7VN1dhyM487FqXNSM69Lh7BGmGhimg+bJv6Uu4/5F/o6mwySUQkIAny
+         8z9jZhTJIHVgROqKtqPCIGUQeN6btgj0KRQTBwel/KWLc8WkpsRjpl9LaUDNDSi/bVwi
+         Oiw6xrwj7e+i7vg4sGcxzOHBxjlRlrDl9yehM=
+Date: Fri, 7 May 2010 01:09:19 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       Mike Frysinger <vapier.adi@gmail.com>,
+       Michael Hennerich <michael.hennerich@analog.com>,
+       Sebastian Siewior <bigeasy@linutronix.de>,
+       Catalin Marinas <catalin.marinas@arm.com>,
+       Bryan Wu <cooloney@kernel.org>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH v2] USB: isp1760: Soften DW3 X/transaction error bit
+ handling
+Message-ID: <20100506210919.GA28930@oksana.dev.rtsoft.ru>
+References: <20100506191532.GA11365@oksana.dev.rtsoft.ru>
+ <Pine.LNX.4.44L0.1005061543421.1708-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100506190037.GC13974@dhcp231-156.rdu.redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <Pine.LNX.4.44L0.1005061543421.1708-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 03:00:38PM -0400, Josef Bacik wrote:
-> +void dio_end_io(struct bio *bio, int error)
-> +{
-> +	struct dio *dio = bio->bi_private;
-> +
-> +	if (dio->is_async)
-> +		dio_bio_end_aio(bio, error);
-> +	else
-> +		dio_bio_end_io(bio, error);
-> +}
-> +EXPORT_SYMBOL(dio_end_io);
+There were some reports[1] of isp1760 USB driver malfunctioning
+with high speed devices, noticed on Blackfin and PowerPC targets.
+These reports indicated that the original Philips 'pehcd'[2]
+driver worked fine.
 
-_GPL export please as it's quite internal.
+We've noticed the same issue with an ARM RealView platform. This
+happens under load (with only some mass storage devices, not all,
+just as in another report[3]):
 
-> @@ -340,7 +352,10 @@ static void dio_bio_submit(struct dio *dio)
->  	if (dio->is_async && dio->rw == READ)
->  		bio_set_pages_dirty(bio);
->  
-> -	submit_bio(dio->rw, bio);
-> +	if (!dio->submit_io)
-> +		submit_bio(dio->rw, bio);
-> +	else
-> +		dio->submit_io(dio->rw, bio, dio->inode);
+  error bit is set in DW3
+  error bit is set in DW3
+  error bit is set in DW3
+  usb 1-1.2: device descriptor read/64, error -32
 
-What about making sure that dio->submit_io is always set in
-direct_io_worker?
+It appears that the 'pehcd' driver checks the X bit only if the
+transaction is halted (H bit), otherwise the error is so far
+insignificant.
 
->  static int dio_send_cur_page(struct dio *dio)
->  {
-> +	int boundary = dio->boundary;
->  	int ret = 0;
->  
->  	if (dio->bio) {
-> @@ -612,7 +628,7 @@ static int dio_send_cur_page(struct dio *dio)
->  		 * Submit now if the underlying fs is about to perform a
->  		 * metadata read
->  		 */
-> -		if (dio->boundary)
-> +		if (boundary)
->  			dio_bio_submit(dio);
->  	}
->  
-> @@ -629,6 +645,8 @@ static int dio_send_cur_page(struct dio *dio)
->  			ret = dio_bio_add_page(dio);
->  			BUG_ON(ret != 0);
->  		}
-> +	} else if (boundary) {
-> +		dio_bio_submit(dio);
->  	}
+The ISP176x chips were modeled after EHCI, and EHCI spec says
+(thanks to Alan Stern for pointing out):
 
-These hunk seem like they're unrealted to the actual hook,  I'd rather
-have them in a separate patch.
+"Transaction errors cause the status field to be updated to reflect
+ the type of error, but the transaction continues to be retried until
+ the Active bit is set to 0.  When the error counter reaches 0, the
+ Halt bit is set and the Active bit is cleared."
 
-> +static inline ssize_t blockdev_direct_IO_own_submit(int rw, struct kiocb *iocb,
-> +	struct inode *inode, struct block_device *bdev, const struct iovec *iov,
-> +	loff_t offset, unsigned long nr_segs, get_block_t get_block,
-> +	dio_submit_t submit_io)
-> +{
-> +	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
-> +				    nr_segs, get_block, NULL, submit_io, 0);
->  }
+So, just as the original Philips driver, isp1760 must report the
+error only if the transaction error and the halt bits are set.
 
-Please don't add another wrapper.  At this point I'd suggest just using
-__blockdev_direct_IO for everything but the trivial blockdev_direct_IO
-and also kill blockdev_direct_IO_no_locking.
+[1] http://markmail.org/message/lx4qrlbrs2uhcnly
+[2] svn co svn://sources.blackfin.uclinux.org/linux-kernel/trunk/drivers/usb/host -r 5494
+    See pehci.c:pehci_hcd_update_error_status().
+[3] http://blackfin.uclinux.org/gf/tracker/5148
+
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+---
+
+On Thu, May 06, 2010 at 03:53:54PM -0400, Alan Stern wrote:
+[...]
+> > I didn't find where exactly ISP1760 spec mandates 'H && X'
+> > handling (maybe it's in the EHCI spec?),
+> 
+> Yes, it is described implicitly in the EHCI spec, section 4.10.3.
+
+Thanks! I've added this to the commit message.
+
+On Thu, May 06, 2010 at 03:23:28PM -0400, Mike Frysinger wrote:
+> On Thu, May 6, 2010 at 15:15, Anton Vorontsov wrote:
+> > [3] http://blackfin.uclinux.org/gf/project/uclinux-dist/tracker/?action=TrackerItemEdit&tracker_item_id=5148
+>
+> i doubt you feel like resending, but this is a better link:
+>   http://blackfin.uclinux.org/gf/tracker/5148
+
+Yeah. I've changed the link, thanks.
+
+ drivers/usb/host/isp1760-hcd.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/host/isp1760-hcd.c b/drivers/usb/host/isp1760-hcd.c
+index 9f01293..9989c0b 100644
+--- a/drivers/usb/host/isp1760-hcd.c
++++ b/drivers/usb/host/isp1760-hcd.c
+@@ -713,12 +713,11 @@ static int check_error(struct ptd *ptd)
+ 	u32 dw3;
+ 
+ 	dw3 = le32_to_cpu(ptd->dw3);
+-	if (dw3 & DW3_HALT_BIT)
++	if (dw3 & DW3_HALT_BIT) {
+ 		error = -EPIPE;
+ 
+-	if (dw3 & DW3_ERROR_BIT) {
+-		printk(KERN_ERR "error bit is set in DW3\n");
+-		error = -EPIPE;
++		if (dw3 & DW3_ERROR_BIT)
++			pr_err("error bit is set in DW3\n");
+ 	}
+ 
+ 	if (dw3 & DW3_QTD_ACTIVE) {
+-- 
+1.7.0.5
 
