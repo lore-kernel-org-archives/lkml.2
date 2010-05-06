@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab0EFGVv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 02:21:51 -0400
-Received: from kroah.org ([198.145.64.141]:56962 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751082Ab0EFGVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 02:21:50 -0400
-Date: Wed, 5 May 2010 23:21:29 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Prashant P. Shah" <pshah.mumbai@gmail.com>,
-       Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
-       netdev@vger.kernel.org
-Subject: Re: linux-next: manual merge of the staging-next tree with the net
-	tree
-Message-ID: <20100506062129.GA23076@kroah.com>
-References: <20100506140543.d6f3841f.sfr@canb.auug.org.au> <20100506042048.GA25425@kroah.com> <20100506142139.c1b1c1c3.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100506142139.c1b1c1c3.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1752916Ab0EFGWV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 02:22:21 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42064 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab0EFGWT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 02:22:19 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 6 May 2010 15:18:13 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: balbir@linux.vnet.ibm.com, nishimura@mxp.nes.nec.co.jp,
+       akpm@linux-foundation.org, kirill@shutemov.name, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: remove unnecessary use of atomic
+Message-Id: <20100506151813.b4e625d2.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1273058509-16625-1-git-send-email-ext-phil.2.carmody@nokia.com>
+References: <1273058509-16625-1-git-send-email-ext-phil.2.carmody@nokia.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 02:21:39PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On Wed,  5 May 2010 14:21:48 +0300
+Phil Carmody <ext-phil.2.carmody@nokia.com> wrote:
+
+> From: Phil Carmody <ext-phil.2.carmody@nokia.com>
 > 
-> On Wed, 5 May 2010 21:20:48 -0700 Greg KH <greg@kroah.com> wrote:
-> >
-> > Thanks for doing this.  Hm, the arlan driver is scheduled to be deleted
-> > in .35, so it would make things easier if I just do it now to keep these
-> > kinds of merge issues from happening.  I'll queue that up tomorrow.
+> The bottom 4 hunks are atomically changing memory to which there
+> are no aliases as it's freshly allocated, so there's no need to
+> use atomic operations.
 > 
-> Ah, yes, that would be easier.  Thanks.
+> The other hunks are just atomic_read and atomic_set, and do not
+> involve any read-modify-write. The use of atomic_{read,set}
+> doesn't prevent a read/write or write/write race, so if a race
+> were possible (I'm not saying one is), then it would still be
+> there even with atomic_set.
+> 
+> See:
+> http://digitalvampire.org/blog/index.php/2007/05/13/atomic-cargo-cults/
+> 
+> Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-It is now deleted, along with 3 other drivers that were scheduled to be
-deleted in .35, so you will not have any merge issues with them anymore.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-thanks,
-
-greg k-h
