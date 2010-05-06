@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab0EFHEg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 03:04:36 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42063 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026Ab0EFHEe convert rfc822-to-8bit (ORCPT
+	id S1758892Ab0EFP76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 11:59:58 -0400
+Received: from mail-yx0-f191.google.com ([209.85.210.191]:50135 "EHLO
+	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab0EFP74 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 03:04:34 -0400
-Subject: Re: [RFC PATCHSET] sched,perf: unify tracers in sched and move
- perf on top of TP
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Tejun Heo <tj@kernel.org>, efault@gmx.de, avi@redhat.com, paulus@samba.org,
-       acme@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20100506063116.GE1172@elte.hu>
-References: <1272994165.1642.203.camel@laptop> <4BE0FB68.7080403@kernel.org>
-	 <1273050400.1642.229.camel@laptop> <4BE13B33.3030709@kernel.org>
-	 <1273053073.1642.235.camel@laptop> <4BE1406C.2000400@kernel.org>
-	 <1273059488.1642.245.camel@laptop> <4BE1648B.1080709@kernel.org>
-	 <20100505165532.GC14323@elte.hu> <1273083173.1642.250.camel@laptop>
-	 <20100506063116.GE1172@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 6 May 2010 11:59:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GgRzSPZTRUm007jPw1GKTzabr6YBkICx9Sz7vWGyKhnOFAguLVlAW7ScGZIRaaoTfT
+         tKp942AzMveP3fD2a8FxsqqEHDNBQQArAFJFbcHqpJeyRsx1YgkaEnpMbdt4XMYdOMj/
+         clrUPPGra4g1QYs8fVnhgzOt5BaDeRv6J9HbM=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1005060703540.901@i5.linux-foundation.org>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie>
+	 <1273065281-13334-2-git-send-email-mel@csn.ul.ie>
+	 <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org>
+	 <20100505145620.GP20979@csn.ul.ie>
+	 <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org>
+	 <20100505175311.GU20979@csn.ul.ie>
+	 <alpine.LFD.2.00.1005051058380.27218@i5.linux-foundation.org>
+	 <20100506002255.GY20979@csn.ul.ie>
+	 <p2s28c262361005060247m2983625clff01aeaa1668402f@mail.gmail.com>
+	 <alpine.LFD.2.00.1005060703540.901@i5.linux-foundation.org>
+Date: Fri, 7 May 2010 00:59:55 +0900
+Message-ID: <s2j28c262361005060859ga196a23eq8f4ee0c8ce5f3ea9@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing the 
+	wrong VMA information
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 06 May 2010 09:04:24 +0200
-Message-ID: <1273129464.5605.228.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-06 at 08:31 +0200, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > Well, I'd much rather just see a direct call in the code than having to 
-> > reverse engineer wth hangs onto that _EVENT() junk.
-> 
-> Direct calls into code were fine 10 years ago, but since then we got:
-> 
->  - preempt notifiers
+On Thu, May 6, 2010 at 11:06 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>
+> On Thu, 6 May 2010, Minchan Kim wrote:
+>> > +        */
+>> > +       avc = list_first_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
+>>
+>> Dumb question.
+>>
+>> I can't understand why we should use list_first_entry.
+>
+> It's not that we "should" use list_entry_first. It's that we want to find
+> _any_ entry on the list, and the most natural one is the first one.
+>
+> So we could take absolutely any 'avc' entry that is reachable from the
+> anon_vma, and use that to look up _any_ 'vma' that is associated with that
+> anon_vma. And then, from _any_ of those vma's, we know how to get to the
+> "root anon_vma" - the one that they are all associated with.
+>
+> So no, there's absolutely nothing special about the first entry. It's
+> just a random easily found one.
+>
+>                Linus
+>
 
-Are per task an no good for driving perf.
+Thanks, Linus and Mel.
+You understood my question correctly. :)
 
->  - sw events
->  - tracepoints
+My concern was following case.
 
-Are unrelated to the core perf scheduler calls.
+Child process does mmap new VMA but anon_vma is reused nearer child's
+VMA which is linked parent's VMA by fork.
+In that case, anon_vma_prepare calls list_add not list_add_tail.
+ex) list_add(&avc->same_anon_vma, &anon_vma->head);
 
-> Which add up to a lot more than just a plain call into code.
-> 
-> Also, with the jump-optimizations we will have tracepoints that are _cheaper_ 
-> than a plain function call.
+It means list_first_entry is the new VMA not old VMA and new VMA's
+root_avc isn't linked at parent's one. It means we are locking each
+other locks. That's why I have a question.
 
-Which can just as easily be used on the core perf hooks.
+But I carefully looked at the reusable_anon_vma and found
+list_is_singular. I remember Linus changed it to make problem simple.
+So in my scenario, new VMA can't share old VMA's anon_vma.
 
-> > Also, we don't need ABI muck for this.
-> 
-> we already have an ABIs in place here - this would just properly unify and 
-> enumerate it.
+So my story is broken.
+If I miss something, please, correct me. :)
 
-I'm not getting it, this is about in-kernel stuff, there are _NO_ in
-kernel ABIs.
+-- 
+Kind regards,
+Minchan Kim
