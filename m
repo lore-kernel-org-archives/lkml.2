@@ -1,83 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab0EFAVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 20:21:37 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35669 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab0EFAVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 20:21:36 -0400
-Date: Thu, 6 May 2010 01:21:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: tytso@mit.edu, Matthew Garrett <mjg@redhat.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Brian Swetland <swetland@google.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100506002125.GA22013@sirena.org.uk>
-References: <20100505185225.GA4411@srcf.ucam.org> <201005060005.01215.rjw@sisk.pl> <20100505230917.GA5269@opensource.wolfsonmicro.com> <201005060133.59417.rjw@sisk.pl>
+	id S1756493Ab0EFAXR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 20:23:17 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:40840 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755422Ab0EFAXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 May 2010 20:23:16 -0400
+Date: Thu, 6 May 2010 01:22:56 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+	the wrong VMA information
+Message-ID: <20100506002255.GY20979@csn.ul.ie>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie> <1273065281-13334-2-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org> <20100505145620.GP20979@csn.ul.ie> <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org> <20100505175311.GU20979@csn.ul.ie> <alpine.LFD.2.00.1005051058380.27218@i5.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <201005060133.59417.rjw@sisk.pl>
-X-Cookie: Many suitcases look alike.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <alpine.LFD.2.00.1005051058380.27218@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 01:33:59AM +0200, Rafael J. Wysocki wrote:
+On Wed, May 05, 2010 at 11:02:25AM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Wed, 5 May 2010, Mel Gorman wrote:
+> > 
+> > If the same_vma list is properly ordered then maybe something like the
+> > following is allowed?
+> 
+> Heh. This is the same logic I just sent out. However:
+> 
+> > +	anon_vma = page_rmapping(page);
+> > +	if (!anon_vma)
+> > +		return NULL;
+> > +
+> > +	spin_lock(&anon_vma->lock);
+> 
+> RCU should guarantee that this spin_lock() is valid, but:
+> 
+> > +	/*
+> > +	 * Get the oldest anon_vma on the list by depending on the ordering
+> > +	 * of the same_vma list setup by __page_set_anon_rmap
+> > +	 */
+> > +	avc = list_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
+> 
+> We're not guaranteed that the 'anon_vma->head' list is non-empty.
+> 
+> Somebody could have freed the list and the anon_vma and we have a stale 
+> 'page->anon_vma' (that has just not been _released_ yet). 
+> 
+> And shouldn't that be 'list_first_entry'? Or &anon_vma->head.next?
+> 
+> How did that line actually work for you? Or was it just a "it boots", but 
+> no actual testing of the rmap walk?
+> 
 
-> set up that way).  Even without the patchset you may implement a power
-> manager in user space that will suspend the system whenever it thinks it's
-> idle.
+This is what I just started testing on a 4-core machine. Lockdep didn't
+complain but there are two potential sources of badness in anon_vma_lock_root
+marked with XXX. The second is the most important because I can't see how the
+local and root anon_vma locks can be safely swapped - i.e. release local and
+get the root without the root disappearing. I haven't considered the other
+possibilities yet such as always locking the root anon_vma. Going to
+sleep on it.
 
-Clearly, but...
+Any comments?
 
-> On Thursday 06 May 2010, Mark Brown wrote:
+==== CUT HERE ====
+mm,migration: Prevent rmap_walk_[anon|ksm] seeing the wrong VMA information
 
-> > In the primary existing application this change interoperates very poorly
-> > with at least the current audio subsystem since that handles suspend by
-> > ceasing all activity and powering as much as it can off, which is sensible for
-> > manual only suspends but highly undesirable for opportunistic suspend in
-> > phones.
+vma_adjust() is updating anon VMA information without locks being taken.
+In contrast, file-backed mappings use the i_mmap_lock and this lack of
+locking can result in races with users of rmap_walk such as page migration.
+vma_address() can return -EFAULT for an address that will soon be valid.
+For migration, this potentially leaves a dangling migration PTE behind
+which can later cause a BUG_ON to trigger when the page is faulted in.
 
-> You said that there's no fundamental difference between manual and
-> opportunistic suspend.  It only matters what _you_ are going to use suspend
-> for.  I agree that at the moment it's not suitable for aggressive power
-> management in phones because of the audio problem, but that applies to
-> "manual" as well as to "opportunistic" suspend.
+With the recent anon_vma changes, there can be more than one anon_vma->lock to
+take in a anon_vma_chain but as the order of anon_vmas cannot be guaranteed,
+rmap_walk cannot take multiple locks. This patch has rmap_walk start
+by locking the anon_vma lock associated with a page. It then finds the
+"root" anon_vma using the anon_vma_chains same_vma list as it is strictly
+ordered. The root anon_vma lock is taken and rmap_walk traverses the
+list. This allows multiple locks to be taken as the list is always traversed
+in the same direction.
 
-...on the other hand there's exactly one existing application for this,
-and that's the one that's most likely to run into problems since it's a
-phone OS and aggressive power management is pretty important for phones.
+For vma_adjust(), the locking behaviour prior to the anon_vma is restored
+so that rmap_walk() can be sure of the integrity of the VMA information and
+lists when the anon_vma lock is held. With this patch, the vma->anon_vma->lock
+is taken if
 
-Merging a feature into mainline makes it much more something which one
-would expect to play nicely with the rest of the kernel - if it's
-something that isn't part of the standard kernel or userspaces it's much
-less surprising that additional changes may be required to produce a
-well integrated system.
+	a) If there is any overlap with the next VMA due to the adjustment
+	b) If there is a new VMA is being inserted into the address space
+	c) If the start of the VMA is being changed so that the
+	   relationship between vm_start and vm_pgoff is preserved
+	   for vma_address()
 
-> You're saying that suspend is not suitable for one particular purpose in its
-> current form, which is entirely correct, but that doesn't imply that the
-> patchset is wrong.
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+---
+ include/linux/rmap.h |    2 +
+ mm/ksm.c             |   20 ++++++++++--
+ mm/mmap.c            |    9 +++++
+ mm/rmap.c            |   88 +++++++++++++++++++++++++++++++++++++++++++++----
+ 4 files changed, 108 insertions(+), 11 deletions(-)
 
-As I keep saying I agree that merging this is reasonable given the
-additional power savings it brings in practical systems today.  As I
-also keep saying I do want to have some understanding about what the
-story is for dealing with the problems so that people can easily use
-this feature out of the box.
-
-Like I say, my current impression is that the best approach is for
-affected subsystems or drivers to implement a custom solution - does
-that match your understanding and that of the other PM maintainers?
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 7721674..6d4d5f7 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -121,6 +121,8 @@ int  anon_vma_prepare(struct vm_area_struct *);
+ void unlink_anon_vmas(struct vm_area_struct *);
+ int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
+ int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
++struct anon_vma *anon_vma_lock_root(struct anon_vma *anon_vma);
++struct anon_vma *page_anon_vma_lock_root(struct page *page);
+ void __anon_vma_link(struct vm_area_struct *);
+ void anon_vma_free(struct anon_vma *);
+ 
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 3666d43..d16b459 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1668,15 +1668,24 @@ int rmap_walk_ksm(struct page *page, int (*rmap_one)(struct page *,
+ again:
+ 	hlist_for_each_entry(rmap_item, hlist, &stable_node->hlist, hlist) {
+ 		struct anon_vma *anon_vma = rmap_item->anon_vma;
++		struct anon_vma *locked_vma;
+ 		struct anon_vma_chain *vmac;
+ 		struct vm_area_struct *vma;
+ 
+-		spin_lock(&anon_vma->lock);
++		anon_vma = anon_vma_lock_root(anon_vma);
+ 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
+ 			vma = vmac->vma;
++
++			locked_vma = NULL;
++			if (anon_vma != vma->anon_vma) {
++				locked_vma = vma->anon_vma;
++				spin_lock_nested(&locked_vma->lock, SINGLE_DEPTH_NESTING);
++			}
++
+ 			if (rmap_item->address < vma->vm_start ||
+ 			    rmap_item->address >= vma->vm_end)
+-				continue;
++				goto next_vma;
++
+ 			/*
+ 			 * Initially we examine only the vma which covers this
+ 			 * rmap_item; but later, if there is still work to do,
+@@ -1684,9 +1693,14 @@ again:
+ 			 * were forked from the original since ksmd passed.
+ 			 */
+ 			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
+-				continue;
++				goto next_vma;
+ 
+ 			ret = rmap_one(page, vma, rmap_item->address, arg);
++
++next_vma:
++			if (locked_vma)
++				spin_unlock(&locked_vma->lock);
++
+ 			if (ret != SWAP_AGAIN) {
+ 				spin_unlock(&anon_vma->lock);
+ 				goto out;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f90ea92..d635132 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -505,6 +505,7 @@ int vma_adjust(struct vm_area_struct *vma, unsigned long start,
+ 	struct vm_area_struct *next = vma->vm_next;
+ 	struct vm_area_struct *importer = NULL;
+ 	struct address_space *mapping = NULL;
++	struct anon_vma *anon_vma = NULL;
+ 	struct prio_tree_root *root = NULL;
+ 	struct file *file = vma->vm_file;
+ 	long adjust_next = 0;
+@@ -578,6 +579,11 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		}
+ 	}
+ 
++	if (vma->anon_vma && (insert || importer || start != vma->vm_start)) {
++		anon_vma = vma->anon_vma;
++		spin_lock(&anon_vma->lock);
++	}
++
+ 	if (root) {
+ 		flush_dcache_mmap_lock(mapping);
+ 		vma_prio_tree_remove(vma, root);
+@@ -620,6 +626,9 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 	if (mapping)
+ 		spin_unlock(&mapping->i_mmap_lock);
+ 
++	if (anon_vma)
++		spin_unlock(&anon_vma->lock);
++
+ 	if (remove_next) {
+ 		if (file) {
+ 			fput(file);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 85f203e..0d8db6d 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -236,6 +236,69 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ 	return -ENOMEM;
+ }
+ 
++/* Given an anon_vma, find the root of the chain, lock it and return the root */
++struct anon_vma *anon_vma_lock_root(struct anon_vma *anon_vma)
++{
++	struct anon_vma *root_anon_vma;
++	struct anon_vma_chain *avc, *root_avc;
++	struct vm_area_struct *vma;
++
++	/* Lock the same_anon_vma list and make sure we are on a chain */
++	spin_lock(&anon_vma->lock);
++	if (list_empty(&anon_vma->head)) {
++		spin_unlock(&anon_vma->lock);
++		return NULL;
++	}
++
++	/*
++	 * Get the root anon_vma on the list by depending on the ordering
++	 * of the same_vma list setup by __page_set_anon_rmap. Basically
++	 * we are doing
++	 *
++	 * local anon_vma -> local vma -> deepest vma -> anon_vma
++	 */
++	avc = list_first_entry(&anon_vma->head, struct anon_vma_chain, same_anon_vma);
++	vma = avc->vma;
++	root_avc = list_entry(vma->anon_vma_chain.prev, struct anon_vma_chain, same_vma);
++	root_anon_vma = root_avc->anon_vma;
++	if (!root_anon_vma) {
++		/* XXX: Can this happen? Don't think so but get confirmation */
++		WARN_ON_ONCE(1);
++		return anon_vma;
++	}
++
++	/* Get the lock of the root anon_vma */
++	if (anon_vma != root_anon_vma) {
++		/*
++		 * XXX: This doesn't seem safe. What prevents root_anon_vma
++		 * getting freed from underneath us? Not much but if
++		 * we take the second lock first, there is a deadlock
++		 * possibility if there are multiple callers of rmap_walk
++		 */
++		spin_unlock(&anon_vma->lock);
++		spin_lock(&root_anon_vma->lock);
++	}
++
++	return root_anon_vma;
++}
++
++/*
++ * From the anon_vma associated with this page, find and lock the
++ * deepest anon_vma on the list. This allows multiple anon_vma locks
++ * to be taken by guaranteeing the locks are taken in the same order
++ */
++struct anon_vma *page_anon_vma_lock_root(struct page *page)
++{
++	struct anon_vma *anon_vma;
++
++	/* Get the local anon_vma */
++	anon_vma = page_anon_vma(page);
++	if (!anon_vma)
++		return NULL;
++
++	return anon_vma_lock_root(anon_vma);
++}
++
+ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
+ {
+ 	struct anon_vma *anon_vma = anon_vma_chain->anon_vma;
+@@ -326,7 +389,7 @@ void page_unlock_anon_vma(struct anon_vma *anon_vma)
+  * Returns virtual address or -EFAULT if page's index/offset is not
+  * within the range mapped the @vma.
+  */
+-static inline unsigned long
++static noinline unsigned long
+ vma_address(struct page *page, struct vm_area_struct *vma)
+ {
+ 	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+@@ -1358,7 +1421,7 @@ int try_to_munlock(struct page *page)
+ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+ 		struct vm_area_struct *, unsigned long, void *), void *arg)
+ {
+-	struct anon_vma *anon_vma;
++	struct anon_vma *anon_vma, *locked_vma;
+ 	struct anon_vma_chain *avc;
+ 	int ret = SWAP_AGAIN;
+ 
+@@ -1368,16 +1431,25 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+ 	 * are holding mmap_sem. Users without mmap_sem are required to
+ 	 * take a reference count to prevent the anon_vma disappearing
+ 	 */
+-	anon_vma = page_anon_vma(page);
++	anon_vma = page_anon_vma_lock_root(page);
+ 	if (!anon_vma)
+ 		return ret;
+-	spin_lock(&anon_vma->lock);
+ 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
+ 		struct vm_area_struct *vma = avc->vma;
+-		unsigned long address = vma_address(page, vma);
+-		if (address == -EFAULT)
+-			continue;
+-		ret = rmap_one(page, vma, address, arg);
++		unsigned long address;
++
++		locked_vma = NULL;
++		if (anon_vma != vma->anon_vma) {
++			locked_vma = vma->anon_vma;
++			spin_lock_nested(&locked_vma->lock, SINGLE_DEPTH_NESTING);
++		}
++		address = vma_address(page, vma);
++		if (address != -EFAULT)
++			ret = rmap_one(page, vma, address, arg);
++
++		if (locked_vma)
++			spin_unlock(&locked_vma->lock);
++
+ 		if (ret != SWAP_AGAIN)
+ 			break;
+ 	}
