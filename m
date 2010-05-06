@@ -1,100 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759179Ab0EFQr3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 12:47:29 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:55257 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759158Ab0EFQr1 (ORCPT
+	id S1755238Ab0EFSrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 14:47:31 -0400
+Received: from x35.xmailserver.org ([64.71.152.41]:42748 "EHLO
+	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab0EFSra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 12:47:27 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-arch@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: kbuild: fixing the select problem
-In-Reply-To: Your message of "Thu, 06 May 2010 09:17:24 EDT."
-             <1273151844.23208.48.camel@mulgrave.site>
-From: Valdis.Kletnieks@vt.edu
-References: <1273096160.23208.35.camel@mulgrave.site> <p2x10f740e81005052347x9430657fua98b8982e860bd2d@mail.gmail.com>
-            <1273151844.23208.48.camel@mulgrave.site>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1273164427_4019P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 06 May 2010 12:47:07 -0400
-Message-ID: <28312.1273164427@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020208.4BE2F28D.00ED,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	Thu, 6 May 2010 14:47:30 -0400
+X-AuthUser: davidel@xmailserver.org
+Date: Thu, 6 May 2010 11:47:27 -0700 (PDT)
+From: Davide Libenzi <davidel@xmailserver.org>
+X-X-Sender: davide@makko.or.mcafeemobile.com
+To: Changli Gao <xiaosuo@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Roland Dreier <rolandd@cisco.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Takashi Iwai <tiwai@suse.de>,
+       David Howells <dhowells@redhat.com>, linux-fsdevel@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] epoll: use wrapper functions
+In-Reply-To: <1273111054-10141-1-git-send-email-xiaosuo@gmail.com>
+Message-ID: <alpine.DEB.2.00.1005061140100.2642@makko.or.mcafeemobile.com>
+References: <1273111054-10141-1-git-send-email-xiaosuo@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
+X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1273164427_4019P
-Content-Type: text/plain; charset=us-ascii
+On Thu, 6 May 2010, Changli Gao wrote:
 
-On Thu, 06 May 2010 09:17:24 EDT, James Bottomley said:
-> On Thu, 2010-05-06 at 08:47 +0200, Geert Uytterhoeven wrote:
-> > On Wed, May 5, 2010 at 23:49, James Bottomley
-> > <James.Bottomley@hansenpartnership.com> wrote:
-> > > [Sam: I know you don't maintain kbuild anymore, but since you have the
-> > > most experience, if you could find time to comment, I'd be grateful]
-> > >
-> > > The select problem is that the kbuild select directive will turn a
-> > > symbol on without reference to its dependencies.  This, in turn, means
-> > > that either selected symbols must select their dependencies, or that
-> > > people using select have to be aware of the selected symbol's dependency
-> > > and build those dependencies into their symbol (leading to duplication
-> > > and the possibility of getting the dependencies out of sync).  We use
-> > > select for the scsi transport classes, so we run into this problem in
-> > > SCSI quite a lot.
-> > >
-> > > I think the correct fix is to make a symbol that selects another symbol
-> > > automatically inherit all of the selected symbol's dependencies.
-> > 
-> > What if there's a good reason the selected symbol has this dependency?
-> > E.g. it depends on a critical feature not available? Like CONFIG_HAS_IOMEM?
+> use wrapper functions.
 > 
-> I don't quite understand the question.  If a selected symbol has a
-> critical dependency which is config'd to N then the build usually
-> breaks ... that's what I'm calling the select problem.  I thought
-> CONFIG_HAS_IOMEM was usually selected by the architecture, though.  In
-> the new proposal, we wouldn't be able to generate the invalid
-> configuration in the first place.
+> epoll should not touch flags in wait_queue_t. This patch introduces a new
+> function add_wait_queue_head_exclusive_locked(), for the users, who use
+> wait queue as a LIFO queue.
 
-I think Geert is asking "If the arch says CONFIG_HAS_IOMEM=n, but some driver
-does a 'select CONFIG_FOO' which then (under your proposal) forces the
-value CONFIG_BAR=y, which eventually ends up with CONFIG_HAS_IOMEM=y, what
-should the behavior be?"
+Since we already have __add_wait_queue(), __add_wait_queue_tail() and 
+__remove_wait_queue() (which all means "locked"), and while I agree in 
+having the exclusive-add wrapped into a function, I much better prefer a:
 
-(I suspect the right answer here is "one of the symbols is buggy and its
-'select' should be a 'depends' instead", but somebody else better double-check
-that conclusion - I'm hardly a Kconfig expert).
+static inline void __add_wait_queue_excl(wait_queue_head_t *head, 
+					 wait_queue_t *new)
+{
+	new->flags |= WQ_FLAG_EXCLUSIVE;
+	__add_wait_queue(head, new);
+}
 
---==_Exmh_1273164427_4019P
-Content-Type: application/pgp-signature
+The patch you posted introduces a different naming, which leaves all the 
+other __*() untouched, and wraps the already one-liner __remove_wait_queue() 
+with yet another one-liner.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFL4vKLcC3lWbTT17ARAgE5AJ43psqTT7rYy0JcknGfXKbMiJD5ugCeORV6
-7EXqMun2Vq5ohJHT4EhZFEI=
-=X0zm
------END PGP SIGNATURE-----
 
---==_Exmh_1273164427_4019P--
+
+
+> Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+> ----
+>  fs/eventpoll.c       |    5 ++---
+>  include/linux/wait.h |   15 +++++++++++++--
+>  2 files changed, 15 insertions(+), 5 deletions(-)
+> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+> index bd056a5..8137f6e 100644
+> --- a/fs/eventpoll.c
+> +++ b/fs/eventpoll.c
+> @@ -1140,8 +1140,7 @@ retry:
+>  		 * ep_poll_callback() when events will become available.
+>  		 */
+>  		init_waitqueue_entry(&wait, current);
+> -		wait.flags |= WQ_FLAG_EXCLUSIVE;
+> -		__add_wait_queue(&ep->wq, &wait);
+> +		add_wait_queue_head_exclusive_locked(&ep->wq, &wait);
+>  
+>  		for (;;) {
+>  			/*
+> @@ -1161,7 +1160,7 @@ retry:
+>  			jtimeout = schedule_timeout(jtimeout);
+>  			spin_lock_irqsave(&ep->lock, flags);
+>  		}
+> -		__remove_wait_queue(&ep->wq, &wait);
+> +		remove_wait_queue_locked(&ep->wq, &wait);
+>  
+>  		set_current_state(TASK_RUNNING);
+>  	}
+> diff --git a/include/linux/wait.h b/include/linux/wait.h
+> index a48e16b..de2566d 100644
+> --- a/include/linux/wait.h
+> +++ b/include/linux/wait.h
+> @@ -407,17 +407,28 @@ do {									\
+>   * Must be called with the spinlock in the wait_queue_head_t held.
+>   */
+>  static inline void add_wait_queue_exclusive_locked(wait_queue_head_t *q,
+> -						   wait_queue_t * wait)
+> +						   wait_queue_t *wait)
+>  {
+>  	wait->flags |= WQ_FLAG_EXCLUSIVE;
+>  	__add_wait_queue_tail(q,  wait);
+>  }
+>  
+>  /*
+> + * Must be called with the spinlock in the wait_queue_head_t held, and
+> + * q must be for exclusive wait only.
+> + */
+> +static inline void add_wait_queue_head_exclusive_locked(wait_queue_head_t *q,
+> +							wait_queue_t *wait)
+> +{
+> +	wait->flags |= WQ_FLAG_EXCLUSIVE;
+> +	__add_wait_queue(q,  wait);
+> +}
+> +
+> +/*
+>   * Must be called with the spinlock in the wait_queue_head_t held.
+>   */
+>  static inline void remove_wait_queue_locked(wait_queue_head_t *q,
+> -					    wait_queue_t * wait)
+> +					    wait_queue_t *wait)
+>  {
+>  	__remove_wait_queue(q,  wait);
+>  }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+- Davide
+
 
