@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115Ab0EFRPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:15:16 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:53118 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab0EFRPN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:15:13 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 69.181.193.102
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/JyZgKHBEndpaOBRUkcrvg
-Date: Thu, 6 May 2010 10:14:53 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
-       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100506171453.GC30928@atomide.com>
-References: <20100505202826.GB7450@linux.intel.com>
- <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
- <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
- <20100505234755.GI29604@atomide.com>
- <20100506134015.GA23426@srcf.ucam.org>
- <20100506170151.GA30928@atomide.com>
- <20100506170956.GA28104@srcf.ucam.org>
+	id S1758910Ab0EFPpo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 11:45:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56456 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754929Ab0EFPpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 11:45:42 -0400
+Message-ID: <4BE2E3F9.9090708@redhat.com>
+Date: Thu, 06 May 2010 11:44:57 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100506170956.GA28104@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mel Gorman <mel@csn.ul.ie>
+CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+ the wrong VMA information
+References: <1273159987-10167-1-git-send-email-mel@csn.ul.ie> <1273159987-10167-2-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <1273159987-10167-2-git-send-email-mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Matthew Garrett <mjg@redhat.com> [100506 10:05]:
-> On Thu, May 06, 2010 at 10:01:51AM -0700, Tony Lindgren wrote:
-> 
-> > Or are you suspending constantly, tens of times per minute even if
-> > there's no user activity?
-> 
-> In this case you'd be repeatedly trying to suspend until the modem 
-> driver stopped blocking it. It's pretty much a waste.
+On 05/06/2010 11:33 AM, Mel Gorman wrote:
 
-But then the userspace knows you're getting data from the modem, and
-it can kick some inactivity timer that determines when to try to
-suspend next.
+> @@ -1368,16 +1424,25 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+>   	 * are holding mmap_sem. Users without mmap_sem are required to
+>   	 * take a reference count to prevent the anon_vma disappearing
+>   	 */
+> -	anon_vma = page_anon_vma(page);
+> +	anon_vma = page_anon_vma_lock_root(page);
+>   	if (!anon_vma)
+>   		return ret;
+> -	spin_lock(&anon_vma->lock);
+>   	list_for_each_entry(avc,&anon_vma->head, same_anon_vma) {
 
-Why would you need to constantly try to suspend in that case?
+One conceptual problem here.  By taking the oldest anon_vma,
+instead of the anon_vma of the page, we may end up searching
+way too many processes.
 
-Regards,
+Eg. if the page is the page of a child process in a forking
+server workload, the above code will end up searching the
+parent and all of the siblings - even for a private page, in
+the child process's private anon_vma.
 
-Tony
+For an Apache or Oracle system with 1000 clients (and child
+processes), that could be quite a drag - searching 1000 times
+as many processes as we should.
