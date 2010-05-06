@@ -1,91 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759061Ab0EFRZU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:25:20 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39564 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758234Ab0EFRZR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:25:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=FgfOLGWQjWsj8sd95AWEK6lOJ12ytA6a7tWFUaDQOyZymBYOe0kmO8JPs+vF2nAakt
-         pDpyUQAF8H1XSgJU9vuCOsqI16pMaKK+Tj7h+xT0xKb5NvOBY1qLWwTFgonsc1m3RU1Y
-         5ts+5sYXW/nRMSB7Xl91KCagbDMS7XoYVOHhU=
+	id S1757140Ab0EFNWc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 09:22:32 -0400
+Received: from fwil.voltaire.com ([193.47.165.2]:42259 "EHLO exil.voltaire.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751208Ab0EFNWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 09:22:30 -0400
+Message-ID: <4BE2C28D.1090108@Voltaire.com>
+Date: Thu, 06 May 2010 16:22:21 +0300
+From: Or Gerlitz <ogerlitz@Voltaire.com>
+User-Agent: Thunderbird 2.0.0.19 (X11/20081209)
 MIME-Version: 1.0
-In-Reply-To: <28312.1273164427@localhost>
-References: <1273096160.23208.35.camel@mulgrave.site>
-	 <p2x10f740e81005052347x9430657fua98b8982e860bd2d@mail.gmail.com>
-	 <1273151844.23208.48.camel@mulgrave.site> <28312.1273164427@localhost>
-Date: Thu, 6 May 2010 19:25:15 +0200
-X-Google-Sender-Auth: cbf50feec1e40848
-Message-ID: <p2l10f740e81005061025l276d91b5mf87d2af65438539a@mail.gmail.com>
-Subject: Re: kbuild: fixing the select problem
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-       linux-arch@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-       Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Roland Dreier <rdreier@cisco.com>
+CC: Dan Carpenter <error27@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+       linux-rdma <linux-rdma@vger.kernel.org>
+Subject: Re: [patch v3] infiniband: ulp/iser, fix error retval in iser_create_ib_conn_res
+References: <1268750962-13547-1-git-send-email-jslaby@suse.cz>	<ada634v9644.fsf@roland-alpha.cisco.com> <20100317151122.GF5331@bicker>	<adak4ssi4ky.fsf@roland-alpha.cisco.com> <20100402112736.GH5265@bicker> <ada4oimmd9p.fsf@roland-alpha.cisco.com>
+In-Reply-To: <ada4oimmd9p.fsf@roland-alpha.cisco.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 May 2010 13:22:25.0739 (UTC) FILETIME=[2B2981B0:01CAED1F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 6, 2010 at 18:47,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Thu, 06 May 2010 09:17:24 EDT, James Bottomley said:
->> On Thu, 2010-05-06 at 08:47 +0200, Geert Uytterhoeven wrote:
->> > On Wed, May 5, 2010 at 23:49, James Bottomley
->> > <James.Bottomley@hansenpartnership.com> wrote:
->> > > [Sam: I know you don't maintain kbuild anymore, but since you have the
->> > > most experience, if you could find time to comment, I'd be grateful]
->> > >
->> > > The select problem is that the kbuild select directive will turn a
->> > > symbol on without reference to its dependencies.  This, in turn, means
->> > > that either selected symbols must select their dependencies, or that
->> > > people using select have to be aware of the selected symbol's dependency
->> > > and build those dependencies into their symbol (leading to duplication
->> > > and the possibility of getting the dependencies out of sync).  We use
->> > > select for the scsi transport classes, so we run into this problem in
->> > > SCSI quite a lot.
->> > >
->> > > I think the correct fix is to make a symbol that selects another symbol
->> > > automatically inherit all of the selected symbol's dependencies.
->> >
->> > What if there's a good reason the selected symbol has this dependency?
->> > E.g. it depends on a critical feature not available? Like CONFIG_HAS_IOMEM?
->>
->> I don't quite understand the question.  If a selected symbol has a
->> critical dependency which is config'd to N then the build usually
->> breaks ... that's what I'm calling the select problem.  I thought
->> CONFIG_HAS_IOMEM was usually selected by the architecture, though.  In
->> the new proposal, we wouldn't be able to generate the invalid
->> configuration in the first place.
->
-> I think Geert is asking "If the arch says CONFIG_HAS_IOMEM=n, but some driver
-> does a 'select CONFIG_FOO' which then (under your proposal) forces the
-> value CONFIG_BAR=y, which eventually ends up with CONFIG_HAS_IOMEM=y, what
-> should the behavior be?"
+Roland Dreier wrote:
+> Or, I don't think we ever fixed this.  This patch looks correct to me,
+> any problem with merging this for 2.6.35?
 
-Yep, that was my (bogus) question...
+Roland, please use V4 below, the patch is okay and would apply before and after 
+applying the multipathing patches I sent yesterday (same goes for them).
 
-> (I suspect the right answer here is "one of the symbols is buggy and its
-> 'select' should be a 'depends' instead", but somebody else better double-check
-> that conclusion - I'm hardly a Kconfig expert).
+[PATCH V4] ib/iser: fix error flow in iser_create_ib_conn_res
 
-No, the CONFIG_FOO will inherit the dependency on CONFIG_HAS_IOMEM.
+From: Dan Carpenter <error27@gmail.com>
 
-Gr{oetje,eeting}s,
+We shouldn't free things here because we free them later. 
+The call tree looks like this: 
+	iser_connect() ==> initiating the connection establishment
+and later 
+	iser_cma_handler() => iser_route_handler() => iser_create_ib_conn_res()
+if we fail here, eventually iser_conn_release() is called, resulted in double free.
+                                                                                                 
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Or Gerlitz <ogerlitz@voltaire.com>
+---
+V1 fixed unreachable code
+V2 noticed that the original code had a double free
+V3 Roland Dreier points out that I left a dangling ERR_PTR() in
+   "ib_conn->fmr_pool" which would be freed later on.
+V4 reviewed/enhanced the change-log
+---
+ drivers/infiniband/ulp/iser/iser_verbs.c |   25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Index: linux-2.6.34-rc6/drivers/infiniband/ulp/iser/iser_verbs.c
+===================================================================
+--- linux-2.6.34-rc6.orig/drivers/infiniband/ulp/iser/iser_verbs.c
++++ linux-2.6.34-rc6/drivers/infiniband/ulp/iser/iser_verbs.c
+@@ -163,10 +163,8 @@ static int iser_create_ib_conn_res(struc
+ 	device = ib_conn->device;
+ 
+ 	ib_conn->login_buf = kmalloc(ISER_RX_LOGIN_SIZE, GFP_KERNEL);
+-	if (!ib_conn->login_buf) {
+-		goto alloc_err;
+-		ret = -ENOMEM;
+-	}
++	if (!ib_conn->login_buf)
++		goto out_err;
+ 
+ 	ib_conn->login_dma = ib_dma_map_single(ib_conn->device->ib_device,
+ 				(void *)ib_conn->login_buf, ISER_RX_LOGIN_SIZE,
+@@ -175,10 +173,9 @@ static int iser_create_ib_conn_res(struc
+ 	ib_conn->page_vec = kmalloc(sizeof(struct iser_page_vec) +
+ 				    (sizeof(u64) * (ISCSI_ISER_SG_TABLESIZE +1)),
+ 				    GFP_KERNEL);
+-	if (!ib_conn->page_vec) {
+-		ret = -ENOMEM;
+-		goto alloc_err;
+-	}
++	if (!ib_conn->page_vec)
++		goto out_err;
++
+ 	ib_conn->page_vec->pages = (u64 *) (ib_conn->page_vec + 1);
+ 
+ 	params.page_shift        = SHIFT_4K;
+@@ -198,7 +195,8 @@ static int iser_create_ib_conn_res(struc
+ 	ib_conn->fmr_pool = ib_create_fmr_pool(device->pd, &params);
+ 	if (IS_ERR(ib_conn->fmr_pool)) {
+ 		ret = PTR_ERR(ib_conn->fmr_pool);
+-		goto fmr_pool_err;
++		ib_conn->fmr_pool = NULL;
++		goto out_err;
+ 	}
+ 
+ 	memset(&init_attr, 0, sizeof init_attr);
+@@ -216,7 +214,7 @@ static int iser_create_ib_conn_res(struc
+ 
+ 	ret = rdma_create_qp(ib_conn->cma_id, device->pd, &init_attr);
+ 	if (ret)
+-		goto qp_err;
++		goto out_err;
+ 
+ 	ib_conn->qp = ib_conn->cma_id->qp;
+ 	iser_err("setting conn %p cma_id %p: fmr_pool %p qp %p\n",
+@@ -224,12 +222,7 @@ static int iser_create_ib_conn_res(struc
+ 		 ib_conn->fmr_pool, ib_conn->cma_id->qp);
+ 	return ret;
+ 
+-qp_err:
+-	(void)ib_destroy_fmr_pool(ib_conn->fmr_pool);
+-fmr_pool_err:
+-	kfree(ib_conn->page_vec);
+-	kfree(ib_conn->login_buf);
+-alloc_err:
++out_err:
+ 	iser_err("unable to alloc mem or create resource, err %d\n", ret);
+ 	return ret;
+ }
