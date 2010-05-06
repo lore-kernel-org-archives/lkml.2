@@ -1,139 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab0EFVmi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 17:42:38 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:44130 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab0EFVmg (ORCPT
+	id S1753178Ab0EFWHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 18:07:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42014 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752425Ab0EFWH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 17:42:36 -0400
-Date: Thu, 6 May 2010 13:31:17 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Oren Laadan <orenl@cs.columbia.edu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Cedric Le Goater <legoater@free.fr>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH v21 015/100] cgroup freezer: Update stale locking
- comments
-Message-ID: <20100506203117.GM31830@count0.beaverton.ibm.com>
-References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
- <1272723382-19470-16-git-send-email-orenl@cs.columbia.edu>
- <201005062140.19821.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005062140.19821.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 6 May 2010 18:07:28 -0400
+Date: Thu, 6 May 2010 15:07:08 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nils Radtke <lkml@Think-Future.de>
+Cc: linux-kernel@vger.kernel.org,
+       "Jan Evert van Grootheest (SDG)" <j.e.van.grootheest@caiway.nl>,
+       dri-devel@lists.freedesktop.org
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference,
+ i915_gem_object_move_to_active
+Message-Id: <20100506150708.4baa4b70.akpm@linux-foundation.org>
+In-Reply-To: <20100504222216.GW3479@localhost>
+References: <20100504222216.GW3479@localhost>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 09:40:19PM +0200, Rafael J. Wysocki wrote:
-> On Saturday 01 May 2010, Oren Laadan wrote:
-> > From: Matt Helsley <matthltc@us.ibm.com>
-> > 
-> > Update stale comments regarding locking order and add a little more detail
-> > so it's easier to follow the locking between the cgroup freezer and the
-> > power management freezer code.
-> 
-> I guess these three patches are for me.
-> 
-> Do you want me to handle them?
-> 
-> Rafael
+(cc dri-devel)
 
-Hi Rafael,
+On Wed, 5 May 2010 00:22:16 +0200
+Nils Radtke <lkml@Think-Future.de> wrote:
 
-	I think you can take 15 as it's an update to the comments.
-
-16 and 17 are specific to checkpoint/restart. There are no other in-kernel
-uses, that we've identified, for them. So I was under the impression that it's
-inappropriate to add them without also adding the checkpoint/restart patches
-that use them.
-
-Thanks!
-
-Cheers,
-	-Matt Helsley
-
+>   Hi,
+> 
+> It happens quite often that X crashes for unknown reasons but this time 
+> there it's left us a note, this BUG:
+> 
+> BUG: unable to handle kernel NULL pointer dereference at 000001e4
+> IP: [<c134ddbc>] i915_gem_object_move_to_active+0x1c/0xa0
+> *pde = 00000000 
+> Oops: 0000 [#4] PREEMPT 
+> last sysfs file: /sys/devices/pci0000:00/0000:00:1c.1/0000:04:00.0/net/wlan0/wireless/link
+> Modules linked in: wlan_scan_sta ath_rate_sample ath_pci ath_hal option usbserial usb_storage snd_usb_audio snd_usb_lib snd_seq_midi snd_rawmidi uvcvideo wlan_ccmp video1394 raw1394 dv1394 firewire_ohci firewire_core wlan ohci1394 tg3 libphy ieee1394 [last unloaded: ath_hal]
+> 
+> Pid: 3328, comm: Xorg Tainted: G      D    2.6.33 #1 Columbia                       /Extensa 5220                   
+> EIP: 0060:[<c134ddbc>] EFLAGS: 00213282 CPU: 0
+> EIP is at i915_gem_object_move_to_active+0x1c/0xa0
+> EAX: 00000000 EBX: c6679450 ECX: c679fd50 EDX: 00b10a13
+> ESI: 00000000 EDI: 00000000 EBP: 00b10a13 ESP: f51c1cb0
+>  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+> Process Xorg (pid: 3328, ti=f51c0000 task=f6be5bf0 task.ti=f51c0000)
+> Stack:
+>  c6679450 00000004 00000000 c679fd50 c134e83f 00000002 c17d42ab c16e3b29
+> <0> c17d71ee 00b10a13 00000004 f7395800 f7318000 f7318e10 c1326450 f7318df8
+> <0> f6baff20 00b10a13 f7318de8 f7318e10 f7318000 00000004 00000001 f7395800
+> Call Trace:
+>  [<c134e83f>] ? i915_add_request+0x25f/0x370
+>  [<c1326450>] ? agp_flush_chipset+0x10/0x20
+>  [<c1352d55>] ? i915_gem_do_execbuffer+0x1325/0x13a0
+>  [<c102e087>] ? check_preempt_wakeup+0x87/0x160
+>  [<c13530ae>] ? i915_gem_execbuffer+0xee/0x4b0
+>  [<c13531fb>] ? i915_gem_execbuffer+0x23b/0x4b0
+>  [<c1334056>] ? drm_ioctl+0x186/0x380
+>  [<c1352fc0>] ? i915_gem_execbuffer+0x0/0x4b0
+>  [<c10d79dd>] ? do_sync_read+0xad/0xf0
+>  [<c1333ed0>] ? drm_ioctl+0x0/0x380
+>  [<c10e5fcb>] ? vfs_ioctl+0x2b/0xa0
+>  [<c10e61a3>] ? do_vfs_ioctl+0x73/0x5f0
+>  [<c1038229>] ? do_setitimer+0xd9/0x220
+>  [<c1058a93>] ? ktime_get_ts+0xe3/0x100
+>  [<c104e1e0>] ? posix_ktime_get_ts+0x0/0x10
+>  [<c10e6786>] ? sys_ioctl+0x66/0x70
+>  [<c1002c8c>] ? sysenter_do_call+0x12/0x22
+> Code: 8a 8d b4 26 00 00 00 00 8d bc 27 00 00 00 00 83 ec 10 89 c1 89 6c 24 0c 89 d5 89 1c 24 89 74 24 04 89 7c 24 08 8b 40 08 8b 71 50 <8b> b8 e4 01 00 00 8b 46 20 85 c0 74 5f 89 e1 81 e1 00 e0 ff ff 
+> EIP: [<c134ddbc>] i915_gem_object_move_to_active+0x1c/0xa0 SS:ESP 0068:f51c1cb0
+> CR2: 00000000000001e4
+> ---[ end trace 13931f32db9a26c3 ]---
 > 
 > 
-> > Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-> > Cc: Oren Laadan <orenl@cs.columbia.edu>
-> > Cc: Cedric Le Goater <legoater@free.fr>
-> > Cc: Paul Menage <menage@google.com>
-> > Cc: Li Zefan <lizf@cn.fujitsu.com>
-> > Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> > Cc: linux-pm@lists.linux-foundation.org
-> > ---
-> >  kernel/cgroup_freezer.c |   21 +++++++++++++--------
-> >  1 files changed, 13 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> > index da5e139..85f19cc 100644
-> > --- a/kernel/cgroup_freezer.c
-> > +++ b/kernel/cgroup_freezer.c
-> > @@ -89,10 +89,10 @@ struct cgroup_subsys freezer_subsys;
-> >  
-> >  /* Locks taken and their ordering
-> >   * ------------------------------
-> > - * css_set_lock
-> >   * cgroup_mutex (AKA cgroup_lock)
-> > - * task->alloc_lock (AKA task_lock)
-> >   * freezer->lock
-> > + * css_set_lock
-> > + * task->alloc_lock (AKA task_lock)
-> >   * task->sighand->siglock
-> >   *
-> >   * cgroup code forces css_set_lock to be taken before task->alloc_lock
-> > @@ -100,33 +100,38 @@ struct cgroup_subsys freezer_subsys;
-> >   * freezer_create(), freezer_destroy():
-> >   * cgroup_mutex [ by cgroup core ]
-> >   *
-> > - * can_attach():
-> > - * cgroup_mutex
-> > + * freezer_can_attach():
-> > + * cgroup_mutex (held by caller of can_attach)
-> >   *
-> > - * cgroup_frozen():
-> > + * cgroup_freezing_or_frozen():
-> >   * task->alloc_lock (to get task's cgroup)
-> >   *
-> >   * freezer_fork() (preserving fork() performance means can't take cgroup_mutex):
-> > - * task->alloc_lock (to get task's cgroup)
-> >   * freezer->lock
-> >   *  sighand->siglock (if the cgroup is freezing)
-> >   *
-> >   * freezer_read():
-> >   * cgroup_mutex
-> >   *  freezer->lock
-> > + *   write_lock css_set_lock (cgroup iterator start)
-> > + *    task->alloc_lock
-> >   *   read_lock css_set_lock (cgroup iterator start)
-> >   *
-> >   * freezer_write() (freeze):
-> >   * cgroup_mutex
-> >   *  freezer->lock
-> > + *   write_lock css_set_lock (cgroup iterator start)
-> > + *    task->alloc_lock
-> >   *   read_lock css_set_lock (cgroup iterator start)
-> > - *    sighand->siglock
-> > + *    sighand->siglock (fake signal delivery inside freeze_task())
-> >   *
-> >   * freezer_write() (unfreeze):
-> >   * cgroup_mutex
-> >   *  freezer->lock
-> > + *   write_lock css_set_lock (cgroup iterator start)
-> > + *    task->alloc_lock
-> >   *   read_lock css_set_lock (cgroup iterator start)
-> > - *    task->alloc_lock (to prevent races with freeze_task())
-> > + *    task->alloc_lock (inside thaw_process(), prevents race with refrigerator())
-> >   *     sighand->siglock
-> >   */
-> >  static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
-> > 
+> - Is there any particular meaning for "last sysfs file" shown? I mean, could there
+>   be some link between the crash and "last sysfs file"?
 > 
+> - X crashing happens actually a lot on this specific notebook. If it's not X crashing, 
+>   then unmotivated kde log-offs or frequent firefox crashes contribute their share.
+>   It's most probably not faulty RAM, it's new, it's been tested thoroughly.
+> 
+> 
+> Thanks for some answers,
+> 
+>   Nils
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
