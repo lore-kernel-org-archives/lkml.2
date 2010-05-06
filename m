@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759282Ab0EFRhk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 13:37:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53483 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759261Ab0EFRhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 13:37:38 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: kernel-janitors@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-       ysato@users.sourceforge.jp, tony.luck@intel.com, dhowells@redhat.com,
-       kyle@mcmartin.ca, benh@kernel.crashing.org, schwidefsky@de.ibm.com,
-       jgarzik@pobox.com, hare@suse.de, felipe.balbi@nokia.com,
-       Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 09/13] parisc: removing redundant ifdef
-Date: Thu,  6 May 2010 19:36:13 +0200
-Message-Id: <1273167377-14270-10-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
-References: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
+	id S1757878Ab0EFRLq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 13:11:46 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61951 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755800Ab0EFRLo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 13:11:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DWlHQz8UEDWsjEUMc88hwVak9iYrHrdQkQa2tLdgeppEKB+cyMnNUlyz0qTxmbdrLF
+         ICLmfeECPlRO7U2qTwFLsILQcR+K7xLwNL9VAqWSBoGTH6TqacdPPl0CvYRII+mGvadc
+         Dj4LvldSlta5qcs4dMMgUsjOTSAWDytX7yFyk=
+Date: Thu, 6 May 2010 19:11:43 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+       mingo@elte.hu, Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFC] perf_events: ctx_flexible_sched_in() not maximizing PMU
+	utilization
+Message-ID: <20100506171141.GA5562@nowhere>
+References: <AANLkTikQCkR2K438llKOh43yEgW-Bw7j0f8GoXR50A0V@mail.gmail.com> <1273155640.5605.300.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273155640.5605.300.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wbr,
-jirka
+On Thu, May 06, 2010 at 04:20:40PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-05-06 at 16:03 +0200, Stephane Eranian wrote:
+> > Hi,
+> > 
+> > Looking at ctx_flexible_sched_in(), the logic is that if  group_sched_in()
+> > fails for a HW group, then no other HW group in the list is even tried.
+> > I don't understand this restriction. Groups are independent of each other.
+> > The failure of one group should not block others from being scheduled,
+> > otherwise you under-utilize the PMU.
+> > 
+> > What is the reason for this restriction? Can we lift it somehow?
+> 
+> Sure, but it will make scheduling much more expensive. The current
+> scheme will only ever check the first N events because it stops at the
+> first that fails, and since you can max fix N events on the PMU its
+> constant time.
+> 
+> To fix this issue you'd have to basically always iterate all events and
+> only stop once the PMU is fully booked, which reduces to an O(n) worst
+> case algorithm.
+> 
+> But yeah, I did think of making the thing an RB-tree and basically
+> schedule on service received, that should fix the lop-sided RR we get
+> with constrained events.
 
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- arch/parisc/kernel/unaligned.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+I don't understand what you mean by schedule on service received, and why
+an rbtree would solve that.
 
-diff --git a/arch/parisc/kernel/unaligned.c b/arch/parisc/kernel/unaligned.c
-index 92d977b..6ea7a0d 100644
---- a/arch/parisc/kernel/unaligned.c
-+++ b/arch/parisc/kernel/unaligned.c
-@@ -620,14 +620,12 @@ void handle_unaligned(struct pt_regs *regs)
- 		ret = emulate_std(regs, R2(regs->iir),1);
- 		break;
- 
--#ifdef CONFIG_PA20
- 	case OPCODE_LDD_L:
- 		ret = emulate_ldd(regs, R2(regs->iir),0);
- 		break;
- 	case OPCODE_STD_L:
- 		ret = emulate_std(regs, R2(regs->iir),0);
- 		break;
--#endif
- 	}
- #endif
- 	switch (regs->iir & OPCODE3_MASK)
--- 
-1.6.6.1
+Unless you think about giving a weight to a group that has hardware events.
+This weight is the number of "slots" a group would use in the hardware pmu
+and you can compare this weight against the available remaining slots
+in the pmu?
+
+So yeah, if the hw group of events are sorted by weight, once one fails,
+we know the following will fail too. But that doesn't seem a right solution
+as it is going to always give more chances to low weight groups and very
+fewer opportunities for the heavy ones to be scheduled.
 
