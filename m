@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab0EFXAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 19:00:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55617 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753957Ab0EFXAX (ORCPT
+	id S1753183Ab0EFXF7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 19:05:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:46158 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab0EFXF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 19:00:23 -0400
-Date: Thu, 6 May 2010 15:59:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kyle Hubert <khubert@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: race condition between udevd and modprobe (mtrr_add)
-Message-Id: <20100506155951.af7b3ded.akpm@linux-foundation.org>
-In-Reply-To: <p2n9a158e2e1005032230u2cb21e6do40ae0b58e746b75f@mail.gmail.com>
-References: <p2n9a158e2e1005032230u2cb21e6do40ae0b58e746b75f@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 6 May 2010 19:05:57 -0400
+X-Authority-Analysis: v=1.1 cv=Ebn0m7KaSvUJV60GCOzUqyhjUj7QmnsyUUVbVvk8w6o= c=1 sm=0 a=fAN4bZ6l490A:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=5cPxywkZGpyR0_AJOkgA:9 a=v9DQi2CQnZXmhADKNOwA:7 a=FqMyRxIh-DyxxYuHyU4LhS9NP8IA:4 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Message-Id: <20100506230555.640538099@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 06 May 2010 19:05:02 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thiago Farina <tfransosi@gmail.com>
+Subject: [PATCH 3/3] tracing: Fix "integer as NULL pointer" warning.
+References: <20100506230459.278936703@goodmis.org>
+Content-Disposition: inline; filename=0003-tracing-Fix-integer-as-NULL-pointer-warning.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 May 2010 22:30:01 -0700
-Kyle Hubert <khubert@gmail.com> wrote:
+From: Thiago Farina <tfransosi@gmail.com>
 
-> Hi, while booting an initrd image built off of BusyBox on a thousand
-> nodes, we hit a race on a couple of nodes. They hang during the boot
-> process with the stack traces listed below. The really simple init
-> script in the initrd does a 'udevd --daemon' and then modprobe of a
-> device. The device needs to assign an mtrr to the pci resource, and
-> instead the whole node hangs. Putting a 'sleep 1' in between these two
-> calls prevents any hangs.
-> 
-> mtrr_add_page and the buddy allocator code don't appear to share any
-> semaphores, and there isn't an obvious way in which this can hang.
-> Possibly the smp_call_function IPI isn't being handled by the other
-> cores... That's the best guess. Can anyone help sort this mess out?
-> 
-> Also, is there a better way to test that udevd is fully up? A 'sleep
-> 1' is not the preferred solution here.
-> 
-> Thanks for your time,
-> 
+kernel/trace/trace_output.c:256:24: warning: Using plain integer as NULL pointer
 
-What kernel version are you using here?  It looks old - pre 2.6.31.
+Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+LKML-Reference: <1264349038-1766-3-git-send-email-tfransosi@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_output.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> 
-> >> ps
->               ADDR    UID    PID   PPID  STATE     FLAGS CPU  NAME
-> ===============================================================================
-> ...
-> 0xffff88061d26c720      0   1036      1      0  0x400140   -  udevd
-> 0xffff88021e05c480      0   1037      1      0  0x400100   -  modprobe
-> 0xffff88081d072440      0   1116   1036      0  0x400040   -  udevd
-> ===============================================================================
-> 135 active task structs found
-> >> bt 0xffff88021e05c480
-> ================================================================
-> STACK TRACE FOR TASK: 0xffff88021e05c480(modprobe)
-> 
->  0 <schedule?> [0x0]
->  1 mtrr_add_page+494 [0xffffffff80219d9e]
->  2 <unknown?>+<ERROR> [0xffffffffa0009a08]
-> ================================================================
-> >> bt 0xffff88061d25f420
-> ================================================================
-> STACK TRACE FOR TASK: 0xffff88061d25f420(udevd)
-> 
->  0 <schedule?> [0x0]
->  1 __alloc_pages_internal+241 [0xffffffff80292731]
->  2 rmqueue_bulk+89 [0xffffffff80291b19]
->  3 get_page_from_freelist+1430 [0xffffffff802922e6]
->  4 __alloc_pages_internal+241 [0xffffffff80292731]
->  5 alloc_pages_current+168 [0xffffffff802b0898]
->  6 pte_alloc_one+49 [0xffffffff80229271]
->  7 __pte_alloc+67 [0xffffffff8029e7d3]
->  8 copy_page_range+1269 [0xffffffff802a11c5]
->  9 alloc_pid+744 [0xffffffff80250a18]
-> 10 copy_process+3057 [0xffffffff8023bcf1]
-> 11 do_fork+118 [0xffffffff8023c4d6]
-> 12 sys_clone+35 [0xffffffff80209c23]
-> 13 ptregscall_common+103 [0xffffffff8020bda7]
+diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+index 8e46b33..2404c12 100644
+--- a/kernel/trace/trace_output.c
++++ b/kernel/trace/trace_output.c
+@@ -253,7 +253,7 @@ void *trace_seq_reserve(struct trace_seq *s, size_t len)
+ 	void *ret;
+ 
+ 	if (s->full)
+-		return 0;
++		return NULL;
+ 
+ 	if (len > ((PAGE_SIZE - 1) - s->len)) {
+ 		s->full = 1;
+-- 
+1.7.0
 
-These traces look odd - the kernel shouldn't be calling schedule() from
-below rmqueue_bulk()!
-
-If possible, please try a more recent kernel.  If the problem occurs
-there and if we manage to fix it, the fix can be backported into
-whatever-kernel-version-you're-using.
-
-Can you get a better trace?  The sysrq-T output would be good.  That's
-known to work sufficiently well.  Please avoid wordwrapping it when sending.
 
