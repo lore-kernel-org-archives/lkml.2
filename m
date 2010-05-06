@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758525Ab0EFUNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 16:13:51 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:11841 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758377Ab0EFUNu (ORCPT
+	id S1758616Ab0EFURM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 16:17:12 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:44868 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757097Ab0EFURK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 16:13:50 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEACPA4kurR7Ht/2dsb2JhbACdfnGkAJlnhRMEgz8
-X-IronPort-AV: E=Sophos;i="4.52,343,1270425600"; 
-   d="scan'208";a="526077164"
-From: Roland Dreier <rdreier@cisco.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Changli Gao <xiaosuo@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: indiscriminate get_maintainer.pl usage
-References: <1273111054-10141-1-git-send-email-xiaosuo@gmail.com>
-	<4BE25AE8.1060607@s5r6.in-berlin.de>
-	<s2t412e6f7f1005052319sdbf3fdfbg256d11b983c4f304@mail.gmail.com>
-	<4BE26472.6040805@s5r6.in-berlin.de>
-X-Message-Flag: Warning: May contain useful information
-Date: Thu, 06 May 2010 13:13:46 -0700
-In-Reply-To: <4BE26472.6040805@s5r6.in-berlin.de> (Stefan Richter's message of
-	"Thu, 06 May 2010 08:40:50 +0200")
-Message-ID: <ada4oikaiv9.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Thu, 6 May 2010 16:17:10 -0400
+Date: Thu, 6 May 2010 16:17:09 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Pankaj Thakkar <pthakkar@vmware.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Dmitry Torokhov <dtor@vmware.com>,
+       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
+Message-ID: <20100506201709.GA17922@infradead.org>
+References: <20100504230225.GP8323@vmware.com> <201005051029.42052.dtor@vmware.com> <20100505173120.GA1752@infradead.org> <201005051035.29831.dtor@vmware.com> <20100505173951.GA8388@infradead.org> <F1354E79A137A24CBA60059AA65CB1B802A235C535@EXCH-MBX-2.vmware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F1354E79A137A24CBA60059AA65CB1B802A235C535@EXCH-MBX-2.vmware.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > $ scripts/get_maintainer.pl --rolestats -f fs/eventpoll.c
- > Alexander Viro <viro@zeniv.linux.org.uk> (maintainer:FILESYSTEMS (VFS...)
- > Andrew Morton <akpm@linux-foundation.org> (commit_signer:2/6=33%)
- > "Eric W. Biederman" <ebiederm@xmission.com> (commit_signer:2/6=33%)
- > Davide Libenzi <davidel@xmailserver.org> (commit_signer:2/6=33%)
- > Roland Dreier <rolandd@cisco.com> (commit_signer:1/6=17%)
- > Stefan Richter <stefanr@s5r6.in-berlin.de> (commit_signer:1/6=17%)
- > linux-fsdevel@vger.kernel.org (open list:FILESYSTEMS (VFS...)
- > linux-kernel@vger.kernel.org (open list)
+On Wed, May 05, 2010 at 10:47:10AM -0700, Pankaj Thakkar wrote:
+> > Forget about the licensing.  Loading binary blobs written to a shim
+> > layer is a complete pain in the ass and totally unsupportable, and
+> > also uninteresting because of the overhead.
+> 
+> [PT] Why do you think it is unsupportable? How different is it from any module written against a well maintained interface? What overhead are you talking about?
 
-And my appearing here is a bit silly as well, since I have made one
-commit to fs/eventpoll.c that changed one line.  A bit different in
-scope from Davide who designed and wrote the whole thing...
+We only support in-kernel drivers, everything else is subject to changes
+in the kernel API and ABI.  What you do is basically introducing another
+wrapper layer not allowing full access to the normal Linux API.  People
+have tried this before and we're not willing to add it.  Do a little
+research on Project UDI if you're curious.
 
-OTOH it's not clear how smart we want get_maintainer.pl to try to be.
+> >  (1) move the limited VF drivers directly into the kernel tree,
+> >      talk to them through a normal ops vector
+> [PT] This assumes that all the VF drivers would always be available.
 
- - R.
--- 
-Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+Yes, absolutely.  Just as we assume that for every other driver.
+
+> Also we have to support windows and our current design supports it nicely in an OS agnostic manner.
+
+And that's not something we care about at all.  The Linux kernel has
+traditionally a very hostile position against cross platform drivers for
+reasons well explained before at many occasions.
+
+> >  (2) get rid of the whole shim crap and instead integrate the limited
+> >      VF driver with the full VF driver we already have, instead of
+> >      duplicating the code
+> [PT] Having a full VF driver adds a lot of dependency on the guest VM and this is what NPA tries to avoid.
+
+Yes, of course it does.  It's a normal driver at the point which it
+should have been from day one.
+
+> >  (3) don't make the PV to VF integration VMware-specific but also
+> >      provide an open reference implementation like virtio.  We're not
+> >      going to add massive amount of infrastructure that is not actually
+> >      useable in a free software stack.
+> [PT] Today this is tied to vmxnet3 device and is intended to work on ESX hypervisor only (vmxnet3 works on VMware hypervisor only). All the loading support is inside the ESX hypervisor. I am going to post the interface between the shell and the plugin soon and you can see that there is not a whole lot of dependency or infrastructure requirements from the Linux kernel. Please keep in mind that we don't use Linux as a hypervisor but as a guest VM.
+
+But we use Linux as the hypervisor, too.  So if you want to target a
+major infrastructure you might better make it available for that case.
+
