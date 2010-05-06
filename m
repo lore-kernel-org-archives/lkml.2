@@ -1,142 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab0EFJeZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 05:34:25 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57877 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756568Ab0EFJeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 05:34:21 -0400
-Message-ID: <4BE28C5F.7020104@cn.fujitsu.com>
-Date: Thu, 06 May 2010 17:31:11 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1754263Ab0EFJOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 05:14:40 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:47841 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363Ab0EFJOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 05:14:38 -0400
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some accesspoint == hardlock
+Date: Thu, 6 May 2010 11:14:35 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-self-00106-gd93ac51-dirty; KDE/4.3.4; x86_64; ; )
+Cc: NilsRadtkelkml@think-future.de, linux-kernel@vger.kernel.org,
+       reinette.chatre@intel.com, linux-wireless@vger.kernel.org
+References: <20100503191756.GA3479@localhost> <20100503192219.GE25748@tuxdriver.com>
+In-Reply-To: <20100503192219.GE25748@tuxdriver.com>
+Organization: IBM
 MIME-Version: 1.0
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-       KVM list <kvm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 5/9] KVM MMU: rename 'root_count' to 'active_count'
-References: <4BE2818A.5000301@cn.fujitsu.com>
-In-Reply-To: <4BE2818A.5000301@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Message-Id: <201005061114.35480.borntraeger@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename 'root_count' to 'active_count' in kvm_mmu_page, since the unsync pages
-also will use it in later patch
+Am Montag 03 Mai 2010 21:22:19 schrieb John W. Linville:
+> >   /* Sanity-check TPT calculations */
+> >   BUG_ON(window->average_tpt != ((window->success_ratio *
+> >       tbl->expected_tpt[index] + 64) / 128));
+> 
+> Interestingly enough, we have been discussing this line of code today.  Could you try the patch here?
+> 
+> 	http://marc.info/?l=linux-wireless&m=127290931304496&w=2
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/include/asm/kvm_host.h |    7 ++++++-
- arch/x86/kvm/mmu.c              |   14 +++++++-------
- arch/x86/kvm/mmutrace.h         |    6 +++---
- 3 files changed, 16 insertions(+), 11 deletions(-)
+I also see a hard lockup some time after connection to my companies
+wireless network. My private network does not seem to trigger that bug.
+Unfortunately the kernel is not able to switch back graphics, so I 
+cannot tell if I see the same BUG - even if the problem description is 
+the same.
+For reference, the patch above  does not help on my T61p.
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index ed48904..86a8550 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -203,7 +203,12 @@ struct kvm_mmu_page {
- 	DECLARE_BITMAP(slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
- 	bool multimapped;         /* More than one parent_pte? */
- 	bool unsync;
--	int root_count;          /* Currently serving as active root */
-+	/*
-+	 * if active_count > 0, it means that this page is not freed
-+	 * immediately, it's used by active root and unsync pages which
-+	 * out of kvm->mmu_lock's protection currently.
-+	 */
-+	int active_count;
- 	unsigned int unsync_children;
- 	union {
- 		u64 *parent_pte;               /* !multimapped */
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 26edc11..58cf0f1 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1539,7 +1539,7 @@ static int kvm_mmu_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp)
- 		unaccount_shadowed(kvm, sp->gfn);
- 	if (sp->unsync)
- 		kvm_unlink_unsync_page(kvm, sp);
--	if (!sp->root_count) {
-+	if (!sp->active_count) {
- 		hlist_del(&sp->hash_link);
- 		kvm_mmu_free_page(kvm, sp);
- 	} else {
-@@ -2060,8 +2060,8 @@ static void mmu_free_roots(struct kvm_vcpu *vcpu)
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
- 
- 		sp = page_header(root);
--		--sp->root_count;
--		if (!sp->root_count && sp->role.invalid)
-+		--sp->active_count;
-+		if (!sp->active_count && sp->role.invalid)
- 			kvm_mmu_zap_page(vcpu->kvm, sp);
- 		vcpu->arch.mmu.root_hpa = INVALID_PAGE;
- 		spin_unlock(&vcpu->kvm->mmu_lock);
-@@ -2073,8 +2073,8 @@ static void mmu_free_roots(struct kvm_vcpu *vcpu)
- 		if (root) {
- 			root &= PT64_BASE_ADDR_MASK;
- 			sp = page_header(root);
--			--sp->root_count;
--			if (!sp->root_count && sp->role.invalid)
-+			--sp->active_count;
-+			if (!sp->active_count && sp->role.invalid)
- 				kvm_mmu_zap_page(vcpu->kvm, sp);
- 		}
- 		vcpu->arch.mmu.pae_root[i] = INVALID_PAGE;
-@@ -2120,7 +2120,7 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
- 				      PT64_ROOT_LEVEL, direct,
- 				      ACC_ALL, NULL);
- 		root = __pa(sp->spt);
--		++sp->root_count;
-+		++sp->active_count;
- 		spin_unlock(&vcpu->kvm->mmu_lock);
- 		vcpu->arch.mmu.root_hpa = root;
- 		return 0;
-@@ -2150,7 +2150,7 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
- 				      PT32_ROOT_LEVEL, direct,
- 				      ACC_ALL, NULL);
- 		root = __pa(sp->spt);
--		++sp->root_count;
-+		++sp->active_count;
- 		spin_unlock(&vcpu->kvm->mmu_lock);
- 
- 		vcpu->arch.mmu.pae_root[i] = root | PT_PRESENT_MASK;
-diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index 42f07b1..8c8d265 100644
---- a/arch/x86/kvm/mmutrace.h
-+++ b/arch/x86/kvm/mmutrace.h
-@@ -10,13 +10,13 @@
- #define KVM_MMU_PAGE_FIELDS \
- 	__field(__u64, gfn) \
- 	__field(__u32, role) \
--	__field(__u32, root_count) \
-+	__field(__u32, active_count) \
- 	__field(bool, unsync)
- 
- #define KVM_MMU_PAGE_ASSIGN(sp)			     \
- 	__entry->gfn = sp->gfn;			     \
- 	__entry->role = sp->role.word;		     \
--	__entry->root_count = sp->root_count;        \
-+	__entry->active_count = sp->active_count;        \
- 	__entry->unsync = sp->unsync;
- 
- #define KVM_MMU_PAGE_PRINTK() ({				        \
-@@ -37,7 +37,7 @@
- 			 access_str[role.access],			\
- 			 role.invalid ? " invalid" : "",		\
- 			 role.nxe ? "" : "!",				\
--			 __entry->root_count,				\
-+			 __entry->active_count,				\
- 			 __entry->unsync ? "unsync" : "sync", 0);	\
- 	ret;								\
- 		})
--- 
-1.6.1.2
+It started soon after 2.6.34-rc4. Before and with rc4 I had to
+apply this http://patchwork.ozlabs.org/patch/49850/mbox/ patch to avoid
+the other crash. With only this patch on top of rc4 everything seemed to
+work fine, so the lockup seems to be triggered by one of the other patches.
+Sometimes it takes some minutes to crash, which makes it hard to bisect
+the problem.
 
-
-
-
-
+Christian
