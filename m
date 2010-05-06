@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab0EFCyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 May 2010 22:54:10 -0400
-Received: from mail-yx0-f191.google.com ([209.85.210.191]:51049 "EHLO
-	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab0EFCyH (ORCPT
+	id S1752159Ab0EFDNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 May 2010 23:13:17 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:65106 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab0EFDNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 May 2010 22:54:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=UzgqZCHNQ9mHVTzP13i23yVWEBTiAUtKjPRHkn08EWFWdmCxNeQMEzKOApYxPe+ONl
-         0moJJzJMG5FLdGOWpvnln5C9NRW9mQnHzLCHKfaQ2NCLfsyLdjWe8wfWxxOk6Ayzuvrl
-         wpkGNoiOcK2Uce8PLqgguQVRtmfN7PUSUr19g=
-Subject: [PATCH] mc13783-regulator: fix vaild voltage range checking for
-	mc13783_fixed_regulator_set_voltage
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Sascha Hauer <s.hauer@pengutronix.de>
-Content-Type: text/plain
-Date: Thu, 06 May 2010 10:54:29 +0800
-Message-Id: <1273114469.24703.3.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Wed, 5 May 2010 23:13:16 -0400
+Message-Id: <201005060312.o463CUOQ085547@www262.sakura.ne.jp>
+Subject: Re: [RFC] mm: generic adaptive large memory allocation APIs
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: xiaosuo@gmail.com
+Cc: eric.dumazet@gmail.com, jslaby@suse.cz, viro@zeniv.linux.org.uk,
+       paulmck@linux.vnet.ibm.com, adobriyan@gmail.com, mingo@elte.hu,
+       peterz@infradead.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, avi@redhat.com, akpm@linux-foundation.org
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+Date: Thu, 06 May 2010 12:12:30 +0900
+References: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com>
+In-Reply-To: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 05052010 #3818610, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case of "min_uV == max_uV == mc13783_regulators[id].voltages[0]",
-mc13783_fixed_regulator_set_voltage should return 0 instead of -EINVAL.
+Changli Gao wrote:
+> struct kvfree_work_struct {
+> 	struct work_struct	work;
+> 	void			*head;
+> 	void			**ptail;
+> };
 
-This patch also adds a missing ">" character for MODULE_AUTHOR, a
-trivial fix.
+I wonder why "struct kvfree_work_struct" is needed.
+According to http://kernel.ubuntu.com/git?p=jj/ubuntu-lucid.git;a=blobdiff;f=security/apparmor/match.c;h=d2cd55419acfcae85cb748c8f837a4384a3a0d29;hp=afc2dd2260edffcf88521ae86458ad03aa8ea12c;hb=f5eba4b0a01cc671affa429ba1512b6de7caeb5b;hpb=abdff9ddaf2644d0f9962490f73e030806ba90d3 ,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>
----
- drivers/regulator/mc13783-regulator.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+static void kvfree_work(struct work_struct *work)
+{
+	vfree(work);
+}
 
-diff --git a/drivers/regulator/mc13783-regulator.c
-b/drivers/regulator/mc13783-regulator.c
-index ad036dd..4597d50 100644
---- a/drivers/regulator/mc13783-regulator.c
-+++ b/drivers/regulator/mc13783-regulator.c
-@@ -440,8 +440,8 @@ static int
-mc13783_fixed_regulator_set_voltage(struct regulator_dev *rdev,
- 	dev_dbg(rdev_get_dev(rdev), "%s id: %d min_uV: %d max_uV: %d\n",
- 		__func__, id, min_uV, max_uV);
- 
--	if (min_uV > mc13783_regulators[id].voltages[0] &&
--	    max_uV < mc13783_regulators[id].voltages[0])
-+	if (min_uV >= mc13783_regulators[id].voltages[0] &&
-+	    max_uV <= mc13783_regulators[id].voltages[0])
- 		return 0;
- 	else
- 		return -EINVAL;
-@@ -649,6 +649,6 @@ static void __exit mc13783_regulator_exit(void)
- module_exit(mc13783_regulator_exit);
- 
- MODULE_LICENSE("GPL v2");
--MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de");
-+MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
- MODULE_DESCRIPTION("Regulator Driver for Freescale MC13783 PMIC");
- MODULE_ALIAS("platform:mc13783-regulator");
--- 
-1.5.4.3
+void kvfree_inatomic(void *ptr, size_t size)
+{
+	if (size < PAGE_SIZE) {
+		kfree(ptr);
+	} else if (is_vmalloc_addr(ptr)) {
+		/*
+		 * We can embed "struct work_struct" inside *ptr
+		 * because size >= PAGE_SIZE.
+		 */
+		struct work_struct *work = ptr;
+		BUILD_BUG_ON(sizeof(struct work_struct) > PAGE_SIZE);
+		INIT_WORK(&work, kvfree_work);
+		schedule_work(&work);
+	} else {
+		free_pages_exact(ptr, size);
+	}
+}
 
-
-
+should do what you want. (Though, I didn't test it.)
