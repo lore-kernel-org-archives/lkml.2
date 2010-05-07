@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab0EGHeJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 03:34:09 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:56973 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753032Ab0EGHeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 03:34:07 -0400
-X-Greylist: delayed 1905 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 May 2010 03:34:07 EDT
-Date: Fri, 7 May 2010 09:02:18 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: ignore non-maintainer tags
-Message-ID: <20100507070218.GA6574@home.mickler.org>
-References: <1273179148.1537.145.camel@Joe-Laptop.home>
- <1273214095-23396-1-git-send-email-florian@mickler.org>
- <1273214367.1540.21.camel@Joe-Laptop.home>
+	id S1754051Ab0EGHoP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 03:44:15 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:60522 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753940Ab0EGHoN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 03:44:13 -0400
+Message-ID: <4BE3C4CC.8050307@cs.helsinki.fi>
+Date: Fri, 07 May 2010 10:44:12 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273214367.1540.21.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Greg KH <greg@kroah.com>, Linus Torvalds <torvalds@linux-foundation.org>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+       Christoph Hellwig <hch@infradead.org>,
+       Jens Axboe <jens.axboe@oracle.com>, Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       driverdev <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] ramzswap: Eliminate stale data from compressed memory
+ (v2)
+References: <1273217107-2023-1-git-send-email-ngupta@vflare.org>
+In-Reply-To: <1273217107-2023-1-git-send-email-ngupta@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 11:39:26PM -0700, Joe Perches wrote:
-> On Fri, 2010-05-07 at 08:34 +0200, florian@mickler.org wrote:
-> > Using --git to determine who to send a patch to, it is not
-> > reasonable to include people that only reported an issue or tested a
-> > patch.
+Nitin Gupta kirjoitti:
+> (tested on mainline but should apply to linux-next cleanly)
 > 
-> I think this is a questionable assumption.
+>  * Changelog: v2 vs initial patches
+>    - directly add swap free callback to block_device_operations
+>      instead of using 'notifiers' for various swap events.
 > 
-> People that test or otherwise sign a patch are also good
-> candidates to review new patches.
+> ramzswap driver creates RAM based block devices which can be
+> used (only) as swap disks. Pages swapped to these disks are
+> compressed and stored in memory itself.
 > 
-> cheers, Joe
+> However, these devices do not get any notification when a swap
+> slot is freed (swap_map[i] reaches 0). So, we cannot free memory
+> allocated corresponding to this swap slot. Such stale data can
+> quickly accumulate in (compressed) memory defeating the whole
+> purpose of such devices.
+> 
+> To overcome this problem, we now add a callback in struct
+> block_device_operations which is called as soon as a swap
+> slot is freed.
+> 
+> Nitin Gupta (3):
+>   Add flag to identify block swap devices
+>   Add swap slot free callback to block_device_operations
+>   ramzswap: Handler for swap slot free callback
+> 
+>  drivers/staging/ramzswap/TODO           |    5 -----
+>  drivers/staging/ramzswap/ramzswap_drv.c |   22 +++++++++++++---------
+>  include/linux/blkdev.h                  |    2 ++
+>  include/linux/swap.h                    |    1 +
+>  mm/swapfile.c                           |    5 +++++
+>  5 files changed, 21 insertions(+), 14 deletions(-)
+>  delete mode 100644 drivers/staging/ramzswap/TODO
 
-Our views differ then.
+The series looks good to me:
 
-It is unreasonable to assume, that someone who is listed via
-Tested-By: in a random patch is able to review another patch to the same
-file. More likely will he be annoyed, because he see's a patch, dig's
-in and then thinks: "wtf? why were i cc'ed on this. I don't know this
-code. I don't have time for this!"
-
-Thats just broken.
-
-cheers,
-Flo
-
-
+Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
