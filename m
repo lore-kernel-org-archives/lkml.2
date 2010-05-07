@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab0EGDI1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 23:08:27 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54211 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753135Ab0EGDIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 23:08:25 -0400
-Date: Fri, 7 May 2010 13:08:21 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Helmut Schaa <Helmut.Schaa@gmx.de>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: build failure after merge of the suspend tree
-Message-Id: <20100507130821.3fb72c9d.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1753736Ab0EGDJb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 23:09:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33330 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031Ab0EGDJa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 23:09:30 -0400
+X-Authority-Analysis: v=1.1 cv=GuuPm/R9MDBdMhOgsQZYzj+bBK5woo0X8cuc0sTVRtI= c=1 sm=0 a=9e0D-j7WXTsA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=E0p0_C1TF2Q-2w1mLXAA:9 a=S0-a06dq1Anix2E9jXu30_huvWYA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: [PATCH][GIT PULL] perf: Fix check at end of event search
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Dan Carpenter <error27@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 06 May 2010 23:09:27 -0400
+Message-ID: <1273201767.22438.73.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
 
-After merging the suspend tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Ingo,
 
-net/mac80211/scan.c: In function 'ieee80211_scan_state_decision':
-net/mac80211/scan.c:510: error: implicit declaration of function 'pm_qos_requirement'
+I just notice that I had this patch laying around and never pushed it
+out. I first had it in my ftrace branches but then realized that it was
+a perf change. I moved it there, but got distracted and unfortunately,
+forgot about it. I rebased it to the latest tip/perf/core.
 
-Caused by commit 62bad14fc6e0911a99882c261390968977d43283 ("PM QOS
-update") from the suspend tree interacting with commit
-df13cce53a7b28a81460e6bfc4857e9df4956141 ("mac80211: Improve software
-scan timing") from the net tree.
+The change is within a #ifdef CONFIG_PERF_EVENTS
 
-I have added the following merge fixup patch and can carry it as
-necessary:
+Please pull the latest tip/perf/core tree, which can be found at:
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 7 May 2010 13:02:54 +1000
-Subject: [PATCH] wireless: update for pm_qos_requirement to pm_qos_request rename
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/core
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/mac80211/scan.c |    2 +-
+
+Dan Carpenter (1):
+      perf: Fix check at end of event search
+
+----
+ kernel/trace/trace_events_filter.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
+---------------------------
+commit d9f599e1e6d019968b35d2dc63074b9e8964fa69
+Author: Dan Carpenter <error27@gmail.com>
+Date:   Sat Mar 20 17:39:11 2010 +0300
 
-diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
-index e14c441..e1b0be7 100644
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -510,7 +510,7 @@ static int ieee80211_scan_state_decision(struct ieee80211_local *local,
- 		bad_latency = time_after(jiffies +
- 				ieee80211_scan_get_channel_time(next_chan),
- 				local->leave_oper_channel_time +
--				usecs_to_jiffies(pm_qos_requirement(PM_QOS_NETWORK_LATENCY)));
-+				usecs_to_jiffies(pm_qos_request(PM_QOS_NETWORK_LATENCY)));
+    perf: Fix check at end of event search
+    
+    The original code doesn't work because "call" is never NULL there.
+    
+    Signed-off-by: Dan Carpenter <error27@gmail.com>
+    LKML-Reference: <20100320143911.GF5331@bicker>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 88c0b6d..58092d8 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -1398,7 +1398,7 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
+ 	}
  
- 		listen_int_exceeded = time_after(jiffies +
- 				ieee80211_scan_get_channel_time(next_chan),
--- 
-1.7.1
+ 	err = -EINVAL;
+-	if (!call)
++	if (&call->list == &ftrace_events)
+ 		goto out_unlock;
+ 
+ 	err = -EEXIST;
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+
