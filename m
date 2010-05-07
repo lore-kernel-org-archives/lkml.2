@@ -1,85 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021Ab0EGQlv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 12:41:51 -0400
-Received: from mail-qy0-f195.google.com ([209.85.221.195]:56008 "EHLO
-	mail-qy0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab0EGQlu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 12:41:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:reply-to:mime-version:content-type
-         :content-disposition:user-agent;
-        b=L3Cq4QwnhK6g0NLL7sabdavaOXHpIvL16fFIhcrVKTtjp+MXQDGMUTcse1JB8qWb/h
-         LsdZaWVyCUbbkVj9g7Y/Lb0XHHCnYxo8f650nBLoGvC1NKtonNcc8csy+4TPFWbkMrHW
-         K+/mBSYTj+PjZbJVQT1Pp+ZoNUGIA5AgtLTLU=
-Date: Fri, 7 May 2010 12:41:40 -0400
-From: John Villalovos <sodarock@gmail.com>
-To: andi@firstfloor.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-       robert.richter@amd.com, oprofile-list@lists.sf.net
-Subject: [PATCH V2] Oprofile: Change CPUIDS from decimal to hex, and add some
- comments
-Message-ID: <20100507164140.GA6128@linuxjohn.usersys.redhat.com>
-Reply-To: John Villalovos <sodarock@gmail.com>
+	id S1752328Ab0EGQok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 12:44:40 -0400
+Received: from www.tglx.de ([62.245.132.106]:36057 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751700Ab0EGQoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 12:44:39 -0400
+Date: Fri, 7 May 2010 18:43:10 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Darren Hart <dvhltc@us.ibm.com>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>, Ulrich Drepper <drepper@gmail.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH 4/4] futex: Add FUTEX_LOCK with optional adaptive
+ spinning
+In-Reply-To: <1273250143.1642.361.camel@laptop>
+Message-ID: <alpine.LFD.2.00.1005071839140.3401@localhost.localdomain>
+References: <1273127060-30375-1-git-send-email-dvhltc@us.ibm.com>  <1273127060-30375-5-git-send-email-dvhltc@us.ibm.com>  <alpine.LFD.2.00.1005071818380.3401@localhost.localdomain>  <1273249491.1642.360.camel@laptop>  <alpine.LFD.2.00.1005071829470.3401@localhost.localdomain>
+ <1273250143.1642.361.camel@laptop>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Version 2:
 
-Incorporating suggested changes from Robert Richter.
+On Fri, 7 May 2010, Peter Zijlstra wrote:
 
-Back when the patch was submitted for "Add Xeon 7500 series support to
-oprofile", Robert Richter had asked for a followon patch that converted all the
-CPU ID values to hex.
+> On Fri, 2010-05-07 at 18:30 +0200, Thomas Gleixner wrote:
+> > > Please keep the code as near mutex_spin_on_owner() as possible.
+> > 
+> > There is no reason why we can't make that unconditional.
+> > 
+> Sure, but lets do that in a separate series.
 
-I have done that here for the "i386/core_i7" and "i386/atom" class
-processors in the ppro_init() function and also added some comments on
-where to find documentation on the Intel processors.
+Sure. I'm not touching mutex_spin_on_owner() now. It's just for
+testing now.
 
-Signed-off-by: John L. Villalovos <john.l.villalovos@intel.com>
+Thanks,
 
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 9f001d9..2de5f44 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -586,6 +586,13 @@ static int __init ppro_init(char **cpu_type)
- 	if (force_arch_perfmon && cpu_has_arch_perfmon)
- 		return 0;
+	tglx
+---
+Index: linux-2.6-tip/kernel/sched.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/sched.c
++++ linux-2.6-tip/kernel/sched.c
+@@ -841,6 +841,10 @@ static inline int task_running(struct rq
  
-+	/* Documentation on identifying Intel processors by CPU Family and Model
-+	 * can be found in the Intel Software Developer's Manual (SDM).
-+	 * http://www.intel.com/products/processor/manuals/
-+	 * As of May 2010 the documentation for this was in the:
-+	 * "Intel 64 and IA-32 Architectures Software Developer's Manual Volume
-+	 * 3B: System Programming Guide",
-+	 * "Table B-1 CPUID Signature Values of DisplayFamily_DisplayModel" */
- 	switch (cpu_model) {
- 	case 0 ... 2:
- 		*cpu_type = "i386/ppro";
-@@ -607,12 +614,12 @@ static int __init ppro_init(char **cpu_type)
- 	case 15: case 23:
- 		*cpu_type = "i386/core_2";
- 		break;
-+	case 0x1a:
- 	case 0x2e:
--	case 26:
- 		spec = &op_arch_perfmon_spec;
- 		*cpu_type = "i386/core_i7";
- 		break;
--	case 28:
-+	case 0x1c:
- 		*cpu_type = "i386/atom";
- 		break;
- 	default:
-
-
--- 
-John Villalovos
-Intel Corporation on-site partner engineer at Red Hat, Inc.
+ static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
+ {
++#ifdef CONFIG_SMP
++	next->oncpu = 1;
++	prev->oncpu = 0;
++#endif
+ }
+ 
+ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
+@@ -2628,7 +2632,7 @@ void sched_fork(struct task_struct *p, i
+ 	if (likely(sched_info_on()))
+ 		memset(&p->sched_info, 0, sizeof(p->sched_info));
+ #endif
+-#if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
++#if defined(CONFIG_SMP)
+ 	p->oncpu = 0;
+ #endif
+ #ifdef CONFIG_PREEMPT
+@@ -5250,7 +5254,7 @@ void __cpuinit init_idle(struct task_str
+ 	__set_task_cpu(idle, cpu);
+ 
+ 	rq->curr = rq->idle = idle;
+-#if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
++#if defined(CONFIG_SMP)
+ 	idle->oncpu = 1;
+ #endif
+ 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+Index: linux-2.6-tip/include/linux/sched.h
+===================================================================
+--- linux-2.6-tip.orig/include/linux/sched.h
++++ linux-2.6-tip/include/linux/sched.h
+@@ -1178,10 +1178,8 @@ struct task_struct {
+ 	int lock_depth;		/* BKL lock depth */
+ 
+ #ifdef CONFIG_SMP
+-#ifdef __ARCH_WANT_UNLOCKED_CTXSW
+ 	int oncpu;
+ #endif
+-#endif
+ 
+ 	int prio, static_prio, normal_prio;
+ 	unsigned int rt_priority;
 
