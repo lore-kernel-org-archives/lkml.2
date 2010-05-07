@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681Ab0EGPcS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 11:32:18 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:53239
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756621Ab0EGPcM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 11:32:12 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz1432P98dN936eM62a3Lab9bhzz1202hzz6ff19hz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L222ZP-01-H2J-02
-X-M-MSG: 
-Date: Fri, 7 May 2010 17:28:35 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] perf: fix raw sample size if no sampling data is attached
-Message-ID: <20100507152835.GU6450@erda.amd.com>
-References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
- <1271190201-25705-13-git-send-email-robert.richter@amd.com>
- <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	id S1756663Ab0EGPeh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 11:34:37 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:22050 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755772Ab0EGPeg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 11:34:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=tcMlnEyq5j7aZ0zA2JscxhJSSaxkm2o6AQrIwB2p+940wlHQV0mwC06vwt1zuGG3GM
+         VxuvYanct0s0B2IMKAR4nbWr3MU4Fz06A3e9yx7XHneJ2k6Gl93pC3n9Z9dtXL1X8Lkv
+         /orAkbMs3wvseEZiSKHYqZPb8gW0zvnjVaHaU=
+From: John Kacur <jkacur@redhat.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       John Kacur <jkacur@redhat.com>, Jeff Dike <jdike@addtoit.com>
+Subject: [PATCH] uml: Convert to unlocked_ioctls to remove implicit BKL
+Date: Fri,  7 May 2010 17:34:28 +0200
+Message-Id: <1273246468-11048-1-git-send-email-jkacur@redhat.com>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.04.10 14:19:57, Stephane Eranian wrote:
-> > +       perf_sample_data_init(&data, 0);
-> > +       if (event->attr.sample_type & PERF_SAMPLE_RAW) {
-> > +               for (i = 1; i < size; i++)
-> > +                       rdmsrl(msr++, *buf++);
-> > +               raw.size = sizeof(u64) * size;
-> > +               raw.data = buffer;
-> > +               data.raw = &raw;
-> > +       }
-> > +
-> 
-> Need to add the padding: raw.size = sizeof(u64) * size + sizeof(u32);
-> 
-> > +       regs = *iregs; /* later: update ip from ibs sample */
-> > +
-> > +       if (perf_event_overflow(event, 1, &data, &regs))
+Convert to hostaudio_ioctl and hostmixer_ioctl_mixdev to unlocked_ioctl
 
-During code review I found a bug in perf_output_sample(). A fix is
-below.
-
-> > +               x86_pmu_stop(event);
-> > +       else
-> > +               __x86_pmu_enable_event(&event->hw, reenable);
-> > +
-> > +       return 1;
-> > +}
-
---
-
->From 6373951f1c660400650066b73c3bb2f6d232be67 Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Fri, 7 May 2010 15:49:56 +0200
-Subject: [PATCH] perf: fix raw sample size if no sampling data is attached
-
-The header size of a raw sample is not included in the total size of a
-raw data sample. Thus, if no data is attached the size must be
-null. In this case a buffer overflow may occur when copying the
-sampling data.
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: John Kacur <jkacur@redhat.com>
 ---
- kernel/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/um/drivers/hostaudio_kern.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 9dbe8cd..f6ddae9 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -3229,7 +3229,7 @@ void perf_output_sample(struct perf_output_handle *handle,
- 				u32	size;
- 				u32	data;
- 			} raw = {
--				.size = sizeof(u32),
-+				.size = 0,
- 				.data = 0,
- 			};
- 			perf_output_put(handle, raw);
+diff --git a/arch/um/drivers/hostaudio_kern.c b/arch/um/drivers/hostaudio_kern.c
+index 368219c..ae42695 100644
+--- a/arch/um/drivers/hostaudio_kern.c
++++ b/arch/um/drivers/hostaudio_kern.c
+@@ -136,7 +136,7 @@ static unsigned int hostaudio_poll(struct file *file,
+ 	return mask;
+ }
+ 
+-static int hostaudio_ioctl(struct inode *inode, struct file *file,
++static long hostaudio_ioctl(struct file *file,
+ 			   unsigned int cmd, unsigned long arg)
+ {
+ 	struct hostaudio_state *state = file->private_data;
+@@ -223,7 +223,7 @@ static int hostaudio_release(struct inode *inode, struct file *file)
+ 
+ /* /dev/mixer file operations */
+ 
+-static int hostmixer_ioctl_mixdev(struct inode *inode, struct file *file,
++static long hostmixer_ioctl_mixdev(struct file *file,
+ 				  unsigned int cmd, unsigned long arg)
+ {
+ 	struct hostmixer_state *state = file->private_data;
+@@ -289,7 +289,7 @@ static const struct file_operations hostaudio_fops = {
+ 	.read           = hostaudio_read,
+ 	.write          = hostaudio_write,
+ 	.poll           = hostaudio_poll,
+-	.ioctl          = hostaudio_ioctl,
++	.unlocked_ioctl	= hostaudio_ioctl,
+ 	.mmap           = NULL,
+ 	.open           = hostaudio_open,
+ 	.release        = hostaudio_release,
+@@ -298,7 +298,7 @@ static const struct file_operations hostaudio_fops = {
+ static const struct file_operations hostmixer_fops = {
+ 	.owner          = THIS_MODULE,
+ 	.llseek         = no_llseek,
+-	.ioctl          = hostmixer_ioctl_mixdev,
++	.unlocked_ioctl	= hostmixer_ioctl_mixdev,
+ 	.open           = hostmixer_open_mixdev,
+ 	.release        = hostmixer_release,
+ };
 -- 
-1.7.0.3
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
+1.6.6.1
 
