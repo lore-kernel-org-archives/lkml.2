@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab0EGK5k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 06:57:40 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:50141 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557Ab0EGK5j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 06:57:39 -0400
+	id S1755343Ab0EGLKO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 07:10:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44461 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753333Ab0EGLKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 07:10:11 -0400
+Date: Fri, 7 May 2010 13:10:09 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Stephane Chatty <chatty@enac.fr>,
+       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, wylda@volny.cz,
+       Jerome Vidal <jerom3@free.fr>, Tejun Heo <tj@kernel.org>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: add chardev to propagate special events of Roccat
+ hardware to userland
+In-Reply-To: <1273161216.2343.6.camel@localhost>
+Message-ID: <alpine.LNX.2.00.1005071305350.9849@pobox.suse.cz>
+References: <1273161216.2343.6.camel@localhost>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100507100406.GA21498@rakim.wolfsonmicro.main>
-References: <20100505185225.GA4411@srcf.ucam.org>
-	 <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
-	 <m2oa55d774e1005051356n3610d780ra42200c1785e02bd@mail.gmail.com>
-	 <20100505234025.GB4838@opensource.wolfsonmicro.com>
-	 <l2kd6200be21005052125rc43217a2r8c65bc98e7a5d3d4@mail.gmail.com>
-	 <20100507100406.GA21498@rakim.wolfsonmicro.main>
-Date: Fri, 7 May 2010 03:57:37 -0700
-Message-ID: <w2kd6200be21005070357r9aad2896l355168a23bf85eae@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Matthew Garrett <mjg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/7 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Wed, May 05, 2010 at 09:25:18PM -0700, Arve Hjønnevåg wrote:
->> On Wed, May 5, 2010 at 4:40 PM, Mark Brown
->
->> > This really does depend heavily on system design and the intended
->> > function of the suspend on the part of the initiator.  In many systems
->> > suspend will remove sufficient power to stop audio running even if it
->> > were desired, and there's the idea with existing manually initiated
->> > suspends that the system should stop what it's doing and go into a low
->> > power, low responsiveness state.  Some systems will initiate a suspend
->> > with active audio paths (especially those to or from the AP) which they
->> > expect to be stopped.
->
->> You can support both in the same driver in some cases (without a
->> switch). If the hardware cannot wake the system when it needs more
->> audio buffers, then the driver needs to block suspend while audio is
->> playing. Since suspend blockers only block opportunistic suspend, the
->> driver can also implement suspend to stop audio playback and it will
->> only be called for forced suspend.
->
-> As discussed elsewhere in the thread a suspend blocker is not desirable
-> here - the AP is not doing anything useful on a voice call so blocking
-> the suspend will just waste power unless runtime PM is good enough to
-> mean opportunistic suspend isn't adding anything anyway.  It will avoid
-> the immediate issue with loosing audio but it's not really what we want
-> to happen.
->
+On Thu, 6 May 2010, Stefan Achatz wrote:
 
-I was talking about audio from the AP. Why would you ever turn off
-another core's audio path on suspend?
+> This Patch adds a chardev that is used to report special events
+> like request for on-screen-display of actual mouse-setting informations,
+> request for execution of macro sequences not stored in mouse.
+> The device is as generic as possible so that the functionality is usable
+> by all (kone and upcomming) roccat device drivers.
+
+Hi Stefan,
+
+what userspace application is supposed to process these events?
+
+> Also small improvements in kone driver are implemented as understanding
+> of the device and kernel programming increases.
+
+It would be nice to separate those out to standalone patches, please.
+
+> --- a/drivers/hid/hid-roccat-kone.c
+> +++ b/drivers/hid/hid-roccat-kone.c
+> @@ -37,6 +37,7 @@
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+>  #include "hid-ids.h"
+> +#include "hid-roccat.h"
+>  #include "hid-roccat-kone.h"
+>  
+>  static void kone_set_settings_checksum(struct kone_settings *settings)
+> @@ -630,7 +631,7 @@ static ssize_t kone_sysfs_set_startup_profile(struct device *dev,
+>  static ssize_t kone_sysfs_show_driver_version(struct device *dev,
+>  		struct device_attribute *attr, char *buf)
+>  {
+> -	return snprintf(buf, PAGE_SIZE, DRIVER_VERSION "\n");
+> +	return snprintf(buf, PAGE_SIZE, ROCCAT_KONE_DRIVER_VERSION "\n");
+
+Do we really want to keep this kind of driver versioning? Git provided 
+much more fine-graned versioning anyway. What is it needed for?
+
+> new file mode 100644
+> index 0000000..e05d48e
+> --- /dev/null
+> +++ b/drivers/hid/hid-roccat.c
+> @@ -0,0 +1,428 @@
+> +/*
+> + * Roccat driver for Linux
+> + *
+> + * Copyright (c) 2010 Stefan Achatz <erazor_de@users.sourceforge.net>
+> + */
+> +
+> +/*
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the Free
+> + * Software Foundation; either version 2 of the License, or (at your option)
+> + * any later version.
+> + */
+> +
+> +/*
+> + * Module roccat is a char device used to report special events of roccat
+> + * hardware to userland. These events include requests for on-screen-display of
+> + * profile or dpi settings or requests for execution of macro sequences that are
+> + * not stored in device. The information in these events depends on hid device
+> + * implementation and contains data that is not available in a single hid event
+> + * or else hidraw could have been used.
+> + * It is inspired by hidraw, but uses only one circular buffer for all readers.
+
+This information could maybe go into the kernel changelog as well. For 
+someone not familiar with the driver layout, the difference between 
+'roccat' and 'roccat-kone' might be very difficult to understand.
+
+Thanks,
 
 -- 
-Arve Hjønnevåg
+Jiri Kosina
+SUSE Labs, Novell Inc.
