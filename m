@@ -1,106 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab0EGNaa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 09:30:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38000 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751772Ab0EGNa2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 09:30:28 -0400
-Date: Fri, 7 May 2010 14:30:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Brian Swetland <swetland@google.com>
-Cc: Theodore Tso <tytso@mit.edu>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Matthew Garrett <mjg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100507133025.GA23983@rakim.wolfsonmicro.main>
-References: <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
- <m2oa55d774e1005051356n3610d780ra42200c1785e02bd@mail.gmail.com>
- <20100505234025.GB4838@opensource.wolfsonmicro.com>
- <l2kd6200be21005052125rc43217a2r8c65bc98e7a5d3d4@mail.gmail.com>
- <20100507100406.GA21498@rakim.wolfsonmicro.main>
- <w2kd6200be21005070357r9aad2896l355168a23bf85eae@mail.gmail.com>
- <20100507112102.GC21498@rakim.wolfsonmicro.main>
- <81818215-44A2-4B74-A43F-E2644C950F5C@mit.edu>
- <20100507122520.GD21498@rakim.wolfsonmicro.main>
- <z2wa55d774e1005070537k8e3cb6baxc74e998e930d254d@mail.gmail.com>
+	id S1754272Ab0EGNag (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 09:30:36 -0400
+Received: from toro.web-alm.net ([62.245.132.31]:52500 "EHLO toro.web-alm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754119Ab0EGNae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 09:30:34 -0400
+Message-ID: <4BE415B8.1010400@osadl.org>
+Date: Fri, 07 May 2010 15:29:28 +0200
+From: Carsten Emde <Carsten.Emde@osadl.org>
+Organization: Open Source Automation Development Lab (OSADL) eG
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <z2wa55d774e1005070537k8e3cb6baxc74e998e930d254d@mail.gmail.com>
-X-Cookie: Rome wasn't burnt in a day.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Huaxu Wan <huaxu.wan@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+       Huaxu Wan <huaxu.wan@intel.com>
+Subject: Re: [lm-sensors] [PATCH 2/2] hwmon: (coretemp) Get TjMax value from
+ MSR
+References: <20100507095945.GB12190@owl>
+In-Reply-To: <20100507095945.GB12190@owl>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/mixed;
+ boundary="------------090109080908080504090509"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 05:37:21AM -0700, Brian Swetland wrote:
-> On Fri, May 7, 2010 at 5:25 AM, Mark Brown
+This is a multi-part message in MIME format.
+--------------090109080908080504090509
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-> > It's unfortunate that I only noticed that this was actually wakelocks
-> > very late in the day but I think I can get an implementation which
-> > handles paths that ignore suspends done quickly.
+Hi Huaxu,
 
-> Do you mean an implementation of embedded linux audio or an
-> implementation of suspend blockers "which handles paths that ignore
-> suspends"?  I assume you mean the former, but maybe I misunderstand.
+> The MSR IA32_TEMPERATURE_TARGET contains the TjMax value in the newer
+> processers.
+I took the liberty to make some very minor changes to your patch:
+- Unified and adapted messages and comments
+- Added a definition of MSR_IA32_TEMPERATURE_TARGET to the arch header
+- Replaced 0x1a2 by MSR_IA32_TEMPERATURE_TARGET
+- Applied changes suggested by checkpatch
 
-I mean that I will extend the embedded audio subsystem that the kernel
-already has (ASoC, in sound/soc) to support ignoring suspends for some
-audio paths so that they can be kept up during suspend.  This will be
-primarily intended for use with opportunistic suspend but not specific
-to it.
+Hope you like it.
 
-I have no intention of touching suspend blockers, except in that some of
-the drivers I'm responsible for should probably use suspend blockers for
-similar reasons to the other users you're merging but that's less urgent.
+Signed-off-by: Carsten Emde <C.Emde@osadl.org>
 
-> We've done a lot of work around multicore SoCs where the baseband
-> generally owns a lot of the audio routing and so on,
+--------------090109080908080504090509
+Content-Type: text/x-patch;
+ name="coretemp-add-tjmax-method-for-i-series-processors.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="coretemp-add-tjmax-method-for-i-series-processors.patch"
 
-Multicore isn't really the term here - obviously on something like the
-OMAP4 or the current nVidia devices you've got a multicore AP but may or
-may not have an integrated baseband.  The distinction is down to how
-much visibility the AP has of the audio hardware, which is in general
-orthogonal to how the silicon is split and packaged.
+---
+ arch/x86/include/asm/msr-index.h |    3 ++
+ drivers/hwmon/coretemp.c         |   54 ++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 53 insertions(+), 4 deletions(-)
 
->                                                      but we do as
-> general policy not disable audio, codecs, and amps while playback or
-> record is underway.
+Index: head/arch/x86/include/asm/msr-index.h
+===================================================================
+--- head.orig/arch/x86/include/asm/msr-index.h
++++ head/arch/x86/include/asm/msr-index.h
+@@ -277,6 +277,9 @@
+ #define MSR_IA32_MCG_EIP		0x00000189
+ #define MSR_IA32_MCG_RESERVED		0x0000018a
+ 
++/* Specific to i series processors */
++#define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
++
+ /* Pentium IV performance counter MSRs */
+ #define MSR_P4_BPU_PERFCTR0		0x00000300
+ #define MSR_P4_BPU_PERFCTR1		0x00000301
+Index: head/drivers/hwmon/coretemp.c
+===================================================================
+--- head.orig/drivers/hwmon/coretemp.c
++++ head/drivers/hwmon/coretemp.c
+@@ -153,7 +153,8 @@ static struct coretemp_data *coretemp_up
+ 	return data;
+ }
+ 
+-static int __devinit adjust_tjmax(struct cpuinfo_x86 *c, u32 id, struct device *dev)
++static int __devinit adjust_tjmax(struct cpuinfo_x86 *c, u32 id,
++				  struct device *dev)
+ {
+ 	/* The 100C is default for both mobile and non mobile CPUs */
+ 
+@@ -241,6 +242,51 @@ static int __devinit adjust_tjmax(struct
+ 	return tjmax;
+ }
+ 
++static int __devinit get_tjmax(struct cpuinfo_x86 *c, u32 id,
++			       struct device *dev)
++{
++	int err;
++	u32 eax, edx;
++	u32 val;
++
++	err = rdmsr_safe_on_cpu(id, MSR_IA32_TEMPERATURE_TARGET, &eax, &edx);
++	if (err)
++		dev_warn(dev, "Unable to read TjMax from CPU.\n");
++	else {
++		val = (eax >> 16) & 0xff;
++		if (val > 80 && val < 120) {
++			dev_info(dev, "TjMax is %dC.\n", val);
++			return val * 1000;
++		} else {
++			dev_warn(dev, "TjMax of %dC not plausible,"
++			    " using 100C instead." , val);
++			return 100000;
++		}
++	}
++
++	/*
++	 * An assumption is made for early CPUs and unreadable MSR.
++	 * NOTE: the given value may not be correct.
++	 */
++	switch (c->x86_model) {
++	case 0x0e:
++	case 0x0f:
++	case 0x16:
++	case 0x1a:
++		dev_warn(dev, "TjMax is assumed as 100C!\n");
++		return 100000;
++		break;
++	case 0x17:
++	case 0x1c: /* Atom CPUs */
++		return adjust_tjmax(c, id, dev);
++		break;
++	default:
++		dev_warn(dev, "CPU (model=0x%x) is not supported yet,"
++		    " using default TjMax of 100C.\n", c->x86_model);
++		return 100000;
++	}
++}
++
+ static int __devinit coretemp_probe(struct platform_device *pdev)
+ {
+ 	struct coretemp_data *data;
+@@ -283,14 +329,14 @@ static int __devinit coretemp_probe(stru
+ 		}
+ 	}
+ 
+-	data->tjmax = adjust_tjmax(c, data->id, &pdev->dev);
++	data->tjmax = get_tjmax(c, data->id, &pdev->dev);
+ 	platform_set_drvdata(pdev, data);
+ 
+ 	/* read the still undocumented IA32_TEMPERATURE_TARGET it exists
+ 	   on older CPUs but not in this register, Atoms don't have it either */
+-
+ 	if ((c->x86_model > 0xe) && (c->x86_model != 0x1c)) {
+-		err = rdmsr_safe_on_cpu(data->id, 0x1a2, &eax, &edx);
++		err = rdmsr_safe_on_cpu(data->id, MSR_IA32_TEMPERATURE_TARGET,
++		     &eax, &edx);
+ 		if (err) {
+ 			dev_warn(&pdev->dev, "Unable to read"
+ 					" IA32_TEMPERATURE_TARGET MSR\n");
 
-Yeah, I know.  I have been keeping an eye on the Android stuff, though
-none of the audio side has been mainlined yet.
-
->                      I suppose for environments more like a pc laptop
-> where the expectation is the world stops when you close the lid a
-> different policy would be preferable.
-
-Yes, quite.  It all depends on what the intention of the user is when
-they do a suspend.  Clearly if the suspend was initiated automatically
-because the system is apparently idle the intention is different to if
-it was initiated because the user performed some explicit action.
-
-> We typically fire up codecs and amps when playback starts (if they
-> were off), and usually set a timer for a couple seconds after playback
-> stops to spin them down (since you tend to have to delay while they're
-> powering up to avoid pops, etc, and if the system just played a short
-> sound there's a reasonable chance it'll follow that with another).
-
-This is exactly what ASoC does - the two biggest wins it offers are that
-it allows reuse of the code specific to a given piece of silicon on all
-boards using that silicon and that it provides automatic runtime power
-management in the core by keeping track of which audio paths are live.
-
-There is the slight wrinkle that you don't really want to *fully* power
-down devices that don't have ground referenced outputs since they take
-a relatively long time to bring their reference level up without audible
-artifacts in the output.
+--------------090109080908080504090509--
