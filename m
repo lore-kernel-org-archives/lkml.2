@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757626Ab0EGSaG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 14:30:06 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:45090 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757469Ab0EGSaE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 14:30:04 -0400
-Date: Fri, 7 May 2010 12:30:00 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Phillip Susi <psusi@cfl.rr.com>
-Cc: linux-fsdevel@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: unified page and buffer cache?
-Message-ID: <20100507183000.GD17259@parisc-linux.org>
-References: <4BCC7C05.8000803@cfl.rr.com> <4BE417CB.7000806@cfl.rr.com> <20100507135329.GA17259@parisc-linux.org> <4BE4359E.9020400@cfl.rr.com>
+	id S1757655Ab0EGScA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 14:32:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54425 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757604Ab0EGSb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 14:31:59 -0400
+Date: Fri, 7 May 2010 15:31:43 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>, mingo@redhat.com, hpa@zytor.com,
+       paulus@samba.org, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+       peterz@infradead.org, efault@gmx.de, tglx@linutronix.de, mingo@elte.hu,
+       linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf probe: Support DW_OP_call_frame_cfa in
+	debuginfo
+Message-ID: <20100507183143.GB30926@ghostprotocols.net>
+References: <20100412171728.3790.98217.stgit@localhost6.localdomain6> <tip-a34a985499895a46a4dacff727d0fbc63cdc75e8@git.kernel.org> <20100507163321.GB15333@erda.amd.com> <4BE44AF4.3090303@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4BE4359E.9020400@cfl.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4BE44AF4.3090303@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 11:45:34AM -0400, Phillip Susi wrote:
-> On 5/7/2010 9:53 AM, Matthew Wilcox wrote:
-> > The problem you're seeing is aliasing in the page cache, not a failed
-> > unification of the buffer and page caches.  Pages are addressed by
-> > (mapping, offset).  Each inode generally has its own mapping.  Depending
-> > on the file system, directories may be addressed by their own inode's
-> > mapping, or by the block device's mapping.
+Em Fri, May 07, 2010 at 01:16:36PM -0400, Masami Hiramatsu escreveu:
+> Hi,
 > 
-> If there are two mappings that don't know about each other, then the
-> caches don't seem very unified to me.  If I write to the file and that
-> data sits in the mapping for the inode, then I read the corresponding
-> blocks though the block device, and it has a different mapping, then I
-> read the old data off the disk instead of the new data in the cache.  I
-> thought that this exact problem had been fixed long ago.
-
-A long time ago (was this 2.0?  1.2?) the buffer cache and the page cache
-were actually separate caches.  Then the buffer cache was rewritten to
-point into the page cache, and we were all grateful.
-
-As I said, you're seeing something completely different.  The page cache
-is virtually indexed, not physically indexed.  As generations of CPU
-designers have found, that's a lot faster, but aliases can bite you.
-
-> > Resolving aliasing would be horribly expensive, so it's unlikely to
-> > happen.
+> Robert Richter wrote:
+> > On 15.04.10 07:29:18, tip-bot for Masami Hiramatsu wrote:
+> >> diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+> >> index 2a27132..310ce89 100644
+> >> --- a/tools/perf/util/probe-finder.h
+> >> +++ b/tools/perf/util/probe-finder.h
+> >> @@ -42,6 +42,7 @@ struct probe_finder {
+> >>  	struct list_head	lcache;		/* Line cache for lazy match */
+> >>  
+> >>  	/* For variable searching */
+> >> +	Dwarf_CFI		*cfi;		/* Call Frame Information */
+> > 
+> > I get the following complile error:
+> > 
+> > gcc -o builtin-probe.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstack-protector -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wvolatile-register-var -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement  -fstack-protector-all -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -I/usr/include/elfutils -DDWARF_SUPPORT -DNO_NEWT_SUPPORT -DNO_LIBPERL -DSHA1_HEADER='<openssl/sha.h>'  builtin-probe.c
+> > In file included from builtin-probe.c:43:
+> > util/probe-finder.h:45: error: expected specifier-qualifier-list before ‘Dwarf_CFI’
+> > make: *** [builtin-probe.o] Error 1
+> > build script error: 2
+> > 
+> > git grep only finds the following:
+> > 
+> >  $ git grep Dwarf_CFI 
+> >  tools/perf/util/probe-finder.h: Dwarf_CFI               *cfi;           /* Call Frame Information */
+> > 
+> > Am I missing something?
 > 
-> Back to the drawing board I guess.  Maybe ext could be fixed to use an
-> inode mapping for directories instead of relying on the block device
-> mapping, then I could readahead() the directory instead of having to go
-> to the block device at all.
+> Hmm, it seems that Dwarf_CFI is not defined in library.
+> (it is defined as a type in /usr/include/elfutils/libdw.h)
+> Could you tell me what version of elfutils you are using?
 
-That would be possible, but would waste memory space.  But we've all
-got gigabytes of ram these days, maybe nobody cares.
+Masami-san,
 
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+	If we are version dependant on that, we should disable this
+specific feature by doing one more compile test like we have for setting
+NO_DWARF, hopefully just a subset of DWARF support can be disabled due
+to this version dependency, right?
+
+- Arnaldo
