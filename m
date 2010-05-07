@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab0EGOyu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 10:54:50 -0400
-Received: from tomts20-srv.bellnexxia.net ([209.226.175.74]:48928 "EHLO
-	tomts20-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755533Ab0EGOys (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 10:54:48 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEACvG40tGGNqG/2dsb2JhbACeFnK/CYUVBA
-Date: Fri, 7 May 2010 10:54:38 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/9 - v2][RFC] tracing: Remove per event trace
-	registering
-Message-ID: <20100507145438.GB29573@Krystal>
-References: <20100504034045.085822814@goodmis.org> <20100504034202.282030521@goodmis.org> <20100507042025.GC8069@nowhere>
-Mime-Version: 1.0
+	id S1755798Ab0EGOzZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 10:55:25 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:57806 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755206Ab0EGOzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 10:55:23 -0400
+Date: Fri, 7 May 2010 07:55:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>,
+       "containers@lists.osdl.org" <containers@lists.osdl.org>,
+       Paul Menage <menage@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+       Gui Jianfeng <GuiJianfeng@cn.fujitsu.com>
+Subject: Re: [PATCH 5/5] blk-cgroup: Fix an RCU warning in blkiocg_create()
+Message-ID: <20100507145515.GA2368@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4BD016F4.8060108@cn.fujitsu.com>
+ <4BD017AC.1020209@cn.fujitsu.com>
+ <20100422195725.GM2524@linux.vnet.ibm.com>
+ <4BE3B985.1000407@cn.fujitsu.com>
+ <20100507065741.GW27497@kernel.dk>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100507042025.GC8069@nowhere>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 10:42:20 up 30 days, 35 min,  3 users,  load average: 0.19, 0.20,
-	0.18
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100507065741.GW27497@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> On Mon, May 03, 2010 at 11:40:48PM -0400, Steven Rostedt wrote:
-> > From: Steven Rostedt <srostedt@redhat.com>
+On Fri, May 07, 2010 at 08:57:41AM +0200, Jens Axboe wrote:
+> On Fri, May 07 2010, Li Zefan wrote:
+> > Paul E. McKenney wrote:
+> > > On Thu, Apr 22, 2010 at 05:32:28PM +0800, Li Zefan wrote:
+> > >> with CONFIG_PROVE_RCU=y, a warning can be triggered:
+> > >>
+> > >>   # mount -t cgroup -o blkio xxx /mnt
+> > >>   # mkdir /mnt/subgroup
+> > >>
+> > >> ...
+> > >> kernel/cgroup.c:4442 invoked rcu_dereference_check() without protection!
+> > >> ...
+> > >>
+> > >> To fix this, we avoid caling css_depth() here, which is a bit simpler
+> > >> than the original code.
+> > > 
+> > > Queued for 2.6.34, thank you!
+> > > 
 > > 
-> > This patch removes the register functions of TRACE_EVENT() to enable
-> > and disable tracepoints. The registering of a event is now down
-> > directly in the trace_events.c file. The tracepoint_probe_register()
-> > is now called directly.
-> > 
-> > The prototypes are no longer type checked, but this should not be
-> > an issue since the tracepoints are created automatically by the
-> > macros. If a prototype is incorrect in the TRACE_EVENT() macro, then
-> > other macros will catch it.
+> > Seems neither you nor Jens queued this patch...
 > 
-> 
-> 
-> Agreed. Typechecking matters for human code but not in this context.
-> Considering that the tracepoint and the probe are created by the same
-> CPP code, bugs will be tracked down quickly and located to a single
-> place.
+> I've included it now, thanks.
 
-So it seems that I am the only one asking for extra type-checking and
-caring about problems that can appear subtily on architectures where the
-number of caller/callee arguments must match. And also the only one
-considering that passing more arguments to a callback that does not
-expect all of them might be a problem on some architectures.
+<red face>  Thank you both for catching this one!!!
 
-Am I the only one thinking there is something fishy there ? I might be
-entirely over-paranoid, but this approach has rarely failed me in the
-past.
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+							Thanx, Paul
