@@ -1,88 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532Ab0EGSBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 14:01:36 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46141 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757196Ab0EGSBe (ORCPT
+	id S1757426Ab0EGSCN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 14:02:13 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:62085 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756639Ab0EGSCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 14:01:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XZiOa/EOG4ebP3Ww2xIrN1BF1Pcd0zliQtDiIDgbeM1kjoBBQNh7+SmyyEtAnmdful
-         PmD2bJbV5om2kyjkcv1Jf5NVFzh3EhTXy/DzAy3ZA8BxvdbutEcRs4SOIOx9IwUkoID1
-         GFWJQ14i6BEoXDUKgkcVAt7ErNnfispzQ31tI=
-Date: Fri, 7 May 2010 20:01:33 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/9 - v2][RFC] tracing: Remove per event trace
-	registering
-Message-ID: <20100507180130.GA5401@nowhere>
-References: <20100504034045.085822814@goodmis.org> <20100504034202.282030521@goodmis.org> <20100507042025.GC8069@nowhere> <20100507145438.GB29573@Krystal>
+	Fri, 7 May 2010 14:02:10 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 69.181.193.102
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18z6wmMlskfpA/7ZEDd23sm
+Date: Fri, 7 May 2010 11:01:52 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+Message-ID: <20100507180152.GH387@atomide.com>
+References: <20100506171453.GC30928@atomide.com>
+ <20100506172201.GA28578@srcf.ucam.org>
+ <20100506173807.GD30928@atomide.com>
+ <20100506174331.GA29103@srcf.ucam.org>
+ <20100506183335.GE30928@atomide.com>
+ <20100506184418.GA30669@srcf.ucam.org>
+ <20100507020541.GH30928@atomide.com>
+ <20100507171218.GA23142@srcf.ucam.org>
+ <20100507173549.GF387@atomide.com>
+ <20100507175025.GA23952@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100507145438.GB29573@Krystal>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100507175025.GA23952@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 10:54:38AM -0400, Mathieu Desnoyers wrote:
-> * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > On Mon, May 03, 2010 at 11:40:48PM -0400, Steven Rostedt wrote:
-> > > From: Steven Rostedt <srostedt@redhat.com>
-> > > 
-> > > This patch removes the register functions of TRACE_EVENT() to enable
-> > > and disable tracepoints. The registering of a event is now down
-> > > directly in the trace_events.c file. The tracepoint_probe_register()
-> > > is now called directly.
-> > > 
-> > > The prototypes are no longer type checked, but this should not be
-> > > an issue since the tracepoints are created automatically by the
-> > > macros. If a prototype is incorrect in the TRACE_EVENT() macro, then
-> > > other macros will catch it.
+* Matthew Garrett <mjg@redhat.com> [100507 10:46]:
+> On Fri, May 07, 2010 at 10:35:49AM -0700, Tony Lindgren wrote:
+> > * Matthew Garrett <mjg@redhat.com> [100507 10:08]:
+> > > The situation is this. You've frozen most of your userspace because you 
+> > > don't trust the applications. One of those applications has an open 
+> > > network socket, and policy indicates that receiving a network packet 
+> > > should generate a wakeup, allow the userspace application to handle the 
+> > > packet and then return to sleep. What mechanism do you use to do that?
 > > 
-> > 
-> > 
-> > Agreed. Typechecking matters for human code but not in this context.
-> > Considering that the tracepoint and the probe are created by the same
-> > CPP code, bugs will be tracked down quickly and located to a single
-> > place.
+> > I think the ideal way of doing this would be to have the system running
+> > and hitting some deeper idle states using cpuidle. Then fix the apps
+> > so timers don't wake up the system too often. Then everything would
+> > just run in a normal way.
 > 
-> So it seems that I am the only one asking for extra type-checking and
-> caring about problems that can appear subtily on architectures where the
-> number of caller/callee arguments must match. And also the only one
-> considering that passing more arguments to a callback that does not
-> expect all of them might be a problem on some architectures.
+> Effective power management in the face of real-world applications is a 
+> reasonable usecase.
+
+Sure there's no easy solution to misbehaving apps.
+
+> > For the misbehaving stopped apps, maybe they could be woken
+> > to deal with the incoming network data with sysfs_notify?
 > 
-> Am I the only one thinking there is something fishy there ? I might be
-> entirely over-paranoid, but this approach has rarely failed me in the
-> past.
+> How would that work? Have the kernel send a sysfs_notify on every netwrk 
+> packet and have a monitor app listen for it and unfreeze the rest of 
+> userspace if it's frozen? That sounds expensive.
 
+Yeah maybe there are better ways of dealing with this.
 
-You are confusing two different and unrelated issues here.
+Maybe deferred timers would help some so all the apps could
+be allowed to run until some power management policy decides
+to suspend the whole device.
 
-One is the lost typechecking when we _register_ a probe because we now use
-directly tracepoint_probe_register() for that.
-I don't care personally because both tracepoint and probe are created by
-the same automation. There is very few risk of callback type mess and
-if there is, it will be located in a small and isolated code.
+Regards,
 
-The second is this extra parameter passed whether or not it is needed.
-And although we suppose it is safe, I don't feel comfortable with it.
-So if we can find a more proper way to avoid it, I'm all for it.
-
-Thanks.
-
+Tony
