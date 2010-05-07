@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab0EGFDJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 01:03:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39768 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab0EGFDH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 01:03:07 -0400
-From: "Arce, Abraham" <x0066660@ti.com>
-To: "Ha, Tristram" <Tristram.Ha@micrel.com>, Ben Dooks <ben@simtec.co.uk>
-CC: David Miller <davem@davemloft.net>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Jan, Sebastien" <s-jan@ti.com>
-Date: Fri, 7 May 2010 00:02:58 -0500
-Subject: RE: [PATCH 2.6.34-rc6] net: Improve ks8851 snl transmit performance
-Thread-Topic: [PATCH 2.6.34-rc6] net: Improve ks8851 snl transmit performance
-Thread-Index: AcrtboWeBzoU+Bp2RryGc5lv2EoDowAL251A
-Message-ID: <27F9C60D11D683428E133F85D2BB4A53043DF7779A@dlee03.ent.ti.com>
-References: <14385191E87B904DBD836449AA30269D021A64@MORGANITE.micrel.com>
-In-Reply-To: <14385191E87B904DBD836449AA30269D021A64@MORGANITE.micrel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752070Ab0EGFJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 01:09:56 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43301 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750703Ab0EGFJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 01:09:55 -0400
+Date: Fri, 7 May 2010 13:43:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tomi Valkeinen <tomi.valkeinen@nokia.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Roger Quadros <roger.quadros@nokia.com>,
+       Jarkko Nikula <jhnikula@gmail.com>, Tony Lindgren <tony@atomide.com>,
+       <linux-omap@vger.kernel.org>
+Subject: linux-next: manual merge of the omap_dss2 tree with the omap tree
+Message-Id: <20100507134334.75808884.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Tomi,
 
-[snip]
+Today's linux-next merge of the omap_dss2 tree got a conflict in
+arch/arm/mach-omap2/board-rx51-peripherals.c between commit
+e87da74e34ad151e6ae75ebb7a7bf447f02c0004 ("omap: rx51: Add supplies for
+the tlv320aic3x codec driver") from the omap tree and commit
+a693839eab0292aa234d7a6f48d40389389baebb ("OMAP: RX51: Add "vdds_sdi"
+supply voltage for SDI") from the omap_dss2 tree.
 
-> There is a driver option no_tx_opt so that the driver can revert to original
-> implementation.  This allows user to verify if the transmit performance
-> actually improves.
+Just overlapping additions. I fixed it up (see below) and can carry the
+fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Should we limit patch description to 80 characters also?
-
-> Signed-off-by: Tristram Ha <Tristram.Ha@micrel.com>
-> ---
-> This replaces the [patch 01/13] patch I submitted and was objected by David.
-> 
-> Other users with Micrel KSZ8851 SNL chip please verify the transmit
-> performance does improve or not.
-
-Tested-by: Abraham Arce <x0066660@ti.com>
-
-Executing some nuttcp scenarios:
-
-- Without Patch -
-
-# /testsuites/ethernet/bin/nuttcp -u -i -Ri50m <serverip>
- 1.2676 MB /   1.00 sec =   10.6330 Mbps     0 /  1298 ~drop/pkt  0.00 ~%loss
- 1.2705 MB /   1.00 sec =   10.6579 Mbps     0 /  1301 ~drop/pkt  0.00 ~%loss
- 1.2686 MB /   1.00 sec =   10.6414 Mbps     0 /  1299 ~drop/pkt  0.00 ~%loss
- 1.2695 MB /   1.00 sec =   10.6496 Mbps     0 /  1300 ~drop/pkt  0.00 ~%loss
- 1.2695 MB /   1.00 sec =   10.6496 Mbps     0 /  1300 ~drop/pkt  0.00 ~%loss
- 1.2686 MB /   1.00 sec =   10.6414 Mbps     0 /  1299 ~drop/pkt  0.00 ~%loss
- 1.2686 MB /   1.00 sec =   10.6414 Mbps     0 /  1299 ~drop/pkt  0.00 ~%loss
- 1.2646 MB /   1.00 sec =   10.6086 Mbps     0 /  1295 ~drop/pkt  0.00 ~%loss
- 1.2686 MB /   1.00 sec =   10.6412 Mbps     0 /  1299 ~drop/pkt  0.00 ~%loss
- 1.2695 MB /   1.00 sec =   10.6498 Mbps     0 /  1300 ~drop/pkt  0.00 ~%loss
-
-12.7314 MB /  10.02 sec =   10.6637 Mbps 4 %TX 0 %RX 0 / 13037 drop/pkt 0.00 %loss
-
-- With Patch -
-
-# /testsuites/ethernet/bin/nuttcp -u -i -Ri50m 10.87.231.229
-    1.2891 MB /   1.00 sec =   10.8133 Mbps     0 /  1320 ~drop/pkt  0.00 ~%loss
-    1.2900 MB /   1.00 sec =   10.8217 Mbps     0 /  1321 ~drop/pkt  0.00 ~%loss
-    1.2900 MB /   1.00 sec =   10.8217 Mbps     0 /  1321 ~drop/pkt  0.00 ~%loss
-    1.2910 MB /   1.00 sec =   10.8298 Mbps     0 /  1322 ~drop/pkt  0.00 ~%loss
-    1.2910 MB /   1.00 sec =   10.8299 Mbps     0 /  1322 ~drop/pkt  0.00 ~%loss
-    1.2900 MB /   1.00 sec =   10.8216 Mbps     0 /  1321 ~drop/pkt  0.00 ~%loss
-    1.2900 MB /   1.00 sec =   10.8216 Mbps     0 /  1321 ~drop/pkt  0.00 ~%loss
-    1.2891 MB /   1.00 sec =   10.8135 Mbps     0 /  1320 ~drop/pkt  0.00 ~%loss
-    1.2900 MB /   1.00 sec =   10.8216 Mbps     0 /  1321 ~drop/pkt  0.00 ~%loss
-    1.2910 MB /   1.00 sec =   10.8298 Mbps     0 /  1322 ~drop/pkt  0.00 ~%loss
-
-   12.9492 MB /  10.02 sec =   10.8461 Mbps 4 %TX 0 %RX 0 / 13260 drop/pkt 0.00
-%loss
-
-Also simulated heavy transmission consisting of 40 processes executed in parallel:
-
- - 20 ping instances using packet size of 32768
- - 20 dd instances creating a 50MB file each under the nfs rootfs
-
-If any specific test scenario/application is required please do let me know...
-
-Best Regards
-Abraham
+diff --cc arch/arm/mach-omap2/board-rx51-peripherals.c
+index 8179d55,020f354..0000000
+--- a/arch/arm/mach-omap2/board-rx51-peripherals.c
++++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+@@@ -287,35 -315,19 +315,48 @@@ static struct regulator_consumer_suppl
+  	.dev_name = "mmci-omap-hs.1",
+  };
+  
+ +static struct regulator_consumer_supply rx51_vmmc2_supplies[] = {
+ +	/* tlv320aic3x analog supplies */
+ +	{
+ +		.supply		= "AVDD",
+ +		.dev_name	= "2-0018",
+ +	},
+ +	{
+ +		.supply		= "DRVDD",
+ +		.dev_name	= "2-0018",
+ +	},
+ +	/* Keep vmmc as last item. It is not iterated for newer boards */
+ +	{
+ +		.supply		= "vmmc",
+ +		.dev_name	= "mmci-omap-hs.1",
+ +	},
+ +};
+ +
+ +static struct regulator_consumer_supply rx51_vio_supplies[] = {
+ +	/* tlv320aic3x digital supplies */
+ +	{
+ +		.supply		= "IOVDD",
+ +		.dev_name	= "2-0018"
+ +	},
+ +	{
+ +		.supply		= "DVDD",
+ +		.dev_name	= "2-0018"
+ +	},
+ +};
+ +
++ #if defined(CONFIG_FB_OMAP2) || defined(CONFIG_FB_OMAP2_MODULE)
++ extern struct platform_device rx51_display_device;
++ #endif
++ 
++ static struct regulator_consumer_supply rx51_vaux1_consumers[] = {
++ #if defined(CONFIG_FB_OMAP2) || defined(CONFIG_FB_OMAP2_MODULE)
++ 	{
++ 		.supply	= "vdds_sdi",
++ 		.dev	= &rx51_display_device.dev,
++ 	},
++ #endif
++ };
++ 
+  static struct regulator_init_data rx51_vaux1 = {
+  	.constraints = {
+  		.name			= "V28",
