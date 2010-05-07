@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab0EGOsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 10:48:01 -0400
-Received: from nef2.ens.fr ([129.199.96.40]:2974 "EHLO nef2.ens.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755125Ab0EGOr7 convert rfc822-to-8bit (ORCPT
+	id S1755444Ab0EGOvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 10:51:12 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51690 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755125Ab0EGOvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 10:47:59 -0400
-X-Greylist: delayed 3040 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 May 2010 10:47:59 EDT
-From: =?utf-8?q?=C3=89ric_Brunet?= <Eric.Brunet@lps.ens.fr>
-Organization: UPMC LPS-ENS
-To: linux-kernel@vger.kernel.org
-Subject: Some problem with nouveau
-Date: Fri, 7 May 2010 15:57:15 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32.11-99.fc12.x86_64; KDE/4.4.2; x86_64; ; )
-Cc: eric.brunet@lps.ens.fr
+	Fri, 7 May 2010 10:51:10 -0400
+Date: Fri, 7 May 2010 10:51:10 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Daniel Mack <daniel@caiaq.de>
+cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+       <alsa-devel@alsa-project.org>, Greg KH <gregkh@suse.de>,
+       Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Chris Wright <chrisw@sous-sol.org>, <iommu@lists.linux-foundation.org>,
+       Andi Kleen <andi@firstfloor.org>, Pedro Ribeiro <pedrib@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+In-Reply-To: <20100507102408.GM30801@buzzloop.caiaq.de>
+Message-ID: <Pine.LNX.4.44L0.1005071048220.1804-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005071557.15728.Eric.Brunet@lps.ens.fr>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.1.4 (nef2.ens.fr [129.199.96.32]); Fri, 07 May 2010 15:57:18 +0200 (CEST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 7 May 2010, Daniel Mack wrote:
 
-I have HP Z400 desktop computer running in x86_64 mode with a fedora 12
-installed on it. The computer has an nvidia (NV96) card, for which I am
-using the nouveau driver.
+> > At least the audio class and ua101 drivers don't do this and fill the
+> > buffers before they are submitted.
+> 
+> Gnaa, you're right. I _thought_ my code does it the way I described, but
+> what I wrote is how I _wanted_ to do it, not how it's currently done. I
+> have a plan to change this in the future.
+> 
+> So unfortunately, that doesn't explain it either. Sorry for the noise.
 
-Everything (meaning 2D acceleration) was working fine up to
-kernel-2.6.31.12-174.2.22, and when fedora updated to 2.6.32.xxx (now
-kernel-2.6.32.11-99) it stopped working. I also tried a vanilla 2.6.33.3
-and it doesn't work either (I wouldn't dream bothering LKML without trying
-a vanilla kernel...) Here are the symptoms:
-  when X is launched, the computer reboots instantaneously to the BIOS
-  greeting screen, leaving the computer in such a state that the BIOS is
-  enable to work (it never reaches grub, but keeps on rebooting after a few
-  seconds). Shutting down the computer is necessary to recover. I have no
-  useful log as the buffer have not been flushed: /var/log/Xorg.0.log is
-  found empty on the next reboot.
+At one point we tried an experiment, printing out the buffer and DMA 
+addresses.  I don't recall seeing anything obviously wrong, but if an 
+IOMMU was in use then that might not mean anything.  Is it possible 
+that the IOMMU mappings sometimes get messed up for addresses above 4 
+GB?
 
-I filled a bug with fedora with more info (dmesg, lspci) on
-  https://bugzilla.redhat.com/show_bug.cgi?id=578108
-but I had zero response.
+Alan Stern
 
-So to sum up:
-        2.6.31.12 + fedora patches      is working
-        2.6.32.xx + fedora patches      is crashing horribly
-        2.6.33.xx vanilla               is crashing in the same way.
-
-Does that count as a regression ? I am a little bit at a loss as how to
-provide debugging information on that one.
-
-Thanks,
-
-        Éric Brunet
