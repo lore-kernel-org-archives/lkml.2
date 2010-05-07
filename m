@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab0EGJFr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:05:47 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:34927 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673Ab0EGJFp (ORCPT
+	id S1754762Ab0EGJOE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:14:04 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:34903 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754Ab0EGJOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:05:45 -0400
+	Fri, 7 May 2010 05:14:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=geeRdn0Vw0/hGCvX2O7lsualcMFqiBPYymbNjgTOtV+Sryu3Gj1LglOASQXHCxhGta
-         +FrcchvROwk4gRAHc6BXSJmHIrihRs+/pRYQzCCYhLFSYB72xzxrewDqf9nXoaE7owz1
-         XU+1GH1RuQejLC/2SHK65XYysGQWONV8odq3o=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=bH3l0p1E2eF54PbQ+HzOr7+73wna1O9LjdLqfHCt3kDahHseWFkuT/1RfdxfiVqsR1
+         5Uv771zNU6fyYvKPizmGE358jHFgVZYSA5DGhTyfdk9Fe9OXtJzyI6TKYY1b8r4wlzYB
+         952UEn0tzfgdHx/n3ueJ/5V+HTIeKGK2zQ0MM=
 MIME-Version: 1.0
-Date: Fri, 7 May 2010 17:05:44 +0800
-Message-ID: <t2pbd0d95d71005070205s5707e3bq45d16050262c303@mail.gmail.com>
-Subject: [PATCH] Check kmalloc return value before use the buffer
-From: Steven Liu <lingjiujianke@gmail.com>
-To: Linus WALLEIJ <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1272848060-28049-1-git-send-email-linus.walleij@stericsson.com>
+References: <1272848060-28049-1-git-send-email-linus.walleij@stericsson.com>
+Date: Fri, 7 May 2010 11:13:57 +0200
+Message-ID: <i2t63386a3d1005070213u2ad32613w694be1ecbeb46856@mail.gmail.com>
+Subject: Re: [PATCH 0/7] DMAENGINE: fixes and PrimeCells
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+       linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: LiuQi <lingjiujianke@gmail.com>
----
- arch/arm/mach-u300/dummyspichip.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+Dan is this patch set OK?
 
-diff --git a/arch/arm/mach-u300/dummyspichip.c
-b/arch/arm/mach-u300/dummyspichip.c
-index 5f55012..df19f9b 100644
---- a/arch/arm/mach-u300/dummyspichip.c
-+++ b/arch/arm/mach-u300/dummyspichip.c
-@@ -64,6 +64,11 @@ static ssize_t dummy_looptest(struct device *dev,
- 		goto out;
- 	}
- 	bigrxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
-+	if (bigrxbuf_virtual == NULL) {
-+		status = -ENOMEM;
-+		kfree(bigtxbuf_virtual);
-+		goto out;
-+	}
+Sorry if you're busy, just need to check...
 
- 	/* Fill TXBUF with some happy pattern */
- 	memset(bigtxbuf_virtual, 0xAA, DMA_TEST_SIZE);
--- 
-1.6.0.3
+Patches 1 thru 4 should be uncontroversial, only affects
+our ST-Ericsson platforms and have been thorougly reviewed.
+
+As posted elsewhere this is tested on an ARM reference
+design now as well, which IMHO would make it OK to apply
+also the PL011 patch, nr 5.
+
+(OK Russell?)
+
+Nr 6 and 7 depend on changes in Russells -next branch
+so unless you want to bring in the ARM next to your tree
+as well, you can wait with these.
+
+Yours,
+Linus Walleij
