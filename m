@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab0EGJc0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:32:26 -0400
+	id S1756116Ab0EGJd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:33:57 -0400
 Received: from mga09.intel.com ([134.134.136.24]:55769 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754975Ab0EGJaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:30:12 -0400
+	id S1755530Ab0EGJaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 05:30:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,347,1270450800"; 
-   d="scan'208";a="515915115"
+   d="scan'208";a="515915064"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
        jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC][PATCH v5 13/19] To skip GRO if buffer is external currently.
-Date: Fri,  7 May 2010 17:35:00 +0800
-Message-Id: <1273224906-4874-14-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC][PATCH v5 10/19] Don't do skb recycle, if device use external buffer.
+Date: Fri,  7 May 2010 17:34:57 +0800
+Message-Id: <1273224906-4874-11-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1273224906-4874-13-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1273224906-4874-10-git-send-email-xiaohui.xin@intel.com>
 References: <1273224906-4874-1-git-send-email-xiaohui.xin@intel.com>
  <1273224906-4874-2-git-send-email-xiaohui.xin@intel.com>
  <1273224906-4874-3-git-send-email-xiaohui.xin@intel.com>
@@ -29,9 +29,6 @@ References: <1273224906-4874-1-git-send-email-xiaohui.xin@intel.com>
  <1273224906-4874-8-git-send-email-xiaohui.xin@intel.com>
  <1273224906-4874-9-git-send-email-xiaohui.xin@intel.com>
  <1273224906-4874-10-git-send-email-xiaohui.xin@intel.com>
- <1273224906-4874-11-git-send-email-xiaohui.xin@intel.com>
- <1273224906-4874-12-git-send-email-xiaohui.xin@intel.com>
- <1273224906-4874-13-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -42,24 +39,26 @@ Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- net/core/dev.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ net/core/skbuff.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index dc2f225..6c6b2fe 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2787,6 +2787,10 @@ enum gro_result dev_gro_receive(struct napi_struct *napi, struct sk_buff *skb)
- 	if (skb_is_gso(skb) || skb_has_frags(skb))
- 		goto normal;
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index ae223d2..169f22c 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -553,6 +553,12 @@ int skb_recycle_check(struct sk_buff *skb, int skb_size)
+ 	if (skb_shared(skb) || skb_cloned(skb))
+ 		return 0;
  
-+	/* currently GRO is not supported by mediate passthru */
++	/* if the device wants to do mediate passthru, the skb may
++	 * get external buffer, so don't recycle
++	 */
 +	if (dev_is_mpassthru(skb->dev))
-+		goto normal;
++		return 0;
 +
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(ptype, head, list) {
- 		if (ptype->type != type || ptype->dev || !ptype->gro_receive)
+ 	skb_release_head_state(skb);
+ 	shinfo = skb_shinfo(skb);
+ 	atomic_set(&shinfo->dataref, 1);
 -- 
 1.5.4.4
 
