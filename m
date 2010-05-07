@@ -1,49 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab0EGIJq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 04:09:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25705 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754325Ab0EGIJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 04:09:44 -0400
-Date: Fri, 7 May 2010 10:08:12 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-       ysato@users.sourceforge.jp, tony.luck@intel.com, dhowells@redhat.com,
-       kyle@mcmartin.ca, benh@kernel.crashing.org, schwidefsky@de.ibm.com,
-       jgarzik@pobox.com, hare@suse.de, felipe.balbi@nokia.com
-Subject: Re: [PATCH] removing redundant ifdefs
-Message-ID: <20100507080812.GB1880@jolsa.lab.eng.brq.redhat.com>
-References: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
- <20100506180114.GB15797@n2100.arm.linux.org.uk>
+	id S1754496Ab0EGIPI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 04:15:08 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:47830 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754438Ab0EGIPF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 04:15:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:content-type;
+        b=iNHuVMD45Fx8cuM3/ayYfMa/X1dx8Ol6o0JBEGwqpcDKcAO3PC8BVfBKQYzj7hL5B2
+         OmkNA9OLrDRG7zLVgZq1E7VlSoRoeI4OPm9lvoCk/OQlZz7vBgMyylSZr+rUmls9BZBP
+         811HHZbtpxrrMqT4jeNbPIpKHdamR1QcWIgnU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100506180114.GB15797@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <AANLkTingM7EsCtbElXTNzzjZt4kG5acQtbt5mJEIVbrW@mail.gmail.com>
+References: <AANLkTingM7EsCtbElXTNzzjZt4kG5acQtbt5mJEIVbrW@mail.gmail.com>
+Date: Fri, 7 May 2010 18:14:58 +1000
+X-Google-Sender-Auth: UPIHjDEJoIME16Rz9x206I_Iwjg
+Message-ID: <AANLkTiku49O-IKX0NwDtUoDEQyRT2VPcKiNVrSMbOR38@mail.gmail.com>
+Subject: Re: Regression: monitor fails to sleep/suspend, forced to reboot to 
+	correct. 2.6.34-rc6
+From: Lex Hider <floss@lex.hider.name>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 07:01:14PM +0100, Russell King - ARM Linux wrote:
-> On Thu, May 06, 2010 at 07:36:04PM +0200, Jiri Olsa wrote:
-> >  arch/arm/include/asm/processor.h              |    2 --
-> >  arch/arm/mach-ixp23xx/include/mach/platform.h |    3 ---
-> >  arch/arm/plat-omap/include/plat/clock.h       |    5 -----
-> 
-> I've not received any patches relating to the above, but I seem to
-> have received everything else, including stuff for PPC and x86.
-> 
-> Maybe you've negated the list of people to send patches to?
+On 7 May 2010 13:00, Justin P. Mattock <justinmattock@gmail.com> wrote:
 
-thats strange, I also did not received copy of this part,
-and I got everything else..
+    On 05/06/2010 07:30 PM, Lex Hider wrote:
 
-but I checked the lkml and it's there:
-http://lkml.org/lkml/2010/5/6/255
+        Hi,
 
-not sure whats wrong..
+        My current setup has worked on previous kernels, I think the problem
+        has begun with 2.6.32.
 
-wbr,
-jirka
+        If the monitor goes to standby/suspend it shows:
+
+        "Out of Range
+
+        H.frequency 33 KHz
+        V.frequency 31 Hz"
+
+        I can test this with running: "xset dpms force standby" or "xset dpms
+        force suspend".
+
+        I can no longer switch to console with Ctrl+Alt+F2, etc, and must
+        reboot to be able to use my system again.
+
+        Please advise what additional information/testing I can provide to
+        make sure this regression gets fixed for 2.6.34.
+
+        This bug appears to affect all recent distros as they are 2.6.32 based
+        (ubuntu lts, debian, rhel6).
+
+        I have reported the following bugs with little response. I am unsure
+        whether I have filed bugs in the correct place or against the correct
+        component.
+
+        http://bugs.freedesktop.org/show_bug.cgi?id=26423
+        https://bugzilla.redhat.com/show_bug.cgi?id=581898
+
+        Please CC me in on any replies.
+
+        Thanks,
+
+        Lex.
+        --
+        To unsubscribe from this list: send the line "unsubscribe
+linux-kernel" in
+        the body of a message to majordomo@vger.kernel.org
+        More majordomo info at  http://vger.kernel.org/majordomo-info.html
+        Please read the FAQ at  http://www.tux.org/lkml/
+
+
+    Can you do a bisect?
+    (2.6.32 - HEAD shouldn't
+    take too long).
+
+    Justin P. Mattock
+
+
+I'm still a git newbie. What specific command should I run and what
+output to post?
+You want me to do it against HEAD vs "latest known working version"?
+
+Thanks,
+
+Lex.
