@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab0EGJrq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:47:46 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:59209 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755023Ab0EGJrp (ORCPT
+	id S1756205Ab0EGJru (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:47:50 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:45670 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755023Ab0EGJrs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:47:45 -0400
-X-Sasl-enc: dJ8U/T5wiwi+oHZ6+raLCAAICFIZtds9dvUbp4TQiB9+ 1273225660
-Message-ID: <4BE3E1B9.5020602@ladisch.de>
-Date: Fri, 07 May 2010 11:47:37 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Fri, 7 May 2010 05:47:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YzKL4WlwvrjFLH1Ypz1eMllnoB97Ifbm6exJoGkBY1ivNYtNwZVt73U1Sn768lpMmr
+         E5gE+U1GiTvb0FnHpix4ycMtJWOYhknS3c6k34ToCfuRCa8OJGuzlvAfK9d+I/eHsaSg
+         gmKTdb12OEf1Sa0KUXDmKKJsd4Rk9rpUEQ/jI=
 MIME-Version: 1.0
-To: Daniel Mack <daniel@caiaq.de>
-CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-       Greg KH <gregkh@suse.de>,
-       Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-       USB list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Chris Wright <chrisw@sous-sol.org>, iommu@lists.linux-foundation.org,
-       Andi Kleen <andi@firstfloor.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Pedro Ribeiro <pedrib@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
-References: <g2h74fd948d1004141820ladc1941eo732d059dd678df0a@mail.gmail.com>	<Pine.LNX.4.44L0.1004151114490.1562-100000@iolanthe.rowland.org>	<t2r74fd948d1004191716l49dedc2p25a27da39bcc614a@mail.gmail.com> <20100507074855.GF30801@buzzloop.caiaq.de>
-In-Reply-To: <20100507074855.GF30801@buzzloop.caiaq.de>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4BE3DF5A.9070601@tuxonice.net>
+References: <v2ubd0d95d71005061941j4f9272d1he7dc9bcf5daa6457@mail.gmail.com>
+	 <CEE6BB42CAD6E947908279175AF8470A025A68CE5C@EXDCVYMBSTM006.EQ1STM.local>
+	 <z2mbd0d95d71005070017w7aa97001m2b81be6dbc1021b9@mail.gmail.com>
+	 <4BE3DF5A.9070601@tuxonice.net>
+Date: Fri, 7 May 2010 17:47:45 +0800
+Message-ID: <v2gbd0d95d71005070247j1f615a65mcbd52b5b6474206e@mail.gmail.com>
+Subject: Re: [PATCH] Check kmalloc return value before use the buffer
+From: Steven Liu <lingjiujianke@gmail.com>
+To: nigel@tuxonice.net
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Mack wrote:
-> The problem is again (summarized):
-> 
-> On 64bit machines, with 4GB or more, the allocated buffers for USB
-> transfers might be beyond the 32bit boundary. In this case, the IOMMU
-> should take care and install DMA bounce buffer to copy over the buffer
-> before the transfer actually happens. The problem is, however, that this
-> copy mechanism takes place when the URB with its associated buffer is
-> submitted, not when the EHCI will actually do the transfer.
-> 
-> In the particular case of audio drivers, though, the contents of the
-> buffers are likely to change after the submission. What we do here
-> is that we map the audio stream buffers which are used by ALSA to
-> the output URBs, so they're filled asychronously. Once the buffer is
-> actually sent out on the bus, it is believed to contain proper audio
-> date. If it doesn't, that's due to too tight audio timing or other
-> problems. This breaks once buffers are magically bounced in the
-> background.
+Hi, guy,
 
-At least the audio class and ua101 drivers don't do this and fill the
-buffers before they are submitted.
+the code in arch/arm/mach-u300/dummyspichip.c is
 
-> So - long story short: these audio buffers need to be DMA coherent.
-
-Does the USB API actually guarantee that all controllers use DMA, i.e.,
-that the buffers can be filled after submission?
+    bigtxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
+    if (bigtxbuf_virtual == NULL) {
+        status = -ENOMEM;
+        goto out;
+    }
+    bigrxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
 
 
-Regards,
-Clemens
+if kmalloc memory space for bigrxbuf_virtual is NULL, when it have
+kmalloc DMA_TEST_SIZE memory space for bigtxbuf_virtual,so ,if kmalloc
+memory for bigtxbuf_virtual success and kmalloc memory for
+bigrxbuf_virtual faild,i think we must kfree  bigtxbuf_virtual memory
+
+
+
+best regards,
+
+
+
+LiuQi
+2010/5/7 Nigel Cunningham <nigel@tuxonice.net>:
+> Hi.
+>
+> No commit comment?
+>
+> On 07/05/10 17:17, Steven Liu wrote:
+>>
+>> Signed-off-by: LiuQi<lingjiujianke@gmail.com>
+>> ---
+>>  arch/arm/mach-u300/dummyspichip.c |    5 +++++
+>>  1 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-u300/dummyspichip.c
+>> b/arch/arm/mach-u300/dummyspichip.c
+>> index 5f55012..df19f9b 100644
+>> --- a/arch/arm/mach-u300/dummyspichip.c
+>> +++ b/arch/arm/mach-u300/dummyspichip.c
+>> @@ -64,6 +64,11 @@ static ssize_t dummy_looptest(struct device *dev,
+>>                goto out;
+>>        }
+>>        bigrxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
+>> +       if (bigrxbuf_virtual == NULL) {
+>> +               status = -ENOMEM;
+>> +               kfree(bigtxbuf_virtual);
+>
+> Why kfree something you know is NULL?
+>
+> Regards,
+>
+> Nigel
+>
