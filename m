@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab0EGJqD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:46:03 -0400
-Received: from mga06.intel.com ([134.134.136.21]:47966 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753096Ab0EGJqA (ORCPT
+	id S1756021Ab0EGJrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:47:46 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:59209 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755023Ab0EGJrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:46:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,347,1270450800"; 
-   d="scan'208";a="619683838"
-Date: Fri, 7 May 2010 17:54:59 +0800
-From: Huaxu Wan <huaxu.wan@linux.intel.com>
-To: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Cc: huaxu.wan@intel.com, khali@linux-fr.org
-Subject: [PATCH 1/2] hwmon: (coretemp) Detect the thermal sensors by CPUID
-Message-ID: <20100507095459.GA12190@owl>
+	Fri, 7 May 2010 05:47:45 -0400
+X-Sasl-enc: dJ8U/T5wiwi+oHZ6+raLCAAICFIZtds9dvUbp4TQiB9+ 1273225660
+Message-ID: <4BE3E1B9.5020602@ladisch.de>
+Date: Fri, 07 May 2010 11:47:37 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Daniel Mack <daniel@caiaq.de>
+CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+       Greg KH <gregkh@suse.de>,
+       Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Chris Wright <chrisw@sous-sol.org>, iommu@lists.linux-foundation.org,
+       Andi Kleen <andi@firstfloor.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Pedro Ribeiro <pedrib@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+References: <g2h74fd948d1004141820ladc1941eo732d059dd678df0a@mail.gmail.com>	<Pine.LNX.4.44L0.1004151114490.1562-100000@iolanthe.rowland.org>	<t2r74fd948d1004191716l49dedc2p25a27da39bcc614a@mail.gmail.com> <20100507074855.GF30801@buzzloop.caiaq.de>
+In-Reply-To: <20100507074855.GF30801@buzzloop.caiaq.de>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Daniel Mack wrote:
+> The problem is again (summarized):
+> 
+> On 64bit machines, with 4GB or more, the allocated buffers for USB
+> transfers might be beyond the 32bit boundary. In this case, the IOMMU
+> should take care and install DMA bounce buffer to copy over the buffer
+> before the transfer actually happens. The problem is, however, that this
+> copy mechanism takes place when the URB with its associated buffer is
+> submitted, not when the EHCI will actually do the transfer.
+> 
+> In the particular case of audio drivers, though, the contents of the
+> buffers are likely to change after the submission. What we do here
+> is that we map the audio stream buffers which are used by ALSA to
+> the output URBs, so they're filled asychronously. Once the buffer is
+> actually sent out on the bus, it is believed to contain proper audio
+> date. If it doesn't, that's due to too tight audio timing or other
+> problems. This breaks once buffers are magically bounced in the
+> background.
 
-The thermal sensors of Intel(R) CPUs can be detected by CPUID instruction,
-indicated by CPUID.06H.EAX[0].
+At least the audio class and ua101 drivers don't do this and fill the
+buffers before they are submitted.
 
-Signed-off-by: Huaxu Wan <huaxu.wan@linux.intel.com>
----
- drivers/hwmon/coretemp.c |   24 +++++++-----------------
- 1 files changed, 7 insertions(+), 17 deletions(-)
+> So - long story short: these audio buffers need to be DMA coherent.
 
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index e9b7fbc..237c68d 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -440,6 +440,7 @@ static int __init coretemp_init(void)
- {
-        int i, err = -ENODEV;
-        struct pdev_entry *p, *n;
-+       u32 eax;
+Does the USB API actually guarantee that all controllers use DMA, i.e.,
+that the buffers can be filled after submission?
 
-        /* quick check if we run Intel */
-        if (cpu_data(0).x86_vendor != X86_VENDOR_INTEL)
-@@ -450,23 +451,12 @@ static int __init coretemp_init(void)
-                goto exit;
 
-        for_each_online_cpu(i) {
--               struct cpuinfo_x86 *c = &cpu_data(i);
--
--               /* check if family 6, models 0xe (Pentium M DC),
--                 0xf (Core 2 DC 65nm), 0x16 (Core 2 SC 65nm),
--                 0x17 (Penryn 45nm), 0x1a (Nehalem), 0x1c (Atom),
--                 0x1e (Lynnfield) */
--               if ((c->cpuid_level < 0) || (c->x86 != 0x6) ||
--                   !((c->x86_model == 0xe) || (c->x86_model == 0xf) ||
--                       (c->x86_model == 0x16) || (c->x86_model == 0x17) ||
--                       (c->x86_model == 0x1a) || (c->x86_model == 0x1c) ||
--                       (c->x86_model == 0x1e))) {
--
--                       /* supported CPU not found, but report the unknown
--                          family 6 CPU */
--                       if ((c->x86 == 0x6) && (c->x86_model > 0xf))
--                               printk(KERN_WARNING DRVNAME ": Unknown CPU "
--                                       "model 0x%x\n", c->x86_model);
-+               /* check if the CPU has thermal sensor */
-+               eax = cpuid_eax(0x06);
-+               if (!(eax & 0x01)) {
-+                       struct cpuinfo_x86 *c = &cpu_data(i);
-+                       printk_once(KERN_WARNING DRVNAME ": CPU (model=0x%x)"
-+                               " has no thermal sensor!\n", c->x86_model);
-                        continue;
-                }
-
---
-1.6.3.3.363.g725cf7
+Regards,
+Clemens
