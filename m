@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab0EGI5N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 04:57:13 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:46481 "EHLO
+	id S1755327Ab0EGI5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 04:57:51 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:46475 "EHLO
 	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1755116Ab0EGI4n (ORCPT
+	with ESMTP id S1755061Ab0EGI4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 04:56:43 -0400
+	Fri, 7 May 2010 04:56:41 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: akpm@linux-foundation.org
 Cc: torvalds@linux-foundation.org, adobriyan@gmail.com, nhorman@tuxdriver.com,
        oleg@redhat.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 02/11] rlimits: add task_struct to update_rlimit_cpu
-Date: Fri,  7 May 2010 10:55:33 +0200
-Message-Id: <1273222543-17083-2-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 10/11] rlimits: implement prlimit64 syscall
+Date: Fri,  7 May 2010 10:55:42 +0200
+Message-Id: <1273222543-17083-11-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <alpine.LFD.2.00.1005060827520.901@i5.linux-foundation.org>
 References: <alpine.LFD.2.00.1005060827520.901@i5.linux-foundation.org>
@@ -21,81 +21,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jirislaby@gmail.com>
+This patch adds the code to support the sys_prlimit64 syscall which
+modifies-and-return the rlim values of a selected process. pid 0 means
+current process.
 
-Add task_struct as a parameter to update_rlimit_cpu to be able to set
-rlimit_cpu of different task than current.
+All rlim users now either use accessors or doesn't need them due to
+- locking
+- the fact a process was just forked and nobody else knows about it
+  yet (and nobody can't thus read/write limits)
+hence it is safe to modify them now.
 
-Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
-Acked-by: James Morris <jmorris@namei.org>
+The limitation is that we stay at ulong internal representation. So
+we use the rlim64_is_infinity check where we compare to ULONG_MAX on
+32-bit which is the maximal value there.
+
+And since internally we hold limits in struct rlimit, we introduce
+converters used before and after do_prlimit call in sys_prlimit64.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/linux/posix-timers.h |    2 +-
- kernel/posix-cpu-timers.c    |    8 ++++----
- kernel/sys.c                 |    2 +-
- security/selinux/hooks.c     |    3 ++-
- 4 files changed, 8 insertions(+), 7 deletions(-)
+ include/linux/syscalls.h |    4 ++
+ kernel/sys.c             |   99 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 103 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index 4f71bf4..3e23844 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -117,6 +117,6 @@ void set_process_cpu_timer(struct task_struct *task, unsigned int clock_idx,
- 
- long clock_nanosleep_restart(struct restart_block *restart_block);
- 
--void update_rlimit_cpu(unsigned long rlim_new);
-+void update_rlimit_cpu(struct task_struct *task, unsigned long rlim_new);
- 
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index f93a5c4..3f0e3ab 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -35,6 +35,7 @@ struct oldold_utsname;
+ struct old_utsname;
+ struct pollfd;
+ struct rlimit;
++struct rlimit64;
+ struct rusage;
+ struct sched_param;
+ struct sel_arg_struct;
+@@ -667,6 +668,9 @@ asmlinkage long sys_old_getrlimit(unsigned int resource, struct rlimit __user *r
  #endif
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 9829646..0513900 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -16,13 +16,13 @@
-  * siglock protection since other code may update expiration cache as
-  * well.
-  */
--void update_rlimit_cpu(unsigned long rlim_new)
-+void update_rlimit_cpu(struct task_struct *task, unsigned long rlim_new)
- {
- 	cputime_t cputime = secs_to_cputime(rlim_new);
+ asmlinkage long sys_setrlimit(unsigned int resource,
+ 				struct rlimit __user *rlim);
++asmlinkage long sys_prlimit64(pid_t pid, unsigned int resource,
++				const struct rlimit64 __user *new_rlim,
++				struct rlimit64 __user *old_rlim);
+ asmlinkage long sys_getrusage(int who, struct rusage __user *ru);
+ asmlinkage long sys_umask(int mask);
  
--	spin_lock_irq(&current->sighand->siglock);
--	set_process_cpu_timer(current, CPUCLOCK_PROF, &cputime, NULL);
--	spin_unlock_irq(&current->sighand->siglock);
-+	spin_lock_irq(&task->sighand->siglock);
-+	set_process_cpu_timer(task, CPUCLOCK_PROF, &cputime, NULL);
-+	spin_unlock_irq(&task->sighand->siglock);
- }
- 
- static int check_clock(const clockid_t which_clock)
 diff --git a/kernel/sys.c b/kernel/sys.c
-index 1ba4522..f5183b0 100644
+index 0f8034f..d7fcd4a 100644
 --- a/kernel/sys.c
 +++ b/kernel/sys.c
-@@ -1320,7 +1320,7 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
- 	if (new_rlim.rlim_cur == RLIM_INFINITY)
- 		goto out;
+@@ -1271,6 +1271,39 @@ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
  
--	update_rlimit_cpu(new_rlim.rlim_cur);
-+	update_rlimit_cpu(current, new_rlim.rlim_cur);
- out:
- 	return 0;
- }
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 674992f..740a71f 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -2360,7 +2360,8 @@ static void selinux_bprm_committing_creds(struct linux_binprm *bprm)
- 			initrlim = init_task.signal->rlim + i;
- 			rlim->rlim_cur = min(rlim->rlim_max, initrlim->rlim_cur);
- 		}
--		update_rlimit_cpu(current->signal->rlim[RLIMIT_CPU].rlim_cur);
-+		update_rlimit_cpu(current,
-+				current->signal->rlim[RLIMIT_CPU].rlim_cur);
- 	}
+ #endif
+ 
++static inline bool rlim64_is_infinity(__u64 rlim64)
++{
++#if BITS_PER_LONG < 64
++	return rlim64 >= ULONG_MAX;
++#else
++	return rlim64 == RLIM64_INFINITY;
++#endif
++}
++
++static void rlim_to_rlim64(const struct rlimit *rlim, struct rlimit64 *rlim64)
++{
++	if (rlim->rlim_cur == RLIM_INFINITY)
++		rlim64->rlim_cur = RLIM64_INFINITY;
++	else
++		rlim64->rlim_cur = rlim->rlim_cur;
++	if (rlim->rlim_max == RLIM_INFINITY)
++		rlim64->rlim_max = RLIM64_INFINITY;
++	else
++		rlim64->rlim_max = rlim->rlim_max;
++}
++
++static void rlim64_to_rlim(const struct rlimit64 *rlim64, struct rlimit *rlim)
++{
++	if (rlim64_is_infinity(rlim64->rlim_cur))
++		rlim->rlim_cur = RLIM_INFINITY;
++	else
++		rlim->rlim_cur = (unsigned long)rlim64->rlim_cur;
++	if (rlim64_is_infinity(rlim64->rlim_max))
++		rlim->rlim_max = RLIM_INFINITY;
++	else
++		rlim->rlim_max = (unsigned long)rlim64->rlim_max;
++}
++
+ /* make sure you are allowed to change @tsk limits before calling this */
+ int do_prlimit(struct task_struct *tsk, unsigned int resource,
+ 		struct rlimit *new_rlim, struct rlimit *old_rlim)
+@@ -1340,6 +1373,72 @@ out:
+ 	return retval;
  }
  
++/* rcu lock must be held */
++static int check_prlimit_permission(struct task_struct *task)
++{
++	const struct cred *cred = current_cred(), *tcred;
++
++	tcred = __task_cred(task);
++	if ((cred->uid != tcred->euid ||
++	     cred->uid != tcred->suid ||
++	     cred->uid != tcred->uid  ||
++	     cred->gid != tcred->egid ||
++	     cred->gid != tcred->sgid ||
++	     cred->gid != tcred->gid) &&
++	     !capable(CAP_SYS_RESOURCE)) {
++		return -EPERM;
++	}
++
++	return 0;
++}
++
++SYSCALL_DEFINE4(prlimit64, pid_t, pid, unsigned int, resource,
++		const struct rlimit64 __user *, new_rlim,
++		struct rlimit64 __user *, old_rlim)
++{
++	struct rlimit64 old64, new64;
++	struct rlimit old, new;
++	struct task_struct *tsk;
++	int ret;
++
++	if (new_rlim) {
++		if (copy_from_user(&new64, new_rlim, sizeof(new64)))
++			return -EFAULT;
++		rlim64_to_rlim(&new64, &new);
++	}
++
++	/* we don't want to fail after do_rlimit */
++	if (old_rlim && !access_ok(VERIFY_WRITE, old_rlim, sizeof(old64)))
++		return -EFAULT;
++
++	rcu_read_lock();
++	tsk = pid ? find_task_by_vpid(pid) : current;
++	if (!tsk) {
++		rcu_read_unlock();
++		return -ESRCH;
++	}
++	ret = check_prlimit_permission(tsk);
++	if (ret) {
++		rcu_read_unlock();
++		return ret;
++	}
++	get_task_struct(tsk);
++	rcu_read_unlock();
++
++	ret = do_prlimit(tsk, resource, new_rlim ? &new : NULL,
++			old_rlim ? &old : NULL);
++
++	if (!ret && old_rlim) {
++		rlim_to_rlim64(&old, &old64);
++		if (WARN_ON_ONCE(__copy_to_user(old_rlim, &old64,
++						sizeof(old64))))
++			ret = -EFAULT;
++	}
++
++	put_task_struct(tsk);
++	return ret;
++}
++
+ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+ {
+ 	struct rlimit new_rlim;
 -- 
 1.7.1
 
