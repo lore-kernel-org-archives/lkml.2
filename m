@@ -1,65 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab0EGKEM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 06:04:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35500 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755023Ab0EGKEK (ORCPT
+	id S1756304Ab0EGKGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 06:06:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57030 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab0EGKGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 06:04:10 -0400
-Date: Fri, 7 May 2010 11:04:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Matthew Garrett <mjg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100507100406.GA21498@rakim.wolfsonmicro.main>
-References: <20100505185225.GA4411@srcf.ucam.org>
- <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
- <m2oa55d774e1005051356n3610d780ra42200c1785e02bd@mail.gmail.com>
- <20100505234025.GB4838@opensource.wolfsonmicro.com>
- <l2kd6200be21005052125rc43217a2r8c65bc98e7a5d3d4@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <l2kd6200be21005052125rc43217a2r8c65bc98e7a5d3d4@mail.gmail.com>
-X-Cookie: Do not stamp.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 7 May 2010 06:06:40 -0400
+Subject: Re: [RFC] perf_events: ctx_flexible_sched_in() not maximizing PMU 
+ utilization
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <AANLkTimegTx_2wHCIhyLqcYbkIJEPi3SsdwgFxU4E7Rk@mail.gmail.com>
+References: <AANLkTikQCkR2K438llKOh43yEgW-Bw7j0f8GoXR50A0V@mail.gmail.com>
+	 <1273155640.5605.300.camel@twins> <20100506171141.GA5562@nowhere>
+	 <1273167024.1642.256.camel@laptop> <1273220736.1642.318.camel@laptop>
+	 <AANLkTimegTx_2wHCIhyLqcYbkIJEPi3SsdwgFxU4E7Rk@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 May 2010 12:06:36 +0200
+Message-ID: <1273226796.1642.333.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 09:25:18PM -0700, Arve Hjønnevåg wrote:
-> On Wed, May 5, 2010 at 4:40 PM, Mark Brown
+On Fri, 2010-05-07 at 11:37 +0200, Stephane Eranian wrote:
 
-> > This really does depend heavily on system design and the intended
-> > function of the suspend on the part of the initiator.  In many systems
-> > suspend will remove sufficient power to stop audio running even if it
-> > were desired, and there's the idea with existing manually initiated
-> > suspends that the system should stop what it's doing and go into a low
-> > power, low responsiveness state.  Some systems will initiate a suspend
-> > with active audio paths (especially those to or from the AP) which they
-> > expect to be stopped.
+> > If we define lag to be the difference between perfect service and our
+> > approximation thereof: lag_i = S - s_i, then for a scheduler to be fair
+> > we must place two conditions thereon:
+> >
+> 
+> I assume S represents the time an event would be on the PMU in the
+> case of perfect scheduling. And thus S is the same for all events. The
+> index i represents the event index.
 
-> You can support both in the same driver in some cases (without a
-> switch). If the hardware cannot wake the system when it needs more
-> audio buffers, then the driver needs to block suspend while audio is
-> playing. Since suspend blockers only block opportunistic suspend, the
-> driver can also implement suspend to stop audio playback and it will
-> only be called for forced suspend.
+Ah indeed, I should have clarified that.
 
-As discussed elsewhere in the thread a suspend blocker is not desirable
-here - the AP is not doing anything useful on a voice call so blocking
-the suspend will just waste power unless runtime PM is good enough to
-mean opportunistic suspend isn't adding anything anyway.  It will avoid
-the immediate issue with loosing audio but it's not really what we want
-to happen.
+> > So eligibility can be expressed as: s_i < avg(s_i).
+> >
+> Which would mean: if my total time on PMU is less than the average
+> time on the PMU for all events thus far, then "schedule me now".
+
+Yes, although I would state the action like: "consider me for
+scheduling", since there might not be place for all eligible events on
+the PMU.
+
+[ If you start adding weights (like we do for task scheduling) this
+becomes a weighted average. ]
+
+> You would have to sort the event by increasing s_i (using the RB tree, I assume)
+
+Exactly.
+
+> > With this, we will get a schedule like:
+> >
+> > / {A, C}, {B} /
+> >
+> > We are however still fully greedy, which is still O(n), which we don't
+> > want. However if we stop being greedy and use the same heuristic we do
+> > now, stop filling the PMU at the first fail, we'll still be fair,
+> > because the algorithm ensures that.
+> >
+> Let's see if I understand with an example. Assume the PMU multiplex
+> timing is 1ms, 2 counters. s(n) = total time in ms at time n.
+> 
+> evt   A  B  C
+> s(0)  0   0  0 -> avg = 0/3=0.00, sort = A, B, C, schedule A, fail on B
+> s(1)  1   0  0 -> avg = 1/3=0.33, sort = B, C, A, schedule B, C,
+> s(2)  1   1  1 -> avg = 3/3=1.00, sort = A, B, C, schedule A, fail on B
+> s(3)  2   1  1 -> avg = 4/3=1.33, sort = B, C, A, schedule B, C
+> s(4)  2   2  2 -> avg = 6/3=2.00, sort = A, B, C, schedule A, fail on B
+> s(5)  3   2  2 -> avg = 5/3=1.66, sort = B, C, A, schedule B, C
+> 
+> What if there is no constraints on all 3 events?
+> 
+> evt   A  B  C
+> s(0)  0   0  0 -> avg = 0/3=0.00, sort = A, B, C, schedule A, B
+> s(1)  1   1  0 -> avg = 2/3=0.66, sort = C, A, B, schedule C (A, B > avg)
+> s(2)  1   1  1 -> avg = 3/3=1.00, sort = A, B, C, schedule A, B
+> s(3)  2   2  1 -> avg = 5/3=1.66, sort = C, A, B, schedule C (A, B > avg)
+> s(4)  2   2  2 -> avg = 6/3=2.00, sort = B, C, A, schedule B, C
+> s(5)  2   3  3 -> avg = 8/3=2.66, sort = A, B, C, schedule A (B, C > avg)
+> s(6)  3   3  3 -> avg = 9/3=3.00, sort = A, B, C, schedule A, B
+> 
+> When all timings are equal, sort could yield any order, it would not matter
+> because overtime each event will be scheduled if it lags.
+> 
+> Am I understanding your algorithm right?
+
+Perfectly!
+
+So the ramification of not using a greedy algorithm is that the
+potential schedule of constrained events/groups gets longer than is
+absolutely required, but I think that is something we'll have to live
+with, since O(n) just isn't a nice option.
+
+This can be illustrated if we consider B to be exclusive with both A and
+C, in that case we could end up with:
+
+/ {A}, {B}, {C} /
+
+instead of
+
+/ {A, C}, {B} /
+
+Depending on the order in which we find events sorted.
+
