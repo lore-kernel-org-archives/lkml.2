@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758698Ab0EGVqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 17:46:32 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62874 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753903Ab0EGVqb (ORCPT
+	id S1758722Ab0EGVt1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 17:49:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49682 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033Ab0EGVt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 17:46:31 -0400
-X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 May 2010 17:46:31 EDT
-Message-ID: <4BE48842.4080101@metafoo.de>
-Date: Fri, 07 May 2010 23:38:10 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
-MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-       Balaji Rao <balajirrao@openmoko.org>
-Subject: Re: [PATCH 0/5] pcf50633 - error handling & use threaded IRQs - v2
-References: <20091116060611.20162.81714.stgit@localhost.localdomain> <20091120094510.GD3733@sortiz.org>
-In-Reply-To: <20091120094510.GD3733@sortiz.org>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 7 May 2010 17:49:26 -0400
+Date: Fri, 7 May 2010 14:47:56 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, jens.axboe@oracle.com
+Subject: [PATCH] paride: fix menu indentation
+Message-Id: <20100507144756.fbebdebe.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4BE48ADC.00E3:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Samuel Ortiz wrote:
-> Hi Dmitry,
->
-> On Sun, Nov 15, 2009 at 10:08:37PM -0800, Dmitry Torokhov wrote:
-> ... I applied it to my for-next branch. I'd appreciate if Lars or
-> Balaji could give it a try and report problems with it.
->
-> Cheers, Samuel.
-Hi
+Make the PARIDE menu be displayed correctly, with proper/expected
+indentation, by moving the GDROM kconfig symbol, which was
+splitting the PARIDE kconfig symbol from its dependent symbols.
 
-I was just wondering what happened to this patchset. I can find it
-anywhere in the mfd tree.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/block/Kconfig |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-- - Lars
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org
-
-iEUEARECAAYFAkvkiEEACgkQBX4mSR26RiM6qwCeKWRF6VuZKzEuLk0RkefQV5Mx
-kUIAmIHNoj/41wR/GcADpq4lQZV3jis=
-=EjLk
------END PGP SIGNATURE-----
-
+--- linux-2.6.34-rc6-git5.orig/drivers/block/Kconfig
++++ linux-2.6.34-rc6-git5/drivers/block/Kconfig
+@@ -76,6 +76,17 @@ config BLK_DEV_XD
+ 
+ 	  It's pretty unlikely that you have one of these: say N.
+ 
++config GDROM
++	tristate "SEGA Dreamcast GD-ROM drive"
++	depends on SH_DREAMCAST
++	help
++	  A standard SEGA Dreamcast comes with a modified CD ROM drive called a
++	  "GD-ROM" by SEGA to signify it is capable of reading special disks
++	  with up to 1 GB of data. This drive will also read standard CD ROM
++	  disks. Select this option to access any disks in your GD ROM drive.
++	  Most users will want to say "Y" here.
++	  You can also build this as a module which will be called gdrom.
++
+ config PARIDE
+ 	tristate "Parallel port IDE device support"
+ 	depends on PARPORT_PC
+@@ -103,17 +114,6 @@ config PARIDE
+ 	  "MicroSolutions backpack protocol", "DataStor Commuter protocol"
+ 	  etc.).
+ 
+-config GDROM
+-	tristate "SEGA Dreamcast GD-ROM drive"
+-	depends on SH_DREAMCAST
+-	help
+-	  A standard SEGA Dreamcast comes with a modified CD ROM drive called a
+-	  "GD-ROM" by SEGA to signify it is capable of reading special disks
+-	  with up to 1 GB of data. This drive will also read standard CD ROM
+-	  disks. Select this option to access any disks in your GD ROM drive.
+-	  Most users will want to say "Y" here.
+-	  You can also build this as a module which will be called gdrom.
+-
+ source "drivers/block/paride/Kconfig"
+ 
+ config BLK_CPQ_DA
