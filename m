@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab0EGK4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 06:56:54 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:36575 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755673Ab0EGK4w (ORCPT
+	id S1756631Ab0EGK5k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 06:57:40 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50141 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756557Ab0EGK5j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 06:56:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=iGazL/cBjFpXEFRFk4x6qggS5vL8UAaGPVEFo0OMj1gNGddmh8X/R3EFfd+fIwk6s+
-         P1kG6Oy5wW20Z4Kr0pPeNQdL7zMJsPI7VrrwKixhuyWvsIIZS0bKYf2hAcMQlFrZxHGY
-         qEy1YHVkTgH3t9+MY4a3Fc6eRgLaR+usbK65s=
+	Fri, 7 May 2010 06:57:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <1264620749-24527-4-git-send-email-adharmap@codeaurora.org>
-References: <1264620749-24527-1-git-send-email-adharmap@codeaurora.org>
-	 <1264620749-24527-4-git-send-email-adharmap@codeaurora.org>
-Date: Fri, 7 May 2010 12:56:49 +0200
-Message-ID: <h2z63386a3d1005070356r23cee2c7m5d0ac534ec0182d4@mail.gmail.com>
-Subject: Re: [PATCH 3/5] gic: Add set_type callback
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: adharmap@codeaurora.org
-Cc: linux-arm-kernel@lists.infradead.org,
-       Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Yinghai Lu <yinghai@kernel.org>, Tony Lindgren <tony@atomide.com>,
-       Santosh Shilimkar <santosh.shilimkar@ti.com>,
+In-Reply-To: <20100507100406.GA21498@rakim.wolfsonmicro.main>
+References: <20100505185225.GA4411@srcf.ucam.org>
+	 <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
+	 <m2oa55d774e1005051356n3610d780ra42200c1785e02bd@mail.gmail.com>
+	 <20100505234025.GB4838@opensource.wolfsonmicro.com>
+	 <l2kd6200be21005052125rc43217a2r8c65bc98e7a5d3d4@mail.gmail.com>
+	 <20100507100406.GA21498@rakim.wolfsonmicro.main>
+Date: Fri, 7 May 2010 03:57:37 -0700
+Message-ID: <w2kd6200be21005070357r9aad2896l355168a23bf85eae@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Matthew Garrett <mjg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
        Kevin Hilman <khilman@deeprootsystems.com>,
-       Kalle Valo <kalle.valo@iki.fi>, Jean Pihet <jpihet@mvista.com>,
-       Linus Walleij <linus.walleij@stericsson.com>,
-       Colin Tuckley <colin.tuckley@arm.com>,
-       Philby John <pjohn@in.mvista.com>,
-       Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-       Alessandro Rubini <rubini@unipv.it>,
-       Andrea Gallo <andrea.gallo@stericsson.com>,
-       linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-       Abhijeet Dharmapurikar <adharmap@quicinc.com>,
-       Rabin VINCENT <rabin.vincent@stericsson.com>,
-       Mian.Yousaf.Kaukab@stericsson.com
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
+       mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/1/27  <adharmap@codeaurora.org>:
-
-> From: Abhijeet Dharmapurikar <adharmap@quicinc.com>
+2010/5/7 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Wed, May 05, 2010 at 09:25:18PM -0700, Arve Hjønnevåg wrote:
+>> On Wed, May 5, 2010 at 4:40 PM, Mark Brown
 >
-> Add gic_set_type callback to set an irq as level or edge triggered type
+>> > This really does depend heavily on system design and the intended
+>> > function of the suspend on the part of the initiator.  In many systems
+>> > suspend will remove sufficient power to stop audio running even if it
+>> > were desired, and there's the idea with existing manually initiated
+>> > suspends that the system should stop what it's doing and go into a low
+>> > power, low responsiveness state.  Some systems will initiate a suspend
+>> > with active audio paths (especially those to or from the AP) which they
+>> > expect to be stopped.
+>
+>> You can support both in the same driver in some cases (without a
+>> switch). If the hardware cannot wake the system when it needs more
+>> audio buffers, then the driver needs to block suspend while audio is
+>> playing. Since suspend blockers only block opportunistic suspend, the
+>> driver can also implement suspend to stop audio playback and it will
+>> only be called for forced suspend.
+>
+> As discussed elsewhere in the thread a suspend blocker is not desirable
+> here - the AP is not doing anything useful on a voice call so blocking
+> the suspend will just waste power unless runtime PM is good enough to
+> mean opportunistic suspend isn't adding anything anyway.  It will avoid
+> the immediate issue with loosing audio but it's not really what we want
+> to happen.
+>
 
-Abhijeet, will you pursue this patchset?
+I was talking about audio from the AP. Why would you ever turn off
+another core's audio path on suspend?
 
-Else we will pick it up and propose our solution for the U8500 needs which
-are similar.
-
-Yours,
-Linus Walleij
+-- 
+Arve Hjønnevåg
