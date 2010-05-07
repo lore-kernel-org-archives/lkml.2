@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab0EGClQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 22:41:16 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:44237 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab0EGClO (ORCPT
+	id S1753313Ab0EGClc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 22:41:32 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44303 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752486Ab0EGCla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 22:41:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=GB6lRZnqJN+w8rm32vKRbfG7pVJt11bdHjg5myzlYy/W105Dp8ugiC1QiCiPWCB9Ey
-         feI0SxiQ0SF5wRY8PeCfdS/fWUMKjRm6k2hHVgreanDwBuH5BwH/CvQDE7K7tiqssyw5
-         dJ+V+p9o/Qtk9iMP8NT6iVFis89+OmGz66Kz4=
+	Thu, 6 May 2010 22:41:30 -0400
+Message-ID: <4BE37DDD.8000402@cox.net>
+Date: Thu, 06 May 2010 22:41:33 -0400
+From: James Kosin <james.kosin.04@cnu.edu>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Date: Fri, 7 May 2010 10:41:14 +0800
-Message-ID: <v2ubd0d95d71005061941j4f9272d1he7dc9bcf5daa6457@mail.gmail.com>
-Subject: [PATCH] Check kmalloc return value before use the buffer
-From: Steven Liu <lingjiujianke@gmail.com>
-To: linus.walleij@stericsson.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+References: <eGToe-3b9-5@gated-at.bofh.it> <eGUaB-4mU-1@gated-at.bofh.it> <eGUtX-4Kd-3@gated-at.bofh.it> <eGWvL-7Fy-1@gated-at.bofh.it> <eGWFt-7S7-17@gated-at.bofh.it> <eGWP9-8jH-17@gated-at.bofh.it>
+In-Reply-To: <eGWP9-8jH-17@gated-at.bofh.it>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,linus.walleij
+On 5/5/2010 8:10 PM, Tony Lindgren wrote:
+> * Brian Swetland <swetland@google.com> [100505 16:51]:
+>> On Wed, May 5, 2010 at 4:47 PM, Tony Lindgren <tony@atomide.com> wrote:
+>>> * Brian Swetland <swetland@google.com> [100505 14:34]:
+>>>> On Wed, May 5, 2010 at 2:12 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+<<-- snip -->>
+>>>>> At no point does the user program have to communicate anything to the
+>>>>> modem driver, and at no point does it have to do anything out of the
+>>>>> ordinary except to enable and disable a suspend blocker.
+>>>>
+>>>> Exactly -- and you can use the same style of overlapping suspend
+>>>> blockers with other drivers than input, if the input interface is not
+>>>> suitable for the particular interaction.
+>>>
+>>> Would the suspend blockers still be needed somewhere in the example
+>>> above?
+>>
+>> How often would we retry suspending?
+> 
+> Well based on some timer, the same way the screen blanks? Or five
+> seconds of no audio play? So if the suspend fails, then reset whatever
+> userspace suspend policy timers.
+>  
 
-          Check kmalloc return value before use the buffer
+Tony,
+Wouldn't this be handled by the idle task, or task manager?
 
+When all tasks are suspended and not doing anything that should be the
+first clue that a real suspend cycle could be attempted.
 
-Signed-off-by: LiuQi <lingjiujianke@gmail.com>
----
- arch/arm/mach-u300/dummyspichip.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-u300/dummyspichip.c
-b/arch/arm/mach-u300/dummyspichip.c
-index 962f9de..4f2af7c 100644
---- a/arch/arm/mach-u300/dummyspichip.c
-+++ b/arch/arm/mach-u300/dummyspichip.c
-@@ -63,6 +63,11 @@ static ssize_t dummy_looptest(struct device *dev,
- 		goto out;
- 	}
- 	bigrxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
-+	if (bigtxbuf_virtual == NULL) {
-+		status = -ENOMEM;
-+		kfree(bigtxbuf_virtual);
-+		goto out;
-+	}
-
- 	/* Fill TXBUF with some happy pattern */
- 	memset(bigtxbuf_virtual, 0xAA, DMA_TEST_SIZE);
--- 
-1.6.0.3
+James
