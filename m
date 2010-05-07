@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007Ab0EGJcm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:32:42 -0400
+	id S1756083Ab0EGJde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:33:34 -0400
 Received: from mga09.intel.com ([134.134.136.24]:55769 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755596Ab0EGJaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:30:10 -0400
+	id S1755563Ab0EGJaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 05:30:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,347,1270450800"; 
-   d="scan'208";a="515915101"
+   d="scan'208";a="515915081"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
        jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC][PATCH v5 12/19] Add a hook to intercept external buffers from NIC driver.
-Date: Fri,  7 May 2010 17:34:59 +0800
-Message-Id: <1273224906-4874-13-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC][PATCH v5 11/19] Use callback to deal with skb_release_data() specially.
+Date: Fri,  7 May 2010 17:34:58 +0800
+Message-Id: <1273224906-4874-12-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1273224906-4874-12-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1273224906-4874-11-git-send-email-xiaohui.xin@intel.com>
 References: <1273224906-4874-1-git-send-email-xiaohui.xin@intel.com>
  <1273224906-4874-2-git-send-email-xiaohui.xin@intel.com>
  <1273224906-4874-3-git-send-email-xiaohui.xin@intel.com>
@@ -30,74 +30,51 @@ References: <1273224906-4874-1-git-send-email-xiaohui.xin@intel.com>
  <1273224906-4874-9-git-send-email-xiaohui.xin@intel.com>
  <1273224906-4874-10-git-send-email-xiaohui.xin@intel.com>
  <1273224906-4874-11-git-send-email-xiaohui.xin@intel.com>
- <1273224906-4874-12-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-The hook is called in netif_receive_skb().
+If buffer is external, then use the callback to destruct
+buffers.
+
 Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- net/core/dev.c |   35 +++++++++++++++++++++++++++++++++++
- 1 files changed, 35 insertions(+), 0 deletions(-)
+ net/core/skbuff.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 37b389a..dc2f225 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2548,6 +2548,37 @@ err:
- EXPORT_SYMBOL(netdev_mp_port_prep);
- #endif
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 169f22c..5d93b2d 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -385,6 +385,11 @@ static void skb_clone_fraglist(struct sk_buff *skb)
  
-+#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+/* Add a hook to intercept mediate passthru(zero-copy) packets,
-+ * and insert it to the socket queue owned by mp_port specially.
-+ */
-+static inline struct sk_buff *handle_mpassthru(struct sk_buff *skb,
-+					       struct packet_type **pt_prev,
-+					       int *ret,
-+					       struct net_device *orig_dev)
-+{
-+	struct mpassthru_port *mp_port = NULL;
-+	struct sock *sk = NULL;
+ static void skb_release_data(struct sk_buff *skb)
+ {
++	/* check if the skb has external buffers, we have use destructor_arg
++	 * here to indicate
++	 */
++	struct skb_external_page *ext_page = skb_shinfo(skb)->destructor_arg;
 +
-+	if (!dev_is_mpassthru(skb->dev))
-+		return skb;
-+	mp_port = skb->dev->mp_port;
-+
-+	if (*pt_prev) {
-+		*ret = deliver_skb(skb, *pt_prev, orig_dev);
-+		*pt_prev = NULL;
-+	}
-+
-+	sk = mp_port->sock->sk;
-+	skb_queue_tail(&sk->sk_receive_queue, skb);
-+	sk->sk_state_change(sk);
-+
-+	return NULL;
-+}
-+#else
-+#define handle_mpassthru(skb, pt_prev, ret, orig_dev)     (skb)
-+#endif
-+
- /**
-  *	netif_receive_skb - process receive buffer from network
-  *	@skb: buffer to process
-@@ -2629,6 +2660,10 @@ int netif_receive_skb(struct sk_buff *skb)
- ncls:
- #endif
+ 	if (!skb->cloned ||
+ 	    !atomic_sub_return(skb->nohdr ? (1 << SKB_DATAREF_SHIFT) + 1 : 1,
+ 			       &skb_shinfo(skb)->dataref)) {
+@@ -397,6 +402,12 @@ static void skb_release_data(struct sk_buff *skb)
+ 		if (skb_has_frags(skb))
+ 			skb_drop_fraglist(skb);
  
-+	/* To intercept mediate passthru(zero-copy) packets here */
-+	skb = handle_mpassthru(skb, &pt_prev, &ret, orig_dev);
-+	if (!skb)
-+		goto out;
- 	skb = handle_bridge(skb, &pt_prev, &ret, orig_dev);
- 	if (!skb)
- 		goto out;
++		/* if the skb has external buffers, use destructor here,
++		 * since after that skb->head will be kfree, in case skb->head
++		 * from external buffer cannot use kfree to destroy.
++		 */
++		if (dev_is_mpassthru(skb->dev) && ext_page && ext_page->dtor)
++			ext_page->dtor(ext_page);
+ 		kfree(skb->head);
+ 	}
+ }
 -- 
 1.5.4.4
 
