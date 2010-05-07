@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab0EGXDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 19:03:15 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45579 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753398Ab0EGXDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 19:03:13 -0400
-Date: Fri, 7 May 2010 16:00:54 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Len Brown <lenb@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [git pull request] ACPI patches for 2.6.34-rc6
-In-Reply-To: <201005080039.45533.rjw@sisk.pl>
-Message-ID: <alpine.LFD.2.00.1005071600030.901@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1005062216430.10792@localhost.localdomain> <alpine.LFD.2.00.1005061926460.901@i5.linux-foundation.org> <201005080039.45533.rjw@sisk.pl>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754068Ab0EGXIw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 19:08:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58323 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753398Ab0EGXIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 19:08:51 -0400
+Message-ID: <4BE49D76.5000001@zytor.com>
+Date: Fri, 07 May 2010 16:08:38 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg KH <greg@kroah.com>
+CC: Ky Srinivasan <ksrinivasan@novell.com>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Hank Janssen <hjanssen@microsoft.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Alok Kataria <akataria@vmware.com>
+Subject: Re: RFC - Cleaned up hypervisor layer
+References: <4BE49778.6060800@zytor.com> <20100507230210.GB24877@kroah.com>
+In-Reply-To: <20100507230210.GB24877@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Sat, 8 May 2010, Rafael J. Wysocki wrote:
-
-> On Friday 07 May 2010, Linus Torvalds wrote:
-> > 
-> > Btw, why don't we just force the SCI_EN by hand?
+On 05/07/2010 04:02 PM, Greg KH wrote:
+> On Fri, May 07, 2010 at 03:43:04PM -0700, H. Peter Anvin wrote:
+>> This patch implements a cleaned up hypervisor layer, plus cleans up some
+>> of the aspects of both Hank's MS-HyperV patch and the existing VMware
+>> driver.  In particular, the MS-HyperV information is private
+>> information, per system, not per CPU, and can thus simply be stored in
+>> an ordinary global variable.  This also turns the hypervisor detection
+>> into an information structure instead of just an identifier.
 > 
-> Because there are boxes that are broken right away by this.
+> This looks great to me, thanks for doing this work.
 > 
-> I have one on my desk in front of me. :-)
+> As this is a diff on top of my previous patch, do you want me to merge
+> it in with it and resend it, or will you?
+> 
 
-Also if we check whether it was already set before?
+I was planning to put this on top of your patch as a second commit, just
+to preserve history and authorship.
 
-The thing is, if that bit is clear (_after_ we've done the regular ACPI 
-setup), the box can't work correctly as far as I know.
-
-			Linus
+	-ha
