@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab0EGQKJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 12:10:09 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:57466 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab0EGQKD (ORCPT
+	id S1756980Ab0EGQKg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 12:10:36 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:51891 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755974Ab0EGQKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 12:10:03 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -24.389
-Message-ID: <4BE43B53.9060502@tremplin-utc.net>
-Date: Fri, 07 May 2010 18:09:55 +0200
-From: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100422 Mandriva/3.0.4-6mdv2010.1 (2010.1) Thunderbird/3.0.4
+	Fri, 7 May 2010 12:10:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=KC7cQJ+z2tT2SGoJ9SnrYsTGTpjkEXICm5IiM//gnkx9wfu17F9m7vWbsJs1Xbw1td
+         uC0joeA8Xhy8Ta88e3PV6r9Zz4eWHPFjspSEHhDIeCXMiSNPap3Dc+91cUs8UM762Qty
+         KRn8ksAMt1xGnnmotQoceMB12yw7FBCRybIS0=
 MIME-Version: 1.0
-To: Oliver Neukum <oneukum@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-       Pavel Herrmann <morpheus.ibis@gmail.com>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [patch]hp_accel: Fix race in device removal
-References: <201005071804.20462.oneukum@suse.de>
-In-Reply-To: <201005071804.20462.oneukum@suse.de>
+In-Reply-To: <j2r1b68c6791005070531u57b4b1basc56d45d0e06b1d04@mail.gmail.com>
+References: <1272848060-28049-1-git-send-email-linus.walleij@stericsson.com>
+	 <i2t63386a3d1005070213u2ad32613w694be1ecbeb46856@mail.gmail.com>
+	 <20100507093256.GB19936@n2100.arm.linux.org.uk>
+	 <x2j63386a3d1005070443yfadbaf3ct8686a8f7aae6412f@mail.gmail.com>
+	 <j2r1b68c6791005070531u57b4b1basc56d45d0e06b1d04@mail.gmail.com>
+Date: Fri, 7 May 2010 18:10:28 +0200
+Message-ID: <k2k63386a3d1005070910kcdb516dcga60c24043b1b44de@mail.gmail.com>
+Subject: Re: [PATCH 0/7] DMAENGINE: fixes and PrimeCells
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: jassi brar <jassisinghbrar@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       Ben Dooks <ben-linux@fluff.org>,
+       Dan Williams <dan.j.williams@intel.com>, linux-mmc@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 07-05-10 18:04, Oliver Neukum schreef:
-> From 505056649f5ecb1ebb086981243b9870ce961a87 Mon Sep 17 00:00:00 2001
-> From: Oliver Neukum <oliver@neukum.org>
-> Date: Fri, 7 May 2010 18:02:07 +0200
-> Subject: [PATCH] hp_accel: Fix race in device removal
-> 
-> The work queue has to be flushed after the device has been made
-> inaccessible.
-> 
-> Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Ah, flushing the work before unregistering the device seemed more
-logical... but now that you mention it, I understand the race.
+2010/5/7 jassi brar <jassisinghbrar@gmail.com>:
+> On Fri, May 7, 2010 at 8:43 PM, Linus Walleij
+> <linus.ml.walleij@gmail.com> wrote:
+>> 2010/5/7 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+>>>
+>>> Or let me put it another way - if people are happy for Linux to support
+>>> new ARM CPU architectures, but with very little attention given to DMA
+>>> support on those architectures, then feel free to box the ARM platforms
+>>> into a corner on DMA support - but on the understanding that _you_ will
+>>> have to deal with the DMA API breakage on those architectures yourself.
+>>> Because with ARM platforms not having DMA support, there's absolutely
+>>> no way to run any checks what so ever on DMA when the CPU architecture
+>>> support is created.
+>>
+>> I'm doing the best I can to meet exactly this goal. The changes done in
+>> the DMA engine were done towards the end of making the DMA
+>> engine support *any* DMA controller for the PrimeCells,
+>
+> with due respect, I think DMA Engine API is very restricting. And it is not
+> just the 'async' character of it but also some desirable features like
+> Circular-Linked-Buffer are missing. It may be good enough for Mem->Mem
+> but is found wanting for Mem<->Dev transfers.
+> I would like to see some new API defined that address reasonable
+> requirements of extant platform specific implementations.
 
-Thanks
+I understand these concerns, however I believe the DMAdevices/DMAengine
+API can surely be refactored towards this end. Dan Williams has proved
+*very* cooperative in doing changes and testing for regressions in the
+DMAengine, and I see no fundamental problem with it.
 
-Acked-by: Eric Piel <eric.piel@tremplin-utc.net>
+Surely circular linked buffers and other goodies can be retrofitted into the
+DMAengine without a complete redesign? I only see a new slave call
+to support that really, in addition to the existing sglist interface.
 
+I remember we discussed circular buffer device->device transfers with
+Dan some while ago, and he was all for including that but wanted some
+real-world example to go along with it.
 
-> ---
->  drivers/hwmon/hp_accel.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hwmon/hp_accel.c b/drivers/hwmon/hp_accel.c
-> index c8ab505..7580f55 100644
-> --- a/drivers/hwmon/hp_accel.c
-> +++ b/drivers/hwmon/hp_accel.c
-> @@ -328,8 +328,8 @@ static int lis3lv02d_remove(struct acpi_device *device, int type)
->  	lis3lv02d_joystick_disable();
->  	lis3lv02d_poweroff(&lis3_dev);
->  
-> -	flush_work(&hpled_led.work);
->  	led_classdev_unregister(&hpled_led.led_classdev);
-> +	flush_work(&hpled_led.work);
->  
->  	return lis3lv02d_remove_fs(&lis3_dev);
->  }
+>> So now I guess I have to make it tick on the block known as PL080/PL081
+>> as well, and I'll have a try at it.
+>
+> I always hoped the pl080 core would be segregated out of S3C implementation,
+> but for some new common DMA API.
 
+Well, I don't see any fundamental problems with DMAengine, just wanted
+extensions really.
+
+I don't know if I'll be able to provide the nice breakout of the PL080 core
+from S3C that you'd like to see but I will try to hack something up as
+a proof-of-concept that the DMAengine can support the PrimeCells
+found on the RealView.
+
+Yours,
+Linus Walleij
