@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab0EGPUW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 11:20:22 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58842 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755343Ab0EGPUU (ORCPT
+	id S1755863Ab0EGPZG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 11:25:06 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:39951 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755422Ab0EGPZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 11:20:20 -0400
-Date: Fri, 7 May 2010 11:20:18 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Du, Alek" <alek.du@intel.com>
-cc: Ondrej Zary <linux@rainbow-software.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       USB list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
- (WKOC_E) and disconnect (WKDISC_E)
-In-Reply-To: <20100507093200.28ecd63c@dxy2>
-Message-ID: <Pine.LNX.4.44L0.1005071106570.1804-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 7 May 2010 11:25:04 -0400
+Subject: Re: UBIFS: Oops while rebooting 2.6.34-rc6
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Adrian Hunter <adrian.hunter@nokia.com>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Sven Neumann <s.neumann@raumfeld.com>
+In-Reply-To: <20100507131652.GT30801@buzzloop.caiaq.de>
+References: <20100507131652.GT30801@buzzloop.caiaq.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 May 2010 18:23:46 +0300
+Message-ID: <1273245826.4537.294.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 07 May 2010 15:24:40.0293 (UTC) FILETIME=[694F6150:01CAEDF9]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 May 2010, Du, Alek wrote:
-
-> Alan,
+On Fri, 2010-05-07 at 15:16 +0200, Daniel Mack wrote:
+> Hi,
 > 
-> As I tested, with the second patch, after entering phy low power mode, the port cannot detect any USB devices that plugged in.
+> We've had a kernel Oops today when rebooting an ARM PXA based machine
+> while file I/O via SSH was outstanding.
+> 
+> Daniel
+> 
+> # reboot
+> # [  671.190085] UBIFS: un-mount UBI device 0, volume 1
+> The system is going down NOW!
+> Sent SIGTERM to all processes
+> [  672.083833] Unable to handle kernel NULL pointer dereference at virtual address 000000ac
+> [  672.094587] pgd = c0004000
+> [  672.097301] [000000ac] *pgd=00000000
+> [  672.100850] Internal error: Oops: 817 [#1]
+> [  672.104919] last sysfs file: /sys/devices/platform/spi_gpio.0/spi0.2/value
 
-Ooh, that's not good.  It almost violates the EHCI spec (see the last
-line on p.60 in table 4.4).
+It's Firday, and I want to go home, so here is another quick idea for
+you where to dig.
 
-> I also confirm that after set PHCD flag, any write to PORTSC is illegal. (I have another patch will send out soon named "Clear PHCD before resuming",
-> but the patch is not related with this one) 
+When the system reboots it re-mounts the FS to RO mode, usually. And
+there is some emergency remount business (see do_emergency_remount()),
+which will re-mount the FS even if there are files opened for writing.
 
-I'm afraid we are going to have to modify the wakeup bits in PORTSC
-after PHCD is set.  Can we clear PHCD, modify PORTSC, and then set PHCD
-again?
+So, if there is a UBIFS or VFS bug, and somehow one process is in
+make_reservation() and is about to write something, and another process
+managed to re-mount the FS to R/O mode, then we may ooops, because UBIFS
+frees these 'wbuf' objects when it is mounted to R/O (see
+ubifs_remount_ro()).
 
-> So it seems wakeup bits must set before set PHCD. So we may revise the flowchart a little bit, for example, if the HCD has hostpc,
-> then set the wakeup bits like before, if the HCD is the normal one, then go your new way?
+So, inject printks to ubifs_remount_ro() to check this theory.
 
-For normal HCDs, the wakeup bits don't matter when the controller is in
-D0.  Therefore we can continue to set them as before during bus or port
-suspend.
+Have a nice weekend and bughunting!
 
-But during controller suspend, if the controller isn't supposed to be
-remote-wakeup-enabled then we will need to clear the wakeup bits
-(and set them again during controller resume).  Will that work?
-
-Alan Stern
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
