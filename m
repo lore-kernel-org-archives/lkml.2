@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab0EGRNH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 13:13:07 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:60944 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423Ab0EGRNF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 13:13:05 -0400
-Date: Fri, 7 May 2010 18:12:18 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
-       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100507171218.GA23142@srcf.ucam.org>
-References: <20100506134015.GA23426@srcf.ucam.org> <20100506170151.GA30928@atomide.com> <20100506170956.GA28104@srcf.ucam.org> <20100506171453.GC30928@atomide.com> <20100506172201.GA28578@srcf.ucam.org> <20100506173807.GD30928@atomide.com> <20100506174331.GA29103@srcf.ucam.org> <20100506183335.GE30928@atomide.com> <20100506184418.GA30669@srcf.ucam.org> <20100507020541.GH30928@atomide.com>
+	id S1755565Ab0EGRRB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 13:17:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3861 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754937Ab0EGRRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 13:17:00 -0400
+Message-ID: <4BE44AF4.3090303@redhat.com>
+Date: Fri, 07 May 2010 13:16:36 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100507020541.GH30928@atomide.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Robert Richter <robert.richter@amd.com>
+CC: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+       linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
+       peterz@infradead.org, efault@gmx.de, tglx@linutronix.de, mingo@elte.hu,
+       linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf probe: Support DW_OP_call_frame_cfa in debuginfo
+References: <20100412171728.3790.98217.stgit@localhost6.localdomain6> <tip-a34a985499895a46a4dacff727d0fbc63cdc75e8@git.kernel.org> <20100507163321.GB15333@erda.amd.com>
+In-Reply-To: <20100507163321.GB15333@erda.amd.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 07:05:41PM -0700, Tony Lindgren wrote:
-> * Matthew Garrett <mjg@redhat.com> [100506 11:39]:
-> > And the untrusted userspace code that's waiting for a network packet? 
-> > Adding a few seconds of latency isn't an option here.
-> 
-> Hmm well hitting retention and wake you can basically do between
-> jiffies. Hitting off mode in idle has way longer latencies,
-> but still in few hundred milliseconds or so, not seconds.
+Hi,
 
-The situation is this. You've frozen most of your userspace because you 
-don't trust the applications. One of those applications has an open 
-network socket, and policy indicates that receiving a network packet 
-should generate a wakeup, allow the userspace application to handle the 
-packet and then return to sleep. What mechanism do you use to do that?
+Robert Richter wrote:
+> On 15.04.10 07:29:18, tip-bot for Masami Hiramatsu wrote:
+>> diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+>> index 2a27132..310ce89 100644
+>> --- a/tools/perf/util/probe-finder.h
+>> +++ b/tools/perf/util/probe-finder.h
+>> @@ -42,6 +42,7 @@ struct probe_finder {
+>>  	struct list_head	lcache;		/* Line cache for lazy match */
+>>  
+>>  	/* For variable searching */
+>> +	Dwarf_CFI		*cfi;		/* Call Frame Information */
+> 
+> I get the following complile error:
+> 
+> gcc -o builtin-probe.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstack-protector -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wvolatile-register-var -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement  -fstack-protector-all -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -I/usr/include/elfutils -DDWARF_SUPPORT -DNO_NEWT_SUPPORT -DNO_LIBPERL -DSHA1_HEADER='<openssl/sha.h>'  builtin-probe.c
+> In file included from builtin-probe.c:43:
+> util/probe-finder.h:45: error: expected specifier-qualifier-list before ‘Dwarf_CFI’
+> make: *** [builtin-probe.o] Error 1
+> build script error: 2
+> 
+> git grep only finds the following:
+> 
+>  $ git grep Dwarf_CFI 
+>  tools/perf/util/probe-finder.h: Dwarf_CFI               *cfi;           /* Call Frame Information */
+> 
+> Am I missing something?
+
+Hmm, it seems that Dwarf_CFI is not defined in library.
+(it is defined as a type in /usr/include/elfutils/libdw.h)
+Could you tell me what version of elfutils you are using?
+
+Thank you,
+
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
