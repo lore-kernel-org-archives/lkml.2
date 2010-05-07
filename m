@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab0EGQ5P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 12:57:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752699Ab0EGQ5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 12:57:14 -0400
-Subject: Re: fanotify issues in 2.6.34-rc6-next-20100506
-From: Eric Paris <eparis@redhat.com>
-To: Anders Blomdell <anders.blomdell@control.lth.se>
-Cc: Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org
-In-Reply-To: <4BE3DC60.7080105@control.lth.se>
-References: <4BE3DC60.7080105@control.lth.se>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 May 2010 12:57:01 -0400
-Message-ID: <1273251421.15368.208.camel@localhost>
-Mime-Version: 1.0
+	id S1755117Ab0EGRIy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 13:08:54 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:48497 "EHLO
+	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252Ab0EGRIx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 13:08:53 -0400
+Message-ID: <4BE44901.9060508@cs.columbia.edu>
+Date: Fri, 07 May 2010 13:08:17 -0400
+From: Oren Laadan <orenl@cs.columbia.edu>
+Organization: Columbia University
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Manfred Spraul <manfred@colorfullife.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
+       Pavel Emelyanov <xemul@openvz.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH v21 053/100] c/r (ipc): allow allocation of a desired
+ ipc identifier
+References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu> <1272723382-19470-54-git-send-email-orenl@cs.columbia.edu> <4BE440AD.20300@colorfullife.com>
+In-Reply-To: <4BE440AD.20300@colorfullife.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-07 at 11:24 +0200, Anders Blomdell wrote:
 
-> seems to lose/corrupt events. For instance running 'fanotify -c /dir/to/watch'
-> and then running the command 'cd /dir/to/watch ; touch a b c d e f g h i j k l'
->  might generate (results are more or less random):
 
-sometimes I'm not the sharpest knife in the drawer.  switch statements
-are hard.
+Manfred Spraul wrote:
+> Hi Oren,
+> 
+> 
+> On 05/01/2010 04:15 PM, Oren Laadan wrote:
+>> @@ -82,7 +82,7 @@ void shm_init_ns(struct ipc_namespace *ns)
+>>    * Called with shm_ids.rw_mutex (writer) and the shp structure locked.
+>>    * Only shm_ids.rw_mutex remains locked on exit.
+>>    */
+>> -static void do_shm_rmid(struct ipc_namespace *ns, struct 
+>> kern_ipc_perm *ipcp)
+>> +void do_shm_rmid(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
+>>   {
+>>       struct shmid_kernel *shp;
+>>       shp = container_of(ipcp, struct shmid_kernel, shm_perm);
+>>    
+> This hunk appears to be unrelated to the main patch.
+> Is it intentional or a left-over from debugging?
+> 
 
-diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
-index bbcfccd..34c9661 100644
---- a/fs/notify/fanotify/fanotify.c
-+++ b/fs/notify/fanotify/fanotify.c
-@@ -21,6 +21,7 @@ static bool should_merge(struct fsnotify_event *old, struct fsnotify_event *new)
- 			if ((old->path.mnt == new->path.mnt) &&
- 			    (old->path.dentry == new->path.dentry))
- 				return true;
-+			break;
- 		case (FSNOTIFY_EVENT_NONE):
- 			return true;
- 		default:
+Good catch: it belongs in patch 55: "c/r: support shared memory 
+sysv-ipc". Will move it there. Thanks for the review.
 
+Oren.
 
