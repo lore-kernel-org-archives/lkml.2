@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab0EGHDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 03:03:45 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:55629 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab0EGHDn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 03:03:43 -0400
-From: Jassi Brar <jassi.brar@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: dan.j.williams@intel.com, linus.ml.walleij@gmail.com,
-       maciej.sosnowski@intel.com, Jassi Brar <jassi.brar@samsung.com>
-Subject: [PATCH 1/2] DMA ENGINE: Do not reset 'private' of channel
-Date: Fri,  7 May 2010 16:00:12 +0900
-Message-Id: <1273215612-3058-1-git-send-email-jassi.brar@samsung.com>
-X-Mailer: git-send-email 1.6.2.5
+	id S1753368Ab0EGHHd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 03:07:33 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:52593 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751499Ab0EGHHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 03:07:31 -0400
+X-Greylist: delayed 1931 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 May 2010 03:07:31 EDT
+From: florian@mickler.org
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
+       Florian Mickler <florian@mickler.org>
+Subject: [PATCH] get_maintainer.pl: ignore non-maintainer tags
+Date: Fri,  7 May 2010 08:34:55 +0200
+Message-Id: <1273214095-23396-1-git-send-email-florian@mickler.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1273179148.1537.145.camel@Joe-Laptop.home>
+References: <1273179148.1537.145.camel@Joe-Laptop.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The member 'private' of 'struct dma_chan' is meant for passing
-data between client and the controller driver.
+Using --git to determine who to send a patch to, it is not
+reasonable to include people that only reported an issue or tested a
+patch. Thus we restrict the candidates to be the one's listed with
+Reviewed-By, Signed-Off-By and Acked-By tags.
 
-The DMA client driver may point it to platform specific stuff after
-acquiring the channel. So, it is the responsiblity of the same code
-to reset it, if it must.
+The Acked-By: is questionable also, but as people listed with this tag
+tend to be active linux gatekeepers, false positives are tolerable.
 
-The DMA engine doesn't set it and hence, shouldn't reset it either.
-
-Signed-off-by: Jassi Brar <jassi.brar@samsung.com>
+Signed-off-by: Florian Mickler <florian@mickler.org>
 ---
- drivers/dma/dmaengine.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ scripts/get_maintainer.pl |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index d18b5d0..3b4dab5 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -515,7 +515,6 @@ struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask, dma_filter_fn fn, v
- 				break;
- 			if (--device->privatecnt == 0)
- 				dma_cap_clear(DMA_PRIVATE, device->cap_mask);
--			chan->private = NULL;
- 			chan = NULL;
- 		}
- 	}
-@@ -537,7 +536,6 @@ void dma_release_channel(struct dma_chan *chan)
- 	/* drop PRIVATE cap enabled by __dma_request_channel() */
- 	if (--chan->device->privatecnt == 0)
- 		dma_cap_clear(DMA_PRIVATE, chan->device->cap_mask);
--	chan->private = NULL;
- 	mutex_unlock(&dma_list_mutex);
- }
- EXPORT_SYMBOL_GPL(dma_release_channel);
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index 6f97a13..ad38ed3 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -496,7 +496,7 @@ version: $V
+ 
+ MAINTAINER field selection options:
+   --email => print email address(es) if any
+-    --git => include recent git \*-by: signers
++    --git => include recent git {Reviewed|Signed-Off|Acked}-by: signers
+     --git-chief-penguins => include ${penguin_chiefs}
+     --git-min-signatures => number of signatures required (default: 1)
+     --git-max-maintainers => maximum maintainers to add (default: 5)
+@@ -964,7 +964,7 @@ sub vcs_find_signers {
+ 
+     $commits = grep(/$pattern/, @lines);	# of commits
+ 
+-    @lines = grep(/^[-_ 	a-z]+by:.*\@.*$/i, @lines);
++    @lines = grep(/(signed-off|reviewed|acked)-by:.*\@.*$/i, @lines);
+     if (!$email_git_penguin_chiefs) {
+ 	@lines = grep(!/${penguin_chiefs}/i, @lines);
+     }
 -- 
-1.6.2.5
+1.7.0.4
 
