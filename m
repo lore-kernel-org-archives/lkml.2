@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab0EGJ34 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:29:56 -0400
+	id S1755647Ab0EGJaN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:30:13 -0400
 Received: from mga09.intel.com ([134.134.136.24]:55769 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754975Ab0EGJ3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:29:52 -0400
+	id S1755511Ab0EGJaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 05:30:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,347,1270450800"; 
-   d="scan'208";a="515914991"
+   d="scan'208";a="515915054"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
        jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC][PATCH v5 02/19] Add a new struct for device to manipulate external buffer.
-Date: Fri,  7 May 2010 17:34:49 +0800
-Message-Id: <1273224906-4874-3-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC][PATCH v5 09/19] Ignore room skb_reserve() when device is using external buffer.
+Date: Fri,  7 May 2010 17:34:56 +0800
+Message-Id: <1273224906-4874-10-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1273224906-4874-2-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1273224906-4874-9-git-send-email-xiaohui.xin@intel.com>
 References: <1273224906-4874-1-git-send-email-xiaohui.xin@intel.com>
  <1273224906-4874-2-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-3-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-4-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-5-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-6-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-7-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-8-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-9-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
+Make the skb->data and skb->head from external buffer
+to be consistent, we ignore the room reserved by driver
+for kernel skb.
+
 Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/netdevice.h |   19 ++++++++++++++++++-
- 1 files changed, 18 insertions(+), 1 deletions(-)
+ include/linux/skbuff.h |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index fa8b476..bae725c 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -530,6 +530,22 @@ struct netdev_queue {
- 	unsigned long		tx_dropped;
- } ____cacheline_aligned_in_smp;
- 
-+/* Add a structure in structure net_device, the new field is
-+ * named as mp_port. It's for mediate passthru (zero-copy).
-+ * It contains the capability for the net device driver,
-+ * a socket, and an external buffer creator, external means
-+ * skb buffer belongs to the device may not be allocated from
-+ * kernel space.
-+ */
-+struct mpassthru_port	{
-+	int		hdr_len;
-+	int		data_len;
-+	int		npages;
-+	unsigned	flags;
-+	struct socket	*sock;
-+	struct skb_external_page *(*ctor)(struct mpassthru_port *,
-+				struct sk_buff *, int);
-+};
- 
- /*
-  * This structure defines the management hooks for network devices.
-@@ -952,7 +968,8 @@ struct net_device {
- 	struct macvlan_port	*macvlan_port;
- 	/* GARP */
- 	struct garp_port	*garp_port;
--
-+	/* mpassthru */
-+	struct mpassthru_port	*mp_port;
- 	/* class/net/name entry */
- 	struct device		dev;
- 	/* space for optional device, statistics, and wireless sysfs groups */
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 5ff8c27..193b259 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1200,6 +1200,15 @@ static inline int skb_tailroom(const struct sk_buff *skb)
+  */
+ static inline void skb_reserve(struct sk_buff *skb, int len)
+ {
++	/* Since skb_reserve() is only for an empty buffer,
++	 * and when the skb is getting external buffer, we cannot
++	 * retain the external buffer has the same reserved space
++	 * in the header which kernel allocatd skb has, so have to
++	 * ignore this. And we have recorded the external buffer
++	 * info in the destructor_arg field, so use it as indicator.
++	 */
++	if (skb_shinfo(skb)->destructor_arg)
++		return;
+ 	skb->data += len;
+ 	skb->tail += len;
+ }
 -- 
 1.5.4.4
 
