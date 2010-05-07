@@ -1,88 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab0EGQZv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 12:25:51 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:49830 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab0EGQZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 12:25:49 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 69.181.193.102
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18cuwzQH4LJYH40/z/mDfz9
-Date: Fri, 7 May 2010 09:25:44 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: James Kosin <james.kosin.04@cnu.edu>
-Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100507162544.GE387@atomide.com>
-References: <eGUaB-4mU-1@gated-at.bofh.it>
- <eGUtX-4Kd-3@gated-at.bofh.it>
- <eGWvL-7Fy-1@gated-at.bofh.it>
- <eGWFt-7S7-17@gated-at.bofh.it>
- <eGWP9-8jH-17@gated-at.bofh.it>
- <4BE37DDD.8000402@cox.net>
- <p2jd6200be21005061953y497b0766k15123f69ff7db630@mail.gmail.com>
- <4BE38290.6040404@cnu.edu>
- <g2rd6200be21005062010s1a490b3dref465f5df64b8f7@mail.gmail.com>
- <4BE386D1.2050608@cnu.edu>
+	id S1757109Ab0EGQ1I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 12:27:08 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:55241 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756847Ab0EGQ1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 12:27:05 -0400
+Date: Fri, 7 May 2010 17:26:44 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+	the wrong VMA information
+Message-ID: <20100507162644.GD4859@csn.ul.ie>
+References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie> <1273188053-26029-2-git-send-email-mel@csn.ul.ie> <20100507095654.a8097967.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4BE386D1.2050608@cnu.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100507095654.a8097967.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* James Kosin <james.kosin.04@cnu.edu> [100506 20:14]:
-> On 5/6/2010 11:10 PM, Arve Hjønnevåg wrote:
-> >>>>         
-> >>> One if the benefit we get from using suspend is that an unprivileged
-> >>> app that does not have access to suspend blockers cannot prevent
-> >>> suspend. You lose this advantage if you trigger suspend only from the
-> >>> idle task.
-
-This assumes that you're using cached values for echo mem > /sys/power/state
-and the system keeps on running.
-
-IMHO if you want to keep the system running, then you should just use
-cpuidle and implement good idle modes.
-
-Then when someting in the userspace knows you've been idle long enough,
-you can suspend.
-
-> >> If the process (privileged or unprivileged) doesn't want to suspend, why
-> >> not just provide an interface to allow suspend to be turned off at the
-> >> user level.  This could block the suspend cycle in itself, and you
-> >> shouldn't need fine grained off/on cycles.  If an application really
-> >> needs the system not to suspend then they (the user) should know the
-> >> consequences and power requirements for such a task.
-> >>
-> >> I didn't say it had to be only from the idle task; but, that is the most
-> >> logical place.  If the other threads are not idle then they really
-> >> require work and will most likely already have a bock on the suspend anyway.
-> >>
-> >>     
-> > I think you missed my point. Unprivileged processes should not be
-> > allowed to prevent suspend.
-
-You could just freeze the GUI process based on some policy if you
-worry about misbehaving timers in various apps. This way the cpuidle
-modes will allow you to run some userspace policy daemon. And then that
-can suspend if needed based on how it's configured.
-  
-> Ah, you want a way for the system to suspend (and enforce the suspend)
-> when only unprivileged processes are the only thing running....
+On Fri, May 07, 2010 at 09:56:54AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Fri,  7 May 2010 00:20:52 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> That would mean a lot of work defining the unprivileged (or privileged)
-> processes, and properly suspending (or enforcing) when needed.  Yuck. 
-> Sorry I commented then, this is really getting deep into what I love to
-> do at work.
+> > vma_adjust() is updating anon VMA information without locks being taken.
+> > In contrast, file-backed mappings use the i_mmap_lock and this lack of
+> > locking can result in races with users of rmap_walk such as page migration.
+> > vma_address() can return -EFAULT for an address that will soon be valid.
+> > For migration, this potentially leaves a dangling migration PTE behind
+> > which can later cause a BUG_ON to trigger when the page is faulted in.
+> > 
+> > <SNIP>
+> 
+> I'm sorry but I don't think I understand this. Could you help me ?
+> 
 
-Hmm, yeah sounds a bit messy.
+Hopefully.
 
-Tony
+> IIUC, anon_vma_chain is linked as 2D-mesh
+> 
+>             anon_vma1    anon_vma2    anon_vma3
+>                 |            |            |
+>     vma1 -----  1  --------  2  --------- 3 -----
+>                 |            |            |
+>     vma2 -----  4  --------  5 ---------- 6 -----
+>                 |            |            |
+>     vma3 -----  7  --------  8 ---------- 9 -----
+> 
+> 
+> Here,
+>   * vertical link is anon_vma->head, avc->same_anon_vma link.
+>   * horizontal link is vma->anon_vma_chain, avc->same_vma link.
+>   * 1-9 are avcs.
+> 
+
+I don't think this is quite right for how the "root" anon_vma is
+discovered. The ordering of same_vma is such that the prev pointer
+points to the root anon_vma as described in __page_set_anon_rmap() but
+even so...
+
+> When scanning pages, we may see a page whose anon_vma is anon_vma1
+> or anon_vma2 or anon_vma3. 
+>
+
+When we are walking the list for the anon_vma, we also hold the page
+lock and what we're really interested in are ptes mapping that page.
+
+> When we see anon_vma3 in page->mapping, we lock anon_vma1 and chase
+> avc1->avc4->avc7. Then, start from vma1. Next, we visit vma2, we lock anon_vma2.
+> At the last, we visit vma3 and lock anon_vma3.....And all are done under
+> anon_vma1->lock. Right ?
+> 
+
+assuming it's the root lock, sure.
+
+> Hmm, one concern is 
+> 	anon_vma3 -> avc3 -> vma1 -> avc1 -> anon_vma1 chasing.
+> 
+> What will prevent vma1 disappear right after releasling anon_vma3->lock ?
+> 
+
+What does it matter if it disappeared? If it did, it was because it was torn
+down, the PTEs are also gone and a user of rmap_walk should have stopped
+caring. Right?
+
+> ex)
+> a1) At we chase, anon_vma3 -> avc3 -> vma1 -> anon_vma1, link was following.
+> 
+>             anon_vma1    anon_vma2    anon_vma3
+>                 |            |            |
+>     vma1 -----  1  --------  2  --------- 3 -----
+>                 |            |            |
+>     vma2 -----  4  --------  5 ---------- 6 -----
+>                 |            |            |
+>     vma3 -----  7  --------  8 ---------- 9 -----
+>  
+>    We hold lock on anon_vma3.
+> 
+> a2) After releasing anon_vma3 lock. vma1 can be unlinked.
+> 
+>             anon_vma1    anon_vma2    anon_vma3
+>                 |            |            |
+>  vma1 removed.
+>                 |            |            |
+>     vma2 -----  4  --------  5 ---------- 6 -----
+>                 |            |            |
+>     vma3 -----  7  --------  8 ---------- 9 -----
+> 
+> But we know anon_vma1->head is not empty, and it's accessable.
+> Then, no problem for our purpose. Right ?
+> 
+
+As the PTEs are also gone, I'm not seeing the problem.
+
+> b1) Another thinking.
+> 
+> At we chase, anon_vma3 -> avc3 -> vma1 -> anon_vma1, link was following.
+> 
+>             anon_vma1    anon_vma2    anon_vma3
+>                 |            |            |
+>     vma1 -----  1  --------  2  --------- 3 -----
+>                 |            |            |
+>     vma2 -----  4  --------  5 ---------- 6 -----
+>                 |            |            |
+>     vma3 -----  7  --------  8 ---------- 9 -----
+>  
+>    We hold lock on anon_vma3. So, 
+> 
+>             anon_vma1    anon_vma2    anon_vma3
+>                 |            |            |
+>     vma1 ----removed -----removed  ------ 3 -----
+>                 |            |            |
+>     vma2 -----  4  --------  5 ---------- 6 -----
+>                 |            |            |
+>     vma3 -----  7  --------  8 ---------- 9 -----
+> 
+> we may see half-broken link while we take anon_vma3->lock. In this case,
+> anon_vma1 can be caugt.
+> 
+> Don't we need this ?
+> 
+> 
+>  void unlink_anon_vmas(struct vm_area_struct *vma)
+>  {
+>         struct anon_vma_chain *avc, *next;
+> 
+>         /* Unlink each anon_vma chained to the VMA. */
+> -        list_for_each_entry_safe_reverse(avc, next, &vma->anon_vma_chain, same_vma) {
+
+This was meant to be list_for_each_entry_safe(....)
+
+> +        list_for_each_entry_safe_reverse(avc, next, &vma->anon_vma_chain, same_vma) {
+>                 anon_vma_unlink(avc);
+>                 list_del(&avc->same_vma);
+>                 anon_vma_chain_free(avc);
+>          }
+>  }
+> 
+> head avc should be removed last...  Hmm ? I'm sorry if all are
+> in correct order already.
+> 
+
+I think the ordering is ok. The rmap_walk may find a situation where the
+anon_vmas are being cleaned up but again as the page tables are going
+away at this point, the contents of the PTEs are no longer important.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
