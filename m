@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab0EGLNS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 07:13:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42718 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754817Ab0EGLNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 07:13:16 -0400
-From: Neil Brown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 7 May 2010 21:13:07 +1000
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755416Ab0EGLPw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 07:15:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47913 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab0EGLPv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 07:15:51 -0400
+Subject: Re: [RFC] perf_events: ctx_flexible_sched_in() not maximizing PMU 
+ utilization
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <AANLkTimguldif-yCpPIPC65RL5bvp-HARuuhOHarxIf1@mail.gmail.com>
+References: <AANLkTikQCkR2K438llKOh43yEgW-Bw7j0f8GoXR50A0V@mail.gmail.com>
+	 <1273155640.5605.300.camel@twins> <20100506171141.GA5562@nowhere>
+	 <1273167024.1642.256.camel@laptop> <1273220736.1642.318.camel@laptop>
+	 <AANLkTimegTx_2wHCIhyLqcYbkIJEPi3SsdwgFxU4E7Rk@mail.gmail.com>
+	 <1273226796.1642.333.camel@laptop>
+	 <AANLkTimguldif-yCpPIPC65RL5bvp-HARuuhOHarxIf1@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 May 2010 13:15:48 +0200
+Message-ID: <1273230948.1642.351.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-ID: <19427.62915.600797.337003@notabene.brown>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Joe Bryant <tenminjoe@yahoo.com>,
-       Gabriele A "." Trombetti 
-	<g.trombetti.lkrnl1213@logicschema.com>,
-       Janos Haar <janos.haar@netcenter.hu>
-Subject: [PULL REQUEST] two small fixes for md for 2.6.34
-X-Mailer: VM 8.0.13 under 22.3.1 (x86_64-pc-linux-gnu)
-X-face: [Gw_3E*Gng}4rRrKRYotwlE?.2|**#s9D<ml'fY1Vw+@XfR[fRCsUoP?K6bt3YD\ui5Fh?f
-	LONpR';(ql)VM_TQ/<l_^D3~B:z$\YC7gUCuC=sYm/80G=$tt"98mr8(l))QzVKCk$6~gldn~*FK9x
-	8`;pM{3S8679sP+MbP,72<3_PIH-$I&iaiIb|hV1d%cYg))BmI)AZ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-05-07 at 12:49 +0200, Stephane Eranian wrote:
+> You'd have to insert all event into the tree, read leftmost.
+> I believe you need more than just basic integer arithmetic
+> to compare s_i to avg. Or you need to tweak the values
+> to get more precisions. But you may already be doing that
+> elsewhere in the kernel. 
 
-Hi Linus,
- please consider pulling these two bug fixes for md for 2.6.34.
- They are not very serious bugs but can lead to unexpected behaviour
- and in one case doesn't protect your data quite as much as you would
- like is certain cases.
+I've got a modification to CFS which implements EEVDF which needs
+similar eligibility checks. So yeah, I've got code to do this.
 
-Thanks,
-NeilBrown
+The trick to computable avg is to keep a monotonic min_s around and use
+ds_i = s_i - min_s. These ds_i will be 'small', in the order of the max
+lag.
 
+We can thus keep a sum of ds_i up-to-date when inserting/removing events
+from the tree without fear of overflowing our integer.
 
-The following changes since commit 722154e4cacf015161efe60009ae9be23d492296:
-  Linus Torvalds (1):
-        Merge branch 'zerolen' of git://git.kernel.org/.../jgarzik/misc-2.6
+When we update min_s, we must also update our relative sum
+proportionally and in the opposite direction.
 
-are available in the git repository at:
+Comparing for eligibility can be done by:
 
-  git://neil.brown.name/md/ for-linus
+s_i < 1/n \Sum s_i, or s_i - min_s < 1/n \Sum s_i - min_s, which we can
+write as: n*ds_i < \Sum ds_i
 
-Gabriele A. Trombetti (1):
-      md/raid6: Fix raid-6 read-error correction in degraded state
+Again, this can be done without fear of overflows because ds_i is small.
 
-NeilBrown (1):
-      md: restore ability of spare drives to spin down.
+> Yes. Not clear how you could avoid this without having a global
+> view of the dependencies between events (which are really event
+> groups, BTW). Here you'd need to know that if you have
+> evt   A  B  C
+> s(0)  0   0  0 -> avg = 0/3=0.00, sort = A, B, C, schedule A, fail on B
+> s(1)  1   0  0 -> avg = 1/3=0.33, sort = B, C, A, schedule B, fail on C
+> 
+> You'd have two options:
+>    s(2)  1   1  0 -> avg = 2/3=0.66, sort = C, A, B, schedule A, C
+> or
+>    s(2)  1   1  0 -> avg = 2/3=0.66, sort = C, B, A  schedule C
+> 
+> The first is more attractive because it shortens the blind spots on C.
+> Both are equally fair, though. Looks like you'd need to add a 2nd
+> parameter to the sort when s_i are equal. That would have to be
+> related to the number of constraints. You could  sort in reverse order
+> to the number of constraints, assuming you can express the constraint
+> as a number. For simple constraints, such as counter restrictions, you
+> could simply compare the number of possible counters between events.
+> But there are PMU where there is no counter constraints but events are
+> incompatible. What values do you compare  in this case?
 
- drivers/md/md.c    |   10 ++++++++--
- drivers/md/raid5.c |    2 +-
- 2 files changed, 9 insertions(+), 3 deletions(-)
+Not sure, but yeah, using constraint data to tie break is indeed an
+interesting option. 
+
+I wonder how much tie breaking we'll really need in practice though, if
+we use event->total_time_running as our s_i we've got ns resolution
+timestamps, and with sub jiffies preemption like is common I doubt we'll
+actually see a lot equal service numbers.
+
