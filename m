@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757612Ab0EGS25 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 14:28:57 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42128 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757593Ab0EGS2y (ORCPT
+	id S1757626Ab0EGSaG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 14:30:06 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:45090 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757469Ab0EGSaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 14:28:54 -0400
-Date: Fri, 7 May 2010 19:28:24 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
-       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100507182824.GA25198@srcf.ucam.org>
-References: <20100506172201.GA28578@srcf.ucam.org> <20100506173807.GD30928@atomide.com> <20100506174331.GA29103@srcf.ucam.org> <20100506183335.GE30928@atomide.com> <20100506184418.GA30669@srcf.ucam.org> <20100507020541.GH30928@atomide.com> <20100507171218.GA23142@srcf.ucam.org> <20100507173549.GF387@atomide.com> <20100507175025.GA23952@srcf.ucam.org> <20100507180152.GH387@atomide.com>
+	Fri, 7 May 2010 14:30:04 -0400
+Date: Fri, 7 May 2010 12:30:00 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Phillip Susi <psusi@cfl.rr.com>
+Cc: linux-fsdevel@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: unified page and buffer cache?
+Message-ID: <20100507183000.GD17259@parisc-linux.org>
+References: <4BCC7C05.8000803@cfl.rr.com> <4BE417CB.7000806@cfl.rr.com> <20100507135329.GA17259@parisc-linux.org> <4BE4359E.9020400@cfl.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100507180152.GH387@atomide.com>
+In-Reply-To: <4BE4359E.9020400@cfl.rr.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 11:01:52AM -0700, Tony Lindgren wrote:
-> * Matthew Garrett <mjg@redhat.com> [100507 10:46]:
-> > Effective power management in the face of real-world applications is a 
-> > reasonable usecase.
+On Fri, May 07, 2010 at 11:45:34AM -0400, Phillip Susi wrote:
+> On 5/7/2010 9:53 AM, Matthew Wilcox wrote:
+> > The problem you're seeing is aliasing in the page cache, not a failed
+> > unification of the buffer and page caches.  Pages are addressed by
+> > (mapping, offset).  Each inode generally has its own mapping.  Depending
+> > on the file system, directories may be addressed by their own inode's
+> > mapping, or by the block device's mapping.
 > 
-> Sure there's no easy solution to misbehaving apps.
+> If there are two mappings that don't know about each other, then the
+> caches don't seem very unified to me.  If I write to the file and that
+> data sits in the mapping for the inode, then I read the corresponding
+> blocks though the block device, and it has a different mapping, then I
+> read the old data off the disk instead of the new data in the cache.  I
+> thought that this exact problem had been fixed long ago.
 
-That's the point of the suspend blockers.
+A long time ago (was this 2.0?  1.2?) the buffer cache and the page cache
+were actually separate caches.  Then the buffer cache was rewritten to
+point into the page cache, and we were all grateful.
+
+As I said, you're seeing something completely different.  The page cache
+is virtually indexed, not physically indexed.  As generations of CPU
+designers have found, that's a lot faster, but aliases can bite you.
+
+> > Resolving aliasing would be horribly expensive, so it's unlikely to
+> > happen.
+> 
+> Back to the drawing board I guess.  Maybe ext could be fixed to use an
+> inode mapping for directories instead of relying on the block device
+> mapping, then I could readahead() the directory instead of having to go
+> to the block device at all.
+
+That would be possible, but would waste memory space.  But we've all
+got gigabytes of ram these days, maybe nobody cares.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
