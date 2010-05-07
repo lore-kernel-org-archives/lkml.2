@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549Ab0EGMoB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 08:44:01 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:56990 "EHLO poutre.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab0EGMn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 08:43:59 -0400
-Date: Fri, 7 May 2010 14:43:56 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Huaxu Wan <huaxu.wan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-       huaxu.wan@intel.com
-Subject: Re: [PATCH 1/2] hwmon: (coretemp) Detect the thermal sensors by
- CPUID
-Message-ID: <20100507144356.4dae6046@hyperion.delvare>
-In-Reply-To: <20100507095459.GA12190@owl>
-References: <20100507095459.GA12190@owl>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751772Ab0EGMqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 08:46:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50920 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab0EGMqE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 08:46:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Subject: cpumask: fix compat getaffinity
+Date: Fri, 7 May 2010 14:45:49 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: stable@kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+       Andi Kleen <andi@firstfloor.org>, Ken Werner <ken.werner@web.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005071445.50147.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1883nVEKsMEWCD9Ac/XSAYt9c7YTuDT8qPtf83
+ fynTy4A/ev+ICpv8p6aFndkaFrbSO13mPxV5xiii4f7swxhMfw
+ 07fDhOKfTLBuf6iXXMfhQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Huawu,
+Commit a45185d2d "cpumask: convert kernel/compat.c" broke
+libnuma, which abuses sched_getaffinity to find out NR_CPUS
+in order to parse /sys/devices/system/node/node*/cpumap.
 
-On Fri, 7 May 2010 17:54:59 +0800, Huaxu Wan wrote:
-> 
-> The thermal sensors of Intel(R) CPUs can be detected by CPUID instruction,
-> indicated by CPUID.06H.EAX[0].
+On NUMA systems with less than 32 possibly CPUs, the
+current compat_sys_sched_getaffinity now returns '4'
+instead of the actual NR_CPUS/8, which makes libnuma
+bail out when parsing the cpumap.
 
-I can see that you are sending these two patches for quite some time
-and I understand you'd like them to get finally reviewed and merged.
-Unfortunately I simply don't have the time for this. So please don't
-wait for my ack, just send your patches to Andrew Morton and hopefully
-he will take care.
+This restores the original return value for now.
+If we ever get around to changing cpumask_size
+to return only possibly CPUs, we will also need to
+make the format of the cpumap file.
 
-> 
-> Signed-off-by: Huaxu Wan <huaxu.wan@linux.intel.com>
-> ---
->  drivers/hwmon/coretemp.c |   24 +++++++-----------------
->  1 files changed, 7 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-> index e9b7fbc..237c68d 100644
-> --- a/drivers/hwmon/coretemp.c
-> +++ b/drivers/hwmon/coretemp.c
-> @@ -440,6 +440,7 @@ static int __init coretemp_init(void)
->  {
->         int i, err = -ENODEV;
->         struct pdev_entry *p, *n;
-> +       u32 eax;
-> 
->         /* quick check if we run Intel */
->         if (cpu_data(0).x86_vendor != X86_VENDOR_INTEL)
-> @@ -450,23 +451,12 @@ static int __init coretemp_init(void)
->                 goto exit;
-> 
->         for_each_online_cpu(i) {
-> -               struct cpuinfo_x86 *c = &cpu_data(i);
-> -
-> -               /* check if family 6, models 0xe (Pentium M DC),
-> -                 0xf (Core 2 DC 65nm), 0x16 (Core 2 SC 65nm),
-> -                 0x17 (Penryn 45nm), 0x1a (Nehalem), 0x1c (Atom),
-> -                 0x1e (Lynnfield) */
-> -               if ((c->cpuid_level < 0) || (c->x86 != 0x6) ||
-> -                   !((c->x86_model == 0xe) || (c->x86_model == 0xf) ||
-> -                       (c->x86_model == 0x16) || (c->x86_model == 0x17) ||
-> -                       (c->x86_model == 0x1a) || (c->x86_model == 0x1c) ||
-> -                       (c->x86_model == 0x1e))) {
-> -
-> -                       /* supported CPU not found, but report the unknown
-> -                          family 6 CPU */
-> -                       if ((c->x86 == 0x6) && (c->x86_model > 0xf))
-> -                               printk(KERN_WARNING DRVNAME ": Unknown CPU "
-> -                                       "model 0x%x\n", c->x86_model);
-> +               /* check if the CPU has thermal sensor */
-> +               eax = cpuid_eax(0x06);
-> +               if (!(eax & 0x01)) {
-> +                       struct cpuinfo_x86 *c = &cpu_data(i);
-> +                       printk_once(KERN_WARNING DRVNAME ": CPU (model=0x%x)"
-> +                               " has no thermal sensor!\n", c->x86_model);
->                         continue;
->                 }
-> 
-> --
-> 1.6.3.3.363.g725cf7
+We should probably also make libnuma able to deal with
+the modified kernel interface, so it can operate on
+all kernels.
 
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Reported-by: Ken Werner <ken.werner@web.de>
+Cc: stable@kernel.org
+Cc: Andi Kleen <andi@firstfloor.org>
 
--- 
-Jean Delvare
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -497,7 +497,7 @@ asmlinkage long compat_sys_sched_getaffinity(compat_pid_t pid, unsigned int len,
+ 	unsigned long *k;
+ 	unsigned int min_length = cpumask_size();
+ 
+-	if (nr_cpu_ids <= BITS_PER_COMPAT_LONG)
++	if (NR_CPUS <= BITS_PER_COMPAT_LONG)
+ 		min_length = sizeof(compat_ulong_t);
+ 
+ 	if (len < min_length)
