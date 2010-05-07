@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab0EGJfV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:35:21 -0400
+	id S1756184Ab0EGJfs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:35:48 -0400
 Received: from mga09.intel.com ([134.134.136.24]:55769 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755373Ab0EGJ3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:29:54 -0400
+	id S1755218Ab0EGJ3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 05:29:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,347,1270450800"; 
-   d="scan'208";a="515914997"
+   d="scan'208";a="515914984"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
        jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC][PATCH v5 03/19] Export 2 func for device to assign/deassign new strucure
-Date: Fri,  7 May 2010 17:34:50 +0800
-Message-Id: <1273224906-4874-4-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC][PATCH v5 01/19] Add a new structure for skb buffer from external.
+Date: Fri,  7 May 2010 17:34:48 +0800
+Message-Id: <1273224906-4874-2-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1273224906-4874-3-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1273224906-4874-1-git-send-email-xiaohui.xin@intel.com>
 References: <1273224906-4874-1-git-send-email-xiaohui.xin@intel.com>
- <1273224906-4874-2-git-send-email-xiaohui.xin@intel.com>
- <1273224906-4874-3-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,63 +30,32 @@ Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/netdevice.h |    3 +++
- net/core/dev.c            |   28 ++++++++++++++++++++++++++++
- 2 files changed, 31 insertions(+), 0 deletions(-)
+ include/linux/skbuff.h |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index bae725c..efb575a 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1592,6 +1592,9 @@ extern gro_result_t	napi_frags_finish(struct napi_struct *napi,
- 					  gro_result_t ret);
- extern struct sk_buff *	napi_frags_skb(struct napi_struct *napi);
- extern gro_result_t	napi_gro_frags(struct napi_struct *napi);
-+extern int netdev_mp_port_attach(struct net_device *dev,
-+				 struct mpassthru_port *port);
-+extern void netdev_mp_port_detach(struct net_device *dev);
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 124f90c..cf309c9 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -203,6 +203,18 @@ struct skb_shared_info {
+ 	void *		destructor_arg;
+ };
  
- static inline void napi_free_frags(struct napi_struct *napi)
- {
-diff --git a/net/core/dev.c b/net/core/dev.c
-index f769098..ecbb6b1 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2469,6 +2469,34 @@ void netif_nit_deliver(struct sk_buff *skb)
- 	rcu_read_unlock();
- }
- 
-+/* Export two functions to assign/de-assign mp_port pointer
-+ * to a net device.
++/* The structure is for a skb which skb->data may point to
++ * an external buffer, which is not allocated from kernel space.
++ * Since the buffer is external, then the shinfo or frags are
++ * also extern too. It also contains a destructor for itself.
 + */
-+
-+int netdev_mp_port_attach(struct net_device *dev,
-+			struct mpassthru_port *port)
-+{
-+	/* locked by mp_mutex */
-+	if (rcu_dereference(dev->mp_port))
-+		return -EBUSY;
-+
-+	rcu_assign_pointer(dev->mp_port, port);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(netdev_mp_port_attach);
-+
-+void netdev_mp_port_detach(struct net_device *dev)
-+{
-+	/* locked by mp_mutex */
-+	if (!rcu_dereference(dev->mp_port))
-+		return;
-+
-+	rcu_assign_pointer(dev->mp_port, NULL);
-+	synchronize_rcu();
-+}
-+EXPORT_SYMBOL(netdev_mp_port_detach);
-+
- /**
-  *	netif_receive_skb - process receive buffer from network
-  *	@skb: buffer to process
++struct skb_external_page {
++	u8              *start;
++	int             size;
++	struct skb_frag_struct *frags;
++	struct skb_shared_info *ushinfo;
++	void		(*dtor)(struct skb_external_page *);
++};
+ /* We divide dataref into two halves.  The higher 16 bits hold references
+  * to the payload part of skb->data.  The lower 16 bits hold references to
+  * the entire skb->data.  A clone of a headerless skb holds the length of
 -- 
 1.5.4.4
 
