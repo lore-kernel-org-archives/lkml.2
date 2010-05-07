@@ -1,97 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756454Ab0EGPcC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 11:32:02 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:56769 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755444Ab0EGPcA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 11:32:00 -0400
-Date: Fri, 7 May 2010 11:31:59 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/9 - v2][RFC] tracing: Remove per event trace
-	registering
-Message-ID: <20100507153158.GB15267@Krystal>
-References: <20100504034045.085822814@goodmis.org> <20100504034202.282030521@goodmis.org> <20100507042025.GC8069@nowhere> <20100507145438.GB29573@Krystal> <1273245128.22438.160.camel@gandalf.stny.rr.com>
+	id S1756681Ab0EGPcS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 11:32:18 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:53239
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756621Ab0EGPcM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 11:32:12 -0400
+X-SpamScore: -22
+X-BigFish: VPS-22(zz1432P98dN936eM62a3Lab9bhzz1202hzz6ff19hz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L222ZP-01-H2J-02
+X-M-MSG: 
+Date: Fri, 7 May 2010 17:28:35 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf: fix raw sample size if no sampling data is attached
+Message-ID: <20100507152835.GU6450@erda.amd.com>
+References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
+ <1271190201-25705-13-git-send-email-robert.richter@amd.com>
+ <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <1273245128.22438.160.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:31:39 up 104 days, 18:08,  7 users,  load average: 0.15, 0.15,
-	0.10
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Fri, 2010-05-07 at 10:54 -0400, Mathieu Desnoyers wrote:
-> > * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > > On Mon, May 03, 2010 at 11:40:48PM -0400, Steven Rostedt wrote:
-> > > > From: Steven Rostedt <srostedt@redhat.com>
-> > > > 
-> > > > This patch removes the register functions of TRACE_EVENT() to enable
-> > > > and disable tracepoints. The registering of a event is now down
-> > > > directly in the trace_events.c file. The tracepoint_probe_register()
-> > > > is now called directly.
-> > > > 
-> > > > The prototypes are no longer type checked, but this should not be
-> > > > an issue since the tracepoints are created automatically by the
-> > > > macros. If a prototype is incorrect in the TRACE_EVENT() macro, then
-> > > > other macros will catch it.
-> > > 
-> > > 
-> > > 
-> > > Agreed. Typechecking matters for human code but not in this context.
-> > > Considering that the tracepoint and the probe are created by the same
-> > > CPP code, bugs will be tracked down quickly and located to a single
-> > > place.
-> > 
-> > So it seems that I am the only one asking for extra type-checking and
-> > caring about problems that can appear subtily on architectures where the
-> > number of caller/callee arguments must match. And also the only one
-> > considering that passing more arguments to a callback that does not
-> > expect all of them might be a problem on some architectures.
-> > 
-> > Am I the only one thinking there is something fishy there ? I might be
-> > entirely over-paranoid, but this approach has rarely failed me in the
-> > past.
+On 19.04.10 14:19:57, Stephane Eranian wrote:
+> > +       perf_sample_data_init(&data, 0);
+> > +       if (event->attr.sample_type & PERF_SAMPLE_RAW) {
+> > +               for (i = 1; i < size; i++)
+> > +                       rdmsrl(msr++, *buf++);
+> > +               raw.size = sizeof(u64) * size;
+> > +               raw.data = buffer;
+> > +               data.raw = &raw;
+> > +       }
+> > +
 > 
-> I think you are the only one not realizing that the caller and callee
-> are created automatically with the same data. There is no human
-> intervention here.
+> Need to add the padding: raw.size = sizeof(u64) * size + sizeof(u32);
 > 
-> You are asking to add a check that I can not see helping. The only way
-> to add a check, is to use the automated process to check the automation.
-> If the automated process fails, it is very likely the check will also be
-> broken and will not catch the bug either.
+> > +       regs = *iregs; /* later: update ip from ibs sample */
+> > +
+> > +       if (perf_event_overflow(event, 1, &data, &regs))
 
-Tell me where to fetch the git head, I'll add it myself. ;)
+During code review I found a bug in perf_output_sample(). A fix is
+below.
 
-Thanks,
+> > +               x86_pmu_stop(event);
+> > +       else
+> > +               __x86_pmu_enable_event(&event->hw, reenable);
+> > +
+> > +       return 1;
+> > +}
 
-Mathieu
+--
 
-> 
-> -- Steve
-> 
-> 
+>From 6373951f1c660400650066b73c3bb2f6d232be67 Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Fri, 7 May 2010 15:49:56 +0200
+Subject: [PATCH] perf: fix raw sample size if no sampling data is attached
+
+The header size of a raw sample is not included in the total size of a
+raw data sample. Thus, if no data is attached the size must be
+null. In this case a buffer overflow may occur when copying the
+sampling data.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ kernel/perf_event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 9dbe8cd..f6ddae9 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -3229,7 +3229,7 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 				u32	size;
+ 				u32	data;
+ 			} raw = {
+-				.size = sizeof(u32),
++				.size = 0,
+ 				.data = 0,
+ 			};
+ 			perf_output_put(handle, raw);
+-- 
+1.7.0.3
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
+
