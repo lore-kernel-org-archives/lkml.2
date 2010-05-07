@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab0EGJlL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:41:11 -0400
-Received: from mx1.emlix.com ([193.175.82.87]:47907 "EHLO mx1.emlix.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab0EGJlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:41:08 -0400
-Message-ID: <4BE3E02E.1090500@emlix.com>
-Date: Fri, 07 May 2010 11:41:02 +0200
-From: =?UTF-8?B?RGFuaWVsIEdsw7Zja25lcg==?= <dg@emlix.com>
-Organization: emlix GmbH
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
+	id S1755573Ab0EGJqD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:46:03 -0400
+Received: from mga06.intel.com ([134.134.136.21]:47966 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753096Ab0EGJqA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 05:46:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,347,1270450800"; 
+   d="scan'208";a="619683838"
+Date: Fri, 7 May 2010 17:54:59 +0800
+From: Huaxu Wan <huaxu.wan@linux.intel.com>
+To: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Cc: huaxu.wan@intel.com, khali@linux-fr.org
+Subject: [PATCH 1/2] hwmon: (coretemp) Detect the thermal sensors by CPUID
+Message-ID: <20100507095459.GA12190@owl>
 MIME-Version: 1.0
-To: Mike Frysinger <vapier.adi@gmail.com>
-CC: Oskar Schirmer <os@emlix.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Oliver Schneidewind <osw@emlix.com>,
-       Michael Hennerich <michael.hennerich@analog.com>
-Subject: Re: [PATCH] ad7877: fix spi word size to 16 bit
-References: <1273142265-11929-1-git-send-email-os@emlix.com> <n2j8bd0f97a1005061126h7fecc32btad9986c0e38246f2@mail.gmail.com>
-In-Reply-To: <n2j8bd0f97a1005061126h7fecc32btad9986c0e38246f2@mail.gmail.com>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2010 08:26 PM, Mike Frysinger wrote:
-> i think it'd be a better idea to do something like:
->   if (spi->bits_per_word != 16) {
->     if (spi->bits_per_word) {
->       dev_err(&spi->dev, "Invalid SPI settings; bits_per_word must be 16\n");
->       return -EINVAL;
->     }
->     spi->bits_per_word = 16;
->     spi_setup(spi);
->   }
 
-There is no way to set bits_per_word using struct spi_board_info. The
-description of that structure in spi.h explicitly lists the wordsize as
-one of the parameters drivers should set themself in probe().
+The thermal sensors of Intel(R) CPUs can be detected by CPUID instruction,
+indicated by CPUID.06H.EAX[0].
 
-Only struct bfin5xx_spi_chip allows to set this value in the board code.
+Signed-off-by: Huaxu Wan <huaxu.wan@linux.intel.com>
+---
+ drivers/hwmon/coretemp.c |   24 +++++++-----------------
+ 1 files changed, 7 insertions(+), 17 deletions(-)
 
-  Daniel
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index e9b7fbc..237c68d 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -440,6 +440,7 @@ static int __init coretemp_init(void)
+ {
+        int i, err = -ENODEV;
+        struct pdev_entry *p, *n;
++       u32 eax;
 
+        /* quick check if we run Intel */
+        if (cpu_data(0).x86_vendor != X86_VENDOR_INTEL)
+@@ -450,23 +451,12 @@ static int __init coretemp_init(void)
+                goto exit;
 
--- 
-Dipl.-Math. Daniel Glöckner, emlix GmbH, http://www.emlix.com
-Fon +49 551 30664-0, Fax -11, Bahnhofsallee 1b, 37081 Göttingen, Germany
-Sitz der Gesellschaft: Göttingen, Amtsgericht Göttingen HR B 3160
-Geschäftsführer: Dr. Uwe Kracke, Ust-IdNr.: DE 205 198 055
+        for_each_online_cpu(i) {
+-               struct cpuinfo_x86 *c = &cpu_data(i);
+-
+-               /* check if family 6, models 0xe (Pentium M DC),
+-                 0xf (Core 2 DC 65nm), 0x16 (Core 2 SC 65nm),
+-                 0x17 (Penryn 45nm), 0x1a (Nehalem), 0x1c (Atom),
+-                 0x1e (Lynnfield) */
+-               if ((c->cpuid_level < 0) || (c->x86 != 0x6) ||
+-                   !((c->x86_model == 0xe) || (c->x86_model == 0xf) ||
+-                       (c->x86_model == 0x16) || (c->x86_model == 0x17) ||
+-                       (c->x86_model == 0x1a) || (c->x86_model == 0x1c) ||
+-                       (c->x86_model == 0x1e))) {
+-
+-                       /* supported CPU not found, but report the unknown
+-                          family 6 CPU */
+-                       if ((c->x86 == 0x6) && (c->x86_model > 0xf))
+-                               printk(KERN_WARNING DRVNAME ": Unknown CPU "
+-                                       "model 0x%x\n", c->x86_model);
++               /* check if the CPU has thermal sensor */
++               eax = cpuid_eax(0x06);
++               if (!(eax & 0x01)) {
++                       struct cpuinfo_x86 *c = &cpu_data(i);
++                       printk_once(KERN_WARNING DRVNAME ": CPU (model=0x%x)"
++                               " has no thermal sensor!\n", c->x86_model);
+                        continue;
+                }
 
-emlix - your embedded linux partner
+--
+1.6.3.3.363.g725cf7
