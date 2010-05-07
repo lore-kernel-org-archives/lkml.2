@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095Ab0EGI4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 04:56:42 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:46474 "EHLO
+	id S1755147Ab0EGI4p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 04:56:45 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:46478 "EHLO
 	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045Ab0EGI4k (ORCPT
+	with ESMTP id S1755011Ab0EGI4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 04:56:40 -0400
+	Fri, 7 May 2010 04:56:43 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: akpm@linux-foundation.org
 Cc: torvalds@linux-foundation.org, adobriyan@gmail.com, nhorman@tuxdriver.com,
        oleg@redhat.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 09/11] rlimits: switch more rlimit syscalls to do_prlimit
-Date: Fri,  7 May 2010 10:55:41 +0200
-Message-Id: <1273222543-17083-10-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 05/11] rlimits: allow setrlimit to non-current tasks
+Date: Fri,  7 May 2010 10:55:36 +0200
+Message-Id: <1273222543-17083-5-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <alpine.LFD.2.00.1005060827520.901@i5.linux-foundation.org>
 References: <alpine.LFD.2.00.1005060827520.901@i5.linux-foundation.org>
@@ -23,90 +23,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Slaby <jirislaby@gmail.com>
 
-After we added more generic do_prlimit, switch sys_getrlimit to that.
-Also switch compat handling, so we can get rid of ugly __user casts
-and avoid setting process' address limit to kernel data and back.
+Add locking to allow setrlimit accept task parameter other than
+current.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Namely, lock tasklist_lock for read and check whether the task
+structure has sighand non-null. Do all the signal processing under
+that lock still held.
+
+Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/compat.c |   16 +++-------------
- kernel/sys.c    |   17 ++++++++---------
- 2 files changed, 11 insertions(+), 22 deletions(-)
+ kernel/sys.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/compat.c b/kernel/compat.c
-index 7f40e92..199b345 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -280,10 +280,6 @@ asmlinkage long compat_sys_setrlimit(unsigned int resource,
- {
- 	struct rlimit r;
- 	int ret;
--	mm_segment_t old_fs = get_fs ();
--
--	if (resource >= RLIM_NLIMITS)
--		return -EINVAL;
- 
- 	if (!access_ok(VERIFY_READ, rlim, sizeof(*rlim)) ||
- 	    __get_user(r.rlim_cur, &rlim->rlim_cur) ||
-@@ -294,10 +290,7 @@ asmlinkage long compat_sys_setrlimit(unsigned int resource,
- 		r.rlim_cur = RLIM_INFINITY;
- 	if (r.rlim_max == COMPAT_RLIM_INFINITY)
- 		r.rlim_max = RLIM_INFINITY;
--	set_fs(KERNEL_DS);
--	ret = sys_setrlimit(resource, (struct rlimit __user *) &r);
--	set_fs(old_fs);
--	return ret;
-+	return do_prlimit(current, resource, &r, NULL);
- }
- 
- #ifdef COMPAT_RLIM_OLD_INFINITY
-@@ -329,16 +322,13 @@ asmlinkage long compat_sys_old_getrlimit(unsigned int resource,
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 7c76f84..eb21661 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1272,6 +1272,7 @@ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
  
  #endif
  
--asmlinkage long compat_sys_getrlimit (unsigned int resource,
-+asmlinkage long compat_sys_getrlimit(unsigned int resource,
- 		struct compat_rlimit __user *rlim)
++/* make sure you are allowed to change @tsk limits before calling this */
+ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
+ 		struct rlimit *new_rlim)
  {
- 	struct rlimit r;
- 	int ret;
--	mm_segment_t old_fs = get_fs();
+@@ -1285,9 +1286,16 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
+ 	if (resource == RLIMIT_NOFILE && new_rlim->rlim_max > sysctl_nr_open)
+ 		return -EPERM;
  
--	set_fs(KERNEL_DS);
--	ret = sys_getrlimit(resource, (struct rlimit __user *) &r);
--	set_fs(old_fs);
-+	ret = do_prlimit(current, resource, NULL, &r);
- 	if (!ret) {
- 		if (r.rlim_cur > COMPAT_RLIM_INFINITY)
- 			r.rlim_cur = COMPAT_RLIM_INFINITY;
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 7a453d2..0f8034f 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1236,15 +1236,14 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
++	/* protect tsk->signal and tsk->sighand from disappearing */
++	read_lock(&tasklist_lock);
++	if (!tsk->sighand) {
++		retval = -ESRCH;
++		goto out;
++	}
++
+ 	retval = security_task_setrlimit(tsk, resource, new_rlim);
+ 	if (retval)
+-		return retval;
++		goto out;
  
- SYSCALL_DEFINE2(getrlimit, unsigned int, resource, struct rlimit __user *, rlim)
- {
--	if (resource >= RLIM_NLIMITS)
--		return -EINVAL;
--	else {
--		struct rlimit value;
--		task_lock(current->group_leader);
--		value = current->signal->rlim[resource];
--		task_unlock(current->group_leader);
--		return copy_to_user(rlim, &value, sizeof(*rlim)) ? -EFAULT : 0;
--	}
-+	struct rlimit value;
-+	int ret;
-+
-+	ret = do_prlimit(current, resource, NULL, &value);
-+	if (!ret)
-+		ret = copy_to_user(rlim, &value, sizeof(*rlim)) ? -EFAULT : 0;
-+
-+	return ret;
+ 	if (resource == RLIMIT_CPU && new_rlim->rlim_cur == 0) {
+ 		/*
+@@ -1322,6 +1330,7 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
+ 
+ 	update_rlimit_cpu(tsk, new_rlim->rlim_cur);
+ out:
++	read_unlock(&tasklist_lock);
+ 	return retval;
  }
  
- #ifdef __ARCH_WANT_SYS_OLD_GETRLIMIT
 -- 
 1.7.1
 
