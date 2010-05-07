@@ -1,119 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab0EGCap (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 22:30:45 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:52261 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215Ab0EGCan (ORCPT
+	id S1752798Ab0EGCgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 22:36:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51241 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751936Ab0EGCgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 22:30:43 -0400
-From: Bryan Wu <bryan.wu@canonical.com>
-To: davem@davemloft.net, Sascha Hauer <s.hauer@pengutronix.de>,
-       Greg Ungerer <gerg@uclinux.org>,
-       Amit Kucheria <amit.kucheria@canonical.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] netdev/fec: fix ifconfig eth0 down hang issue
-Date: Fri,  7 May 2010 10:27:19 +0800
-Message-Id: <1273199239-11057-3-git-send-email-bryan.wu@canonical.com>
-X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1273199239-11057-1-git-send-email-bryan.wu@canonical.com>
-References: <1273199239-11057-1-git-send-email-bryan.wu@canonical.com>
+	Thu, 6 May 2010 22:36:02 -0400
+Date: Thu, 6 May 2010 19:34:10 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Len Brown <lenb@kernel.org>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [git pull request] ACPI patches for 2.6.34-rc6
+In-Reply-To: <alpine.LFD.2.00.1005062216430.10792@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1005061926460.901@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1005062216430.10792@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BugLink: http://bugs.launchpad.net/bugs/559065
 
-In fec open/close function, we need to use phy_connect and phy_disconnect
-operation before we start/stop phy. Otherwise it will cause system hang.
 
-Only call fec_enet_mii_probe() in open function, because the first open
-action will cause NULL pointer error.
+On Thu, 6 May 2010, Len Brown wrote:
+> 
+> The big DMI list in sleep.c a temporary brute force and low-risk workaround.
+> We will endeavor to delete it entirely in 2.6.35 with a clean fix
+> that was deemed too risky for this late in the .34 release cycle.
 
-Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
----
- drivers/net/fec.c |   28 ++++++++++++++++------------
- 1 files changed, 16 insertions(+), 12 deletions(-)
+Btw, why don't we just force the SCI_EN by hand?
 
-diff --git a/drivers/net/fec.c b/drivers/net/fec.c
-index 9c58f6b..af4243f 100644
---- a/drivers/net/fec.c
-+++ b/drivers/net/fec.c
-@@ -678,6 +678,8 @@ static int fec_enet_mii_probe(struct net_device *dev)
- 	struct phy_device *phy_dev = NULL;
- 	int phy_addr;
- 
-+	fep->phy_dev = NULL;
-+
- 	/* find the first phy */
- 	for (phy_addr = 0; phy_addr < PHY_MAX_ADDR; phy_addr++) {
- 		if (fep->mii_bus->phy_map[phy_addr]) {
-@@ -708,6 +710,11 @@ static int fec_enet_mii_probe(struct net_device *dev)
- 	fep->link = 0;
- 	fep->full_duplex = 0;
- 
-+	printk(KERN_INFO "%s: Freescale FEC PHY driver [%s] "
-+		"(mii_bus:phy_addr=%s, irq=%d)\n", dev->name,
-+		fep->phy_dev->drv->name, dev_name(&fep->phy_dev->dev),
-+		fep->phy_dev->irq);
-+
- 	return 0;
- }
- 
-@@ -753,13 +760,8 @@ static int fec_enet_mii_init(struct platform_device *pdev)
- 	if (mdiobus_register(fep->mii_bus))
- 		goto err_out_free_mdio_irq;
- 
--	if (fec_enet_mii_probe(dev) != 0)
--		goto err_out_unregister_bus;
--
- 	return 0;
- 
--err_out_unregister_bus:
--	mdiobus_unregister(fep->mii_bus);
- err_out_free_mdio_irq:
- 	kfree(fep->mii_bus->irq);
- err_out_free_mdiobus:
-@@ -912,7 +914,12 @@ fec_enet_open(struct net_device *dev)
- 	if (ret)
- 		return ret;
- 
--	/* schedule a link state check */
-+	/* Probe and connect to PHY when open the interface */
-+	ret = fec_enet_mii_probe(dev);
-+	if (ret) {
-+		fec_enet_free_buffers(dev);
-+		return ret;
-+	}
- 	phy_start(fep->phy_dev);
- 	netif_start_queue(dev);
- 	fep->opened = 1;
-@@ -926,10 +933,12 @@ fec_enet_close(struct net_device *dev)
- 
- 	/* Don't know what to do yet. */
- 	fep->opened = 0;
--	phy_stop(fep->phy_dev);
- 	netif_stop_queue(dev);
- 	fec_stop(dev);
- 
-+	if (fep->phy_dev)
-+		phy_disconnect(fep->phy_dev);
-+
-         fec_enet_free_buffers(dev);
- 
- 	return 0;
-@@ -1293,11 +1302,6 @@ fec_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto failed_register;
- 
--	printk(KERN_INFO "%s: Freescale FEC PHY driver [%s] "
--		"(mii_bus:phy_addr=%s, irq=%d)\n", ndev->name,
--		fep->phy_dev->drv->name, dev_name(&fep->phy_dev->dev),
--		fep->phy_dev->irq);
--
- 	return 0;
- 
- failed_register:
--- 
-1.7.0.1
+We did that for the Apple Mac Mini bug too. It was always the right thing 
+to do.
 
+There is _no_ reason not to force it. If the BIOS set it, it's a no-op. If 
+the BIOS didn't set it, it's a bug that _must_ be fixed.
+
+I really don't see the reason for that DMI list. What could _possibly_ go 
+wrong for just setting the damn bit that we _know_ has to be set?
+
+How could setting SCI_EN _ever_ be a bug? Seriously? Why are we doing this 
+conditionally, especially considering that even the commit message here 
+explicitly states that Windows does it unconditionally?
+
+And no, I'm not interested in "that toilet paper spec says you can't touch 
+it". I care about _reality_.
+
+				Linus
