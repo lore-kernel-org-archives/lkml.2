@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab0EGRrT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 13:47:19 -0400
+	id S1757341Ab0EGRrW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 13:47:22 -0400
 Received: from mga10.intel.com ([192.55.52.92]:58103 "EHLO
 	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756703Ab0EGRrQ (ORCPT
+	with ESMTP id S1756703Ab0EGRrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 13:47:16 -0400
+	Fri, 7 May 2010 13:47:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,349,1270450800"; 
-   d="scan'208";a="796418387"
+   d="scan'208";a="796418396"
 From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 To: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
        Ingo Molnar <mingo@elte.hu>, Alek Du <alek.du@intel.com>,
@@ -17,9 +17,9 @@ To: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
        Feng Tang <feng.tang@intel.com>, LKML <linux-kernel@vger.kernel.org>
 Cc: Jacob Pan <jacob.jun.pan@intel.com>,
        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH 1/8] x86: avoid check hlt if no timer interrupts
-Date: Fri,  7 May 2010 10:41:41 -0700
-Message-Id: <1273254108-3234-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Subject: [PATCH 3/8] x86/apic: allow use of lapic timer early calibration result
+Date: Fri,  7 May 2010 10:41:43 -0700
+Message-Id: <1273254108-3234-4-git-send-email-jacob.jun.pan@linux.intel.com>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
 References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
@@ -29,47 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jacob Pan <jacob.jun.pan@intel.com>
 
-check hlt requires external timer interrupt to wake up the
-cpu. for platforms equipped with only per cpu timers, we don't
-have external interrupts during check hlt.
-this patch checks such condition to avoid kernel hang at hlt.
-it also saves boot time in that hlt four times in the current code
-requires four ticks to break out of them.
+lapic timer calibration can be combined with tsc in platform specific
+calibration functions. if such calibration result is obtained early,
+we can skip the redundent calibration loops.
 
 Signed-off-by: Jacob Pan <jacob.jun.pan@intel.com>
 Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 ---
- arch/x86/include/asm/bugs.h |    1 +
- arch/x86/kernel/cpu/bugs.c  |    4 ++++
- 2 files changed, 5 insertions(+), 0 deletions(-)
+ arch/x86/kernel/apic/apic.c |   21 ++++++++++++++++++++-
+ 1 files changed, 20 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/bugs.h b/arch/x86/include/asm/bugs.h
-index 08abf63..1e0cef8 100644
---- a/arch/x86/include/asm/bugs.h
-+++ b/arch/x86/include/asm/bugs.h
-@@ -2,6 +2,7 @@
- #define _ASM_X86_BUGS_H
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index e5a4a1e..8ef56ac 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -175,7 +175,7 @@ static struct resource lapic_resource = {
+ 	.flags = IORESOURCE_MEM | IORESOURCE_BUSY,
+ };
  
- extern void check_bugs(void);
-+extern struct clock_event_device *global_clock_event;
+-static unsigned int calibration_result;
++unsigned int calibration_result;
  
- #if defined(CONFIG_CPU_SUP_INTEL) && defined(CONFIG_X86_32)
- int ppro_with_ram_bug(void);
-diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
-index 01a2652..c0d9688 100644
---- a/arch/x86/kernel/cpu/bugs.c
-+++ b/arch/x86/kernel/cpu/bugs.c
-@@ -90,6 +90,10 @@ static void __init check_hlt(void)
- 		return;
+ static int lapic_next_event(unsigned long delta,
+ 			    struct clock_event_device *evt);
+@@ -597,6 +597,25 @@ static int __init calibrate_APIC_clock(void)
+ 	long delta, deltatsc;
+ 	int pm_referenced = 0;
  
- 	printk(KERN_INFO "Checking 'hlt' instruction... ");
-+	if (!global_clock_event) {
-+		printk(KERN_CONT "no clockevent to wake up, skipped.\n");
-+		return;
++	/**
++	 * check if lapic timer has already been calibrated by platform
++	 * specific routine, such as tsc calibration code. if so, we just fill
++	 * in the clockevent structure and return.
++	 */
++
++	if (calibration_result) {
++		apic_printk(APIC_VERBOSE, "lapic timer already calibrated %d\n",
++				calibration_result);
++		lapic_clockevent.mult = div_sc(calibration_result/APIC_DIVISOR,
++					TICK_NSEC, lapic_clockevent.shift);
++		lapic_clockevent.max_delta_ns =
++			clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
++		lapic_clockevent.min_delta_ns =
++			clockevent_delta2ns(0xF, &lapic_clockevent);
++		lapic_clockevent.features &= ~CLOCK_EVT_FEAT_DUMMY;
++		return 0;
 +	}
- 	if (!boot_cpu_data.hlt_works_ok) {
- 		printk("disabled\n");
- 		return;
++
+ 	local_irq_disable();
+ 
+ 	/* Replace the global interrupt handler */
 -- 
 1.6.3.3
 
