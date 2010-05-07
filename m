@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab0EGRJq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 13:09:46 -0400
-Received: from kroah.org ([198.145.64.141]:42651 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753252Ab0EGRJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 13:09:44 -0400
-Date: Fri, 7 May 2010 09:56:07 -0700
-From: Greg KH <greg@kroah.com>
-To: roma1390 <roma1390@gmail.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [stable] nfs kernel server causes: kernel BUG at
- include/linux/module.h:386!
-Message-ID: <20100507165606.GA795@kroah.com>
-References: <4BE257EF.9050904@gmail.com>
- <20100506060326.GA20846@kroah.com>
- <4BE3BCDF.4080604@gmail.com>
+	id S1755171Ab0EGRNH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 13:13:07 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:60944 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423Ab0EGRNF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 13:13:05 -0400
+Date: Fri, 7 May 2010 18:12:18 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+Message-ID: <20100507171218.GA23142@srcf.ucam.org>
+References: <20100506134015.GA23426@srcf.ucam.org> <20100506170151.GA30928@atomide.com> <20100506170956.GA28104@srcf.ucam.org> <20100506171453.GC30928@atomide.com> <20100506172201.GA28578@srcf.ucam.org> <20100506173807.GD30928@atomide.com> <20100506174331.GA29103@srcf.ucam.org> <20100506183335.GE30928@atomide.com> <20100506184418.GA30669@srcf.ucam.org> <20100507020541.GH30928@atomide.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BE3BCDF.4080604@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100507020541.GH30928@atomide.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 10:10:23AM +0300, roma1390 wrote:
-> Greg KH wrote:
-> > On Thu, May 06, 2010 at 08:47:27AM +0300, roma1390 wrote:
-> >> Hello,
-> >>
-> >> after some nfs server start/stop i hit kernel bug on 2.6.26.
-> There is hope[1] that this bug is fixed[2], and fix is merged[3]
-> into 2.6.29. But there is missing bugfix for older stable kernels.
-> >
-> > 2.6.26 is not supported by the community anymore.
+On Thu, May 06, 2010 at 07:05:41PM -0700, Tony Lindgren wrote:
+> * Matthew Garrett <mjg@redhat.com> [100506 11:39]:
+> > And the untrusted userspace code that's waiting for a network packet? 
+> > Adding a few seconds of latency isn't an option here.
 > 
-> Sadly, the debian 5.0 (current stable) chose 2.6.26 as distribution
-> kernel. Of course they do kernel as part of distribution support by
-> them self.
-> 
-> > Is this a problem on the latest 2.6.27-stable kernel release?  If so,
-> > which specific patches in Linus's tree do you think resolves this?  Is
-> > it just the 22945e4a1c7454c97f5d8aee1ef526 commit that is needed to be
-> > added there?
-> 
-> Currently there isn't any free resources to do 2.6.27-stable
-> testing. Switching from distribution kernel to custom one adds much
-> more work for system admin, so this options is the last one none
-> other will work.
-> 
-> If there is any demand to test 22945e4a1c7454c97f5d8aee1ef526, there
-> can be such test done. But this issue was found only once, and on
-> first hour after nfs server configuration was started.
+> Hmm well hitting retention and wake you can basically do between
+> jiffies. Hitting off mode in idle has way longer latencies,
+> but still in few hundred milliseconds or so, not seconds.
 
-If you can't test it, if I add that commit id to .27, I don't see how
-that would help you out at all, right?
+The situation is this. You've frozen most of your userspace because you 
+don't trust the applications. One of those applications has an open 
+network socket, and policy indicates that receiving a network packet 
+should generate a wakeup, allow the userspace application to handle the 
+packet and then return to sleep. What mechanism do you use to do that?
 
-Can you poke the debian developers about this?
-
-thanks,
-
-greg k-h
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
