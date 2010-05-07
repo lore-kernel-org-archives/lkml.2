@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169Ab0EGTsr (ORCPT <rfc822;w@1wt.eu>);
+	id S932185Ab0EGTst (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 15:48:49 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:18327
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932167Ab0EGTsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 May 2010 15:48:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8776 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932148Ab0EGTsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 15:48:45 -0400
-Message-ID: <4BE46E6D.6000502@redhat.com>
-Date: Fri, 07 May 2010 15:47:57 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+X-SpamScore: -14
+X-BigFish: VPS-14(zz98dN936eM62a3Lab9bhzz1202hzz6ff19hz32i2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L22F0X-01-48N-02
+X-M-MSG: 
+Date: Fri, 7 May 2010 21:48:33 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: fix raw sample size if no sampling data is
+ attached
+Message-ID: <20100507194833.GY6450@erda.amd.com>
+References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
+ <1271190201-25705-13-git-send-email-robert.richter@amd.com>
+ <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com>
+ <20100507152835.GU6450@erda.amd.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Robert Richter <robert.richter@amd.com>, mingo@redhat.com, hpa@zytor.com,
-       paulus@samba.org, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-       peterz@infradead.org, efault@gmx.de, tglx@linutronix.de, mingo@elte.hu,
-       linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf probe: Support DW_OP_call_frame_cfa in	debuginfo
-References: <20100412171728.3790.98217.stgit@localhost6.localdomain6> <tip-a34a985499895a46a4dacff727d0fbc63cdc75e8@git.kernel.org> <20100507163321.GB15333@erda.amd.com> <4BE44AF4.3090303@redhat.com> <20100507183143.GB30926@ghostprotocols.net> <4BE46613.9090509@redhat.com>
-In-Reply-To: <4BE46613.9090509@redhat.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100507152835.GU6450@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Masami Hiramatsu wrote:
-> Arnaldo Carvalho de Melo wrote:
->> Em Fri, May 07, 2010 at 01:16:36PM -0400, Masami Hiramatsu escreveu:
->>> Hi,
->>>
->>> Robert Richter wrote:
->>>> On 15.04.10 07:29:18, tip-bot for Masami Hiramatsu wrote:
->>>>> diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
->>>>> index 2a27132..310ce89 100644
->>>>> --- a/tools/perf/util/probe-finder.h
->>>>> +++ b/tools/perf/util/probe-finder.h
->>>>> @@ -42,6 +42,7 @@ struct probe_finder {
->>>>>  	struct list_head	lcache;		/* Line cache for lazy match */
->>>>>  
->>>>>  	/* For variable searching */
->>>>> +	Dwarf_CFI		*cfi;		/* Call Frame Information */
->>>>
->>>> I get the following complile error:
->>>>
->>>> gcc -o builtin-probe.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstack-protector -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wvolatile-register-var -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement  -fstack-protector-all -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -I/usr/include/elfutils -DDWARF_SUPPORT -DNO_NEWT_SUPPORT -DNO_LIBPERL -DSHA1_HEADER='<openssl/sha.h>'  builtin-probe.c
->>>> In file included from builtin-probe.c:43:
->>>> util/probe-finder.h:45: error: expected specifier-qualifier-list before ‘Dwarf_CFI’
->>>> make: *** [builtin-probe.o] Error 1
->>>> build script error: 2
->>>>
->>>> git grep only finds the following:
->>>>
->>>>  $ git grep Dwarf_CFI 
->>>>  tools/perf/util/probe-finder.h: Dwarf_CFI               *cfi;           /* Call Frame Information */
->>>>
->>>> Am I missing something?
->>>
->>> Hmm, it seems that Dwarf_CFI is not defined in library.
->>> (it is defined as a type in /usr/include/elfutils/libdw.h)
->>> Could you tell me what version of elfutils you are using?
->>
->> Masami-san,
->>
->> 	If we are version dependant on that, we should disable this
->> specific feature by doing one more compile test like we have for setting
->> NO_DWARF, hopefully just a subset of DWARF support can be disabled due
->> to this version dependency, right?
-> 
-> Agreed. I'll check that what version can support current perf probe.
+On 07.05.10 17:28:35, Robert Richter wrote:
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index 9dbe8cd..f6ddae9 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -3229,7 +3229,7 @@ void perf_output_sample(struct perf_output_handle *handle,
+>  				u32	size;
+>  				u32	data;
+>  			} raw = {
+> -				.size = sizeof(u32),
+> +				.size = 0,
+>  				.data = 0,
 
-OK, I've found that the CFI support has been added at last June,
-and elfutils-0.142 is released in last July.
-So, I think we can check whether CFI is supported or not by checking
-the version of elfutils, which can be done by _ELFUTILS_PREREQ() macro
-defined in elfutils/version.h 
+Uhhh, this padding data was completly hidden to me by a SEP field. It
+became visible to me with a far distance of at least 4km and only from
+the corner of my eye. So, *now* I realized that size is the size of
+padding data, not the size header! Please ignore this, I shouln't send
+patches at Friday afternoon.
 
-Thank you,
+-Robert
+
+>  			};
+>  			perf_output_put(handle, raw);
 
 -- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
+
