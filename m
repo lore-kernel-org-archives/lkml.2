@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab0EGT5Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 15:57:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39010 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756954Ab0EGT5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 15:57:23 -0400
-Message-ID: <4BE47059.8090101@zytor.com>
-Date: Fri, 07 May 2010 12:56:09 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1758149Ab0EGUDl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 16:03:41 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49470 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756943Ab0EGUDj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 16:03:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=M8PxDZA1R/K+BNO9qROO5K1MNBhCy53F7pDVV/+1n9w4pQoLqYZd4Sfvb9Lra5/vQi
+         klWdF2uWJoFJ4w2bFVHuEZUG4qHItT31eqRgGEVsAYSdyM5sbXNk4gsgC5E0+9u5Xn8+
+         5IU9vYltfH6HhW38xl2A02ooeo04sg7EXhE64=
+Date: Fri, 7 May 2010 22:03:39 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/9 - v2][RFC] tracing: Remove per event trace
+	registering
+Message-ID: <20100507200337.GC5401@nowhere>
+References: <20100504034045.085822814@goodmis.org> <20100504034202.282030521@goodmis.org> <20100507042025.GC8069@nowhere> <20100507145438.GB29573@Krystal> <20100507180130.GA5401@nowhere> <1273259305.22438.417.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       Jacob Pan <jacob.jun.pan@linux.intel.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Alek Du <alek.du@intel.com>, Arjan van de Ven <arjan@linux.intel.com>,
-       Feng Tang <feng.tang@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] x86/mrst: add vrtc driver which serves as a wall
- clock device
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>	 <1273254108-3234-8-git-send-email-jacob.jun.pan@linux.intel.com>	 <1273258266.1540.63.camel@Joe-Laptop.home>	 <20100507200208.09b2941d@lxorguk.ukuu.org.uk> <1273259187.1540.75.camel@Joe-Laptop.home>
-In-Reply-To: <1273259187.1540.75.camel@Joe-Laptop.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273259305.22438.417.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2010 12:06 PM, Joe Perches wrote:
-> On Fri, 2010-05-07 at 20:02 +0100, Alan Cox wrote:
->> On Fri, 07 May 2010 11:51:06 -0700
->> Joe Perches <joe@perches.com> wrote:
->>> On Fri, 2010-05-07 at 10:41 -0700, Jacob Pan wrote: 
->>>> +	printk(KERN_INFO "vRTC: sec: %d min: %d hour: %d day: %d "
->>>> +	"mon: %d year: %d\n", sec, min, hour, mday, mon, year);
->>> Even though many of the rtc drivers print this way, it seems
->>> a very backwards way of presenting time to me.
->> Consistency is really more important here IMHO - lots of drivers have set
->> an existing policy.
+On Fri, May 07, 2010 at 03:08:25PM -0400, Steven Rostedt wrote:
+> On Fri, 2010-05-07 at 20:01 +0200, Frederic Weisbecker wrote:
+> > On Fri, May 07, 2010 at 10:54:38AM -0400, Mathieu Desnoyers wrote:
 > 
-> (added Alessandro Zummo to cc's)
+> > The second is this extra parameter passed whether or not it is needed.
+> > And although we suppose it is safe, I don't feel comfortable with it.
+> > So if we can find a more proper way to avoid it, I'm all for it.
 > 
-> look at drivers/rtc.
+> Now I'm making the extra parameter mandatory for all tracepoint
+> probes. ;-)
 > 
-> All of them seem to use a templated copy/paste dev_dbg,
-> which seems to point to a use for a possible common rtc_util.c
-> or some such where this could be standardized.
->  
-> Is there somewhere else this style is used?
+> But this time, it will be at the start not the end.
 > 
+> 	void probe(void *data, proto);
+> 
+> 
+> Unfortunately we can't avoid it. In order to remove the extra code
+> (registering and unregistering) and even share the probe among several
+> events, we need a way to pass the data to the probe to let the probe
+> know what event it is dealing with (to put in the event id into the
+> buffer, to let the tracer output code know what event this data is for).
+> 
+> The current method is that only the proto that the tracepoint uses is
+> passed to the probe. This gives us no way to add any more information.
+> 
+> This new method allows data to be assigned at probe register, and the
+> probe gets this data as the first parameter.
+> 
+> The register_* functions will still do typechecking of the probes, they
+> just add the "void *" at the beginning.
+> 
+> Actually, here is a place that I can see where Mathieu's check does come
+> in handy. If we add the check test to each probe, and the tracepoint
+> proto changes, it will flag it.
+> 
+> Mathieu, you've been explaining this wrong ;-)
+> 
+> I'm not worried about changes to ftrace.h breaking things. I'm worried
+> about changes to tracepoint.h breaking ftrace.h.  This is where your
+> check comes in. As I change the void *data from the end to the start,
+> I'm nervous about catching all the probes that are registered this way.
+> (ftrace events, syscalls, kprobes, and perf)
 
-Probably the right thing to do is to (a) move all this printing to
-common code; (b) change to ISO 8601 format.
 
-	-hpa
+Yeah right, I see the point.
 
