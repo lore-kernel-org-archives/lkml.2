@@ -1,176 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab0EGRzc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 13:55:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49135 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755596Ab0EGRza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 13:55:30 -0400
-Message-ID: <4BE453A1.1060003@redhat.com>
-Date: Fri, 07 May 2010 13:53:37 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Mel Gorman <mel@csn.ul.ie>, Randy Dunlap <rdunlap@xenotime.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v3 10/10] perf: perf interface for uprobes.
-References: <20100506180139.28877.81699.sendpatchset@localhost6.localdomain6> <20100506180340.28877.25709.sendpatchset@localhost6.localdomain6> <4BE34D1D.2020100@redhat.com> <20100507022403.GH7426@linux.vnet.ibm.com>
-In-Reply-To: <20100507022403.GH7426@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757472Ab0EGR6t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 13:58:49 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:50197 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755596Ab0EGR6s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 13:58:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=HBYOaf2t4hWI0VaQ1oRS0tYeyERTjqGW/0pLw1jm0ZpyhXKnFdwutEuakVeNW0C1WI
+         lYyPHI/amwkAQJKiJ598RFTHFzpTstx2JP4OZlp1hjq/4BfJNCKQRoNxKWgL+raVRJt4
+         GuW5Yd6SGpbtHsHmfjwywbhoYJLO4t0xdWHdE=
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH] tty: fix obsolete comment on tty_insert_flip_string_fixed_flag
+Date: Fri,  7 May 2010 19:58:32 +0200
+Message-Id: <1273255112-30671-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srikar Dronamraju wrote:
->>
->> Could you also rebase your patch on the latest tip tree? :)
->> (and remove die() too)
-> 
-> I was aware that I have to rebase the patch to the latest tip.
-> However I wanted to get a working set out.
-> Please expect the rebased version in the next version of the posting.
-> 
->>
->>> Here is a terminal snapshot of placing, using and removing a probe on a
->>> process with pid 3329 (corresponding to zsh)
->>>
->>> [ Probing a function in the executable using function name  ]
->>> -------------------------------------------------------------
->>> [root@ABCD]# perf probe -p 3329 zfree@zsh
->>
->> Hmm, I'm not sure why we have to specify both of PID and exec name.
->> Is that possible to give a symbol as below? (omit exec name)
->>
->> # perf probe -p 3329 zfree
-> 
-> Yes, If the symbol name belongs to th execfile then we can omit the
-> execfile part. However for symbols outside the execname, the
-> execfile(library file) is a must(atleast for now).
+Comment was not updated when tty_insert_flip_string was generalised.
 
-Good!:)
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/char/tty_buffer.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
->>> Added new event:
->>>   probe:p_3329_zfree                       (on 0x446420)
->>
->> Hmm, the event name should be simpler, as like as zfree_3329.
->> or, we might better make a new event group for each process, as like as
->> 'probe_3329:zfree'
->>
-> 
-> Either zfree_3329 or having a new event group for each process is
-> possible.
-
-I think adding new groups make controlling those event easier.
-(e.g. deleting all probes on exited process)
-
-
->> Hmm, if user gave --list with -p, what happened?
->> We need to check a bad combination and warn it.
->>
-> 
-> Currently it would ignore -p option. i.e --list overrides.
-> We could either warn, or error out. What do you suggest?
-> 
->>>  
->>> +	if (session.pid)
->>> +		goto end_dwarf;
->>> +
->>
->> Again, it must be checked that the combination of -p option and dwarf requirement.
->> The latest code has perf_probe_event_need_dwarf(), so you can check it easier.
->>
-> 
-> Okay, 
-> 
->> [...]
->>> +	else
->>> +		free(pp->function);
->>> +	pp->function = zalloc(sizeof(char *) * 20);
->>> +	if (!pp->function)
->>> +		die("Failed to allocate memory by zalloc.");
->>> +	e_snprintf(pp->function, 20, "0x%llx", vaddr);
->>> +}
->>
->> Well, after rebasing, you'll need to remove die()s from here and
->> make it returns errors. 
->>
-> 
-> Okay. 
-> 
-> 
->> [...]
->>> @@ -383,7 +450,11 @@ int synthesize_trace_kprobe_event(struct probe_point *pp)
->>>  	pp->probes[0] = buf = zalloc(MAX_CMDLEN);
->>>  	if (!buf)
->>>  		die("Failed to allocate memory by zalloc.");
->>> -	ret = e_snprintf(buf, MAX_CMDLEN, "%s+%d", pp->function, pp->offset);
->>> +	if (pp->offset)
->>> +		ret = e_snprintf(buf, MAX_CMDLEN, "%s+%d", pp->function,
->>> +					pp->offset);
->>> +	else
->>> +		ret = e_snprintf(buf, MAX_CMDLEN, "%s", pp->function);
->>>  	if (ret <= 0)
->>>  		goto error;
->>>  	len = ret;
->>
->> Isn't it a cleanup ?
-> 
-> Can you please elaborate?
-
-symbol+offset is always allowed even if offset == 0,
-so I think this change isn't needed. I guessed it is just for cleanup.
-
->>> +void add_trace_uprobe_events(struct probe_point *probes, int nr_probes,
->>> +			     bool force_add, pid_t pid)
->>> +{
->>> +	int fd = open_uprobe_events(O_RDWR, O_APPEND);
->>> +	add_trace_probe_events(fd, probes, nr_probes, force_add, pid);
->>> +}
->>
->> Please close fd in the function which opened it.
->>
-> 
-> Okay.
-> 
->>
->>>  	memset(&sym, 0, sizeof(sym));
->>> -	if (!self->kernel) {
->>> +	if (self->kernel || symbol_conf.sort_by_name)
->>> +		self->adjust_symbols = 0;
->>> +	else {
->>>  		self->adjust_symbols = (ehdr.e_type == ET_EXEC ||
->>>  				elf_section_by_name(elf, &ehdr, &shdr,
->>>  						     ".gnu.prelink_undo",
->>>  						     NULL) != NULL);
->>> -	} else self->adjust_symbols = 0;
->>> +	}
->>>  
->>>  	elf_symtab__for_each_symbol(syms, nr_syms, idx, sym) {
->>>  		struct symbol *f;
->>
->> This one changes the symbol.c, so I think you'd better make a
->> separate patch for this change.
-> 
-> Okay, I will separate it in the next version.
-> Thanks Masami for the review.
-
-
-Thank you!
-
+diff --git a/drivers/char/tty_buffer.c b/drivers/char/tty_buffer.c
+index 7ee5216..cc1e985 100644
+--- a/drivers/char/tty_buffer.c
++++ b/drivers/char/tty_buffer.c
+@@ -238,7 +238,7 @@ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
+  *	@size: size
+  *
+  *	Queue a series of bytes to the tty buffering. All the characters
+- *	passed are marked as without error. Returns the number added.
++ *	passed are marked with the supplied flag. Returns the number added.
+  *
+  *	Locking: Called functions may take tty->buf.lock
+  */
 -- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+1.7.0.4
+
