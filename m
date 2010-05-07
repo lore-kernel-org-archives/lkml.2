@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773Ab0EGBfk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 21:35:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47511 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845Ab0EGBfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 21:35:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,344,1270450800"; 
-   d="scan'208";a="515826042"
-Date: Fri, 7 May 2010 09:32:00 +0800
-From: "Du, Alek" <alek.du@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Ondrej Zary <linux@rainbow-software.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       USB list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
- (WKOC_E) and disconnect (WKDISC_E)
-Message-ID: <20100507093200.28ecd63c@dxy2>
-In-Reply-To: <Pine.LNX.4.44L0.1005061204000.1708-100000@iolanthe.rowland.org>
-References: <1865303E0DED764181A9D882DEF65FB61A82A6DAFD@shsmsx502.ccr.corp.intel.com>
-	<Pine.LNX.4.44L0.1005061204000.1708-100000@iolanthe.rowland.org>
-Organization: Intel Corp.
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
+	id S1751791Ab0EGBo1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 21:44:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33819 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750845Ab0EGBo0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 21:44:26 -0400
+Date: Thu, 6 May 2010 18:40:39 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/2] mm,migration: Fix race between shift_arg_pages and
+ rmap_walk by guaranteeing rmap_walk finds PTEs created within the temporary
+ stack
+In-Reply-To: <1273188053-26029-3-git-send-email-mel@csn.ul.ie>
+Message-ID: <alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org>
+References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie> <1273188053-26029-3-git-send-email-mel@csn.ul.ie>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 May 2010 00:06:33 +0800
-Alan Stern <stern@rowland.harvard.edu> wrote:
 
-> On Thu, 6 May 2010, Du, Alek wrote:
+
+On Fri, 7 May 2010, Mel Gorman wrote:
 > 
-> > Hi Alan,
-> > 
-> > >With this patch, _none_ of the wakeup bits are enabled.  That should
-> > >work, right?
-> > >
-> > I guess so, but if no wakeup bits set, how to handle remote wakeup case? Seems you removed remote wakeup case?
-> 
-> The wakeup bits get set later, in ehci_set_wakeup_flags().
-> 
-> The point is that the wakeup bits take effect only when the controller 
-> leaves D0.  But ehci_bus_suspend() is called when the root hub is 
-> suspended, which happens first.  So at that time the wakeup bits aren't 
-> needed.
-> 
-> Alan Stern
-> 
+> Page migration requires rmap to be able to find all migration ptes
+> created by migration. If the second rmap_walk clearing migration PTEs
+> misses an entry, it is left dangling causing a BUG_ON to trigger during
+> fault. For example;
 
-Alan,
+So I still absolutely detest this patch.
 
-As I tested, with the second patch, after entering phy low power mode, the port cannot detect any USB devices that plugged in.
-I also confirm that after set PHCD flag, any write to PORTSC is illegal. (I have another patch will send out soon named "Clear PHCD before resuming",
-but the patch is not related with this one) 
+Why didn't the other - much simpler - patch work? The one Rik pointed to:
 
-So it seems wakeup bits must set before set PHCD. So we may revise the flowchart a little bit, for example, if the HCD has hostpc,
-then set the wakeup bits like before, if the HCD is the normal one, then go your new way?
+	http://lkml.org/lkml/2010/4/30/198
 
+and didn't do that _disgusting_ temporary anon_vma?
 
-Thanks,
-Alek
+Alternatively, why don't we just take the anon_vma lock over this region, 
+so that rmap can't _walk_ the damn thing?
+
+			Linus
