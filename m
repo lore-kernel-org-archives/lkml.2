@@ -1,147 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758414Ab0EGVNE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 17:13:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19932 "EHLO mx1.redhat.com"
+	id S1758469Ab0EGVMM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 17:12:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59323 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758509Ab0EGVM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 17:12:57 -0400
+	id S1756315Ab0EGVMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 17:12:09 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: mingo@elte.hu, fweisbec@gmail.com
 Cc: peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
        linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
        dzickus@redhat.com
-Subject: [PATCH 7/8] [watchdog] resolve softlockup.c conflicts
-Date: Fri,  7 May 2010 17:11:50 -0400
-Message-Id: <1273266711-18706-8-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 4/8] [watchdog] remove nmi_watchdog.c file
+Date: Fri,  7 May 2010 17:11:47 -0400
+Message-Id: <1273266711-18706-5-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1273266711-18706-1-git-send-email-dzickus@redhat.com>
 References: <1273266711-18706-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My changes with the softlockup code uses an older version of softlockup.c.
-A couple of commits have been committed that were not on the branch I am
-using.  This patch resolves those conflicts.
-
-Commit 8c2eb4 softlockup: Stop spurious softlockup messages due to overflow
-       d6ad3e softlockup: Add sched_clock_tick() to avoid kernel warning on kgdb resume
-
-Conflicts:
-
-	include/linux/sched.h
-	kernel/kgdb.c
-	kernel/softlockup.c
+This file migrated to kernel/watchdog.c and then combined with
+kernel/softlockup.c.  As a result kernel/nmi_watchdog.c is no longer
+needed.  Just remove it.
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- include/linux/sched.h |    4 ++++
- kernel/kgdb.c         |    6 +++---
- kernel/watchdog.c     |   17 ++++++++++++++++-
- 3 files changed, 23 insertions(+), 4 deletions(-)
+ kernel/nmi_watchdog.c |  259 -------------------------------------------------
+ 1 files changed, 0 insertions(+), 259 deletions(-)
+ delete mode 100644 kernel/nmi_watchdog.c
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e9c6c1d..720e7e9 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -310,6 +310,7 @@ extern void sched_show_task(struct task_struct *p);
- #ifdef CONFIG_DETECT_SOFTLOCKUP
- extern void touch_softlockup_watchdog(void);
- extern void touch_all_softlockup_watchdogs(void);
-+extern void touch_softlockup_watchdog_sync(void);
- extern unsigned int  softlockup_panic;
- extern int softlockup_thresh;
- extern int proc_dowatchdog_thresh(struct ctl_table *table, int write,
-@@ -322,6 +323,9 @@ static inline void touch_softlockup_watchdog(void)
- static inline void touch_all_softlockup_watchdogs(void)
- {
- }
-+static inline void touch_softlockup_watchdog_sync(void)
-+{
-+}
- #endif
- 
- #ifdef CONFIG_DETECT_HUNG_TASK
-diff --git a/kernel/kgdb.c b/kernel/kgdb.c
-index 2eb517e..87f2cc5 100644
---- a/kernel/kgdb.c
-+++ b/kernel/kgdb.c
-@@ -596,7 +596,7 @@ static void kgdb_wait(struct pt_regs *regs)
- 
- 	/* Signal the primary CPU that we are done: */
- 	atomic_set(&cpu_in_kgdb[cpu], 0);
+diff --git a/kernel/nmi_watchdog.c b/kernel/nmi_watchdog.c
+deleted file mode 100644
+index a79d211..0000000
+--- a/kernel/nmi_watchdog.c
++++ /dev/null
+@@ -1,259 +0,0 @@
+-/*
+- * Detect Hard Lockups using the NMI
+- *
+- * started by Don Zickus, Copyright (C) 2010 Red Hat, Inc.
+- *
+- * this code detects hard lockups: incidents in where on a CPU
+- * the kernel does not respond to anything except NMI.
+- *
+- * Note: Most of this code is borrowed heavily from softlockup.c,
+- * so thanks to Ingo for the initial implementation.
+- * Some chunks also taken from arch/x86/kernel/apic/nmi.c, thanks
+- * to those contributors as well.
+- */
+-
+-#include <linux/mm.h>
+-#include <linux/cpu.h>
+-#include <linux/nmi.h>
+-#include <linux/init.h>
+-#include <linux/delay.h>
+-#include <linux/freezer.h>
+-#include <linux/lockdep.h>
+-#include <linux/notifier.h>
+-#include <linux/module.h>
+-#include <linux/sysctl.h>
+-
+-#include <asm/irq_regs.h>
+-#include <linux/perf_event.h>
+-
+-static DEFINE_PER_CPU(struct perf_event *, nmi_watchdog_ev);
+-static DEFINE_PER_CPU(int, nmi_watchdog_touch);
+-static DEFINE_PER_CPU(long, alert_counter);
+-
+-static int panic_on_timeout;
+-
+-void touch_nmi_watchdog(void)
+-{
+-	__raw_get_cpu_var(nmi_watchdog_touch) = 1;
 -	touch_softlockup_watchdog();
-+	touch_softlockup_watchdog_sync();
- 	clocksource_touch_watchdog();
- 	local_irq_restore(flags);
- }
-@@ -1450,7 +1450,7 @@ acquirelock:
- 	    (kgdb_info[cpu].task &&
- 	     kgdb_info[cpu].task->pid != kgdb_sstep_pid) && --sstep_tries) {
- 		atomic_set(&kgdb_active, -1);
--		touch_softlockup_watchdog();
-+		touch_softlockup_watchdog_sync();
- 		clocksource_touch_watchdog();
- 		local_irq_restore(flags);
- 
-@@ -1550,7 +1550,7 @@ kgdb_restore:
- 	}
- 	/* Free kgdb_active */
- 	atomic_set(&kgdb_active, -1);
+-}
+-EXPORT_SYMBOL(touch_nmi_watchdog);
+-
+-void touch_all_nmi_watchdog(void)
+-{
+-	int cpu;
+-
+-	for_each_online_cpu(cpu)
+-		per_cpu(nmi_watchdog_touch, cpu) = 1;
 -	touch_softlockup_watchdog();
-+	touch_softlockup_watchdog_sync();
- 	clocksource_touch_watchdog();
- 	local_irq_restore(flags);
- 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 03671b7..80a282c 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -33,6 +33,7 @@ int __read_mostly softlockup_thresh = 60;
- static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
- static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
- static DEFINE_PER_CPU(struct hrtimer, watchdog_hrtimer);
-+static DEFINE_PER_CPU(bool, softlockup_touch_sync);
- static DEFINE_PER_CPU(bool, hard_watchdog_warn);
- static DEFINE_PER_CPU(bool, soft_watchdog_warn);
- #ifdef CONFIG_PERF_EVENTS_NMI
-@@ -136,6 +137,12 @@ void touch_all_softlockup_watchdogs(void)
- 		per_cpu(watchdog_touch_ts, cpu) = 0;
- }
- 
-+void touch_softlockup_watchdog_sync(void)
-+{
-+	__raw_get_cpu_var(softlockup_touch_sync) = true;
-+	__raw_get_cpu_var(watchdog_touch_ts) = 0;
-+}
-+
- void touch_nmi_watchdog(void)
- {
- 	touch_softlockup_watchdog();
-@@ -161,7 +168,7 @@ static int is_softlockup(unsigned long touch_ts, int cpu)
- 	unsigned long now = get_timestamp(cpu);
- 
- 	/* Warn about unreasonable delays: */
--	if (now > (touch_ts + softlockup_thresh))
-+	if (time_after(now, touch_ts + softlockup_thresh))
- 		return now - touch_ts;
- 
- 	return 0;
-@@ -250,6 +257,14 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
- 	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
- 
- 	if (touch_ts == 0) {
-+		if (unlikely(per_cpu(softlockup_touch_sync, this_cpu))) {
-+			/*
-+			 * If the time stamp was touched atomically
-+			 * make sure the scheduler tick is up to date.
-+			 */
-+			per_cpu(softlockup_touch_sync, this_cpu) = false;
-+			sched_clock_tick();
-+		}
- 		__touch_watchdog();
- 		return HRTIMER_RESTART;
- 	}
+-}
+-
+-static int __init setup_nmi_watchdog(char *str)
+-{
+-	if (!strncmp(str, "panic", 5)) {
+-		panic_on_timeout = 1;
+-		str = strchr(str, ',');
+-		if (!str)
+-			return 1;
+-		++str;
+-	}
+-	return 1;
+-}
+-__setup("nmi_watchdog=", setup_nmi_watchdog);
+-
+-struct perf_event_attr wd_hw_attr = {
+-	.type		= PERF_TYPE_HARDWARE,
+-	.config		= PERF_COUNT_HW_CPU_CYCLES,
+-	.size		= sizeof(struct perf_event_attr),
+-	.pinned		= 1,
+-	.disabled	= 1,
+-};
+-
+-struct perf_event_attr wd_sw_attr = {
+-	.type		= PERF_TYPE_SOFTWARE,
+-	.config		= PERF_COUNT_SW_CPU_CLOCK,
+-	.size		= sizeof(struct perf_event_attr),
+-	.pinned		= 1,
+-	.disabled	= 1,
+-};
+-
+-void wd_overflow(struct perf_event *event, int nmi,
+-		 struct perf_sample_data *data,
+-		 struct pt_regs *regs)
+-{
+-	int cpu = smp_processor_id();
+-	int touched = 0;
+-
+-	if (__get_cpu_var(nmi_watchdog_touch)) {
+-		per_cpu(nmi_watchdog_touch, cpu) = 0;
+-		touched = 1;
+-	}
+-
+-	/* check to see if the cpu is doing anything */
+-	if (!touched && hw_nmi_is_cpu_stuck(regs)) {
+-		/*
+-		 * Ayiee, looks like this CPU is stuck ...
+-		 * wait a few IRQs (5 seconds) before doing the oops ...
+-		 */
+-		per_cpu(alert_counter, cpu) += 1;
+-		if (per_cpu(alert_counter, cpu) == 5) {
+-			if (panic_on_timeout)
+-				panic("NMI Watchdog detected LOCKUP on cpu %d", cpu);
+-			else
+-				WARN(1, "NMI Watchdog detected LOCKUP on cpu %d", cpu);
+-		}
+-	} else {
+-		per_cpu(alert_counter, cpu) = 0;
+-	}
+-
+-	return;
+-}
+-
+-static int enable_nmi_watchdog(int cpu)
+-{
+-	struct perf_event *event;
+-	struct perf_event_attr *wd_attr;
+-
+-	event = per_cpu(nmi_watchdog_ev, cpu);
+-	if (event && event->state > PERF_EVENT_STATE_OFF)
+-		return 0;
+-
+-	if (event == NULL) {
+-		/* Try to register using hardware perf events first */
+-		wd_attr = &wd_hw_attr;
+-		wd_attr->sample_period = hw_nmi_get_sample_period();
+-		event = perf_event_create_kernel_counter(wd_attr, cpu, -1, wd_overflow);
+-		if (IS_ERR(event)) {
+-			/* hardware doesn't exist or not supported, fallback to software events */
+-			printk(KERN_INFO "nmi_watchdog: hardware not available, trying software events\n");
+-			wd_attr = &wd_sw_attr;
+-			wd_attr->sample_period = NSEC_PER_SEC;
+-			event = perf_event_create_kernel_counter(wd_attr, cpu, -1, wd_overflow);
+-			if (IS_ERR(event)) {
+-				printk(KERN_ERR "nmi watchdog failed to create perf event on %i: %p\n", cpu, event);
+-				return -1;
+-			}
+-		}
+-		per_cpu(nmi_watchdog_ev, cpu) = event;
+-	}
+-	perf_event_enable(per_cpu(nmi_watchdog_ev, cpu));
+-	return 0;
+-}
+-
+-static void disable_nmi_watchdog(int cpu)
+-{
+-	struct perf_event *event;
+-
+-	event = per_cpu(nmi_watchdog_ev, cpu);
+-	if (event) {
+-		perf_event_disable(per_cpu(nmi_watchdog_ev, cpu));
+-		per_cpu(nmi_watchdog_ev, cpu) = NULL;
+-		perf_event_release_kernel(event);
+-	}
+-}
+-
+-#ifdef CONFIG_SYSCTL
+-/*
+- * proc handler for /proc/sys/kernel/nmi_watchdog
+- */
+-int nmi_watchdog_enabled;
+-
+-int proc_nmi_enabled(struct ctl_table *table, int write,
+-		     void __user *buffer, size_t *length, loff_t *ppos)
+-{
+-	int cpu;
+-
+-	if (!write) {
+-		struct perf_event *event;
+-		for_each_online_cpu(cpu) {
+-			event = per_cpu(nmi_watchdog_ev, cpu);
+-			if (event && event->state > PERF_EVENT_STATE_OFF) {
+-				nmi_watchdog_enabled = 1;
+-				break;
+-			}
+-		}
+-		proc_dointvec(table, write, buffer, length, ppos);
+-		return 0;
+-	}
+-
+-	touch_all_nmi_watchdog();
+-	proc_dointvec(table, write, buffer, length, ppos);
+-	if (nmi_watchdog_enabled) {
+-		for_each_online_cpu(cpu)
+-			if (enable_nmi_watchdog(cpu)) {
+-				printk(KERN_ERR "NMI watchdog failed configuration, "
+-					" can not be enabled\n");
+-			}
+-	} else {
+-		for_each_online_cpu(cpu)
+-			disable_nmi_watchdog(cpu);
+-	}
+-	return 0;
+-}
+-
+-#endif /* CONFIG_SYSCTL */
+-
+-/*
+- * Create/destroy watchdog threads as CPUs come and go:
+- */
+-static int __cpuinit
+-cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+-{
+-	int hotcpu = (unsigned long)hcpu;
+-
+-	switch (action) {
+-	case CPU_UP_PREPARE:
+-	case CPU_UP_PREPARE_FROZEN:
+-		per_cpu(nmi_watchdog_touch, hotcpu) = 0;
+-		break;
+-	case CPU_ONLINE:
+-	case CPU_ONLINE_FROZEN:
+-		if (enable_nmi_watchdog(hotcpu))
+-			return NOTIFY_BAD;
+-		break;
+-#ifdef CONFIG_HOTPLUG_CPU
+-	case CPU_UP_CANCELED:
+-	case CPU_UP_CANCELED_FROZEN:
+-		disable_nmi_watchdog(hotcpu);
+-	case CPU_DEAD:
+-	case CPU_DEAD_FROZEN:
+-		break;
+-#endif /* CONFIG_HOTPLUG_CPU */
+-	}
+-	return NOTIFY_OK;
+-}
+-
+-static struct notifier_block __cpuinitdata cpu_nfb = {
+-	.notifier_call = cpu_callback
+-};
+-
+-static int __initdata nonmi_watchdog;
+-
+-static int __init nonmi_watchdog_setup(char *str)
+-{
+-	nonmi_watchdog = 1;
+-	return 1;
+-}
+-__setup("nonmi_watchdog", nonmi_watchdog_setup);
+-
+-static int __init spawn_nmi_watchdog_task(void)
+-{
+-	void *cpu = (void *)(long)smp_processor_id();
+-	int err;
+-
+-	if (nonmi_watchdog)
+-		return 0;
+-
+-	printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
+-
+-	err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
+-	if (err == NOTIFY_BAD) {
+-		BUG();
+-		return 1;
+-	}
+-	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
+-	register_cpu_notifier(&cpu_nfb);
+-
+-	return 0;
+-}
+-early_initcall(spawn_nmi_watchdog_task);
 -- 
 1.7.0.1
 
