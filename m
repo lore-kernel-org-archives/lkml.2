@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab0EGI6P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 04:58:15 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:46447 "EHLO
-	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab0EGI4W (ORCPT
+	id S1755040Ab0EGI73 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 04:59:29 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:52091 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824Ab0EGI72 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 04:56:22 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: akpm@linux-foundation.org
-Cc: torvalds@linux-foundation.org, adobriyan@gmail.com, nhorman@tuxdriver.com,
-       oleg@redhat.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-       Heiko Carstens <heiko.carstens@de.ibm.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 06/11] rlimits: do security check under task_lock
-Date: Fri,  7 May 2010 10:55:37 +0200
-Message-Id: <1273222543-17083-6-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <alpine.LFD.2.00.1005060827520.901@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1005060827520.901@i5.linux-foundation.org>
+	Fri, 7 May 2010 04:59:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=P6qHQMpEum0DJE1a7fHrUNZGfTxknQfdJskc6eEL8LvdTSutG1Sk/Z+alNGhpG3OQc
+         7roUxlaGZK2f39jYNUSYQ9JTAUIm4dY2RC3wcfyenuRRWE9E+QevM+g0CV9C+hiEYZiD
+         aqVVy/VM8NPGSGhUd60LaQcmUQzt7+9uMUiB0=
+MIME-Version: 1.0
+In-Reply-To: <1273215671-3090-1-git-send-email-jassisinghbrar@gmail.com>
+References: <1273215671-3090-1-git-send-email-jassisinghbrar@gmail.com>
+Date: Fri, 7 May 2010 10:59:26 +0200
+Message-ID: <i2r63386a3d1005070159tf0879839u24c1c1f11466970d@mail.gmail.com>
+Subject: Re: [PATCH 2/2] DMA: PL330: Add async dma api driver
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       dan.j.williams@intel.com, ben-linux@fluff.org, jy0922.shim@samsung.com,
+       maciej.sosnowski@intel.com, Jassi Brar <jassi.brar@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do security_task_setrlimit under task_lock. Other tasks may
-change limits under our hands while we are checking limits
-inside the function. From now on, they can't.
+2010/5/7 Jassi Brar <jassisinghbrar@gmail.com>:
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: James Morris <jmorris@namei.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
----
- kernel/sys.c |   16 +++++++---------
- 1 files changed, 7 insertions(+), 9 deletions(-)
+> Add ASYNC DMA Engine API driver for the PL330 DMAC.
+> This driver is supposed to be reusable by various
+> platforms that have one or more PL330 DMACs.
+> Atm, DMA_SLAVE and DMA_MEMCPY capabilities have been
+> implemented.
+>
+> Signed-off-by: Jassi Brar <jassi.brar@samsung.com>
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index eb21661..9e9a3a7 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1277,7 +1277,7 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
- 		struct rlimit *new_rlim)
- {
- 	struct rlimit *old_rlim;
--	int retval;
-+	int retval = 0;
- 
- 	if (resource >= RLIM_NLIMITS)
- 		return -EINVAL;
-@@ -1293,10 +1293,6 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
- 		goto out;
- 	}
- 
--	retval = security_task_setrlimit(tsk, resource, new_rlim);
--	if (retval)
--		goto out;
--
- 	if (resource == RLIMIT_CPU && new_rlim->rlim_cur == 0) {
- 		/*
- 		 * The caller is asking for an immediate RLIMIT_CPU
-@@ -1309,11 +1305,13 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
- 
- 	old_rlim = tsk->signal->rlim + resource;
- 	task_lock(tsk->group_leader);
--	if ((new_rlim->rlim_max <= old_rlim->rlim_max) ||
--				capable(CAP_SYS_RESOURCE))
--		*old_rlim = *new_rlim;
--	else
-+	if ((new_rlim->rlim_max > old_rlim->rlim_max) &&
-+				!capable(CAP_SYS_RESOURCE))
- 		retval = -EPERM;
-+	if (!retval)
-+		retval = security_task_setrlimit(tsk, resource, new_rlim);
-+	if (!retval)
-+		*old_rlim = *new_rlim;
- 	task_unlock(tsk->group_leader);
- 
- 	if (retval || resource != RLIMIT_CPU)
--- 
-1.7.1
+This needs some updating to apply and compile on Dan Williams tree,
+please clone async_tx from git.kernel.org and generate the patch on that
+tree instead. (It's my updates for generic channel status etc that
+collide.)
 
+You'll also find these changes in Rothwell's -next tree.
 
+> (...)
+
+> +static void pl330_terminate_all(struct dma_chan *chan)
+
+This needs to be converted to the new prototype and will look
+something like this:
+
+static int
+pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd)
+
+> +static enum dma_status
+> +pl330_is_tx_complete(struct dma_chan *chan, dma_cookie_t cookie,
+> +               dma_cookie_t *done, dma_cookie_t *used)
+
+This needs to be converted to the new prototype and will look
+something like this:
+
+static enum dma_status
+pl330_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
+                 struct dma_tx_state *txstate)
+
+See the other drivers for examples, e.g. coh901318.c
+coh901318_control() and coh901318_tx_status()
+
+(...)
+> +       pd->device_is_tx_complete = pl330_is_tx_complete;
+> +       pd->device_prep_slave_sg = pl330_prep_slave_sg;
+> +       pd->device_terminate_all = pl330_terminate_all;
+> +       pd->device_issue_pending = pl330_issue_pending;
+
+Consequential updates here.
+
+Sorry for the mess, moving target as usual...
+
+If you fix this and test it on async_tx it's:
+Reviewed-by: Linus Walleij <linus.walleij@stericsson.com>
+
+Yours,
+Linus Walleij
