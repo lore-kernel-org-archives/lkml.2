@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab0EGQeu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 12:34:50 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:49202 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756457Ab0EGQes convert rfc822-to-8bit (ORCPT
+	id S1757235Ab0EGQfz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 12:35:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56540 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754950Ab0EGQfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 12:34:48 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(z1857rz1432P98dN936eM62a3Lab9bh7cf0izz1202hzz6ff19hz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L2261L-02-3VS-02
-X-M-MSG: 
-Date: Fri, 7 May 2010 18:34:31 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
-       peterz@infradead.org, efault@gmx.de, tglx@linutronix.de,
-       mhiramat@redhat.com, mingo@elte.hu
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf probe: Support DW_OP_call_frame_cfa in
- debuginfo
-Message-ID: <20100507163321.GB15333@erda.amd.com>
-References: <20100412171728.3790.98217.stgit@localhost6.localdomain6>
- <tip-a34a985499895a46a4dacff727d0fbc63cdc75e8@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <tip-a34a985499895a46a4dacff727d0fbc63cdc75e8@git.kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: unknown
+	Fri, 7 May 2010 12:35:53 -0400
+Subject: Re: [PATCH 4/4] futex: Add FUTEX_LOCK with optional adaptive
+ spinning
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Darren Hart <dvhltc@us.ibm.com>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>, Ulrich Drepper <drepper@gmail.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, Avi Kivity <avi@redhat.com>
+In-Reply-To: <alpine.LFD.2.00.1005071829470.3401@localhost.localdomain>
+References: <1273127060-30375-1-git-send-email-dvhltc@us.ibm.com>
+	 <1273127060-30375-5-git-send-email-dvhltc@us.ibm.com>
+	 <alpine.LFD.2.00.1005071818380.3401@localhost.localdomain>
+	 <1273249491.1642.360.camel@laptop>
+	 <alpine.LFD.2.00.1005071829470.3401@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 May 2010 18:35:43 +0200
+Message-ID: <1273250143.1642.361.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.04.10 07:29:18, tip-bot for Masami Hiramatsu wrote:
-> diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
-> index 2a27132..310ce89 100644
-> --- a/tools/perf/util/probe-finder.h
-> +++ b/tools/perf/util/probe-finder.h
-> @@ -42,6 +42,7 @@ struct probe_finder {
->  	struct list_head	lcache;		/* Line cache for lazy match */
->  
->  	/* For variable searching */
-> +	Dwarf_CFI		*cfi;		/* Call Frame Information */
-
-I get the following complile error:
-
-gcc -o builtin-probe.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstack-protector -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wvolatile-register-var -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement  -fstack-protector-all -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -I/usr/include/elfutils -DDWARF_SUPPORT -DNO_NEWT_SUPPORT -DNO_LIBPERL -DSHA1_HEADER='<openssl/sha.h>'  builtin-probe.c
-In file included from builtin-probe.c:43:
-util/probe-finder.h:45: error: expected specifier-qualifier-list before ‘Dwarf_CFI’
-make: *** [builtin-probe.o] Error 1
-build script error: 2
-
-git grep only finds the following:
-
- $ git grep Dwarf_CFI 
- tools/perf/util/probe-finder.h: Dwarf_CFI               *cfi;           /* Call Frame Information */
-
-Am I missing something?
-
--Robert
-
->  	Dwarf_Op		*fb_ops;	/* Frame base attribute */
->  	struct perf_probe_arg	*pvar;		/* Current target variable */
->  	struct kprobe_trace_arg	*tvar;		/* Current result variable */
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
+On Fri, 2010-05-07 at 18:30 +0200, Thomas Gleixner wrote:
+> > Please keep the code as near mutex_spin_on_owner() as possible.
+> 
+> There is no reason why we can't make that unconditional.
+> 
+Sure, but lets do that in a separate series.
 
