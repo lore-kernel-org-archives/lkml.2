@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736Ab0EGDJb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 23:09:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33330 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031Ab0EGDJa (ORCPT
+	id S1753842Ab0EGDKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 23:10:48 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33387 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753568Ab0EGDKr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 23:09:30 -0400
-X-Authority-Analysis: v=1.1 cv=GuuPm/R9MDBdMhOgsQZYzj+bBK5woo0X8cuc0sTVRtI= c=1 sm=0 a=9e0D-j7WXTsA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=E0p0_C1TF2Q-2w1mLXAA:9 a=S0-a06dq1Anix2E9jXu30_huvWYA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: [PATCH][GIT PULL] perf: Fix check at end of event search
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Dan Carpenter <error27@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 06 May 2010 23:09:27 -0400
-Message-ID: <1273201767.22438.73.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 6 May 2010 23:10:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <4BE38290.6040404@cnu.edu>
+References: <eGToe-3b9-5@gated-at.bofh.it> <eGUaB-4mU-1@gated-at.bofh.it>
+	 <eGUtX-4Kd-3@gated-at.bofh.it> <eGWvL-7Fy-1@gated-at.bofh.it>
+	 <eGWFt-7S7-17@gated-at.bofh.it> <eGWP9-8jH-17@gated-at.bofh.it>
+	 <4BE37DDD.8000402@cox.net>
+	 <p2jd6200be21005061953y497b0766k15123f69ff7db630@mail.gmail.com>
+	 <4BE38290.6040404@cnu.edu>
+Date: Thu, 6 May 2010 20:10:46 -0700
+Message-ID: <g2rd6200be21005062010s1a490b3dref465f5df64b8f7@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: James Kosin <james.kosin.04@cnu.edu>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2010/5/6 James Kosin <james.kosin.04@cnu.edu>:
+> On 5/6/2010 10:53 PM, Arve Hjønnevåg wrote:
+>> On Thu, May 6, 2010 at 7:41 PM, James Kosin <james.kosin.04@cnu.edu> wrote:
+>>
+>>> On 5/5/2010 8:10 PM, Tony Lindgren wrote:
+>>>
+>>>> * Brian Swetland <swetland@google.com> [100505 16:51]:
+>>>>
+>>>>> On Wed, May 5, 2010 at 4:47 PM, Tony Lindgren <tony@atomide.com> wrote:
+>>>>>
+>>>>>> * Brian Swetland <swetland@google.com> [100505 14:34]:
+>>>>>>
+>>>>>>> On Wed, May 5, 2010 at 2:12 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>>>>>>>
+>>> <<-- snip -->>
+>>>
+>>>>>>>> At no point does the user program have to communicate anything to the
+>>>>>>>> modem driver, and at no point does it have to do anything out of the
+>>>>>>>> ordinary except to enable and disable a suspend blocker.
+>>>>>>>>
+>>>>>>> Exactly -- and you can use the same style of overlapping suspend
+>>>>>>> blockers with other drivers than input, if the input interface is not
+>>>>>>> suitable for the particular interaction.
+>>>>>>>
+>>>>>> Would the suspend blockers still be needed somewhere in the example
+>>>>>> above?
+>>>>>>
+>>>>> How often would we retry suspending?
+>>>>>
+>>>> Well based on some timer, the same way the screen blanks? Or five
+>>>> seconds of no audio play? So if the suspend fails, then reset whatever
+>>>> userspace suspend policy timers.
+>>>>
+>>>>
+>>> Tony,
+>>> Wouldn't this be handled by the idle task, or task manager?
+>>>
+>>> When all tasks are suspended and not doing anything that should be the
+>>> first clue that a real suspend cycle could be attempted.
+>>>
+>>>
+>> One if the benefit we get from using suspend is that an unprivileged
+>> app that does not have access to suspend blockers cannot prevent
+>> suspend. You lose this advantage if you trigger suspend only from the
+>> idle task.
+>>
+>>
+> If the process (privileged or unprivileged) doesn't want to suspend, why
+> not just provide an interface to allow suspend to be turned off at the
+> user level.  This could block the suspend cycle in itself, and you
+> shouldn't need fine grained off/on cycles.  If an application really
+> needs the system not to suspend then they (the user) should know the
+> consequences and power requirements for such a task.
+>
+> I didn't say it had to be only from the idle task; but, that is the most
+> logical place.  If the other threads are not idle then they really
+> require work and will most likely already have a bock on the suspend anyway.
+>
 
-Ingo,
+I think you missed my point. Unprivileged processes should not be
+allowed to prevent suspend.
 
-I just notice that I had this patch laying around and never pushed it
-out. I first had it in my ftrace branches but then realized that it was
-a perf change. I moved it there, but got distracted and unfortunately,
-forgot about it. I rebased it to the latest tip/perf/core.
-
-The change is within a #ifdef CONFIG_PERF_EVENTS
-
-Please pull the latest tip/perf/core tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/perf/core
-
-
-Dan Carpenter (1):
-      perf: Fix check at end of event search
-
-----
- kernel/trace/trace_events_filter.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
----------------------------
-commit d9f599e1e6d019968b35d2dc63074b9e8964fa69
-Author: Dan Carpenter <error27@gmail.com>
-Date:   Sat Mar 20 17:39:11 2010 +0300
-
-    perf: Fix check at end of event search
-    
-    The original code doesn't work because "call" is never NULL there.
-    
-    Signed-off-by: Dan Carpenter <error27@gmail.com>
-    LKML-Reference: <20100320143911.GF5331@bicker>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 88c0b6d..58092d8 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -1398,7 +1398,7 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 	}
- 
- 	err = -EINVAL;
--	if (!call)
-+	if (&call->list == &ftrace_events)
- 		goto out_unlock;
- 
- 	err = -EEXIST;
-
-
+-- 
+Arve Hjønnevåg
