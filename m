@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab0EGCka (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 22:40:30 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59694 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab0EGCk3 (ORCPT
+	id S1753051Ab0EGClQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 22:41:16 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44237 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350Ab0EGClO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 22:40:29 -0400
-Message-ID: <4BE37D98.3000001@linux.vnet.ibm.com>
-Date: Thu, 06 May 2010 19:40:24 -0700
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	Thu, 6 May 2010 22:41:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=GB6lRZnqJN+w8rm32vKRbfG7pVJt11bdHjg5myzlYy/W105Dp8ugiC1QiCiPWCB9Ey
+         feI0SxiQ0SF5wRY8PeCfdS/fWUMKjRm6k2hHVgreanDwBuH5BwH/CvQDE7K7tiqssyw5
+         dJ+V+p9o/Qtk9iMP8NT6iVFis89+OmGz66Kz4=
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Carl Love <carll@us.ibm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       stephane eranian <eranian@googlemail.com>
-Subject: Re: [BUG] perf_events: PERF_FORMAT_GROUP not working correctly when
- monitoring another task
-References: <4BDF8118.3090200@linux.vnet.ibm.com> <1273160566.5605.404.camel@twins>  <4BE321F8.1050309@linux.vnet.ibm.com> <1273177360.1642.280.camel@laptop>
-In-Reply-To: <1273177360.1642.280.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Fri, 7 May 2010 10:41:14 +0800
+Message-ID: <v2ubd0d95d71005061941j4f9272d1he7dc9bcf5daa6457@mail.gmail.com>
+Subject: [PATCH] Check kmalloc return value before use the buffer
+From: Steven Liu <lingjiujianke@gmail.com>
+To: linus.walleij@stericsson.com
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2010 01:22 PM, Peter Zijlstra wrote:
-> On Thu, 2010-05-06 at 13:09 -0700, Corey Ashford wrote:
->> The patch works with the test case I provided, but for some reason it
->> breaks the normal operation of the libpfm4 "task" utility.  If I put
->> more than one event in a group, I get zero counts on all but the first
->> event.  That's even if I don't use the PERF_FORMAT_GROUP option.
->
-> Bugger,.. weird though, I can't see how it would affect the state before
-> the counters get detached from their context (exit() / close()).
->
->> So something appears to be messed up.  I will see if I can construct an
->> arch-independent test case which demonstrates the problem.
->
-> That would be awesome, thanks!
->
+Hi,linus.walleij
 
-Ok, it was pilot error.  We had made a few changes to the "task" program 
-to expand its capabilities and introduced a couple of bugs at the same time.
+          Check kmalloc return value before use the buffer
 
-Unfortunately, I have one remaining mystery.  The default behavior of 
-task is to create groups, without the PERF_FORMAT_GROUP flag set, and 
-then read up the counts and time enabled/running values for each counter 
-in the group after the measurement has occurred.
 
-Well, for some reason I haven't been able to figure out, all but first 
-event in the group have their time running and time enable values set to 
-zero, but their counts are non-zero.
+Signed-off-by: LiuQi <lingjiujianke@gmail.com>
+---
+ arch/arm/mach-u300/dummyspichip.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-If I replicate this setup with the show_fg_bug test case I posted, the 
-time running and enabled values are correct for each counter.
+diff --git a/arch/arm/mach-u300/dummyspichip.c
+b/arch/arm/mach-u300/dummyspichip.c
+index 962f9de..4f2af7c 100644
+--- a/arch/arm/mach-u300/dummyspichip.c
++++ b/arch/arm/mach-u300/dummyspichip.c
+@@ -63,6 +63,11 @@ static ssize_t dummy_looptest(struct device *dev,
+ 		goto out;
+ 	}
+ 	bigrxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
++	if (bigtxbuf_virtual == NULL) {
++		status = -ENOMEM;
++		kfree(bigtxbuf_virtual);
++		goto out;
++	}
 
-The enabled and running flag bits are set for every event which is 
-opened (in both show_fg_bug and task)... so I don't know what the 
-difference would be.
-
-If anything springs to mind there as to how I might be getting zero 
-enabled/running values passed back from the kernel, I'd be very 
-interested to know.
-
-Otherwise, I will keep poking at it till I find the bug in task, or 
-something I can point at in the kernel.
-
-Thanks,
-
-- Corey
+ 	/* Fill TXBUF with some happy pattern */
+ 	memset(bigtxbuf_virtual, 0xAA, DMA_TEST_SIZE);
+-- 
+1.6.0.3
