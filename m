@@ -1,43 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953Ab0EGQNV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 12:13:21 -0400
-Received: from kroah.org ([198.145.64.141]:49651 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755083Ab0EGQNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 12:13:20 -0400
-Date: Fri, 7 May 2010 09:13:14 -0700
-From: Greg KH <greg@kroah.com>
-To: David Dajun Chen <Dajun.Chen@diasemi.com>
-Cc: linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
-       sameo@linux.intel.com, lm-sensors@lm-sensors.org, rpurdie@rpsys.net,
-       lrg@slimlogic.co.uk, dmitry.torokhov@gmail.com
-Subject: Re: [PATCH] Device driver for DA9052 PMIC IC
-Message-ID: <20100507161314.GA20909@kroah.com>
-References: <3495EC08FA53E94AAA00CC4743D5BA7E010C1E94@pandora.diasemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3495EC08FA53E94AAA00CC4743D5BA7E010C1E94@pandora.diasemi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756996Ab0EGQTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 12:19:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38620 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756623Ab0EGQTK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 12:19:10 -0400
+Date: Fri, 7 May 2010 09:18:08 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Carlos Chinea <carlos.chinea@nokia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [RFC PATCHv2 1/7] HSI: Introducing HSI framework
+Message-Id: <20100507091808.d294050a.randy.dunlap@oracle.com>
+In-Reply-To: <1273248713.7755.7261.camel@localhost>
+References: <1273245517-30712-1-git-send-email-carlos.chinea@nokia.com>
+	<1273245517-30712-2-git-send-email-carlos.chinea@nokia.com>
+	<20100507082629.3bdf0b17.randy.dunlap@oracle.com>
+	<1273248713.7755.7261.camel@localhost>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4BE43D78.01FB:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 12:43:27PM +0100, David Dajun Chen wrote:
-> Dear all,
+On Fri, 07 May 2010 19:11:53 +0300 Carlos Chinea wrote:
+
+> Hi,
 > 
-> It is device driver for DA9052 Power Management IC from Dialog Semiconductor.
+> On Fri, 2010-05-07 at 17:26 +0200, ext Randy Dunlap wrote:
+> > On Fri,  7 May 2010 18:18:31 +0300 Carlos Chinea wrote:
+> > 
+> --[snip]--
+> 
+> > > diff --git a/drivers/hsi/Kconfig b/drivers/hsi/Kconfig
+> > > new file mode 100644
+> > > index 0000000..5af62ce
+> > > --- /dev/null
+> > > +++ b/drivers/hsi/Kconfig
+> > > @@ -0,0 +1,13 @@
+> > > +#
+> > > +# HSI driver configuration
+> > > +#
+> > > +menuconfig HSI
+> > > +	bool "HSI support"
+> > 
+> > Why is this bool instead of tristate?
+> > IOW, why can it not be built as a loadable module?
+> > 
+> 
+> Because, I have not implemented it yet. I was planning to do it later
+> on. But of course if it has to be there, I can add the module support
+> now.
 
-What are we supposed to do with this?
+OK, it can wait, no hurry.
 
-Please read Documentation/SubmittingPatches for how to submit a patch
-(hint, you need to break it up, and provide a "Signed-off-by:" line, and
-send it to the correct people and subsystem mailing lists.)
+Thanks.
 
-And why did you add a selinux file?  I think something is wrong with how
-you generated your patch.
+> > 
+> > > +	---help---
+> > > +	  The "High speed synchronous Serial Interface" is
+> > > +	  synchronous serial interface used mainly to connect
+> > > +	  application engines and cellular modems.
+> > > +
+> > > +if HSI
+> > > +
+> > > +endif # HSI
+> > > diff --git a/drivers/hsi/Makefile b/drivers/hsi/Makefile
+> > > new file mode 100644
+> > > index 0000000..b42b6cf
+> > > --- /dev/null
+> > > +++ b/drivers/hsi/Makefile
+> > > @@ -0,0 +1,4 @@
+> > > +#
+> > > +# Makefile for HSI
+> > > +#
+> > > +obj-$(CONFIG_HSI)	+= hsi.o
+> > 
+> > 
+> > ---
+> > ~Randy
+> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> 
+> Br,
+> Carlos
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-thanks,
 
-greg k-h
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
