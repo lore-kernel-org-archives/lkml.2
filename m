@@ -1,127 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758519Ab0EGVMP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 17:12:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24276 "EHLO mx1.redhat.com"
+	id S1758416Ab0EGVMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 17:12:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53031 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758494Ab0EGVMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 17:12:13 -0400
+	id S1758464Ab0EGVMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 17:12:12 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: mingo@elte.hu, fweisbec@gmail.com
 Cc: peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
        linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
        dzickus@redhat.com
-Subject: [PATCH 5/8] [x86] watchdog: move trigger_all_cpu_backtrace to its own die_notifier
-Date: Fri,  7 May 2010 17:11:48 -0400
-Message-Id: <1273266711-18706-6-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 2/8] [nmi watchdog] touch_softlockup cleanups and softlockup_tick removal
+Date: Fri,  7 May 2010 17:11:45 -0400
+Message-Id: <1273266711-18706-3-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1273266711-18706-1-git-send-email-dzickus@redhat.com>
 References: <1273266711-18706-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of the transition of the nmi watchdog to something more generic,
-the trigger_all_cpu_backtrace code is getting left behind.  Put it in its
-own die_notifier so it can still be used.
+Just some code cleanup to make touch_softlockup clearer and remove the
+softlockup_tick function as it is no longer needed.
 
-V2:
-- use arch_spin_locks
+Also remove the /proc softlockup_thres call as it has been changed to
+watchdog_thres.
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- arch/x86/kernel/apic/hw_nmi.c |   65 ++++++++++++++++++++++++++++++++---------
- 1 files changed, 51 insertions(+), 14 deletions(-)
+ include/linux/sched.h |   16 +++-------------
+ kernel/sysctl.c       |    9 ---------
+ kernel/timer.c        |    1 -
+ kernel/watchdog.c     |   35 +++--------------------------------
+ 4 files changed, 6 insertions(+), 55 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index 79425f9..8c3edfb 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -17,6 +17,10 @@
- #include <linux/cpumask.h>
- #include <linux/kernel_stat.h>
- #include <asm/mce.h>
-+#include <linux/kdebug.h>
-+#include <linux/notifier.h>
-+#include <linux/kprobes.h>
-+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 2455ff5..e9c6c1d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -308,18 +308,14 @@ extern void scheduler_tick(void);
+ extern void sched_show_task(struct task_struct *p);
  
- #include <linux/nmi.h>
- #include <linux/module.h>
-@@ -54,20 +58,6 @@ int hw_nmi_is_cpu_stuck(struct pt_regs *regs)
- 	unsigned int sum;
- 	int cpu = smp_processor_id();
- 
--	/* FIXME: cheap hack for this check, probably should get its own
--	 * die_notifier handler
--	 */
--	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
--		static DEFINE_SPINLOCK(lock);	/* Serialise the printks */
--
--		spin_lock(&lock);
--		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
--		show_regs(regs);
--		dump_stack();
--		spin_unlock(&lock);
--		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
--	}
--
- 	/* if we are doing an mce, just assume the cpu is not stuck */
- 	/* Could check oops_in_progress here too, but it's safer not to */
- 	if (mce_in_progress())
-@@ -109,6 +99,53 @@ void arch_trigger_all_cpu_backtrace(void)
- 		mdelay(1);
- 	}
+ #ifdef CONFIG_DETECT_SOFTLOCKUP
+-extern void softlockup_tick(void);
+ extern void touch_softlockup_watchdog(void);
+ extern void touch_all_softlockup_watchdogs(void);
+-extern int proc_dosoftlockup_thresh(struct ctl_table *table, int write,
+-				    void __user *buffer,
+-				    size_t *lenp, loff_t *ppos);
+ extern unsigned int  softlockup_panic;
+ extern int softlockup_thresh;
++extern int proc_dowatchdog_thresh(struct ctl_table *table, int write,
++				  void __user *buffer,
++				  size_t *lenp, loff_t *ppos);
+ #else
+-static inline void softlockup_tick(void)
+-{
+-}
+ static inline void touch_softlockup_watchdog(void)
+ {
  }
-+
-+static int __kprobes
-+arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
-+			 unsigned long cmd, void *__args)
-+{
-+	struct die_args *args = __args;
-+	struct pt_regs *regs;
-+	int cpu = smp_processor_id();
-+
-+	switch (cmd) {
-+	case DIE_NMI:
-+	case DIE_NMI_IPI:
-+		break;
-+
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+
-+	regs = args->regs;
-+
-+	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
-+		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
-+
-+		arch_spin_lock(&lock);
-+		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
-+		show_regs(regs);
-+		dump_stack();
-+		arch_spin_unlock(&lock);
-+		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
-+		return NOTIFY_STOP;
-+	}
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static __read_mostly struct notifier_block backtrace_notifier = {
-+	.notifier_call          = arch_trigger_all_cpu_backtrace_handler,
-+	.next                   = NULL,
-+	.priority               = 1
-+};
-+
-+static int __init register_trigger_all_cpu_backtrace(void)
-+{
-+	register_die_notifier(&backtrace_notifier);
-+	return 0;
-+}
-+early_initcall(register_trigger_all_cpu_backtrace);
+@@ -338,12 +334,6 @@ extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
+ 					 size_t *lenp, loff_t *ppos);
  #endif
  
- /* STUB calls to mimic old nmi_watchdog behaviour */
+-#ifdef CONFIG_LOCKUP_DETECTOR
+-extern int proc_dowatchdog_thresh(struct ctl_table *table, int write,
+-				  void __user *buffer,
+-				  size_t *lenp, loff_t *ppos);
+-#endif
+-
+ /* Attach to any functions which should be ignored in wchan output. */
+ #define __sched		__attribute__((__section__(".sched.text")))
+ 
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 1083897..1fec781 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -827,15 +827,6 @@ static struct ctl_table kern_table[] = {
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
+-	{
+-		.procname	= "softlockup_thresh",
+-		.data		= &softlockup_thresh,
+-		.maxlen		= sizeof(int),
+-		.mode		= 0644,
+-		.proc_handler	= proc_dosoftlockup_thresh,
+-		.extra1		= &neg_one,
+-		.extra2		= &sixty,
+-	},
+ #endif
+ #ifdef CONFIG_DETECT_HUNG_TASK
+ 	{
+diff --git a/kernel/timer.c b/kernel/timer.c
+index c61a794..80c8da5 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1223,7 +1223,6 @@ void run_local_timers(void)
+ {
+ 	hrtimer_run_queues();
+ 	raise_softirq(TIMER_SOFTIRQ);
+-	softlockup_tick();
+ }
+ 
+ /*
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 2684e95..03671b7 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -118,13 +118,12 @@ static void __touch_watchdog(void)
+ 	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
+ }
+ 
+-void touch_watchdog(void)
++void touch_softlockup_watchdog(void)
+ {
+ 	__get_cpu_var(watchdog_touch_ts) = 0;
+ }
+-EXPORT_SYMBOL(touch_watchdog);
+ 
+-void touch_all_watchdog(void)
++void touch_all_softlockup_watchdogs(void)
+ {
+ 	int cpu;
+ 
+@@ -139,29 +138,10 @@ void touch_all_watchdog(void)
+ 
+ void touch_nmi_watchdog(void)
+ {
+-	touch_watchdog();
++	touch_softlockup_watchdog();
+ }
+ EXPORT_SYMBOL(touch_nmi_watchdog);
+ 
+-void touch_all_nmi_watchdog(void)
+-{
+-	touch_all_watchdog();
+-}
+-
+-void touch_softlockup_watchdog(void)
+-{
+-	touch_watchdog();
+-}
+-
+-void touch_all_softlockup_watchdogs(void)
+-{
+-	touch_all_watchdog();
+-}
+-
+-void softlockup_tick(void)
+-{
+-}
+-
+ #ifdef CONFIG_PERF_EVENTS_NMI
+ /* watchdog detector functions */
+ static int is_hardlockup(int cpu)
+@@ -507,15 +487,6 @@ int proc_dowatchdog_thresh(struct ctl_table *table, int write,
+ {
+ 	return proc_dointvec_minmax(table, write, buffer, lenp, ppos);
+ }
+-
+-/* stub functions */
+-int proc_dosoftlockup_thresh(struct ctl_table *table, int write,
+-			     void __user *buffer,
+-			     size_t *lenp, loff_t *ppos)
+-{
+-	return proc_dowatchdog_thresh(table, write, buffer, lenp, ppos);
+-}
+-/* end of stub functions */
+ #endif /* CONFIG_SYSCTL */
+ 
+ 
 -- 
 1.7.0.1
 
