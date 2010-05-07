@@ -1,39 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168Ab0EGGPx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 02:15:53 -0400
-Received: from web82302.mail.mud.yahoo.com ([209.191.85.222]:41527 "HELO
-	web82302.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751124Ab0EGGPw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 02:15:52 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 May 2010 02:15:52 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=pv/PCNL3bcF4zLiOh+ST1kqY6gZK68apVhUYrMy3+ttQ3x7/IseYTggijjPR1Yhtp3cs4cjOCjEL2MOuPWRV1Yf+N24pcLNhGeukTHuaTqwte8MrTjs6CgLLOfTsdL9Gd2iKGUcmR7RT2U96RenJr08Y22NpA8U/+Y3w3Bk6bnw=;
-Message-ID: <453666.36955.qm@web82302.mail.mud.yahoo.com>
-X-YMail-OSG: HFKVbKoVM1n6AIhRTVWX.CxL3rXTOYt6eQPoDxnDUy8vQfx
- GAQxuU61CZOWhvvG.izqVrDc2LBlygzo10SLWDiXp.pvDw1hcXMz5xaJyTpc
- mgHFdYdJNAw.AWfC7w.qE3kJnZP_FGRnAIypKEMjHI5TKuG0sdGsEiHaY_q9
- RJWr7OWt1hhDnghG4G_QhHV9JXl3waSnHBL_btmkI5GwsQdg3XBDpPB.x3RL
- 2tBPeoNN1Sk9BPELVH9PBnkB5eZQiSV8UKWaPXDcGjmDFj8ixrcoZCuj71Yo
- -
-X-Mailer: YahooMailClassic/10.1.11 YahooMailWebService/0.8.103.269680
-Date: Thu, 6 May 2010 23:09:11 -0700 (PDT)
-From: British Tobacco Award Promo <echriston-ies@sbcglobal.net>
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753428Ab0EGGQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 02:16:54 -0400
+Received: from mail.gmx.net ([213.165.64.20]:32856 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751124Ab0EGGQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 02:16:53 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18DXdstjsYDHSD67W+rOSQpqyFxw4ri1rUHAWthbD
+	7hEQW27DIr6ZcV
+Subject: Re: [PATCH/RFC] mutex: Fix optimistic spinning vs. BKL
+From: Mike Galbraith <efault@gmx.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Tony Breeds <tonyb@au1.ibm.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20100507053023.GF8069@nowhere>
+References: <1272429513.24542.83.camel@pasglop>
+	 <201004281406.04080.arnd@arndb.de> <1272494121.24542.113.camel@pasglop>
+	 <20100507042010.GR12389@ozlabs.org>  <20100507053023.GF8069@nowhere>
+Content-Type: text/plain
+Date: Fri, 07 May 2010 08:16:48 +0200
+Message-Id: <1273213008.9286.15.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-05-07 at 07:30 +0200, Frederic Weisbecker wrote:
 
-Your E-Address won the sum £ 1,000,000.00. in the Tobacco Award Promo
+> I like the safeguard against the bkl, it looks indeed like something
+> we should have in .34
+> 
+> But I really don't like the timeout.
+> 
+> This is going to make the things even worse if we have another cause of
+> deadlock by hiding the worst part of the consequences without actually
+> solving the problem.
+> And since the induced latency or deadlock won't be easily visible anymore,
+> we'll miss there is a problem. So we are going to spin for two jiffies
+> and only someone doing specific latency measurements will notice, if he's
+> lucky enough to meet the bug.
+> 
+> Moreover that adds some unnessary (small) overhead in this path.
+> 
+> May be can we have it as a debugging option, something that would
+> be part of lockdep, which would require CONFIG_DEBUG_MUTEX to
+> support mutex adaptive spinning.
+> 
+> A debugging option that could just dump the held locks and the
+> current one if we spin for an excessive timeslice.
 
-1.Full name: 
-2.Home Address:
-3.Country:
-4.Phone Number
+FYI, there's a case where OWNER_SPIN eats astounding amounts of CPU.
+
+Run virgin AIM7 V1.1 with many many tasks and a nil workfile.  When the
+thing kicks off preparing for test, it forks of these many tasks, who
+then all try to phone home via pipe.  The result it horrible to behold.
+
+There's a fix for AIM7's scalability problem, but the virgin code looks
+like a decent OWNER_SPIN corner case test.  It turns a 32 core smt box
+into an expensive space heater at sufficiently high task count:)
+
+	-Mike
+
