@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab0EGG7J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 02:59:09 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:47746 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab0EGG7H (ORCPT
+	id S1753134Ab0EGHDp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 03:03:45 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:55629 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab0EGHDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 02:59:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=iHsPa1pFBnIkgt5WiEKNJVL1d7M3sNZFWYjuS7TDCyQDOcgGcutKxOej2mXoeNO87R
-         TcAp7PQZODM+TVP6cPidqzSZi4Jgdc+BS0NKFOfMzowr8/Vs+syFw+XRhykM6rB+Npnr
-         8EMi1Kpcfk3vAWFRuXOkb5GdRtyaHstcmGHfE=
-Date: Fri, 7 May 2010 15:02:57 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: Michal Marek <mmarek@suse.cz>, Randy Dunlap <randy.dunlap@oracle.com>,
-       linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-       davej@redhat.com, kyle@redhat.com, vgoyal@redhat.com,
-       arjan@linux.intel.com
-Subject: Re: [PATCH] kconfig: introduce nonint_oldconfig and
- loose_nonint_oldconfig (v3)
-Message-ID: <20100507070257.GD5921@cr0.nay.redhat.com>
-References: <20100413194747.GX31193@redhat.com>
- <20100413130031.d4dec19b.randy.dunlap@oracle.com>
- <20100413201759.GY31193@redhat.com>
- <4BC4D310.6060705@oracle.com>
- <20100413210352.GA31193@redhat.com>
- <4BC5C190.3020501@suse.cz>
- <20100506164834.GL20778@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100506164834.GL20778@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 7 May 2010 03:03:43 -0400
+From: Jassi Brar <jassi.brar@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: dan.j.williams@intel.com, linus.ml.walleij@gmail.com,
+       maciej.sosnowski@intel.com, Jassi Brar <jassi.brar@samsung.com>
+Subject: [PATCH 1/2] DMA ENGINE: Do not reset 'private' of channel
+Date: Fri,  7 May 2010 16:00:12 +0900
+Message-Id: <1273215612-3058-1-git-send-email-jassi.brar@samsung.com>
+X-Mailer: git-send-email 1.6.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 12:48:34PM -0400, Aristeu Rozanski wrote:
->This patch has been around for a long time in Fedora and Red Hat Enterprise
->Linux kernels and it may be useful for others. The nonint_oldconfig target
->will fail and print the unset config options while loose_nonint_oldconfig will
->simply let the config option unset. They're useful in distro kernel packages
->where the config files are built using a combination of smaller config files.
->
->Arjan van de Ven wrote the initial nonint_config and Roland McGrath added the
->loose_nonint_oldconfig.
->
->v2:
->- when -B and -b are used, return "2" so the reason can be distinguished from
->  other errors
->v3:
->- help updated
->- nonint_oldconfig won't update the config file if options are missing
+The member 'private' of 'struct dma_chan' is meant for passing
+data between client and the controller driver.
 
-The patch looks fine, but, why the name 'nonint_oldconfig'?
-My English is not good enough to see what 'nonint' standards for...
+The DMA client driver may point it to platform specific stuff after
+acquiring the channel. So, it is the responsiblity of the same code
+to reset it, if it must.
 
-Thanks.
+The DMA engine doesn't set it and hence, shouldn't reset it either.
+
+Signed-off-by: Jassi Brar <jassi.brar@samsung.com>
+---
+ drivers/dma/dmaengine.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index d18b5d0..3b4dab5 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -515,7 +515,6 @@ struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask, dma_filter_fn fn, v
+ 				break;
+ 			if (--device->privatecnt == 0)
+ 				dma_cap_clear(DMA_PRIVATE, device->cap_mask);
+-			chan->private = NULL;
+ 			chan = NULL;
+ 		}
+ 	}
+@@ -537,7 +536,6 @@ void dma_release_channel(struct dma_chan *chan)
+ 	/* drop PRIVATE cap enabled by __dma_request_channel() */
+ 	if (--chan->device->privatecnt == 0)
+ 		dma_cap_clear(DMA_PRIVATE, chan->device->cap_mask);
+-	chan->private = NULL;
+ 	mutex_unlock(&dma_list_mutex);
+ }
+ EXPORT_SYMBOL_GPL(dma_release_channel);
+-- 
+1.6.2.5
+
