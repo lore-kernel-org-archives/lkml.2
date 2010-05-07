@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab0EGPeh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 11:34:37 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:22050 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755772Ab0EGPeg (ORCPT
+	id S1756292Ab0EGPmA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 11:42:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33616 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab0EGPl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 11:34:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=tcMlnEyq5j7aZ0zA2JscxhJSSaxkm2o6AQrIwB2p+940wlHQV0mwC06vwt1zuGG3GM
-         VxuvYanct0s0B2IMKAR4nbWr3MU4Fz06A3e9yx7XHneJ2k6Gl93pC3n9Z9dtXL1X8Lkv
-         /orAkbMs3wvseEZiSKHYqZPb8gW0zvnjVaHaU=
-From: John Kacur <jkacur@redhat.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       John Kacur <jkacur@redhat.com>, Jeff Dike <jdike@addtoit.com>
-Subject: [PATCH] uml: Convert to unlocked_ioctls to remove implicit BKL
-Date: Fri,  7 May 2010 17:34:28 +0200
-Message-Id: <1273246468-11048-1-git-send-email-jkacur@redhat.com>
-X-Mailer: git-send-email 1.6.6.1
+	Fri, 7 May 2010 11:41:59 -0400
+Subject: Re: [PATCH] perf: fix raw sample size if no sampling data is
+ attached
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100507152835.GU6450@erda.amd.com>
+References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
+	 <1271190201-25705-13-git-send-email-robert.richter@amd.com>
+	 <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com>
+	 <20100507152835.GU6450@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 May 2010 17:41:54 +0200
+Message-ID: <1273246914.1642.359.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to hostaudio_ioctl and hostmixer_ioctl_mixdev to unlocked_ioctl
+On Fri, 2010-05-07 at 17:28 +0200, Robert Richter wrote:
+> From 6373951f1c660400650066b73c3bb2f6d232be67 Mon Sep 17 00:00:00 2001
+> From: Robert Richter <robert.richter@amd.com>
+> Date: Fri, 7 May 2010 15:49:56 +0200
+> Subject: [PATCH] perf: fix raw sample size if no sampling data is
+> attached
+> 
+> The header size of a raw sample is not included in the total size of a
+> raw data sample. Thus, if no data is attached the size must be
+> null. In this case a buffer overflow may occur when copying the
+> sampling data.
+> 
+But there is data, a whole u32 of value 0. Your patch breaks things.
 
-Signed-off-by: John Kacur <jkacur@redhat.com>
----
- arch/um/drivers/hostaudio_kern.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> ---
+>  kernel/perf_event.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index 9dbe8cd..f6ddae9 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -3229,7 +3229,7 @@ void perf_output_sample(struct
+> perf_output_handle *handle,
+>                                 u32     size;
+>                                 u32     data;
+>                         } raw = {
+> -                               .size = sizeof(u32),
+> +                               .size = 0,
+>                                 .data = 0,
+>                         };
+>                         perf_output_put(handle, raw); 
 
-diff --git a/arch/um/drivers/hostaudio_kern.c b/arch/um/drivers/hostaudio_kern.c
-index 368219c..ae42695 100644
---- a/arch/um/drivers/hostaudio_kern.c
-+++ b/arch/um/drivers/hostaudio_kern.c
-@@ -136,7 +136,7 @@ static unsigned int hostaudio_poll(struct file *file,
- 	return mask;
- }
- 
--static int hostaudio_ioctl(struct inode *inode, struct file *file,
-+static long hostaudio_ioctl(struct file *file,
- 			   unsigned int cmd, unsigned long arg)
- {
- 	struct hostaudio_state *state = file->private_data;
-@@ -223,7 +223,7 @@ static int hostaudio_release(struct inode *inode, struct file *file)
- 
- /* /dev/mixer file operations */
- 
--static int hostmixer_ioctl_mixdev(struct inode *inode, struct file *file,
-+static long hostmixer_ioctl_mixdev(struct file *file,
- 				  unsigned int cmd, unsigned long arg)
- {
- 	struct hostmixer_state *state = file->private_data;
-@@ -289,7 +289,7 @@ static const struct file_operations hostaudio_fops = {
- 	.read           = hostaudio_read,
- 	.write          = hostaudio_write,
- 	.poll           = hostaudio_poll,
--	.ioctl          = hostaudio_ioctl,
-+	.unlocked_ioctl	= hostaudio_ioctl,
- 	.mmap           = NULL,
- 	.open           = hostaudio_open,
- 	.release        = hostaudio_release,
-@@ -298,7 +298,7 @@ static const struct file_operations hostaudio_fops = {
- static const struct file_operations hostmixer_fops = {
- 	.owner          = THIS_MODULE,
- 	.llseek         = no_llseek,
--	.ioctl          = hostmixer_ioctl_mixdev,
-+	.unlocked_ioctl	= hostmixer_ioctl_mixdev,
- 	.open           = hostmixer_open_mixdev,
- 	.release        = hostmixer_release,
- };
--- 
-1.6.6.1
+
 
