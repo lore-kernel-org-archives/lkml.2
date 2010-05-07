@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab0EGCs3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 22:48:29 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:56328 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab0EGCs2 convert rfc822-to-8bit (ORCPT
+	id S1753333Ab0EGCxG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 22:53:06 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:49711 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845Ab0EGCxD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 22:48:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=g2bg0gNHIx4z6jDekc92Qb4NiuBS5FPVazj8LOLcjW95lf8/gkVWSp/mLaWnTTGIYg
-         5J8cMvxzo/qIJgI5IYEnGtlU0TkkImmua1JJbcHECuTHcClq7mvwbOJqnbFsrdgA7bcr
-         nqxJ2/uIk0xchyZYunE7dUhvkPfxk6DAMkNBA=
+	Thu, 6 May 2010 22:53:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1273171863.1642.258.camel@laptop>
-References: <1273111054-10141-1-git-send-email-xiaosuo@gmail.com> 
-	<alpine.DEB.2.00.1005061140100.2642@makko.or.mcafeemobile.com> 
-	<1273171863.1642.258.camel@laptop>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Fri, 7 May 2010 10:48:05 +0800
-Message-ID: <o2l412e6f7f1005061948u1ca0fe54of0b453846c678c85@mail.gmail.com>
-Subject: Re: [PATCH] epoll: use wrapper functions
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Davide Libenzi <davidel@xmailserver.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Roland Dreier <rolandd@cisco.com>,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>, Ingo Molnar <mingo@elte.hu>,
-       Takashi Iwai <tiwai@suse.de>, David Howells <dhowells@redhat.com>,
-       linux-fsdevel@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4BE37DDD.8000402@cox.net>
+References: <eGToe-3b9-5@gated-at.bofh.it> <eGUaB-4mU-1@gated-at.bofh.it>
+	 <eGUtX-4Kd-3@gated-at.bofh.it> <eGWvL-7Fy-1@gated-at.bofh.it>
+	 <eGWFt-7S7-17@gated-at.bofh.it> <eGWP9-8jH-17@gated-at.bofh.it>
+	 <4BE37DDD.8000402@cox.net>
+Date: Thu, 6 May 2010 19:53:02 -0700
+Message-ID: <p2jd6200be21005061953y497b0766k15123f69ff7db630@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: James Kosin <james.kosin.04@cnu.edu>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 7, 2010 at 2:51 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-05-06 at 11:47 -0700, Davide Libenzi wrote:
->> Since we already have __add_wait_queue(), __add_wait_queue_tail() and
->> __remove_wait_queue() (which all means "locked"), and while I agree in
->> having the exclusive-add wrapped into a function, I much better prefer a:
+On Thu, May 6, 2010 at 7:41 PM, James Kosin <james.kosin.04@cnu.edu> wrote:
+> On 5/5/2010 8:10 PM, Tony Lindgren wrote:
+>> * Brian Swetland <swetland@google.com> [100505 16:51]:
+>>> On Wed, May 5, 2010 at 4:47 PM, Tony Lindgren <tony@atomide.com> wrote:
+>>>> * Brian Swetland <swetland@google.com> [100505 14:34]:
+>>>>> On Wed, May 5, 2010 at 2:12 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> <<-- snip -->>
+>>>>>> At no point does the user program have to communicate anything to the
+>>>>>> modem driver, and at no point does it have to do anything out of the
+>>>>>> ordinary except to enable and disable a suspend blocker.
+>>>>>
+>>>>> Exactly -- and you can use the same style of overlapping suspend
+>>>>> blockers with other drivers than input, if the input interface is not
+>>>>> suitable for the particular interaction.
+>>>>
+>>>> Would the suspend blockers still be needed somewhere in the example
+>>>> above?
+>>>
+>>> How often would we retry suspending?
 >>
->> static inline void __add_wait_queue_excl(wait_queue_head_t *head,
->>                                          wait_queue_t *new)
->> {
->>         new->flags |= WQ_FLAG_EXCLUSIVE;
->>         __add_wait_queue(head, new);
->> }
+>> Well based on some timer, the same way the screen blanks? Or five
+>> seconds of no audio play? So if the suspend fails, then reset whatever
+>> userspace suspend policy timers.
 >>
->> The patch you posted introduces a different naming, which leaves all the
->> other __*() untouched, and wraps the already one-liner __remove_wait_queue()
->> with yet another one-liner.
 >
-> I concur, I always get confused by the _locked postfix (and its more
-> typing). Also, it goes against the lock data not code paradigm.
+> Tony,
+> Wouldn't this be handled by the idle task, or task manager?
 >
+> When all tasks are suspended and not doing anything that should be the
+> first clue that a real suspend cycle could be attempted.
 >
 
-I greped all the code, and found that
-add_wait_queue_head_exclusive_locked() and remove_wait_queue_locked()
-aren't used. It seems that no users like these APIs. So I will remove
-these two APIs, and add __add_wait_queue_excl() instead. Thanks.
-
+One if the benefit we get from using suspend is that an unprivileged
+app that does not have access to suspend blockers cannot prevent
+suspend. You lose this advantage if you trigger suspend only from the
+idle task.
 
 -- 
-Regards，
-Changli Gao(xiaosuo@gmail.com)
+Arve Hj�nnev�g
