@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab0EGW2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 18:28:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34559 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614Ab0EGW2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 18:28:34 -0400
-Message-ID: <4BE493D6.6000105@zytor.com>
-Date: Fri, 07 May 2010 15:27:34 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1752944Ab0EGW2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 18:28:47 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45286 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab0EGW2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 18:28:44 -0400
+Date: Fri, 7 May 2010 23:28:09 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Daniel Walker <dwalker@fifo99.com>, Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+Message-ID: <20100507222809.GA30808@srcf.ucam.org>
+References: <20100507193353.GA27175@srcf.ucam.org> <20100507195548.GN387@atomide.com> <20100507202859.GA27328@srcf.ucam.org> <20100507205329.GP387@atomide.com> <20100507210304.GA28701@srcf.ucam.org> <20100507212556.GQ387@atomide.com> <20100507213917.GE28906@srcf.ucam.org> <20100507214211.GR387@atomide.com> <20100507214855.GA30190@srcf.ucam.org> <20100507220026.GS387@atomide.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Arjan van de Ven <arjan@linux.intel.com>,
-       Jacob Pan <jacob.jun.pan@linux.intel.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Alek Du <alek.du@intel.com>, Feng Tang <feng.tang@intel.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jacob Pan <jacob.jun.pan@intel.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Arjan van de Ven <arjan.van.de.ven@intel.com>
-Subject: Re: RFD: Should we remove the HLT check?  (was Re: [PATCH 1/8] x86:
- avoid check hlt if no timer interrupts)
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>	<1273254108-3234-2-git-send-email-jacob.jun.pan@linux.intel.com>	<4BE478C1.2060602@zytor.com>	<4BE4791B.1060304@linux.intel.com>	<4BE479EA.3080005@zytor.com> <20100507232448.343b5ebc@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100507232448.343b5ebc@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100507220026.GS387@atomide.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2010 03:24 PM, Alan Cox wrote:
->> I'd be cool skipping it for family 5 or newer.  I'm just wondering if we
->> should kill it completely -- IIRC it was only a handful of 386/486
->> systems which had problems, usually due to marginal power supplies which
->> couldn't handle the noise of a variable load (DOS not having any power
->> management would run at a reliable 100% load) -- that's not exactly the
->> type of systems which would have survived to modern day.
+On Fri, May 07, 2010 at 03:00:26PM -0700, Tony Lindgren wrote:
+
+> Hmm, I'm thinking there would not be any need to turn the screen on
+> for the broken apps until some other event such as a tap on the screen
+> triggers the need to turn the screen on.
 > 
-> Also SMM and hardware bugs on some platforms - Cyrix MediaGX 5510 for
-> example where a hlt at the wrong moment during ATA transfers hung the box
-> until power cycle. But all old old stuff.
+> If it's a critical app, then it should be fixed so it's safe to keep
+> running.
+> 
+> And yeah, I guess you could cgroups to categorize "timer certified"
+> and "broken" apps.
 
-I think family < 5 seems a reasonable cutoff.
+This is a perfectly valid model, but it's not one that matches Android.
 
-Note that the ATA transfer bug you describe above would not be caught by
-the existing check.
-
-	-hpa
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
