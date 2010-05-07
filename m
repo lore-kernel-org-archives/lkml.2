@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab0EGJOE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:14:04 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:34903 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab0EGJOA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:14:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=bH3l0p1E2eF54PbQ+HzOr7+73wna1O9LjdLqfHCt3kDahHseWFkuT/1RfdxfiVqsR1
-         5Uv771zNU6fyYvKPizmGE358jHFgVZYSA5DGhTyfdk9Fe9OXtJzyI6TKYY1b8r4wlzYB
-         952UEn0tzfgdHx/n3ueJ/5V+HTIeKGK2zQ0MM=
+	id S1754800Ab0EGJQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:16:52 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53487 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750766Ab0EGJQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 05:16:50 -0400
+Date: Fri, 7 May 2010 10:16:31 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/2] mm,migration: Fix race between shift_arg_pages and
+	rmap_walk by guaranteeing rmap_walk finds PTEs created within the
+	temporary stack
+Message-ID: <20100507091631.GA4859@csn.ul.ie>
+References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie> <1273188053-26029-3-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1272848060-28049-1-git-send-email-linus.walleij@stericsson.com>
-References: <1272848060-28049-1-git-send-email-linus.walleij@stericsson.com>
-Date: Fri, 7 May 2010 11:13:57 +0200
-Message-ID: <i2t63386a3d1005070213u2ad32613w694be1ecbeb46856@mail.gmail.com>
-Subject: Re: [PATCH 0/7] DMAENGINE: fixes and PrimeCells
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan is this patch set OK?
+On Thu, May 06, 2010 at 06:40:39PM -0700, Linus Torvalds wrote:
+> On Fri, 7 May 2010, Mel Gorman wrote:
+> > 
+> > Page migration requires rmap to be able to find all migration ptes
+> > created by migration. If the second rmap_walk clearing migration PTEs
+> > misses an entry, it is left dangling causing a BUG_ON to trigger during
+> > fault. For example;
+> 
+> So I still absolutely detest this patch.
+> 
+> Why didn't the other - much simpler - patch work? The one Rik pointed to:
+> 
+> 	http://lkml.org/lkml/2010/4/30/198
+> 
 
-Sorry if you're busy, just need to check...
+Oh, it works, but it depends on a magic check is_vma_temporary_stack().
+Kamezawa had a variant that did not depend on magic but it increased the
+size of vm_area_struct. That magic check was just something that would
+be easy to break and not spot hence the temporary VMA instead.
 
-Patches 1 thru 4 should be uncontroversial, only affects
-our ST-Ericsson platforms and have been thorougly reviewed.
+> and didn't do that _disgusting_ temporary anon_vma?
+> 
+> Alternatively, why don't we just take the anon_vma lock over this region, 
+> so that rmap can't _walk_ the damn thing?
+> 
 
-As posted elsewhere this is tested on an ARM reference
-design now as well, which IMHO would make it OK to apply
-also the PL011 patch, nr 5.
+Because move_page_tables() calls into the page allocator. I'll create a
+version that allocates the PMDs in advance and see what it looks like.
 
-(OK Russell?)
-
-Nr 6 and 7 depend on changes in Russells -next branch
-so unless you want to bring in the ARM next to your tree
-as well, you can wait with these.
-
-Yours,
-Linus Walleij
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
