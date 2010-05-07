@@ -1,219 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535Ab0EGEX6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 00:23:58 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57080 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab0EGEX4 (ORCPT
+	id S1751400Ab0EGEcw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 00:32:52 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:42612 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab0EGEcu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 00:23:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 7 May 2010 13:19:24 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] mm,migration: Fix race between shift_arg_pages and
- rmap_walk by guaranteeing rmap_walk finds PTEs created within the temporary
- stack
-Message-Id: <20100507131924.e75db6fc.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.LFD.2.00.1005061905230.901@i5.linux-foundation.org>
-References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie>
-	<1273188053-26029-3-git-send-email-mel@csn.ul.ie>
-	<alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org>
-	<20100507105712.18fc90c4.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.LFD.2.00.1005061905230.901@i5.linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 7 May 2010 00:32:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=jPGdP2UAkdYGBOXQ77BAFT18DipNenOb+v2DoR3umdvxsRMYVRwftsqep+pKw6Ge6N
+         bimf4hAMHjtsblQCxfDC8BsHcCpqlv0J90lVH0pibWJwtXQV8DdCsh5qdLYhLxPUEjQO
+         GD2lVfaOqhUWzFCtZwlkjr/p48h+M1nDpI2BY=
+MIME-Version: 1.0
+In-Reply-To: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com>
+References: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Fri, 7 May 2010 12:32:30 +0800
+Message-ID: <t2p412e6f7f1005062132lbcaf5192ua6ead4872465a766@mail.gmail.com>
+Subject: Re: [RFC] mm: generic adaptive large memory allocation APIs
+To: akpm@linux-foundation.org
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+       Changli Gao <xiaosuo@gmail.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010 19:12:59 -0700 (PDT)
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Thu, May 6, 2010 at 8:30 AM, Changli Gao <xiaosuo@gmail.com> wrote:
+> void kvfree(void *ptr, size_t size)
+> {
+>        if (size < PAGE_SIZE)
+>                kfree(ptr);
+>        else if (is_vmalloc_addr(ptr))
+>                vfree(ptr);
+>        else
+>                free_pages_exact(ptr, size);
+> }
 
-> 
-> 
-> On Fri, 7 May 2010, KAMEZAWA Hiroyuki wrote:
-> > 
-> > IIUC, move_page_tables() may call "page table allocation" and it cannot be
-> > done under spinlock.
-> 
-> Bah. It only does a "alloc_new_pmd()", and we could easily move that out 
-> of the loop and pre-allocate the pmd's.
-> 
-> If that's the only reason, then it's a really weak one, methinks.
-> 
-Hmm, is this too slow ? This is the simplest one I have.
+I found a way to eliminate the size argument of kvfree() and
+kvfree_inatomic(). We can check where the page_head is slab or
+compound, as pages owned by slab  subsystem always have Slab flag set
+or are compound.
 
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+                page = virt_to_head_page(ptr);
+                if (PageSlab(page) || PageCompound(page))
+                        kfree(ptr);
+                else
+                        free_pages_exact(ptr, page->private);
 
-exec()'s shift_arg_pages calls adjust_vma and move_page_table() directly.
-During this, rmap information (i.e. page <-> pte <-> address <-> vma)
-information is inconsistent. This causes a bug in rmap_walk() which
-rmap_walk cannot find valid ptes it must visit.
+And we can save the size argument in page->private after
+alloc_pages_eact() returns.
 
-Considering the race, move_vma() does valid things. So, making use of
-move_vma() instead of bare move_page_tables() is a choice.
+        ptr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
+        if (ptr != NULL) {
+                virt_to_head_page(ptr)->private = size;
+                return ptr;
+        }
 
-Pros.
- - all races are handled under /mm. very simple.
-Cons.
- - This may makes exec() slow a bit.
+here is the test code:
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- fs/exec.c          |   64 +++++++++++++++--------------------------------------
- include/linux/mm.h |    6 ++--
- mm/mremap.c        |    4 +--
- 3 files changed, 24 insertions(+), 50 deletions(-)
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/mm.h>
+#include <linux/init.h>
+#include <linux/slab.h>
+#include <linux/vmalloc.h>
+#include <linux/interrupt.h>
 
-Index: linux-2.6.34-rc5-mm1/fs/exec.c
-===================================================================
---- linux-2.6.34-rc5-mm1.orig/fs/exec.c
-+++ linux-2.6.34-rc5-mm1/fs/exec.c
-@@ -486,14 +486,7 @@ EXPORT_SYMBOL(copy_strings_kernel);
- /*
-  * During bprm_mm_init(), we create a temporary stack at STACK_TOP_MAX.  Once
-  * the binfmt code determines where the new stack should reside, we shift it to
-- * its final location.  The process proceeds as follows:
-- *
-- * 1) Use shift to calculate the new vma endpoints.
-- * 2) Extend vma to cover both the old and new ranges.  This ensures the
-- *    arguments passed to subsequent functions are consistent.
-- * 3) Move vma's page tables to the new range.
-- * 4) Free up any cleared pgd range.
-- * 5) Shrink the vma to cover only the new range.
-+ * its final location.
-  */
- static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
- {
-@@ -503,7 +496,7 @@ static int shift_arg_pages(struct vm_are
- 	unsigned long length = old_end - old_start;
- 	unsigned long new_start = old_start - shift;
- 	unsigned long new_end = old_end - shift;
--	struct mmu_gather *tlb;
-+	unsigned long ret;
- 
- 	BUG_ON(new_start > new_end);
- 
-@@ -514,45 +507,23 @@ static int shift_arg_pages(struct vm_are
- 	if (vma != find_vma(mm, new_start))
- 		return -EFAULT;
- 
--	/*
--	 * cover the whole range: [new_start, old_end)
--	 */
--	if (vma_adjust(vma, new_start, old_end, vma->vm_pgoff, NULL))
--		return -ENOMEM;
--
--	/*
--	 * move the page tables downwards, on failure we rely on
--	 * process cleanup to remove whatever mess we made.
--	 */
--	if (length != move_page_tables(vma, old_start,
--				       vma, new_start, length))
--		return -ENOMEM;
-+	if (new_end > old_start) { /* overlap */
-+		unsigned long part_len = new_end - old_start;
-+		ret = move_vma(vma, old_start, part_len, part_len, new_start);
- 
--	lru_add_drain();
--	tlb = tlb_gather_mmu(mm, 0);
--	if (new_end > old_start) {
--		/*
--		 * when the old and new regions overlap clear from new_end.
--		 */
--		free_pgd_range(tlb, new_end, old_end, new_end,
--			vma->vm_next ? vma->vm_next->vm_start : 0);
-+		if (ret != new_start)
-+			return -ENOMEM;
-+		/* old_vma is splitted.. */
-+		vma = find_vma(mm, old_start + part_len);
-+		ret = move_vma(vma, old_start + part_len, length - part_len,
-+			length - part_len, new_start + part_len);
-+		if (ret != new_start + part_len)
-+			return -ENOMEM;
- 	} else {
--		/*
--		 * otherwise, clean from old_start; this is done to not touch
--		 * the address space in [new_end, old_start) some architectures
--		 * have constraints on va-space that make this illegal (IA64) -
--		 * for the others its just a little faster.
--		 */
--		free_pgd_range(tlb, old_start, old_end, new_end,
--			vma->vm_next ? vma->vm_next->vm_start : 0);
-+		ret = move_vma(vma, old_start, length, length, new_start);
-+		if (ret != new_start)
-+			return -ENOMEM;
- 	}
--	tlb_finish_mmu(tlb, new_end, old_end);
--
--	/*
--	 * Shrink the vma to just the new range.  Always succeeds.
--	 */
--	vma_adjust(vma, new_start, new_end, vma->vm_pgoff, NULL);
--
- 	return 0;
- }
- 
-@@ -625,9 +596,12 @@ int setup_arg_pages(struct linux_binprm 
- 
- 	/* Move stack pages down in memory. */
- 	if (stack_shift) {
-+		unsigned long new_start = vma->vm_start - stack_shift;
- 		ret = shift_arg_pages(vma, stack_shift);
- 		if (ret)
- 			goto out_unlock;
-+		vma = find_vma(mm, new_start);
-+		bprm->vma = vma;
- 	}
- 
- 	stack_expand = 131072UL; /* randomly 32*4k (or 2*64k) pages */
-Index: linux-2.6.34-rc5-mm1/include/linux/mm.h
-===================================================================
---- linux-2.6.34-rc5-mm1.orig/include/linux/mm.h
-+++ linux-2.6.34-rc5-mm1/include/linux/mm.h
-@@ -856,9 +856,9 @@ int set_page_dirty_lock(struct page *pag
- int set_page_dirty_notag(struct page *page);
- int clear_page_dirty_for_io(struct page *page);
- 
--extern unsigned long move_page_tables(struct vm_area_struct *vma,
--		unsigned long old_addr, struct vm_area_struct *new_vma,
--		unsigned long new_addr, unsigned long len);
-+extern unsigned long move_vma(struct vm_area_struct *vma,
-+		unsigned long old_addr, unsigned long old_length,
-+		unsigned long new_length, unsigned long new_addr);
- extern unsigned long do_mremap(unsigned long addr,
- 			       unsigned long old_len, unsigned long new_len,
- 			       unsigned long flags, unsigned long new_addr);
-Index: linux-2.6.34-rc5-mm1/mm/mremap.c
-===================================================================
---- linux-2.6.34-rc5-mm1.orig/mm/mremap.c
-+++ linux-2.6.34-rc5-mm1/mm/mremap.c
-@@ -128,7 +128,7 @@ static void move_ptes(struct vm_area_str
- 
- #define LATENCY_LIMIT	(64 * PAGE_SIZE)
- 
--unsigned long move_page_tables(struct vm_area_struct *vma,
-+static unsigned long move_page_tables(struct vm_area_struct *vma,
- 		unsigned long old_addr, struct vm_area_struct *new_vma,
- 		unsigned long new_addr, unsigned long len)
- {
-@@ -162,7 +162,7 @@ unsigned long move_page_tables(struct vm
- 	return len + old_addr - old_end;	/* how much done */
- }
- 
--static unsigned long move_vma(struct vm_area_struct *vma,
-+unsigned long move_vma(struct vm_area_struct *vma,
- 		unsigned long old_addr, unsigned long old_len,
- 		unsigned long new_len, unsigned long new_addr)
- {
+#define kmalloc(size, gfp) ({ \
+        void *ptr = kmalloc(size, gfp); \
+        if (ptr != NULL) \
+                printk("kmalloc: %p(%u)\n", ptr, size); \
+        ptr; })
 
+#define alloc_pages_exact(size, gfp) ({ \
+        void *ptr = alloc_pages_exact(size, gfp); \
+        if (ptr != NULL) \
+                printk("alloc_pages_exact: %p(%u)\n", ptr, size); \
+        ptr; })
+
+#define vmalloc(size) ({ \
+        void *ptr = vmalloc(size); \
+        if (ptr != NULL) \
+                printk("vmalloc: %p(%u)\n", ptr, size); \
+        ptr; })
+
+#define kfree(ptr) do { printk("kfree: %p\n", ptr); kfree(ptr); } while (0)
+#define vfree(ptr) do { printk("vfree: %p\n", ptr); vfree(ptr); } while (0)
+#define free_pages_exact(ptr, size) do { \
+                printk("free_pages_exact: %p(%u)\n", ptr, size); \
+                free_pages_exact(ptr, size); \
+        } while (0)
+
+void *kvmalloc(size_t size)
+{
+        void *ptr;
+
+        if (size < PAGE_SIZE)
+                return kmalloc(size, GFP_KERNEL);
+        ptr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
+        if (ptr != NULL) {
+                virt_to_head_page(ptr)->private = size;
+                return ptr;
+        }
+
+        return vmalloc(size);
+}
+EXPORT_SYMBOL(kvmalloc);
+
+static void kvfree_work(struct work_struct *work)
+{
+        vfree(work);
+}
+
+static void __kvfree(void *ptr, bool inatomic)
+{
+        if (unlikely(ZERO_OR_NULL_PTR(ptr)))
+                return;
+        if (is_vmalloc_addr(ptr)) {
+                if (inatomic) {
+                        struct work_struct *work;
+
+                        work = ptr;
+                        BUILD_BUG_ON(sizeof(struct work_struct) > PAGE_SIZE);
+                        INIT_WORK(work, kvfree_work);
+                        schedule_work(work);
+                } else {
+                        vfree(ptr);
+                }
+        } else {
+                struct page *page;
+
+                page = virt_to_head_page(ptr);
+                if (PageSlab(page) || PageCompound(page))
+                        kfree(ptr);
+                else
+                        free_pages_exact(ptr, page->private);
+        }
+}
+
+void kvfree(void *ptr)
+{
+        __kvfree(ptr, false);
+}
+EXPORT_SYMBOL(kvfree);
+
+void kvfree_inatomic(void *ptr)
+{
+        __kvfree(ptr, true);
+}
+EXPORT_SYMBOL(kvfree_inatomic);
+
+//--------------------
+// for testing
+static int test_init(void)
+{
+        int size;
+        void *ptr;
+
+        for (size = 1; size < (1<<30); size <<= 1) {
+                ptr = kvmalloc(size);
+                if (ptr == NULL)
+                        return -1;
+                if (is_vmalloc_addr(ptr)) {
+                        kvfree(ptr);
+                        break;
+                }
+                kvfree(ptr);
+        }
+        ptr = kvmalloc(size);
+        if (ptr == NULL)
+                return -1;
+        kvfree_inatomic(ptr);
+
+        return 0;
+}
+module_init(test_init);
+
+static void test_exit(void)
+{
+}
+module_exit(test_exit);
+
+MODULE_LICENSE("GPL");
+
+-- 
+Regards，
+Changli Gao(xiaosuo@gmail.com)
