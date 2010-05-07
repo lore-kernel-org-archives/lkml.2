@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab0EGQH1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 12:07:27 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57480 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756906Ab0EGQHX (ORCPT
+	id S1756707Ab0EGQKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 12:10:00 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:31795 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755083Ab0EGQJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 12:07:23 -0400
-Date: Fri, 7 May 2010 18:07:16 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Eric Piel <eric.piel@tremplin-utc.net>,
-       Pavel Herrmann <morpheus.ibis@gmail.com>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [patch]hp_accel: Fix race in device removal
-Message-ID: <20100507160716.GA1506@elf.ucw.cz>
-References: <201005071804.20462.oneukum@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005071804.20462.oneukum@suse.de>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 7 May 2010 12:09:58 -0400
+Subject: Re: [RFC PATCHv2 1/7] HSI: Introducing HSI framework
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: ext Randy Dunlap <randy.dunlap@oracle.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+In-Reply-To: <20100507082629.3bdf0b17.randy.dunlap@oracle.com>
+References: <1273245517-30712-1-git-send-email-carlos.chinea@nokia.com>
+	 <1273245517-30712-2-git-send-email-carlos.chinea@nokia.com>
+	 <20100507082629.3bdf0b17.randy.dunlap@oracle.com>
+Content-Type: text/plain
+Date: Fri, 07 May 2010 19:11:53 +0300
+Message-Id: <1273248713.7755.7261.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.3 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 May 2010 16:08:59.0682 (UTC) FILETIME=[9A6DF020:01CAEDFF]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2010-05-07 18:04:20, Oliver Neukum wrote:
-> From 505056649f5ecb1ebb086981243b9870ce961a87 Mon Sep 17 00:00:00 2001
-> From: Oliver Neukum <oliver@neukum.org>
-> Date: Fri, 7 May 2010 18:02:07 +0200
-> Subject: [PATCH] hp_accel: Fix race in device removal
-> 
-> The work queue has to be flushed after the device has been made
-> inaccessible.
-> 
-> Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Hi,
 
-ACK.
+On Fri, 2010-05-07 at 17:26 +0200, ext Randy Dunlap wrote:
+> On Fri,  7 May 2010 18:18:31 +0300 Carlos Chinea wrote:
+> 
+--[snip]--
+
+> > diff --git a/drivers/hsi/Kconfig b/drivers/hsi/Kconfig
+> > new file mode 100644
+> > index 0000000..5af62ce
+> > --- /dev/null
+> > +++ b/drivers/hsi/Kconfig
+> > @@ -0,0 +1,13 @@
+> > +#
+> > +# HSI driver configuration
+> > +#
+> > +menuconfig HSI
+> > +	bool "HSI support"
+> 
+> Why is this bool instead of tristate?
+> IOW, why can it not be built as a loadable module?
+> 
+
+Because, I have not implemented it yet. I was planning to do it later
+on. But of course if it has to be there, I can add the module support
+now.
+
+> 
+> > +	---help---
+> > +	  The "High speed synchronous Serial Interface" is
+> > +	  synchronous serial interface used mainly to connect
+> > +	  application engines and cellular modems.
+> > +
+> > +if HSI
+> > +
+> > +endif # HSI
+> > diff --git a/drivers/hsi/Makefile b/drivers/hsi/Makefile
+> > new file mode 100644
+> > index 0000000..b42b6cf
+> > --- /dev/null
+> > +++ b/drivers/hsi/Makefile
+> > @@ -0,0 +1,4 @@
+> > +#
+> > +# Makefile for HSI
+> > +#
+> > +obj-$(CONFIG_HSI)	+= hsi.o
+> 
+> 
 > ---
->  drivers/hwmon/hp_accel.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hwmon/hp_accel.c b/drivers/hwmon/hp_accel.c
-> index c8ab505..7580f55 100644
-> --- a/drivers/hwmon/hp_accel.c
-> +++ b/drivers/hwmon/hp_accel.c
-> @@ -328,8 +328,8 @@ static int lis3lv02d_remove(struct acpi_device *device, int type)
->  	lis3lv02d_joystick_disable();
->  	lis3lv02d_poweroff(&lis3_dev);
->  
-> -	flush_work(&hpled_led.work);
->  	led_classdev_unregister(&hpled_led.led_classdev);
-> +	flush_work(&hpled_led.work);
->  
->  	return lis3lv02d_remove_fs(&lis3_dev);
->  }
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Br,
+Carlos
+
+
