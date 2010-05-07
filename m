@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab0EGFrG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 01:47:06 -0400
-Received: from ozlabs.org ([203.10.76.45]:53806 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751750Ab0EGFrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 01:47:05 -0400
-Date: Fri, 7 May 2010 15:40:34 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Subrata Modak <subrata@linux.vnet.ibm.com>
-Cc: Linuxppc-dev <Linuxppc-dev@ozlabs.org>,
-       Paul Mackerras <paulus@au1.ibm.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: PPC64 2.6.34-rc6 warning - Is this expected ?
-Message-ID: <20100507054034.GB25173@drongo>
-References: <1273060251.13463.8.camel@subratamodak.linux.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273060251.13463.8.camel@subratamodak.linux.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752713Ab0EGFxq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 01:53:46 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:32929 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab0EGFxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 01:53:45 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 7 May 2010 14:49:37 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+ the wrong VMA information
+Message-Id: <20100507144937.2266df7d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100507085219.5821f721.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie>
+	<1273065281-13334-2-git-send-email-mel@csn.ul.ie>
+	<20100506163837.bf6587ef.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100506094621.GZ20979@csn.ul.ie>
+	<20100507085219.5821f721.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 05:20:51PM +0530, Subrata Modak wrote:
+On Fri, 7 May 2010 08:52:19 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> I built 2.6.34-rc6 with the attached Fedora Config file
-> (config-2.6.33.1-19.fc13.ppc64) on my P5 Fedora Box and got the
-> following warning. Is the following expected ?
+> On Thu, 6 May 2010 10:46:21 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
+
+> > 5. It added a field to mm_struct. It's the smallest of concerns though.
+> > 
+> > Do you think it's a better approach and should be revisited?
+> > 
+> > 
 > 
-> CALL    arch/powerpc/relocs_check.pl
-> Building modules, stage 2.
-> WARNING: 4 bad relocations
-> c00000000007216e R_PPC64_ADDR16_HIGHEST  __ksymtab+0x00000000009dcec8
-> c000000000072172 R_PPC64_ADDR16_HIGHER  __ksymtab+0x00000000009dcec8
-> c00000000007217a R_PPC64_ADDR16_HI  __ksymtab+0x00000000009dcec8
-> c00000000007217e R_PPC64_ADDR16_LO  __ksymtab+0x00000000009dcec8
+> If everyone think seqlock is simple, I think it should be. But it seems you all are
+> going ahead with anon_vma->lock approach. 
+> (Basically, it's ok to me if it works. We may be able to make it better in later.)
+> 
+> I'll check your V7.
+> 
+> Thank you for answering.
 
-No, it's not expected.  It's in iSeries code, so you could avoid it
-just by disabling CONFIG_ISERIES (I don't think any distro still
-supports legacy iSeries).  I'll post a patch to fix the problem
-properly.
+plz forget about seq_counter. we may have to add "retry" path for avoiding
+dead lock. If so, using anon_vma->lock in proper manner seems sane.
 
-Paul.
+Thanks,
+-Kame
+
