@@ -1,47 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab0EGOyF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 10:54:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48906 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755505Ab0EGOyC (ORCPT
+	id S1755940Ab0EGOyu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 10:54:50 -0400
+Received: from tomts20-srv.bellnexxia.net ([209.226.175.74]:48928 "EHLO
+	tomts20-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755533Ab0EGOys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 10:54:02 -0400
-Date: Fri, 7 May 2010 07:51:31 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-cc: Nitin Gupta <ngupta@vflare.org>, Greg KH <greg@kroah.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-       Christoph Hellwig <hch@infradead.org>,
-       Jens Axboe <jens.axboe@oracle.com>, Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] ramzswap: Eliminate stale data from compressed memory
- (v2)
-In-Reply-To: <4BE3C4CC.8050307@cs.helsinki.fi>
-Message-ID: <alpine.LFD.2.00.1005070750510.901@i5.linux-foundation.org>
-References: <1273217107-2023-1-git-send-email-ngupta@vflare.org> <4BE3C4CC.8050307@cs.helsinki.fi>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 7 May 2010 10:54:48 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEACvG40tGGNqG/2dsb2JhbACeFnK/CYUVBA
+Date: Fri, 7 May 2010 10:54:38 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/9 - v2][RFC] tracing: Remove per event trace
+	registering
+Message-ID: <20100507145438.GB29573@Krystal>
+References: <20100504034045.085822814@goodmis.org> <20100504034202.282030521@goodmis.org> <20100507042025.GC8069@nowhere>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100507042025.GC8069@nowhere>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 10:42:20 up 30 days, 35 min,  3 users,  load average: 0.19, 0.20,
+	0.18
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, 7 May 2010, Pekka Enberg wrote:
+* Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> On Mon, May 03, 2010 at 11:40:48PM -0400, Steven Rostedt wrote:
+> > From: Steven Rostedt <srostedt@redhat.com>
+> > 
+> > This patch removes the register functions of TRACE_EVENT() to enable
+> > and disable tracepoints. The registering of a event is now down
+> > directly in the trace_events.c file. The tracepoint_probe_register()
+> > is now called directly.
+> > 
+> > The prototypes are no longer type checked, but this should not be
+> > an issue since the tracepoints are created automatically by the
+> > macros. If a prototype is incorrect in the TRACE_EVENT() macro, then
+> > other macros will catch it.
 > 
-> The series looks good to me:
 > 
-> Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+> 
+> Agreed. Typechecking matters for human code but not in this context.
+> Considering that the tracepoint and the probe are created by the same
+> CPP code, bugs will be tracked down quickly and located to a single
+> place.
 
-Yeah, I think I'm finally ok with it too.
+So it seems that I am the only one asking for extra type-checking and
+caring about problems that can appear subtily on architectures where the
+number of caller/callee arguments must match. And also the only one
+considering that passing more arguments to a callback that does not
+expect all of them might be a problem on some architectures.
 
-	Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Am I the only one thinking there is something fishy there ? I might be
+entirely over-paranoid, but this approach has rarely failed me in the
+past.
 
 Thanks,
 
-		Linus
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
