@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab0EGU4y (ORCPT <rfc822;w@1wt.eu>);
+	id S1758275Ab0EGU44 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 16:56:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44738 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757109Ab0EGU4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 May 2010 16:56:54 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51052 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295Ab0EGU4w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 16:56:52 -0400
-Subject: Re: [PATCH v2] wait: use wrapper functions
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Changli Gao <xiaosuo@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Davide Libenzi <davidel@xmailserver.org>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       containers@lists.linux-foundation.org
-In-Reply-To: <20100507135220.a972a6b2.akpm@linux-foundation.org>
-References: <1273214006-2979-1-git-send-email-xiaosuo@gmail.com>
-	 <20100507135220.a972a6b2.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 May 2010 22:56:47 +0200
-Message-ID: <1273265807.1642.368.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Date: Fri, 7 May 2010 17:14:16 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm mmu: reduce 50% memory usage
+Message-ID: <20100507201416.GA12974@amt.cnet>
+References: <4BD8228D.7090708@cn.fujitsu.com>
+ <20100429180955.GA17909@amt.cnet>
+ <4BD9D35C.5090403@redhat.com>
+ <20100430154427.GA32340@amt.cnet>
+ <4BE269D4.9090108@cn.fujitsu.com>
+ <20100506190402.GA3432@amt.cnet>
+ <4BE3CE80.8050408@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BE3CE80.8050408@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-07 at 13:52 -0700, Andrew Morton wrote:
-> On Fri,  7 May 2010 14:33:26 +0800
-> Changli Gao <xiaosuo@gmail.com> wrote:
+On Fri, May 07, 2010 at 04:25:36PM +0800, Lai Jiangshan wrote:
+> Subject: [PATCH] kvm, tdp: calculate correct base gfn for non-DIR level
 > 
-> > epoll should not touch flags in wait_queue_t. This patch introduces a new
-> > function __add_wait_queue_excl(), for the users, who use wait queue as a
-> > LIFO queue.
+> the base gfn calculation is incorrect in __direct_map(),
+> it does not calculate correctly when level=3 or 4.
 > 
-> __add_wait_queue_exclusive(), please.  Let's be consistent.
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Reported-by: Marcelo Tosatti <mtosatti@redhat.com>
+> ---
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index a5c6719..6986a6f 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -1955,7 +1956,10 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+>  		}
+>  
+>  		if (*iterator.sptep == shadow_trap_nonpresent_pte) {
+> -			pseudo_gfn = (iterator.addr & PT64_DIR_BASE_ADDR_MASK) >> PAGE_SHIFT;
+> +			u64 base_addr = iterator.addr;
+> +
+> +			base_addr &= PT64_LVL_ADDR_MASK(iterator.level);
+> +			pseudo_gfn = base_addr >> PAGE_SHIFT;
+>  			sp = kvm_mmu_get_page(vcpu, pseudo_gfn, iterator.addr,
+>  					      iterator.level - 1,
+>  					      1, ACC_ALL, iterator.sptep);
 
-done
-
+Looks good, please resend the whole patch.
