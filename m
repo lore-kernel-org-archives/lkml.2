@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab0EGJfs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:35:48 -0400
+	id S1756135Ab0EGJed (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:34:33 -0400
 Received: from mga09.intel.com ([134.134.136.24]:55769 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755218Ab0EGJ3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:29:51 -0400
+	id S1755440Ab0EGJaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 05:30:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,347,1270450800"; 
-   d="scan'208";a="515914984"
+   d="scan'208";a="515915017"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
        jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC][PATCH v5 01/19] Add a new structure for skb buffer from external.
-Date: Fri,  7 May 2010 17:34:48 +0800
-Message-Id: <1273224906-4874-2-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC][PATCH v5 06/19] Add a function to indicate if device use external buffer.
+Date: Fri,  7 May 2010 17:34:53 +0800
+Message-Id: <1273224906-4874-7-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1273224906-4874-1-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1273224906-4874-6-git-send-email-xiaohui.xin@intel.com>
 References: <1273224906-4874-1-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-2-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-3-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-4-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-5-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-6-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,32 +35,25 @@ Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/skbuff.h |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ include/linux/netdevice.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 124f90c..cf309c9 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -203,6 +203,18 @@ struct skb_shared_info {
- 	void *		destructor_arg;
- };
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 31d9c4a..0cb78f4 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1602,6 +1602,11 @@ extern void netdev_mp_port_detach(struct net_device *dev);
+ extern int netdev_mp_port_prep(struct net_device *dev,
+ 			struct mpassthru_port *port);
  
-+/* The structure is for a skb which skb->data may point to
-+ * an external buffer, which is not allocated from kernel space.
-+ * Since the buffer is external, then the shinfo or frags are
-+ * also extern too. It also contains a destructor for itself.
-+ */
-+struct skb_external_page {
-+	u8              *start;
-+	int             size;
-+	struct skb_frag_struct *frags;
-+	struct skb_shared_info *ushinfo;
-+	void		(*dtor)(struct skb_external_page *);
-+};
- /* We divide dataref into two halves.  The higher 16 bits hold references
-  * to the payload part of skb->data.  The lower 16 bits hold references to
-  * the entire skb->data.  A clone of a headerless skb holds the length of
++static inline bool dev_is_mpassthru(struct net_device *dev)
++{
++	return (dev && dev->mp_port);
++}
++
+ static inline void napi_free_frags(struct napi_struct *napi)
+ {
+ 	kfree_skb(napi->skb);
 -- 
 1.5.4.4
 
