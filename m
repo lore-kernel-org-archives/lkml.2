@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab0EGWfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 18:35:40 -0400
-Received: from mga05.intel.com ([192.55.52.89]:24128 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752679Ab0EGWfj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 18:35:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,350,1270450800"; 
-   d="scan'208";a="796496223"
-Message-ID: <4BE495BA.3040905@linux.intel.com>
-Date: Fri, 07 May 2010 15:35:38 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1753184Ab0EGWg6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 18:36:58 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39201 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752732Ab0EGWg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 18:36:57 -0400
+Date: Fri, 7 May 2010 22:36:41 GMT
+From: tip-bot for Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       tglx@linutronix.de, jacob.jun.pan@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, jacob.jun.pan@linux.intel.com
+In-Reply-To: <1273269585-14346-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1273269585-14346-1-git-send-email-jacob.jun.pan@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mrst] x86: Avoid check hlt for newer cpus
+Message-ID: <tip-2b107d93635616db0c3f893c8cc2e6d5cd8d77b2@git.kernel.org>
+Git-Commit-ID: 2b107d93635616db0c3f893c8cc2e6d5cd8d77b2
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-       Jacob Pan <jacob.jun.pan@linux.intel.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Alek Du <alek.du@intel.com>, Feng Tang <feng.tang@intel.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jacob Pan <jacob.jun.pan@intel.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: RFD: Should we remove the HLT check?  (was Re: [PATCH 1/8] x86:
- avoid check hlt if no timer interrupts)
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>	<1273254108-3234-2-git-send-email-jacob.jun.pan@linux.intel.com>	<4BE478C1.2060602@zytor.com>	<4BE4791B.1060304@linux.intel.com>	<4BE479EA.3080005@zytor.com> <20100507232448.343b5ebc@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100507232448.343b5ebc@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 May 2010 22:36:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/7/2010 15:24, Alan Cox wrote:
->> I'd be cool skipping it for family 5 or newer.  I'm just wondering if we
->> should kill it completely -- IIRC it was only a handful of 386/486
->> systems which had problems, usually due to marginal power supplies which
->> couldn't handle the noise of a variable load (DOS not having any power
->> management would run at a reliable 100% load) -- that's not exactly the
->> type of systems which would have survived to modern day.
->
-> Also SMM and hardware bugs on some platforms - Cyrix MediaGX 5510 for
-> example where a hlt at the wrong moment during ATA transfers hung the box
-> until power cycle. But all old old stuff.
+Commit-ID:  2b107d93635616db0c3f893c8cc2e6d5cd8d77b2
+Gitweb:     http://git.kernel.org/tip/2b107d93635616db0c3f893c8cc2e6d5cd8d77b2
+Author:     Jacob Pan <jacob.jun.pan@linux.intel.com>
+AuthorDate: Fri, 7 May 2010 14:59:45 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Fri, 7 May 2010 15:31:17 -0700
 
-but a boot time "does hlt work at all" check won't catch that.
+x86: Avoid check hlt for newer cpus
+
+Check hlt instruction was targeted for some older CPUs. It is an expensive
+operation in that it takes 4 ticks to break out the check.  We can avoid
+such check completely for newer x86 cpus (family >= 5).
+
+[ hpa: corrected family > 5 to family >= 5 ]
+
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+LKML-Reference: <1273269585-14346-1-git-send-email-jacob.jun.pan@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/cpu/bugs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index 01a2652..c39576c 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -86,7 +86,7 @@ static void __init check_fpu(void)
+ 
+ static void __init check_hlt(void)
+ {
+-	if (paravirt_enabled())
++	if (boot_cpu_data.x86 >= 5 || paravirt_enabled())
+ 		return;
+ 
+ 	printk(KERN_INFO "Checking 'hlt' instruction... ");
