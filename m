@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751219Ab0EGWIA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 18:08:00 -0400
-Received: from mga10.intel.com ([192.55.52.92]:45625 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750744Ab0EGWH7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 18:07:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,350,1270450800"; 
-   d="scan'208";a="565221039"
-Date: Fri, 7 May 2010 15:07:48 -0700
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Alek Du <alek.du@intel.com>, Feng Tang <feng.tang@intel.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jacob Pan <jacob.jun.pan@intel.com>,
-       Arjan van de Ven <arjan.van.de.ven@intel.com>
-Subject: Re: RFD: Should we remove the HLT check?  (was Re: [PATCH 1/8] x86:
- avoid check hlt if no timer interrupts)
-Message-ID: <20100507150748.00005a2d@unknown>
-In-Reply-To: <4BE48051.1060604@zytor.com>
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1273254108-3234-2-git-send-email-jacob.jun.pan@linux.intel.com>
-	<4BE478C1.2060602@zytor.com>
-	<4BE4791B.1060304@linux.intel.com>
-	<alpine.LFD.2.00.1005071354310.901@i5.linux-foundation.org>
-	<4BE48051.1060604@zytor.com>
-Organization: Intel OTC
-X-Mailer: Claws Mail 3.7.4cvs1 (GTK+ 2.16.0; i586-pc-mingw32msvc)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752230Ab0EGWTH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 18:19:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33472 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751720Ab0EGWTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 18:19:04 -0400
+Date: Fri, 7 May 2010 22:18:46 GMT
+From: tip-bot for Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       tglx@linutronix.de, jacob.jun.pan@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, jacob.jun.pan@linux.intel.com
+In-Reply-To: <1273269585-14346-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1273269585-14346-1-git-send-email-jacob.jun.pan@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mrst] x86: Avoid check hlt for newer cpus
+Message-ID: <tip-d081dd5fe0ed8449433b972d3080f9d776e9424b@git.kernel.org>
+Git-Commit-ID: d081dd5fe0ed8449433b972d3080f9d776e9424b
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 May 2010 22:18:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  d081dd5fe0ed8449433b972d3080f9d776e9424b
+Gitweb:     http://git.kernel.org/tip/d081dd5fe0ed8449433b972d3080f9d776e9424b
+Author:     Jacob Pan <jacob.jun.pan@linux.intel.com>
+AuthorDate: Fri, 7 May 2010 14:59:45 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Fri, 7 May 2010 15:15:47 -0700
 
->Sounds like a plan.  Jacob, do you want to submit a new patch (bypassing
->this check if boot_cpu_info.x86 >= 5)?
->
->	-hpa
->
-Just sent out the updated patch. I guess you meant boot_cpu_data instead of boot_cpu_info.
+x86: Avoid check hlt for newer cpus
+
+Check hlt instruction was targeted for some older CPUs. It is an expensive
+operation in that it takes 4 ticks to break out the check.  We can avoid
+such check completely for newer x86 cpus (family >= 5).
+
+[ hpa: corrected family > 5 to family >= 5 ]
+
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+LKML-Reference: <1273269585-14346-1-git-send-email-jacob.jun.pan@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/cpu/bugs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index 01a2652..38f20e8 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -86,7 +86,7 @@ static void __init check_fpu(void)
+ 
+ static void __init check_hlt(void)
+ {
+-	if (paravirt_enabled())
++	if (boot_cpu_data >= 5 || paravirt_enabled())
+ 		return;
+ 
+ 	printk(KERN_INFO "Checking 'hlt' instruction... ");
