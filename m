@@ -1,89 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757018Ab0EGQKm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 12:10:42 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:62030 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756970Ab0EGQKf (ORCPT
+	id S1756921Ab0EGQMF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 12:12:05 -0400
+Received: from neskaya.eckenfels.net ([195.49.138.57]:63001 "EHLO
+	neskaya.eckenfels.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755835Ab0EGQMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 12:10:35 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 69.181.193.102
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Yr7/1H3CiT3pNz3QWQhEr
-Date: Fri, 7 May 2010 09:10:32 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: James Kosin <james.kosin.04@cnu.edu>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100507161032.GD387@atomide.com>
-References: <eGToe-3b9-5@gated-at.bofh.it>
- <eGUaB-4mU-1@gated-at.bofh.it>
- <eGUtX-4Kd-3@gated-at.bofh.it>
- <eGWvL-7Fy-1@gated-at.bofh.it>
- <eGWFt-7S7-17@gated-at.bofh.it>
- <eGWP9-8jH-17@gated-at.bofh.it>
- <4BE37DDD.8000402@cox.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BE37DDD.8000402@cox.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 7 May 2010 12:12:03 -0400
+X-Greylist: delayed 2463 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 May 2010 12:12:03 EDT
+Date: Fri, 7 May 2010 17:28:31 +0200 (CEST)
+Message-Id: <201005071528.o47FSVas054141@neskaya.eckenfels.net>
+From: Bernd Eckenfels <bernd-10@eckenfels.net>
+To: linux-kernel@vger.kernel.org
+Subject: Re: ext4 is faster with LVM than without, and other filesystem benchmarks
+In-Reply-To: <20100507142310.GF13143@lh.kyla.fi>
+X-Newsgroups: ka.lists.linux.kernel
+User-Agent: tin/1.8.3-20070201 ("Scotasay") (UNIX) (FreeBSD/7.2-PRERELEASE (i386))
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: ecki@neskaya.eckenfels.net
+X-SA-Exim-Scanned: No (on neskaya.eckenfels.net); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* James Kosin <james.kosin.04@cnu.edu> [100506 19:38]:
-> On 5/5/2010 8:10 PM, Tony Lindgren wrote:
-> > * Brian Swetland <swetland@google.com> [100505 16:51]:
-> >> On Wed, May 5, 2010 at 4:47 PM, Tony Lindgren <tony@atomide.com> wrote:
-> >>> * Brian Swetland <swetland@google.com> [100505 14:34]:
-> >>>> On Wed, May 5, 2010 at 2:12 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> <<-- snip -->>
-> >>>>> At no point does the user program have to communicate anything to the
-> >>>>> modem driver, and at no point does it have to do anything out of the
-> >>>>> ordinary except to enable and disable a suspend blocker.
-> >>>>
-> >>>> Exactly -- and you can use the same style of overlapping suspend
-> >>>> blockers with other drivers than input, if the input interface is not
-> >>>> suitable for the particular interaction.
-> >>>
-> >>> Would the suspend blockers still be needed somewhere in the example
-> >>> above?
-> >>
-> >> How often would we retry suspending?
-> > 
-> > Well based on some timer, the same way the screen blanks? Or five
-> > seconds of no audio play? So if the suspend fails, then reset whatever
-> > userspace suspend policy timers.
-> >  
-> 
-> Tony,
-> Wouldn't this be handled by the idle task, or task manager?
+In article <20100507142310.GF13143@lh.kyla.fi> you wrote:
+> I think the most surprising result of the benchmarks is that ext4
+> seems to be significantly faster under LVM than on the raw /dev/sdd1
+> partition. Without LVM the variance in run times is much larger.
 
-My thinking is that suspend should be only triggered from the
-userspace based on a device specic policy. Suspend breaks
-standard Linux behaviour as all the timers will stop running.
+Sounds like the syncs/barriers never reach the disk with LVM. What mount
+journal/sync options did you use?  default?  Is dmesg telling you that
+barriers have been turned off for the lvm case?  IF yo uwant it fast and
+dirty try nobarrier,data=writeback :)
 
-You can already implement suspend-like idle states for various
-processors that are controlled by cpuidle.
-
-In those cases the device hits suspend or off modes in the kernel
-idle loop. In this case the system keeps running waking every
-few seconds or so when idle, and the timers behave the normal way.
-
-Of course there can be tens or even few hundred millisecond
-wake-up latencies in the case of hitting off and restoring the
-kernel during idle, so interrupt response time in those cases
-is longer.
-
-> When all tasks are suspended and not doing anything that should be the
-> first clue that a real suspend cycle could be attempted.
-
-Yeah, but I don't think there's a generic way of figuring
-out when it's OK to suspend. It depends on the device. It
-can also depend on how the user wants to configure things.
-
-Regards,
-
-Tony
+Greetings
+Bernd
