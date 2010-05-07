@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab0EGPPn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 11:15:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44394 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979Ab0EGPPm (ORCPT
+	id S1756169Ab0EGPPz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 11:15:55 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:28481 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755955Ab0EGPPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 11:15:42 -0400
-X-Authority-Analysis: v=1.1 cv=OMZqYO3L41gFG4eI735GctFZkIqa2t9YKv4cWfI71LE= c=1 sm=0 a=8LHCb4_oiB0A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=dt4kaHklVt5s5FRngd4A:9 a=h6iFTf9miLASv7JxbvgA:7 a=fNvGzAgk7WO4kCffDQYTiCk7EuUA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 3/9 - v2][RFC] tracing: Remove per event trace
- registering
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20100507145438.GB29573@Krystal>
-References: <20100504034045.085822814@goodmis.org>
-	 <20100504034202.282030521@goodmis.org> <20100507042025.GC8069@nowhere>
-	 <20100507145438.GB29573@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Fri, 07 May 2010 11:12:08 -0400
-Message-ID: <1273245128.22438.160.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 7 May 2010 11:15:52 -0400
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-omap@vger.kernel.org
+Subject: [RFC PATCHv2 0/7] HSI framework and drivers
+Date: Fri,  7 May 2010 18:18:30 +0300
+Message-Id: <1273245517-30712-1-git-send-email-carlos.chinea@nokia.com>
+X-Mailer: git-send-email 1.5.6.5
+X-OriginalArrivalTime: 07 May 2010 15:15:45.0702 (UTC) FILETIME=[2AAB4460:01CAEDF8]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-07 at 10:54 -0400, Mathieu Desnoyers wrote:
-> * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > On Mon, May 03, 2010 at 11:40:48PM -0400, Steven Rostedt wrote:
-> > > From: Steven Rostedt <srostedt@redhat.com>
-> > > 
-> > > This patch removes the register functions of TRACE_EVENT() to enable
-> > > and disable tracepoints. The registering of a event is now down
-> > > directly in the trace_events.c file. The tracepoint_probe_register()
-> > > is now called directly.
-> > > 
-> > > The prototypes are no longer type checked, but this should not be
-> > > an issue since the tracepoints are created automatically by the
-> > > macros. If a prototype is incorrect in the TRACE_EVENT() macro, then
-> > > other macros will catch it.
-> > 
-> > 
-> > 
-> > Agreed. Typechecking matters for human code but not in this context.
-> > Considering that the tracepoint and the probe are created by the same
-> > CPP code, bugs will be tracked down quickly and located to a single
-> > place.
-> 
-> So it seems that I am the only one asking for extra type-checking and
-> caring about problems that can appear subtily on architectures where the
-> number of caller/callee arguments must match. And also the only one
-> considering that passing more arguments to a callback that does not
-> expect all of them might be a problem on some architectures.
-> 
-> Am I the only one thinking there is something fishy there ? I might be
-> entirely over-paranoid, but this approach has rarely failed me in the
-> past.
+Hi !
 
-I think you are the only one not realizing that the caller and callee
-are created automatically with the same data. There is no human
-intervention here.
+Here you have the second round of the HSI framework patches.
+ 
+The patch series introduces the HSI framework, an SSI driver
+for OMAP and a generic character device for HSI/SSI devices.
 
-You are asking to add a check that I can not see helping. The only way
-to add a check, is to use the automated process to check the automation.
-If the automated process fails, it is very likely the check will also be
-broken and will not catch the bug either.
+SSI, which is a legacy version of HSI, is used to connect the application
+engine with the cellular modem on the Nokia N900.
 
--- Steve
+In this round we have addressed the issues raised by Randy Dunlap.
+We have also added two new patches which adds the HSI API to the kernel-doc
+and updates the ioctl-number.txt file.
 
+I would very glad to continue getting feedback about this proposal.
+
+This patch series is based on 2.6.34-rc6.
+
+The original post: http://lkml.org/lkml/2010/4/23/210
+
+Br,
+Carlos Chinea
+
+Andras Domokos (3):
+  HSI CHAR: Add HSI char device driver
+  HSI CHAR: Add HSI char device kernel configuration
+  HSI CHAR: Update ioctl-number.txt
+
+Carlos Chinea (4):
+  HSI: Introducing HSI framework
+  OMAP SSI: Introducing OMAP SSI driver
+  OMAP SSI: Add OMAP SSI to the kernel configuration
+  HSI: Add HSI API documentation
+
+ Documentation/DocBook/device-drivers.tmpl |   17 +
+ Documentation/ioctl/ioctl-number.txt      |    1 +
+ arch/arm/mach-omap2/Makefile              |    3 +
+ arch/arm/mach-omap2/ssi.c                 |  139 +++
+ arch/arm/plat-omap/include/plat/ssi.h     |  196 ++++
+ drivers/Kconfig                           |    2 +
+ drivers/Makefile                          |    1 +
+ drivers/hsi/Kconfig                       |   16 +
+ drivers/hsi/Makefile                      |    5 +
+ drivers/hsi/clients/Kconfig               |   13 +
+ drivers/hsi/clients/Makefile              |    5 +
+ drivers/hsi/clients/hsi_char.c            | 1053 ++++++++++++++++++
+ drivers/hsi/controllers/Kconfig           |   13 +
+ drivers/hsi/controllers/Makefile          |    5 +
+ drivers/hsi/controllers/omap_ssi.c        | 1694 +++++++++++++++++++++++++++++
+ drivers/hsi/hsi.c                         |  489 +++++++++
+ include/linux/Kbuild                      |    1 +
+ include/linux/hsi/Kbuild                  |    1 +
+ include/linux/hsi/hsi.h                   |  369 +++++++
+ include/linux/hsi/hsi_char.h              |   66 ++
+ 20 files changed, 4089 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/ssi.c
+ create mode 100644 arch/arm/plat-omap/include/plat/ssi.h
+ create mode 100644 drivers/hsi/Kconfig
+ create mode 100644 drivers/hsi/Makefile
+ create mode 100644 drivers/hsi/clients/Kconfig
+ create mode 100644 drivers/hsi/clients/Makefile
+ create mode 100644 drivers/hsi/clients/hsi_char.c
+ create mode 100644 drivers/hsi/controllers/Kconfig
+ create mode 100644 drivers/hsi/controllers/Makefile
+ create mode 100644 drivers/hsi/controllers/omap_ssi.c
+ create mode 100644 drivers/hsi/hsi.c
+ create mode 100644 include/linux/hsi/Kbuild
+ create mode 100644 include/linux/hsi/hsi.h
+ create mode 100644 include/linux/hsi/hsi_char.h
 
