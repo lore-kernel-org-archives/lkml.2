@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab0EGCxG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 22:53:06 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:49711 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab0EGCxD convert rfc822-to-8bit (ORCPT
+	id S1753427Ab0EGDAE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 23:00:04 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:64166 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753135Ab0EGDAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 22:53:03 -0400
+	Thu, 6 May 2010 23:00:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=bIRYjXc9yuGoyptQfEx/RaXl5rmLPtcrVgWEBQSd/KDKfCcTT0wuhqqalHfzJ41NQO
+         4ZLxyC+diWzvFY3cAT+YzvK5MgCSothgFn8lzZc4qQ9OKTaX2vYWSoddQSBAwATOKhNo
+         BUjuGfnw1D2IQpPKnCOcdQHVGkwU4cDRgZ6ls=
+Message-ID: <4BE38239.1010901@gmail.com>
+Date: Thu, 06 May 2010 20:00:09 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-In-Reply-To: <4BE37DDD.8000402@cox.net>
-References: <eGToe-3b9-5@gated-at.bofh.it> <eGUaB-4mU-1@gated-at.bofh.it>
-	 <eGUtX-4Kd-3@gated-at.bofh.it> <eGWvL-7Fy-1@gated-at.bofh.it>
-	 <eGWFt-7S7-17@gated-at.bofh.it> <eGWP9-8jH-17@gated-at.bofh.it>
-	 <4BE37DDD.8000402@cox.net>
-Date: Thu, 6 May 2010 19:53:02 -0700
-Message-ID: <p2jd6200be21005061953y497b0766k15123f69ff7db630@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: James Kosin <james.kosin.04@cnu.edu>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Lex Hider <floss@lex.hider.name>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Regression: monitor fails to sleep/suspend, forced to reboot
+ to 	correct. 2.6.34-rc6
+References: <AANLkTingM7EsCtbElXTNzzjZt4kG5acQtbt5mJEIVbrW@mail.gmail.com>
+In-Reply-To: <AANLkTingM7EsCtbElXTNzzjZt4kG5acQtbt5mJEIVbrW@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 6, 2010 at 7:41 PM, James Kosin <james.kosin.04@cnu.edu> wrote:
-> On 5/5/2010 8:10 PM, Tony Lindgren wrote:
->> * Brian Swetland <swetland@google.com> [100505 16:51]:
->>> On Wed, May 5, 2010 at 4:47 PM, Tony Lindgren <tony@atomide.com> wrote:
->>>> * Brian Swetland <swetland@google.com> [100505 14:34]:
->>>>> On Wed, May 5, 2010 at 2:12 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> <<-- snip -->>
->>>>>> At no point does the user program have to communicate anything to the
->>>>>> modem driver, and at no point does it have to do anything out of the
->>>>>> ordinary except to enable and disable a suspend blocker.
->>>>>
->>>>> Exactly -- and you can use the same style of overlapping suspend
->>>>> blockers with other drivers than input, if the input interface is not
->>>>> suitable for the particular interaction.
->>>>
->>>> Would the suspend blockers still be needed somewhere in the example
->>>> above?
->>>
->>> How often would we retry suspending?
->>
->> Well based on some timer, the same way the screen blanks? Or five
->> seconds of no audio play? So if the suspend fails, then reset whatever
->> userspace suspend policy timers.
->>
+On 05/06/2010 07:30 PM, Lex Hider wrote:
+> Hi,
 >
-> Tony,
-> Wouldn't this be handled by the idle task, or task manager?
+> My current setup has worked on previous kernels, I think the problem
+> has begun with 2.6.32.
 >
-> When all tasks are suspended and not doing anything that should be the
-> first clue that a real suspend cycle could be attempted.
+> If the monitor goes to standby/suspend it shows:
+>
+> "Out of Range
+>
+> H.frequency 33 KHz
+> V.frequency 31 Hz"
+>
+> I can test this with running: "xset dpms force standby" or "xset dpms
+> force suspend".
+>
+> I can no longer switch to console with Ctrl+Alt+F2, etc, and must
+> reboot to be able to use my system again.
+>
+> Please advise what additional information/testing I can provide to
+> make sure this regression gets fixed for 2.6.34.
+>
+> This bug appears to affect all recent distros as they are 2.6.32 based
+> (ubuntu lts, debian, rhel6).
+>
+> I have reported the following bugs with little response. I am unsure
+> whether I have filed bugs in the correct place or against the correct
+> component.
+>
+> http://bugs.freedesktop.org/show_bug.cgi?id=26423
+> https://bugzilla.redhat.com/show_bug.cgi?id=581898
+>
+> Please CC me in on any replies.
+>
+> Thanks,
+>
+> Lex.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
 
-One if the benefit we get from using suspend is that an unprivileged
-app that does not have access to suspend blockers cannot prevent
-suspend. You lose this advantage if you trigger suspend only from the
-idle task.
+Can you do a bisect?
+(2.6.32 - HEAD shouldn't
+take too long).
 
--- 
-Arve Hjønnevåg
+Justin P. Mattock
