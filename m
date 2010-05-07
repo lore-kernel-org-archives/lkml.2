@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693Ab0EGSjW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 14:39:22 -0400
-Received: from web82007.mail.mud.yahoo.com ([66.163.178.251]:43407 "HELO
-	web82007.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757606Ab0EGSjT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 14:39:19 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=iFAb5rpvD29D7PBR3FqOP7GjqZ6rzZUk+/ciF1jXc/5h7eKWV3HY9jkqOTUfz1FNhBYm5LytFocPbClIJzJbr78Q6rb9XHGxBz0KJiBVNLsk81ap9YiINppggwRz25xUxVBzZr+LjwXa4botBSiNtwdAiGBkt/r1OfLBUWA/XAg=;
-Message-ID: <360909.3860.qm@web82007.mail.mud.yahoo.com>
-X-YMail-OSG: tT5iFowVM1lDMIW6te_nIvFG4j9sx_4S_Mw_2cco5Zpws2b
- NRPsMLm2t3f87.FSBSkYKmWAcgvPjhZzZDxpAW1puxPVC0XxICxSRfgT7k9V
- tee2tJCnoF10V7YkvbRRtxfKZHIfa7YkwVG.BJEQJa65fv.GBjAo_Zw8SdgQ
- ppspiNiLjGH00q14fpuLnlDnv6mf2HMJ_OvFmBW9uGL.TzlXgmJrtgOkS90r
- oKAqEIXFWXCpwjGYsUxRpXdzTr.jsqFM9DdmI5agZSPqy5KmGxC05Ef7NH_D
- bfSaMshZP3AbUnejRk31Cqyvw3LbNBYLPUeWGFmTcZe7rIXcKw6CNHUILwzP
- xNcpNXCM3KeaNOrQvFxTK1AnEvLHarKE6QBT6YeXlVxvo2NELDK12.e_Loxh
- iXa9kPhJM4B0KVOqfjb249NJRYlPJjBueV41FTu5rpuM35t639Gq3sSAGhyK
- PQkmRQ.5SYku14lG2qamrAUoXe_Jy5hcuIE0EoIQMtyFGL0kRhPgSoRGHIKr
- 3h75E.ZAykTGaNfuVkgvAerkNmNV_zxjcncVBnRQ1_ySlMwvQ2hm__1nD2LL
- X_xBEe0He2XnKb89Co9SAwoJ2HLXV_VfTFfYART_uTt9BARdY2YFSQDYH1_I
- UrvKpvirM7YR5dRU99ZZ2CyzL4OX0HgV2VuGgGK.JzChwg95yFIqOr4fWPRP
- hIYuFUeGl_D6fGiBZ17CorRagQP1fBsZIdLfLwc8Lxw9SjavAcQaTrpuG0MG
- 7rnEevootzzbKxYAPIQYdH9JVsodXwzgXKE5RavgFlMNntIUG9yB8r1jG3h6
- gvL3RvE1WZlhaZ5jAMZbow7rvRLWAjih6RgAXO25tSNKiiMVTOzVYWETUn5M
- Ho1bbIpB9eoIsePqiek9AWje0Rhr1
-X-Mailer: YahooMailClassic/10.1.11 YahooMailWebService/0.8.103.269680
-Date: Fri, 7 May 2010 11:32:39 -0700 (PDT)
-From: "Mrs.Edithy Jefferson" <garrity5255@sbcglobal.net>
-Subject: Precious Package From Mrs.Edithy Jefferson
-To: undisclosed recipients:;
+	id S1757731Ab0EGSkP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 14:40:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59581 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757606Ab0EGSkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 14:40:12 -0400
+Date: Fri, 7 May 2010 18:39:47 GMT
+From: tip-bot for Li Zefan <lizf@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       rostedt@goodmis.org, lizf@cn.fujitsu.com, tglx@linutronix.de,
+       kosaki.motohiro@jp.fujitsu.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       lizf@cn.fujitsu.com, rostedt@goodmis.org, tglx@linutronix.de,
+       kosaki.motohiro@jp.fujitsu.com
+In-Reply-To: <4B2F154C.2060503@cn.fujitsu.com>
+References: <4B2F154C.2060503@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:tracing/core] tracing: Make the documentation clear on trace_event boot option
+Message-ID: <tip-03d646e62b06e9364e2dbb939d67934c6c9826cd@git.kernel.org>
+Git-Commit-ID: 03d646e62b06e9364e2dbb939d67934c6c9826cd
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 May 2010 18:39:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  03d646e62b06e9364e2dbb939d67934c6c9826cd
+Gitweb:     http://git.kernel.org/tip/03d646e62b06e9364e2dbb939d67934c6c9826cd
+Author:     Li Zefan <lizf@cn.fujitsu.com>
+AuthorDate: Mon, 21 Dec 2009 14:27:24 +0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Tue, 4 May 2010 16:25:51 -0400
 
-This is to notify you that Mrs.Edithy Jefferson have deposited your Bank Draft the sum of $1,000,000.00 USD with UPS COMPANY here in West Africa. For immediate action. Contact Person:Mr.Derek Morgan Email: mr.derek.morgan009@hotmail.com
+tracing: Make the documentation clear on trace_event boot option
+
+Make it clear that event-list is a comma separated list of events.
+
+Reported-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+LKML-Reference: <4B2F154C.2060503@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ Documentation/trace/events.txt |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/Documentation/trace/events.txt b/Documentation/trace/events.txt
+index 02ac6ed..778ddf3 100644
+--- a/Documentation/trace/events.txt
++++ b/Documentation/trace/events.txt
+@@ -90,7 +90,8 @@ In order to facilitate early boot debugging, use boot option:
+ 
+ 	trace_event=[event-list]
+ 
+-The format of this boot option is the same as described in section 2.1.
++event-list is a comma separated list of events. See section 2.1 for event
++format.
+ 
+ 3. Defining an event-enabled tracepoint
+ =======================================
