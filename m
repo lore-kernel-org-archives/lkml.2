@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab0EGJim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:38:42 -0400
-Received: from sperry-02.control.lth.se ([130.235.83.189]:47814 "EHLO
-	sperry-02.control.lth.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab0EGJik (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:38:40 -0400
-X-Greylist: delayed 824 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 May 2010 05:38:40 EDT
-Message-ID: <4BE3DC60.7080105@control.lth.se>
-Date: Fri, 07 May 2010 11:24:48 +0200
-From: Anders Blomdell <anders.blomdell@control.lth.se>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1755719Ab0EGJlL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:41:11 -0400
+Received: from mx1.emlix.com ([193.175.82.87]:47907 "EHLO mx1.emlix.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753957Ab0EGJlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 05:41:08 -0400
+Message-ID: <4BE3E02E.1090500@emlix.com>
+Date: Fri, 07 May 2010 11:41:02 +0200
+From: =?UTF-8?B?RGFuaWVsIEdsw7Zja25lcg==?= <dg@emlix.com>
+Organization: emlix GmbH
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-To: Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org
-Subject: fanotify issues in 2.6.34-rc6-next-20100506
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Mike Frysinger <vapier.adi@gmail.com>
+CC: Oskar Schirmer <os@emlix.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Oliver Schneidewind <osw@emlix.com>,
+       Michael Hennerich <michael.hennerich@analog.com>
+Subject: Re: [PATCH] ad7877: fix spi word size to 16 bit
+References: <1273142265-11929-1-git-send-email-os@emlix.com> <n2j8bd0f97a1005061126h7fecc32btad9986c0e38246f2@mail.gmail.com>
+In-Reply-To: <n2j8bd0f97a1005061126h7fecc32btad9986c0e38246f2@mail.gmail.com>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have started to have a look at the fanotify system, based on information
-gleaned from:
+On 05/06/2010 08:26 PM, Mike Frysinger wrote:
+> i think it'd be a better idea to do something like:
+>   if (spi->bits_per_word != 16) {
+>     if (spi->bits_per_word) {
+>       dev_err(&spi->dev, "Invalid SPI settings; bits_per_word must be 16\n");
+>       return -EINVAL;
+>     }
+>     spi->bits_per_word = 16;
+>     spi_setup(spi);
+>   }
 
-  [1] http://people.redhat.com/~eparis/fanotify/
-  [2] http://lwn.net/Articles/360955/
+There is no way to set bits_per_word using struct spi_board_info. The
+description of that structure in spi.h explicitly lists the wordsize as
+one of the parameters drivers should set themself in probe().
 
-Unfortunately there seems to be some bug in the current implemenation, since
-running a patched version of the fanotify.c application found in [1]
+Only struct bfin5xx_spi_chip allows to set this value in the board code.
 
---- fanotify.c.orig     2010-03-27 05:26:27.000000000 +0100
-+++ fanotify.c  2010-05-07 10:56:38.000000000 +0200
-@@ -125,7 +125,7 @@
-                fan_mask |= FAN_ALL_PERM_EVENTS;
+  Daniel
 
-        // fanotify_init(flags, event_f_flags, priority)
--       fan_fd = fanotify_init(0, O_RDONLY | O_LARGEFILE, 0);
-+       fan_fd = fanotify_init(0, 0, 0);
-        if (fan_fd < 0)
-                goto fail;
-
-seems to lose/corrupt events. For instance running 'fanotify -c /dir/to/watch'
-and then running the command 'cd /dir/to/watch ; touch a b c d e f g h i j k l'
- might generate (results are more or less random):
-
-/dir/to/watch/a: pid=18584 open
-/dir/to/watch/a: pid=18584 close(writable)
-/dir/to/watch/b: pid=18584 open                 # 2 open events for b
-/dir/to/watch/b: pid=18584 open close(writable) #
-/dir/to/watch/d: pid=18584 open                 # events for c missing
-/dir/to/watch/d: pid=18584 open close(writable) # 2 open events for d
-/dir/to/watch/f: pid=18584 open close(writable) # events for e missing
-/dir/to/watch/g: pid=18584 open close(writable)
-/dir/to/watch/h: pid=18584 open close(writable)
-/dir/to/watch/i: pid=18584 open close(writable)
-/dir/to/watch/j: pid=18584 open
-/dir/to/watch/j: pid=18584 close(writable)
-/dir/to/watch/k: pid=18584 open
-/dir/to/watch/k: pid=18584 open close(writable) # 2 open events for k
-/dir/to/watch/l: pid=18584 close(writable)      # no open event for l
-
-A similar program using inotify gets all events correctly.
-
-
-I have also problems with the fact that the following sequence dosn't leave a
-trace in the fanotify events:
-
-  mkdir /dir/not/watched
-  touch /dir/not/watched/z
-  ln /dir/not/watched/z /dir/to/watch/z
-  rm /dir/not/watched/z
-  rmdir /dir/not/watched)
-
-What is the rationale for not reporting link/unlink events via fanotify?
-
-Best regards
-
-Anders Blomdell
 
 -- 
-Anders Blomdell                  Email: anders.blomdell@control.lth.se
-Department of Automatic Control
-Lund University                  Phone:    +46 46 222 4625
-P.O. Box 118                     Fax:      +46 46 138118
-SE-221 00 Lund, Sweden
+Dipl.-Math. Daniel Glöckner, emlix GmbH, http://www.emlix.com
+Fon +49 551 30664-0, Fax -11, Bahnhofsallee 1b, 37081 Göttingen, Germany
+Sitz der Gesellschaft: Göttingen, Amtsgericht Göttingen HR B 3160
+Geschäftsführer: Dr. Uwe Kracke, Ust-IdNr.: DE 205 198 055
+
+emlix - your embedded linux partner
