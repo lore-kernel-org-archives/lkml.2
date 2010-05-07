@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab0EGPNo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 11:13:44 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:28299 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab0EGPNm (ORCPT
+	id S1755772Ab0EGPPp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 11:15:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44394 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045Ab0EGPPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 11:13:42 -0400
-Subject: Re: UBIFS: Oops while rebooting 2.6.34-rc6
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Daniel Mack <daniel@caiaq.de>
-Cc: Adrian Hunter <adrian.hunter@nokia.com>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Sven Neumann <s.neumann@raumfeld.com>
-In-Reply-To: <20100507131652.GT30801@buzzloop.caiaq.de>
-References: <20100507131652.GT30801@buzzloop.caiaq.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 May 2010 18:12:34 +0300
-Message-ID: <1273245154.4537.288.camel@localhost>
+	Fri, 7 May 2010 11:15:42 -0400
+X-Authority-Analysis: v=1.1 cv=OMZqYO3L41gFG4eI735GctFZkIqa2t9YKv4cWfI71LE= c=1 sm=0 a=HwkIGVdAOiAA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=h-sSn279LmOJlxuotmkA:9 a=ONkIGXIUiewfI3AHDwsA:7 a=vZXaD3FV1N7IsW6oKWTI2UNIAvoA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 2/9 - v2][RFC] tracing: Let tracepoints have
+ data?passed to tracepoint callbacks
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
+In-Reply-To: <20100507150838.GB30356@Krystal>
+References: <7a22ce9b-4c74-4818-9521-7fbccd1b8b1d@email.android.com>
+	 <20100507143901.GA18408@Krystal>
+	 <1273244123.22438.140.camel@gandalf.stny.rr.com>
+	 <20100507150838.GB30356@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Fri, 07 May 2010 11:15:38 -0400
+Message-ID: <1273245338.22438.168.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 07 May 2010 15:13:21.0969 (UTC) FILETIME=[D4FF5A10:01CAEDF7]
-X-Nokia-AV: Clean
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Evening,
+On Fri, 2010-05-07 at 11:08 -0400, Mathieu Desnoyers wrote:
 
-On Fri, 2010-05-07 at 15:16 +0200, Daniel Mack wrote:
-> We've had a kernel Oops today when rebooting an ARM PXA based machine
-> while file I/O via SSH was outstanding.
+> > > Can you show me where the C standard says it is safe to do so ?
+> > 
+> > No, but it seems safe in the kernel ;-)
 > 
-> Daniel
+> The use of "seems" here does not give me a warm feeling of safety. ;)
+
+Right, which is why I added the below.
+
 > 
-> # reboot
-> # [  671.190085] UBIFS: un-mount UBI device 0, volume 1
-> The system is going down NOW!
-> Sent SIGTERM to all processes
-> [  672.083833] Unable to handle kernel NULL pointer dereference at virtual address 000000ac
-> [  672.094587] pgd = c0004000
-> [  672.097301] [000000ac] *pgd=00000000
-> [  672.100850] Internal error: Oops: 817 [#1]
-> [  672.104919] last sysfs file: /sys/devices/platform/spi_gpio.0/spi0.2/value
-> [  672.111741] Modules linked in: eeti_ts libertas_sdio libertas pxamci ds2760_battery w1_ds2760 wire
-> [  672.120641] CPU: 0    Tainted: G        W   (2.6.34-rc6 #154)
-> [  672.126376] PC is at mutex_lock+0x4/0x14
-> [  672.130291] LR is at make_reservation+0x74/0x328
+> > 
+> > But that said. There is another option that will conform to this, and
+> > that is to add flags to registering tracepoints. I already wrote a patch
+> > for this in trying to do some other work (that I threw away).
+> > 
+> > 
+> > So here's the proposal.
+> > 
+> > Change struct tracepoint_func to...
+> > 
+> > struct tracepoint_func {
+> > 	void *func;
+> > 	void *data;
+> > 	unsigned int flags;
+> > };
+> > 
+> > 
+> > The flags is set when registered. If a function is registered with data,
+> > then the flags field will be set. Then the calling of the function can
+> > be:
+> > 
+> > 	if ((it_func_ptr)->flags & TP_FL_DATA)
+> > 		((void(*)(proto, void *))(it_func)(args, __data);
+> > 	else
+> > 		((void(*)(proto))(it_func)(args);
+> > 
+> > This would comply with the C standard.
+> 
+> This would also add a branch on the tracing fast path, which I would like to
+> avoid. Why can't we simply change all prototypes to take an extra void *__data
+> parameter instead ?
 
-Hi,
+I'm fine with making the data parameter mandatory with all tracers. Thus
+the call back must require it. I would then move the data parameter from
+the end to the beginning.
 
-is this reproducible? It looks like this came from:
+So a tracepoint with proto, will have a callback:
 
-journal.c:127:  mutex_lock_nested(&wbuf->io_mutex, wbuf->jhead);
+	void callback(void *data, proto);
 
-May be memory corruption? Did you try to see where exectly was the oops,
-on which C statement?
+I'm fine with forcing all callbacks to include a data parameter if you
+are. This would also make the changes simpler.
 
-Do you have lockdep enabled? Can it be that lockdep somehow shutdown
-first? This is unlikely, though.
+-- Steve
 
-May be the FS was somehow unmounted, so UBIFS freed its data structures,
-and now UBIFS accesses freed memory?
-
-Try to inject some printks to ubifs_umount() or just enable the general
-UBIFS messages (enable UBIFS debugging in menuconfig first, then enable
-the general messages via module parameters or sysfs, see
-Documentation/filesystems/ubifs.txt).
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
 
