@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab0EGOWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 10:22:25 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40741 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752628Ab0EGOWX (ORCPT
+	id S1754496Ab0EGOZe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 10:25:34 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50023 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab0EGOZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 10:22:23 -0400
-Date: Fri, 7 May 2010 10:22:20 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
+	Fri, 7 May 2010 10:25:33 -0400
+From: Juergen Beisert <jbe@pengutronix.de>
+Organization: Pengutronix - Linux Solutions for Science and Industry
+To: linux-kernel@vger.kernel.org
+Subject: Re: Driver for a SmartCard interface on a SoC
+Date: Fri, 7 May 2010 16:25:27 +0200
+User-Agent: KMail/1.9.9
+Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/8] PM: Add suspend block api.
-In-Reply-To: <y2id6200be21005061648m47d03875h6e9de89d0e965344@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1005071019170.1804-100000@iolanthe.rowland.org>
+       Rusty Russell <rusty@rustcorp.com.au>, Jiri Slaby <jslaby@suse.cz>
+References: <201005071518.50406.jbe@pengutronix.de> <20100507140248.7958da8f@linux.intel.com>
+In-Reply-To: <20100507140248.7958da8f@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201005071625.27872.jbe@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: jbe@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010, Arve Hjønnevåg wrote:
+Hi Alan,
 
-> On Thu, May 6, 2010 at 12:40 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Thu, 6 May 2010, Rafael J. Wysocki wrote:
+Alan Cox wrote:
+> On Fri, 7 May 2010 15:18:50 +0200
+> Juergen Beisert <jbe@pengutronix.de> wrote:
+> > most SmartCard readers are external devices, connected via USB or
+> > serial lines. So, they do not need special in-kernel drivers.
 > >
-> >> > Here's a completely new issue.  When using opportunistic suspends on an
-> >> > SMP system, it could happen that the system gets a wakeup event and
-> >> > this routine starts running again before the event's IRQ handler has
-> >> > finished (or has enabled a suspend blocker).  The system would
-> >> > re-suspend too soon.
-> >>
-> >> This routine will be run from a freezable workqueue.
-> >
-> > But how do you know that processes won't get unfrozen until all the
-> > pending IRQs have been handled?  Imagine something like this:
-> >
-> >        CPU 0                   CPU 1
-> >        -----                   -----
-> >        Wake up non-boot CPUs
-> >        Resume devices          Invoke the IRQ handler
-> >
-> >        [ CPU 0 should wait here for the handler to finish,
-> >          but it doesn't ]
-> >
-> >        Defrost threads         Handler running...
-> >        Workqueue routine runs
-> >        Start another suspend
-> >                                Handler enables a suspend blocker,
-> >                                but it's too late
-> 
-> It is not optimal, but it is not too late. We check if any suspend
-> blockers block suspend after disabling non-boot cpus so as long as
-> this is done in a way that does not lose interrupts the resuspend
-> attempt will not succeed.
+> > My SmartCard interface is part of a SoC (i.MX25 CPU). So, I need an
+> > in-kernel driver. Where would be the best place in the kernel tree,
+> > to add a driver for this kind of device? Maybe "drivers/char"?
+> > To exchange data with the plugged in SmartCard, only a couple of
+> > IOCTLs are required (detecting if a card is plugged in, socket power
+> > on/off, send reset to the card, configuring the communication
+> > parameters). Data exchange with the SmartCard can be done with simple
+> > read/write.
+>
+> I'd say drivers/char if its a generic char device, but if its MX25
+> specific code entirely then drivers/platform or arch/.../platform.
 
-Is it possible for the resuspend to disable CPU 1 before the IRQ
-handler can enable its suspend blocker?  (Probably not -- but I don't
-know enough about how non-boot CPUs are enabled or disabled.)
+This driver covers a SmartCard core built into this kind of CPU. Its not like 
+an interrupt controller which is specific to the CPU. Its a component like 
+the USB and LCD controller, also built into this CPU. Maybe other CPUs will 
+follow that are also using this SmartCard core (I don't know, only the 
+manufacture knows). 
 
-Alan Stern
+> The other question is one of API - it's going to best if the API isn't
+> MX25 specific but could reasonably be expected to work with other
+> future devices. A fake tty interface is probably overkill for that but
+> it would be good to get general review of any API.
 
+"faky tty"?
+
+Regards,
+Juergen
