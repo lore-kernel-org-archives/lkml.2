@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab0EGCBU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 22:01:20 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57273 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab0EGCBS (ORCPT
+	id S1752284Ab0EGCB0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 22:01:26 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40171 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687Ab0EGCBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 22:01:18 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 69.181.193.102
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19TjViNe4E+mSaXutQ3T/T6
-Date: Thu, 6 May 2010 19:00:57 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
-       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100507020057.GG30928@atomide.com>
-References: <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
- <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
- <20100505234755.GI29604@atomide.com>
- <20100506134015.GA23426@srcf.ucam.org>
- <20100506170151.GA30928@atomide.com>
- <20100506170956.GA28104@srcf.ucam.org>
- <20100506171453.GC30928@atomide.com>
- <1273167311.20494.13.camel@c-dwalke-linux.qualcomm.com>
- <20100506183605.GF30928@atomide.com>
- <1273173110.20494.19.camel@c-dwalke-linux.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273173110.20494.19.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 6 May 2010 22:01:21 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 7 May 2010 10:57:12 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/2] mm,migration: Fix race between shift_arg_pages and
+ rmap_walk by guaranteeing rmap_walk finds PTEs created within the temporary
+ stack
+Message-Id: <20100507105712.18fc90c4.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org>
+References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie>
+	<1273188053-26029-3-git-send-email-mel@csn.ul.ie>
+	<alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Daniel Walker <dwalker@fifo99.com> [100506 12:07]:
-> On Thu, 2010-05-06 at 11:36 -0700, Tony Lindgren wrote:
-> > * Daniel Walker <dwalker@fifo99.com> [100506 10:30]:
-> > > On Thu, 2010-05-06 at 10:14 -0700, Tony Lindgren wrote:
-> > > > * Matthew Garrett <mjg@redhat.com> [100506 10:05]:
-> > > > > On Thu, May 06, 2010 at 10:01:51AM -0700, Tony Lindgren wrote:
-> > > > > 
-> > > > > > Or are you suspending constantly, tens of times per minute even if
-> > > > > > there's no user activity?
-> > > > > 
-> > > > > In this case you'd be repeatedly trying to suspend until the modem 
-> > > > > driver stopped blocking it. It's pretty much a waste.
-> > > > 
-> > > > But then the userspace knows you're getting data from the modem, and
-> > > > it can kick some inactivity timer that determines when to try to
-> > > > suspend next.
-> > > 
-> > > If the idle thread was doing the suspending then the inactivity timer by
-> > > it's self could block suspend. As long as the idle thread was setup to
-> > > check for timers. I'm sure that _isn't_ the point your trying to make.
-> > > It just makes gobs more sense to me that the idle thread does the
-> > > suspending .. Your idle, so depending on how long your idle then you
-> > > suspend.
-> > 
-> > The alternative logic I'm suggesting is get the GUI into idle mode as
-> > soon as possible, then limp along with off-while-idle or
-> > retention-while-idle until some timer expires, then suspend the whole
-> > device.
+On Thu, 6 May 2010 18:40:39 -0700 (PDT)
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
 > 
-> Could you elaborate on "off-while-idle" and "retention-while-idle" ? I'm
-> not sure I follow what you mean.
+> 
+> On Fri, 7 May 2010, Mel Gorman wrote:
+> > 
+> > Page migration requires rmap to be able to find all migration ptes
+> > created by migration. If the second rmap_walk clearing migration PTEs
+> > misses an entry, it is left dangling causing a BUG_ON to trigger during
+> > fault. For example;
+> 
+> So I still absolutely detest this patch.
+> 
+> Why didn't the other - much simpler - patch work? The one Rik pointed to:
+> 
+> 	http://lkml.org/lkml/2010/4/30/198
+> 
+> and didn't do that _disgusting_ temporary anon_vma?
+> 
+I vote for simple one rather than temporal anon_vma. IIUC, this patch is selected
+for not to leak exec's problem out to mm/ by magical check.
 
-Oh some SoC devices like omap hit retention or off modes in the idle loop.
-That brings down the idle consumption of a running system to minimal
-levels. It's basically the same as suspending the device in every idle loop.
 
-The system wakes up every few seconds or so, but that already provides
-battery life of over ten days or so on an idle system. Of course the
-wakeup latencies are in milliseconds then.
+> Alternatively, why don't we just take the anon_vma lock over this region, 
+> so that rmap can't _walk_ the damn thing?
+> 
 
-Regards,
+IIUC, move_page_tables() may call "page table allocation" and it cannot be
+done under spinlock.
 
-Tony
+Thanks,
+-Kame
+
