@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758621Ab0EGVNo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 17:13:44 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:34754 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758424Ab0EGVNm (ORCPT
+	id S1756267Ab0EGVSQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 17:18:16 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:54614 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578Ab0EGVSP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 17:13:42 -0400
-Date: Fri, 7 May 2010 22:13:31 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Len Brown <lenb@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [git pull request] ACPI patches for 2.6.34-rc6
-Message-ID: <20100507211331.GA28906@srcf.ucam.org>
-References: <alpine.LFD.2.00.1005062216430.10792@localhost.localdomain> <alpine.LFD.2.00.1005061926460.901@i5.linux-foundation.org> <20100507061203.GA8779@srcf.ucam.org> <alpine.LFD.2.00.1005071402080.901@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005071402080.901@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 7 May 2010 17:18:15 -0400
+Date: Fri, 7 May 2010 23:18:01 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Dave Airlie <airlied@gmail.com>, dri-devel@lists.freedesktop.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+       linux-pm@lists.linux-foundation.org
+Subject: Re: s2ram slow resume - radeon versus no_console_suspend?
+Message-ID: <20100507231801.1794daa8@neptune.home>
+In-Reply-To: <20100502155653.68fc3643@neptune.home>
+References: <20100502155653.68fc3643@neptune.home>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 02:06:53PM -0700, Linus Torvalds wrote:
-> On Fri, 7 May 2010, Matthew Garrett wrote:
-> > 
-> > The spec says we can't. I've posted a patch to do so if it's still not 
-> > set after we've tried doing it the right way, but I'm not keen on 
-> > pushing it into a release at this point.
+On Sun, 02 May 2010 Bruno Prémont <bonbons@linux-vserver.org> wrote:
+> On a IEI Kino 690S1 I'm having a hard time to get s2ram running.
 > 
-> I'm ok with the "release at this point".
+> When the system is able to suspend it takes an eternity (more than 3
+> minutes to wake-up, the radeon apparently being responsible for quite
+> a big share of that slowness.
+> 
+> 
+> During resume early it looks like every PCI access needs about a second,
+> and there are a few cases where during lots of seconds nothing seems to
+> happen and the first event following is related to radeon.
 
-http://git.kernel.org/?p=linux/kernel/git/lenb/linux-acpi-2.6.git;a=commit;h=3b12303e6bda6e05579d899fb71cb3e9d3bc26ba
+This slowness only happens when I run the kernel with no_console_suspend
+parameter (e.g. to debug some suspend/resume issue).
+This probably means that in this case radeon's PCI config recorded during
+suspend and restored during early resume is all but appropriate...
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Currently drm/radeon does not suspend when no_console_suspend is provided,
+even so when the kernel logging does not happen on tty0 & co.
+
+e.g. I would expect that a kernel run with
+  no_console_suspend console=ttyS0
+would just skip suspending serial port ttyS0 and not also skip suspending
+KMS framebuffer as it currently does.
+
+
+In most framebuffer devices I see usage of acquire_console_sem() and
+release_console_sem() but except for kernel/printk.c and drivers/serial/
+code nothing is considering console_suspend_enabled.
+
+Currently I'm not sure what code path prevents suspend of KMS (at least
+for radeon) when no_console_suspend has been passed, this code path should
+probably have a conditional just as serial to take no_console_suspend only
+if it's running kernel's console itself.
+
+Thanks,
+Bruno
