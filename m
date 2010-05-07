@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab0EGH2q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 03:28:46 -0400
+	id S1754087Ab0EGH24 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 03:28:56 -0400
 Received: from mail-pv0-f174.google.com ([74.125.83.174]:57766 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725Ab0EGH2o (ORCPT
+	with ESMTP id S1753732Ab0EGH2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 03:28:44 -0400
+	Fri, 7 May 2010 03:28:52 -0400
 From: Nitin Gupta <ngupta@vflare.org>
 To: Greg KH <greg@kroah.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,9 +18,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        driverdev <devel@driverdev.osuosl.org>,
        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] Add flag to identify block swap devices
-Date: Fri,  7 May 2010 12:55:05 +0530
-Message-Id: <1273217107-2023-2-git-send-email-ngupta@vflare.org>
+Subject: [PATCH 2/3] Add swap slot free callback to block_device_operations
+Date: Fri,  7 May 2010 12:55:06 +0530
+Message-Id: <1273217107-2023-3-git-send-email-ngupta@vflare.org>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1273217107-2023-1-git-send-email-ngupta@vflare.org>
 References: <1273217107-2023-1-git-send-email-ngupta@vflare.org>
@@ -28,42 +28,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added SWP_BLKDEV flag to distinguish block and regular file backed
-swap devices. We could also check if a swap is entire block device,
-rather than a file, by:
-S_ISBLK(swap_info_struct->swap_file->f_mapping->host->i_mode)
-but, I think, simply checking this flag is more convenient.
+This callback is required when RAM based devices are used as swap disks.
+One such device is ramzswap which is used as compressed in-memory swap
+disk.  For such devices, we need a callback as soon as a swap slot is no
+longer used to allow freeing memory allocated for this slot.  Without this
+callback, stale data can quickly accumulate in memory defeating the whole
+purpose of such devices.
 
 Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 ---
- include/linux/swap.h |    1 +
- mm/swapfile.c        |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+ include/linux/blkdev.h |    2 ++
+ mm/swapfile.c          |    4 ++++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 1f59d93..ec2b7a4 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -146,6 +146,7 @@ enum {
- 	SWP_DISCARDING	= (1 << 3),	/* now discarding a free cluster */
- 	SWP_SOLIDSTATE	= (1 << 4),	/* blkdev seeks are cheap */
- 	SWP_CONTINUED	= (1 << 5),	/* swap_map has count continuation */
-+	SWP_BLKDEV	= (1 << 6),	/* its a block device */
- 					/* add others here before... */
- 	SWP_SCANNING	= (1 << 8),	/* refcount in scan_swap_map */
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 6690e8b..413284a 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1287,6 +1287,8 @@ struct block_device_operations {
+ 						unsigned long long);
+ 	int (*revalidate_disk) (struct gendisk *);
+ 	int (*getgeo)(struct block_device *, struct hd_geometry *);
++	/* this callback is with swap_lock and sometimes page table lock held */
++	void (*swap_slot_free_notify) (struct block_device *, unsigned long);
+ 	struct module *owner;
  };
+ 
 diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 6cd0a8f..ecb069e 100644
+index ecb069e..f5ccc47 100644
 --- a/mm/swapfile.c
 +++ b/mm/swapfile.c
-@@ -1884,6 +1884,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
- 		if (error < 0)
- 			goto bad_swap;
- 		p->bdev = bdev;
-+		p->flags |= SWP_BLKDEV;
- 	} else if (S_ISREG(inode->i_mode)) {
- 		p->bdev = inode->i_sb->s_bdev;
- 		mutex_lock(&inode->i_mutex);
+@@ -574,6 +574,7 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+ 
+ 	/* free if no reference */
+ 	if (!usage) {
++		struct gendisk *disk = p->bdev->bd_disk;
+ 		if (offset < p->lowest_bit)
+ 			p->lowest_bit = offset;
+ 		if (offset > p->highest_bit)
+@@ -583,6 +584,9 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+ 			swap_list.next = p->type;
+ 		nr_swap_pages++;
+ 		p->inuse_pages--;
++		if ((p->flags & SWP_BLKDEV) &&
++				disk->fops->swap_slot_free_notify)
++			disk->fops->swap_slot_free_notify(p->bdev, offset);
+ 	}
+ 
+ 	return usage;
 -- 
 1.6.6.1
 
