@@ -1,26 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab0EGPmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 11:42:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33616 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752906Ab0EGPl7 (ORCPT
+	id S1756573Ab0EGPn5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 11:43:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33576 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754927Ab0EGPnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 11:41:59 -0400
-Subject: Re: [PATCH] perf: fix raw sample size if no sampling data is
- attached
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100507152835.GU6450@erda.amd.com>
-References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
-	 <1271190201-25705-13-git-send-email-robert.richter@amd.com>
-	 <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com>
-	 <20100507152835.GU6450@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 May 2010 17:41:54 +0200
-Message-ID: <1273246914.1642.359.camel@laptop>
+	Fri, 7 May 2010 11:43:55 -0400
+X-Authority-Analysis: v=1.1 cv=nrqrmdtKPnrEe5McJVoaEKFzY/lexCxOe+Stj/aSkNs= c=1 sm=0 a=8LHCb4_oiB0A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=e2nmDqdt3TG2yUAM7jUA:9 a=-LqdC_mQsFEXL7OLkHJ_MnwCsi0A:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 3/9 - v2][RFC] tracing: Remove per event trace
+ registering
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20100507153158.GB15267@Krystal>
+References: <20100504034045.085822814@goodmis.org>
+	 <20100504034202.282030521@goodmis.org> <20100507042025.GC8069@nowhere>
+	 <20100507145438.GB29573@Krystal>
+	 <1273245128.22438.160.camel@gandalf.stny.rr.com>
+	 <20100507153158.GB15267@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Fri, 07 May 2010 11:43:51 -0400
+Message-ID: <1273247031.22438.198.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -28,39 +41,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-07 at 17:28 +0200, Robert Richter wrote:
-> From 6373951f1c660400650066b73c3bb2f6d232be67 Mon Sep 17 00:00:00 2001
-> From: Robert Richter <robert.richter@amd.com>
-> Date: Fri, 7 May 2010 15:49:56 +0200
-> Subject: [PATCH] perf: fix raw sample size if no sampling data is
-> attached
-> 
-> The header size of a raw sample is not included in the total size of a
-> raw data sample. Thus, if no data is attached the size must be
-> null. In this case a buffer overflow may occur when copying the
-> sampling data.
-> 
-But there is data, a whole u32 of value 0. Your patch breaks things.
+On Fri, 2010-05-07 at 11:31 -0400, Mathieu Desnoyers wrote:
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
 
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> ---
->  kernel/perf_event.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> > You are asking to add a check that I can not see helping. The only way
+> > to add a check, is to use the automated process to check the automation.
+> > If the automated process fails, it is very likely the check will also be
+> > broken and will not catch the bug either.
 > 
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index 9dbe8cd..f6ddae9 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -3229,7 +3229,7 @@ void perf_output_sample(struct
-> perf_output_handle *handle,
->                                 u32     size;
->                                 u32     data;
->                         } raw = {
-> -                               .size = sizeof(u32),
-> +                               .size = 0,
->                                 .data = 0,
->                         };
->                         perf_output_put(handle, raw); 
+> Tell me where to fetch the git head, I'll add it myself. ;)
 
+It was posted in the 0/9 patch. Although I am modifying it now to
+include the latest changes.
+
+-- Steve
 
 
