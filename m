@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab0EGSnr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 14:43:47 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46517 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757996Ab0EGSnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 14:43:42 -0400
-Date: Fri, 7 May 2010 18:43:21 GMT
-From: tip-bot for Robert Richter <robert.richter@amd.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-       mingo@elte.hu
-In-Reply-To: <1271190201-25705-7-git-send-email-robert.richter@amd.com>
-References: <1271190201-25705-7-git-send-email-robert.richter@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf, x86: Use weight instead of cmask in for_each_event_constraint()
-Message-ID: <tip-a1f2b70a942b8d858a0ab02567da3999b60a99b2@git.kernel.org>
-Git-Commit-ID: a1f2b70a942b8d858a0ab02567da3999b60a99b2
-X-Mailer: tip-git-log-daemon
+	id S1757716Ab0EGSnx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 14:43:53 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:61513 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757996Ab0EGSns (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 14:43:48 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 69.181.193.102
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+/i3/BniSver0muhmxo/lz
+Date: Fri, 7 May 2010 11:43:33 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+Message-ID: <20100507184333.GL387@atomide.com>
+References: <20100506173807.GD30928@atomide.com>
+ <20100506174331.GA29103@srcf.ucam.org>
+ <20100506183335.GE30928@atomide.com>
+ <20100506184418.GA30669@srcf.ucam.org>
+ <20100507020541.GH30928@atomide.com>
+ <20100507171218.GA23142@srcf.ucam.org>
+ <20100507173549.GF387@atomide.com>
+ <20100507175025.GA23952@srcf.ucam.org>
+ <20100507180152.GH387@atomide.com>
+ <20100507182824.GA25198@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 May 2010 18:43:22 +0000 (UTC)
+In-Reply-To: <20100507182824.GA25198@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a1f2b70a942b8d858a0ab02567da3999b60a99b2
-Gitweb:     http://git.kernel.org/tip/a1f2b70a942b8d858a0ab02567da3999b60a99b2
-Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Tue, 13 Apr 2010 22:23:15 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 7 May 2010 11:31:01 +0200
+* Matthew Garrett <mjg@redhat.com> [100507 11:23]:
+> On Fri, May 07, 2010 at 11:01:52AM -0700, Tony Lindgren wrote:
+> > * Matthew Garrett <mjg@redhat.com> [100507 10:46]:
+> > > Effective power management in the face of real-world applications is a 
+> > > reasonable usecase.
+> > 
+> > Sure there's no easy solution to misbehaving apps.
+> 
+> That's the point of the suspend blockers.
 
-perf, x86: Use weight instead of cmask in for_each_event_constraint()
+To me it sounds like suspending the whole system to deal with
+some misbehaving apps is an overkill. Sounds like kill -STOP
+the misbehaving apps should do the trick?
 
-There may exist constraints with a cmask set to zero. In this case
-for_each_event_constraint() will not work properly. Now weight is used
-instead of the cmask for loop exit detection. Weight is always a value
-other than zero since the default contains the HWEIGHT from the
-counter mask and in other cases a value of zero does not fit too.
-
-This is in preparation of ibs event constraints that wont have a
-cmask.
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1271190201-25705-7-git-send-email-robert.richter@amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 4e218d7..4a3f1f2 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -170,7 +170,7 @@ struct cpu_hw_events {
- 	EVENT_CONSTRAINT(0, 0, 0)
- 
- #define for_each_event_constraint(e, c)	\
--	for ((e) = (c); (e)->cmask; (e)++)
-+	for ((e) = (c); (e)->weight; (e)++)
- 
- union perf_capabilities {
- 	struct {
+Tony
