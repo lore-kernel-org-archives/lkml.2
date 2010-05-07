@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757787Ab0EGSkf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 14:40:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59598 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757757Ab0EGSkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 14:40:33 -0400
-Date: Fri, 7 May 2010 18:40:24 GMT
-From: tip-bot for Thiago Farina <tfransosi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       rostedt@goodmis.org, tfransosi@gmail.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       rostedt@goodmis.org, tfransosi@gmail.com, tglx@linutronix.de
-In-Reply-To: <1264349038-1766-3-git-send-email-tfransosi@gmail.com>
-References: <1264349038-1766-3-git-send-email-tfransosi@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:tracing/core] tracing: Fix "integer as NULL pointer" warning.
-Message-ID: <tip-668eb65f092902eb7dd526af73d4a7f025a94612@git.kernel.org>
-Git-Commit-ID: 668eb65f092902eb7dd526af73d4a7f025a94612
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 May 2010 18:40:24 +0000 (UTC)
+	id S1757858Ab0EGSks (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 14:40:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:52776 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757819Ab0EGSkq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 14:40:46 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Cyrill Gorcunov <gorcunov@gmail.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>,
+       Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 0/1] perf list documentation changes
+Date: Fri,  7 May 2010 15:40:27 -0300
+Message-Id: <1273257628-15215-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  668eb65f092902eb7dd526af73d4a7f025a94612
-Gitweb:     http://git.kernel.org/tip/668eb65f092902eb7dd526af73d4a7f025a94612
-Author:     Thiago Farina <tfransosi@gmail.com>
-AuthorDate: Sun, 24 Jan 2010 11:03:50 -0500
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Wed, 5 May 2010 12:01:26 -0400
+Hi Ingo,
 
-tracing: Fix "integer as NULL pointer" warning.
+        Please pull from:
 
-kernel/trace/trace_output.c:256:24: warning: Using plain integer as NULL pointer
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
 
-Signed-off-by: Thiago Farina <tfransosi@gmail.com>
-LKML-Reference: <1264349038-1766-3-git-send-email-tfransosi@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_output.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Regards,
 
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 8e46b33..2404c12 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -253,7 +253,7 @@ void *trace_seq_reserve(struct trace_seq *s, size_t len)
- 	void *ret;
- 
- 	if (s->full)
--		return 0;
-+		return NULL;
- 
- 	if (len > ((PAGE_SIZE - 1) - s->len)) {
- 		s->full = 1;
+Arnaldo Carvalho de Melo (1):
+  perf list: Improve the raw hw event descriptor documentation
+
+ tools/perf/Documentation/perf-list.txt |   19 ++++++++++++++++---
+ tools/perf/util/parse-events.c         |    3 ++-
+ 2 files changed, 18 insertions(+), 4 deletions(-)
+
