@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050Ab0EGFgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 01:36:20 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:25635 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab0EGFgS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 01:36:18 -0400
-Date: Fri, 7 May 2010 08:32:03 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext Jiri Olsa <jolsa@redhat.com>
-Cc: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-       "ysato@users.sourceforge.jp" <ysato@users.sourceforge.jp>,
-       "tony.luck@intel.com" <tony.luck@intel.com>,
-       "dhowells@redhat.com" <dhowells@redhat.com>,
-       "kyle@mcmartin.ca" <kyle@mcmartin.ca>,
-       "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-       "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-       "jgarzik@pobox.com" <jgarzik@pobox.com>, "hare@suse.de" <hare@suse.de>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Subject: Re: [PATCH 12/13] drivers/usb/musb: removing redundant ifdefs
-Message-ID: <20100507053203.GC10123@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <1273167377-14270-1-git-send-email-jolsa@redhat.com>
- <1273167377-14270-13-git-send-email-jolsa@redhat.com>
+	id S1752805Ab0EGFrG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 01:47:06 -0400
+Received: from ozlabs.org ([203.10.76.45]:53806 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751750Ab0EGFrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 01:47:05 -0400
+Date: Fri, 7 May 2010 15:40:34 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Subrata Modak <subrata@linux.vnet.ibm.com>
+Cc: Linuxppc-dev <Linuxppc-dev@ozlabs.org>,
+       Paul Mackerras <paulus@au1.ibm.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: PPC64 2.6.34-rc6 warning - Is this expected ?
+Message-ID: <20100507054034.GB25173@drongo>
+References: <1273060251.13463.8.camel@subratamodak.linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273167377-14270-13-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1273060251.13463.8.camel@subratamodak.linux.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 07 May 2010 05:32:38.0996 (UTC) FILETIME=[B4F79940:01CAEDA6]
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, May 05, 2010 at 05:20:51PM +0530, Subrata Modak wrote:
 
-On Thu, May 06, 2010 at 07:36:16PM +0200, ext Jiri Olsa wrote:
->wbr,
->jirka
->
->
+> I built 2.6.34-rc6 with the attached Fedora Config file
+> (config-2.6.33.1-19.fc13.ppc64) on my P5 Fedora Box and got the
+> following warning. Is the following expected ?
+> 
+> CALL    arch/powerpc/relocs_check.pl
+> Building modules, stage 2.
+> WARNING: 4 bad relocations
+> c00000000007216e R_PPC64_ADDR16_HIGHEST  __ksymtab+0x00000000009dcec8
+> c000000000072172 R_PPC64_ADDR16_HIGHER  __ksymtab+0x00000000009dcec8
+> c00000000007217a R_PPC64_ADDR16_HI  __ksymtab+0x00000000009dcec8
+> c00000000007217e R_PPC64_ADDR16_LO  __ksymtab+0x00000000009dcec8
 
-good catch but please add a body here. This problem appeared because 
-those used to be CONFIG_ARCH_OMAP34XX.
+No, it's not expected.  It's in iSeries code, so you could avoid it
+just by disabling CONFIG_ISERIES (I don't think any distro still
+supports legacy iSeries).  I'll post a patch to fix the problem
+properly.
 
->Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-
-after adding a body, you can have my:
-
-Acked-by: Felipe Balbi <felipe.balbi@nokia.com>
-
--- 
-balbi
-
-DefectiveByDesign.org
+Paul.
