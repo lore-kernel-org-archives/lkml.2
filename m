@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab0EGDFs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 23:05:48 -0400
-Received: from ozlabs.org ([203.10.76.45]:60949 "EHLO ozlabs.org"
+	id S1753615Ab0EGDI1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 23:08:27 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:54211 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329Ab0EGDFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 23:05:47 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: virtio: put last_used and last_avail index into ring itself.
-Date: Fri, 7 May 2010 12:35:39 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       linux-mm@kvack.org, akpm@linux-foundation.org, hpa@zytor.com,
-       gregory.haskins@gmail.com, s.hetze@linux-ag.com,
-       Daniel Walker <dwalker@fifo99.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>
-References: <cover.1257349249.git.mst@redhat.com> <201005061022.13815.rusty@rustcorp.com.au> <20100506062755.GC8363@redhat.com>
-In-Reply-To: <20100506062755.GC8363@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753135Ab0EGDIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 23:08:25 -0400
+Date: Fri, 7 May 2010 13:08:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Helmut Schaa <Helmut.Schaa@gmx.de>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: build failure after merge of the suspend tree
+Message-Id: <20100507130821.3fb72c9d.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005071235.40590.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010 03:57:55 pm Michael S. Tsirkin wrote:
-> On Thu, May 06, 2010 at 10:22:12AM +0930, Rusty Russell wrote:
-> > On Wed, 5 May 2010 03:52:36 am Michael S. Tsirkin wrote:
-> > > What do you think?
-> > 
-> > I think everyone is settled on 128 byte cache lines for the forseeable
-> > future, so it's not really an issue.
-> 
-> You mean with 64 bit descriptors we will be bouncing a cache line
-> between host and guest, anyway?
+Hi Rafael,
 
-I'm confused by this entire thread.
+After merging the suspend tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Descriptors are 16 bytes.  They are at the start, so presumably aligned to
-cache boundaries.
+net/mac80211/scan.c: In function 'ieee80211_scan_state_decision':
+net/mac80211/scan.c:510: error: implicit declaration of function 'pm_qos_requirement'
 
-Available ring follows that at 2 bytes per entry, so it's also packed nicely
-into cachelines.
+Caused by commit 62bad14fc6e0911a99882c261390968977d43283 ("PM QOS
+update") from the suspend tree interacting with commit
+df13cce53a7b28a81460e6bfc4857e9df4956141 ("mac80211: Improve software
+scan timing") from the net tree.
 
-Then there's padding to page boundary.  That puts us on a cacheline again
-for the used ring; also 2 bytes per entry.
+I have added the following merge fixup patch and can carry it as
+necessary:
 
-I don't see how any change in layout could be more cache friendly?
-Rusty.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 7 May 2010 13:02:54 +1000
+Subject: [PATCH] wireless: update for pm_qos_requirement to pm_qos_request rename
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/mac80211/scan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
+index e14c441..e1b0be7 100644
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -510,7 +510,7 @@ static int ieee80211_scan_state_decision(struct ieee80211_local *local,
+ 		bad_latency = time_after(jiffies +
+ 				ieee80211_scan_get_channel_time(next_chan),
+ 				local->leave_oper_channel_time +
+-				usecs_to_jiffies(pm_qos_requirement(PM_QOS_NETWORK_LATENCY)));
++				usecs_to_jiffies(pm_qos_request(PM_QOS_NETWORK_LATENCY)));
+ 
+ 		listen_int_exceeded = time_after(jiffies +
+ 				ieee80211_scan_get_channel_time(next_chan),
+-- 
+1.7.1
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
