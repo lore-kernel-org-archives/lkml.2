@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab0EGCB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 22:01:26 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40171 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab0EGCBV (ORCPT
+	id S1752133Ab0EGCGE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 22:06:04 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:61475 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab0EGCGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 22:01:21 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 7 May 2010 10:57:12 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] mm,migration: Fix race between shift_arg_pages and
- rmap_walk by guaranteeing rmap_walk finds PTEs created within the temporary
- stack
-Message-Id: <20100507105712.18fc90c4.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org>
-References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie>
-	<1273188053-26029-3-git-send-email-mel@csn.ul.ie>
-	<alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 6 May 2010 22:06:01 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 69.181.193.102
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+8DdtLJeLC/rCr7ofyH9++
+Date: Thu, 6 May 2010 19:05:41 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+Message-ID: <20100507020541.GH30928@atomide.com>
+References: <20100505234755.GI29604@atomide.com>
+ <20100506134015.GA23426@srcf.ucam.org>
+ <20100506170151.GA30928@atomide.com>
+ <20100506170956.GA28104@srcf.ucam.org>
+ <20100506171453.GC30928@atomide.com>
+ <20100506172201.GA28578@srcf.ucam.org>
+ <20100506173807.GD30928@atomide.com>
+ <20100506174331.GA29103@srcf.ucam.org>
+ <20100506183335.GE30928@atomide.com>
+ <20100506184418.GA30669@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100506184418.GA30669@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010 18:40:39 -0700 (PDT)
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> 
-> 
-> On Fri, 7 May 2010, Mel Gorman wrote:
+* Matthew Garrett <mjg@redhat.com> [100506 11:39]:
+> On Thu, May 06, 2010 at 11:33:35AM -0700, Tony Lindgren wrote:
+> > * Matthew Garrett <mjg@redhat.com> [100506 10:39]:
+> > > On Thu, May 06, 2010 at 10:38:08AM -0700, Tony Lindgren wrote:
+> > > 
+> > > > If your userspace keeps polling and has runaway timers, then you
+> > > > could suspend it's parent process to idle the system?
+> > > 
+> > > If your userspace is suspended, how does it process the events that 
+> > > generated a system wakeup? If we had a good answer to that then suspend 
+> > > blockers would be much less necessary.
 > > 
-> > Page migration requires rmap to be able to find all migration ptes
-> > created by migration. If the second rmap_walk clearing migration PTEs
-> > misses an entry, it is left dangling causing a BUG_ON to trigger during
-> > fault. For example;
+> > Well if your hardware runs off-while-idle or even just
+> > retention-while-idle, then the basic shell works just fine waking up
+> > every few seconds or so.
 > 
-> So I still absolutely detest this patch.
-> 
-> Why didn't the other - much simpler - patch work? The one Rik pointed to:
-> 
-> 	http://lkml.org/lkml/2010/4/30/198
-> 
-> and didn't do that _disgusting_ temporary anon_vma?
-> 
-I vote for simple one rather than temporal anon_vma. IIUC, this patch is selected
-for not to leak exec's problem out to mm/ by magical check.
+> And the untrusted userspace code that's waiting for a network packet? 
+> Adding a few seconds of latency isn't an option here.
 
+Hmm well hitting retention and wake you can basically do between
+jiffies. Hitting off mode in idle has way longer latencies,
+but still in few hundred milliseconds or so, not seconds.
 
-> Alternatively, why don't we just take the anon_vma lock over this region, 
-> so that rmap can't _walk_ the damn thing?
-> 
+And cpuidle pretty much takes care of hitting the desired C state
+for you. This setup is totally working on Nokia N900 for example,
+it's hitting off modes in idle and running all the time, it never
+suspends.
 
-IIUC, move_page_tables() may call "page table allocation" and it cannot be
-done under spinlock.
+Regards,
 
-Thanks,
--Kame
-
+Tony
