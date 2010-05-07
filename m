@@ -1,84 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab0EGJcz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:32:55 -0400
-Received: from crca.org.au ([74.207.252.120]:42623 "EHLO crca.org.au"
+	id S1755554Ab0EGJaH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:30:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55769 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755751Ab0EGJcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:32:51 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BE3DE3C.1090707@crca.org.au>
-Date: Fri, 07 May 2010 19:32:44 +1000
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Greg KH <greg@kroah.com>, Linus Torvalds <torvalds@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-       Christoph Hellwig <hch@infradead.org>,
-       Jens Axboe <jens.axboe@oracle.com>, Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] Add flag to identify block swap devices
-References: <1273217107-2023-1-git-send-email-ngupta@vflare.org> <1273217107-2023-2-git-send-email-ngupta@vflare.org>
-In-Reply-To: <1273217107-2023-2-git-send-email-ngupta@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755435Ab0EGJaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 05:30:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,347,1270450800"; 
+   d="scan'208";a="515915037"
+From: xiaohui.xin@intel.com
+To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+       jdike@linux.intel.com
+Cc: Xin Xiaohui <xiaohui.xin@intel.com>
+Subject: [RFC][PATCH v5 08/19] Make __alloc_skb() to get external buffer.
+Date: Fri,  7 May 2010 17:34:55 +0800
+Message-Id: <1273224906-4874-9-git-send-email-xiaohui.xin@intel.com>
+X-Mailer: git-send-email 1.5.4.4
+In-Reply-To: <1273224906-4874-8-git-send-email-xiaohui.xin@intel.com>
+References: <1273224906-4874-1-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-2-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-3-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-4-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-5-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-6-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-7-git-send-email-xiaohui.xin@intel.com>
+ <1273224906-4874-8-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again.
+From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-On 07/05/10 17:25, Nitin Gupta wrote:
-> Added SWP_BLKDEV flag to distinguish block and regular file backed
-> swap devices. We could also check if a swap is entire block device,
-> rather than a file, by:
-> S_ISBLK(swap_info_struct->swap_file->f_mapping->host->i_mode)
-> but, I think, simply checking this flag is more convenient.
->
-> Signed-off-by: Nitin Gupta<ngupta@vflare.org>
-> ---
->   include/linux/swap.h |    1 +
->   mm/swapfile.c        |    1 +
->   2 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index 1f59d93..ec2b7a4 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -146,6 +146,7 @@ enum {
->   	SWP_DISCARDING	= (1<<  3),	/* now discarding a free cluster */
->   	SWP_SOLIDSTATE	= (1<<  4),	/* blkdev seeks are cheap */
->   	SWP_CONTINUED	= (1<<  5),	/* swap_map has count continuation */
-> +	SWP_BLKDEV	= (1<<  6),	/* its a block device */
->   					/* add others here before... */
->   	SWP_SCANNING	= (1<<  8),	/* refcount in scan_swap_map */
->   };
-> diff --git a/mm/swapfile.c b/mm/swapfile.c
-> index 6cd0a8f..ecb069e 100644
-> --- a/mm/swapfile.c
-> +++ b/mm/swapfile.c
-> @@ -1884,6 +1884,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
->   		if (error<  0)
->   			goto bad_swap;
->   		p->bdev = bdev;
-> +		p->flags |= SWP_BLKDEV;
->   	} else if (S_ISREG(inode->i_mode)) {
->   		p->bdev = inode->i_sb->s_bdev;
->   		mutex_lock(&inode->i_mutex);
+Add a dev parameter to __alloc_skb(), skb->data
+points to external buffer, recompute skb->head,
+maintain shinfo of the external buffer, record
+external buffer info into destructor_arg field.
 
-The more I read your patches, the more I think either I'm seriously 
-confused (entirely possible!) or you are.
+Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
+Reviewed-by: Jeff Dike <jdike@linux.intel.com>
+---
 
-Don't you want to distinguish RAM backed swap from swap that's either a 
-partition or a file? If that's the case, you should also be setting 
-SWP_BLKDEV in the S_ISREG part that follows iff the p->bdev is a regular 
-file.
+	__alloc_skb() cleaup by 
+	
+	Jeff Dike <jdike@linux.inetl.com>
 
-Regards,
+ include/linux/skbuff.h |    7 ++++---
+ net/core/skbuff.c      |   43 +++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 41 insertions(+), 9 deletions(-)
 
-Nigel
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 281a1c0..5ff8c27 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -442,17 +442,18 @@ extern void kfree_skb(struct sk_buff *skb);
+ extern void consume_skb(struct sk_buff *skb);
+ extern void	       __kfree_skb(struct sk_buff *skb);
+ extern struct sk_buff *__alloc_skb(unsigned int size,
+-				   gfp_t priority, int fclone, int node);
++				   gfp_t priority, int fclone,
++				   int node, struct net_device *dev);
+ static inline struct sk_buff *alloc_skb(unsigned int size,
+ 					gfp_t priority)
+ {
+-	return __alloc_skb(size, priority, 0, -1);
++	return __alloc_skb(size, priority, 0, -1, NULL);
+ }
+ 
+ static inline struct sk_buff *alloc_skb_fclone(unsigned int size,
+ 					       gfp_t priority)
+ {
+-	return __alloc_skb(size, priority, 1, -1);
++	return __alloc_skb(size, priority, 1, -1, NULL);
+ }
+ 
+ extern int skb_recycle_check(struct sk_buff *skb, int skb_size);
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 6345acc..ae223d2 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -161,7 +161,8 @@ EXPORT_SYMBOL(skb_under_panic);
+  *	@fclone: allocate from fclone cache instead of head cache
+  *		and allocate a cloned (child) skb
+  *	@node: numa node to allocate memory on
+- *
++ *	@dev: a device owns the skb if the skb try to get external buffer.
++ *		otherwise is NULL.
+  *	Allocate a new &sk_buff. The returned buffer has no headroom and a
+  *	tail room of size bytes. The object has a reference count of one.
+  *	The return is the buffer. On a failure the return is %NULL.
+@@ -170,12 +171,13 @@ EXPORT_SYMBOL(skb_under_panic);
+  *	%GFP_ATOMIC.
+  */
+ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+-			    int fclone, int node)
++			    int fclone, int node, struct net_device *dev)
+ {
+ 	struct kmem_cache *cache;
+ 	struct skb_shared_info *shinfo;
+ 	struct sk_buff *skb;
+-	u8 *data;
++	u8 *data = NULL;
++	struct skb_external_page *ext_page = NULL;
+ 
+ 	cache = fclone ? skbuff_fclone_cache : skbuff_head_cache;
+ 
+@@ -185,8 +187,23 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+ 		goto out;
+ 
+ 	size = SKB_DATA_ALIGN(size);
+-	data = kmalloc_node_track_caller(size + sizeof(struct skb_shared_info),
+-			gfp_mask, node);
++
++	/* If the device wants to do mediate passthru(zero-copy),
++	 * the skb may try to get external buffers from outside.
++	 * If fails, then fall back to alloc buffers from kernel.
++	 */
++	if (dev && dev->mp_port) {
++		ext_page = netdev_alloc_external_page(dev, skb, size);
++		if (ext_page) {
++			data = ext_page->start;
++			size = ext_page->size;
++		}
++	}
++
++	if (!data)
++		data = kmalloc_node_track_caller(
++				size + sizeof(struct skb_shared_info),
++				gfp_mask, node);
+ 	if (!data)
+ 		goto nodata;
+ 
+@@ -208,6 +225,15 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+ 	skb->mac_header = ~0U;
+ #endif
+ 
++	/* If the skb get external buffers sucessfully, since the shinfo is
++	 * at the end of the buffer, we may retain the shinfo once we
++	 * need it sometime.
++	 */
++	if (ext_page) {
++		skb->head = skb->data - NET_IP_ALIGN - NET_SKB_PAD;
++		memcpy(ext_page->ushinfo, skb_shinfo(skb),
++		       sizeof(struct skb_shared_info));
++	}
+ 	/* make sure we initialize shinfo sequentially */
+ 	shinfo = skb_shinfo(skb);
+ 	atomic_set(&shinfo->dataref, 1);
+@@ -231,6 +257,11 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+ 
+ 		child->fclone = SKB_FCLONE_UNAVAILABLE;
+ 	}
++	/* Record the external buffer info in this field. It's not so good,
++	 * but we cannot find another place easily.
++	 */
++	shinfo->destructor_arg = ext_page;
++
+ out:
+ 	return skb;
+ nodata:
+@@ -259,7 +290,7 @@ struct sk_buff *__netdev_alloc_skb(struct net_device *dev,
+ 	int node = dev->dev.parent ? dev_to_node(dev->dev.parent) : -1;
+ 	struct sk_buff *skb;
+ 
+-	skb = __alloc_skb(length + NET_SKB_PAD, gfp_mask, 0, node);
++	skb = __alloc_skb(length + NET_SKB_PAD, gfp_mask, 0, node, dev);
+ 	if (likely(skb)) {
+ 		skb_reserve(skb, NET_SKB_PAD);
+ 		skb->dev = dev;
+-- 
+1.5.4.4
+
