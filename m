@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab0EGMyh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 08:54:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64800 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098Ab0EGMyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 08:54:35 -0400
-Message-ID: <4BE40D6B.5020501@redhat.com>
-Date: Fri, 07 May 2010 14:54:03 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Yang, Bo" <Bo.Yang@lsi.com>
-CC: "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>,
-       "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-       "'akpm@osdl.org'" <akpm@osdl.org>,
-       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Subject: Re: [PATCH 3/7] scsi: megaraid_sas - Online COntroller Reset (OCR)
- PART-III
-References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com> <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C3CDB80BE9@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3CDB80BE9@cosmail02.lsi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752310Ab0EGM6F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 08:58:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:44702 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab0EGM6B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 08:58:01 -0400
+X-Authority-Analysis: v=1.1 cv=OMZqYO3L41gFG4eI735GctFZkIqa2t9YKv4cWfI71LE= c=1 sm=0 a=q_jxKnJxyX0A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=f9B20GKQXyT-MpOgTEAA:9 a=etGgw1xQngRI5-p8788RoZiBhfsA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 4/9 - v2][RFC] tracing: Move fields from event to class
+ structure
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Mathieu Desnoyers <compudj@krystal.dyndns.org>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Tom Zanussi <tzanussi@gmail.com>
+In-Reply-To: <20100507044914.GE8069@nowhere>
+References: <20100504034045.085822814@goodmis.org>
+	 <20100504034202.506915822@goodmis.org>  <20100507044914.GE8069@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Fri, 07 May 2010 08:57:56 -0400
+Message-ID: <1273237076.22438.74.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2010 05:52 PM, Yang, Bo wrote:
-> This is third part of the Online Controller Reset. In ISR routine, if driver receive the FW state change interrupt
-> And the online controller reset support enabled in FW, driver will read the controller register.  Driver will issue
-> Controller reset if the FW register state failure.  Also driver will back up the pending cmds for the re-fire after
-> the reset finished.
->
-> Also Driver added the CTIO support to this patch.
->
-> Signed-off-by Bo Yang<bo.yang@lsi.com>
->
-> +static void
-> +process_fw_state_change_wq(struct work_struct *work)
-> +{
-> +       struct megasas_instance *instance =
-> +               container_of(work, struct megasas_instance, work_init);
-> +       u32 wait;
-> +       unsigned long flags;
-> +
-> +       if (instance->adprecovery != MEGASAS_ADPRESET_SM_INFAULT) {
-> +               printk(KERN_NOTICE "megaraid_sas: error, recovery st %x \n",
-> +                               instance->adprecovery);
-> +               return ;
-> +       }
-> +
-> +       if (instance->adprecovery == MEGASAS_ADPRESET_SM_INFAULT) {
-> +               printk(KERN_NOTICE "megaraid_sas: FW detected to be in fault"
-> +                                       "state, restarting it...\n");
-> +
-> +               instance->instancet->disable_intr(instance->reg_set);
-> +               atomic_set(&instance->fw_outstanding, 0);
-> +
-> +               atomic_set(&instance->fw_reset_no_pci_access, 1);
-> +               instance->instancet->adp_reset(instance, instance->reg_set);
-> +               atomic_set(&instance->fw_reset_no_pci_access, 0 );
-> +
-> +               printk(KERN_NOTICE "megaraid_sas: FW restarted successfully,"
-> +                                       "initiating next stage...\n");
-> +
-> +               printk(KERN_NOTICE "megaraid_sas: HBA recovery state machine,"
-> +                                       "state 2 starting...\n");
-> +
-> +               /*waitting for about 20 second before start the second init*/
-> +               for (wait = 0; wait < 30; wait++) {
-> +                       msleep(1000);
-> +               }
->   
-Hi Bo,
-I'm only curios - couldn't be the above loop replaced by ssleep(30); 
-and have the u32 wait; removed?
-+		ssleep(30); /* wait for about 30 second before second init */
+On Fri, 2010-05-07 at 06:49 +0200, Frederic Weisbecker wrote:
+> On Mon, May 03, 2010 at 11:40:49PM -0400, Steven Rostedt wrote:
+> > From: Steven Rostedt <srostedt@redhat.com>
 
-I guess you wanted to have a space after the comma in the printk, if yes I think
-you should do this -> printk(KERN_NOTICE "megaraid_sas: HBA recovery state machine, "
+> 
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+> Now I need to recover from my CPP headache before reviewing
+> this set further ;)
+> 
 
-It might be a problem with my mail reader, but it seems to me that you are using 
-spaces instead of tabs almost everywhere.
+I know how you feel. Actually writing CPP takes your brain away from the
+ability to write documentation, hence my lack of it ;-)
 
-Tomas
+-- Steve
 
 
