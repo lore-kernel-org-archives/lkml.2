@@ -1,65 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab0EGLsN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 07:48:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45174 "EHLO mx2.suse.de"
+	id S1756264Ab0EGLxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 07:53:13 -0400
+Received: from mta01.eastlink.ca ([24.224.136.8]:38840 "EHLO mta01.eastlink.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754359Ab0EGLsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 07:48:11 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Clemens Ladisch <clemens@ladisch.de>
-Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
-Date: Fri, 7 May 2010 13:47:56 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-0.1-default; KDE/4.3.5; x86_64; ; )
-Cc: Daniel Mack <daniel@caiaq.de>, Takashi Iwai <tiwai@suse.de>,
-       alsa-devel@alsa-project.org, Greg KH <gregkh@suse.de>,
-       Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-       USB list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Chris Wright <chrisw@sous-sol.org>, iommu@lists.linux-foundation.org,
-       Andi Kleen <andi@firstfloor.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Pedro Ribeiro <pedrib@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Woodhouse <dwmw2@infradead.org>
-References: <g2h74fd948d1004141820ladc1941eo732d059dd678df0a@mail.gmail.com> <4BE3E1B9.5020602@ladisch.de> <201005071342.34923.oneukum@suse.de>
-In-Reply-To: <201005071342.34923.oneukum@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005071347.56993.oneukum@suse.de>
+	id S1754588Ab0EGLxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 07:53:11 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ah8hALKY40tDOsAPV2dsb2JhbACRaYtJXQsBFhUGEiKIC7Q6hRUEj0sC
+X-IronPort-AV: E=Sophos;i="4.52,348,1270436400";   d="scan'208";a="603072891"
+Message-id: <2ff83cef1de5375ba5d490fcc5ddd99a.squirrel@mail.amtelecom.net>
+Date: Fri, 07 May 2010 07:39:34 -0400 (EDT)
+Subject: Re:
+From: William Wilcox <william1@amtelecom.net>
+Reply-to: william.wilcox@discuz.org
+User-Agent: SquirrelMail/1.4.17
+X-Priority: 3 (Normal)
+Importance: Normal
+To: Undisclosed recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 7. Mai 2010 13:42:34 schrieb Oliver Neukum:
-> Am Freitag, 7. Mai 2010 11:47:37 schrieb Clemens Ladisch:
-> > > In the particular case of audio drivers, though, the contents of the
-> > > buffers are likely to change after the submission. What we do here
-> > > is that we map the audio stream buffers which are used by ALSA to
-> > > the output URBs, so they're filled asychronously. Once the buffer is
-> > > actually sent out on the bus, it is believed to contain proper audio
-> > > date. If it doesn't, that's due to too tight audio timing or other
-> > > problems. This breaks once buffers are magically bounced in the
-> > > background.
-> > 
-> > At least the audio class and ua101 drivers don't do this and fill the
-> > buffers before they are submitted.
-> > 
-> > > So - long story short: these audio buffers need to be DMA coherent.
-> > 
-> > Does the USB API actually guarantee that all controllers use DMA, i.e.,
-> > that the buffers can be filled after submission?
-> 
-> No, you must not touch buffers after submission. This does not even
-> work if we use DMA, because on some architectures this violates
-> guarantees to the dma primitives. It cannot be done.
+My name is Sir William Wilcox,I work with the Euro Lottery. I can help you
+win 4,528,000 GBP.But I charge 40% of the winning.Can we do this deal
+together?
 
-Or to be precise it could be done with coherent memory, but you'd risk
-transfering partially updated buffers, as you cannot know when DMA will
-be done and we don't guarantee that DMA will be done right as we transfer.
-
-	Regards
-		Oliver
