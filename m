@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab0EGPpj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 11:45:39 -0400
-Received: from exhub016-2.exch016.msoutlookonline.net ([207.5.72.164]:10460
-	"EHLO EXHUB016-2.exch016.msoutlookonline.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756131Ab0EGPph (ORCPT
+	id S1756793Ab0EGPqz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 11:46:55 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:40272 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756615Ab0EGPqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 11:45:37 -0400
-Message-ID: <4BE4359E.9020400@cfl.rr.com>
-Date: Fri, 7 May 2010 11:45:34 -0400
-From: Phillip Susi <psusi@cfl.rr.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Fri, 7 May 2010 11:46:53 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Subject: Re: 2.6.34-rc6 pci bridge problems
+Date: Fri, 7 May 2010 09:46:41 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
+Cc: dhlii@dlasys.net, linux-wireless@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+References: <4BDC001F.9050202@dlasys.net> <201005052159.55871.chunkeey@googlemail.com> <201005060909.58503.bjorn.helgaas@hp.com>
+In-Reply-To: <201005060909.58503.bjorn.helgaas@hp.com>
 MIME-Version: 1.0
-To: Matthew Wilcox <matthew@wil.cx>
-CC: linux-fsdevel@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: unified page and buffer cache?
-References: <4BCC7C05.8000803@cfl.rr.com> <4BE417CB.7000806@cfl.rr.com> <20100507135329.GA17259@parisc-linux.org>
-In-Reply-To: <20100507135329.GA17259@parisc-linux.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005070946.41857.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/7/2010 9:53 AM, Matthew Wilcox wrote:
-> The problem you're seeing is aliasing in the page cache, not a failed
-> unification of the buffer and page caches.  Pages are addressed by
-> (mapping, offset).  Each inode generally has its own mapping.  Depending
-> on the file system, directories may be addressed by their own inode's
-> mapping, or by the block device's mapping.
+On Thursday, May 06, 2010 09:09:58 am Bjorn Helgaas wrote:
+> On Wednesday, May 05, 2010 01:59:55 pm Christian Lamparter wrote:
+> > On Wednesday 05 May 2010 20:41:26 David H. Lynch Jr. wrote:
+> > > When I build out of the wireless-testing git tree (puled today) 
+> > > 2.6.34-rc6 using my current systems .config I get a very quick error
+> > > on boot about PCI bridge windows.
+> > > googling the error indicates this is a know 2.6.34 problem and that 
+> > > there are fixes in other 2.6.34 trees.
+> > > I have been unable to find the actual patches or I would just apply 
+> > > them to wireless-testing.
+> 
+> I made significant changes in the way we handle PCI bridge windows,
+> and I'm eager to fix any issues in that area.  But "very quick error
+> on boot" doesn't give me any information to work with.
+> 
+> Please attach your complete dmesg output, serial console log (with
+> "ignore_loglevel"), digital photo of the error, or other specific
+> details.
 
-If there are two mappings that don't know about each other, then the
-caches don't seem very unified to me.  If I write to the file and that
-data sits in the mapping for the inode, then I read the corresponding
-blocks though the block device, and it has a different mapping, then I
-read the old data off the disk instead of the new data in the cache.  I
-thought that this exact problem had been fixed long ago.
+Ping!  If there's a problem here, I want to fix it as soon as possible.
+Do you have any more details?  What error message did you google?
 
-> Resolving aliasing would be horribly expensive, so it's unlikely to
-> happen.
-
-Back to the drawing board I guess.  Maybe ext could be fixed to use an
-inode mapping for directories instead of relying on the block device
-mapping, then I could readahead() the directory instead of having to go
-to the block device at all.
+Thanks,
+  Bjorn
