@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab0EGImb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 04:42:31 -0400
-Received: from toro.web-alm.net ([62.245.132.31]:50265 "EHLO toro.web-alm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754317Ab0EGIm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 04:42:28 -0400
-X-Greylist: delayed 3720 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 May 2010 04:42:28 EDT
-Message-ID: <4BE3C292.8040908@osadl.org>
-Date: Fri, 07 May 2010 09:34:42 +0200
-From: Carsten Emde <Carsten.Emde@osadl.org>
-Organization: Open Source Automation Development Lab (OSADL) eG
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] fix-taskstates-in-sched_switch-trace.patch
-References: <20100311122454.585724424@osadl.org>	 <20100311122822.678489605@osadl.org> <1273187510.22438.67.camel@gandalf.stny.rr.com>
-In-Reply-To: <1273187510.22438.67.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
+	id S1754762Ab0EGIon (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 04:44:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:32827 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754317Ab0EGIom (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 04:44:42 -0400
+Subject: Re: [RFC] perf_events: ctx_flexible_sched_in() not maximizing PMU
+ utilization
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+       mingo@elte.hu, Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <1273220736.1642.318.camel@laptop>
+References: <AANLkTikQCkR2K438llKOh43yEgW-Bw7j0f8GoXR50A0V@mail.gmail.com>
+	 <1273155640.5605.300.camel@twins>  <20100506171141.GA5562@nowhere>
+	 <1273167024.1642.256.camel@laptop>  <1273220736.1642.318.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 May 2010 10:44:38 +0200
+Message-ID: <1273221878.1642.320.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On Fri, 2010-05-07 at 10:25 +0200, Peter Zijlstra wrote:
+> We are however still fully greedy, which is still O(n), which we don't
+> want. However if we stop being greedy and use the same heuristic we do
+> now, stop filling the PMU at the first fail, we'll still be fair,
+> because the algorithm ensures that.
+> 
+FWIW the non-greedy algorithm is O(m * log(n)), where m is the number of
+counters on the PMU and n the number of competing events, since m is
+pretty much a constant, we can say the full algorithm is O(log n).
 
-> I just notice that this patch was never applied. Anyone against
-> applying it?
-Needless to say that I would like to see it applied.
 
-This patch removes duplicate strings and moves all task state related
-definitions to a single location to prevent future changes from being
-made at one place and omitted at another place.
 
-In addition, if fixes an incorrectly displayed task state of the
-sched_switch trace event (which probably was the result of having the
-same info at several places).
-
-The principle of this patch made it already into PREEMPT_RT of 2.6.31
-and 2.6.33 nearly 3 months ago - and is running smoothly since then.
-
-Thanks for taking care of the patch.
-
-	Carsten.
