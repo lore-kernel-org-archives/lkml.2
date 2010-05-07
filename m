@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab0EGI5I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 04:57:08 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:46480 "EHLO
+	id S1755171Ab0EGI5K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 04:57:10 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:46479 "EHLO
 	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106Ab0EGI4n (ORCPT
+	with ESMTP id S1755006Ab0EGI4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 May 2010 04:56:43 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: akpm@linux-foundation.org
 Cc: torvalds@linux-foundation.org, adobriyan@gmail.com, nhorman@tuxdriver.com,
        oleg@redhat.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 01/11] rlimits: security, add task_struct to setrlimit
-Date: Fri,  7 May 2010 10:55:32 +0200
-Message-Id: <1273222543-17083-1-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 04/11] rlimits: split sys_setrlimit
+Date: Fri,  7 May 2010 10:55:35 +0200
+Message-Id: <1273222543-17083-4-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <alpine.LFD.2.00.1005060827520.901@i5.linux-foundation.org>
 References: <alpine.LFD.2.00.1005060827520.901@i5.linux-foundation.org>
@@ -23,123 +23,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Slaby <jirislaby@gmail.com>
 
-Add task_struct to task_setrlimit of security_operations to be able to set
-rlimit of different task than current.
+Create do_setrlimit from sys_setrlimit and declare do_setrlimit
+in the resource header. This is the firts phase to have generic
+do_prlimit which allows to be called from read, write and compat
+rlimits code.
 
-Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
-Acked-by: Eric Paris <eparis@redhat.com>
-Acked-by: James Morris <jmorris@namei.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/linux/security.h |    9 ++++++---
- kernel/sys.c             |    2 +-
- security/capability.c    |    3 ++-
- security/security.c      |    5 +++--
- security/selinux/hooks.c |    7 ++++---
- 5 files changed, 16 insertions(+), 10 deletions(-)
+ include/linux/resource.h |    2 ++
+ kernel/sys.c             |   40 ++++++++++++++++++++++++----------------
+ 2 files changed, 26 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 24fc295..2c6a756 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -1502,7 +1502,8 @@ struct security_operations {
- 	int (*task_setnice) (struct task_struct *p, int nice);
- 	int (*task_setioprio) (struct task_struct *p, int ioprio);
- 	int (*task_getioprio) (struct task_struct *p);
--	int (*task_setrlimit) (unsigned int resource, struct rlimit *new_rlim);
-+	int (*task_setrlimit) (struct task_struct *p, unsigned int resource,
-+			struct rlimit *new_rlim);
- 	int (*task_setscheduler) (struct task_struct *p, int policy,
- 				  struct sched_param *lp);
- 	int (*task_getscheduler) (struct task_struct *p);
-@@ -1752,7 +1753,8 @@ void security_task_getsecid(struct task_struct *p, u32 *secid);
- int security_task_setnice(struct task_struct *p, int nice);
- int security_task_setioprio(struct task_struct *p, int ioprio);
- int security_task_getioprio(struct task_struct *p);
--int security_task_setrlimit(unsigned int resource, struct rlimit *new_rlim);
-+int security_task_setrlimit(struct task_struct *p, unsigned int resource,
-+		struct rlimit *new_rlim);
- int security_task_setscheduler(struct task_struct *p,
- 				int policy, struct sched_param *lp);
- int security_task_getscheduler(struct task_struct *p);
-@@ -2314,7 +2316,8 @@ static inline int security_task_getioprio(struct task_struct *p)
- 	return 0;
- }
+diff --git a/include/linux/resource.h b/include/linux/resource.h
+index f1e914e..cf8dc96 100644
+--- a/include/linux/resource.h
++++ b/include/linux/resource.h
+@@ -73,6 +73,8 @@ struct rlimit {
+ struct task_struct;
  
--static inline int security_task_setrlimit(unsigned int resource,
-+static inline int security_task_setrlimit(struct task_struct *p,
-+					  unsigned int resource,
- 					  struct rlimit *new_rlim)
- {
- 	return 0;
+ int getrusage(struct task_struct *p, int who, struct rusage __user *ru);
++int do_setrlimit(struct task_struct *tsk, unsigned int resource,
++		struct rlimit *new_rlim);
+ 
+ #endif /* __KERNEL__ */
+ 
 diff --git a/kernel/sys.c b/kernel/sys.c
-index e83ddbb..1ba4522 100644
+index d527c46..7c76f84 100644
 --- a/kernel/sys.c
 +++ b/kernel/sys.c
-@@ -1290,7 +1290,7 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
- 	if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > sysctl_nr_open)
+@@ -1272,42 +1272,41 @@ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
+ 
+ #endif
+ 
+-SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
++int do_setrlimit(struct task_struct *tsk, unsigned int resource,
++		struct rlimit *new_rlim)
+ {
+-	struct rlimit new_rlim, *old_rlim;
++	struct rlimit *old_rlim;
+ 	int retval;
+ 
+ 	if (resource >= RLIM_NLIMITS)
+ 		return -EINVAL;
+-	if (copy_from_user(&new_rlim, rlim, sizeof(*rlim)))
+-		return -EFAULT;
+-	if (new_rlim.rlim_cur > new_rlim.rlim_max)
++	if (new_rlim->rlim_cur > new_rlim->rlim_max)
+ 		return -EINVAL;
+-	if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > sysctl_nr_open)
++	if (resource == RLIMIT_NOFILE && new_rlim->rlim_max > sysctl_nr_open)
  		return -EPERM;
  
--	retval = security_task_setrlimit(resource, &new_rlim);
-+	retval = security_task_setrlimit(current, resource, &new_rlim);
+-	retval = security_task_setrlimit(current, resource, &new_rlim);
++	retval = security_task_setrlimit(tsk, resource, new_rlim);
  	if (retval)
  		return retval;
  
-diff --git a/security/capability.c b/security/capability.c
-index 7f093d5..33a16d6 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -412,7 +412,8 @@ static int cap_task_getioprio(struct task_struct *p)
- 	return 0;
+-	if (resource == RLIMIT_CPU && new_rlim.rlim_cur == 0) {
++	if (resource == RLIMIT_CPU && new_rlim->rlim_cur == 0) {
+ 		/*
+ 		 * The caller is asking for an immediate RLIMIT_CPU
+ 		 * expiry.  But we use the zero value to mean "it was
+ 		 * never set".  So let's cheat and make it one second
+ 		 * instead
+ 		 */
+-		new_rlim.rlim_cur = 1;
++		new_rlim->rlim_cur = 1;
+ 	}
+ 
+-	old_rlim = current->signal->rlim + resource;
+-	task_lock(current->group_leader);
+-	if ((new_rlim.rlim_max <= old_rlim->rlim_max) ||
++	old_rlim = tsk->signal->rlim + resource;
++	task_lock(tsk->group_leader);
++	if ((new_rlim->rlim_max <= old_rlim->rlim_max) ||
+ 				capable(CAP_SYS_RESOURCE))
+-		*old_rlim = new_rlim;
++		*old_rlim = *new_rlim;
+ 	else
+ 		retval = -EPERM;
+-	task_unlock(current->group_leader);
++	task_unlock(tsk->group_leader);
+ 
+ 	if (retval || resource != RLIMIT_CPU)
+ 		goto out;
+@@ -1318,14 +1317,23 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+ 	 * very long-standing error, and fixing it now risks breakage of
+ 	 * applications, so we live with it
+ 	 */
+-	if (new_rlim.rlim_cur == RLIM_INFINITY)
++	if (new_rlim->rlim_cur == RLIM_INFINITY)
+ 		goto out;
+ 
+-	update_rlimit_cpu(current, new_rlim.rlim_cur);
++	update_rlimit_cpu(tsk, new_rlim->rlim_cur);
+ out:
+ 	return retval;
  }
  
--static int cap_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
-+static int cap_task_setrlimit(struct task_struct *p, unsigned int resource,
-+		struct rlimit *new_rlim)
- {
- 	return 0;
- }
-diff --git a/security/security.c b/security/security.c
-index a525e01..3ed1719 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -781,9 +781,10 @@ int security_task_getioprio(struct task_struct *p)
- 	return security_ops->task_getioprio(p);
- }
- 
--int security_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
-+int security_task_setrlimit(struct task_struct *p, unsigned int resource,
-+		struct rlimit *new_rlim)
- {
--	return security_ops->task_setrlimit(resource, new_rlim);
-+	return security_ops->task_setrlimit(p, resource, new_rlim);
- }
- 
- int security_task_setscheduler(struct task_struct *p,
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index ebee467..674992f 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -3393,16 +3393,17 @@ static int selinux_task_getioprio(struct task_struct *p)
- 	return current_has_perm(p, PROCESS__GETSCHED);
- }
- 
--static int selinux_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
-+static int selinux_task_setrlimit(struct task_struct *p, unsigned int resource,
-+		struct rlimit *new_rlim)
- {
--	struct rlimit *old_rlim = current->signal->rlim + resource;
-+	struct rlimit *old_rlim = p->signal->rlim + resource;
- 
- 	/* Control the ability to change the hard limit (whether
- 	   lowering or raising it), so that the hard limit can
- 	   later be used as a safe reset point for the soft limit
- 	   upon context transitions.  See selinux_bprm_committing_creds. */
- 	if (old_rlim->rlim_max != new_rlim->rlim_max)
--		return current_has_perm(current, PROCESS__SETRLIMIT);
-+		return current_has_perm(p, PROCESS__SETRLIMIT);
- 
- 	return 0;
- }
++SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
++{
++	struct rlimit new_rlim;
++
++	if (copy_from_user(&new_rlim, rlim, sizeof(*rlim)))
++		return -EFAULT;
++	return do_setrlimit(current, resource, &new_rlim);
++}
++
+ /*
+  * It would make sense to put struct rusage in the task_struct,
+  * except that would make the task_struct be *really big*.  After
 -- 
 1.7.1
 
