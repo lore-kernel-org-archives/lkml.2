@@ -1,179 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab0EGRkr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 13:40:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58878 "EHLO mx1.redhat.com"
+	id S1756907Ab0EGRk4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 13:40:56 -0400
+Received: from fifo99.com ([67.223.236.141]:47110 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755825Ab0EGRkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 13:40:46 -0400
-Date: Fri, 7 May 2010 13:40:29 -0400
-From: Josef Bacik <josef@redhat.com>
-To: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Cc: hch@infradead.org, akpm@linux-foundation.org
-Subject: [PATCH 2/5] direct-io: add a hook for the fs to provide its own
-	submit_bio function V2
-Message-ID: <20100507174028.GC3360@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756229Ab0EGRky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 13:40:54 -0400
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+From: Daniel Walker <dwalker@fifo99.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Tony Lindgren <tony@atomide.com>, Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20100507173621.GA23604@srcf.ucam.org>
+References: <20100505234755.GI29604@atomide.com>
+	 <20100506134015.GA23426@srcf.ucam.org> <20100506170151.GA30928@atomide.com>
+	 <20100506170956.GA28104@srcf.ucam.org> <20100506171453.GC30928@atomide.com>
+	 <1273167311.20494.13.camel@c-dwalke-linux.qualcomm.com>
+	 <20100506183605.GF30928@atomide.com>
+	 <1273173110.20494.19.camel@c-dwalke-linux.qualcomm.com>
+	 <20100507020057.GG30928@atomide.com>
+	 <1273252837.3542.30.camel@c-dwalke-linux.qualcomm.com>
+	 <20100507173621.GA23604@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 May 2010 10:40:43 -0700
+Message-ID: <1273254043.3542.37.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V1->V2:
--Changed dio_end_io to EXPORT_SYMBOL_GPL
--Removed the own_submit blockdev dio helper
--Removed the boundary change
+On Fri, 2010-05-07 at 18:36 +0100, Matthew Garrett wrote:
+> On Fri, May 07, 2010 at 10:20:37AM -0700, Daniel Walker wrote:
+> 
+> > MSM doesn't have those power states unfortunately .. Your kind of
+> > suggesting what I was suggesting in that we should suspend in idle. Your
+> > hardware can do it easier tho since your have power states that are
+> > equal to suspend.
+> 
+> If your wakeup latencies are sufficiently low and you have fine-grained 
+> enough control over your hardware then suspend in idle is a reasonable 
+> thing to do - but if you have a userspace app that's spinning then 
+> that doesn't solve the issue.
 
-Because BTRFS can do RAID and such, we need our own submit hook so we can setup
-the bio's in the correct fashion, and handle checksum errors properly.  So there
-are a few changes here
+If there's a userspace app spinning then you don't go idle (or that's my
+assumption anyway). You mean like repeatedly blocking and unblocking
+right?
 
-1) The submit_io hook.  This is straightforward, just call this instead of
-submit_bio.
+Daniel
 
-2) Allow the fs to return -ENOTBLK for reads.  Usually this has only worked for
-writes, since writes can fallback onto buffered IO.  But BTRFS needs the option
-of falling back on buffered IO if it encounters a compressed extent, since we
-need to read the entire extent in and decompress it.  So if we get -ENOTBLK back
-from get_block we'll return back and fallback on buffered just like the write
-case.
-
-I've tested these changes with fsx and everything seems to work.  Thanks,
-
-Signed-off-by: Josef Bacik <josef@redhat.com>
----
- fs/direct-io.c     |   27 ++++++++++++++++++++++-----
- include/linux/fs.h |   10 +++++++---
- 2 files changed, 29 insertions(+), 8 deletions(-)
-
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index e82adc2..2dbf2e9 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -82,6 +82,7 @@ struct dio {
- 	int reap_counter;		/* rate limit reaping */
- 	get_block_t *get_block;		/* block mapping function */
- 	dio_iodone_t *end_io;		/* IO completion function */
-+	dio_submit_t *submit_io;	/* IO submition function */
- 	sector_t final_block_in_bio;	/* current final block in bio + 1 */
- 	sector_t next_block_for_io;	/* next block to be put under IO,
- 					   in dio_blocks units */
-@@ -300,6 +301,17 @@ static void dio_bio_end_io(struct bio *bio, int error)
- 	spin_unlock_irqrestore(&dio->bio_lock, flags);
- }
- 
-+void dio_end_io(struct bio *bio, int error)
-+{
-+	struct dio *dio = bio->bi_private;
-+
-+	if (dio->is_async)
-+		dio_bio_end_aio(bio, error);
-+	else
-+		dio_bio_end_io(bio, error);
-+}
-+EXPORT_SYMBOL_GPL(dio_end_io);
-+
- static int
- dio_bio_alloc(struct dio *dio, struct block_device *bdev,
- 		sector_t first_sector, int nr_vecs)
-@@ -340,7 +352,10 @@ static void dio_bio_submit(struct dio *dio)
- 	if (dio->is_async && dio->rw == READ)
- 		bio_set_pages_dirty(bio);
- 
--	submit_bio(dio->rw, bio);
-+	if (!dio->submit_io)
-+		submit_bio(dio->rw, bio);
-+	else
-+		dio->submit_io(dio->rw, bio, dio->inode);
- 
- 	dio->bio = NULL;
- 	dio->boundary = 0;
-@@ -935,7 +950,7 @@ static ssize_t
- direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode, 
- 	const struct iovec *iov, loff_t offset, unsigned long nr_segs, 
- 	unsigned blkbits, get_block_t get_block, dio_iodone_t end_io,
--	struct dio *dio)
-+	dio_submit_t submit_io, struct dio *dio)
- {
- 	unsigned long user_addr; 
- 	unsigned long flags;
-@@ -952,6 +967,7 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
- 
- 	dio->get_block = get_block;
- 	dio->end_io = end_io;
-+	dio->submit_io = submit_io;
- 	dio->final_block_in_bio = -1;
- 	dio->next_block_for_io = -1;
- 
-@@ -1008,7 +1024,7 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
- 		}
- 	} /* end iovec loop */
- 
--	if (ret == -ENOTBLK && (rw & WRITE)) {
-+	if (ret == -ENOTBLK) {
- 		/*
- 		 * The remaining part of the request will be
- 		 * be handled by buffered I/O when we return
-@@ -1110,7 +1126,7 @@ ssize_t
- __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
- 	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
--	int flags)
-+	dio_submit_t submit_io,	int flags)
- {
- 	int seg;
- 	size_t size;
-@@ -1197,7 +1213,8 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 		(end > i_size_read(inode)));
- 
- 	retval = direct_io_worker(rw, iocb, inode, iov, offset,
--				nr_segs, blkbits, get_block, end_io, dio);
-+				nr_segs, blkbits, get_block, end_io,
-+				submit_io, dio);
- 
- 	/*
- 	 * In case of error extending write may have instantiated a few
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 44f35ae..9e76d01 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2250,10 +2250,14 @@ static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
- #endif
- 
- #ifdef CONFIG_BLOCK
-+struct bio;
-+typedef void (dio_submit_t)(int rw, struct bio *bio, struct inode *inode);
-+void dio_end_io(struct bio *bio, int error);
-+
- ssize_t __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	struct block_device *bdev, const struct iovec *iov, loff_t offset,
- 	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
--	int lock_type);
-+	dio_submit_t submit_io,	int lock_type);
- 
- enum {
- 	/* need locking between buffered and direct access */
-@@ -2269,7 +2273,7 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
- 	dio_iodone_t end_io)
- {
- 	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
--				    nr_segs, get_block, end_io,
-+				    nr_segs, get_block, end_io, NULL,
- 				    DIO_LOCKING | DIO_SKIP_HOLES);
- }
- 
-@@ -2279,7 +2283,7 @@ static inline ssize_t blockdev_direct_IO_no_locking(int rw, struct kiocb *iocb,
- 	dio_iodone_t end_io)
- {
- 	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
--				nr_segs, get_block, end_io, 0);
-+				    nr_segs, get_block, end_io, NULL, 0);
- }
- #endif
- 
--- 
-1.6.6.1
 
