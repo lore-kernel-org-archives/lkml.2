@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab0EGDYB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 23:24:01 -0400
-Received: from ozlabs.org ([203.10.76.45]:51028 "EHLO ozlabs.org"
+	id S1753615Ab0EGDdi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 23:33:38 -0400
+Received: from ozlabs.org ([203.10.76.45]:43900 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753654Ab0EGDYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 23:24:00 -0400
+	id S1752361Ab0EGDdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 23:33:37 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Avi Kivity <avi@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH RFC] virtio: put last seen used index into 
- =?iso-8859-1?q?ring=09itself?=
-Date: Fri, 7 May 2010 12:53:52 +0930
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH RFC] virtio: put last seen used index into ring itself
+Date: Fri, 7 May 2010 13:03:28 +0930
 User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       qemu-devel@nongnu.org
-References: <20100505205814.GA7090@redhat.com> <4BE29320.5090506@redhat.com>
-In-Reply-To: <4BE29320.5090506@redhat.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+       kvm@vger.kernel.org, qemu-devel@nongnu.org
+References: <20100505205814.GA7090@redhat.com> <201005061201.35223.rusty@rustcorp.com.au> <20100506061945.GA8363@redhat.com>
+In-Reply-To: <20100506061945.GA8363@redhat.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005071253.53393.rusty@rustcorp.com.au>
+Message-Id: <201005071303.29129.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010 07:30:00 pm Avi Kivity wrote:
-> On 05/05/2010 11:58 PM, Michael S. Tsirkin wrote:
-> > +	/* We publish the last-seen used index at the end of the available ring.
-> > +	 * It is at the end for backwards compatibility. */
-> > +	vr->last_used_idx =&(vr)->avail->ring[num];
-> > +	/* Verify that last used index does not spill over the used ring. */
-> > +	BUG_ON((void *)vr->last_used_idx +
-> > +	       sizeof *vr->last_used_idx>  (void *)vr->used);
-> >   }
-> >    
-> 
-> Shouldn't this be on its own cache line?
+On Thu, 6 May 2010 03:49:46 pm Michael S. Tsirkin wrote:
+> Now, I also added an mb() in guest between read and write so
+> that last used index write can not get ahead of used index read.
+> It does feel good to have it there, but I can not say why
+> it's helpful. Works fine without it, but then these
+> subtle races might be hard to trigger. What do you think?
 
-It's next to the available ring; because that's where the guest publishes
-its data.  That whole page is guest-write, host-read.
+I couldn't see that in the patch?  I don't think it's necessary
+though, since the write of depends last_used depends on the read of
+used (and no platform we care about would reorder such a thing).
 
-Putting it on a cacheline by itself would be a slight pessimization; the host
-cpu would have to get the last_used_idx cacheline and the avail descriptor
-cacheline every time.  This way, they are sometimes the same cacheline.
+I'm reasonably happy, but we should write some convenient test for
+missing interrupts.
 
-Hope that clarifies,
+I'm thinking of a sender which does a loop: blasts 1MB of UDP packets,
+then prints the time and sleep(1).  The receiver would print the time
+every 1MB of received data.  The two times should almost exactly correspond.
+
+Assuming that the network doesn't overflow and lose stuff, this should
+identify any missing wakeup/interrupts (depending on direction used).
+
+Cheers,
 Rusty.
