@@ -1,76 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725Ab0EGAtu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 20:49:50 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:54809 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab0EGAts (ORCPT
+	id S1752091Ab0EGAuN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 20:50:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41700 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751396Ab0EGAuL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 20:49:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DPacQ7uiu2Pi4gWIGT3A7mIQwZqzv5LXduMQLwSuBvs2ac7rkYjT4z3ERQHWLmaMOe
-         fY57VoLDIrD5LcZotdmCgn5dn1fjCxTfckyMiaw0M/Y3sQTNVlzzUBEAa/Uqq59kH+8Y
-         yNb2CZIwo9XyP5fRBnLK3hfvapUcpD4HsKdPQ=
-Date: Fri, 7 May 2010 02:49:47 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: Re: [PATCH] perf lock: track only specified threads
-Message-ID: <20100507004945.GA8069@nowhere>
-References: <4BE28C8D.8000408@dcl.info.waseda.ac.jp> <1273138376-23323-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273138376-23323-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 6 May 2010 20:50:11 -0400
+Date: Thu, 6 May 2010 21:49:54 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linux Media Mailing List <linux-media@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for 2.6.34] V4L/DVB fixes
+Message-ID: <20100506214954.7953e52e@pedra>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 06:32:56PM +0900, Hitoshi Mitake wrote:
-> I implemented the feature of tracking only specified threads to perf lock.
-> With -t option, users can specify which threads should be tracked.
-> 
-> Example of usage:
-> | % sudo ./perf lock info -t                    # info -t is convenient with this feature
-> |  Thread ID: comm
-> |          0: swapper
-> |          1: init
-> |         12: migration/3
-> |         13: ksoftirqd/3
-> |         27: events/0
-> |         28: events/1
-> |         29: events/2
-> |         30: events/3
-> |         31: events/4
-> |        857: kondemand/0
-> |        858: kondemand/1
-> |        859: kondemand/2
-> | ...
-> | % sudo ./perf lock -t 27,28,29,30,31 report   # track only these threads
-> |                 Name   acquired  contended total wait (ns)   max wait (ns)   min wait (ns)
+The following changes since commit 722154e4cacf015161efe60009ae9be23d492296:
+  Linus Torvalds (1):
+        Merge branch 'zerolen' of git://git.kernel.org/.../jgarzik/misc-2.6
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_2.6.34
+
+Bjørn Mork (1):
+      V4L/DVB: budget: Oops: "BUG: unable to handle kernel NULL pointer 	dereference"
+
+Dan Carpenter (2):
+      V4L/DVB: omap24xxcam: potential buffer overflow
+      V4L/DVB: video: testing unsigned for less than 0
+
+Erik Andrén (1):
+      V4L/DVB: gspca - stv06xx: Remove the 046d:08da from the stv06xx driver
+
+Hans Verkuil (3):
+      V4L/DVB: feature-removal: announce videotext.h removal
+      V4L/DVB: v4l: fix config dependencies: mxb and saa7191 are V4L2 drivers, not V4L1
+      V4L/DVB: saa7146: fix regression of the av7110/budget-av driver
+
+John Ellson (1):
+      V4L/DVB: gspca: make usb id 0461:0815 get handled by the right driver
+
+Michael Hunold (1):
+      V4L/DVB: saa7146: fix up bytesperline if it is an impossible value
+
+Murali Karicheri (1):
+      V4L/DVB: V4L: vpfe_capture - free ccdc_lock when memory allocation fails
+
+Muralidharan Karicheri (1):
+      V4L/DVB: V4L - vpfe capture - fix for kernel crash
+
+Oliver Endriss (1):
+      V4L/DVB: ngene: Workaround for stuck DiSEqC pin
+
+Stefan Herbrechtsmeier (1):
+      V4L/DVB: pxa_camera: move fifo reset direct before dma start
+
+Uwe Kleine-König (1):
+      V4L/DVB: mx1-camera: compile fix
+
+Vaibhav Hiremath (1):
+      V4L/DVB: V4L - Makfile:Removed duplicate entry of davinci
+
+Yong Zhang (1):
+      V4L/DVB: gspca - sn9c20x: Correct onstack wait_queue_head declaration
+
+ Documentation/feature-removal-schedule.txt   |   23 +++++++++++++++
+ arch/arm/plat-mxc/include/mach/dma-mx1-mx2.h |    8 +++++-
+ drivers/media/common/saa7146_fops.c          |   11 +++----
+ drivers/media/common/saa7146_video.c         |    8 +++--
+ drivers/media/dvb/frontends/stv090x.c        |    4 +++
+ drivers/media/dvb/ttpci/budget.c             |    3 --
+ drivers/media/video/Kconfig                  |    4 +-
+ drivers/media/video/Makefile                 |    2 -
+ drivers/media/video/davinci/vpfe_capture.c   |   38 +++++++++++++++----------
+ drivers/media/video/gspca/sn9c20x.c          |    2 +-
+ drivers/media/video/gspca/spca508.c          |    1 -
+ drivers/media/video/gspca/spca561.c          |    1 +
+ drivers/media/video/gspca/stv06xx/stv06xx.c  |    2 -
+ drivers/media/video/hexium_gemini.c          |    3 --
+ drivers/media/video/hexium_orion.c           |    4 ---
+ drivers/media/video/mx1_camera.c             |    8 ++---
+ drivers/media/video/mxb.c                    |   17 +++++------
+ drivers/media/video/omap24xxcam.c            |    2 +-
+ drivers/media/video/pxa_camera.c             |   11 ++++---
+ drivers/media/video/sh_mobile_ceu_camera.c   |    2 +-
+ include/media/saa7146_vv.h                   |    1 -
+ 21 files changed, 90 insertions(+), 65 deletions(-)
 
 
 
-I'm not sure we want such per thread granularity filtering. I'm not
-sure it will be very useful. But per process yeah.
+-- 
 
-And actually we should do that on tracing time rather than on post-processing.
-This will lower the tracing overhead a lot.
-
-Ideally I think we need:
-	./perf lock record ls -R /
-
-This would trace locks taken by this instance of ls only, ie: drop the -a
-if we pass a command line.
-
-What do you think?
-
+Cheers,
+Mauro
