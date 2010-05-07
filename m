@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791Ab0EGBo1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 21:44:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33819 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750845Ab0EGBo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 21:44:26 -0400
-Date: Thu, 6 May 2010 18:40:39 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] mm,migration: Fix race between shift_arg_pages and
- rmap_walk by guaranteeing rmap_walk finds PTEs created within the temporary
- stack
-In-Reply-To: <1273188053-26029-3-git-send-email-mel@csn.ul.ie>
-Message-ID: <alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org>
-References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie> <1273188053-26029-3-git-send-email-mel@csn.ul.ie>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751936Ab0EGBuG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 21:50:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45587 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751468Ab0EGBuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 May 2010 21:50:04 -0400
+Message-ID: <4BE371AB.2000806@zytor.com>
+Date: Thu, 06 May 2010 18:49:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg KH <greg@kroah.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       x86@kernel.org, linux-kernel@vger.kernel.org,
+       Vadim Rozenfeld <vrozenfe@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Haiyang Zhang <haiyangz@microsoft.com>,
+       Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH] x86: detect running on a HyperV system
+References: <20100506190841.GA1605@kroah.com> <4BE314CD.6060701@zytor.com> <20100506191816.GA20874@kroah.com>
+In-Reply-To: <20100506191816.GA20874@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, 7 May 2010, Mel Gorman wrote:
+On 05/06/2010 12:18 PM, Greg KH wrote:
+> On Thu, May 06, 2010 at 12:13:17PM -0700, H. Peter Anvin wrote:
+>> On 05/06/2010 12:08 PM, Greg KH wrote:
+>>>
+>>> x86-maintainers, we need this patch in the tree to get a -staging driver
+>>> to work properly.  If you don't object, can I take it through the
+>>> staging tree?  Or do you want to take it in -tip?
+>>>
+>>
+>> I'd prefer to take it in -tip, partly because I would like to rework a
+>> few things -- including preexisting braindamage like c->x86_hyper_vendor
+>> (since when was hypervisor vendor a per-cpu property!?)
 > 
-> Page migration requires rmap to be able to find all migration ptes
-> created by migration. If the second rmap_walk clearing migration PTEs
-> misses an entry, it is left dangling causing a BUG_ON to trigger during
-> fault. For example;
+> Heh, good point, but where should it live?
+> 
+> And I have no objection to taking it in -tip, thanks for doing so.
+> 
+>> I'll try to get to it today, if not feel free to bug me.
+> 
+> Will do :)
+> 
+> thanks again,
+> 
 
-So I still absolutely detest this patch.
+Okay... we write something called x86_hyper_features, but it isn't
+actually used for anything.  I'm assuming based on what I can see in
+<asm/hyperv.h> that it is almost certainly not anything CPU-based.  I
+really don't like a random field that can be stuffed with information
+from random locations, and it doesn't look like it's even a flag field
+in any meaningful way.  Worse, the field is just used to mix bits from
+two different CPUID levels at what appears to be a completely arbitrary
+boundary:
 
-Why didn't the other - much simpler - patch work? The one Rik pointed to:
+        /*
+         * Extract the features, recommendations etc.
+         * The first 9 bits will be used to track hypervisor features.
+         * The next 6 bits will be used to track the hypervisor
+         * recommendations.
+         */
+        cpuid(HYPERV_CPUID_FEATURES, &eax, &ebx, &ecx, &edx);
+        c->x86_hyper_features |= (eax & 0x1ff);
 
-	http://lkml.org/lkml/2010/4/30/198
+        cpuid(HYPERV_CPUID_ENLIGHTMENT_INFO, &eax, &ebx, &ecx, &edx);
+        c->x86_hyper_features |= ((eax & 0x3f) << 9);
 
-and didn't do that _disgusting_ temporary anon_vma?
+Why 9?  Why 6?  The only thing that I can think of that justifies those
+particular numbers is what the *current* version of Hyper-V does.
 
-Alternatively, why don't we just take the anon_vma lock over this region, 
-so that rmap can't _walk_ the damn thing?
+It would be better to just have a global variable where these two levels
+are separately stuffed away instead of arbitrarily commingled (again,
+I'm assuming none of the bits are actually per CPU.)
 
-			Linus
+What does this driver of yours do with them?
+
+	-hpa
