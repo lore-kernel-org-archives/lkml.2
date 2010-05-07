@@ -1,160 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab0EGOz1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 10:55:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60932 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755957Ab0EGOz0 (ORCPT
+	id S1755343Ab0EGPFY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 11:05:24 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64616 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754659Ab0EGPFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 10:55:26 -0400
-X-Authority-Analysis: v=1.1 cv=GuuPm/R9MDBdMhOgsQZYzj+bBK5woo0X8cuc0sTVRtI= c=1 sm=0 a=HwkIGVdAOiAA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=pGLkceISAAAA:8 a=2IemZA3HlO9qZh5dc-MA:9 a=Hey8zEur1oYf-i7WRRIA:7 a=cUY3lqaShVXXFC6PmlKPgg9MAEQA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 2/9 - v2][RFC] tracing: Let tracepoints have
- data?passed to tracepoint callbacks
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
+	Fri, 7 May 2010 11:05:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=VNFdY5bw6pL+k90CUmD/8sYFAmvZYI82x2sQQiCOKmy1GGN5a8XomNBmV4biDDzbQm
+         3xHgUUbxlBRoyrwTswHI4E+2Wqv5Y2eWwvmK9bqSu5Y511KA1g8NlxIejRtiL3nGuEi6
+         OELVpTd/uKT1aVQwnp8FLtc9zqgTXA9FSmgfA=
+Date: Fri, 7 May 2010 19:05:17 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
        Peter Zijlstra <peterz@infradead.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-In-Reply-To: <20100507143901.GA18408@Krystal>
-References: <7a22ce9b-4c74-4818-9521-7fbccd1b8b1d@email.android.com>
-	 <20100507143901.GA18408@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Fri, 07 May 2010 10:55:23 -0400
-Message-ID: <1273244123.22438.140.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Lin Ming <ming.m.lin@intel.com>
+Subject: [PATCH -tip] x86,perf: P4 PMU -- protect sensible procedures from
+	preemption
+Message-ID: <20100507150517.GB16434@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-07 at 10:39 -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > 
-> > 
-> > "Frederic Weisbecker" <fweisbec@gmail.com> wrote:
-> > 
-> > >On Mon, May 03, 2010 at 11:40:47PM -0400, Steven Rostedt wrote:
-> [...]
-> > >> 
-> > >> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-> > >> index 78b4bd3..ee8059a 100644
-> > >> --- a/include/linux/tracepoint.h
-> > >> +++ b/include/linux/tracepoint.h
-> > >> @@ -20,12 +20,17 @@
-> > >>  struct module;
-> > >>  struct tracepoint;
-> > >>  
-> > >> +struct tracepoint_func {
-> > >> +	void *func;
-> > >> +	void *data;
-> > >> +};
-> > >> +
-> > >>  struct tracepoint {
-> > >>  	const char *name;		/* Tracepoint name */
-> > >>  	int state;			/* State. */
-> > >>  	void (*regfunc)(void);
-> > >>  	void (*unregfunc)(void);
-> > >> -	void **funcs;
-> > >> +	struct tracepoint_func *funcs;
-> > >>  } __attribute__((aligned(32)));		/*
-> > >>  					 * Aligned on 32 bytes because it is
-> > >>  					 * globally visible and gcc happily
-> > >> @@ -46,14 +51,18 @@ struct tracepoint {
-> > >>   */
-> > >>  #define __DO_TRACE(tp, proto, args)					\
-> > >>  	do {								\
-> > >> -		void **it_func;						\
-> > >> +		struct tracepoint_func *it_func_ptr;			\
-> > >> +		void *it_func;						\
-> > >> +		void *__data;						\
-> > >>  									\
-> > >>  		rcu_read_lock_sched_notrace();				\
-> > >> -		it_func = rcu_dereference_sched((tp)->funcs);		\
-> > >> -		if (it_func) {						\
-> > >> +		it_func_ptr = rcu_dereference_sched((tp)->funcs);	\
-> > >> +		if (it_func_ptr) {					\
-> > >>  			do {						\
-> > >> -				((void(*)(proto))(*it_func))(args);	\
-> > >> -			} while (*(++it_func));				\
-> > >> +				it_func = (it_func_ptr)->func;		\
-> > >> +				__data = (it_func_ptr)->data;		\
-> > >> +				((void(*)(proto))(it_func))(args);	\
-> > >
-> > >
-> > >So, we had a talk about this and we concluded that it is probably fine
-> > >on every archs to push one more argument than needed in a function.
-> > >
-> > 
-> > Yeah, I'm hoping it's fine.
-> 
-> How about changing the callback prototypes to match the call arguments (changing
-> the type expected in register/unregister_trace, as well as an additional "check
-> type" that I proposed for Ftrace) ?
+Steven reported
+|
+| I'm getting:
+|
+| Pid: 3477, comm: perf Not tainted 2.6.34-rc6 #2727
+| Call Trace:
+|  [<ffffffff811c7565>] debug_smp_processor_id+0xd5/0xf0
+|  [<ffffffff81019874>] p4_hw_config+0x2b/0x15c
+|  [<ffffffff8107acbc>] ? trace_hardirqs_on_caller+0x12b/0x14f
+|  [<ffffffff81019143>] hw_perf_event_init+0x468/0x7be
+|  [<ffffffff810782fd>] ? debug_mutex_init+0x31/0x3c
+|  [<ffffffff810c68b2>] T.850+0x273/0x42e
+|  [<ffffffff810c6cab>] sys_perf_event_open+0x23e/0x3f1
+|  [<ffffffff81009e6a>] ? sysret_check+0x2e/0x69
+|  [<ffffffff81009e32>] system_call_fastpath+0x16/0x1b
+|
+| When running perf record in latest tip/perf/core
+|
 
-This can not happen!!!! As I said before, the register is done in C,
-there is no macro that will help here. We create the call back with the
-macro, but the registering is in kernel/trace/trace_events.c. One
-register for ___ALL___ events!!!
+Due to the fact that p4 counters are shared between HT threads
+we synthetically divide the whole set of counters into two
+non-intersected subsets. And while we're borrowing counters
+from these subsets we should not be preempted. So use
+get_cpu/put_cpu pair.
 
- Thus there is no check.
+Also p4_pmu_schedule_events should use smp_processor_id rather
+than raw_ version. This allow us to catch up preemption issue
+(if there will ever be).
 
-Understand this yet?
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Tested-by: Steven Rostedt <rostedt@goodmis.org>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
 
+N.B. I'm still invetigating the need of preemt to be
+disabled of p4_pmu_schedule_events, though Steven has
+tested this version and preemtion issue didn't reveal itself
+anyhow I think it's valueable to close the former issue
+in p4_hw_config first.
 
-> 
-> Otherwise, you basically expect here that:
-> 
-> void fct(void *foo, void *bar, etc etc) (N parameters expected)
-> {
-> 
-> }
-> 
-> called by:
-> 
-> fct(foo, bar, etc etc, foobar) (N + 1 parameters)
-> 
-> will always work.
-> 
-> Can you show me where the C standard says it is safe to do so ?
+ arch/x86/kernel/cpu/perf_event_p4.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-No, but it seems safe in the kernel ;-)
-
-But that said. There is another option that will conform to this, and
-that is to add flags to registering tracepoints. I already wrote a patch
-for this in trying to do some other work (that I threw away).
-
-
-So here's the proposal.
-
-Change struct tracepoint_func to...
-
-struct tracepoint_func {
-	void *func;
-	void *data;
-	unsigned int flags;
-};
-
-
-The flags is set when registered. If a function is registered with data,
-then the flags field will be set. Then the calling of the function can
-be:
-
-	if ((it_func_ptr)->flags & TP_FL_DATA)
-		((void(*)(proto, void *))(it_func)(args, __data);
-	else
-		((void(*)(proto))(it_func)(args);
-
-This would comply with the C standard.
-
--- Steve
-
-
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -421,7 +421,7 @@ static u64 p4_pmu_event_map(int hw_event
+ 
+ static int p4_hw_config(struct perf_event *event)
+ {
+-	int cpu = raw_smp_processor_id();
++	int cpu = get_cpu();
+ 	u32 escr, cccr;
+ 
+ 	/*
+@@ -440,7 +440,7 @@ static int p4_hw_config(struct perf_even
+ 		event->hw.config = p4_set_ht_bit(event->hw.config);
+ 
+ 	if (event->attr.type != PERF_TYPE_RAW)
+-		return 0;
++		goto out;
+ 
+ 	/*
+ 	 * We don't control raw events so it's up to the caller
+@@ -455,6 +455,8 @@ static int p4_hw_config(struct perf_even
+ 		(p4_config_pack_escr(P4_ESCR_MASK_HT) |
+ 		 p4_config_pack_cccr(P4_CCCR_MASK_HT));
+ 
++out:
++	put_cpu();
+ 	return 0;
+ }
+ 
+@@ -741,7 +743,7 @@ static int p4_pmu_schedule_events(struct
+ {
+ 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+ 	unsigned long escr_mask[BITS_TO_LONGS(ARCH_P4_TOTAL_ESCR)];
+-	int cpu = raw_smp_processor_id();
++	int cpu = smp_processor_id();
+ 	struct hw_perf_event *hwc;
+ 	struct p4_event_bind *bind;
+ 	unsigned int i, thread, num;
