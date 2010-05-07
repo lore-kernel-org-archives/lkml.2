@@ -1,89 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab0EGI73 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 04:59:29 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:52091 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824Ab0EGI72 convert rfc822-to-8bit (ORCPT
+	id S1755285Ab0EGJDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:03:55 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:48411 "EHLO
+	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1755181Ab0EGJDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 04:59:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=P6qHQMpEum0DJE1a7fHrUNZGfTxknQfdJskc6eEL8LvdTSutG1Sk/Z+alNGhpG3OQc
-         7roUxlaGZK2f39jYNUSYQ9JTAUIm4dY2RC3wcfyenuRRWE9E+QevM+g0CV9C+hiEYZiD
-         aqVVy/VM8NPGSGhUd60LaQcmUQzt7+9uMUiB0=
-MIME-Version: 1.0
-In-Reply-To: <1273215671-3090-1-git-send-email-jassisinghbrar@gmail.com>
-References: <1273215671-3090-1-git-send-email-jassisinghbrar@gmail.com>
-Date: Fri, 7 May 2010 10:59:26 +0200
-Message-ID: <i2r63386a3d1005070159tf0879839u24c1c1f11466970d@mail.gmail.com>
-Subject: Re: [PATCH 2/2] DMA: PL330: Add async dma api driver
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       dan.j.williams@intel.com, ben-linux@fluff.org, jy0922.shim@samsung.com,
-       maciej.sosnowski@intel.com, Jassi Brar <jassi.brar@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 7 May 2010 05:03:54 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: akpm@linux-foundation.org
+Cc: torvalds@linux-foundation.org, adobriyan@gmail.com, nhorman@tuxdriver.com,
+       oleg@redhat.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH v2 09/11] rlimits: switch more rlimit syscalls to do_prlimit
+Date: Fri,  7 May 2010 11:02:57 +0200
+Message-Id: <1273222977-17419-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1273222543-17083-9-git-send-email-jslaby@suse.cz>
+References: <1273222543-17083-9-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/7 Jassi Brar <jassisinghbrar@gmail.com>:
+From: Jiri Slaby <jirislaby@gmail.com>
 
-> Add ASYNC DMA Engine API driver for the PL330 DMAC.
-> This driver is supposed to be reusable by various
-> platforms that have one or more PL330 DMACs.
-> Atm, DMA_SLAVE and DMA_MEMCPY capabilities have been
-> implemented.
->
-> Signed-off-by: Jassi Brar <jassi.brar@samsung.com>
+This is the correct one, I forgot to re-run format-patch.
+--
 
-This needs some updating to apply and compile on Dan Williams tree,
-please clone async_tx from git.kernel.org and generate the patch on that
-tree instead. (It's my updates for generic channel status etc that
-collide.)
+After we added more generic do_prlimit, switch sys_getrlimit to that.
+Also switch compat handling, so we can get rid of ugly __user casts
+and avoid setting process' address limit to kernel data and back.
 
-You'll also find these changes in Rothwell's -next tree.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ kernel/compat.c |   16 +++-------------
+ kernel/sys.c    |   17 ++++++++---------
+ 2 files changed, 11 insertions(+), 22 deletions(-)
 
-> (...)
+diff --git a/kernel/compat.c b/kernel/compat.c
+index 7f40e92..199b345 100644
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -280,10 +280,6 @@ asmlinkage long compat_sys_setrlimit(unsigned int resource,
+ {
+ 	struct rlimit r;
+ 	int ret;
+-	mm_segment_t old_fs = get_fs ();
+-
+-	if (resource >= RLIM_NLIMITS)
+-		return -EINVAL;
+ 
+ 	if (!access_ok(VERIFY_READ, rlim, sizeof(*rlim)) ||
+ 	    __get_user(r.rlim_cur, &rlim->rlim_cur) ||
+@@ -294,10 +290,7 @@ asmlinkage long compat_sys_setrlimit(unsigned int resource,
+ 		r.rlim_cur = RLIM_INFINITY;
+ 	if (r.rlim_max == COMPAT_RLIM_INFINITY)
+ 		r.rlim_max = RLIM_INFINITY;
+-	set_fs(KERNEL_DS);
+-	ret = sys_setrlimit(resource, (struct rlimit __user *) &r);
+-	set_fs(old_fs);
+-	return ret;
++	return do_prlimit(current, resource, &r, NULL);
+ }
+ 
+ #ifdef COMPAT_RLIM_OLD_INFINITY
+@@ -329,16 +322,13 @@ asmlinkage long compat_sys_old_getrlimit(unsigned int resource,
+ 
+ #endif
+ 
+-asmlinkage long compat_sys_getrlimit (unsigned int resource,
++asmlinkage long compat_sys_getrlimit(unsigned int resource,
+ 		struct compat_rlimit __user *rlim)
+ {
+ 	struct rlimit r;
+ 	int ret;
+-	mm_segment_t old_fs = get_fs();
+ 
+-	set_fs(KERNEL_DS);
+-	ret = sys_getrlimit(resource, (struct rlimit __user *) &r);
+-	set_fs(old_fs);
++	ret = do_prlimit(current, resource, NULL, &r);
+ 	if (!ret) {
+ 		if (r.rlim_cur > COMPAT_RLIM_INFINITY)
+ 			r.rlim_cur = COMPAT_RLIM_INFINITY;
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 7a453d2..0f8034f 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1236,15 +1236,14 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
+ 
+ SYSCALL_DEFINE2(getrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+ {
+-	if (resource >= RLIM_NLIMITS)
+-		return -EINVAL;
+-	else {
+-		struct rlimit value;
+-		task_lock(current->group_leader);
+-		value = current->signal->rlim[resource];
+-		task_unlock(current->group_leader);
+-		return copy_to_user(rlim, &value, sizeof(*rlim)) ? -EFAULT : 0;
+-	}
++	struct rlimit value;
++	int ret;
++
++	ret = do_prlimit(current, resource, NULL, &value);
++	if (!ret)
++		ret = copy_to_user(rlim, &value, sizeof(*rlim)) ? -EFAULT : 0;
++
++	return ret;
+ }
+ 
+ #ifdef __ARCH_WANT_SYS_OLD_GETRLIMIT
+-- 
+1.7.1
 
-> +static void pl330_terminate_all(struct dma_chan *chan)
 
-This needs to be converted to the new prototype and will look
-something like this:
-
-static int
-pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd)
-
-> +static enum dma_status
-> +pl330_is_tx_complete(struct dma_chan *chan, dma_cookie_t cookie,
-> +               dma_cookie_t *done, dma_cookie_t *used)
-
-This needs to be converted to the new prototype and will look
-something like this:
-
-static enum dma_status
-pl330_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
-                 struct dma_tx_state *txstate)
-
-See the other drivers for examples, e.g. coh901318.c
-coh901318_control() and coh901318_tx_status()
-
-(...)
-> +       pd->device_is_tx_complete = pl330_is_tx_complete;
-> +       pd->device_prep_slave_sg = pl330_prep_slave_sg;
-> +       pd->device_terminate_all = pl330_terminate_all;
-> +       pd->device_issue_pending = pl330_issue_pending;
-
-Consequential updates here.
-
-Sorry for the mess, moving target as usual...
-
-If you fix this and test it on async_tx it's:
-Reviewed-by: Linus Walleij <linus.walleij@stericsson.com>
-
-Yours,
-Linus Walleij
