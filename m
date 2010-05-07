@@ -1,65 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab0EGCaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 May 2010 22:30:05 -0400
-Received: from mail-iw0-f197.google.com ([209.85.223.197]:62097 "EHLO
-	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936Ab0EGCaE (ORCPT
+	id S1752859Ab0EGCaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 May 2010 22:30:21 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:51864 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab0EGCaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 May 2010 22:30:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:content-type;
-        b=qiGd1lf/h7s8Y0uHUAErUlK7PDRyxd+W3lzz8/YO0cChALL4oLjLybfK7Wo5/ryk9F
-         2p6WkVauwH05oIeGq7WziF3qt4+rTujasfm3uT7mDKAiAEo1rogByFku3w9ht0uAVZu8
-         SOlnB/UOnS536dY68MiWbBWLMvpDTaJIqtVlA=
-MIME-Version: 1.0
-Date: Fri, 7 May 2010 12:30:03 +1000
-X-Google-Sender-Auth: wmpWIitHeUoNjeHXT3yyGWD0Eow
-Message-ID: <AANLkTingM7EsCtbElXTNzzjZt4kG5acQtbt5mJEIVbrW@mail.gmail.com>
-Subject: Regression: monitor fails to sleep/suspend, forced to reboot to 
-	correct. 2.6.34-rc6
-From: Lex Hider <floss@lex.hider.name>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 6 May 2010 22:30:19 -0400
+From: Bryan Wu <bryan.wu@canonical.com>
+To: davem@davemloft.net, Sascha Hauer <s.hauer@pengutronix.de>,
+       Greg Ungerer <gerg@uclinux.org>,
+       Amit Kucheria <amit.kucheria@canonical.com>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] netdev/fec: fix performance impact from mdio poll operation
+Date: Fri,  7 May 2010 10:27:18 +0800
+Message-Id: <1273199239-11057-2-git-send-email-bryan.wu@canonical.com>
+X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <1273199239-11057-1-git-send-email-bryan.wu@canonical.com>
+References: <1273199239-11057-1-git-send-email-bryan.wu@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+BugLink: http://bugs.launchpad.net/bugs/546649
+BugLink: http://bugs.launchpad.net/bugs/457878
 
-My current setup has worked on previous kernels, I think the problem
-has begun with 2.6.32.
+After introducing phylib supporting, users experienced performace drop. That is
+because of the mdio polling operation of phylib. Use msleep to replace the busy
+waiting cpu_relax() and remove the warning message.
 
-If the monitor goes to standby/suspend it shows:
+Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+Acked-by: Andy Whitcroft <apw@canonical.com>
+---
+ drivers/net/fec.c |   45 +++++++++++++++++++++------------------------
+ 1 files changed, 21 insertions(+), 24 deletions(-)
 
-"Out of Range
+diff --git a/drivers/net/fec.c b/drivers/net/fec.c
+index 2b1651a..9c58f6b 100644
+--- a/drivers/net/fec.c
++++ b/drivers/net/fec.c
+@@ -203,7 +203,7 @@ static void fec_stop(struct net_device *dev);
+ #define FEC_MMFR_TA		(2 << 16)
+ #define FEC_MMFR_DATA(v)	(v & 0xffff)
+ 
+-#define FEC_MII_TIMEOUT		10000
++#define FEC_MII_TIMEOUT		10
+ 
+ /* Transmitter timeout */
+ #define TX_TIMEOUT (2 * HZ)
+@@ -611,13 +611,29 @@ spin_unlock:
+ /*
+  * NOTE: a MII transaction is during around 25 us, so polling it...
+  */
+-static int fec_enet_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
++static int fec_enet_mdio_poll(struct fec_enet_private *fep)
+ {
+-	struct fec_enet_private *fep = bus->priv;
+ 	int timeout = FEC_MII_TIMEOUT;
+ 
+ 	fep->mii_timeout = 0;
+ 
++	/* wait for end of transfer */
++	while (!(readl(fep->hwp + FEC_IEVENT) & FEC_ENET_MII)) {
++		msleep(1);
++		if (timeout-- < 0) {
++			fep->mii_timeout = 1;
++			break;
++		}
++	}
++
++	return 0;
++}
++
++static int fec_enet_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
++{
++	struct fec_enet_private *fep = bus->priv;
++
++
+ 	/* clear MII end of transfer bit*/
+ 	writel(FEC_ENET_MII, fep->hwp + FEC_IEVENT);
+ 
+@@ -626,15 +642,7 @@ static int fec_enet_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
+ 		FEC_MMFR_PA(mii_id) | FEC_MMFR_RA(regnum) |
+ 		FEC_MMFR_TA, fep->hwp + FEC_MII_DATA);
+ 
+-	/* wait for end of transfer */
+-	while (!(readl(fep->hwp + FEC_IEVENT) & FEC_ENET_MII)) {
+-		cpu_relax();
+-		if (timeout-- < 0) {
+-			fep->mii_timeout = 1;
+-			printk(KERN_ERR "FEC: MDIO read timeout\n");
+-			return -ETIMEDOUT;
+-		}
+-	}
++	fec_enet_mdio_poll(fep);
+ 
+ 	/* return value */
+ 	return FEC_MMFR_DATA(readl(fep->hwp + FEC_MII_DATA));
+@@ -644,9 +652,6 @@ static int fec_enet_mdio_write(struct mii_bus *bus, int mii_id, int regnum,
+ 			   u16 value)
+ {
+ 	struct fec_enet_private *fep = bus->priv;
+-	int timeout = FEC_MII_TIMEOUT;
+-
+-	fep->mii_timeout = 0;
+ 
+ 	/* clear MII end of transfer bit*/
+ 	writel(FEC_ENET_MII, fep->hwp + FEC_IEVENT);
+@@ -657,15 +662,7 @@ static int fec_enet_mdio_write(struct mii_bus *bus, int mii_id, int regnum,
+ 		FEC_MMFR_TA | FEC_MMFR_DATA(value),
+ 		fep->hwp + FEC_MII_DATA);
+ 
+-	/* wait for end of transfer */
+-	while (!(readl(fep->hwp + FEC_IEVENT) & FEC_ENET_MII)) {
+-		cpu_relax();
+-		if (timeout-- < 0) {
+-			fep->mii_timeout = 1;
+-			printk(KERN_ERR "FEC: MDIO write timeout\n");
+-			return -ETIMEDOUT;
+-		}
+-	}
++	fec_enet_mdio_poll(fep);
+ 
+ 	return 0;
+ }
+-- 
+1.7.0.1
 
-H.frequency 33 KHz
-V.frequency 31 Hz"
-
-I can test this with running: "xset dpms force standby" or "xset dpms
-force suspend".
-
-I can no longer switch to console with Ctrl+Alt+F2, etc, and must
-reboot to be able to use my system again.
-
-Please advise what additional information/testing I can provide to
-make sure this regression gets fixed for 2.6.34.
-
-This bug appears to affect all recent distros as they are 2.6.32 based
-(ubuntu lts, debian, rhel6).
-
-I have reported the following bugs with little response. I am unsure
-whether I have filed bugs in the correct place or against the correct
-component.
-
-http://bugs.freedesktop.org/show_bug.cgi?id=26423
-https://bugzilla.redhat.com/show_bug.cgi?id=581898
-
-Please CC me in on any replies.
-
-Thanks,
-
-Lex.
