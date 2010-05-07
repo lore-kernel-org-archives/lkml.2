@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341Ab0EGRrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 13:47:22 -0400
-Received: from mga10.intel.com ([192.55.52.92]:58103 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756703Ab0EGRrU (ORCPT
+	id S1757371Ab0EGRrc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 13:47:32 -0400
+Received: from ey-out-2122.google.com ([74.125.78.24]:48409 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757324Ab0EGRrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 May 2010 13:47:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,349,1270450800"; 
-   d="scan'208";a="796418396"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Alek Du <alek.du@intel.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Feng Tang <feng.tang@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Cc: Jacob Pan <jacob.jun.pan@intel.com>,
-       Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH 3/8] x86/apic: allow use of lapic timer early calibration result
-Date: Fri,  7 May 2010 10:41:43 -0700
-Message-Id: <1273254108-3234-4-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=FlFy6F7CUOjxVUxFcbNzgCpfV2Owv14iYIeBYvvZB10xu3xT7IAqiCbyPk9GMBc7Ee
+         ODo6xlJqhJ+ZENG3lG/IFOawhFDZG0U186P0CfoXvTn5jM3sOkTaKdPpF4iHcUfp4crk
+         DPp9yg81mXrNu65hfvUhL30cyIDeY92NWLFI0=
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH] USB: tty: fix incorrect use of tty_insert_flip_string_fixed_flag
+Date: Fri,  7 May 2010 19:46:56 +0200
+Message-Id: <1273254416-29802-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Pan <jacob.jun.pan@intel.com>
+Fix regression introduced by commit
+a108bfcb372d8c4452701039308fb95747911c59 (USB: tty: Prune uses of
+tty_request_room in the USB layer) which broke three drivers
+(cypress_m8, digi_acceleport and spcp8x5) through incorrect use of
+tty_insert_flip_string_fixed_flag.
 
-lapic timer calibration can be combined with tsc in platform specific
-calibration functions. if such calibration result is obtained early,
-we can skip the redundent calibration loops.
-
-Signed-off-by: Jacob Pan <jacob.jun.pan@intel.com>
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- arch/x86/kernel/apic/apic.c |   21 ++++++++++++++++++++-
- 1 files changed, 20 insertions(+), 1 deletions(-)
+ drivers/usb/serial/cypress_m8.c      |    2 +-
+ drivers/usb/serial/digi_acceleport.c |    4 ++--
+ drivers/usb/serial/spcp8x5.c         |    4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index e5a4a1e..8ef56ac 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -175,7 +175,7 @@ static struct resource lapic_resource = {
- 	.flags = IORESOURCE_MEM | IORESOURCE_BUSY,
- };
+diff --git a/drivers/usb/serial/cypress_m8.c b/drivers/usb/serial/cypress_m8.c
+index e23c779..582e832 100644
+--- a/drivers/usb/serial/cypress_m8.c
++++ b/drivers/usb/serial/cypress_m8.c
+@@ -1309,7 +1309,7 @@ static void cypress_read_int_callback(struct urb *urb)
+ 	/* process read if there is data other than line status */
+ 	if (tty && bytes > i) {
+ 		tty_insert_flip_string_fixed_flag(tty, data + i,
+-				bytes - i, tty_flag);
++				tty_flag, bytes - i);
+ 		tty_flip_buffer_push(tty);
+ 	}
  
--static unsigned int calibration_result;
-+unsigned int calibration_result;
- 
- static int lapic_next_event(unsigned long delta,
- 			    struct clock_event_device *evt);
-@@ -597,6 +597,25 @@ static int __init calibrate_APIC_clock(void)
- 	long delta, deltatsc;
- 	int pm_referenced = 0;
- 
-+	/**
-+	 * check if lapic timer has already been calibrated by platform
-+	 * specific routine, such as tsc calibration code. if so, we just fill
-+	 * in the clockevent structure and return.
-+	 */
-+
-+	if (calibration_result) {
-+		apic_printk(APIC_VERBOSE, "lapic timer already calibrated %d\n",
-+				calibration_result);
-+		lapic_clockevent.mult = div_sc(calibration_result/APIC_DIVISOR,
-+					TICK_NSEC, lapic_clockevent.shift);
-+		lapic_clockevent.max_delta_ns =
-+			clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
-+		lapic_clockevent.min_delta_ns =
-+			clockevent_delta2ns(0xF, &lapic_clockevent);
-+		lapic_clockevent.features &= ~CLOCK_EVT_FEAT_DUMMY;
-+		return 0;
-+	}
-+
- 	local_irq_disable();
- 
- 	/* Replace the global interrupt handler */
+diff --git a/drivers/usb/serial/digi_acceleport.c b/drivers/usb/serial/digi_acceleport.c
+index 68b0aa5..3edda3e 100644
+--- a/drivers/usb/serial/digi_acceleport.c
++++ b/drivers/usb/serial/digi_acceleport.c
+@@ -1703,8 +1703,8 @@ static int digi_read_inb_callback(struct urb *urb)
+ 		/* data length is len-1 (one byte of len is port_status) */
+ 		--len;
+ 		if (len > 0) {
+-			tty_insert_flip_string_fixed_flag(tty, data, len,
+-									flag);
++			tty_insert_flip_string_fixed_flag(tty, data, flag,
++									len);
+ 			tty_flip_buffer_push(tty);
+ 		}
+ 	}
+diff --git a/drivers/usb/serial/spcp8x5.c b/drivers/usb/serial/spcp8x5.c
+index 5d39191..2ea32c5 100644
+--- a/drivers/usb/serial/spcp8x5.c
++++ b/drivers/usb/serial/spcp8x5.c
+@@ -726,8 +726,8 @@ static void spcp8x5_read_bulk_callback(struct urb *urb)
+ 		/* overrun is special, not associated with a char */
+ 		if (status & UART_OVERRUN_ERROR)
+ 			tty_insert_flip_char(tty, 0, TTY_OVERRUN);
+-		tty_insert_flip_string_fixed_flag(tty, data,
+-						urb->actual_length, tty_flag);
++		tty_insert_flip_string_fixed_flag(tty, data, tty_flag,
++							urb->actual_length);
+ 		tty_flip_buffer_push(tty);
+ 	}
+ 	tty_kref_put(tty);
 -- 
-1.6.3.3
+1.7.0.4
 
