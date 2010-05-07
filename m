@@ -1,139 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750891Ab0EGEA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 00:00:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61940 "EHLO song.cn.fujitsu.com"
+	id S1751114Ab0EGEBx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 00:01:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58701 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab0EGEAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 00:00:25 -0400
-Message-ID: <4BE38F9A.8070209@cn.fujitsu.com>
-Date: Fri, 07 May 2010 11:57:14 +0800
+	id S1750773Ab0EGEBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 00:01:52 -0400
+Message-ID: <4BE38FF1.3030603@cn.fujitsu.com>
+Date: Fri, 07 May 2010 11:58:41 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v5 5/9] KVM MMU: rename 'root_count' to 'active_count'
-References: <4BE2818A.5000301@cn.fujitsu.com> <4BE28C5F.7020104@cn.fujitsu.com>
-In-Reply-To: <4BE28C5F.7020104@cn.fujitsu.com>
+Subject: [PATCH v5 6/9] KVM MMU: support keeping sp live while it's out of
+ protection
+References: <4BE2818A.5000301@cn.fujitsu.com> <4BE28C6B.8010505@cn.fujitsu.com>
+In-Reply-To: <4BE28C6B.8010505@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename 'root_count' to 'active_count' in kvm_mmu_page, since the unsync pages
-also will use it in later patch
+If we want to keep sp live while it it's out of kvm->mmu_lock protection,
+we can increase sp->active_count.
+
+Then, the invalid page is not only for active root but also unsync sp, we
+should filter those out when we make a page to unsync.
+
+And move 'hlist_del(&sp->hash_link)' into kvm_mmu_free_page() then we can
+free the invalid unsync page to call kvm_mmu_free_page directly.
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/include/asm/kvm_host.h |    8 +++++++-
- arch/x86/kvm/mmu.c              |   14 +++++++-------
- arch/x86/kvm/mmutrace.h         |    6 +++---
- 3 files changed, 17 insertions(+), 11 deletions(-)
+ arch/x86/kvm/mmu.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index ed48904..2f61543 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -203,7 +203,13 @@ struct kvm_mmu_page {
- 	DECLARE_BITMAP(slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
- 	bool multimapped;         /* More than one parent_pte? */
- 	bool unsync;
--	int root_count;          /* Currently serving as active root */
-+	/*
-+	 * if active_count > 0, it means that this page is not freed
-+	 * immediately, it's used by active root and unsync pages which
-+	 * out of kvm->mmu_lock's protection currently.
-+	 */
-+	int active_count;
-+
- 	unsigned int unsync_children;
- 	union {
- 		u64 *parent_pte;               /* !multimapped */
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index e202b0d..4077a9c 100644
+index 4077a9c..2d3347c 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1539,7 +1539,7 @@ static int kvm_mmu_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp)
- 		unaccount_shadowed(kvm, sp->gfn);
- 	if (sp->unsync)
- 		kvm_unlink_unsync_page(kvm, sp);
--	if (!sp->root_count) {
-+	if (!sp->active_count) {
+@@ -894,6 +894,7 @@ static int is_empty_shadow_page(u64 *spt)
+ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ {
+ 	ASSERT(is_empty_shadow_page(sp->spt));
++	hlist_del(&sp->hash_link);
+ 	list_del(&sp->link);
+ 	__free_page(virt_to_page(sp->spt));
+ 	__free_page(virt_to_page(sp->gfns));
+@@ -1542,12 +1543,13 @@ static int kvm_mmu_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ 	if (!sp->active_count) {
  		/* Count self */
  		ret++;
- 		hlist_del(&sp->hash_link);
-@@ -2061,8 +2061,8 @@ static void mmu_free_roots(struct kvm_vcpu *vcpu)
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
+-		hlist_del(&sp->hash_link);
+ 		kvm_mmu_free_page(kvm, sp);
+ 	} else {
+ 		sp->role.invalid = 1;
+ 		list_move(&sp->link, &kvm->arch.active_mmu_pages);
+-		kvm_reload_remote_mmus(kvm);
++		/* No need reload mmu if it's unsync page zapped */
++		if (sp->role.level != PT_PAGE_TABLE_LEVEL)
++			kvm_reload_remote_mmus(kvm);
+ 	}
+ 	kvm_mmu_reset_last_pte_updated(kvm);
+ 	return ret;
+@@ -1782,7 +1784,8 @@ static void kvm_unsync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
+ 	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
  
- 		sp = page_header(root);
--		--sp->root_count;
--		if (!sp->root_count && sp->role.invalid)
-+		--sp->active_count;
-+		if (!sp->active_count && sp->role.invalid)
- 			kvm_mmu_zap_page(vcpu->kvm, sp);
- 		vcpu->arch.mmu.root_hpa = INVALID_PAGE;
- 		spin_unlock(&vcpu->kvm->mmu_lock);
-@@ -2074,8 +2074,8 @@ static void mmu_free_roots(struct kvm_vcpu *vcpu)
- 		if (root) {
- 			root &= PT64_BASE_ADDR_MASK;
- 			sp = page_header(root);
--			--sp->root_count;
--			if (!sp->root_count && sp->role.invalid)
-+			--sp->active_count;
-+			if (!sp->active_count && sp->role.invalid)
- 				kvm_mmu_zap_page(vcpu->kvm, sp);
- 		}
- 		vcpu->arch.mmu.pae_root[i] = INVALID_PAGE;
-@@ -2121,7 +2121,7 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
- 				      PT64_ROOT_LEVEL, direct,
- 				      ACC_ALL, NULL);
- 		root = __pa(sp->spt);
--		++sp->root_count;
-+		++sp->active_count;
- 		spin_unlock(&vcpu->kvm->mmu_lock);
- 		vcpu->arch.mmu.root_hpa = root;
- 		return 0;
-@@ -2151,7 +2151,7 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
- 				      PT32_ROOT_LEVEL, direct,
- 				      ACC_ALL, NULL);
- 		root = __pa(sp->spt);
--		++sp->root_count;
-+		++sp->active_count;
- 		spin_unlock(&vcpu->kvm->mmu_lock);
+ 	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
+-		if (s->gfn != gfn || s->role.direct || s->unsync)
++		if (s->gfn != gfn || s->role.direct || s->unsync ||
++		      s->role.invalid)
+ 			continue;
+ 		WARN_ON(s->role.level != PT_PAGE_TABLE_LEVEL);
+ 		__kvm_unsync_page(vcpu, s);
+@@ -1807,7 +1810,7 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
+ 		if (s->role.level != PT_PAGE_TABLE_LEVEL)
+ 			return 1;
  
- 		vcpu->arch.mmu.pae_root[i] = root | PT_PRESENT_MASK;
-diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index 42f07b1..8c8d265 100644
---- a/arch/x86/kvm/mmutrace.h
-+++ b/arch/x86/kvm/mmutrace.h
-@@ -10,13 +10,13 @@
- #define KVM_MMU_PAGE_FIELDS \
- 	__field(__u64, gfn) \
- 	__field(__u32, role) \
--	__field(__u32, root_count) \
-+	__field(__u32, active_count) \
- 	__field(bool, unsync)
- 
- #define KVM_MMU_PAGE_ASSIGN(sp)			     \
- 	__entry->gfn = sp->gfn;			     \
- 	__entry->role = sp->role.word;		     \
--	__entry->root_count = sp->root_count;        \
-+	__entry->active_count = sp->active_count;        \
- 	__entry->unsync = sp->unsync;
- 
- #define KVM_MMU_PAGE_PRINTK() ({				        \
-@@ -37,7 +37,7 @@
- 			 access_str[role.access],			\
- 			 role.invalid ? " invalid" : "",		\
- 			 role.nxe ? "" : "!",				\
--			 __entry->root_count,				\
-+			 __entry->active_count,				\
- 			 __entry->unsync ? "unsync" : "sync", 0);	\
- 	ret;								\
- 		})
+-		if (!need_unsync && !s->unsync) {
++		if (!need_unsync && !s->unsync && !s->role.invalid) {
+ 			if (!can_unsync || !oos_shadow)
+ 				return 1;
+ 			need_unsync = true;
 -- 
 1.6.1.2
 
