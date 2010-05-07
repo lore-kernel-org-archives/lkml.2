@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab0EGQMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 12:12:05 -0400
-Received: from neskaya.eckenfels.net ([195.49.138.57]:63001 "EHLO
-	neskaya.eckenfels.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835Ab0EGQMD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 12:12:03 -0400
-X-Greylist: delayed 2463 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 May 2010 12:12:03 EDT
-Date: Fri, 7 May 2010 17:28:31 +0200 (CEST)
-Message-Id: <201005071528.o47FSVas054141@neskaya.eckenfels.net>
-From: Bernd Eckenfels <bernd-10@eckenfels.net>
-To: linux-kernel@vger.kernel.org
-Subject: Re: ext4 is faster with LVM than without, and other filesystem benchmarks
-In-Reply-To: <20100507142310.GF13143@lh.kyla.fi>
-X-Newsgroups: ka.lists.linux.kernel
-User-Agent: tin/1.8.3-20070201 ("Scotasay") (UNIX) (FreeBSD/7.2-PRERELEASE (i386))
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: ecki@neskaya.eckenfels.net
-X-SA-Exim-Scanned: No (on neskaya.eckenfels.net); SAEximRunCond expanded to false
+	id S1756953Ab0EGQNV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 12:13:21 -0400
+Received: from kroah.org ([198.145.64.141]:49651 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755083Ab0EGQNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 12:13:20 -0400
+Date: Fri, 7 May 2010 09:13:14 -0700
+From: Greg KH <greg@kroah.com>
+To: David Dajun Chen <Dajun.Chen@diasemi.com>
+Cc: linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
+       sameo@linux.intel.com, lm-sensors@lm-sensors.org, rpurdie@rpsys.net,
+       lrg@slimlogic.co.uk, dmitry.torokhov@gmail.com
+Subject: Re: [PATCH] Device driver for DA9052 PMIC IC
+Message-ID: <20100507161314.GA20909@kroah.com>
+References: <3495EC08FA53E94AAA00CC4743D5BA7E010C1E94@pandora.diasemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3495EC08FA53E94AAA00CC4743D5BA7E010C1E94@pandora.diasemi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In article <20100507142310.GF13143@lh.kyla.fi> you wrote:
-> I think the most surprising result of the benchmarks is that ext4
-> seems to be significantly faster under LVM than on the raw /dev/sdd1
-> partition. Without LVM the variance in run times is much larger.
+On Fri, May 07, 2010 at 12:43:27PM +0100, David Dajun Chen wrote:
+> Dear all,
+> 
+> It is device driver for DA9052 Power Management IC from Dialog Semiconductor.
 
-Sounds like the syncs/barriers never reach the disk with LVM. What mount
-journal/sync options did you use?  default?  Is dmesg telling you that
-barriers have been turned off for the lvm case?  IF yo uwant it fast and
-dirty try nobarrier,data=writeback :)
+What are we supposed to do with this?
 
-Greetings
-Bernd
+Please read Documentation/SubmittingPatches for how to submit a patch
+(hint, you need to break it up, and provide a "Signed-off-by:" line, and
+send it to the correct people and subsystem mailing lists.)
+
+And why did you add a selinux file?  I think something is wrong with how
+you generated your patch.
+
+thanks,
+
+greg k-h
