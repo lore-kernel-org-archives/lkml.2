@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472Ab0EGR6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 13:58:49 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:50197 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596Ab0EGR6s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 13:58:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=HBYOaf2t4hWI0VaQ1oRS0tYeyERTjqGW/0pLw1jm0ZpyhXKnFdwutEuakVeNW0C1WI
-         lYyPHI/amwkAQJKiJ598RFTHFzpTstx2JP4OZlp1hjq/4BfJNCKQRoNxKWgL+raVRJt4
-         GuW5Yd6SGpbtHsHmfjwywbhoYJLO4t0xdWHdE=
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH] tty: fix obsolete comment on tty_insert_flip_string_fixed_flag
-Date: Fri,  7 May 2010 19:58:32 +0200
-Message-Id: <1273255112-30671-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1757509Ab0EGSBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 14:01:10 -0400
+Received: from fifo99.com ([67.223.236.141]:35717 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756681Ab0EGSBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 14:01:07 -0400
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+From: Daniel Walker <dwalker@fifo99.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Tony Lindgren <tony@atomide.com>, Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20100507175159.GB23952@srcf.ucam.org>
+References: <20100506170151.GA30928@atomide.com>
+	 <20100506170956.GA28104@srcf.ucam.org> <20100506171453.GC30928@atomide.com>
+	 <1273167311.20494.13.camel@c-dwalke-linux.qualcomm.com>
+	 <20100506183605.GF30928@atomide.com>
+	 <1273173110.20494.19.camel@c-dwalke-linux.qualcomm.com>
+	 <20100507020057.GG30928@atomide.com>
+	 <1273252837.3542.30.camel@c-dwalke-linux.qualcomm.com>
+	 <20100507173621.GA23604@srcf.ucam.org>
+	 <1273254043.3542.37.camel@c-dwalke-linux.qualcomm.com>
+	 <20100507175159.GB23952@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 May 2010 11:00:55 -0700
+Message-ID: <1273255255.3542.43.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Comment was not updated when tty_insert_flip_string was generalised.
+On Fri, 2010-05-07 at 18:51 +0100, Matthew Garrett wrote:
+> On Fri, May 07, 2010 at 10:40:43AM -0700, Daniel Walker wrote:
+> > On Fri, 2010-05-07 at 18:36 +0100, Matthew Garrett wrote:
+> > > If your wakeup latencies are sufficiently low and you have fine-grained 
+> > > enough control over your hardware then suspend in idle is a reasonable 
+> > > thing to do - but if you have a userspace app that's spinning then 
+> > > that doesn't solve the issue.
+> > 
+> > If there's a userspace app spinning then you don't go idle (or that's my
+> > assumption anyway). You mean like repeatedly blocking and unblocking
+> > right?
+> 
+> Right, that's the problem. idle-based suspend works fine if your 
+> applications let the system go idle, but if your applications are 
+> anything other than absolutely perfect in this respect then you consume 
+> significant power even if the device is sitting unused in someone's 
+> pocket.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/char/tty_buffer.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+True .. I'd wonder how an OMAP based devices deal with that issue, since
+they would have that exact problem. According to what Tony is telling
+us. Actually a bogus userspace can do a lot more than just consume power
+you could hang the system too.
 
-diff --git a/drivers/char/tty_buffer.c b/drivers/char/tty_buffer.c
-index 7ee5216..cc1e985 100644
---- a/drivers/char/tty_buffer.c
-+++ b/drivers/char/tty_buffer.c
-@@ -238,7 +238,7 @@ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
-  *	@size: size
-  *
-  *	Queue a series of bytes to the tty buffering. All the characters
-- *	passed are marked as without error. Returns the number added.
-+ *	passed are marked with the supplied flag. Returns the number added.
-  *
-  *	Locking: Called functions may take tty->buf.lock
-  */
--- 
-1.7.0.4
+Daniel
+
 
