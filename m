@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab0EGLQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 07:16:52 -0400
-Received: from snt0-omc1-s35.snt0.hotmail.com ([65.55.90.46]:19912 "EHLO
-	snt0-omc1-s35.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751274Ab0EGLQv (ORCPT
+	id S1755137Ab0EGLVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 07:21:10 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57831 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754113Ab0EGLVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 07:16:51 -0400
-X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 May 2010 07:16:51 EDT
-X-Originating-IP: [94.195.177.167]
-X-Originating-Email: [johnkyr83@hotmail.com]
-Message-ID: <SNT111-DS115B558E5855C0FAEA860CA7F60@phx.gbl>
-From: "limp" <johnkyr83@hotmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: Weird timer handler used with LAPIC selected
-Date: Fri, 7 May 2010 12:10:33 +0100
+	Fri, 7 May 2010 07:21:08 -0400
+Date: Fri, 7 May 2010 12:21:03 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
+Cc: Brian Swetland <swetland@google.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Matthew Garrett <mjg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Paul Walmsley <paul@pwsan.com>, magnus.damm@gmail.com,
+       mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>, rebecca@android.com
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100507112102.GC21498@rakim.wolfsonmicro.main>
+References: <20100505185225.GA4411@srcf.ucam.org>
+ <Pine.LNX.4.44L0.1005051511040.1885-100000@iolanthe.rowland.org>
+ <m2oa55d774e1005051356n3610d780ra42200c1785e02bd@mail.gmail.com>
+ <20100505234025.GB4838@opensource.wolfsonmicro.com>
+ <l2kd6200be21005052125rc43217a2r8c65bc98e7a5d3d4@mail.gmail.com>
+ <20100507100406.GA21498@rakim.wolfsonmicro.main>
+ <w2kd6200be21005070357r9aad2896l355168a23bf85eae@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acrt1emrAx3mGXk+Rp61THS9NfIdcA==
-Content-Language: en-gb
-X-OriginalArrivalTime: 07 May 2010 11:10:41.0461 (UTC) FILETIME=[EE422650:01CAEDD5]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <w2kd6200be21005070357r9aad2896l355168a23bf85eae@mail.gmail.com>
+X-Cookie: Exercise caution in your daily affairs.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Fri, May 07, 2010 at 03:57:37AM -0700, Arve Hjønnevåg wrote:
+> 2010/5/7 Mark Brown <broonie@opensource.wolfsonmicro.com>:
 
-I have configured my kernel (2.6.31.6) so that I get periodic ticks from the
-timer interrupt (i.e. tickless is not configured) with a rate determined by
-the HZ value. I have also selected the "Local APIC support on uniprocessors"
-option so that the LAPIC timer is used as a tick source. The problem is that
-the handler used for the timer is not the "local_apic_timer_interrupt"
-handler as I was excepted but the "tick_handle_periodic" handler. This can
-be verified by seeing the output of /proc/timer_list:
+> > As discussed elsewhere in the thread a suspend blocker is not desirable
+> > here - the AP is not doing anything useful on a voice call so blocking
+> > the suspend will just waste power unless runtime PM is good enough to
+> > mean opportunistic suspend isn't adding anything anyway.  It will avoid
+> > the immediate issue with loosing audio but it's not really what we want
+> > to happen.
 
-Tick Device: mode:     0
-Per CPU device: 0
-Clock Event Device: lapic
- max_delta_ns:   1006457290
- min_delta_ns:   1799
- mult:           35797637
- shift:          32
- mode:           1
- next_event:     9223372036854775807 nsecs
- set_next_event: lapic_next_event
- set_mode:       lapic_timer_setup
- event_handler:  tick_handle_periodic
+> I was talking about audio from the AP. Why would you ever turn off
+> another core's audio path on suspend?
 
-Is there an explanation for that? The board in which I am running the kernel
-is a Kontron 986LCD-M/mITX one with an Intel Celeron M 440 installed on it.
-I have verified that Intel Celeron M Processors have a LAPIC and
-consequently, a LAPIC timer.
+This goes back to the thing about a full system suspend being a
+sledgehammer which doesn't give enough information about what's going
+on when it's used like this.  As discussed we need a way to know that
+the connections involved are able to stay live during suspend (on a
+large proportion of systems suspend is going to mean that the relevant
+bits of the board will loose power so need to be shut down) and that
+that the intention of the user is that they should do so (this isn't
+clear in the general system, especially not if the suspend is initiated
+manually).  
 
---------------------------------------------
-Another weird thing that I noticed is that by running the same kernel but
-configured for "Core 2/newer Xeon" processors, the timer handler used is the
-"hrtimer_interrupt" handler. Again, this is verified by /proc/timer_list: 
-
-Tick Device: mode:     1
-Per CPU device: 0
-Clock Event Device: lapic
-event_handler:  hrtimer_interrupt
-
-I have put some printks inside "local_apic_timer_interrupt" handler which
-should never be executed as the handler selected for the timer is
-"hrtimer_interrupt" and not "local_apic_timer_interrupt" as verified.
-However, when I execute a user process which is just a long time delay, the
-printks from the "local_apic_timer_interrupt" are printed. 
-
-If you need more info about something, please ask.
-
-Any help will be much appreciated.
-
-Thanks in advance.
-
-P.S. please CC me.
-
--John
-
+With a runtime PM approach this is trivial - we just turn off anything
+that isn't in use at the current time.  I'll need to extend ASoC to add
+information about what to do on suspend to the existing power data.
