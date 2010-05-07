@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab0EGNl6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 09:41:58 -0400
-Received: from mga10.intel.com ([192.55.52.92]:58368 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754389Ab0EGNl5 (ORCPT
+	id S1752173Ab0EGNxc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 09:53:32 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:60025 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab0EGNxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 09:41:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,348,1270450800"; 
-   d="scan'208";a="796348276"
-Date: Fri, 7 May 2010 14:02:48 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Juergen Beisert <jbe@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Rusty Russell <rusty@rustcorp.com.au>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Driver for a SmartCard interface on a SoC
-Message-ID: <20100507140248.7958da8f@linux.intel.com>
-In-Reply-To: <201005071518.50406.jbe@pengutronix.de>
-References: <201005071518.50406.jbe@pengutronix.de>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 7 May 2010 09:53:31 -0400
+Date: Fri, 7 May 2010 07:53:30 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Phillip Susi <psusi@cfl.rr.com>
+Cc: linux-fsdevel@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: unified page and buffer cache? (was: readahead on directories)
+Message-ID: <20100507135329.GA17259@parisc-linux.org>
+References: <4BCC7C05.8000803@cfl.rr.com> <4BE417CB.7000806@cfl.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BE417CB.7000806@cfl.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 May 2010 15:18:50 +0200
-Juergen Beisert <jbe@pengutronix.de> wrote:
-
-> Hi,
+On Fri, May 07, 2010 at 09:38:19AM -0400, Phillip Susi wrote:
+> I thought that the buffer and page caches were unified long ago, but
+> last night I modified ureadahead to call readahead() directly on the
+> block device for all physical extents involved rather than open() each
+> file and readahead() on that.  It read all of the related blocks into
+> the buffer cache nice and fast, which was then ignored and the data was
+> read again when accessed normally during boot.
 > 
-> most SmartCard readers are external devices, connected via USB or
-> serial lines. So, they do not need special in-kernel drivers.
+> So it seems that the buffer cache and page cache are still separate, and
+> normal files only use the page cache, and directories only use the
+> buffer cache, which is why readahead() fails when called on a directory.
 > 
-> My SmartCard interface is part of a SoC (i.MX25 CPU). So, I need an
-> in-kernel driver. Where would be the best place in the kernel tree,
-> to add a driver for this kind of device? Maybe "drivers/char"?
-> To exchange data with the plugged in SmartCard, only a couple of
-> IOCTLs are required (detecting if a card is plugged in, socket power
-> on/off, send reset to the card, configuring the communication
-> parameters). Data exchange with the SmartCard can be done with simple
-> read/write.
+> Can anyone confirm that my disappointed understanding is correct?  I
+> started experimenting with a workaround where I readahead directories
+> via the block device, and normal files the normal way.  This seems to do
+> the trick, but is sub optimal since you have to read in two passes,
+> picking up the directories on the first pass, then going back for the files.
 
-I'd say drivers/char if its a generic char device, but if its MX25
-specific code entirely then drivers/platform or arch/.../platform.
+The problem you're seeing is aliasing in the page cache, not a failed
+unification of the buffer and page caches.  Pages are addressed by
+(mapping, offset).  Each inode generally has its own mapping.  Depending
+on the file system, directories may be addressed by their own inode's
+mapping, or by the block device's mapping.
 
-The other question is one of API - it's going to best if the API isn't
-MX25 specific but could reasonably be expected to work with other
-future devices. A fake tty interface is probably overkill for that but
-it would be good to get general review of any API.
+Resolving aliasing would be horribly expensive, so it's unlikely to
+happen.
+
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
