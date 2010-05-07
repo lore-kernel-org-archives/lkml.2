@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab0EGSqw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 14:46:52 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:50934 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803Ab0EGSqu (ORCPT
+	id S1757715Ab0EGSuA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 14:50:00 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:41841 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803Ab0EGSt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 14:46:50 -0400
-Date: Fri, 7 May 2010 19:46:21 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
-       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100507184621.GA25978@srcf.ucam.org>
-References: <20100506174331.GA29103@srcf.ucam.org> <20100506183335.GE30928@atomide.com> <20100506184418.GA30669@srcf.ucam.org> <20100507020541.GH30928@atomide.com> <20100507171218.GA23142@srcf.ucam.org> <20100507173549.GF387@atomide.com> <20100507175025.GA23952@srcf.ucam.org> <20100507180152.GH387@atomide.com> <20100507182824.GA25198@srcf.ucam.org> <20100507184333.GL387@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100507184333.GL387@atomide.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 7 May 2010 14:49:58 -0400
+Subject: Re: [PATCH] Add clocksource_register_hz/khz interface
+From: john stultz <johnstul@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1005071735260.3401@localhost.localdomain>
+References: <1273112824-5112-1-git-send-email-johnstul@us.ibm.com>
+	 <alpine.LFD.2.00.1005071735260.3401@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 May 2010 11:49:38 -0700
+Message-ID: <1273258178.2776.2.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 11:43:33AM -0700, Tony Lindgren wrote:
-> * Matthew Garrett <mjg@redhat.com> [100507 11:23]:
-> > On Fri, May 07, 2010 at 11:01:52AM -0700, Tony Lindgren wrote:
-> > > * Matthew Garrett <mjg@redhat.com> [100507 10:46]:
-> > > > Effective power management in the face of real-world applications is a 
-> > > > reasonable usecase.
-> > > 
-> > > Sure there's no easy solution to misbehaving apps.
-> > 
-> > That's the point of the suspend blockers.
+On Fri, 2010-05-07 at 17:44 +0200, Thomas Gleixner wrote:
+> On Wed, 5 May 2010, John Stultz wrote:
 > 
-> To me it sounds like suspending the whole system to deal with
-> some misbehaving apps is an overkill. Sounds like kill -STOP
-> the misbehaving apps should do the trick?
+> > Hey Thomas,
+> > 	I updated the patch docs and made the calls EXPORT_SYMBOL_GPL.
+> > However the need for both khz and hz is due to high freq clocksources
+> > like the TSC who's cycles/sec are close to the upper bound of a u32.
+> 
+> Come on. It's not that hard :)
 
-Freezer cgroups would work better, but it doesn't really change the 
-point - if that application has an open network socket, how do you know 
-to resume that application when a packet comes in?
+Oh... So your fine with having two interfaces, but just want the code
+redundancy removed between the two interfaces? 
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Ok, I misunderstood. That's no problem.
+
+thanks
+-john
+
+
+> int clocksource_register_freq(struct clocksource *cs, u32 scale, u32 freq)
+> {
+> 	clocks_calc_mult_shift(&cs->mult, &cs->shift, freq,
+> 			       NSEC_PER_SEC / scale, MAX_UPDATE_LENGTH * scale);
+> 
+> 	....
+> }
+> 
+> static inline int clocksource_register_hz(struct clocksource *cs, u32 freq)
+> {
+> 	clocksource_regiser_freq(cs, 1, freq);
+> }
+> 
+> static inline int clocksource_register_khz(struct clocksource *cs, u32 freq)
+> {
+> 	clocksource_regiser_freq(cs, 1000, freq);
+> }
+> 
+> Thanks,
+> 
+> 	tglx
+
+
