@@ -1,68 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab0EGP07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 11:26:59 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:49249 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008Ab0EGP06 (ORCPT
+	id S1756414Ab0EGP1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 11:27:55 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32730 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754891Ab0EGP1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 11:26:58 -0400
-Date: Fri, 7 May 2010 17:26:40 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@nokia.com>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Sven Neumann <s.neumann@raumfeld.com>
-Subject: Re: UBIFS: Oops while rebooting 2.6.34-rc6
-Message-ID: <20100507152640.GX30801@buzzloop.caiaq.de>
-References: <20100507131652.GT30801@buzzloop.caiaq.de>
- <1273245826.4537.294.camel@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273245826.4537.294.camel@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 7 May 2010 11:27:53 -0400
+Date: Fri, 7 May 2010 08:26:29 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Carlos Chinea <carlos.chinea@nokia.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [RFC PATCHv2 1/7] HSI: Introducing HSI framework
+Message-Id: <20100507082629.3bdf0b17.randy.dunlap@oracle.com>
+In-Reply-To: <1273245517-30712-2-git-send-email-carlos.chinea@nokia.com>
+References: <1273245517-30712-1-git-send-email-carlos.chinea@nokia.com>
+	<1273245517-30712-2-git-send-email-carlos.chinea@nokia.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090208.4BE43176.01B7:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 06:23:46PM +0300, Artem Bityutskiy wrote:
-> On Fri, 2010-05-07 at 15:16 +0200, Daniel Mack wrote:
-> > Hi,
-> > 
-> > We've had a kernel Oops today when rebooting an ARM PXA based machine
-> > while file I/O via SSH was outstanding.
-> > 
-> > Daniel
-> > 
-> > # reboot
-> > # [  671.190085] UBIFS: un-mount UBI device 0, volume 1
-> > The system is going down NOW!
-> > Sent SIGTERM to all processes
-> > [  672.083833] Unable to handle kernel NULL pointer dereference at virtual address 000000ac
-> > [  672.094587] pgd = c0004000
-> > [  672.097301] [000000ac] *pgd=00000000
-> > [  672.100850] Internal error: Oops: 817 [#1]
-> > [  672.104919] last sysfs file: /sys/devices/platform/spi_gpio.0/spi0.2/value
-> 
-> It's Firday, and I want to go home, so here is another quick idea for
-> you where to dig.
-> 
-> When the system reboots it re-mounts the FS to RO mode, usually. And
-> there is some emergency remount business (see do_emergency_remount()),
-> which will re-mount the FS even if there are files opened for writing.
-> 
-> So, if there is a UBIFS or VFS bug, and somehow one process is in
-> make_reservation() and is about to write something, and another process
-> managed to re-mount the FS to R/O mode, then we may ooops, because UBIFS
-> frees these 'wbuf' objects when it is mounted to R/O (see
-> ubifs_remount_ro()).
-> 
-> So, inject printks to ubifs_remount_ro() to check this theory.
-> 
-> Have a nice weekend and bughunting!
+On Fri,  7 May 2010 18:18:31 +0300 Carlos Chinea wrote:
 
-Thanks for your feedback - I'll give that a try next week.
+> Adds HSI framework in to the linux kernel.
+> 
+> High Speed Synchronous Serial Interface (HSI) is a
+> serial interface mainly used for connecting application
+> engines (APE) with cellular modem engines (CMT) in cellular
+> handsets.
+> 
+> HSI provides multiplexing for up to 16 logical channels,
+> low-latency and full duplex communication.
+> 
+> Signed-off-by: Carlos Chinea <carlos.chinea@nokia.com>
+> ---
+>  drivers/Kconfig         |    2 +
+>  drivers/Makefile        |    1 +
+>  drivers/hsi/Kconfig     |   13 ++
+>  drivers/hsi/Makefile    |    4 +
+>  drivers/hsi/hsi.c       |  489 +++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/hsi/hsi.h |  369 +++++++++++++++++++++++++++++++++++
+>  6 files changed, 878 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/hsi/Kconfig
+>  create mode 100644 drivers/hsi/Makefile
+>  create mode 100644 drivers/hsi/hsi.c
+>  create mode 100644 include/linux/hsi/hsi.h
+> 
+> diff --git a/drivers/Kconfig b/drivers/Kconfig
+> index a2b902f..4fe39f9 100644
+> --- a/drivers/Kconfig
+> +++ b/drivers/Kconfig
+> @@ -50,6 +50,8 @@ source "drivers/i2c/Kconfig"
+>  
+>  source "drivers/spi/Kconfig"
+>  
+> +source "drivers/hsi/Kconfig"
+> +
+>  source "drivers/pps/Kconfig"
+>  
+>  source "drivers/gpio/Kconfig"
+> diff --git a/drivers/Makefile b/drivers/Makefile
+> index 2c4f277..24ca5bd 100644
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@ -45,6 +45,7 @@ obj-$(CONFIG_SCSI)		+= scsi/
+>  obj-$(CONFIG_ATA)		+= ata/
+>  obj-$(CONFIG_MTD)		+= mtd/
+>  obj-$(CONFIG_SPI)		+= spi/
+> +obj-$(CONFIG_HSI)		+= hsi/
+>  obj-y				+= net/
+>  obj-$(CONFIG_ATM)		+= atm/
+>  obj-$(CONFIG_FUSION)		+= message/
+> diff --git a/drivers/hsi/Kconfig b/drivers/hsi/Kconfig
+> new file mode 100644
+> index 0000000..5af62ce
+> --- /dev/null
+> +++ b/drivers/hsi/Kconfig
+> @@ -0,0 +1,13 @@
+> +#
+> +# HSI driver configuration
+> +#
+> +menuconfig HSI
+> +	bool "HSI support"
 
-Have a good weekend :)
+Why is this bool instead of tristate?
+IOW, why can it not be built as a loadable module?
 
-Daniel
+
+> +	---help---
+> +	  The "High speed synchronous Serial Interface" is
+> +	  synchronous serial interface used mainly to connect
+> +	  application engines and cellular modems.
+> +
+> +if HSI
+> +
+> +endif # HSI
+> diff --git a/drivers/hsi/Makefile b/drivers/hsi/Makefile
+> new file mode 100644
+> index 0000000..b42b6cf
+> --- /dev/null
+> +++ b/drivers/hsi/Makefile
+> @@ -0,0 +1,4 @@
+> +#
+> +# Makefile for HSI
+> +#
+> +obj-$(CONFIG_HSI)	+= hsi.o
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
