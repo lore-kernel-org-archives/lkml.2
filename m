@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab0EGTe0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 15:34:26 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:32828 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758095Ab0EGTeZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 15:34:25 -0400
-Date: Fri, 7 May 2010 20:33:53 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Daniel Walker <dwalker@fifo99.com>, Brian Swetland <swetland@google.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       mark gross <mgross@linux.intel.com>, markgross@thegnar.org,
-       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100507193353.GA27175@srcf.ucam.org>
-References: <20100507020541.GH30928@atomide.com> <20100507171218.GA23142@srcf.ucam.org> <20100507173549.GF387@atomide.com> <20100507175025.GA23952@srcf.ucam.org> <20100507180152.GH387@atomide.com> <20100507182824.GA25198@srcf.ucam.org> <20100507184333.GL387@atomide.com> <20100507184621.GA25978@srcf.ucam.org> <1273259186.3542.93.camel@c-dwalke-linux.qualcomm.com> <20100507192837.GM387@atomide.com>
+	id S932169Ab0EGTsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 15:48:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932148Ab0EGTsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 15:48:45 -0400
+Message-ID: <4BE46E6D.6000502@redhat.com>
+Date: Fri, 07 May 2010 15:47:57 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100507192837.GM387@atomide.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Robert Richter <robert.richter@amd.com>, mingo@redhat.com, hpa@zytor.com,
+       paulus@samba.org, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+       peterz@infradead.org, efault@gmx.de, tglx@linutronix.de, mingo@elte.hu,
+       linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf probe: Support DW_OP_call_frame_cfa in	debuginfo
+References: <20100412171728.3790.98217.stgit@localhost6.localdomain6> <tip-a34a985499895a46a4dacff727d0fbc63cdc75e8@git.kernel.org> <20100507163321.GB15333@erda.amd.com> <4BE44AF4.3090303@redhat.com> <20100507183143.GB30926@ghostprotocols.net> <4BE46613.9090509@redhat.com>
+In-Reply-To: <4BE46613.9090509@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 12:28:37PM -0700, Tony Lindgren wrote:
-> * Daniel Walker <dwalker@fifo99.com> [100507 12:01]:
-> > On Fri, 2010-05-07 at 19:46 +0100, Matthew Garrett wrote:
-> > > Freezer cgroups would work better, but it doesn't really change the 
-> > > point - if that application has an open network socket, how do you know 
-> > > to resume that application when a packet comes in?
+Masami Hiramatsu wrote:
+> Arnaldo Carvalho de Melo wrote:
+>> Em Fri, May 07, 2010 at 01:16:36PM -0400, Masami Hiramatsu escreveu:
+>>> Hi,
+>>>
+>>> Robert Richter wrote:
+>>>> On 15.04.10 07:29:18, tip-bot for Masami Hiramatsu wrote:
+>>>>> diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+>>>>> index 2a27132..310ce89 100644
+>>>>> --- a/tools/perf/util/probe-finder.h
+>>>>> +++ b/tools/perf/util/probe-finder.h
+>>>>> @@ -42,6 +42,7 @@ struct probe_finder {
+>>>>>  	struct list_head	lcache;		/* Line cache for lazy match */
+>>>>>  
+>>>>>  	/* For variable searching */
+>>>>> +	Dwarf_CFI		*cfi;		/* Call Frame Information */
+>>>>
+>>>> I get the following complile error:
+>>>>
+>>>> gcc -o builtin-probe.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstack-protector -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wvolatile-register-var -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement  -fstack-protector-all -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -I/usr/include/elfutils -DDWARF_SUPPORT -DNO_NEWT_SUPPORT -DNO_LIBPERL -DSHA1_HEADER='<openssl/sha.h>'  builtin-probe.c
+>>>> In file included from builtin-probe.c:43:
+>>>> util/probe-finder.h:45: error: expected specifier-qualifier-list before ‘Dwarf_CFI’
+>>>> make: *** [builtin-probe.o] Error 1
+>>>> build script error: 2
+>>>>
+>>>> git grep only finds the following:
+>>>>
+>>>>  $ git grep Dwarf_CFI 
+>>>>  tools/perf/util/probe-finder.h: Dwarf_CFI               *cfi;           /* Call Frame Information */
+>>>>
+>>>> Am I missing something?
+>>>
+>>> Hmm, it seems that Dwarf_CFI is not defined in library.
+>>> (it is defined as a type in /usr/include/elfutils/libdw.h)
+>>> Could you tell me what version of elfutils you are using?
+>>
+>> Masami-san,
+>>
+>> 	If we are version dependant on that, we should disable this
+>> specific feature by doing one more compile test like we have for setting
+>> NO_DWARF, hopefully just a subset of DWARF support can be disabled due
+>> to this version dependency, right?
 > 
-> No idea, but that still sounds a better situation to me than
-> trying to deal with that for a suspended system! :)
+> Agreed. I'll check that what version can support current perf probe.
 
-Suspend blocks deal with that problem. Nobody has yet demonstrated a 
-workable alternative solution.
+OK, I've found that the CFI support has been added at last June,
+and elfutils-0.142 is released in last July.
+So, I think we can check whether CFI is supported or not by checking
+the version of elfutils, which can be done by _ELFUTILS_PREREQ() macro
+defined in elfutils/version.h 
+
+Thank you,
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
