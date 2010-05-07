@@ -1,319 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab0EGKle (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 06:41:34 -0400
-Received: from www.tglx.de ([62.245.132.106]:33600 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754107Ab0EGKlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 06:41:32 -0400
-Date: Fri, 7 May 2010 12:41:07 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-cc: LKML <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>,
-       John Stultz <johnstul@us.ibm.com>
-Subject: Re: 2.6.33.3-rt19 kernel BUG's
-In-Reply-To: <1273197218.6768.10.camel@localhost.localdomain>
-Message-ID: <alpine.LFD.2.00.1005071240350.3401@localhost.localdomain>
-References: <1273197218.6768.10.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756543Ab0EGKqg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 06:46:36 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:44600 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076Ab0EGKqe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 06:46:34 -0400
+From: Eric B Munson <ebmunson@us.ibm.com>
+To: mingo@elte.hu
+Cc: a.p.zijlstra@chello.nl, acme@redhat.com, arjan@linux.intel.com,
+       anton@samba.org, riel@redhat.com, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Eric B Munson <ebmunson@us.ibm.com>
+Subject: [PATCH] Split executable and non-executable mmap tracking
+Date: Fri,  7 May 2010 10:05:35 +0100
+Message-Id: <1273223135-22695-1-git-send-email-ebmunson@us.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 May 2010, Fernando Lopez-Lezcano wrote:
+This patch splits tracking of executable and non-executable mmaps.
+Executable mmaps are tracked normally and non-executable are
+tracked when --data is used.
 
-CC'ed John and Nick
+Signed-off-by: Anton Blanchard <anton@samba.org>
 
-> See below... just trying to boot (quad core desktop machine).
-> 
-> -- Fernando
-> 
-> 
-> May  6 18:23:36 localhost kernel: ------------[ cut here ]------------
-> May  6 18:23:36 localhost kernel: kernel BUG at kernel/rtmutex.c:808!
-> May  6 18:23:36 localhost kernel: invalid opcode: 0000 [#1] PREEMPT SMP 
-> May  6 18:23:36 localhost kernel: last sysfs
-> file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
-> May  6 18:23:36 localhost kernel: Modules linked in: autofs4 xt_time
-> xt_connlimit xt_realm iptable_raw xt_comment xt_policy ipt_ULOG
-> ipt_REDIRECT ipt_NETMAP ipt_MASQUERADE ipt_LOG ipt_ECN ipt_ecn
-> ipt_CLUSTERIP ipt_ah ipt_addrtype nf_nat_tftp nf_nat_snmp_basic
-> nf_nat_sip nf_nat_pptp nf_nat_proto_gre nf_nat_irc nf_nat_h323
-> nf_nat_ftp nf_nat_amanda ts_kmp nf_conntrack_amanda nf_conntrack_sane
-> nf_conntrack_tftp nf_conntrack_sip nf_conntrack_proto_sctp
-> nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_netlink
-> nf_conntrack_netbios_ns nf_conntrack_irc nf_conntrack_h323
-> nf_conntrack_ftp xt_tcpmss xt_recent xt_pkttype xt_physdev xt_owner
-> xt_NFQUEUE xt_NFLOG nfnetlink_log xt_multiport xt_MARK xt_mark xt_mac
-> xt_limit xt_length xt_iprange xt_helper xt_hashlimit xt_DSCP xt_dscp
-> xt_dccp xt_CONNMARK xt_connmark xt_CLASSIFY iptable_nat nf_nat
-> iptable_mangle nfnetlink coretemp hwmon_vid nfs lockd fscache nfs_acl
-> auth_rpcgss sunrpc ip6t_REJECT nf_conntrack_ipv6 ip6table_filter
-> ip6_tables ipv6 cpufreq_ondemand acpi_cpufreq dm_mul
-> May  6 18:23:36 localhost kernel: tipath uinput snd_hda_codec_realtek
-> snd_ice1712 snd_ice17xx_ak4xxx snd_ak4xxx_adda snd_hda_intel snd_cs8427
-> snd_hda_codec snd_ac97_codec snd_hwdep snd_seq snd_pcm ac97_bus snd_i2c
-> snd_mpu401_uart snd_rawmidi joydev asus_atk0110 snd_seq_device snd_timer
-> snd ohci1394 iTCO_wdt sata_sil24 soundcore i2c_i801 snd_page_alloc
-> iTCO_vendor_support sky2 serio_raw ata_generic pata_acpi radeon ttm
-> drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: microcode]
-> May  6 18:23:36 localhost kernel:
-> May  6 18:23:36 localhost kernel: Pid: 4100, comm: gdm-session-wor Not
-> tainted 2.6.33.3-84.rt19.1.fc11.ccrma.i686.rtPAE #1 P5K/EPU/P5K/EPU
-> May  6 18:23:36 localhost kernel: EIP: 0060:[<c079201b>] EFLAGS:
-> 00210046 CPU: 1
-> May  6 18:23:36 localhost kernel: EIP is at rt_spin_lock_slowlock
-> +0x43/0x1bb
-> May  6 18:23:36 localhost kernel: EAX: f33620f0 EBX: fba27f00 ECX:
-> fba27f00 EDX: f33620f0
-> May  6 18:23:36 localhost kernel: ESI: f33f2940 EDI: f2859910 EBP:
-> f01b5db4 ESP: f01b5d5c
-> May  6 18:23:36 localhost kernel: DS: 007b ES: 007b FS: 00d8 GS: 00e0
-> SS: 0068 preempt:00000001
-> May  6 18:23:36 localhost kernel: Process gdm-session-wor (pid: 4100,
-> ti=f01b4000 task=f33620f0 task.ti=f01b4000)
-> May  6 18:23:36 localhost kernel: Stack:
-> May  6 18:23:36 localhost kernel: ffffffff 00000001 00000000 f01b5d90
-> 00200296 f01b5df0 00200246 c58857f4
-> May  6 18:23:36 localhost kernel: <0> c0a607f4 c58857f4 f01b5d90
-> c0464f73 c5885810 f01b5d98 c0792766 f01b5db0
-> May  6 18:23:36 localhost kernel: <0> 00000000 f01b5da0 00200246
-> fba27f00 f33f2940 f2859910 f01b5dc0 c0464fa9
-> May  6 18:23:36 localhost kernel: Call Trace:
-> May  6 18:23:36 localhost kernel: [<c0464f73>] ?
-> rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> May  6 18:23:36 localhost kernel: [<c0792766>] ? rt_spin_unlock+0x8/0xa
-> May  6 18:23:36 localhost kernel: [<c0464fa9>] ?
-> rt_spin_lock_fastlock.clone.1+0x5c/0x5f
-> May  6 18:23:36 localhost kernel: [<c0792752>] ? rt_spin_lock+0x8/0xa
-> May  6 18:23:36 localhost kernel: [<fba24f1f>] ? autofs4_revalidate
-> +0x24b/0x263 [autofs4]
-> May  6 18:23:36 localhost kernel: [<c04d91a9>] ? do_revalidate+0xc/0x3a
-> May  6 18:23:36 localhost kernel: [<c04d92ee>] ? do_lookup+0x117/0x137
-> May  6 18:23:36 localhost kernel: [<c0572222>] ?
-> security_inode_permission+0x1a/0x20
-> May  6 18:23:36 localhost kernel: [<c04d98cf>] ? link_path_walk
-> +0x20b/0x4fc
-> May  6 18:23:36 localhost kernel: [<c04d9cc7>] ? path_walk+0x3a/0x84
-> May  6 18:23:36 localhost kernel: [<c04db08b>] ? path_init+0x6e/0x10c
-> May  6 18:23:36 localhost kernel: [<c04db24d>] ? do_path_lookup
-> +0x124/0x186
-> May  6 18:23:36 localhost kernel: [<c04db3c4>] ? do_filp_open+0xd1/0x817
-> May  6 18:23:36 localhost kernel: [<c0464f73>] ?
-> rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> May  6 18:23:36 localhost kernel: [<c0464f73>] ?
-> rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> May  6 18:23:36 localhost kernel: [<c0792766>] ? rt_spin_unlock+0x8/0xa
-> May  6 18:23:36 localhost kernel: [<c04d0975>] ? do_sys_open+0x48/0xdf
-> May  6 18:23:36 localhost kernel: [<c07951fe>] ? do_page_fault
-> +0x26e/0x2b3
-> May  6 18:23:36 localhost kernel: [<c04d0a4e>] ? sys_open+0x1e/0x26
-> May  6 18:23:36 localhost kernel: [<c040895f>] ? sysenter_do_call
-> +0x12/0x28
-> May  6 18:23:36 localhost kernel: Code: 7b 08 00 89 45 b8 75 12 8d 43 04
-> 89 43 04 89 43 08 8d 43 0c 89 43 0c 89 43 10 8b 43 14 64 8b 15 2c d1 a5
-> c0 83 e0 fc 39 c2 75 04 <0f> 0b eb fe 8b 3a 81 ff 08 01 00 00 74 0a 83
-> ff 02 b8 04 00 00 
-> May  6 18:23:36 localhost kernel: EIP: [<c079201b>]
-> rt_spin_lock_slowlock+0x43/0x1bb SS:ESP 0068:f01b5d5c
-> May  6 18:23:36 localhost kernel: ---[ end trace 7d2af8ee67c50871 ]---
-> May  6 18:23:36 localhost kernel: note: gdm-session-wor[4100] exited
-> with preempt_count 1
-> May  6 18:23:36 localhost kernel: BUG: scheduling while atomic:
-> gdm-session-wor/0x10000001/4100, CPU#1
-> May  6 18:23:36 localhost kernel: Modules linked in: autofs4 xt_time
-> xt_connlimit xt_realm iptable_raw xt_comment xt_policy ipt_ULOG
-> ipt_REDIRECT ipt_NETMAP ipt_MASQUERADE ipt_LOG ipt_ECN ipt_ecn
-> ipt_CLUSTERIP ipt_ah ipt_addrtype nf_nat_tftp nf_nat_snmp_basic
-> nf_nat_sip nf_nat_pptp nf_nat_proto_gre nf_nat_irc nf_nat_h323
-> nf_nat_ftp nf_nat_amanda ts_kmp nf_conntrack_amanda nf_conntrack_sane
-> nf_conntrack_tftp nf_conntrack_sip nf_conntrack_proto_sctp
-> nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_netlink
-> nf_conntrack_netbios_ns nf_conntrack_irc nf_conntrack_h323
-> nf_conntrack_ftp xt_tcpmss xt_recent xt_pkttype xt_physdev xt_owner
-> xt_NFQUEUE xt_NFLOG nfnetlink_log xt_multiport xt_MARK xt_mark xt_mac
-> xt_limit xt_length xt_iprange xt_helper xt_hashlimit xt_DSCP xt_dscp
-> xt_dccp xt_CONNMARK xt_connmark xt_CLASSIFY iptable_nat nf_nat
-> iptable_mangle nfnetlink coretemp hwmon_vid nfs lockd fscache nfs_acl
-> auth_rpcgss sunrpc ip6t_REJECT nf_conntrack_ipv6 ip6table_filter
-> ip6_tables ipv6 cpufreq_ondemand acpi_cpufreq dm_mul
-> May  6 18:23:36 localhost kernel: tipath uinput snd_hda_codec_realtek
-> snd_ice1712 snd_ice17xx_ak4xxx snd_ak4xxx_adda snd_hda_intel snd_cs8427
-> snd_hda_codec snd_ac97_codec snd_hwdep snd_seq snd_pcm ac97_bus snd_i2c
-> snd_mpu401_uart snd_rawmidi joydev asus_atk0110 snd_seq_device snd_timer
-> snd ohci1394 iTCO_wdt sata_sil24 soundcore i2c_i801 snd_page_alloc
-> iTCO_vendor_support sky2 serio_raw ata_generic pata_acpi radeon ttm
-> drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: microcode]
-> May  6 18:23:36 localhost kernel: Pid: 4100, comm: gdm-session-wor
-> Tainted: G      D    2.6.33.3-84.rt19.1.fc11.ccrma.i686.rtPAE #1
-> May  6 18:23:36 localhost kernel: Call Trace:
-> May  6 18:23:36 localhost kernel: [<c0435cbd>] __schedule_bug+0x54/0x59
-> May  6 18:23:36 localhost kernel: [<c0790e99>] __schedule+0x66/0x7d7
-> May  6 18:23:36 localhost kernel: [<c04a5e7a>] ? list_add+0xa/0xc
-> May  6 18:23:36 localhost kernel: [<c04a65df>] ? __free_one_page
-> +0xfd/0x14e
-> May  6 18:23:36 localhost kernel: [<c07916ef>] schedule+0xe/0x1f
-> May  6 18:23:36 localhost kernel: [<c0439e7b>] __cond_resched+0x16/0x2f
-> May  6 18:23:36 localhost kernel: [<c0439eb3>] __cond_resched_lock
-> +0x1f/0x2e
-> May  6 18:23:36 localhost kernel: [<c04a67b6>] free_pcppages_bulk
-> +0xbe/0xfc
-> May  6 18:23:36 localhost kernel: [<c04a7503>] free_hot_cold_page
-> +0x15c/0x186
-> May  6 18:23:36 localhost kernel: [<c0464f73>] ?
-> rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> May  6 18:23:36 localhost kernel: [<c04a758d>] __pagevec_free+0x60/0x6d
-> May  6 18:23:36 localhost kernel: [<c04a9c04>] release_pages+0xbc/0xf3
-> May  6 18:23:36 localhost kernel: [<c04c1961>] free_pages_and_swap_cache
-> +0x43/0x50
-> May  6 18:23:36 localhost kernel: [<c04baa1b>] tlb_finish_mmu+0x2a/0x67
-> May  6 18:23:36 localhost kernel: [<c04babee>] exit_mmap+0xa2/0xc5
-> May  6 18:23:36 localhost kernel: [<c043cb5d>] mmput+0x41/0xa4
-> May  6 18:23:36 localhost kernel: [<c04405f4>] exit_mm+0x103/0x10b
-> May  6 18:23:36 localhost kernel: [<c0441e73>] do_exit+0x1a8/0x5dc
-> May  6 18:23:36 localhost kernel: [<c0792766>] ? rt_spin_unlock+0x8/0xa
-> May  6 18:23:36 localhost kernel: [<c043f748>] ? kmsg_dump+0xde/0xe6
-> May  6 18:23:36 localhost kernel: [<c0793c40>] oops_end+0x99/0xa1
-> May  6 18:23:36 localhost kernel: [<c040ae57>] die+0x53/0x59
-> May  6 18:23:36 localhost kernel: [<c079356b>] do_trap+0x89/0xa2
-> May  6 18:23:36 localhost kernel: [<c04092c0>] ? do_invalid_op+0x0/0x80
-> May  6 18:23:36 localhost kernel: [<c0409336>] do_invalid_op+0x76/0x80
-> May  6 18:23:36 localhost kernel: [<c079201b>] ? rt_spin_lock_slowlock
-> +0x43/0x1bb
-> May  6 18:23:36 localhost kernel: [<c04c9391>] ? slab_irq_enable
-> +0x4c/0x6d
-> May  6 18:23:36 localhost kernel: [<c05760a7>] ? avc_alloc_node
-> +0x18/0x18c
-> May  6 18:23:36 localhost kernel: [<c0575bd8>] ? rcu_read_unlock+0x8/0xa
-> May  6 18:23:36 localhost kernel: [<c05765b0>] ? avc_has_perm_noaudit
-> +0x395/0x3cf
-> May  6 18:23:36 localhost kernel: [<c0793317>] error_code+0x73/0x78
-> May  6 18:23:36 localhost kernel: [<c079201b>] ? rt_spin_lock_slowlock
-> +0x43/0x1bb
-> May  6 18:23:36 localhost kernel: [<c0464f73>] ?
-> rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> May  6 18:23:36 localhost kernel: [<c0792766>] ? rt_spin_unlock+0x8/0xa
-> May  6 18:23:36 localhost kernel: [<c0464fa9>]
-> rt_spin_lock_fastlock.clone.1+0x5c/0x5f
-> May  6 18:23:36 localhost kernel: [<c0792752>] rt_spin_lock+0x8/0xa
-> May  6 18:23:36 localhost kernel: [<fba24f1f>] autofs4_revalidate
-> +0x24b/0x263 [autofs4]
-> May  6 18:23:36 localhost kernel: [<c04d91a9>] do_revalidate+0xc/0x3a
-> May  6 18:23:36 localhost kernel: [<c04d92ee>] do_lookup+0x117/0x137
-> May  6 18:23:36 localhost kernel: [<c0572222>] ?
-> security_inode_permission+0x1a/0x20
-> May  6 18:23:36 localhost kernel: [<c04d98cf>] link_path_walk
-> +0x20b/0x4fc
-> May  6 18:23:36 localhost kernel: [<c04d9cc7>] path_walk+0x3a/0x84
-> May  6 18:23:36 localhost kernel: [<c04db08b>] ? path_init+0x6e/0x10c
-> May  6 18:23:36 localhost kernel: [<c04db24d>] do_path_lookup
-> +0x124/0x186
-> May  6 18:23:36 localhost kernel: [<c04db3c4>] do_filp_open+0xd1/0x817
-> May  6 18:23:36 localhost kernel: [<c0464f73>] ?
-> rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> May  6 18:23:36 localhost kernel: [<c0464f73>] ?
-> rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> May  6 18:23:36 localhost kernel: [<c0792766>] ? rt_spin_unlock+0x8/0xa
-> May  6 18:23:36 localhost kernel: [<c04d0975>] do_sys_open+0x48/0xdf
-> May  6 18:23:36 localhost kernel: [<c07951fe>] ? do_page_fault
-> +0x26e/0x2b3
-> May  6 18:23:36 localhost kernel: [<c04d0a4e>] sys_open+0x1e/0x26
-> May  6 18:23:36 localhost kernel: [<c040895f>] sysenter_do_call
-> +0x12/0x28
-> May  6 18:23:42 localhost kernel: ------------[ cut here ]------------
-> May  6 18:23:42 localhost kernel: kernel BUG at kernel/rtmutex.c:808!
-> May  6 18:23:42 localhost kernel: invalid opcode: 0000 [#2] PREEMPT SMP 
-> May  6 18:23:42 localhost kernel: last sysfs
-> file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
-> May  6 18:23:42 localhost kernel: Modules linked in: autofs4 xt_time
-> xt_connlimit xt_realm iptable_raw xt_comment xt_policy ipt_ULOG
-> ipt_REDIRECT ipt_NETMAP ipt_MASQUERADE ipt_LOG ipt_ECN ipt_ecn
-> ipt_CLUSTERIP ipt_ah ipt_addrtype nf_nat_tftp nf_nat_snmp_basic
-> nf_nat_sip nf_nat_pptp nf_nat_proto_gre nf_nat_irc nf_nat_h323
-> nf_nat_ftp nf_nat_amanda ts_kmp nf_conntrack_amanda nf_conntrack_sane
-> nf_conntrack_tftp nf_conntrack_sip nf_conntrack_proto_sctp
-> nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_netlink
-> nf_conntrack_netbios_ns nf_conntrack_irc nf_conntrack_h323
-> nf_conntrack_ftp xt_tcpmss xt_recent xt_pkttype xt_physdev xt_owner
-> xt_NFQUEUE xt_NFLOG nfnetlink_log xt_multiport xt_MARK xt_mark xt_mac
-> xt_limit xt_length xt_iprange xt_helper xt_hashlimit xt_DSCP xt_dscp
-> xt_dccp xt_CONNMARK xt_connmark xt_CLASSIFY iptable_nat nf_nat
-> iptable_mangle nfnetlink coretemp hwmon_vid nfs lockd fscache nfs_acl
-> auth_rpcgss sunrpc ip6t_REJECT nf_conntrack_ipv6 ip6table_filter
-> ip6_tables ipv6 cpufreq_ondemand acpi_cpufreq dm_mul
-> May  6 18:23:42 localhost kernel: tipath uinput snd_hda_codec_realtek
-> snd_ice1712 snd_ice17xx_ak4xxx snd_ak4xxx_adda snd_hda_intel snd_cs8427
-> snd_hda_codec snd_ac97_codec snd_hwdep snd_seq snd_pcm ac97_bus snd_i2c
-> snd_mpu401_uart snd_rawmidi joydev asus_atk0110 snd_seq_device snd_timer
-> snd ohci1394 iTCO_wdt sata_sil24 soundcore i2c_i801 snd_page_alloc
-> iTCO_vendor_support sky2 serio_raw ata_generic pata_acpi radeon ttm
-> drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: microcode]
-> May  6 18:23:42 localhost kernel:
-> May  6 18:23:42 localhost kernel: Pid: 4109, comm: gdm-session-wor
-> Tainted: G      D    2.6.33.3-84.rt19.1.fc11.ccrma.i686.rtPAE #1
-> P5K/EPU/P5K/EPU
-> May  6 18:23:42 localhost kernel: EIP: 0060:[<c079201b>] EFLAGS:
-> 00210046 CPU: 1
-> May  6 18:23:42 localhost kernel: EIP is at rt_spin_lock_slowlock
-> +0x43/0x1bb
-> May  6 18:23:42 localhost kernel: EAX: f33620f0 EBX: f2859910 ECX:
-> f2859910 EDX: f33620f0
-> May  6 18:23:42 localhost kernel: ESI: f33f2940 EDI: f2859910 EBP:
-> f021bdb4 ESP: f021bd5c
-> May  6 18:23:42 localhost kernel: DS: 007b ES: 007b FS: 00d8 GS: 00e0
-> SS: 0068 preempt:00000001
-> May  6 18:23:42 localhost kernel: Process gdm-session-wor (pid: 4109,
-> ti=f021a000 task=f33620f0 task.ti=f021a000)
-> May  6 18:23:42 localhost kernel: Stack:
-> May  6 18:23:42 localhost kernel: ffffffff 00000001 00000000 f021bd90
-> 00200296 f021bdf0 00200246 c58857f4
-> May  6 18:23:42 localhost kernel: <0> c0a607f4 c58857f4 f021bd90
-> c0464f73 c5885810 f021bd98 c0792766 f021bdb0
-> May  6 18:23:42 localhost kernel: <0> 00000000 00200246 00200246
-> f2859910 f33f2940 f2859910 f021bdc0 c0464fa9
-> May  6 18:23:42 localhost kernel: Call Trace:
-> May  6 18:23:42 localhost kernel: [<c0464f73>] ?
-> rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> May  6 18:23:42 localhost kernel: [<c0792766>] ? rt_spin_unlock+0x8/0xa
-> May  6 18:23:42 localhost kernel: [<c0464fa9>] ?
-> rt_spin_lock_fastlock.clone.1+0x5c/0x5f
-> May  6 18:23:42 localhost kernel: [<c0792752>] ? rt_spin_lock+0x8/0xa
-> May  6 18:23:42 localhost kernel: [<fba24dbc>] ? autofs4_revalidate
-> +0xe8/0x263 [autofs4]
-> May  6 18:23:42 localhost kernel: [<c04d91a9>] ? do_revalidate+0xc/0x3a
-> May  6 18:23:42 localhost kernel: [<c04d92ee>] ? do_lookup+0x117/0x137
-> May  6 18:23:42 localhost kernel: [<c0572222>] ?
-> security_inode_permission+0x1a/0x20
-> May  6 18:23:42 localhost kernel: [<c04d98cf>] ? link_path_walk
-> +0x20b/0x4fc
-> May  6 18:23:42 localhost kernel: [<c04d9cc7>] ? path_walk+0x3a/0x84
-> May  6 18:23:42 localhost kernel: [<c04db08b>] ? path_init+0x6e/0x10c
-> May  6 18:23:42 localhost kernel: [<c04db24d>] ? do_path_lookup
-> +0x124/0x186
-> May  6 18:23:42 localhost kernel: [<c04db3c4>] ? do_filp_open+0xd1/0x817
-> May  6 18:23:42 localhost kernel: [<c0464f73>] ?
-> rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> May  6 18:23:42 localhost kernel: [<c0464f73>] ?
-> rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> May  6 18:23:42 localhost kernel: [<c0792766>] ? rt_spin_unlock+0x8/0xa
-> May  6 18:23:42 localhost kernel: [<c04d0975>] ? do_sys_open+0x48/0xdf
-> May  6 18:23:42 localhost kernel: [<c07951fe>] ? do_page_fault
-> +0x26e/0x2b3
-> May  6 18:23:42 localhost kernel: [<c04d0a4e>] ? sys_open+0x1e/0x26
-> May  6 18:23:42 localhost kernel: [<c040895f>] ? sysenter_do_call
-> +0x12/0x28
-> May  6 18:23:42 localhost kernel: Code: 7b 08 00 89 45 b8 75 12 8d 43 04
-> 89 43 04 89 43 08 8d 43 0c 89 43 0c 89 43 10 8b 43 14 64 8b 15 2c d1 a5
-> c0 83 e0 fc 39 c2 75 04 <0f> 0b eb fe 8b 3a 81 ff 08 01 00 00 74 0a 83
-> ff 02 b8 04 00 00 
-> May  6 18:23:42 localhost kernel: EIP: [<c079201b>]
-> rt_spin_lock_slowlock+0x43/0x1bb SS:ESP 0068:f021bd5c
-> May  6 18:23:42 localhost kernel: ---[ end trace 7d2af8ee67c50872 ]---
-> May  6 18:23:42 localhost kernel: note: gdm-session-wor[4109] exited
-> with preempt_count 1
-> 
-> 
+Updated code for stable perf ABI
+Signed-off-by: Eric B Munson <ebmunson@us.ibm.com>
+---
+ fs/exec.c                   |    1 +
+ include/linux/perf_event.h  |   12 +++---------
+ kernel/perf_event.c         |   34 +++++++++++++++++++++++++---------
+ mm/mmap.c                   |    2 ++
+ tools/perf/builtin-record.c |    6 ++++--
+ tools/perf/builtin-top.c    |    2 +-
+ 6 files changed, 36 insertions(+), 21 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 49cdaa1..5ad4f69 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -648,6 +648,7 @@ int setup_arg_pages(struct linux_binprm *bprm,
+ 	else
+ 		stack_base = vma->vm_start - stack_expand;
+ #endif
++	current->mm->start_stack = bprm->p;
+ 	ret = expand_stack(vma, stack_base);
+ 	if (ret)
+ 		ret = -EFAULT;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index c8e3754..b8f59cc 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -197,6 +197,7 @@ struct perf_event_attr {
+ 				exclude_hv     :  1, /* ditto hypervisor      */
+ 				exclude_idle   :  1, /* don't count when idle */
+ 				mmap           :  1, /* include mmap data     */
++				mmap_exec      :  1, /* include exec mmap data*/
+ 				comm	       :  1, /* include comm data     */
+ 				freq           :  1, /* use freq, not period  */
+ 				inherit_stat   :  1, /* per task counts       */
+@@ -204,7 +205,7 @@ struct perf_event_attr {
+ 				task           :  1, /* trace fork/exit       */
+ 				watermark      :  1, /* wakeup_watermark      */
+ 
+-				__reserved_1   : 49;
++				__reserved_1   : 48;
+ 
+ 	union {
+ 		__u32		wakeup_events;	  /* wakeup every n events */
+@@ -894,14 +895,7 @@ perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
+ 	}
+ }
+ 
+-extern void __perf_event_mmap(struct vm_area_struct *vma);
+-
+-static inline void perf_event_mmap(struct vm_area_struct *vma)
+-{
+-	if (vma->vm_flags & VM_EXEC)
+-		__perf_event_mmap(vma);
+-}
+-
++extern void perf_event_mmap(struct vm_area_struct *vma);
+ extern void perf_event_comm(struct task_struct *tsk);
+ extern void perf_event_fork(struct task_struct *tsk);
+ 
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 3d1552d..b3f49e6 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1832,6 +1832,8 @@ static void free_event(struct perf_event *event)
+ 
+ 	if (!event->parent) {
+ 		atomic_dec(&nr_events);
++		if (event->attr.mmap_exec)
++			atomic_dec(&nr_mmap_events);
+ 		if (event->attr.mmap)
+ 			atomic_dec(&nr_mmap_events);
+ 		if (event->attr.comm)
+@@ -3354,7 +3356,7 @@ perf_event_read_event(struct perf_event *event,
+ /*
+  * task tracking -- fork/exit
+  *
+- * enabled by: attr.comm | attr.mmap | attr.task
++ * enabled by: attr.comm | attr.mmap | attr.mmap_exec | attr.task
+  */
+ 
+ struct perf_task_event {
+@@ -3414,7 +3416,8 @@ static int perf_event_task_match(struct perf_event *event)
+ 	if (event->cpu != -1 && event->cpu != smp_processor_id())
+ 		return 0;
+ 
+-	if (event->attr.comm || event->attr.mmap || event->attr.task)
++	if (event->attr.comm || event->attr.mmap ||
++	    event->attr.mmap_exec || event->attr.task)
+ 		return 1;
+ 
+ 	return 0;
+@@ -3639,7 +3642,8 @@ static void perf_event_mmap_output(struct perf_event *event,
+ }
+ 
+ static int perf_event_mmap_match(struct perf_event *event,
+-				   struct perf_mmap_event *mmap_event)
++				   struct perf_mmap_event *mmap_event,
++				   int executable)
+ {
+ 	if (event->state < PERF_EVENT_STATE_INACTIVE)
+ 		return 0;
+@@ -3647,19 +3651,21 @@ static int perf_event_mmap_match(struct perf_event *event,
+ 	if (event->cpu != -1 && event->cpu != smp_processor_id())
+ 		return 0;
+ 
+-	if (event->attr.mmap)
++	if ((executable && event->attr.mmap_exec) ||
++	    (!executable && event->attr.mmap))
+ 		return 1;
+ 
+ 	return 0;
+ }
+ 
+ static void perf_event_mmap_ctx(struct perf_event_context *ctx,
+-				  struct perf_mmap_event *mmap_event)
++				  struct perf_mmap_event *mmap_event,
++				  int executable)
+ {
+ 	struct perf_event *event;
+ 
+ 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
+-		if (perf_event_mmap_match(event, mmap_event))
++		if (perf_event_mmap_match(event, mmap_event, executable))
+ 			perf_event_mmap_output(event, mmap_event);
+ 	}
+ }
+@@ -3703,6 +3709,14 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 		if (!vma->vm_mm) {
+ 			name = strncpy(tmp, "[vdso]", sizeof(tmp));
+ 			goto got_name;
++		} else if (vma->vm_start <= vma->vm_mm->start_brk &&
++				vma->vm_end >= vma->vm_mm->brk) {
++			name = strncpy(tmp, "[heap]", sizeof(tmp));
++			goto got_name;
++		} else if (vma->vm_start <= vma->vm_mm->start_stack &&
++				vma->vm_end >= vma->vm_mm->start_stack) {
++			name = strncpy(tmp, "[stack]", sizeof(tmp));
++			goto got_name;
+ 		}
+ 
+ 		name = strncpy(tmp, "//anon", sizeof(tmp));
+@@ -3719,17 +3733,17 @@ got_name:
+ 
+ 	rcu_read_lock();
+ 	cpuctx = &get_cpu_var(perf_cpu_context);
+-	perf_event_mmap_ctx(&cpuctx->ctx, mmap_event);
++	perf_event_mmap_ctx(&cpuctx->ctx, mmap_event, vma->vm_flags & VM_EXEC);
+ 	ctx = rcu_dereference(current->perf_event_ctxp);
+ 	if (ctx)
+-		perf_event_mmap_ctx(ctx, mmap_event);
++		perf_event_mmap_ctx(ctx, mmap_event, vma->vm_flags & VM_EXEC);
+ 	put_cpu_var(perf_cpu_context);
+ 	rcu_read_unlock();
+ 
+ 	kfree(buf);
+ }
+ 
+-void __perf_event_mmap(struct vm_area_struct *vma)
++void perf_event_mmap(struct vm_area_struct *vma)
+ {
+ 	struct perf_mmap_event mmap_event;
+ 
+@@ -4641,6 +4655,8 @@ done:
+ 		atomic_inc(&nr_events);
+ 		if (event->attr.mmap)
+ 			atomic_inc(&nr_mmap_events);
++		if (event->attr.mmap_exec)
++			atomic_inc(&nr_mmap_events);
+ 		if (event->attr.comm)
+ 			atomic_inc(&nr_comm_events);
+ 		if (event->attr.task)
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 456ec6f..6ceee1d 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1781,6 +1781,7 @@ static int expand_downwards(struct vm_area_struct *vma,
+ 		if (!error) {
+ 			vma->vm_start = address;
+ 			vma->vm_pgoff -= grow;
++			perf_event_mmap(vma);
+ 		}
+ 	}
+ 	anon_vma_unlock(vma);
+@@ -2208,6 +2209,7 @@ unsigned long do_brk(unsigned long addr, unsigned long len)
+ 	vma->vm_page_prot = vm_get_page_prot(flags);
+ 	vma_link(mm, vma, prev, rb_link, rb_parent);
+ out:
++	perf_event_mmap(vma);
+ 	mm->total_vm += len >> PAGE_SHIFT;
+ 	if (flags & VM_LOCKED) {
+ 		if (!mlock_vma_pages_range(vma, addr, addr + len))
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 3b8b638..ff0b351 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -260,8 +260,10 @@ static void create_counter(int counter, int cpu, pid_t pid)
+ 	if (inherit_stat)
+ 		attr->inherit_stat = 1;
+ 
+-	if (sample_address)
++	if (sample_address) {
+ 		attr->sample_type	|= PERF_SAMPLE_ADDR;
++		attr->mmap = track;
++	}
+ 
+ 	if (call_graph)
+ 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
+@@ -272,7 +274,7 @@ static void create_counter(int counter, int cpu, pid_t pid)
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
+ 	}
+ 
+-	attr->mmap		= track;
++	attr->mmap_exec		= track;
+ 	attr->comm		= track;
+ 	attr->inherit		= inherit;
+ 	attr->disabled		= 1;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 1f52932..2cddcb5 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1142,7 +1142,7 @@ static void start_counter(int i, int counter)
+ 	}
+ 
+ 	attr->inherit		= (cpu < 0) && inherit;
+-	attr->mmap		= 1;
++	attr->mmap_exec		= 1;
+ 
+ try_again:
+ 	fd[i][counter] = sys_perf_event_open(attr, target_pid, cpu, group_fd, 0);
+-- 
+1.7.0.4
+
