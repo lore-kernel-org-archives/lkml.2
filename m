@@ -1,116 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab0EGJDz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 05:03:55 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:48411 "EHLO
-	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1755181Ab0EGJDy (ORCPT
+	id S1752845Ab0EGJFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 05:05:34 -0400
+Received: from fg-out-1718.google.com ([72.14.220.153]:33405 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab0EGJFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 05:03:54 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: akpm@linux-foundation.org
-Cc: torvalds@linux-foundation.org, adobriyan@gmail.com, nhorman@tuxdriver.com,
-       oleg@redhat.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH v2 09/11] rlimits: switch more rlimit syscalls to do_prlimit
-Date: Fri,  7 May 2010 11:02:57 +0200
-Message-Id: <1273222977-17419-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1273222543-17083-9-git-send-email-jslaby@suse.cz>
-References: <1273222543-17083-9-git-send-email-jslaby@suse.cz>
+	Fri, 7 May 2010 05:05:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=GtYHOgg8TNpScyEuI1mmGc9WNTThWoYOhm5ulY3VhGIqEZJXClH3a8NNX7tmtcuRi1
+         I7g56J1DVhXvdl1np5Xuvj/jQHo7gSBuXsCOpredtaEhdu5O5NJu8DBPub9Wr82Wl2MZ
+         I8H9avuFK+b45Ia21z4D8y736HmA6Hyc4/KFI=
+Message-ID: <4BE3D7D9.2080406@gmail.com>
+Date: Fri, 07 May 2010 11:05:29 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.5pre) Gecko/20100430 SUSE/3.1b2-7.1 Thunderbird/3.1b2
+MIME-Version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>
+CC: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       adobriyan@gmail.com, nhorman@tuxdriver.com, oleg@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 09/11] rlimits: switch more rlimit syscalls to do_prlimit
+References: <1273222543-17083-9-git-send-email-jslaby@suse.cz> <1273222977-17419-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1273222977-17419-1-git-send-email-jslaby@suse.cz>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jirislaby@gmail.com>
+On 05/07/2010 11:02 AM, Jiri Slaby wrote:
+> From: Jiri Slaby <jirislaby@gmail.com>
+> 
+> This is the correct one, I forgot to re-run format-patch.
 
-This is the correct one, I forgot to re-run format-patch.
---
+Ah, no I didn't. There are two 09/11 because it generates the latter
+with a different name.
 
-After we added more generic do_prlimit, switch sys_getrlimit to that.
-Also switch compat handling, so we can get rid of ugly __user casts
-and avoid setting process' address limit to kernel data and back.
+So "rlimits: switch getrlimit to do_prlimit" is old and wrong.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- kernel/compat.c |   16 +++-------------
- kernel/sys.c    |   17 ++++++++---------
- 2 files changed, 11 insertions(+), 22 deletions(-)
-
-diff --git a/kernel/compat.c b/kernel/compat.c
-index 7f40e92..199b345 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -280,10 +280,6 @@ asmlinkage long compat_sys_setrlimit(unsigned int resource,
- {
- 	struct rlimit r;
- 	int ret;
--	mm_segment_t old_fs = get_fs ();
--
--	if (resource >= RLIM_NLIMITS)
--		return -EINVAL;
- 
- 	if (!access_ok(VERIFY_READ, rlim, sizeof(*rlim)) ||
- 	    __get_user(r.rlim_cur, &rlim->rlim_cur) ||
-@@ -294,10 +290,7 @@ asmlinkage long compat_sys_setrlimit(unsigned int resource,
- 		r.rlim_cur = RLIM_INFINITY;
- 	if (r.rlim_max == COMPAT_RLIM_INFINITY)
- 		r.rlim_max = RLIM_INFINITY;
--	set_fs(KERNEL_DS);
--	ret = sys_setrlimit(resource, (struct rlimit __user *) &r);
--	set_fs(old_fs);
--	return ret;
-+	return do_prlimit(current, resource, &r, NULL);
- }
- 
- #ifdef COMPAT_RLIM_OLD_INFINITY
-@@ -329,16 +322,13 @@ asmlinkage long compat_sys_old_getrlimit(unsigned int resource,
- 
- #endif
- 
--asmlinkage long compat_sys_getrlimit (unsigned int resource,
-+asmlinkage long compat_sys_getrlimit(unsigned int resource,
- 		struct compat_rlimit __user *rlim)
- {
- 	struct rlimit r;
- 	int ret;
--	mm_segment_t old_fs = get_fs();
- 
--	set_fs(KERNEL_DS);
--	ret = sys_getrlimit(resource, (struct rlimit __user *) &r);
--	set_fs(old_fs);
-+	ret = do_prlimit(current, resource, NULL, &r);
- 	if (!ret) {
- 		if (r.rlim_cur > COMPAT_RLIM_INFINITY)
- 			r.rlim_cur = COMPAT_RLIM_INFINITY;
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 7a453d2..0f8034f 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1236,15 +1236,14 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
- 
- SYSCALL_DEFINE2(getrlimit, unsigned int, resource, struct rlimit __user *, rlim)
- {
--	if (resource >= RLIM_NLIMITS)
--		return -EINVAL;
--	else {
--		struct rlimit value;
--		task_lock(current->group_leader);
--		value = current->signal->rlim[resource];
--		task_unlock(current->group_leader);
--		return copy_to_user(rlim, &value, sizeof(*rlim)) ? -EFAULT : 0;
--	}
-+	struct rlimit value;
-+	int ret;
-+
-+	ret = do_prlimit(current, resource, NULL, &value);
-+	if (!ret)
-+		ret = copy_to_user(rlim, &value, sizeof(*rlim)) ? -EFAULT : 0;
-+
-+	return ret;
- }
- 
- #ifdef __ARCH_WANT_SYS_OLD_GETRLIMIT
 -- 
-1.7.1
-
-
+js
