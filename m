@@ -1,102 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487Ab0EGKPs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 06:15:48 -0400
-Received: from mx1.emlix.com ([193.175.82.87]:58325 "EHLO mx1.emlix.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab0EGKPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 06:15:47 -0400
-Date: Fri, 7 May 2010 12:15:44 +0200
-From: Oskar Schirmer <os@emlix.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Oskar Schirmer <os@emlix.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Daniel =?utf-8?B?R2zDtmNrbmVy?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>
-Subject: Re: [PATCH] ad7877: keep dma rx buffers in seperate cache lines
-Message-ID: <20100507101544.GB25342@emlix.com>
-References: <1273142265-11929-1-git-send-email-os@emlix.com> <1273142265-11929-2-git-send-email-os@emlix.com> <g2j8bd0f97a1005061146l2b01e45do15bf46162e38ce84@mail.gmail.com>
+	id S1756360Ab0EGKYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 06:24:15 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:58761 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab0EGKYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 06:24:13 -0400
+Date: Fri, 7 May 2010 12:24:08 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+       Greg KH <gregkh@suse.de>,
+       Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Chris Wright <chrisw@sous-sol.org>, iommu@lists.linux-foundation.org,
+       Andi Kleen <andi@firstfloor.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Pedro Ribeiro <pedrib@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100507102408.GM30801@buzzloop.caiaq.de>
+References: <g2h74fd948d1004141820ladc1941eo732d059dd678df0a@mail.gmail.com>
+ <Pine.LNX.4.44L0.1004151114490.1562-100000@iolanthe.rowland.org>
+ <t2r74fd948d1004191716l49dedc2p25a27da39bcc614a@mail.gmail.com>
+ <20100507074855.GF30801@buzzloop.caiaq.de>
+ <4BE3E1B9.5020602@ladisch.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <g2j8bd0f97a1005061146l2b01e45do15bf46162e38ce84@mail.gmail.com>
-Organization: emlix GmbH
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4BE3E1B9.5020602@ladisch.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 06, 2010 at 14:46:04 -0400, Mike Frysinger wrote:
-> On Thu, May 6, 2010 at 06:37, Oskar Schirmer wrote:
-> >  struct ser_req {
-> > +       u16                     sample;
-> > +       char                    __padalign[L1_CACHE_BYTES - sizeof(u16)];
-> > +
-> >        u16                     reset;
-> >        u16                     ref_on;
-> >        u16                     command;
-> > -       u16                     sample;
-> >        struct spi_message      msg;
-> >        struct spi_transfer     xfer[6];
-> >  };
+On Fri, May 07, 2010 at 11:47:37AM +0200, Clemens Ladisch wrote:
+> Daniel Mack wrote:
+> > The problem is again (summarized):
+> > 
+> > On 64bit machines, with 4GB or more, the allocated buffers for USB
+> > transfers might be beyond the 32bit boundary. In this case, the IOMMU
+> > should take care and install DMA bounce buffer to copy over the buffer
+> > before the transfer actually happens. The problem is, however, that this
+> > copy mechanism takes place when the URB with its associated buffer is
+> > submitted, not when the EHCI will actually do the transfer.
+> > 
+> > In the particular case of audio drivers, though, the contents of the
+> > buffers are likely to change after the submission. What we do here
+> > is that we map the audio stream buffers which are used by ALSA to
+> > the output URBs, so they're filled asychronously. Once the buffer is
+> > actually sent out on the bus, it is believed to contain proper audio
+> > date. If it doesn't, that's due to too tight audio timing or other
+> > problems. This breaks once buffers are magically bounced in the
+> > background.
 > 
-> are you sure this is necessary ?  ser_req is only ever used with
-> spi_sync() and it's allocated/released on the fly, so how could
-> anything be reading that memory between the start of the transmission
-> and the return to adi7877 ?
+> At least the audio class and ua101 drivers don't do this and fill the
+> buffers before they are submitted.
 
-msg is handed over to spi_sync, it contains the addresses
-which will be used to programme the DMA: the spi master
-transfer function will read these fields to start DMA.
+Gnaa, you're right. I _thought_ my code does it the way I described, but
+what I wrote is how I _wanted_ to do it, not how it's currently done. I
+have a plan to change this in the future.
 
-E.g., drivers/spi/atmel_spi.c, assures cache coherency
-in function atmel_spi_dma_map_xfer, one xfer at a time.
-Multiple transfers are worked on in a loop in atmel_spi_transfer,
-so when coherency for transfer #1 is ensured, addresses
-for transfer #2 are read from the msg and xfer structs,
-caching lines which have been just before invalidated.
+So unfortunately, that doesn't explain it either. Sorry for the noise.
 
-And, citing Documentation/DMA-API.txt, Part Id:
-"mapped region must begin exactly on a cache line
-boundary and end exactly on one", which is our case.
-
-> 
-> >  struct ad7877 {
-> > +       u16                     conversion_data[AD7877_NR_SENSE];
-> > +       char                    __padalign[L1_CACHE_BYTES
-> > +                                       - AD7877_NR_SENSE * sizeof(u16)];
-> > +
-> >        struct input_dev        *input;
-> >        char                    phys[32];
-> >
-> > @@ -182,8 +188,6 @@ struct ad7877 {
-> >        u8                      averaging;
-> >        u8                      pen_down_acc_interval;
-> >
-> > -       u16                     conversion_data[AD7877_NR_SENSE];
-> > -
-> >        struct spi_transfer     xfer[AD7877_NR_SENSE + 2];
-> >        struct spi_message      msg;
-> 
-> i can see the spi_message inside of this struct being a problem
-> because the spi transfer is doing asynchronously with spi_async().
-> however, i would add a comment right above these two fields with a
-> short explanation as to why they're at the start and why the pad
-> exists so someone down the line doesnt move it.
-
-The code says "pad to align according to L1 cache, and
-keep away other stuff by exactly the amount so it is
-off the line". I'ld guess a comment would repeat just
-this, so it is superfluous. But if opinions differ on
-this topic, we can have a comment added, sure.
-
-  Oskar
--- 
-oskar schirmer, emlix gmbh, http://www.emlix.com
-fon +49 551 30664-0, fax -11, bahnhofsallee 1b, 37081 göttingen, germany
-sitz der gesellschaft: göttingen, amtsgericht göttingen hr b 3160
-geschäftsführer: dr. uwe kracke, ust-idnr.: de 205 198 055
-
-emlix - your embedded linux partner
+Daniel
