@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770Ab0EHHgA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 03:36:00 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:59299 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab0EHHf7 (ORCPT
+	id S1751869Ab0EHHzz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 03:55:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18394 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751282Ab0EHHzx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 03:35:59 -0400
-Message-ID: <4BE51391.3080104@vflare.org>
-Date: Sat, 08 May 2010 13:02:33 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Sat, 8 May 2010 03:55:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,352,1270450800"; 
+   d="scan'208";a="796579338"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>
+Date: Sat, 8 May 2010 15:55:48 +0800
+Subject: RE: [RFC][PATCH v4 00/18] Provide a zero-copy method on KVM
+	virtio-net.
+Thread-Topic: [RFC][PATCH v4 00/18] Provide a zero-copy method on KVM
+	virtio-net.
+Thread-Index: AcrkcW+KStexS0mKTqWOXzh2TtBgWwKEEK2g
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D790AB4A3F137@shsmsx502.ccr.corp.intel.com>
+References: <1272187206-18534-10-git-send-email-xiaohui.xin@intel.com>
+ <1272187206-18534-11-git-send-email-xiaohui.xin@intel.com>
+ <1272187206-18534-12-git-send-email-xiaohui.xin@intel.com>
+ <1272187206-18534-13-git-send-email-xiaohui.xin@intel.com>
+ <1272187206-18534-14-git-send-email-xiaohui.xin@intel.com>
+ <1272187206-18534-15-git-send-email-xiaohui.xin@intel.com>
+ <1272187206-18534-16-git-send-email-xiaohui.xin@intel.com>
+ <1272187206-18534-17-git-send-email-xiaohui.xin@intel.com>
+ <1272187206-18534-18-git-send-email-xiaohui.xin@intel.com>
+ <1272187206-18534-19-git-send-email-xiaohui.xin@intel.com>
+ <20100425121420.GB10238@redhat.com>
+In-Reply-To: <20100425121420.GB10238@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-       Christoph Hellwig <hch@infradead.org>,
-       Jens Axboe <jens.axboe@oracle.com>, Andi Kleen <andi@firstfloor.org>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] ramzswap: Eliminate stale data from compressed memory
- (v2)
-References: <1273217107-2023-1-git-send-email-ngupta@vflare.org> <20100507155504.10532b3e.akpm@linux-foundation.org> <4BE504AD.4030807@cs.helsinki.fi> <4BE50B71.4020202@vflare.org> <4BE5120B.10408@cs.helsinki.fi>
-In-Reply-To: <4BE5120B.10408@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2010 12:56 PM, Pekka Enberg wrote:
-> Nitin Gupta wrote:
->> Oops, missed this part:
->>
->> On 05/08/2010 11:59 AM, Pekka Enberg wrote:
->>> Andrew Morton wrote:
->>>> I've completely forgotten why we need this xvmalloc thing and I don't
->>>> recall whether we decided it would be a good thing to have as a generic
->>>> facility and of course it's all unexplained and undocumented.  I won't
->>>> be looking at it today, for this reason.
->>> We need it because the slab allocator is not a good fit for this special
->>> purpose driver due to fragmentation. Nitin, you had a nice web page
->>> showing all the relevant numbers but I can't find it anymore.
->>>
->>
->> xvmalloc performance numbers:
->> http://code.google.com/p/compcache/wiki/xvMalloc
->> http://code.google.com/p/compcache/wiki/xvMallocPerformance
-> 
-> I don't see the xvmalloc vs. kmalloc fragmentation numbers there. I
-> thought you had some?
-> 
+Michael,
+Sorry, somehow I missed this mail. :-(
 
-TLSF vs kmalloc (SLUB):
-http://code.google.com/p/compcache/wiki/AllocatorsComparison
+>> Here, we have ever considered 2 ways to utilize the page constructor
+>> API to dispense the user buffers.
+>> 
+>> One:	Modify __alloc_skb() function a bit, it can only allocate a 
+>> 	structure of sk_buff, and the data pointer is pointing to a 
+>> 	user buffer which is coming from a page constructor API.
+>> 	Then the shinfo of the skb is also from guest.
+>> 	When packet is received from hardware, the skb->data is filled
+>> 	directly by h/w. What we have done is in this way.
+>> 
+>> 	Pros:	We can avoid any copy here.
+>> 	Cons:	Guest virtio-net driver needs to allocate skb as almost
+>> 		the same method with the host NIC drivers, say the size
+>> 		of netdev_alloc_skb() and the same reserved space in the
+>> 		head of skb. Many NIC drivers are the same with guest and
+>> 		ok for this. But some lastest NIC drivers reserves special
+>> 		room in skb head. To deal with it, we suggest to provide
+>> 		a method in guest virtio-net driver to ask for parameter
+>> 		we interest from the NIC driver when we know which device 
+>> 		we have bind to do zero-copy. Then we ask guest to do so.
+>> 		Is that reasonable?
 
-By design, xvmalloc is very similar to TLSF. In fact, xvmalloc has less
-metadata overhead than TLSF. So, we will surely get similar results for
-xvmalloc vs kmalloc comparison too.
+>Do you still do this?
 
-Thanks,
-Nitin
+Currently, we still use the first way. But we now ignore the room which 
+host skb_reserve() required when device is doing zero-copy. Now we don't 
+taint guest virtio-net driver with a new method by this way.
 
+>> Two:	Modify driver to get user buffer allocated from a page constructor
+>> 	API(to substitute alloc_page()), the user buffer are used as payload
+>> 	buffers and filled by h/w directly when packet is received. Driver
+>> 	should associate the pages with skb (skb_shinfo(skb)->frags). For 
+>> 	the head buffer side, let host allocates skb, and h/w fills it. 
+>> 	After that, the data filled in host skb header will be copied into
+>> 	guest header buffer which is submitted together with the payload buffer.
+>> 
+>> 	Pros:	We could less care the way how guest or host allocates their
+>> 		buffers.
+>> 	Cons:	We still need a bit copy here for the skb header.
+>> 
+>> We are not sure which way is the better here. This is the first thing we want
+>> to get comments from the community. We wish the modification to the network
+>> part will be generic which not used by vhost-net backend only, but a user
+>> application may use it as well when the zero-copy device may provides async
+>> read/write operations later.
+
+>I commented on this in the past. Do you still want comments?
+
+Now we continue with the first way and try to push it. But any comments about the two methods are still welcome.
+
+>That's nice. The thing to do is probably to enable GSO/TSO
+>and see what we get this way. Also, mergeable buffer support
+>was recently posted and I hope to merge it for 2.6.35.
+>You might want to take a look.
+
+I'm looking at the mergeable buffer. I think GSO/GRO support with zero-copy also needs it.
+Currently, GSO/TSO is still not supported by vhost-net?
+-- 
+MST
