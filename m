@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab0EHI4t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 04:56:49 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41982 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362Ab0EHI4s convert rfc822-to-8bit (ORCPT
+	id S1752736Ab0EHJLU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 05:11:20 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61191 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab0EHJLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 04:56:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=txd/bDHrkSddWldoGKL/H9ALC7FEdFbL28xvGLON/uTEaQb5EdIFmpS0ZCndgUH6/3
-         n9+yFsSb5GU5gXcKdpwgZUQxRjwpXJ5s7aMJBGTSNQ/KHdlT3kVNn3bJFleWP0pSrR/U
-         18n6r+Je9AyHKkEQeA3Lm5pYEjPJwIDFMJw6Y=
+	Sat, 8 May 2010 05:11:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: cpumask: fix compat getaffinity
+Date: Sat, 8 May 2010 11:11:08 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.34-rc6-00090-g1509e54-dirty; KDE/4.4.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
+       Andi Kleen <andi@firstfloor.org>, Ken Werner <ken.werner@web.de>
+References: <201005071445.50147.arnd@arndb.de> <201005081800.48240.rusty@rustcorp.com.au>
+In-Reply-To: <201005081800.48240.rusty@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <4BE4BDED.5050406@tuxonice.net>
-References: <v2ubd0d95d71005061941j4f9272d1he7dc9bcf5daa6457@mail.gmail.com>
-	 <CEE6BB42CAD6E947908279175AF8470A025A68CE5C@EXDCVYMBSTM006.EQ1STM.local>
-	 <z2mbd0d95d71005070017w7aa97001m2b81be6dbc1021b9@mail.gmail.com>
-	 <4BE3DF5A.9070601@tuxonice.net>
-	 <v2gbd0d95d71005070247j1f615a65mcbd52b5b6474206e@mail.gmail.com>
-	 <CEE6BB42CAD6E947908279175AF8470A025A68D366@EXDCVYMBSTM006.EQ1STM.local>
-	 <4BE4BDED.5050406@tuxonice.net>
-Date: Sat, 8 May 2010 16:56:47 +0800
-Message-ID: <i2ubd0d95d71005080156z7bf1b34bh2a15532813ae7cec@mail.gmail.com>
-Subject: Re: [PATCH] Check kmalloc return value before use the buffer
-From: Steven Liu <lingjiujianke@gmail.com>
-To: Nigel Cunningham <nigel@tuxonice.net>
-Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005081111.08720.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/Q71OcUjGMx3mDZlmY9DbfnSczlrkt3tUhi3U
+ TSEpXq002TUm6yzWWPXKef+PuXexwxixdoiy69Afbqqv8OtliU
+ 39P+27GgSD/ubhadDuCfg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Linus WALLEIJ]
+On Saturday 08 May 2010 10:30:47 Rusty Russell wrote:
+> 
+> On Fri, 7 May 2010 10:15:49 pm Arnd Bergmann wrote:
+> > Commit a45185d2d "cpumask: convert kernel/compat.c" broke
+> > libnuma, which abuses sched_getaffinity to find out NR_CPUS
+> > in order to parse /sys/devices/system/node/node*/cpumap.
+> > 
+> > On NUMA systems with less than 32 possibly CPUs, the
+> > current compat_sys_sched_getaffinity now returns '4'
+> > instead of the actual NR_CPUS/8, which makes libnuma
+> > bail out when parsing the cpumap.
+> 
+> Really?  AFAICT the cpumap is printed using nr_cpu_ids too.  Can you
+> give an example of what cpumap is on this system?
 
-   can this patch fix in?
+On Ken's PS3 running the Fedora 12 kernel (2.6.32-something), the output
+from my memory is 00000000,00000000,00000000,00000003\n. NR_CPUs
+is 128, nr_cpu_ids is most likely 2.
 
-2010/5/8 Nigel Cunningham <nigel@tuxonice.net>:
-> Hi again.
->
-> On 08/05/10 04:57, Linus WALLEIJ wrote:
->>
->> [Steven]
->>
->>> the code in arch/arm/mach-u300/dummyspichip.c is
->>>
->>>     bigtxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
->>>     if (bigtxbuf_virtual == NULL) {
->>>         status = -ENOMEM;
->>>         goto out;
->>>     }
->>>     bigrxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
->>>
->>>
->>> if kmalloc memory space for bigrxbuf_virtual is NULL, when it have
->>> kmalloc DMA_TEST_SIZE memory space for bigtxbuf_virtual,so ,if kmalloc
->>> memory for bigtxbuf_virtual success and kmalloc memory for
->>> bigrxbuf_virtual faild,i think we must kfree  bigtxbuf_virtual memory
->>
->> Ha, I also misread tx for rx, sorry.
->
-> I've just looked again, and the original version did have rx in the test. We
-> weren't seeing things :)
->
->> Acked-by: Linus Walleij<linus.walleij@stericsson.com>
->
-> Acked-by: Nigel Cunningham <nigel@tuxonice.net>
->
-> Regards,
->
-> Nigel
->
+	Arnd
