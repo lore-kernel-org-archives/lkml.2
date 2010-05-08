@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751308Ab0EHG5y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 02:57:54 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49787 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab0EHG5x (ORCPT
+	id S1751226Ab0EHHBV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 03:01:21 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46879 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab0EHHBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 02:57:53 -0400
-Message-ID: <4BE50AA3.6040806@vflare.org>
-Date: Sat, 08 May 2010 12:24:27 +0530
+	Sat, 8 May 2010 03:01:19 -0400
+Message-ID: <4BE50B71.4020202@vflare.org>
+Date: Sat, 08 May 2010 12:27:53 +0530
 From: Nitin Gupta <ngupta@vflare.org>
 Reply-To: ngupta@vflare.org
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
@@ -32,37 +32,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Oops, missed this part:
 
-On 05/08/2010 11:59 AM, Pekka Enberg wrote:
-> 
+On 05/08/2010 11:59 AM, Pekka Enberg wrote: 
 > Andrew Morton wrote:
->> The driver appears to be controlled by some nasty-looking ioctl against
->> some fd.  None of it is documented anywhere.  It should be.  You're
->> proposing here a permanent extension to the kernel ABI which we will
->> need to maintain for ever.  That's a big deal and it is the very first
->> thing reviewers will look at, before even considering the code.
+>> I've completely forgotten why we need this xvmalloc thing and I don't
+>> recall whether we decided it would be a good thing to have as a generic
+>> facility and of course it's all unexplained and undocumented.  I won't
+>> be looking at it today, for this reason.
 > 
-> I thought we got rid of it? Nitin?
->
-
-No, we didn't get rid of any ioctls. In fact, issuing ioctls is how we
-configure various ramzswap devices (using rzscontrol utility). The
-functionality of all these ioctls is well documented in rzscontrol
-manpage. Now, I will also add relevant comments in the code.
-
- 
->> RZSIO_GET_STATS looks to be hopeless from a long-term maintainability
->> POV.  It's debug code and it would be better to move it into a debugfs
->> file, where we can then add and remove things at will.
-> 
-> Yup.
+> We need it because the slab allocator is not a good fit for this special
+> purpose driver due to fragmentation. Nitin, you had a nice web page
+> showing all the relevant numbers but I can't find it anymore.
 > 
 
-Its not debug code. This ioctl is how we send stats about given ramzswap
-device to userspace: rzscontrol /dev/ramzswap --stats, invokes this ioctl
-and prints the stats. I will add comments to this part to make it clear.
-
+xvmalloc performance numbers:
+http://code.google.com/p/compcache/wiki/xvMalloc
+http://code.google.com/p/compcache/wiki/xvMallocPerformance
 
 Thanks,
 Nitin
