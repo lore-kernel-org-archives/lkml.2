@@ -1,153 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab0EHBHn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 21:07:43 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:56304 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755264Ab0EHBHm (ORCPT
+	id S1755353Ab0EHBSr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 21:18:47 -0400
+Received: from mail-qy0-f183.google.com ([209.85.221.183]:56475 "EHLO
+	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755264Ab0EHBSq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 21:07:42 -0400
-From: John Stultz <johnstul@us.ibm.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] Add clocksource_register_hz/khz interface (take3)
-Date: Fri,  7 May 2010 18:07:38 -0700
-Message-Id: <1273280858-30143-1-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.6.0.4
+	Fri, 7 May 2010 21:18:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=EYxTNEu15S26m5hAqZ1yLjnNHl+4VkxMOcFB7pApeQX0+uB8zF9cBIHGspXIeManN1
+         KZovEJ5LgrDjitegddwx/6usngTjaxkO9X0J52oewegw0DcB9hBvWQz8i5Ah9pRdg+0x
+         BfMG47B9YZsVcqGnsLVVmrAnWReO7Xu+48lRg=
+MIME-Version: 1.0
+In-Reply-To: <20100507105059.GE3479@localhost>
+References: <20100507105059.GE3479@localhost>
+Date: Fri, 7 May 2010 21:18:44 -0400
+X-Google-Sender-Auth: 85d228a4ccdba311
+Message-ID: <p2pb6c5339f1005071818u489804e7ud40fe3feb5459bb8@mail.gmail.com>
+Subject: Re: ath5k deadlock w/ blob transfer
+From: Bob Copeland <me@bobcopeland.com>
+To: Nils Radtke <lkml@think-future.de>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas, 
+On Fri, May 7, 2010 at 6:50 AM, Nils Radtke <lkml@think-future.de> wrote:
+>  Hi,
+>
+>  Guess, this is better suited in here:
+>>   - ath5k: when starting a blob transfer eg. ssh summer.jpg to the
+>>     notebook with the ath5k driver running, the wNIC freezes almost
+>>     immediately! Dead device. This is unfortunately too easily reproducible.
 
-Ok, got rid of the code duplication. Let me know if you see any
-other issues with the interface.
+> So where should I be posting this?
 
-thanks
--john
+You're in the right place...
 
+> When both drivers deadlock it's either a common
+> base in the wireless driver premisses or yet up the path somewhere in the
+> kernel code.
 
-How to pick good mult/shif pairs has always been difficult to describe
-to folks writing clocksource drivers, since it requires careful tradeoffs
-in adjustment accuracy vs overflow limits.
+(Or hardware.  madwifi doesn't use mac80211 so it is probably not
+common code, but ath5k could have inherited a bug from it.)
 
-Now, with the clocks_calc_mult_shift function, its much easier. However,
-not many clocksources have converted to using that function, and there is
-still the issue of the max interval length assumption being made by
-each clocksource driver independently.
+> Ideas?
 
-So this patch simplifies the registration process by having clocksources
-be registered with a hz/khz value and the the registration function taking
-care of setting mult/shift.
+I missed the first email.  What type of machine?  System lockup
+or the connection drops?  Do you get any output on the console or
+in dmesg? (try switching to a text console before your scp test.)
+If not, any output after lockup booting with nmi_watchdog=1?
 
-This should take most of the confusion out of writing a clocksource driver.
-
-Additionally it also keeps the shift size tradeoff (more accuracy vs longer
-possible nohz times) centralized so the timekeeping core can keep track of the
-assumptions being made.
-
-CC: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- include/linux/clocksource.h |   17 ++++++++++++++-
- kernel/time/clocksource.c   |   49 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 65 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 4bca8b6..b6d80f0 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -273,7 +273,6 @@ static inline s64 clocksource_cyc2ns(cycle_t cycles, u32 mult, u32 shift)
- }
- 
- 
--/* used to install a new clocksource */
- extern int clocksource_register(struct clocksource*);
- extern void clocksource_unregister(struct clocksource*);
- extern void clocksource_touch_watchdog(void);
-@@ -287,6 +286,22 @@ extern void clocksource_mark_unstable(struct clocksource *cs);
- extern void
- clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 minsec);
- 
-+/*
-+ * Don't call __clocksource_register_scale directly, use
-+ * clocksource_register_hz/khz
-+ */
-+extern int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq);
-+static inline int clocksource_register_hz(struct clocksource* cs, u32 hz)
-+{
-+	return __clocksource_register_scale(cs, 1, hz);
-+}
-+
-+static inline int clocksource_register_khz(struct clocksource* cs, u32 khz)
-+{
-+	return __clocksource_register_scale(cs, 1000, khz);
-+}
-+
-+
- static inline void
- clocksource_calc_mult_shift(struct clocksource *cs, u32 freq, u32 minsec)
- {
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index 1f5dde6..13c6fef 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -625,6 +625,55 @@ static void clocksource_enqueue(struct clocksource *cs)
- 	list_add(&cs->list, entry);
- }
- 
-+
-+/*
-+ * Maximum time we expect to go between ticks.
-+ * This is includes idle tickless time. It provides
-+ * the trade off between selecting a mult/shift pair 
-+ * that is very precise but can only handle a short period 
-+ * of time, vs. a mult/shift pair that can handle long 
-+ * periods of time but isn't as precise. 
-+ *
-+ * This is a subsystem constant, and actual hardware limitations
-+ * may override it (ie: clocksources that wrap every 3 seconds).
-+ */
-+#define MAX_UPDATE_LENGTH 5 /* Seconds */
-+
-+
-+/**
-+ * __clocksource_register_scale - Used to install new clocksources
-+ * @t:		clocksource to be registered
-+ * @scale:	Scale factor multiplied against freq to get clocksuorce hz
-+ * @freq:	clocksource frequency (cycles per second) divided by scale
-+ *
-+ * Returns -EBUSY if registration fails, zero otherwise.
-+ *
-+ * This *SHOULD NOT* be called directly! Please use the 
-+ * clocksource_register_hz() or clocksource_register_khz helper functions.
-+ */
-+int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq)
-+{
-+	
-+	/* Ideally we want to use  some of the limits used in 
-+	 * clocksource_max_deferment, to provide a more informed
-+	 * MAX_UPDATE_LENGTH. But for now this just gets the
-+	 * regiseter interface working properly.
-+	 */
-+	clocks_calc_mult_shift(&cs->mult, &cs->shift, freq,
-+				      NSEC_PER_SEC/scale,
-+				      MAX_UPDATE_LENGTH*scale);
-+	cs->max_idle_ns = clocksource_max_deferment(cs);
-+
-+	mutex_lock(&clocksource_mutex);
-+	clocksource_enqueue(cs);
-+	clocksource_select();
-+	clocksource_enqueue_watchdog(cs);
-+	mutex_unlock(&clocksource_mutex);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(__clocksource_register_scale);
-+
-+
- /**
-  * clocksource_register - Used to install new clocksources
-  * @t:		clocksource to be registered
 -- 
-1.6.0.4
-
+Bob Copeland %% www.bobcopeland.com
