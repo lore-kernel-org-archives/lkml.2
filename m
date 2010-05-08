@@ -1,56 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab0EHPdY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 11:33:24 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:44503 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527Ab0EHPdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 11:33:23 -0400
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH] perf report: Document '--call-graph' better for usage
-Date: Sat,  8 May 2010 18:33:03 +0300
-Message-Id: <1273332783-4268-1-git-send-email-penberg@cs.helsinki.fi>
-X-Mailer: git-send-email 1.6.3.3
+	id S1753496Ab0EHPg0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 11:36:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45124 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752527Ab0EHPgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 11:36:25 -0400
+Message-ID: <4BE585D1.50101@redhat.com>
+Date: Sat, 08 May 2010 11:40:01 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Ingo Molnar <mingo@elte.hu>
+CC: Masami Hiramatsu <mhiramat@redhat.com>,
+       lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH -tip 1/2] [RESEND] kprobes: Move enable/disable_kprobe()
+ out	from debugfs code
+References: <20100427223312.2322.60512.stgit@localhost6.localdomain6>
+In-Reply-To: <20100427223312.2322.60512.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch improves 'perf report -h' output for the '--call-graph' command line
-option by enumerating the different output types.
+Masami Hiramatsu wrote:
+> Move enable/disable_kprobe() API out from debugfs related code,
+> because these interfaces are not related to debugfs interface.
 
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
----
- tools/perf/builtin-report.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Hi Ingo,
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index f815de2..695a15e 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -424,7 +424,7 @@ static const struct option options[] = {
- 	OPT_BOOLEAN('x', "exclude-other", &symbol_conf.exclude_other,
- 		    "Only display entries with parent-match"),
- 	OPT_CALLBACK_DEFAULT('g', "call-graph", NULL, "output_type,min_percent",
--		     "Display callchains using output_type and min percent threshold. "
-+		     "Display callchains using output_type (graph, flat, fractal, or none) and min percent threshold. "
- 		     "Default: fractal,0.5", &parse_callchain_opt, callchain_default_opt),
- 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
- 		   "only consider symbols in these dsos"),
+Could you also merge this fix too?
+This fixes a compiler warning when CONFIG_KPROBES && !CONFIG_DEBUG_FS.
+
+Thank you,
+
+> 
+> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+> Acked-by:  Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Acked-by: Tony Luck <tony.luck@intel.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> ---
+> 
+>  kernel/kprobes.c |  132 +++++++++++++++++++++++++++---------------------------
+>  1 files changed, 66 insertions(+), 66 deletions(-)
+> 
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 0ed46f3..282035f 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1588,6 +1588,72 @@ static void __kprobes kill_kprobe(struct kprobe *p)
+>  	arch_remove_kprobe(p);
+>  }
+>  
+> +/* Disable one kprobe */
+> +int __kprobes disable_kprobe(struct kprobe *kp)
+> +{
+> +	int ret = 0;
+> +	struct kprobe *p;
+> +
+> +	mutex_lock(&kprobe_mutex);
+> +
+> +	/* Check whether specified probe is valid. */
+> +	p = __get_valid_kprobe(kp);
+> +	if (unlikely(p == NULL)) {
+> +		ret = -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	/* If the probe is already disabled (or gone), just return */
+> +	if (kprobe_disabled(kp))
+> +		goto out;
+> +
+> +	kp->flags |= KPROBE_FLAG_DISABLED;
+> +	if (p != kp)
+> +		/* When kp != p, p is always enabled. */
+> +		try_to_disable_aggr_kprobe(p);
+> +
+> +	if (!kprobes_all_disarmed && kprobe_disabled(p))
+> +		disarm_kprobe(p);
+> +out:
+> +	mutex_unlock(&kprobe_mutex);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(disable_kprobe);
+> +
+> +/* Enable one kprobe */
+> +int __kprobes enable_kprobe(struct kprobe *kp)
+> +{
+> +	int ret = 0;
+> +	struct kprobe *p;
+> +
+> +	mutex_lock(&kprobe_mutex);
+> +
+> +	/* Check whether specified probe is valid. */
+> +	p = __get_valid_kprobe(kp);
+> +	if (unlikely(p == NULL)) {
+> +		ret = -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	if (kprobe_gone(kp)) {
+> +		/* This kprobe has gone, we couldn't enable it. */
+> +		ret = -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	if (p != kp)
+> +		kp->flags &= ~KPROBE_FLAG_DISABLED;
+> +
+> +	if (!kprobes_all_disarmed && kprobe_disabled(p)) {
+> +		p->flags &= ~KPROBE_FLAG_DISABLED;
+> +		arm_kprobe(p);
+> +	}
+> +out:
+> +	mutex_unlock(&kprobe_mutex);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(enable_kprobe);
+> +
+>  void __kprobes dump_kprobe(struct kprobe *kp)
+>  {
+>  	printk(KERN_WARNING "Dumping kprobe:\n");
+> @@ -1805,72 +1871,6 @@ static const struct file_operations debugfs_kprobes_operations = {
+>  	.release        = seq_release,
+>  };
+>  
+> -/* Disable one kprobe */
+> -int __kprobes disable_kprobe(struct kprobe *kp)
+> -{
+> -	int ret = 0;
+> -	struct kprobe *p;
+> -
+> -	mutex_lock(&kprobe_mutex);
+> -
+> -	/* Check whether specified probe is valid. */
+> -	p = __get_valid_kprobe(kp);
+> -	if (unlikely(p == NULL)) {
+> -		ret = -EINVAL;
+> -		goto out;
+> -	}
+> -
+> -	/* If the probe is already disabled (or gone), just return */
+> -	if (kprobe_disabled(kp))
+> -		goto out;
+> -
+> -	kp->flags |= KPROBE_FLAG_DISABLED;
+> -	if (p != kp)
+> -		/* When kp != p, p is always enabled. */
+> -		try_to_disable_aggr_kprobe(p);
+> -
+> -	if (!kprobes_all_disarmed && kprobe_disabled(p))
+> -		disarm_kprobe(p);
+> -out:
+> -	mutex_unlock(&kprobe_mutex);
+> -	return ret;
+> -}
+> -EXPORT_SYMBOL_GPL(disable_kprobe);
+> -
+> -/* Enable one kprobe */
+> -int __kprobes enable_kprobe(struct kprobe *kp)
+> -{
+> -	int ret = 0;
+> -	struct kprobe *p;
+> -
+> -	mutex_lock(&kprobe_mutex);
+> -
+> -	/* Check whether specified probe is valid. */
+> -	p = __get_valid_kprobe(kp);
+> -	if (unlikely(p == NULL)) {
+> -		ret = -EINVAL;
+> -		goto out;
+> -	}
+> -
+> -	if (kprobe_gone(kp)) {
+> -		/* This kprobe has gone, we couldn't enable it. */
+> -		ret = -EINVAL;
+> -		goto out;
+> -	}
+> -
+> -	if (p != kp)
+> -		kp->flags &= ~KPROBE_FLAG_DISABLED;
+> -
+> -	if (!kprobes_all_disarmed && kprobe_disabled(p)) {
+> -		p->flags &= ~KPROBE_FLAG_DISABLED;
+> -		arm_kprobe(p);
+> -	}
+> -out:
+> -	mutex_unlock(&kprobe_mutex);
+> -	return ret;
+> -}
+> -EXPORT_SYMBOL_GPL(enable_kprobe);
+> -
+>  static void __kprobes arm_all_kprobes(void)
+>  {
+>  	struct hlist_head *head;
+> 
+> 
+
 -- 
-1.6.3.3
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
 
