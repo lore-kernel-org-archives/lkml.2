@@ -1,138 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab0EHPkX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 11:40:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33160 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753285Ab0EHPkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 11:40:21 -0400
-Date: Sat, 8 May 2010 17:39:22 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
- the wrong VMA information
-Message-ID: <20100508153922.GS5941@random.random>
-References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie>
- <1273188053-26029-2-git-send-email-mel@csn.ul.ie>
+	id S1753407Ab0EHPyK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 11:54:10 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49973 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058Ab0EHPyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 11:54:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=cNe6U5XgqgME9dcbLxPnHZa7k9yZR5WYJvtW0S/J6kYKNOrz4yLr68f7o8YgB8cVvQ
+         5VojDTuZBW9c8HxNcOkleez8d0C424pdk8Au79qthDMImaCSBmPAWXPDkwmn1MQr95CM
+         Uh8ebMO3R3v3+KyT50hI3+Z3/YiueOdZakzh4=
+Date: Sat, 8 May 2010 17:54:07 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tom Zanussi <tzanussi@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>
+Subject: Re: [PATCH 0/2] perf: Redesign trace events reordering
+Message-ID: <20100508155404.GA5444@nowhere>
+References: <1273017811-16880-1-git-send-regression-fweisbec@gmail.com> <1273038527.6383.51.camel@tropicana>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273188053-26029-2-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <1273038527.6383.51.camel@tropicana>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 12:20:52AM +0100, Mel Gorman wrote:
-> @@ -1655,6 +1655,7 @@ int rmap_walk_ksm(struct page *page, int (*rmap_one)(struct page *,
->  {
->  	struct stable_node *stable_node;
->  	struct hlist_node *hlist;
-> +	struct anon_vma *nested_anon_vma = NULL;
->  	struct rmap_item *rmap_item;
->  	int ret = SWAP_AGAIN;
->  	int search_new_forks = 0;
-> @@ -1671,9 +1672,16 @@ again:
->  		struct anon_vma_chain *vmac;
->  		struct vm_area_struct *vma;
+On Wed, May 05, 2010 at 12:48:47AM -0500, Tom Zanussi wrote:
+> Hi Frederic,
+> 
+> On Wed, 2010-05-05 at 02:03 +0200, Frederic Weisbecker wrote:
+> > I recently noticed that the new reordering design is broken
+> > when it deals with tons of events.
+> > 
+> > This patchset provides another algorithm to deal with that,
+> > tested without any problem.
+> > 
+> > And since it involves more frequent flushes, I guess it could
+> > plug nicely with the live mode.
+> 
+> Very nice!  I tried these out with live mode and it seems to work fine,
+> after applying the patch below.
+> 
+> I initially had a problem with 'unexpected end of event stream' errors,
+> then noticed that the FINISHED_ROUND events were basically just headers
+> with no data, which caused the read of the 0-length payload to appear as
+> end-of-stream.
+> 
+> I'll do some more testing (and fix some warnings in the scripts that
+> this mode seems to elicit), but it seems so far to work pretty well for
+> live mode...
+> 
+> Tom
+
+
+Cool, I'm applying your patch then,
+
+Thanks.
+
+
+
+
+> 
+> From: Tom Zanussi <tzanussi@gmail.com>
+> Date: Wed, 5 May 2010 00:27:40 -0500
+> Subject: [PATCH] perf/live-mode: handle payload-less events
+> 
+> Some events, such as the PERF_RECORD_FINISHED_ROUND event consist of
+> only an event header and no data.  In this case, a 0-length payload
+> will be read, and the 0 return value will be wrongly interpreted as an
+> 'unexpected end of event stream'.
+> 
+> This patch allows for proper handling of data-less events by skipping
+> 0-length reads.
+> 
+> Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+> ---
+>  tools/perf/util/session.c |   19 +++++++++++--------
+>  1 files changed, 11 insertions(+), 8 deletions(-)
+> 
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 9401909..00ab298 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -696,15 +696,18 @@ more:
+>  	p = &event;
+>  	p += sizeof(struct perf_event_header);
 >  
-> -		spin_lock(&anon_vma->lock);
-> +		anon_vma = anon_vma_lock_root(anon_vma);
-> +		if (nested_anon_vma) {
-> +			spin_unlock(&nested_anon_vma->lock);
-> +			nested_anon_vma = NULL;
+> -	err = do_read(self->fd, p, size - sizeof(struct perf_event_header));
+> -	if (err <= 0) {
+> -		if (err == 0) {
+> -			pr_err("unexpected end of event stream\n");
+> -			goto done;
+> -		}
+> +	if (size - sizeof(struct perf_event_header)) {
+> +		err = do_read(self->fd, p,
+> +			      size - sizeof(struct perf_event_header));
+> +		if (err <= 0) {
+> +			if (err == 0) {
+> +				pr_err("unexpected end of event stream\n");
+> +				goto done;
+> +			}
+>  
+> -		pr_err("failed to read event data\n");
+> -		goto out_err;
+> +			pr_err("failed to read event data\n");
+> +			goto out_err;
 > +		}
->  		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
->  			vma = vmac->vma;
-> +			nested_anon_vma = anon_vma_lock_nested(nested_anon_vma,
-> +						vma->anon_vma, anon_vma);
-> +
->  			if (rmap_item->address < vma->vm_start ||
->  			    rmap_item->address >= vma->vm_end)
->  				continue;
-> @@ -1368,19 +1444,26 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
->  	 * are holding mmap_sem. Users without mmap_sem are required to
->  	 * take a reference count to prevent the anon_vma disappearing
->  	 */
-> -	anon_vma = page_anon_vma(page);
-> +	anon_vma = page_anon_vma_lock_root(page);
->  	if (!anon_vma)
->  		return ret;
-> -	spin_lock(&anon_vma->lock);
->  	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
->  		struct vm_area_struct *vma = avc->vma;
-> -		unsigned long address = vma_address(page, vma);
-> -		if (address == -EFAULT)
-> -			continue;
-> -		ret = rmap_one(page, vma, address, arg);
-> +		unsigned long address;
-> +
-> +		nested_anon_vma = anon_vma_lock_nested(nested_anon_vma,
-> +						vma->anon_vma, anon_vma);
-> +		address = vma_address(page, vma);
-> +		if (address != -EFAULT)
-> +			ret = rmap_one(page, vma, address, arg);
-> +
->  		if (ret != SWAP_AGAIN)
->  			break;
 >  	}
-> +
-> +	if (nested_anon_vma)
-> +		spin_unlock(&nested_anon_vma->lock);
-> +
->  	spin_unlock(&anon_vma->lock);
->  	return ret;
->  }
+>  
+>  	if (size == 0 ||
+> -- 
+> 1.6.4.GIT
+> 
+> 
+> 
 
-I already told Mel by PM. This degrades the new-anon_vma code to an
-even _slower_ mode than the old anon-vma code in 2.6.32 (the same in
-math complexity terms but slower in practice) for migrate. Furthermore
-page_referenced() may now return true even if there are young ptes
-that simply get lost in the rmap walk.
-
-The new anon-vma code is mostly relevant for migrate and memory
-compaction and transparent hugepage support where it gets invoked even
-if there's plenty of free memory and no I/O load at all. So whatever
-you save during swap, you'll lose while transparent hugepage support
-allocate the pages. So the above fix renders the whole effort
-pointless as far as I'm concerned.
-
-I think Rik's patch is the only sensible solution that won't
-invalidate the whole effort for transparent hugepage.
-
-About how to adapt split_huge_page to the root anon_vma I didn't even
-think about it yet. All I can tell you right now is that
-wait_split_huge_page can be changed to wait on the pmd_trans_splitting
-(or alternatively the pmd_trans_huge bit) bit to go away in a
-cpu_relax() barrier() loop. But the page->mapping/anon_vma->lock is
-also used to serialize against parallel split_huge_page but I guess
-taking the root anon_vma lock in split_huge_page() should work
-fine. Just I'm not going to do that except maybe in a for-mainline
-branch, but I'll keep master branch with the old-anon-vma 2.6.32 code
-and the anon_vma_branch with Rik's fix that allows to take advantage
-of the new anon-vma code (so it's not purely gratuitous complexity
-added for nothing) also in migrate.c from memory compaction (that runs
-24/7 on all my systems and it's much more frequent than the swap rmap
-walks that in fact never ever happens here), and in the rmap walks in
-split_huge_page too (which are not so frequent especially after
-Johannes implemented native mprotect on hugepages but it's obviously
-still more frequent than swap).
-
-I'm simply not going to support the degradation to the root anon_vma
-complexity in aa.git, except for strict merging requirements but I'll
-keep backing it out in aa.git or I'd rather stick to old-anon-vma
-code which at least is much simpler and saves memory too (as there are
-many fewer anon-vma and no avc, and less useless locks).
-
-What I instead already mentioned once was to add a _shared_ lock so
-you share the spinlock across the whole forest but you keep walking
-the right page->anon_vma->same_anon_vma! The moment you walk the
-page->anon_vma->root_anon_vma->same_anon_vma you lost my support as it
-makes the whole effort pointless compared to 2.6.32 as far as 99% of my
-workloads are concerned.
