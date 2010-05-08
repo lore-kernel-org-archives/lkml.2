@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751226Ab0EHHBV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 03:01:21 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46879 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab0EHHBT (ORCPT
+	id S1751299Ab0EHHFx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 03:05:53 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:39397 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab0EHHFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 03:01:19 -0400
-Message-ID: <4BE50B71.4020202@vflare.org>
-Date: Sat, 08 May 2010 12:27:53 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Sat, 8 May 2010 03:05:51 -0400
+Message-ID: <4BE50D37.7020603@cs.helsinki.fi>
+Date: Sat, 08 May 2010 10:05:27 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@cs.helsinki.fi>
+To: ngupta@vflare.org
 CC: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
@@ -24,31 +23,17 @@ CC: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
        linux-kernel <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH 0/3] ramzswap: Eliminate stale data from compressed memory
  (v2)
-References: <1273217107-2023-1-git-send-email-ngupta@vflare.org> <20100507155504.10532b3e.akpm@linux-foundation.org> <4BE504AD.4030807@cs.helsinki.fi>
-In-Reply-To: <4BE504AD.4030807@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+References: <1273217107-2023-1-git-send-email-ngupta@vflare.org> <20100507155504.10532b3e.akpm@linux-foundation.org> <4BE504AD.4030807@cs.helsinki.fi> <4BE50AA3.6040806@vflare.org>
+In-Reply-To: <4BE50AA3.6040806@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops, missed this part:
+Nitin Gupta wrote:
+> Its not debug code. This ioctl is how we send stats about given ramzswap
+> device to userspace: rzscontrol /dev/ramzswap --stats, invokes this ioctl
+> and prints the stats. I will add comments to this part to make it clear.
 
-On 05/08/2010 11:59 AM, Pekka Enberg wrote: 
-> Andrew Morton wrote:
->> I've completely forgotten why we need this xvmalloc thing and I don't
->> recall whether we decided it would be a good thing to have as a generic
->> facility and of course it's all unexplained and undocumented.  I won't
->> be looking at it today, for this reason.
-> 
-> We need it because the slab allocator is not a good fit for this special
-> purpose driver due to fragmentation. Nitin, you had a nice web page
-> showing all the relevant numbers but I can't find it anymore.
-> 
-
-xvmalloc performance numbers:
-http://code.google.com/p/compcache/wiki/xvMalloc
-http://code.google.com/p/compcache/wiki/xvMallocPerformance
-
-Thanks,
-Nitin
+Another option would be sysfs if you want the stats to always be available.
