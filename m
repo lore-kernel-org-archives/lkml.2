@@ -1,234 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab0EHK6N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 06:58:13 -0400
-Received: from ozlabs.org ([203.10.76.45]:41464 "EHLO ozlabs.org"
+	id S1752757Ab0EHLPj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 07:15:39 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55493 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752495Ab0EHK6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 06:58:10 -0400
-Date: Sat, 8 May 2010 20:28:41 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-       linux-kernel@vger.kernel.org, davem@davemloft.net, fweisbec@gmail.com,
-       ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu,
-       linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf: Add group scheduling transactional APIs
-Message-ID: <20100508102841.GA10650@brick.ozlabs.ibm.com>
-References: <1272002160.5707.60.camel@minggr.sh.intel.com>
- <tip-6bde9b6ce0127e2a56228a2071536d422be31336@git.kernel.org>
- <1273269355.1642.383.camel@laptop>
+	id S1751374Ab0EHLPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 07:15:38 -0400
+Date: Sat, 8 May 2010 13:15:29 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
+       paulmck@linux.vnet.ibm.com
+Subject: Re: [GIT PULL sched/core] cpu_stop: implement and use cpu_stop,
+ take#3
+Message-ID: <20100508111529.GA19796@elte.hu>
+References: <1273164772-19149-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273269355.1642.383.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1273164772-19149-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 11:55:55PM +0200, Peter Zijlstra wrote:
 
-> Paul, are you ok with the powerpc patch that goes with this:
->   https://patchwork.kernel.org/patch/94620/
+* Tejun Heo <tj@kernel.org> wrote:
+
+> Hello, Ingo.
 > 
-> (I've got a slightly modified version because I did rename things back
-> to txn)
+> Please pull from the following branch to receive cpu_stop patches.
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cpu_stop
+> 
+> Adding mb()'s in synchronize_sched_expedited() is the only change
+> since the last take[2].  Both Peter and Paul have acked the patchset.
+> I'll post the patchset as replies to this message.
+> 
+> This patchset is on top of the current sched/core (99bd5e2f) and
+> contains the following changes.
+> 
+> Paul E. McKenney (1):
+>       scheduler: correctly place paranioa memory barriers in synchronize_sched_expedited()
+> 
+> Tejun Heo (4):
+>       cpu_stop: implement stop_cpu[s]()
+>       stop_machine: reimplement using cpu_stop
+>       scheduler: replace migration_thread with cpu_stop
+>       scheduler: kill paranoia check in synchronize_sched_expedited()
+> 
+>  Documentation/RCU/torture.txt |   10 -
+>  arch/s390/kernel/time.c       |    1 -
+>  drivers/xen/manage.c          |   14 +-
+>  include/linux/rcutiny.h       |    2 -
+>  include/linux/rcutree.h       |    1 -
+>  include/linux/stop_machine.h  |   59 +++--
+>  kernel/cpu.c                  |    8 -
+>  kernel/module.c               |   14 +-
+>  kernel/rcutorture.c           |    2 +-
+>  kernel/sched.c                |  284 +++++-----------------
+>  kernel/sched_fair.c           |   48 +++-
+>  kernel/stop_machine.c         |  530 +++++++++++++++++++++++++++++++----------
+>  12 files changed, 538 insertions(+), 435 deletions(-)
 
-That version doesn't update event->hw.config properly; the thing is
-that some events have multiple event codes that count the same thing
-but have different constraints (e.g. one code might only work on one
-hardware counter whereas another might work on any counter but
-constrain what can be counted on other counters).
+FYI, it doesnt build on x86 allnoconfig:
 
-So power_check_constraints() searches through the space of possible
-alternative codes and returns the results in cpuhw->events[].  I then
-put the alternatives chosen back into each event->hw.config to use as
-the starting point for the search next time.  This means that
-event->hw.config has to be updated after power_check_constraints() has
-been called in power_pmu_commit_txn, not in the no-check case in
-power_pmu_enable().
+kernel/sched_fair.c: In function 'load_balance':
+kernel/sched_fair.c:2917: error: implicit declaration of function 'stop_one_cpu_nowait'
+kernel/sched.c: In function 'sched_exec':
+kernel/sched.c:3084: error: implicit declaration of function 'stop_one_cpu'
+kernel/sched.c: In function 'synchronize_sched_expedited':
 
-Here's the patch I ended up with.
-
---------------
-Subject: perf, powerpc: Implement group scheduling transactional APIs
-From: Lin Ming <ming.m.lin@intel.com>
-
-[paulus@samba.org: Set cpuhw->event[i]->hw.config in
-power_pmu_commit_txn.]
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Paul Mackerras <paulus@samba.org>
----
-diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
-index 08460a2..43b83c3 100644
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -35,6 +35,9 @@ struct cpu_hw_events {
- 	u64 alternatives[MAX_HWEVENTS][MAX_EVENT_ALTERNATIVES];
- 	unsigned long amasks[MAX_HWEVENTS][MAX_EVENT_ALTERNATIVES];
- 	unsigned long avalues[MAX_HWEVENTS][MAX_EVENT_ALTERNATIVES];
-+
-+	unsigned int group_flag;
-+	int n_txn_start;
- };
- DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
- 
-@@ -718,66 +721,6 @@ static int collect_events(struct perf_event *group, int max_count,
- 	return n;
- }
- 
--static void event_sched_in(struct perf_event *event)
--{
--	event->state = PERF_EVENT_STATE_ACTIVE;
--	event->oncpu = smp_processor_id();
--	event->tstamp_running += event->ctx->time - event->tstamp_stopped;
--	if (is_software_event(event))
--		event->pmu->enable(event);
--}
--
--/*
-- * Called to enable a whole group of events.
-- * Returns 1 if the group was enabled, or -EAGAIN if it could not be.
-- * Assumes the caller has disabled interrupts and has
-- * frozen the PMU with hw_perf_save_disable.
-- */
--int hw_perf_group_sched_in(struct perf_event *group_leader,
--	       struct perf_cpu_context *cpuctx,
--	       struct perf_event_context *ctx)
--{
--	struct cpu_hw_events *cpuhw;
--	long i, n, n0;
--	struct perf_event *sub;
--
--	if (!ppmu)
--		return 0;
--	cpuhw = &__get_cpu_var(cpu_hw_events);
--	n0 = cpuhw->n_events;
--	n = collect_events(group_leader, ppmu->n_counter - n0,
--			   &cpuhw->event[n0], &cpuhw->events[n0],
--			   &cpuhw->flags[n0]);
--	if (n < 0)
--		return -EAGAIN;
--	if (check_excludes(cpuhw->event, cpuhw->flags, n0, n))
--		return -EAGAIN;
--	i = power_check_constraints(cpuhw, cpuhw->events, cpuhw->flags, n + n0);
--	if (i < 0)
--		return -EAGAIN;
--	cpuhw->n_events = n0 + n;
--	cpuhw->n_added += n;
--
--	/*
--	 * OK, this group can go on; update event states etc.,
--	 * and enable any software events
--	 */
--	for (i = n0; i < n0 + n; ++i)
--		cpuhw->event[i]->hw.config = cpuhw->events[i];
--	cpuctx->active_oncpu += n;
--	n = 1;
--	event_sched_in(group_leader);
--	list_for_each_entry(sub, &group_leader->sibling_list, group_entry) {
--		if (sub->state != PERF_EVENT_STATE_OFF) {
--			event_sched_in(sub);
--			++n;
--		}
--	}
--	ctx->nr_active += n;
--
--	return 1;
--}
--
- /*
-  * Add a event to the PMU.
-  * If all events are not already frozen, then we disable and
-@@ -805,12 +748,22 @@ static int power_pmu_enable(struct perf_event *event)
- 	cpuhw->event[n0] = event;
- 	cpuhw->events[n0] = event->hw.config;
- 	cpuhw->flags[n0] = event->hw.event_base;
-+
-+	/*
-+	 * If group events scheduling transaction was started,
-+	 * skip the schedulability test here, it will be peformed
-+	 * at commit time(->commit_txn) as a whole
-+	 */
-+	if (cpuhw->group_flag & PERF_EVENT_TXN_STARTED)
-+		goto nocheck;
-+
- 	if (check_excludes(cpuhw->event, cpuhw->flags, n0, 1))
- 		goto out;
- 	if (power_check_constraints(cpuhw, cpuhw->events, cpuhw->flags, n0 + 1))
- 		goto out;
--
- 	event->hw.config = cpuhw->events[n0];
-+
-+nocheck:
- 	++cpuhw->n_events;
- 	++cpuhw->n_added;
- 
-@@ -896,11 +849,65 @@ static void power_pmu_unthrottle(struct perf_event *event)
- 	local_irq_restore(flags);
- }
- 
-+/*
-+ * Start group events scheduling transaction
-+ * Set the flag to make pmu::enable() not perform the
-+ * schedulability test, it will be performed at commit time
-+ */
-+void power_pmu_start_txn(const struct pmu *pmu)
-+{
-+	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+
-+	cpuhw->group_flag |= PERF_EVENT_TXN_STARTED;
-+	cpuhw->n_txn_start = cpuhw->n_events;
-+}
-+
-+/*
-+ * Stop group events scheduling transaction
-+ * Clear the flag and pmu::enable() will perform the
-+ * schedulability test.
-+ */
-+void power_pmu_cancel_txn(const struct pmu *pmu)
-+{
-+	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+
-+	cpuhw->group_flag &= ~PERF_EVENT_TXN_STARTED;
-+}
-+
-+/*
-+ * Commit group events scheduling transaction
-+ * Perform the group schedulability test as a whole
-+ * Return 0 if success
-+ */
-+int power_pmu_commit_txn(const struct pmu *pmu)
-+{
-+	struct cpu_hw_events *cpuhw;
-+	long i, n;
-+
-+	if (!ppmu)
-+		return -EAGAIN;
-+	cpuhw = &__get_cpu_var(cpu_hw_events);
-+	n = cpuhw->n_events;
-+	if (check_excludes(cpuhw->event, cpuhw->flags, 0, n))
-+		return -EAGAIN;
-+	i = power_check_constraints(cpuhw, cpuhw->events, cpuhw->flags, n);
-+	if (i < 0)
-+		return -EAGAIN;
-+
-+	for (i = cpuhw->n_txn_start; i < n; ++i)
-+		cpuhw->event[i]->hw.config = cpuhw->events[i];
-+
-+	return 0;
-+}
-+
- struct pmu power_pmu = {
- 	.enable		= power_pmu_enable,
- 	.disable	= power_pmu_disable,
- 	.read		= power_pmu_read,
- 	.unthrottle	= power_pmu_unthrottle,
-+	.start_txn	= power_pmu_start_txn,
-+	.cancel_txn	= power_pmu_cancel_txn,
-+	.commit_txn	= power_pmu_commit_txn,
- };
- 
- /*
+	Ingo
