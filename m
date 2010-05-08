@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab0EHNqT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 09:46:19 -0400
-Received: from b.painless.aaisp.net.uk ([81.187.30.52]:37924 "EHLO
-	b.painless.aaisp.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab0EHNqS (ORCPT
+	id S1752219Ab0EHOLx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 10:11:53 -0400
+Received: from relay01.mx.bawue.net ([193.7.176.67]:37584 "EHLO
+	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab0EHOLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 09:46:18 -0400
-X-Greylist: delayed 1115 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 May 2010 09:46:18 EDT
-Subject: option.ko: ZTE MF636 support
-From: Peter Hicks <peter.hicks@poggs.co.uk>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 08 May 2010 14:27:38 +0100
-Message-ID: <1273325258.15521.38.camel@angel>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 8 May 2010 10:11:52 -0400
+Date: Sat, 8 May 2010 16:11:44 +0200
+From: Nils Radtke <Nils.Radtke@Think-Future.de>
+To: Bob Copeland <me@bobcopeland.com>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: ath5k deadlock w/ blob transfer
+Message-ID: <20100508141144.GA30514@localhost>
+Reply-To: Nils Radtke <Nils.Radtke@Think-Future.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <p2pb6c5339f1005071818u489804e7ud40fe3feb5459bb8@mail.gmail.com>
+X-Url: http://www.Think-Future.de
+X-Editor: Vi it! http://www.vim.org
+X-Bkp: p2mi
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+  Hi,
 
-I've discovered that the ZTE MF636 USB HSUPA modem (USB ID 19d2:0033)
-doesn't play well with option.ko.  This seems to be a similar problem to
-the 4G W14 stick (commit a74171005f2f6474e05bdfccb05c9f0d68224a49).
+> I missed the first email.  What type of machine?  System lockup
+> or the connection drops?  Do you get any output on the console or
+> in dmesg? (try switching to a text console before your scp test.)
+> If not, any output after lockup booting with nmi_watchdog=1?
 
-The symptom of this problem is that the first three serial ports on the
-MF636 take around 10s to open with modem-manager, and fail to open with
-Minicom.  The fourth serial port is fine.
+IRC, no system lockup, only driver lockup. But I avoided using wireless for
+blob transfer for the reliability of the lockups, so it's a couple of months
+since I deliberately crashed it.. Maybe once in a while it lead to a complete
+system lockup, but treat this as rumble in my memories (and could be due to
+the other BUGs reported, also)..
 
-Blacklisting the first three interfaces in option.c results in them
-opening immediately.  This reduces modem detection time in modem-manager
-from 20-30 seconds to around five.
+notebook: ACER Extensa 5220
+kernels since  Linux host 2.6.32.2 #4 PREEMPT Wed Dec 30 15:19:58 CET 2009 i686 and even before
+lspci:
+04:00.0 Ethernet controller: Atheros Communications Inc. AR5001 Wireless Network Adapter (rev 01)
+        Subsystem: Device 1a32:0105
+        Control: I/O+ Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+
++FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR-
++<PERR- INTx-
+        Interrupt: pin A routed to IRQ 17
+        Region 0: Memory at f8000000 (64-bit, non-prefetchable) [size=64K]
+        Capabilities: <access denied>
 
-As there is only a single blacklisted device in option.c at present,
-what is the best way to work around this problem?  Can somebody help me
-with writing a patch to submit to fix the problem in the kernel?
+There's another bugreport for this machine, w/ hw info: http://lkml.org/lkml/2010/2/18/104
 
-Regards,
+Ok, trying to lockup the machine once more, will report back then.
 
+  Thanks,
 
-Peter
-
+  Nils
 
