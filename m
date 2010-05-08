@@ -1,208 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab0EHPg0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 11:36:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45124 "EHLO mx1.redhat.com"
+	id S1753570Ab0EHPkX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 11:40:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33160 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527Ab0EHPgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 11:36:25 -0400
-Message-ID: <4BE585D1.50101@redhat.com>
-Date: Sat, 08 May 2010 11:40:01 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+	id S1753285Ab0EHPkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 11:40:21 -0400
+Date: Sat, 8 May 2010 17:39:22 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+ the wrong VMA information
+Message-ID: <20100508153922.GS5941@random.random>
+References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie>
+ <1273188053-26029-2-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Masami Hiramatsu <mhiramat@redhat.com>,
-       lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH -tip 1/2] [RESEND] kprobes: Move enable/disable_kprobe()
- out	from debugfs code
-References: <20100427223312.2322.60512.stgit@localhost6.localdomain6>
-In-Reply-To: <20100427223312.2322.60512.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273188053-26029-2-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Masami Hiramatsu wrote:
-> Move enable/disable_kprobe() API out from debugfs related code,
-> because these interfaces are not related to debugfs interface.
-
-Hi Ingo,
-
-Could you also merge this fix too?
-This fixes a compiler warning when CONFIG_KPROBES && !CONFIG_DEBUG_FS.
-
-Thank you,
-
-> 
-> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-> Acked-by:  Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> Acked-by: Tony Luck <tony.luck@intel.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> ---
-> 
->  kernel/kprobes.c |  132 +++++++++++++++++++++++++++---------------------------
->  1 files changed, 66 insertions(+), 66 deletions(-)
-> 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 0ed46f3..282035f 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1588,6 +1588,72 @@ static void __kprobes kill_kprobe(struct kprobe *p)
->  	arch_remove_kprobe(p);
+On Fri, May 07, 2010 at 12:20:52AM +0100, Mel Gorman wrote:
+> @@ -1655,6 +1655,7 @@ int rmap_walk_ksm(struct page *page, int (*rmap_one)(struct page *,
+>  {
+>  	struct stable_node *stable_node;
+>  	struct hlist_node *hlist;
+> +	struct anon_vma *nested_anon_vma = NULL;
+>  	struct rmap_item *rmap_item;
+>  	int ret = SWAP_AGAIN;
+>  	int search_new_forks = 0;
+> @@ -1671,9 +1672,16 @@ again:
+>  		struct anon_vma_chain *vmac;
+>  		struct vm_area_struct *vma;
+>  
+> -		spin_lock(&anon_vma->lock);
+> +		anon_vma = anon_vma_lock_root(anon_vma);
+> +		if (nested_anon_vma) {
+> +			spin_unlock(&nested_anon_vma->lock);
+> +			nested_anon_vma = NULL;
+> +		}
+>  		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
+>  			vma = vmac->vma;
+> +			nested_anon_vma = anon_vma_lock_nested(nested_anon_vma,
+> +						vma->anon_vma, anon_vma);
+> +
+>  			if (rmap_item->address < vma->vm_start ||
+>  			    rmap_item->address >= vma->vm_end)
+>  				continue;
+> @@ -1368,19 +1444,26 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+>  	 * are holding mmap_sem. Users without mmap_sem are required to
+>  	 * take a reference count to prevent the anon_vma disappearing
+>  	 */
+> -	anon_vma = page_anon_vma(page);
+> +	anon_vma = page_anon_vma_lock_root(page);
+>  	if (!anon_vma)
+>  		return ret;
+> -	spin_lock(&anon_vma->lock);
+>  	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
+>  		struct vm_area_struct *vma = avc->vma;
+> -		unsigned long address = vma_address(page, vma);
+> -		if (address == -EFAULT)
+> -			continue;
+> -		ret = rmap_one(page, vma, address, arg);
+> +		unsigned long address;
+> +
+> +		nested_anon_vma = anon_vma_lock_nested(nested_anon_vma,
+> +						vma->anon_vma, anon_vma);
+> +		address = vma_address(page, vma);
+> +		if (address != -EFAULT)
+> +			ret = rmap_one(page, vma, address, arg);
+> +
+>  		if (ret != SWAP_AGAIN)
+>  			break;
+>  	}
+> +
+> +	if (nested_anon_vma)
+> +		spin_unlock(&nested_anon_vma->lock);
+> +
+>  	spin_unlock(&anon_vma->lock);
+>  	return ret;
 >  }
->  
-> +/* Disable one kprobe */
-> +int __kprobes disable_kprobe(struct kprobe *kp)
-> +{
-> +	int ret = 0;
-> +	struct kprobe *p;
-> +
-> +	mutex_lock(&kprobe_mutex);
-> +
-> +	/* Check whether specified probe is valid. */
-> +	p = __get_valid_kprobe(kp);
-> +	if (unlikely(p == NULL)) {
-> +		ret = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	/* If the probe is already disabled (or gone), just return */
-> +	if (kprobe_disabled(kp))
-> +		goto out;
-> +
-> +	kp->flags |= KPROBE_FLAG_DISABLED;
-> +	if (p != kp)
-> +		/* When kp != p, p is always enabled. */
-> +		try_to_disable_aggr_kprobe(p);
-> +
-> +	if (!kprobes_all_disarmed && kprobe_disabled(p))
-> +		disarm_kprobe(p);
-> +out:
-> +	mutex_unlock(&kprobe_mutex);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(disable_kprobe);
-> +
-> +/* Enable one kprobe */
-> +int __kprobes enable_kprobe(struct kprobe *kp)
-> +{
-> +	int ret = 0;
-> +	struct kprobe *p;
-> +
-> +	mutex_lock(&kprobe_mutex);
-> +
-> +	/* Check whether specified probe is valid. */
-> +	p = __get_valid_kprobe(kp);
-> +	if (unlikely(p == NULL)) {
-> +		ret = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	if (kprobe_gone(kp)) {
-> +		/* This kprobe has gone, we couldn't enable it. */
-> +		ret = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	if (p != kp)
-> +		kp->flags &= ~KPROBE_FLAG_DISABLED;
-> +
-> +	if (!kprobes_all_disarmed && kprobe_disabled(p)) {
-> +		p->flags &= ~KPROBE_FLAG_DISABLED;
-> +		arm_kprobe(p);
-> +	}
-> +out:
-> +	mutex_unlock(&kprobe_mutex);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(enable_kprobe);
-> +
->  void __kprobes dump_kprobe(struct kprobe *kp)
->  {
->  	printk(KERN_WARNING "Dumping kprobe:\n");
-> @@ -1805,72 +1871,6 @@ static const struct file_operations debugfs_kprobes_operations = {
->  	.release        = seq_release,
->  };
->  
-> -/* Disable one kprobe */
-> -int __kprobes disable_kprobe(struct kprobe *kp)
-> -{
-> -	int ret = 0;
-> -	struct kprobe *p;
-> -
-> -	mutex_lock(&kprobe_mutex);
-> -
-> -	/* Check whether specified probe is valid. */
-> -	p = __get_valid_kprobe(kp);
-> -	if (unlikely(p == NULL)) {
-> -		ret = -EINVAL;
-> -		goto out;
-> -	}
-> -
-> -	/* If the probe is already disabled (or gone), just return */
-> -	if (kprobe_disabled(kp))
-> -		goto out;
-> -
-> -	kp->flags |= KPROBE_FLAG_DISABLED;
-> -	if (p != kp)
-> -		/* When kp != p, p is always enabled. */
-> -		try_to_disable_aggr_kprobe(p);
-> -
-> -	if (!kprobes_all_disarmed && kprobe_disabled(p))
-> -		disarm_kprobe(p);
-> -out:
-> -	mutex_unlock(&kprobe_mutex);
-> -	return ret;
-> -}
-> -EXPORT_SYMBOL_GPL(disable_kprobe);
-> -
-> -/* Enable one kprobe */
-> -int __kprobes enable_kprobe(struct kprobe *kp)
-> -{
-> -	int ret = 0;
-> -	struct kprobe *p;
-> -
-> -	mutex_lock(&kprobe_mutex);
-> -
-> -	/* Check whether specified probe is valid. */
-> -	p = __get_valid_kprobe(kp);
-> -	if (unlikely(p == NULL)) {
-> -		ret = -EINVAL;
-> -		goto out;
-> -	}
-> -
-> -	if (kprobe_gone(kp)) {
-> -		/* This kprobe has gone, we couldn't enable it. */
-> -		ret = -EINVAL;
-> -		goto out;
-> -	}
-> -
-> -	if (p != kp)
-> -		kp->flags &= ~KPROBE_FLAG_DISABLED;
-> -
-> -	if (!kprobes_all_disarmed && kprobe_disabled(p)) {
-> -		p->flags &= ~KPROBE_FLAG_DISABLED;
-> -		arm_kprobe(p);
-> -	}
-> -out:
-> -	mutex_unlock(&kprobe_mutex);
-> -	return ret;
-> -}
-> -EXPORT_SYMBOL_GPL(enable_kprobe);
-> -
->  static void __kprobes arm_all_kprobes(void)
->  {
->  	struct hlist_head *head;
-> 
-> 
 
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+I already told Mel by PM. This degrades the new-anon_vma code to an
+even _slower_ mode than the old anon-vma code in 2.6.32 (the same in
+math complexity terms but slower in practice) for migrate. Furthermore
+page_referenced() may now return true even if there are young ptes
+that simply get lost in the rmap walk.
 
+The new anon-vma code is mostly relevant for migrate and memory
+compaction and transparent hugepage support where it gets invoked even
+if there's plenty of free memory and no I/O load at all. So whatever
+you save during swap, you'll lose while transparent hugepage support
+allocate the pages. So the above fix renders the whole effort
+pointless as far as I'm concerned.
+
+I think Rik's patch is the only sensible solution that won't
+invalidate the whole effort for transparent hugepage.
+
+About how to adapt split_huge_page to the root anon_vma I didn't even
+think about it yet. All I can tell you right now is that
+wait_split_huge_page can be changed to wait on the pmd_trans_splitting
+(or alternatively the pmd_trans_huge bit) bit to go away in a
+cpu_relax() barrier() loop. But the page->mapping/anon_vma->lock is
+also used to serialize against parallel split_huge_page but I guess
+taking the root anon_vma lock in split_huge_page() should work
+fine. Just I'm not going to do that except maybe in a for-mainline
+branch, but I'll keep master branch with the old-anon-vma 2.6.32 code
+and the anon_vma_branch with Rik's fix that allows to take advantage
+of the new anon-vma code (so it's not purely gratuitous complexity
+added for nothing) also in migrate.c from memory compaction (that runs
+24/7 on all my systems and it's much more frequent than the swap rmap
+walks that in fact never ever happens here), and in the rmap walks in
+split_huge_page too (which are not so frequent especially after
+Johannes implemented native mprotect on hugepages but it's obviously
+still more frequent than swap).
+
+I'm simply not going to support the degradation to the root anon_vma
+complexity in aa.git, except for strict merging requirements but I'll
+keep backing it out in aa.git or I'd rather stick to old-anon-vma
+code which at least is much simpler and saves memory too (as there are
+many fewer anon-vma and no avc, and less useless locks).
+
+What I instead already mentioned once was to add a _shared_ lock so
+you share the spinlock across the whole forest but you keep walking
+the right page->anon_vma->same_anon_vma! The moment you walk the
+page->anon_vma->root_anon_vma->same_anon_vma you lost my support as it
+makes the whole effort pointless compared to 2.6.32 as far as 99% of my
+workloads are concerned.
