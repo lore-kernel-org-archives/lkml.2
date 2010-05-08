@@ -1,278 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620Ab0EHBtZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 21:49:25 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:17768 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab0EHBtX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 21:49:23 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:x-system-of-record;
-	b=OnOfxoMxqth58DilwQzdWdkC3/2iNFwPJJuq7vq/Lyzc15SAqH2pVJHPGNwVnni3e
-	6wXaZtsbC8EBs2cxO7eUw==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Ken Chen <kenchen@google.com>,
-       Paul Turner <pjt@google.com>, Nikhil Rao <ncrao@google.com>,
-       Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH] sched: Avoid side-effect of tickless idle on update_cpu_load
-Date: Fri,  7 May 2010 18:48:49 -0700
-Message-Id: <1273283329-25258-1-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.0.1
-X-System-Of-Record: true
+	id S1751654Ab0EHB4U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 21:56:20 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:41880 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750744Ab0EHB4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 21:56:18 -0400
+Message-ID: <4BE4C4BF.6020801@linux.vnet.ibm.com>
+Date: Fri, 07 May 2010 18:56:15 -0700
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+       Paul Mackerras <paulus@samba.org>
+CC: Stephane Eranian <eranian@googlemail.com>
+Subject: [BUG] perf_event: when events are grouped, the time enabled / running
+ values are incorrect
+Content-Type: multipart/mixed;
+ boundary="------------090407070906080608090601"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tickless idle has a negative side effect on update_cpu_load(),
-which in turn can affect load balancing behavior.
+This is a multi-part message in MIME format.
+--------------090407070906080608090601
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-update_cpu_load() is supposed to be called every tick, to keep track of
-various load indicies. With tickless idle, there are no scheduler ticks called
-on the idle CPUs. Idle CPUs may still do load balancing (with idle_load_balance
-CPU) using the stale cpu_load. It will also cause problems when all CPUs go
-idle for a while and become active again. In this case loads would not degrade
-as expected.
+Hi,
 
-This is how rq->nr_load_updates change looks like under different conditions:
+There appears to be a bug in the kernel related to reading up the time 
+running and enabled values for events that are in a group.  The group 
+leader's time running and time enable values look correct, but all of 
+the other group members have a zero value for their time running and 
+time enabled fields.
 
-<cpu_num> <nr_load_updates change>
-All CPUS idle for 10 seconds (HZ=1000)
-0 1621
-10 496
-11 139
-12 875
-13 1672
-14 12
-15 21
-1 1472
-2 2426
-3 1161
-4 2108
-5 1525
-6 701
-7 249
-8 766
-9 1967
+This happens only when remote monitoring a process (perhaps only after 
+it has terminated)... when self monitoring, the time running/enabled 
+values come out non-zero, and the values are the same for all of the 
+counters (as one would expect since they can be enabled/disabled 
+simultaneously).
 
-One CPU busy rest idle for 10 seconds
-0 10003
-10 601
-11 95
-12 966
-13 1597
-14 114
-15 98
-1 3457
-2 93
-3 6679
-4 1425
-5 1479
-6 595
-7 193
-8 633
-9 1687
+I've attached a test case which you can place in the tools/perf 
+subdirectory and compile with just:
 
-All CPUs busy for 10 seconds
-0 10026
-10 10026
-11 10026
-12 10026
-13 10025
-14 10025
-15 10025
-1 10026
-2 10026
-3 10026
-4 10026
-5 10026
-6 10026
-7 10026
-8 10026
-9 10026
+gcc -o show_re_bug show_re_bug.c
 
-That is update_cpu_load works properly only when all CPUs are busy.
-If all are idle, all the CPUs get way lower updates.
-And when few CPUs are busy and rest are idle, only busy and ilb does
-proper updates and rest of the idle CPUs will get lower updates.
+Thanks for your consideration,
 
-The patch keeps track of when a last update was done and fixes up
-the load avg based on current time.
+- Corey
 
-On one of my test system SPECjbb with warehouse 1..numcpus, patch improves
-throughput numbers by ~1% (average of 6 runs).
-On another test system (with different domain hierarchy) there is no
-noticable change in perf.
+Corey Ashford
+Software Engineer
+IBM Linux Technology Center, Linux Toolchain
+Beaverton, OR
+cjashfor@us.ibm.com
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
----
- kernel/sched.c      |   82 +++++++++++++++++++++++++++++++++++++++++++++++---
- kernel/sched_fair.c |    5 ++-
- 2 files changed, 81 insertions(+), 6 deletions(-)
+--------------090407070906080608090601
+Content-Type: text/plain;
+ name="show_re_bug.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="show_re_bug.c"
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3c2a54f..0abd7db 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -502,6 +502,7 @@ struct rq {
- 	unsigned long nr_running;
- 	#define CPU_LOAD_IDX_MAX 5
- 	unsigned long cpu_load[CPU_LOAD_IDX_MAX];
-+	unsigned long last_load_update_tick;
- #ifdef CONFIG_NO_HZ
- 	unsigned char in_nohz_recently;
- #endif
-@@ -1816,6 +1817,7 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
- static void calc_load_account_active(struct rq *this_rq);
- static void update_sysctl(void);
- static int get_update_sysctl_factor(void);
-+static void update_cpu_load(struct rq *this_rq);
- 
- static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
- {
-@@ -3088,23 +3090,84 @@ static void calc_load_account_active(struct rq *this_rq)
- }
- 
- /*
-+ * Load degrade calculations below are approximated on a 128 point scale.
-+ * degrade_zero_ticks is the number of ticks after which old_load at any
-+ * particular idx is approximated to be zero.
-+ * degrade_factor is a precomputed table, a row for each load idx.
-+ * Each column corresponds to degradation factor for a power of two ticks,
-+ * based on 128 point scale.
-+ * Example:
-+ * row 2, col 3 (=12) says that the degradation at load idx 2 after
-+ * 8 ticks is 12/128 (which is an approximation of 3^8/4^8).
-+ */
-+#define DEGRADE_SHIFT		7
-+static const unsigned char
-+		degrade_zero_ticks[CPU_LOAD_IDX_MAX] = {0, 8, 32, 64, 128};
-+static const unsigned char
-+		degrade_factor[CPU_LOAD_IDX_MAX][DEGRADE_SHIFT + 1] = {
-+					{0, 0, 0, 0, 0, 0, 0, 0},
-+					{64, 32, 8, 0, 0, 0, 0, 0},
-+					{96, 72, 40, 12, 1, 0, 0},
-+					{112, 98, 75, 43, 15, 1, 0},
-+					{120, 112, 98, 76, 45, 16, 2} };
-+
-+/*
-+ * Update cpu_load for any backlog'd ticks. The backlog would be when
-+ * CPU is idle and so we just decay the old load without adding any new load.
-+ */
-+static unsigned long update_backlog(unsigned long load,
-+                        unsigned long missed_updates, int idx)
-+{
-+	int j = 0;
-+
-+	if (missed_updates >= degrade_zero_ticks[idx])
-+		return 0;
-+
-+	if (idx == 1)
-+		return load >> missed_updates;
-+
-+	while (missed_updates) {
-+		if (missed_updates % 2)
-+			load =(load * degrade_factor[idx][j]) >> DEGRADE_SHIFT;
-+
-+		missed_updates >>= 1;
-+		j++;
-+	}
-+	return load;
-+}
-+
-+/*
-  * Update rq->cpu_load[] statistics. This function is usually called every
-- * scheduler tick (TICK_NSEC).
-+ * scheduler tick (TICK_NSEC). With tickless idle this will not be called
-+ * every tick. We fix it up based on jiffies.
-  */
- static void update_cpu_load(struct rq *this_rq)
- {
- 	unsigned long this_load = this_rq->load.weight;
-+	unsigned long curr_jiffies = jiffies;
-+	unsigned long pending_updates, missed_updates;
- 	int i, scale;
- 
- 	this_rq->nr_load_updates++;
- 
-+	if (curr_jiffies == this_rq->last_load_update_tick)
-+		return;
-+
-+	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
-+	this_rq->last_load_update_tick = curr_jiffies;
-+	missed_updates = pending_updates - 1;
-+
- 	/* Update our load: */
--	for (i = 0, scale = 1; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
-+	this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
-+	for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
- 		unsigned long old_load, new_load;
- 
- 		/* scale is effectively 1 << i now, and >> i divides by scale */
- 
- 		old_load = this_rq->cpu_load[i];
-+		if (missed_updates)
-+			old_load = update_backlog(old_load, missed_updates, i);
-+
- 		new_load = this_load;
- 		/*
- 		 * Round up the averaging division if load is increasing. This
-@@ -3112,9 +3175,15 @@ static void update_cpu_load(struct rq *this_rq)
- 		 * example.
- 		 */
- 		if (new_load > old_load)
--			new_load += scale-1;
--		this_rq->cpu_load[i] = (old_load*(scale-1) + new_load) >> i;
-+			new_load += scale - 1;
-+
-+		this_rq->cpu_load[i] = (old_load * (scale - 1) + new_load) >> i;
- 	}
-+}
-+
-+static void update_cpu_load_active(struct rq *this_rq)
-+{
-+	update_cpu_load(this_rq);
- 
- 	if (time_after_eq(jiffies, this_rq->calc_load_update)) {
- 		this_rq->calc_load_update += LOAD_FREQ;
-@@ -3522,7 +3591,7 @@ void scheduler_tick(void)
- 
- 	raw_spin_lock(&rq->lock);
- 	update_rq_clock(rq);
--	update_cpu_load(rq);
-+	update_cpu_load_active(rq);
- 	curr->sched_class->task_tick(rq, curr, 0);
- 	raw_spin_unlock(&rq->lock);
- 
-@@ -7789,6 +7858,9 @@ void __init sched_init(void)
- 
- 		for (j = 0; j < CPU_LOAD_IDX_MAX; j++)
- 			rq->cpu_load[j] = 0;
-+
-+		rq->last_load_update_tick = jiffies;
-+
- #ifdef CONFIG_SMP
- 		rq->sd = NULL;
- 		rq->rd = NULL;
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 5a5ea2c..22c0a58 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3464,9 +3464,12 @@ static void run_rebalance_domains(struct softirq_action *h)
- 			if (need_resched())
- 				break;
- 
-+			rq = cpu_rq(balance_cpu);
-+			raw_spin_lock(&rq->lock);
-+			update_cpu_load(rq);
-+			raw_spin_unlock(&rq->lock);
- 			rebalance_domains(balance_cpu, CPU_IDLE);
- 
--			rq = cpu_rq(balance_cpu);
- 			if (time_after(this_rq->next_balance, rq->next_balance))
- 				this_rq->next_balance = rq->next_balance;
- 		}
--- 
-1.7.0.1
+/*
+ * task_inherit.c - example of a task counting event in a tree of child processes
+ *
+ * Copyright (c) 2009 Google, Inc
+ * Contributed by Stephane Eranian <eranian@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+ * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * This test case is a cut down of the program perf_examples/task from libpfm4.
+ */
+#include <sys/types.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdarg.h>
 
+#include <sys/wait.h>
+#include "perf.h"
+
+typedef struct {
+        struct perf_event_attr hw;
+        uint64_t value, prev_value;
+        uint64_t enabled, running;
+        char *name;
+        int fd;
+} perf_event_desc_t;
+
+int
+child(char **arg)
+{
+	/*
+	 * execute the requested command
+	 */
+	execvp(arg[0], arg);
+	fprintf(stderr, "cannot exec: %s\n", arg[0]);
+	exit(1);
+	/* not reached */
+}
+
+static inline uint64_t
+perf_scale(uint64_t *values)
+{
+	uint64_t res = 0;
+
+	if (values[2])
+		res = (uint64_t)((double)values[0] * values[1]/values[2]);
+	return res;
+}
+
+
+static void
+read_group(perf_event_desc_t *fds, int num)
+{
+	uint64_t *values;
+	size_t sz;
+	int i, ret;
+
+	/*
+	 * 	{ u64		nr;
+	 * 	  { u64		time_enabled; } && PERF_FORMAT_ENABLED
+	 * 	  { u64		time_running; } && PERF_FORMAT_RUNNING
+	 * 	  { u64		value;
+	 * 	    { u64	id;           } && PERF_FORMAT_ID
+	 * 	  }		cntr[nr];
+	 * 	} && PERF_FORMAT_GROUP
+	 *
+	 * we do not use FORMAT_ID in this program
+	 */
+	sz = sizeof(uint64_t) * 3;
+	values = malloc(sz);
+	if (!values)
+		fprintf(stderr, "cannot allocate memory for values\n");
+
+	for (i = 0; i < num; i++) {
+		ret = read(fds[i].fd, values, sz);
+		if (ret != sz) { /* unsigned */
+			if (ret == -1)
+				fprintf(stderr, "cannot read values\n");
+			else	/* likely pinned and could not be loaded */
+				fprintf(stderr, "Error! tried to read %d bytes, but got %d\n", (int)sz, ret);
+		}
+		printf("values[0] = %llx\n", values[0]);
+		printf("values[1] = %llx\n", values[1]);
+		printf("values[2] = %llx\n", values[2]);
+	}
+	free(values);
+	return;
+
+	/*
+	 * propagate to save area
+	 */
+	for(i = 0; i < num; i++) {
+		values[0] = values[3+i];
+		/*
+		 * scaling because we may be sharing the PMU and
+		 * thus may be multiplexed
+		 */
+		fds[i].prev_value = fds[i].value;
+		fds[i].value = perf_scale(values);
+		fds[i].enabled = values[1];
+		fds[i].running = values[2];
+	}
+	free(values);
+}
+
+
+static void
+print_counts(perf_event_desc_t *fds, int num)
+{
+	int i;
+
+
+	read_group(fds, num);
+	for(i = 0; i < num; i++) {
+		double ratio;
+		uint64_t val;
+
+		val = fds[i].value - fds[i].prev_value;
+
+		ratio = 0.0;
+		if (fds[i].enabled)
+			ratio = 1.0 * fds[i].running / fds[i].enabled;
+
+		if (ratio == 1.0)
+			printf("%'20"PRIu64" %s (%'"PRIu64" : %'"PRIu64")\n", val, fds[i].name, fds[i].enabled, fds[i].running);
+		else
+			if (ratio == 0.0)
+				printf("%'20"PRIu64" %s (did not run: incompatible events, too many events in a group, competing session)\n", val, fds[i].name);
+			else
+				printf("%'20"PRIu64" %s (scaled from %.2f%% of time)\n", val, fds[i].name, ratio*100.0);
+
+	}
+}
+
+int
+parent(char **arg)
+{
+	perf_event_desc_t *fds;
+	int status, ret, i, num;
+	int ready[2], go[2];
+	char buf;
+	pid_t pid;
+
+	num = 2;
+	fds = calloc(num, sizeof(perf_event_desc_t));
+
+	fds[0].name = "PERF_COUNT_HW_CPU_CYCLES";
+	fds[0].hw.type = PERF_TYPE_HARDWARE;
+        fds[0].hw.size = sizeof(struct perf_event_attr);
+	fds[0].hw.config = PERF_COUNT_HW_CPU_CYCLES;
+	fds[1].name = "PERF_COUNT_HW_INSTRUCTIONS";
+        fds[1].hw.size = sizeof(struct perf_event_attr);
+	fds[1].hw.type = PERF_TYPE_HARDWARE;
+	fds[1].hw.config = PERF_COUNT_HW_INSTRUCTIONS;
+
+	ret = pipe(ready);
+	if (ret)
+		fprintf(stderr, "cannot create pipe ready");
+
+	ret = pipe(go);
+	if (ret)
+		fprintf(stderr, "cannot create pipe go");
+
+
+	/*
+	 * Create the child task
+	 */
+	if ((pid = fork()) == -1)
+		fprintf(stderr, "Cannot fork process");
+
+	/*
+	 * and launch the child code
+	 *
+	 * The pipe is used to avoid a race condition
+	 * between for() and exec(). We need the pid
+	 * of the new tak but we want to start measuring
+	 * at the first user level instruction. Thus we
+	 * need to prevent exec until we have attached
+	 * the events.
+	 */
+	if (pid == 0) {
+		close(ready[0]);
+		close(go[1]);
+
+		/*
+		 * let the parent know we exist
+		 */
+		close(ready[1]);
+		if (read(go[0], &buf, 1) == -1)
+			fprintf(stderr, "unable to read go_pipe");
+
+
+		exit(child(arg));
+	}
+
+	close(ready[1]);
+	close(go[0]);
+
+	if (read(ready[0], &buf, 1) == -1)
+		fprintf(stderr, "unable to read child_ready_pipe");
+
+	close(ready[0]);
+
+	fds[0].fd = -1;
+	//fds[0].hw.read_format = PERF_FORMAT_GROUP;
+	for(i = 0; i < num; i++) {
+		/*
+		 * create leader disabled with enable_on-exec
+		 */
+		fds[i].hw.disabled = (i == 0);
+		fds[i].hw.enable_on_exec = (i == 0);
+		fds[i].hw.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
+			 PERF_FORMAT_TOTAL_TIME_RUNNING;
+
+		fds[i].fd = sys_perf_event_open(&fds[i].hw, pid, -1, fds[0].fd, 0);
+		if (fds[i].fd == -1) {
+			warn("cannot attach event %d %s", i, fds[i].name);
+			goto error;
+		}
+	}	
+
+	close(go[1]);
+
+	waitpid(pid, &status, 0);
+
+	print_counts(fds, num);
+
+	for(i = 0; i < num; i++)
+		close(fds[i].fd);
+
+	free(fds);
+	return 0;
+error:
+	free(fds);
+	kill(SIGKILL, pid);
+	return -1;
+}
+
+
+int
+main(int argc, char **argv)
+{
+	int c;
+
+	if (argc < 2) {
+		fprintf(stderr, "you must specify a command to execute\n");
+	} 
+
+	return parent(&argv[1]);
+}
+
+--------------090407070906080608090601--
