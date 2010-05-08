@@ -1,103 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab0EHUnQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 16:43:16 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:45980 "EHLO mail001.aei.ca"
+	id S1753425Ab0EHVdW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 17:33:22 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:44102 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753249Ab0EHUnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 16:43:14 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: linux-btrfs@vger.kernel.org
-Subject: [OPPS] btrfs on 33-3 with latest from btrfs-unstable.git master
-Date: Sat, 8 May 2010 16:43:08 -0400
-User-Agent: KMail/1.13.3 (Linux/2.6.33.3-crc; KDE/4.4.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005081643.08726.edt@aei.ca>
+	id S1752087Ab0EHVdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 17:33:20 -0400
+From: florian@mickler.org
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Florian Mickler <florian@mickler.org>
+Subject: [PATCH] get_maintainer.pl: optionally ignore non-maintainer tags
+Date: Sat,  8 May 2010 23:32:44 +0200
+Message-Id: <1273354364-6016-1-git-send-email-florian@mickler.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <4BE46E7D.1040906@s5r6.in-berlin.de>
+References: <4BE46E7D.1040906@s5r6.in-berlin.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Using --git to determine who to send a patch to, it is not
+reasonable to include people that only reported an issue or tested a
+patch. Thus we restrict the candidates to be the one's listed with
+Reviewed-By, Signed-Off-By and Acked-By tags.
 
-I had a problem that forced me to reboot.  Post reboot btrfsfsck (from git) dies with:
+Signed-Off-By:'s because that are people who are responsible for the code
+in question.
 
-[  523.753878] device fsid 142fc9ee92a20d2-f998b64b009f85a7 devid 3 transid 1099996 /dev/sda4
-[  523.767056] device fsid 142fc9ee92a20d2-f998b64b009f85a7 devid 1 transid 1099996 /dev/sdc3
-[  523.798512] device fsid 142fc9ee92a20d2-f998b64b009f85a7 devid 2 transid 1099996 /dev/sdb4
-[  530.272331] btrfsck[4441]: segfault at c4 ip 0000000000413a78 sp 00007fffb64fdae0 error 4 in btrfsck[400000+24000]
+Reviewed-By:'s because people responsible for the code in question
+obviously thought that the review-feedback for this changeset by that
+person was valuable.
 
-and the mounting the fs with: mount -tbtrfs /dev/sdc3 /mnt/sdc3
-causes the following opps:
+The Acked-By: is questionable, but as people listed with this tag
+tend to be active linux gatekeepers, false positives are tolerable.
 
-[ 2300.375718] device fsid 142fc9ee92a20d2-f998b64b009f85a7 devid 1 transid 1099996 /dev/sdc3
-[ 2302.319429] btrfs: sdb4 checksum verify failed on 1317523083264 wanted 769383BA found A6555473 level 0
-[ 2302.329240] btrfs: sdb4 checksum verify failed on 1317523083264 wanted 769383BA found A6555473 level 0
-[ 2302.338892] BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
-[ 2302.339860] IP: [<ffffffffa04e42c1>] btrfs_print_leaf+0x21/0x920 [btrfs]
-[ 2302.339860] PGD 1597ee067 PUD 14a06e067 PMD 0 
-[ 2302.339860] Oops: 0000 [#1] PREEMPT SMP 
-[ 2302.339860] last sysfs file: /sys/devices/pci0000:00/0000:00:18.3/temp1_input
-[ 2302.339860] CPU 1 
-[ 2302.339860] Pid: 5369, comm: mount Not tainted 2.6.33.3-crc #125 M3A78-T/System Product Name
-[ 2302.339860] RIP: 0010:[<ffffffffa04e42c1>]  [<ffffffffa04e42c1>] btrfs_print_leaf+0x21/0x920 [btrfs]
-[ 2302.339860] RSP: 0018:ffff88014b0cf698  EFLAGS: 00010283
-[ 2302.339860] RAX: 00000000fffffffb RBX: ffff880169dd8000 RCX: 0000000000000000
-[ 2302.339860] RDX: 0000000000000008 RSI: 0000000000000000 RDI: ffff88016a97d000
-[ 2302.339860] RBP: ffff88014b0cf718 R08: 0000000000000002 R09: 0000000000000000
-[ 2302.339860] R10: 0000000000000000 R11: 0000000000000246 R12: 00000000fffffffb
-[ 2302.339860] R13: ffff88016a97d000 R14: 0000000000000002 R15: 00000132c2849000
-[ 2302.339860] FS:  00007f0cab085740(0000) GS:ffff880028280000(0000) knlGS:0000000000000000
-[ 2302.339860] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 2302.339860] CR2: 0000000000000030 CR3: 000000016b409000 CR4: 00000000000006e0
-[ 2302.339860] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 2302.339860] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 2302.339860] Process mount (pid: 5369, threadinfo ffff88014b0ce000, task ffff88016b668000)
-[ 2302.339860] Stack:
-[ 2302.339860]  ffff880169dd8000 00000132c2849000 ffff88014b0cf6b8 ffff88016a97d000
-[ 2302.339860] <0> ffff88014b0cf708 ffff88014a9bc000 00000132c2849000 00000000001000a8
-[ 2302.339860] <0> 0000000000000000 ffff8801499c2c60 00000000fffffff4 ffff880169dd8000
-[ 2302.339860] Call Trace:
-[ 2302.339860]  [<ffffffffa04dda18>] __btrfs_free_extent+0x818/0x9c0 [btrfs]
-[ 2302.339860]  [<ffffffff8125051e>] ? do_raw_spin_lock+0xde/0x1d0
-[ 2302.339860]  [<ffffffff81081e49>] ? trace_hardirqs_on_caller+0x29/0x190
-[ 2302.339860]  [<ffffffffa04def2f>] run_one_delayed_ref+0x55f/0x710 [btrfs]
-[ 2302.339860]  [<ffffffff81081f00>] ? trace_hardirqs_on_caller+0xe0/0x190
-[ 2302.339860]  [<ffffffff814c9eb7>] ? mutex_trylock+0x117/0x250
-[ 2302.339860]  [<ffffffffa052cb5c>] ? btrfs_delayed_ref_lock+0x5c/0xc0 [btrfs]
-[ 2302.339860]  [<ffffffff814d063e>] ? sub_preempt_count+0xe/0x60
-[ 2302.339860]  [<ffffffffa04dffa4>] run_clustered_refs+0xc4/0x430 [btrfs]
-[ 2302.339860]  [<ffffffffa04e03dd>] btrfs_run_delayed_refs+0xcd/0x290 [btrfs]
-[ 2302.339860]  [<ffffffffa04f0919>] btrfs_commit_transaction+0x89/0x7c0 [btrfs]
-[ 2302.339860]  [<ffffffff81081e49>] ? trace_hardirqs_on_caller+0x29/0x190
-[ 2302.339860]  [<ffffffff81081fbd>] ? trace_hardirqs_on+0xd/0x10
-[ 2302.339860]  [<ffffffff81117611>] ? kmem_cache_free+0x111/0x1e0
-[ 2302.339860]  [<ffffffff8106ccf0>] ? autoremove_wake_function+0x0/0x40
-[ 2302.339860]  [<ffffffffa0525ff9>] btrfs_recover_log_trees+0x379/0x3a0 [btrfs]
-[ 2302.339860]  [<ffffffffa0526580>] ? replay_one_buffer+0x0/0x450 [btrfs]
-[ 2302.339860]  [<ffffffffa04ec283>] ? btree_read_extent_buffer_pages+0x73/0xb0 [btrfs]
-[ 2302.339860]  [<ffffffffa04eed2a>] open_ctree+0x146a/0x1640 [btrfs]
-[ 2302.339860]  [<ffffffff811883b4>] ? disk_name+0x64/0xc0
-[ 2302.339860]  [<ffffffffa04cd285>] btrfs_get_sb+0x305/0x490 [btrfs]
-[ 2302.339860]  [<ffffffff8111e450>] ? __alloc_percpu+0x10/0x20
-[ 2302.339860]  [<ffffffff811255e2>] vfs_kern_mount+0x72/0x1c0
-[ 2302.339860]  [<ffffffff811257a5>] do_kern_mount+0x55/0x150
-[ 2302.339860]  [<ffffffff814ccf33>] ? _lock_kernel+0x143/0x1e0
-[ 2302.339860]  [<ffffffff811415c2>] do_mount+0x2d2/0x850
-[ 2302.339860]  [<ffffffff810f6dea>] ? might_fault+0x7a/0xd0
-[ 2302.339860]  [<ffffffff810f2d99>] ? strndup_user+0x69/0xc0
-[ 2302.339860]  [<ffffffff81141c0f>] sys_mount+0xcf/0x110
-[ 2302.339860]  [<ffffffff81002adb>] system_call_fastpath+0x16/0x1b
-[ 2302.339860] Code: e0 5b 44 89 e0 41 5c c9 c3 90 55 48 89 e5 48 83 c4 80 48 89 5d d8 4c 89 65 e0 4c 89 6d e8 4c 89 75 f0 4c 89 7d f8 0f 1f 44 00 00 <4c> 8b 66 30 49 89 fe bf 01 00 00 00 48 89 f3 e8 bb c3 fe e0 48 
-[ 2302.339860] RIP  [<ffffffffa04e42c1>] btrfs_print_leaf+0x21/0x920 [btrfs]
-[ 2302.339860]  RSP <ffff88014b0cf698>
-[ 2302.339860] CR2: 0000000000000030
-[ 2302.343138] ---[ end trace e68668d9a065c83e ]---
+Signed-off-by: Florian Mickler <florian@mickler.org>
+---
+ scripts/get_maintainer.pl |   21 ++++++++++++++++++++-
+ 1 files changed, 20 insertions(+), 1 deletions(-)
 
-idea?
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index 6f97a13..8e974bb 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -25,6 +25,7 @@ my $email_list = 1;
+ my $email_subscriber_list = 0;
+ my $email_git_penguin_chiefs = 0;
+ my $email_git = 1;
++my $email_git_maintainers = 0;
+ my $email_git_blame = 0;
+ my $email_git_min_signatures = 1;
+ my $email_git_max_maintainers = 5;
+@@ -50,6 +51,15 @@ my $help = 0;
+ 
+ my $exit = 0;
+ 
++#
++# tags for people who are either
++# 	a) responsible for the code in question, or
++# 	b) familiar enough with it to give relevant feedback
++my @maintainer_tags = ();
++push(@maintainer_tags,"Signed-Off");
++push(@maintainer_tags,"Reviewed");
++push(@maintainer_tags,"Acked");
++
+ my @penguin_chief = ();
+ push(@penguin_chief,"Linus Torvalds:torvalds\@linux-foundation.org");
+ #Andrew wants in on most everything - 2009/01/14
+@@ -100,6 +110,7 @@ my %VCS_cmds_hg = (
+ if (!GetOptions(
+ 		'email!' => \$email,
+ 		'git!' => \$email_git,
++		'git-maintainers!' => \$email_git_maintainers,
+ 		'git-blame!' => \$email_git_blame,
+ 		'git-chief-penguins!' => \$email_git_penguin_chiefs,
+ 		'git-min-signatures=i' => \$email_git_min_signatures,
+@@ -497,6 +508,7 @@ version: $V
+ MAINTAINER field selection options:
+   --email => print email address(es) if any
+     --git => include recent git \*-by: signers
++    --git-maintainers => only use 'Signed-Off-By:', 'Reviewed-By:' and 'Acked-By:' signers
+     --git-chief-penguins => include ${penguin_chiefs}
+     --git-min-signatures => number of signatures required (default: 1)
+     --git-max-maintainers => maximum maintainers to add (default: 5)
+@@ -957,6 +969,13 @@ sub vcs_find_signers {
+     my ($cmd) = @_;
+     my @lines = ();
+     my $commits;
++    my $tagPattern;
++    if ($email_git_maintainers) {
++	    $tagPattern = join("|",@maintainer_tags);
++    } else {
++	    $tagPattern = "[^ \t]+";
++    }
++
+ 
+     @lines = &{$VCS_cmds{"execute_cmd"}}($cmd);
+ 
+@@ -964,7 +983,7 @@ sub vcs_find_signers {
+ 
+     $commits = grep(/$pattern/, @lines);	# of commits
+ 
+-    @lines = grep(/^[-_ 	a-z]+by:.*\@.*$/i, @lines);
++    @lines = grep(/^[ \t]*($tagPattern)-by:.*\@.*$/i, @lines);
+     if (!$email_git_penguin_chiefs) {
+ 	@lines = grep(!/${penguin_chiefs}/i, @lines);
+     }
+-- 
+1.7.0.4
 
-TIA
-Ed Tomlinson
