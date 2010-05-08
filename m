@@ -1,260 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178Ab0EHB7Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 21:59:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60295 "EHLO hera.kernel.org"
+	id S1752126Ab0EHCBI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 22:01:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24313 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751438Ab0EHB7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 21:59:23 -0400
-Date: Sat, 8 May 2010 01:57:41 GMT
-From: tip-bot for Ky Srinivasan <ksrinivasan@novell.com>
-Cc: eranian@google.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-       hjanssen@microsoft.com, fweisbec@gmail.com, gregkh@suse.de,
-       tglx@linutronix.de, adobriyan@gmail.com, hpa@zytor.com,
-       linux-kernel@vger.kernel.org, paulus@samba.org, alan@linux.intel.com,
-       gleb@redhat.com, ksrinivasan@novell.com, haiyangz@microsoft.com,
-       vrozenfe@redhat.com, avi@redhat.com, prasad@linux.vnet.ibm.com
-Reply-To: mingo@redhat.com, eranian@google.com, a.p.zijlstra@chello.nl,
-       hjanssen@microsoft.com, fweisbec@gmail.com, gregkh@suse.de,
-       tglx@linutronix.de, adobriyan@gmail.com, hpa@zytor.com,
-       linux-kernel@vger.kernel.org, paulus@samba.org, alan@linux.intel.com,
-       gleb@redhat.com, ksrinivasan@novell.com, haiyangz@microsoft.com,
-       vrozenfe@redhat.com, prasad@linux.vnet.ibm.com, avi@redhat.com
-In-Reply-To: <20100506190841.GA1605@kroah.com>
-References: <20100506190841.GA1605@kroah.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86: Detect running on a Microsoft HyperV system
-Message-ID: <tip-a2a47c6c3d1a7c01da4464b3b7be93b924f874c1@git.kernel.org>
-Git-Commit-ID: a2a47c6c3d1a7c01da4464b3b7be93b924f874c1
-X-Mailer: tip-git-log-daemon
+	id S1751572Ab0EHCBG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 May 2010 22:01:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,351,1270450800"; 
+   d="scan'208";a="619901802"
+From: "Du, Alek" <alek.du@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Ondrej Zary <linux@rainbow-software.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>
+Date: Sat, 8 May 2010 10:00:59 +0800
+Subject: RE: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
+ (WKOC_E) and disconnect (WKDISC_E)
+Thread-Topic: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
+ (WKOC_E) and disconnect (WKDISC_E)
+Thread-Index: Acrt+OPbPENtsyftSB24D3M3BnEK8AAT4YBg
+Message-ID: <1865303E0DED764181A9D882DEF65FB61A82A6DF26@shsmsx502.ccr.corp.intel.com>
+References: <20100507093200.28ecd63c@dxy2>
+ <Pine.LNX.4.44L0.1005071106570.1804-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1005071106570.1804-100000@iolanthe.rowland.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 08 May 2010 01:57:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a2a47c6c3d1a7c01da4464b3b7be93b924f874c1
-Gitweb:     http://git.kernel.org/tip/a2a47c6c3d1a7c01da4464b3b7be93b924f874c1
-Author:     Ky Srinivasan <ksrinivasan@novell.com>
-AuthorDate: Thu, 6 May 2010 12:08:41 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 6 May 2010 18:24:15 -0700
+>On Fri, 7 May 2010, Du, Alek wrote:
+>
+>> Alan,
+>>
+>> As I tested, with the second patch, after entering phy low power mode, the
+>port cannot detect any USB devices that plugged in.
+>
+>Ooh, that's not good.  It almost violates the EHCI spec (see the last
+>line on p.60 in table 4.4).
 
-x86: Detect running on a Microsoft HyperV system
+Ok, that's the new behavior that PHCD brings to us, It shouldn't a big deal if we
+take care of the wakeup bits before PHCD, right? The spec may be modified if
+PHCD become a normal feature to EHCI, just like why we have EHCI1.1 addendum
+spec. (We have some ehci1.1 addendum patches that will submit soon, but the
+PHCD is not in EHCI1.1 addendum currently)
 
-This patch integrates HyperV detection within the framework currently
-used by VmWare. With this patch, we can avoid having to replicate the
-HyperV detection code in each of the Microsoft HyperV drivers.
+>
+>> I also confirm that after set PHCD flag, any write to PORTSC is illegal. (I have
+>another patch will send out soon named "Clear PHCD before resuming",
+>> but the patch is not related with this one)
+>
+>I'm afraid we are going to have to modify the wakeup bits in PORTSC
+>after PHCD is set.  Can we clear PHCD, modify PORTSC, and then set PHCD
+>again?
 
-Reworked and tweaked by Greg K-H to build properly.
+This is doable. It is confirmed by the HW designer, before accessing PORTSC, just
+Clear PHCD. But we still need additional 5ms for the second time PHCD setting to
+ensure it enter phy low power mode.
 
-Signed-off-by: K. Y. Srinivasan <ksrinivasan@novell.com>
-LKML-Reference: <20100506190841.GA1605@kroah.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vadim Rozenfeld <vrozenfe@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: "K.Prasad" <prasad@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/include/asm/hyperv.h    |    6 +++
- arch/x86/include/asm/mshyperv.h  |    7 ++++
- arch/x86/include/asm/processor.h |    3 ++
- arch/x86/kernel/cpu/Makefile     |    2 +-
- arch/x86/kernel/cpu/hypervisor.c |   10 ++++--
- arch/x86/kernel/cpu/mshyperv.c   |   67 ++++++++++++++++++++++++++++++++++++++
- 6 files changed, 91 insertions(+), 4 deletions(-)
+>
+>> So it seems wakeup bits must set before set PHCD. So we may revise the
+>flowchart a little bit, for example, if the HCD has hostpc,
+>> then set the wakeup bits like before, if the HCD is the normal one, then go
+>your new way?
+>
+>For normal HCDs, the wakeup bits don't matter when the controller is in
+>D0.  Therefore we can continue to set them as before during bus or port
+>suspend.
+>
+>But during controller suspend, if the controller isn't supposed to be
+>remote-wakeup-enabled then we will need to clear the wakeup bits
+>(and set them again during controller resume).  Will that work?
 
-diff --git a/arch/x86/include/asm/hyperv.h b/arch/x86/include/asm/hyperv.h
-index e153a2b..4604047 100644
---- a/arch/x86/include/asm/hyperv.h
-+++ b/arch/x86/include/asm/hyperv.h
-@@ -14,6 +14,9 @@
- #define HYPERV_CPUID_ENLIGHTMENT_INFO		0x40000004
- #define HYPERV_CPUID_IMPLEMENT_LIMITS		0x40000005
- 
-+#define HYPERV_HYPERVISOR_PRESENT_BIT		0x80000000
-+#define HYPERV_CPUID_MIN			0x40000005
-+
- /*
-  * Feature identification. EAX indicates which features are available
-  * to the partition based upon the current partition privileges.
-@@ -129,6 +132,9 @@
- /* MSR used to provide vcpu index */
- #define HV_X64_MSR_VP_INDEX			0x40000002
- 
-+/* MSR used to read the per-partition time reference counter */
-+#define HV_X64_MSR_TIME_REF_COUNT		0x40000020
-+
- /* Define the virtual APIC registers */
- #define HV_X64_MSR_EOI				0x40000070
- #define HV_X64_MSR_ICR				0x40000071
-diff --git a/arch/x86/include/asm/mshyperv.h b/arch/x86/include/asm/mshyperv.h
-new file mode 100644
-index 0000000..6cd8101
---- /dev/null
-+++ b/arch/x86/include/asm/mshyperv.h
-@@ -0,0 +1,7 @@
-+#ifndef ASM_X86__MSHYPER_H
-+#define ASM_X86__MSHYPER_H
-+
-+int ms_hyperv_platform(void);
-+void __cpuinit ms_hyperv_set_feature_bits(struct cpuinfo_x86 *c);
-+
-+#endif
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index b753ea5..597c041 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -114,6 +114,8 @@ struct cpuinfo_x86 {
- 	u16			cpu_index;
- #endif
- 	unsigned int		x86_hyper_vendor;
-+	/* The layout of this field is hypervisor specific */
-+	unsigned int		x86_hyper_features;
- } __attribute__((__aligned__(SMP_CACHE_BYTES)));
- 
- #define X86_VENDOR_INTEL	0
-@@ -129,6 +131,7 @@ struct cpuinfo_x86 {
- 
- #define X86_HYPER_VENDOR_NONE  0
- #define X86_HYPER_VENDOR_VMWARE 1
-+#define X86_HYPER_VENDOR_MSFT	2
- 
- /*
-  * capabilities of CPUs
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index c202b62..3a785da 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -14,7 +14,7 @@ CFLAGS_common.o		:= $(nostackp)
- 
- obj-y			:= intel_cacheinfo.o addon_cpuid_features.o
- obj-y			+= proc.o capflags.o powerflags.o common.o
--obj-y			+= vmware.o hypervisor.o sched.o
-+obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
- 
- obj-$(CONFIG_X86_32)	+= bugs.o cmpxchg.o
- obj-$(CONFIG_X86_64)	+= bugs_64.o
-diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
-index 08be922..de3f4e0 100644
---- a/arch/x86/kernel/cpu/hypervisor.c
-+++ b/arch/x86/kernel/cpu/hypervisor.c
-@@ -23,6 +23,7 @@
- 
- #include <asm/processor.h>
- #include <asm/vmware.h>
-+#include <asm/mshyperv.h>
- #include <asm/hypervisor.h>
- 
- static inline void __cpuinit
-@@ -30,6 +31,8 @@ detect_hypervisor_vendor(struct cpuinfo_x86 *c)
- {
- 	if (vmware_platform())
- 		c->x86_hyper_vendor = X86_HYPER_VENDOR_VMWARE;
-+	else if (ms_hyperv_platform())
-+		c->x86_hyper_vendor = X86_HYPER_VENDOR_MSFT;
- 	else
- 		c->x86_hyper_vendor = X86_HYPER_VENDOR_NONE;
- }
-@@ -37,10 +40,11 @@ detect_hypervisor_vendor(struct cpuinfo_x86 *c)
- static inline void __cpuinit
- hypervisor_set_feature_bits(struct cpuinfo_x86 *c)
- {
--	if (boot_cpu_data.x86_hyper_vendor == X86_HYPER_VENDOR_VMWARE) {
-+	if (boot_cpu_data.x86_hyper_vendor == X86_HYPER_VENDOR_VMWARE)
- 		vmware_set_feature_bits(c);
--		return;
--	}
-+	else if (boot_cpu_data.x86_hyper_vendor == X86_HYPER_VENDOR_MSFT)
-+		ms_hyperv_set_feature_bits(c);
-+	return;
- }
- 
- void __cpuinit init_hypervisor(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-new file mode 100644
-index 0000000..2443b61
---- /dev/null
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -0,0 +1,67 @@
-+/*
-+ * HyperV  Detection code.
-+ *
-+ * Copyright (C) 2010, Novell, Inc.
-+ * Author : K. Y. Srinivasan <ksrinivasan@novell.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ */
-+
-+#include <linux/types.h>
-+#include <asm/processor.h>
-+#include <asm/hyperv.h>
-+#include <asm/mshyperv.h>
-+
-+
-+int ms_hyperv_platform(void)
-+{
-+	u32 eax, ebx, ecx, edx;
-+	char hyp_signature[13];
-+
-+	cpuid(1, &eax, &ebx, &ecx, &edx);
-+	if (!(ecx & HYPERV_HYPERVISOR_PRESENT_BIT))
-+		return 0;
-+
-+	cpuid(HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS, &eax, &ebx, &ecx, &edx);
-+	*(u32 *)(hyp_signature + 0) = ebx;
-+	*(u32 *)(hyp_signature + 4) = ecx;
-+	*(u32 *)(hyp_signature + 8) = edx;
-+
-+	if ((eax < HYPERV_CPUID_MIN) || (memcmp("Microsoft Hv", hyp_signature, 12)))
-+		return 0;
-+	return 1;
-+}
-+
-+void __cpuinit ms_hyperv_set_feature_bits(struct cpuinfo_x86 *c)
-+{
-+	u32 eax, ebx, ecx, edx;
-+
-+	c->x86_hyper_features = 0;
-+	/*
-+	 * Extract the features, recommendations etc.
-+	 * The first 9 bits will be used to track hypervisor features.
-+	 * The next 6 bits will be used to track the hypervisor
-+	 * recommendations.
-+	 */
-+	cpuid(HYPERV_CPUID_FEATURES, &eax, &ebx, &ecx, &edx);
-+	c->x86_hyper_features |= (eax & 0x1ff);
-+
-+	cpuid(HYPERV_CPUID_ENLIGHTMENT_INFO, &eax, &ebx, &ecx, &edx);
-+	c->x86_hyper_features |= ((eax & 0x3f) << 9);
-+	printk(KERN_INFO "Detected HyperV with features: %x\n",
-+		c->x86_hyper_features);
-+}
+That should be ok. For Moorestown, the controller should always enable remote
+wakeup, so that won't impact us.
+
+>
+>Alan Stern
+
