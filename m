@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab0EHAJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 May 2010 20:09:09 -0400
-Received: from smtp4.Stanford.EDU ([171.67.219.84]:54708 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751075Ab0EHAJH (ORCPT
+	id S1754154Ab0EHAJx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 May 2010 20:09:53 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:49634 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab0EHAJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 May 2010 20:09:07 -0400
-X-Greylist: delayed 582 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 May 2010 20:09:07 EDT
-Subject: Re: 2.6.33.3-rt19 kernel BUG's
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-To: john stultz <johnstul@us.ibm.com>
-Cc: nando@ccrma.Stanford.EDU, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
-In-Reply-To: <1273275821.2776.3.camel@localhost.localdomain>
-References: <1273197218.6768.10.camel@localhost.localdomain>
-	 <alpine.LFD.2.00.1005071240350.3401@localhost.localdomain>
-	 <1273275821.2776.3.camel@localhost.localdomain>
-Content-Type: text/plain
-Date: Fri, 07 May 2010 23:58:45 +0000
-Message-Id: <1273276725.17045.4.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	Fri, 7 May 2010 20:09:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=c77QSE66tjhXOWGCj7x8qV/zkYVYC54XDwHa+pE3FFP5+X1/uUD8uqjav0mzn/WbdZ
+         UbyM6yMHwLJ5HmSwgs7XBc2bf02LshgG3lmjGaGli/nY+R7DhPwnmBDOnFsNyJwJlT3c
+         9JnDW7GsrpzYWuVUNKlK8kQDWbPJYO7GnDUEE=
+MIME-Version: 1.0
+In-Reply-To: <1272964935-10756-1-git-send-email-jassi.brar@samsung.com>
+References: <1272964935-10756-1-git-send-email-jassi.brar@samsung.com>
+Date: Fri, 7 May 2010 17:09:51 -0700
+X-Google-Sender-Auth: d0722c43eb01002c
+Message-ID: <x2te9c3a7c21005071709v6fc7941eyacf50a9e42c9defd@mail.gmail.com>
+Subject: Re: [PATCH] DMA ENGINE: Do not reset 'private' of channel
+From: Dan Williams <dan.j.williams@intel.com>
+To: Jassi Brar <jassi.brar@samsung.com>
+Cc: linux-kernel@vger.kernel.org, maciej.sosnowski@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-07 at 16:43 -0700, john stultz wrote:
-> On Fri, 2010-05-07 at 12:41 +0200, Thomas Gleixner wrote:
-> > On Thu, 6 May 2010, Fernando Lopez-Lezcano wrote:
-> > 
-> > CC'ed John and Nick
-> > 
-> > > See below... just trying to boot (quad core desktop machine).
-> 
-> Ok. Got this to reproduce. Will hopefully have a fix for your soon.
-> 
-> Thanks for the bug report!
+On Tue, May 4, 2010 at 2:22 AM, Jassi Brar <jassi.brar@samsung.com> wrote:
+> The member 'private' of 'struct dma_chan' is meant for passing
+> data between client and the controller driver.
+>
+> The DMA client driver may point it to platform specific stuff after
+> acquiring the channel. So, it is the responsiblity of the same code
+> to reset it, if it must.
+>
+> The DMA engine doesn't set it and hence, shouldn't reset it either.
+>
+> Signed-off-by: Jassi Brar <jassi.brar@samsung.com>
+>
+> This reseting of private by DMA Engine comes in the way of implementing
+> default channel settings during DMAC probe. That capability is useful
+> for not having the clients to always provide platform specific data,
+> like Rx/Tx FIFO addresses, which usually doesn't change across channel
+> requests.
+>
 
-Thanks for looking at it! It had been a while since I had problems with
-rt so I could not understand why I could not login :-) 
+Ok I like this explanation better than the changelog you have above
+because it clarifies that the driver is setting a default that the
+client can override at registration time, but when this is happening
+dmaengine should get out of the way.
 
--- Fernando
+Applied.
 
-
+Thanks,
+Dan
