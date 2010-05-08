@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab0EHLPj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 07:15:39 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55493 "EHLO mx3.mail.elte.hu"
+	id S1752816Ab0EHLTM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 07:19:12 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55093 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751374Ab0EHLPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 07:15:38 -0400
-Date: Sat, 8 May 2010 13:15:29 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
-       paulmck@linux.vnet.ibm.com
-Subject: Re: [GIT PULL sched/core] cpu_stop: implement and use cpu_stop,
- take#3
-Message-ID: <20100508111529.GA19796@elte.hu>
-References: <1273164772-19149-1-git-send-email-tj@kernel.org>
+	id S1752679Ab0EHLTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 07:19:10 -0400
+Date: Sat, 8 May 2010 11:18:37 GMT
+From: tip-bot for Paul Mackerras <paulus@samba.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+       mingo@redhat.com, peterz@infradead.org, fweisbec@gmail.com,
+       ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+       linux-kernel@vger.kernel.org, fweisbec@gmail.com, peterz@infradead.org,
+       ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20100508105800.GB10650@brick.ozlabs.ibm.com>
+References: <20100508105800.GB10650@brick.ozlabs.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf_event: Make software events work again
+Message-ID: <tip-6e85158cf5a2385264316870256fb6ad681156a0@git.kernel.org>
+Git-Commit-ID: 6e85158cf5a2385264316870256fb6ad681156a0
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1273164772-19149-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 08 May 2010 11:18:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  6e85158cf5a2385264316870256fb6ad681156a0
+Gitweb:     http://git.kernel.org/tip/6e85158cf5a2385264316870256fb6ad681156a0
+Author:     Paul Mackerras <paulus@samba.org>
+AuthorDate: Sat, 8 May 2010 20:58:00 +1000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 8 May 2010 13:16:55 +0200
 
-* Tejun Heo <tj@kernel.org> wrote:
+perf_event: Make software events work again
 
-> Hello, Ingo.
-> 
-> Please pull from the following branch to receive cpu_stop patches.
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cpu_stop
-> 
-> Adding mb()'s in synchronize_sched_expedited() is the only change
-> since the last take[2].  Both Peter and Paul have acked the patchset.
-> I'll post the patchset as replies to this message.
-> 
-> This patchset is on top of the current sched/core (99bd5e2f) and
-> contains the following changes.
-> 
-> Paul E. McKenney (1):
->       scheduler: correctly place paranioa memory barriers in synchronize_sched_expedited()
-> 
-> Tejun Heo (4):
->       cpu_stop: implement stop_cpu[s]()
->       stop_machine: reimplement using cpu_stop
->       scheduler: replace migration_thread with cpu_stop
->       scheduler: kill paranoia check in synchronize_sched_expedited()
-> 
->  Documentation/RCU/torture.txt |   10 -
->  arch/s390/kernel/time.c       |    1 -
->  drivers/xen/manage.c          |   14 +-
->  include/linux/rcutiny.h       |    2 -
->  include/linux/rcutree.h       |    1 -
->  include/linux/stop_machine.h  |   59 +++--
->  kernel/cpu.c                  |    8 -
->  kernel/module.c               |   14 +-
->  kernel/rcutorture.c           |    2 +-
->  kernel/sched.c                |  284 +++++-----------------
->  kernel/sched_fair.c           |   48 +++-
->  kernel/stop_machine.c         |  530 +++++++++++++++++++++++++++++++----------
->  12 files changed, 538 insertions(+), 435 deletions(-)
+Commit 6bde9b6ce0127e2a56228a2071536d422be31336 ("perf: Add
+group scheduling transactional APIs") added code to allow a
+group to be scheduled in a single transaction.  However, it
+introduced a bug in handling events whose pmu does not implement
+transactions -- at the end of scheduling in the events in the
+group, in the non-transactional case the code now falls through
+to the group_error label, and proceeds to unschedule all the
+events in the group and return failure.
 
-FYI, it doesnt build on x86 allnoconfig:
+This fixes it by returning 0 (success) in the non-transactional
+case.
 
-kernel/sched_fair.c: In function 'load_balance':
-kernel/sched_fair.c:2917: error: implicit declaration of function 'stop_one_cpu_nowait'
-kernel/sched.c: In function 'sched_exec':
-kernel/sched.c:3084: error: implicit declaration of function 'stop_one_cpu'
-kernel/sched.c: In function 'synchronize_sched_expedited':
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Lin Ming <ming.m.lin@intel.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: eranian@gmail.com
+LKML-Reference: <20100508105800.GB10650@brick.ozlabs.ibm.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-	Ingo
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index bb06382..180151f 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -664,13 +664,13 @@ group_sched_in(struct perf_event *group_event,
+ 		}
+ 	}
+ 
+-	if (txn) {
+-		ret = pmu->commit_txn(pmu);
+-		if (!ret) {
+-			pmu->cancel_txn(pmu);
++	if (!txn)
++		return 0;
+ 
+-			return 0;
+-		}
++	ret = pmu->commit_txn(pmu);
++	if (!ret) {
++		pmu->cancel_txn(pmu);
++		return 0;
+ 	}
+ 
+ group_error:
