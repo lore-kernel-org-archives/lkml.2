@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab0EHQKV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 12:10:21 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39967 "EHLO mx2.mail.elte.hu"
+	id S1753665Ab0EHQLG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 12:11:06 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57782 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347Ab0EHQKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 12:10:20 -0400
-Date: Sat, 8 May 2010 18:10:05 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de
-Subject: Re: [GIT RFC PULL] RCU changes for 2.6.35
-Message-ID: <20100508161005.GB29638@elte.hu>
-References: <20100507212220.GA10465@linux.vnet.ibm.com>
- <20100508083421.GA11245@elte.hu>
- <20100508151001.GB2383@linux.vnet.ibm.com>
+	id S1752952Ab0EHQLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 12:11:02 -0400
+Date: Sat, 8 May 2010 16:10:36 GMT
+From: tip-bot for Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       gorcunov@openvz.org, peterz@infradead.org, fweisbec@gmail.com,
+       ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       fweisbec@gmail.com, gorcunov@openvz.org, peterz@infradead.org,
+       ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20100508112717.315897547@openvz.org>
+References: <20100508112717.315897547@openvz.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] x86, perf: P4 PMU -- check for proper event index in RAW events
+Message-ID: <tip-c7993165ef0c1d636ca05f4787739f8414584e6d@git.kernel.org>
+Git-Commit-ID: c7993165ef0c1d636ca05f4787739f8414584e6d
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100508151001.GB2383@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 08 May 2010 16:10:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  c7993165ef0c1d636ca05f4787739f8414584e6d
+Gitweb:     http://git.kernel.org/tip/c7993165ef0c1d636ca05f4787739f8414584e6d
+Author:     Cyrill Gorcunov <gorcunov@openvz.org>
+AuthorDate: Sat, 8 May 2010 15:25:54 +0400
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 8 May 2010 14:17:53 +0200
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+x86, perf: P4 PMU -- check for proper event index in RAW events
 
-> On Sat, May 08, 2010 at 10:34:21AM +0200, Ingo Molnar wrote:
-> > 
-> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > > Hello, Ingo,
-> > > 
-> > > Here is the first installment of RCU changes for 2.6.35.  These commits
-> > > are based on top of the rcu/urgent set sent yesterday.  If you would rather
-> > > rcu/urgent be merged into tip/core/rcu and then this set based on top of
-> > > that, or some other arrangement, please let me know.
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
-> > 
-> > FYI, it doesnt build on x86 allyesconfig:
-> > 
-> > In file included from kernel/rcutree.c:1961:
-> > kernel/rcutree_plugin.h: In function ?rcu_needs_cpu?:
-> > kernel/rcutree_plugin.h:1066: error: invalid type argument of ?->? (have ?struct rcu_dynticks?)
-> > kernel/rcutree_plugin.h:1067: error: invalid type argument of ?->? (have ?struct rcu_dynticks?)
-> 
-> <red face>
-> 
-> I forgot to move CONFIG_RCU_FAST_NO_HZ from my development tests to my
-> regression tests.  I have done so now.  I have also added allyesconfig
-> to my compile tests, which I should have done long ago.
-> 
-> I am testing the fix, and will rebase the stack onto 2.6.34-rc7 when it
-> comes out.
+RAW events are special and we should be ready for user passing
+in insane event index values.
 
-Cool, thanks Paul!
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Lin Ming <ming.m.lin@intel.com>
+LKML-Reference: <20100508112717.315897547@openvz.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/perf_event_p4.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-	Ingo
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index b8c2d37..a603930 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -418,6 +418,7 @@ static int p4_hw_config(struct perf_event *event)
+ {
+ 	int cpu = get_cpu();
+ 	int rc = 0;
++	unsigned int evnt;
+ 	u32 escr, cccr;
+ 
+ 	/*
+@@ -436,6 +437,14 @@ static int p4_hw_config(struct perf_event *event)
+ 		event->hw.config = p4_set_ht_bit(event->hw.config);
+ 
+ 	if (event->attr.type == PERF_TYPE_RAW) {
++
++		/* user data may have out-of-bound event index */
++		evnt = p4_config_unpack_event(event->attr.config);
++		if (evnt >= ARRAY_SIZE(p4_event_bind_map)) {
++			rc = -EINVAL;
++			goto out;
++		}
++
+ 		/*
+ 		 * We don't control raw events so it's up to the caller
+ 		 * to pass sane values (and we don't count the thread number
+@@ -451,8 +460,8 @@ static int p4_hw_config(struct perf_event *event)
+ 	}
+ 
+ 	rc = x86_setup_perfctr(event);
++out:
+ 	put_cpu();
+-
+ 	return rc;
+ }
+ 
