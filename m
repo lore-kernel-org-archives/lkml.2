@@ -1,61 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751230Ab0EHFUG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 01:20:06 -0400
-Received: from vms173009pub.verizon.net ([206.46.173.9]:32219 "EHLO
-	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab0EHFUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 01:20:03 -0400
-Date: Sat, 08 May 2010 01:19:43 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [git pull request] ACPI patches for 2.6.34-rc6
-In-reply-to: <alpine.LFD.2.00.1005071708010.901@i5.linux-foundation.org>
-Message-id: <alpine.LFD.2.00.1005080112300.5996@localhost.localdomain>
-References: <alpine.LFD.2.00.1005062216430.10792@localhost.localdomain>
- <201005080117.23760.rjw@sisk.pl>
- <alpine.LFD.2.00.1005071618410.901@i5.linux-foundation.org>
- <201005080203.30634.rjw@sisk.pl>
- <alpine.LFD.2.00.1005071708010.901@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1751500Ab0EHFZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 01:25:56 -0400
+Received: from crca.org.au ([74.207.252.120]:53784 "EHLO crca.org.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178Ab0EHFZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 01:25:55 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BE4F5DF.70903@crca.org.au>
+Date: Sat, 08 May 2010 15:25:51 +1000
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: 2.6.33 & 2.6.34-rc6: Huge number of Load Balancing tick wakeups.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sat, 8 May 2010, Rafael J. Wysocki wrote:
-> > 
-> > To calrify, I think the approach in the Matthew's patch is correct, but since I have
-> > some bad experience with that particular thing, I prefer to make that change in
-> > 2.6.35 and then move on to drop the flag entirely.
-> 
-> Oh,yes. I'm not suggesting we do it late in the -rc cycle. 
-> 
-> I just don't think the DMI table is a good idea, so in the longer run I 
-> wan tto get rid of it, rather than have it grow (by quite a few entries, 
-> in this case).
-> 
-> There are valid reasons for DMI tables in many cases, but in this case I 
-> think the reason is simply that we do the wrong thing, so then we ended up 
-> with a DMI table to "fix" the wrong thing we do.
+Hi all.
 
-Hi Linus,
-Matthew, Rafael and I all agree with you on every aspect of this issue.
+I'm seeing a huge number of load balancing tick wakeups, with both 
+2.6.33 and current git (f1c448e0a9e99c76f4ece368714fb35a40a8daba).
 
-The DMI list is temporary.  Matthew's patch to do as you say
-is already queued for 2.6.35.
+This has been reported as a bug in some distros:
 
-I belive that Rafael was prudent in recommending we delay
-the "real" fix until .35, as we discovered that the broken
-machines suffered a 3-second delay on resume, polling for the SCI_EN
-that the BIOS would never set, and so the proposed fix for that 
-is queued for 2.6.35 as well.
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=521944
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/524281
 
-thanks,
--Len
+Regards,
+
+Nigel
+
+PowerTOP 1.12   (C) 2007, 2008 Intel Corporation
+
+Collecting data for 15 seconds
+
+
+Your CPU supports the following C-states : C1 C2 C3 C4
+Your BIOS reports the following C-states : C1 C2 C4
+Cn                Avg residency
+C0 (cpu running)        (40.8%)
+polling           0.7ms ( 0.1%)
+C1 mwait          0.0ms ( 0.0%)
+C2 mwait          0.1ms ( 3.2%)
+C4 mwait          0.4ms (56.0%)
+P-states (frequencies)
+Turbo Mode     7.3%
+   2.21 Ghz     0.7%
+   1.60 Ghz     0.8%
+   1200 Mhz     0.9%
+    800 Mhz    90.3%
+Wakeups-from-idle per second : 1727.3   interval: 15.0s
+no ACPI power usage estimate available
+Top causes for wakeups:
+   53.0% (1983.1)   [kernel scheduler] Load balancing tick
+   27.7% (1035.1)   vmware-vmx
+    8.8% (330.6)   [extra timer interrupt]
+    2.3% ( 85.5)   [TLB shootdowns] <kernel IPI>
+    1.6% ( 61.3)   totem
+    1.2% ( 45.9)   [Rescheduling interrupts] <kernel IPI>
+    1.1% ( 41.1)   [iwl3945] <interrupt>
+    1.0% ( 36.2)   firefox-bin
+    0.4% ( 16.2)   [ata_piix] <interrupt>
+    0.3% ( 11.6)   vmware
+    0.3% ( 11.3)   pulseaudio
+    0.3% ( 11.1)   vmware-unity-he
+    0.3% ( 10.7)   skype
+    0.2% (  8.0)   [kernel core] usb_hcd_poll_rh_status (rh_timer_func)
+    0.1% (  5.4)   [hda_intel] <interrupt>
+    0.1% (  5.3)   gnome-do
+    0.1% (  5.1)   compiz
+    0.1% (  4.1)   python
+    0.1% (  4.0)   avant-window-na
+    0.1% (  2.3)   liferea
+    0.1% (  2.1)   vmware-tray
+    0.1% (  2.1)   thunderbird-bin
+    0.1% (  2.0)   mysqld
+    0.1% (  2.0)   emerald
+    0.1% (  1.9)   gnome-terminal
+    0.0% (  1.3)   [kernel core] sk_reset_timer (tcp_delack_timer)
+    0.0% (  1.3)   [ahci] <interrupt>
+    0.0% (  1.2)   cc1
+    0.0% (  1.0)   [nvidia] <interrupt>
+    0.0% (  1.0)   vmware-usbarbit
+    0.0% (  1.0)   vmnet-natd
+    0.0% (  1.0)   gvfs-afc-volume
+    0.0% (  1.0)   [kernel core] enqueue_task_rt (sched_rt_period_timer)
+    0.0% (  1.0)   [kernel module] HostIF_InitUptime 
+(HostIFUptimeResyncMono)
+    0.0% (  0.8)   cli
+    0.0% (  0.5)   events/1
+    0.0% (  0.5)   events/0
+    0.0% (  1.0)   vmware-usbarbit
+    0.0% (  1.0)   vmnet-natd
+    0.0% (  1.0)   gvfs-afc-volume
+    0.0% (  1.0)   [kernel core] enqueue_task_rt (sched_rt_period_timer)
+    0.0% (  1.0)   [kernel module] HostIF_InitUptime 
+(HostIFUptimeResyncMono)
+    0.0% (  0.8)   cli
+    0.0% (  0.5)   events/1
+    0.0% (  0.5)   events/0
+    0.0% (  0.5)   hald-addon-stor
+    0.0% (  0.5)   udisks-daemon
+    0.0% (  0.3)   tomboy
+    0.0% (  0.3)   awn-applet
+    0.0% (  0.2)   rtkit-daemon
+    0.0% (  0.2)   Thunar
+    0.0% (  0.2)   padevchooser
+    0.0% (  0.2)   xfdesktop
+    0.0% (  0.1)   gnome-power-man
+    0.0% (  0.1)   ssh-agent
+    0.0% (  0.1)   mono
+    0.0% (  0.1)   NetworkManager
+    0.0% (  0.1)   hald
+
+An audio device is active 100.0% of the time:
+hwC0D2 SigmaTel STAC9228
+
+A USB device is active  0.0% of the time:
+USB device  2-2 : Biometric Coprocessor (STMicroelectronics)
+
+Suggestion: Enable SATA ALPM link power management via:
+   echo min_power > /sys/class/scsi_host/host0/link_power_management_policy
+or press the S key.
+
+Suggestion: Enable wireless power saving mode by executing the following 
+command:
+   iwconfig wlan0 power timeout 500ms
+This will sacrifice network performance slightly to save power.
+
+Suggestion: Enable the CONFIG_USB_SUSPEND kernel configuration option.
+This option will automatically disable UHCI USB when not in use, and may
+save approximately 1 Watt of power.
+
+Recent USB suspend statistics
+Active  Device name
+   0.0%  USB device  5-2 : Generic RNDIS (HTC)
+   0.0%  USB device  2-2 : Biometric Coprocessor (STMicroelectronics)
+   0.0%  USB device  1-1 : Laptop Integrated Webcam (OmniVision 
+Technologies, Inc. -2640-07.07.20.3)
+   0.0%  USB device usb7 : UHCI Host Controller (Linux 2.6.34-rc6 uhci_hcd)
+   0.0%  USB device usb6 : UHCI Host Controller (Linux 2.6.34-rc6 uhci_hcd)
+   0.0%  USB device usb5 : UHCI Host Controller (Linux 2.6.34-rc6 uhci_hcd)
+   0.0%  USB device usb4 : EHCI Host Controller (Linux 2.6.34-rc6 ehci_hcd)
+   0.0%  USB device usb3 : UHCI Host Controller (Linux 2.6.34-rc6 uhci_hcd)
+   0.0%  USB device usb2 : UHCI Host Controller (Linux 2.6.34-rc6 uhci_hcd)
+   0.0%  USB device usb1 : EHCI Host Controller (Linux 2.6.34-rc6 ehci_hcd)
+
+Recent audio activity statistics
+Active  Device name
+100.0%  hwC0D2 SigmaTel STAC9228
+
+Recent SATA AHCI link activity statistics
+Active  Partial Slumber Device name
