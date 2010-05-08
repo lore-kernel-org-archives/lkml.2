@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab0EHIC6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 04:02:58 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41681 "EHLO mx2.mail.elte.hu"
+	id S1752246Ab0EHIG4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 04:06:56 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48527 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282Ab0EHICz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 04:02:55 -0400
-Date: Sat, 8 May 2010 10:02:25 +0200
+	id S1751754Ab0EHIGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 04:06:51 -0400
+Date: Sat, 8 May 2010 10:06:40 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Cyrill Gorcunov <gorcunov@gmail.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH 0/1] perf list documentation changes
-Message-ID: <20100508080225.GD2825@elte.hu>
-References: <1273257628-15215-1-git-send-email-acme@infradead.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [PATCH -tip] x86,perf: P4 PMU -- protect sensible procedures
+ from preemption
+Message-ID: <20100508080640.GE2825@elte.hu>
+References: <20100507150517.GB16434@lenovo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273257628-15215-1-git-send-email-acme@infradead.org>
+In-Reply-To: <20100507150517.GB16434@lenovo>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,23 +34,19 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+* Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
-> Hi Ingo,
-> 
->         Please pull from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
-> 
-> Regards,
-> 
-> Arnaldo Carvalho de Melo (1):
->   perf list: Improve the raw hw event descriptor documentation
-> 
->  tools/perf/Documentation/perf-list.txt |   19 ++++++++++++++++---
->  tools/perf/util/parse-events.c         |    3 ++-
->  2 files changed, 18 insertions(+), 4 deletions(-)
+>  arch/x86/kernel/cpu/perf_event_p4.c |    8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
 
-Pulled, thanks Arnaldo!
+Looks good - but it doesnt apply cleanly to tip:master:
+
+ Hunk #3 succeeded at 828 with fuzz 2 (offset 373 lines).
+ Hunk #4 FAILED at 743.
+ 1 out of 4 hunks FAILED -- rejects in file arch/x86/kernel/cpu/perf_event_p4.c
+
+is there some other patch dependency?
+
+Thanks,
 
 	Ingo
