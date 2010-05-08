@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab0EHPWf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 11:22:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16741 "EHLO
+	id S1753983Ab0EHPWi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 11:22:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16748 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab0EHPWc (ORCPT
+	with ESMTP id S1753859Ab0EHPWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 11:22:32 -0400
+	Sat, 8 May 2010 11:22:35 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,88 +16,92 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 15/22] lmb: Add lmb_reserve_area_overlap_ok()
-Date: Sat,  8 May 2010 08:17:33 -0700
-Message-Id: <1273331860-14325-16-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 11/22] lmb: Add find_memory_core_early()
+Date: Sat,  8 May 2010 08:17:29 -0700
+Message-Id: <1273331860-14325-12-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273331860-14325-1-git-send-email-yinghai@kernel.org>
 References: <1273331860-14325-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090206.4BE58171.012B,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4BE58171.0028,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some areas from firmware could be reserved several times from different callers.
+According to node range in early_node_map[] with __lmb_find_area
+to find free range.
 
-If these area are overlapped, We may have overlapped entries in lmb.reserved.
+Will be used by lmb_find_area_node()
 
-Try to free the area at first, before rerserve them again.
+lmb_find_area_node will be used to find right buffer for NODE_DATA
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/lmb.h |    1 +
- mm/lmb.c            |   27 +++++++++++++++++++++++++--
- 2 files changed, 26 insertions(+), 2 deletions(-)
+ include/linux/mm.h |    2 ++
+ mm/page_alloc.c    |   29 +++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index 90022c1..47b9d7f 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -87,6 +87,7 @@ lmb_end_pfn(struct lmb_region *type, unsigned long region_nr)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index fb19bb9..7774e1d 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1159,6 +1159,8 @@ extern void free_bootmem_with_active_regions(int nid,
+ 						unsigned long max_low_pfn);
+ int add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid);
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit);
+ void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
+ 				 u64 goal, u64 limit);
+ typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index d03c946..72afd94 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -21,6 +21,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/jiffies.h>
+ #include <linux/bootmem.h>
++#include <linux/lmb.h>
+ #include <linux/compiler.h>
+ #include <linux/kernel.h>
+ #include <linux/kmemcheck.h>
+@@ -3393,6 +3394,34 @@ void __init free_bootmem_with_active_regions(int nid,
+ 	}
  }
  
- void lmb_reserve_area(u64 start, u64 end, char *name);
-+void lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name);
- void lmb_free_area(u64 start, u64 end);
- void lmb_add_memory(u64 start, u64 end);
- u64 __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
-diff --git a/mm/lmb.c b/mm/lmb.c
-index 2870dd9..decea60 100644
---- a/mm/lmb.c
-+++ b/mm/lmb.c
-@@ -605,6 +605,12 @@ void __init lmb_add_memory(u64 start, u64 end)
- 	__check_and_double_region_array(&lmb.memory, &lmb_memory_region[0]);
- }
- 
-+static void __init __lmb_reserve_area(u64 start, u64 end, char *name)
++#ifdef CONFIG_HAVE_LMB
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit)
 +{
-+	lmb_add_region(&lmb.reserved, start, end - start);
-+	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0]);
-+}
++	int i;
 +
- void __init lmb_reserve_area(u64 start, u64 end, char *name)
++	/* Need to go over early_node_map to find out good range for node */
++	for_each_active_range_index_in_nid(i, nid) {
++		u64 addr;
++		u64 ei_start, ei_last;
++
++		ei_last = early_node_map[i].end_pfn;
++		ei_last <<= PAGE_SHIFT;
++		ei_start = early_node_map[i].start_pfn;
++		ei_start <<= PAGE_SHIFT;
++		addr = __lmb_find_area(ei_start, ei_last,
++					 goal, limit, size, align);
++
++		if (addr == LMB_ERROR)
++			continue;
++
++		return addr;
++	}
++
++	return -1ULL;
++}
++#endif
++
+ int __init add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid)
  {
- 	if (start == end)
-@@ -613,8 +619,25 @@ void __init lmb_reserve_area(u64 start, u64 end, char *name)
- 	if (WARN_ONCE(start > end, "lmb_reserve_area: wrong range [%#llx, %#llx]\n", start, end))
- 		return;
- 
--	lmb_add_region(&lmb.reserved, start, end - start);
--	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0]);
-+	__lmb_reserve_area(start, end, name);
-+}
-+
-+/*
-+ * Could be used to avoid having overlap entries in lmb.reserved.region.
-+ *  Don't need to use it with area that is from lmb_find_area()
-+ *  Only use it for the area that fw hidden area.
-+ */
-+void __init lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name)
-+{
-+	if (start == end)
-+		return;
-+
-+	if (WARN_ONCE(start > end, "lmb_reserve_area_overlap_ok: wrong range [%#llx, %#llx]\n", start, end))
-+		return;
-+
-+	/* Free that region at first */
-+	lmb_free(start, end - start);
-+	__lmb_reserve_area(start, end, name);
- }
- 
- void __init lmb_free_area(u64 start, u64 end)
 -- 
 1.6.4.2
 
