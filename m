@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751160Ab0EHEpN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 00:45:13 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35839 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab0EHEpK (ORCPT
+	id S1751230Ab0EHFUG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 01:20:06 -0400
+Received: from vms173009pub.verizon.net ([206.46.173.9]:32219 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab0EHFUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 00:45:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
-        b=KTKfQOjS9x0yQyacaRVKVA0mUZ2NAbue18f+QcOBY6axji36VdLX+Gw7N888B9WQln
-         1gA2p1voXjt8E3e7Xu6T2sOqh3knkgf/w4hM4OeZZN5ZD7dJ8zoK8lvXTuPvitaLYLEG
-         79ECsAvRLAs/hDy1lOLgZFR/J2yyuuA2uFMC4=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jason Baron <jbaron@redhat.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Tom Zanussi <tzanussi@gmail.com>
-Subject: [GIT PULL] perf fixlet for 2.6.34
-Date: Sat,  8 May 2010 06:45:09 +0200
-Message-Id: <1273293909-21288-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+	Sat, 8 May 2010 01:20:03 -0400
+Date: Sat, 08 May 2010 01:19:43 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [git pull request] ACPI patches for 2.6.34-rc6
+In-reply-to: <alpine.LFD.2.00.1005071708010.901@i5.linux-foundation.org>
+Message-id: <alpine.LFD.2.00.1005080112300.5996@localhost.localdomain>
+References: <alpine.LFD.2.00.1005062216430.10792@localhost.localdomain>
+ <201005080117.23760.rjw@sisk.pl>
+ <alpine.LFD.2.00.1005071618410.901@i5.linux-foundation.org>
+ <201005080203.30634.rjw@sisk.pl>
+ <alpine.LFD.2.00.1005071708010.901@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+> On Sat, 8 May 2010, Rafael J. Wysocki wrote:
+> > 
+> > To calrify, I think the approach in the Matthew's patch is correct, but since I have
+> > some bad experience with that particular thing, I prefer to make that change in
+> > 2.6.35 and then move on to drop the flag entirely.
+> 
+> Oh,yes. I'm not suggesting we do it late in the -rc cycle. 
+> 
+> I just don't think the DMI table is a good idea, so in the longer run I 
+> wan tto get rid of it, rather than have it grow (by quite a few entries, 
+> in this case).
+> 
+> There are valid reasons for DMI tables in many cases, but in this case I 
+> think the reason is simply that we do the wrong thing, so then we ended up 
+> with a DMI table to "fix" the wrong thing we do.
 
-Please pull the perf/urgent branch that can be found at:
+Hi Linus,
+Matthew, Rafael and I all agree with you on every aspect of this issue.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-	perf/urgent
+The DMI list is temporary.  Matthew's patch to do as you say
+is already queued for 2.6.35.
 
-Thanks,
-	Frederic
----
+I belive that Rafael was prudent in recommending we delay
+the "real" fix until .35, as we discovered that the broken
+machines suffered a 3-second delay on resume, polling for the SCI_EN
+that the BIOS would never set, and so the proposed fix for that 
+is queued for 2.6.35 as well.
 
-Frederic Weisbecker (1):
-      perf: Fix static strings treated like dynamic ones
-
-
- tools/perf/util/trace-event-parse.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
----
-commit c236e02b1c5adba76022e349ceff9dd60a00a2b8
-Author: Frederic Weisbecker <fweisbec@gmail.com>
-Date:   Wed May 5 22:07:39 2010 +0200
-
-    perf: Fix static strings treated like dynamic ones
-    
-    The raw_field_ptr() helper, used to retrieve the address of a field
-    inside a trace event, treats every strings as if they were dynamic
-    ie: having a secondary level of indirection to retrieve their
-    contents.
-    
-    FIELD_IS_STRING doesn't mean FIELD_IS_DYNAMIC, we only need to
-    compute the secondary dereference for the latter case.
-    
-    This fixes perf sched segfaults, bad cmdline report and may be
-    some other bugs.
-    
-    Reported-by: Jason Baron <jbaron@redhat.com>
-    Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-    Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: Ingo Molnar <mingo@elte.hu>
-    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Cc: Paul Mackerras <paulus@samba.org>
-    Cc: Tom Zanussi <tzanussi@gmail.com>
-
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index 9b3c20f..613c9cc 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -1925,7 +1925,7 @@ void *raw_field_ptr(struct event *event, const char *name, void *data)
- 	if (!field)
- 		return NULL;
- 
--	if (field->flags & FIELD_IS_STRING) {
-+	if (field->flags & FIELD_IS_DYNAMIC) {
- 		int offset;
- 
- 		offset = *(int *)(data + field->offset);
+thanks,
+-Len
