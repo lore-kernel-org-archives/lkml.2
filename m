@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab0EHWZQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 18:25:16 -0400
-Received: from omr5.networksolutionsemail.com ([205.178.146.55]:60402 "EHLO
-	omr5.networksolutionsemail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754325Ab0EHWZO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 18:25:14 -0400
-X-Greylist: delayed 1897 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 May 2010 18:25:13 EDT
-From: "Webmail Internet Technical Support" <scott@scottludwick.com>
-Importance: Normal
-Sensitivity: Normal
-Message-ID: <W5558427660316651273355611@webmail35>
-X-Mailer: Network Solutions Webmail, Build 11.2.30
-X-Originating-IP: [41.138.190.32]
-X-Forwarded-For: [(null)]
-Date: Sat, 08 May 2010 21:53:31 +0000
-Subject: Reactivation Of Your Email Account
-Reply-to: reupdate@w.cn
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754539Ab0EHW0w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 18:26:52 -0400
+Received: from mail.perches.com ([173.55.12.10]:2058 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754273Ab0EHW0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 18:26:51 -0400
+Subject: [PATCH] scripts/get_maintainer.pl: add .get_maintainer.conf
+ default options file
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Florian Mickler <florian@mickler.org>,
+       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>
+In-Reply-To: <1273354364-6016-1-git-send-email-florian@mickler.org>
+References: <4BE46E7D.1040906@s5r6.in-berlin.de>
+	 <1273354364-6016-1-git-send-email-florian@mickler.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 08 May 2010 15:26:49 -0700
+Message-ID: <1273357609.704.70.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Allow the use of a .get_maintainer.conf file to control the
+default options applied when scripts/get_maintainer.pl is run.
 
-Attention E-mail Account Holder,
+.get_maintainer.conf entries can be any valid argument.
 
-Dear Webmail Email User. All mailhub systems will undergo regularly
-scheduled maintenance, and access to your mailbox via our mail portal will
-be unavailable for some time during this maintenance period.
+Multiple lines may be used, blank lines ignored, # is a comment
 
-We shall be carrying out service maintenance/upgrade on our database and
-e-mail account center for better online services. We are also deleting all
-unused e-mail accounts to create more space for new accounts.In order to
-ensure you do not experience service interruptions or possible deactivation
-of your e-mail account, Please you must reply to this mail immediately
-confirming your e-mail account details below for confirmation and
-identification.
-_____________________________________
-1. First Name & Last:
-2. Full Login Email:
-3. Username:
-4  Password:
-5. Current Password:
-_____________________________________
-Failure to do this may automatically render your e-mail account
-deactivated from our e-mail database/mail server. To enable us upgrade
-your e-mail account, please do reply to this mail.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/get_maintainer.pl |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-Webmaster Information
-Technical Services
-Account Management.
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index 6f97a13..0c4c7e0 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -97,6 +97,30 @@ my %VCS_cmds_hg = (
+     "blame_commit_pattern" => "^([0-9a-f]+):"
+ );
+ 
++if (-f ${lk_path}.get_maintainer.conf) {
++    my @conf_args;
++    open(my $conffile, '<', "${lk_path}.get_maintainer.conf")
++	or warn "$P: Can't open .get_maintainer.conf: $!\n";
++    while (<$conffile>) {
++	my $line = $_;
++
++	$line =~ s/\s*\n?$//g;
++	$line =~ s/^\s*//g;
++	$line =~ s/\s+/ /g;
++
++	next if ($line =~ m/^\s*#/);
++	next if ($line =~ m/^\s*$/);
++
++	my @words = split(" ", $line);
++	foreach my $word (@words) {
++	    last if ($word =~ m/^#/);
++	    push (@conf_args, $word);
++	}
++    }
++    close($conffile);
++    unshift(@ARGV, @conf_args) if @conf_args;
++}
++
+ if (!GetOptions(
+ 		'email!' => \$email,
+ 		'git!' => \$email_git,
 
 
