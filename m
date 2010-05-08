@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab0EHPUI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 11:20:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:63624 "EHLO
+	id S1753740Ab0EHPVK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 11:21:10 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63680 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab0EHPUC (ORCPT
+	with ESMTP id S1752927Ab0EHPUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 11:20:02 -0400
+	Sat, 8 May 2010 11:20:24 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,113 +16,60 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 06/22] bootmem, x86: Add weak version of reserve_bootmem_generic
-Date: Sat,  8 May 2010 08:17:24 -0700
-Message-Id: <1273331860-14325-7-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 01/22] lmb: Move lmb.c to mm/
+Date: Sat,  8 May 2010 08:17:19 -0700
+Message-Id: <1273331860-14325-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273331860-14325-1-git-send-email-yinghai@kernel.org>
 References: <1273331860-14325-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090204.4BE58101.0122,ss=1,fgs=0
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090209.4BE580FB.0066,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be used lmb_to_bootmem converting
-
-It is an wrapper for reserve_bootmem, and x86 64bit is using special one.
-
-Also clean up that version for x86_64. We don't need to take care of numa
-path for that, bootmem can handle it how
+lmb.c is memory related, so move it to mm/. It is suggested by Ingo
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- arch/x86/mm/init_32.c |    6 ------
- arch/x86/mm/init_64.c |   20 ++------------------
- mm/bootmem.c          |    6 ++++++
- 3 files changed, 8 insertions(+), 24 deletions(-)
+ lib/Makefile      |    2 --
+ mm/Makefile       |    2 ++
+ {lib => mm}/lmb.c |    0
+ 3 files changed, 2 insertions(+), 2 deletions(-)
+ rename {lib => mm}/lmb.c (100%)
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index bca7909..90e0545 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -1069,9 +1069,3 @@ void mark_rodata_ro(void)
- #endif
- }
- #endif
+diff --git a/lib/Makefile b/lib/Makefile
+index 9e6d3c2..a8f7d48 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -88,8 +88,6 @@ obj-$(CONFIG_FAULT_INJECTION) += fault-inject.o
+ 
+ lib-$(CONFIG_GENERIC_BUG) += bug.o
+ 
+-obj-$(CONFIG_HAVE_LMB) += lmb.o
 -
--int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
--				   int flags)
--{
--	return reserve_bootmem(phys, len, flags);
--}
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index ee41bba..634fa08 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -799,13 +799,10 @@ void mark_rodata_ro(void)
+ obj-$(CONFIG_HAVE_ARCH_TRACEHOOK) += syscall.o
  
- #endif
+ obj-$(CONFIG_DYNAMIC_DEBUG) += dynamic_debug.o
+diff --git a/mm/Makefile b/mm/Makefile
+index 6c2a73a..52492f9 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -15,6 +15,8 @@ obj-y			:= bootmem.o filemap.o mempool.o oom_kill.o fadvise.o \
+ 			   $(mmu-y)
+ obj-y += init-mm.o
  
-+#ifndef CONFIG_NO_BOOTMEM
- int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 				   int flags)
- {
--#ifdef CONFIG_NUMA
--	int nid, next_nid;
--	int ret;
--#endif
- 	unsigned long pfn = phys >> PAGE_SHIFT;
- 
- 	if (pfn >= max_pfn) {
-@@ -821,21 +818,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 		return -EFAULT;
- 	}
- 
--	/* Should check here against the e820 map to avoid double free */
--#ifdef CONFIG_NUMA
--	nid = phys_to_nid(phys);
--	next_nid = phys_to_nid(phys + len - 1);
--	if (nid == next_nid)
--		ret = reserve_bootmem_node(NODE_DATA(nid), phys, len, flags);
--	else
--		ret = reserve_bootmem(phys, len, flags);
--
--	if (ret != 0)
--		return ret;
--
--#else
- 	reserve_bootmem(phys, len, flags);
--#endif
- 
- 	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
- 		dma_reserve += len / PAGE_SIZE;
-@@ -844,6 +827,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 
- 	return 0;
- }
-+#endif
- 
- int kern_addr_valid(unsigned long addr)
- {
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index 58c66cc..ee31b95 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -526,6 +526,12 @@ int __init reserve_bootmem(unsigned long addr, unsigned long size,
- }
- 
- #ifndef CONFIG_NO_BOOTMEM
-+int __weak __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
-+				   int flags)
-+{
-+	return reserve_bootmem(phys, len, flags);
-+}
++obj-$(CONFIG_HAVE_LMB) += lmb.o
 +
- static unsigned long __init align_idx(struct bootmem_data *bdata,
- 				      unsigned long idx, unsigned long step)
- {
+ obj-$(CONFIG_BOUNCE)	+= bounce.o
+ obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
+ obj-$(CONFIG_HAS_DMA)	+= dmapool.o
+diff --git a/lib/lmb.c b/mm/lmb.c
+similarity index 100%
+rename from lib/lmb.c
+rename to mm/lmb.c
 -- 
 1.6.4.2
 
