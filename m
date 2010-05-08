@@ -1,43 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab0EHWGR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 18:06:17 -0400
-Received: from mail.perches.com ([173.55.12.10]:2054 "EHLO mail.perches.com"
+	id S1754360Ab0EHWWL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 18:22:11 -0400
+Received: from mux2.uit.no ([129.242.5.252]:51757 "EHLO mux2.uit.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752680Ab0EHWGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 18:06:16 -0400
-Subject: Re: [PATCH] get_maintainer.pl: optionally ignore non-maintainer
- tags
-From: Joe Perches <joe@perches.com>
-To: florian@mickler.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>
-In-Reply-To: <1273354364-6016-1-git-send-email-florian@mickler.org>
-References: <4BE46E7D.1040906@s5r6.in-berlin.de>
-	 <1273354364-6016-1-git-send-email-florian@mickler.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 08 May 2010 15:06:13 -0700
-Message-ID: <1273356373.704.56.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753131Ab0EHWWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 18:22:08 -0400
+X-Greylist: delayed 755 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 May 2010 18:22:08 EDT
+X-DKIM: Sendmail DKIM Filter v2.8.3 mux2.uit.no o48LoXYx084373
+Message-ID: <50483b162e27df68a0b9f4439cd6cd11.squirrel@ws.student.uit.no>
+Date: Sat, 8 May 2010 23:50:32 +0200 (CEST)
+Subject: =?utf-8?B?WW91IEhhdmUgV29uIMKjMSwwMDAuMDAwLjAw?=
+From: osp000@post.uit.no
+Reply-To: mmclaimkk@hotmail.com
+User-Agent: SquirrelMail/1.4.15
+MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-08 at 23:32 +0200, florian@mickler.org wrote:
-> Using --git to determine who to send a patch to, it is not
-> reasonable to include people that only reported an issue or tested a
-> patch. Thus we restrict the candidates to be the one's listed with
-> Reviewed-By, Signed-Off-By and Acked-By tags.
-[]
-> +    my $tagPattern;
-> +    if ($email_git_maintainers) {
-> +	    $tagPattern = join("|",@maintainer_tags);
-> +    } else {
-> +	    $tagPattern = "[^ \t]+";
 
-I think the else case should be "[a-z _-]+" as some
-non-standard signatures have embedded spaces.
+
+
+Congratulations your email have been selected by the Microsoft Lottery
+Promotion Department, for the sum payout of (£1,000.000.00) British Pounds
+Contact your Claims officer.Mr Johson Keith :Email:mmclaimkk@hotmail.com
 
