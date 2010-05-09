@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab0EIMGU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 08:06:20 -0400
-Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:49750 "EHLO
-	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753321Ab0EIMGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 08:06:05 -0400
-X-Greylist: delayed 481 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 May 2010 08:06:03 EDT
-Subject: Re: [PATCH] backlight: Add Cirrus EP93xx backlight driver
-From: Richard Purdie <rpurdie@rpsys.net>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "ryan@bluewatersys.com" <ryan@bluewatersys.com>
-In-Reply-To: <0D753D10438DA54287A00B0270842697636EC1EA58@AUSP01VMBX24.collaborationhost.net>
-References: <0D753D10438DA54287A00B0270842697636EC1EA58@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 08 May 2010 14:43:20 +0100
-Message-ID: <1273326200.4312.36.camel@rex>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753601Ab0EIMHK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 08:07:10 -0400
+Received: from mbox.akmail.it ([213.21.176.227]:57311 "EHLO pop.aknet.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753294Ab0EIMHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 08:07:05 -0400
+X-Greylist: delayed 3262 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 May 2010 08:07:05 EDT
+Message-ID: <1273403549.4be6989d73f32@webmail.alpikom.it>
+Date: Sun,  9 May 2010 00:12:29 -1100
+From: THE WCC HELPDESK TEAM <HELPDESK@WCC.NET>
+Reply-to: helpdesk_team@hotmail.com
+Subject: CONFIRM YOUR EMAIL IDENTITY BELOW
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) 3.1
+X-Originating-IP: 85.10.209.67
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-05 at 12:13 -0500, H Hartley Sweeten wrote:
-> The EP9307, EP9312, and EP9315 processors include a framebuffer
-> peripheral.  This peripheral has a dedicated pwm output called
-> BRIGHT that can be used to control the backlight on an LCD.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Ryan Mallon <ryan@bluewatersys.com>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
+THE WCC HELPDESK TEAM periodically checks the size of your e-mail
+space is sending you this information. The program runs weekly to
+ensure your inbox does not grow too large, thus preventing you from
+receiving or sending new e-mail. As this message is being sent, you
+have 18 megabytes (MB) or more stored in your inbox. To help us reset
+your space in our database, please enter your current user name
+(_________________) password (_______________)
 
-Queued in the backlight tree, thanks.
+You will receive a periodic alert if your inbox size is between 18 and
+20 MB. If your inbox size is 20 MB, a program on your Webmail will
+move your oldest e-mails to a folder in your home directory to ensure
+you can continue receiving incoming e-mail. You will be notified this
+has taken place.
 
-Richard
+If your inbox grows to 25 MB, you will be unable to receive new e-mail
+and it will be returned to sender. All this is programmed to ensure
+your e-mail continues to function well.
+
+Thank you for your cooperation.
+   WCC HELPDESK TEAM
+***West Central Wireless***
+
+----------------------------------------------------
+This mail has been sent using Alpikom webmail system
+http://www.alpikom.it
 
