@@ -1,143 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab0EIOAt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 10:00:49 -0400
-Received: from sh.osrg.net ([192.16.179.4]:55281 "EHLO sh.osrg.net"
+	id S1753910Ab0EIOAz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 10:00:55 -0400
+Received: from sh.osrg.net ([192.16.179.4]:55284 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753627Ab0EIOAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 10:00:44 -0400
-Date: Sun, 9 May 2010 22:41:25 +0900
+	id S1753641Ab0EIOAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 10:00:51 -0400
+Date: Sun, 9 May 2010 22:41:15 +0900
 To: konrad.wilk@oracle.com
 Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
        iommu@lists.linux-foundation.org, albert_herranz@yahoo.es,
        linux@eikelenboom.it, chrisw@sous-sol.org, Ian.Campbell@eu.citrix.com,
        jeremy@goop.org, dwmw2@infradead.org, alex.williamson@hp.com
-Subject: Re: [PATCH 3/6] swiotlb: Make exportable bookkeeping functions and
- variables have same prefix.
+Subject: Re: [PATCH 2/6] swiotlb: swiotlb_tbl_map_single: abstract out
+ swiotlb_virt_to_bus calls out.
 From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1270672170-31833-4-git-send-email-konrad.wilk@oracle.com>
-References: <1270672170-31833-2-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1270672170-31833-3-git-send-email-konrad.wilk@oracle.com>
+References: <1270672170-31833-1-git-send-email-konrad.wilk@oracle.com>
+	<1270672170-31833-2-git-send-email-konrad.wilk@oracle.com>
 	<1270672170-31833-3-git-send-email-konrad.wilk@oracle.com>
-	<1270672170-31833-4-git-send-email-konrad.wilk@oracle.com>
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100509224021S.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 09 May 2010 22:41:26 +0900 (JST)
+Message-Id: <20100509223623X.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 09 May 2010 22:41:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  7 Apr 2010 16:29:27 -0400
+On Wed,  7 Apr 2010 16:29:26 -0400
 Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-> We prefix pertient book keeping functions and variables with the
-> 'swiotlb_tbl' prefix.
+> We want to move that function out of swiotlb_tbl_map_single so that the caller
+> of this function does the virt->phys->bus address translation.
 > 
 > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > ---
->  lib/swiotlb.c |  149 +++++++++++++++++++++++++++++---------------------------
->  1 files changed, 77 insertions(+), 72 deletions(-)
+>  lib/swiotlb.c |   22 ++++++++++++++--------
+>  1 files changed, 14 insertions(+), 8 deletions(-)
 
-Can we create the swiotlb initialization function instead of lots of
-renaming and exporting iotlb values?
+It would be better to do something like that instead of spreading
+swiotlb_virt_to_bus()?
 
 =
 From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH 1/2] swiotlb: add the swiotlb initialization function
-with iotlb memory
+Subject: [PATCH] swiotlb: add swiotlb_tlb_map_single library function
 
-This enables the caller to initialize swiotlb with its own iotlb
-memory.
+swiotlb_tlb_map_single() takes the dma address of iotlb instead of
+using swiotlb_virt_to_bus().
 
 Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 ---
- include/linux/swiotlb.h |    1 +
- lib/swiotlb.c           |   48 +++++++++++++++++++++++++++++-----------------
- 2 files changed, 31 insertions(+), 18 deletions(-)
+ lib/swiotlb.c |   25 +++++++++++++++++--------
+ 1 files changed, 17 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index febedcf..17b5298 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -23,6 +23,7 @@ extern int swiotlb_force;
- #define IO_TLB_SHIFT 11
- 
- extern void swiotlb_init(int verbose);
-+extern void swiotlb_init_with_tlb(char *tlb, unsigned long nslabs, int verbose);
- 
- extern void
- *swiotlb_alloc_coherent(struct device *hwdev, size_t size,
 diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 5fddf72..a37ee04 100644
+index a37ee04..58f489a 100644
 --- a/lib/swiotlb.c
 +++ b/lib/swiotlb.c
-@@ -140,28 +140,14 @@ void swiotlb_print_info(void)
- 	       (unsigned long long)pend);
+@@ -373,25 +373,22 @@ static void swiotlb_bounce(phys_addr_t phys, char *dma_addr, size_t size,
+ 	}
  }
  
 -/*
-- * Statically reserve bounce buffer space and initialize bounce buffer data
-- * structures for the software IO TLB used to implement the DMA API.
+- * Allocates bounce buffer and returns its kernel virtual address.
 - */
--void __init
--swiotlb_init_with_default_size(size_t default_size, int verbose)
-+void __init swiotlb_init_with_tlb(char *tlb, unsigned long nslabs, int verbose)
+-static void *
+-map_single(struct device *hwdev, phys_addr_t phys, size_t size, int dir)
++void *swiotlb_tlb_map_single(struct device *hwdev, u64 tlb_dma_addr,
++			     phys_addr_t phys, size_t size, int dir)
  {
- 	unsigned long i, bytes;
+ 	unsigned long flags;
+ 	char *dma_addr;
+ 	unsigned int nslots, stride, index, wrap;
+ 	int i;
+-	unsigned long start_dma_addr;
+ 	unsigned long mask;
+ 	unsigned long offset_slots;
+ 	unsigned long max_slots;
  
--	if (!io_tlb_nslabs) {
--		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
--		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
--	}
-+	bytes = nslabs << IO_TLB_SHIFT;
+ 	mask = dma_get_seg_boundary(hwdev);
+-	start_dma_addr = swiotlb_virt_to_bus(hwdev, io_tlb_start) & mask;
  
--	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
--
--	/*
--	 * Get IO TLB memory from the low pages
--	 */
--	io_tlb_start = alloc_bootmem_low_pages(bytes);
--	if (!io_tlb_start)
--		panic("Cannot allocate SWIOTLB buffer");
-+	io_tlb_nslabs = nslabs;
-+	io_tlb_start = tlb;
- 	io_tlb_end = io_tlb_start + bytes;
+-	offset_slots = ALIGN(start_dma_addr, 1 << IO_TLB_SHIFT) >> IO_TLB_SHIFT;
++	tlb_dma_addr &= mask;
++
++	offset_slots = ALIGN(tlb_dma_addr, 1 << IO_TLB_SHIFT) >> IO_TLB_SHIFT;
  
  	/*
-@@ -185,6 +171,32 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
- 		swiotlb_print_info();
+  	 * Carefully handle integer overflow which can occur when mask == ~0UL.
+@@ -480,6 +477,18 @@ found:
  }
  
-+/*
-+ * Statically reserve bounce buffer space and initialize bounce buffer data
-+ * structures for the software IO TLB used to implement the DMA API.
+ /*
++ * Allocates bounce buffer and returns its kernel virtual address.
 + */
-+void __init
-+swiotlb_init_with_default_size(size_t default_size, int verbose)
++
++static void *
++map_single(struct device *hwdev, phys_addr_t phys, size_t size, int dir)
 +{
-+	unsigned long bytes;
++	u64 start_dma_addr = swiotlb_virt_to_bus(hwdev, io_tlb_start);
 +
-+	if (!io_tlb_nslabs) {
-+		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
-+		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-+	}
-+
-+	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
-+
-+	/*
-+	 * Get IO TLB memory from the low pages
-+	 */
-+	io_tlb_start = alloc_bootmem_low_pages(bytes);
-+	if (!io_tlb_start)
-+		panic("Cannot allocate SWIOTLB buffer");
-+
-+	swiotlb_init_with_tlb(io_tlb_start, io_tlb_nslabs, verbose);
++	return swiotlb_tlb_map_single(hwdev, start_dma_addr, phys, size, dir);
 +}
 +
- void __init
- swiotlb_init(int verbose)
- {
++/*
+  * dma_addr is the kernel virtual address of the bounce buffer to unmap.
+  */
+ static void
 -- 
 1.6.5
 
