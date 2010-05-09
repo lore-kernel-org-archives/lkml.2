@@ -1,78 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab0EILB6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 07:01:58 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:49047 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752542Ab0EILB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 07:01:56 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: linux-i2c@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       uclinux-dist-devel@blackfin.uclinux.org,
-       Michael Hennerich <michael.hennerich@analog.com>
-Subject: [PATCH] i2c-bfin-twi: handle faulty slave devices better
-Date: Sun,  9 May 2010 07:04:47 -0400
-Message-Id: <1273403087-3326-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.1
+	id S1753446Ab0EILSv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 07:18:51 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:47873 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab0EILSt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 07:18:49 -0400
+Date: Sun, 9 May 2010 16:48:41 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Mel Gorman <mel@csn.ul.ie>, Randy Dunlap <rdunlap@xenotime.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v3 10/10] perf: perf interface for uprobes.
+Message-ID: <20100509111841.GJ7426@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100506180139.28877.81699.sendpatchset@localhost6.localdomain6>
+ <20100506180340.28877.25709.sendpatchset@localhost6.localdomain6>
+ <4BE34D1D.2020100@redhat.com>
+ <20100507022403.GH7426@linux.vnet.ibm.com>
+ <4BE453A1.1060003@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4BE453A1.1060003@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Hennerich <michael.hennerich@analog.com>
+> >>
+> > 
+> > Either zfree_3329 or having a new event group for each process is
+> > possible.
+> 
+> I think adding new groups make controlling those event easier.
+> (e.g. deleting all probes on exited process)
+> 
 
-Faulty slave devices might drive SDA low after a transfer finishes.  So,
-when this scenario is detected, have the master generate up to 8 extra
-clocks until the SDA is properly released.
+Okay..
 
-Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
-Note: this requires the existing Blackfin TWI patches already sent out
+> 
+> >> [...]
+> >>> @@ -383,7 +450,11 @@ int synthesize_trace_kprobe_event(struct probe_point *pp)
+> >>>  	pp->probes[0] = buf = zalloc(MAX_CMDLEN);
+> >>>  	if (!buf)
+> >>>  		die("Failed to allocate memory by zalloc.");
+> >>> -	ret = e_snprintf(buf, MAX_CMDLEN, "%s+%d", pp->function, pp->offset);
+> >>> +	if (pp->offset)
+> >>> +		ret = e_snprintf(buf, MAX_CMDLEN, "%s+%d", pp->function,
+> >>> +					pp->offset);
+> >>> +	else
+> >>> +		ret = e_snprintf(buf, MAX_CMDLEN, "%s", pp->function);
+> >>>  	if (ret <= 0)
+> >>>  		goto error;
+> >>>  	len = ret;
+> >>
+> >> Isn't it a cleanup ?
+> > 
+> > Can you please elaborate?
+> 
+> symbol+offset is always allowed even if offset == 0,
+> so I think this change isn't needed. I guessed it is just for cleanup.
+> 
 
- drivers/i2c/busses/i2c-bfin-twi.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
+kprobes has an advantage that it can make sense of kernel symbols. 
+However uprobes doesnt have the advantage. It cannot make any sense of
+user space symbols. Hence unlike kprobes, uprobes doesnt have
+symbol_name and offset fields. To overcome this the perf probe for
+uprobes resolves the symbol_name, offset and pass the plain vaddr to
+uprobes. 
 
-diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
-index fb26e5c..f9c05e1 100644
---- a/drivers/i2c/busses/i2c-bfin-twi.c
-+++ b/drivers/i2c/busses/i2c-bfin-twi.c
-@@ -20,6 +20,7 @@
- #include <linux/completion.h>
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
-+#include <linux/delay.h>
- 
- #include <asm/blackfin.h>
- #include <asm/portmux.h>
-@@ -159,6 +160,27 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
- 		if (mast_stat & BUFWRERR)
- 			dev_dbg(&iface->adap.dev, "Buffer Write Error\n");
- 
-+		/* Faulty salve devices, may drive SDA low after a transfer
-+		 * finishes. To release the bus this code generates up to 8
-+		 * extra clocks until SDA is released.
-+		 */
-+
-+		if (read_MASTER_STAT(iface) & SDASEN) {
-+			int cnt = 8;
-+			do {
-+				write_MASTER_CTL(iface, SCLOVR);
-+				udelay(6);
-+				write_MASTER_CTL(iface, 0);
-+				udelay(6);
-+			} while ((read_MASTER_STAT(iface) & SDASEN) && cnt--);
-+
-+			write_MASTER_CTL(iface, SDAOVR | SCLOVR);
-+			udelay(6);
-+			write_MASTER_CTL(iface, SDAOVR);
-+			udelay(6);
-+			write_MASTER_CTL(iface, 0);
-+		}
-+
- 		/* If it is a quick transfer, only address without data,
- 		 * not an err, return 1.
- 		 */
--- 
-1.7.1
+--
+Thanks and Regards
+Srikar Dronamraju
+
 
