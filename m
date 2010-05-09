@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab0EIJCm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 05:02:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9070 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752165Ab0EIJCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 05:02:40 -0400
-Date: Sun, 9 May 2010 11:57:33 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       linux-mm@kvack.org, akpm@linux-foundation.org, hpa@zytor.com,
-       gregory.haskins@gmail.com, s.hetze@linux-ag.com,
-       Daniel Walker <dwalker@fifo99.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: virtio: put last_used and last_avail index into ring itself.
-Message-ID: <20100509085733.GD16775@redhat.com>
-References: <cover.1257349249.git.mst@redhat.com> <201005061022.13815.rusty@rustcorp.com.au> <20100506062755.GC8363@redhat.com> <201005071235.40590.rusty@rustcorp.com.au>
+	id S1752687Ab0EIJL4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 05:11:56 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:60594 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752564Ab0EIJLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 05:11:54 -0400
+Date: Sun, 9 May 2010 11:11:51 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Nigel Cunningham <ncunningham@crca.org.au>,
+       Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Len Brown <lenb@kernel.org>,
+       Linux Power Management List <linux-pm@lists.osdl.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] 2.6.33 & 2.6.34-rc6: Huge number of Load Balancing
+	tick wakeups.
+Message-ID: <20100509091151.GA24453@isilmar-3.linta.de>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	Nigel Cunningham <ncunningham@crca.org.au>,
+	Suresh Siddha <suresh.b.siddha@intel.com>,
+	Len Brown <lenb@kernel.org>,
+	Linux Power Management List <linux-pm@lists.osdl.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <4BE4F5DF.70903@crca.org.au> <alpine.LFD.2.00.1005081511550.4103@localhost.localdomain> <4BE5F3B2.6070901@crca.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201005071235.40590.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4BE5F3B2.6070901@crca.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 12:35:39PM +0930, Rusty Russell wrote:
-> On Thu, 6 May 2010 03:57:55 pm Michael S. Tsirkin wrote:
-> > On Thu, May 06, 2010 at 10:22:12AM +0930, Rusty Russell wrote:
-> > > On Wed, 5 May 2010 03:52:36 am Michael S. Tsirkin wrote:
-> > > > What do you think?
-> > > 
-> > > I think everyone is settled on 128 byte cache lines for the forseeable
-> > > future, so it's not really an issue.
-> > 
-> > You mean with 64 bit descriptors we will be bouncing a cache line
-> > between host and guest, anyway?
+Hey,
+
+On Sun, May 09, 2010 at 09:28:50AM +1000, Nigel Cunningham wrote:
+> On 09/05/10 05:16, Len Brown wrote:
+> > (linux-pm cc'd)
+> >
+> >> I'm seeing a huge number of load balancing tick wakeups, with both 2.6.33 and
+> >> current git (f1c448e0a9e99c76f4ece368714fb35a40a8daba).
+> >>
+> >> This has been reported as a bug in some distros:
+> >>
+> >> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=521944
+> >> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/524281
+> >
+> > Unclear if your sighting is the same as those two.
+> >
+> > What do you see if vmware is not present?
 > 
-> I'm confused by this entire thread.
+> I still see a huge number, just not as huge. The number of load 
+> balancing ticks seems to increase with the number of ticks from other 
+> sources. Without vmware running I got:
 > 
-> Descriptors are 16 bytes.  They are at the start, so presumably aligned to
-> cache boundaries.
-> 
-> Available ring follows that at 2 bytes per entry, so it's also packed nicely
-> into cachelines.
-> 
-> Then there's padding to page boundary.  That puts us on a cacheline again
-> for the used ring; also 2 bytes per entry.
-> 
+> Cn	          Avg residency
+> C0 (cpu running)        (14.5%)
+> polling		  0.2ms ( 0.0%)
+> C1 mwait	  0.0ms ( 0.0%)
+> C2 mwait	  0.1ms ( 1.7%)
+> C4 mwait	  1.1ms (83.8%)
+> P-states (frequencies)
+> Turbo Mode     1.2%
+>    2.21 Ghz     0.0%
+>    1.60 Ghz     0.0%
+>    1200 Mhz     0.1%
+>     800 Mhz    98.7%
+> Wakeups-from-idle per second : 907.4	interval: 15.0s
+> no ACPI power usage estimate available
+> Top causes for wakeups:
+>    42.1% (435.6)   [kernel scheduler] Load balancing tick
+>    21.2% (219.6)   [extra timer interrupt]
+>    10.2% (105.6)   plugin-containe
+>     9.5% ( 98.1)   pulseaudio
+>     1.7% ( 17.9)   [Rescheduling interrupts] <kernel IPI>
+>     1.7% ( 17.1)   [iwl3945] <interrupt>
+>     1.4% ( 14.8)   [kernel core] hrtimer_start (tick_sched_timer)
+>     1.4% ( 14.3)   [ata_piix] <interrupt>
 
-Hmm, is used ring really 2 bytes per entry?
+Seems to be exactly what I'm seeing here, too. See my description and
+possible patch at
 
+	http://lkml.org/lkml/2010/4/26/249
 
-/* u32 is used here for ids for padding reasons. */
-struct vring_used_elem {
-        /* Index of start of used descriptor chain. */
-        __u32 id;
-        /* Total length of the descriptor chain which was used (written to) */
-        __u32 len;
-};
+Suresh Siddha reported he's working on getting some (more advanced) patches
+ready for submission.
 
-struct vring_used {
-        __u16 flags;
-        __u16 idx;
-        struct vring_used_elem ring[];
-};
-
-> I don't see how any change in layout could be more cache friendly?
-> Rusty.
-
-I thought that used ring has 8 bytes per entry, and that struct
-vring_used is aligned at page boundary, this
-would mean that ring element is at offset 4 bytes from page boundary.
-Thus with cacheline size 128 bytes, each 4th element crosses
-a cacheline boundary. If we had a 4 byte padding after idx, each
-used element would always be completely within a single cacheline.
-
-What am I missing?
--- 
-MST
+Best,
+	Dominik
