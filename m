@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab0EIKsD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 06:48:03 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59348 "EHLO mx3.mail.elte.hu"
+	id S1752881Ab0EIK74 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 06:59:56 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:48719 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752542Ab0EIKsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 06:48:00 -0400
-Date: Sun, 9 May 2010 12:47:49 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       greg@kroah.com, hjanssen@microsoft.com, ksrinivasan@novell.com,
-       dtor@vmware.com, tglx@linutronix.de, akataria@vmware.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/cpu] Modify the VMware balloon driver for the new
- x86_hyper API
-Message-ID: <20100509104749.GA29586@elte.hu>
-References: <4BE49778.6060800@zytor.com>
- <tip-a10a569806e43b9be5fce60b21f836b50b1010e4@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-a10a569806e43b9be5fce60b21f836b50b1010e4@git.kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752450Ab0EIK7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 06:59:55 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-fbdev@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       uclinux-dist-devel@blackfin.uclinux.org,
+       Michael Hennerich <michael.hennerich@analog.com>
+Subject: [PATCH] fbdev: bfin-t350mcqb-fb: fix fbmem allocation with blanking lines
+Date: Sun,  9 May 2010 07:02:45 -0400
+Message-Id: <1273402965-2995-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Michael Hennerich <michael.hennerich@analog.com>
 
-* tip-bot for H. Peter Anvin <hpa@zytor.com> wrote:
+The current allocation does not include the memory required for blanking
+lines.  So avoid memory corruption when multiple devices are using the DMA
+memory near each other.
 
-> Commit-ID:  a10a569806e43b9be5fce60b21f836b50b1010e4
-> Gitweb:     http://git.kernel.org/tip/a10a569806e43b9be5fce60b21f836b50b1010e4
-> Author:     H. Peter Anvin <hpa@zytor.com>
-> AuthorDate: Sun, 9 May 2010 01:13:42 -0700
-> Committer:  H. Peter Anvin <hpa@zytor.com>
-> CommitDate: Sun, 9 May 2010 01:13:42 -0700
-> 
-> Modify the VMware balloon driver for the new x86_hyper API
-> 
-> Modify the VMware balloon driver to match the new x86_hyper API.
+Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ drivers/video/bfin-t350mcqb-fb.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
-FYI, this is still not enough - now the allmodconfig build fails with:
+diff --git a/drivers/video/bfin-t350mcqb-fb.c b/drivers/video/bfin-t350mcqb-fb.c
+index 44e49c2..c2ec3dc 100644
+--- a/drivers/video/bfin-t350mcqb-fb.c
++++ b/drivers/video/bfin-t350mcqb-fb.c
+@@ -488,9 +488,9 @@ static int __devinit bfin_t350mcqb_probe(struct platform_device *pdev)
+ 	fbinfo->fbops = &bfin_t350mcqb_fb_ops;
+ 	fbinfo->flags = FBINFO_FLAG_DEFAULT;
+ 
+-	info->fb_buffer =
+-	    dma_alloc_coherent(NULL, fbinfo->fix.smem_len, &info->dma_handle,
+-			       GFP_KERNEL);
++	info->fb_buffer = dma_alloc_coherent(NULL, fbinfo->fix.smem_len +
++				ACTIVE_VIDEO_MEM_OFFSET,
++				&info->dma_handle, GFP_KERNEL);
+ 
+ 	if (NULL == info->fb_buffer) {
+ 		printk(KERN_ERR DRIVER_NAME
+@@ -568,8 +568,8 @@ out7:
+ out6:
+ 	fb_dealloc_cmap(&fbinfo->cmap);
+ out4:
+-	dma_free_coherent(NULL, fbinfo->fix.smem_len, info->fb_buffer,
+-			  info->dma_handle);
++	dma_free_coherent(NULL, fbinfo->fix.smem_len + ACTIVE_VIDEO_MEM_OFFSET,
++			 info->fb_buffer, info->dma_handle);
+ out3:
+ 	framebuffer_release(fbinfo);
+ out2:
+@@ -592,8 +592,9 @@ static int __devexit bfin_t350mcqb_remove(struct platform_device *pdev)
+ 	free_irq(info->irq, info);
+ 
+ 	if (info->fb_buffer != NULL)
+-		dma_free_coherent(NULL, fbinfo->fix.smem_len, info->fb_buffer,
+-				  info->dma_handle);
++		dma_free_coherent(NULL, fbinfo->fix.smem_len +
++			ACTIVE_VIDEO_MEM_OFFSET, info->fb_buffer,
++			info->dma_handle);
+ 
+ 	fb_dealloc_cmap(&fbinfo->cmap);
+ 
+-- 
+1.7.1
 
-ERROR: "x86_hyper" [drivers/misc/vmware_balloon.ko] undefined!
-
-	Ingo
