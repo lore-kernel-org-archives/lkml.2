@@ -1,160 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab0EIDsT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 23:48:19 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36022 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951Ab0EIDsR convert rfc822-to-8bit (ORCPT
+	id S1754588Ab0EID4x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 23:56:53 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45775 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754096Ab0EID4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 23:48:17 -0400
+	Sat, 8 May 2010 23:56:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=pKRdGUf6x1h3WlDduAPhGji+UY4vbXRyC56sFXyfgTmTmSrsgYiTw3Mm+OPSxN62GF
-         Ix1cqsHC+AxyqoRTYph9deyGPgUt2Xien0wqpigvwrymt5UIual6N49bPfP5v4I3LZv/
-         wIXVPR44DKegcgJrFRsbRWKbC3A0gUJnzHjTY=
-MIME-Version: 1.0
-In-Reply-To: <w2re9c3a7c21005081524z2a52a078nad8d316553dfde80@mail.gmail.com>
-References: <1272848060-28049-1-git-send-email-linus.walleij@stericsson.com>
-	 <i2t63386a3d1005070213u2ad32613w694be1ecbeb46856@mail.gmail.com>
-	 <20100507093256.GB19936@n2100.arm.linux.org.uk>
-	 <x2j63386a3d1005070443yfadbaf3ct8686a8f7aae6412f@mail.gmail.com>
-	 <j2r1b68c6791005070531u57b4b1basc56d45d0e06b1d04@mail.gmail.com>
-	 <k2k63386a3d1005070910kcdb516dcga60c24043b1b44de@mail.gmail.com>
-	 <m2u1b68c6791005071937s5b2bbb60p6de395a6c06a963e@mail.gmail.com>
-	 <w2re9c3a7c21005081524z2a52a078nad8d316553dfde80@mail.gmail.com>
-Date: Sun, 9 May 2010 12:48:16 +0900
-Message-ID: <l2j1b68c6791005082048j5deaf863g2887c968ff841f2f@mail.gmail.com>
-Subject: Re: [PATCH 0/7] DMAENGINE: fixes and PrimeCells
-From: jassi brar <jassisinghbrar@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Ben Dooks <ben-linux@fluff.org>, linux-mmc@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=uI/mNejD8M/FfNKZj1MZfWX/IsKIVjl1FRTDdOygEl7kIaNXQha6lgSailfBu4EBEN
+         CzoBo3yqcZpjBbwc01orBR6vZDfWe2A+Vo9cf5gJ18BXzuKxkj8gFY66f5Qg+0z3d5ho
+         7g5ttJQ+M3hMgQFabW40kg9TmQBhT9DT8yX90=
+From: tom.leiming@gmail.com
+To: linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org,
+       linux-arm-kernel@lists.arm.linux.org.uk, linux-embedded@vger.kernel.org,
+       a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
+       Ming Lei <tom.leiming@gmail.com>
+Subject: [PATCH] ARM: fix inbalance of hardirqs trace before return to user or exception
+Date: Sun,  9 May 2010 11:56:19 +0800
+Message-Id: <1273377379-18078-1-git-send-email-tom.leiming@gmail.com>
+X-Mailer: git-send-email 1.6.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 9, 2010 at 7:24 AM, Dan Williams <dan.j.williams@intel.com> wrote:
-> On Fri, May 7, 2010 at 7:37 PM, jassi brar <jassisinghbrar@gmail.com> wrote:
->>  IMHO, a DMA api should be as quick as possible - callbacks done in IRQ context.
->>  But since there maybe clients that need to do sleepable stuff in
->
-> None of the current clients sleep in the callback, it's done in
-> soft-irq context.  The only expectation is that hard-irqs are enabled
-> during the callback just like timer callbacks.  I also would like to
-> see numbers to quantify the claims of slowness.
-The clients evolve around the API so they don't do what the API doesn't
-allow. Any API should try to put as least contraints as possible - you never
-know what kinda clients are gonna arise.
-Lets say a protocol requires 'quick' ACK(within few usecs) on control bus after
-xfer'ing a large packet on data bus. All the client needs is to be
-able to toggle
-some bit of the device controller after the DMA done, which can very well be
-done in IRQ context but maybe too late if the callback is done from a tasklet
-scheduled from DMAC ISR.
-The point being, a DMA API should be able to do callbacks from the IRQ context
-too. That is, assuming the clients know what they do.
+From: Ming Lei <tom.leiming@gmail.com>
 
-Also, I think it is possible to have an API that allows request submission from
-callbacks, which will be a very useful feature.
-Of course, assuming the clients know what they can/can't do (just like current
-DMA API or any other API).
+This patch introduces macro of trace_ret_hardirqs_on, which will
+call asm_trace_hardirqs_on if I flag in the stored CPSR is zero.
 
+The patch adds trace_ret_hardirqs_on before returning to user
+or exception mode once disable_irq was called explicitly, which does
+fix the inbalance of hardirqs trace and make lockdep happy. The patch
+does fix this kind of lockdep warning below:
 
->> callbacks, the API
->>  may do two callbacks - 'quick' in irq context and 'lazy' from
->> tasklets scheduled from
->>  the IRQ. Most clients will provide either, while some may provide
->> both callback functions.
->>
->> b) There seems to be no clear way of reporting failed transfers. The
->> device_tx_status
->>    can get FAIL/SUCSESS but the call is open ended and can be performed
->>    without any time bound after tx_submit. It is not very optimal for
->> DMAC drivers
->>    to save descriptors of all failed transactions until the channel
->> is released.
->>    IMHO, provision of status checking by two mechanisms: cookie and dma-done
->>   callbacks is complication more than a feature. Perhaps the dma
->> engine could provide
->>   a default callback, should the client doesn't do so, and track
->> done/pending xfers
->>  for such requests?
->
-> I agree the error handling was designed around mem-to-mem assumptions
-> where failures are due to double-bit ECC errors and other rare events.
-well, neither have I ever seen DMA failure, but a good API shouldn't count
-upon h/w perfection.
+	PU: Testing write buffer coherency: ok
+	------------[ cut here ]------------
+	WARNING: at kernel/lockdep.c:3145 check_flags+0xcc/0x1dc()
+	Modules linked in:
+	[<c0035120>] (unwind_backtrace+0x0/0xf8) from [<c0355374>] (dump_stack+0x20/0x24)
+	[<c0355374>] (dump_stack+0x20/0x24) from [<c0060c04>] (warn_slowpath_common+0x58/0x70)
+	[<c0060c04>] (warn_slowpath_common+0x58/0x70) from [<c0060c3c>] (warn_slowpath_null+0x20/0x24)
+	[<c0060c3c>] (warn_slowpath_null+0x20/0x24) from [<c008f224>] (check_flags+0xcc/0x1dc)
+	[<c008f224>] (check_flags+0xcc/0x1dc) from [<c00945dc>] (lock_acquire+0x50/0x140)
+	[<c00945dc>] (lock_acquire+0x50/0x140) from [<c0358434>] (_raw_spin_lock+0x50/0x88)
+	[<c0358434>] (_raw_spin_lock+0x50/0x88) from [<c00fd114>] (set_task_comm+0x2c/0x60)
+	[<c00fd114>] (set_task_comm+0x2c/0x60) from [<c007e184>] (kthreadd+0x30/0x108)
+	[<c007e184>] (kthreadd+0x30/0x108) from [<c0030104>] (kernel_thread_exit+0x0/0x8)
+	---[ end trace 1b75b31a2719ed1c ]---
+	possible reason: unannotated irqs-on.
+	irq event stamp: 3
+	hardirqs last  enabled at (2): [<c0059bb0>] finish_task_switch+0x48/0xb0
+	hardirqs last disabled at (3): [<c002f0b0>] ret_slow_syscall+0xc/0x1c
+	softirqs last  enabled at (0): [<c005f3e0>] copy_process+0x394/0xe5c
+	softirqs last disabled at (0): [<(null)>] (null)
+	devtmpfs: initialized
 
+The patch refers to implementation on x86, suggested by Peter.
 
->> c) Conceptually, the channels are tightly coupled with the DMACs,
->> there seems to be
->>   no way to be able to schedule a channel among more than one DMACs
->> in the runtime,
->>   that is if more then one DMAC support the same channel/peripheral.
->>   For example, Samsung's S5Pxxxx have many channels available on more
->> than 1 DMAC
->>   but for this dma api we have to statically assign channels to
->> DMACs, which may result in
->>   a channel acquire request rejected just because the DMAC we chose
->> for it is already
->>   fully busy while another DMAC, which also supports the channel, is idling.
->>   Unless we treat the same peripheral as, say, I2STX_viaDMAC1 and
->> I2STX_viaDMAC2
->>   and allocate double resources for these "mutually exclusive" channels.
->
-> I am not understanding this example.  If both DMACs are registered the
-> dma_filter function to dma_request_channel() can select between them,
-> right?
-Let me be precise. I2S_Tx fifo(I2S peripheral/channel) can be be reached
-by two DMACs but, of course, the channel can only be active with
-exactly one DMAC.
-So, it is desirable to be able to reach the peripheral via second DMAC should
-the first one is too busy to handle the request. Clearly this is a
-runtime decision.
-FWIHS, I can associate the channel with either of the DMACs and if that DMAC
-can't handle the I2S_Tx request (say due to its all h/w threads
-allocated to other
-request), I can't play audio even if the DMAC might be simply idling.
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+---
+ arch/arm/kernel/entry-armv.S   |   14 ++++++++++----
+ arch/arm/kernel/entry-common.S |    8 ++++++++
+ arch/arm/kernel/entry-header.S |    9 +++++++++
+ 3 files changed, 27 insertions(+), 4 deletions(-)
 
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index e6a0fb0..47abf42 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -210,6 +210,13 @@ __dabt_svc:
+ 	@ restore SPSR and restart the instruction
+ 	@
+ 	ldr	r2, [sp, #S_PSR]
++
++	@
++	@trace hardirqs on if hardirq will be enabled before
++	@returning from exception
++	@
++	trace_ret_hardirqs_on r2
++
+ 	svc_exit r2				@ return from exception
+  UNWIND(.fnend		)
+ ENDPROC(__dabt_svc)
+@@ -235,10 +242,7 @@ __irq_svc:
+ 	blne	svc_preempt
+ #endif
+ 	ldr	r4, [sp, #S_PSR]		@ irqs are already disabled
+-#ifdef CONFIG_TRACE_IRQFLAGS
+-	tst	r4, #PSR_I_BIT
+-	bleq	trace_hardirqs_on
+-#endif
++	trace_ret_hardirqs_on r4
+ 	svc_exit r4				@ return from exception
+  UNWIND(.fnend		)
+ ENDPROC(__irq_svc)
+@@ -297,6 +301,7 @@ __und_svc:
+ 	@ restore SPSR and restart the instruction
+ 	@
+ 	ldr	r2, [sp, #S_PSR]		@ Get SVC cpsr
++	trace_ret_hardirqs_on r2
+ 	svc_exit r2				@ return from exception
+  UNWIND(.fnend		)
+ ENDPROC(__und_svc)
+@@ -333,6 +338,7 @@ __pabt_svc:
+ 	@ restore SPSR and restart the instruction
+ 	@
+ 	ldr	r2, [sp, #S_PSR]
++	trace_ret_hardirqs_on r2
+ 	svc_exit r2				@ return from exception
+  UNWIND(.fnend		)
+ ENDPROC(__pabt_svc)
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index 2c1db77..282576f 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -66,6 +66,14 @@ no_work_pending:
+ 	/* perform architecture specific actions before user return */
+ 	arch_ret_to_user r1, lr
+ 
++	@
++	@trace hardirqs on if hardirq will be enabled before
++	@returning to user
++	@
++#ifdef CONFIG_TRACE_IRQFLAGS
++	ldr	r1, [sp, #S_PSR]	@ get calling cpsr
++	trace_ret_hardirqs_on r1
++#endif
+ 	restore_user_regs fast = 0, offset = 0
+ ENDPROC(ret_to_user)
+ 
+diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
+index d93f976..85f4b5b 100644
+--- a/arch/arm/kernel/entry-header.S
++++ b/arch/arm/kernel/entry-header.S
+@@ -30,6 +30,15 @@
+ #error "Please fix"
+ #endif
+ 
++	.macro trace_ret_hardirqs_on, rspsr
++#ifdef CONFIG_TRACE_IRQFLAGS
++	tst 	\rspsr, #PSR_I_BIT
++	bne	1f
++	asm_trace_hardirqs_on
++1:
++#endif
++	.endm
++
+ 	.macro	zero_fp
+ #ifdef CONFIG_FRAME_POINTER
+ 	mov	fp, #0
+-- 
+1.6.2.5
 
->>
->> d) Something like circular-linked-request is highly desirable for one
->> of the important DMA
->>   clients i.e, audio.
->
-> Is this a standing dma chain that periodically a client will say "go"
-> to re-run those operations?  Please enlighten me, I've never played
-> with audio drivers.
-Yes, quite similar. Only alsa drivers will say "go" just once at playback start
-and the submitted xfer requests(called periods) are repeatedly transfered in
-circular manner.
-Just a quick snd_pcm_period_elapsed is called in dma-done callback for
-each request(which are usually the same length).
-That way, the client neither have to re-submit requests nor need to do sleepable
-stuff(allocating memory for new reqs and managing local state machine)
-The minimum period size depends on audio latency, which depends on the
-ability to do dma-done callbacks asap.
-This is another example, where the clients wud benefit from callback from IRQ
-context which is also perfectly safe.
-
->> e) There seems to be no ScatterGather support for Mem to Mem transfers.
->
-> There has never been a use case, what did you have in mind.  If
-> multiple prep_memcpy commands is too inefficient we could always add
-> another operation.
-Just that I believe any API should be as exhaustive and generic as possible.
-I see it possible for multimedia devices/drivers to evolve to start needing
-such capabilities.
-Also, the way DMA API treats memcpy/memset and assume SG reqs to be
-equivalent to MEM<=>DEV request is not very impressive.
-IMHO, any submitted request should be a list of xfers. And an xfer is a
-'memset' with 'src_len' bytes from 'src_addr' to be copied 'n' times
-at 'dst_addr'.
-Memcpy is just a special case of memset, where n := 1
-This covers most possible use cases while being more compact and future-proof.
