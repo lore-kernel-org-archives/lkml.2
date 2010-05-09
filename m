@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab0EIPUs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 11:20:48 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:53763 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab0EIPUp (ORCPT
+	id S1753613Ab0EIPYW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 11:24:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40362 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab0EIPYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 11:20:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=FksKOb85J/vxX8tcrJ5P30c6taGKrizHb5KJRuphDylfqvNcJ+1z0TysstxhIuIVu3
-         3+1aXnLXpBARIwdz/GdtgDZ+nRueSd7njfq3BZ3GFiZTWumJvrt5hEl0CkzhP5VQHvmV
-         3jyXEQK7WRvep14gpEjXlXuiqR/g78mXFV/n8=
-Message-ID: <4BE6D437.9000200@gmail.com>
-Date: Sun, 09 May 2010 17:26:47 +0200
-From: Roel Kluin <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>, kvm-ppc@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Keep index within boundaries in kvmppc_44x_emul_tlbwe()
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 9 May 2010 11:24:17 -0400
+Date: Sun, 9 May 2010 08:22:08 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, davej@redhat.com
+Subject: [PATCH v2  1/8] sched: Add a comment to get_cpu_idle_time_us()
+Message-ID: <20100509082208.7cb721f0@infradead.org>
+In-Reply-To: <20100509082126.4a080d46@infradead.org>
+References: <20100509082126.4a080d46@infradead.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An index of KVM44x_GUEST_TLB_SIZE is already one too large.
+From: Arjan van de Ven <arjan@linux.intel.com>
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+The exported function get_cpu_idle_time_us() has no comment
+describing it; add a kerneldoc comment
+
+Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+
 ---
- arch/powerpc/kvm/44x_tlb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/kvm/44x_tlb.c b/arch/powerpc/kvm/44x_tlb.c
-index 2570fcc..8123125 100644
---- a/arch/powerpc/kvm/44x_tlb.c
-+++ b/arch/powerpc/kvm/44x_tlb.c
-@@ -440,7 +440,7 @@ int kvmppc_44x_emul_tlbwe(struct kvm_vcpu *vcpu, u8 ra, u8 rs, u8 ws)
- 	unsigned int gtlb_index;
+ kernel/time/tick-sched.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff -puN kernel/time/tick-sched.c~sched-add-a-comment-to-get_cpu_idle_time_us kernel/time/tick-sched.c
+--- a/kernel/time/tick-sched.c~sched-add-a-comment-to-get_cpu_idle_time_us
++++ a/kernel/time/tick-sched.c
+@@ -179,6 +179,20 @@ static ktime_t tick_nohz_start_idle(stru
+ 	return now;
+ }
  
- 	gtlb_index = kvmppc_get_gpr(vcpu, ra);
--	if (gtlb_index > KVM44x_GUEST_TLB_SIZE) {
-+	if (gtlb_index >= KVM44x_GUEST_TLB_SIZE) {
- 		printk("%s: index %d\n", __func__, gtlb_index);
- 		kvmppc_dump_vcpu(vcpu);
- 		return EMULATE_FAIL;
++/**
++ * get_cpu_idle_time_us - get the total idle time of a cpu
++ * @cpu: CPU number to query
++ * @last_update_time: variable to store update time in
++ *
++ * Return the cummulative idle time (since boot) for a given
++ * CPU, in microseconds. The idle time returned includes
++ * the iowait time (unlike what "top" and co report).
++ *
++ * This time is measured via accounting rather than sampling,
++ * and is as accurate as ktime_get() is.
++ *
++ * This function returns -1 if NOHZ is not enabled.
++ */
+ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
+ {
+ 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+_
