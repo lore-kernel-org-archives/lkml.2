@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab0EIWKx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 18:10:53 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:39846 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab0EIWKt (ORCPT
+	id S1752973Ab0EIW2M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 18:28:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61682 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab0EIW2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 18:10:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=uHMLWk4b/zyC/m1F0k90YK/V2DPy4jQBlYUb+fp/S8mvdP0wZ5SyCZhaoGhlOXLJvu
-         SW9GMkUx1Vv7VLfbNx76Hm8NCFfK3kkmixHcQx8PW3TkYXLlkpSWP353efnBo75MANbB
-         gRHo8zNAJtlZss0ilvk6kD6UOeK63Hyal7zdk=
-Date: Mon, 10 May 2010 00:10:45 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
+	Sun, 9 May 2010 18:28:06 -0400
+Date: Sun, 9 May 2010 15:27:29 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Alexander Beregalov <a.beregalov@gmail.com>
-Subject: Re: [Bug #15805] reiserfs locking
-Message-ID: <20100509221043.GB5817@nowhere>
-References: <10aqDnTJcLO.A.mLE.48y5LB@chimera> <HqroMXsT-CJ.A.9DF.s9y5LB@chimera>
+       Maciej Rutecki <maciej.rutecki@gmail.com>, adobriyan@gmail.com,
+       schwab@linux-m68k.org, michael@ellerman.id.au, linuxppc-dev@ozlabs.org
+Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
+In-Reply-To: <HqroMXsT-CJ.A.DnG.m_y5LB@chimera>
+Message-ID: <alpine.DEB.2.01.1005091519130.3067@bogon.housecafe.de>
+References: <10aqDnTJcLO.A.mLE.48y5LB@chimera> <HqroMXsT-CJ.A.DnG.m_y5LB@chimera>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <HqroMXsT-CJ.A.9DF.s9y5LB@chimera>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V01U2FsdGVkX19XSzOtnov3kIk332dB4RBZ2NLjfrRceK5QWYK
+ ICqIjmyn5tN79Xd+Iind0Q8JjKXYspLY2p9iV4WU9cr2Ldy9dE
+ IJ6SwyiLNuCc6zlGGz0tg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 09, 2010 at 11:17:36PM +0200, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.33.  Please verify if it still should be listed and let the tracking team
-> know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15805
-> Subject		: reiserfs locking
-> Submitter	: Alexander Beregalov <a.beregalov@gmail.com>
-> Date		: 2010-04-15 21:02 (25 days old)
-> Message-ID	: <t2ka4423d671004151402n7b2dc425mdc9c6bb9640d63fb@mail.gmail.com>
-> References	: http://marc.info/?l=linux-kernel&m=127136535323933&w=2
+On Sun, 9 May 2010 at 23:17, Rafael J. Wysocki wrote:
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15589
+> Subject		: 2.6.34-rc1: Badness at fs/proc/generic.c:316
+> Submitter	: Christian Kujau <lists@nerdbynature.de>
+> Date		: 2010-03-13 23:53 (58 days old)
+> Message-ID	: <<alpine.DEB.2.01.1003131544340.5493@bogon.housecafe.de>>
+> References	: http://marc.info/?l=linux-kernel&m=126852442903680&w=2
 
+The bug is still present in -rc6, but Michael Ellerman has a patch[0] 
+which made the warning go away.
 
+@Michael: will you post your patch with a Sign-Off, so that it can be 
+          pushed into mainline?
 
-I'll do some tests and see if something caused this recently.
+Thanks,
+Christian.
 
+[0] http://patchwork.ozlabs.org/patch/50557/
+
+diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+index ce94801..019581d 100644
+--- a/fs/proc/proc_devtree.c
++++ b/fs/proc/proc_devtree.c
+@@ -176,6 +176,24 @@ retry:
+ 	return fixed_name;
+ }
+ 
++static const char *unslash_name(const char *name)
++{
++	char *p, *fixed_name;
++
++	fixed_name = kstrdup(name, GFP_KERNEL);
++	if (!fixed_name) {
++		printk(KERN_ERR "device-tree: Out of memory trying to unslash "
++				"name \"%s\"\n", name);
++	return name;
++	}
++
++	p = fixed_name;
++	while ((p = strstr(p, "/")))
++		*p++ = '_';
++
++	return fixed_name;
++}
++
+ /*
+  * Process a node, adding entries for its children and its properties.
+  */
+@@ -212,6 +230,9 @@ void proc_device_tree_add_node(struct device_node *np,
+ 		if (duplicate_name(de, p))
+ 			p = fixup_name(np, de, p);
+ 
++		if (strstr(p, "/"))
++			p = unslash_name(p);
++
+ 		ent = __proc_device_tree_add_prop(de, pp, p);
+ 		if (ent == NULL)
+ 			break;
+-- 
+BOFH excuse #188:
+
+..disk or the processor is on fire.
