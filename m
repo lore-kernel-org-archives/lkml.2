@@ -1,358 +1,1273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab0EIQtf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 12:49:35 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:39810 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257Ab0EIQtd (ORCPT
+	id S1754658Ab0EIRLh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 13:11:37 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:48865 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754279Ab0EIRLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 12:49:33 -0400
-Date: Sun, 9 May 2010 18:49:11 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Jaya Kumar <jayakumar.lkml@gmail.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jiri Kosina <jkosina@suse.cz>
-Subject: Deadlock between fbcon and fb_defio?
-Message-ID: <20100509184911.3f136b77@neptune.home>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 9 May 2010 13:11:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=qVUmTtuMLe8ylWxFEklaQj0Eo48VM2gsAIYhUq8B9xW4b8iWYEW26I3+m87QC8y0cz
+         yyQ51h/GCYheDf1/AJK1wuh61cLoeJNGHjvlwuCPoG+n6IT2Iz05sKP2q6sAx82nVIP4
+         TkXzJRoh2BZefh3/PFPi63TH0FH79Yg9jqstY=
+From: "Prashant P. Shah" <pshah.mumbai@gmail.com>
+To: gregkh@suse.de
+Cc: akpm@linux-foundation.org, pe1dnn@amsat.org,
+       ext-andriy.shevchenko@nokia.com, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org,
+       "Prashant P. Shah" <pshah.mumbai@gmail.com>
+Subject: [PATCH] Staging: wlags49_h2: fixed whitespace issues in wl_profile.c
+Date: Sun,  9 May 2010 22:41:16 +0530
+Message-Id: <1273425076-6692-1-git-send-email-pshah.mumbai@gmail.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaya,
+This is a patch to the wl_profile.c file that fixes whitespace
+issues found by the checkpatch.pl tool.
 
-While working on hid-picolcd to get fbcon working on top of it (fixing
-up color handling and other issues) I've hit what looks like a dead-lock
-apparently between fbcon and fb_defio.
-
-In set_par() I'm calling fb_deferred_io_cleanup() before switching
-to new framebuffer (on bits-per-pixel change) after which I resume
-deferred_io by calling fb_deferred_io_init().
-
-See code at (fixes I'm working on are at the end):
-http://git.kernel.org/?p=linux/kernel/git/jikos/hid.git;a=blob;f=drivers/hid/hid-picolcd.c;hb=picolcd
-
-
-Any idea why things deadlock here and how to avoid it? (it seems
-to be more of a race condition as I already called fbset successfully
-but that was from a ssh session instead of from console itself).
-
-One option seems to be to release console_sem for the time I stop
-fb_defio and re-acquiring it afterwards. But this rather looks like
-a work-around as the events kernel thread seems to have both fbcon
-fb_defio work interleaved (which I think a better fix would prevent)...
-
-Trace below.
-
-Thanks,
-Bruno
-
-
-[ 3480.400053] INFO: task events/0:5 blocked for more than 120 seconds.
-[ 3480.400072] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3480.400094] events/0      D c1038220  2600     5      2 0x00000000
-[ 3480.400133]  f704aed0 00000046 f704edc0 c1038220 f704aeb4 f704ef40 f6157f00 f5cd31c0
-[ 3480.400172]  f704edc0 7fffffff c119c4e0 f704af20 c1337e05 000007c0 ffffffff f5af27c0
-[ 3480.400208]  00000014 00000008 00000004 f6157f00 f5af27c0 00000246 f6325c00 0000000d
-[ 3480.400245] Call Trace:
-[ 3480.400290]  [<c1038220>] ? autoremove_wake_function+0x0/0x50
-[ 3480.400329]  [<c119c4e0>] ? fb_flashcursor+0x0/0x100
-[ 3480.400364]  [<c1337e05>] schedule_timeout+0xf5/0x170
-[ 3480.400398]  [<c119c4e0>] ? fb_flashcursor+0x0/0x100
-[ 3480.400427]  [<c13387a8>] __down+0x48/0x70
-[ 3480.400457]  [<c103c770>] down+0x20/0x30
-[ 3480.400490]  [<c10263fd>] acquire_console_sem+0x1d/0x50
-[ 3480.400520]  [<c119c500>] fb_flashcursor+0x20/0x100
-[ 3480.400547]  [<c11a300f>] ? fb_deferred_io_work+0xaf/0xc0
-[ 3480.400577]  [<c119c4e0>] ? fb_flashcursor+0x0/0x100
-[ 3480.400605]  [<c1035066>] worker_thread+0xd6/0x180
-[ 3480.400633]  [<c10228ef>] ? finish_task_switch+0x2f/0x80
-[ 3480.400666]  [<c1038220>] ? autoremove_wake_function+0x0/0x50
-[ 3480.400694]  [<c1034f90>] ? worker_thread+0x0/0x180
-[ 3480.400723]  [<c1037e5c>] kthread+0x6c/0x80
-[ 3480.400750]  [<c1037df0>] ? kthread+0x0/0x80
-[ 3480.400777]  [<c1003036>] kernel_thread_helper+0x6/0x10
-[ 3480.400832] INFO: task fbset:18512 blocked for more than 120 seconds.
-[ 3480.400848] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3480.400867] fbset         D 00000002  1828 18512   1504 0x00000000
-[ 3480.400902]  f33b7b34 00000086 f712f810 00000002 00000000 f712f990 00000001 f5cd31c0
-[ 3480.400937]  f712f810 7fffffff f33b7bd8 f33b7b84 c1337e05 c14b58b0 00000002 00000041
-[ 3480.400974]  c14b52e8 00000000 f5cc600c f33b7b64 c10760c3 c14b58b0 00000000 000200d2
-[ 3480.401009] Call Trace:
-[ 3480.401037]  [<c1337e05>] schedule_timeout+0xf5/0x170
-[ 3480.401068]  [<c10760c3>] ? __insert_vmap_area+0x53/0xb0
-[ 3480.401099]  [<c13377b8>] wait_for_common+0x98/0xf0
-[ 3480.401128]  [<c1022f80>] ? default_wake_function+0x0/0x10
-[ 3480.401158]  [<c13378a2>] wait_for_completion+0x12/0x20
-[ 3480.401186]  [<c1034bcb>] flush_cpu_workqueue+0x3b/0x70
-[ 3480.401214]  [<c1034e70>] ? wq_barrier_func+0x0/0x10
-[ 3480.401241]  [<c1034c7a>] flush_workqueue+0xa/0x10
-[ 3480.401268]  [<c1034c8d>] flush_scheduled_work+0xd/0x10
-[ 3480.401294]  [<c11a3192>] fb_deferred_io_cleanup+0x32/0x80
-[ 3480.401335]  [<f8127eb4>] picolcd_set_par+0x74/0x120 [hid_picolcd]
-[ 3480.401387]  [<c1194491>] fb_set_var+0x191/0x340
-[ 3480.401431]  [<c1107477>] ? xfs_bmap_search_extents+0x47/0xf0
-[ 3480.401461]  [<c110f726>] ? xfs_bmapi+0x2e6/0x1330
-[ 3480.401490]  [<c100483e>] ? handle_irq+0x1e/0xd0
-[ 3480.401518]  [<c1194a5a>] do_fb_ioctl+0x41a/0x550
-[ 3480.401553]  [<c1081907>] ? nameidata_to_filp+0x47/0x60
-[ 3480.401583]  [<c105b3bd>] ? unlock_page+0x3d/0x40
-[ 3480.401614]  [<c106e8e0>] ? __do_fault+0x330/0x400
-[ 3480.401640]  [<c108aa00>] ? path_put+0x20/0x30
-[ 3480.401668]  [<c1194b90>] ? fb_ioctl+0x0/0x20
-[ 3480.401694]  [<c1194bad>] fb_ioctl+0x1d/0x20
-[ 3480.401719]  [<c108ede0>] vfs_ioctl+0x20/0x80
-[ 3480.401745]  [<c108f7d2>] do_vfs_ioctl+0x362/0x560
-[ 3480.401780]  [<c101a417>] ? do_page_fault+0x1c7/0x360
-[ 3480.401811]  [<c1003a10>] ? do_device_not_available+0x0/0x50
-[ 3480.401843]  [<c1009a76>] ? init_fpu+0x66/0x170
-[ 3480.401868]  [<c108fa09>] sys_ioctl+0x39/0x70
-[ 3480.401893]  [<c1002b10>] sysenter_do_call+0x12/0x26
-
+Signed-off-by: Prashant P. Shah <pshah.mumbai@gmail.com>
 ---
+ drivers/staging/wlags49_h2/wl_profile.c |  759 ++++++++++++++----------------
+ 1 files changed, 354 insertions(+), 405 deletions(-)
 
-Fix crash if we are the first framebuffer loaded as in that case fbcon
-wants to flush framebuffer at the end of fb registration, before we
-have setup fb_defio.
-
-Add a flag for forcing full re-transmit of framebuffer as otherwise
-we have a long race period after initialization during which fb can
-change and match startup inverted shadow copy, thus cause initial transmit
-of tiles to be skipped (visible with fbcon).
-
-Adjust visual handling so fbcon gets properly displayed in 8bpp grayscale
-mode.
-
-Reorder tear-down so we avoid spamming kernel log with messages regarding
-full USB queue and also avoid long delay from fb_defio cleanup when
-fb was active during unplug.
-
-diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-index 95253b3..ffaa39c 100644
---- a/drivers/hid/hid-picolcd.c
-+++ b/drivers/hid/hid-picolcd.c
-@@ -127,6 +127,26 @@ static const struct fb_var_screeninfo picolcdfb_var = {
- 	.height         = 26,
- 	.bits_per_pixel = 1,
- 	.grayscale      = 1,
-+	.red            = {
-+		.offset = 0,
-+		.length = 1,
-+		.msb_right = 0,
-+	},
-+	.green          = {
-+		.offset = 0,
-+		.length = 1,
-+		.msb_right = 0,
-+	},
-+	.blue           = {
-+		.offset = 0,
-+		.length = 1,
-+		.msb_right = 0,
-+	},
-+	.transp         = {
-+		.offset = 0,
-+		.length = 0,
-+		.msb_right = 0,
-+	},
- };
- #endif /* CONFIG_HID_PICOLCD_FB */
+diff --git a/drivers/staging/wlags49_h2/wl_profile.c b/drivers/staging/wlags49_h2/wl_profile.c
+index 1e0c75f..e4e78a4 100644
+--- a/drivers/staging/wlags49_h2/wl_profile.c
++++ b/drivers/staging/wlags49_h2/wl_profile.c
+@@ -113,17 +113,19 @@ extern p_u32    DebugFlag;
+ extern dbg_info_t *DbgInfo;
+ #endif
  
-@@ -188,6 +208,7 @@ struct picolcd_data {
- 	/* Framebuffer stuff */
- 	u8 fb_update_rate;
- 	u8 fb_bpp;
-+	u8 fb_force;
- 	u8 *fb_vbitmap;		/* local copy of what was sent to PicoLCD */
- 	u8 *fb_bitmap;		/* framebuffer */
- 	struct fb_info *fb_info;
-@@ -346,7 +367,7 @@ static int picolcd_fb_update_tile(u8 *vbitmap, const u8 *bitmap, int bpp,
- 			const u8 *bdata = bitmap + tile * 256 + chip * 8 + b * 32;
- 			for (i = 0; i < 64; i++) {
- 				tdata[i] <<= 1;
--				tdata[i] |= (bdata[i/8] >> (7 - i % 8)) & 0x01;
-+				tdata[i] |= (bdata[i/8] >> (/* 7 - */ i % 8)) & 0x01;
- 			}
- 		}
- 	} else if (bpp == 8) {
-@@ -399,13 +420,10 @@ static int picolcd_fb_reset(struct picolcd_data *data, int clear)
+-int parse_yes_no( char* value );
++int parse_yes_no(char *value);
  
- 	if (data->fb_bitmap) {
- 		if (clear) {
--			memset(data->fb_vbitmap, 0xff, PICOLCDFB_SIZE);
-+			memset(data->fb_vbitmap, 0, PICOLCDFB_SIZE);
- 			memset(data->fb_bitmap, 0, PICOLCDFB_SIZE*data->fb_bpp);
--		} else {
--			/* invert 1 byte in each tile to force resend */
--			for (i = 0; i < PICOLCDFB_SIZE; i += 64)
--				data->fb_vbitmap[i] = ~data->fb_vbitmap[i];
- 		}
-+		data->fb_force = 1;
+ 
+-int parse_yes_no( char* value ) {
++int parse_yes_no(char *value)
++{
+ int rc = 0;										//default to NO for invalid parameters
+ 
+-	if ( strlen( value ) == 1 ) {
+-		if ( ( value[0] | ('Y'^'y') ) == 'y' ) rc = 1;
++	if (strlen(value) == 1) {
++		if ((value[0] | ('Y'^'y')) == 'y')
++			rc = 1;
+ //	} else {
+ //		this should not be debug time info, it is an enduser data entry error ;?
+-//		DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_MICROWAVE_ROBUSTNESS );
++//		DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_MICROWAVE_ROBUSTNESS);
  	}
- 
- 	/* schedule first output of framebuffer */
-@@ -421,6 +439,9 @@ static void picolcd_fb_update(struct picolcd_data *data)
- 	int chip, tile, n;
- 	unsigned long flags;
- 
-+	if (!data)
-+		return;
-+
- 	spin_lock_irqsave(&data->lock, flags);
- 	if (!(data->status & PICOLCD_READY_FB)) {
- 		spin_unlock_irqrestore(&data->lock, flags);
-@@ -440,14 +461,18 @@ static void picolcd_fb_update(struct picolcd_data *data)
- 	for (chip = 0; chip < 4; chip++)
- 		for (tile = 0; tile < 8; tile++)
- 			if (picolcd_fb_update_tile(data->fb_vbitmap,
--					data->fb_bitmap, data->fb_bpp, chip, tile)) {
-+					data->fb_bitmap, data->fb_bpp, chip, tile) ||
-+				data->fb_force) {
- 				n += 2;
-+				if (!data->fb_info->par)
-+					return; /* device lost! */
- 				if (n >= HID_OUTPUT_FIFO_SIZE / 2) {
- 					usbhid_wait_io(data->hdev);
- 					n = 0;
- 				}
- 				picolcd_fb_send_tile(data->hdev, chip, tile);
- 			}
-+	data->fb_force = false;
- 	if (n)
- 		usbhid_wait_io(data->hdev);
- }
-@@ -511,10 +536,11 @@ static int picolcd_fb_blank(int blank, struct fb_info *info)
- static void picolcd_fb_destroy(struct fb_info *info)
+ 	return rc;
+ } // parse_yes_no
+@@ -149,11 +151,11 @@ int rc = 0;										//default to NO for invalid parameters
+  *      N/A
+  *
+  ******************************************************************************/
+-void parse_config( struct net_device *dev )
++void parse_config(struct net_device *dev)
  {
- 	struct picolcd_data *data = info->par;
-+	fb_deferred_io_cleanup(info);
-+
- 	info->par = NULL;
- 	if (data)
- 		data->fb_info = NULL;
--	fb_deferred_io_cleanup(info);
- 	framebuffer_release(info);
- }
+ 	int				    file_desc;
+ #if 0 // BIN_DL
+-	int 	 			rc;
++	int				rc;
+ 	char				*cp = NULL;
+ #endif // BIN_DL
+ 	char                buffer[MAX_LINE_SIZE];
+@@ -163,48 +165,48 @@ void parse_config( struct net_device *dev )
+ 	ENCSTRCT            sEncryption;
+ 	/*------------------------------------------------------------------------*/
  
-@@ -526,10 +552,17 @@ static int picolcd_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *i
- 	/* only allow 1/8 bit depth (8-bit is grayscale) */
- 	*var = picolcdfb_var;
- 	var->activate = activate;
--	if (bpp >= 8)
-+	if (bpp >= 8) {
- 		var->bits_per_pixel = 8;
--	else
-+		var->red.length     = 8;
-+		var->green.length   = 8;
-+		var->blue.length    = 8;
-+	} else {
- 		var->bits_per_pixel = 1;
-+		var->red.length     = 1;
-+		var->green.length   = 1;
-+		var->blue.length    = 1;
-+	}
- 	return 0;
- }
+-	DBG_FUNC( "parse_config" );
+-	DBG_ENTER( DbgInfo );
++	DBG_FUNC("parse_config");
++	DBG_ENTER(DbgInfo);
  
-@@ -537,6 +570,8 @@ static int picolcd_set_par(struct fb_info *info)
- {
- 	struct picolcd_data *data = info->par;
- 	u8 *o_fb, *n_fb;
-+	if (!data)
-+		return -ENODEV;
- 	if (info->var.bits_per_pixel == data->fb_bpp)
- 		return 0;
- 	/* switch between 1/8 bit depths */
-@@ -565,7 +600,7 @@ static int picolcd_set_par(struct fb_info *info)
- 		int i;
- 		for (i = 0; i < PICOLCDFB_SIZE * 8; i++)
- 			n_fb[i] = o_fb[i/8] & (0x01 << (7 - i % 8)) ? 0xff : 0x00;
--		info->fix.visual = FB_VISUAL_TRUECOLOR;
-+		info->fix.visual = FB_VISUAL_DIRECTCOLOR;
- 		info->fix.line_length = PICOLCDFB_WIDTH;
- 	}
- 
-@@ -660,9 +695,10 @@ static int picolcd_init_framebuffer(struct picolcd_data *data)
- {
- 	struct device *dev = &data->hdev->dev;
- 	struct fb_info *info = NULL;
--	int error = -ENOMEM;
-+	int i, error = -ENOMEM;
- 	u8 *fb_vbitmap = NULL;
- 	u8 *fb_bitmap  = NULL;
-+	u32 *palette;
- 
- 	fb_bitmap = vmalloc(PICOLCDFB_SIZE*picolcdfb_var.bits_per_pixel);
- 	if (fb_bitmap == NULL) {
-@@ -678,12 +714,16 @@ static int picolcd_init_framebuffer(struct picolcd_data *data)
- 
- 	data->fb_update_rate = PICOLCDFB_UPDATE_RATE_DEFAULT;
- 	data->fb_defio = picolcd_fb_defio;
--	info = framebuffer_alloc(0, dev);
-+	info = framebuffer_alloc(256 * sizeof(u32), dev);
- 	if (info == NULL) {
- 		dev_err(dev, "failed to allocate a framebuffer\n");
- 		goto err_nomem;
- 	}
- 
-+	palette = info->par;
-+	for (i = 0; i < 256; i++)
-+		palette[i] = i > 0 && i < 16 ? 0xff : 0;
-+	info->pseudo_palette = info->par;
- 	info->fbdefio = &data->fb_defio;
- 	info->screen_base = (char __force __iomem *)fb_bitmap;
- 	info->fbops = &picolcdfb_ops;
-@@ -707,18 +747,20 @@ static int picolcd_init_framebuffer(struct picolcd_data *data)
- 		dev_err(dev, "failed to create sysfs attributes\n");
- 		goto err_cleanup;
- 	}
-+	fb_deferred_io_init(info);
- 	data->fb_info    = info;
- 	error = register_framebuffer(info);
- 	if (error) {
- 		dev_err(dev, "failed to register framebuffer\n");
- 		goto err_sysfs;
- 	}
--	fb_deferred_io_init(info);
- 	/* schedule first output of framebuffer */
-+	data->fb_force = 1;
- 	schedule_delayed_work(&info->deferred_work, 0);
- 	return 0;
- 
- err_sysfs:
-+	fb_deferred_io_cleanup(info);
- 	device_remove_file(dev, &dev_attr_fb_update_rate);
- err_cleanup:
- 	data->fb_vbitmap = NULL;
-@@ -742,13 +784,13 @@ static void picolcd_exit_framebuffer(struct picolcd_data *data)
- 	if (!info)
+ 	/* Get the wavelan specific info for this device */
+ 	wvlan_config = (struct wl_private *)dev->priv;
+-	if ( wvlan_config == NULL ) {
+-		DBG_ERROR( DbgInfo, "Wavelan specific info struct not present?\n" );
++	if (wvlan_config == NULL) {
++		DBG_ERROR(DbgInfo, "Wavelan specific info struct not present?\n");
  		return;
+ 	}
  
-+	info->par = NULL;
-+	device_remove_file(&data->hdev->dev, &dev_attr_fb_update_rate);
-+	unregister_framebuffer(info);
- 	data->fb_vbitmap = NULL;
- 	data->fb_bitmap  = NULL;
- 	data->fb_bpp     = 0;
- 	data->fb_info    = NULL;
--	device_remove_file(&data->hdev->dev, &dev_attr_fb_update_rate);
--	fb_deferred_io_cleanup(info);
--	unregister_framebuffer(info);
- 	vfree(fb_bitmap);
- 	kfree(fb_vbitmap);
- }
-@@ -2566,6 +2608,11 @@ static void picolcd_remove(struct hid_device *hdev)
- 	spin_lock_irqsave(&data->lock, flags);
- 	data->status |= PICOLCD_FAILED;
- 	spin_unlock_irqrestore(&data->lock, flags);
-+	/* short-circuit FB as early as possible in order to
-+	 * avoid long details if we hosted console.
-+	 */
-+	if (data->fb_info)
-+		data->fb_info->par = NULL;
+ 	/* setup the default encryption string */
+-	strcpy( wvlan_config->szEncryption, DEF_CRYPT_STR );
++	strcpy(wvlan_config->szEncryption, DEF_CRYPT_STR);
  
- 	picolcd_exit_devfs(data);
- 	device_remove_file(&hdev->dev, &dev_attr_operation_mode);
+ 	/* Obtain a user-space process context, storing the original context */
+-	fs = get_fs( );
+-	set_fs( get_ds( ));
++	fs = get_fs();
++	set_fs(get_ds());
+ 
+ 	/* Determine the filename for this device and attempt to open it */
+-	sprintf( filename, "%s%s", ROOT_CONFIG_FILENAME, dev->name );
+-	file_desc = open( filename, O_RDONLY, 0 );
+-	if ( file_desc != -1 ) {
+-		DBG_TRACE( DbgInfo, "Wireless config file found. Parsing options...\n" );
++	sprintf(filename, "%s%s", ROOT_CONFIG_FILENAME, dev->name);
++	file_desc = open(filename, O_RDONLY, 0);
++	if (file_desc != -1) {
++		DBG_TRACE(DbgInfo, "Wireless config file found. Parsing options...\n");
+ 
+ 		/* Read out the options */
+-		while( readline( file_desc, buffer )) {
+-			translate_option( buffer, wvlan_config );
++		while (readline(file_desc, buffer)) {
++			translate_option(buffer, wvlan_config);
+ 		}
+ 		/* Close the file */
+-		close( file_desc );	//;?even if file_desc == -1 ???
++		close(file_desc);	//;?even if file_desc == -1 ???
+ 	} else {
+-		DBG_TRACE( DbgInfo, "No iwconfig file found for this device; "
+-				   "config.opts or wireless.opts will be used\n" );
++		DBG_TRACE(DbgInfo, "No iwconfig file found for this device; "
++				   "config.opts or wireless.opts will be used\n");
+ 	}
+ 	/* Return to the original context */
+-	set_fs( fs );
++	set_fs(fs);
+ 
+ 	/* convert the WEP keys, if read in as key1, key2, type of data */
+-	if ( wvlan_config->EnableEncryption ) {
+-		memset( &sEncryption, 0, sizeof( sEncryption ));
++	if (wvlan_config->EnableEncryption) {
++		memset(&sEncryption, 0, sizeof(sEncryption));
+ 
+-		wl_wep_decode( CRYPT_CODE, &sEncryption,
+-						   wvlan_config->szEncryption );
++		wl_wep_decode(CRYPT_CODE, &sEncryption,
++						   wvlan_config->szEncryption);
+ 
+ 		/* the Linux driver likes to use 1-4 for the key IDs, and then
+ 		   convert to 0-3 when sending to the card.  The Windows code
+@@ -216,63 +218,63 @@ void parse_config( struct net_device *dev )
+ 		sEncryption.wEnabled = wvlan_config->EnableEncryption;
+ 		sEncryption.wTxKeyID = wvlan_config->TransmitKeyID - 1;
+ 
+-		memcpy( &sEncryption.EncStr, &wvlan_config->DefaultKeys,
+-				sizeof( CFG_DEFAULT_KEYS_STRCT ));
++		memcpy(&sEncryption.EncStr, &wvlan_config->DefaultKeys,
++				sizeof(CFG_DEFAULT_KEYS_STRCT));
+ 
+-		memset( wvlan_config->szEncryption, 0, sizeof( wvlan_config->szEncryption ));
++		memset(wvlan_config->szEncryption, 0, sizeof(wvlan_config->szEncryption));
+ 
+-		wl_wep_code( CRYPT_CODE, wvlan_config->szEncryption, &sEncryption,
+-						 sizeof( sEncryption ));
++		wl_wep_code(CRYPT_CODE, wvlan_config->szEncryption, &sEncryption,
++						 sizeof(sEncryption));
+ 	}
+ 
+ 	/* decode the encryption string for the call to wl_commit() */
+-	wl_wep_decode( CRYPT_CODE, &sEncryption, wvlan_config->szEncryption );
++	wl_wep_decode(CRYPT_CODE, &sEncryption, wvlan_config->szEncryption);
+ 
+ 	wvlan_config->TransmitKeyID    = sEncryption.wTxKeyID + 1;
+ 	wvlan_config->EnableEncryption = sEncryption.wEnabled;
+ 
+-	memcpy( &wvlan_config->DefaultKeys, &sEncryption.EncStr,
+-			sizeof( CFG_DEFAULT_KEYS_STRCT ));
++	memcpy(&wvlan_config->DefaultKeys, &sEncryption.EncStr,
++			sizeof(CFG_DEFAULT_KEYS_STRCT));
+ 
+ #if 0 //BIN_DL
+ 		/* Obtain a user-space process context, storing the original context */
+-		fs = get_fs( );
+-		set_fs( get_ds( ));
++		fs = get_fs();
++		set_fs(get_ds());
+ 
+ 		//;?just to fake something
+-		strcpy(/*wvlan_config->fw_image_*/filename, "/etc/agere/fw.bin" );
+-		file_desc = open( /*wvlan_config->fw_image_*/filename, 0, 0 );
+-		if ( file_desc == -1 ) {
+-			DBG_ERROR( DbgInfo, "No image file found\n" );
++		strcpy(/*wvlan_config->fw_image_*/filename, "/etc/agere/fw.bin");
++		file_desc = open(/*wvlan_config->fw_image_*/filename, 0, 0);
++		if (file_desc == -1) {
++			DBG_ERROR(DbgInfo, "No image file found\n");
+ 		} else {
+-			DBG_TRACE( DbgInfo, "F/W image file found\n" );
++			DBG_TRACE(DbgInfo, "F/W image file found\n");
+ #define DHF_ALLOC_SIZE 96000			//just below 96K, let's hope it suffices for now and for the future
+-			cp = (char*)vmalloc( DHF_ALLOC_SIZE );
+-			if ( cp == NULL ) {
+-				DBG_ERROR( DbgInfo, "error in vmalloc\n" );
++			cp = (char *)vmalloc(DHF_ALLOC_SIZE);
++			if (cp == NULL) {
++				DBG_ERROR(DbgInfo, "error in vmalloc\n");
+ 			} else {
+-				rc = read( file_desc, cp, DHF_ALLOC_SIZE );
+-				if ( rc == DHF_ALLOC_SIZE ) {
+-					DBG_ERROR( DbgInfo, "buffer too small, %d\n", DHF_ALLOC_SIZE );
+-				} else if ( rc > 0 ) {
+-					DBG_TRACE( DbgInfo, "read O.K.: %d bytes  %.12s\n", rc, cp );
+-					rc = read( file_desc, &cp[rc], 1 );
+-					if ( rc == 0 ) {
+-						DBG_TRACE( DbgInfo, "no more to read\n" );
++				rc = read(file_desc, cp, DHF_ALLOC_SIZE);
++				if (rc == DHF_ALLOC_SIZE) {
++					DBG_ERROR(DbgInfo, "buffer too small, %d\n", DHF_ALLOC_SIZE);
++				} else if (rc > 0) {
++					DBG_TRACE(DbgInfo, "read O.K.: %d bytes  %.12s\n", rc, cp);
++					rc = read(file_desc, &cp[rc], 1);
++					if (rc == 0) {
++						DBG_TRACE(DbgInfo, "no more to read\n");
+ 					}
+ 				}
+-				if ( rc != 0 ) {
+-					DBG_ERROR( DbgInfo, "file not read in one swoop or other error"\
+-										", give up, too complicated, rc = %0X\n", rc );
++				if (rc != 0) {
++					DBG_ERROR(DbgInfo, "file not read in one swoop or other error"\
++										", give up, too complicated, rc = %0X\n", rc);
+ 				}
+-				vfree( cp );
++				vfree(cp);
+ 			}
+-			close( file_desc );
++			close(file_desc);
+ 		}
+-		set_fs( fs );			/* Return to the original context */
++		set_fs(fs);			/* Return to the original context */
+ #endif // BIN_DL
+ 
+-	DBG_LEAVE( DbgInfo );
++	DBG_LEAVE(DbgInfo);
+ 	return;
+ } // parse_config
+ 
+@@ -298,17 +300,17 @@ void parse_config( struct net_device *dev )
+  *      -1 on error
+  *
+  ******************************************************************************/
+-int readline( int filedesc, char *buffer )
++int readline(int filedesc, char *buffer)
+ {
+ 	int result = -1;
+ 	int bytes_read = 0;
+ 	/*------------------------------------------------------------------------*/
+ 
+ 	/* Make sure the file descriptor is good */
+-	if ( filedesc != -1 ) {
++	if (filedesc != -1) {
+ 		/* Read in from the file byte by byte until a newline is reached */
+-		while(( result = read( filedesc, &buffer[bytes_read], 1 )) == 1 ) {
+-			if ( buffer[bytes_read] == '\n' ) {
++		while ((result = read(filedesc, &buffer[bytes_read], 1)) == 1) {
++			if (buffer[bytes_read] == '\n') {
+ 				buffer[bytes_read] = '\0';
+ 				bytes_read++;
+ 				break;
+@@ -318,7 +320,7 @@ int readline( int filedesc, char *buffer )
+ 	}
+ 
+ 	/* Return the number of bytes read */
+-	if ( result == -1 ) {
++	if (result == -1) {
+ 		return result;
+ 	} else {
+ 		return bytes_read;
+@@ -346,7 +348,7 @@ int readline( int filedesc, char *buffer )
+  *      N/A
+  *
+  ******************************************************************************/
+-void translate_option( char *buffer, struct wl_private *lp )
++void translate_option(char *buffer, struct wl_private *lp)
+ {
+ 	unsigned int value_convert = 0;
+ 	int string_length = 0;
+@@ -355,16 +357,16 @@ void translate_option( char *buffer, struct wl_private *lp )
+ 	u_char mac_value[ETH_ALEN];
+ 	/*------------------------------------------------------------------------*/
+ 
+-	DBG_FUNC( "translate_option" );
++	DBG_FUNC("translate_option");
+ 
+-	if ( buffer == NULL || lp == NULL ) {
+-		DBG_ERROR( DbgInfo, "Config file buffer and/or wavelan buffer ptr NULL\n" );
++	if (buffer == NULL || lp == NULL) {
++		DBG_ERROR(DbgInfo, "Config file buffer and/or wavelan buffer ptr NULL\n");
+ 		return;
+ 	}
+ 
+-	ParseConfigLine( buffer, &key, &value );
++	ParseConfigLine(buffer, &key, &value);
+ 
+-	if ( key == NULL || value == NULL ) {
++	if (key == NULL || value == NULL) {
+ 		return;
+ 	}
+ 
+@@ -375,9 +377,9 @@ void translate_option( char *buffer, struct wl_private *lp )
+ 	/* handle DebugFlag as early as possible so it starts its influence as early
+ 	 * as possible
+ 	 */
+-	if ( strcmp( key, PARM_NAME_DEBUG_FLAG ) == 0 ) {
+-		if ( DebugFlag == ~0 ) {			//if DebugFlag is not specified on the command line
+-			if ( DbgInfo->DebugFlag == 0 ) {	/* if pc_debug did not set DebugFlag (i.e.pc_debug is
++	if (strcmp(key, PARM_NAME_DEBUG_FLAG) == 0) {
++		if (DebugFlag == ~0) {			/* if DebugFlag is not specified on the command line */
++			if (DbgInfo->DebugFlag == 0) {	/* if pc_debug did not set DebugFlag (i.e.pc_debug is
+ 											 * not specified or specified outside the 4-8 range
+ 											 */
+ 				DbgInfo->DebugFlag |= DBG_DEFAULTS;
+@@ -388,250 +390,230 @@ void translate_option( char *buffer, struct wl_private *lp )
+ 		DbgInfo->DebugFlag = simple_strtoul(value, NULL, 0); //;?Delete ASAP
+ 	}
+ #endif /* DBG */
+-	if ( strcmp( key, PARM_NAME_AUTH_KEY_MGMT_SUITE ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_AUTH_KEY_MGMT_SUITE, value );
++	if (strcmp(key, PARM_NAME_AUTH_KEY_MGMT_SUITE) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_AUTH_KEY_MGMT_SUITE, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if (( value_convert >= PARM_MIN_AUTH_KEY_MGMT_SUITE ) || ( value_convert <= PARM_MAX_AUTH_KEY_MGMT_SUITE )) {
++		if ((value_convert >= PARM_MIN_AUTH_KEY_MGMT_SUITE) || (value_convert <= PARM_MAX_AUTH_KEY_MGMT_SUITE)) {
+ 			lp->AuthKeyMgmtSuite = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_AUTH_KEY_MGMT_SUITE );
++			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_AUTH_KEY_MGMT_SUITE);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_BRSC_2GHZ ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_BRSC_2GHZ, value );
++	} else if (strcmp(key, PARM_NAME_BRSC_2GHZ) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_BRSC_2GHZ, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if (( value_convert >= PARM_MIN_BRSC ) || ( value_convert <= PARM_MAX_BRSC )) {
++		if ((value_convert >= PARM_MIN_BRSC) || (value_convert <= PARM_MAX_BRSC)) {
+ 			lp->brsc[0] = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_BRSC_2GHZ );
++			DBG_WARNING(DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_BRSC_2GHZ);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_BRSC_5GHZ ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_BRSC_5GHZ, value );
++	} else if (strcmp(key, PARM_NAME_BRSC_5GHZ) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_BRSC_5GHZ, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if (( value_convert >= PARM_MIN_BRSC ) || ( value_convert <= PARM_MAX_BRSC )) {
++		if ((value_convert >= PARM_MIN_BRSC) || (value_convert <= PARM_MAX_BRSC)) {
+ 			lp->brsc[1] = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_BRSC_5GHZ );
++			DBG_WARNING(DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_BRSC_5GHZ);
+ 		}
+-	}
+-	else if (( strcmp( key, PARM_NAME_DESIRED_SSID ) == 0 ) || ( strcmp( key, PARM_NAME_OWN_SSID ) == 0 )) {
+-		DBG_TRACE( DbgInfo, "SSID, value: %s\n", value );
++	} else if ((strcmp(key, PARM_NAME_DESIRED_SSID) == 0) || (strcmp(key, PARM_NAME_OWN_SSID) == 0)) {
++		DBG_TRACE(DbgInfo, "SSID, value: %s\n", value);
+ 
+-		memset( lp->NetworkName, 0, ( PARM_MAX_NAME_LEN + 1 ));
++		memset(lp->NetworkName, 0, (PARM_MAX_NAME_LEN + 1));
+ 
+ 		/* Make sure the value isn't too long */
+-		string_length = strlen( value );
+-		if ( string_length > PARM_MAX_NAME_LEN ) {
+-			DBG_WARNING( DbgInfo, "SSID too long; will be truncated\n" );
++		string_length = strlen(value);
++		if (string_length > PARM_MAX_NAME_LEN) {
++			DBG_WARNING(DbgInfo, "SSID too long; will be truncated\n");
+ 			string_length = PARM_MAX_NAME_LEN;
+ 		}
+ 
+-		memcpy( lp->NetworkName, value, string_length );
++		memcpy(lp->NetworkName, value, string_length);
+ 	}
+ #if 0
+-	else if ( strcmp( key, PARM_NAME_DOWNLOAD_FIRMWARE ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "DOWNLOAD_FIRMWARE, value: %s\n", value );
+-		memset( lp->fw_image_filename, 0, ( MAX_LINE_SIZE + 1 ));
++	else if (strcmp(key, PARM_NAME_DOWNLOAD_FIRMWARE) == 0) {
++		DBG_TRACE(DbgInfo, "DOWNLOAD_FIRMWARE, value: %s\n", value);
++		memset(lp->fw_image_filename, 0, (MAX_LINE_SIZE + 1));
+ 		/* Make sure the value isn't too long */
+-		string_length = strlen( value );
+-		if ( string_length > MAX_LINE_SIZE ) {
+-			DBG_WARNING( DbgInfo, "F/W image file name too long; will be ignored\n" );
++		string_length = strlen(value);
++		if (string_length > MAX_LINE_SIZE) {
++			DBG_WARNING(DbgInfo, "F/W image file name too long; will be ignored\n");
+ 		} else {
+-			memcpy( lp->fw_image_filename, value, string_length );
++			memcpy(lp->fw_image_filename, value, string_length);
+ 		}
+ 	}
+ #endif
+-	else if ( strcmp( key, PARM_NAME_ENABLE_ENCRYPTION ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_ENABLE_ENCRYPTION, value );
++	else if (strcmp(key, PARM_NAME_ENABLE_ENCRYPTION) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_ENABLE_ENCRYPTION, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if (( value_convert >= PARM_MIN_ENABLE_ENCRYPTION ) && ( value_convert <= PARM_MAX_ENABLE_ENCRYPTION )) {
++		if ((value_convert >= PARM_MIN_ENABLE_ENCRYPTION) && (value_convert <= PARM_MAX_ENABLE_ENCRYPTION)) {
+ 			lp->EnableEncryption = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_ENABLE_ENCRYPTION );
++			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_ENABLE_ENCRYPTION);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_ENCRYPTION ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_ENCRYPTION, value );
++	} else if (strcmp(key, PARM_NAME_ENCRYPTION) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_ENCRYPTION, value);
+ 
+-		memset( lp->szEncryption, 0, sizeof( lp->szEncryption ));
++		memset(lp->szEncryption, 0, sizeof(lp->szEncryption));
+ 
+ 		/* Make sure the value isn't too long */
+-		string_length = strlen( value );
+-		if ( string_length > sizeof( lp->szEncryption ) ) {
+-			DBG_WARNING( DbgInfo, "%s too long; will be truncated\n", PARM_NAME_ENCRYPTION );
+-			string_length = sizeof( lp->szEncryption );
++		string_length = strlen(value);
++		if (string_length > sizeof(lp->szEncryption)) {
++			DBG_WARNING(DbgInfo, "%s too long; will be truncated\n", PARM_NAME_ENCRYPTION);
++			string_length = sizeof(lp->szEncryption);
+ 		}
+ 
+-		memcpy( lp->szEncryption, value, string_length );
+-	}
+-	else if ( strcmp( key, PARM_NAME_KEY1 ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_KEY1, value );
++		memcpy(lp->szEncryption, value, string_length);
++	} else if (strcmp(key, PARM_NAME_KEY1) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_KEY1, value);
+ 
+-		if ( is_valid_key_string( value )) {
+-			memset( lp->DefaultKeys.key[0].key, 0, MAX_KEY_SIZE );
++		if (is_valid_key_string(value)) {
++			memset(lp->DefaultKeys.key[0].key, 0, MAX_KEY_SIZE);
+ 
+-			key_string2key( value, &lp->DefaultKeys.key[0] );
++			key_string2key(value, &lp->DefaultKeys.key[0]);
+ 		} else {
+-			 DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_KEY1 );
++			 DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_KEY1);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_KEY2 ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_KEY2, value );
++	} else if (strcmp(key, PARM_NAME_KEY2) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_KEY2, value);
+ 
+-		if ( is_valid_key_string( value )) {
+-			memset( lp->DefaultKeys.key[1].key, 0, MAX_KEY_SIZE );
++		if (is_valid_key_string(value)) {
++			memset(lp->DefaultKeys.key[1].key, 0, MAX_KEY_SIZE);
+ 
+-			key_string2key( value, &lp->DefaultKeys.key[1] );
++			key_string2key(value, &lp->DefaultKeys.key[1]);
+ 		} else {
+-			 DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_KEY2 );
++			 DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_KEY2);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_KEY3 ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_KEY3, value );
++	} else if (strcmp(key, PARM_NAME_KEY3) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_KEY3, value);
+ 
+-		if ( is_valid_key_string( value )) {
+-			memset( lp->DefaultKeys.key[2].key, 0, MAX_KEY_SIZE );
++		if (is_valid_key_string(value)) {
++			memset(lp->DefaultKeys.key[2].key, 0, MAX_KEY_SIZE);
+ 
+-			key_string2key( value, &lp->DefaultKeys.key[2] );
++			key_string2key(value, &lp->DefaultKeys.key[2]);
+ 		} else {
+-			 DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_KEY3 );
++			 DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_KEY3);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_KEY4 ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_KEY4, value );
++	} else if (strcmp(key, PARM_NAME_KEY4) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_KEY4, value);
+ 
+-		if ( is_valid_key_string( value )) {
+-			memset( lp->DefaultKeys.key[3].key, 0, MAX_KEY_SIZE );
++		if (is_valid_key_string(value)) {
++			memset(lp->DefaultKeys.key[3].key, 0, MAX_KEY_SIZE);
+ 
+-			key_string2key( value, &lp->DefaultKeys.key[3] );
++			key_string2key(value, &lp->DefaultKeys.key[3]);
+ 		} else {
+-			 DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_KEY4 );
++			 DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_KEY4);
+ 		}
+ 	}
+ 	/* New Parameters for WARP */
+-	else if ( strcmp( key, PARM_NAME_LOAD_BALANCING ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_LOAD_BALANCING, value );
++	else if (strcmp(key, PARM_NAME_LOAD_BALANCING) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_LOAD_BALANCING, value);
+ 		lp->loadBalancing = parse_yes_no(value);
+-	}
+-	else if ( strcmp( key, PARM_NAME_MEDIUM_DISTRIBUTION ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_MEDIUM_DISTRIBUTION, value );
++	} else if (strcmp(key, PARM_NAME_MEDIUM_DISTRIBUTION) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_MEDIUM_DISTRIBUTION, value);
+ 		lp->mediumDistribution = parse_yes_no(value);
+-	}
+-	else if ( strcmp( key, PARM_NAME_MICROWAVE_ROBUSTNESS) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_MICROWAVE_ROBUSTNESS, value );
++	} else if (strcmp(key, PARM_NAME_MICROWAVE_ROBUSTNESS) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_MICROWAVE_ROBUSTNESS, value);
+ 		lp->MicrowaveRobustness = parse_yes_no(value);
+-	}
+-	else if ( strcmp( key, PARM_NAME_MULTICAST_RATE ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_MULTICAST_RATE, value );
++	} else if (strcmp(key, PARM_NAME_MULTICAST_RATE) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_MULTICAST_RATE, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+ 
+-		if (( value_convert >= PARM_MIN_MULTICAST_RATE ) && ( value_convert <= PARM_MAX_MULTICAST_RATE )) {
++		if ((value_convert >= PARM_MIN_MULTICAST_RATE) && (value_convert <= PARM_MAX_MULTICAST_RATE)) {
+ 			lp->MulticastRate[0] = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_MULTICAST_RATE );
++			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_MULTICAST_RATE);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_OWN_CHANNEL ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_OWN_CHANNEL, value );
++	} else if (strcmp(key, PARM_NAME_OWN_CHANNEL) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_OWN_CHANNEL, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if ( wl_is_a_valid_chan( value_convert )) {
+-			if ( value_convert > 14 ) {
++		if (wl_is_a_valid_chan(value_convert)) {
++			if (value_convert > 14) {
+ 				value_convert = value_convert | 0x100;
+ 			}
+ 			lp->Channel = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_OWN_CHANNEL );
++			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_OWN_CHANNEL);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_OWN_NAME ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_OWN_NAME, value );
++	} else if (strcmp(key, PARM_NAME_OWN_NAME) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_OWN_NAME, value);
+ 
+-		memset( lp->StationName, 0, ( PARM_MAX_NAME_LEN + 1 ));
++		memset(lp->StationName, 0, (PARM_MAX_NAME_LEN + 1));
+ 
+ 		/* Make sure the value isn't too long */
+-		string_length = strlen( value );
+-		if ( string_length > PARM_MAX_NAME_LEN ) {
+-			DBG_WARNING( DbgInfo, "%s too long; will be truncated\n", PARM_NAME_OWN_NAME );
++		string_length = strlen(value);
++		if (string_length > PARM_MAX_NAME_LEN) {
++			DBG_WARNING(DbgInfo, "%s too long; will be truncated\n", PARM_NAME_OWN_NAME);
+ 			string_length = PARM_MAX_NAME_LEN;
+ 		}
+ 
+-		memcpy( lp->StationName, value, string_length );
+-	}
+-	else if ( strcmp( key, PARM_NAME_RTS_THRESHOLD ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD, value );
++		memcpy(lp->StationName, value, string_length);
++	} else if (strcmp(key, PARM_NAME_RTS_THRESHOLD) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if (( value_convert >= PARM_MIN_RTS_THRESHOLD ) && ( value_convert <= PARM_MAX_RTS_THRESHOLD )) {
++		if ((value_convert >= PARM_MIN_RTS_THRESHOLD) && (value_convert <= PARM_MAX_RTS_THRESHOLD)) {
+ 			lp->RTSThreshold = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD );
++			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_SRSC_2GHZ ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_SRSC_2GHZ, value );
++	} else if (strcmp(key, PARM_NAME_SRSC_2GHZ) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_SRSC_2GHZ, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if (( value_convert >= PARM_MIN_SRSC ) || ( value_convert <= PARM_MAX_SRSC )) {
++		if ((value_convert >= PARM_MIN_SRSC) || (value_convert <= PARM_MAX_SRSC)) {
+ 			lp->srsc[0] = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_SRSC_2GHZ );
++			DBG_WARNING(DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_SRSC_2GHZ);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_SRSC_5GHZ ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_SRSC_5GHZ, value );
++	} else if (strcmp(key, PARM_NAME_SRSC_5GHZ) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_SRSC_5GHZ, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if (( value_convert >= PARM_MIN_SRSC ) || ( value_convert <= PARM_MAX_SRSC )) {
++		if ((value_convert >= PARM_MIN_SRSC) || (value_convert <= PARM_MAX_SRSC)) {
+ 			lp->srsc[1] = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_SRSC_5GHZ );
++			DBG_WARNING(DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_SRSC_5GHZ);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_SYSTEM_SCALE ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_SYSTEM_SCALE, value );
++	} else if (strcmp(key, PARM_NAME_SYSTEM_SCALE) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_SYSTEM_SCALE, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if (( value_convert >= PARM_MIN_SYSTEM_SCALE ) && ( value_convert <= PARM_MAX_SYSTEM_SCALE )) {
++		if ((value_convert >= PARM_MIN_SYSTEM_SCALE) && (value_convert <= PARM_MAX_SYSTEM_SCALE)) {
+ 			lp->DistanceBetweenAPs = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_SYSTEM_SCALE );
++			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_SYSTEM_SCALE);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_TX_KEY ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_TX_KEY, value );
++	} else if (strcmp(key, PARM_NAME_TX_KEY) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_TX_KEY, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if (( value_convert >= PARM_MIN_TX_KEY ) && ( value_convert <= PARM_MAX_TX_KEY )) {
++		if ((value_convert >= PARM_MIN_TX_KEY) && (value_convert <= PARM_MAX_TX_KEY)) {
+ 			lp->TransmitKeyID = simple_strtoul(value, NULL, 0);
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_KEY );
++			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_KEY);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_TX_RATE ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE, value );
++	} else if (strcmp(key, PARM_NAME_TX_RATE) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if (( value_convert >= PARM_MIN_TX_RATE ) && ( value_convert <= PARM_MAX_TX_RATE )) {
++		if ((value_convert >= PARM_MIN_TX_RATE) && (value_convert <= PARM_MAX_TX_RATE)) {
+ 			lp->TxRateControl[0] = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE );
++			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE);
+ 		}
+-	}
+-	else if ( strcmp( key, PARM_NAME_TX_POW_LEVEL ) == 0 ) {
+-		DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_TX_POW_LEVEL, value );
++	} else if (strcmp(key, PARM_NAME_TX_POW_LEVEL) == 0) {
++		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_TX_POW_LEVEL, value);
+ 
+ 		value_convert = simple_strtoul(value, NULL, 0);
+-		if (( value_convert >= PARM_MIN_TX_POW_LEVEL ) || ( value_convert <= PARM_MAX_TX_POW_LEVEL )) {
++		if ((value_convert >= PARM_MIN_TX_POW_LEVEL) || (value_convert <= PARM_MAX_TX_POW_LEVEL)) {
+ 			lp->txPowLevel = value_convert;
+ 		} else {
+-			DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_POW_LEVEL );
++			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_POW_LEVEL);
+ 		}
+ 	}
+ 
+@@ -640,101 +622,91 @@ void translate_option( char *buffer, struct wl_private *lp )
+ 	/* Configuration parameters specific to STA mode */
+ #if 1 //;? (HCF_TYPE) & HCF_TYPE_STA
+ //;?seems reasonable that even an AP-only driver could afford this small additional footprint
+-	if ( CNV_INT_TO_LITTLE( lp->hcfCtx.IFB_FWIdentity.comp_id ) == COMP_ID_FW_STA  ) {
++	if (CNV_INT_TO_LITTLE(lp->hcfCtx.IFB_FWIdentity.comp_id) == COMP_ID_FW_STA) {
+ 					//;?should we return an error status in AP mode
+-		if ( strcmp( key, PARM_NAME_PORT_TYPE ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_PORT_TYPE, value );
++		if (strcmp(key, PARM_NAME_PORT_TYPE) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_PORT_TYPE, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert == PARM_MIN_PORT_TYPE ) || ( value_convert == PARM_MAX_PORT_TYPE )) {
++			if ((value_convert == PARM_MIN_PORT_TYPE) || (value_convert == PARM_MAX_PORT_TYPE)) {
+ 				lp->PortType = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_PORT_TYPE );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_PORT_TYPE);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_PM_ENABLED ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_PM_ENABLED, value );
++		} else if (strcmp(key, PARM_NAME_PM_ENABLED) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_PM_ENABLED, value);
+ 			value_convert = simple_strtoul(value, NULL, 0);
+ 	/* ;? how about wl_main.c containing
+-	 * VALID_PARAM( PARM_PM_ENABLED <= WVLAN_PM_STATE_STANDARD ||
+-	 *					 ( PARM_PM_ENABLED & 0x7FFF ) <= WVLAN_PM_STATE_STANDARD );
++	 * VALID_PARAM(PARM_PM_ENABLED <= WVLAN_PM_STATE_STANDARD ||
++	 *					 (PARM_PM_ENABLED & 0x7FFF) <= WVLAN_PM_STATE_STANDARD);
+ 	 */
+-			if ( ( value_convert & 0x7FFF ) <= PARM_MAX_PM_ENABLED) {
++			if ((value_convert & 0x7FFF) <= PARM_MAX_PM_ENABLED) {
+ 				lp->PMEnabled = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_PM_ENABLED );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_PM_ENABLED);
+ 				//;?this is a data entry error, hence not a DBG_WARNING
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_CREATE_IBSS ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_CREATE_IBSS, value );
++		} else if (strcmp(key, PARM_NAME_CREATE_IBSS) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_CREATE_IBSS, value);
+ 			lp->CreateIBSS = parse_yes_no(value);
+-		}
+-		else if ( strcmp( key, PARM_NAME_MULTICAST_RX ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_MULTICAST_RX, value );
++		} else if (strcmp(key, PARM_NAME_MULTICAST_RX) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_MULTICAST_RX, value);
+ 			lp->MulticastReceive = parse_yes_no(value);
+-		}
+-		else if ( strcmp( key, PARM_NAME_MAX_SLEEP ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_MAX_SLEEP, value );
++		} else if (strcmp(key, PARM_NAME_MAX_SLEEP) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_MAX_SLEEP, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= 0 ) && ( value_convert <= 65535 )) {
++			if ((value_convert >= 0) && (value_convert <= 65535)) {
+ 				lp->MaxSleepDuration = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_MAX_SLEEP );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_MAX_SLEEP);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_NETWORK_ADDR ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_NETWORK_ADDR, value );
++		} else if (strcmp(key, PARM_NAME_NETWORK_ADDR) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_NETWORK_ADDR, value);
+ 
+-			if ( parse_mac_address( value, mac_value ) == ETH_ALEN ) {
+-				memcpy( lp->MACAddress, mac_value, ETH_ALEN );
++			if (parse_mac_address(value, mac_value) == ETH_ALEN) {
++				memcpy(lp->MACAddress, mac_value, ETH_ALEN);
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_NETWORK_ADDR );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_NETWORK_ADDR);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_AUTHENTICATION ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_AUTHENTICATION, value );
++		} else if (strcmp(key, PARM_NAME_AUTHENTICATION) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_AUTHENTICATION, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_AUTHENTICATION ) && ( value_convert <= PARM_MAX_AUTHENTICATION )) {
++			if ((value_convert >= PARM_MIN_AUTHENTICATION) && (value_convert <= PARM_MAX_AUTHENTICATION)) {
+ 				lp->authentication = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_AUTHENTICATION );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_AUTHENTICATION);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_OWN_ATIM_WINDOW ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_OWN_ATIM_WINDOW, value );
++		} else if (strcmp(key, PARM_NAME_OWN_ATIM_WINDOW) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_OWN_ATIM_WINDOW, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_OWN_ATIM_WINDOW ) && ( value_convert <= PARM_MAX_OWN_ATIM_WINDOW )) {
++			if ((value_convert >= PARM_MIN_OWN_ATIM_WINDOW) && (value_convert <= PARM_MAX_OWN_ATIM_WINDOW)) {
+ 				lp->atimWindow = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_OWN_ATIM_WINDOW );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_OWN_ATIM_WINDOW);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_PM_HOLDOVER_DURATION ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_PM_HOLDOVER_DURATION, value );
++		} else if (strcmp(key, PARM_NAME_PM_HOLDOVER_DURATION) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_PM_HOLDOVER_DURATION, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_PM_HOLDOVER_DURATION ) && ( value_convert <= PARM_MAX_PM_HOLDOVER_DURATION )) {
++			if ((value_convert >= PARM_MIN_PM_HOLDOVER_DURATION) && (value_convert <= PARM_MAX_PM_HOLDOVER_DURATION)) {
+ 				lp->holdoverDuration = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_PM_HOLDOVER_DURATION );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_PM_HOLDOVER_DURATION);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_PROMISCUOUS_MODE ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_PROMISCUOUS_MODE, value );
++		} else if (strcmp(key, PARM_NAME_PROMISCUOUS_MODE) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_PROMISCUOUS_MODE, value);
+ 			lp->promiscuousMode = parse_yes_no(value);
+-		}
+-		else if ( strcmp( key, PARM_NAME_CONNECTION_CONTROL ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_CONNECTION_CONTROL, value );
++		} else if (strcmp(key, PARM_NAME_CONNECTION_CONTROL) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_CONNECTION_CONTROL, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_CONNECTION_CONTROL ) && ( value_convert <= PARM_MAX_CONNECTION_CONTROL )) {
++			if ((value_convert >= PARM_MIN_CONNECTION_CONTROL) && (value_convert <= PARM_MAX_CONNECTION_CONTROL)) {
+ 				lp->connectionControl = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_CONNECTION_CONTROL );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_CONNECTION_CONTROL);
+ 			}
+ 		}
+ 
+@@ -745,227 +717,204 @@ void translate_option( char *buffer, struct wl_private *lp )
+ 	/* Configuration parameters specific to AP mode */
+ #if 1 //;? (HCF_TYPE) & HCF_TYPE_AP
+ 		//;?should we restore this to allow smaller memory footprint
+-	if ( CNV_INT_TO_LITTLE( lp->hcfCtx.IFB_FWIdentity.comp_id ) == COMP_ID_FW_AP  ) {
+-		if ( strcmp( key, PARM_NAME_OWN_DTIM_PERIOD ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_OWN_DTIM_PERIOD, value );
++	if (CNV_INT_TO_LITTLE(lp->hcfCtx.IFB_FWIdentity.comp_id) == COMP_ID_FW_AP) {
++		if (strcmp(key, PARM_NAME_OWN_DTIM_PERIOD) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_OWN_DTIM_PERIOD, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if ( value_convert >= PARM_MIN_OWN_DTIM_PERIOD ) {
++			if (value_convert >= PARM_MIN_OWN_DTIM_PERIOD) {
+ 				lp->DTIMPeriod = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_OWN_DTIM_PERIOD );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_OWN_DTIM_PERIOD);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_REJECT_ANY ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_REJECT_ANY, value );
++		} else if (strcmp(key, PARM_NAME_REJECT_ANY) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_REJECT_ANY, value);
+ 			lp->RejectAny = parse_yes_no(value);
+-		}
+-		else if ( strcmp( key, PARM_NAME_EXCLUDE_UNENCRYPTED ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_EXCLUDE_UNENCRYPTED, value );
++		} else if (strcmp(key, PARM_NAME_EXCLUDE_UNENCRYPTED) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_EXCLUDE_UNENCRYPTED, value);
+ 			lp->ExcludeUnencrypted = parse_yes_no(value);
+-		}
+-		else if ( strcmp( key, PARM_NAME_MULTICAST_PM_BUFFERING ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_MULTICAST_PM_BUFFERING, value );
++		} else if (strcmp(key, PARM_NAME_MULTICAST_PM_BUFFERING) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_MULTICAST_PM_BUFFERING, value);
+ 			lp->ExcludeUnencrypted = parse_yes_no(value);
+-		}
+-		else if ( strcmp( key, PARM_NAME_INTRA_BSS_RELAY ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_INTRA_BSS_RELAY, value );
++		} else if (strcmp(key, PARM_NAME_INTRA_BSS_RELAY) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_INTRA_BSS_RELAY, value);
+ 			lp->ExcludeUnencrypted = parse_yes_no(value);
+-		}
+-		else if ( strcmp( key, PARM_NAME_OWN_BEACON_INTERVAL ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_OWN_BEACON_INTERVAL, value );
++		} else if (strcmp(key, PARM_NAME_OWN_BEACON_INTERVAL) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_OWN_BEACON_INTERVAL, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if ( value_convert >= PARM_MIN_OWN_BEACON_INTERVAL ) {
++			if (value_convert >= PARM_MIN_OWN_BEACON_INTERVAL) {
+ 				lp->ownBeaconInterval = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_OWN_BEACON_INTERVAL );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_OWN_BEACON_INTERVAL);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_COEXISTENCE ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_COEXISTENCE, value );
++		} else if (strcmp(key, PARM_NAME_COEXISTENCE) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_COEXISTENCE, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if ( value_convert >= PARM_MIN_COEXISTENCE ) {
++			if (value_convert >= PARM_MIN_COEXISTENCE) {
+ 				lp->coexistence = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_COEXISTENCE );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_COEXISTENCE);
+ 			}
+ 		}
+ 
+ #ifdef USE_WDS
+-		else if ( strcmp( key, PARM_NAME_RTS_THRESHOLD1 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD1, value );
++		else if (strcmp(key, PARM_NAME_RTS_THRESHOLD1) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD1, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_RTS_THRESHOLD ) && ( value_convert <= PARM_MAX_RTS_THRESHOLD )) {
++			if ((value_convert >= PARM_MIN_RTS_THRESHOLD) && (value_convert <= PARM_MAX_RTS_THRESHOLD)) {
+ 				lp->wds_port[0].rtsThreshold = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD1 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD1);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_RTS_THRESHOLD2 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD2, value );
++		} else if (strcmp(key, PARM_NAME_RTS_THRESHOLD2) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD2, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_RTS_THRESHOLD ) && ( value_convert <= PARM_MAX_RTS_THRESHOLD )) {
++			if ((value_convert >= PARM_MIN_RTS_THRESHOLD) && (value_convert <= PARM_MAX_RTS_THRESHOLD)) {
+ 				lp->wds_port[1].rtsThreshold = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD2 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD2);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_RTS_THRESHOLD3 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD3, value );
++		} else if (strcmp(key, PARM_NAME_RTS_THRESHOLD3) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD3, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_RTS_THRESHOLD ) && ( value_convert <= PARM_MAX_RTS_THRESHOLD )) {
++			if ((value_convert >= PARM_MIN_RTS_THRESHOLD) && (value_convert <= PARM_MAX_RTS_THRESHOLD)) {
+ 				lp->wds_port[2].rtsThreshold = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD3 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD3);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_RTS_THRESHOLD4 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD4, value );
++		} else if (strcmp(key, PARM_NAME_RTS_THRESHOLD4) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD4, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_RTS_THRESHOLD ) && ( value_convert <= PARM_MAX_RTS_THRESHOLD )) {
++			if ((value_convert >= PARM_MIN_RTS_THRESHOLD) && (value_convert <= PARM_MAX_RTS_THRESHOLD)) {
+ 				lp->wds_port[3].rtsThreshold = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD4 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD4);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_RTS_THRESHOLD5 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD5, value );
++		} else if (strcmp(key, PARM_NAME_RTS_THRESHOLD5) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD5, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_RTS_THRESHOLD ) && ( value_convert <= PARM_MAX_RTS_THRESHOLD )) {
++			if ((value_convert >= PARM_MIN_RTS_THRESHOLD) && (value_convert <= PARM_MAX_RTS_THRESHOLD)) {
+ 				lp->wds_port[4].rtsThreshold = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD5 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD5);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_RTS_THRESHOLD6 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD6, value );
++		} else if (strcmp(key, PARM_NAME_RTS_THRESHOLD6) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_RTS_THRESHOLD6, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_RTS_THRESHOLD ) && ( value_convert <= PARM_MAX_RTS_THRESHOLD )) {
++			if ((value_convert >= PARM_MIN_RTS_THRESHOLD) && (value_convert <= PARM_MAX_RTS_THRESHOLD)) {
+ 				lp->wds_port[5].rtsThreshold = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD6 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_RTS_THRESHOLD6);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_TX_RATE1 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE1, value );
++		} else if (strcmp(key, PARM_NAME_TX_RATE1) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE1, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_TX_RATE ) && ( value_convert <= PARM_MAX_TX_RATE )) {
++			if ((value_convert >= PARM_MIN_TX_RATE) && (value_convert <= PARM_MAX_TX_RATE)) {
+ 				lp->wds_port[0].txRateCntl = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE1 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE1);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_TX_RATE2 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE2, value );
++		} else if (strcmp(key, PARM_NAME_TX_RATE2) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE2, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_TX_RATE ) && ( value_convert <= PARM_MAX_TX_RATE )) {
++			if ((value_convert >= PARM_MIN_TX_RATE) && (value_convert <= PARM_MAX_TX_RATE)) {
+ 				lp->wds_port[1].txRateCntl = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE2 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE2);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_TX_RATE3 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE3, value );
++		} else if (strcmp(key, PARM_NAME_TX_RATE3) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE3, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_TX_RATE ) && ( value_convert <= PARM_MAX_TX_RATE )) {
++			if ((value_convert >= PARM_MIN_TX_RATE) && (value_convert <= PARM_MAX_TX_RATE)) {
+ 				lp->wds_port[2].txRateCntl = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE3 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE3);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_TX_RATE4 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE4, value );
++		} else if (strcmp(key, PARM_NAME_TX_RATE4) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE4, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_TX_RATE ) && ( value_convert <= PARM_MAX_TX_RATE )) {
++			if ((value_convert >= PARM_MIN_TX_RATE) && (value_convert <= PARM_MAX_TX_RATE)) {
+ 				lp->wds_port[3].txRateCntl = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE4 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE4);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_TX_RATE5 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE5, value );
++		} else if (strcmp(key, PARM_NAME_TX_RATE5) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE5, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_TX_RATE ) && ( value_convert <= PARM_MAX_TX_RATE )) {
++			if ((value_convert >= PARM_MIN_TX_RATE) && (value_convert <= PARM_MAX_TX_RATE)) {
+ 				lp->wds_port[4].txRateCntl = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE5 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE5);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_TX_RATE6 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE6, value );
++		} else if (strcmp(key, PARM_NAME_TX_RATE6) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_TX_RATE6, value);
+ 
+ 			value_convert = simple_strtoul(value, NULL, 0);
+-			if (( value_convert >= PARM_MIN_TX_RATE ) && ( value_convert <= PARM_MAX_TX_RATE )) {
++			if ((value_convert >= PARM_MIN_TX_RATE) && (value_convert <= PARM_MAX_TX_RATE)) {
+ 				lp->wds_port[5].txRateCntl = value_convert;
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE6 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_TX_RATE6);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_WDS_ADDRESS1 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS1, value );
++		} else if (strcmp(key, PARM_NAME_WDS_ADDRESS1) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS1, value);
+ 
+-			if ( parse_mac_address( value, mac_value ) == ETH_ALEN ) {
+-				memcpy( lp->wds_port[0].wdsAddress, mac_value, ETH_ALEN );
++			if (parse_mac_address(value, mac_value) == ETH_ALEN) {
++				memcpy(lp->wds_port[0].wdsAddress, mac_value, ETH_ALEN);
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS1 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS1);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_WDS_ADDRESS2 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS2, value );
++		} else if (strcmp(key, PARM_NAME_WDS_ADDRESS2) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS2, value);
+ 
+-			if ( parse_mac_address( value, mac_value ) == ETH_ALEN ) {
+-				memcpy( lp->wds_port[1].wdsAddress, mac_value, ETH_ALEN );
++			if (parse_mac_address(value, mac_value) == ETH_ALEN) {
++				memcpy(lp->wds_port[1].wdsAddress, mac_value, ETH_ALEN);
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS2 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS2);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_WDS_ADDRESS3 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS3, value );
++		} else if (strcmp(key, PARM_NAME_WDS_ADDRESS3) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS3, value);
+ 
+-			if ( parse_mac_address( value, mac_value ) == ETH_ALEN ) {
+-				memcpy( lp->wds_port[2].wdsAddress, mac_value, ETH_ALEN );
++			if (parse_mac_address(value, mac_value) == ETH_ALEN) {
++				memcpy(lp->wds_port[2].wdsAddress, mac_value, ETH_ALEN);
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS3 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS3);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_WDS_ADDRESS4 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS4, value );
++		} else if (strcmp(key, PARM_NAME_WDS_ADDRESS4) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS4, value);
+ 
+-			if ( parse_mac_address( value, mac_value ) == ETH_ALEN ) {
+-				memcpy( lp->wds_port[3].wdsAddress, mac_value, ETH_ALEN );
++			if (parse_mac_address(value, mac_value) == ETH_ALEN) {
++				memcpy(lp->wds_port[3].wdsAddress, mac_value, ETH_ALEN);
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS4 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS4);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_WDS_ADDRESS5 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS5, value );
++		} else if (strcmp(key, PARM_NAME_WDS_ADDRESS5) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS5, value);
+ 
+-			if ( parse_mac_address( value, mac_value ) == ETH_ALEN ) {
+-				memcpy( lp->wds_port[4].wdsAddress, mac_value, ETH_ALEN );
++			if (parse_mac_address(value, mac_value) == ETH_ALEN) {
++				memcpy(lp->wds_port[4].wdsAddress, mac_value, ETH_ALEN);
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS5 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS5);
+ 			}
+-		}
+-		else if ( strcmp( key, PARM_NAME_WDS_ADDRESS6 ) == 0 ) {
+-			DBG_TRACE( DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS6, value );
++		} else if (strcmp(key, PARM_NAME_WDS_ADDRESS6) == 0) {
++			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_WDS_ADDRESS6, value);
+ 
+-			if ( parse_mac_address( value, mac_value ) == ETH_ALEN ) {
+-				memcpy( lp->wds_port[5].wdsAddress, mac_value, ETH_ALEN );
++			if (parse_mac_address(value, mac_value) == ETH_ALEN) {
++				memcpy(lp->wds_port[5].wdsAddress, mac_value, ETH_ALEN);
+ 			} else {
+-				DBG_WARNING( DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS6 );
++				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_WDS_ADDRESS6);
+ 			}
+ 		}
+ #endif  /* USE_WDS */
+@@ -996,7 +945,7 @@ void translate_option( char *buffer, struct wl_private *lp )
+  *      The number of bytes in the final MAC address, should equal to ETH_ALEN.
+  *
+  ******************************************************************************/
+-int parse_mac_address( char *value, u_char *byte_array )
++int parse_mac_address(char *value, u_char *byte_array)
+ {
+ 	int     value_offset = 0;
+ 	int     array_offset = 0;
+@@ -1004,11 +953,11 @@ int parse_mac_address( char *value, u_char *byte_array )
+ 	char    byte_field[3];
+ 	/*------------------------------------------------------------------------*/
+ 
+-	memset( byte_field, '\0', 3 );
++	memset(byte_field, '\0', 3);
+ 
+-	while( value[value_offset] != '\0' ) {
++	while (value[value_offset] != '\0') {
+ 		/* Skip over the colon chars seperating the bytes, if they exist */
+-		if ( value[value_offset] == ':' ) {
++		if (value[value_offset] == ':') {
+ 			value_offset++;
+ 			continue;
+ 		}
+@@ -1018,9 +967,9 @@ int parse_mac_address( char *value, u_char *byte_array )
+ 		value_offset++;
+ 
+ 		/* Once the byte_field is filled, convert it and store it */
+-		if ( field_offset == 2 ) {
++		if (field_offset == 2) {
+ 			byte_field[field_offset] = '\0';
+-			byte_array[array_offset] = simple_strtoul( byte_field, NULL, 16 );
++			byte_array[array_offset] = simple_strtoul(byte_field, NULL, 16);
+ 			field_offset = 0;
+ 			array_offset++;
+ 		}
+@@ -1052,42 +1001,42 @@ int parse_mac_address( char *value, u_char *byte_array )
+  *      N/A
+  *
+  ******************************************************************************/
+-void ParseConfigLine( char *pszLine, char **ppszLVal, char **ppszRVal )
++void ParseConfigLine(char *pszLine, char **ppszLVal, char **ppszRVal)
+ {
+ 	int i;
+ 	int size;
+ 	/*------------------------------------------------------------------------*/
+ 
+-	DBG_FUNC( "ParseConfigLine" );
+-	DBG_ENTER( DbgInfo );
++	DBG_FUNC("ParseConfigLine");
++	DBG_ENTER(DbgInfo);
+ 
+ 	/* get a snapshot of our string size */
+-	size      = strlen( pszLine );
++	size      = strlen(pszLine);
+ 	*ppszLVal = NULL;
+ 	*ppszRVal = NULL;
+ 
+-	if ( pszLine[0] != '#' &&							/* skip the line if it is a comment */
+-		 pszLine[0] != '\n'&&							/* if it's an empty UNIX line, do nothing */
+-		 !( pszLine[0] == '\r' && pszLine[1] == '\n' )	/* if it's an empty MS-DOS line, do nothing */
+-	    ) {
++	if (pszLine[0] != '#' &&							/* skip the line if it is a comment */
++		 pszLine[0] != '\n' &&							/* if it's an empty UNIX line, do nothing */
++		 !(pszLine[0] == '\r' && pszLine[1] == '\n')	/* if it's an empty MS-DOS line, do nothing */
++	   ) {
+ 		/* advance past any whitespace, and assign the L-value */
+-		for( i = 0; i < size; i++ ) {
+-			if ( pszLine[i] != ' ' ) {
++		for (i = 0; i < size; i++) {
++			if (pszLine[i] != ' ') {
+ 				*ppszLVal = &pszLine[i];
+ 				break;
+ 			}
+ 		}
+ 		/* advance to the end of the l-value*/
+-		for( i++; i < size; i++ ) {
+-			if ( pszLine[i] == ' ' || pszLine[i] == '=' ) {
++		for (i++; i < size; i++) {
++			if (pszLine[i] == ' ' || pszLine[i] == '=') {
+ 				pszLine[i] = '\0';
+ 				break;
+ 			}
+ 		}
+ 		/* make any whitespace and the equal sign a NULL character, and
+ 		   advance to the R-Value */
+-		for( i++; i < size; i++ ) {
+-			if ( pszLine[i] == ' ' || pszLine[i] == '=' ) {
++		for (i++; i < size; i++) {
++			if (pszLine[i] == ' ' || pszLine[i] == '=') {
+ 				pszLine[i] = '\0';
+ 				continue;
+ 			}
+@@ -1095,16 +1044,16 @@ void ParseConfigLine( char *pszLine, char **ppszLVal, char **ppszRVal )
+ 			break;
+ 		}
+ 		/* make the line ending character(s) a NULL */
+-		for( i++; i < size; i++ ) {
+-			if ( pszLine[i] == '\n' ) {
++		for (i++; i < size; i++) {
++			if (pszLine[i] == '\n') {
+ 				pszLine[i] = '\0';
+ 			}
+-			if (( pszLine[i] == '\r' ) && ( pszLine[i+1] == '\n' )) {
++			if ((pszLine[i] == '\r') && (pszLine[i+1] == '\n')) {
+ 				pszLine[i] = '\0';
+ 			}
+ 		}
+ 	}
+-	DBG_LEAVE( DbgInfo );
++	DBG_LEAVE(DbgInfo);
+ } // ParseConfigLine
+ /*============================================================================*/
+ 
+-- 
+1.6.0.4
+
