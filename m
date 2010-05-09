@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab0EIPYh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 11:24:37 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40379 "EHLO
+	id S1753884Ab0EIPYZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 11:24:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40365 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753910Ab0EIPY0 (ORCPT
+	with ESMTP id S1753431Ab0EIPYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 11:24:26 -0400
-Date: Sun, 9 May 2010 08:25:23 -0700
+	Sun, 9 May 2010 11:24:19 -0400
+Date: Sun, 9 May 2010 08:22:45 -0700
 From: Arjan van de Ven <arjan@infradead.org>
 To: Arjan van de Ven <arjan@infradead.org>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, davej@redhat.com
-Subject: [PATCH v2  6/8] sched: Intoduce get_cpu_iowait_time_us()
-Message-ID: <20100509082523.284feab6@infradead.org>
+Subject: [PATCH v2  2/8] sched: Introduce a function to update the idle
+ statistics
+Message-ID: <20100509082245.163e67ed@infradead.org>
 In-Reply-To: <20100509082126.4a080d46@infradead.org>
 References: <20100509082126.4a080d46@infradead.org>
 Organization: Intel
@@ -28,112 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arjan van de Ven <arjan@linux.intel.com>
 
-For the ondemand cpufreq governor, it is desired that the iowait
-time is microaccounted in a similar way as idle time is.
+Currently, two places update the idle statistics (and more to
+come later in this series).
 
-This patch introduces the infrastructure to account and expose
-this information via the get_cpu_iowait_time_us() function.
+This patch creates a helper function for updating these statistics.
 
-[akpm@linux-foundation.org: fix CONFIG_NO_HZ=n build]
 Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Reviewed-by: Rik van Riel <riel@redhat.com>
+
 ---
 
- include/linux/tick.h     |    4 ++++
- kernel/time/tick-sched.c |   28 ++++++++++++++++++++++++++++
- kernel/time/timer_list.c |    1 +
- 3 files changed, 33 insertions(+)
+ kernel/time/tick-sched.c |   29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
 
-diff -puN include/linux/tick.h~sched-introduce-get_cpu_iowait_time_us include/linux/tick.h
---- a/include/linux/tick.h~sched-introduce-get_cpu_iowait_time_us
-+++ a/include/linux/tick.h
-@@ -42,6 +42,7 @@ enum tick_nohz_mode {
-  * @idle_waketime:	Time when the idle was interrupted
-  * @idle_exittime:	Time when the idle state was left
-  * @idle_sleeptime:	Sum of the time slept in idle with sched tick stopped
-+ * @iowait_sleeptime:	Sum of the time slept in idle with sched tick stopped, with IO outstanding
-  * @sleep_length:	Duration of the current idle sleep
-  * @do_timer_lst:	CPU was the last one doing do_timer before going idle
-  */
-@@ -60,6 +61,7 @@ struct tick_sched {
- 	ktime_t				idle_waketime;
- 	ktime_t				idle_exittime;
- 	ktime_t				idle_sleeptime;
-+	ktime_t				iowait_sleeptime;
- 	ktime_t				sleep_length;
- 	unsigned long			last_jiffies;
- 	unsigned long			next_jiffies;
-@@ -123,6 +125,7 @@ extern void tick_nohz_stop_sched_tick(in
- extern void tick_nohz_restart_sched_tick(void);
- extern ktime_t tick_nohz_get_sleep_length(void);
- extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
-+extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
- # else
- static inline void tick_nohz_stop_sched_tick(int inidle) { }
- static inline void tick_nohz_restart_sched_tick(void) { }
-@@ -133,6 +136,7 @@ static inline ktime_t tick_nohz_get_slee
- 	return len;
- }
- static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
-+static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
- # endif /* !NO_HZ */
- 
- #endif
-diff -puN kernel/time/tick-sched.c~sched-introduce-get_cpu_iowait_time_us kernel/time/tick-sched.c
---- a/kernel/time/tick-sched.c~sched-introduce-get_cpu_iowait_time_us
+diff -puN kernel/time/tick-sched.c~sched-introduce-a-function-to-update-the-idle-statistics kernel/time/tick-sched.c
+--- a/kernel/time/tick-sched.c~sched-introduce-a-function-to-update-the-idle-statistics
 +++ a/kernel/time/tick-sched.c
-@@ -161,6 +161,8 @@ update_ts_time_stats(struct tick_sched *
- 	if (ts->idle_active) {
- 		delta = ktime_sub(now, ts->idle_entrytime);
- 		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
-+		if (nr_iowait_cpu() > 0)
-+			ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
- 		ts->idle_entrytime = now;
- 	}
- 
-@@ -220,6 +222,32 @@ u64 get_cpu_idle_time_us(int cpu, u64 *l
+@@ -150,14 +150,25 @@ static void tick_nohz_update_jiffies(kti
+ 	touch_softlockup_watchdog();
  }
- EXPORT_SYMBOL_GPL(get_cpu_idle_time_us);
  
+-static void tick_nohz_stop_idle(int cpu, ktime_t now)
 +/*
-+ * get_cpu_iowait_time_us - get the total iowait time of a cpu
-+ * @cpu: CPU number to query
-+ * @last_update_time: variable to store update time in
-+ *
-+ * Return the cummulative iowait time (since boot) for a given
-+ * CPU, in microseconds.
-+ *
-+ * This time is measured via accounting rather than sampling,
-+ * and is as accurate as ktime_get() is.
-+ *
-+ * This function returns -1 if NOHZ is not enabled.
++ * Updates the per cpu time idle statistics counters
 + */
-+u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
++static void update_ts_time_stats(struct tick_sched *ts, ktime_t now)
+ {
+-	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+ 	ktime_t delta;
+ 
+-	delta = ktime_sub(now, ts->idle_entrytime);
+ 	ts->idle_lastupdate = now;
+-	ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
++	if (ts->idle_active) {
++		delta = ktime_sub(now, ts->idle_entrytime);
++		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
++	}
++}
++
++static void tick_nohz_stop_idle(int cpu, ktime_t now)
 +{
 +	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
 +
-+	if (!tick_nohz_enabled)
-+		return -1;
++	update_ts_time_stats(ts, now);
+ 	ts->idle_active = 0;
+ 
+ 	sched_clock_idle_wakeup_event(0);
+@@ -165,14 +176,12 @@ static void tick_nohz_stop_idle(int cpu,
+ 
+ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
+ {
+-	ktime_t now, delta;
++	ktime_t now;
+ 
+ 	now = ktime_get();
+-	if (ts->idle_active) {
+-		delta = ktime_sub(now, ts->idle_entrytime);
+-		ts->idle_lastupdate = now;
+-		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+-	}
 +
-+	update_ts_time_stats(ts, ktime_get(), last_update_time);
++	update_ts_time_stats(ts, now);
 +
-+	return ktime_to_us(ts->iowait_sleeptime);
-+}
-+EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
-+
- /**
-  * tick_nohz_stop_sched_tick - stop the idle tick from the idle task
-  *
-diff -puN kernel/time/timer_list.c~sched-introduce-get_cpu_iowait_time_us kernel/time/timer_list.c
---- a/kernel/time/timer_list.c~sched-introduce-get_cpu_iowait_time_us
-+++ a/kernel/time/timer_list.c
-@@ -176,6 +176,7 @@ static void print_cpu(struct seq_file *m
- 		P_ns(idle_waketime);
- 		P_ns(idle_exittime);
- 		P_ns(idle_sleeptime);
-+		P_ns(iowait_sleeptime);
- 		P(last_jiffies);
- 		P(next_jiffies);
- 		P_ns(idle_expires);
+ 	ts->idle_entrytime = now;
+ 	ts->idle_active = 1;
+ 	sched_clock_idle_sleep_event();
 _
