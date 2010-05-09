@@ -1,310 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab0EIAMS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 20:12:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36762 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab0EIAMR (ORCPT
+	id S1754641Ab0EIAWn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 20:22:43 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:55885 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754328Ab0EIAWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 20:12:17 -0400
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: linux-mm@kvack.org, containers@lists.linux-foundation.org
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Phil Carmody <ext-phil.2.carmody@nokia.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       linux-kernel@vger.kernel.org
-Subject: [RFC] [PATCH] memcg: cleanup memory thresholds
-Date: Sun,  9 May 2010 03:11:12 +0300
-Message-Id: <1273363872-8031-1-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.0.4
+	Sat, 8 May 2010 20:22:41 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4BE60045.3040600@s5r6.in-berlin.de>
+Date: Sun, 09 May 2010 02:22:29 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100415 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: florian@mickler.org, Andrew Morton <akpm@linux-foundation.org>,
+       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] get_maintainer.pl: only list maintainers by default
+References: <1273354364-6016-1-git-send-email-florian@mickler.org>	 <1273354778-6129-1-git-send-email-florian@mickler.org>	 <1273358674.704.77.camel@Joe-Laptop.home>	 <4BE5F286.1020503@s5r6.in-berlin.de> <1273362666.704.104.camel@Joe-Laptop.home>
+In-Reply-To: <1273362666.704.104.camel@Joe-Laptop.home>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce struct mem_cgroup_thresholds. It helps to reduce number of
-checks of thresholds type (memory or mem+swap).
+Joe Perches wrote:
+> On Sun, 2010-05-09 at 01:23 +0200, Stefan Richter wrote:
+>> Joe Perches wrote:
+>> Reported-by and tested-by signatures in the git history commit /are/ in
+>> fact random WRT getting a list of handlers/ reviewers of a new patch.
+> 
+> Supporting stats please.
+...
+> Look like mostly patch authors and maintainers to me.
+> 
+> Brian Cavagnolo isn't a patch author, but he's an active tester.
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- mm/memcontrol.c |  151 ++++++++++++++++++++++++-------------------------------
- 1 files changed, 66 insertions(+), 85 deletions(-)
+So you looked up signatures across the entire tree, found some people
+who appear more often than an average reporter/tester, and one of these
+is not a classic developer/maintainer.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a6d2a4c..a6c6268 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -158,6 +158,18 @@ struct mem_cgroup_threshold_ary {
- 	/* Array of thresholds */
- 	struct mem_cgroup_threshold entries[0];
- };
-+
-+struct mem_cgroup_thresholds {
-+	/* Primary thresholds array */
-+	struct mem_cgroup_threshold_ary *primary;
-+	/*
-+	 * Spare threshold array.
-+	 * It needed to make mem_cgroup_unregister_event() "never fail".
-+	 * It must be able to store at least primary->size - 1 entires.
-+	 */
-+	struct mem_cgroup_threshold_ary *spare;
-+};
-+
- /* for OOM */
- struct mem_cgroup_eventfd_list {
- 	struct list_head list;
-@@ -224,20 +236,10 @@ struct mem_cgroup {
- 	struct mutex thresholds_lock;
- 
- 	/* thresholds for memory usage. RCU-protected */
--	struct mem_cgroup_threshold_ary *thresholds;
--
--	/*
--	 * Preallocated buffer to be used in mem_cgroup_unregister_event()
--	 * to make it "never fail".
--	 * It must be able to store at least thresholds->size - 1 entries.
--	 */
--	struct mem_cgroup_threshold_ary *__thresholds;
-+	struct mem_cgroup_thresholds thresholds;
- 
- 	/* thresholds for mem+swap usage. RCU-protected */
--	struct mem_cgroup_threshold_ary *memsw_thresholds;
--
--	/* the same as __thresholds, but for memsw_thresholds */
--	struct mem_cgroup_threshold_ary *__memsw_thresholds;
-+	struct mem_cgroup_thresholds memsw_thresholds;
- 
- 	/* For oom notifier event fd */
- 	struct list_head oom_notify;
-@@ -3438,9 +3440,9 @@ static void __mem_cgroup_threshold(struct mem_cgroup *memcg, bool swap)
- 
- 	rcu_read_lock();
- 	if (!swap)
--		t = rcu_dereference(memcg->thresholds);
-+		t = rcu_dereference(memcg->thresholds.primary);
- 	else
--		t = rcu_dereference(memcg->memsw_thresholds);
-+		t = rcu_dereference(memcg->memsw_thresholds.primary);
- 
- 	if (!t)
- 		goto unlock;
-@@ -3514,91 +3516,78 @@ static int mem_cgroup_usage_register_event(struct cgroup *cgrp,
- 	struct cftype *cft, struct eventfd_ctx *eventfd, const char *args)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
--	struct mem_cgroup_threshold_ary *thresholds, *thresholds_new;
-+	struct mem_cgroup_thresholds *thresholds;
-+	struct mem_cgroup_threshold_ary *new;
- 	int type = MEMFILE_TYPE(cft->private);
- 	u64 threshold, usage;
--	int size;
--	int i, ret;
-+	int i, size, ret;
- 
- 	ret = res_counter_memparse_write_strategy(args, &threshold);
- 	if (ret)
- 		return ret;
- 
- 	mutex_lock(&memcg->thresholds_lock);
-+
- 	if (type == _MEM)
--		thresholds = memcg->thresholds;
-+		thresholds = &memcg->thresholds;
- 	else if (type == _MEMSWAP)
--		thresholds = memcg->memsw_thresholds;
-+		thresholds = &memcg->memsw_thresholds;
- 	else
- 		BUG();
- 
- 	usage = mem_cgroup_usage(memcg, type == _MEMSWAP);
- 
- 	/* Check if a threshold crossed before adding a new one */
--	if (thresholds)
-+	if (thresholds->primary)
- 		__mem_cgroup_threshold(memcg, type == _MEMSWAP);
- 
--	if (thresholds)
--		size = thresholds->size + 1;
--	else
--		size = 1;
-+	size = thresholds->primary ? thresholds->primary->size + 1 : 1;
- 
- 	/* Allocate memory for new array of thresholds */
--	thresholds_new = kmalloc(sizeof(*thresholds_new) +
--			size * sizeof(struct mem_cgroup_threshold),
-+	new = kmalloc(sizeof(*new) + size * sizeof(struct mem_cgroup_threshold),
- 			GFP_KERNEL);
--	if (!thresholds_new) {
-+	if (!new) {
- 		ret = -ENOMEM;
- 		goto unlock;
- 	}
--	thresholds_new->size = size;
-+	new->size = size;
- 
- 	/* Copy thresholds (if any) to new array */
--	if (thresholds)
--		memcpy(thresholds_new->entries, thresholds->entries,
--				thresholds->size *
-+	if (thresholds->primary) {
-+		memcpy(new->entries, thresholds->primary->entries, (size - 1) *
- 				sizeof(struct mem_cgroup_threshold));
-+	}
-+
- 	/* Add new threshold */
--	thresholds_new->entries[size - 1].eventfd = eventfd;
--	thresholds_new->entries[size - 1].threshold = threshold;
-+	new->entries[size - 1].eventfd = eventfd;
-+	new->entries[size - 1].threshold = threshold;
- 
- 	/* Sort thresholds. Registering of new threshold isn't time-critical */
--	sort(thresholds_new->entries, size,
--			sizeof(struct mem_cgroup_threshold),
-+	sort(new->entries, size, sizeof(struct mem_cgroup_threshold),
- 			compare_thresholds, NULL);
- 
- 	/* Find current threshold */
--	thresholds_new->current_threshold = -1;
-+	new->current_threshold = -1;
- 	for (i = 0; i < size; i++) {
--		if (thresholds_new->entries[i].threshold < usage) {
-+		if (new->entries[i].threshold < usage) {
- 			/*
--			 * thresholds_new->current_threshold will not be used
--			 * until rcu_assign_pointer(), so it's safe to increment
-+			 * new->current_threshold will not be used until
-+			 * rcu_assign_pointer(), so it's safe to increment
- 			 * it here.
- 			 */
--			++thresholds_new->current_threshold;
-+			++new->current_threshold;
- 		}
- 	}
- 
--	if (type == _MEM)
--		rcu_assign_pointer(memcg->thresholds, thresholds_new);
--	else
--		rcu_assign_pointer(memcg->memsw_thresholds, thresholds_new);
-+	/* Free old spare buffer and save old primary buffer as spare */
-+	kfree(thresholds->spare);
-+	thresholds->spare = thresholds->primary;
-+
-+	rcu_assign_pointer(thresholds->primary, new);
- 
- 	/* To be sure that nobody uses thresholds */
- 	synchronize_rcu();
- 
--	/*
--	 * Free old preallocated buffer and use thresholds as new
--	 * preallocated buffer.
--	 */
--	if (type == _MEM) {
--		kfree(memcg->__thresholds);
--		memcg->__thresholds = thresholds;
--	} else {
--		kfree(memcg->__memsw_thresholds);
--		memcg->__memsw_thresholds = thresholds;
--	}
- unlock:
- 	mutex_unlock(&memcg->thresholds_lock);
- 
-@@ -3609,17 +3598,17 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
- 	struct cftype *cft, struct eventfd_ctx *eventfd)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
--	struct mem_cgroup_threshold_ary *thresholds, *thresholds_new;
-+	struct mem_cgroup_thresholds *thresholds;
-+	struct mem_cgroup_threshold_ary *new;
- 	int type = MEMFILE_TYPE(cft->private);
- 	u64 usage;
--	int size = 0;
--	int i, j;
-+	int i, j, size;
- 
- 	mutex_lock(&memcg->thresholds_lock);
- 	if (type == _MEM)
--		thresholds = memcg->thresholds;
-+		thresholds = &memcg->thresholds;
- 	else if (type == _MEMSWAP)
--		thresholds = memcg->memsw_thresholds;
-+		thresholds = &memcg->memsw_thresholds;
- 	else
- 		BUG();
- 
-@@ -3635,53 +3624,45 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
- 	__mem_cgroup_threshold(memcg, type == _MEMSWAP);
- 
- 	/* Calculate new number of threshold */
--	for (i = 0; i < thresholds->size; i++) {
--		if (thresholds->entries[i].eventfd != eventfd)
-+	size = 0;
-+	for (i = 0; i < thresholds->primary->size; i++) {
-+		if (thresholds->primary->entries[i].eventfd != eventfd)
- 			size++;
- 	}
- 
--	/* Use preallocated buffer for new array of thresholds */
--	if (type == _MEM)
--		thresholds_new = memcg->__thresholds;
--	else
--		thresholds_new = memcg->__memsw_thresholds;
-+	new = thresholds->spare;
- 
- 	/* Set thresholds array to NULL if we don't have thresholds */
- 	if (!size) {
--		kfree(thresholds_new);
--		thresholds_new = NULL;
-+		kfree(new);
-+		new = NULL;
- 		goto swap_buffers;
- 	}
- 
--	thresholds_new->size = size;
-+	new->size = size;
- 
- 	/* Copy thresholds and find current threshold */
--	thresholds_new->current_threshold = -1;
--	for (i = 0, j = 0; i < thresholds->size; i++) {
--		if (thresholds->entries[i].eventfd == eventfd)
-+	new->current_threshold = -1;
-+	for (i = 0, j = 0; i < thresholds->primary->size; i++) {
-+		if (thresholds->primary->entries[i].eventfd == eventfd)
- 			continue;
- 
--		thresholds_new->entries[j] = thresholds->entries[i];
--		if (thresholds_new->entries[j].threshold < usage) {
-+		new->entries[j] = thresholds->primary->entries[i];
-+		if (new->entries[j].threshold < usage) {
- 			/*
--			 * thresholds_new->current_threshold will not be used
-+			 * new->current_threshold will not be used
- 			 * until rcu_assign_pointer(), so it's safe to increment
- 			 * it here.
- 			 */
--			++thresholds_new->current_threshold;
-+			++new->current_threshold;
- 		}
- 		j++;
- 	}
- 
- swap_buffers:
--	/* Swap thresholds array and preallocated buffer */
--	if (type == _MEM) {
--		memcg->__thresholds = thresholds;
--		rcu_assign_pointer(memcg->thresholds, thresholds_new);
--	} else {
--		memcg->__memsw_thresholds = thresholds;
--		rcu_assign_pointer(memcg->memsw_thresholds, thresholds_new);
--	}
-+	/* Swap primary and spare array */
-+	thresholds->spare = thresholds->primary;
-+	rcu_assign_pointer(thresholds->primary, new);
- 
- 	/* To be sure that nobody uses thresholds */
- 	synchronize_rcu();
+But how does this indicate a need to include these addresses into
+get_maintainer.pl output?  In no way at all.
+
+To get your patch reviewed, Cc the relevant mailinglists.  To get your
+patch into the submission pipeline, Cc the maintainer.
+
+>> It is more likely that reporters and testers cannot or/and do not want to
+>> do anything about such a patch.  Such a mailing is called UBE.
+> 
+> I doubt that's true of even half of the reporters and testers.
+> 
+> I also doubt such patch emails fit any reasonable definition
+> of UBE.
+
+The U, B, and E all describe such mail exactly.
 -- 
-1.7.0.4
-
+Stefan Richter
+-=====-==-=- -=-= -=--=
+http://arcgraph.de/sr/
