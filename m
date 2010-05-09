@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab0EIXCO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 19:02:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46618 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab0EIXCJ convert rfc822-to-8bit (ORCPT
+	id S1753492Ab0EIXDg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 19:03:36 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:44057 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab0EIXDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 19:02:09 -0400
-Date: Sun, 9 May 2010 16:03:27 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: linux-kernel@vger.kernel.org
-Cc: Arjan van de Ven <arjan@infradead.org>, akpm@linux-foundation.org
-Subject: [PATCH 1/2] cpuidle: Fix incorrect optimziation
-Message-ID: <20100509160327.61b8ef53@infradead.org>
-In-Reply-To: <20100509160242.2e351e6a@infradead.org>
-References: <20100509160242.2e351e6a@infradead.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sun, 9 May 2010 19:03:35 -0400
+Date: Mon, 10 May 2010 08:03:27 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH] MAINTAINERS: arch/arm/s3c and arch/arm/s5p
+In-reply-to: <q2m9c9fda241005031917gbe9236f3kd56bfdf9a76ae549@mail.gmail.com>
+To: "'Kyungmin Park'" <kmpark@infradead.org>,
+       "'Ben Dooks'" <ben-linux@fluff.org>
+Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+       linux-kernel@vger.kernel.org, "'Ben Dooks'" <ben-linux-arm@fluff.org>,
+       "'Joe Perches'" <joe@perches.com>, linux-arm-kernel@lists.infradead.org,
+       "'Marek Szyprowski'" <m.szyprowski@samsung.com>
+Message-id: <001901caefcb$d9b07460$8d115d20$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcrrMJEr+jTcCeuLQTiKrD4OLEmVAgBinwyA
+References: <cover.1269655208.git.joe@perches.com>
+ <0c97f736400ec243e71ba794ae7046a61d2449c1.1269655208.git.joe@perches.com>
+ <20100412194737.GS3048@n2100.arm.linux.org.uk>
+ <1271102450.2131.27.camel@Joe-Laptop.home>
+ <h2p9c9fda241004121653te938caa2u42e39c31f27e85e1@mail.gmail.com>
+ <1271126826.4631.7.camel@Joe-Laptop.home>
+ <p2y9c9fda241004161243p924e06f0rb1ff64d5ae258819@mail.gmail.com>
+ <20100504004623.GT6684@trinity.fluff.org>
+ <q2m9c9fda241005031917gbe9236f3kd56bfdf9a76ae549@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Kyungmin Park wrote:
+> On Tue, May 4, 2010 at 9:46 AM, Ben Dooks <ben-linux@fluff.org> wrote:
+> > On Sat, Apr 17, 2010 at 04:43:34AM +0900, Kyungmin Park wrote:
+> >> Please add me and marek.
+> >> Ben how do you think? Marek is proper person since he posted a lot of
+s5p
+> >> series patches.
+> >> Note that byoungho min is no longer works on this series
+> >
+> > I thought the System LSI group where wanting to maintain this, which is
+> > why I've been holding off making any comment about what is going on.
+> >
+> > Personally, I would like to see a co-maintainership between myself
+> > and whoever at Samsung before completely handing over the responsibility.
+> 
+> I agree. then how about the Marek, even though LSI want it. they don't
+> have enough experience with open source works. you can see the recent
+> their works at their git. but we are trying to modify and make a patch
+> with open source style.
 
->From 8fd01c156227a2c14e6c4cf46fc421ee1c8d9946 Mon Sep 17 00:00:00 2001
-From: Arjan van de Ven <arjan@linux.intel.com>
-Date: Sat, 8 May 2010 15:47:37 -0700
-Subject: [PATCH 1/2] cpuidle: Fix incorrect optimziation
+Hi,
 
-commit 672917dcc781ead7652a8b11b1fba14e38ac15b8 added an optimization,
-where the analysis on the past idle period moved from the end of idle,
-to the beginning of the new idle.
+I don't agree with your opinion that System LSI doesn't have enough
+experience.
+What is 'enough experience' that you said? Is it about posting to mailing
+list ?
+I and my team members also have been posting Samsung SoC patches related to
+Samsung SoC more than you think, even though you argued you and Marek posted
+a lot of s5p series patches.
 
-Unfortunately, this optimization had a bug where it zeroed one key variable
-for new use, that is needed for the analysis. The fix is simple,
-zero the variable after doing the work from the previous idle.
+> Also we setup the public git for open source
 
-During the audit of the code that found this issue, another issue was
-also found; the ->measured_us data structure member is never set,
-a local variable is always used instead.
+When it comes to the public git, System LSI has setup the open git a few
+months earlier than you.
+I hope you stop criticizing us. :-)
 
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+Anyway, we will continue to make much contributions as now.
 
-Cc: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: stable@kernel.org
----
- drivers/cpuidle/governors/menu.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+> Thank you,
+> Kyungmin Park
+> 
+> P.S., when do you expect to hand-over responsibility to others?
+> >
+> >> Thank you,
+> >> Kyungmin Park
+> >>
+> >> On Apr 12, 2010 7:47 PM, "Joe Perches" <joe@perches.com> wrote:
+> >>
+> >> On Tue, 2010-04-13 at 08:53 +0900, Kyungmin Park wrote:
+> >> > No, s5p stubs are maintained by Samsung.
+> >> >...
+> >> So perhaps you'll add yourself and the correct entries to MAINTAINERS?
 
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 1aea715..f8e57c6 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -100,7 +100,6 @@ struct menu_device {
- 	int             needs_update;
- 
- 	unsigned int	expected_us;
--	unsigned int	measured_us;
- 	u64		predicted_us;
- 	unsigned int	exit_us;
- 	unsigned int	bucket;
-@@ -187,14 +186,14 @@ static int menu_select(struct cpuidle_device *dev)
- 	int i;
- 	int multiplier;
- 
--	data->last_state_idx = 0;
--	data->exit_us = 0;
--
- 	if (data->needs_update) {
- 		menu_update(dev);
- 		data->needs_update = 0;
- 	}
- 
-+	data->last_state_idx = 0;
-+	data->exit_us = 0;
-+
- 	/* Special case when user has set very strict latency requirement */
- 	if (unlikely(latency_req == 0))
- 		return 0;
-@@ -294,7 +293,7 @@ static void menu_update(struct cpuidle_device *dev)
- 	new_factor = data->correction_factor[data->bucket]
- 			* (DECAY - 1) / DECAY;
- 
--	if (data->expected_us > 0 && data->measured_us < MAX_INTERESTING)
-+	if (data->expected_us > 0 && measured_us < MAX_INTERESTING)
- 		new_factor += RESOLUTION * measured_us / data->expected_us;
- 	else
- 		/*
--- 
-1.6.2.5
+Thanks.
 
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
