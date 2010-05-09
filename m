@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab0EIITX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 04:19:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43990 "EHLO hera.kernel.org"
+	id S1751849Ab0EIITL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 04:19:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43983 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880Ab0EIITR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 04:19:17 -0400
-Date: Sun, 9 May 2010 08:19:01 GMT
+	id S1751446Ab0EIITH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 04:19:07 -0400
+Date: Sun, 9 May 2010 08:18:41 GMT
 From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
        greg@kroah.com, hjanssen@microsoft.com, ksrinivasan@novell.com,
@@ -17,28 +17,29 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
 In-Reply-To: <4BE49778.6060800@zytor.com>
 References: <4BE49778.6060800@zytor.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] Modify the VMware balloon driver for the new x86_hyper API
-Message-ID: <tip-a10a569806e43b9be5fce60b21f836b50b1010e4@git.kernel.org>
-Git-Commit-ID: a10a569806e43b9be5fce60b21f836b50b1010e4
+Subject: [tip:x86/cpu] x86, hypervisor: Export the x86_hyper* symbols
+Message-ID: <tip-96f6e775b58687d85ee33004d414419b5ec34106@git.kernel.org>
+Git-Commit-ID: 96f6e775b58687d85ee33004d414419b5ec34106
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 09 May 2010 08:19:01 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 09 May 2010 08:18:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a10a569806e43b9be5fce60b21f836b50b1010e4
-Gitweb:     http://git.kernel.org/tip/a10a569806e43b9be5fce60b21f836b50b1010e4
+Commit-ID:  96f6e775b58687d85ee33004d414419b5ec34106
+Gitweb:     http://git.kernel.org/tip/96f6e775b58687d85ee33004d414419b5ec34106
 Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Sun, 9 May 2010 01:13:42 -0700
+AuthorDate: Sun, 9 May 2010 01:10:34 -0700
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Sun, 9 May 2010 01:13:42 -0700
+CommitDate: Sun, 9 May 2010 01:10:34 -0700
 
-Modify the VMware balloon driver for the new x86_hyper API
+x86, hypervisor: Export the x86_hyper* symbols
 
-Modify the VMware balloon driver to match the new x86_hyper API.
+Export x86_hyper and the related specific structures, allowing for
+hypervisor identification by modules.
 
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Cc: Greg KH <greg@kroah.com>
@@ -48,28 +49,46 @@ Cc: Ky Srinivasan <ksrinivasan@novell.com>
 Cc: Dmitry Torokhov <dtor@vmware.com>
 LKML-Reference: <4BE49778.6060800@zytor.com>
 ---
- drivers/misc/vmware_balloon.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/hypervisor.c |    1 +
+ arch/x86/kernel/cpu/mshyperv.c   |    1 +
+ arch/x86/kernel/cpu/vmware.c     |    2 +-
+ 3 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/misc/vmware_balloon.c b/drivers/misc/vmware_balloon.c
-index e7161c4..db9cd02 100644
---- a/drivers/misc/vmware_balloon.c
-+++ b/drivers/misc/vmware_balloon.c
-@@ -41,7 +41,7 @@
- #include <linux/workqueue.h>
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
--#include <asm/vmware.h>
-+#include <asm/hypervisor.h>
+diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+index 8738175..4afb5a2 100644
+--- a/arch/x86/kernel/cpu/hypervisor.c
++++ b/arch/x86/kernel/cpu/hypervisor.c
+@@ -36,6 +36,7 @@ static const __initconst struct hypervisor_x86 * const hypervisors[] =
+ };
  
- MODULE_AUTHOR("VMware, Inc.");
- MODULE_DESCRIPTION("VMware Memory Control (Balloon) Driver");
-@@ -767,7 +767,7 @@ static int __init vmballoon_init(void)
- 	 * Check if we are running on VMware's hypervisor and bail out
- 	 * if we are not.
- 	 */
--	if (!vmware_platform())
-+	if (x86_hyper != &x86_hyper_vmware)
- 		return -ENODEV;
+ const struct hypervisor_x86 *x86_hyper;
++EXPORT_SYMBOL(x86_hyper);
  
- 	vmballoon_wq = create_freezeable_workqueue("vmmemctl");
+ static inline void __init
+ detect_hypervisor_vendor(void)
+diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+index 5969c3e..0f13717 100644
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -51,3 +51,4 @@ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+ 	.detect			= ms_hyperv_platform,
+ 	.init_platform		= ms_hyperv_init_platform,
+ };
++EXPORT_SYMBOL(x86_hyper_ms_hyperv);
+diff --git a/arch/x86/kernel/cpu/vmware.c b/arch/x86/kernel/cpu/vmware.c
+index 265b432..b9d1ff5 100644
+--- a/arch/x86/kernel/cpu/vmware.c
++++ b/arch/x86/kernel/cpu/vmware.c
+@@ -99,7 +99,6 @@ static bool __init vmware_platform(void)
+ 
+ 	return false;
+ }
+-EXPORT_SYMBOL(vmware_platform);
+ 
+ /*
+  * VMware hypervisor takes care of exporting a reliable TSC to the guest.
+@@ -125,3 +124,4 @@ const __refconst struct hypervisor_x86 x86_hyper_vmware = {
+ 	.set_cpu_features	= vmware_set_cpu_features,
+ 	.init_platform		= vmware_platform_setup,
+ };
++EXPORT_SYMBOL(x86_hyper_vmware);
