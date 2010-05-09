@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab0EIPYW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 11:24:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40362 "EHLO
+	id S1754073Ab0EIPYc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 11:24:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40374 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab0EIPYR (ORCPT
+	with ESMTP id S1753665Ab0EIPYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 11:24:17 -0400
-Date: Sun, 9 May 2010 08:22:08 -0700
+	Sun, 9 May 2010 11:24:22 -0400
+Date: Sun, 9 May 2010 08:24:03 -0700
 From: Arjan van de Ven <arjan@infradead.org>
 To: Arjan van de Ven <arjan@infradead.org>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, davej@redhat.com
-Subject: [PATCH v2  1/8] sched: Add a comment to get_cpu_idle_time_us()
-Message-ID: <20100509082208.7cb721f0@infradead.org>
+Subject: [PATCH v2  4/8] sched: Fold updating of the last_update_time_info
+ into update_ts_time_stats()
+Message-ID: <20100509082403.60072967@infradead.org>
 In-Reply-To: <20100509082126.4a080d46@infradead.org>
 References: <20100509082126.4a080d46@infradead.org>
 Organization: Intel
@@ -28,40 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arjan van de Ven <arjan@linux.intel.com>
 
-The exported function get_cpu_idle_time_us() has no comment
-describing it; add a kerneldoc comment
+This patch folds the updating of the last_update_time into the
+update_ts_time_stats() function, and updates the callers.
+
+This allows for further cleanups that are done in the next patch.
 
 Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Reviewed-by: Rik van Riel <riel@redhat.com>
-
 ---
 
- kernel/time/tick-sched.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ kernel/time/tick-sched.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff -puN kernel/time/tick-sched.c~sched-add-a-comment-to-get_cpu_idle_time_us kernel/time/tick-sched.c
---- a/kernel/time/tick-sched.c~sched-add-a-comment-to-get_cpu_idle_time_us
+diff -puN kernel/time/tick-sched.c~sched-fold-updating-of-the-last-update-time-into-update_ts_time_stats kernel/time/tick-sched.c
+--- a/kernel/time/tick-sched.c~sched-fold-updating-of-the-last-update-time-into-update_ts_time_stats
 +++ a/kernel/time/tick-sched.c
-@@ -179,6 +179,20 @@ static ktime_t tick_nohz_start_idle(stru
- 	return now;
+@@ -153,7 +153,8 @@ static void tick_nohz_update_jiffies(kti
+ /*
+  * Updates the per cpu time idle statistics counters
+  */
+-static void update_ts_time_stats(struct tick_sched *ts, ktime_t now)
++static void
++update_ts_time_stats(struct tick_sched *ts, ktime_t now, u64 *last_update_time)
+ {
+ 	ktime_t delta;
+ 
+@@ -163,13 +164,19 @@ static void update_ts_time_stats(struct 
+ 		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+ 		ts->idle_entrytime = now;
+ 	}
++
++	if (ts->idle_active && last_update_time)
++		*last_update_time = ktime_to_us(ts->idle_lastupdate);
++	else
++		*last_update_time = ktime_to_us(now);
++
  }
  
-+/**
-+ * get_cpu_idle_time_us - get the total idle time of a cpu
-+ * @cpu: CPU number to query
-+ * @last_update_time: variable to store update time in
-+ *
-+ * Return the cummulative idle time (since boot) for a given
-+ * CPU, in microseconds. The idle time returned includes
-+ * the iowait time (unlike what "top" and co report).
-+ *
-+ * This time is measured via accounting rather than sampling,
-+ * and is as accurate as ktime_get() is.
-+ *
-+ * This function returns -1 if NOHZ is not enabled.
-+ */
+ static void tick_nohz_stop_idle(int cpu, ktime_t now)
+ {
+ 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+ 
+-	update_ts_time_stats(ts, now);
++	update_ts_time_stats(ts, now, NULL);
+ 	ts->idle_active = 0;
+ 
+ 	sched_clock_idle_wakeup_event(0);
+@@ -181,7 +188,7 @@ static ktime_t tick_nohz_start_idle(stru
+ 
+ 	now = ktime_get();
+ 
+-	update_ts_time_stats(ts, now);
++	update_ts_time_stats(ts, now, NULL);
+ 
+ 	ts->idle_entrytime = now;
+ 	ts->idle_active = 1;
+@@ -206,18 +213,11 @@ static ktime_t tick_nohz_start_idle(stru
  u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
  {
  	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+-	ktime_t now;
+ 
+ 	if (!tick_nohz_enabled)
+ 		return -1;
+ 
+-	now = ktime_get();
+-	update_ts_time_stats(ts, now);
+-
+-	if (ts->idle_active)
+-		*last_update_time = ktime_to_us(ts->idle_lastupdate);
+-	else
+-		*last_update_time = ktime_to_us(now);
++	update_ts_time_stats(ts, ktime_get(), last_update_time);
+ 
+ 	return ktime_to_us(ts->idle_sleeptime);
+ }
 _
