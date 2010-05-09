@@ -1,63 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab0EHXvL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 May 2010 19:51:11 -0400
-Received: from mail.perches.com ([173.55.12.10]:2071 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751960Ab0EHXvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 May 2010 19:51:09 -0400
-Subject: Re: [PATCH] [RFC] get_maintainer.pl: only list maintainers by
- default
-From: Joe Perches <joe@perches.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: florian@mickler.org, Andrew Morton <akpm@linux-foundation.org>,
-       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <4BE5F286.1020503@s5r6.in-berlin.de>
-References: <1273354364-6016-1-git-send-email-florian@mickler.org>
-	 <1273354778-6129-1-git-send-email-florian@mickler.org>
-	 <1273358674.704.77.camel@Joe-Laptop.home>
-	 <4BE5F286.1020503@s5r6.in-berlin.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 08 May 2010 16:51:06 -0700
-Message-ID: <1273362666.704.104.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754569Ab0EIAL2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 May 2010 20:11:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44877 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab0EIAL1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 May 2010 20:11:27 -0400
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: linux-mm@kvack.org, containers@lists.linux-foundation.org
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Phil Carmody <ext-phil.2.carmody@nokia.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH v2] cgroups: make cftype.unregister_event() void-returning
+Date: Sun,  9 May 2010 03:10:22 +0300
+Message-Id: <1273363822-7796-1-git-send-email-kirill@shutemov.name>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-05-09 at 01:23 +0200, Stefan Richter wrote:
-> Joe Perches wrote:
-> Reported-by and tested-by signatures in the git history commit /are/ in
-> fact random WRT getting a list of handlers/ reviewers of a new patch.
+Since we unable to handle error returned by cftype.unregister_event()
+properly, let's make the callback void-returning.
 
-Supporting stats please.
+mem_cgroup_unregister_event() has been rewritten to be "never fail"
+function. On mem_cgroup_usage_register_event() we save old buffer
+for thresholds array and reuse it in mem_cgroup_usage_unregister_event()
+to avoid allocation.
 
-$ git log --since=1-year-ago | grep -Pi "(reported|tested)-by:.*@" \
-  | cut -f2- -d":" | sort | uniq -c | sort -rn | head -10
-     77  Ingo Molnar <mingo@elte.hu>
-     47  Wolfram Sang <w.sang@pengutronix.de>
-     42  Stephen Rothwell <sfr@canb.auug.org.au>
-     35  Dan Carpenter <error27@gmail.com>
-     24  Randy Dunlap <randy.dunlap@oracle.com>
-     23  Larry Finger <Larry.Finger@lwfinger.net>
-     20  Brian Cavagnolo <brian@cozybit.com>
-     17  Frans Pop <elendil@planet.nl>
-     17  Christian Kujau <lists@nerdbynature.de>
-     16  Alexander Beregalov <a.beregalov@gmail.com>
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+---
+Changelog:
 
-Look like mostly patch authors and maintainers to me.
+* v1 -> v2
+  - Fix memory leak.
 
-Brian Cavagnolo isn't a patch author, but he's an active tester.
+---
+ include/linux/cgroup.h |    2 +-
+ kernel/cgroup.c        |    1 -
+ mm/memcontrol.c        |   65 ++++++++++++++++++++++++++++++-----------------
+ 3 files changed, 42 insertions(+), 26 deletions(-)
 
-> It is more likely that reporters and testers cannot or/and do not want to
-> do anything about such a patch.  Such a mailing is called UBE.
-
-I doubt that's true of even half of the reporters and testers.
-
-I also doubt such patch emails fit any reasonable definition
-of UBE.
-
-cheers, Joe
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 8f78073..0c62160 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -397,7 +397,7 @@ struct cftype {
+ 	 * This callback must be implemented, if you want provide
+ 	 * notification functionality.
+ 	 */
+-	int (*unregister_event)(struct cgroup *cgrp, struct cftype *cft,
++	void (*unregister_event)(struct cgroup *cgrp, struct cftype *cft,
+ 			struct eventfd_ctx *eventfd);
+ };
+ 
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 06dbf97..6675e8c 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2988,7 +2988,6 @@ static void cgroup_event_remove(struct work_struct *work)
+ 			remove);
+ 	struct cgroup *cgrp = event->cgrp;
+ 
+-	/* TODO: check return code */
+ 	event->cft->unregister_event(cgrp, event->cft, event->eventfd);
+ 
+ 	eventfd_ctx_put(event->eventfd);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 8cb2722..a6d2a4c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -226,9 +226,19 @@ struct mem_cgroup {
+ 	/* thresholds for memory usage. RCU-protected */
+ 	struct mem_cgroup_threshold_ary *thresholds;
+ 
++	/*
++	 * Preallocated buffer to be used in mem_cgroup_unregister_event()
++	 * to make it "never fail".
++	 * It must be able to store at least thresholds->size - 1 entries.
++	 */
++	struct mem_cgroup_threshold_ary *__thresholds;
++
+ 	/* thresholds for mem+swap usage. RCU-protected */
+ 	struct mem_cgroup_threshold_ary *memsw_thresholds;
+ 
++	/* the same as __thresholds, but for memsw_thresholds */
++	struct mem_cgroup_threshold_ary *__memsw_thresholds;
++
+ 	/* For oom notifier event fd */
+ 	struct list_head oom_notify;
+ 
+@@ -3575,17 +3585,27 @@ static int mem_cgroup_usage_register_event(struct cgroup *cgrp,
+ 	else
+ 		rcu_assign_pointer(memcg->memsw_thresholds, thresholds_new);
+ 
+-	/* To be sure that nobody uses thresholds before freeing it */
++	/* To be sure that nobody uses thresholds */
+ 	synchronize_rcu();
+ 
+-	kfree(thresholds);
++	/*
++	 * Free old preallocated buffer and use thresholds as new
++	 * preallocated buffer.
++	 */
++	if (type == _MEM) {
++		kfree(memcg->__thresholds);
++		memcg->__thresholds = thresholds;
++	} else {
++		kfree(memcg->__memsw_thresholds);
++		memcg->__memsw_thresholds = thresholds;
++	}
+ unlock:
+ 	mutex_unlock(&memcg->thresholds_lock);
+ 
+ 	return ret;
+ }
+ 
+-static int mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
++static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
+ 	struct cftype *cft, struct eventfd_ctx *eventfd)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+@@ -3593,7 +3613,7 @@ static int mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
+ 	int type = MEMFILE_TYPE(cft->private);
+ 	u64 usage;
+ 	int size = 0;
+-	int i, j, ret = 0;
++	int i, j;
+ 
+ 	mutex_lock(&memcg->thresholds_lock);
+ 	if (type == _MEM)
+@@ -3620,20 +3640,19 @@ static int mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
+ 			size++;
+ 	}
+ 
++	/* Use preallocated buffer for new array of thresholds */
++	if (type == _MEM)
++		thresholds_new = memcg->__thresholds;
++	else
++		thresholds_new = memcg->__memsw_thresholds;
++
+ 	/* Set thresholds array to NULL if we don't have thresholds */
+ 	if (!size) {
++		kfree(thresholds_new);
+ 		thresholds_new = NULL;
+-		goto assign;
++		goto swap_buffers;
+ 	}
+ 
+-	/* Allocate memory for new array of thresholds */
+-	thresholds_new = kmalloc(sizeof(*thresholds_new) +
+-			size * sizeof(struct mem_cgroup_threshold),
+-			GFP_KERNEL);
+-	if (!thresholds_new) {
+-		ret = -ENOMEM;
+-		goto unlock;
+-	}
+ 	thresholds_new->size = size;
+ 
+ 	/* Copy thresholds and find current threshold */
+@@ -3654,20 +3673,20 @@ static int mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
+ 		j++;
+ 	}
+ 
+-assign:
+-	if (type == _MEM)
++swap_buffers:
++	/* Swap thresholds array and preallocated buffer */
++	if (type == _MEM) {
++		memcg->__thresholds = thresholds;
+ 		rcu_assign_pointer(memcg->thresholds, thresholds_new);
+-	else
++	} else {
++		memcg->__memsw_thresholds = thresholds;
+ 		rcu_assign_pointer(memcg->memsw_thresholds, thresholds_new);
++	}
+ 
+-	/* To be sure that nobody uses thresholds before freeing it */
++	/* To be sure that nobody uses thresholds */
+ 	synchronize_rcu();
+ 
+-	kfree(thresholds);
+-unlock:
+ 	mutex_unlock(&memcg->thresholds_lock);
+-
+-	return ret;
+ }
+ 
+ static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
+@@ -3695,7 +3714,7 @@ static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
+ 	return 0;
+ }
+ 
+-static int mem_cgroup_oom_unregister_event(struct cgroup *cgrp,
++static void mem_cgroup_oom_unregister_event(struct cgroup *cgrp,
+ 	struct cftype *cft, struct eventfd_ctx *eventfd)
+ {
+ 	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
+@@ -3714,8 +3733,6 @@ static int mem_cgroup_oom_unregister_event(struct cgroup *cgrp,
+ 	}
+ 
+ 	mutex_unlock(&memcg_oom_mutex);
+-
+-	return 0;
+ }
+ 
+ static int mem_cgroup_oom_control_read(struct cgroup *cgrp,
+-- 
+1.7.0.4
 
