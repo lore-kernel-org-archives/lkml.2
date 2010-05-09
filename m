@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab0EIWEy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 18:04:54 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33310 "EHLO ogre.sisk.pl"
+	id S1754282Ab0EIWE7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 18:04:59 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33322 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753863Ab0EIWEh convert rfc822-to-8bit (ORCPT
+	id S1753214Ab0EIWEz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 18:04:37 -0400
+	Sun, 9 May 2010 18:04:55 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "liubo" <liubo2009@cn.fujitsu.com>
+       "Michal Hocko" <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       "Tony Vroon" <tony@linx.net>
 References: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
 In-Reply-To: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <HqroMXsT-CJ.A.FgE.D9y5LB@chimera>
-Subject: [Bug #15935] [BUG] btrfs: report a direct-IO bug
+Message-ID: <HqroMXsT-CJ.A.DUE.-8y5LB@chimera>
+Subject: [Bug #15951] commit 9630bdd9 changes behavior of the poweroff
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun,  9 May 2010 23:17:38 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,11 +34,12 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15935
-Subject		: [BUG] btrfs: report a direct-IO bug
-Submitter	: liubo <liubo2009@cn.fujitsu.com>
-Date		: 2010-05-06 1:47 (4 days old)
-Message-ID	: <4BE21FC1.1010901@cn.fujitsu.com>
-References	: http://marc.info/?l=linux-kernel&m=127311036803487&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15951
+Subject		: commit 9630bdd9 changes behavior of the poweroff
+Submitter	: Michal Hocko <mhocko@suse.cz>
+Date		: 2010-04-01 13:39 (39 days old)
+Message-ID	: <20100401133923.GA4104@tiehlicka.suse.cz>
+References	: http://marc.info/?l=linux-kernel&m=127012918316305&w=4
+Handled-By	: Rafael J. Wysocki <rjw@sisk.pl>
 
 
