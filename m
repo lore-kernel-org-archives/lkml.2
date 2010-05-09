@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881Ab0EIK74 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 06:59:56 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:48719 "EHLO smtp.gentoo.org"
+	id S1753210Ab0EILB6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 07:01:58 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:49047 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450Ab0EIK7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 06:59:55 -0400
+	id S1752542Ab0EILB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 07:01:56 -0400
 From: Mike Frysinger <vapier@gentoo.org>
-To: linux-fbdev@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+To: linux-i2c@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
        uclinux-dist-devel@blackfin.uclinux.org,
        Michael Hennerich <michael.hennerich@analog.com>
-Subject: [PATCH] fbdev: bfin-t350mcqb-fb: fix fbmem allocation with blanking lines
-Date: Sun,  9 May 2010 07:02:45 -0400
-Message-Id: <1273402965-2995-1-git-send-email-vapier@gentoo.org>
+Subject: [PATCH] i2c-bfin-twi: handle faulty slave devices better
+Date: Sun,  9 May 2010 07:04:47 -0400
+Message-Id: <1273403087-3326-1-git-send-email-vapier@gentoo.org>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,56 +21,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Hennerich <michael.hennerich@analog.com>
 
-The current allocation does not include the memory required for blanking
-lines.  So avoid memory corruption when multiple devices are using the DMA
-memory near each other.
+Faulty slave devices might drive SDA low after a transfer finishes.  So,
+when this scenario is detected, have the master generate up to 8 extra
+clocks until the SDA is properly released.
 
 Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
 Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 ---
- drivers/video/bfin-t350mcqb-fb.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+Note: this requires the existing Blackfin TWI patches already sent out
 
-diff --git a/drivers/video/bfin-t350mcqb-fb.c b/drivers/video/bfin-t350mcqb-fb.c
-index 44e49c2..c2ec3dc 100644
---- a/drivers/video/bfin-t350mcqb-fb.c
-+++ b/drivers/video/bfin-t350mcqb-fb.c
-@@ -488,9 +488,9 @@ static int __devinit bfin_t350mcqb_probe(struct platform_device *pdev)
- 	fbinfo->fbops = &bfin_t350mcqb_fb_ops;
- 	fbinfo->flags = FBINFO_FLAG_DEFAULT;
+ drivers/i2c/busses/i2c-bfin-twi.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
+index fb26e5c..f9c05e1 100644
+--- a/drivers/i2c/busses/i2c-bfin-twi.c
++++ b/drivers/i2c/busses/i2c-bfin-twi.c
+@@ -20,6 +20,7 @@
+ #include <linux/completion.h>
+ #include <linux/interrupt.h>
+ #include <linux/platform_device.h>
++#include <linux/delay.h>
  
--	info->fb_buffer =
--	    dma_alloc_coherent(NULL, fbinfo->fix.smem_len, &info->dma_handle,
--			       GFP_KERNEL);
-+	info->fb_buffer = dma_alloc_coherent(NULL, fbinfo->fix.smem_len +
-+				ACTIVE_VIDEO_MEM_OFFSET,
-+				&info->dma_handle, GFP_KERNEL);
+ #include <asm/blackfin.h>
+ #include <asm/portmux.h>
+@@ -159,6 +160,27 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
+ 		if (mast_stat & BUFWRERR)
+ 			dev_dbg(&iface->adap.dev, "Buffer Write Error\n");
  
- 	if (NULL == info->fb_buffer) {
- 		printk(KERN_ERR DRIVER_NAME
-@@ -568,8 +568,8 @@ out7:
- out6:
- 	fb_dealloc_cmap(&fbinfo->cmap);
- out4:
--	dma_free_coherent(NULL, fbinfo->fix.smem_len, info->fb_buffer,
--			  info->dma_handle);
-+	dma_free_coherent(NULL, fbinfo->fix.smem_len + ACTIVE_VIDEO_MEM_OFFSET,
-+			 info->fb_buffer, info->dma_handle);
- out3:
- 	framebuffer_release(fbinfo);
- out2:
-@@ -592,8 +592,9 @@ static int __devexit bfin_t350mcqb_remove(struct platform_device *pdev)
- 	free_irq(info->irq, info);
- 
- 	if (info->fb_buffer != NULL)
--		dma_free_coherent(NULL, fbinfo->fix.smem_len, info->fb_buffer,
--				  info->dma_handle);
-+		dma_free_coherent(NULL, fbinfo->fix.smem_len +
-+			ACTIVE_VIDEO_MEM_OFFSET, info->fb_buffer,
-+			info->dma_handle);
- 
- 	fb_dealloc_cmap(&fbinfo->cmap);
- 
++		/* Faulty salve devices, may drive SDA low after a transfer
++		 * finishes. To release the bus this code generates up to 8
++		 * extra clocks until SDA is released.
++		 */
++
++		if (read_MASTER_STAT(iface) & SDASEN) {
++			int cnt = 8;
++			do {
++				write_MASTER_CTL(iface, SCLOVR);
++				udelay(6);
++				write_MASTER_CTL(iface, 0);
++				udelay(6);
++			} while ((read_MASTER_STAT(iface) & SDASEN) && cnt--);
++
++			write_MASTER_CTL(iface, SDAOVR | SCLOVR);
++			udelay(6);
++			write_MASTER_CTL(iface, SDAOVR);
++			udelay(6);
++			write_MASTER_CTL(iface, 0);
++		}
++
+ 		/* If it is a quick transfer, only address without data,
+ 		 * not an err, return 1.
+ 		 */
 -- 
 1.7.1
 
