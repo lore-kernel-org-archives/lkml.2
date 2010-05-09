@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab0EIIkr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 04:40:47 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:48490 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722Ab0EIIkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 04:40:45 -0400
-Date: Sun, 9 May 2010 10:40:41 +0200
-From: Florian Mickler <florian@mickler.org>
+	id S1752127Ab0EIImD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 04:42:03 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:57444 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab0EIImA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 04:42:00 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4BE67539.8040805@s5r6.in-berlin.de>
+Date: Sun, 09 May 2010 10:41:29 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100415 SeaMonkey/1.1.18
+MIME-Version: 1.0
 To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: [PATCH] [RFC] get_maintainer.pl: only list maintainers by
- default
-Message-ID: <20100509104041.1186d5f1@schatten.dmk.lab>
-In-Reply-To: <1273358674.704.77.camel@Joe-Laptop.home>
-References: <1273354364-6016-1-git-send-email-florian@mickler.org>
-	<1273354778-6129-1-git-send-email-florian@mickler.org>
-	<1273358674.704.77.camel@Joe-Laptop.home>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+CC: florian@mickler.org, Andrew Morton <akpm@linux-foundation.org>,
+       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] get_maintainer.pl: only list maintainers by default
+References: <1273354364-6016-1-git-send-email-florian@mickler.org>	 <1273354778-6129-1-git-send-email-florian@mickler.org>	 <1273358674.704.77.camel@Joe-Laptop.home>	 <4BE5F286.1020503@s5r6.in-berlin.de>	 <1273362666.704.104.camel@Joe-Laptop.home>	 <4BE60045.3040600@s5r6.in-berlin.de> <1273366633.704.109.camel@Joe-Laptop.home> <4BE66FE1.3010608@s5r6.in-berlin.de>
+In-Reply-To: <4BE66FE1.3010608@s5r6.in-berlin.de>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 08 May 2010 15:44:34 -0700
-Joe Perches <joe@perches.com> wrote:
+Stefan Richter wrote:
+> Joe Perches wrote:
+>> Supporting stats please.
+...
+>   $ git log drivers/firewire/ drivers/ieee1394/ |
+>     grep -e "Tested-by: " -e "Reported-by: "
+> lists 32 people of whom
+>   - 0 need to be/ should be included in the address list of a patch
+>     submission,
+>   - 2 or 3 were active in firewire subsystem development (but not
+>     anymore) but were perfectly fine to reach via MAINTAINERS' L: entry
 
-> On Sat, 2010-05-08 at 23:39 +0200, florian@mickler.org wrote:
-> > If scm meta-information is used, only list people that signed-off or
-> > acked or reviewed the code in question.
-> > 
-> > after all it's called get_maintainer.pl and not
-> > get_random_people_to_look_at_the_code.pl
-> 
-> Anyone that actually signs a patch is not "random".
-> 
+PS:  And when they were still active, they also clearly showed up as
+patch authors.
 
-I actually think that tested-by and reviewed-by is not "signing",
-because it is not the person who does the "tag insertion". 
+>   - 3 or 2 are still somewhat involved in firewire subsystem
+>     development, but only in special application domains, and they are
+>     reached via MAINTAINERS' L: entry
 
-it was one of the signed-off-by's who put the reviewed- and testet-tags
-in there. presumably this is done in agreement with the mentioned
-person. 
-
-And for facts, please check this out:
-
-$ git log --since=1-year-ago | grep -Pi "(reported|tested)-by:.*@"  \
- | cut -f2- -d":" | sort | uniq | wc -l
-1280
-
-so i would say, these numbers (combied with your top ten which
-accounts for only 318 signatures ) suggest that those mentioned with
-these tag's are one-off bug reporters and not maintainers.
-
-cheers,
-Flo
+Think of mailinglists as a pull model to reach potential reviewers,
+whereas personal mail constitute a push model which must be used with a
+lot of care --- i.e. when you as a submitter _know_ that these people
+are going to want to be directly informed about the patch submission.
+-- 
+Stefan Richter
+-=====-==-=- -=-= -=--=
+http://arcgraph.de/sr/
