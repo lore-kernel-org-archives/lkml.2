@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab0EIXkQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 19:40:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45151 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754549Ab0EIXjo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 19:39:44 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/4] perf symbols: Consider unresolved DSOs in the dso__col_widt calculation
-Date: Sun,  9 May 2010 20:39:26 -0300
-Message-Id: <1273448369-7479-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1273448369-7479-1-git-send-email-acme@infradead.org>
-References: <1273448369-7479-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754603Ab0EIXnj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 19:43:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34247 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753721Ab0EIXne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 19:43:34 -0400
+Date: Mon, 10 May 2010 09:43:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the wireless-current tree with a fix up
+ patch
+Message-Id: <20100510094332.9b1114f8.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi John,
 
-By using BITS_PER_LONG / 4, that is the number of chars that will be
-used in such cases as the DSO "name".
+Today's linux-next merge of the wireless-current tree got a conflict in
+drivers/net/wireless/ath/ar9170/usb.c between a fix I am carrying in the
+linux-next tree and commit 160b82420ab41f1e67fbf2e56dc587837ef39ce0
+("ar9170: wait for asynchronous firmware loading") from the
+wireless-current tree.
 
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+I fixed it up (see at the bottom or this email).
+
+John, can you put this following small patch in your wireless-current
+tree, please?  This is to cope with an upcoming API change and applies to
+Linus' tree (the device_lock/unlock wrappers are already in Linus' tree).
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 3 Mar 2010 17:08:11 +1100
+Subject: [PATCH] ar9170: fix for driver-core ABI change
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- tools/perf/util/event.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/net/wireless/ath/ar9170/usb.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 23d5dfd..46563e1 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -676,6 +676,13 @@ int event__preprocess_sample(const event_t *self, struct perf_session *session,
- 			dso__calc_col_width(al->map->dso);
+diff --git a/drivers/net/wireless/ath/ar9170/usb.c b/drivers/net/wireless/ath/ar9170/usb.c
+index 4e30197..7fc1034 100644
+--- a/drivers/net/wireless/ath/ar9170/usb.c
++++ b/drivers/net/wireless/ath/ar9170/usb.c
+@@ -41,6 +41,7 @@
+ #include <linux/usb.h>
+ #include <linux/firmware.h>
+ #include <linux/etherdevice.h>
++#include <linux/device.h>
+ #include <net/mac80211.h>
+ #include "ar9170.h"
+ #include "cmd.h"
+@@ -726,10 +727,10 @@ static void ar9170_usb_firmware_failed(struct ar9170_usb *aru)
  
- 		al->sym = map__find_symbol(al->map, al->addr, filter);
-+	} else {
-+		const unsigned int unresolved_col_width = BITS_PER_LONG / 4;
-+
-+		if (dsos__col_width < unresolved_col_width &&
-+		    !symbol_conf.col_width_list_str && !symbol_conf.field_sep &&
-+		    !symbol_conf.dso_list)
-+			dsos__col_width = unresolved_col_width;
- 	}
+ 	/* unbind anything failed */
+ 	if (parent)
+-		down(&parent->sem);
++		device_lock(parent);
+ 	device_release_driver(&aru->udev->dev);
+ 	if (parent)
+-		up(&parent->sem);
++		device_unlock(parent);
+ }
  
- 	if (symbol_conf.sym_list && al->sym &&
+ static void ar9170_usb_firmware_finish(const struct firmware *fw, void *context)
 -- 
-1.6.2.5
+1.7.0
 
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/wireless/ath/ar9170/usb.c
+index 5f0477b,24dc555..0000000
+--- a/drivers/net/wireless/ath/ar9170/usb.c
++++ b/drivers/net/wireless/ath/ar9170/usb.c
+@@@ -728,12 -726,16 +728,16 @@@ static void ar9170_usb_firmware_failed(
+  {
+  	struct device *parent = aru->udev->dev.parent;
+  
++ 	complete(&aru->firmware_loading_complete);
++ 
+  	/* unbind anything failed */
+  	if (parent)
+ -		down(&parent->sem);
+ +		device_lock(parent);
+  	device_release_driver(&aru->udev->dev);
+  	if (parent)
+ -		up(&parent->sem);
+ +		device_unlock(parent);
++ 
++ 	usb_put_dev(aru->udev);
+  }
+  
+  static void ar9170_usb_firmware_finish(const struct firmware *fw, void *context)
