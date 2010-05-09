@@ -1,78 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab0EISYV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 14:24:21 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57395 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab0EISYT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 14:24:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Z/B8weekTuX2iYW1+dyVHjxnFkKwoO1uALRgm3rfU+93ORMC6y/dlYN+5UkC4lVh6A
-         ip6cU4mz8w/Bc17oY3GVslJqNqoTU/mSDVs/P7WtMMZap4+y2vrCtTkWYMJCuIKHSccF
-         ndjf1RR9BZ0A8IPQ/NrIze0WIGHp3V+tF4xvc=
+	id S1752112Ab0EISr3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 14:47:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16832 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751105Ab0EISrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 14:47:25 -0400
+Date: Sun, 9 May 2010 20:45:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mathias Krause <Mathias.Krause@secunet.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org
+Subject: Re: kernel panic on kill(0, SIGTERM) with PGID == 0
+Message-ID: <20100509184510.GA15219@redhat.com>
+References: <4BE01C86.3050908@secunet.com>
 MIME-Version: 1.0
-In-Reply-To: <20100509113420.GB2589@trinity.fluff.org>
-References: <1273403087-3326-1-git-send-email-vapier@gentoo.org> 
-	<20100509113420.GB2589@trinity.fluff.org>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sun, 9 May 2010 14:23:58 -0400
-Message-ID: <o2l8bd0f97a1005091123le4e59343j798a70d5db76c66e@mail.gmail.com>
-Subject: Re: [PATCH] i2c-bfin-twi: handle faulty slave devices better
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       uclinux-dist-devel@blackfin.uclinux.org,
-       Michael Hennerich <michael.hennerich@analog.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BE01C86.3050908@secunet.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 9, 2010 at 07:34, Ben Dooks wrote:
-> On Sun, May 09, 2010 at 07:04:47AM -0400, Mike Frysinger wrote:
->> From: Michael Hennerich <michael.hennerich@analog.com>
->>
->> Faulty slave devices might drive SDA low after a transfer finishes.  So,
->> when this scenario is detected, have the master generate up to 8 extra
->> clocks until the SDA is properly released.
->>
->> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
->> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
->> ---
->> Note: this requires the existing Blackfin TWI patches already sent out
+sorry for delay, vacation.
+
+On 05/04, Mathias Krause wrote:
 >
-> hmm, it is late in the -rc series for anything other than critical
-> bugfixes, will update series tomorrow.
+> Hi Oleg, Hi Eric,
+>
+> I stumbled across a nasty bug related to the special init I'm using
+> (cinit) and a process trying to kill it's process group. That always ends
+> in a kernel NULL pointer dereference. git bisect brought me to that
+> commit:
+>
+> | commit 430c623121ea88ca80595c99fdc63b7f8a803ae5
+> | Author: Oleg Nesterov <oleg@tv-sign.ru>
+> | Date:   Fri Feb 8 04:19:11 2008 -0800
+> |
+> | start the global /sbin/init with 0,0 special pids
+> |
+> | As Eric pointed out, there is no problem with init starting with sid == pgid
+> | == 0, and this was historical linux behavior changed in 2.6.18.
+> |
+> | Remove kernel_init()->__set_special_pids(), this is unneeded and complicates
+> | the rules for sys_setsid().
+> |
+> | This change and the previous change in daemonize() mean that /sbin/init does
+> | not need the special "session != 1" hack in sys_setsid() any longer. We can'
+> | remove this check yet, we should cleanup copy_process(CLONE_NEWPID) first, s
+> | update the comment only.
+> |
+> | Signed-off-by: Oleg Nesterov <oleg@tv-sign.ru>
+> | Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> | Cc: Pavel Emelyanov <xemul@openvz.org>
+> | Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> | Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>
+> Well, it actually is a problem for my setup. If neither init nor any of
+> the programs init starts ever change the PGID, all will live in the
+> process group 0. That's bad when some of the started programs tries to
+> kill its process group. That will in fact kill _all_ processes. So far so
+> bad.
 
-this patch is fine for 2.6.35, but the rest of the series should have
-been merged for like 2.6.33 ...
+sorry again, I'll try to comment this later...
 
->>  drivers/i2c/busses/i2c-bfin-twi.c |   22 ++++++++++++++++++++++
->>  1 files changed, 22 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
->> index fb26e5c..f9c05e1 100644
->> --- a/drivers/i2c/busses/i2c-bfin-twi.c
->> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
->> @@ -20,6 +20,7 @@
->>  #include <linux/completion.h>
->>  #include <linux/interrupt.h>
->>  #include <linux/platform_device.h>
->> +#include <linux/delay.h>
->>
->>  #include <asm/blackfin.h>
->>  #include <asm/portmux.h>
->> @@ -159,6 +160,27 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
->>               if (mast_stat & BUFWRERR)
->>                       dev_dbg(&iface->adap.dev, "Buffer Write Error\n");
->>
->> +             /* Faulty salve devices, may drive SDA low after a transfer
-> spello: slave
+And I think this should be discussed on lkml, cc'ed.
 
-ok, i'll resend in a bit
--mike
+> But it even gets worser because process group 0 contains some
+> special processes, like swapper (PID: 0). Normally swapper will never be
+> reachable for userland because PID 0 is handled special by kill(2) but
+> killing the current process group while having a PGID of 0 will also try
+> to kill those special processes like swapper. This ends in the following
+> kernel null pointer deref:
+>
+> [    3.595820] BUG: unable to handle kernel NULL pointer dereference at 000003a8
+
+Thanks Mathias.
+
+I think this should be fixed anyway. Could you try the patch below?
+
+In any case swapper should be immune to signals, and its ->thread_group
+should be properly initiallized (the patch does only this).
+
+> [    3.595820]  [<c012b45b>] __group_send_sig_info+0x7b/0xa0
+> [    3.595820]  [<c012b5bd>] group_send_sig_info+0x5d/0x80
+> [    3.595820]  [<c012b628>] __kill_pgrp_info+0x48/0x70
+> [    3.595820]  [<c012b679>] kill_pgrp_info+0x29/0x40
+
+Looks like, you kernel is old. Any chance you can also test the recent
+kernel?
+
+> May be a minor bug, because it can be work around by calling setpgid(0,0)
+> in init
+
+setpgid(0,0) just moves the caller's pgrp from PGID 0, that is why it
+helps.
+
+> but I think it should be fixed, anyway.
+
+Completely agreed.
+
+> A reproducer is attached. It contains a substitute for init that triggers
+> the bug.
+
+Thanks.
+
+I didn't try it, but it looks overcomplicated to trigger this bug, or
+I missed something? Afaics, init could be just
+
+	int main(void)
+	{
+		kill(0, SIGGKILL);
+	}
+
+No?
+
+Oleg.
+
+We should also change INIT_SIGHAND, but _hopefully_ this is enough
+to fix the crash.
+
+--- x/include/linux/init_task.h
++++ x/include/linux/init_task.h
+@@ -172,6 +172,7 @@ extern struct cred init_cred;
+ 		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
+ 		[PIDTYPE_SID]  = INIT_PID_LINK(PIDTYPE_SID),		\
+ 	},								\
++	.thread_group	= LIST_HEAD_INIT(tsk.thread_group),		\
+ 	.dirties = INIT_PROP_LOCAL_SINGLE(dirties),			\
+ 	INIT_IDS							\
+ 	INIT_PERF_EVENTS(tsk)						\
+
+
