@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab0EINhm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 09:37:42 -0400
-Received: from amanaus.varma-el.com ([194.186.189.102]:39314 "EHLO
-	amanaus.varma-el.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab0EINhi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 09:37:38 -0400
-Message-ID: <4BE6BA7D.7030700@varma-el.com>
-Date: Sun, 09 May 2010 17:37:01 +0400
-From: Andrey Volkov <avolkov@varma-el.com>
-User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
-MIME-Version: 1.0
-To: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-CC: linuxppc-dev list <Linuxppc-dev@ozlabs.org>,
-       LKML <linux-kernel@vger.kernel.org>, David Gibson <dwg@au1.ibm.com>,
-       Sam Ravnborg <sam@ravnborg.org>, benh@kernel.crashing.org
-Subject: Re: Fix [e]glibc build process
-References: <4BE5C203.6060509@varma-el.com> <1273375269.5312.4.camel@norville.austin.ibm.com>
-In-Reply-To: <1273375269.5312.4.camel@norville.austin.ibm.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+	id S1753543Ab0EIOAj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 10:00:39 -0400
+Received: from sh.osrg.net ([192.16.179.4]:55276 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751839Ab0EIOAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 10:00:37 -0400
+Date: Sun, 9 May 2010 22:41:26 +0900
+To: konrad.wilk@oracle.com
+Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+       iommu@lists.linux-foundation.org, albert_herranz@yahoo.es,
+       linux@eikelenboom.it, chrisw@sous-sol.org, Ian.Campbell@eu.citrix.com,
+       jeremy@goop.org, dwmw2@infradead.org, alex.williamson@hp.com
+Subject: Re: [PATCH 5/6] swiotlb: Make swiotlb bookkeeping functions
+ visible in the header file.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1270672170-31833-6-git-send-email-konrad.wilk@oracle.com>
+References: <1270672170-31833-4-git-send-email-konrad.wilk@oracle.com>
+	<1270672170-31833-5-git-send-email-konrad.wilk@oracle.com>
+	<1270672170-31833-6-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100509224534X.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 09 May 2010 22:41:26 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Kleikamp wrote:
-> On Sat, 2010-05-08 at 23:56 +0400, Andrey Volkov wrote:
->   
->> This patch fix [e]glibc build process destruction (more precisely _assembler_
->> is die when try to compile getcontext.S since stdint.h coldn't be assembled)
->> intruduced by patch:
->>
->> commit: 162d92dfb79a0b5fc03380b8819fa5f870ebf1e
->> Date: Mon, 8 Feb 2010 11:51:05 +0000 (11:51 +0000)
->> from: Dave Kleikamp
->>
->> Signed-off-by: Andrey Volkov <avolkov@varma-el.com>
->>
->> ---
->>
->>  arch/powerpc/include/asm/ptrace.h |    2 ++
->>  1 files changed, 2 insertions(+), 0 deletions(-)
->>
->>
->> diff --git a/arch/powerpc/include/asm/ptrace.h b/arch/powerpc/include/asm/ptrace.h
->> index 9e2d84c..025912b 100644
->> --- a/arch/powerpc/include/asm/ptrace.h
->> +++ b/arch/powerpc/include/asm/ptrace.h
->> @@ -27,8 +27,10 @@
->>  #ifdef __KERNEL__
->>  #include <linux/types.h>
->>  #else
->> +#ifndef __ASSEMBLY__
->>  #include <stdint.h>
->>  #endif
->> +#endif
->>
->>  #ifndef __ASSEMBLY__
->>     
->
-> Assembly code won't need to pull in linux/types.h either, so this would
-> be simpler:
->   
-Questionable assertion. "linux/types.h" contain (indirectly) not only 
-types definitions, but some useful, for assembly, defines too.
-So patch, which Sam Ravnborg offered, is better for me (if it will work 
-certainly ;)).
+On Wed,  7 Apr 2010 16:29:29 -0400
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
---
-Andrey Volkov
+> We put the init, free, and functions dealing with the operations on
+> the SWIOTLB buffer at the top of the header. Also we export some of the
+> variables that are used by the dma_ops functions.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  include/linux/swiotlb.h |   33 +++++++++++++++++++++++++++++++++
+>  lib/swiotlb.c           |   42 ++++++++++++++++++++----------------------
+>  2 files changed, 53 insertions(+), 22 deletions(-)
 
-> Signed-off-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
->
-> diff --git a/arch/powerpc/include/asm/ptrace.h b/arch/powerpc/include/asm/ptrace.h
-> index 9e2d84c..0ed710e 100644
-> --- a/arch/powerpc/include/asm/ptrace.h
-> +++ b/arch/powerpc/include/asm/ptrace.h
-> @@ -24,14 +24,14 @@
->   * 2 of the License, or (at your option) any later version.
->   */
->  
-> +#ifndef __ASSEMBLY__
+
+> +extern void swiotlb_full(struct device *dev, size_t size,
+> +			 enum dma_data_direction dir, int do_panic);
 > +
->  #ifdef __KERNEL__
->  #include <linux/types.h>
->  #else
->  #include <stdint.h>
->  #endif
->  
-> -#ifndef __ASSEMBLY__
-> -
->  struct pt_regs {
->  	unsigned long gpr[32];
->  	unsigned long nip;
->
->   
 
+Please don't. You create a new IOMMU implementation with the helper
+function. We don't want another IOMMU implementation that has broken
+'overflow buffer' concept.
+
+swiotlb-xen should handle DMA mapping errors properly instead of
+calling swiotlb_full().
+
+btw, if you try to push xen swiotlb stuff to mainline, please don't
+put xen swiotlb stuff to include/linux/swiotlb.h.
