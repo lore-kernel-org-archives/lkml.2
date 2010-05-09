@@ -1,102 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab0EIJMQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 05:12:16 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:54653 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752564Ab0EIJMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 05:12:13 -0400
-Date: Sun, 9 May 2010 11:12:09 +0200
-From: Florian Mickler <florian@mickler.org>
+	id S1752881Ab0EIJMX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 05:12:23 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:57561 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab0EIJMP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 05:12:15 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4BE67C65.9080801@s5r6.in-berlin.de>
+Date: Sun, 09 May 2010 11:12:05 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100415 SeaMonkey/1.1.18
+MIME-Version: 1.0
 To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: [PATCH] scripts/get_maintainer.pl: add .get_maintainer.conf
- default options file
-Message-ID: <20100509111209.6c871a68@schatten.dmk.lab>
-In-Reply-To: <1273357609.704.70.camel@Joe-Laptop.home>
-References: <4BE46E7D.1040906@s5r6.in-berlin.de>
-	<1273354364-6016-1-git-send-email-florian@mickler.org>
-	<1273357609.704.70.camel@Joe-Laptop.home>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+CC: florian@mickler.org, Andrew Morton <akpm@linux-foundation.org>,
+       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] get_maintainer.pl: only list maintainers by default
+References: <1273354364-6016-1-git-send-email-florian@mickler.org>	 <1273354778-6129-1-git-send-email-florian@mickler.org>	 <1273358674.704.77.camel@Joe-Laptop.home>	 <4BE5F286.1020503@s5r6.in-berlin.de>	 <1273362666.704.104.camel@Joe-Laptop.home>	 <4BE60045.3040600@s5r6.in-berlin.de> <1273366633.704.109.camel@Joe-Laptop.home>
+In-Reply-To: <1273366633.704.109.camel@Joe-Laptop.home>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 08 May 2010 15:26:49 -0700
-Joe Perches <joe@perches.com> wrote:
+Joe Perches wrote:
+> I'd send you Linus' original email from 2007,
+> but you'd already commented on that, so for now,
+> unless you come up with some stats that support
+> your view, I'll stand by mine.
 
-> Allow the use of a .get_maintainer.conf file to control the
-> default options applied when scripts/get_maintainer.pl is run.
-> 
-> .get_maintainer.conf entries can be any valid argument.
-> 
-> Multiple lines may be used, blank lines ignored, # is a comment
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
- 
-probably worth noting, that an entry is of the form 
+I don't remember the particular mail of his that you refer to.  But I
+suspect he recommended to /look/ at the history, not exactly to /blindly
+grep/ through the history and Cc all addresses that got caught.
 
-"--cmdlinearg" 
-
-as that's unexpected for a config file.
-
-> ---
->  scripts/get_maintainer.pl |   24 ++++++++++++++++++++++++
->  1 files changed, 24 insertions(+), 0 deletions(-)
-> 
-> diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-> index 6f97a13..0c4c7e0 100755
-> --- a/scripts/get_maintainer.pl
-> +++ b/scripts/get_maintainer.pl
-> @@ -97,6 +97,30 @@ my %VCS_cmds_hg = (
->      "blame_commit_pattern" => "^([0-9a-f]+):"
->  );
->  
-> +if (-f ${lk_path}.get_maintainer.conf) {
-
-missing "" around the argument to -f ...
-
-i wouldn't put the trailing slash in the variables but add it when composing path's.
-but it seems this is the convention for get_maintainer.pl... 
-
-
- 
-
-> +    my @conf_args;
-> +    open(my $conffile, '<', "${lk_path}.get_maintainer.conf")
-> +	or warn "$P: Can't open .get_maintainer.conf: $!\n";
-> +    while (<$conffile>) {
-> +	my $line = $_;
-> +
-> +	$line =~ s/\s*\n?$//g;
-> +	$line =~ s/^\s*//g;
-> +	$line =~ s/\s+/ /g;
-> +
-> +	next if ($line =~ m/^\s*#/);
-> +	next if ($line =~ m/^\s*$/);
-> +
-> +	my @words = split(" ", $line);
-> +	foreach my $word (@words) {
-> +	    last if ($word =~ m/^#/);
-> +	    push (@conf_args, $word);
-> +	}
-> +    }
-> +    close($conffile);
-> +    unshift(@ARGV, @conf_args) if @conf_args;
-> +}
-
-this works.
-
-> +
->  if (!GetOptions(
->  		'email!' => \$email,
->  		'git!' => \$email_git,
-> 
-
-Reviewed-by:Florian Mickler <florian@mickler.org>
-
+If the thread starter had looked at the history of fs/eventpoll.c, he
+wouldn't have Cc'd me.  A 5 seconds glance at gitk fs/eventpoll.c would
+have sufficed.
+-- 
+Stefan Richter
+-=====-==-=- -=-= -=--=
+http://arcgraph.de/sr/
