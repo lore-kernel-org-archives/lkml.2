@@ -1,87 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750979Ab0EIEqG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 00:46:06 -0400
-Received: from mail-gx0-f217.google.com ([209.85.217.217]:55329 "EHLO
-	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab0EIEqC convert rfc822-to-8bit (ORCPT
+	id S1751039Ab0EIFpb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 01:45:31 -0400
+Received: from mail-in-18.arcor-online.net ([151.189.21.58]:44348 "EHLO
+	mail-in-18.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750842Ab0EIFp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 00:46:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=VGKnLcRVubD5qTIL1PPoE44hBEvwBWMw4H8mXPAdUusE8fEMT3HM9VmEedsDanQ+T9
-         CJBFY7FcxWY+VI39djV7sSxf2s09NtEmHK3VE/fPcyKQgQWGJnec77UTsYRtSOEwP416
-         FsZqOIGeMBRIFdviO6KJWF4ADwbrdeyZGjP4g=
-MIME-Version: 1.0
-In-Reply-To: <20100508223206.GA365@emlix.com>
-References: <1273142265-11929-1-git-send-email-os@emlix.com> 
-	<1273142265-11929-2-git-send-email-os@emlix.com> <g2j8bd0f97a1005061146l2b01e45do15bf46162e38ce84@mail.gmail.com> 
-	<20100507101544.GB25342@emlix.com> <w2w8bd0f97a1005071128o63fba35fl824cc997980fee03@mail.gmail.com> 
-	<20100508223206.GA365@emlix.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sun, 9 May 2010 00:45:41 -0400
-Message-ID: <l2u8bd0f97a1005082145te5965291q91a5daa01695e3d9@mail.gmail.com>
-Subject: Re: [PATCH] ad7877: keep dma rx buffers in seperate cache lines
-To: Johannes Weiner <jw@emlix.com>
-Cc: Oskar Schirmer <os@emlix.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       =?UTF-8?Q?Daniel_Gl=C3=B6ckner?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 9 May 2010 01:45:29 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-02.arcor-online.net 8BB1F11989B
+Subject: Re: [PATCH] HID: add chardev to propagate special events of Roccat
+ hardware to userland
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
+Reply-To: erazor_de@users.sourceforge.net
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Stephane Chatty <chatty@enac.fr>,
+       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, wylda@volny.cz,
+       Jerome Vidal <jerom3@free.fr>, Tejun Heo <tj@kernel.org>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1005071305350.9849@pobox.suse.cz>
+References: <1273161216.2343.6.camel@localhost>
+	 <alpine.LNX.2.00.1005071305350.9849@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 09 May 2010 07:45:23 +0200
+Message-ID: <1273383923.2278.17.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 8, 2010 at 18:32, Johannes Weiner wrote:
-> On Fri, May 07, 2010 at 02:28:16PM -0400, Mike Frysinger wrote:
->> On Fri, May 7, 2010 at 06:15, Oskar Schirmer wrote:
->> > On Thu, May 06, 2010 at 14:46:04 -0400, Mike Frysinger wrote:
->> >> On Thu, May 6, 2010 at 06:37, Oskar Schirmer wrote:
->> >> >  struct ser_req {
->> >> > +       u16                     sample;
->> >> > +       char                    __padalign[L1_CACHE_BYTES - sizeof(u16)];
->> >> > +
->> >> >        u16                     reset;
->> >> >        u16                     ref_on;
->> >> >        u16                     command;
->> >> > -       u16                     sample;
->> >> >        struct spi_message      msg;
->> >> >        struct spi_transfer     xfer[6];
->> >> >  };
->> >>
->> >> are you sure this is necessary ?  ser_req is only ever used with
->> >> spi_sync() and it's allocated/released on the fly, so how could
->> >> anything be reading that memory between the start of the transmission
->> >> and the return to adi7877 ?
->> >
->> > msg is handed over to spi_sync, it contains the addresses
->> > which will be used to programme the DMA: the spi master
->> > transfer function will read these fields to start DMA.
->>
->> so the issue is coming from the SPI master drivers and not the AD7877 driver
->
-> No, the issue is coming from ad7877 placing a transmission buffer
-> into the same cache line with memory locations that are accessed outside
-> the driver's scope.
+Am Freitag, den 07.05.2010, 13:10 +0200 schrieb Jiri Kosina:
+> On Thu, 6 May 2010, Stefan Achatz wrote:
+> 
+> > This Patch adds a chardev that is used to report special events
+> > like request for on-screen-display of actual mouse-setting informations,
+> > request for execution of macro sequences not stored in mouse.
+> > The device is as generic as possible so that the functionality is usable
+> > by all (kone and upcomming) roccat device drivers.
+> 
+> Hi Stefan,
+> 
+> what userspace application is supposed to process these events?
 
-you missed the point of my comment.  as i clearly explained in the
-other structure, the AD7877 driver was causing the cache desync.  here
-it is the SPI master that is implicitly causing it.  i'm not talking
-about the AD7877 being correct wrt to the implicit SPI/DMA
-requirements, just what code exactly is triggering the cache issues.
+Mine. It could be found at http://sourceforge.net/projects/roccat/ 
 
->  /*
->   * DMA (thus cache coherency maintainance) requires the
->   * transfer buffers to live in their own cache lines.
->   */
->   char         __padalign[...];
->
-> ?  It might be obvious what the code does, but I agree with
-> Mike that it might not be immediately apparent why it's needed.
+> > Also small improvements in kone driver are implemented as understanding
+> > of the device and kernel programming increases.
+> 
+> It would be nice to separate those out to standalone patches, please.
 
-comment looks fine once the spelling is fixed (maintenance).  thanks.
--mike
+Will rerelease as patchset after all points in this mail are addressed.
+
+> > --- a/drivers/hid/hid-roccat-kone.c
+> > +++ b/drivers/hid/hid-roccat-kone.c
+> > @@ -37,6 +37,7 @@
+> >  #include <linux/module.h>
+> >  #include <linux/slab.h>
+> >  #include "hid-ids.h"
+> > +#include "hid-roccat.h"
+> >  #include "hid-roccat-kone.h"
+> >  
+> >  static void kone_set_settings_checksum(struct kone_settings *settings)
+> > @@ -630,7 +631,7 @@ static ssize_t kone_sysfs_set_startup_profile(struct device *dev,
+> >  static ssize_t kone_sysfs_show_driver_version(struct device *dev,
+> >  		struct device_attribute *attr, char *buf)
+> >  {
+> > -	return snprintf(buf, PAGE_SIZE, DRIVER_VERSION "\n");
+> > +	return snprintf(buf, PAGE_SIZE, ROCCAT_KONE_DRIVER_VERSION "\n");
+> 
+> Do we really want to keep this kind of driver versioning? Git provided 
+> much more fine-graned versioning anyway. What is it needed for?
+
+My comment to function kone_sysfs_show_driver_version states:
+/*
+ * This file is used by userland software to find devices that are handled by
+ * this driver. This provides a consistent way for actual and older kernels
+ * where this driver replaced usbhid instead of generic-usb.
+ * Driver capabilities are determined by version number.
+ */
+
+> > new file mode 100644
+> > index 0000000..e05d48e
+> > --- /dev/null
+> > +++ b/drivers/hid/hid-roccat.c
+> > @@ -0,0 +1,428 @@
+> > +/*
+> > + * Roccat driver for Linux
+> > + *
+> > + * Copyright (c) 2010 Stefan Achatz <erazor_de@users.sourceforge.net>
+> > + */
+> > +
+> > +/*
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms of the GNU General Public License as published by the Free
+> > + * Software Foundation; either version 2 of the License, or (at your option)
+> > + * any later version.
+> > + */
+> > +
+> > +/*
+> > + * Module roccat is a char device used to report special events of roccat
+> > + * hardware to userland. These events include requests for on-screen-display of
+> > + * profile or dpi settings or requests for execution of macro sequences that are
+> > + * not stored in device. The information in these events depends on hid device
+> > + * implementation and contains data that is not available in a single hid event
+> > + * or else hidraw could have been used.
+> > + * It is inspired by hidraw, but uses only one circular buffer for all readers.
+> 
+> This information could maybe go into the kernel changelog as well. For 
+> someone not familiar with the driver layout, the difference between 
+> 'roccat' and 'roccat-kone' might be very difficult to understand.
+
+How or where do I do this?
+
+> Thanks,
+
+Also thanks.
+Stefan
+
