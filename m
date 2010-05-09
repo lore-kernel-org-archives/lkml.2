@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab0EILeZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 07:34:25 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:37887 "EHLO trinity.fluff.org"
+	id S1753505Ab0EILrx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 07:47:53 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:42785 "EHLO mail.issp.bas.bg"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab0EILeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 07:34:23 -0400
-Date: Sun, 9 May 2010 12:34:20 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: linux-i2c@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       uclinux-dist-devel@blackfin.uclinux.org,
-       Michael Hennerich <michael.hennerich@analog.com>
-Subject: Re: [PATCH] i2c-bfin-twi: handle faulty slave devices better
-Message-ID: <20100509113420.GB2589@trinity.fluff.org>
-References: <1273403087-3326-1-git-send-email-vapier@gentoo.org>
+	id S1751745Ab0EILrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 07:47:49 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+To: Greg KH <greg@kroah.com>
+Subject: [PATCH][BUG] staging/dt3155v4l correcting a bug
+Date: Sun, 9 May 2010 14:50:40 +0300
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1273403087-3326-1-git-send-email-vapier@gentoo.org>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+Message-Id: <201005091450.40482.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 09, 2010 at 07:04:47AM -0400, Mike Frysinger wrote:
-> From: Michael Hennerich <michael.hennerich@analog.com>
-> 
-> Faulty slave devices might drive SDA low after a transfer finishes.  So,
-> when this scenario is detected, have the master generate up to 8 extra
-> clocks until the SDA is properly released.
-> 
-> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-> ---
-> Note: this requires the existing Blackfin TWI patches already sent out
+Hi Greg,
 
-hmm, it is late in the -rc series for anything other than critical
-bugfixes, will update series tomorrow.
- 
->  drivers/i2c/busses/i2c-bfin-twi.c |   22 ++++++++++++++++++++++
->  1 files changed, 22 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
-> index fb26e5c..f9c05e1 100644
-> --- a/drivers/i2c/busses/i2c-bfin-twi.c
-> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
-> @@ -20,6 +20,7 @@
->  #include <linux/completion.h>
->  #include <linux/interrupt.h>
->  #include <linux/platform_device.h>
-> +#include <linux/delay.h>
->  
->  #include <asm/blackfin.h>
->  #include <asm/portmux.h>
-> @@ -159,6 +160,27 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
->  		if (mast_stat & BUFWRERR)
->  			dev_dbg(&iface->adap.dev, "Buffer Write Error\n");
->  
-> +		/* Faulty salve devices, may drive SDA low after a transfer
-spello: slave
+dt3155v4l driver, as in -rc6-next-20100506 has a BUG.
+When it modifies q->int_ops structure in videobuf-dma-contig
+module the change is visible for all other modules using it.
 
-> +		 * finishes. To release the bus this code generates up to 8
-> +		 * extra clocks until SDA is released.
-> +		 */
-> +
-> +		if (read_MASTER_STAT(iface) & SDASEN) {
-> +			int cnt = 8;
-> +			do {
-> +				write_MASTER_CTL(iface, SCLOVR);
-> +				udelay(6);
-> +				write_MASTER_CTL(iface, 0);
-> +				udelay(6);
-> +			} while ((read_MASTER_STAT(iface) & SDASEN) && cnt--);
-> +
-> +			write_MASTER_CTL(iface, SDAOVR | SCLOVR);
-> +			udelay(6);
-> +			write_MASTER_CTL(iface, SDAOVR);
-> +			udelay(6);
-> +			write_MASTER_CTL(iface, 0);
-> +		}
-> +
->  		/* If it is a quick transfer, only address without data,
->  		 * not an err, return 1.
->  		 */
-> -- 
-> 1.7.1
-> 
+Make a local copy of this structure and use its modification
+to solve the bug.
 
--- 
--- 
-Ben
+This patch has to be applied after the synchronization patch.
 
-Q:      What's a light-year?
-A:      One-third less calories than a regular year.
+Please, apply.
 
+Thanks.
+
+Marin Mitov
+
+Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
+
+
+==========================================================
+diff -up b/drivers/staging/dt3155v4l/dt3155v4l.c a/drivers/staging/dt3155v4l/dt3155v4l.c
+--- a/drivers/staging/dt3155v4l/dt3155v4l.c	2010-05-07 10:02:26.000000000 +0300
++++ b/drivers/staging/dt3155v4l/dt3155v4l.c	2010-05-09 14:04:05.000000000 +0300
+@@ -612,9 +612,14 @@ dt3155_queue_dma_contig_init(struct vide
+ 					unsigned int msize,
+ 					void *priv)
+ {
++	struct dt3155_priv *pd = q->priv_data;
++
+ 	videobuf_queue_dma_contig_init(q, ops, dev, irqlock,
+ 				       type, field, msize, priv);
+-	/* overwrite with our methods */
++	/* replace with local copy */
++	pd->qt_ops = *q->int_ops;
++	q->int_ops = &pd->qt_ops;
++	/* and overwrite with our methods */
+ 	q->int_ops->iolock = dt3155_iolock;
+ 	q->int_ops->mmap_mapper = dt3155_mmap_mapper;
+ 	q->int_ops->sync = dt3155_sync_for_cpu;
+diff -up b/drivers/staging/dt3155v4l/dt3155v4l.h a/drivers/staging/dt3155v4l/dt3155v4l.h
+--- a/drivers/staging/dt3155v4l/dt3155v4l.h	2010-04-30 17:59:03.000000000 +0300
++++ b/drivers/staging/dt3155v4l/dt3155v4l.h	2010-05-09 13:59:37.000000000 +0300
+@@ -185,6 +185,7 @@ struct dt3155_stats {
+  * @curr_buf:		pointer to curren buffer
+  * @thread		pointer to worker thraed
+  * @irq_handler:	irq handler for the driver
++ * @qt_ops		local copy of dma-contig qtype_ops
+  * @dmaq		queue for dma buffers
+  * @do_dma		wait queue of the kernel thread
+  * @mux:		mutex to protect the instance
+@@ -204,6 +205,7 @@ struct dt3155_priv {
+ 	struct videobuf_buffer *curr_buf;
+ 	struct task_struct *thread;
+ 	irq_handler_t irq_handler;
++	struct videobuf_qtype_ops qt_ops;
+ 	struct list_head dmaq;
+ 	wait_queue_head_t do_dma;
+ 	struct mutex mux;
