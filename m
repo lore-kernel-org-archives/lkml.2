@@ -1,218 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab0EIRMS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 13:12:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42987 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754595Ab0EIRMO (ORCPT
+	id S1751601Ab0EIR07 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 13:26:59 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:64807 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab0EIR05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 13:12:14 -0400
+	Sun, 9 May 2010 13:26:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=MWye8B0cSip8etlOxv6Ffmzvb1h6rhjM/WDm+0tcRwmwv8EV78uTxXhc8Fuw4IBH9q
-         4MCiJL/S1bj68zIixOZ4ghfO8AuRjl9GKvmc0Yysf/aJ6MJVEGJpR+uJUEkEGgcvRyhh
-         vEVmBCjngT0sl5nwUD/Cjf2a0YZaOQbgJ5X+A=
-From: "Prashant P. Shah" <pshah.mumbai@gmail.com>
-To: gregkh@suse.de
-Cc: akpm@linux-foundation.org, pe1dnn@amsat.org,
-       ext-andriy.shevchenko@nokia.com, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org,
-       "Prashant P. Shah" <pshah.mumbai@gmail.com>
-Subject: [PATCH] Staging: wlags49_h2: fixed C99 comments style issues in wl_profile.c
-Date: Sun,  9 May 2010 22:42:04 +0530
-Message-Id: <1273425124-6750-1-git-send-email-pshah.mumbai@gmail.com>
-X-Mailer: git-send-email 1.6.0.4
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=PAQihARz7zFzqU/xIs0FDPDJR/1jFUe79JRCmrTO6tgV7A3tidGHYiuoZVBVquo37W
+         45sV90bUKe9aocMNXkQJI5cK4Ij9Lk8PwNzMAbp35DeuM7qIxz8NnLXhbCWa7Cs44KGj
+         LJG75siJy2GTi/VDaPFDiK0q5VZIjOdC+Bcjc=
+MIME-Version: 1.0
+In-Reply-To: <l2r1b68c6791005090306ld948bebfqa1e7d22321e302aa@mail.gmail.com>
+References: <1272848060-28049-1-git-send-email-linus.walleij@stericsson.com>
+	 <20100507093256.GB19936@n2100.arm.linux.org.uk>
+	 <x2j63386a3d1005070443yfadbaf3ct8686a8f7aae6412f@mail.gmail.com>
+	 <j2r1b68c6791005070531u57b4b1basc56d45d0e06b1d04@mail.gmail.com>
+	 <k2k63386a3d1005070910kcdb516dcga60c24043b1b44de@mail.gmail.com>
+	 <m2u1b68c6791005071937s5b2bbb60p6de395a6c06a963e@mail.gmail.com>
+	 <w2re9c3a7c21005081524z2a52a078nad8d316553dfde80@mail.gmail.com>
+	 <l2j1b68c6791005082048j5deaf863g2887c968ff841f2f@mail.gmail.com>
+	 <h2ie9c3a7c21005090047lf1157930t9a625073c87e8cea@mail.gmail.com>
+	 <l2r1b68c6791005090306ld948bebfqa1e7d22321e302aa@mail.gmail.com>
+Date: Sun, 9 May 2010 10:26:26 -0700
+X-Google-Sender-Auth: ab295d01e74a4d27
+Message-ID: <k2le9c3a7c21005091026y9140dd46i8020c49ebef7c06c@mail.gmail.com>
+Subject: Re: [PATCH 0/7] DMAENGINE: fixes and PrimeCells
+From: Dan Williams <dan.j.williams@intel.com>
+To: jassi brar <jassisinghbrar@gmail.com>
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       Ben Dooks <ben-linux@fluff.org>, linux-mmc@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the wl_profile.c file that fixes the C99 comments
-style issues found by the checkpatch.pl tool.
+On Sun, May 9, 2010 at 3:06 AM, jassi brar <jassisinghbrar@gmail.com> wrote:
+> This discussion is purely about what the current DMA API misses and what
+> a generic DMA API should do. So, that the current DMA API fills up those
+> gap, if possible. I would love to get started implementing the generic
+> DMA API for reference but my priorities are decided by my employer.
 
-Signed-off-by: Prashant P. Shah <pshah.mumbai@gmail.com>
----
- drivers/staging/wlags49_h2/wl_profile.c |   54 +++++++++++++++---------------
- 1 files changed, 27 insertions(+), 27 deletions(-)
+Well, the only significant miss that has been identified so far is
+dynamic channel allocation for the device-to-mem case.  Everything
+else can be done with small tweaks to the existing interface.  But
+some of this discussion reminds me of Section 2.4 of
+Documentaion/SubmittingPatches:
 
-diff --git a/drivers/staging/wlags49_h2/wl_profile.c b/drivers/staging/wlags49_h2/wl_profile.c
-index 13ade70..4a3b64d 100644
---- a/drivers/staging/wlags49_h2/wl_profile.c
-+++ b/drivers/staging/wlags49_h2/wl_profile.c
-@@ -91,7 +91,7 @@
- 
- #include <debug.h>
- #include <hcf.h>
--//#include <hcfdef.h>
-+/* #include <hcfdef.h> */
- 
- #include <wl_if.h>
- #include <wl_internal.h>
-@@ -118,17 +118,17 @@ int parse_yes_no(char *value);
- 
- int parse_yes_no(char *value)
- {
--int rc = 0;										//default to NO for invalid parameters
-+int rc = 0;										/* default to NO for invalid parameters */
- 
- 	if (strlen(value) == 1) {
- 		if ((value[0] | ('Y'^'y')) == 'y')
- 			rc = 1;
--//	} else {
--//		this should not be debug time info, it is an enduser data entry error ;?
--//		DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_MICROWAVE_ROBUSTNESS);
-+/*	} else {
-+		this should not be debug time info, it is an enduser data entry error ;?
-+		DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_MICROWAVE_ROBUSTNESS); */
- 	}
- 	return rc;
--} // parse_yes_no
-+} /* parse_yes_no */
- 
- 
- /*******************************************************************************
-@@ -154,10 +154,10 @@ int rc = 0;										//default to NO for invalid parameters
- void parse_config(struct net_device *dev)
- {
- 	int				    file_desc;
--#if 0 // BIN_DL
-+#if 0 /* BIN_DL */
- 	int				rc;
- 	char				*cp = NULL;
--#endif // BIN_DL
-+#endif /* BIN_DL */
- 	char                buffer[MAX_LINE_SIZE];
- 	char                filename[MAX_LINE_SIZE];
- 	mm_segment_t	    fs;
-@@ -192,7 +192,7 @@ void parse_config(struct net_device *dev)
- 		while (readline(file_desc, buffer))
- 			translate_option(buffer, wvlan_config);
- 		/* Close the file */
--		close(file_desc);	//;?even if file_desc == -1 ???
-+		close(file_desc);	/* ;?even if file_desc == -1 ??? */
- 	} else {
- 		DBG_TRACE(DbgInfo, "No iwconfig file found for this device; "
- 				   "config.opts or wireless.opts will be used\n");
-@@ -235,19 +235,19 @@ void parse_config(struct net_device *dev)
- 	memcpy(&wvlan_config->DefaultKeys, &sEncryption.EncStr,
- 			sizeof(CFG_DEFAULT_KEYS_STRCT));
- 
--#if 0 //BIN_DL
-+#if 0 /* BIN_DL */
- 		/* Obtain a user-space process context, storing the original context */
- 		fs = get_fs();
- 		set_fs(get_ds());
- 
--		//;?just to fake something
-+		/* ;?just to fake something */
- 		strcpy(/*wvlan_config->fw_image_*/filename, "/etc/agere/fw.bin");
- 		file_desc = open(/*wvlan_config->fw_image_*/filename, 0, 0);
- 		if (file_desc == -1) {
- 			DBG_ERROR(DbgInfo, "No image file found\n");
- 		} else {
- 			DBG_TRACE(DbgInfo, "F/W image file found\n");
--#define DHF_ALLOC_SIZE 96000			//just below 96K, let's hope it suffices for now and for the future
-+#define DHF_ALLOC_SIZE 96000			/* just below 96K, let's hope it suffices for now and for the future */
- 			cp = (char *)vmalloc(DHF_ALLOC_SIZE);
- 			if (cp == NULL) {
- 				DBG_ERROR(DbgInfo, "error in vmalloc\n");
-@@ -270,11 +270,11 @@ void parse_config(struct net_device *dev)
- 			close(file_desc);
- 		}
- 		set_fs(fs);			/* Return to the original context */
--#endif // BIN_DL
-+#endif /* BIN_DL */
- 
- 	DBG_LEAVE(DbgInfo);
- 	return;
--} // parse_config
-+} /* parse_config */
- 
- /*******************************************************************************
-  *	readline()
-@@ -322,7 +322,7 @@ int readline(int filedesc, char *buffer)
- 		return result;
- 	else
- 		return bytes_read;
--} // readline
-+} /* readline */
- /*============================================================================*/
- 
- /*******************************************************************************
-@@ -381,9 +381,9 @@ void translate_option(char *buffer, struct wl_private *lp)
- 				DbgInfo->DebugFlag |= DBG_DEFAULTS;
- 			}
- 		} else {
--			DbgInfo->DebugFlag = simple_strtoul(value, NULL, 0); //;?DebugFlag;
-+			DbgInfo->DebugFlag = simple_strtoul(value, NULL, 0); /* ;?DebugFlag; */
- 		}
--		DbgInfo->DebugFlag = simple_strtoul(value, NULL, 0); //;?Delete ASAP
-+		DbgInfo->DebugFlag = simple_strtoul(value, NULL, 0); /* ;?Delete ASAP */
- 	}
- #endif /* DBG */
- 	if (strcmp(key, PARM_NAME_AUTH_KEY_MGMT_SUITE) == 0) {
-@@ -602,10 +602,10 @@ void translate_option(char *buffer, struct wl_private *lp)
- 	/* Need to add? : Country code, Short/Long retry */
- 
- 	/* Configuration parameters specific to STA mode */
--#if 1 //;? (HCF_TYPE) & HCF_TYPE_STA
--//;?seems reasonable that even an AP-only driver could afford this small additional footprint
-+#if 1 /* ;? (HCF_TYPE) & HCF_TYPE_STA */
-+/* ;?seems reasonable that even an AP-only driver could afford this small additional footprint */
- 	if (CNV_INT_TO_LITTLE(lp->hcfCtx.IFB_FWIdentity.comp_id) == COMP_ID_FW_STA) {
--					//;?should we return an error status in AP mode
-+					/* ;?should we return an error status in AP mode */
- 		if (strcmp(key, PARM_NAME_PORT_TYPE) == 0) {
- 			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_PORT_TYPE, value);
- 
-@@ -625,7 +625,7 @@ void translate_option(char *buffer, struct wl_private *lp)
- 				lp->PMEnabled = value_convert;
- 			} else {
- 				DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_PM_ENABLED);
--				//;?this is a data entry error, hence not a DBG_WARNING
-+				/* ;?this is a data entry error, hence not a DBG_WARNING */
- 			}
- 		} else if (strcmp(key, PARM_NAME_CREATE_IBSS) == 0) {
- 			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_CREATE_IBSS, value);
-@@ -690,8 +690,8 @@ void translate_option(char *buffer, struct wl_private *lp)
- #endif  /* (HCF_TYPE) & HCF_TYPE_STA */
- 
- 	/* Configuration parameters specific to AP mode */
--#if 1 //;? (HCF_TYPE) & HCF_TYPE_AP
--		//;?should we restore this to allow smaller memory footprint
-+#if 1 /* ;? (HCF_TYPE) & HCF_TYPE_AP */
-+		/* ;?should we restore this to allow smaller memory footprint */
- 	if (CNV_INT_TO_LITTLE(lp->hcfCtx.IFB_FWIdentity.comp_id) == COMP_ID_FW_AP) {
- 		if (strcmp(key, PARM_NAME_OWN_DTIM_PERIOD) == 0) {
- 			DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_OWN_DTIM_PERIOD, value);
-@@ -876,7 +876,7 @@ void translate_option(char *buffer, struct wl_private *lp)
- #endif  /* (HCF_TYPE) & HCF_TYPE_AP */
- 
- 	return;
--} // translate_option
-+} /* translate_option */
- /*============================================================================*/
- 
- /*******************************************************************************
-@@ -932,7 +932,7 @@ int parse_mac_address(char *value, u_char *byte_array)
- 	/* Use the array_offset as a check; 6 bytes should be written to the
- 	   byte_array */
- 	return array_offset;
--} // parse_mac_address
-+} /* parse_mac_address */
- /*============================================================================*/
- 
- /*******************************************************************************
-@@ -1006,7 +1006,7 @@ void ParseConfigLine(char *pszLine, char **ppszLVal, char **ppszRVal)
- 		}
- 	}
- 	DBG_LEAVE(DbgInfo);
--} // ParseConfigLine
-+} /* ParseConfigLine */
- /*============================================================================*/
- 
--#endif  // USE_PROFILE
-+#endif  /* USE_PROFILE */
--- 
-1.6.0.4
+4) Don't over-design.
 
+Don't try to anticipate nebulous future cases which may or may not
+be useful:  "Make it as simple as you can, and no simpler."
+
+Let's just wait for the code before outlining what can and cannot be
+done, especially given where we started [1].
+
+--
+Dan
+
+[1]: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=include/linux/dmaengine.h;hb=v2.6.18#l160
