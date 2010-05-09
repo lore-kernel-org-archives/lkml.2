@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853Ab0EIVJB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 17:09:01 -0400
-Received: from mga06.intel.com ([134.134.136.21]:11449 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751397Ab0EIVJA (ORCPT
+	id S1751535Ab0EIVJs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 17:09:48 -0400
+Received: from mga10.intel.com ([192.55.52.92]:41882 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751228Ab0EIVJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 17:09:00 -0400
+	Sun, 9 May 2010 17:09:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,358,1270450800"; 
-   d="scan'208";a="516399123"
-Date: Sun, 9 May 2010 23:09:41 +0200
+   d="scan'208";a="565558690"
+Date: Sun, 9 May 2010 23:10:30 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Todd Fischer <todd.fischer@ridgerun.com>, linux-kernel@vger.kernel.org,
-       davinci-linux-open-source@linux.davincidsp.com, lrg@slimlogic.co.uk,
-       broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 4/4]-V3 Add MFD driver for TPS6507x family of
- multi-function chips and move TPS6507x regulator driver from being
- stand-alone to using the MFD driver.
-Message-ID: <20100509210940.GA3269@sortiz.org>
-References: <1270520639-20516-1-git-send-email-todd.fischer@ridgerun.com>
- <1270520639-20516-2-git-send-email-todd.fischer@ridgerun.com>
- <1270520639-20516-3-git-send-email-todd.fischer@ridgerun.com>
- <1270520639-20516-4-git-send-email-todd.fischer@ridgerun.com>
- <1270520639-20516-5-git-send-email-todd.fischer@ridgerun.com>
- <87633kacmq.fsf@deeprootsystems.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: WM8350: remove incorrect kfree
+Message-ID: <20100509211029.GB3269@sortiz.org>
+References: <1271864165-8096-1-git-send-email-rabin@rab.in>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87633kacmq.fsf@deeprootsystems.com>
+In-Reply-To: <1271864165-8096-1-git-send-email-rabin@rab.in>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+Hi Vincent,
 
-On Wed, Apr 21, 2010 at 11:23:09AM -0700, Kevin Hilman wrote:
-> Todd Fischer <todd.fischer@ridgerun.com> writes:
-> 
-> > Add MFD driver for TPS6507x family of multi-function chips.  Move TPS6507x 
-> > regulator driver from being stand-alone driver to using the MFD TPS6507x driver.
-> >
-> > Signed-off-by: Todd Fischer <todd.fischer@ridgerun.com>
-> 
-> [...]
-> 
-> Not sure whose tree this is queued in currently, but testing with
-> current davinci git, I had a compile problem...
-This is fixed in the MFD tree.
+On Wed, Apr 21, 2010 at 09:06:05PM +0530, Rabin Vincent wrote:
+> The i2c_client received in probe() should not be kfree()'d.
+Patch applied, many thanks.
 
 Cheers,
 Samuel.
+
+
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
+> ---
+>  drivers/mfd/wm8350-i2c.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mfd/wm8350-i2c.c b/drivers/mfd/wm8350-i2c.c
+> index 65830f5..5fe5de1 100644
+> --- a/drivers/mfd/wm8350-i2c.c
+> +++ b/drivers/mfd/wm8350-i2c.c
+> @@ -64,10 +64,8 @@ static int wm8350_i2c_probe(struct i2c_client *i2c,
+>  	int ret = 0;
+>  
+>  	wm8350 = kzalloc(sizeof(struct wm8350), GFP_KERNEL);
+> -	if (wm8350 == NULL) {
+> -		kfree(i2c);
+> +	if (wm8350 == NULL)
+>  		return -ENOMEM;
+> -	}
+>  
+>  	i2c_set_clientdata(i2c, wm8350);
+>  	wm8350->dev = &i2c->dev;
+> -- 
+> 1.7.0.4
+> 
 
 -- 
 Intel Open Source Technology Centre
