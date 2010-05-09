@@ -1,101 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab0EIXnj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 19:43:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34247 "EHLO smtps.tip.net.au"
+	id S1754549Ab0EIXsY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 19:48:24 -0400
+Received: from crca.org.au ([74.207.252.120]:40810 "EHLO crca.org.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753721Ab0EIXne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 19:43:34 -0400
-Date: Mon, 10 May 2010 09:43:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the wireless-current tree with a fix up
- patch
-Message-Id: <20100510094332.9b1114f8.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752657Ab0EIXsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 19:48:22 -0400
+X-Bogosity: Ham, spamicity=0.000006
+Message-ID: <4BE749C2.50300@crca.org.au>
+Date: Mon, 10 May 2010 09:48:18 +1000
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Len Brown <lenb@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+       Linux Power Management List <linux-pm@lists.osdl.org>
+Subject: Re: 2.6.33 & 2.6.34-rc6: Huge number of Load Balancing tick wakeups.
+References: <4BE4F5DF.70903@crca.org.au> <alpine.LFD.2.00.1005081511550.4103@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1005081511550.4103@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+Hi again.
 
-Today's linux-next merge of the wireless-current tree got a conflict in
-drivers/net/wireless/ath/ar9170/usb.c between a fix I am carrying in the
-linux-next tree and commit 160b82420ab41f1e67fbf2e56dc587837ef39ce0
-("ar9170: wait for asynchronous firmware loading") from the
-wireless-current tree.
+On 09/05/10 05:16, Len Brown wrote:
+> What do you see if vmware is not present?
+> What do you see if you boot single user mode,
+> how about with maxcpusx=1?
 
-I fixed it up (see at the bottom or this email).
+Repeated the tests, just booting into X (xfce) - except for the init S 
+test. No programs were started and wifi was turned off.
 
-John, can you put this following small patch in your wireless-current
-tree, please?  This is to cope with an upcoming API change and applies to
-Linus' tree (the device_lock/unlock wrappers are already in Linus' tree).
+1) No vmware (etc)
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 3 Mar 2010 17:08:11 +1100
-Subject: [PATCH] ar9170: fix for driver-core ABI change
+Cn                Avg residency
+C0 (cpu running)        ( 3.7%)
+polling           0.0ms ( 0.0%)
+C1 mwait          0.0ms ( 0.0%)
+C2 mwait          0.1ms ( 0.3%)
+C4 mwait          5.4ms (96.0%)
+P-states (frequencies)
+Turbo Mode     1.4%
+   2.21 Ghz     0.0%
+   1.60 Ghz     0.0%
+   1200 Mhz     0.0%
+    800 Mhz    98.6%
+Wakeups-from-idle per second : 202.7    interval: 15.0s
+no ACPI power usage estimate available
+Top causes for wakeups:
+   56.1% (128.5)   [kernel scheduler] Load balancing tick
+   13.1% ( 30.1)   [extra timer interrupt]
+    6.9% ( 15.9)   [ata_piix] <interrupt>
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/wireless/ath/ar9170/usb.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+2) Above + maxcpus=1
 
-diff --git a/drivers/net/wireless/ath/ar9170/usb.c b/drivers/net/wireless/ath/ar9170/usb.c
-index 4e30197..7fc1034 100644
---- a/drivers/net/wireless/ath/ar9170/usb.c
-+++ b/drivers/net/wireless/ath/ar9170/usb.c
-@@ -41,6 +41,7 @@
- #include <linux/usb.h>
- #include <linux/firmware.h>
- #include <linux/etherdevice.h>
-+#include <linux/device.h>
- #include <net/mac80211.h>
- #include "ar9170.h"
- #include "cmd.h"
-@@ -726,10 +727,10 @@ static void ar9170_usb_firmware_failed(struct ar9170_usb *aru)
- 
- 	/* unbind anything failed */
- 	if (parent)
--		down(&parent->sem);
-+		device_lock(parent);
- 	device_release_driver(&aru->udev->dev);
- 	if (parent)
--		up(&parent->sem);
-+		device_unlock(parent);
- }
- 
- static void ar9170_usb_firmware_finish(const struct firmware *fw, void *context)
--- 
-1.7.0
+Cn                Avg residency
+C0 (cpu running)        ( 4.0%)
+polling           0.0ms ( 0.0%)
+C1 mwait          0.0ms ( 0.0%)
+C2 mwait          0.4ms ( 0.2%)
+C4 mwait         16.0ms (95.9%)
+P-states (frequencies)
+Turbo Mode     6.0%
+   2.21 Ghz     0.0%
+   1.60 Ghz     0.0%
+   1200 Mhz     0.0%
+    800 Mhz    94.0%
+Wakeups-from-idle per second : 64.5     interval: 15.0s
+no ACPI power usage estimate available
+Top causes for wakeups:
+   39.6% ( 46.3)   [kernel scheduler] Load balancing tick
+   12.3% ( 14.3)   [ata_piix] <interrupt>
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+(No idea why you need a load balancing tick with one core!)
 
-diff --cc drivers/net/wireless/ath/ar9170/usb.c
-index 5f0477b,24dc555..0000000
---- a/drivers/net/wireless/ath/ar9170/usb.c
-+++ b/drivers/net/wireless/ath/ar9170/usb.c
-@@@ -728,12 -726,16 +728,16 @@@ static void ar9170_usb_firmware_failed(
-  {
-  	struct device *parent = aru->udev->dev.parent;
-  
-+ 	complete(&aru->firmware_loading_complete);
-+ 
-  	/* unbind anything failed */
-  	if (parent)
- -		down(&parent->sem);
- +		device_lock(parent);
-  	device_release_driver(&aru->udev->dev);
-  	if (parent)
- -		up(&parent->sem);
- +		device_unlock(parent);
-+ 
-+ 	usb_put_dev(aru->udev);
-  }
-  
-  static void ar9170_usb_firmware_finish(const struct firmware *fw, void *context)
+3) Init S, without maxcpus=1
+
+Cn                Avg residency
+C0 (cpu running)        ( 0.0%)
+polling           0.0ms ( 0.0%)
+C1 mwait          0.0ms ( 0.0%)
+C2 mwait          0.1ms ( 0.0%)
+C4 mwait         48.9ms (100.0%)
+P-states (frequencies)
+Turbo Mode     0.0%
+   2.21 Ghz     0.0%
+   1.60 Ghz     0.0%
+   1200 Mhz     0.0%
+    800 Mhz   100.0%
+Wakeups-from-idle per second : 21.4     interval: 15.0s
+no ACPI power usage estimate available
+Top causes for wakeups:
+   33.5% ( 10.3)   [kernel core] hrtimer_start (tick_sched_timer)
+   16.1% (  4.9)   [kernel core] cursor_timer_handler (cursor_timer_handler)
+   15.9% (  4.9)   [kernel scheduler] Load balancing tick
+   12.8% (  3.9)   [kernel core] usb_hcd_poll_rh_status (rh_timer_func)
+    9.3% (  2.9)   [ahci] <interrupt>
+
+I also tried the patch Dominik provided, and it didn't seem to make a 
+difference:
+
+P-states (frequencies)
+Turbo Mode     3.7%
+   2.21 Ghz     0.0%
+   1.60 Ghz     0.0%
+   1200 Mhz     0.6%
+    800 Mhz    95.7%
+Wakeups-from-idle per second : 236.7    interval: 15.0s
+no ACPI power usage estimate available
+Top causes for wakeups:
+   55.4% (119.7)   [kernel scheduler] Load balancing tick
+    9.7% ( 20.9)   skype
+    7.7% ( 16.5)   [ata_piix] <interrupt>
+
+Regards,
+
+Nigel
