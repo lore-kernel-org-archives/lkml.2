@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab0EIWEI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 18:04:08 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33270 "EHLO ogre.sisk.pl"
+	id S1754486Ab0EIWGi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 18:06:38 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33301 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753359Ab0EIWD7 convert rfc822-to-8bit (ORCPT
+	id S1753596Ab0EIWEb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 18:03:59 -0400
+	Sun, 9 May 2010 18:04:31 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Sergey Senozhatsky" <sergey.senozhatsky@gmail.com>
+       "Daniel J Blueman" <daniel.blueman@gmail.com>
 References: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
 In-Reply-To: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <HqroMXsT-CJ.A.D0F.m-y5LB@chimera>
-Subject: [Bug #15704] [r8169] WARNING: at net/sched/sch_generic.c
+Message-ID: <HqroMXsT-CJ.A.X9E.e9y5LB@chimera>
+Subject: [Bug #15858] [2.6.34-rc5] bad page state copying to/from HFS+ filesystem...
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun,  9 May 2010 23:17:34 +0200 (CEST)
+Date: Sun,  9 May 2010 23:17:36 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,11 +33,11 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15704
-Subject		: [r8169] WARNING: at net/sched/sch_generic.c
-Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Date		: 2010-03-31 10:21 (40 days old)
-Message-ID	: <<<20100331102142.GA3294@swordfish.minsk.epam.com>>>
-References	: http://marc.info/?l=linux-kernel&m=127003090406108&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15858
+Subject		: [2.6.34-rc5] bad page state copying to/from HFS+ filesystem...
+Submitter	: Daniel J Blueman <daniel.blueman@gmail.com>
+Date		: 2010-04-25 21:14 (15 days old)
+Message-ID	: <v2k6278d2221004251414kbbcc41baw78b86120d81dce7d@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127223008621881&w=2
 
 
