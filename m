@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab0EIWGF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 18:06:05 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33314 "EHLO ogre.sisk.pl"
+	id S1754442Ab0EIWGI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 18:06:08 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33306 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753849Ab0EIWEh convert rfc822-to-8bit (ORCPT
+	id S1753595Ab0EIWEf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 18:04:37 -0400
+	Sun, 9 May 2010 18:04:35 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Subrata Modak" <subrata@linux.vnet.ibm.com>
+       "=?utf-8?q?Jaroslav=20Kamen=C3=ADk?=" <jaroslav@kamenik.cz>
 References: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
 In-Reply-To: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,8 +17,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <HqroMXsT-CJ.A.EaE.B9y5LB@chimera>
-Subject: [Bug #15936] Suspicious rcu_dereference_check() usage detected during 2.6.34-rc6 boot on PPC64/p5 processor
+Message-ID: <HqroMXsT-CJ.A.DiE.K9y5LB@chimera>
+Subject: [Bug #15924] kacpid consumes ~100% CPU, system freezes randomly
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun,  9 May 2010 23:17:38 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,11 +33,9 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15936
-Subject		: Suspicious rcu_dereference_check() usage detected during 2.6.34-rc6 boot on PPC64/p5 processor
-Submitter	: Subrata Modak <subrata@linux.vnet.ibm.com>
-Date		: 2010-05-06 7:29 (4 days old)
-Message-ID	: <1273130279.4898.5.camel@subratamodak.linux.ibm.com>
-References	: http://marc.info/?l=linux-kernel&m=127313031922395&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15924
+Subject		: kacpid consumes ~100% CPU, system freezes randomly
+Submitter	: Jaroslav Kameník <jaroslav@kamenik.cz>
+Date		: 2010-05-06 21:12 (4 days old)
 
 
