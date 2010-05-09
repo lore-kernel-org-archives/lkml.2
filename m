@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab0EIJL4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 05:11:56 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:60594 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752564Ab0EIJLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 05:11:54 -0400
-Date: Sun, 9 May 2010 11:11:51 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Nigel Cunningham <ncunningham@crca.org.au>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-       Linux Power Management List <linux-pm@lists.osdl.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] 2.6.33 & 2.6.34-rc6: Huge number of Load Balancing
-	tick wakeups.
-Message-ID: <20100509091151.GA24453@isilmar-3.linta.de>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Nigel Cunningham <ncunningham@crca.org.au>,
-	Suresh Siddha <suresh.b.siddha@intel.com>,
-	Len Brown <lenb@kernel.org>,
-	Linux Power Management List <linux-pm@lists.osdl.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <4BE4F5DF.70903@crca.org.au> <alpine.LFD.2.00.1005081511550.4103@localhost.localdomain> <4BE5F3B2.6070901@crca.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BE5F3B2.6070901@crca.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752794Ab0EIJMQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 05:12:16 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:54653 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752564Ab0EIJMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 05:12:13 -0400
+Date: Sun, 9 May 2010 11:12:09 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: [PATCH] scripts/get_maintainer.pl: add .get_maintainer.conf
+ default options file
+Message-ID: <20100509111209.6c871a68@schatten.dmk.lab>
+In-Reply-To: <1273357609.704.70.camel@Joe-Laptop.home>
+References: <4BE46E7D.1040906@s5r6.in-berlin.de>
+	<1273354364-6016-1-git-send-email-florian@mickler.org>
+	<1273357609.704.70.camel@Joe-Laptop.home>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Sat, 08 May 2010 15:26:49 -0700
+Joe Perches <joe@perches.com> wrote:
 
-On Sun, May 09, 2010 at 09:28:50AM +1000, Nigel Cunningham wrote:
-> On 09/05/10 05:16, Len Brown wrote:
-> > (linux-pm cc'd)
-> >
-> >> I'm seeing a huge number of load balancing tick wakeups, with both 2.6.33 and
-> >> current git (f1c448e0a9e99c76f4ece368714fb35a40a8daba).
-> >>
-> >> This has been reported as a bug in some distros:
-> >>
-> >> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=521944
-> >> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/524281
-> >
-> > Unclear if your sighting is the same as those two.
-> >
-> > What do you see if vmware is not present?
+> Allow the use of a .get_maintainer.conf file to control the
+> default options applied when scripts/get_maintainer.pl is run.
 > 
-> I still see a huge number, just not as huge. The number of load 
-> balancing ticks seems to increase with the number of ticks from other 
-> sources. Without vmware running I got:
+> .get_maintainer.conf entries can be any valid argument.
 > 
-> Cn	          Avg residency
-> C0 (cpu running)        (14.5%)
-> polling		  0.2ms ( 0.0%)
-> C1 mwait	  0.0ms ( 0.0%)
-> C2 mwait	  0.1ms ( 1.7%)
-> C4 mwait	  1.1ms (83.8%)
-> P-states (frequencies)
-> Turbo Mode     1.2%
->    2.21 Ghz     0.0%
->    1.60 Ghz     0.0%
->    1200 Mhz     0.1%
->     800 Mhz    98.7%
-> Wakeups-from-idle per second : 907.4	interval: 15.0s
-> no ACPI power usage estimate available
-> Top causes for wakeups:
->    42.1% (435.6)   [kernel scheduler] Load balancing tick
->    21.2% (219.6)   [extra timer interrupt]
->    10.2% (105.6)   plugin-containe
->     9.5% ( 98.1)   pulseaudio
->     1.7% ( 17.9)   [Rescheduling interrupts] <kernel IPI>
->     1.7% ( 17.1)   [iwl3945] <interrupt>
->     1.4% ( 14.8)   [kernel core] hrtimer_start (tick_sched_timer)
->     1.4% ( 14.3)   [ata_piix] <interrupt>
+> Multiple lines may be used, blank lines ignored, # is a comment
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+ 
+probably worth noting, that an entry is of the form 
 
-Seems to be exactly what I'm seeing here, too. See my description and
-possible patch at
+"--cmdlinearg" 
 
-	http://lkml.org/lkml/2010/4/26/249
+as that's unexpected for a config file.
 
-Suresh Siddha reported he's working on getting some (more advanced) patches
-ready for submission.
+> ---
+>  scripts/get_maintainer.pl |   24 ++++++++++++++++++++++++
+>  1 files changed, 24 insertions(+), 0 deletions(-)
+> 
+> diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+> index 6f97a13..0c4c7e0 100755
+> --- a/scripts/get_maintainer.pl
+> +++ b/scripts/get_maintainer.pl
+> @@ -97,6 +97,30 @@ my %VCS_cmds_hg = (
+>      "blame_commit_pattern" => "^([0-9a-f]+):"
+>  );
+>  
+> +if (-f ${lk_path}.get_maintainer.conf) {
 
-Best,
-	Dominik
+missing "" around the argument to -f ...
+
+i wouldn't put the trailing slash in the variables but add it when composing path's.
+but it seems this is the convention for get_maintainer.pl... 
+
+
+ 
+
+> +    my @conf_args;
+> +    open(my $conffile, '<', "${lk_path}.get_maintainer.conf")
+> +	or warn "$P: Can't open .get_maintainer.conf: $!\n";
+> +    while (<$conffile>) {
+> +	my $line = $_;
+> +
+> +	$line =~ s/\s*\n?$//g;
+> +	$line =~ s/^\s*//g;
+> +	$line =~ s/\s+/ /g;
+> +
+> +	next if ($line =~ m/^\s*#/);
+> +	next if ($line =~ m/^\s*$/);
+> +
+> +	my @words = split(" ", $line);
+> +	foreach my $word (@words) {
+> +	    last if ($word =~ m/^#/);
+> +	    push (@conf_args, $word);
+> +	}
+> +    }
+> +    close($conffile);
+> +    unshift(@ARGV, @conf_args) if @conf_args;
+> +}
+
+this works.
+
+> +
+>  if (!GetOptions(
+>  		'email!' => \$email,
+>  		'git!' => \$email_git,
+> 
+
+Reviewed-by:Florian Mickler <florian@mickler.org>
+
