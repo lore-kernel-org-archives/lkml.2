@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab0EIUoj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 16:44:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:32986 "EHLO
+	id S1752082Ab0EIUog (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 16:44:36 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34161 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab0EIUn5 (ORCPT
+	with ESMTP id S1751296Ab0EIUn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 May 2010 16:43:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=noxhHmZbopFWyXfLHiBlU9fxPFbBQazKaOHfC1VyWAjy5YQ0yK5t8z30y2WMV516ZK
-         1WE02X8G9JXOhtFC6Le4zrfjXRhMQv+a+VdSz9YAhzO7Rjm3ZOn5dgiJXBUslkaBZRer
-         al6qsjeKQx7nijx20lyHL6EaYvZc8QAXq+E/E=
+        b=kqyRGqp89ljYNOzotmb7inY7JO/z8lTNcGcjDm+dz2wAjaDgIyyVuQTzjjvGoygCK1
+         jBaYLhIHDQ34ltKaMAFpmcDUEf31gVZcIhwAYF372UqOg1cXOurPhrmpqCBCAdxTeGV6
+         QUXlFYGYBaVOOyjTGXV53kPvI+3K4qDW7E97w=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Tom Zanussi <tzanussi@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 08/10] tracing: Factorize lock events in a lock class
-Date: Sun,  9 May 2010 22:43:36 +0200
-Message-Id: <1273437818-8130-9-git-send-regression-fweisbec@gmail.com>
+       Paul Mackerras <paulus@samba.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 09/10] perf/live-mode: Handle payload-less events
+Date: Sun,  9 May 2010 22:43:37 +0200
+Message-Id: <1273437818-8130-10-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1273437818-8130-1-git-send-regression-fweisbec@gmail.com>
@@ -32,103 +33,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lock_acquired, lock_contended and lock_release now share the
-same prototype and format. Let's factorize them into a lock
-event class.
+From: Tom Zanussi <tzanussi@gmail.com>
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Some events, such as the PERF_RECORD_FINISHED_ROUND event consist of
+only an event header and no data.  In this case, a 0-length payload
+will be read, and the 0 return value will be wrongly interpreted as an
+'unexpected end of event stream'.
+
+This patch allows for proper handling of data-less events by skipping
+0-length reads.
+
+Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Masami Hiramatsu <mhiramat@redhat.com>
+LKML-Reference: <1273038527.6383.51.camel@tropicana>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/trace/events/lock.h |   48 +++++++++++++-----------------------------
- 1 files changed, 15 insertions(+), 33 deletions(-)
+ tools/perf/util/session.c |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/include/trace/events/lock.h b/include/trace/events/lock.h
-index fde4c38..2821b86 100644
---- a/include/trace/events/lock.h
-+++ b/include/trace/events/lock.h
-@@ -35,15 +35,15 @@ TRACE_EVENT(lock_acquire,
- 		  __get_str(name))
- );
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 9401909..00ab298 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -696,15 +696,18 @@ more:
+ 	p = &event;
+ 	p += sizeof(struct perf_event_header);
  
--TRACE_EVENT(lock_release,
-+DECLARE_EVENT_CLASS(lock,
+-	err = do_read(self->fd, p, size - sizeof(struct perf_event_header));
+-	if (err <= 0) {
+-		if (err == 0) {
+-			pr_err("unexpected end of event stream\n");
+-			goto done;
+-		}
++	if (size - sizeof(struct perf_event_header)) {
++		err = do_read(self->fd, p,
++			      size - sizeof(struct perf_event_header));
++		if (err <= 0) {
++			if (err == 0) {
++				pr_err("unexpected end of event stream\n");
++				goto done;
++			}
  
- 	TP_PROTO(struct lockdep_map *lock, unsigned long ip),
+-		pr_err("failed to read event data\n");
+-		goto out_err;
++			pr_err("failed to read event data\n");
++			goto out_err;
++		}
+ 	}
  
- 	TP_ARGS(lock, ip),
- 
- 	TP_STRUCT__entry(
--		__string(name, lock->name)
--		__field(void *, lockdep_addr)
-+		__string(	name, 	lock->name	)
-+		__field(	void *, lockdep_addr	)
- 	),
- 
- 	TP_fast_assign(
-@@ -51,48 +51,30 @@ TRACE_EVENT(lock_release,
- 		__entry->lockdep_addr = lock;
- 	),
- 
--	TP_printk("%p %s",
--		  __entry->lockdep_addr, __get_str(name))
-+	TP_printk("%p %s",  __entry->lockdep_addr, __get_str(name))
- );
- 
--#ifdef CONFIG_LOCK_STAT
--
--TRACE_EVENT(lock_contended,
-+DEFINE_EVENT(lock, lock_release,
- 
- 	TP_PROTO(struct lockdep_map *lock, unsigned long ip),
- 
--	TP_ARGS(lock, ip),
--
--	TP_STRUCT__entry(
--		__string(name, lock->name)
--		__field(void *, lockdep_addr)
--	),
-+	TP_ARGS(lock, ip)
-+);
- 
--	TP_fast_assign(
--		__assign_str(name, lock->name);
--		__entry->lockdep_addr = lock;
--	),
-+#ifdef CONFIG_LOCK_STAT
- 
--	TP_printk("%p %s",
--		  __entry->lockdep_addr, __get_str(name))
--);
-+DEFINE_EVENT(lock, lock_contended,
- 
--TRACE_EVENT(lock_acquired,
- 	TP_PROTO(struct lockdep_map *lock, unsigned long ip),
- 
--	TP_ARGS(lock, ip),
-+	TP_ARGS(lock, ip)
-+);
- 
--	TP_STRUCT__entry(
--		__string(name, lock->name)
--		__field(void *, lockdep_addr)
--	),
-+DEFINE_EVENT(lock, lock_acquired,
- 
--	TP_fast_assign(
--		__assign_str(name, lock->name);
--		__entry->lockdep_addr = lock;
--	),
--	TP_printk("%p %s", __entry->lockdep_addr,
--		  __get_str(name))
-+	TP_PROTO(struct lockdep_map *lock, unsigned long ip),
-+
-+	TP_ARGS(lock, ip)
- );
- 
- #endif
+ 	if (size == 0 ||
 -- 
 1.6.2.3
 
