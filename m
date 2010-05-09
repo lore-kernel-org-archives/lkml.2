@@ -1,17 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab0EIWHN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 18:07:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33270 "EHLO ogre.sisk.pl"
+	id S1754027Ab0EIWHc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 18:07:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33281 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753386Ab0EIWEC convert rfc822-to-8bit (ORCPT
+	id S1753178Ab0EIWEC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 May 2010 18:04:02 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Alex Shi" <alex.shi@intel.com>,
-       "Christoph Lameter" <cl@linux-foundation.org>,
-       "Pekka Enberg" <penberg@cs.helsinki.fi>
+       "Marcel Holtmann" <marcel@holtmann.org>, "Pavel Machek" <pavel@ucw.cz>
 References: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
 In-Reply-To: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -19,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <HqroMXsT-CJ.A.rlF.f-y5LB@chimera>
-Subject: [Bug #15713] hackbench regression due to commit 9dfc6e68bfe6e
+Message-ID: <HqroMXsT-CJ.A.6aF.Z-y5LB@chimera>
+Subject: [Bug #15717] bluetooth oops
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun,  9 May 2010 23:17:34 +0200 (CEST)
+Date: Sun,  9 May 2010 23:17:35 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,14 +33,12 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15713
-Subject		: hackbench regression due to commit 9dfc6e68bfe6e
-Submitter	: Alex Shi <alex.shi@intel.com>
-Date		: 2010-03-25 8:40 (46 days old)
-First-Bad-Commit: http://git.kernel.org/linus/9dfc6e68bfe6ee452efb1a4e9ca26a9007f2b864
-Message-ID	: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-References	: http://marc.info/?l=linux-kernel&m=126950632920682&w=4
-Handled-By	: Christoph Lameter <cl@linux-foundation.org>
-		  Pekka Enberg <penberg@cs.helsinki.fi>
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15717
+Subject		: bluetooth oops
+Submitter	: Pavel Machek <pavel@ucw.cz>
+Date		: 2010-03-14 20:14 (57 days old)
+Message-ID	: <20100314201434.GE22059@elf.ucw.cz>
+References	: http://marc.info/?l=linux-kernel&m=126859771528426&w=4
+Handled-By	: Marcel Holtmann <marcel@holtmann.org>
 
 
