@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab0EJODW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 10:03:22 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57264
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754878Ab0EJODU (ORCPT
+	id S1755303Ab0EJOEX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 10:04:23 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:39746 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752606Ab0EJOEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 10:03:20 -0400
-Date: Mon, 10 May 2010 07:03:26 -0700 (PDT)
-Message-Id: <20100510.070326.146087861.davem@davemloft.net>
-To: catalin.marinas@arm.com
-Cc: matthew@wil.cx, fujita.tomonori@lab.ntt.co.jp, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org, James.Bottomley@HansenPartnership.com,
-       benh@kernel.crashing.org, rmk@arm.linux.org.uk
-Subject: Re: [RFC PATCH] Update the cachetlb.txt file WRT
- flush_dcache_pageand update_mmu_cache
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1273500010.10282.25.camel@e102109-lin.cambridge.arm.com>
-References: <1273486607.3023.37.camel@e102109-lin.cambridge.arm.com>
-	<20100510115552.GD10452@parisc-linux.org>
-	<1273500010.10282.25.camel@e102109-lin.cambridge.arm.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 10 May 2010 10:04:22 -0400
+Date: Mon, 10 May 2010 10:04:20 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+cc: linux-ide@vger.kernel.org, <linux-pm@lists.linux-foundation.org>,
+       <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] libata, hddtemp + s2ram is racy
+In-Reply-To: <20100507230732.5dd15e93@neptune.home>
+Message-ID: <Pine.LNX.4.44L0.1005100958430.1626-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Mon, 10 May 2010 15:00:10 +0100
+On Fri, 7 May 2010, Bruno [UTF-8] Prémont wrote:
 
-> 3rd point above would help with the D-cache aliasing. Does the I/D cache
-> coherency need to be handled differently? On PIPT Harvard architectures,
-> we don't actually have D-cache aliasing but we may end up flushing too
-> much in kunmap() just in case such page would be mapped in user space
-> with executable permission.
+> Hi,
+> 
+> On a SMP system I've hit a race condition between suspend and hddtemp
+> checking disk's temperature.
+> 
+> System details:
+> - Dual-core AMD Turion CPU
+> - 00:12.0 SATA controller [0106]: ATI Technologies Inc SB600 Non-Raid-5 SATA [1002:4380]
+> - hddtemp-0.3_beta15 (Gentoo package app-admin/hddtemp-0.3_beta15-r3)
+> - Linus' tree shortly after v2.6.34-rc6, at commit
+>   be1066bbcd443a65df312fdecea7e4959adedb45 with some drm updates on
+>   top of it.
+> 
+> 
+> It looked like hddtemp had sent the SMART request to disk right before
+> suspend and during suspend process ata2 did complain without aborting
+> suspend (see below).
+> After resume access to that disk was dead-locked (any further
+> attempt to suspend timed-out freezing hddtemp and any access attempt
+> towards that disk did put userspace tasks in uninterruptible state and
+> caused soft-raid to mark the disk failed).
+> 
+> Is suspend not waiting on SG_IO ioctls to complete (at ata host level)?
 
-You can handle this by having an "I-cache clean" bit in the page.
-When you kmap/kunmap, simply force this bit clear.
+If you use the libata driver then the ATA I/O is handled by the SCSI 
+midlayer.  The SCSI midlayer waits for the device's command queue to 
+drain completely before initiating a suspend.
 
-In update_mmu_cache() or set_pte_at() you'll see when a page gets
-into userspace with execute permission, and if the I-cache bit
-is clear you can do the flush then and set the "I-cache clean"
-bit.
+Furthermore, the hddtemp process has to get frozen before the suspend 
+can begin, and I believe a process cannot be frozen while it is waiting 
+for an SG_IO to complete.
+
+At any rate, you should try posting this bug report on the linux-scsi 
+mailing list.
+
+Alan Stern
+
