@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933542Ab0EJXp6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:45:58 -0400
-Received: from n5-vm0.bullet.mail.gq1.yahoo.com ([67.195.8.62]:43223 "HELO
-	n5-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932337Ab0EJXpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 19:45:50 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 837352.12748.bm@omp120.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=nKyRvuq0rCENStD9weycOIATFRt79Dq2yhyPZ8WqjWUd3G45bYc+nqH0SR27BE7LajOfraG3i2ts09Iv2GkCc6JG8+d5jh9euvmvlw6K/qBT/3eIJqrUx61unjCU34sblj0TWLaMwIdm1V2Xkr6VnJJ9+9R4ko3zXwqF9jDtY6Y=;
-Message-ID: <689426.33806.qm@web112505.mail.gq1.yahoo.com>
-X-YMail-OSG: _GRx3OMVM1l0h3_28OrKvFSL.eYeWV24mgIAeMYlITwfRtJ
- 7d0xHhZ7O89ZT7D7sxZ504ExD_JZcCojo8Ffl758cLD_3hs2bBRwExX7ihpp
- wAeMEea0A6aLclkPMLf81vg.iL2U2pEcIBvdwM_Pm_Ti2E2ppuEERoQsY2iJ
- zk_nQJFQIBPvZvDP6riytkOxqO9gySxHudNvBhvsfJuAxglqYxj6Xk6lOYhw
- Wjo.m.VeSJd8iY1QG1Optb0paHl1weKM-
-X-Mailer: YahooMailClassic/11.0.8 YahooMailWebService/0.8.103.269680
-Date: Mon, 10 May 2010 16:45:48 -0700 (PDT)
-From: Sharat Masetty <sharat_masetty@yahoo.com>
-Subject: Question about more headroom in skb in outgoing packets 
-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S933541Ab0EJXqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:46:16 -0400
+Received: from kroah.org ([198.145.64.141]:32877 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932301Ab0EJWvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:51:40 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:17 2010
+Message-Id: <20100510223317.822696901@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:31:38 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+       Jeff Garzik <jgarzik@redhat.com>
+Subject: [007/117] libata: fix locking around blk_abort_request()
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All,
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-For my project I need 3 words of headroom in the skb in the network driver level, to add a  custom header to the ethernet/ip packets. I looked into the tcp code and figured out tcp uses sk->sk_prot->max_header for header allocation size. But I was not able to confirm that all other transport protocol use the same mechanism(?) For example in UDP/ICMP I was not able to figure out from the code where the skb allocation and header reservation happens(Any light here would be really helpful.). Is there a parameter I can tune to allocate 3 words for any outgoing skb's, or what is the best way to do it?
+------------------
 
-I want to figure out a good way(may be tune some parameters) to allocate extra 3 words for any skbuff independent of the transport protocol being used. I have also looked at an API in skbuff skb_pad() which does what I want(add either headroom or tailroom), but I want to avoid that for performance reasons(skb_pad does kmalloc and memcpy).  Any light here would be very much appreciated.
+From: Tejun Heo <tj@kernel.org>
 
-Thanks,
-Sharat.
+commit fa41efdae7de61191a7bda3a00e88ef69afb5bb9 upstream.
 
+blk_abort_request() expectes queue lock to be held by the caller.
+Grab it before calling the function.
 
+Lack of this synchronization led to infinite loop on corrupt
+q->timeout_list.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-      
+---
+ drivers/ata/libata-eh.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -879,6 +879,8 @@ static void ata_eh_set_pending(struct at
+ void ata_qc_schedule_eh(struct ata_queued_cmd *qc)
+ {
+ 	struct ata_port *ap = qc->ap;
++	struct request_queue *q = qc->scsicmd->device->request_queue;
++	unsigned long flags;
+ 
+ 	WARN_ON(!ap->ops->error_handler);
+ 
+@@ -890,7 +892,9 @@ void ata_qc_schedule_eh(struct ata_queue
+ 	 * Note that ATA_QCFLAG_FAILED is unconditionally set after
+ 	 * this function completes.
+ 	 */
++	spin_lock_irqsave(q->queue_lock, flags);
+ 	blk_abort_request(qc->scsicmd->request);
++	spin_unlock_irqrestore(q->queue_lock, flags);
+ }
+ 
+ /**
+
 
