@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932921Ab0EJW6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:58:24 -0400
-Received: from kroah.org ([198.145.64.141]:51581 "EHLO coco.kroah.org"
+	id S933053Ab0EJXAe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:00:34 -0400
+Received: from kroah.org ([198.145.64.141]:51704 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757411Ab0EJW51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:27 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:35 2010
-Message-Id: <20100510223535.066461834@kvm.kroah.org>
+	id S932714Ab0EJW5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:57:52 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:37 2010
+Message-Id: <20100510223537.387310258@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:19 -0700
+Date: Mon, 10 May 2010 15:34:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Evgeniy Polyakov <johnpol@2ka.mipt.ru>
-Subject: [07/98] w1: w1 temp: fix negative termperature calculation
+       Hank Janssen <hjanssen@microsoft.com>,
+       Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [33/98] Staging: hv: Fix a bug affecting IPv6
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Dall <ian@beware.dropbear.id.au>
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-commit 9a6a1ecd9e9b5d046a236da2f7eb6b6812f04229 upstream.
+commit 95beae90aa4afce57fb28e6f8238b78217bd7c98 upstream.
 
-Fix regression caused by commit 507e2fbaaacb6f164b4125b87c5002f95143174b
-("w1: w1 temp calculation overflow fix") whereby negative temperatures for
-the DS18B20 are not converted properly.
+Fix a bug affecting IPv6
+Added the multicast flag for proper IPv6 function.
 
-When the temperature exceeds 32767 milli-degrees the temperature overflows
-to -32768 millidegrees.  These are both well within the -55 - +125 degree
-range for the sensor.
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=12646
-
-Signed-of-by: Ian Dall <ian@beware.dropbear.id.au>
-Cc: Evgeniy Polyakov <johnpol@2ka.mipt.ru>
-Tested-by: Karsten Elfenbein <kelfe@gmx.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Toshikazu Sakai <toshikas@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/w1/slaves/w1_therm.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/staging/hv/RndisFilter.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/w1/slaves/w1_therm.c
-+++ b/drivers/w1/slaves/w1_therm.c
-@@ -115,9 +115,8 @@ static struct w1_therm_family_converter
+--- a/drivers/staging/hv/RndisFilter.c
++++ b/drivers/staging/hv/RndisFilter.c
+@@ -756,6 +756,7 @@ static int RndisFilterOpenDevice(struct
  
- static inline int w1_DS18B20_convert_temp(u8 rom[9])
- {
--	int t = ((s16)rom[1] << 8) | rom[0];
--	t = t*1000/16;
--	return t;
-+	s16 t = le16_to_cpup((__le16 *)rom);
-+	return t*1000/16;
- }
- 
- static inline int w1_DS18S20_convert_temp(u8 rom[9])
+ 	ret = RndisFilterSetPacketFilter(Device,
+ 					 NDIS_PACKET_TYPE_BROADCAST |
++					 NDIS_PACKET_TYPE_ALL_MULTICAST |
+ 					 NDIS_PACKET_TYPE_DIRECTED);
+ 	if (ret == 0)
+ 		Device->State = RNDIS_DEV_DATAINITIALIZED;
 
 
