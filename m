@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab0EJWwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:52:49 -0400
-Received: from kroah.org ([198.145.64.141]:33105 "EHLO coco.kroah.org"
+	id S932790Ab0EJX2g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:28:36 -0400
+Received: from kroah.org ([198.145.64.141]:33388 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932324Ab0EJWwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:10 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:21 2010
-Message-Id: <20100510223321.172931234@kvm.kroah.org>
+	id S932542Ab0EJWw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:56 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:26 2010
+Message-Id: <20100510223326.426279271@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:15 -0700
+Date: Mon, 10 May 2010 15:33:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ping Cheng <pingc@wacom.com>
-Subject: [044/117] serial: 8250_pnp - add Fujitsu Wacom device
+       "David S. Miller" <davem@davemloft.net>
+Subject: [100/117] sparc64: Adjust __raw_local_irq_save() to cooperate in NMIs.
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ping Cheng <pingc@wacom.com>
 
-commit d9901660b53b92f0f3551c06588b8be38224b245 upstream.
+From: David S. Miller <davem@davemloft.net>
 
-Add Fujitsu Wacom 1FGT Tablet PC device
+[ Upstream commits 0c25e9e6cbe7b233bb91d14d0e2c258bf8e6ec83 and
+   c011f80ba0912486fe51dd2b3f71d9b33a151188 ]
 
-Signed-off-by: Ping Cheng <pingc@wacom.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+If we are in an NMI then doing a plain raw_local_irq_disable() will
+write PIL_NORMAL_MAX into %pil, which is lower than PIL_NMI, and thus
+we'll re-enable NMIs and recurse.
+
+Doing a simple:
+
+	%pil = %pil | PIL_NORMAL_MAX
+
+does what we want, if we're already at PIL_NMI (15) we leave it at
+that setting, else we set it to PIL_NORMAL_MAX (14).
+
+This should get the function tracer working on sparc64.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/serial/8250_pnp.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sparc/include/asm/irqflags_64.h |   21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
---- a/drivers/serial/8250_pnp.c
-+++ b/drivers/serial/8250_pnp.c
-@@ -348,6 +348,8 @@ static const struct pnp_device_id pnp_de
- 	{	"FUJ02E6",		0	},
- 	/* Fujitsu Wacom 2FGT Tablet PC device */
- 	{	"FUJ02E7",		0	},
-+	/* Fujitsu Wacom 1FGT Tablet PC device */
-+	{	"FUJ02E9",		0	},
- 	/*
- 	 * LG C1 EXPRESS DUAL (C1-PB11A3) touch screen (actually a FUJ02E6 in
- 	 * disguise)
+--- a/arch/sparc/include/asm/irqflags_64.h
++++ b/arch/sparc/include/asm/irqflags_64.h
+@@ -76,9 +76,26 @@ static inline int raw_irqs_disabled(void
+  */
+ static inline unsigned long __raw_local_irq_save(void)
+ {
+-	unsigned long flags = __raw_local_save_flags();
++	unsigned long flags, tmp;
+ 
+-	raw_local_irq_disable();
++	/* Disable interrupts to PIL_NORMAL_MAX unless we already
++	 * are using PIL_NMI, in which case PIL_NMI is retained.
++	 *
++	 * The only values we ever program into the %pil are 0,
++	 * PIL_NORMAL_MAX and PIL_NMI.
++	 *
++	 * Since PIL_NMI is the largest %pil value and all bits are
++	 * set in it (0xf), it doesn't matter what PIL_NORMAL_MAX
++	 * actually is.
++	 */
++	__asm__ __volatile__(
++		"rdpr	%%pil, %0\n\t"
++		"or	%0, %2, %1\n\t"
++		"wrpr	%1, 0x0, %%pil"
++		: "=r" (flags), "=r" (tmp)
++		: "i" (PIL_NORMAL_MAX)
++		: "memory"
++	);
+ 
+ 	return flags;
+ }
 
 
