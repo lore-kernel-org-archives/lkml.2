@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab0EJMjr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 08:39:47 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:43513 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab0EJMjq (ORCPT
+	id S1753553Ab0EJMpP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 08:45:15 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:57398
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750721Ab0EJMpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 08:39:46 -0400
-Date: Mon, 10 May 2010 21:39:02 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Eduardo Valentin <eduardo.valentin@nokia.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       Linux-OMAP <linux-omap@vger.kernel.org>,
-       Russell King <linux@arm.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       ext Tony Lindgren <tony@atomide.com>,
-       ext Kevin Hilman <khilman@deeprootsystems.com>,
-       "De-Schrijver Peter (Nokia-D/Helsinki)" 
-	<Peter.De-Schrijver@nokia.com>,
-       "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-       Ambresh <a0393775@ti.com>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Subject: Re: [PATCHv4 1/4] procfs: Introduce socinfo under /proc
-Message-ID: <20100510123902.GA15293@linux-sh.org>
-References: <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com> <1273487857-32281-3-git-send-email-eduardo.valentin@nokia.com> <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com> <1273487857-32281-2-git-send-email-eduardo.valentin@nokia.com> <20100510111259.GA14680@linux-sh.org> <20100510123514.GA11804@besouro.research.nokia.com>
+	Mon, 10 May 2010 08:45:12 -0400
+X-SpamScore: -32
+X-BigFish: VPS-32(zz1432P98dN936eM1447R62a3Lzz1202hzz6d525hz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L27FD4-02-0GT-02
+X-M-MSG: 
+Date: Mon, 10 May 2010 14:43:53 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: "mingo@elte.hu" <mingo@elte.hu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [patch 1/4] x86,perf: P4 PMU -- configurate predefined events
+Message-ID: <20100510124353.GG6450@erda.amd.com>
+References: <20100508112550.187421916@openvz.org>
+ <20100508112716.741423821@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100510123514.GA11804@besouro.research.nokia.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <20100508112716.741423821@openvz.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 03:35:14PM +0300, Eduardo Valentin wrote:
-> On Mon, May 10, 2010 at 01:13:00PM +0200, ext Paul Mundt wrote:
-> > On Mon, May 10, 2010 at 01:37:34PM +0300, Eduardo Valentin wrote:
-> > > + */
-> > > +#include <linux/fs.h>
-> > > +#include <linux/init.h>
-> > > +#include <linux/proc_fs.h>
-> > > +#include <linux/seq_file.h>
-> > > +
-> > > +extern const struct seq_operations socinfo_op;
-> > 
-> > This doesn't look promising..
+On 08.05.10 07:25:51, Cyrill Gorcunov wrote:
+> If an event is not RAW we should exit p4_hw_config
+> early but call x86_setup_perfctr as well.
 > 
-> Right.. as stated in patch description (maybe not that clear), this was
-> basically same thing which you see under fs/proc/cpuinfo.c
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: Lin Ming <ming.m.lin@intel.com>
+> CC: Robert Richter <robert.richter@amd.com>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> ---
 > 
-The cpuinfo case is a bit more complex since you have actual real work to
-do in the ->start op and you will iterate over the ->show op for each
-CPU. In your socinfo case you're just following the single_xxx()
-semantics so using those helpers there simplifies things quite a bit.
+> Robert, if only I'm not missing something this is
+> a side effect of commit 9d0fcba67e47ff398a6fa86476d4884d472dc98a,
+> wonders why don't we hit it earlier. Am I wrong?
 
-Architectures that do not support SMP technically employ single_open()
-semantics, but the fs/proc/cpuinfo.c abstraction requires the
-architecture to provide seq ops regardless.
+Yes, that's true, the function had have two exit points. Thanks for
+the fix.
 
-Note that in the cpuinfo case there is often special handling for the
-single (or boot CPU) case, such as printing out a descriptor for the
-machine type and so on. You might be better off just extending cpuinfo
-rather than introducing another /proc abstraction, presumably your
-socinfo string will be fixed regardless of whether it's SMP or not.
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
+
