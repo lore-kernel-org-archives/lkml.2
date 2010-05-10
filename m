@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757319Ab0EJVJq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 17:09:46 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38134 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757183Ab0EJVJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 17:09:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jean Delvare <khali@linux-fr.org>
-Subject: Re: platform_bus: Allow runtime PM by default
-Date: Mon, 10 May 2010 23:10:55 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, Greg KH <gregkh@suse.de>,
-       Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-       linux-pm@lists.linux-foundation.org
-References: <1269625370-17754-1-git-send-email-broonie@opensource.wolfsonmicro.com> <20100507132746.GA3425@sirena.org.uk> <20100507162028.022a737c@hyperion.delvare>
-In-Reply-To: <20100507162028.022a737c@hyperion.delvare>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S932263Ab0EJVKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 17:10:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:55969 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757183Ab0EJVKa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 17:10:30 -0400
+X-Authority-Analysis: v=1.1 cv=nrqrmdtKPnrEe5McJVoaEKFzY/lexCxOe+Stj/aSkNs= c=1 sm=0 a=H3ye9l9LKTQA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=CrcsiEUOVWRLc7bLdHQA:9 a=AUtfvQEl0e0MPRh-irjT9w0Iz2YA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [rfc] x86,perf: P4 PMU -- use hash for p4_get_escr_idx
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <20100510152708.GS5104@lenovo>
+References: <20100510152708.GS5104@lenovo>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 10 May 2010 17:10:27 -0400
+Message-ID: <1273525827.22438.4489.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005102310.55838.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 May 2010, Jean Delvare wrote:
-> Hi Mark,
-> 
-> On Fri, 7 May 2010 14:27:46 +0100, Mark Brown wrote:
-> > On Fri, Apr 23, 2010 at 08:41:41PM +0200, Rafael J. Wysocki wrote:
-> > 
-> > > Jean, the patch we're discussing depends on the
-> > > "i2c: Fix bus-level power management callbacks" patch that's in your tree right
-> > > now.  Would it be possible to move the i2c patch to my tree, or alternatively
-> > > would it be acceptable for you to merge a core PM patch through your tree?
-> > 
-> > Jean, any updates on this?
-> 
-> I'm sorry, I never received Rafael's initial message. I just checked
-> through my mailbox and it isn't there.
-> 
-> The current status is that patch "i2c: Fix bus-level power management
-> callbacks" is currently queued in my i2c tree at:
-> ftp://ftp.kernel.org/pub/linux/kernel/people/jdelvare/linux-2.6/jdelvare-i2c/i2c-fix-bus-level-power-management-callbacks.patch
-> and is scheduled to be merged in 2.6.35-rc1. If this isn't OK, we can
-> change the plan.
-> 
-> Merging a core PM patch through the i2c tree would be quite confusing,
-> I think, and might draw even more odd dependencies. So I'd rather have
-> the i2c patch moved to the PM staging tree (or whatever tree the
-> dependent patch lives in.) Just let me know and I'll drop my copy.
+On Mon, 2010-05-10 at 19:27 +0400, Cyrill Gorcunov wrote:
 
-The patch above has been applied to suspend-2.6/linux-next along with the
-Mark's $subject patch.
+>  static int p4_get_escr_idx(unsigned int addr)
+>  {
+> -	unsigned int i;
+> +	unsigned int idx = P4_ESCR_MSR_IDX(addr);
+>  
+> -	for (i = 0; i < ARRAY_SIZE(p4_escr_map); i++) {
+> -		if (addr == p4_escr_map[i])
+> -			return i;
+> -	}
+> +	BUG_ON(idx >= P4_ESCR_MSR_TABLE_SIZE);
+> +	BUG_ON(!p4_escr_table[idx]);
 
-I have converted your sign-off into an ack, hope that's fine.
+Is there any softer way to handle this. IOW, must it be a BUG_ON()? or
+can you add a WARN_ON() and pass back something that will cause it to
+fail a bit nicer.
+
+A BUG_ON() may panic the box and if you are in X on a laptop, all you
+see is that your box locked up hard. If this is a WARN_ON() and you can
+prevent further damage to the computer (no file corruption or anything)
+then the user may notice, "Oh, my dmesg has this nasty error here", and
+report something useful.
+
+You could do:
+
+	if (WARN_ON(idx >= P4_ESCR_MSR_TABLE_SIZE))
+		return -1;
+
+or whatever.
 
 Thanks,
-Rafael
+
+-- Steve
+
+>  
+> -	return -1;
+> +	return idx;
+>  }
+>  
+
