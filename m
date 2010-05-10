@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab0EJXTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:19:10 -0400
-Received: from kroah.org ([198.145.64.141]:51661 "EHLO coco.kroah.org"
+	id S1757943Ab0EJXSN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:18:13 -0400
+Received: from kroah.org ([198.145.64.141]:51701 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932837Ab0EJW5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:44 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:36 2010
-Message-Id: <20100510223536.491218717@kvm.kroah.org>
+	id S932862Ab0EJW5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:57:51 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:37 2010
+Message-Id: <20100510223537.208950349@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:35 -0700
+Date: Mon, 10 May 2010 15:34:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [23/98] USB: xhci: properly set the "Mult" field of the endpoint context.
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: [31/98] nfs d_revalidate() is too trigger-happy with d_drop()
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,59 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 1cf62246c0e394021e494e0a8f1013e80db1a1a9 upstream.
+commit d9e80b7de91db05c1c4d2e5ebbfd70b3b3ba0e0f upstream.
 
-A SuperSpeed interrupt or isochronous endpoint can define the number of
-"burst transactions" it can handle in a service interval.  This is
-indicated by the "Mult" bits in the bmAttributes of the SuperSpeed
-Endpoint Companion Descriptor.  For example, if it has a max packet size
-of 1024, a max burst of 11, and a mult of 3, the host may send 33
-1024-byte packets in one service interval.
+If dentry found stale happens to be a root of disconnected tree, we
+can't d_drop() it; its d_hash is actually part of s_anon and d_drop()
+would simply hide it from shrink_dcache_for_umount(), leading to
+all sorts of fun, including busy inodes on umount and oopsen after
+that.
 
-We must tell the xHCI host controller the number of multiple service
-opportunities (mults) the device can handle when the endpoint is
-installed.  We do that by setting the Mult field of the Endpoint Context
-before a configure endpoint command is sent down.  The Mult field is
-invalid for control or bulk SuperSpeed endpoints.
+Bug had been there since at least 2006 (commit c636eb already has it),
+so it's definitely -stable fodder.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-mem.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ fs/nfs/dir.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -496,6 +496,19 @@ static inline unsigned int xhci_get_endp
- 	return EP_INTERVAL(interval);
- }
- 
-+/* The "Mult" field in the endpoint context is only set for SuperSpeed devices.
-+ * High speed endpoint descriptors can define "the number of additional
-+ * transaction opportunities per microframe", but that goes in the Max Burst
-+ * endpoint context field.
-+ */
-+static inline u32 xhci_get_endpoint_mult(struct usb_device *udev,
-+		struct usb_host_endpoint *ep)
-+{
-+	if (udev->speed != USB_SPEED_SUPER || !ep->ss_ep_comp)
-+		return 0;
-+	return ep->ss_ep_comp->desc.bmAttributes;
-+}
-+
- static inline u32 xhci_get_endpoint_type(struct usb_device *udev,
- 		struct usb_host_endpoint *ep)
- {
-@@ -550,6 +563,7 @@ int xhci_endpoint_init(struct xhci_hcd *
- 	ep_ctx->deq = ep_ring->first_seg->dma | ep_ring->cycle_state;
- 
- 	ep_ctx->ep_info = xhci_get_endpoint_interval(udev, ep);
-+	ep_ctx->ep_info |= EP_MULT(xhci_get_endpoint_mult(udev, ep));
- 
- 	/* FIXME dig Mult and streams info out of ep companion desc */
- 
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -837,6 +837,8 @@ out_zap_parent:
+ 		/* If we have submounts, don't unhash ! */
+ 		if (have_submounts(dentry))
+ 			goto out_valid;
++		if (dentry->d_flags & DCACHE_DISCONNECTED)
++			goto out_valid;
+ 		shrink_dcache_parent(dentry);
+ 	}
+ 	d_drop(dentry);
 
 
