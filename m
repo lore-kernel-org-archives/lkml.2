@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab0EJTPR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 15:15:17 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33353 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab0EJTPO (ORCPT
+	id S1756177Ab0EJTTf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 15:19:35 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49294 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab0EJTTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 15:15:14 -0400
-Date: Mon, 10 May 2010 16:15:01 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-       lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       Roland McGrath <roland@redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>
-Subject: Re: [PATCH -tip] perf probe: Don't compile CFI related code if
- elfutils is old
-Message-ID: <20100510191501.GC19192@ghostprotocols.net>
-References: <20100510171207.26029.97604.stgit@localhost6.localdomain6>
- <20100510172854.GD30926@ghostprotocols.net>
- <20100510183654.GH6450@erda.amd.com>
- <4BE8571E.4020403@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BE8571E.4020403@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 10 May 2010 15:19:34 -0400
+Subject: Re: [RFC][PATCH 3/3] Try to convert non-trivial clocksources to
+ clocksource_register_hz
+From: john stultz <johnstul@us.ibm.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mundt <lethal@linux-sh.org>, Jim Cromie <jim.cromie@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20100510175338.05ef5db8@mschwide.boeblingen.de.ibm.com>
+References: <1272677785-23881-1-git-send-email-johnstul@us.ibm.com>
+	 <1272677785-23881-2-git-send-email-johnstul@us.ibm.com>
+	 <1272677785-23881-3-git-send-email-johnstul@us.ibm.com>
+	 <20100510175338.05ef5db8@mschwide.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 May 2010 12:19:10 -0700
+Message-ID: <1273519150.3843.4.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, May 10, 2010 at 02:57:34PM -0400, Masami Hiramatsu escreveu:
-> Hmm, ok, version.h is also introduced at the same time.
+On Mon, 2010-05-10 at 17:53 +0200, Martin Schwidefsky wrote:
+> On Fri, 30 Apr 2010 18:36:25 -0700
+> John Stultz <johnstul@us.ibm.com> wrote:
 > 
-> # git log ./config/version.h.in
-> commit fbc7245df72ce0142f0a21fa0f4f88c97278bf60
-> Author: Roland McGrath <roland@redhat.com>
-> Date:   Tue Dec 16 17:03:03 2008 -0800
+> > NOT FOR INCLUSION!
+> > NOT FOR INCLUSION!
+> > 
+> > I've already gone through and converted the rest of the clocksources 
+> > to use clocksource_register_hz, and I'll be hopefully pushing those 
+> > to arch maintainers for 2.6.36-2.6.37.
+> > 
+> > However, in going through all the clocksources, I hit a few
+> > non-trivial conversions and wanted to bring them up on the list
+> > early so they can be handled soon.
+> > 
+> > The following patch tries to convert the non-trival clocksources
+> > to use clocksource_register_hz/khz. It is likely broken. I will
+> > need arch maintainer help to figure out the best way to resovle 
+> > these clocksources.
+> > 
+> > This patch requires the previous "Add clocksource_register_hz/khz 
+> > interface" patch to build. 
+> > 
+> > So any help maintainers can provide in finding solutions to
+> > break the mult/shift assumptions in the arch code would be
+> > greatly appreciated!
+> > 
+> > thanks
+> > -john
+> > 
+> > NOT FOR INCLUSION!
+> > NOT FOR INCLUSION!
 > 
->     Install elfutils/version.h header for library compatibility checking.
-> 
-> So, I think we'd better set NO_DWARF if the elfutils
-> is older than 0.138, since we can't check API compatibility
-> easily.
+> The s390 conversion to clocksource_register_khz looks good - at least
+> the kilo hertz value is correct. Bit 2^12 of the TOD value are
+> microseconds, which makes one millisecond (1000<<12). 
 
-Well, for that you can just add some of the code you ifdefed in this
-patch into the tools/perf/Makefile test, or better, duplicate the test,
-including just the CPI stuff in the new test, and then set NO_DWARF_CFI
-and use it as the ifdef condition :-)
+Thanks for the review!
 
-- Arnaldo
+However, is there a more straightforward frequency value that we could
+use? Is 4096000000 hz really the correct value or is there something
+more precise?
+
+thanks again!
+-john
+
+
+
+
