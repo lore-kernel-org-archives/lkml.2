@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab0EJXd6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:33:58 -0400
-Received: from kroah.org ([198.145.64.141]:33231 "EHLO coco.kroah.org"
+	id S933311Ab0EJXeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:34:12 -0400
+Received: from kroah.org ([198.145.64.141]:33227 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932452Ab0EJWw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932449Ab0EJWw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 May 2010 18:52:29 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:23 2010
-Message-Id: <20100510223323.523660754@kvm.kroah.org>
+Message-Id: <20100510223323.416439918@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:39 -0700
+Date: Mon, 10 May 2010 15:32:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>
-Subject: [068/117] CRED: Fix a race in creds_are_invalid() in credentials debugging
+       Phillip Lougher <phillip@lougher.demon.co.uk>
+Subject: [067/117] initramfs: handle unrecognised decompressor when unpacking
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,75 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
 
-commit e134d200d57d43b171dcb0b55c178a1a0c7db14a upstream.
+commit df37bd156dcb4f5441beaf5bde444adac974e9a0 upstream.
 
-creds_are_invalid() reads both cred->usage and cred->subscribers and then
-compares them to make sure the number of processes subscribed to a cred struct
-never exceeds the refcount of that cred struct.
+The unpack routine fails to handle the decompress_method() returning
+unrecognised decompressor (compress_name == NULL).  This results in the
+routine looping eventually oopsing on an out of bounds memory access.
 
-The problem is that this can cause a race with both copy_creds() and
-exit_creds() as the two counters, whilst they are of atomic_t type, are only
-atomic with respect to themselves, and not atomic with respect to each other.
+Note this bug is usually hidden, only triggering on trailing junk after
+one or more correct compressed blocks.  The case of the compressed archive
+being complete junk is (by accident?) caught by the if (state != Reset)
+check because state is initialised to Start, but not updated due to the
+decompressor not having been called.  Obviously if the junk is trailing a
+correctly decompressed buffer, state == Reset from the previous call to
+the decompressor.
 
-This means that if creds_are_invalid() can read the values on one CPU whilst
-they're being modified on another CPU, and so can observe an evolving state in
-which the subscribers count now is greater than the usage count a moment
-before.
-
-Switching the order in which the counts are read cannot help, so the thing to
-do is to remove that particular check.
-
-I had considered rechecking the values to see if they're in flux if the test
-fails, but I can't guarantee they won't appear the same, even if they've
-changed several times in the meantime.
-
-Note that this can only happen if CONFIG_DEBUG_CREDENTIALS is enabled.
-
-The problem is only likely to occur with multithreaded programs, and can be
-tested by the tst-eintr1 program from glibc's "make check".  The symptoms look
-like:
-
-	CRED: Invalid credentials
-	CRED: At include/linux/cred.h:240
-	CRED: Specified credentials: ffff88003dda5878 [real][eff]
-	CRED: ->magic=43736564, put_addr=(null)
-	CRED: ->usage=766, subscr=766
-	CRED: ->*uid = { 0,0,0,0 }
-	CRED: ->*gid = { 0,0,0,0 }
-	CRED: ->security is ffff88003d72f538
-	CRED: ->security {359, 359}
-	------------[ cut here ]------------
-	kernel BUG at kernel/cred.c:850!
-	...
-	RIP: 0010:[<ffffffff81049889>]  [<ffffffff81049889>] __invalid_creds+0x4e/0x52
-	...
-	Call Trace:
-	 [<ffffffff8104a37b>] copy_creds+0x6b/0x23f
-
-Note the ->usage=766 and subscr=766.  The values appear the same because
-they've been re-read since the check was made.
-
-Reported-by: Roland McGrath <roland@redhat.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
+Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/cred.c |    2 --
- 1 file changed, 2 deletions(-)
+ init/initramfs.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -786,8 +786,6 @@ bool creds_are_invalid(const struct cred
- {
- 	if (cred->magic != CRED_MAGIC)
- 		return true;
--	if (atomic_read(&cred->usage) < atomic_read(&cred->subscribers))
--		return true;
- #ifdef CONFIG_SECURITY_SELINUX
- 	if (selinux_is_enabled()) {
- 		if ((unsigned long) cred->security < PAGE_SIZE)
+--- a/init/initramfs.c
++++ b/init/initramfs.c
+@@ -457,7 +457,8 @@ static char * __init unpack_to_rootfs(ch
+ 					 compress_name);
+ 				message = msg_buf;
+ 			}
+-		}
++		} else
++			error("junk in compressed archive");
+ 		if (state != Reset)
+ 			error("junk in compressed archive");
+ 		this_header = saved_offset + my_inptr;
 
 
