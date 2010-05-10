@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab0EJMBk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 08:01:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43547 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565Ab0EJMBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 08:01:37 -0400
-Message-ID: <4BE7F58C.50006@redhat.com>
-Date: Mon, 10 May 2010 15:01:16 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
+	id S1752449Ab0EJMCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 08:02:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54418 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955Ab0EJMCO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 08:02:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
 To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: Arnd Bergmann <arnd@arndb.de>,
-       Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, mtosatti@redhat.com,
-       agraf@suse.de, fernando@oss.ntt.co.jp, kvm@vger.kernel.org,
-       kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org, tglx@linutronix.de,
-       mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+Subject: Re: [RFC][PATCH resend 8/12] asm-generic: bitops: introduce le bit offset macro
+Date: Mon, 10 May 2010 14:01:51 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, Avi Kivity <avi@redhat.com>,
+       mtosatti@redhat.com, agraf@suse.de, fernando@oss.ntt.co.jp,
+       kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org,
+       tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
        benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH resend 8/12] asm-generic: bitops: introduce le bit
- offset macro
-References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <4BE04677.4060608@redhat.com> <20100505115924.7bb92036.takuya.yoshikawa@gmail.com> <201005061538.54326.arnd@arndb.de> <4BE7F22E.9070504@oss.ntt.co.jp>
+References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <201005061538.54326.arnd@arndb.de> <4BE7F22E.9070504@oss.ntt.co.jp>
 In-Reply-To: <4BE7F22E.9070504@oss.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005101401.52182.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX180Uw38AJc6KxunHT827Nb+7zvQyCTS4+u9me2
+ sbg8xIQBIcnkPa+nxdrpzKaxLj/GsPezplT+c/a1VL3ZTUsXIo
+ IBMbUKoTvSIz/jbiHb5/Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2010 02:46 PM, Takuya Yoshikawa wrote:
+On Monday 10 May 2010, Takuya Yoshikawa wrote:
 > (2010/05/06 22:38), Arnd Bergmann wrote:
->> On Wednesday 05 May 2010, Takuya Yoshikawa wrote:
->>> Date:
->>> Yesterday 04:59:24
->>>> That's why the bitmaps are defined as little endian u64 aligned, 
->>>> even on
->>>> big endian 32-bit systems.  Little endian bitmaps are wordsize 
->>>> agnostic,
->>>> and u64 alignment ensures we can use long-sized bitops on mixed size
->>>> systems.
->>
->> Ok, I see.
->>
->>> There was a suggestion to propose set_le_bit_user() kind of macros.
->>> But what I thought was these have a constraint you two explained and 
->>> seemed to be
->>> a little bit specific to some area, like KVM.
->>>
->>> So I decided to propose just the offset calculation macro.
->>
->> I'm not sure I understand how this macro is going to be used though.
->> If you are just using this in kernel space, that's fine, please go for
->> it.
->
-> Yes, I'm just using in kernel space: qemu has its own endian related 
-> helpers.
->
-> So if you allow us to place this macro in asm-generic/bitops/* it will 
-> help us.
->
-> Avi, what do you think? Do you want to place it in kvm.h ?
+> > On Wednesday 05 May 2010, Takuya Yoshikawa wrote:
+> >> There was a suggestion to propose set_le_bit_user() kind of macros.
+> >> But what I thought was these have a constraint you two explained and seemed to be
+> >> a little bit specific to some area, like KVM.
+> >>
+> >> So I decided to propose just the offset calculation macro.
+> >
+> > I'm not sure I understand how this macro is going to be used though.
+> > If you are just using this in kernel space, that's fine, please go for
+> > it.
+> 
+> Yes, I'm just using in kernel space: qemu has its own endian related helpers.
+> 
+> So if you allow us to place this macro in asm-generic/bitops/* it will help us.
 
-I really prefer anything that is generic to be outside kvm, even if kvm 
-is the only user.
+No problem at all then. Thanks for the explanation.
 
--- 
-error compiling committee.c: too many arguments to function
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
