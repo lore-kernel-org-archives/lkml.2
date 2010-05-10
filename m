@@ -1,213 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab0EJQxy (ORCPT <rfc822;w@1wt.eu>);
+	id S1755629Ab0EJQx6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 12:53:58 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59816 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750824Ab0EJQxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 May 2010 12:53:54 -0400
-Received: from stinky.trash.net ([213.144.137.162]:50011 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab0EJQxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 12:53:51 -0400
-Message-ID: <4BE83A1C.5000508@trash.net>
-Date: Mon, 10 May 2010 18:53:48 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
+Date: Mon, 10 May 2010 09:25:35 -0700
+From: Greg KH <gregkh@suse.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Anatolij Gustschin <agust@denx.de>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, leonardo.lists@gmail.com,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] serial: mpc52xx_uart: fix null pointer dereference
+Message-ID: <20100510162535.GA15137@suse.de>
+References: <g2xc2d0b6ec1005041339r9c40822w7a642f9bba976820@mail.gmail.com>
+ <1273011539-13994-1-git-send-email-agust@denx.de>
+ <i2xfa686aa41005091504ve2b35a09m23cd2dc13a331f86@mail.gmail.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: mmotm 2010-04-28 - RCU whinges
-References: <201004290021.o3T0L04Y028017@imap1.linux-foundation.org>	 <5702.1272822394@localhost> <1272865137.2173.179.camel@edumazet-laptop>
-In-Reply-To: <1272865137.2173.179.camel@edumazet-laptop>
-X-Enigmail-Version: 0.95.0
-Content-Type: multipart/mixed;
- boundary="------------010005020008040209080803"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <i2xfa686aa41005091504ve2b35a09m23cd2dc13a331f86@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010005020008040209080803
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
-
-Eric Dumazet wrote:
-> Le dimanche 02 mai 2010 à 13:46 -0400, Valdis.Kletnieks@vt.edu a écrit :
->> On Wed, 28 Apr 2010 16:53:32 PDT, akpm@linux-foundation.org said:
->>> The mm-of-the-moment snapshot 2010-04-28-16-53 has been uploaded to
->>>
->>>    http://userweb.kernel.org/~akpm/mmotm/
->> I thought we swatted all these, hit another one...
->>
->> [    9.131490] ctnetlink v0.93: registering with nfnetlink.
->> [    9.131535]
->> [    9.131535] ===================================================
->> [    9.131704] [ INFO: suspicious rcu_dereference_check() usage. ]
->> [    9.131794] ---------------------------------------------------
->> [    9.131883] net/netfilter/nf_conntrack_ecache.c:88 invoked rcu_dereference_check() without protection!
->> [    9.131977]
->> [    9.131977] other info that might help us debug this:
->> [    9.131978]
->> [    9.132218]
->> [    9.132219] rcu_scheduler_active = 1, debug_locks = 0
->> [    9.132434] 1 lock held by swapper/1:
->> [    9.132519]  #0:  (nf_ct_ecache_mutex){+.+...}, at: [<ffffffff8148922d>] nf_conntrack_register_notifier+0x1a/0x75
->> [    9.132938]
->> [    9.132939] stack backtrace:
->> [    9.133129] Pid: 1, comm: swapper Tainted: G        W   2.6.34-rc5-mmotm0428 #1
->> [    9.133220] Call Trace:
->> [    9.133319]  [<ffffffff81064832>] lockdep_rcu_dereference+0xaa/0xb2
->> [    9.133410]  [<ffffffff81489250>] nf_conntrack_register_notifier+0x3d/0x75
->> [    9.133521]  [<ffffffff81b5a157>] ctnetlink_init+0x71/0xd5
->> [    9.133627]  [<ffffffff81b5a0e6>] ? ctnetlink_init+0x0/0xd5
->> [    9.133735]  [<ffffffff810001ef>] do_one_initcall+0x59/0x14e
->> [    9.133843]  [<ffffffff81b2e68a>] kernel_init+0x144/0x1ce
->> [    9.133949]  [<ffffffff81003414>] kernel_thread_helper+0x4/0x10
->> [    9.134060]  [<ffffffff81598a40>] ? restore_args+0x0/0x30
->> [    9.134196]  [<ffffffff81b2e546>] ? kernel_init+0x0/0x1ce
->> [    9.134328]  [<ffffffff81003410>] ? kernel_thread_helper+0x0/0x10
->> [    9.134530] ip_tables: (C) 2000-2006 Netfilter Core Team
->> [    9.134655] TCP bic registered
->>
+On Mon, May 10, 2010 at 12:04:30AM +0200, Grant Likely wrote:
+> On Wed, May 5, 2010 at 12:18 AM, Anatolij Gustschin <agust@denx.de> wrote:
+> > Commit 6acc6833510db8f72b5ef343296d97480555fda9
+> > introduced NULL pointer dereference and kernel crash
+> > on ppc32 machines while booting. Fix this bug now.
+> >
+> > Reported-by: Leonardo Chiquitto <leonardo.lists@gmail.com>
+> > Signed-off-by: Anatolij Gustschin <agust@denx.de>
 > 
-> Thanks for the report !
+> Thanks for being so quick to pick up on this Anatolij.  I've been
+> traveling and not able to respond to stuff.  I see that Greg has
+> already picked this up (thanks Greg!), but FWIW:
 > 
-> We can use rcu_dereference_protected() in those cases.
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
 > 
-> [PATCH] net: Use rcu_dereference_protected in nf_conntrack_ecache
+> Actually, now that I look, this fix needs to go into Linus' tree right
+> away (not just linux-next) since the offending patch went in during
+> the 2.6.34 merge window.
 > 
-> Writers own nf_ct_ecache_mutex.
+> Greg, I can either pick this up and push it out to Linus tomorrow, or
+> let you do it.  Whichever you prefer.  Let me know so I don't cause
+> conflicts in your tree.
 
-I've committed this patch to my tree, which also fixes up the nf_log
-changes I already had queued.
+I have 2 other tty/serial fixes to go to Linus for .34 along with this
+one, so I'll be glad to send it to him.  I've added your ack to the
+patch.
 
-I've also figured out how to prevent the false commits from showing
-up using the '^' notation, I'll submit everything after some final
-testing.
+thanks,
 
-
-
---------------010005020008040209080803
-Content-Type: text/plain;
- name="x"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="x"
-
-commit b56f2d55c6c22b0c5774b3b22e336fb6cc5f4094
-Author: Patrick McHardy <kaber@trash.net>
-Date:   Mon May 10 18:47:57 2010 +0200
-
-    netfilter: use rcu_dereference_protected()
-    
-    Restore the rcu_dereference() calls in conntrack/expectation notifier
-    and logger registration/unregistration, but use the _protected variant,
-    which will be required by the upcoming __rcu annotations.
-    
-    Based on patch by Eric Dumazet <eric.dumazet@gmail.com>
-    
-    Signed-off-by: Patrick McHardy <kaber@trash.net>
-
-diff --git a/net/netfilter/nf_conntrack_ecache.c b/net/netfilter/nf_conntrack_ecache.c
-index a94ac3a..cdcc764 100644
---- a/net/netfilter/nf_conntrack_ecache.c
-+++ b/net/netfilter/nf_conntrack_ecache.c
-@@ -82,9 +82,12 @@ EXPORT_SYMBOL_GPL(nf_ct_deliver_cached_events);
- int nf_conntrack_register_notifier(struct nf_ct_event_notifier *new)
- {
- 	int ret = 0;
-+	struct nf_ct_event_notifier *notify;
- 
- 	mutex_lock(&nf_ct_ecache_mutex);
--	if (nf_conntrack_event_cb != NULL) {
-+	notify = rcu_dereference_protected(nf_conntrack_event_cb,
-+					   lockdep_is_held(&nf_ct_ecache_mutex));
-+	if (notify != NULL) {
- 		ret = -EBUSY;
- 		goto out_unlock;
- 	}
-@@ -100,8 +103,12 @@ EXPORT_SYMBOL_GPL(nf_conntrack_register_notifier);
- 
- void nf_conntrack_unregister_notifier(struct nf_ct_event_notifier *new)
- {
-+	struct nf_ct_event_notifier *notify;
-+
- 	mutex_lock(&nf_ct_ecache_mutex);
--	BUG_ON(nf_conntrack_event_cb != new);
-+	notify = rcu_dereference_protected(nf_conntrack_event_cb,
-+					   lockdep_is_held(&nf_ct_ecache_mutex));
-+	BUG_ON(notify != new);
- 	rcu_assign_pointer(nf_conntrack_event_cb, NULL);
- 	mutex_unlock(&nf_ct_ecache_mutex);
- }
-@@ -110,9 +117,12 @@ EXPORT_SYMBOL_GPL(nf_conntrack_unregister_notifier);
- int nf_ct_expect_register_notifier(struct nf_exp_event_notifier *new)
- {
- 	int ret = 0;
-+	struct nf_exp_event_notifier *notify;
- 
- 	mutex_lock(&nf_ct_ecache_mutex);
--	if (nf_expect_event_cb != NULL) {
-+	notify = rcu_dereference_protected(nf_expect_event_cb,
-+					   lockdep_is_held(&nf_ct_ecache_mutex));
-+	if (notify != NULL) {
- 		ret = -EBUSY;
- 		goto out_unlock;
- 	}
-@@ -128,8 +138,12 @@ EXPORT_SYMBOL_GPL(nf_ct_expect_register_notifier);
- 
- void nf_ct_expect_unregister_notifier(struct nf_exp_event_notifier *new)
- {
-+	struct nf_exp_event_notifier *notify;
-+
- 	mutex_lock(&nf_ct_ecache_mutex);
--	BUG_ON(nf_expect_event_cb != new);
-+	notify = rcu_dereference_protected(nf_expect_event_cb,
-+					   lockdep_is_held(&nf_ct_ecache_mutex));
-+	BUG_ON(notify != new);
- 	rcu_assign_pointer(nf_expect_event_cb, NULL);
- 	mutex_unlock(&nf_ct_ecache_mutex);
- }
-diff --git a/net/netfilter/nf_log.c b/net/netfilter/nf_log.c
-index 908f599..7df37fd 100644
---- a/net/netfilter/nf_log.c
-+++ b/net/netfilter/nf_log.c
-@@ -35,6 +35,7 @@ static struct nf_logger *__find_logger(int pf, const char *str_logger)
- /* return EEXIST if the same logger is registred, 0 on success. */
- int nf_log_register(u_int8_t pf, struct nf_logger *logger)
- {
-+	const struct nf_logger *llog;
- 	int i;
- 
- 	if (pf >= ARRAY_SIZE(nf_loggers))
-@@ -51,7 +52,9 @@ int nf_log_register(u_int8_t pf, struct nf_logger *logger)
- 	} else {
- 		/* register at end of list to honor first register win */
- 		list_add_tail(&logger->list[pf], &nf_loggers_l[pf]);
--		if (nf_loggers[pf] == NULL)
-+		llog = rcu_dereference_protected(nf_loggers[pf],
-+						 lockdep_is_held(&nf_log_mutex));
-+		if (llog == NULL)
- 			rcu_assign_pointer(nf_loggers[pf], logger);
- 	}
- 
-@@ -63,11 +66,14 @@ EXPORT_SYMBOL(nf_log_register);
- 
- void nf_log_unregister(struct nf_logger *logger)
- {
-+	const struct nf_logger *c_logger;
- 	int i;
- 
- 	mutex_lock(&nf_log_mutex);
- 	for (i = 0; i < ARRAY_SIZE(nf_loggers); i++) {
--		if (nf_loggers[i] == logger)
-+		c_logger = rcu_dereference_protected(nf_loggers[i],
-+						     lockdep_is_held(&nf_log_mutex));
-+		if (c_logger == logger)
- 			rcu_assign_pointer(nf_loggers[i], NULL);
- 		list_del(&logger->list[i]);
- 	}
-
---------------010005020008040209080803--
+greg k-h
