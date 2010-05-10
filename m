@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab0EJAgd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 20:36:33 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42505 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753411Ab0EJAgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 20:36:31 -0400
-Date: Mon, 10 May 2010 10:36:21 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Brian Johnson <brijohn@gmail.com>, Yong Zhang <yong.zhang0@gmail.com>
-Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
-Message-Id: <20100510103621.4ffbc8c3.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1754799Ab0EJAgy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 20:36:54 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:56678 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725Ab0EJAgw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 20:36:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 10 May 2010 09:32:41 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/2] mm,migration: Fix race between shift_arg_pages and
+ rmap_walk by guaranteeing rmap_walk finds PTEs created within the temporary
+ stack
+Message-Id: <20100510093241.420743a8.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100509192145.GI4859@csn.ul.ie>
+References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie>
+	<1273188053-26029-3-git-send-email-mel@csn.ul.ie>
+	<alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org>
+	<20100507105712.18fc90c4.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.LFD.2.00.1005061905230.901@i5.linux-foundation.org>
+	<20100509192145.GI4859@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__10_May_2010_10_36_21_+1000_M3LMii=QyO1zo.PF"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_May_2010_10_36_21_+1000_M3LMii=QyO1zo.PF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 9 May 2010 20:21:45 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-Hi Mauro,
+> On Thu, May 06, 2010 at 07:12:59PM -0700, Linus Torvalds wrote:
+> > 
+> > 
+> > On Fri, 7 May 2010, KAMEZAWA Hiroyuki wrote:
+> > > 
+> > > IIUC, move_page_tables() may call "page table allocation" and it cannot be
+> > > done under spinlock.
+> > 
+> > Bah. It only does a "alloc_new_pmd()", and we could easily move that out 
+> > of the loop and pre-allocate the pmd's.
+> > 
+> > If that's the only reason, then it's a really weak one, methinks.
+> > 
+> 
+> It turns out not to be easy to the preallocating of PUDs, PMDs and PTEs
+> move_page_tables() needs.  To avoid overallocating, it has to follow the same
+> logic as move_page_tables duplicating some code in the process. The ugliest
+> aspect of all is passing those pre-allocated pages back into move_page_tables
+> where they need to be passed down to such functions as __pte_alloc. It turns
+> extremely messy.
+> 
+> I stopped working on it about half way through as it was already too ugly
+> to live and would have similar cost to Kamezawa's much more straight-forward
+> approach of using move_vma().
+> 
+> While using move_vma is straight-forward and solves the problem, it's
+> not as cheap as Andrea's solution. Andrea allocates a temporary VMA and
+> puts it on a list and very little else. It didn't show up any problems
+> in microbenchmarks. Calling move_vma does a lot more work particularly in
+> copy_vma and this slows down exec.
+> 
+> With Kamezawa's patch, kernbench was fine on wall time but in System Time,
+> it slowed by up 1.48% in comparison to Andrea's slowing up by 0.64%[1].
+> 
+> aim9 was slowed as well. Kamezawa's slowed by 2.77% where Andrea's reported
+> faster by 2.58%. While AIM9 is flaky and these figures are barely outside
+> the noise, calling move_vma() is obviously more expensive.
+> 
 
-Today's linux-next merge of the v4l-dvb tree got a conflict in
-drivers/media/video/gspca/sn9c20x.c between commit
-a76b9f49ba58d081e373080ff75130673140d3f1 ("V4L/DVB: gspca - sn9c20x:
-Correct onstack wait_queue_head declaration") from Linus' tree and commit
-a0965d58c1aa34ab66f3e2b5abd770f18f393905 ("V4L/DVB: gspca - sn9c20x: use
-gspca's input device handling") from the v4l-dvb tree.
+Thank you for testing.
 
-The latter just removed the code modified by the former.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__10_May_2010_10_36_21_+1000_M3LMii=QyO1zo.PF
-Content-Type: application/pgp-signature
+> While my solution at http://lkml.org/lkml/2010/4/30/198 is cheapest as it
+> does not touch exec() at all, is_vma_temporary_stack() could be broken in
+> the future if any of the assumptions it makes change.
+> 
+> So what you have is an inverse relationship between magic and
+> performance. Mine has the most magic and is fastest. Kamezawa's has the
+> least magic but slowest and Andrea has the goldilocks factor. Which do
+> you prefer?
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+I like the fastest one ;)
 
-iEYEARECAAYFAkvnVQUACgkQjjKRsyhoI8xAWwCbB3is0Iea3xl0NSTzPv1FwLuv
-cOkAnjY738p6v+iz39WJsy1gFtuNDMT8
-=ICIK
------END PGP SIGNATURE-----
+Thanks,
+-Kame
 
---Signature=_Mon__10_May_2010_10_36_21_+1000_M3LMii=QyO1zo.PF--
