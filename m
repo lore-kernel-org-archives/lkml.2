@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab0EJSBf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 14:01:35 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:37097 "EHLO
+	id S1756043Ab0EJSBr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 14:01:47 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:37105 "EHLO
 	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1755933Ab0EJSB1 (ORCPT
+	with ESMTP id S1755979Ab0EJSBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 14:01:27 -0400
+	Mon, 10 May 2010 14:01:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: akpm@linux-foundation.org
 Cc: adobriyan@gmail.com, nhorman@tuxdriver.com, oleg@redhat.com,
        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH v3 03/11] rlimits: make sure ->rlim_max never grows in sys_setrlimit
-Date: Mon, 10 May 2010 20:00:43 +0200
-Message-Id: <1273514451-28894-3-git-send-email-jslaby@suse.cz>
+Subject: [PATCH v3 04/11] rlimits: split sys_setrlimit
+Date: Mon, 10 May 2010 20:00:44 +0200
+Message-Id: <1273514451-28894-4-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1273514451-28894-1-git-send-email-jslaby@suse.cz>
 References: <1273514451-28894-1-git-send-email-jslaby@suse.cz>
@@ -21,69 +21,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Jiri Slaby <jirislaby@gmail.com>
 
-Mostly preparation for Jiri's changes, but probably makes sense anyway.
+Create do_setrlimit from sys_setrlimit and declare do_setrlimit
+in the resource header. This is the firts phase to have generic
+do_prlimit which allows to be called from read, write and compat
+rlimits code.
 
-sys_setrlimit() checks new_rlim.rlim_max <= old_rlim->rlim_max, but when
-it takes task_lock() old_rlim->rlim_max can be already lowered. Move this
-check under task_lock().
-
-Currently this is not important, we can only race with our sub-thread,
-this means the application is stupid. But when we change the code to allow
-the update of !current task's limits, it becomes important to make sure
-->rlim_max can be lowered "reliably" even if we race with the application
-doing sys_setrlimit().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/sys.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+ include/linux/resource.h |    2 ++
+ kernel/sys.c             |   40 ++++++++++++++++++++++++----------------
+ 2 files changed, 26 insertions(+), 16 deletions(-)
 
+diff --git a/include/linux/resource.h b/include/linux/resource.h
+index f1e914e..cf8dc96 100644
+--- a/include/linux/resource.h
++++ b/include/linux/resource.h
+@@ -73,6 +73,8 @@ struct rlimit {
+ struct task_struct;
+ 
+ int getrusage(struct task_struct *p, int who, struct rusage __user *ru);
++int do_setrlimit(struct task_struct *tsk, unsigned int resource,
++		struct rlimit *new_rlim);
+ 
+ #endif /* __KERNEL__ */
+ 
 diff --git a/kernel/sys.c b/kernel/sys.c
-index f5183b0..d527c46 100644
+index d527c46..7c76f84 100644
 --- a/kernel/sys.c
 +++ b/kernel/sys.c
-@@ -1283,10 +1283,6 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
- 		return -EFAULT;
- 	if (new_rlim.rlim_cur > new_rlim.rlim_max)
+@@ -1272,42 +1272,41 @@ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
+ 
+ #endif
+ 
+-SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
++int do_setrlimit(struct task_struct *tsk, unsigned int resource,
++		struct rlimit *new_rlim)
+ {
+-	struct rlimit new_rlim, *old_rlim;
++	struct rlimit *old_rlim;
+ 	int retval;
+ 
+ 	if (resource >= RLIM_NLIMITS)
  		return -EINVAL;
--	old_rlim = current->signal->rlim + resource;
--	if ((new_rlim.rlim_max > old_rlim->rlim_max) &&
--	    !capable(CAP_SYS_RESOURCE))
--		return -EPERM;
- 	if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > sysctl_nr_open)
+-	if (copy_from_user(&new_rlim, rlim, sizeof(*rlim)))
+-		return -EFAULT;
+-	if (new_rlim.rlim_cur > new_rlim.rlim_max)
++	if (new_rlim->rlim_cur > new_rlim->rlim_max)
+ 		return -EINVAL;
+-	if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > sysctl_nr_open)
++	if (resource == RLIMIT_NOFILE && new_rlim->rlim_max > sysctl_nr_open)
  		return -EPERM;
  
-@@ -1304,11 +1300,16 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
- 		new_rlim.rlim_cur = 1;
+-	retval = security_task_setrlimit(current, resource, &new_rlim);
++	retval = security_task_setrlimit(tsk, resource, new_rlim);
+ 	if (retval)
+ 		return retval;
+ 
+-	if (resource == RLIMIT_CPU && new_rlim.rlim_cur == 0) {
++	if (resource == RLIMIT_CPU && new_rlim->rlim_cur == 0) {
+ 		/*
+ 		 * The caller is asking for an immediate RLIMIT_CPU
+ 		 * expiry.  But we use the zero value to mean "it was
+ 		 * never set".  So let's cheat and make it one second
+ 		 * instead
+ 		 */
+-		new_rlim.rlim_cur = 1;
++		new_rlim->rlim_cur = 1;
  	}
  
-+	old_rlim = current->signal->rlim + resource;
- 	task_lock(current->group_leader);
--	*old_rlim = new_rlim;
-+	if ((new_rlim.rlim_max <= old_rlim->rlim_max) ||
-+				capable(CAP_SYS_RESOURCE))
-+		*old_rlim = new_rlim;
-+	else
-+		retval = -EPERM;
- 	task_unlock(current->group_leader);
+-	old_rlim = current->signal->rlim + resource;
+-	task_lock(current->group_leader);
+-	if ((new_rlim.rlim_max <= old_rlim->rlim_max) ||
++	old_rlim = tsk->signal->rlim + resource;
++	task_lock(tsk->group_leader);
++	if ((new_rlim->rlim_max <= old_rlim->rlim_max) ||
+ 				capable(CAP_SYS_RESOURCE))
+-		*old_rlim = new_rlim;
++		*old_rlim = *new_rlim;
+ 	else
+ 		retval = -EPERM;
+-	task_unlock(current->group_leader);
++	task_unlock(tsk->group_leader);
  
--	if (resource != RLIMIT_CPU)
-+	if (retval || resource != RLIMIT_CPU)
+ 	if (retval || resource != RLIMIT_CPU)
+ 		goto out;
+@@ -1318,14 +1317,23 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+ 	 * very long-standing error, and fixing it now risks breakage of
+ 	 * applications, so we live with it
+ 	 */
+-	if (new_rlim.rlim_cur == RLIM_INFINITY)
++	if (new_rlim->rlim_cur == RLIM_INFINITY)
  		goto out;
  
- 	/*
-@@ -1322,7 +1323,7 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
- 
- 	update_rlimit_cpu(current, new_rlim.rlim_cur);
+-	update_rlimit_cpu(current, new_rlim.rlim_cur);
++	update_rlimit_cpu(tsk, new_rlim->rlim_cur);
  out:
--	return 0;
-+	return retval;
+ 	return retval;
  }
  
++SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
++{
++	struct rlimit new_rlim;
++
++	if (copy_from_user(&new_rlim, rlim, sizeof(*rlim)))
++		return -EFAULT;
++	return do_setrlimit(current, resource, &new_rlim);
++}
++
  /*
+  * It would make sense to put struct rusage in the task_struct,
+  * except that would make the task_struct be *really big*.  After
 -- 
 1.7.1
 
