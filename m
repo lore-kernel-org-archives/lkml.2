@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933094Ab0EJXBf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:01:35 -0400
-Received: from kroah.org ([198.145.64.141]:51773 "EHLO coco.kroah.org"
+	id S933073Ab0EJXBY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:01:24 -0400
+Received: from kroah.org ([198.145.64.141]:51757 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932886Ab0EJW6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:03 -0400
+	id S932883Ab0EJW6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:01 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:38 2010
-Message-Id: <20100510223538.550476928@kvm.kroah.org>
+Message-Id: <20100510223538.384795492@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:58 -0700
+Date: Mon, 10 May 2010 15:34:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Joerg Roedel <joerg.roedel@amd.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [46/98] x86, k8 nb: Fix boot crash: enable k8_northbridges unconditionally on AMD systems
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: [44/98] x86-64: Clear a 64-bit FS/GS base on fork if selector is nonzero
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,114 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@amd64.org>
+From: H. Peter Anvin <hpa@zytor.com>
 
-commit 0e152cd7c16832bd5cadee0c2e41d9959bc9b6f9 upstream.
+commit 7ce5a2b9bb2e92902230e3121d8c3047fab9cb47 upstream.
 
-de957628ce7c84764ff41331111036b3ae5bad0f changed setting of the
-x86_init.iommu.iommu_init function ptr only when GART IOMMU is
-found.
+When we do a thread switch, we clear the outgoing FS/GS base if the
+corresponding selector is nonzero.  This is taken by __switch_to() as
+an entry invariant; it does not verify that it is true on entry.
+However, copy_thread() doesn't enforce this constraint, which can
+result in inconsistent results after fork().
 
-One side effect of it is that num_k8_northbridges
-is not initialized anymore if not explicitly
-called. This resulted in uninitialized pointers in
-<arch/x86/kernel/cpu/intel_cacheinfo.c:amd_calc_l3_indices()>,
-for example, which uses the num_k8_northbridges thing through
-node_to_k8_nb_misc().
+Make copy_thread() match the behavior of __switch_to().
 
-Fix that through an initcall that runs right after the PCI
-subsystem and does all the scanning. Then, remove initialization
-in gart_iommu_init() which is a rootfs_initcall and we're
-running before that.
-
-What is more, since num_k8_northbridges is being used in other
-places beside GART IOMMU, include it whenever we add AMD CPU
-support. The previous dependency chain in kconfig contained
-
-K8_NB depends on AGP_AMD64|GART_IOMMU
-
-which was clearly incorrect. The more natural way in terms of
-hardware dependency should be
-
-AGP_AMD64|GART_IOMMU depends on K8_NB depends on CPU_SUP_AMD &&
-PCI. Make it so Number One!
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-LKML-Reference: <20100312144303.GA29262@aftab>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Tested-by: Joerg Roedel <joerg.roedel@amd.com>
+Reported-and-tested-by: Samuel Thibault <samuel.thibault@inria.fr>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+LKML-Reference: <4BD1E061.8030605@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/Kconfig              |    4 ++--
- arch/x86/kernel/k8.c          |   14 ++++++++++++++
- arch/x86/kernel/pci-gart_64.c |    2 +-
- drivers/char/agp/Kconfig      |    2 +-
- 4 files changed, 18 insertions(+), 4 deletions(-)
+ arch/x86/kernel/process_64.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -622,7 +622,7 @@ config GART_IOMMU
- 	bool "GART IOMMU support" if EMBEDDED
- 	default y
- 	select SWIOTLB
--	depends on X86_64 && PCI
-+	depends on X86_64 && PCI && K8_NB
- 	---help---
- 	  Support for full DMA access of devices with 32bit memory access only
- 	  on systems with more than 3GB. This is usually needed for USB,
-@@ -2027,7 +2027,7 @@ endif # X86_32
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -295,11 +295,10 @@ int copy_thread(unsigned long clone_flag
  
- config K8_NB
- 	def_bool y
--	depends on AGP_AMD64 || (X86_64 && (GART_IOMMU || (PCI && NUMA)))
-+	depends on CPU_SUP_AMD && PCI
+ 	set_tsk_thread_flag(p, TIF_FORK);
  
- source "drivers/pcmcia/Kconfig"
+-	p->thread.fs = me->thread.fs;
+-	p->thread.gs = me->thread.gs;
+-
+ 	savesegment(gs, p->thread.gsindex);
++	p->thread.gs = p->thread.gsindex ? 0 : me->thread.gs;
+ 	savesegment(fs, p->thread.fsindex);
++	p->thread.fs = p->thread.fsindex ? 0 : me->thread.fs;
+ 	savesegment(es, p->thread.es);
+ 	savesegment(ds, p->thread.ds);
  
---- a/arch/x86/kernel/k8.c
-+++ b/arch/x86/kernel/k8.c
-@@ -121,3 +121,17 @@ void k8_flush_garts(void)
- }
- EXPORT_SYMBOL_GPL(k8_flush_garts);
- 
-+static __init int init_k8_nbs(void)
-+{
-+	int err = 0;
-+
-+	err = cache_k8_northbridges();
-+
-+	if (err < 0)
-+		printk(KERN_NOTICE "K8 NB: Cannot enumerate AMD northbridges.\n");
-+
-+	return err;
-+}
-+
-+/* This has to go after the PCI subsystem */
-+fs_initcall(init_k8_nbs);
---- a/arch/x86/kernel/pci-gart_64.c
-+++ b/arch/x86/kernel/pci-gart_64.c
-@@ -720,7 +720,7 @@ void __init gart_iommu_init(void)
- 	unsigned long scratch;
- 	long i;
- 
--	if (cache_k8_northbridges() < 0 || num_k8_northbridges == 0)
-+	if (num_k8_northbridges == 0)
- 		return;
- 
- #ifndef CONFIG_AGP_AMD64
---- a/drivers/char/agp/Kconfig
-+++ b/drivers/char/agp/Kconfig
-@@ -57,7 +57,7 @@ config AGP_AMD
- 
- config AGP_AMD64
- 	tristate "AMD Opteron/Athlon64 on-CPU GART support" if !GART_IOMMU
--	depends on AGP && X86
-+	depends on AGP && X86 && K8_NB
- 	default y if GART_IOMMU
- 	help
- 	  This option gives you AGP support for the GLX component of
 
 
