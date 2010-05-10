@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab0EJJlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 05:41:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55328 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755708Ab0EJJlB convert rfc822-to-8bit (ORCPT
+	id S1756055Ab0EJJk3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 05:40:29 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40153 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756048Ab0EJJkX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 05:41:01 -0400
-Subject: Re: [RFC][PATCH 2/9] perf: core, remove hw_perf_event_init
+	Mon, 10 May 2010 05:40:23 -0400
+Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
 From: Peter Zijlstra <peterz@infradead.org>
 To: Lin Ming <ming.m.lin@intel.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
@@ -20,36 +20,35 @@ Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
        "David S. Miller" <davem@davemloft.net>,
        Russell King <rmk+kernel@arm.linux.org.uk>,
        Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1273483595.15998.56.camel@minggr.sh.intel.com>
-References: <1273483595.15998.56.camel@minggr.sh.intel.com>
+In-Reply-To: <1273483623.15998.57.camel@minggr.sh.intel.com>
+References: <1273483623.15998.57.camel@minggr.sh.intel.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 10 May 2010 11:40:30 +0200
-Message-ID: <1273484430.5605.3334.camel@twins>
+Date: Mon, 10 May 2010 11:40:01 +0200
+Message-ID: <1273484401.5605.3333.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 17:26 +0800, Lin Ming wrote:
-> +static struct pmu *perf_event_lookup_pmu(struct perf_event *event)
-> +{
-> +       struct pmu *pmu;
-> +       int pmu_id = event->attr.pmu_id;
-> +
-> +       list_for_each_entry(pmu, &pmus, entry) {
-> +               if (pmu->id == pmu_id)
-> +                       return pmu;
-> +       }
-> +
-> +       return NULL;
-> +}
+On Mon, 2010-05-10 at 17:27 +0800, Lin Ming wrote:
+> Export pmus via sysfs /sys/devices/system/cpu/pmus/0...N
+> The file name is the pmu id, ie, /sys/devices/system/cpu/pmus/N
+> represents pmu id N.
+> So perf tool can use it to initialize perf_event_attr. 
 
-> +void perf_event_register_pmu(struct pmu *pmu)
-> +{
-> +       pmu->id = pmu_id_curr++;
-> +       list_add_tail(&pmu->entry, &pmus);
-> +} 
+Why create a whole new directory, why not:
 
-That will be wanting some sort of synchronization
+ /sys/devices/system/cpu/cpuN/pmu_id ?
+
+That way we can simply extend it to things like:
+
+ /sys/devices/system/cpu/cpuN/nodeN/pmu_id
+ /sys/devices/system/node/nodeN/pmi_id
+
+Instead of having to add something like:
+
+ /sys/devices/system/node/pmus/0..N
+
+
