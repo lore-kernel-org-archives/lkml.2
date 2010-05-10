@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab0EJJ3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 05:29:45 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45410 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab0EJJ3n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 05:29:43 -0400
-Date: Mon, 10 May 2010 10:29:09 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: akpm@linux-foundation.org, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 0/6] remove unnecessary sync_single_range_* in
-	dma_map_ops
-Message-ID: <20100510092909.GA11675@flint.arm.linux.org.uk>
-Mail-Followup-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-	akpm@linux-foundation.org, linux-arch@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1272371140-6085-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272371140-6085-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755900Ab0EJJaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 05:30:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:45812 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753072Ab0EJJaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 05:30:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,361,1270450800"; 
+   d="scan'208";a="275210201"
+Subject: [RFC][PATCH 9/9] perf top: set perf_event_attr->pmu_id
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain
+Date: Mon, 10 May 2010 17:29:20 +0800
+Message-Id: <1273483760.15998.63.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 09:25:34PM +0900, FUJITA Tomonori wrote:
-> This patchset removes useless sync_single_range_for_cpu and
-> sync_single_range_for_device hooks in dma_map_ops. These hooks were
-> for dma_sync_single_range_* DMA API, however, the API became obsolete
-> (the description in DMA API docs was removed too). Architecutres
-> should use sync_single_for_cpu and sync_single_for_device hooks
-> instead (as DMA API docs say, they need to support a partial sync).
+This is just a temporary patch to show the setting of
+perf_event_attr->pmu_id. 
 
-If you're going to do this, then please catch all instances - compare
-the number of places which contain "dma_sync_single_range" with your
-diffstat and you'll notice you've missed a _lot_ of places.
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ tools/perf/builtin-top.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-$ git grep -l '\<dma_sync_single_range'
-arch/arm/include/asm/dma-mapping.h
-arch/avr32/include/asm/dma-mapping.h
-arch/blackfin/include/asm/dma-mapping.h
-arch/cris/include/asm/dma-mapping.h
-arch/frv/include/asm/dma-mapping.h
-arch/m68k/include/asm/dma-mapping.h
-arch/mips/include/asm/dma-mapping.h
-arch/mips/mm/dma-default.c
-arch/mn10300/include/asm/dma-mapping.h
-arch/parisc/include/asm/dma-mapping.h
-arch/xtensa/include/asm/dma-mapping.h
-include/asm-generic/dma-mapping-broken.h
-include/asm-generic/dma-mapping-common.h
-include/linux/ssb/ssb.h
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ed9b5b6..f775393 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1213,6 +1213,11 @@ static void start_counter(int i, int counter)
+ 
+ 	attr = attrs + counter;
+ 
++	/*
++	 * TBD: in the future, may read /sys/devices/system/cpu/pmus/<pmu_id> 
++	 * to get the pmu id
++	 */
++	attr.pmu_id = 0;
+ 	attr->sample_type	= PERF_SAMPLE_IP | PERF_SAMPLE_TID;
+ 
+ 	if (freq) {
 
-vs.
 
->  arch/ia64/kernel/pci-swiotlb.c           |    2 -
->  arch/powerpc/kernel/dma-swiotlb.c        |    4 +-
->  arch/powerpc/kernel/dma.c                |   12 +++++-----
->  arch/x86/kernel/pci-swiotlb.c            |    2 -
->  include/asm-generic/dma-mapping-common.h |   20 +-----------------
->  include/linux/dma-mapping.h              |   10 ---------
->  include/linux/swiotlb.h                  |   10 ---------
->  lib/swiotlb.c                            |   31 ------------------------------
->  8 files changed, 10 insertions(+), 81 deletions(-)
-
-It seems there's users of this API in linux/ssb/ssb.h.
-
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
