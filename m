@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933134Ab0EJXDp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:03:45 -0400
-Received: from kroah.org ([198.145.64.141]:45312 "EHLO coco.kroah.org"
+	id S1757686Ab0EJXMH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:12:07 -0400
+Received: from kroah.org ([198.145.64.141]:45429 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932920Ab0EJW6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:24 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:41 2010
-Message-Id: <20100510223540.974834172@kvm.kroah.org>
+	id S932957Ab0EJW6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:39 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:42 2010
+Message-Id: <20100510223542.681274000@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:25 -0700
+Date: Mon, 10 May 2010 15:35:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Francois Romieu <romieu@fr.zoreil.com>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [73/98] r8169: more broken register writes workaround
+       Tejun Heo <tj@kernel.org>, James Bottomley <James.Bottomley@suse.de>
+Subject: [92/98] SCSI: fix locking around blk_abort_request()
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +25,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?fran=C3=A7ois=20romieu?= <romieu@fr.zoreil.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 908ba2bfd22253f26fa910cd855e4ccffb1467d0 upstream.
+commit 70b25f890ce9f0520c64075ce9225a5b020a513e upstream.
 
-78f1cd02457252e1ffbc6caa44a17424a45286b8 ("fix broken register writes")
-does not work for Al Viro's r8169 (XID 18000000).
+blk_abort_request() expects queue lock to be held by the caller.
+Grab it before calling the function.
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Lack of this synchronization led to infinite loop on corrupt
+q->timeout_list.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/r8169.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/scsi/libsas/sas_ata.c       |    4 ++++
+ drivers/scsi/libsas/sas_scsi_host.c |    4 ++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -2832,8 +2832,13 @@ static void rtl_rar_set(struct rtl8169_p
- 	spin_lock_irq(&tp->lock);
+--- a/drivers/scsi/libsas/sas_ata.c
++++ b/drivers/scsi/libsas/sas_ata.c
+@@ -394,11 +394,15 @@ int sas_ata_init_host_and_port(struct do
+ void sas_ata_task_abort(struct sas_task *task)
+ {
+ 	struct ata_queued_cmd *qc = task->uldd_task;
++	struct request_queue *q = qc->scsicmd->device->request_queue;
+ 	struct completion *waiting;
++	unsigned long flags;
  
- 	RTL_W8(Cfg9346, Cfg9346_Unlock);
-+
- 	RTL_W32(MAC4, high);
-+	RTL_R32(MAC4);
-+
- 	RTL_W32(MAC0, low);
-+	RTL_R32(MAC0);
-+
- 	RTL_W8(Cfg9346, Cfg9346_Lock);
+ 	/* Bounce SCSI-initiated commands to the SCSI EH */
+ 	if (qc->scsicmd) {
++		spin_lock_irqsave(q->queue_lock, flags);
+ 		blk_abort_request(qc->scsicmd->request);
++		spin_unlock_irqrestore(q->queue_lock, flags);
+ 		scsi_schedule_eh(qc->scsicmd->device->host);
+ 		return;
+ 	}
+--- a/drivers/scsi/libsas/sas_scsi_host.c
++++ b/drivers/scsi/libsas/sas_scsi_host.c
+@@ -1025,6 +1025,8 @@ int __sas_task_abort(struct sas_task *ta
+ void sas_task_abort(struct sas_task *task)
+ {
+ 	struct scsi_cmnd *sc = task->uldd_task;
++	struct request_queue *q = sc->device->request_queue;
++	unsigned long flags;
  
- 	spin_unlock_irq(&tp->lock);
+ 	/* Escape for libsas internal commands */
+ 	if (!sc) {
+@@ -1039,7 +1041,9 @@ void sas_task_abort(struct sas_task *tas
+ 		return;
+ 	}
+ 
++	spin_lock_irqsave(q->queue_lock, flags);
+ 	blk_abort_request(sc->request);
++	spin_unlock_irqrestore(q->queue_lock, flags);
+ 	scsi_schedule_eh(sc->device->host);
+ }
+ 
 
 
