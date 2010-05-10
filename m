@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab0EJI4B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 04:56:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17222 "EHLO mx1.redhat.com"
+	id S1751506Ab0EJJF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 05:05:59 -0400
+Received: from mga14.intel.com ([143.182.124.37]:63118 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753364Ab0EJIz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 04:55:59 -0400
-Message-ID: <4BE7CA19.1030405@redhat.com>
-Date: Mon, 10 May 2010 11:55:53 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1750964Ab0EJJF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 05:05:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,361,1270450800"; 
+   d="scan'208";a="275203685"
+Date: Mon, 10 May 2010 17:17:07 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Jacob Pan <jacob.jun.pan@linux.intel.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "Ingo Molnar" <mingo@elte.hu>,
+       "Du, Alek" <alek.du@intel.com>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/8] x86/mrst: add vrtc driver which serves as a wall
+ clock device
+Message-ID: <20100510171707.28da6795@feng-i7>
+In-Reply-To: <4BE47059.8090101@zytor.com>
+References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1273254108-3234-8-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1273258266.1540.63.camel@Joe-Laptop.home>
+	<20100507200208.09b2941d@lxorguk.ukuu.org.uk>
+	<1273259187.1540.75.camel@Joe-Laptop.home>
+	<4BE47059.8090101@zytor.com>
+Organization: intel
+X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Joerg Roedel <joro@8bytes.org>,
-       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Subject: Re: [RFC PATCH] kvm: calculate correct gfn for small host pages which
- emulates large guest pages
-References: <4BD97AC1.8070704@cn.fujitsu.com> <4BDA4342.9070603@cn.fujitsu.com>
-In-Reply-To: <4BDA4342.9070603@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2010 05:41 AM, Lai Jiangshan wrote:
-> Lai Jiangshan wrote:
->    
->> RFC, because maybe I missing something with the old code.
->>
->> Frome: Lai Jiangshan<laijs@cn.fujitsu.com>
->>
->> In Document/kvm/mmu.txt:
->>    gfn:
->>      Either the guest page table containing the translations shadowed by this
->>      page, or the base page frame for linear translations. See role.direct.
->>
->> But in function FNAME(fetch)(), sp->gfn is incorrect when one of following
->> situations occurred:
->>   1) guest is 32bit paging and guest uses pse-36 and the guest PDE maps
->>      a 4-MByte page(backed by 4k host pages) and bits 20:13 of the guest PDE
->>      is not equals to 0.
->>   2) guest is long mode paging and the guest PDPTE maps a 1-GByte page
->>      (backed by 4k or 2M host pages)
->>
->>      
-> Resend this patch with the changelog changed.
->
-> As Marcelo Tosatti and Gui Jianfeng points out,
-> FNAME(fetch)() miss quadrant on 4mb large page emulation with shadow.
->
-> Subject: [PATCH] kvm: calculate correct gfn for small host pages which emulates large guest pages
->
-> In Document/kvm/mmu.txt:
->    gfn:
->      Either the guest page table containing the translations shadowed by this
->      page, or the base page frame for linear translations. See role.direct.
->
-> But in function FNAME(fetch)(), sp->gfn is incorrect when one of following
-> situations occurred:
->   1) guest is 32bit paging and the guest PDE maps a 4-MByte page
->      (backed by 4k host pages), FNAME(fetch)() miss handling the quadrant.
->
->      And if guest use pse-36, "table_gfn = gpte_to_gfn(gw->ptes[level - delta]);"
->      is incorrect.
->   2) guest is long mode paging and the guest PDPTE maps a 1-GByte page
->      (backed by 4k or 2M host pages).
->
-> So we fix it to suit to the document and suit to the code which
-> requires sp->gfn correct when sp->role.direct=1.
->
-> We use the goal mapping gfn(gw->gfn) to calculate the base page frame
-> for linear translations, it is simple and easy to be understood.
->
-> Signed-off-by: Lai Jiangshan<laijs@cn.fujitsu.com>
-> ---
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index 702c016..958e9c6 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -338,10 +338,13 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
->   			direct = 1;
->   			if (!is_dirty_gpte(gw->ptes[level - delta]))
->   				access&= ~ACC_WRITE_MASK;
-> -			table_gfn = gpte_to_gfn(gw->ptes[level - delta]);
-> -			/* advance table_gfn when emulating 1gb pages with 4k */
-> -			if (delta == 0)
-> -				table_gfn += PT_INDEX(addr, level);
-> +			/*
-> +			 * It is a large guest pages backed by small host pages,
-> +			 * So we set @direct(@shadow_page->role.direct)=1, and
-> +			 * set @table_gfn(@shadow_page->gfn)=the base page frame
-> +			 * for linear translations.
-> +			 */
-> +			table_gfn = gw->gfn&  ~(KVM_PAGES_PER_HPAGE(level) - 1);
->   		} else {
->   			direct = 0;
->   			table_gfn = gw->table_gfn[level - 2];
->    
+On Sat, 8 May 2010 03:56:09 +0800
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-Looks good, indeed it is a lot easier to understand than the original 
-calculation (a minor issue is that the variable name is misleading, but 
-that's a problem with kvm_mmu_page definition and not this patch).
 
--- 
-error compiling committee.c: too many arguments to function
+> > 
+> 
+> Probably the right thing to do is to (a) move all this printing to
+> common code; (b) change to ISO 8601 format.
+> 
+> 	-hpa
+> 
 
+Thank you all for the comments. please review this follow-on patch.
+
+- Feng
+--
+diff --git a/arch/x86/kernel/vrtc.c b/arch/x86/kernel/vrtc.c
+index fa1eb63..0fbd74d 100644
+--- a/arch/x86/kernel/vrtc.c
++++ b/arch/x86/kernel/vrtc.c
+@@ -74,8 +74,8 @@ unsigned long vrtc_get_time(void)
+ 	/* vRTC YEAR reg contains the offset to 1960 */
+ 	year += 1960;
+ 
+-	printk(KERN_INFO "vRTC: sec: %d min: %d hour: %d day: %d "
+-		"mon: %d year: %d\n", sec, min, hour, mday, mon, year);
++	pr_debug("vrtc time: %4d-%02d-%02d %02d:%02d:%02d\n",
++		year, mon, mday, hour, min, sec);
+ 
+ 	return mktime(year, mon, mday, hour, min, sec);
+ }
