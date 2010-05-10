@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421Ab0EJXj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:39:58 -0400
-Received: from kroah.org ([198.145.64.141]:33007 "EHLO coco.kroah.org"
+	id S933389Ab0EJXjv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:39:51 -0400
+Received: from kroah.org ([198.145.64.141]:33016 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932377Ab0EJWwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:02 -0400
+	id S932378Ab0EJWwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:03 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:20 2010
-Message-Id: <20100510223320.268027175@kvm.kroah.org>
+Message-Id: <20100510223320.357232971@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:05 -0700
+Date: Mon, 10 May 2010 15:32:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Joel Becker <joel.becker@oracle.com>
-Subject: [034/117] ocfs2_dlmfs: Fix math error when reading LVB.
+       Mark Langsdorf <mark.langsdorf@amd.com>,
+       Borislav Petkov <borislav.petkov@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [035/117] powernow-k8: Fix frequency reporting
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joel Becker <joel.becker@oracle.com>
+From: Mark Langsdorf <mark.langsdorf@amd.com>
 
-commit a36d515c7a2dfacebcf41729f6812dbc424ebcf0 upstream.
+commit b810e94c9d8e3fff6741b66cd5a6f099a7887871 upstream.
 
-When asked for a partial read of the LVB in a dlmfs file, we can
-accidentally calculate a negative count.
+With F10, model 10, all valid frequencies are in the ACPI _PST table.
 
-Reported-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
+Signed-off-by: Mark Langsdorf <mark.langsdorf@amd.com>
+LKML-Reference: <1270065406-1814-6-git-send-email-bp@amd64.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Reviewed-by: Thomas Renninger <trenn@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/dlm/dlmfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/ocfs2/dlm/dlmfs.c
-+++ b/fs/ocfs2/dlm/dlmfs.c
-@@ -205,7 +205,7 @@ static ssize_t dlmfs_file_read(struct fi
- 	if ((count + *ppos) > i_size_read(inode))
- 		readlen = i_size_read(inode) - *ppos;
- 	else
--		readlen = count - *ppos;
-+		readlen = count;
+--- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
++++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+@@ -929,7 +929,8 @@ static int fill_powernow_table_pstate(st
+ 		powernow_table[i].index = index;
  
- 	lvb_buf = kmalloc(readlen, GFP_NOFS);
- 	if (!lvb_buf)
+ 		/* Frequency may be rounded for these */
+-		if (boot_cpu_data.x86 == 0x10 || boot_cpu_data.x86 == 0x11) {
++		if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
++				 || boot_cpu_data.x86 == 0x11) {
+ 			powernow_table[i].frequency =
+ 				freq_from_fid_did(lo & 0x3f, (lo >> 6) & 7);
+ 		} else
 
 
