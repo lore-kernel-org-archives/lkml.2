@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab0EJW7Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:59:25 -0400
-Received: from kroah.org ([198.145.64.141]:51644 "EHLO coco.kroah.org"
+	id S933233Ab0EJXEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:04:13 -0400
+Received: from kroah.org ([198.145.64.141]:45354 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932769Ab0EJW5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:41 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:36 2010
-Message-Id: <20100510223536.153266288@kvm.kroah.org>
+	id S932933Ab0EJW63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:29 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:41 2010
+Message-Id: <20100510223541.503627465@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:31 -0700
+Date: Mon, 10 May 2010 15:35:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       William Lightning <kassah@gmail.com>
-Subject: [19/98] USB: Add id for HP ev2210 a.k.a Sierra MC5725 miniPCI-e Cell Modem.
+       Lalit Chandivade <lalit.chandivade@qlogic.com>,
+       Michael Hernandez <michael.hernandez@qlogic.com>,
+       Ravi Anand <ravi.anand@qlogic.com>,
+       Andrew Vasquez <andrew.vasquez@qlogic.com>,
+       Giridhar Malavali <giridhar.malavali@qlogic.com>,
+       James Bottomley <James.Bottomley@suse.de>
+Subject: [79/98] [SCSI] qla2xxx: Properly handle UNDERRUN completion statuses.
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,26 +30,185 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: William Lightning <kassah@gmail.com>
+From: Lalit Chandivade <lalit.chandivade@qlogic.com>
 
-commit cfbaa39347b34837f26e01fe8f4f8dbbae60b520 upstream.
+commit 0f00a206ccb1dc644b6770ef25f185610fee6962 upstream.
 
-Signed-off-by: William Lightning <kassah@gmail.com>
+Correct issues where the lower scsi-status would be improperly
+cleared, instead, allow the midlayer to process the status after
+the proper residual-count checks are performed.  Finally,
+validate firmware status flags prior to assigning values from the
+FCP_RSP frame.
+
+Signed-off-by: Lalit Chandivade <lalit.chandivade@qlogic.com>
+Signed-off-by: Michael Hernandez <michael.hernandez@qlogic.com>
+Signed-off-by: Ravi Anand <ravi.anand@qlogic.com>
+Signed-off-by: Andrew Vasquez <andrew.vasquez@qlogic.com>
+Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/sierra.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/qla2xxx/qla_isr.c |  120 +++++++++++++++++++----------------------
+ 1 file changed, 57 insertions(+), 63 deletions(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -195,6 +195,7 @@ static const struct sierra_iface_info di
- static struct usb_device_id id_table [] = {
- 	{ USB_DEVICE(0x0F3D, 0x0112) }, /* Airprime/Sierra PC 5220 */
- 	{ USB_DEVICE(0x03F0, 0x1B1D) },	/* HP ev2200 a.k.a MC5720 */
-+	{ USB_DEVICE(0x03F0, 0x211D) }, /* HP ev2210 a.k.a MC5725 */
- 	{ USB_DEVICE(0x03F0, 0x1E1D) },	/* HP hs2300 a.k.a MC8775 */
+--- a/drivers/scsi/qla2xxx/qla_isr.c
++++ b/drivers/scsi/qla2xxx/qla_isr.c
+@@ -1347,16 +1347,22 @@ qla2x00_status_entry(scsi_qla_host_t *vh
  
- 	{ USB_DEVICE(0x1199, 0x0017) },	/* Sierra Wireless EM5625 */
+ 	sense_len = rsp_info_len = resid_len = fw_resid_len = 0;
+ 	if (IS_FWI2_CAPABLE(ha)) {
+-		sense_len = le32_to_cpu(sts24->sense_len);
+-		rsp_info_len = le32_to_cpu(sts24->rsp_data_len);
+-		resid_len = le32_to_cpu(sts24->rsp_residual_count);
+-		fw_resid_len = le32_to_cpu(sts24->residual_len);
++		if (scsi_status & SS_SENSE_LEN_VALID)
++			sense_len = le32_to_cpu(sts24->sense_len);
++		if (scsi_status & SS_RESPONSE_INFO_LEN_VALID)
++			rsp_info_len = le32_to_cpu(sts24->rsp_data_len);
++		if (scsi_status & (SS_RESIDUAL_UNDER | SS_RESIDUAL_OVER))
++			resid_len = le32_to_cpu(sts24->rsp_residual_count);
++		if (comp_status == CS_DATA_UNDERRUN)
++			fw_resid_len = le32_to_cpu(sts24->residual_len);
+ 		rsp_info = sts24->data;
+ 		sense_data = sts24->data;
+ 		host_to_fcp_swap(sts24->data, sizeof(sts24->data));
+ 	} else {
+-		sense_len = le16_to_cpu(sts->req_sense_length);
+-		rsp_info_len = le16_to_cpu(sts->rsp_info_len);
++		if (scsi_status & SS_SENSE_LEN_VALID)
++			sense_len = le16_to_cpu(sts->req_sense_length);
++		if (scsi_status & SS_RESPONSE_INFO_LEN_VALID)
++			rsp_info_len = le16_to_cpu(sts->rsp_info_len);
+ 		resid_len = le32_to_cpu(sts->residual_length);
+ 		rsp_info = sts->rsp_info;
+ 		sense_data = sts->req_sense_data;
+@@ -1443,38 +1449,62 @@ qla2x00_status_entry(scsi_qla_host_t *vh
+ 		break;
+ 
+ 	case CS_DATA_UNDERRUN:
+-		resid = resid_len;
++		DEBUG2(printk(KERN_INFO
++		    "scsi(%ld:%d:%d) UNDERRUN status detected 0x%x-0x%x. "
++		    "resid=0x%x fw_resid=0x%x cdb=0x%x os_underflow=0x%x\n",
++		    vha->host_no, cp->device->id, cp->device->lun, comp_status,
++		    scsi_status, resid_len, fw_resid_len, cp->cmnd[0],
++		    cp->underflow));
++
+ 		/* Use F/W calculated residual length. */
+-		if (IS_FWI2_CAPABLE(ha)) {
+-			if (!(scsi_status & SS_RESIDUAL_UNDER)) {
+-				lscsi_status = 0;
+-			} else if (resid != fw_resid_len) {
+-				scsi_status &= ~SS_RESIDUAL_UNDER;
+-				lscsi_status = 0;
++		resid = IS_FWI2_CAPABLE(ha) ? fw_resid_len : resid_len;
++		scsi_set_resid(cp, resid);
++		if (scsi_status & SS_RESIDUAL_UNDER) {
++			if (IS_FWI2_CAPABLE(ha) && fw_resid_len != resid_len) {
++				DEBUG2(printk(
++				    "scsi(%ld:%d:%d:%d) Dropped frame(s) "
++				    "detected (%x of %x bytes)...residual "
++				    "length mismatch...retrying command.\n",
++				    vha->host_no, cp->device->channel,
++				    cp->device->id, cp->device->lun, resid,
++				    scsi_bufflen(cp)));
++
++				cp->result = DID_ERROR << 16 | lscsi_status;
++				break;
+ 			}
+-			resid = fw_resid_len;
+-		}
+ 
+-		if (scsi_status & SS_RESIDUAL_UNDER) {
+-			scsi_set_resid(cp, resid);
+-		} else {
+-			DEBUG2(printk(KERN_INFO
+-			    "scsi(%ld:%d:%d) UNDERRUN status detected "
+-			    "0x%x-0x%x. resid=0x%x fw_resid=0x%x cdb=0x%x "
+-			    "os_underflow=0x%x\n", vha->host_no,
+-			    cp->device->id, cp->device->lun, comp_status,
+-			    scsi_status, resid_len, resid, cp->cmnd[0],
+-			    cp->underflow));
++			if (!lscsi_status &&
++			    ((unsigned)(scsi_bufflen(cp) - resid) <
++			    cp->underflow)) {
++				qla_printk(KERN_INFO, ha,
++				    "scsi(%ld:%d:%d:%d): Mid-layer underflow "
++				    "detected (%x of %x bytes)...returning "
++				    "error status.\n", vha->host_no,
++				    cp->device->channel, cp->device->id,
++				    cp->device->lun, resid, scsi_bufflen(cp));
+ 
++				cp->result = DID_ERROR << 16;
++				break;
++			}
++		} else if (!lscsi_status) {
++			DEBUG2(printk(
++			    "scsi(%ld:%d:%d:%d) Dropped frame(s) detected "
++			    "(%x of %x bytes)...firmware reported underrun..."
++			    "retrying command.\n", vha->host_no,
++			    cp->device->channel, cp->device->id,
++			    cp->device->lun, resid, scsi_bufflen(cp)));
++
++			cp->result = DID_ERROR << 16;
++			break;
+ 		}
+ 
++		cp->result = DID_OK << 16 | lscsi_status;
++
+ 		/*
+ 		 * Check to see if SCSI Status is non zero. If so report SCSI
+ 		 * Status.
+ 		 */
+ 		if (lscsi_status != 0) {
+-			cp->result = DID_OK << 16 | lscsi_status;
+-
+ 			if (lscsi_status == SAM_STAT_TASK_SET_FULL) {
+ 				DEBUG2(printk(KERN_INFO
+ 				    "scsi(%ld): QUEUE FULL status detected "
+@@ -1501,42 +1531,6 @@ qla2x00_status_entry(scsi_qla_host_t *vh
+ 				break;
+ 
+ 			qla2x00_handle_sense(sp, sense_data, sense_len, rsp);
+-		} else {
+-			/*
+-			 * If RISC reports underrun and target does not report
+-			 * it then we must have a lost frame, so tell upper
+-			 * layer to retry it by reporting an error.
+-			 */
+-			if (!(scsi_status & SS_RESIDUAL_UNDER)) {
+-				DEBUG2(printk("scsi(%ld:%d:%d:%d) Dropped "
+-					      "frame(s) detected (%x of %x bytes)..."
+-					      "retrying command.\n",
+-					vha->host_no, cp->device->channel,
+-					cp->device->id, cp->device->lun, resid,
+-					scsi_bufflen(cp)));
+-
+-				scsi_set_resid(cp, resid);
+-				cp->result = DID_ERROR << 16;
+-				break;
+-			}
+-
+-			/* Handle mid-layer underflow */
+-			if ((unsigned)(scsi_bufflen(cp) - resid) <
+-			    cp->underflow) {
+-				qla_printk(KERN_INFO, ha,
+-					   "scsi(%ld:%d:%d:%d): Mid-layer underflow "
+-					   "detected (%x of %x bytes)...returning "
+-					   "error status.\n", vha->host_no,
+-					   cp->device->channel, cp->device->id,
+-					   cp->device->lun, resid,
+-					   scsi_bufflen(cp));
+-
+-				cp->result = DID_ERROR << 16;
+-				break;
+-			}
+-
+-			/* Everybody online, looking good... */
+-			cp->result = DID_OK << 16;
+ 		}
+ 		break;
+ 
 
 
