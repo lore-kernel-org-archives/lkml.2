@@ -1,103 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933112Ab0EJXU6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:20:58 -0400
-Received: from kroah.org ([198.145.64.141]:51612 "EHLO coco.kroah.org"
+	id S932719Ab0EJWyx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:54:53 -0400
+Received: from kroah.org ([198.145.64.141]:33355 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757431Ab0EJW5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:32 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:35 2010
-Message-Id: <20100510223535.528832417@kvm.kroah.org>
+	id S932416Ab0EJWwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:50 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:25 2010
+Message-Id: <20100510223325.693160095@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:24 -0700
+Date: Mon, 10 May 2010 15:33:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mel Gorman <mel@csn.ul.ie>, Peter Zijlstra <peterz@infradead.org>,
-       Darren Hart <darren@dvhart.com>
-Subject: [12/98] hugetlb: fix infinite loop in get_futex_key() when backed by huge pages
-In-Reply-To: <20100510223714.GA18416@kroah.com>
+       Neil Horman <nhorman@tuxdriver.com>,
+       Allan Stephens <allan.stephens@windriver.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       tipc-discussion@lists.sourceforge.net
+Subject: [092/117] tipc: Fix oops on send prior to entering networked mode (v3)
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Mel Gorman <mel@csn.ul.ie>
 
-commit 23be7468e8802a2ac1de6ee3eecb3ec7f14dc703 upstream.
+From: Neil Horman <nhorman@tuxdriver.com>
 
-If a futex key happens to be located within a huge page mapped
-MAP_PRIVATE, get_futex_key() can go into an infinite loop waiting for a
-page->mapping that will never exist.
+[ Upstream commit d0021b252eaf65ca07ed14f0d66425dd9ccab9a6 ]
 
-See https://bugzilla.redhat.com/show_bug.cgi?id=552257 for more details
-about the problem.
+Fix TIPC to disallow sending to remote addresses prior to entering NET_MODE
 
-This patch makes page->mapping a poisoned value that includes
-PAGE_MAPPING_ANON mapped MAP_PRIVATE.  This is enough for futex to
-continue but because of PAGE_MAPPING_ANON, the poisoned value is not
-dereferenced or used by futex.  No other part of the VM should be
-dereferencing the page->mapping of a hugetlbfs page as its page cache is
-not on the LRU.
+user programs can oops the kernel by sending datagrams via AF_TIPC prior to
+entering networked mode.  The following backtrace has been observed:
 
-This patch fixes the problem with the test case described in the bugzilla.
+ID: 13459  TASK: ffff810014640040  CPU: 0   COMMAND: "tipc-client"
+[exception RIP: tipc_node_select_next_hop+90]
+RIP: ffffffff8869d3c3  RSP: ffff81002d9a5ab8  RFLAGS: 00010202
+RAX: 0000000000000001  RBX: 0000000000000001  RCX: 0000000000000001
+RDX: 0000000000000000  RSI: 0000000000000001  RDI: 0000000001001001
+RBP: 0000000001001001   R8: 0074736575716552   R9: 0000000000000000
+R10: ffff81003fbd0680  R11: 00000000000000c8  R12: 0000000000000008
+R13: 0000000000000001  R14: 0000000000000001  R15: ffff810015c6ca00
+ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+RIP: 0000003cbd8d49a3  RSP: 00007fffc84e0be8  RFLAGS: 00010206
+RAX: 000000000000002c  RBX: ffffffff8005d116  RCX: 0000000000000000
+RDX: 0000000000000008  RSI: 00007fffc84e0c00  RDI: 0000000000000003
+RBP: 0000000000000000   R8: 00007fffc84e0c10   R9: 0000000000000010
+R10: 0000000000000000  R11: 0000000000000246  R12: 0000000000000000
+R13: 00007fffc84e0d10  R14: 0000000000000000  R15: 00007fffc84e0c30
+ORIG_RAX: 000000000000002c  CS: 0033  SS: 002b
 
-[akpm@linux-foundation.org: mel cant spel]
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Darren Hart <darren@dvhart.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+What happens is that, when the tipc module in inserted it enters a standalone
+node mode in which communication to its own address is allowed <0.0.0> but not
+to other addresses, since the appropriate data structures have not been
+allocated yet (specifically the tipc_net pointer).  There is nothing stopping a
+client from trying to send such a message however, and if that happens, we
+attempt to dereference tipc_net.zones while the pointer is still NULL, and
+explode.  The fix is pretty straightforward.  Since these oopses all arise from
+the dereference of global pointers prior to their assignment to allocated
+values, and since these allocations are small (about 2k total), lets convert
+these pointers to static arrays of the appropriate size.  All the accesses to
+these bits consider 0/NULL to be a non match when searching, so all the lookups
+still work properly, and there is no longer a chance of a bad dererence
+anywhere.  As a bonus, this lets us eliminate the setup/teardown routines for
+those pointers, and elimnates the need to preform any locking around them to
+prevent access while their being allocated/freed.
+
+I've updated the tipc_net structure to behave this way to fix the exact reported
+problem, and also fixed up the tipc_bearers and media_list arrays to fix an
+obvious simmilar problem that arises from issuing tipc-config commands to
+manipulate bearers/links prior to entering networked mode
+
+I've tested this for a few hours by running the sanity tests and stress test
+with the tipcutils suite, and nothing has fallen over.  There have been a few
+lockdep warnings, but those were there before, and can be addressed later, as
+they didn't actually result in any deadlock.
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Allan Stephens <allan.stephens@windriver.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: tipc-discussion@lists.sourceforge.net
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- include/linux/poison.h |    9 +++++++++
- mm/hugetlb.c           |    5 ++++-
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ net/tipc/bearer.c |   37 ++++++-------------------------------
+ net/tipc/bearer.h |    2 +-
+ net/tipc/net.c    |   25 ++++---------------------
+ 3 files changed, 11 insertions(+), 53 deletions(-)
 
---- a/include/linux/poison.h
-+++ b/include/linux/poison.h
-@@ -48,6 +48,15 @@
- #define POISON_FREE	0x6b	/* for use-after-free poisoning */
- #define	POISON_END	0xa5	/* end-byte of poisoning */
+--- a/net/tipc/bearer.c
++++ b/net/tipc/bearer.c
+@@ -45,10 +45,10 @@
  
-+/********** mm/hugetlb.c **********/
-+/*
-+ * Private mappings of hugetlb pages use this poisoned value for
-+ * page->mapping. The core VM should not be doing anything with this mapping
-+ * but futex requires the existence of some page->mapping value even though it
-+ * is unused if PAGE_MAPPING_ANON is set.
-+ */
-+#define HUGETLB_POISON	((void *)(0x00300300 + POISON_POINTER_DELTA + PAGE_MAPPING_ANON))
-+
- /********** arch/$ARCH/mm/init.c **********/
- #define POISON_FREE_INITMEM	0xcc
+ #define MAX_ADDR_STR 32
  
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -545,6 +545,7 @@ static void free_huge_page(struct page *
+-static struct media *media_list = NULL;
++static struct media media_list[MAX_MEDIA];
+ static u32 media_count = 0;
  
- 	mapping = (struct address_space *) page_private(page);
- 	set_page_private(page, 0);
-+	page->mapping = NULL;
- 	BUG_ON(page_count(page));
- 	INIT_LIST_HEAD(&page->lru);
+-struct bearer *tipc_bearers = NULL;
++struct bearer tipc_bearers[MAX_BEARERS];
  
-@@ -2095,8 +2096,10 @@ retry:
- 			spin_lock(&inode->i_lock);
- 			inode->i_blocks += blocks_per_huge_page(h);
- 			spin_unlock(&inode->i_lock);
--		} else
-+		} else {
- 			lock_page(page);
-+			page->mapping = HUGETLB_POISON;
-+		}
+ /**
+  * media_name_valid - validate media name
+@@ -108,9 +108,11 @@ int  tipc_register_media(u32 media_type,
+ 	int res = -EINVAL;
+ 
+ 	write_lock_bh(&tipc_net_lock);
+-	if (!media_list)
+-		goto exit;
+ 
++	if (tipc_mode != TIPC_NET_MODE) {
++		warn("Media <%s> rejected, not in networked mode yet\n", name);
++		goto exit;
++	}
+ 	if (!media_name_valid(name)) {
+ 		warn("Media <%s> rejected, illegal name\n", name);
+ 		goto exit;
+@@ -660,33 +662,10 @@ int tipc_disable_bearer(const char *name
+ 
+ 
+ 
+-int tipc_bearer_init(void)
+-{
+-	int res;
+-
+-	write_lock_bh(&tipc_net_lock);
+-	tipc_bearers = kcalloc(MAX_BEARERS, sizeof(struct bearer), GFP_ATOMIC);
+-	media_list = kcalloc(MAX_MEDIA, sizeof(struct media), GFP_ATOMIC);
+-	if (tipc_bearers && media_list) {
+-		res = 0;
+-	} else {
+-		kfree(tipc_bearers);
+-		kfree(media_list);
+-		tipc_bearers = NULL;
+-		media_list = NULL;
+-		res = -ENOMEM;
+-	}
+-	write_unlock_bh(&tipc_net_lock);
+-	return res;
+-}
+-
+ void tipc_bearer_stop(void)
+ {
+ 	u32 i;
+ 
+-	if (!tipc_bearers)
+-		return;
+-
+ 	for (i = 0; i < MAX_BEARERS; i++) {
+ 		if (tipc_bearers[i].active)
+ 			tipc_bearers[i].publ.blocked = 1;
+@@ -695,10 +674,6 @@ void tipc_bearer_stop(void)
+ 		if (tipc_bearers[i].active)
+ 			bearer_disable(tipc_bearers[i].publ.name);
  	}
+-	kfree(tipc_bearers);
+-	kfree(media_list);
+-	tipc_bearers = NULL;
+-	media_list = NULL;
+ 	media_count = 0;
+ }
  
- 	/*
+--- a/net/tipc/bearer.h
++++ b/net/tipc/bearer.h
+@@ -114,7 +114,7 @@ struct bearer_name {
+ 
+ struct link;
+ 
+-extern struct bearer *tipc_bearers;
++extern struct bearer tipc_bearers[];
+ 
+ void tipc_media_addr_printf(struct print_buf *pb, struct tipc_media_addr *a);
+ struct sk_buff *tipc_media_get_names(void);
+--- a/net/tipc/net.c
++++ b/net/tipc/net.c
+@@ -116,7 +116,8 @@
+ */
+ 
+ DEFINE_RWLOCK(tipc_net_lock);
+-struct network tipc_net = { NULL };
++struct _zone *tipc_zones[256] = { NULL, };
++struct network tipc_net = { tipc_zones };
+ 
+ struct tipc_node *tipc_net_select_remote_node(u32 addr, u32 ref)
+ {
+@@ -158,28 +159,12 @@ void tipc_net_send_external_routes(u32 d
+ 	}
+ }
+ 
+-static int net_init(void)
+-{
+-	memset(&tipc_net, 0, sizeof(tipc_net));
+-	tipc_net.zones = kcalloc(tipc_max_zones + 1, sizeof(struct _zone *), GFP_ATOMIC);
+-	if (!tipc_net.zones) {
+-		return -ENOMEM;
+-	}
+-	return 0;
+-}
+-
+ static void net_stop(void)
+ {
+ 	u32 z_num;
+ 
+-	if (!tipc_net.zones)
+-		return;
+-
+-	for (z_num = 1; z_num <= tipc_max_zones; z_num++) {
++	for (z_num = 1; z_num <= tipc_max_zones; z_num++)
+ 		tipc_zone_delete(tipc_net.zones[z_num]);
+-	}
+-	kfree(tipc_net.zones);
+-	tipc_net.zones = NULL;
+ }
+ 
+ static void net_route_named_msg(struct sk_buff *buf)
+@@ -282,9 +267,7 @@ int tipc_net_start(u32 addr)
+ 	tipc_named_reinit();
+ 	tipc_port_reinit();
+ 
+-	if ((res = tipc_bearer_init()) ||
+-	    (res = net_init()) ||
+-	    (res = tipc_cltr_init()) ||
++	if ((res = tipc_cltr_init()) ||
+ 	    (res = tipc_bclink_init())) {
+ 		return res;
+ 	}
 
 
