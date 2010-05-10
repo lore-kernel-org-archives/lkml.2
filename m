@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab0EJLyP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 07:54:15 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39760 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970Ab0EJLyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 07:54:14 -0400
-Date: Mon, 10 May 2010 13:53:44 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-Message-ID: <20100510115344.GA11238@elte.hu>
-References: <1273483623.15998.57.camel@minggr.sh.intel.com>
- <1273484401.5605.3333.camel@twins>
- <1273486313.15998.76.camel@minggr.sh.intel.com>
- <1273486708.5605.3342.camel@twins>
- <1273487195.15998.85.camel@minggr.sh.intel.com>
- <1273490824.5605.3379.camel@twins>
- <20100510114311.GA6449@elte.hu>
- <1273492164.5605.3397.camel@twins>
+	id S1751434Ab0EJLz5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 07:55:57 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:38379 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab0EJLzy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 07:55:54 -0400
+Date: Mon, 10 May 2010 05:55:52 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+       James.Bottomley@HansenPartnership.com, benh@kernel.crashing.org,
+       davem@davemloft.net, rmk@arm.linux.org.uk
+Subject: Re: [RFC PATCH] Update the cachetlb.txt file WRT flush_dcache_page
+	and update_mmu_cache
+Message-ID: <20100510115552.GD10452@parisc-linux.org>
+References: <20100507132418.28009.6013.stgit@e102109-lin.cambridge.arm.com> <20100510170616O.fujita.tomonori@lab.ntt.co.jp> <1273486607.3023.37.camel@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273492164.5605.3397.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1273486607.3023.37.camel@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Mon, 2010-05-10 at 13:43 +0200, Ingo Molnar wrote:
-> > 
-> > Yeah, we really want a mechanism like this in place instead of continuing with 
-> > the somewhat ad-hoc extensions to the event enumeration space.
-> > 
-> > One detail: i think we want one more level. Instead of:
-> > 
-> >  /sys/devices/system/node/nodeN/node_events
-> >                                 node_events/event_source_id
-> >                                 node_events/local_misses
-> >                                            /local_hits
-> >                                            /remote_misses
-> >                                            /remote_hits
-> >                                            /...
-> > 
-> > We want the individual events to be a directory, containing the event_id:
-> > 
-> >  /sys/devices/system/node/nodeN/node_events
-> >                                 node_events/event_source_id
-> >                                 node_events/local_misses/event_id
-> >                                            /local_hits/event_id
-> >                                            /remote_misses/event_id
-> >                                            /remote_hits/event_id
-> >                                            /...
-> > 
-> > The reason is that we want to keep our options open to add more attributes to 
-> > individual events. (In fact extended attributes already exist for certain 
-> > event classes - such as the 'format' info for tracepoints.) 
+On Mon, May 10, 2010 at 11:16:47AM +0100, Catalin Marinas wrote:
+> In most situations, just doing flushing in set_pte_at() would suffice
+> and flush_dcache_page() can be ignored. There are two situations where I
+> still see flush_dcache_page() useful:
 > 
-> Sure, sounds like a sensible suggestion.
+>      1. SMP systems where the cache maintenance operations aren't
+>         automatically broadcast in hardware
+>      2. The kernel modifies a page cache page that is already mapped in
+>         user space
 > 
-> One thing I'd also like to clarify is that !raw events should not be 
-> exhaustive hardware event lists, those are best left for userspace, but 
-> instead are generally useful events that can be expected to be implemented 
-> by any hardware of that particular class.
+> (1) can be worked around on some architectures (though not sure about
+> all of them).
 > 
-> So a GPU might have things like 'vsync' and 'cmd_pipeline_stall' or whatever 
-> is a generic GPU feature, but not very implementation specific things that 
-> the next generation of hardware won't ever have.
+> Is (2) a valid scenario?
 
-Definitely so.
+The kernel always calls kmap() / kunmap() around accesses to page cache
+pages (thanks to x86-32's ability to support 64GB).  There are three
+ways I know of that architectures use this:
 
-	Ingo
+1) No-ops.  These architectures don't have cache problems.
+2) Flush the kernel's mapping in kunmap().  This can have bad consequences
+in SMP systems with threaded programs.
+3) Select an address in kmap() that will alias to the user's address.
+
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
