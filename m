@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab0EJQ2A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 12:28:00 -0400
-Received: from stinky.trash.net ([213.144.137.162]:49606 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610Ab0EJQ15 (ORCPT
+	id S1754822Ab0EJQck (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 12:32:40 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34740 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab0EJQch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 12:27:57 -0400
-Message-ID: <4BE8340B.901@trash.net>
-Date: Mon, 10 May 2010 18:27:55 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: eric.dumazet@gmail.com, Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org,
-       peterz@infradead.org, linux-kernel@vger.kernel.org,
-       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-       paulmck@linux.vnet.ibm.com
-Subject: Re: mmotm 2010-04-28 - RCU whinges
-References: <1272865436.2173.182.camel@edumazet-laptop>	<20100502.225509.233880079.davem@davemloft.net>	<4BE8290A.2080707@trash.net> <20100510.091257.51273494.davem@davemloft.net>
-In-Reply-To: <20100510.091257.51273494.davem@davemloft.net>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	Mon, 10 May 2010 12:32:37 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Eric B Munson <ebmunson@us.ibm.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: [GIT PULL 0/4] perf improvements and fixes
+Date: Mon, 10 May 2010 13:32:17 -0300
+Message-Id: <1273509141-15696-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller wrote:
-> From: Patrick McHardy <kaber@trash.net>
-> Date: Mon, 10 May 2010 17:40:58 +0200
-> 
->> I queued this patch in nf-next, the only reason why I haven't
->> submitted it yet is that I was unable to get git to cleanly export
->> only the proper set of patches meant for -next due to a few merges,
->> it insists on including 5 patches already merged upstream. If you
->> don't mind ignoring the first 5 patches in the series, I'll send a
->> pull request tonight.
-> 
-> Something like "git format-patch origin" doesn't avoid those upstream
-> commits?  Weird...
+Hi Ingo,
 
-Yeah, it seems to have something to do with me merging the nf-2.6.git
-tree a few weeks ago since it had patches queued that were too late
-for 2.6.34. Even the --ignore-if-in-upstream option doesn't help.
+        Please pull from:
 
-> Another trick is to specify a commit range using triple-dot "..."
-> notation, such as "origin...master"
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
 
-Thanks, I'll give it another try, the alternative is manually
-renumbering the entire patchset.
+	The 3rd is important as it fixes a recently introduced bug (yesterday,
+I believe), that makes perf record segfault.
+
+Regards,
+
+Arnaldo Carvalho de Melo (4):
+  perf newt: Use newtAddComponent()
+  perf callchains: Use zalloc to allocate objects
+  perf session: create_kernel_maps should use ->host_machine
+  perf hist: Introduce hists class and move lots of methods to it
+
+ tools/perf/builtin-annotate.c |   17 ++++----
+ tools/perf/builtin-diff.c     |   50 ++++++++++------------
+ tools/perf/builtin-report.c   |   71 +++++++++++++++----------------
+ tools/perf/builtin-trace.c    |    2 +-
+ tools/perf/util/callchain.c   |    6 +-
+ tools/perf/util/event.c       |    2 +-
+ tools/perf/util/event.h       |   14 ------
+ tools/perf/util/hist.c        |   92 ++++++++++++++++++----------------------
+ tools/perf/util/hist.h        |   48 ++++++++++++---------
+ tools/perf/util/newt.c        |    6 +-
+ tools/perf/util/session.c     |    7 +--
+ tools/perf/util/session.h     |   12 ++++-
+ 12 files changed, 154 insertions(+), 173 deletions(-)
+
