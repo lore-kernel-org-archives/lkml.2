@@ -1,62 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab0EJMpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 08:45:15 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:57398
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750721Ab0EJMpM (ORCPT
+	id S1753698Ab0EJMql (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 08:46:41 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:41570 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202Ab0EJMqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 08:45:12 -0400
-X-SpamScore: -32
-X-BigFish: VPS-32(zz1432P98dN936eM1447R62a3Lzz1202hzz6d525hz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L27FD4-02-0GT-02
-X-M-MSG: 
-Date: Mon, 10 May 2010 14:43:53 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "mingo@elte.hu" <mingo@elte.hu>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [patch 1/4] x86,perf: P4 PMU -- configurate predefined events
-Message-ID: <20100510124353.GG6450@erda.amd.com>
-References: <20100508112550.187421916@openvz.org>
- <20100508112716.741423821@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100508112716.741423821@openvz.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Mon, 10 May 2010 08:46:39 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Huaxu Wan <huaxu.wan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+       huaxu.wan@intel.com, Carsten Emde <Carsten.Emde@osadl.org>
+Subject: Re: [PATCH 1/2 V2] hwmon: (coretemp) Detect the thermal sensors by CPUID
+In-Reply-To: Your message of "Mon, 10 May 2010 11:35:25 +0800."
+             <20100510033525.GC9181@owl>
+From: Valdis.Kletnieks@vt.edu
+References: <20100507095459.GA12190@owl>
+            <20100510033525.GC9181@owl>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1273495551_8340P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 10 May 2010 08:45:51 -0400
+Message-ID: <148928.1273495551@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020202.4BE80000.00C8,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.05.10 07:25:51, Cyrill Gorcunov wrote:
-> If an event is not RAW we should exit p4_hw_config
-> early but call x86_setup_perfctr as well.
+--==_Exmh_1273495551_8340P
+Content-Type: text/plain; charset=us-ascii
+
+On Mon, 10 May 2010 11:35:25 +0800, Huaxu Wan said:
 > 
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: Lin Ming <ming.m.lin@intel.com>
-> CC: Robert Richter <robert.richter@amd.com>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> The thermal sensors of Intel(R) CPUs can be detected by CPUID instruction,
+> indicated by CPUID.06H.EAX[0].
+> 
+> Signed-off-by: Huaxu Wan <huaxu.wan@linux.intel.com>
+> Signed-off-by: Carsten Emde <C.Emde@osadl.org>
 > ---
+>  drivers/hwmon/coretemp.c |   24 +++++++-----------------
+>  1 files changed, 7 insertions(+), 17 deletions(-)
 > 
-> Robert, if only I'm not missing something this is
-> a side effect of commit 9d0fcba67e47ff398a6fa86476d4884d472dc98a,
-> wonders why don't we hit it earlier. Am I wrong?
+> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+> index e9b7fbc..d194207 100644
+> --- a/drivers/hwmon/coretemp.c
+> +++ b/drivers/hwmon/coretemp.c
+> @@ -440,6 +440,7 @@ static int __init coretemp_init(void)
+>  {
+>  	int i, err = -ENODEV;
+>  	struct pdev_entry *p, *n;
+> +	u32 eax;
+>  
+>  	/* quick check if we run Intel */
+>  	if (cpu_data(0).x86_vendor != X86_VENDOR_INTEL)
+> @@ -450,23 +451,12 @@ static int __init coretemp_init(void)
+>  		goto exit;
+>  
+>  	for_each_online_cpu(i) {
+> -		struct cpuinfo_x86 *c = &cpu_data(i);
+> -
+> -		/* check if family 6, models 0xe (Pentium M DC),
+> -		  0xf (Core 2 DC 65nm), 0x16 (Core 2 SC 65nm),
+> -		  0x17 (Penryn 45nm), 0x1a (Nehalem), 0x1c (Atom),
+> -		  0x1e (Lynnfield) */
+> -		if ((c->cpuid_level < 0) || (c->x86 != 0x6) ||
+> -		    !((c->x86_model == 0xe) || (c->x86_model == 0xf) ||
+> -			(c->x86_model == 0x16) || (c->x86_model == 0x17) ||
+> -			(c->x86_model == 0x1a) || (c->x86_model == 0x1c) ||
+> -			(c->x86_model == 0x1e))) {
 
-Yes, that's true, the function had have two exit points. Thanks for
-the fix.
+So we remove something that checks the CPU level for a model we *expect*
+to find a thermal sensor, and only throws a KERN_WARNING if we're on a
+model we don't know about...
 
--Robert
+> + 		/* check if the CPU has thermal sensor */
+> + 		eax = cpuid_eax(0x06);
+> + 		if (!(eax & 0x01)) {
+> + 			struct cpuinfo_x86 *c = &cpu_data(i);
+> + 			printk(KERN_WARNING DRVNAME ": CPU (model=0x%x)"
+> + 				" has no thermal sensor!\n", c->x86_model);
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
+And replace it with a totally unprotected check that's going to fire off
+a KERN_WARNING on every single CPU that Intel ever made that doesn't
+include a hardware thermal sensor - including all the family 0-5,
+and model < 0x0e hardware.
+
+KERN_WARNING is for "We expected to find the hardware but it's gone off
+for a walk on us".  If you wanted to say "Hmm.. this CPU doesn't have one"
+you probably wanted KERN_DEBUG or *maybe* KERN_INFO.
+
+--==_Exmh_1273495551_8340P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFL5///cC3lWbTT17ARAsebAJ45wCEIcBkej9RyvSuThIT3aTwhUwCgtH4r
+gocOJqnVegIe/kxcRFcgi7s=
+=s9OR
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1273495551_8340P--
 
