@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab0EJKZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 06:25:57 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33210 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab0EJKZz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 06:25:55 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <9D38EE7159934A5C85505E9517638040@rainbow>
-From: "Iram Shahzad" <iram.shahzad@jp.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-References: <20090206060328.181057235@goodmis.org>
-Subject: hrtimer: about hres_active
-Date: Mon, 10 May 2010 19:27:06 +0900
-MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-2022-jp";
-	reply-type=original
+	id S1756560Ab0EJK1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 06:27:13 -0400
+Received: from mga14.intel.com ([143.182.124.37]:11473 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752428Ab0EJK1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 06:27:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,361,1270450800"; 
+   d="scan'208";a="275225169"
+Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1273486708.5605.3342.camel@twins>
+References: <1273483623.15998.57.camel@minggr.sh.intel.com>
+	 <1273484401.5605.3333.camel@twins>
+	 <1273486313.15998.76.camel@minggr.sh.intel.com>
+	 <1273486708.5605.3342.camel@twins>
+Content-Type: text/plain
+Date: Mon, 10 May 2010 18:26:35 +0800
+Message-Id: <1273487195.15998.85.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5843
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Mon, 2010-05-10 at 18:18 +0800, Peter Zijlstra wrote:
+> On Mon, 2010-05-10 at 18:11 +0800, Lin Ming wrote:
+> > On Mon, 2010-05-10 at 17:40 +0800, Peter Zijlstra wrote:
+> > > On Mon, 2010-05-10 at 17:27 +0800, Lin Ming wrote:
+> > > > Export pmus via sysfs /sys/devices/system/cpu/pmus/0...N
+> > > > The file name is the pmu id, ie, /sys/devices/system/cpu/pmus/N
+> > > > represents pmu id N.
+> > > > So perf tool can use it to initialize perf_event_attr. 
+> > > 
+> > > Why create a whole new directory, why not:
+> > > 
+> > >  /sys/devices/system/cpu/cpuN/pmu_id ?
+> > 
+> > 
+> > Do you mean /sys/devices/system/cpu/cpuN/pmu_id contain all ids?
+> > 
+> > For example, each cpu has 4 pmus and the file pmu_id shows something
+> > like,
+> > 
+> > #cat /sys/devices/system/cpu/cpu0/pmu_id
+> > 0 1 2 3
+> 
+> No, I'm assuming there is only 1 PMU per CPU. Corey is the expert on
+> crazy hardware though, but I think the sanest way is to extend the CPU
+> topology if there's more structure to it.
 
-I am trying to understand the purpose of "hres_active" of hrtimer
-and have the following question in this regard.
+But our goal is to support multiple pmus, don't we need to assume there
+are more than 1 PMU per CPU?
 
-It seems "hres_active" indicates whether high resolution mode is
-active or not. But I am not clear about the idea behind it.
+> 
+> It simply doesn't make sense to have multiple PMU IDs on a single
+> topology entry, how would you choose?
 
-I see that hres_active is initialized to 0 here:
-    hrtimer_init_hres
-
-and set to 1 here:
-    hrtimer_run_pending
-       -> hrtimer_switch_to_hres
-
-That means hrtimer becomes "active" at the 1st timer softirq
-and remains so forever. Is this understanding correct?
-
-My original concern is as follows:
-
-hrtimer_get_next_event returns KTIME_MAX when hrtimer is "active".
-So if the above understanding is correct, then after the 1st timer
-softirq it will always return KTIME_MAX. This means cpu_idle will never
-take the hrtimer event into account and will always base its decision
-on the next event of the timer wheel. Is this intended behaviour?
-
-I would highly appreciate any information about this.
-Please CC me because I am not a member of this ML.
-
-Best regards
-Iram
+How about
+/sys/devices/system/cpu/cpuN/pmu_0
+/sys/devices/system/cpu/cpuN/pmu_1
+/sys/devices/system/cpu/cpuN/pmu_2
+/sys/devices/system/cpu/cpuN/pmu_3
+....?
 
 
