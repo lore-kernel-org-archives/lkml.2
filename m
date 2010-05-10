@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722Ab0EJXQZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:16:25 -0400
-Received: from kroah.org ([198.145.64.141]:51792 "EHLO coco.kroah.org"
+	id S932977Ab0EJXPs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:15:48 -0400
+Received: from kroah.org ([198.145.64.141]:51821 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757370Ab0EJW6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:05 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:38 2010
-Message-Id: <20100510223538.724493996@kvm.kroah.org>
+	id S932895Ab0EJW6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:13 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:39 2010
+Message-Id: <20100510223539.449347387@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:00 -0700
+Date: Mon, 10 May 2010 15:35:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [48/98] ALSA: hda: Use LPIB quirk for DG965OT board version AAD63733-203
+Subject: [56/98] ALSA: hda: Fix 0 dB for Packard Bell models using Conexant CX20549 (Venice)
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 0e0280dc2b0c7395a880d25544b47f3e3e3f79db upstream.
+commit 8f0f5ff6777104084b4b2e1ae079541c2a6ed6d9 upstream.
 
-BugLink: https://launchpad.net/bugs/459083
+BugLink: https://launchpad.net/bugs/541802
 
-The OR has verified with 2.6.32.11 and the latest alsa-driver stable
-daily snapshot that position_fix=1 is necessary for the external mic
-to work and for PulseAudio not to crash constantly.
+The OR's hardware distorts at PCM 100% because it does not correspond to
+0 dB. Fix this in patch_cxt5045() for all Packard Bell models.
 
-This patch is necessary also for 2.6.32.11 and 2.6.33.2.
-
-Reported-by: <imwithid@yahoo.com>
-Tested-by: <imwithid@yahoo.com>
+Reported-by: Valombre
 Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_intel.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_conexant.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2236,6 +2236,7 @@ static struct snd_pci_quirk position_fix
- 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1565, 0x8218, "Biostar Microtech", POS_FIX_LPIB),
-+	SND_PCI_QUIRK(0x8086, 0x2503, "DG965OT AAD63733-203", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x8086, 0xd601, "eMachines T5212", POS_FIX_LPIB),
- 	{}
- };
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -1175,9 +1175,10 @@ static int patch_cxt5045(struct hda_code
+ 
+ 	switch (codec->subsystem_id >> 16) {
+ 	case 0x103c:
++	case 0x1631:
+ 	case 0x1734:
+-		/* HP & Fujitsu-Siemens laptops have really bad sound over 0dB
+-		 * on NID 0x17. Fix max PCM level to 0 dB
++		/* HP, Packard Bell, & Fujitsu-Siemens laptops have really bad
++		 * sound over 0dB on NID 0x17. Fix max PCM level to 0 dB
+ 		 * (originally it has 0x2b steps with 0dB offset 0x14)
+ 		 */
+ 		snd_hda_override_amp_caps(codec, 0x17, HDA_INPUT,
 
 
