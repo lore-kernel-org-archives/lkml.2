@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab0EJVHs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 17:07:48 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:43837 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932229Ab0EJVHp (ORCPT
+	id S1757277Ab0EJVIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 17:08:16 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:43841 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755410Ab0EJVIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 17:07:45 -0400
-Date: Mon, 10 May 2010 14:07:24 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Oren Laadan <orenl@cs.columbia.edu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Serge Hallyn <serue@us.ibm.com>, Matt Helsley <matthltc@us.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>, Cedric Le Goater <legoater@free.fr>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH v21 015/100] cgroup freezer: Update stale locking
- comments
-Message-ID: <20100510210724.GP31830@count0.beaverton.ibm.com>
-References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu>
- <201005062140.19821.rjw@sisk.pl>
- <4BE333B0.1010003@cs.columbia.edu>
- <201005102301.45729.rjw@sisk.pl>
+	Mon, 10 May 2010 17:08:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=BJ+7Z27OMst0/o4BTZ18/Rmv2yqgfLxjS+P6s8PRf9oJbdH6kKX17XQOuCfd3dzb2z
+         LxKCdJwqFuThdnvQjfqWdHKujFfO9TKxB9+oBfg2KVBwa+eQyXz2wu9L1/LJ5SwyldH1
+         y+GTtrkrkDuyatQjK36YZlCcGnsckFF2fQMVg=
+Message-ID: <4BE875C8.8050202@gmail.com>
+Date: Mon, 10 May 2010 14:08:24 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005102301.45729.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-bluetooth@vger.kernel.org
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: magicmouse: claimed by neither input, hiddev nor hidraw
+References: <j2idd18b0c31005101341o43b652c1zf8729f5f9a60e0d3@mail.gmail.com>
+In-Reply-To: <j2idd18b0c31005101341o43b652c1zf8729f5f9a60e0d3@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 11:01:45PM +0200, Rafael J. Wysocki wrote:
-> On Thursday 06 May 2010, Oren Laadan wrote:
-> > 
-> > On 05/06/2010 03:40 PM, Rafael J. Wysocki wrote:
-> > > On Saturday 01 May 2010, Oren Laadan wrote:
-> > >> From: Matt Helsley <matthltc@us.ibm.com>
-> > >>
-> > >> Update stale comments regarding locking order and add a little more detail
-> > >> so it's easier to follow the locking between the cgroup freezer and the
-> > >> power management freezer code.
-> > > 
-> > > I guess these three patches are for me.
-> > > 
-> > > Do you want me to handle them?
-> > 
-> > Yes, please, that would be great.
-> 
-> However, patches 16 and 17 seem to depend on checkpoint/restart and don't
-> appear to be margeable at this point.  Is this correct?
+On 05/10/2010 01:41 PM, Justin Mattock wrote:
+> is it me, or is there something wrong
+> with the magicmouse connecting
+> i.g. I've had my system setup to use the
+> magicmouse with 2.6.33* with no issues
+> now coming back after sometime
+> seems everything is connecting,but then no movement:
+> (and some thing in dmesg):
+> [  116.267993] magicmouse 0005:05AC:030D.0007: claimed by neither
+> input, hiddev nor hidraw
+> [  116.268053] magicmouse 0005:05AC:030D.0007: magicmouse hw start failed
+>
+> using osx  magicmouse connects fine.
+> Using standard mightymouse everything connects.
+>   are there any reports of such things?
+>
+>
 
-Strictly speaking they do not depend on checkpoint/restart. However, only
-checkpoint/restart uses the functionality introduced by those patches so I
-think you are correct that they aren't mergeable at this point.
+nevermind.. my bad, ended up not
+having hiddraw enabled in the kernel.
 
-Cheers,
-	-Matt Helsley
+everything looks good, suspend etc..
+
+Justin P. Mattock
