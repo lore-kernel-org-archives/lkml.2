@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932436Ab0EJWxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:53:00 -0400
-Received: from kroah.org ([198.145.64.141]:33105 "EHLO coco.kroah.org"
+	id S932679Ab0EJWyR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:54:17 -0400
+Received: from kroah.org ([198.145.64.141]:33321 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932408Ab0EJWwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:14 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:21 2010
-Message-Id: <20100510223321.540938530@kvm.kroah.org>
+	id S932500Ab0EJWwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:44 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:25 2010
+Message-Id: <20100510223325.064561622@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:19 -0700
+Date: Mon, 10 May 2010 15:32:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Christian Lamparter <chunkeey@googlemail.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [048/117] p54pci: fix bugs in p54p_check_tx_ring
+       Herbert Xu <herbert@gondor.hengli.com.au>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [085/117] ipv6: Fix tcp_v6_send_response transport header setting.
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
 
-commit 0250ececdf6813457c98719e2d33b3684881fde0 upstream.
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-Hans de Goede identified a bug in p54p_check_tx_ring:
+[ Upstream commit 6651ffc8e8bdd5fb4b7d1867c6cfebb4f309512c ]
 
-there are two ring indices. 1 => tx data and 3 => tx management.
-But the old code had a constant "1" and this resulted in spurious
-dma unmapping failures.
+My recent patch to remove the open-coded checksum sequence in
+tcp_v6_send_response broke it as we did not set the transport
+header pointer on the new packet.
 
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=583623
-Bug-Identified-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Actually, there is code there trying to set the transport
+header properly, but it sets it for the wrong skb ('skb'
+instead of 'buff').
+
+This bug was introduced by commit
+a8fdf2b331b38d61fb5f11f3aec4a4f9fb2dedcb ("ipv6: Fix
+tcp_v6_send_response(): it didn't set skb transport header")
+
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/net/wireless/p54/p54pci.c |    2 +-
+ net/ipv6/tcp_ipv6.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/p54/p54pci.c
-+++ b/drivers/net/wireless/p54/p54pci.c
-@@ -245,7 +245,7 @@ static void p54p_check_tx_ring(struct ie
- 	u32 idx, i;
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1006,7 +1006,7 @@ static void tcp_v6_send_response(struct
+ 	skb_reserve(buff, MAX_HEADER + sizeof(struct ipv6hdr) + tot_len);
  
- 	i = (*index) % ring_limit;
--	(*index) = idx = le32_to_cpu(ring_control->device_idx[1]);
-+	(*index) = idx = le32_to_cpu(ring_control->device_idx[ring_index]);
- 	idx %= ring_limit;
+ 	t1 = (struct tcphdr *) skb_push(buff, tot_len);
+-	skb_reset_transport_header(skb);
++	skb_reset_transport_header(buff);
  
- 	while (i != idx) {
+ 	/* Swap the send and the receive. */
+ 	memset(t1, 0, sizeof(*t1));
 
 
