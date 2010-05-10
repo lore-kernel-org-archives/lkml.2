@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab0EJWzr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:55:47 -0400
-Received: from kroah.org ([198.145.64.141]:33419 "EHLO coco.kroah.org"
+	id S932729Ab0EJWzB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:55:01 -0400
+Received: from kroah.org ([198.145.64.141]:33362 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932450Ab0EJWxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:53:01 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:27 2010
-Message-Id: <20100510223326.950383300@kvm.kroah.org>
+	id S932531Ab0EJWwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:53 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:26 2010
+Message-Id: <20100510223326.053630207@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:33:17 -0700
+Date: Mon, 10 May 2010 15:33:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [106/117] V4L/DVB: budget: Oops: "BUG: unable to handle kernel NULL pointer dereference"
+       "David S. Miller" <davem@davemloft.net>
+Subject: [096/117] sparc64: Use correct pt_regs in decode_access_size() error paths.
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
 
-commit 6f550dc08369ee0bc6402963c377e65f0f2e3b71 upstream.
+From: David S. Miller <davem@davemloft.net>
 
-Never call dvb_frontend_detach if we failed to attach a frontend. This fixes
-the following oops, which will be triggered by a missing stv090x module:
+[ Upstream commit baa06775e224e9f74e5c2de894c95cd49678beff ]
 
-[    8.172997] DVB: registering new adapter (TT-Budget S2-1600 PCI)
-[    8.209018] adapter has MAC addr = 00:d0:5c:cc:a7:29
-[    8.328665] Intel ICH 0000:00:1f.5: PCI INT B -> GSI 17 (level, low) -> IRQ 17
-[    8.328753] Intel ICH 0000:00:1f.5: setting latency timer to 64
-[    8.562047] DVB: Unable to find symbol stv090x_attach()
-[    8.562117] BUG: unable to handle kernel NULL pointer dereference at 000000ac
-[    8.562239] IP: [<e08b04a3>] dvb_frontend_detach+0x4/0x67 [dvb_core]
-
-Ref http://bugs.debian.org/575207
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/media/dvb/ttpci/budget.c |    3 ---
- 1 file changed, 3 deletions(-)
+ arch/sparc/kernel/unaligned_64.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/media/dvb/ttpci/budget.c
-+++ b/drivers/media/dvb/ttpci/budget.c
-@@ -643,9 +643,6 @@ static void frontend_init(struct budget
- 					&budget->i2c_adap,
- 					&tt1600_isl6423_config);
+--- a/arch/sparc/kernel/unaligned_64.c
++++ b/arch/sparc/kernel/unaligned_64.c
+@@ -49,7 +49,7 @@ static inline enum direction decode_dire
+ }
  
--			} else {
--				dvb_frontend_detach(budget->dvb_frontend);
--				budget->dvb_frontend = NULL;
- 			}
- 		}
- 		break;
+ /* 16 = double-word, 8 = extra-word, 4 = word, 2 = half-word */
+-static inline int decode_access_size(unsigned int insn)
++static inline int decode_access_size(struct pt_regs *regs, unsigned int insn)
+ {
+ 	unsigned int tmp;
+ 
+@@ -65,7 +65,7 @@ static inline int decode_access_size(uns
+ 		return 2;
+ 	else {
+ 		printk("Impossible unaligned trap. insn=%08x\n", insn);
+-		die_if_kernel("Byte sized unaligned access?!?!", current_thread_info()->kregs);
++		die_if_kernel("Byte sized unaligned access?!?!", regs);
+ 
+ 		/* GCC should never warn that control reaches the end
+ 		 * of this function without returning a value because
+@@ -289,7 +289,7 @@ static void log_unaligned(struct pt_regs
+ asmlinkage void kernel_unaligned_trap(struct pt_regs *regs, unsigned int insn)
+ {
+ 	enum direction dir = decode_direction(insn);
+-	int size = decode_access_size(insn);
++	int size = decode_access_size(regs, insn);
+ 	int orig_asi, asi;
+ 
+ 	current_thread_info()->kern_una_regs = regs;
 
 
