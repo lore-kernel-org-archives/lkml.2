@@ -1,90 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab0EJIL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 04:11:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51930 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751311Ab0EJILx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 04:11:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,361,1270450800"; 
-   d="scan'208";a="275188284"
-Subject: Re: [Patch-next] Oops caused by ERST Table not supported.
-From: Huang Ying <ying.huang@intel.com>
-To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: LKLM <linux-kernel@vger.kernel.org>, lenb <lenb@kernel.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       ACPI <linux-acpi@vger.kernel.org>
-In-Reply-To: <4BE7BE10.8080000@np.css.fujitsu.com>
-References: <4BE7BE10.8080000@np.css.fujitsu.com>
+	id S1755522Ab0EJIMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 04:12:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51213 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755463Ab0EJIMU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 04:12:20 -0400
+Subject: Re: [tip:perf/core] perf: Add group scheduling transactional APIs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Mackerras <paulus@samba.org>
+Cc: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+       linux-kernel@vger.kernel.org, davem@davemloft.net, fweisbec@gmail.com,
+       ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu,
+       linux-tip-commits@vger.kernel.org
+In-Reply-To: <20100508102841.GA10650@brick.ozlabs.ibm.com>
+References: <1272002160.5707.60.camel@minggr.sh.intel.com>
+	 <tip-6bde9b6ce0127e2a56228a2071536d422be31336@git.kernel.org>
+	 <1273269355.1642.383.camel@laptop>
+	 <20100508102841.GA10650@brick.ozlabs.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 May 2010 16:11:50 +0800
-Message-ID: <1273479110.3344.56.camel@yhuang-dev.sh.intel.com>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 10 May 2010 10:11:55 +0200
+Message-ID: <1273479115.5605.3329.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Dongming,
+On Sat, 2010-05-08 at 20:28 +1000, Paul Mackerras wrote:
 
-On Mon, 2010-05-10 at 16:04 +0800, Jin Dongming wrote:
-> On my server(x86_64) when the mcelog is executed, it will cause oops. And
-> following information could be gotten.
+> Here's the patch I ended up with.
+
+Ok, I'll take this one. Thanks Paul!
+
+One small question on the patch below:
+
+> --------------
+> Subject: perf, powerpc: Implement group scheduling transactional APIs
+> From: Lin Ming <ming.m.lin@intel.com>
 > 
-> Call Trace:
->   [<ffffffff812ceefd>] ? avc_has_perm_noaudit+0x4d/0x680
->   [<ffffffff812ceefd>] ? avc_has_perm_noaudit+0x4d/0x680
->   [<ffffffff8142492b>] erst_read_next+0x3b/0x100
->   [<ffffffff81028def>] apei_read_mce+0x2f/0x170
->   [<ffffffff811bfc5d>] ? check_object+0x36d/0x430
->   [<ffffffff811c059c>] ? init_object+0x9c/0xe0
->   [<ffffffff811c38ef>] ? __slab_alloc+0x7cf/0x8b0
->   [<ffffffff81025cba>] ? mce_read+0x4a/0x510
->   [<ffffffff811c49ab>] ? __kmalloc+0x2db/0x390
->   [<ffffffff81025cba>] ? mce_read+0x4a/0x510
->   [<ffffffff811bf81d>] ? check_bytes_and_report+0x3d/0x110
->   [<ffffffff816caf1e>] ? _cond_resched+0x3e/0x80
->   [<ffffffff8102613b>] mce_read+0x4cb/0x510
->   [<ffffffff812cb9f2>] ? security_file_permission+0x122/0x130
->   [<ffffffff811dff16>] ? rw_verify_area+0x196/0x210
->   [<ffffffff811e0e7b>] vfs_read+0x1bb/0x2f0
->   [<ffffffff811e172d>] sys_read+0x8d/0xe0
->   [<ffffffff81003c9b>] system_call_fastpath+0x16/0x1b
+> [paulus@samba.org: Set cpuhw->event[i]->hw.config in
+> power_pmu_commit_txn.]
 > 
-> This is because of the ERST Table not supported on my server and it
-> makes the variable "ctx" used by erst_read_nextis NULL. So I make
-> the patch to solve this problem.
-> 
-> And I confirmed it on my server(x86_64).
-> 
-> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> Signed-off-by: Paul Mackerras <paulus@samba.org>
 > ---
->  drivers/acpi/apei/erst.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-> index 5fe5c0f..2ebc391 100644
-> --- a/drivers/acpi/apei/erst.c
-> +++ b/drivers/acpi/apei/erst.c
-> @@ -698,6 +698,9 @@ ssize_t erst_read_next(struct cper_record_header *record, size_t buflen)
->  	unsigned long flags;
->  	u64 record_id;
->  
-> +	if (erst_disable)
-> +		return -ENODEV;
+> diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+> index 08460a2..43b83c3 100644
+> --- a/arch/powerpc/kernel/perf_event.c
+> +++ b/arch/powerpc/kernel/perf_event.c
+> @@ -35,6 +35,9 @@ struct cpu_hw_events {
+>  	u64 alternatives[MAX_HWEVENTS][MAX_EVENT_ALTERNATIVES];
+>  	unsigned long amasks[MAX_HWEVENTS][MAX_EVENT_ALTERNATIVES];
+>  	unsigned long avalues[MAX_HWEVENTS][MAX_EVENT_ALTERNATIVES];
 > +
->  	spin_lock_irqsave(&erst_lock, flags);
->  	rc = __erst_get_next_record_id(&record_id);
->  	if (rc) {
+> +	unsigned int group_flag;
+> +	int n_txn_start;
+>  };
+>  DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
+>  
+> @@ -805,12 +748,22 @@ static int power_pmu_enable(struct perf_event *event)
+>  	cpuhw->event[n0] = event;
+>  	cpuhw->events[n0] = event->hw.config;
+>  	cpuhw->flags[n0] = event->hw.event_base;
+> +
+> +	/*
+> +	 * If group events scheduling transaction was started,
+> +	 * skip the schedulability test here, it will be peformed
+> +	 * at commit time(->commit_txn) as a whole
+> +	 */
+> +	if (cpuhw->group_flag & PERF_EVENT_TXN_STARTED)
+> +		goto nocheck;
+> +
+>  	if (check_excludes(cpuhw->event, cpuhw->flags, n0, 1))
+>  		goto out;
+>  	if (power_check_constraints(cpuhw, cpuhw->events, cpuhw->flags, n0 + 1))
+>  		goto out;
+>  	event->hw.config = cpuhw->events[n0];
+> +
+> +nocheck:
+>  	++cpuhw->n_events;
+>  	++cpuhw->n_added;
+>  
+> @@ -896,11 +849,65 @@ static void power_pmu_unthrottle(struct perf_event *event)
+>  	local_irq_restore(flags);
+>  }
+>  
+> +/*
+> + * Start group events scheduling transaction
+> + * Set the flag to make pmu::enable() not perform the
+> + * schedulability test, it will be performed at commit time
+> + */
+> +void power_pmu_start_txn(const struct pmu *pmu)
+> +{
+> +	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
+> +
+> +	cpuhw->group_flag |= PERF_EVENT_TXN_STARTED;
+> +	cpuhw->n_txn_start = cpuhw->n_events;
+> +}
+> +
+> +/*
+> + * Stop group events scheduling transaction
+> + * Clear the flag and pmu::enable() will perform the
+> + * schedulability test.
+> + */
+> +void power_pmu_cancel_txn(const struct pmu *pmu)
+> +{
+> +	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
+> +
+> +	cpuhw->group_flag &= ~PERF_EVENT_TXN_STARTED;
+> +}
+> +
+> +/*
+> + * Commit group events scheduling transaction
+> + * Perform the group schedulability test as a whole
+> + * Return 0 if success
+> + */
+> +int power_pmu_commit_txn(const struct pmu *pmu)
+> +{
+> +	struct cpu_hw_events *cpuhw;
+> +	long i, n;
+> +
+> +	if (!ppmu)
+> +		return -EAGAIN;
+> +	cpuhw = &__get_cpu_var(cpu_hw_events);
+> +	n = cpuhw->n_events;
+> +	if (check_excludes(cpuhw->event, cpuhw->flags, 0, n))
+> +		return -EAGAIN;
+> +	i = power_check_constraints(cpuhw, cpuhw->events, cpuhw->flags, n);
+> +	if (i < 0)
+> +		return -EAGAIN;
+> +
+> +	for (i = cpuhw->n_txn_start; i < n; ++i)
+> +		cpuhw->event[i]->hw.config = cpuhw->events[i];
+> +
+> +	return 0;
+> +}
 
-Thank you very much for your fixing.
-
-Acked-by: Huang Ying <ying.huang@intel.com>
-
-Best Regards,
-Huang Ying
-
-
+Can't you compute n_txn_start by subtracting n_added from n_events ?
