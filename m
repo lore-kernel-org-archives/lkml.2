@@ -1,91 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab0EJGHz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 02:07:55 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:45192 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab0EJGHw (ORCPT
+	id S1755243Ab0EJGMd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 02:12:33 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52880 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754241Ab0EJGMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 02:07:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=VQUaQIbT1e1MJCfyNxPpUWnm1yg8UTPPGLwt++dABlsxolL6E8LSocKXsZrO32dUuG
-         h5Ottpg6iblnHlI7d19O1erlS22h8umxaOhtXT178dr0SQc5QD6/70TPXgjofwr5bZN4
-         1e8M8x/YwAMExKvrZTQMxe5zPxjaosKNxo3AM=
-Date: Mon, 10 May 2010 14:16:02 +0800
-From: wzt.wzt@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: axboe@kernel.dk
-Subject: [PATCH] Block: Check major number before allocate the buffer in register_blkdev()
-Message-ID: <20100510061602.GB2858@localhost.localdomain>
+	Mon, 10 May 2010 02:12:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 10 May 2010 15:08:15 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-mm@kvack.org, containers@lists.linux-foundation.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Phil Carmody <ext-phil.2.carmody@nokia.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] cgroups: make cftype.unregister_event()
+ void-returning
+Message-Id: <20100510150815.3d2f7647.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1273363822-7796-1-git-send-email-kirill@shutemov.name>
+References: <1273363822-7796-1-git-send-email-kirill@shutemov.name>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check major number before allocate the buffer, if the major number is not exist,
-and the register_blkdev() called many times, kmalloc()/kfree() will be no need 
-to invoked many times. So check the major number before use kmalloc() to allocate
-the buffer will be better.
+On Sun,  9 May 2010 03:10:22 +0300
+"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
 
-Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+> Since we unable to handle error returned by cftype.unregister_event()
+> properly, let's make the callback void-returning.
+> 
+> mem_cgroup_unregister_event() has been rewritten to be "never fail"
+> function. On mem_cgroup_usage_register_event() we save old buffer
+> for thresholds array and reuse it in mem_cgroup_usage_unregister_event()
+> to avoid allocation.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 
----
- block/genhd.c |   25 ++++++++++++-------------
- 1 files changed, 12 insertions(+), 13 deletions(-)
+Hmm, just reusing buffer isn't enough ?
+as
+	tmp = memory->thresholds;
+	reduce entries on tmp
+And what happens when
 
-diff --git a/block/genhd.c b/block/genhd.c
-index d13ba76..15360cc 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -300,30 +300,29 @@ int register_blkdev(unsigned int major, const char *name)
- 		ret = major;
- 	}
- 
--	p = kmalloc(sizeof(struct blk_major_name), GFP_KERNEL);
--	if (p == NULL) {
--		ret = -ENOMEM;
--		goto out;
--	}
--
--	p->major = major;
--	strlcpy(p->name, name, sizeof(p->name));
--	p->next = NULL;
- 	index = major_to_index(major);
- 
- 	for (n = &major_names[index]; *n; n = &(*n)->next) {
- 		if ((*n)->major == major)
- 			break;
- 	}
--	if (!*n)
-+	if (!*n) {
-+		p = kmalloc(sizeof(struct blk_major_name), GFP_KERNEL);
-+		if (p == NULL) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+
-+		p->major = major;
-+		strlcpy(p->name, name, sizeof(p->name));
-+		p->next = NULL;
- 		*n = p;
--	else
-+	}
-+	else {
- 		ret = -EBUSY;
- 
--	if (ret < 0) {
- 		printk("register_blkdev: cannot get major %d for %s\n",
- 		       major, name);
--		kfree(p);
- 	}
- out:
- 	mutex_unlock(&block_class_lock);
--- 
-1.6.5.3
+	register
+	register
+	register	
+	unregister  (use preallocated buffer)
+	unregister  ????
+	unregister
+
+Thanks,
+-Kame
 
