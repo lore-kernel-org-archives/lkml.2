@@ -1,150 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab0EJFyw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 01:54:52 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33889 "EHLO hera.kernel.org"
+	id S1755274Ab0EJFzB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 01:55:01 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33897 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755199Ab0EJFyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 01:54:50 -0400
-Date: Mon, 10 May 2010 05:54:19 GMT
+	id S1754820Ab0EJFy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 01:54:57 -0400
+Date: Mon, 10 May 2010 05:54:36 GMT
 From: tip-bot for Arjan van de Ven <arjan@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, arjan@linux.intel.com, davej@redhat.com,
-       riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
-       mingo@elte.hu
+       a.p.zijlstra@chello.nl, arjan@linux.intel.com, pavel@ucw.cz,
+       riel@redhat.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       arjan@linux.intel.com, a.p.zijlstra@chello.nl, davej@redhat.com,
-       riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
-       mingo@elte.hu
-In-Reply-To: <20100509082606.3d9f00d0@infradead.org>
-References: <20100509082606.3d9f00d0@infradead.org>
+       arjan@linux.intel.com, a.p.zijlstra@chello.nl, pavel@ucw.cz,
+       riel@redhat.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20100509082651.46914d04@infradead.org>
+References: <20100509082651.46914d04@infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] ondemand: Solve a big performance issue by counting IOWAIT time as busy
-Message-ID: <tip-6b8fcd9029f217a9ecce822db645e19111c11080@git.kernel.org>
-Git-Commit-ID: 6b8fcd9029f217a9ecce822db645e19111c11080
+Subject: [tip:sched/core] ondemand: Make the iowait-is-busy time a sysfs tunable
+Message-ID: <tip-19379b11819efc1fc3b602e64f7e7531050aaddb@git.kernel.org>
+Git-Commit-ID: 19379b11819efc1fc3b602e64f7e7531050aaddb
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 10 May 2010 05:54:19 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 10 May 2010 05:54:37 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6b8fcd9029f217a9ecce822db645e19111c11080
-Gitweb:     http://git.kernel.org/tip/6b8fcd9029f217a9ecce822db645e19111c11080
+Commit-ID:  19379b11819efc1fc3b602e64f7e7531050aaddb
+Gitweb:     http://git.kernel.org/tip/19379b11819efc1fc3b602e64f7e7531050aaddb
 Author:     Arjan van de Ven <arjan@linux.intel.com>
-AuthorDate: Sun, 9 May 2010 08:26:06 -0700
+AuthorDate: Sun, 9 May 2010 08:26:51 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Sun, 9 May 2010 19:35:27 +0200
 
-ondemand: Solve a big performance issue by counting IOWAIT time as busy
+ondemand: Make the iowait-is-busy time a sysfs tunable
 
-The ondemand cpufreq governor uses CPU busy time (e.g. not-idle
-time) as a measure for scaling the CPU frequency up or down.
-If the CPU is busy, the CPU frequency scales up, if it's idle,
-the CPU frequency scales down. Effectively, it uses the CPU busy
-time as proxy variable for the more nebulous "how critical is
-performance right now" question.
+Pavel Machek pointed out that not all CPUs have an efficient
+idle at high frequency. Specifically, older Intel and various
+AMD cpus would get a higher powerusage when copying files from
+USB.
 
-This algorithm falls flat on its face in the light of workloads
-where you're alternatingly disk and CPU bound, such as the ever
-popular "git grep", but also things like startup of programs and
-maildir using email clients... much to the chagarin of Andrew
-Morton.
+Mike Chan pointed out that the same is true for various ARM
+chips as well.
 
-This patch changes the ondemand algorithm to count iowait time
-as busy, not idle, time. As shown in the breakdown cases above,
-iowait is performance critical often, and by counting iowait,
-the proxy variable becomes a more accurate representation of the
-"how critical is performance" question.
+Thomas Renninger suggested to make this a sysfs tunable with a
+reasonable default.
 
-The problem and fix are both verified with the "perf timechar"
-tool.
+This patch adds a sysfs tunable for the new behavior, and uses
+a very simple function to determine a reasonable default,
+depending on the CPU vendor/type.
 
 Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Dave Jones <davej@redhat.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Pavel Machek <pavel@ucw.cz>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20100509082606.3d9f00d0@infradead.org>
+Cc: davej@redhat.com
+LKML-Reference: <20100509082651.46914d04@infradead.org>
+[ minor tidyup ]
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- drivers/cpufreq/cpufreq_ondemand.c |   30 ++++++++++++++++++++++++++++--
- 1 files changed, 28 insertions(+), 2 deletions(-)
+ drivers/cpufreq/cpufreq_ondemand.c |   47 +++++++++++++++++++++++++++++++++++-
+ 1 files changed, 46 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-index bd444dc..ed472f8 100644
+index ed472f8..8e9dbdc 100644
 --- a/drivers/cpufreq/cpufreq_ondemand.c
 +++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -73,6 +73,7 @@ enum {DBS_NORMAL_SAMPLE, DBS_SUB_SAMPLE};
- 
- struct cpu_dbs_info_s {
- 	cputime64_t prev_cpu_idle;
-+	cputime64_t prev_cpu_iowait;
- 	cputime64_t prev_cpu_wall;
- 	cputime64_t prev_cpu_nice;
- 	struct cpufreq_policy *cur_policy;
-@@ -148,6 +149,16 @@ static inline cputime64_t get_cpu_idle_time(unsigned int cpu, cputime64_t *wall)
- 	return idle_time;
+@@ -109,6 +109,7 @@ static struct dbs_tuners {
+ 	unsigned int down_differential;
+ 	unsigned int ignore_nice;
+ 	unsigned int powersave_bias;
++	unsigned int io_is_busy;
+ } dbs_tuners_ins = {
+ 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
+ 	.down_differential = DEF_FREQUENCY_DOWN_DIFFERENTIAL,
+@@ -260,6 +261,7 @@ static ssize_t show_##file_name						\
+ 	return sprintf(buf, "%u\n", dbs_tuners_ins.object);		\
+ }
+ show_one(sampling_rate, sampling_rate);
++show_one(io_is_busy, io_is_busy);
+ show_one(up_threshold, up_threshold);
+ show_one(ignore_nice_load, ignore_nice);
+ show_one(powersave_bias, powersave_bias);
+@@ -310,6 +312,23 @@ static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
+ 	return count;
  }
  
-+static inline cputime64_t get_cpu_iowait_time(unsigned int cpu, cputime64_t *wall)
++static ssize_t store_io_is_busy(struct kobject *a, struct attribute *b,
++				   const char *buf, size_t count)
 +{
-+	u64 iowait_time = get_cpu_iowait_time_us(cpu, wall);
++	unsigned int input;
++	int ret;
 +
-+	if (iowait_time == -1ULL)
-+		return 0;
++	ret = sscanf(buf, "%u", &input);
++	if (ret != 1)
++		return -EINVAL;
 +
-+	return iowait_time;
++	mutex_lock(&dbs_mutex);
++	dbs_tuners_ins.io_is_busy = !!input;
++	mutex_unlock(&dbs_mutex);
++
++	return count;
 +}
 +
- /*
-  * Find right freq to be set now with powersave_bias on.
-  * Returns the freq_hi to be used right now and will set freq_hi_jiffies,
-@@ -470,14 +481,15 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
+ static ssize_t store_up_threshold(struct kobject *a, struct attribute *b,
+ 				  const char *buf, size_t count)
+ {
+@@ -392,6 +411,7 @@ static struct global_attr _name = \
+ __ATTR(_name, 0644, show_##_name, store_##_name)
  
- 	for_each_cpu(j, policy->cpus) {
- 		struct cpu_dbs_info_s *j_dbs_info;
--		cputime64_t cur_wall_time, cur_idle_time;
--		unsigned int idle_time, wall_time;
-+		cputime64_t cur_wall_time, cur_idle_time, cur_iowait_time;
-+		unsigned int idle_time, wall_time, iowait_time;
- 		unsigned int load, load_freq;
- 		int freq_avg;
+ define_one_rw(sampling_rate);
++define_one_rw(io_is_busy);
+ define_one_rw(up_threshold);
+ define_one_rw(ignore_nice_load);
+ define_one_rw(powersave_bias);
+@@ -403,6 +423,7 @@ static struct attribute *dbs_attributes[] = {
+ 	&up_threshold.attr,
+ 	&ignore_nice_load.attr,
+ 	&powersave_bias.attr,
++	&io_is_busy.attr,
+ 	NULL
+ };
  
- 		j_dbs_info = &per_cpu(od_cpu_dbs_info, j);
+@@ -527,7 +548,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
+ 		 * from the cpu idle time.
+ 		 */
  
- 		cur_idle_time = get_cpu_idle_time(j, &cur_wall_time);
-+		cur_iowait_time = get_cpu_iowait_time(j, &cur_wall_time);
+-		if (idle_time >= iowait_time)
++		if (dbs_tuners_ins.io_is_busy && idle_time >= iowait_time)
+ 			idle_time -= iowait_time;
  
- 		wall_time = (unsigned int) cputime64_sub(cur_wall_time,
- 				j_dbs_info->prev_cpu_wall);
-@@ -487,6 +499,10 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
- 				j_dbs_info->prev_cpu_idle);
- 		j_dbs_info->prev_cpu_idle = cur_idle_time;
- 
-+		iowait_time = (unsigned int) cputime64_sub(cur_iowait_time,
-+				j_dbs_info->prev_cpu_iowait);
-+		j_dbs_info->prev_cpu_iowait = cur_iowait_time;
-+
- 		if (dbs_tuners_ins.ignore_nice) {
- 			cputime64_t cur_nice;
- 			unsigned long cur_nice_jiffies;
-@@ -504,6 +520,16 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
- 			idle_time += jiffies_to_usecs(cur_nice_jiffies);
- 		}
- 
-+		/*
-+		 * For the purpose of ondemand, waiting for disk IO is an
-+		 * indication that you're performance critical, and not that
-+		 * the system is actually idle. So subtract the iowait time
-+		 * from the cpu idle time.
-+		 */
-+
-+		if (idle_time >= iowait_time)
-+			idle_time -= iowait_time;
-+
  		if (unlikely(!wall_time || wall_time < idle_time))
- 			continue;
+@@ -643,6 +664,29 @@ static inline void dbs_timer_exit(struct cpu_dbs_info_s *dbs_info)
+ 	cancel_delayed_work_sync(&dbs_info->work);
+ }
+ 
++/*
++ * Not all CPUs want IO time to be accounted as busy; this dependson how
++ * efficient idling at a higher frequency/voltage is.
++ * Pavel Machek says this is not so for various generations of AMD and old
++ * Intel systems.
++ * Mike Chan (androidlcom) calis this is also not true for ARM.
++ * Because of this, whitelist specific known (series) of CPUs by default, and
++ * leave all others up to the user.
++ */
++static int should_io_be_busy(void)
++{
++#if defined(CONFIG_X86)
++	/*
++	 * For Intel, Core 2 (model 15) andl later have an efficient idle.
++	 */
++	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
++	    boot_cpu_data.x86 == 6 &&
++	    boot_cpu_data.x86_model >= 15)
++		return 1;
++#endif
++	return 0;
++}
++
+ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 				   unsigned int event)
+ {
+@@ -705,6 +749,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 			dbs_tuners_ins.sampling_rate =
+ 				max(min_sampling_rate,
+ 				    latency * LATENCY_MULTIPLIER);
++			dbs_tuners_ins.io_is_busy = should_io_be_busy();
+ 		}
+ 		mutex_unlock(&dbs_mutex);
  
