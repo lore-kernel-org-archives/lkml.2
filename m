@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497Ab0EJWwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:52:42 -0400
-Received: from kroah.org ([198.145.64.141]:33054 "EHLO coco.kroah.org"
+	id S933238Ab0EJXaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:30:00 -0400
+Received: from kroah.org ([198.145.64.141]:33338 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932390Ab0EJWwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:07 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:20 2010
-Message-Id: <20100510223320.802556259@kvm.kroah.org>
+	id S932511Ab0EJWwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:47 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:25 2010
+Message-Id: <20100510223325.423478982@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:11 -0700
+Date: Mon, 10 May 2010 15:33:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Stephen Hemminger <shemminger@vyatta.com>,
-       Hank Janssen <hjanssen@microsoft.com>
-Subject: [040/117] Staging: hv: name network device ethX rather than sethX
+       Wei Yongjun <yjwei@cn.fujitsu.com>,
+       Vlad Yasevich <vladislav.yasevich@hp.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [089/117] sctp: fix to calc the INIT/INIT-ACK chunk length correctly is set
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +27,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Hemminger <shemminger@vyatta.com>
 
-commit 546d9e101e7a71e6202f47a13ddcd9b8fb05a52e upstream.
+From: Wei Yongjun <yjwei@cn.fujitsu.com>
 
-This patch makes the HyperV network device use the same naming scheme as
-other virtual drivers (Xen, KVM). In an ideal world, userspace tools
-would not care what the name is, but some users and applications do
-care. Vyatta CLI is one of the tools that does depend on what the name
-is.
+[ Upstream commita8170c35e738d62e9919ce5b109cf4ed66e95bde ]
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Hank Janssen <hjanssen@microsoft.com>
+When calculating the INIT/INIT-ACK chunk length, we should not
+only account the length of parameters, but also the parameters
+zero padding length, such as AUTH HMACS parameter and CHUNKS
+parameter. Without the parameters zero padding length we may get
+following oops.
+
+skb_over_panic: text:ce2068d2 len:130 put:6 head:cac3fe00 data:cac3fe00 tail:0xcac3fe82 end:0xcac3fe80 dev:<NULL>
+------------[ cut here ]------------
+kernel BUG at net/core/skbuff.c:127!
+invalid opcode: 0000 [#2] SMP
+last sysfs file: /sys/module/aes_generic/initstate
+Modules linked in: authenc ......
+
+Pid: 4102, comm: sctp_darn Tainted: G      D    2.6.34-rc2 #6
+EIP: 0060:[<c0607630>] EFLAGS: 00010282 CPU: 0
+EIP is at skb_over_panic+0x37/0x3e
+EAX: 00000078 EBX: c07c024b ECX: c07c02b9 EDX: cb607b78
+ESI: 00000000 EDI: cac3fe7a EBP: 00000002 ESP: cb607b74
+ DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+Process sctp_darn (pid: 4102, ti=cb607000 task=cabdc990 task.ti=cb607000)
+Stack:
+ c07c02b9 ce2068d2 00000082 00000006 cac3fe00 cac3fe00 cac3fe82 cac3fe80
+<0> c07c024b cac3fe7c cac3fe7a c0608dec ca986e80 ce2068d2 00000006 0000007a
+<0> cb8120ca ca986e80 cb812000 00000003 cb8120c4 ce208a25 cb8120ca cadd9400
+Call Trace:
+ [<ce2068d2>] ? sctp_addto_chunk+0x45/0x85 [sctp]
+ [<c0608dec>] ? skb_put+0x2e/0x32
+ [<ce2068d2>] ? sctp_addto_chunk+0x45/0x85 [sctp]
+ [<ce208a25>] ? sctp_make_init+0x279/0x28c [sctp]
+ [<c0686a92>] ? apic_timer_interrupt+0x2a/0x30
+ [<ce1fdc0b>] ? sctp_sf_do_prm_asoc+0x2b/0x7b [sctp]
+ [<ce202823>] ? sctp_do_sm+0xa0/0x14a [sctp]
+ [<ce2133b9>] ? sctp_pname+0x0/0x14 [sctp]
+ [<ce211d72>] ? sctp_primitive_ASSOCIATE+0x2b/0x31 [sctp]
+ [<ce20f3cf>] ? sctp_sendmsg+0x7a0/0x9eb [sctp]
+ [<c064eb1e>] ? inet_sendmsg+0x3b/0x43
+ [<c04244b7>] ? task_tick_fair+0x2d/0xd9
+ [<c06031e1>] ? sock_sendmsg+0xa7/0xc1
+ [<c0416afe>] ? smp_apic_timer_interrupt+0x6b/0x75
+ [<c0425123>] ? dequeue_task_fair+0x34/0x19b
+ [<c0446abb>] ? sched_clock_local+0x17/0x11e
+ [<c052ea87>] ? _copy_from_user+0x2b/0x10c
+ [<c060ab3a>] ? verify_iovec+0x3c/0x6a
+ [<c06035ca>] ? sys_sendmsg+0x186/0x1e2
+ [<c042176b>] ? __wake_up_common+0x34/0x5b
+ [<c04240c2>] ? __wake_up+0x2c/0x3b
+ [<c057e35c>] ? tty_wakeup+0x43/0x47
+ [<c04430f2>] ? remove_wait_queue+0x16/0x24
+ [<c0580c94>] ? n_tty_read+0x5b8/0x65e
+ [<c042be02>] ? default_wake_function+0x0/0x8
+ [<c0604e0e>] ? sys_socketcall+0x17f/0x1cd
+ [<c040264c>] ? sysenter_do_call+0x12/0x22
+Code: 0f 45 de 53 ff b0 98 00 00 00 ff b0 94 ......
+EIP: [<c0607630>] skb_over_panic+0x37/0x3e SS:ESP 0068:cb607b74
+
+To reproduce:
+
+# modprobe sctp
+# echo 1 > /proc/sys/net/sctp/addip_enable
+# echo 1 > /proc/sys/net/sctp/auth_enable
+# sctp_test -H 3ffe:501:ffff:100:20c:29ff:fe4d:f37e -P 800 -l
+# sctp_darn -H 3ffe:501:ffff:100:20c:29ff:fe4d:f37e -P 900 -h 192.168.0.21 -p 800 -I -s -t
+sctp_darn ready to send...
+3ffe:501:ffff:100:20c:29ff:fe4d:f37e:900-192.168.0.21:800 Interactive mode> bindx-add=192.168.0.21
+3ffe:501:ffff:100:20c:29ff:fe4d:f37e:900-192.168.0.21:800 Interactive mode> bindx-add=192.168.1.21
+3ffe:501:ffff:100:20c:29ff:fe4d:f37e:900-192.168.0.21:800 Interactive mode> snd=10
+
+------------------------------------------------------------------
+eth0 has addresses: 3ffe:501:ffff:100:20c:29ff:fe4d:f37e and 192.168.0.21
+eth1 has addresses: 192.168.1.21
+------------------------------------------------------------------
+
+Reported-by: George Cheimonidis <gchimon@gmail.com>
+Signed-off-by: Wei Yongjun <yjwei@cn.fujitsu.com>
+Signed-off-by: Vlad Yasevich <vladislav.yasevich@hp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/staging/hv/netvsc_drv.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/sctp/sm_make_chunk.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -413,8 +413,7 @@ static int netvsc_probe(struct device *d
- 	if (!net_drv_obj->Base.OnDeviceAdd)
- 		return -1;
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -207,7 +207,8 @@ struct sctp_chunk *sctp_make_init(const
+ 	sp = sctp_sk(asoc->base.sk);
+ 	num_types = sp->pf->supported_addrs(sp, types);
  
--	net = alloc_netdev(sizeof(struct net_device_context), "seth%d",
--			   ether_setup);
-+	net = alloc_etherdev(sizeof(struct net_device_context));
- 	if (!net)
- 		return -1;
+-	chunksize = sizeof(init) + addrs_len + SCTP_SAT_LEN(num_types);
++	chunksize = sizeof(init) + addrs_len;
++	chunksize += WORD_ROUND(SCTP_SAT_LEN(num_types));
+ 	chunksize += sizeof(ecap_param);
  
+ 	if (sctp_prsctp_enable)
+@@ -237,14 +238,14 @@ struct sctp_chunk *sctp_make_init(const
+ 		/* Add HMACS parameter length if any were defined */
+ 		auth_hmacs = (sctp_paramhdr_t *)asoc->c.auth_hmacs;
+ 		if (auth_hmacs->length)
+-			chunksize += ntohs(auth_hmacs->length);
++			chunksize += WORD_ROUND(ntohs(auth_hmacs->length));
+ 		else
+ 			auth_hmacs = NULL;
+ 
+ 		/* Add CHUNKS parameter length */
+ 		auth_chunks = (sctp_paramhdr_t *)asoc->c.auth_chunks;
+ 		if (auth_chunks->length)
+-			chunksize += ntohs(auth_chunks->length);
++			chunksize += WORD_ROUND(ntohs(auth_chunks->length));
+ 		else
+ 			auth_chunks = NULL;
+ 
+@@ -254,7 +255,8 @@ struct sctp_chunk *sctp_make_init(const
+ 
+ 	/* If we have any extensions to report, account for that */
+ 	if (num_ext)
+-		chunksize += sizeof(sctp_supported_ext_param_t) + num_ext;
++		chunksize += WORD_ROUND(sizeof(sctp_supported_ext_param_t) +
++					num_ext);
+ 
+ 	/* RFC 2960 3.3.2 Initiation (INIT) (1)
+ 	 *
+@@ -396,13 +398,13 @@ struct sctp_chunk *sctp_make_init_ack(co
+ 
+ 		auth_hmacs = (sctp_paramhdr_t *)asoc->c.auth_hmacs;
+ 		if (auth_hmacs->length)
+-			chunksize += ntohs(auth_hmacs->length);
++			chunksize += WORD_ROUND(ntohs(auth_hmacs->length));
+ 		else
+ 			auth_hmacs = NULL;
+ 
+ 		auth_chunks = (sctp_paramhdr_t *)asoc->c.auth_chunks;
+ 		if (auth_chunks->length)
+-			chunksize += ntohs(auth_chunks->length);
++			chunksize += WORD_ROUND(ntohs(auth_chunks->length));
+ 		else
+ 			auth_chunks = NULL;
+ 
+@@ -411,7 +413,8 @@ struct sctp_chunk *sctp_make_init_ack(co
+ 	}
+ 
+ 	if (num_ext)
+-		chunksize += sizeof(sctp_supported_ext_param_t) + num_ext;
++		chunksize += WORD_ROUND(sizeof(sctp_supported_ext_param_t) +
++					num_ext);
+ 
+ 	/* Now allocate and fill out the chunk.  */
+ 	retval = sctp_make_chunk(asoc, SCTP_CID_INIT_ACK, 0, chunksize);
 
 
