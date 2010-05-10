@@ -1,80 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab0EJKgc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 06:36:32 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:34723 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665Ab0EJKgb (ORCPT
+	id S1756588Ab0EJKg4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 06:36:56 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:57423 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755886Ab0EJKgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 06:36:31 -0400
-Date: Mon, 10 May 2010 19:35:47 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-Message-ID: <20100510103546.GB14278@linux-sh.org>
-References: <1273483623.15998.57.camel@minggr.sh.intel.com> <1273484401.5605.3333.camel@twins> <1273486313.15998.76.camel@minggr.sh.intel.com> <1273486708.5605.3342.camel@twins> <1273487195.15998.85.camel@minggr.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273487195.15998.85.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Mon, 10 May 2010 06:36:51 -0400
+From: Eduardo Valentin <eduardo.valentin@nokia.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
+       Linux-OMAP <linux-omap@vger.kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       ext Tony Lindgren <tony@atomide.com>,
+       ext Kevin Hilman <khilman@deeprootsystems.com>,
+       Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
+       santosh.shilimkar@ti.com, Ambresh <a0393775@ti.com>,
+       felipe.balbi@nokia.com, Eduardo Valentin <eduardo.valentin@nokia.com>
+Subject: [PATCHv4 0/4] Introduce the /proc/socinfo and use it to export OMAP data
+Date: Mon, 10 May 2010 13:37:33 +0300
+Message-Id: <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com>
+X-Mailer: git-send-email 1.7.0.4.361.g8b5fe.dirty
+X-OriginalArrivalTime: 10 May 2010 10:35:33.0041 (UTC) FILETIME=[84C80A10:01CAF02C]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 06:26:35PM +0800, Lin Ming wrote:
-> On Mon, 2010-05-10 at 18:18 +0800, Peter Zijlstra wrote:
-> > On Mon, 2010-05-10 at 18:11 +0800, Lin Ming wrote:
-> > > On Mon, 2010-05-10 at 17:40 +0800, Peter Zijlstra wrote:
-> > > > On Mon, 2010-05-10 at 17:27 +0800, Lin Ming wrote:
-> > > > > Export pmus via sysfs /sys/devices/system/cpu/pmus/0...N
-> > > > > The file name is the pmu id, ie, /sys/devices/system/cpu/pmus/N
-> > > > > represents pmu id N.
-> > > > > So perf tool can use it to initialize perf_event_attr. 
-> > > > 
-> > > > Why create a whole new directory, why not:
-> > > > 
-> > > >  /sys/devices/system/cpu/cpuN/pmu_id ?
-> > > 
-> > > 
-> > > Do you mean /sys/devices/system/cpu/cpuN/pmu_id contain all ids?
-> > > 
-> > > For example, each cpu has 4 pmus and the file pmu_id shows something
-> > > like,
-> > > 
-> > > #cat /sys/devices/system/cpu/cpu0/pmu_id
-> > > 0 1 2 3
-> > 
-> > No, I'm assuming there is only 1 PMU per CPU. Corey is the expert on
-> > crazy hardware though, but I think the sanest way is to extend the CPU
-> > topology if there's more structure to it.
-> 
-> But our goal is to support multiple pmus, don't we need to assume there
-> are more than 1 PMU per CPU?
-> 
-The multiple PMU case still suggests 1 per CPU in most (all?) cases. If
-you're thinking of PMUs in the northbridge case this would sit under its
-own topology given that most CPUs will have a shared view of it. Do you
-have some cases with performance counters in per-CPU memory controllers
-or something similar?
+Hello all,
 
-> How about
-> /sys/devices/system/cpu/cpuN/pmu_0
-> /sys/devices/system/cpu/cpuN/pmu_1
-> /sys/devices/system/cpu/cpuN/pmu_2
-> /sys/devices/system/cpu/cpuN/pmu_3
-> ....?
-> 
-If you're following driver model naming conventions, then these should
-all be pmu.0, pmu.1, etc, etc.
+Here is the patch set to export OMAP id code, production id and die id.
+The history of this change is as follows:
+
+1. First attempt tried adding those data under sysfs node. Original patch by
+Peter De Schrijver [1]. Then, it was suggested to move it to debugfs, which was
+rejected as this info is actually needed in production systems.
+
+2. Then it has been moved to /proc/cpuinfo [2]. Then, it was suggested to do
+not add this kind of info there, as it is not really CPU data.
+
+Now, I'm sending this version which will introduce first the /proc/socinfo.
+Then, following patches will add OMAP data into that node. And finally,
+will add OMAP id, production and die id code.
+
+Just for reference, I'm also pasting the previous 0/4 message:
+
+-------------------------------------------------------------------------------
+I'm resending this series with minor change in the subject prefix of patch 4/4.
+Removed the PM: prefix. Everything else is same. So, I kept the v3 prefix as well.
+
+v3:
+And now v3 of this series. Basically a minor change wrt string manipulation.
+No need to use strlen in so many places. Previous log for reference:
+
+v2:
+
+Here is the version 2 of this series. Now die id is protected using
+same x86 protection mechanism to hide x86 product number. Besides,
+a compilation Kconfig option has been added for DIE ID as well.
+
+Here is previous PATCH 0/4 message:
+
+v1:
+
+This series is to continue what has been discussed several weeks ago
+wrt IDCODE patch. Original patch was made by Peter and discussion is here:
+http://www.mail-archive.com/linux-omap@vger.kernel.org/msg17553.html
+
+So, the conclusion was that IDCODE info is useful even in production systems,
+and for that debugfs is not a good choice to export it. One suggestion was to
+add it under /proc/cpuinfo. However this entry nowadays exports only ARM related
+information.
+
+So this series does the trick by extending the ARM /proc/cpuinfo to include
+soc info data. There are a few ways to add a hook for soc specific data. But
+I've decided to implement it via the simplest way I found. Basically it is
+same thing which is done for system_rev, system_serial_low and system_serial_high.
+Then, now we have system_soc_info, which is printed only if there is something
+useful there.
+
+As usual, comments are welcome.
+
+BR,
+
+Eduardo Valentin (4):
+  procfs: Introduce socinfo under /proc
+  mach-omap2: export omap2 info under /proc/socinfo
+  mach-omap1: export omap1 info under /proc/socinfo
+  OMAP3: export chip IDCODE, Production ID and Die ID
+
+ Documentation/filesystems/proc.txt  |    1 +
+ Documentation/kernel-parameters.txt |    2 +
+ arch/arm/Kconfig                    |    1 +
+ arch/arm/mach-omap1/id.c            |   45 +++++++++++++++++---
+ arch/arm/mach-omap2/Kconfig         |   10 ++++
+ arch/arm/mach-omap2/id.c            |   81 ++++++++++++++++++++++++++++++++---
+ fs/proc/Kconfig                     |    7 +++
+ fs/proc/Makefile                    |    1 +
+ fs/proc/socinfo.c                   |   33 ++++++++++++++
+ 9 files changed, 169 insertions(+), 12 deletions(-)
+ create mode 100644 fs/proc/socinfo.c
+
+-------------------------------------------------------------------------------
+[1] - http://www.mail-archive.com/linux-omap@vger.kernel.org/msg17553.html
+[2] - http://marc.info/?l=linux-omap&m=127304890312365&w=2
+
