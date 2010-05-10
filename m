@@ -1,218 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab0EJRpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 13:45:15 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:58192 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab0EJRpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 13:45:12 -0400
-Date: Mon, 10 May 2010 13:43:29 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: pull request: wireless-2.6 2010-05-10
-Message-ID: <20100510174329.GC11681@tuxdriver.com>
+	id S1753138Ab0EJRsj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 13:48:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56991 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750985Ab0EJRsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 13:48:37 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+Subject: [PATCH -tip 4/5] kprobes/x86: Use text_poke_smp_batch
+To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
+Cc: systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Ingo Molnar <mingo@elte.hu>, Jim Keniston <jkenisto@us.ibm.com>,
+       Jason Baron <jbaron@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Mon, 10 May 2010 13:53:40 -0400
+Message-ID: <20100510175340.27396.7222.stgit@localhost6.localdomain6>
+In-Reply-To: <20100510175313.27396.34605.stgit@localhost6.localdomain6>
+References: <20100510175313.27396.34605.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+Use text_poke_smp_batch() in optimization path for reducing
+the number of stop_machine() issues.
 
-Here are three more candidates for 2.6.34.  I hesitated to push them,
-but at least two of them are documented regressions and the other (i.e.
-"iwlwifi: work around passive scan issue") avoids some rather annoying
-firmware restarts at little or no risk.  I think it would be good to
-take these now rather than later.
-
-Please let me know if there are problems!
-
-Thanks,
-
-John
-
+Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jim Keniston <jkenisto@us.ibm.com>
+Cc: Jason Baron <jbaron@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 ---
 
-The following changes since commit 80ea76bb2575c426154b8d61d324197ee3592baa:
-  David S. Miller (1):
-        phy: Fix initialization in micrel driver.
+ arch/x86/kernel/kprobes.c |   37 ++++++++++++++++++++++++++++++-------
+ include/linux/kprobes.h   |    2 +-
+ kernel/kprobes.c          |   13 +------------
+ 3 files changed, 32 insertions(+), 20 deletions(-)
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
-
-Christian Lamparter (1):
-      ar9170: wait for asynchronous firmware loading
-
-Johannes Berg (1):
-      iwlwifi: work around passive scan issue
-
-Reinette Chatre (1):
-      mac80211: remove association work when processing deauth request
-
- drivers/net/wireless/ath/ar9170/usb.c       |   11 +++++++++++
- drivers/net/wireless/ath/ar9170/usb.h       |    1 +
- drivers/net/wireless/iwlwifi/iwl-commands.h |    4 +++-
- drivers/net/wireless/iwlwifi/iwl-scan.c     |   23 ++++++++++++++++++-----
- drivers/net/wireless/iwlwifi/iwl3945-base.c |    3 ++-
- net/mac80211/mlme.c                         |    3 ++-
- 6 files changed, 37 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ar9170/usb.c b/drivers/net/wireless/ath/ar9170/usb.c
-index 6b1cb70..24dc555 100644
---- a/drivers/net/wireless/ath/ar9170/usb.c
-+++ b/drivers/net/wireless/ath/ar9170/usb.c
-@@ -726,12 +726,16 @@ static void ar9170_usb_firmware_failed(struct ar9170_usb *aru)
- {
- 	struct device *parent = aru->udev->dev.parent;
- 
-+	complete(&aru->firmware_loading_complete);
-+
- 	/* unbind anything failed */
- 	if (parent)
- 		down(&parent->sem);
- 	device_release_driver(&aru->udev->dev);
- 	if (parent)
- 		up(&parent->sem);
-+
-+	usb_put_dev(aru->udev);
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index 345a4b1..63a5c24 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -1385,10 +1385,14 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+ 	return 0;
  }
  
- static void ar9170_usb_firmware_finish(const struct firmware *fw, void *context)
-@@ -760,6 +764,8 @@ static void ar9170_usb_firmware_finish(const struct firmware *fw, void *context)
- 	if (err)
- 		goto err_unrx;
- 
-+	complete(&aru->firmware_loading_complete);
-+	usb_put_dev(aru->udev);
- 	return;
- 
-  err_unrx:
-@@ -857,6 +863,7 @@ static int ar9170_usb_probe(struct usb_interface *intf,
- 	init_usb_anchor(&aru->tx_pending);
- 	init_usb_anchor(&aru->tx_submitted);
- 	init_completion(&aru->cmd_wait);
-+	init_completion(&aru->firmware_loading_complete);
- 	spin_lock_init(&aru->tx_urb_lock);
- 
- 	aru->tx_pending_urbs = 0;
-@@ -876,6 +883,7 @@ static int ar9170_usb_probe(struct usb_interface *intf,
- 	if (err)
- 		goto err_freehw;
- 
-+	usb_get_dev(aru->udev);
- 	return request_firmware_nowait(THIS_MODULE, 1, "ar9170.fw",
- 				       &aru->udev->dev, GFP_KERNEL, aru,
- 				       ar9170_usb_firmware_step2);
-@@ -895,6 +903,9 @@ static void ar9170_usb_disconnect(struct usb_interface *intf)
- 		return;
- 
- 	aru->common.state = AR9170_IDLE;
+-/* Replace a breakpoint (int3) with a relative jump.  */
+-int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
++#define MAX_OPTIMIZE_PROBES 256
++static struct text_poke_param jump_params[MAX_OPTIMIZE_PROBES];
++static char jump_code_buf[MAX_OPTIMIZE_PROBES][RELATIVEJUMP_SIZE];
 +
-+	wait_for_completion(&aru->firmware_loading_complete);
++static void __kprobes setup_optimize_kprobe(struct text_poke_param *tprm,
++					    char *insn_buf,
++					    struct optimized_kprobe *op)
+ {
+-	unsigned char jmp_code[RELATIVEJUMP_SIZE];
+ 	s32 rel = (s32)((long)op->optinsn.insn -
+ 			((long)op->kp.addr + RELATIVEJUMP_SIZE));
+ 
+@@ -1396,16 +1400,35 @@ int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
+ 	memcpy(op->optinsn.copied_insn, op->kp.addr + INT3_SIZE,
+ 	       RELATIVE_ADDR_SIZE);
+ 
+-	jmp_code[0] = RELATIVEJUMP_OPCODE;
+-	*(s32 *)(&jmp_code[1]) = rel;
++	insn_buf[0] = RELATIVEJUMP_OPCODE;
++	*(s32 *)(&insn_buf[1]) = rel;
 +
- 	ar9170_unregister(&aru->common);
- 	ar9170_usb_cancel_urbs(aru);
++	tprm->addr = op->kp.addr;
++	tprm->opcode = insn_buf;
++	tprm->len = RELATIVEJUMP_SIZE;
++}
++
++/* Replace a breakpoint (int3) with a relative jump.  */
++void __kprobes arch_optimize_kprobes(struct list_head *oplist)
++{
++	struct optimized_kprobe *op, *tmp;
++	int c = 0;
++
++	list_for_each_entry_safe(op, tmp, oplist, list) {
++		WARN_ON(kprobe_disabled(&op->kp));
++		/* Setup param */
++		setup_optimize_kprobe(&jump_params[c], jump_code_buf[c], op);
++		list_del_init(&op->list);
++		if (++c >= MAX_OPTIMIZE_PROBES)
++			break;
++	}
  
-diff --git a/drivers/net/wireless/ath/ar9170/usb.h b/drivers/net/wireless/ath/ar9170/usb.h
-index a2ce3b1..919b060 100644
---- a/drivers/net/wireless/ath/ar9170/usb.h
-+++ b/drivers/net/wireless/ath/ar9170/usb.h
-@@ -71,6 +71,7 @@ struct ar9170_usb {
- 	unsigned int tx_pending_urbs;
+ 	/*
+ 	 * text_poke_smp doesn't support NMI/MCE code modifying.
+ 	 * However, since kprobes itself also doesn't support NMI/MCE
+ 	 * code probing, it's not a problem.
+ 	 */
+-	text_poke_smp(op->kp.addr, jmp_code, RELATIVEJUMP_SIZE);
+-	return 0;
++	text_poke_smp_batch(jump_params, c);
+ }
  
- 	struct completion cmd_wait;
-+	struct completion firmware_loading_complete;
- 	int readlen;
- 	u8 *readbuf;
+ /* Replace a relative jump with a breakpoint (int3).  */
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index e7d1b2e..fe157ba 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -275,7 +275,7 @@ extern int arch_prepared_optinsn(struct arch_optimized_insn *optinsn);
+ extern int arch_check_optimized_kprobe(struct optimized_kprobe *op);
+ extern int arch_prepare_optimized_kprobe(struct optimized_kprobe *op);
+ extern void arch_remove_optimized_kprobe(struct optimized_kprobe *op);
+-extern int  arch_optimize_kprobe(struct optimized_kprobe *op);
++extern void arch_optimize_kprobes(struct list_head *oplist);
+ extern void arch_unoptimize_kprobe(struct optimized_kprobe *op);
+ extern kprobe_opcode_t *get_optinsn_slot(void);
+ extern void free_optinsn_slot(kprobe_opcode_t *slot, int dirty);
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index aae368a..c824c23 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -424,14 +424,10 @@ static LIST_HEAD(optimizing_list);
+ static void kprobe_optimizer(struct work_struct *work);
+ static DECLARE_DELAYED_WORK(optimizing_work, kprobe_optimizer);
+ #define OPTIMIZE_DELAY 5
+-#define MAX_OPTIMIZE_PROBES 64
  
-diff --git a/drivers/net/wireless/iwlwifi/iwl-commands.h b/drivers/net/wireless/iwlwifi/iwl-commands.h
-index 6383d9f..f4e59ae 100644
---- a/drivers/net/wireless/iwlwifi/iwl-commands.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-commands.h
-@@ -2621,7 +2621,9 @@ struct iwl_ssid_ie {
- #define PROBE_OPTION_MAX_3945		4
- #define PROBE_OPTION_MAX		20
- #define TX_CMD_LIFE_TIME_INFINITE	cpu_to_le32(0xFFFFFFFF)
--#define IWL_GOOD_CRC_TH			cpu_to_le16(1)
-+#define IWL_GOOD_CRC_TH_DISABLED	0
-+#define IWL_GOOD_CRC_TH_DEFAULT		cpu_to_le16(1)
-+#define IWL_GOOD_CRC_TH_NEVER		cpu_to_le16(0xffff)
- #define IWL_MAX_SCAN_SIZE 1024
- #define IWL_MAX_CMD_SIZE 4096
- #define IWL_MAX_PROBE_REQUEST		200
-diff --git a/drivers/net/wireless/iwlwifi/iwl-scan.c b/drivers/net/wireless/iwlwifi/iwl-scan.c
-index 5062f4e..2367286 100644
---- a/drivers/net/wireless/iwlwifi/iwl-scan.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
-@@ -812,16 +812,29 @@ static void iwl_bg_request_scan(struct work_struct *data)
- 			rate = IWL_RATE_1M_PLCP;
- 			rate_flags = RATE_MCS_CCK_MSK;
- 		}
--		scan->good_CRC_th = 0;
-+		scan->good_CRC_th = IWL_GOOD_CRC_TH_DISABLED;
- 	} else if (priv->scan_bands & BIT(IEEE80211_BAND_5GHZ)) {
- 		band = IEEE80211_BAND_5GHZ;
- 		rate = IWL_RATE_6M_PLCP;
- 		/*
--		 * If active scaning is requested but a certain channel
--		 * is marked passive, we can do active scanning if we
--		 * detect transmissions.
-+		 * If active scanning is requested but a certain channel is
-+		 * marked passive, we can do active scanning if we detect
-+		 * transmissions.
-+		 *
-+		 * There is an issue with some firmware versions that triggers
-+		 * a sysassert on a "good CRC threshold" of zero (== disabled),
-+		 * on a radar channel even though this means that we should NOT
-+		 * send probes.
-+		 *
-+		 * The "good CRC threshold" is the number of frames that we
-+		 * need to receive during our dwell time on a channel before
-+		 * sending out probes -- setting this to a huge value will
-+		 * mean we never reach it, but at the same time work around
-+		 * the aforementioned issue. Thus use IWL_GOOD_CRC_TH_NEVER
-+		 * here instead of IWL_GOOD_CRC_TH_DISABLED.
- 		 */
--		scan->good_CRC_th = is_active ? IWL_GOOD_CRC_TH : 0;
-+		scan->good_CRC_th = is_active ? IWL_GOOD_CRC_TH_DEFAULT :
-+						IWL_GOOD_CRC_TH_NEVER;
- 
- 		/* Force use of chains B and C (0x6) for scan Rx for 4965
- 		 * Avoid A (0x1) because of its off-channel reception on A-band.
-diff --git a/drivers/net/wireless/iwlwifi/iwl3945-base.c b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-index e276f2a..2f47d93 100644
---- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
-+++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-@@ -2966,7 +2966,8 @@ static void iwl3945_bg_request_scan(struct work_struct *data)
- 		 * is marked passive, we can do active scanning if we
- 		 * detect transmissions.
- 		 */
--		scan->good_CRC_th = is_active ? IWL_GOOD_CRC_TH : 0;
-+		scan->good_CRC_th = is_active ? IWL_GOOD_CRC_TH_DEFAULT :
-+						IWL_GOOD_CRC_TH_DISABLED;
- 		band = IEEE80211_BAND_5GHZ;
- 	} else {
- 		IWL_WARN(priv, "Invalid scan band count\n");
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index 8a96503..6ccd48e 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -2029,7 +2029,8 @@ int ieee80211_mgd_deauth(struct ieee80211_sub_if_data *sdata,
- 				continue;
- 
- 			if (wk->type != IEEE80211_WORK_DIRECT_PROBE &&
--			    wk->type != IEEE80211_WORK_AUTH)
-+			    wk->type != IEEE80211_WORK_AUTH &&
-+			    wk->type != IEEE80211_WORK_ASSOC)
- 				continue;
- 
- 			if (memcmp(req->bss->bssid, wk->filter_ta, ETH_ALEN))
+ /* Kprobe jump optimizer */
+ static __kprobes void kprobe_optimizer(struct work_struct *work)
+ {
+-	struct optimized_kprobe *op, *tmp;
+-	int c = 0;
+-
+ 	/* Lock modules while optimizing kprobes */
+ 	mutex_lock(&module_mutex);
+ 	mutex_lock(&kprobe_mutex);
+@@ -459,14 +455,7 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
+ 	 */
+ 	get_online_cpus();
+ 	mutex_lock(&text_mutex);
+-	list_for_each_entry_safe(op, tmp, &optimizing_list, list) {
+-		WARN_ON(kprobe_disabled(&op->kp));
+-		if (arch_optimize_kprobe(op) < 0)
+-			op->kp.flags &= ~KPROBE_FLAG_OPTIMIZED;
+-		list_del_init(&op->list);
+-		if (++c >= MAX_OPTIMIZE_PROBES)
+-			break;
+-	}
++	arch_optimize_kprobes(&optimizing_list);
+ 	mutex_unlock(&text_mutex);
+ 	put_online_cpus();
+ 	if (!list_empty(&optimizing_list))
+
+
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
