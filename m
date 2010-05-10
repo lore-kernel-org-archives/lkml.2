@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933279Ab0EJXcs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:32:48 -0400
-Received: from kroah.org ([198.145.64.141]:33269 "EHLO coco.kroah.org"
+	id S933302Ab0EJXc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:32:59 -0400
+Received: from kroah.org ([198.145.64.141]:33265 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932473Ab0EJWwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:36 -0400
+	id S932469Ab0EJWwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:35 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:24 2010
-Message-Id: <20100510223324.245814290@kvm.kroah.org>
+Message-Id: <20100510223324.153968147@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:47 -0700
+Date: Mon, 10 May 2010 15:32:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Douglas Gilbert <dgilbert@interlog.com>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: [076/117] [SCSI] skip sense logging for some ATA PASS-THROUGH cdbs
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [075/117] ath9k: reorder ieee80211_free_hw behind ath9k_uninit_hw to avoid oops
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Douglas Gilbert <dgilbert@interlog.com>
+From: John W. Linville <linville@tuxdriver.com>
 
-commit e7efe5932b1d3916c79326a4221693ea90a900e2 upstream.
+This code only exists in 2.6.33 -- 2.6.32 and 2.6.34 are not affected.
 
-Further to the lsml thread titled:
-"does scsi_io_completion need to dump sense data for ata pass through (ck_cond =
-1) ?"
-
-This is a patch to skip logging when the sense data is
-associated with a SENSE_KEY of "RECOVERED_ERROR" and the
-additional sense code is "ATA PASS-THROUGH INFORMATION
-AVAILABLE". This only occurs with the SAT ATA PASS-THROUGH
-commands when CK_COND=1 (in the cdb). It indicates that
-the sense data contains ATA registers.
-
-Smartmontools uses such commands on ATA disks connected via
-SAT. Periodic checks such as those done by smartd cause
-nuisance entries into logs that are:
-    - neither errors nor warnings
-    - pointless unless the cdb that caused them are also logged
-
-Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/scsi/scsi_lib.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -773,8 +773,14 @@ void scsi_io_completion(struct scsi_cmnd
- 	 * we already took a copy of the original into rq->errors which
- 	 * is what gets returned to the user
- 	 */
--	if (sense_valid && sshdr.sense_key == RECOVERED_ERROR) {
--		if (!(req->cmd_flags & REQ_QUIET))
-+	if (sense_valid && (sshdr.sense_key == RECOVERED_ERROR)) {
-+		/* if ATA PASS-THROUGH INFORMATION AVAILABLE skip
-+		 * print since caller wants ATA registers. Only occurs on
-+		 * SCSI ATA PASS_THROUGH commands when CK_COND=1
-+		 */
-+		if ((sshdr.asc == 0x0) && (sshdr.ascq == 0x1d))
-+			;
-+		else if (!(req->cmd_flags & REQ_QUIET))
- 			scsi_print_sense("", cmd);
- 		result = 0;
- 		/* BLOCK_PC may have set error */
+ drivers/net/wireless/ath/ath9k/main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1358,9 +1358,9 @@ void ath_cleanup(struct ath_softc *sc)
+ 	free_irq(sc->irq, sc);
+ 	ath_bus_cleanup(common);
+ 	kfree(sc->sec_wiphy);
+-	ieee80211_free_hw(sc->hw);
+ 
+ 	ath9k_uninit_hw(sc);
++	ieee80211_free_hw(sc->hw);
+ }
+ 
+ static int ath9k_reg_notifier(struct wiphy *wiphy,
 
 
