@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab0EJXZu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:25:50 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40570 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932583Ab0EJWxM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:53:12 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tzanussi@gmail.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/10] perf/trace/scripting: failed-syscalls script cleanup
-Date: Mon, 10 May 2010 19:53:00 -0300
-Message-Id: <1273531987-28956-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1273531987-28956-1-git-send-email-acme@infradead.org>
-References: <1273531987-28956-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S933044Ab0EJX1U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:27:20 -0400
+Received: from kroah.org ([198.145.64.141]:33426 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932559Ab0EJWxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:53:02 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:27 2010
+Message-Id: <20100510223327.130186726@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:33:19 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Dan Carpenter <error27@gmail.com>, Len Brown <lenb@kernel.org>,
+       "Darrick J. Wong" <djwong@us.ibm.com>, Len Brown <len.brown@intel.com>
+Subject: [108/117] power_meter: acpi_device_class "power_meter_resource" too long
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Zanussi <tzanussi@gmail.com>
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-A couple small fixes for the failed syscalls script:
+------------------
 
-- The script description says it can be restricted to a specific comm,
-  make it so.
+From: Dan Carpenter <error27@gmail.com>
 
-- silence the match output in the shell script
+commit 18262714ca0fb65c290b8ea1807b2b02bb52d0e3 upstream.
 
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-LKML-Reference: <1273466820-9330-2-git-send-email-tzanussi@gmail.com>
-Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+acpi_device_class can only be 19 characters and a NULL terminator.
+
+The current code has a buffer overflow in acpi_power_meter_add():
+       strcpy(acpi_device_class(device), ACPI_POWER_METER_CLASS);
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Cc: Len Brown <lenb@kernel.org>
+Cc: "Darrick J. Wong" <djwong@us.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- tools/perf/scripts/perl/bin/failed-syscalls-report |    2 +-
- tools/perf/scripts/perl/failed-syscalls.pl         |    6 +++++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/acpi/power_meter.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/scripts/perl/bin/failed-syscalls-report b/tools/perf/scripts/perl/bin/failed-syscalls-report
-index f634608..e3a5e55 100644
---- a/tools/perf/scripts/perl/bin/failed-syscalls-report
-+++ b/tools/perf/scripts/perl/bin/failed-syscalls-report
-@@ -2,7 +2,7 @@
- # description: system-wide failed syscalls
- # args: [comm]
- if [ $# -gt 0 ] ; then
--    if ! expr match "$1" "-" ; then
-+    if ! expr match "$1" "-" > /dev/null ; then
- 	comm=$1
- 	shift
-     fi
-diff --git a/tools/perf/scripts/perl/failed-syscalls.pl b/tools/perf/scripts/perl/failed-syscalls.pl
-index c18e7e2..94bc25a 100644
---- a/tools/perf/scripts/perl/failed-syscalls.pl
-+++ b/tools/perf/scripts/perl/failed-syscalls.pl
-@@ -11,6 +11,8 @@ use Perf::Trace::Core;
- use Perf::Trace::Context;
- use Perf::Trace::Util;
+--- a/drivers/acpi/power_meter.c
++++ b/drivers/acpi/power_meter.c
+@@ -34,7 +34,7 @@
+ #define ACPI_POWER_METER_NAME		"power_meter"
+ ACPI_MODULE_NAME(ACPI_POWER_METER_NAME);
+ #define ACPI_POWER_METER_DEVICE_NAME	"Power Meter"
+-#define ACPI_POWER_METER_CLASS		"power_meter_resource"
++#define ACPI_POWER_METER_CLASS		"pwr_meter_resource"
  
-+my $for_comm = shift;
-+
- my %failed_syscalls;
+ #define NUM_SENSORS			17
  
- sub raw_syscalls::sys_exit
-@@ -33,6 +35,8 @@ sub trace_end
- 
-     foreach my $comm (sort {$failed_syscalls{$b} <=> $failed_syscalls{$a}}
- 		      keys %failed_syscalls) {
--	    printf("%-20s  %10s\n", $comm, $failed_syscalls{$comm});
-+	next if ($for_comm && $comm ne $for_comm);
-+
-+	printf("%-20s  %10s\n", $comm, $failed_syscalls{$comm});
-     }
- }
--- 
-1.6.2.5
+
 
