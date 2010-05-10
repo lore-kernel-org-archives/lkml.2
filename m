@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932758Ab0EJWz3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:55:29 -0400
-Received: from kroah.org ([198.145.64.141]:33395 "EHLO coco.kroah.org"
+	id S1757565Ab0EJXK3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:10:29 -0400
+Received: from kroah.org ([198.145.64.141]:45450 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932544Ab0EJWw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:57 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:26 2010
-Message-Id: <20100510223326.501674300@kvm.kroah.org>
+	id S932965Ab0EJW6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:42 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:43 2010
+Message-Id: <20100510223543.027935299@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:33:12 -0700
+Date: Mon, 10 May 2010 15:35:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [101/117] sparc64: Fix memory leak in pci_register_iommu_region().
-In-Reply-To: <20100510223700.GA18404@kroah.com>
+       Hannes Reinecke <hare@suse.de>,
+       James Bottomley <James.Bottomley@suse.de>
+Subject: [96/98] SCSI: Retry commands with UNIT_ATTENTION sense codes to fix ext3/ext4 I/O error
+In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
+From: James Bottomley <James.Bottomley@suse.de>
 
-From: David S. Miller <davem@davemloft.net>
+commit 77a4229719e511a0d38d9c355317ae1469adeb54 upstream.
 
-[ Upstream commit e182c77cc291456eed127b1472952ddb59a81a9d ]
+There's nastyness in the way we currently handle barriers (and
+discards): They're effectively filesystem commands, but they get
+processed as BLOCK_PC commands.  Unfortunately BLOCK_PC commands are
+taken by SCSI to be SG_IO commands and the issuer expects to see and
+handle any returned errors, however trivial.  This leads to a huge
+problem, because the block layer doesn't expect this to happen and any
+trivially retryable error on a barrier causes an immediate I/O error
+to the filesystem.
 
-Found by kmemleak.
+The only real way to hack around this is to take the usual class of
+offending errors (unit attentions) and make them all retryable in the
+case of a REQ_HARDBARRIER.  A correct fix would involve a rework of
+the entire block and SCSI submit system, and so is out of scope for a
+quick fix.
 
-If request_resource() fails, we leak the struct resource we
-allocated to represent the IOMMU mapping area.
-
-This actually happens on sun4v machines because the IOMEM area is only
-reported sans the IOMMU region, unlike all previous systems.  I'll
-need to fix that at some point, but for now fix the leak.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Hannes Reinecke <hare@suse.de>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/sparc/kernel/pci_common.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/arch/sparc/kernel/pci_common.c
-+++ b/arch/sparc/kernel/pci_common.c
-@@ -371,14 +371,19 @@ static void pci_register_iommu_region(st
- 		struct resource *rp = kzalloc(sizeof(*rp), GFP_KERNEL);
+---
+ drivers/scsi/scsi_error.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -301,7 +301,20 @@ static int scsi_check_sense(struct scsi_
+ 		if (scmd->device->allow_restart &&
+ 		    (sshdr.asc == 0x04) && (sshdr.ascq == 0x02))
+ 			return FAILED;
+-		return SUCCESS;
++
++		if (blk_barrier_rq(scmd->request))
++			/*
++			 * barrier requests should always retry on UA
++			 * otherwise block will get a spurious error
++			 */
++			return NEEDS_RETRY;
++		else
++			/*
++			 * for normal (non barrier) commands, pass the
++			 * UA upwards for a determination in the
++			 * completion functions
++			 */
++			return SUCCESS;
  
- 		if (!rp) {
--			prom_printf("Cannot allocate IOMMU resource.\n");
--			prom_halt();
-+			pr_info("%s: Cannot allocate IOMMU resource.\n",
-+				pbm->name);
-+			return;
- 		}
- 		rp->name = "IOMMU";
- 		rp->start = pbm->mem_space.start + (unsigned long) vdma[0];
- 		rp->end = rp->start + (unsigned long) vdma[1] - 1UL;
- 		rp->flags = IORESOURCE_BUSY;
--		request_resource(&pbm->mem_space, rp);
-+		if (request_resource(&pbm->mem_space, rp)) {
-+			pr_info("%s: Unable to request IOMMU resource.\n",
-+				pbm->name);
-+			kfree(rp);
-+		}
- 	}
- }
- 
+ 		/* these three are not supported */
+ 	case COPY_ABORTED:
 
 
