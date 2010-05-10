@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab0EJXKu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:10:50 -0400
-Received: from kroah.org ([198.145.64.141]:45432 "EHLO coco.kroah.org"
+	id S1757505Ab0EJXGK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:06:10 -0400
+Received: from kroah.org ([198.145.64.141]:45421 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932959Ab0EJW6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:40 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:42 2010
-Message-Id: <20100510223542.758411193@kvm.kroah.org>
+	id S932937Ab0EJW6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:45 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:43 2010
+Message-Id: <20100510223543.125235907@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:45 -0700
+Date: Mon, 10 May 2010 15:35:49 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mike Christie <michaelc@cs.wisc.edu>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: [93/98] SCSI: libiscsi: regression: fix header digest errors
+       Ralf Baechle <ralf@linux-mips.org>,
+       Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [97/98] MIPS: Sibyte: Apply M3 workaround only on affected chip types and versions.
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+(cherry picked from commit e65c7f33d75e977350ca350573d93c517ec02776)
 
-commit 96b1f96dcab87756c0a1e7ba76bc5dc2add82b88 upstream.
+Previously it was unconditionally used on all Sibyte family SOCs.  The
+M3 bug has to be handled in the TLB exception handler which is extremly
+performance sensitive, so this modification is expected to deliver around
+2-3% performance improvment.  This is important as required changes to the
+M3 workaround will make it more costly.
 
-This fixes a regression introduced with this commit:
-
-commit d3305f3407fa3e9452079ec6cc8379067456e4aa
-Author: Mike Christie <michaelc@cs.wisc.edu>
-Date:   Thu Aug 20 15:10:58 2009 -0500
-
-    [SCSI] libiscsi: don't increment cmdsn if cmd is not sent
-
-in 2.6.32.
-
-When I moved the hdr->cmdsn after init_task, I added
-a bug when header digests are used. The problem is
-that the LLD may calculate the header digest in init_task,
-so if we then set the cmdsn after the init_task call we
-change what the digest will be calculated by the target.
-
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/libiscsi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/include/asm/mach-sibyte/war.h |    6 +++++-
+ arch/mips/sibyte/sb1250/setup.c         |   15 +++++++++++++++
+ 2 files changed, 20 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -384,12 +384,12 @@ static int iscsi_prep_scsi_cmd_pdu(struc
+--- a/arch/mips/include/asm/mach-sibyte/war.h
++++ b/arch/mips/include/asm/mach-sibyte/war.h
+@@ -16,7 +16,11 @@
+ #if defined(CONFIG_SB1_PASS_1_WORKAROUNDS) || \
+     defined(CONFIG_SB1_PASS_2_WORKAROUNDS)
  
- 	WARN_ON(hdrlength >= 256);
- 	hdr->hlength = hdrlength & 0xFF;
-+	hdr->cmdsn = task->cmdsn = cpu_to_be32(session->cmdsn);
+-#define BCM1250_M3_WAR	1
++#ifndef __ASSEMBLY__
++extern int sb1250_m3_workaround_needed(void);
++#endif
++
++#define BCM1250_M3_WAR	sb1250_m3_workaround_needed()
+ #define SIBYTE_1956_WAR	1
  
- 	if (session->tt->init_task && session->tt->init_task(task))
- 		return -EIO;
+ #else
+--- a/arch/mips/sibyte/sb1250/setup.c
++++ b/arch/mips/sibyte/sb1250/setup.c
+@@ -87,6 +87,21 @@ static int __init setup_bcm1250(void)
+ 	return ret;
+ }
  
- 	task->state = ISCSI_TASK_RUNNING;
--	hdr->cmdsn = task->cmdsn = cpu_to_be32(session->cmdsn);
- 	session->cmdsn++;
- 
- 	conn->scsicmd_pdus_cnt++;
++int sb1250_m3_workaround_needed(void)
++{
++	switch (soc_type) {
++	case K_SYS_SOC_TYPE_BCM1250:
++	case K_SYS_SOC_TYPE_BCM1250_ALT:
++	case K_SYS_SOC_TYPE_BCM1250_ALT2:
++	case K_SYS_SOC_TYPE_BCM1125:
++	case K_SYS_SOC_TYPE_BCM1125H:
++		return soc_pass < K_SYS_REVISION_BCM1250_C0;
++
++	default:
++		return 0;
++	}
++}
++
+ static int __init setup_bcm112x(void)
+ {
+ 	int ret = 0;
 
 
