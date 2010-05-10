@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933325Ab0EJXdm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:33:42 -0400
-Received: from kroah.org ([198.145.64.141]:33235 "EHLO coco.kroah.org"
+	id S932486Ab0EJXd6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:33:58 -0400
+Received: from kroah.org ([198.145.64.141]:33231 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932453Ab0EJWwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:30 -0400
+	id S932452Ab0EJWw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:29 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:23 2010
-Message-Id: <20100510223323.615188972@kvm.kroah.org>
+Message-Id: <20100510223323.523660754@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:40 -0700
+Date: Mon, 10 May 2010 15:32:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Bill Pemberton <wfp5p@virginia.edu>,
-       Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-       jfs-discussion@lists.sourceforge.net
-Subject: [069/117] jfs: fix diAllocExt error in resizing filesystem
+       David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>
+Subject: [068/117] CRED: Fix a race in creds_are_invalid() in credentials debugging
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,52 +25,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bill Pemberton <wfp5p@virginia.edu>
+From: David Howells <dhowells@redhat.com>
 
-commit 2b0b39517d1af5294128dbc2fd7ed39c8effa540 upstream.
+commit e134d200d57d43b171dcb0b55c178a1a0c7db14a upstream.
 
-Resizing the filesystem would result in an diAllocExt error in some
-instances because changes in bmp->db_agsize would not get noticed if
-goto extendBmap was called.
+creds_are_invalid() reads both cred->usage and cred->subscribers and then
+compares them to make sure the number of processes subscribed to a cred struct
+never exceeds the refcount of that cred struct.
 
-Signed-off-by: Bill Pemberton <wfp5p@virginia.edu>
-Signed-off-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-Cc: jfs-discussion@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
+The problem is that this can cause a race with both copy_creds() and
+exit_creds() as the two counters, whilst they are of atomic_t type, are only
+atomic with respect to themselves, and not atomic with respect to each other.
+
+This means that if creds_are_invalid() can read the values on one CPU whilst
+they're being modified on another CPU, and so can observe an evolving state in
+which the subscribers count now is greater than the usage count a moment
+before.
+
+Switching the order in which the counts are read cannot help, so the thing to
+do is to remove that particular check.
+
+I had considered rechecking the values to see if they're in flux if the test
+fails, but I can't guarantee they won't appear the same, even if they've
+changed several times in the meantime.
+
+Note that this can only happen if CONFIG_DEBUG_CREDENTIALS is enabled.
+
+The problem is only likely to occur with multithreaded programs, and can be
+tested by the tst-eintr1 program from glibc's "make check".  The symptoms look
+like:
+
+	CRED: Invalid credentials
+	CRED: At include/linux/cred.h:240
+	CRED: Specified credentials: ffff88003dda5878 [real][eff]
+	CRED: ->magic=43736564, put_addr=(null)
+	CRED: ->usage=766, subscr=766
+	CRED: ->*uid = { 0,0,0,0 }
+	CRED: ->*gid = { 0,0,0,0 }
+	CRED: ->security is ffff88003d72f538
+	CRED: ->security {359, 359}
+	------------[ cut here ]------------
+	kernel BUG at kernel/cred.c:850!
+	...
+	RIP: 0010:[<ffffffff81049889>]  [<ffffffff81049889>] __invalid_creds+0x4e/0x52
+	...
+	Call Trace:
+	 [<ffffffff8104a37b>] copy_creds+0x6b/0x23f
+
+Note the ->usage=766 and subscr=766.  The values appear the same because
+they've been re-read since the check was made.
+
+Reported-by: Roland McGrath <roland@redhat.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/jfs/resize.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ kernel/cred.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/fs/jfs/resize.c
-+++ b/fs/jfs/resize.c
-@@ -81,6 +81,7 @@ int jfs_extendfs(struct super_block *sb,
- 	struct inode *iplist[1];
- 	struct jfs_superblock *j_sb, *j_sb2;
- 	uint old_agsize;
-+	int agsizechanged = 0;
- 	struct buffer_head *bh, *bh2;
- 
- 	/* If the volume hasn't grown, get out now */
-@@ -333,6 +334,9 @@ int jfs_extendfs(struct super_block *sb,
- 	 */
- 	if ((rc = dbExtendFS(ipbmap, XAddress, nblocks)))
- 		goto error_out;
-+
-+	agsizechanged |= (bmp->db_agsize != old_agsize);
-+
- 	/*
- 	 * the map now has extended to cover additional nblocks:
- 	 * dn_mapsize = oldMapsize + nblocks;
-@@ -432,7 +436,7 @@ int jfs_extendfs(struct super_block *sb,
- 	 * will correctly identify the new ag);
- 	 */
- 	/* if new AG size the same as old AG size, done! */
--	if (bmp->db_agsize != old_agsize) {
-+	if (agsizechanged) {
- 		if ((rc = diExtendFS(ipimap, ipbmap)))
- 			goto error_out;
- 
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -786,8 +786,6 @@ bool creds_are_invalid(const struct cred
+ {
+ 	if (cred->magic != CRED_MAGIC)
+ 		return true;
+-	if (atomic_read(&cred->usage) < atomic_read(&cred->subscribers))
+-		return true;
+ #ifdef CONFIG_SECURITY_SELINUX
+ 	if (selinux_is_enabled()) {
+ 		if ((unsigned long) cred->security < PAGE_SIZE)
 
 
