@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab0EJJk3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 05:40:29 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40153 "EHLO
+	id S1755833Ab0EJJnf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 05:43:35 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37710 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756048Ab0EJJkX convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755765Ab0EJJnb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 05:40:23 -0400
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+	Mon, 10 May 2010 05:43:31 -0400
+Subject: Re: [RFC][PATCH 9/9] perf top: set perf_event_attr->pmu_id
 From: Peter Zijlstra <peterz@infradead.org>
 To: Lin Ming <ming.m.lin@intel.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
@@ -20,35 +20,39 @@ Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
        "David S. Miller" <davem@davemloft.net>,
        Russell King <rmk+kernel@arm.linux.org.uk>,
        Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1273483623.15998.57.camel@minggr.sh.intel.com>
-References: <1273483623.15998.57.camel@minggr.sh.intel.com>
+In-Reply-To: <1273483760.15998.63.camel@minggr.sh.intel.com>
+References: <1273483760.15998.63.camel@minggr.sh.intel.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 10 May 2010 11:40:01 +0200
-Message-ID: <1273484401.5605.3333.camel@twins>
+Date: Mon, 10 May 2010 11:43:11 +0200
+Message-ID: <1273484591.5605.3337.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 17:27 +0800, Lin Ming wrote:
-> Export pmus via sysfs /sys/devices/system/cpu/pmus/0...N
-> The file name is the pmu id, ie, /sys/devices/system/cpu/pmus/N
-> represents pmu id N.
-> So perf tool can use it to initialize perf_event_attr. 
+On Mon, 2010-05-10 at 17:29 +0800, Lin Ming wrote:
+> This is just a temporary patch to show the setting of
+> perf_event_attr->pmu_id. 
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  tools/perf/builtin-top.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index ed9b5b6..f775393 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -1213,6 +1213,11 @@ static void start_counter(int i, int counter)
+>  
+>  	attr = attrs + counter;
+>  
+> +	/*
+> +	 * TBD: in the future, may read /sys/devices/system/cpu/pmus/<pmu_id> 
+> +	 * to get the pmu id
+> +	 */
+> +	attr.pmu_id = 0;
 
-Why create a whole new directory, why not:
-
- /sys/devices/system/cpu/cpuN/pmu_id ?
-
-That way we can simply extend it to things like:
-
- /sys/devices/system/cpu/cpuN/nodeN/pmu_id
- /sys/devices/system/node/nodeN/pmi_id
-
-Instead of having to add something like:
-
- /sys/devices/system/node/pmus/0..N
-
-
+No, cpu PMUs must always be pmu_id 0.
