@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab0EJVjz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 17:39:55 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41115 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316Ab0EJVjw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 17:39:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=h/JoZ5aXi6H/g+ON89nYoPWvb4CnCDLZtM1cH3YfCpOTWPstExKRfOvW69B5iX1RiT
-         /haB7kgG5OJLQFMsb0G7OhMQ4/0zc7472mc8rdVZmdJIQ8LCekows4dZD7eLaH5Cb+Ii
-         lwJzhYIYfGyM3C3LLNXASIj5iH4sr9EPE+IFc=
+	id S1757325Ab0EJVnA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 17:43:00 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38343 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756598Ab0EJVm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 17:42:59 -0400
+Date: Mon, 10 May 2010 23:42:57 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Cc: linux-kernel@vger.kernel.org, Nick Piggin <npiggin@suse.de>,
+       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+       Randy Dunlap <rdunlap@xenotime.net>, Christoph Hellwig <hch@lst.de>,
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] trivial: inode uses a mutex instead of a semaphore.
+In-Reply-To: <1272385045-4037-1-git-send-email-cascardo@holoscopio.com>
+Message-ID: <alpine.LNX.2.00.1005102342350.28092@pobox.suse.cz>
+References: <1272385045-4037-1-git-send-email-cascardo@holoscopio.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1005102334140.14809@twin.jikos.cz>
-References: <j2idd18b0c31005101341o43b652c1zf8729f5f9a60e0d3@mail.gmail.com>
-	 <alpine.LRH.2.00.1005102334140.14809@twin.jikos.cz>
-Date: Mon, 10 May 2010 14:39:51 -0700
-Message-ID: <s2odd18b0c31005101439v22d03bfdw4e65d7c4b8315b6a@mail.gmail.com>
-Subject: Re: magicmouse: claimed by neither input, hiddev nor hidraw
-From: Justin Mattock <justinmattock@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-bluetooth@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 2:34 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Mon, 10 May 2010, Justin Mattock wrote:
->
->> is it me, or is there something wrong
->> with the magicmouse connecting
->> i.g. I've had my system setup to use the
->> magicmouse with 2.6.33* with no issues
->> now coming back after sometime
->> seems everything is connecting,but then no movement:
->> (and some thing in dmesg):
->> [  116.267993] magicmouse 0005:05AC:030D.0007: claimed by neither
->> input, hiddev nor hidraw
->> [  116.268053] magicmouse 0005:05AC:030D.0007: magicmouse hw start failed
->>
->> using osx  magicmouse connects fine.
->> Using standard mightymouse everything connects.
->>  are there any reports of such things?
->
-> Adding Michael Poole to CC.
->
-> No, I haven't seen any such reports. First -- could you please provide
-> complete dmesg?
->
-> --
-> Jiri Kosina
-> SUSE Labs, Novell Inc.
->
->
+On Tue, 27 Apr 2010, Thadeu Lima de Souza Cascardo wrote:
 
-everything seems to be working o.k. now,
-just had to enable HIDRAW=y
-maybe something changed to where
-I needed this(I remember never really
-using hidraw, just HIDDEV(but could be wrong)).
+> Replace the introduced i_sem by an i_mutex in the filesystem locking
+> documentation. This was introduced [1] after all occurrences were
+> already replaced in the same text [2]. However, the term "inode
+> semaphore" has not been replaced then, and it's replaced now.
+> 
+> [1] afddba49d18f346e5cc2938b6ed7c512db18ca68
+> [2] a7bc02f4f47fd0e7860c6589f0ad000d1476f7a3
+> 
+> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+> Cc: Nick Piggin <npiggin@suse.de>
+> Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> Cc: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> ---
+>  Documentation/filesystems/Locking |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+> index 06bbbed..af16080 100644
+> --- a/Documentation/filesystems/Locking
+> +++ b/Documentation/filesystems/Locking
+> @@ -178,7 +178,7 @@ prototypes:
+>  locking rules:
+>  	All except set_page_dirty may block
+>  
+> -			BKL	PageLocked(page)	i_sem
+> +			BKL	PageLocked(page)	i_mutex
+>  writepage:		no	yes, unlocks (see below)
+>  readpage:		no	yes, unlocks
+>  sync_page:		no	maybe
+> @@ -429,7 +429,7 @@ check_flags:		no
+>  implementations.  If your fs is not using generic_file_llseek, you
+>  need to acquire and release the appropriate locks in your ->llseek().
+>  For many filesystems, it is probably safe to acquire the inode
+> -semaphore.  Note some filesystems (i.e. remote ones) provide no
+> +mutex.  Note some filesystems (i.e. remote ones) provide no
+>  protection for i_size so you will need to use the BKL.
+>  
+>  Note: ext2_release() was *the* source of contention on fs-intensive
+
+This doesn't seem to be present in linux-next as of today. I have applied 
+the patch to trivial queue.
+
+Thanks,
 
 -- 
-Justin P. Mattock
+Jiri Kosina
+SUSE Labs, Novell Inc.
