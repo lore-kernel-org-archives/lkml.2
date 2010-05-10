@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab0EJXN5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:13:57 -0400
-Received: from kroah.org ([198.145.64.141]:51821 "EHLO coco.kroah.org"
+	id S932873Ab0EJXUW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:20:22 -0400
+Received: from kroah.org ([198.145.64.141]:51629 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932834Ab0EJW6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:16 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:40 2010
-Message-Id: <20100510223539.977813255@kvm.kroah.org>
+	id S1757438Ab0EJW5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:57:35 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:35 2010
+Message-Id: <20100510223535.782958082@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:14 -0700
+Date: Mon, 10 May 2010 15:34:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel Vetter <daniel.vetter@ffwll.ch>, Eric Anholt <eric@anholt.net>
-Subject: [62/98] drm/i915: fix tiling limits for i915 class hw v2
+       "J. Bruce Fields" <bfields@citi.umich.edu>
+Subject: [15/98] nfsd4: bug in read_buf
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,100 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Neil Brown <neilb@suse.de>
 
-commit c36a2a6de59e4a141a68b7575de837d3b0bd96b3 upstream.
+commit 2bc3c1179c781b359d4f2f3439cb3df72afc17fc upstream.
 
-Current code is definitely crap: Largest pitch allowed spills into
-the TILING_Y bit of the fence registers ... :(
+When read_buf is called to move over to the next page in the pagelist
+of an NFSv4 request, it sets argp->end to essentially a random
+number, certainly not an address within the page which argp->p now
+points to.  So subsequent calls to READ_BUF will think there is much
+more than a page of spare space (the cast to u32 ensures an unsigned
+comparison) so we can expect to fall off the end of the second
+page.
 
-I've rewritten the limits check under the assumption that 3rd gen hw
-has a 3d pitch limit of 8kb (like 2nd gen). This is supported by an
-otherwise totally misleading XXX comment.
+We never encountered thsi in testing because typically the only
+operations which use more than two pages are write-like operations,
+which have their own decoding logic.  Something like a getattr after a
+write may cross a page boundary, but it would be very unusual for it to
+cross another boundary after that.
 
-This bug mostly resulted in tiling-corrupted pixmaps because the kernel
-allowed too wide buffers to be tiled. Bug brought to the light by the
-xf86-video-intel 2.11 release because that unconditionally enabled
-tiling for pixmaps, relying on the kernel to check things. Tiling for
-the framebuffer was not affected because the ddx does some additional
-checks there ensure the buffer is within hw-limits.
-
-v2: Instead of computing the value that would be written into the
-hw fence registers and then checking the limits simply check whether
-the stride is above the 8kb limit. To better document the hw, add
-some WARN_ONs in i915_write_fence_reg like I've done for the i830
-case (using the right limits).
-
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=27449
-Tested-by: Alexander Lam <lambchop468@gmail.com>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c        |    6 ++++++
- drivers/gpu/drm/i915/i915_gem_tiling.c |   22 +++++++++-------------
- drivers/gpu/drm/i915/i915_reg.h        |    2 +-
- 3 files changed, 16 insertions(+), 14 deletions(-)
+ fs/nfsd/nfs4xdr.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -2334,6 +2334,12 @@ static void i915_write_fence_reg(struct
- 	pitch_val = obj_priv->stride / tile_width;
- 	pitch_val = ffs(pitch_val) - 1;
- 
-+	if (obj_priv->tiling_mode == I915_TILING_Y &&
-+	    HAS_128_BYTE_Y_TILING(dev))
-+		WARN_ON(pitch_val > I830_FENCE_MAX_PITCH_VAL);
-+	else
-+		WARN_ON(pitch_val > I915_FENCE_MAX_PITCH_VAL);
-+
- 	val = obj_priv->gtt_offset;
- 	if (obj_priv->tiling_mode == I915_TILING_Y)
- 		val |= 1 << I830_FENCE_TILING_Y_SHIFT;
---- a/drivers/gpu/drm/i915/i915_gem_tiling.c
-+++ b/drivers/gpu/drm/i915/i915_gem_tiling.c
-@@ -353,21 +353,17 @@ i915_tiling_ok(struct drm_device *dev, i
- 		 * reg, so dont bother to check the size */
- 		if (stride / 128 > I965_FENCE_MAX_PITCH_VAL)
- 			return false;
--	} else if (IS_I9XX(dev)) {
--		uint32_t pitch_val = ffs(stride / tile_width) - 1;
--
--		/* XXX: For Y tiling, FENCE_MAX_PITCH_VAL is actually 6 (8KB)
--		 * instead of 4 (2KB) on 945s.
--		 */
--		if (pitch_val > I915_FENCE_MAX_PITCH_VAL ||
--		    size > (I830_FENCE_MAX_SIZE_VAL << 20))
-+	} else if (IS_I9XX(dev) || IS_I8XX(dev)) {
-+		if (stride > 8192)
- 			return false;
--	} else {
--		uint32_t pitch_val = ffs(stride / tile_width) - 1;
- 
--		if (pitch_val > I830_FENCE_MAX_PITCH_VAL ||
--		    size > (I830_FENCE_MAX_SIZE_VAL << 19))
--			return false;
-+		if (IS_I9XX(dev)) {
-+			if (size > I830_FENCE_MAX_SIZE_VAL << 20)
-+				return false;
-+		} else {
-+			if (size > I830_FENCE_MAX_SIZE_VAL << 19)
-+				return false;
-+		}
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -168,10 +168,10 @@ static __be32 *read_buf(struct nfsd4_com
+ 	argp->p = page_address(argp->pagelist[0]);
+ 	argp->pagelist++;
+ 	if (argp->pagelen < PAGE_SIZE) {
+-		argp->end = p + (argp->pagelen>>2);
++		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
+ 	} else {
+-		argp->end = p + (PAGE_SIZE>>2);
++		argp->end = argp->p + (PAGE_SIZE>>2);
+ 		argp->pagelen -= PAGE_SIZE;
  	}
- 
- 	/* 965+ just needs multiples of tile width */
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -214,7 +214,7 @@
- #define   I830_FENCE_SIZE_BITS(size)	((ffs((size) >> 19) - 1) << 8)
- #define   I830_FENCE_PITCH_SHIFT	4
- #define   I830_FENCE_REG_VALID		(1<<0)
--#define   I915_FENCE_MAX_PITCH_VAL	0x10
-+#define   I915_FENCE_MAX_PITCH_VAL	4
- #define   I830_FENCE_MAX_PITCH_VAL	6
- #define   I830_FENCE_MAX_SIZE_VAL	(1<<8)
- 
+ 	memcpy(((char*)p)+avail, argp->p, (nbytes - avail));
+@@ -1433,10 +1433,10 @@ nfsd4_decode_compound(struct nfsd4_compo
+ 			argp->p = page_address(argp->pagelist[0]);
+ 			argp->pagelist++;
+ 			if (argp->pagelen < PAGE_SIZE) {
+-				argp->end = p + (argp->pagelen>>2);
++				argp->end = argp->p + (argp->pagelen>>2);
+ 				argp->pagelen = 0;
+ 			} else {
+-				argp->end = p + (PAGE_SIZE>>2);
++				argp->end = argp->p + (PAGE_SIZE>>2);
+ 				argp->pagelen -= PAGE_SIZE;
+ 			}
+ 		}
 
 
