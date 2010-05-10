@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415Ab0EJXep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:34:45 -0400
-Received: from kroah.org ([198.145.64.141]:33215 "EHLO coco.kroah.org"
+	id S933260Ab0EJXez (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:34:55 -0400
+Received: from kroah.org ([198.145.64.141]:33209 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932444Ab0EJWw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:26 -0400
+	id S932441Ab0EJWwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:25 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:23 2010
-Message-Id: <20100510223323.067031551@kvm.kroah.org>
+Message-Id: <20100510223322.944976048@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:35 -0700
+Date: Mon, 10 May 2010 15:32:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alex Chiang <achiang@canonical.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Garrett <mjg@redhat.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [064/117] PCI: Ensure we re-enable devices on resume
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [063/117] ALSA: hda: Use olpc-xo-1_5 quirk for Toshiba Satellite P500-PSPGSC-01800T
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,49 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit cc2893b6af5265baa1d68b17b136cffca9e40cfa upstream.
+commit c53666813813a0ea3d0391e1911eefc05a5e6b4f upstream.
 
-If the firmware puts a device back into D0 state at resume time, we'll
-update its state in resume_noirq and thus skip the platform resume code.
-Calling that code twice should be safe and we ought to avoid getting to
-that point anyway, so remove the check and also allow the platform pci
-code to be called for D0.
+BugLink: https://launchpad.net/bugs/549267
 
-Fixes USB not being powered after resume on recent Lenovo machines.
+The OR verified that using the olpc-xo-1_5 model quirk allows the
+headphones to be audible when inserted into the jack. Capture was
+also verified to work correctly.
 
-Acked-by: Alex Chiang <achiang@canonical.com>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reported-by: Richard Gagne
+Tested-by: Richard Gagne
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/pci.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ sound/pci/hda/patch_conexant.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -624,7 +624,7 @@ static void __pci_start_power_transition
-  */
- int __pci_complete_power_transition(struct pci_dev *dev, pci_power_t state)
- {
--	return state > PCI_D0 ?
-+	return state >= PCI_D0 ?
- 			pci_platform_power_transition(dev, state) : -EINVAL;
- }
- EXPORT_SYMBOL_GPL(__pci_complete_power_transition);
-@@ -661,10 +661,6 @@ int pci_set_power_state(struct pci_dev *
- 		 */
- 		return 0;
- 
--	/* Check if we're already there */
--	if (dev->current_state == state)
--		return 0;
--
- 	__pci_start_power_transition(dev, state);
- 
- 	/* This device is quirked not to be put into D3, so
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -2472,6 +2472,7 @@ static struct snd_pci_quirk cxt5066_cfg_
+ 		      CXT5066_DELL_LAPTOP),
+ 	SND_PCI_QUIRK(0x152d, 0x0833, "OLPC XO-1.5", CXT5066_OLPC_XO_1_5),
+ 	SND_PCI_QUIRK(0x1028, 0x0402, "Dell Vostro", CXT5066_DELL_VOSTO),
++	SND_PCI_QUIRK(0x1179, 0xff50, "Toshiba Satellite P500-PSPGSC-01800T", CXT5066_OLPC_XO_1_5),
+ 	SND_PCI_QUIRK(0x1179, 0xffe0, "Toshiba Satellite Pro T130-15F", CXT5066_OLPC_XO_1_5),
+ 	{}
+ };
 
 
