@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480Ab0EJWwi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:52:38 -0400
-Received: from kroah.org ([198.145.64.141]:33032 "EHLO coco.kroah.org"
+	id S933259Ab0EJXbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:31:08 -0400
+Received: from kroah.org ([198.145.64.141]:33306 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932380Ab0EJWwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:05 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:20 2010
-Message-Id: <20100510223320.541076958@kvm.kroah.org>
+	id S932490Ab0EJWwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:41 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:24 2010
+Message-Id: <20100510223324.780010642@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:08 -0700
+Date: Mon, 10 May 2010 15:32:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Chuck Lever <chuck.lever@oracle.com>,
-       Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [037/117] NFS: rsize and wsize settings ignored on v4 mounts
+       Michael Chan <mchan@broadcom.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [082/117] bnx2: Fix lost MSI-X problem on 5709 NICs.
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuck Lever <chuck.lever@oracle.com>
+From: Michael Chan <mchan@broadcom.com>
 
-commit 356e76b855bdbfd8d1c5e75bcf0c6bf0dfe83496 upstream.
+commit c441b8d2cb2194b05550a558d6d95d8944e56a84 upstream.
 
-NFSv4 mounts ignore the rsize and wsize mount options, and always use
-the default transfer size for both.  This seems to be because all
-NFSv4 mounts are now cloned, and the cloning logic doesn't copy the
-rsize and wsize settings from the parent nfs_server.
+It has been reported that under certain heavy traffic conditions in MSI-X
+mode, the driver can lose an MSI-X vector causing all packets in the
+associated rx/tx ring pair to be dropped.  The problem is caused by
+the chip dropping the write to unmask the MSI-X vector by the kernel
+(when migrating the IRQ for example).
 
-I tested Fedora's 2.6.32.11-99 and it seems to have this problem as
-well, so I'm guessing that .33, .32, and perhaps older kernels have
-this issue as well.
+This can be prevented by increasing the GRC timeout value for these
+register read and write operations.
 
-Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Thanks to Dell for helping us debug this problem.
+
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/client.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/bnx2.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -965,6 +965,8 @@ out_error:
- static void nfs_server_copy_userdata(struct nfs_server *target, struct nfs_server *source)
- {
- 	target->flags = source->flags;
-+	target->rsize = source->rsize;
-+	target->wsize = source->wsize;
- 	target->acregmin = source->acregmin;
- 	target->acregmax = source->acregmax;
- 	target->acdirmin = source->acdirmin;
+--- a/drivers/net/bnx2.c
++++ b/drivers/net/bnx2.c
+@@ -4772,8 +4772,12 @@ bnx2_reset_chip(struct bnx2 *bp, u32 res
+ 		rc = bnx2_alloc_bad_rbuf(bp);
+ 	}
+ 
+-	if (bp->flags & BNX2_FLAG_USING_MSIX)
++	if (bp->flags & BNX2_FLAG_USING_MSIX) {
+ 		bnx2_setup_msix_tbl(bp);
++		/* Prevent MSIX table reads and write from timing out */
++		REG_WR(bp, BNX2_MISC_ECO_HW_CTL,
++			BNX2_MISC_ECO_HW_CTL_LARGE_GRC_TMOUT_EN);
++	}
+ 
+ 	return rc;
+ }
 
 
