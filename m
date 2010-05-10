@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab0EJAUK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 20:20:10 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59304 "EHLO
+	id S1754731Ab0EJAU1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 20:20:27 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59307 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab0EJAUH (ORCPT
+	with ESMTP id S1750814Ab0EJAUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 20:20:07 -0400
+	Sun, 9 May 2010 20:20:08 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH v2 2/4] perf symbols: Check if a struct machine instance was found
-Date: Sun,  9 May 2010 21:19:57 -0300
-Message-Id: <1273450799-12808-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/4] perf symbols: Consider unresolved DSOs in the dso__col_widt calculation
+Date: Sun,  9 May 2010 21:19:56 -0300
+Message-Id: <1273450799-12808-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1273450799-12808-1-git-send-email-acme@infradead.org>
 References: <1273450799-12808-1-git-send-email-acme@infradead.org>
@@ -31,12 +31,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Which can happen when processing old files that had no fake kernel MMAP,
-events.
-
-That shouldn't result in perf_session__create_kernel_maps not being
-called, this will be fixed in a followup patch, for now do these checks
-to avoid segfaulting.
+By using BITS_PER_LONG / 4, that is the number of chars that will be
+used in such cases as the DSO "name".
 
 Cc: Frédéric Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -46,45 +42,27 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/event.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+ tools/perf/util/event.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
 diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 46563e1..dfc8bf6 100644
+index 23d5dfd..46563e1 100644
 --- a/tools/perf/util/event.c
 +++ b/tools/perf/util/event.c
-@@ -493,8 +493,10 @@ int event__process_mmap(event_t *self, struct perf_session *session)
- 		return 0;
+@@ -676,6 +676,13 @@ int event__preprocess_sample(const event_t *self, struct perf_session *session,
+ 			dso__calc_col_width(al->map->dso);
+ 
+ 		al->sym = map__find_symbol(al->map, al->addr, filter);
++	} else {
++		const unsigned int unresolved_col_width = BITS_PER_LONG / 4;
++
++		if (dsos__col_width < unresolved_col_width &&
++		    !symbol_conf.col_width_list_str && !symbol_conf.field_sep &&
++		    !symbol_conf.dso_list)
++			dsos__col_width = unresolved_col_width;
  	}
  
--	thread = perf_session__findnew(session, self->mmap.pid);
- 	machine = perf_session__find_host_machine(session);
-+	if (machine == NULL)
-+		goto out_problem;
-+	thread = perf_session__findnew(session, self->mmap.pid);
- 	map = map__new(&machine->user_dsos, self->mmap.start,
- 			self->mmap.len, self->mmap.pgoff,
- 			self->mmap.pid, self->mmap.filename,
-@@ -552,6 +554,10 @@ void thread__find_addr_map(struct thread *self,
- 	if (cpumode == PERF_RECORD_MISC_KERNEL && perf_host) {
- 		al->level = 'k';
- 		machine = perf_session__find_host_machine(session);
-+		if (machine == NULL) {
-+			al->map = NULL;
-+			return;
-+		}
- 		mg = &machine->kmaps;
- 	} else if (cpumode == PERF_RECORD_MISC_USER && perf_host) {
- 		al->level = '.';
-@@ -559,7 +565,7 @@ void thread__find_addr_map(struct thread *self,
- 	} else if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
- 		al->level = 'g';
- 		machine = perf_session__find_machine(session, pid);
--		if (!machine) {
-+		if (machine == NULL) {
- 			al->map = NULL;
- 			return;
- 		}
+ 	if (symbol_conf.sym_list && al->sym &&
 -- 
 1.6.2.5
 
