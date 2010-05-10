@@ -1,58 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab0EJJnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 05:43:35 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37710 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755765Ab0EJJnb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 05:43:31 -0400
-Subject: Re: [RFC][PATCH 9/9] perf top: set perf_event_attr->pmu_id
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1273483760.15998.63.camel@minggr.sh.intel.com>
-References: <1273483760.15998.63.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 10 May 2010 11:43:11 +0200
-Message-ID: <1273484591.5605.3337.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755730Ab0EJJln (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 05:41:43 -0400
+Received: from gate.crashing.org ([63.228.1.57]:41828 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756011Ab0EJJlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 05:41:03 -0400
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, tglx@linuxtronix.de, mingo@elte.hu,
+       davem@davemloft.net, lethal@linux-sh.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 23/25] lmb: Separate lmb_alloc_nid() and lmb_alloc_try_nid()
+Date: Mon, 10 May 2010 19:38:57 +1000
+Message-Id: <1273484339-28911-24-git-send-email-benh@kernel.crashing.org>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1273484339-28911-23-git-send-email-benh@kernel.crashing.org>
+References: <1273484339-28911-1-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-2-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-3-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-4-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-5-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-6-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-7-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-8-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-9-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-10-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-11-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-12-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-13-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-14-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-15-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-16-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-17-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-18-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-19-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-20-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-21-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-22-git-send-email-benh@kernel.crashing.org>
+ <1273484339-28911-23-git-send-email-benh@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 17:29 +0800, Lin Ming wrote:
-> This is just a temporary patch to show the setting of
-> perf_event_attr->pmu_id. 
-> 
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
->  tools/perf/builtin-top.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> index ed9b5b6..f775393 100644
-> --- a/tools/perf/builtin-top.c
-> +++ b/tools/perf/builtin-top.c
-> @@ -1213,6 +1213,11 @@ static void start_counter(int i, int counter)
->  
->  	attr = attrs + counter;
->  
-> +	/*
-> +	 * TBD: in the future, may read /sys/devices/system/cpu/pmus/<pmu_id> 
-> +	 * to get the pmu id
-> +	 */
-> +	attr.pmu_id = 0;
+The former is now strict, it will fail if it cannot honor the allocation
+within the node, while the later implements the previous semantic which
+falls back to allocating anywhere.
 
-No, cpu PMUs must always be pmu_id 0.
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ arch/sparc/mm/init_64.c |    4 ++--
+ include/linux/lmb.h     |    6 +++++-
+ lib/lmb.c               |   10 ++++++++++
+ 3 files changed, 17 insertions(+), 3 deletions(-)
+
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 88443c8..86477c5 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -820,7 +820,7 @@ static void __init allocate_node_data(int nid)
+ 	struct pglist_data *p;
+ 
+ #ifdef CONFIG_NEED_MULTIPLE_NODES
+-	paddr = lmb_alloc_nid(sizeof(struct pglist_data), SMP_CACHE_BYTES, nid);
++	paddr = lmb_alloc_try_nid(sizeof(struct pglist_data), SMP_CACHE_BYTES, nid);
+ 	if (!paddr) {
+ 		prom_printf("Cannot allocate pglist_data for nid[%d]\n", nid);
+ 		prom_halt();
+@@ -840,7 +840,7 @@ static void __init allocate_node_data(int nid)
+ 	if (p->node_spanned_pages) {
+ 		num_pages = bootmem_bootmap_pages(p->node_spanned_pages);
+ 
+-		paddr = lmb_alloc_nid(num_pages << PAGE_SHIFT, PAGE_SIZE, nid);
++		paddr = lmb_alloc_try_nid(num_pages << PAGE_SHIFT, PAGE_SIZE, nid);
+ 		if (!paddr) {
+ 			prom_printf("Cannot allocate bootmap for nid[%d]\n",
+ 				  nid);
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index 45724a6..4e45aa9 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -50,7 +50,11 @@ extern long __init lmb_reserve(phys_addr_t base, phys_addr_t size);
+ /* The numa aware allocator is only available if
+  * CONFIG_ARCH_POPULATES_NODE_MAP is set
+  */
+-extern phys_addr_t __init lmb_alloc_nid(phys_addr_t size, phys_addr_t align, int nid);
++extern phys_addr_t __init lmb_alloc_nid(phys_addr_t size, phys_addr_t align,
++					int nid);
++extern phys_addr_t __init lmb_alloc_try_nid(phys_addr_t size, phys_addr_t align,
++					    int nid);
++
+ extern phys_addr_t __init lmb_alloc(phys_addr_t size, phys_addr_t align);
+ 
+ /* Flags for lmb_alloc_base() amd __lmb_alloc_base() */
+diff --git a/lib/lmb.c b/lib/lmb.c
+index f4b2f95..fd98261 100644
+--- a/lib/lmb.c
++++ b/lib/lmb.c
+@@ -522,9 +522,19 @@ phys_addr_t __init lmb_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
+ 			return ret;
+ 	}
+ 
++	return 0;
++}
++
++phys_addr_t __init lmb_alloc_try_nid(phys_addr_t size, phys_addr_t align, int nid)
++{
++	phys_addr_t res = lmb_alloc_nid(size, align, nid);
++
++	if (res)
++		return res;
+ 	return lmb_alloc(size, align);
+ }
+ 
++
+ /*
+  * Remaining API functions
+  */
+-- 
+1.6.3.3
+
