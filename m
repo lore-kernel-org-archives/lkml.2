@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab0EJJ2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 05:28:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13788 "EHLO mga02.intel.com"
+	id S1755633Ab0EJJ22 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 05:28:28 -0400
+Received: from mga14.intel.com ([143.182.124.37]:1617 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755751Ab0EJJ2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 05:28:00 -0400
+	id S1755671Ab0EJJ2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 05:28:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,361,1270450800"; 
-   d="scan'208";a="620310303"
-Subject: [RFC][PATCH 4/9] perf: x86, convert to new API pmu->init_event
+   d="scan'208";a="275209956"
+Subject: [RFC][PATCH 5/9] perf: arm, convert to new API pmu->init_event
 From: Lin Ming <ming.m.lin@intel.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,8 +23,8 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
        Russell King <rmk+kernel@arm.linux.org.uk>,
        Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain
-Date: Mon, 10 May 2010 17:27:27 +0800
-Message-Id: <1273483647.15998.58.camel@minggr.sh.intel.com>
+Date: Mon, 10 May 2010 17:27:52 +0800
+Message-Id: <1273483672.15998.59.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
 Content-Transfer-Encoding: 7bit
@@ -32,80 +32,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf: x86, convert to new API pmu->init_event
+perf: arm, convert to new API pmu->init_event
 
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |   32 +++++++++++++++++---------------
- 1 files changed, 17 insertions(+), 15 deletions(-)
+ arch/arm/kernel/perf_event.c |   28 +++++++++++++++-------------
+ 1 files changed, 15 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 5c6a0d9..2c3cc46 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1362,6 +1362,8 @@ void __init init_hw_perf_events(void)
- 	pr_info("... event mask:             %016Lx\n", x86_pmu.intel_ctrl);
- 
- 	perf_cpu_notifier(x86_pmu_notifier);
-+
-+	perf_event_register_pmu(&pmu);
- }
- 
- static inline void x86_pmu_read(struct perf_event *event)
-@@ -1422,18 +1424,6 @@ static int x86_pmu_commit_txn(struct pmu *pmu)
- 	return 0;
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 8400ddf..565f13a 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -270,13 +270,6 @@ out:
+ 	return err;
  }
  
 -static struct pmu pmu = {
--	.enable		= x86_pmu_enable,
--	.disable	= x86_pmu_disable,
--	.start		= x86_pmu_start,
--	.stop		= x86_pmu_stop,
--	.read		= x86_pmu_read,
--	.unthrottle	= x86_pmu_unthrottle,
--	.start_txn	= x86_pmu_start_txn,
--	.cancel_txn	= x86_pmu_cancel_txn,
--	.commit_txn	= x86_pmu_commit_txn,
+-	.enable	    = armpmu_enable,
+-	.disable    = armpmu_disable,
+-	.unthrottle = armpmu_unthrottle,
+-	.read	    = armpmu_read,
 -};
 -
- /*
-  * validate that we can schedule this event
-  */
-@@ -1508,7 +1498,7 @@ out:
- 	return ret;
+ static int
+ validate_event(struct cpu_hw_events *cpuc,
+ 	       struct perf_event *event)
+@@ -446,20 +439,19 @@ __hw_perf_event_init(struct perf_event *event)
+ 	return err;
  }
  
--struct pmu *hw_perf_event_init(struct perf_event *event)
-+static int x86_pmu_init_event(struct perf_event *event)
+-struct pmu *
+-hw_perf_event_init(struct perf_event *event)
++static int armpmu_init_event(struct perf_event *event)
  {
- 	struct pmu *tmp;
- 	int err;
-@@ -1533,12 +1523,24 @@ struct pmu *hw_perf_event_init(struct perf_event *event)
- 	if (err) {
- 		if (event->destroy)
- 			event->destroy(event);
--		return ERR_PTR(err);
+ 	int err = 0;
+ 
+ 	if (!armpmu)
+-		return ERR_PTR(-ENODEV);
++		return -ENODEV;
+ 
+ 	event->destroy = hw_perf_event_destroy;
+ 
+ 	if (!atomic_inc_not_zero(&active_events)) {
+ 		if (atomic_read(&active_events) > perf_max_events) {
+ 			atomic_dec(&active_events);
+-			return ERR_PTR(-ENOSPC);
++			return -ENOSPC;
+ 		}
+ 
+ 		mutex_lock(&pmu_reserve_mutex);
+@@ -473,15 +465,23 @@ hw_perf_event_init(struct perf_event *event)
  	}
  
--	return &pmu;
+ 	if (err)
+-		return ERR_PTR(err);
++		return err;
+ 
+ 	err = __hw_perf_event_init(event);
+ 	if (err)
+ 		hw_perf_event_destroy(event);
+ 
+-	return err ? ERR_PTR(err) : &pmu;
 +	return err;
  }
  
 +static struct pmu pmu = {
-+	.enable		= x86_pmu_enable,
-+	.disable	= x86_pmu_disable,
-+	.start		= x86_pmu_start,
-+	.stop		= x86_pmu_stop,
-+	.read		= x86_pmu_read,
-+	.unthrottle	= x86_pmu_unthrottle,
-+	.start_txn	= x86_pmu_start_txn,
-+	.cancel_txn	= x86_pmu_cancel_txn,
-+	.commit_txn	= x86_pmu_commit_txn,
-+	.init_event	= x86_pmu_init_event,
++	.enable	    = armpmu_enable,
++	.disable    = armpmu_disable,
++	.unthrottle = armpmu_unthrottle,
++	.read	    = armpmu_read,
++	.init_event  = armpmu_init_event,
 +};
 +
- /*
-  * callchain support
-  */
+ void
+ hw_perf_enable(void)
+ {
+@@ -2138,6 +2138,8 @@ init_hw_perf_events(void)
+ 		pr_info("enabled with %s PMU driver, %d counters available\n",
+ 			armpmu->name, armpmu->num_events);
+ 
++	perf_event_register_pmu(&pmu);
++
+ 	return 0;
+ }
+ arch_initcall(init_hw_perf_events);
 
 
