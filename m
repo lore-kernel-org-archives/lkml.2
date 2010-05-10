@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933284Ab0EJXFP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:05:15 -0400
-Received: from kroah.org ([198.145.64.141]:45410 "EHLO coco.kroah.org"
+	id S1757521Ab0EJXGT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:06:19 -0400
+Received: from ozlabs.org ([203.10.76.45]:36622 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932949Ab0EJW6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:36 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:42 2010
-Message-Id: <20100510223542.311349651@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:40 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>, Len Brown <lenb@kernel.org>,
-       "Darrick J. Wong" <djwong@us.ibm.com>, Len Brown <len.brown@intel.com>
-Subject: [88/98] power_meter: acpi_device_class "power_meter_resource" too long
-In-Reply-To: <20100510223714.GA18416@kroah.com>
+	id S933032Ab0EJXAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 19:00:15 -0400
+Date: Tue, 11 May 2010 08:59:59 +1000
+From: Anton Blanchard <anton@samba.org>
+To: akpm@linux-foundation.org, gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] panic: Call console_verbose in panic
+Message-ID: <20100510225959.GC12203@kryten>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-------------------
+Most distros turn the console verbosity down and that means a backtrace after
+a panic never makes it to the console. I assume we haven't seen this because
+a panic is often preceeded by an oops which will have called console_verbose.
+There are however a lot of places we call panic directly, and they are
+broken.
 
-From: Dan Carpenter <error27@gmail.com>
+Use console_verbose like we do in the oops path to ensure a directly called
+panic will print a backtrace.
 
-commit 18262714ca0fb65c290b8ea1807b2b02bb52d0e3 upstream.
-
-acpi_device_class can only be 19 characters and a NULL terminator.
-
-The current code has a buffer overflow in acpi_power_meter_add():
-       strcpy(acpi_device_class(device), ACPI_POWER_METER_CLASS);
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: "Darrick J. Wong" <djwong@us.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Anton Blanchard <anton@samba.org>
 ---
- drivers/acpi/power_meter.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/power_meter.c
-+++ b/drivers/acpi/power_meter.c
-@@ -34,7 +34,7 @@
- #define ACPI_POWER_METER_NAME		"power_meter"
- ACPI_MODULE_NAME(ACPI_POWER_METER_NAME);
- #define ACPI_POWER_METER_DEVICE_NAME	"Power Meter"
--#define ACPI_POWER_METER_CLASS		"power_meter_resource"
-+#define ACPI_POWER_METER_CLASS		"pwr_meter_resource"
+Index: linux-2.6/kernel/panic.c
+===================================================================
+--- linux-2.6.orig/kernel/panic.c	2010-05-09 09:13:06.000000000 +1000
++++ linux-2.6/kernel/panic.c	2010-05-09 09:14:13.000000000 +1000
+@@ -87,6 +87,7 @@ NORET_TYPE void panic(const char * fmt, 
+ 	 */
+ 	preempt_disable();
  
- #define NUM_SENSORS			17
- 
-
-
++	console_verbose();
+ 	bust_spinlocks(1);
+ 	va_start(args, fmt);
+ 	vsnprintf(buf, sizeof(buf), fmt, args);
