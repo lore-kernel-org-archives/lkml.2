@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933389Ab0EJXjv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:39:51 -0400
-Received: from kroah.org ([198.145.64.141]:33016 "EHLO coco.kroah.org"
+	id S932325Ab0EJXkH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:40:07 -0400
+Received: from kroah.org ([198.145.64.141]:33001 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932378Ab0EJWwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:03 -0400
+	id S932374Ab0EJWwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:01 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:20 2010
-Message-Id: <20100510223320.357232971@kvm.kroah.org>
+Message-Id: <20100510223320.179273402@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:06 -0700
+Date: Mon, 10 May 2010 15:32:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mark Langsdorf <mark.langsdorf@amd.com>,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [035/117] powernow-k8: Fix frequency reporting
+       Joel Becker <joel.becker@oracle.com>, Mark Fasheh <mfasheh@suse.com>
+Subject: [033/117] ocfs2: Compute metaecc for superblocks during online resize.
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Langsdorf <mark.langsdorf@amd.com>
+From: Joel Becker <joel.becker@oracle.com>
 
-commit b810e94c9d8e3fff6741b66cd5a6f099a7887871 upstream.
+commit a42ab8e1a37257da37e0f018e707bf365ac24531 upstream.
 
-With F10, model 10, all valid frequencies are in the ACPI _PST table.
+Online resize writes out the new superblock and its backups directly.
+The metaecc data wasn't being recomputed.  Let's do that directly.
 
-Signed-off-by: Mark Langsdorf <mark.langsdorf@amd.com>
-LKML-Reference: <1270065406-1814-6-git-send-email-bp@amd64.org>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Reviewed-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Joel Becker <joel.becker@oracle.com>
+Acked-by: Mark Fasheh <mfasheh@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/ocfs2/buffer_head_io.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-+++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-@@ -929,7 +929,8 @@ static int fill_powernow_table_pstate(st
- 		powernow_table[i].index = index;
+--- a/fs/ocfs2/buffer_head_io.c
++++ b/fs/ocfs2/buffer_head_io.c
+@@ -407,6 +407,7 @@ int ocfs2_write_super_or_backup(struct o
+ 				struct buffer_head *bh)
+ {
+ 	int ret = 0;
++	struct ocfs2_dinode *di = (struct ocfs2_dinode *)bh->b_data;
  
- 		/* Frequency may be rounded for these */
--		if (boot_cpu_data.x86 == 0x10 || boot_cpu_data.x86 == 0x11) {
-+		if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
-+				 || boot_cpu_data.x86 == 0x11) {
- 			powernow_table[i].frequency =
- 				freq_from_fid_did(lo & 0x3f, (lo >> 6) & 7);
- 		} else
+ 	mlog_entry_void();
+ 
+@@ -426,6 +427,7 @@ int ocfs2_write_super_or_backup(struct o
+ 
+ 	get_bh(bh); /* for end_buffer_write_sync() */
+ 	bh->b_end_io = end_buffer_write_sync;
++	ocfs2_compute_meta_ecc(osb->sb, bh->b_data, &di->i_check);
+ 	submit_bh(WRITE, bh);
+ 
+ 	wait_on_buffer(bh);
 
 
