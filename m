@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933162Ab0EJXVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:21:09 -0400
-Received: from kroah.org ([198.145.64.141]:51608 "EHLO coco.kroah.org"
+	id S1757737Ab0EJXNP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:13:15 -0400
+Received: from kroah.org ([198.145.64.141]:45322 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757428Ab0EJW5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:32 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:35 2010
-Message-Id: <20100510223535.427211037@kvm.kroah.org>
+	id S932923Ab0EJW6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:25 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:41 2010
+Message-Id: <20100510223541.063022214@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:23 -0700
+Date: Mon, 10 May 2010 15:35:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jaswinder Singh Rajput <jaswinderrajput@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>
-Subject: [11/98] core, x86: make LIST_POISON less deadly
+       Alex Chiang <achiang@canonical.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Matthew Garrett <mjg@redhat.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [74/98] PCI: Ensure we re-enable devices on resume
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,81 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@qumranet.com>
+From: Matthew Garrett <mjg@redhat.com>
 
-commit a29815a333c6c6e677294bbe5958e771d0aad3fd upstream.
+commit cc2893b6af5265baa1d68b17b136cffca9e40cfa upstream.
 
-The list macros use LIST_POISON1 and LIST_POISON2 as undereferencable
-pointers in order to trap erronous use of freed list_heads.  Unfortunately
-userspace can arrange for those pointers to actually be dereferencable,
-potentially turning an oops to an expolit.
+If the firmware puts a device back into D0 state at resume time, we'll
+update its state in resume_noirq and thus skip the platform resume code.
+Calling that code twice should be safe and we ought to avoid getting to
+that point anyway, so remove the check and also allow the platform pci
+code to be called for D0.
 
-To avoid this allow architectures (currently x86_64 only) to override
-the default values for these pointers with truly-undereferencable values.
-This is easy on x86_64 as the virtual address space is large and contains
-areas that cannot be mapped.
+Fixes USB not being powered after resume on recent Lenovo machines.
 
-Other 64-bit architectures will likely find similar unmapped ranges.
-
-[ingo: switch to 0xdead000000000000 as the unmapped area]
-[ingo: add comments, cleanup]
-[jaswinder: eliminate sparse warnings]
-
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jaswinder Singh Rajput <jaswinderrajput@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Alex Chiang <achiang@canonical.com>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/Kconfig       |    5 +++++
- include/linux/poison.h |   16 ++++++++++++++--
- 2 files changed, 19 insertions(+), 2 deletions(-)
+ drivers/pci/pci.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1236,6 +1236,11 @@ config ARCH_MEMORY_PROBE
- 	def_bool X86_64
- 	depends on MEMORY_HOTPLUG
- 
-+config ILLEGAL_POINTER_VALUE
-+       hex
-+       default 0 if X86_32
-+       default 0xdead000000000000 if X86_64
-+
- source "mm/Kconfig"
- 
- config HIGHPTE
---- a/include/linux/poison.h
-+++ b/include/linux/poison.h
-@@ -2,13 +2,25 @@
- #define _LINUX_POISON_H
- 
- /********** include/linux/list.h **********/
-+
-+/*
-+ * Architectures might want to move the poison pointer offset
-+ * into some well-recognized area such as 0xdead000000000000,
-+ * that is also not mappable by user-space exploits:
-+ */
-+#ifdef CONFIG_ILLEGAL_POINTER_VALUE
-+# define POISON_POINTER_DELTA _AC(CONFIG_ILLEGAL_POINTER_VALUE, UL)
-+#else
-+# define POISON_POINTER_DELTA 0
-+#endif
-+
- /*
-  * These are non-NULL pointers that will result in page faults
-  * under normal circumstances, used to verify that nobody uses
-  * non-initialized list entries.
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -601,7 +601,7 @@ static void __pci_start_power_transition
   */
--#define LIST_POISON1  ((void *) 0x00100100)
--#define LIST_POISON2  ((void *) 0x00200200)
-+#define LIST_POISON1  ((void *) 0x00100100 + POISON_POINTER_DELTA)
-+#define LIST_POISON2  ((void *) 0x00200200 + POISON_POINTER_DELTA)
+ int __pci_complete_power_transition(struct pci_dev *dev, pci_power_t state)
+ {
+-	return state > PCI_D0 ?
++	return state >= PCI_D0 ?
+ 			pci_platform_power_transition(dev, state) : -EINVAL;
+ }
+ EXPORT_SYMBOL_GPL(__pci_complete_power_transition);
+@@ -638,10 +638,6 @@ int pci_set_power_state(struct pci_dev *
+ 		 */
+ 		return 0;
  
- /********** include/linux/timer.h **********/
- /*
+-	/* Check if we're already there */
+-	if (dev->current_state == state)
+-		return 0;
+-
+ 	__pci_start_power_transition(dev, state);
+ 
+ 	/* This device is quirked not to be put into D3, so
 
 
