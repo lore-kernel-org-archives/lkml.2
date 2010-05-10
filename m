@@ -1,120 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab0EJVBh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 17:01:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33835 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756929Ab0EJVBf (ORCPT
+	id S932248Ab0EJVFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 17:05:38 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:46045 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932231Ab0EJVFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 17:01:35 -0400
-Date: Mon, 10 May 2010 14:01:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-       linux-scsi@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: burning small isos repeatedly failing with hangcheck error
-Message-Id: <20100510140121.0e2e2d3e.akpm@linux-foundation.org>
-In-Reply-To: <201004261855.29335.tfjellstrom@strangesoft.net>
-References: <201004261855.29335.tfjellstrom@strangesoft.net>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 10 May 2010 17:05:36 -0400
+Date: Mon, 10 May 2010 17:05:34 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Du, Alek" <alek.du@intel.com>
+cc: Ondrej Zary <linux@rainbow-software.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
+ (WKOC_E) and disconnect (WKDISC_E)
+In-Reply-To: <20100510102557.0c30f15d@dxy2>
+Message-ID: <Pine.LNX.4.44L0.1005101616540.1626-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(lotsa cc's added)
+On Mon, 10 May 2010, Du, Alek wrote:
 
-On Mon, 26 Apr 2010 18:55:28 -0600
-Thomas Fjellstrom <tfjellstrom@strangesoft.net> wrote:
-
-> I'm having problems burning a small iso image to a DVDR,
-> every single attempt leads to the following type of errors:
+> Alan,
 > 
-> [  192.190114] cdrom: This disc doesn't have any tracks I recognize!
-> [  192.220213] sr 1:0:0:0: [sr0] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-> [  192.220217] sr 1:0:0:0: [sr0] Sense Key : Illegal Request [current] 
-> [  192.220220] Info fld=0x0
-> [  192.220221] sr 1:0:0:0: [sr0] Add. Sense: Logical block address out of range
-> [  192.220231] sr 1:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 00 00 00 00 01 00
-> [  192.220242] end_request: I/O error, dev sr0, sector 0
-> [  192.220246] Buffer I/O error on device sr0, logical block 0
-> [  192.222931] sr 1:0:0:0: [sr0] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-> [  192.222934] sr 1:0:0:0: [sr0] Sense Key : Illegal Request [current] 
-> [  192.222936] Info fld=0x0
-> [  192.222938] sr 1:0:0:0: [sr0] Add. Sense: Logical block address out of range
-> [  192.222940] sr 1:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 00 00 00 00 01 00
-> [  192.222946] end_request: I/O error, dev sr0, sector 0
-> [  192.222948] Buffer I/O error on device sr0, logical block 0
-> [  600.489102] INFO: task wodim:3587 blocked for more than 120 seconds.
-> [  600.489106] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [  600.489107] wodim         D ffff880005515680     0  3587   2994 0x00000000
-> [  600.489111]  ffff88011ad80700 0000000000000082 0000000000000000 ffff88013b7700d0
-> [  600.489115]  ffff88013b771e50 000000000000f8e0 ffff880078d6dfd8 0000000000015680
-> [  600.489118]  0000000000015680 ffff8800a891e200 ffff8800a891e4f0 000000013b771e50
-> [  600.489121] Call Trace:
-> [  600.489147]  [<ffffffffa00e10d7>] ? atapi_xlat+0x0/0x125 [libata]
-> [  600.489153]  [<ffffffffa00998cc>] ? scsi_done+0x0/0xc [scsi_mod]
-> [  600.489160]  [<ffffffffa00e18d8>] ? __ata_scsi_queuecmd+0x185/0x1dc [libata]
-> [  600.489170]  [<ffffffff812ed4cb>] ? schedule_timeout+0x2e/0xdd
-> [  600.489174]  [<ffffffff81171918>] ? blk_peek_request+0x18b/0x19f
-> [  600.489179]  [<ffffffffa0099bb0>] ? scsi_dispatch_cmd+0x1d2/0x23f [scsi_mod]
-> [  600.489185]  [<ffffffffa009f4ab>] ? scsi_request_fn+0x429/0x506 [scsi_mod]
-> [  600.489187]  [<ffffffff812ed366>] ? wait_for_common+0xde/0x15b
-> [  600.489191]  [<ffffffff81042cc2>] ? default_wake_function+0x0/0x9
-> [  600.489194]  [<ffffffff8117556c>] ? blk_execute_rq+0x9c/0xcc
-> [  600.489197]  [<ffffffff81171418>] ? __freed_request+0x26/0x83
-> [  600.489199]  [<ffffffff81171498>] ? freed_request+0x23/0x43
-> [  600.489202]  [<ffffffff8104f5ce>] ? capable+0x22/0x41
-> [  600.489204]  [<ffffffff81178824>] ? sg_io+0x26e/0x396
-> [  600.489207]  [<ffffffff81178e59>] ? scsi_cmd_ioctl+0x217/0x3fe
-> [  600.489210]  [<ffffffff811806a6>] ? cpumask_next_and+0x2a/0x3a
-> [  600.489213]  [<ffffffff81038ba4>] ? update_curr+0xa6/0x147
-> [  600.489218]  [<ffffffffa014dfd2>] ? cdrom_ioctl+0x42/0xef7 [cdrom]
-> [  600.489222]  [<ffffffff8100f76f>] ? sched_clock+0x5/0x8
-> [  600.489224]  [<ffffffff81063b8f>] ? sched_clock_local+0x13/0x74
-> [  600.489227]  [<ffffffff81042cb5>] ? try_to_wake_up+0x248/0x255
-> [  600.489230]  [<ffffffff810f7bc4>] ? pollwake+0x53/0x5b
-> [  600.489233]  [<ffffffff8104b129>] ? current_fs_time+0x1e/0x24
-> [  600.489235]  [<ffffffff81042cc2>] ? default_wake_function+0x0/0x9
-> [  600.489239]  [<ffffffffa016f33c>] ? sr_block_ioctl+0x49/0x85 [sr_mod]
-> [  600.489242]  [<ffffffff81176738>] ? __blkdev_driver_ioctl+0x7c/0xa4
-> [  600.489245]  [<ffffffff81177005>] ? blkdev_ioctl+0x880/0x8d3
-> [  600.489247]  [<ffffffff812ed0d9>] ? schedule+0x7f6/0x875
-> [  600.489250]  [<ffffffff810e9b69>] ? do_sync_write+0xab/0xed
-> [  600.489254]  [<ffffffff8110c8d5>] ? block_ioctl+0x38/0x3c
-> [  600.489257]  [<ffffffff810f5923>] ? vfs_ioctl+0x21/0x92
-> [  600.489259]  [<ffffffff810f5e9f>] ? do_vfs_ioctl+0x495/0x4d3
-> [  600.489262]  [<ffffffff810ea4b5>] ? vfs_write+0xcd/0x102
-> [  600.489264]  [<ffffffff810f5f2e>] ? sys_ioctl+0x51/0x70
-> [  600.489267]  [<ffffffff81008ac2>] ? system_call_fastpath+0x16/0x1b
-> [  640.816056] ata2.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
-> [  640.816061] sr 1:0:0:0: [sr0] CDB: Synchronize Cache(10): 35 00 00 00 00 00 00 00 00 00
-> [  640.816070] ata2.00: cmd a0/00:00:00:00:00/00:00:00:00:00/a0 tag 0
-> [  640.816071]          res 40/00:03:00:00:f8/00:00:00:00:00/a0 Emask 0x4 (timeout)
-> [  640.816073] ata2.00: status: { DRDY }
-> [  640.816078] ata2: hard resetting link
-> [  641.137050] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-> [  641.141821] ata2.00: ACPI cmd ef/10:06:00:00:00:a0 (SET FEATURES) succeeded
-> [  641.141824] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
-> [  641.151672] ata2.00: ACPI cmd ef/10:06:00:00:00:a0 (SET FEATURES) succeeded
-> [  641.151675] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
-> [  641.155383] ata2.00: configured for UDMA/133
-> [  641.160639] ata2: EH complete
-> 
-> What can I do to fix this problem?
-> 
-> The machine is a Lenovo SL500 laptop, w 2.53ghz core2duo, 4G ram,
-> kernel 2.6.33-2-amd64 from debian sid (also happens with 2.6.32-5 from sid)
-> 
+> The following patch (based on your previous two patches) works for me, could you
+> help to review and test on your machine? Basically, this will only affect those
+> "has_hostpc" HCDs.
 
-You appear to have hit several problems here.  The initial IO error is
-one.  The 440-second sulk is another.
+Based on your suggestion, I completely redid both of my patches.  They 
+are now combined into a single patch, which is meant to go on top of 
+the patch you submitted this morning.  It adds the stuff we talked 
+about, and it cleans up some of the changes you made.
 
-Does wodim _ever_ terminate, or is a reboot required after this has happened?
+Does it look good to you?
 
-Are you able to determine whether the hardware is OK?  Does it burn OK
-with other versions of Linux, or other OS'es?
+Alan Stern
 
-Thanks.
+
+
+Index: usb-2.6/drivers/usb/host/ehci-hub.c
+===================================================================
+--- usb-2.6.orig/drivers/usb/host/ehci-hub.c
++++ usb-2.6/drivers/usb/host/ehci-hub.c
+@@ -106,12 +106,72 @@ static void ehci_handover_companion_port
+ 	ehci->owned_ports = 0;
+ }
+ 
++static void ehci_adjust_port_wakeup_flags(struct ehci_hcd *ehci, bool resuming)
++{
++	int		port;
++	u32		temp;
++
++	/* If remote wakeup is enabled for the root hub but disabled
++	 * for the controller, we must adjust all the port wakeup flags.
++	 */
++	if (!ehci_to_hcd(ehci)->self.root_hub->do_remote_wakeup ||
++			device_may_wakeup(ehci_to_hcd(ehci)->self.controller))
++		return;
++
++	/* clear phy low-power mode before changing wakeup flags */
++	if (ehci->has_hostpc) {
++		port = HCS_N_PORTS(ehci->hcs_params);
++		while (port--) {
++			u32 __iomem	*hostpc_reg;
++
++			hostpc_reg = (u32 __iomem *)((u8 *) ehci->regs
++					+ HOSTPC0 + 4 * port);
++			temp = ehci_readl(ehci, hostpc_reg);
++			ehci_writel(ehci, temp & ~HOSTPC_PHCD, hostpc_reg);
++		}
++		msleep(5);
++	}
++
++	port = HCS_N_PORTS(ehci->hcs_params);
++	while (port--) {
++		u32 __iomem	*reg = &ehci->regs->port_status[port];
++		u32		t1 = ehci_readl(ehci, reg) & ~PORT_RWC_BITS;
++		u32		t2 = t1 & ~PORT_WAKE_BITS;
++
++		/* If we are suspending the controller, clear the flags.
++		 * If we are resuming the controller, set the wakeup flags.
++		 */
++		if (resuming) {
++			if (t1 & PORT_CONNECT)
++				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
++			else
++				t2 |= PORT_WKOC_E | PORT_WKCONN_E;
++		}
++		ehci_vdbg(ehci, "port %d, %08x -> %08x\n",
++				port + 1, t1, t2);
++		ehci_writel(ehci, t2, reg);
++	}
++
++	/* enter phy low-power mode again */
++	if (ehci->has_hostpc) {
++		port = HCS_N_PORTS(ehci->hcs_params);
++		while (port--) {
++			u32 __iomem	*hostpc_reg;
++
++			hostpc_reg = (u32 __iomem *)((u8 *) ehci->regs
++					+ HOSTPC0 + 4 * port);
++			temp = ehci_readl(ehci, hostpc_reg);
++			ehci_writel(ehci, temp | HOSTPC_PHCD, hostpc_reg);
++		}
++	}
++}
++
+ static int ehci_bus_suspend (struct usb_hcd *hcd)
+ {
+ 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
+ 	int			port;
+ 	int			mask;
+-	u32 __iomem		*hostpc_reg = NULL;
++	int			changed;
+ 
+ 	ehci_dbg(ehci, "suspend root hub\n");
+ 
+@@ -155,15 +215,13 @@ static int ehci_bus_suspend (struct usb_
+ 	 */
+ 	ehci->bus_suspended = 0;
+ 	ehci->owned_ports = 0;
++	changed = 0;
+ 	port = HCS_N_PORTS(ehci->hcs_params);
+ 	while (port--) {
+ 		u32 __iomem	*reg = &ehci->regs->port_status [port];
+ 		u32		t1 = ehci_readl(ehci, reg) & ~PORT_RWC_BITS;
+-		u32		t2 = t1;
++		u32		t2 = t1 & ~PORT_WAKE_BITS;
+ 
+-		if (ehci->has_hostpc)
+-			hostpc_reg = (u32 __iomem *)((u8 *)ehci->regs
+-				+ HOSTPC0 + 4 * (port & 0xff));
+ 		/* keep track of which ports we suspend */
+ 		if (t1 & PORT_OWNER)
+ 			set_bit(port, &ehci->owned_ports);
+@@ -172,40 +230,45 @@ static int ehci_bus_suspend (struct usb_
+ 			set_bit(port, &ehci->bus_suspended);
+ 		}
+ 
+-		/* enable remote wakeup on all ports */
++		/* enable remote wakeup on all ports, if told to do so */
+ 		if (hcd->self.root_hub->do_remote_wakeup) {
+ 			/* only enable appropriate wake bits, otherwise the
+ 			 * hardware can not go phy low power mode. If a race
+ 			 * condition happens here(connection change during bits
+ 			 * set), the port change detection will finally fix it.
+ 			 */
+-			if (t1 & PORT_CONNECT) {
++			if (t1 & PORT_CONNECT)
+ 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+-				t2 &= ~PORT_WKCONN_E;
+-			} else {
++			else
+ 				t2 |= PORT_WKOC_E | PORT_WKCONN_E;
+-				t2 &= ~PORT_WKDISC_E;
+-			}
+-		} else
+-			t2 &= ~PORT_WAKE_BITS;
++		}
+ 
+ 		if (t1 != t2) {
+ 			ehci_vdbg (ehci, "port %d, %08x -> %08x\n",
+ 				port + 1, t1, t2);
+ 			ehci_writel(ehci, t2, reg);
+-			if (hostpc_reg) {
+-				u32	t3;
++			changed = 1;
++		}
++	}
+ 
+-				spin_unlock_irq(&ehci->lock);
+-				msleep(5);/* 5ms for HCD enter low pwr mode */
+-				spin_lock_irq(&ehci->lock);
+-				t3 = ehci_readl(ehci, hostpc_reg);
+-				ehci_writel(ehci, t3 | HOSTPC_PHCD, hostpc_reg);
+-				t3 = ehci_readl(ehci, hostpc_reg);
+-				ehci_dbg(ehci, "Port%d phy low pwr mode %s\n",
++	if (changed && ehci->has_hostpc) {
++		spin_unlock_irq(&ehci->lock);
++		msleep(5);	/* 5 ms for HCD to enter low-power mode */
++		spin_lock_irq(&ehci->lock);
++
++		port = HCS_N_PORTS(ehci->hcs_params);
++		while (port--) {
++			u32 __iomem	*hostpc_reg;
++			u32		t3;
++
++			hostpc_reg = (u32 __iomem *)((u8 *) ehci->regs
++					+ HOSTPC0 + 4 * port);
++			t3 = ehci_readl(ehci, hostpc_reg);
++			ehci_writel(ehci, t3 | HOSTPC_PHCD, hostpc_reg);
++			t3 = ehci_readl(ehci, hostpc_reg);
++			ehci_dbg(ehci, "Port %d phy low-power mode %s\n",
+ 					port, (t3 & HOSTPC_PHCD) ?
+ 					"succeeded" : "failed");
+-			}
+ 		}
+ 	}
+ 
+@@ -291,19 +354,28 @@ static int ehci_bus_resume (struct usb_h
+ 	msleep(8);
+ 	spin_lock_irq(&ehci->lock);
+ 
++	/* clear phy low-power mode before resume */
++	if (ehci->bus_suspended && ehci->has_hostpc) {
++		i = HCS_N_PORTS (ehci->hcs_params);
++		while (i--) {
++			if (test_bit(i, &ehci->bus_suspended)) {
++				u32 __iomem	*hostpc_reg;
++
++				hostpc_reg = (u32 __iomem *)((u8 *) ehci->regs
++						+ HOSTPC0 + 4 * i);
++				temp = ehci_readl(ehci, hostpc_reg);
++				ehci_writel(ehci, temp & ~HOSTPC_PHCD,
++						hostpc_reg);
++			}
++		}
++		spin_unlock_irq(&ehci->lock);
++		msleep(5);
++		spin_lock_irq(&ehci->lock);
++	}
++
+ 	/* manually resume the ports we suspended during bus_suspend() */
+ 	i = HCS_N_PORTS (ehci->hcs_params);
+ 	while (i--) {
+-		/* clear phy low power mode before resume */
+-		if (ehci->has_hostpc) {
+-			u32 __iomem	*hostpc_reg =
+-				(u32 __iomem *)((u8 *)ehci->regs
+-				+ HOSTPC0 + 4 * (i & 0xff));
+-			temp = ehci_readl(ehci, hostpc_reg);
+-			ehci_writel(ehci, temp & ~HOSTPC_PHCD,
+-				hostpc_reg);
+-			mdelay(5);
+-		}
+ 		temp = ehci_readl(ehci, &ehci->regs->port_status [i]);
+ 		temp &= ~(PORT_RWC_BITS | PORT_WAKE_BITS);
+ 		if (test_bit(i, &ehci->bus_suspended) &&
+@@ -685,23 +757,25 @@ static int ehci_hub_control (
+ 				goto error;
+ 			if (ehci->no_selective_suspend)
+ 				break;
+-			if (temp & PORT_SUSPEND) {
+-				if ((temp & PORT_PE) == 0)
+-					goto error;
+-				/* clear phy low power mode before resume */
+-				if (hostpc_reg) {
+-					temp1 = ehci_readl(ehci, hostpc_reg);
+-					ehci_writel(ehci, temp1 & ~HOSTPC_PHCD,
+-						hostpc_reg);
+-					mdelay(5);
+-				}
+-				/* resume signaling for 20 msec */
+-				temp &= ~(PORT_RWC_BITS | PORT_WAKE_BITS);
+-				ehci_writel(ehci, temp | PORT_RESUME,
+-						status_reg);
+-				ehci->reset_done [wIndex] = jiffies
+-						+ msecs_to_jiffies (20);
++			if (!(temp & PORT_SUSPEND))
++				break;
++			if ((temp & PORT_PE) == 0)
++				goto error;
++
++			/* clear phy low-power mode before resume */
++			if (hostpc_reg) {
++				temp1 = ehci_readl(ehci, hostpc_reg);
++				ehci_writel(ehci, temp1 & ~HOSTPC_PHCD,
++					hostpc_reg);
++				spin_unlock_irqrestore(&ehci->lock, flags);
++				msleep(5);/* wait to leave low-power mode */
++				spin_lock_irqsave(&ehci->lock, flags);
+ 			}
++			/* resume signaling for 20 msec */
++			temp &= ~(PORT_RWC_BITS | PORT_WAKE_BITS);
++			ehci_writel(ehci, temp | PORT_RESUME, status_reg);
++			ehci->reset_done[wIndex] = jiffies
++					+ msecs_to_jiffies(20);
+ 			break;
+ 		case USB_PORT_FEAT_C_SUSPEND:
+ 			clear_bit(wIndex, &ehci->port_c_suspend);
+Index: usb-2.6/drivers/usb/host/ehci-pci.c
+===================================================================
+--- usb-2.6.orig/drivers/usb/host/ehci-pci.c
++++ usb-2.6/drivers/usb/host/ehci-pci.c
+@@ -287,23 +287,15 @@ static int ehci_pci_suspend(struct usb_h
+ 		msleep(10);
+ 
+ 	/* Root hub was already suspended. Disable irq emission and
+-	 * mark HW unaccessible, bail out if RH has been resumed. Use
+-	 * the spinlock to properly synchronize with possible pending
+-	 * RH suspend or resume activity.
+-	 *
+-	 * This is still racy as hcd->state is manipulated outside of
+-	 * any locks =P But that will be a different fix.
++	 * mark HW unaccessible.  The PM and USB cores make sure that
++	 * the root hub is either suspended or stopped.
+ 	 */
+ 	spin_lock_irqsave (&ehci->lock, flags);
+-	if (hcd->state != HC_STATE_SUSPENDED) {
+-		rc = -EINVAL;
+-		goto bail;
+-	}
++	ehci_adjust_port_wakeup_flags(ehci, false);
+ 	ehci_writel(ehci, 0, &ehci->regs->intr_enable);
+ 	(void)ehci_readl(ehci, &ehci->regs->intr_enable);
+ 
+ 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+- bail:
+ 	spin_unlock_irqrestore (&ehci->lock, flags);
+ 
+ 	// could save FLADJ in case of Vaux power loss
+@@ -333,6 +325,7 @@ static int ehci_pci_resume(struct usb_hc
+ 				!hibernated) {
+ 		int	mask = INTR_MASK;
+ 
++		ehci_adjust_port_wakeup_flags(ehci, true);
+ 		if (!hcd->self.root_hub->do_remote_wakeup)
+ 			mask &= ~STS_PCD;
+ 		ehci_writel(ehci, mask, &ehci->regs->intr_enable);
+Index: usb-2.6/drivers/usb/host/ehci-au1xxx.c
+===================================================================
+--- usb-2.6.orig/drivers/usb/host/ehci-au1xxx.c
++++ usb-2.6/drivers/usb/host/ehci-au1xxx.c
+@@ -224,26 +224,17 @@ static int ehci_hcd_au1xxx_drv_suspend(s
+ 		msleep(10);
+ 
+ 	/* Root hub was already suspended. Disable irq emission and
+-	 * mark HW unaccessible, bail out if RH has been resumed. Use
+-	 * the spinlock to properly synchronize with possible pending
+-	 * RH suspend or resume activity.
+-	 *
+-	 * This is still racy as hcd->state is manipulated outside of
+-	 * any locks =P But that will be a different fix.
++	 * mark HW unaccessible.  The PM and USB cores make sure that
++	 * the root hub is either suspended or stopped.
+ 	 */
+ 	spin_lock_irqsave(&ehci->lock, flags);
+-	if (hcd->state != HC_STATE_SUSPENDED) {
+-		rc = -EINVAL;
+-		goto bail;
+-	}
++	ehci_adjust_port_wakeup_flags(ehci, false);
+ 	ehci_writel(ehci, 0, &ehci->regs->intr_enable);
+ 	(void)ehci_readl(ehci, &ehci->regs->intr_enable);
+ 
+ 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+ 
+ 	au1xxx_stop_ehc();
+-
+-bail:
+ 	spin_unlock_irqrestore(&ehci->lock, flags);
+ 
+ 	// could save FLADJ in case of Vaux power loss
+@@ -273,6 +264,7 @@ static int ehci_hcd_au1xxx_drv_resume(st
+ 	if (ehci_readl(ehci, &ehci->regs->configured_flag) == FLAG_CF) {
+ 		int	mask = INTR_MASK;
+ 
++		ehci_adjust_port_wakeup_flags(ehci, true);
+ 		if (!hcd->self.root_hub->do_remote_wakeup)
+ 			mask &= ~STS_PCD;
+ 		ehci_writel(ehci, mask, &ehci->regs->intr_enable);
+Index: usb-2.6/drivers/usb/host/ehci-fsl.c
+===================================================================
+--- usb-2.6.orig/drivers/usb/host/ehci-fsl.c
++++ usb-2.6/drivers/usb/host/ehci-fsl.c
+@@ -313,6 +313,7 @@ static int ehci_fsl_drv_suspend(struct d
+ 	struct ehci_fsl *ehci_fsl = hcd_to_ehci_fsl(hcd);
+ 	void __iomem *non_ehci = hcd->regs;
+ 
++	ehci_adjust_port_wakeup_flags(ehci, false);
+ 	if (!fsl_deep_sleep())
+ 		return 0;
+ 
+@@ -327,6 +328,7 @@ static int ehci_fsl_drv_resume(struct de
+ 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+ 	void __iomem *non_ehci = hcd->regs;
+ 
++	ehci_adjust_port_wakeup_flags(ehci, true);
+ 	if (!fsl_deep_sleep())
+ 		return 0;
+ 
+
