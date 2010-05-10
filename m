@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab0EJW7O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:59:14 -0400
-Received: from kroah.org ([198.145.64.141]:51642 "EHLO coco.kroah.org"
+	id S933071Ab0EJXAw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:00:52 -0400
+Received: from kroah.org ([198.145.64.141]:51712 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757461Ab0EJW5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:38 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:36 2010
-Message-Id: <20100510223536.046928826@kvm.kroah.org>
+	id S932875Ab0EJW56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:57:58 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:38 2010
+Message-Id: <20100510223538.011972655@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:30 -0700
+Date: Mon, 10 May 2010 15:34:52 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alan Stern <stern@rowland.harvard.edu>
-Subject: [18/98] USB: fix remote wakeup settings during system sleep
+       Richard Kennedy <richard@rsk.demon.co.uk>,
+       Jens Axboe <jens.axboe@oracle.com>
+Subject: [40/98] block: ensure jiffies wrap is handled correctly in blk_rq_timed_out_timer
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,85 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-This is a backport of commit 5f677f1d45b2bf08085bbba7394392dfa586fa8e.
-Some of the functionality had to be removed, but it should still fix
-the webcam problem.
+From: Richard Kennedy <richard@rsk.demon.co.uk>
 
-This patch (as1363b) changes the way USB remote wakeup is handled
-during system sleeps.  It won't be enabled unless an interface driver
-specifically needs it.  Also, it won't be enabled during the FREEZE or
-QUIESCE phases of hibernation, when the system doesn't respond to
-wakeup events anyway.
+commit a534dbe96e9929c7245924d8252d89048c23d569 upstream.
 
-This will fix problems people have reported with certain USB webcams
-that generate wakeup requests when they shouldn't, and as a result
-cause system suspends to fail.  See
+blk_rq_timed_out_timer() relied on blk_add_timer() never returning a
+timer value of zero, but commit 7838c15b8dd18e78a523513749e5b54bda07b0cb
+removed the code that bumped this value when it was zero.
+Therefore when jiffies is near wrap we could get unlucky & not set the
+timeout value correctly.
 
-	https://bugs.launchpad.net/ubuntu/+source/linux/+bug/515109
+This patch uses a flag to indicate that the timeout value was set and so
+handles jiffies wrap correctly, and it keeps all the logic in one
+function so should be easier to maintain in the future.
 
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/driver.c |   32 ++++++++++++++++++++++++++++++--
- 1 file changed, 30 insertions(+), 2 deletions(-)
+ block/blk-timeout.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/core/driver.c
-+++ b/drivers/usb/core/driver.c
-@@ -1175,9 +1175,8 @@ static int usb_suspend_both(struct usb_d
- 			udev->state == USB_STATE_SUSPENDED)
- 		goto done;
+--- a/block/blk-timeout.c
++++ b/block/blk-timeout.c
+@@ -109,6 +109,7 @@ void blk_rq_timed_out_timer(unsigned lon
+ 	struct request_queue *q = (struct request_queue *) data;
+ 	unsigned long flags, next = 0;
+ 	struct request *rq, *tmp;
++	int next_set = 0;
  
--	udev->do_remote_wakeup = device_may_wakeup(&udev->dev);
--
- 	if (msg.event & PM_EVENT_AUTO) {
-+		udev->do_remote_wakeup = device_may_wakeup(&udev->dev);
- 		status = autosuspend_check(udev, 0);
- 		if (status < 0)
- 			goto done;
-@@ -1742,6 +1741,34 @@ int usb_external_resume_device(struct us
- 	return status;
- }
+ 	spin_lock_irqsave(q->queue_lock, flags);
  
-+static void choose_wakeup(struct usb_device *udev, pm_message_t msg)
-+{
-+	int			w, i;
-+	struct usb_interface	*intf;
-+
-+	/* Remote wakeup is needed only when we actually go to sleep.
-+	 * For things like FREEZE and QUIESCE, if the device is already
-+	 * autosuspended then its current wakeup setting is okay.
-+	 */
-+	if (msg.event == PM_EVENT_FREEZE || msg.event == PM_EVENT_QUIESCE) {
-+		udev->do_remote_wakeup = 0;
-+		return;
-+	}
-+
-+	/* If remote wakeup is permitted, see whether any interface drivers
-+	 * actually want it.
-+	 */
-+	w = 0;
-+	if (device_may_wakeup(&udev->dev) && udev->actconfig) {
-+		for (i = 0; i < udev->actconfig->desc.bNumInterfaces; i++) {
-+			intf = udev->actconfig->interface[i];
-+			w |= intf->needs_remote_wakeup;
+@@ -122,16 +123,13 @@ void blk_rq_timed_out_timer(unsigned lon
+ 			if (blk_mark_rq_complete(rq))
+ 				continue;
+ 			blk_rq_timed_out(rq);
+-		} else if (!next || time_after(next, rq->deadline))
++		} else if (!next_set || time_after(next, rq->deadline)) {
+ 			next = rq->deadline;
++			next_set = 1;
 +		}
-+	}
-+
-+	udev->do_remote_wakeup = w;
-+}
-+
- int usb_suspend(struct device *dev, pm_message_t msg)
- {
- 	struct usb_device	*udev;
-@@ -1761,6 +1788,7 @@ int usb_suspend(struct device *dev, pm_m
  	}
  
- 	udev->skip_sys_resume = 0;
-+	choose_wakeup(udev, msg);
- 	return usb_external_suspend_device(udev, msg);
- }
+-	/*
+-	 * next can never be 0 here with the list non-empty, since we always
+-	 * bump ->deadline to 1 so we can detect if the timer was ever added
+-	 * or not. See comment in blk_add_timer()
+-	 */
+-	if (next)
++	if (next_set)
+ 		mod_timer(&q->timeout, round_jiffies_up(next));
  
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
 
 
