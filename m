@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab0EJDq2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 23:46:28 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44018 "EHLO smtps.tip.net.au"
+	id S1755208Ab0EJD57 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 23:57:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38443 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254Ab0EJDqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 23:46:25 -0400
-Date: Mon, 10 May 2010 13:46:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warnings after merge of the rr tree
-Message-Id: <20100510134620.2e06495b.sfr@canb.auug.org.au>
-In-Reply-To: <20100510134409.4bbf1873.sfr@canb.auug.org.au>
-References: <20100510134409.4bbf1873.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__10_May_2010_13_46_20_+1000_3N_2a6VSJEFe/XyP"
+	id S1751765Ab0EJD54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 23:57:56 -0400
+Message-ID: <4BE7851D.2090304@redhat.com>
+Date: Mon, 10 May 2010 12:01:33 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+MIME-Version: 1.0
+To: Amerigo Wang <amwang@redhat.com>
+CC: linux-kernel@vger.kernel.org, Octavian Purdila <opurdila@ixiacom.com>,
+       ebiederm@xmission.com, Eric Dumazet <eric.dumazet@gmail.com>,
+       penguin-kernel@I-love.SAKURA.ne.jp, netdev@vger.kernel.org,
+       Neil Horman <nhorman@tuxdriver.com>, xiaosuo@gmail.com,
+       adobriyan@gmail.com, David Miller <davem@davemloft.net>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v10 0/3] net: reserve ports for applications using fixed
+ port numbers
+References: <20100505103033.5600.77502.sendpatchset@localhost.localdomain>
+In-Reply-To: <20100505103033.5600.77502.sendpatchset@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_May_2010_13_46_20_+1000_3N_2a6VSJEFe/XyP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(Adding Andrew into Cc, hope can hear from him.)
 
-Hi Rusty,
-
-On Mon, 10 May 2010 13:44:09 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On 05/05/10 18:26, Amerigo Wang wrote:
+> Changes from the previous version:
+> - Use 'true' and 'false' for bool's;
+> - Fix some coding style problems;
+> - Allow appending lines to bitmap proc file so that it will be
+>    easier to add new bits.
 >
-> drivers/acpi/debug.c:141: warning: passing argument 1 of '__check_old_set=
-_param' from incompatible pointer type
-> include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, st=
-ruct kernel_param *)' but argument is of type 'int (*)(const char *, const =
-struct kernel_param *)'
->=20
-> Introduced by commit a1c3b92923eced4ee034fa15bf058f91e435e08c ("param:par=
-am_ops").
+> ------------------>
+>
+> This patch introduces /proc/sys/net/ipv4/ip_local_reserved_ports which
+> allows users to reserve ports for third-party applications.
+>
+> The reserved ports will not be used by automatic port assignments
+> (e.g. when calling connect() or bind() with port number 0). Explicit
+> port allocation behavior is unchanged.
+>
+> There are still some miss behaviors with regard to proc parsing in odd
+> invalid cases (for "40000\0-40001" all is acknowledged but only 40000
+> is accepted) but they are not easy to fix without changing the current
+> "acknowledge how much we accepted" behavior.
+>
+> Because of that and because the same issues are present in the
+> existing proc_dointvec code as well I don't think its worth holding
+> the actual feature (port reservation) after such petty error recovery
+> issues.
+>
+>
 
-Also
-
-drivers/message/fusion/mptbase.c:112: warning: passing argument 1 of '__che=
-ck_old_set_param' from incompatible pointer type
-include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
-ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
-ruct kernel_param *)'
-drivers/message/fusion/mptbase.c:112: warning: passing argument 1 of '__che=
-ck_old_set_param' from incompatible pointer type
-include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
-ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
-ruct kernel_param *)'
-drivers/message/fusion/mptbase.c:112: warning: passing argument 1 of '__che=
-ck_old_set_param' from incompatible pointer type
-include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
-ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
-ruct kernel_param *)'
-drivers/message/fusion/mptbase.c:112: warning: passing argument 1 of '__che=
-ck_old_set_param' from incompatible pointer type
-include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
-ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
-ruct kernel_param *)'
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__10_May_2010_13_46_20_+1000_3N_2a6VSJEFe/XyP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvngYwACgkQjjKRsyhoI8wdLwCfZnGhkY/UmlzsVEQTAeKQ0JTp
-fT0AoId6gX7t8mnrWPrYLUz5fTz9Drio
-=aFvg
------END PGP SIGNATURE-----
-
---Signature=_Mon__10_May_2010_13_46_20_+1000_3N_2a6VSJEFe/XyP--
