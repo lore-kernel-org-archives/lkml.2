@@ -1,23 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab0EJPSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 11:18:08 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56031 "EHLO mx1.suse.de"
+	id S1752471Ab0EJPXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 11:23:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56199 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752686Ab0EJPSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 11:18:03 -0400
-Date: Mon, 10 May 2010 17:18:00 +0200
-Message-ID: <s5heihjwztj.wl%tiwai@suse.de>
+	id S1751103Ab0EJPXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 11:23:46 -0400
+Date: Mon, 10 May 2010 17:23:45 +0200
+Message-ID: <s5h8w7rwzjy.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       David Santinoli <david@santinoli.com>
-Subject: Re: ALSA: hda/realtek: quirk for D945GCLF2 mainboard
-In-Reply-To: <201005090124.11811.s.L-H@gmx.de>
-References: <201004292300.45564.s.L-H@gmx.de>
-	<201005070259.08094.s.L-H@gmx.de>
-	<s5hiq70rtlc.wl%tiwai@suse.de>
-	<201005090124.11811.s.L-H@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sound fixes
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -27,33 +21,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 9 May 2010 01:24:08 +0200,
-Stefan Lippers-Hollmann wrote:
-> 
-> Hi
-> 
-> On Sunday 09 May 2010, Takashi Iwai wrote:
-> > At Fri, 7 May 2010 02:59:01 +0200,
-> > Stefan Lippers-Hollmann wrote:
-> > > On Friday 07 May 2010, Takashi Iwai wrote:
-> > > > At Thu, 29 Apr 2010 23:00:42 +0200,
-> > > > Stefan Lippers-Hollmann wrote:
-> > > > > Hi
-> > > > > Since kernel 2.6.33 (and including 2.6.34-rc5-git10), sound output is 
-> > > > > broken on my Intel D945GCLF2 mainboard, while it did work well on earlier
-> > > > > kernels up to and including 2.6.32.12.
-> [...]
-> 
-> > Could you try probe_mask=4 option without reverting?
-> > I don't find any wrong verb with the quirk, so this looks more like a
-> > problem in the slot probing.
-> 
-> Unfortunately I can't observe any improvement with probe_mask=4, logs 
-> attached.
+Linus,
 
-OK, then let's revert it.
+please pull sound (HD-audio) fixes for v2.6.34-final from:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6.git fix/hda
+
+This contain the following three trivial fixes.
 
 
-thanks,
+Thanks!
 
 Takashi
+
+===
+
+Andrej Gelenberg (1):
+      ALSA: hda - add support for Lenovo ThinkPad X100e in conexant codec
+
+Stefan Lippers-Hollmann (1):
+      ALSA: Revert "ALSA: hda/realtek: quirk for D945GCLF2 mainboard"
+
+Wu Fengguang (1):
+      ALSA: hda - fix DG45ID SPDIF output
+
+---
+ sound/pci/hda/patch_conexant.c |    1 +
+ sound/pci/hda/patch_realtek.c  |    1 -
+ sound/pci/hda/patch_sigmatel.c |    6 ++----
+ 3 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 56e5207..d8213e2 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -2846,6 +2846,7 @@ static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
+ 	SND_PCI_QUIRK(0x1028, 0x0408, "Dell Inspiron One 19T", CXT5066_IDEAPAD),
+ 	SND_PCI_QUIRK(0x1179, 0xff50, "Toshiba Satellite P500-PSPGSC-01800T", CXT5066_OLPC_XO_1_5),
+ 	SND_PCI_QUIRK(0x1179, 0xffe0, "Toshiba Satellite Pro T130-15F", CXT5066_OLPC_XO_1_5),
++	SND_PCI_QUIRK(0x17aa, 0x21b2, "Thinkpad X100e", CXT5066_IDEAPAD),
+ 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "ideapad", CXT5066_IDEAPAD),
+ 	{}
+ };
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 7404dba..886d8e4 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -17871,7 +17871,6 @@ static struct snd_pci_quirk alc662_cfg_tbl[] = {
+ 					ALC662_3ST_6ch_DIG),
+ 	SND_PCI_QUIRK_MASK(0x1854, 0xf000, 0x2000, "ASUS H13-200x",
+ 			   ALC663_ASUS_H13),
+-	SND_PCI_QUIRK(0x8086, 0xd604, "Intel mobo", ALC662_3ST_2ch_DIG),
+ 	{}
+ };
+ 
+diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
+index 7fb7d01..12825aa 100644
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -1544,11 +1544,9 @@ static unsigned int alienware_m17x_pin_configs[13] = {
+ 	0x904601b0,
+ };
+ 
+-static unsigned int intel_dg45id_pin_configs[14] = {
++static unsigned int intel_dg45id_pin_configs[13] = {
+ 	0x02214230, 0x02A19240, 0x01013214, 0x01014210,
+-	0x01A19250, 0x01011212, 0x01016211, 0x40f000f0,
+-	0x40f000f0, 0x40f000f0, 0x40f000f0, 0x014510A0,
+-	0x074510B0, 0x40f000f0
++	0x01A19250, 0x01011212, 0x01016211
+ };
+ 
+ static unsigned int *stac92hd73xx_brd_tbl[STAC_92HD73XX_MODELS] = {
