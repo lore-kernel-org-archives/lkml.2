@@ -1,122 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab0EJJln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 05:41:43 -0400
-Received: from gate.crashing.org ([63.228.1.57]:41828 "EHLO gate.crashing.org"
+	id S1756209Ab0EJJrA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 05:47:00 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60846 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756011Ab0EJJlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 05:41:03 -0400
+	id S1753954Ab0EJJq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 05:46:58 -0400
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, tglx@linuxtronix.de, mingo@elte.hu,
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
        davem@davemloft.net, lethal@linux-sh.org,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 23/25] lmb: Separate lmb_alloc_nid() and lmb_alloc_try_nid()
-Date: Mon, 10 May 2010 19:38:57 +1000
-Message-Id: <1273484339-28911-24-git-send-email-benh@kernel.crashing.org>
+Subject: [PATCH 24/25] lmb: Make lmb_alloc_try_nid() fallback to LMB_ALLOC_ANYWHERE
+Date: Mon, 10 May 2010 19:46:04 +1000
+Message-Id: <1273484765-29055-24-git-send-email-benh@kernel.crashing.org>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1273484339-28911-23-git-send-email-benh@kernel.crashing.org>
-References: <1273484339-28911-1-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-2-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-3-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-4-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-5-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-6-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-7-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-8-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-9-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-10-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-11-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-12-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-13-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-14-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-15-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-16-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-17-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-18-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-19-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-20-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-21-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-22-git-send-email-benh@kernel.crashing.org>
- <1273484339-28911-23-git-send-email-benh@kernel.crashing.org>
+In-Reply-To: <1273484765-29055-23-git-send-email-benh@kernel.crashing.org>
+References: <1273484765-29055-1-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-2-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-3-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-4-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-5-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-6-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-7-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-8-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-9-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-10-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-11-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-12-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-13-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-14-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-15-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-16-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-17-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-18-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-19-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-20-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-21-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-22-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-23-git-send-email-benh@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The former is now strict, it will fail if it cannot honor the allocation
-within the node, while the later implements the previous semantic which
-falls back to allocating anywhere.
+lmb_alloc_nid() used to fallback to allocating anywhere by using
+lmb_alloc() as a fallback.
+
+However, some of my previous patches limit lmb_alloc() to the region
+covered by LMB_ALLOC_ACCESSIBLE which is not quite what we want
+for lmb_alloc_try_nid().
+
+So we fix it by explicitely using LMB_ALLOC_ANYWHERE.
+
+Not that so far only sparc uses lmb_alloc_nid() and it hasn't been updated
+to clamp the accessible zone yet. Thus the temporary "breakage" should have
+no effect.
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- arch/sparc/mm/init_64.c |    4 ++--
- include/linux/lmb.h     |    6 +++++-
- lib/lmb.c               |   10 ++++++++++
- 3 files changed, 17 insertions(+), 3 deletions(-)
+ lib/lmb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 88443c8..86477c5 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -820,7 +820,7 @@ static void __init allocate_node_data(int nid)
- 	struct pglist_data *p;
- 
- #ifdef CONFIG_NEED_MULTIPLE_NODES
--	paddr = lmb_alloc_nid(sizeof(struct pglist_data), SMP_CACHE_BYTES, nid);
-+	paddr = lmb_alloc_try_nid(sizeof(struct pglist_data), SMP_CACHE_BYTES, nid);
- 	if (!paddr) {
- 		prom_printf("Cannot allocate pglist_data for nid[%d]\n", nid);
- 		prom_halt();
-@@ -840,7 +840,7 @@ static void __init allocate_node_data(int nid)
- 	if (p->node_spanned_pages) {
- 		num_pages = bootmem_bootmap_pages(p->node_spanned_pages);
- 
--		paddr = lmb_alloc_nid(num_pages << PAGE_SHIFT, PAGE_SIZE, nid);
-+		paddr = lmb_alloc_try_nid(num_pages << PAGE_SHIFT, PAGE_SIZE, nid);
- 		if (!paddr) {
- 			prom_printf("Cannot allocate bootmap for nid[%d]\n",
- 				  nid);
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index 45724a6..4e45aa9 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -50,7 +50,11 @@ extern long __init lmb_reserve(phys_addr_t base, phys_addr_t size);
- /* The numa aware allocator is only available if
-  * CONFIG_ARCH_POPULATES_NODE_MAP is set
-  */
--extern phys_addr_t __init lmb_alloc_nid(phys_addr_t size, phys_addr_t align, int nid);
-+extern phys_addr_t __init lmb_alloc_nid(phys_addr_t size, phys_addr_t align,
-+					int nid);
-+extern phys_addr_t __init lmb_alloc_try_nid(phys_addr_t size, phys_addr_t align,
-+					    int nid);
-+
- extern phys_addr_t __init lmb_alloc(phys_addr_t size, phys_addr_t align);
- 
- /* Flags for lmb_alloc_base() amd __lmb_alloc_base() */
 diff --git a/lib/lmb.c b/lib/lmb.c
-index f4b2f95..fd98261 100644
+index fd98261..6c38c87 100644
 --- a/lib/lmb.c
 +++ b/lib/lmb.c
-@@ -522,9 +522,19 @@ phys_addr_t __init lmb_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
- 			return ret;
- 	}
+@@ -531,7 +531,7 @@ phys_addr_t __init lmb_alloc_try_nid(phys_addr_t size, phys_addr_t align, int ni
  
-+	return 0;
-+}
-+
-+phys_addr_t __init lmb_alloc_try_nid(phys_addr_t size, phys_addr_t align, int nid)
-+{
-+	phys_addr_t res = lmb_alloc_nid(size, align, nid);
-+
-+	if (res)
-+		return res;
- 	return lmb_alloc(size, align);
+ 	if (res)
+ 		return res;
+-	return lmb_alloc(size, align);
++	return lmb_alloc_base(size, align, LMB_ALLOC_ANYWHERE);
  }
  
-+
- /*
-  * Remaining API functions
-  */
+ 
 -- 
 1.6.3.3
 
