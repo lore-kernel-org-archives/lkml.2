@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018Ab0EJXgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:36:42 -0400
-Received: from kroah.org ([198.145.64.141]:33105 "EHLO coco.kroah.org"
+	id S933364Ab0EJXge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:36:34 -0400
+Received: from kroah.org ([198.145.64.141]:33075 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932413Ab0EJWwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:17 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:21 2010
-Message-Id: <20100510223321.884133098@kvm.kroah.org>
+	id S932417Ab0EJWwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:18 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:22 2010
+Message-Id: <20100510223321.976587715@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:23 -0700
+Date: Mon, 10 May 2010 15:32:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Prarit Bhargava <prarit@redhat.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: [052/117] x86: Fix NULL pointer access in irq_force_complete_move() for Xen guests
+       Borislav Petkov <borislav.petkov@amd.com>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Joerg Roedel <joerg.roedel@amd.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [053/117] x86, k8 nb: Fix boot crash: enable k8_northbridges unconditionally on AMD systems
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +27,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prarit Bhargava <prarit@redhat.com>
+From: Borislav Petkov <bp@amd64.org>
 
-commit bbd391a15d82e14efe9d69ba64cadb855b061dba upstream.
+commit 0e152cd7c16832bd5cadee0c2e41d9959bc9b6f9 upstream.
 
-Upstream PV guests fail to boot because of a NULL pointer in
-irq_force_complete_move().  It is possible that xen guests have
-irq_desc->chip_data = NULL.
+de957628ce7c84764ff41331111036b3ae5bad0f changed setting of the
+x86_init.iommu.iommu_init function ptr only when GART IOMMU is
+found.
 
-Test for NULL chip_data pointer before attempting to complete an irq move.
+One side effect of it is that num_k8_northbridges
+is not initialized anymore if not explicitly
+called. This resulted in uninitialized pointers in
+<arch/x86/kernel/cpu/intel_cacheinfo.c:amd_calc_l3_indices()>,
+for example, which uses the num_k8_northbridges thing through
+node_to_k8_nb_misc().
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-LKML-Reference: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Fix that through an initcall that runs right after the PCI
+subsystem and does all the scanning. Then, remove initialization
+in gart_iommu_init() which is a rootfs_initcall and we're
+running before that.
+
+What is more, since num_k8_northbridges is being used in other
+places beside GART IOMMU, include it whenever we add AMD CPU
+support. The previous dependency chain in kconfig contained
+
+K8_NB depends on AGP_AMD64|GART_IOMMU
+
+which was clearly incorrect. The more natural way in terms of
+hardware dependency should be
+
+AGP_AMD64|GART_IOMMU depends on K8_NB depends on CPU_SUP_AMD &&
+PCI. Make it so Number One!
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+LKML-Reference: <20100312144303.GA29262@aftab>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Tested-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/io_apic.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/Kconfig              |    4 ++--
+ arch/x86/kernel/k8.c          |   14 ++++++++++++++
+ arch/x86/kernel/pci-gart_64.c |    2 +-
+ drivers/char/agp/Kconfig      |    2 +-
+ 4 files changed, 18 insertions(+), 4 deletions(-)
 
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2539,6 +2539,9 @@ void irq_force_complete_move(int irq)
- 	struct irq_desc *desc = irq_to_desc(irq);
- 	struct irq_cfg *cfg = desc->chip_data;
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -627,7 +627,7 @@ config GART_IOMMU
+ 	bool "GART IOMMU support" if EMBEDDED
+ 	default y
+ 	select SWIOTLB
+-	depends on X86_64 && PCI
++	depends on X86_64 && PCI && K8_NB
+ 	---help---
+ 	  Support for full DMA access of devices with 32bit memory access only
+ 	  on systems with more than 3GB. This is usually needed for USB,
+@@ -2026,7 +2026,7 @@ endif # X86_32
  
-+	if (!cfg)
-+		return;
-+
- 	__irq_complete_move(&desc, cfg->vector);
+ config K8_NB
+ 	def_bool y
+-	depends on AGP_AMD64 || (X86_64 && (GART_IOMMU || (PCI && NUMA)))
++	depends on CPU_SUP_AMD && PCI
+ 
+ source "drivers/pcmcia/Kconfig"
+ 
+--- a/arch/x86/kernel/k8.c
++++ b/arch/x86/kernel/k8.c
+@@ -121,3 +121,17 @@ void k8_flush_garts(void)
  }
- #else
+ EXPORT_SYMBOL_GPL(k8_flush_garts);
+ 
++static __init int init_k8_nbs(void)
++{
++	int err = 0;
++
++	err = cache_k8_northbridges();
++
++	if (err < 0)
++		printk(KERN_NOTICE "K8 NB: Cannot enumerate AMD northbridges.\n");
++
++	return err;
++}
++
++/* This has to go after the PCI subsystem */
++fs_initcall(init_k8_nbs);
+--- a/arch/x86/kernel/pci-gart_64.c
++++ b/arch/x86/kernel/pci-gart_64.c
+@@ -738,7 +738,7 @@ int __init gart_iommu_init(void)
+ 	unsigned long scratch;
+ 	long i;
+ 
+-	if (cache_k8_northbridges() < 0 || num_k8_northbridges == 0)
++	if (num_k8_northbridges == 0)
+ 		return 0;
+ 
+ #ifndef CONFIG_AGP_AMD64
+--- a/drivers/char/agp/Kconfig
++++ b/drivers/char/agp/Kconfig
+@@ -57,7 +57,7 @@ config AGP_AMD
+ 
+ config AGP_AMD64
+ 	tristate "AMD Opteron/Athlon64 on-CPU GART support"
+-	depends on AGP && X86
++	depends on AGP && X86 && K8_NB
+ 	help
+ 	  This option gives you AGP support for the GLX component of
+ 	  X using the on-CPU northbridge of the AMD Athlon64/Opteron CPUs.
 
 
