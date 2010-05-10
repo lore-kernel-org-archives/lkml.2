@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933320Ab0EJXdV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:33:21 -0400
-Received: from kroah.org ([198.145.64.141]:33253 "EHLO coco.kroah.org"
+	id S932445Ab0EJWw0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:52:26 -0400
+Received: from kroah.org ([198.145.64.141]:32956 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932402Ab0EJWwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:33 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:23 2010
-Message-Id: <20100510223323.886078090@kvm.kroah.org>
+	id S932346Ab0EJWvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:51:54 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:19 2010
+Message-Id: <20100510223319.370862565@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:43 -0700
+Date: Mon, 10 May 2010 15:31:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       David Dillow <dave@thedillows.org>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [072/117] r8169: use correct barrier between cacheable and non-cacheable memory
+       William Lightning <kassah@gmail.com>
+Subject: [024/117] USB: Add id for HP ev2210 a.k.a Sierra MC5725 miniPCI-e Cell Modem.
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +25,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Dillow <dave@thedillows.org>
+From: William Lightning <kassah@gmail.com>
 
-commit 4c020a961a812ffae9846b917304cea504c3a733 upstream.
+commit cfbaa39347b34837f26e01fe8f4f8dbbae60b520 upstream.
 
-r8169 needs certain writes to be visible to other CPUs or the NIC before
-touching the hardware, but was using smp_wmb() which is only required to
-order cacheable memory access. Switch to wmb() which is required to
-order both cacheable and non-cacheable memory.
-
-Noticed by Catalin Marinas and Paul Mackerras.
-
-Signed-off-by: David Dillow <dave@thedillows.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: William Lightning <kassah@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/r8169.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/sierra.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -4316,7 +4316,7 @@ static netdev_tx_t rtl8169_start_xmit(st
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -229,6 +229,7 @@ static const struct sierra_iface_info di
+ static struct usb_device_id id_table [] = {
+ 	{ USB_DEVICE(0x0F3D, 0x0112) }, /* Airprime/Sierra PC 5220 */
+ 	{ USB_DEVICE(0x03F0, 0x1B1D) },	/* HP ev2200 a.k.a MC5720 */
++	{ USB_DEVICE(0x03F0, 0x211D) }, /* HP ev2210 a.k.a MC5725 */
+ 	{ USB_DEVICE(0x03F0, 0x1E1D) },	/* HP hs2300 a.k.a MC8775 */
  
- 	tp->cur_tx += frags + 1;
- 
--	smp_wmb();
-+	wmb();
- 
- 	RTL_W8(TxPoll, NPQ);	/* set polling bit */
- 
-@@ -4675,7 +4675,7 @@ static int rtl8169_poll(struct napi_stru
- 		 * until it does.
- 		 */
- 		tp->intr_mask = 0xffff;
--		smp_wmb();
-+		wmb();
- 		RTL_W16(IntrMask, tp->intr_event);
- 	}
- 
+ 	{ USB_DEVICE(0x1199, 0x0017) },	/* Sierra Wireless EM5625 */
 
 
