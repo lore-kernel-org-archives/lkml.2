@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933537Ab0EJXpk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:45:40 -0400
-Received: from kroah.org ([198.145.64.141]:32882 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932303Ab0EJWvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:51:41 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:17 2010
-Message-Id: <20100510223317.909441707@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:31:39 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeff Garzik <jgarzik@redhat.com>
-Subject: [008/117] libata: ensure NCQ error result taskfile is fully initialized
-In-Reply-To: <20100510223700.GA18404@kroah.com>
+	id S933542Ab0EJXp6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:45:58 -0400
+Received: from n5-vm0.bullet.mail.gq1.yahoo.com ([67.195.8.62]:43223 "HELO
+	n5-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932337Ab0EJXpu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 19:45:50 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 837352.12748.bm@omp120.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=nKyRvuq0rCENStD9weycOIATFRt79Dq2yhyPZ8WqjWUd3G45bYc+nqH0SR27BE7LajOfraG3i2ts09Iv2GkCc6JG8+d5jh9euvmvlw6K/qBT/3eIJqrUx61unjCU34sblj0TWLaMwIdm1V2Xkr6VnJJ9+9R4ko3zXwqF9jDtY6Y=;
+Message-ID: <689426.33806.qm@web112505.mail.gq1.yahoo.com>
+X-YMail-OSG: _GRx3OMVM1l0h3_28OrKvFSL.eYeWV24mgIAeMYlITwfRtJ
+ 7d0xHhZ7O89ZT7D7sxZ504ExD_JZcCojo8Ffl758cLD_3hs2bBRwExX7ihpp
+ wAeMEea0A6aLclkPMLf81vg.iL2U2pEcIBvdwM_Pm_Ti2E2ppuEERoQsY2iJ
+ zk_nQJFQIBPvZvDP6riytkOxqO9gySxHudNvBhvsfJuAxglqYxj6Xk6lOYhw
+ Wjo.m.VeSJd8iY1QG1Optb0paHl1weKM-
+X-Mailer: YahooMailClassic/11.0.8 YahooMailWebService/0.8.103.269680
+Date: Mon, 10 May 2010 16:45:48 -0700 (PDT)
+From: Sharat Masetty <sharat_masetty@yahoo.com>
+Subject: Question about more headroom in skb in outgoing packets 
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+Hello All,
 
-------------------
- before returning it via qc->result_tf.
+For my project I need 3 words of headroom in the skb in the network driver level, to add a  custom header to the ethernet/ip packets. I looked into the tcp code and figured out tcp uses sk->sk_prot->max_header for header allocation size. But I was not able to confirm that all other transport protocol use the same mechanism(?) For example in UDP/ICMP I was not able to figure out from the code where the skb allocation and header reservation happens(Any light here would be really helpful.). Is there a parameter I can tune to allocate 3 words for any outgoing skb's, or what is the best way to do it?
 
-From: Jeff Garzik <jeff@garzik.org>
+I want to figure out a good way(may be tune some parameters) to allocate extra 3 words for any skbuff independent of the transport protocol being used. I have also looked at an API in skbuff skb_pad() which does what I want(add either headroom or tailroom), but I want to avoid that for performance reasons(skb_pad does kmalloc and memcpy).  Any light here would be very much appreciated.
 
-commit a09bf4cd53b8ab000197ef81f15d50f29ecf973c upstream.
+Thanks,
+Sharat.
 
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- drivers/ata/libata-eh.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -1628,6 +1628,7 @@ void ata_eh_analyze_ncq_error(struct ata
- 	}
- 
- 	/* okay, this error is ours */
-+	memset(&tf, 0, sizeof(tf));
- 	rc = ata_eh_read_log_10h(dev, &tag, &tf);
- 	if (rc) {
- 		ata_link_printk(link, KERN_ERR, "failed to read log page 10h "
 
+      
 
