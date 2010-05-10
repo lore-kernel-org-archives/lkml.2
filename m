@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab0EJXdK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:33:10 -0400
-Received: from kroah.org ([198.145.64.141]:33258 "EHLO coco.kroah.org"
+	id S933320Ab0EJXdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:33:21 -0400
+Received: from kroah.org ([198.145.64.141]:33253 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932379Ab0EJWwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932402Ab0EJWwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 May 2010 18:52:33 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:24 2010
-Message-Id: <20100510223323.975685623@kvm.kroah.org>
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:23 2010
+Message-Id: <20100510223323.886078090@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:44 -0700
+Date: Mon, 10 May 2010 15:32:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Francois Romieu <romieu@fr.zoreil.com>,
+       David Dillow <dave@thedillows.org>,
        "David S. Miller" <davem@davemloft.net>
-Subject: [073/117] r8169: fix broken register writes
+Subject: [072/117] r8169: use correct barrier between cacheable and non-cacheable memory
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,21 +26,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francois Romieu <romieu@fr.zoreil.com>
+From: David Dillow <dave@thedillows.org>
 
-commit 78f1cd02457252e1ffbc6caa44a17424a45286b8 upstream.
+commit 4c020a961a812ffae9846b917304cea504c3a733 upstream.
 
-This is quite similar to b39fe41f481d20c201012e4483e76c203802dda7
-though said registers are not even documented as 64-bit registers
-- as opposed to the initial TxDescStartAddress ones - but as single
-bytes which must be combined into 32 bits at the MMIO read/write
-level before being merged into a 64 bit logical entity.
+r8169 needs certain writes to be visible to other CPUs or the NIC before
+touching the hardware, but was using smp_wmb() which is only required to
+order cacheable memory access. Switch to wmb() which is required to
+order both cacheable and non-cacheable memory.
 
-Credits go to Ben Hutchings <ben@decadent.org.uk> for the MAR
-registers (aka "multicast is broken for ages on ARM) and to
-Timo Teräs <timo.teras@iki.fi> for the MAC registers.
+Noticed by Catalin Marinas and Paul Mackerras.
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: David Dillow <dave@thedillows.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
@@ -50,25 +47,23 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 --- a/drivers/net/r8169.c
 +++ b/drivers/net/r8169.c
-@@ -2832,8 +2832,8 @@ static void rtl_rar_set(struct rtl8169_p
- 	spin_lock_irq(&tp->lock);
+@@ -4316,7 +4316,7 @@ static netdev_tx_t rtl8169_start_xmit(st
  
- 	RTL_W8(Cfg9346, Cfg9346_Unlock);
--	RTL_W32(MAC0, low);
- 	RTL_W32(MAC4, high);
-+	RTL_W32(MAC0, low);
- 	RTL_W8(Cfg9346, Cfg9346_Lock);
+ 	tp->cur_tx += frags + 1;
  
- 	spin_unlock_irq(&tp->lock);
-@@ -4813,8 +4813,8 @@ static void rtl_set_rx_mode(struct net_d
- 		mc_filter[1] = swab32(data);
+-	smp_wmb();
++	wmb();
+ 
+ 	RTL_W8(TxPoll, NPQ);	/* set polling bit */
+ 
+@@ -4675,7 +4675,7 @@ static int rtl8169_poll(struct napi_stru
+ 		 * until it does.
+ 		 */
+ 		tp->intr_mask = 0xffff;
+-		smp_wmb();
++		wmb();
+ 		RTL_W16(IntrMask, tp->intr_event);
  	}
- 
--	RTL_W32(MAR0 + 0, mc_filter[0]);
- 	RTL_W32(MAR0 + 4, mc_filter[1]);
-+	RTL_W32(MAR0 + 0, mc_filter[0]);
- 
- 	RTL_W32(RxConfig, tmp);
  
 
 
