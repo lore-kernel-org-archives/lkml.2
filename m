@@ -1,103 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab0EJKmp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 06:42:45 -0400
-Received: from mx1.emlix.com ([193.175.82.87]:53994 "EHLO mx1.emlix.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752849Ab0EJKmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 06:42:43 -0400
-From: "Oskar Schirmer" <os@emlix.com>
-To: Michael Hennerich <Michael.Hennerich@analog.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Mike Frysinger <vapier@gentoo.org>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Oskar Schirmer <os@emlix.com>,
-       =?utf-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>
-Subject: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
-Date: Mon, 10 May 2010 12:42:34 +0200
-Message-Id: <1273488154-2993-1-git-send-email-os@emlix.com>
-In-Reply-To: <1273487642-2169-1-git-send-email-os@emlix.com>
-References: <1273487642-2169-1-git-send-email-os@emlix.com>
+	id S1756686Ab0EJKpb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 06:45:31 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:43511 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756009Ab0EJKpa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 06:45:30 -0400
+Date: Mon, 10 May 2010 19:44:47 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linuxtronix.de,
+       mingo@elte.hu, davem@davemloft.net
+Subject: Re: [PATCH 12/25] lmb: Move lmb arrays to static storage in lmb.c and make their size a variable
+Message-ID: <20100510104446.GC14278@linux-sh.org>
+References: <1273484339-28911-4-git-send-email-benh@kernel.crashing.org> <1273484339-28911-5-git-send-email-benh@kernel.crashing.org> <1273484339-28911-6-git-send-email-benh@kernel.crashing.org> <1273484339-28911-7-git-send-email-benh@kernel.crashing.org> <1273484339-28911-8-git-send-email-benh@kernel.crashing.org> <1273484339-28911-9-git-send-email-benh@kernel.crashing.org> <1273484339-28911-10-git-send-email-benh@kernel.crashing.org> <1273484339-28911-11-git-send-email-benh@kernel.crashing.org> <1273484339-28911-12-git-send-email-benh@kernel.crashing.org> <1273484339-28911-13-git-send-email-benh@kernel.crashing.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Organization: emlix gmbh, Goettingen, Germany
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273484339-28911-13-git-send-email-benh@kernel.crashing.org>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With dma based spi transmission, data corruption
-is observed occasionally. With dma buffers located
-right next to msg and xfer fields, cache lines
-correctly flushed in preparation for dma usage
-may be polluted again when writing to fields
-in the same cache line.
+On Mon, May 10, 2010 at 07:38:46PM +1000, Benjamin Herrenschmidt wrote:
+> diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+> index 27c2386..e575801 100644
+> --- a/include/linux/lmb.h
+> +++ b/include/linux/lmb.h
+> @@ -18,7 +18,7 @@
+>  
+>  #include <asm/lmb.h>
+>  
+> -#define MAX_LMB_REGIONS 128
+> +#define INIT_LMB_REGIONS 128
+>  
+>  struct lmb_region {
+>  	phys_addr_t base;
 
-Make sure cache fields used with dma do not
-share cache lines with fields changed during
-dma handling. As both fields are part of a
-struct that is allocated via kzalloc, thus
-cache aligned, moving the fields to the 1st
-position and insert padding for alignment
-does the job.
-
-Signed-off-by: Oskar Schirmer <os@emlix.com>
-Signed-off-by: Daniel Glöckner <dg@emlix.com>
-Signed-off-by: Oliver Schneidewind <osw@emlix.com>
-Signed-off-by: Johannes Weiner <jw@emlix.com>
----
- drivers/input/touchscreen/ad7877.c |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
-
-v2: add a comment to explain why alignment is needed
-
-v3: fix the typo in comment and layout (- to end of line)
-
-diff --git a/drivers/input/touchscreen/ad7877.c b/drivers/input/touchscreen/ad7877.c
-index 885354c..9ebb1b4 100644
---- a/drivers/input/touchscreen/ad7877.c
-+++ b/drivers/input/touchscreen/ad7877.c
-@@ -153,15 +153,29 @@ enum {
-  */
- 
- struct ser_req {
-+	u16			sample;
-+	/*
-+	 * DMA (thus cache coherency maintenance) requires the
-+	 * transfer buffers to live in their own cache lines.
-+	 */
-+	char			__padalign[L1_CACHE_BYTES - sizeof(u16)];
-+
- 	u16			reset;
- 	u16			ref_on;
- 	u16			command;
--	u16			sample;
- 	struct spi_message	msg;
- 	struct spi_transfer	xfer[6];
- };
- 
- struct ad7877 {
-+	u16			conversion_data[AD7877_NR_SENSE];
-+	/*
-+	 * DMA (thus cache coherency maintenance) requires the
-+	 * transfer buffers to live in their own cache lines.
-+	 */
-+	char			__padalign[L1_CACHE_BYTES -
-+					AD7877_NR_SENSE * sizeof(u16)];
-+
- 	struct input_dev	*input;
- 	char			phys[32];
- 
-@@ -182,8 +196,6 @@ struct ad7877 {
- 	u8			averaging;
- 	u8			pen_down_acc_interval;
- 
--	u16			conversion_data[AD7877_NR_SENSE];
--
- 	struct spi_transfer	xfer[AD7877_NR_SENSE + 2];
- 	struct spi_message	msg;
- 
--- 
-1.5.3.7
-
+Perhaps it would be better to weight this against MAX_ACTIVE_REGIONS for
+the ARCH_POPULATES_NODE_MAP case? The early node map is already using
+that size, at least.
