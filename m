@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932910Ab0EJXOE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:14:04 -0400
-Received: from kroah.org ([198.145.64.141]:51876 "EHLO coco.kroah.org"
+	id S933224Ab0EJXED (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:04:03 -0400
+Received: from kroah.org ([198.145.64.141]:45335 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932828Ab0EJW6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:16 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:40 2010
-Message-Id: <20100510223540.072389145@kvm.kroah.org>
+	id S932926Ab0EJW61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:27 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:41 2010
+Message-Id: <20100510223541.243072327@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:15 -0700
+Date: Mon, 10 May 2010 15:35:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>
-Subject: [63/98] CRED: Fix a race in creds_are_invalid() in credentials debugging
+       Andre Detsch <adetsch@br.ibm.com>, Michael Chan <mchan@broadcom.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Brandon Philips <bphilips@suse.de>
+Subject: [76/98] tg3: Fix INTx fallback when MSI fails
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,75 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Andre Detsch <adetsch@br.ibm.com>
 
-commit e134d200d57d43b171dcb0b55c178a1a0c7db14a upstream.
+commit dc8bf1b1a6edfc92465526de19772061302f0929 upstream.
 
-creds_are_invalid() reads both cred->usage and cred->subscribers and then
-compares them to make sure the number of processes subscribed to a cred struct
-never exceeds the refcount of that cred struct.
+tg3: Fix INTx fallback when MSI fails
 
-The problem is that this can cause a race with both copy_creds() and
-exit_creds() as the two counters, whilst they are of atomic_t type, are only
-atomic with respect to themselves, and not atomic with respect to each other.
+MSI setup changes the value of irq_vec in struct tg3 *tp.
+This attribute must be taken into account and restored before
+we try to do a new request_irq for INTx fallback.
 
-This means that if creds_are_invalid() can read the values on one CPU whilst
-they're being modified on another CPU, and so can observe an evolving state in
-which the subscribers count now is greater than the usage count a moment
-before.
+In powerpc, the original code was leading to an EINVAL return within
+request_irq, because the driver was trying to use the disabled MSI
+virtual irq number instead of tp->pdev->irq.
 
-Switching the order in which the counts are read cannot help, so the thing to
-do is to remove that particular check.
-
-I had considered rechecking the values to see if they're in flux if the test
-fails, but I can't guarantee they won't appear the same, even if they've
-changed several times in the meantime.
-
-Note that this can only happen if CONFIG_DEBUG_CREDENTIALS is enabled.
-
-The problem is only likely to occur with multithreaded programs, and can be
-tested by the tst-eintr1 program from glibc's "make check".  The symptoms look
-like:
-
-	CRED: Invalid credentials
-	CRED: At include/linux/cred.h:240
-	CRED: Specified credentials: ffff88003dda5878 [real][eff]
-	CRED: ->magic=43736564, put_addr=(null)
-	CRED: ->usage=766, subscr=766
-	CRED: ->*uid = { 0,0,0,0 }
-	CRED: ->*gid = { 0,0,0,0 }
-	CRED: ->security is ffff88003d72f538
-	CRED: ->security {359, 359}
-	------------[ cut here ]------------
-	kernel BUG at kernel/cred.c:850!
-	...
-	RIP: 0010:[<ffffffff81049889>]  [<ffffffff81049889>] __invalid_creds+0x4e/0x52
-	...
-	Call Trace:
-	 [<ffffffff8104a37b>] copy_creds+0x6b/0x23f
-
-Note the ->usage=766 and subscr=766.  The values appear the same because
-they've been re-read since the check was made.
-
-Reported-by: Roland McGrath <roland@redhat.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Signed-off-by: Andre Detsch <adetsch@br.ibm.com>
+Acked-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Brandon Philips <bphilips@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/cred.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/net/tg3.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -786,8 +786,6 @@ bool creds_are_invalid(const struct cred
- {
- 	if (cred->magic != CRED_MAGIC)
- 		return true;
--	if (atomic_read(&cred->usage) < atomic_read(&cred->subscribers))
--		return true;
- #ifdef CONFIG_SECURITY_SELINUX
- 	if (selinux_is_enabled()) {
- 		if ((unsigned long) cred->security < PAGE_SIZE)
+--- a/drivers/net/tg3.c
++++ b/drivers/net/tg3.c
+@@ -8168,6 +8168,7 @@ static int tg3_test_msi(struct tg3 *tp)
+ 	pci_disable_msi(tp->pdev);
+ 
+ 	tp->tg3_flags2 &= ~TG3_FLG2_USING_MSI;
++	tp->napi[0].irq_vec = tp->pdev->irq;
+ 
+ 	err = tg3_request_irq(tp, 0);
+ 	if (err)
 
 
