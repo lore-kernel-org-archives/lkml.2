@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab0EJEsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 00:48:20 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34682 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab0EJErM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 00:47:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Gwdh/qpUCv34YQqWf/3G3UiRvZ2FAc9J8hDqoXh/PgCPPGtjLqpCbTZ9KunQN5Hyhm
-         di360iPK75IcrzKEmY9i5JSNPqse0TO1lFVkTIFjZ3GMdpNtTw3rCy3KOuEADC+Qpjxt
-         cIXEcae4rDSvk0pZL2tQSxbPXJVhH3mFgEvL4=
-From: Tom Zanussi <tzanussi@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, fweisbec@gmail.com, acme@ghostprotocols.net
-Subject: [PATCH 5/9] perf/trace/scripting: workqueue-stats script cleanup
-Date: Sun,  9 May 2010 23:46:56 -0500
-Message-Id: <1273466820-9330-6-git-send-email-tzanussi@gmail.com>
-X-Mailer: git-send-email 1.6.4.GIT
-In-Reply-To: <1273466820-9330-1-git-send-email-tzanussi@gmail.com>
-References: <1273466820-9330-1-git-send-email-tzanussi@gmail.com>
+	id S1752943Ab0EJEtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 00:49:21 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38595 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751550Ab0EJEtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 00:49:18 -0400
+Date: Mon, 10 May 2010 14:49:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the tip tree
+Message-Id: <20100510144907.fb4caea9.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__10_May_2010_14_49_07_+1000_xt4hmwf3v8P0uAm_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some minor fixes for the workqueue-stats script:
+--Signature=_Mon__10_May_2010_14_49_07_+1000_xt4hmwf3v8P0uAm_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-- Fix nuisance 'use of uninitialized value' warnings
+Hi all,
 
-Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
----
- tools/perf/scripts/perl/workqueue-stats.pl |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-diff --git a/tools/perf/scripts/perl/workqueue-stats.pl b/tools/perf/scripts/perl/workqueue-stats.pl
-index 511302c..b84b126 100644
---- a/tools/perf/scripts/perl/workqueue-stats.pl
-+++ b/tools/perf/scripts/perl/workqueue-stats.pl
-@@ -71,9 +71,9 @@ sub trace_end
-     printf("%3s %6s %6s\t%-20s\n", "---", "---", "----", "----");
-     foreach my $pidhash (@cpus) {
- 	while ((my $pid, my $wqhash) = each %$pidhash) {
--	    my $ins = $$wqhash{'inserted'};
--	    my $exe = $$wqhash{'executed'};
--	    my $comm = $$wqhash{'comm'};
-+	    my $ins = $$wqhash{'inserted'} || 0;
-+	    my $exe = $$wqhash{'executed'} || 0;
-+	    my $comm = $$wqhash{'comm'} || "";
- 	    if ($ins || $exe) {
- 		printf("%3u %6u %6u\t%-20s\n", $cpu, $ins, $exe, $comm);
- 	    }
-@@ -87,9 +87,9 @@ sub trace_end
-     printf("%3s %6s %6s\t%-20s\n", "---", "-------", "---------", "----");
-     foreach my $pidhash (@cpus) {
- 	while ((my $pid, my $wqhash) = each %$pidhash) {
--	    my $created = $$wqhash{'created'};
--	    my $destroyed = $$wqhash{'destroyed'};
--	    my $comm = $$wqhash{'comm'};
-+	    my $created = $$wqhash{'created'} || 0;
-+	    my $destroyed = $$wqhash{'destroyed'} || 0;
-+	    my $comm = $$wqhash{'comm'} || "";
- 	    if ($created || $destroyed) {
- 		printf("%3u %6u %6u\t%-20s\n", $cpu, $created, $destroyed,
- 		       $comm);
--- 
-1.6.4.GIT
+drivers/misc/vmware_balloon.c:44:24: error: asm/vmware.h: No such file or d=
+irectory
+drivers/misc/vmware_balloon.c: In function 'vmballoon_init':
+drivers/misc/vmware_balloon.c:770: error: implicit declaration of function =
+'vmware_platform'
 
+Caused by commit e08cae4181af9483b04ecfac48f01c8e5a5f27bf ("x86: Clean up
+the hypervisor layer").  (Yes, I know this has already been reported.)
+
+I have used the version of the tip tree from next-20100507 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__10_May_2010_14_49_07_+1000_xt4hmwf3v8P0uAm_
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvnkEMACgkQjjKRsyhoI8zX1QCgqoOO+lM0HBJySI3e0AF+yKFP
+560AoIjSuVU4BXwkx1rQ7ijJxTHYXmnR
+=wZfx
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__10_May_2010_14_49_07_+1000_xt4hmwf3v8P0uAm_--
