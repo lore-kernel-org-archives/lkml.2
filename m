@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab0EJXcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:32:22 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8055 "EHLO mga02.intel.com"
+	id S933279Ab0EJXcs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:32:48 -0400
+Received: from kroah.org ([198.145.64.141]:33269 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757982Ab0EJXcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 19:32:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,203,1272870000"; 
-   d="scan'208";a="620539126"
-Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some
- accesspoint == hardlock
-From: reinette chatre <reinette.chatre@intel.com>
-To: Nils Radtke <lkml@Think-Future.de>
-Cc: "linville@tuxdriver.com" <linville@tuxdriver.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <20100510183639.GA17523@localhost>
-References: <20100510183639.GA17523@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 May 2010 16:32:04 -0700
-Message-ID: <1273534324.2370.6740.camel@rchatre-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S932473Ab0EJWwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:36 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:24 2010
+Message-Id: <20100510223324.245814290@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:32:47 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Douglas Gilbert <dgilbert@interlog.com>,
+       James Bottomley <James.Bottomley@suse.de>
+Subject: [076/117] [SCSI] skip sense logging for some ATA PASS-THROUGH cdbs
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 11:36 -0700, Nils Radtke wrote:
->   Today weather was fine again, finally. So testing with .33.3 w/ the patch applied: 
-> 
->   http://marc.info/?l=linux-wireless&m=127290931304496&w=2
-> 
-> The kernel kernel .32 was still running before it crashed immediately on wireless activation.
-> The crash log showed again at least two messages, the last was as already described in my first
-> message, bug from 2010-04-30: I think even the 0x2030 was the same:
-> 
-> EIP rs_tx_status +x8f/x2030 
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-You report an issue on 2.6.32 ...
+------------------
 
-> 
-> W/ .33.3 and the above patch applied:
+From: Douglas Gilbert <dgilbert@interlog.com>
 
-... but then test the patch with 2.6.33.
+commit e7efe5932b1d3916c79326a4221693ea90a900e2 upstream.
 
-Which kernel are you focused on?
+Further to the lsml thread titled:
+"does scsi_io_completion need to dump sense data for ata pass through (ck_cond =
+1) ?"
 
+This is a patch to skip logging when the sense data is
+associated with a SENSE_KEY of "RECOVERED_ERROR" and the
+additional sense code is "ATA PASS-THROUGH INFORMATION
+AVAILABLE". This only occurs with the SAT ATA PASS-THROUGH
+commands when CK_COND=1 (in the cdb). It indicates that
+the sense data contains ATA registers.
 
-> Linux mypole 2.6.33.3 #18 SMP PREEMPT Thu May 6 21:51:37 CEST 2010 i686 GNU/Linux
-> 
-> May 10 19:14:11 [   80.586637] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-> May 10 19:23:17 [  626.476078] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-> May 10 19:23:30 [  638.913740] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-> May 10 19:23:32 [  641.232425] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-> May 10 19:23:54 [  663.392697] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-> May 10 19:23:58 [  666.980247] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-> May 10 19:24:02 [  671.121826] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
+Smartmontools uses such commands on ATA disks connected via
+SAT. Periodic checks such as those done by smartd cause
+nuisance entries into logs that are:
+    - neither errors nor warnings
+    - pointless unless the cdb that caused them are also logged
 
-Can you see any impact on your connection speed that can be connected to
-these messages?
+Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-> Additionally these were logged, could you tell why they're there and what to do? (also .33.3 w/ patch)
-> 
-> May 10 19:24:16 [  685.079617] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
-> May 10 19:24:22 [  691.026737] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
-> May 10 19:28:02 [  911.406162] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
-> May 10 19:35:38 [ 1367.251240] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
-> 
-> The above "iwl_tx_agg_start" lines happen when connecting - again to a Cisco AP - and the connection gets
-> dropped the exact moment when a download is started. It even often drops when dhcp is still negotiating, has
-> got it's IP but the nego isn't finished yet. Conn drops, same procedure again and again. This happens only
-> with this Cisco AP (which is BTW another one from the "expected_tpt should have been calculated by now" 
-> problem).
+---
+ drivers/scsi/scsi_lib.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-It could be that some of the queues get stuck. Can you try with the
-patches in
-http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2037#c113 ? They
-are based on 2.6.33.
-
-Reinette
-
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -773,8 +773,14 @@ void scsi_io_completion(struct scsi_cmnd
+ 	 * we already took a copy of the original into rq->errors which
+ 	 * is what gets returned to the user
+ 	 */
+-	if (sense_valid && sshdr.sense_key == RECOVERED_ERROR) {
+-		if (!(req->cmd_flags & REQ_QUIET))
++	if (sense_valid && (sshdr.sense_key == RECOVERED_ERROR)) {
++		/* if ATA PASS-THROUGH INFORMATION AVAILABLE skip
++		 * print since caller wants ATA registers. Only occurs on
++		 * SCSI ATA PASS_THROUGH commands when CK_COND=1
++		 */
++		if ((sshdr.asc == 0x0) && (sshdr.ascq == 0x1d))
++			;
++		else if (!(req->cmd_flags & REQ_QUIET))
+ 			scsi_print_sense("", cmd);
+ 		result = 0;
+ 		/* BLOCK_PC may have set error */
 
 
