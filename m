@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab0EJIE3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 04:04:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45242 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755402Ab0EJIE1 convert rfc822-to-8bit (ORCPT
+	id S1755480Ab0EJIFv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 04:05:51 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57923 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318Ab0EJIFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 04:04:27 -0400
-Subject: Re: [PATCH] perf_event: Make software events work again
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, eranian@gmail.com,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100508105800.GB10650@brick.ozlabs.ibm.com>
-References: <20100508105800.GB10650@brick.ozlabs.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 10 May 2010 10:04:12 +0200
-Message-ID: <1273478652.5605.3325.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 10 May 2010 04:05:49 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4BE7BE10.8080000@np.css.fujitsu.com>
+Date: Mon, 10 May 2010 17:04:32 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
+MIME-Version: 1.0
+To: LKLM <linux-kernel@vger.kernel.org>
+CC: lenb <lenb@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+       Huang Ying <ying.huang@intel.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       ACPI <linux-acpi@vger.kernel.org>
+Subject: [Patch-next] Oops caused by ERST Table not supported.
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-08 at 20:58 +1000, Paul Mackerras wrote:
-> Commit 6bde9b6ce0127e2a56228a2071536d422be31336 ("perf: Add group
-> scheduling transactional APIs") added code to allow a group to be
-> scheduled in a single transaction.  However, it introduced a bug in
-> handling events whose pmu does not implement transactions -- at the
-> end of scheduling in the events in the group, in the non-transactional
-> case the code now falls through to the group_error label, and proceeds
-> to unschedule all the events in the group and return failure.
-> 
-> This fixes it by returning 0 (success) in the non-transactional case.
+On my server(x86_64) when the mcelog is executed, it will cause oops. And
+following information could be gotten.
 
-D'0h I should have spotted that :/
+Call Trace:
+  [<ffffffff812ceefd>] ? avc_has_perm_noaudit+0x4d/0x680
+  [<ffffffff812ceefd>] ? avc_has_perm_noaudit+0x4d/0x680
+  [<ffffffff8142492b>] erst_read_next+0x3b/0x100
+  [<ffffffff81028def>] apei_read_mce+0x2f/0x170
+  [<ffffffff811bfc5d>] ? check_object+0x36d/0x430
+  [<ffffffff811c059c>] ? init_object+0x9c/0xe0
+  [<ffffffff811c38ef>] ? __slab_alloc+0x7cf/0x8b0
+  [<ffffffff81025cba>] ? mce_read+0x4a/0x510
+  [<ffffffff811c49ab>] ? __kmalloc+0x2db/0x390
+  [<ffffffff81025cba>] ? mce_read+0x4a/0x510
+  [<ffffffff811bf81d>] ? check_bytes_and_report+0x3d/0x110
+  [<ffffffff816caf1e>] ? _cond_resched+0x3e/0x80
+  [<ffffffff8102613b>] mce_read+0x4cb/0x510
+  [<ffffffff812cb9f2>] ? security_file_permission+0x122/0x130
+  [<ffffffff811dff16>] ? rw_verify_area+0x196/0x210
+  [<ffffffff811e0e7b>] vfs_read+0x1bb/0x2f0
+  [<ffffffff811e172d>] sys_read+0x8d/0xe0
+  [<ffffffff81003c9b>] system_call_fastpath+0x16/0x1b
 
-Thanks Paul!
+This is because of the ERST Table not supported on my server and it
+makes the variable "ctx" used by erst_read_nextis NULL. So I make
+the patch to solve this problem.
+
+And I confirmed it on my server(x86_64).
+
+Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+---
+ drivers/acpi/apei/erst.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index 5fe5c0f..2ebc391 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -698,6 +698,9 @@ ssize_t erst_read_next(struct cper_record_header *record, size_t buflen)
+ 	unsigned long flags;
+ 	u64 record_id;
+ 
++	if (erst_disable)
++		return -ENODEV;
++
+ 	spin_lock_irqsave(&erst_lock, flags);
+ 	rc = __erst_get_next_record_id(&record_id);
+ 	if (rc) {
+-- 
+1.7.0.3
+
