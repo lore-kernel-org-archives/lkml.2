@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab0EJLns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 07:43:48 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43184 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755787Ab0EJLnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 07:43:46 -0400
-Date: Mon, 10 May 2010 13:43:11 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-Message-ID: <20100510114311.GA6449@elte.hu>
-References: <1273483623.15998.57.camel@minggr.sh.intel.com>
- <1273484401.5605.3333.camel@twins>
- <1273486313.15998.76.camel@minggr.sh.intel.com>
- <1273486708.5605.3342.camel@twins>
- <1273487195.15998.85.camel@minggr.sh.intel.com>
- <1273490824.5605.3379.camel@twins>
+	id S1756931Ab0EJLpq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 07:45:46 -0400
+Received: from relay01.mx.bawue.net ([193.7.176.67]:55384 "EHLO
+	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787Ab0EJLpp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 07:45:45 -0400
+Date: Mon, 10 May 2010 13:45:39 +0200
+From: Nils Radtke <lkml@Think-Future.de>
+To: peter.hicks@poggs.co.uk
+Cc: linux-kernel@vger.kernel.org
+Subject: RE: option.ko: ZTE MF636 support
+Message-ID: <20100510114539.GB9319@localhost>
+Reply-To: Nils Radtke <lkml@Think-Future.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1273490824.5605.3379.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1273442132.12665.28.camel@angel>
+X-Url: http://www.Think-Future.de
+X-Editor: Vi it! http://www.vim.org
+X-Bkp: p2mi
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  Hi Peter,
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+>> Similar symptoms are the long delay on opening of devices 0 and 2.
+>> /dev/ttyUSB0: status port
+>> /dev/ttyUSB2: modem port (not working)
+>Does "echo > /dev/ttyUSB0" return immediately, and "echo > /dev/ttyUSB2"
+>take around 15 seconds to return?
+Indeed, that's exactly what's happening.
 
-> [...]
->
-> This way we can create:
-> 
-> /sys/devices/system/cpu/cpuN/cpu_hardware_events 
->                              cpu_hardware_events/event_source_id
->                              cpu_hardware_events/cpu_cycles
->                              cpu_hardware_events/instructions
->                                                 /...
-> 
-> /sys/devices/system/cpu/cpuN/cpu_raw_events
->                              cpu_raw_events/event_source_id
-> 
-> 
-> These would match the current PERF_TYPE_* values for compatibility
-> 
-> For new PMUs we can start a dynamic range of PERF_TYPE_ (say at 64k but
-> that's not ABI and can be changed at any time, we've got u32 to play
-> with).
-> 
-> For uncore this would result in:
-> 
-> /sys/devices/system/node/nodeN/node_raw_events
->                                node_raw_events/event_source_id
-> 
-> and maybe:
-> 
-> /sys/devices/system/node/nodeN/node_events
->                                node_events/event_source_id
->                                node_events/local_misses
->                                           /local_hits
->                                           /remote_misses
->                                           /remote_hits
->                                           /...
-> 
-> The software events and tracepoints and kprobes stuff we could hang off
-> of /sys/kernel/ or something
+>> What has been your solution to get the ZTE working?
+>I've blacklisted devices 0, 1 and 2 using the attached patch, taken
+>against 2.6.34-rc6.  It should be quite straightforward to modify this
+>for your device.
+Ah. It seems that there's been quite some change in the code base of the
+option driver. Using .33.3 here. No such thing as "blacklisting".
 
-Yeah, we really want a mechanism like this in place instead of continuing with 
-the somewhat ad-hoc extensions to the event enumeration space.
+>Without the patch, I'm able to use wvdial against ttyUSB3 to dial up,
+>but the device is unresponsive to anything apart from a PPP LCP
+>disconnect.
+For the olicard100 it's been port 2, dialling, pppd starting up, but lcp 
+cfg req timeouts. At least with the olicard100 there's been no real dialup.
+Conn endpoint has never been talking to the device..
 
-One detail: i think we want one more level. Instead of:
+Thanks alot for your hint. Previously I intended to wait for the .34 to
+come out, but regarding the promising changes in option.c I will reconѕider this.
+What are your overall xp with .34 so far? rc-7 is out, quite a rc count.. Maybe
+the .34 is also levelling out these days.. :)
 
- /sys/devices/system/node/nodeN/node_events
-                                node_events/event_source_id
-                                node_events/local_misses
-                                           /local_hits
-                                           /remote_misses
-                                           /remote_hits
-                                           /...
+Cheers,
 
-We want the individual events to be a directory, containing the event_id:
+Nils
 
- /sys/devices/system/node/nodeN/node_events
-                                node_events/event_source_id
-                                node_events/local_misses/event_id
-                                           /local_hits/event_id
-                                           /remote_misses/event_id
-                                           /remote_hits/event_id
-                                           /...
-
-The reason is that we want to keep our options open to add more attributes to 
-individual events. (In fact extended attributes already exist for certain 
-event classes - such as the 'format' info for tracepoints.)
-
-Thanks,
-
-	Ingo
