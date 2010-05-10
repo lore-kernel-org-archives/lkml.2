@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab0EJJsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 05:48:35 -0400
-Received: from gate.crashing.org ([63.228.1.57]:60877 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755535Ab0EJJsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 05:48:33 -0400
-Subject: [PATCH/WIP] lmb cleanups and additions
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-       davem@davemloft.net, lethal@linux-sh.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 May 2010 19:48:13 +1000
-Message-ID: <1273484893.23699.86.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756230Ab0EJJtA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 05:49:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38622 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753072Ab0EJJs5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 05:48:57 -0400
+Date: Mon, 10 May 2010 10:48:54 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Andres Salomon <dilinger@collabora.co.uk>,
+       Alexey Starikovskiy <astarikovskiy@suse.de>,
+       Len Brown <len.brown@intel.com>, Matt Reimer <mreimer@vpop.net>,
+       Evgeniy Polyakov <zbr@ioremap.net>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/3] pda_power: add support for writeable properties
+Message-ID: <20100510094854.GB31804@rakim.wolfsonmicro.main>
+References: <1273254733-7010-1-git-send-email-daniel@caiaq.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273254733-7010-1-git-send-email-daniel@caiaq.de>
+X-Cookie: There's no time like the pleasant.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Resent that header email, git send-email is having hickups here)
+On Fri, May 07, 2010 at 07:52:11PM +0200, Daniel Mack wrote:
 
-This is my current WIP series. It's compile tested on ppc and sparc64 and
-quickly boot tested on ppc64. The "advanced" features such as the new
-array resize are completely untested in this version.
+> +	/* TODO: support other types than int */
+> +	ret = strict_strtol(buf, 10, &long_val);
+> +	if (ret < 0)
+> +		return ret;
 
-My aim is still to replace the bottom part of Yinghai's patch series
-rather than build on top of it, and from there, add whatever he needs
-to successfully port x86 over and turn NO_BOOTMEM into something half
-decent without adding a ton of unneeded crap to the core lmb.
+It'd be nicer if we could error out if this is used on properties with
+an inappropriate type but we don't seem to have type information
+anywhere convenient for implementing that, which is a bit unfortunate.
 
-This is not finished tho. Here's a peek at my TODO list:
-
- - Move to mm/lmb.c
-
- - Various random return types with non-useful return codes (lmb_add, lmb_remove, ...)
-   needs cleaning & documenting
-
- - Add docbook for all API functions
-
- - lmb_add or lmb_reserve of overlapping regions are going to wreck things in very
-   interesting ways. We could easily error out but that's sub-optimal, instead we
-   should break them up to only add/reserve the bits that aren't yet
-
- - Add some pr_debug in various places in there
-
- - Improve the NUMA interaction
-
-In the meantime, comments are welcome :-)
-
-Cheers,
-Ben.
-
-
+Otherwise this looks reasonable in itself.
