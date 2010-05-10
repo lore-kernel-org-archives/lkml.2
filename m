@@ -1,153 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab0EJSId (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 14:08:33 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:48123 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969Ab0EJSIb (ORCPT
+	id S1756150Ab0EJSMK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 14:12:10 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:22403 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab0EJSMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 14:08:31 -0400
-Date: Mon, 10 May 2010 20:08:15 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-pm@lists.linux-foundation.org, linux-scsi@vger.kernel.org
-Subject: Re: libata, hddtemp + s2ram is racy
-Message-ID: <20100510200815.1b92eb0c@neptune.home>
-In-Reply-To: <20100507230732.5dd15e93@neptune.home>
-References: <20100507230732.5dd15e93@neptune.home>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 10 May 2010 14:12:07 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+       "'gregkh@suse.de'" <gregkh@suse.de>
+CC: Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 1/1] staging: hv: Optimize adj_guesttime function and add
+ more detailed comments
+Thread-Topic: [PATCH 1/1] staging: hv: Optimize adj_guesttime function and
+ add more detailed comments
+Thread-Index: AQHK8GxLqokTG3dHi0SQCMmChJ3HSw==
+Date: Mon, 10 May 2010 18:12:02 +0000
+Message-ID: <1FB5E1D5CA062146B38059374562DF72662AA29C@TK5EX14MBXC130.redmond.corp.microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+Content-Type: multipart/mixed;
+	boundary="_002_1FB5E1D5CA062146B38059374562DF72662AA29CTK5EX14MBXC130r_"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc linux-scsi]
+--_002_1FB5E1D5CA062146B38059374562DF72662AA29CTK5EX14MBXC130r_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-> Hi,
-> 
-> On a SMP system I've hit a race condition between suspend and hddtemp
-> checking disk's temperature.
-> 
-> System details:
-> - Dual-core AMD Turion CPU
-> - 00:12.0 SATA controller [0106]: ATI Technologies Inc SB600 Non-Raid-5 SATA [1002:4380]
-> - hddtemp-0.3_beta15 (Gentoo package app-admin/hddtemp-0.3_beta15-r3)
-> - Linus' tree shortly after v2.6.34-rc6, at commit
->   be1066bbcd443a65df312fdecea7e4959adedb45 with some drm updates on
->   top of it.
-> 
-> 
-> It looked like hddtemp had sent the SMART request to disk right before
-> suspend and during suspend process ata2 did complain without aborting
-> suspend (see below).
-> After resume access to that disk was dead-locked (any further
-> attempt to suspend timed-out freezing hddtemp and any access attempt
-> towards that disk did put userspace tasks in uninterruptible state and
-> caused soft-raid to mark the disk failed).
-> 
-> Is suspend not waiting on SG_IO ioctls to complete (at ata host level)?
-> 
-> To get best luck in reproducing it something like the following is probably
-> needed:
->                    sync
->   ioctl(SG_IO)      //      echo mem > /sys/power/state
-> 
-> Thanks,
-> Bruno
-> 
-> 
-> 
-> 
-> Kernel log extract relating to this issue:
-> ... boot, zero or more s2ram, start suspend
-> [  142.241048] ahci 0000:00:12.0: suspend
-> [  142.660041] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-> [  147.660046] ata2.00: qc timeout (cmd 0xec)
-> [  147.664449] ata2.00: failed to IDENTIFY (I/O error, err_mask=0x4)
-> [  147.670978] ata2.00: revalidation failed (errno=-5)
-> [  148.022541] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-> [  158.022520] ata2.00: qc timeout (cmd 0xec)
-> [  158.026923] ata2.00: failed to IDENTIFY (I/O error, err_mask=0x4)
-> [  158.033467] ata2.00: revalidation failed (errno=-5)
-> [  158.038695] ata2: limiting SATA link speed to 1.5 Gbps
-> [  158.390042] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-> [  188.390023] ata2.00: qc timeout (cmd 0xec)
-> [  188.394426] ata2.00: failed to IDENTIFY (I/O error, err_mask=0x4)
-> [  188.400953] ata2.00: revalidation failed (errno=-5)
-> [  188.406170] ata2.00: disabled
-> [  188.420366] ahci 0000:00:12.0: PCI INT A disabled
-> ... resuming
-> [  200.672629] sd 1:0:0:0: [sdb] Unhandled error code
-> [  200.672632] sd 1:0:0:0: [sdb] Result: hostbyte=0x04 driverbyte=0x00
-> [  200.672635] sd 1:0:0:0: [sdb] CDB: cdb[0]=0x2a: 2a 00 00 81 8f c1 00 00 08 00
-> [  200.672641] end_request: I/O error, dev sdb, sector 8490945
-> [  200.672646] end_request: I/O error, dev sdb, sector 8490945
-> [  200.672649] md: super_written gets error=-5, uptodate=0
-> [  200.672653] raid1: Disk failure on sdb3, disabling device.
-> [  200.672654] raid1: Operation continuing on 1 devices.
-> ... finish resuming, start next suspend
-> [  249.291920] sd 2:0:0:0: legacy suspend
-> [  249.291924] sd 2:0:0:0: [sdc] Synchronizing SCSI cache
-> [  249.292076] sd 2:0:0:0: [sdc] Stopping disk
-> [  250.316996] scsi target2:0:0: legacy suspend
-> [  250.324040] sd 1:0:0:0: legacy suspend
-> [  250.330415] sd 1:0:0:0: [sdb] Synchronizing SCSI cache
-> [  250.338435] sd 1:0:0:0: [sdb] Result: hostbyte=0x04 driverbyte=0x00
-> [  250.347830] legacy_suspend(): scsi_bus_suspend+0x0/0x70 returns -5
-> [  250.357082] PM: Device 1:0:0:0 failed to suspend: error -5
-> [  250.365534] PM: Some devices failed to suspend
-> [  250.372901] scsi target2:0:0: legacy resume
-> [  250.379835] sd 2:0:0:0: legacy resume
-> [  250.386081] sd 2:0:0:0: [sdc] Starting disk
-> ... resume from aborted suspend
-> ... for each subsequent suspend attempt:
-> [  333.626278] Freezing of tasks failed after 20.01 seconds (1 tasks refusing to freeze):
-> [  333.637718] hddtemp       D 0000000000000000     0  1889      1 0x00800004
-> [  333.648048]  ffff88007abe3908 0000000000000082 ffff88007abe3fd8 ffff88007cec4820
-> [  333.658986]  ffff88007abe3fd8 ffff88007abe3fd8 00000000000129c0 00000000000129c0
-> [  333.669921]  ffff88007cec4820 ffff88007cda2820 00000000ffffeda8 0000000000000002
-> [  333.680901] Call Trace:
-> [  333.685892]  [<ffffffff8146c65d>] schedule_timeout+0x19d/0x230
-> [  333.694938]  [<ffffffff8146bc31>] wait_for_common+0xe1/0x170
-> [  333.703779]  [<ffffffff81037820>] ? default_wake_function+0x0/0x10
-> [  333.713234]  [<ffffffff811add9d>] ? __generic_unplug_device+0x2d/0x40
-> [  333.723069]  [<ffffffff8146bd58>] wait_for_completion+0x18/0x20
-> [  333.732255]  [<ffffffff811b3597>] blk_execute_rq+0x67/0xb0
-> [  333.740800]  [<ffffffff811aecd0>] ? freed_request+0x30/0x60
-> [  333.749487]  [<ffffffff810485ed>] ? capable+0x2d/0x60
-> [  333.757471]  [<ffffffff811b6f85>] sg_io+0x1c5/0x3e0
-> [  333.764566]  [<ffffffff810c6340>] ? pollwake+0x0/0x60
-> [  333.771808]  [<ffffffff811b77cf>] scsi_cmd_ioctl+0x27f/0x450
-> [  333.779715]  [<ffffffff813e0080>] ? ip_output+0xa0/0xb0
-> [  333.787134]  [<ffffffff813dee30>] ? ip_local_out+0x20/0x30
-> [  333.794936]  [<ffffffff81322d0a>] sd_ioctl+0x8a/0xd0
-> [  333.802134]  [<ffffffff811b4ac2>] __blkdev_driver_ioctl+0xa2/0xc0
-> [  333.810568]  [<ffffffff811b4cf2>] blkdev_ioctl+0x202/0xa00
-> [  333.818296]  [<ffffffff8146e040>] ? _raw_spin_unlock_bh+0x10/0x20
-> [  333.826714]  [<ffffffff81398a48>] ? release_sock+0xb8/0xd0
-> [  333.834461]  [<ffffffff8146e0c1>] ? _raw_spin_lock_bh+0x11/0x40
-> [  333.842807]  [<ffffffff81398b15>] ? lock_sock_nested+0xb5/0xd0
-> [  333.851003]  [<ffffffff8146e040>] ? _raw_spin_unlock_bh+0x10/0x20
-> [  333.859534]  [<ffffffff81398a48>] ? release_sock+0xb8/0xd0
-> [  333.867379]  [<ffffffff810e0b45>] block_ioctl+0x35/0x40
-> [  333.874943]  [<ffffffff810c4605>] vfs_ioctl+0x35/0xd0
-> [  333.882238]  [<ffffffff810c4b03>] do_vfs_ioctl+0x3d3/0x560
-> [  333.889997]  [<ffffffff810c4cda>] sys_ioctl+0x4a/0x80
-> [  333.897321]  [<ffffffff81002d6b>] system_call_fastpath+0x16/0x1b
-> 
-> 
-> 
-> Strace of hddtemp querying a disk:
-> ...
-> open("/dev/sda", O_RDONLY|O_NONBLOCK)   = 3
-> ioctl(3, SCSI_IOCTL_GET_BUS_NUMBER, 0x7fff11f034fc) = 0
-> ioctl(3, SG_IO, {'S', SG_DXFER_FROM_DEV, cmd[6]=[12, 00, 00, 00, 24, 00], mx_sb_len=0, iovec_count=0, dxfer_len=36, timeout=3000, flags=0, data[36]=["\0\0\5\2[\0\0\0ATA     FUJITSU MHW2160B"...], status=00, masked_status=00, sb[0]=[], host_status=0, driver_status=0, resid=0, duration=0, info=0}) = 0
-> ioctl(3, SG_IO, {'S', SG_DXFER_FROM_DEV, cmd[16]=[85, 08, 2e, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, ec, 00], mx_sb_len=32, iovec_count=0, dxfer_len=512, timeout=3000, flags=0, data[512]=["Z\4\377?7\310\20\0\0\0\0\0?\0\0\0\0\0\0\0        1K20"...], status=02, masked_status=01, sb[22]=[72, 00, 00, 00, 00, 00, 00, 0e, 09, 0c, 00, 00, 00, 00, 00, 09, 00, 27, 00, 64, 40, 40], host_status=0, driver_status=0x8, resid=0, duration=0, info=0x1}) = 0
-> ioctl(3, SG_IO, {'S', SG_DXFER_FROM_DEV, cmd[16]=[85, 08, 2e, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, ec, 00], mx_sb_len=32, iovec_count=0, dxfer_len=512, timeout=3000, flags=0, data[512]=["Z\4\377?7\310\20\0\0\0\0\0?\0\0\0\0\0\0\0        1K20"...], status=02, masked_status=01, sb[22]=[72, 00, 00, 00, 00, 00, 00, 0e, 09, 0c, 00, 00, 00, 00, 00, 09, 00, 27, 00, 64, 40, 40], host_status=0, driver_status=0x8, resid=0, duration=0, info=0x1}) = 0
-> ... (checking its disk DB)
-> ioctl(3, SG_IO, {'S', SG_DXFER_NONE, cmd[16]=[85, 06, 20, 00, d8, 00, 00, 00, 00, 00, 4f, 00, c2, 00, b0, 00], mx_sb_len=32, iovec_count=0, dxfer_len=0, timeout=3000, flags=0, status=02, masked_status=01, sb[22]=[72, 00, 00, 00, 00, 00, 00, 0e, 09, 0c, 00, 00, 00, 00, 00, 00, 00, 4f, 00, c2, 00, 50], host_status=0, driver_status=0x8, resid=0, duration=0, info=0x1}) = 0
-> ioctl(3, SG_IO, {'S', SG_DXFER_FROM_DEV, cmd[16]=[85, 08, 2e, 00, d0, 00, 01, 00, 00, 00, 4f, 00, c2, 00, b0, 00], mx_sb_len=32, iovec_count=0, dxfer_len=512, timeout=3000, flags=0, data[512]=["\20\0\1\17\0dd>\3\1\0\0\0\0\2\5\0dd\0\0P\2\0\0\0\3\3\0dd\1"...], status=02, masked_status=01, sb[22]=[72, 00, 00, 00, 00, 00, 00, 0e, 09, 0c, 00, 00, 00, 00, 00, 00, 00, 4f, 00, c2, 00, 50], host_status=0, driver_status=0x8, resid=0, duration=120, info=0x1}) = 0
-> ... (printing result)
+From: Haiyang Zhang <haiyangz@microsoft.com>
+
+Subject: Optimize adj_guesttime function and add more detailed comments
+Credits go to Joe Perches [joe@perches.com] for suggesting the changes.
+
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+
+---
+ drivers/staging/hv/hv_utils.c |   33 +++++++++++++++++++++++++--------
+ 1 files changed, 25 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/staging/hv/hv_utils.c b/drivers/staging/hv/hv_utils.c
+index 8f1d3ba..c0f57a1 100644
+--- a/drivers/staging/hv/hv_utils.c
++++ b/drivers/staging/hv/hv_utils.c
+@@ -106,28 +106,45 @@ static void shutdown_onchannelcallback(void *context)
+ 		orderly_poweroff(false);
+ }
+=20
+-
+ /*
+- * Synchronize time with host after reboot, restore, etc.
++ * Set guest time to host UTC time.
+  */
+-static void adj_guesttime(u64 hosttime, u8 flags)
++static inline void do_adj_guesttime(u64 hosttime)
+ {
+ 	s64 host_tns;
+ 	struct timespec host_ts;
+-	static s32 scnt =3D 50;
+=20
+ 	host_tns =3D (hosttime - WLTIMEDELTA) * 100;
+ 	host_ts =3D ns_to_timespec(host_tns);
+=20
++	do_settimeofday(&host_ts);
++
++	return;
++}
++
++/*
++ * Synchronize time with host after reboot, restore, etc.
++ *
++ * ICTIMESYNCFLAG_SYNC flag bit indicates reboot, restore events of the VM=
+.
++ * After reboot the flag ICTIMESYNCFLAG_SYNC is included in the first time
++ * message after the timesync channel is opened. Since the hv_utils module=
+ is
++ * loaded after hv_vmbus, the first message is usually missed. The other
++ * thing is, systime is automatically set to emulated hardware clock which=
+ may
++ * not be UTC time or in the same time zone. So, to override these effects=
+, we
++ * use the first 50 time samples for initial system time setting.
++ */
++static inline void adj_guesttime(u64 hosttime, u8 flags)
++{
++	static s32 scnt =3D 50;
++
+ 	if ((flags & ICTIMESYNCFLAG_SYNC) !=3D 0) {
+-		do_settimeofday(&host_ts);
++		do_adj_guesttime(hosttime);
+ 		return;
+ 	}
+=20
+-	if ((flags & ICTIMESYNCFLAG_SAMPLE) !=3D 0 &&
+-	    scnt > 0) {
++	if ((flags & ICTIMESYNCFLAG_SAMPLE) !=3D 0 && scnt > 0) {
+ 		scnt--;
+-		do_settimeofday(&host_ts);
++		do_adj_guesttime(hosttime);
+ 	}
+=20
+ 	return;
+--=20
+1.6.3.2
+
+
+--_002_1FB5E1D5CA062146B38059374562DF72662AA29CTK5EX14MBXC130r_
+Content-Type: application/octet-stream; name="0507-timesync-optimize.patch"
+Content-Description: 0507-timesync-optimize.patch
+Content-Disposition: attachment; filename="0507-timesync-optimize.patch";
+	size=2202; creation-date="Fri, 07 May 2010 17:23:54 GMT";
+	modification-date="Fri, 07 May 2010 18:21:58 GMT"
+Content-Transfer-Encoding: base64
+
+RnJvbTogSGFpeWFuZyBaaGFuZyA8aGFpeWFuZ3pAbWljcm9zb2Z0LmNvbT4KClN1YmplY3Q6IE9w
+dGltaXplIGFkal9ndWVzdHRpbWUgZnVuY3Rpb24gYW5kIGFkZCBtb3JlIGRldGFpbGVkIGNvbW1l
+bnRzCkNyZWRpdHMgZ28gdG8gSm9lIFBlcmNoZXMgW2pvZUBwZXJjaGVzLmNvbV0gZm9yIHN1Z2dl
+c3RpbmcgdGhlIGNoYW5nZXMuCgpDYzogR3JlZyBLcm9haC1IYXJ0bWFuIDxncmVna2hAc3VzZS5k
+ZT4KU2lnbmVkLW9mZi1ieTogSGFuayBKYW5zc2VuIDxoamFuc3NlbkBtaWNyb3NvZnQuY29tPgpT
+aWduZWQtb2ZmLWJ5OiBIYWl5YW5nIFpoYW5nIDxoYWl5YW5nekBtaWNyb3NvZnQuY29tPgoKLS0t
+CiBkcml2ZXJzL3N0YWdpbmcvaHYvaHZfdXRpbHMuYyB8ICAgMzMgKysrKysrKysrKysrKysrKysr
+KysrKysrKy0tLS0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDI1IGluc2VydGlvbnMoKyksIDggZGVs
+ZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9zdGFnaW5nL2h2L2h2X3V0aWxzLmMgYi9k
+cml2ZXJzL3N0YWdpbmcvaHYvaHZfdXRpbHMuYwppbmRleCA4ZjFkM2JhLi5jMGY1N2ExIDEwMDY0
+NAotLS0gYS9kcml2ZXJzL3N0YWdpbmcvaHYvaHZfdXRpbHMuYworKysgYi9kcml2ZXJzL3N0YWdp
+bmcvaHYvaHZfdXRpbHMuYwpAQCAtMTA2LDI4ICsxMDYsNDUgQEAgc3RhdGljIHZvaWQgc2h1dGRv
+d25fb25jaGFubmVsY2FsbGJhY2sodm9pZCAqY29udGV4dCkKIAkJb3JkZXJseV9wb3dlcm9mZihm
+YWxzZSk7CiB9CiAKLQogLyoKLSAqIFN5bmNocm9uaXplIHRpbWUgd2l0aCBob3N0IGFmdGVyIHJl
+Ym9vdCwgcmVzdG9yZSwgZXRjLgorICogU2V0IGd1ZXN0IHRpbWUgdG8gaG9zdCBVVEMgdGltZS4K
+ICAqLwotc3RhdGljIHZvaWQgYWRqX2d1ZXN0dGltZSh1NjQgaG9zdHRpbWUsIHU4IGZsYWdzKQor
+c3RhdGljIGlubGluZSB2b2lkIGRvX2Fkal9ndWVzdHRpbWUodTY0IGhvc3R0aW1lKQogewogCXM2
+NCBob3N0X3RuczsKIAlzdHJ1Y3QgdGltZXNwZWMgaG9zdF90czsKLQlzdGF0aWMgczMyIHNjbnQg
+PSA1MDsKIAogCWhvc3RfdG5zID0gKGhvc3R0aW1lIC0gV0xUSU1FREVMVEEpICogMTAwOwogCWhv
+c3RfdHMgPSBuc190b190aW1lc3BlYyhob3N0X3Rucyk7CiAKKwlkb19zZXR0aW1lb2ZkYXkoJmhv
+c3RfdHMpOworCisJcmV0dXJuOworfQorCisvKgorICogU3luY2hyb25pemUgdGltZSB3aXRoIGhv
+c3QgYWZ0ZXIgcmVib290LCByZXN0b3JlLCBldGMuCisgKgorICogSUNUSU1FU1lOQ0ZMQUdfU1lO
+QyBmbGFnIGJpdCBpbmRpY2F0ZXMgcmVib290LCByZXN0b3JlIGV2ZW50cyBvZiB0aGUgVk0uCisg
+KiBBZnRlciByZWJvb3QgdGhlIGZsYWcgSUNUSU1FU1lOQ0ZMQUdfU1lOQyBpcyBpbmNsdWRlZCBp
+biB0aGUgZmlyc3QgdGltZQorICogbWVzc2FnZSBhZnRlciB0aGUgdGltZXN5bmMgY2hhbm5lbCBp
+cyBvcGVuZWQuIFNpbmNlIHRoZSBodl91dGlscyBtb2R1bGUgaXMKKyAqIGxvYWRlZCBhZnRlciBo
+dl92bWJ1cywgdGhlIGZpcnN0IG1lc3NhZ2UgaXMgdXN1YWxseSBtaXNzZWQuIFRoZSBvdGhlcgor
+ICogdGhpbmcgaXMsIHN5c3RpbWUgaXMgYXV0b21hdGljYWxseSBzZXQgdG8gZW11bGF0ZWQgaGFy
+ZHdhcmUgY2xvY2sgd2hpY2ggbWF5CisgKiBub3QgYmUgVVRDIHRpbWUgb3IgaW4gdGhlIHNhbWUg
+dGltZSB6b25lLiBTbywgdG8gb3ZlcnJpZGUgdGhlc2UgZWZmZWN0cywgd2UKKyAqIHVzZSB0aGUg
+Zmlyc3QgNTAgdGltZSBzYW1wbGVzIGZvciBpbml0aWFsIHN5c3RlbSB0aW1lIHNldHRpbmcuCisg
+Ki8KK3N0YXRpYyBpbmxpbmUgdm9pZCBhZGpfZ3Vlc3R0aW1lKHU2NCBob3N0dGltZSwgdTggZmxh
+Z3MpCit7CisJc3RhdGljIHMzMiBzY250ID0gNTA7CisKIAlpZiAoKGZsYWdzICYgSUNUSU1FU1lO
+Q0ZMQUdfU1lOQykgIT0gMCkgewotCQlkb19zZXR0aW1lb2ZkYXkoJmhvc3RfdHMpOworCQlkb19h
+ZGpfZ3Vlc3R0aW1lKGhvc3R0aW1lKTsKIAkJcmV0dXJuOwogCX0KIAotCWlmICgoZmxhZ3MgJiBJ
+Q1RJTUVTWU5DRkxBR19TQU1QTEUpICE9IDAgJiYKLQkgICAgc2NudCA+IDApIHsKKwlpZiAoKGZs
+YWdzICYgSUNUSU1FU1lOQ0ZMQUdfU0FNUExFKSAhPSAwICYmIHNjbnQgPiAwKSB7CiAJCXNjbnQt
+LTsKLQkJZG9fc2V0dGltZW9mZGF5KCZob3N0X3RzKTsKKwkJZG9fYWRqX2d1ZXN0dGltZShob3N0
+dGltZSk7CiAJfQogCiAJcmV0dXJuOwotLSAKMS42LjMuMgoK
+
+--_002_1FB5E1D5CA062146B38059374562DF72662AA29CTK5EX14MBXC130r_--
