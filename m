@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab0EJWwy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:52:54 -0400
+	id S932515Ab0EJWwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:52:49 -0400
 Received: from kroah.org ([198.145.64.141]:33105 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932405Ab0EJWwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:12 -0400
+	id S932324Ab0EJWwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:10 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:21 2010
-Message-Id: <20100510223321.345147469@kvm.kroah.org>
+Message-Id: <20100510223321.172931234@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:17 -0700
+Date: Mon, 10 May 2010 15:32:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Wu Fengguang <fengguang.wu@intel.com>
-Subject: [046/117] Revert "memory-hotplug: add 0x prefix to HEX block_size_bytes"
+       Ping Cheng <pingc@wacom.com>
+Subject: [044/117] serial: 8250_pnp - add Fujitsu Wacom device
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Ping Cheng <pingc@wacom.com>
 
-commit 4dc86ae1f925b2121d4e75058675895f83e54c71 upstream.
+commit d9901660b53b92f0f3551c06588b8be38224b245 upstream.
 
-This reverts commit ba168fc37dea145deeb8fa9e7e71c748d2e00d74.
+Add Fujitsu Wacom 1FGT Tablet PC device
 
-It changes user-visible sysfs interfaces, and breaks some existing user
-space applications which apparently rely on the fact that the output
-does not contain the "0x" prefix.
-
-Requested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ping Cheng <pingc@wacom.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/base/memory.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/serial/8250_pnp.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -311,7 +311,7 @@ static SYSDEV_ATTR(removable, 0444, show
- static ssize_t
- print_block_size(struct class *class, char *buf)
- {
--	return sprintf(buf, "%#lx\n", (unsigned long)PAGES_PER_SECTION * PAGE_SIZE);
-+	return sprintf(buf, "%lx\n", (unsigned long)PAGES_PER_SECTION * PAGE_SIZE);
- }
- 
- static CLASS_ATTR(block_size_bytes, 0444, print_block_size, NULL);
+--- a/drivers/serial/8250_pnp.c
++++ b/drivers/serial/8250_pnp.c
+@@ -348,6 +348,8 @@ static const struct pnp_device_id pnp_de
+ 	{	"FUJ02E6",		0	},
+ 	/* Fujitsu Wacom 2FGT Tablet PC device */
+ 	{	"FUJ02E7",		0	},
++	/* Fujitsu Wacom 1FGT Tablet PC device */
++	{	"FUJ02E9",		0	},
+ 	/*
+ 	 * LG C1 EXPRESS DUAL (C1-PB11A3) touch screen (actually a FUJ02E6 in
+ 	 * disguise)
 
 
