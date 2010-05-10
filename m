@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933233Ab0EJXEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:04:13 -0400
-Received: from kroah.org ([198.145.64.141]:45354 "EHLO coco.kroah.org"
+	id S1757733Ab0EJXMt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:12:49 -0400
+Received: from kroah.org ([198.145.64.141]:45348 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932933Ab0EJW63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:29 -0400
+	id S932931Ab0EJW62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:28 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:41 2010
-Message-Id: <20100510223541.503627465@kvm.kroah.org>
+Message-Id: <20100510223541.420401073@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:31 -0700
+Date: Mon, 10 May 2010 15:35:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Lalit Chandivade <lalit.chandivade@qlogic.com>,
-       Michael Hernandez <michael.hernandez@qlogic.com>,
-       Ravi Anand <ravi.anand@qlogic.com>,
-       Andrew Vasquez <andrew.vasquez@qlogic.com>,
-       Giridhar Malavali <giridhar.malavali@qlogic.com>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: [79/98] [SCSI] qla2xxx: Properly handle UNDERRUN completion statuses.
+       Carlos ODonell <carlos@codesourcery.com>,
+       Kyle McMartin <kyle@redhat.com>
+Subject: [78/98] parisc: Set PCI CLS early in boot.
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,185 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lalit Chandivade <lalit.chandivade@qlogic.com>
+From: Carlos O'Donell <carlos@codesourcery.com>
 
-commit 0f00a206ccb1dc644b6770ef25f185610fee6962 upstream.
+commit 5fd4514bb351b5ecb0da3692fff70741e5ed200c upstream.
 
-Correct issues where the lower scsi-status would be improperly
-cleared, instead, allow the midlayer to process the status after
-the proper residual-count checks are performed.  Finally,
-validate firmware status flags prior to assigning values from the
-FCP_RSP frame.
+Set the PCI CLS early in the boot process to prevent
+device failures. In pcibios_set_master use the new
+pci_cache_line_size instead of a hard-coded value.
 
-Signed-off-by: Lalit Chandivade <lalit.chandivade@qlogic.com>
-Signed-off-by: Michael Hernandez <michael.hernandez@qlogic.com>
-Signed-off-by: Ravi Anand <ravi.anand@qlogic.com>
-Signed-off-by: Andrew Vasquez <andrew.vasquez@qlogic.com>
-Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Carlos O'Donell <carlos@codesourcery.com>
+Reviewed-by: Grant Grundler <grundler@google.com>
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/qla2xxx/qla_isr.c |  120 +++++++++++++++++++----------------------
- 1 file changed, 57 insertions(+), 63 deletions(-)
+ arch/parisc/kernel/pci.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_isr.c
-+++ b/drivers/scsi/qla2xxx/qla_isr.c
-@@ -1347,16 +1347,22 @@ qla2x00_status_entry(scsi_qla_host_t *vh
+--- a/arch/parisc/kernel/pci.c
++++ b/arch/parisc/kernel/pci.c
+@@ -18,7 +18,6 @@
  
- 	sense_len = rsp_info_len = resid_len = fw_resid_len = 0;
- 	if (IS_FWI2_CAPABLE(ha)) {
--		sense_len = le32_to_cpu(sts24->sense_len);
--		rsp_info_len = le32_to_cpu(sts24->rsp_data_len);
--		resid_len = le32_to_cpu(sts24->rsp_residual_count);
--		fw_resid_len = le32_to_cpu(sts24->residual_len);
-+		if (scsi_status & SS_SENSE_LEN_VALID)
-+			sense_len = le32_to_cpu(sts24->sense_len);
-+		if (scsi_status & SS_RESPONSE_INFO_LEN_VALID)
-+			rsp_info_len = le32_to_cpu(sts24->rsp_data_len);
-+		if (scsi_status & (SS_RESIDUAL_UNDER | SS_RESIDUAL_OVER))
-+			resid_len = le32_to_cpu(sts24->rsp_residual_count);
-+		if (comp_status == CS_DATA_UNDERRUN)
-+			fw_resid_len = le32_to_cpu(sts24->residual_len);
- 		rsp_info = sts24->data;
- 		sense_data = sts24->data;
- 		host_to_fcp_swap(sts24->data, sizeof(sts24->data));
+ #include <asm/io.h>
+ #include <asm/system.h>
+-#include <asm/cache.h>		/* for L1_CACHE_BYTES */
+ #include <asm/superio.h>
+ 
+ #define DEBUG_RESOURCES 0
+@@ -123,6 +122,10 @@ static int __init pcibios_init(void)
  	} else {
--		sense_len = le16_to_cpu(sts->req_sense_length);
--		rsp_info_len = le16_to_cpu(sts->rsp_info_len);
-+		if (scsi_status & SS_SENSE_LEN_VALID)
-+			sense_len = le16_to_cpu(sts->req_sense_length);
-+		if (scsi_status & SS_RESPONSE_INFO_LEN_VALID)
-+			rsp_info_len = le16_to_cpu(sts->rsp_info_len);
- 		resid_len = le32_to_cpu(sts->residual_length);
- 		rsp_info = sts->rsp_info;
- 		sense_data = sts->req_sense_data;
-@@ -1443,38 +1449,62 @@ qla2x00_status_entry(scsi_qla_host_t *vh
- 		break;
- 
- 	case CS_DATA_UNDERRUN:
--		resid = resid_len;
-+		DEBUG2(printk(KERN_INFO
-+		    "scsi(%ld:%d:%d) UNDERRUN status detected 0x%x-0x%x. "
-+		    "resid=0x%x fw_resid=0x%x cdb=0x%x os_underflow=0x%x\n",
-+		    vha->host_no, cp->device->id, cp->device->lun, comp_status,
-+		    scsi_status, resid_len, fw_resid_len, cp->cmnd[0],
-+		    cp->underflow));
+ 		printk(KERN_WARNING "pci_bios != NULL but init() is!\n");
+ 	}
 +
- 		/* Use F/W calculated residual length. */
--		if (IS_FWI2_CAPABLE(ha)) {
--			if (!(scsi_status & SS_RESIDUAL_UNDER)) {
--				lscsi_status = 0;
--			} else if (resid != fw_resid_len) {
--				scsi_status &= ~SS_RESIDUAL_UNDER;
--				lscsi_status = 0;
-+		resid = IS_FWI2_CAPABLE(ha) ? fw_resid_len : resid_len;
-+		scsi_set_resid(cp, resid);
-+		if (scsi_status & SS_RESIDUAL_UNDER) {
-+			if (IS_FWI2_CAPABLE(ha) && fw_resid_len != resid_len) {
-+				DEBUG2(printk(
-+				    "scsi(%ld:%d:%d:%d) Dropped frame(s) "
-+				    "detected (%x of %x bytes)...residual "
-+				    "length mismatch...retrying command.\n",
-+				    vha->host_no, cp->device->channel,
-+				    cp->device->id, cp->device->lun, resid,
-+				    scsi_bufflen(cp)));
++	/* Set the CLS for PCI as early as possible. */
++	pci_cache_line_size = pci_dfl_cache_line_size;
 +
-+				cp->result = DID_ERROR << 16 | lscsi_status;
-+				break;
- 			}
--			resid = fw_resid_len;
--		}
+ 	return 0;
+ }
  
--		if (scsi_status & SS_RESIDUAL_UNDER) {
--			scsi_set_resid(cp, resid);
--		} else {
--			DEBUG2(printk(KERN_INFO
--			    "scsi(%ld:%d:%d) UNDERRUN status detected "
--			    "0x%x-0x%x. resid=0x%x fw_resid=0x%x cdb=0x%x "
--			    "os_underflow=0x%x\n", vha->host_no,
--			    cp->device->id, cp->device->lun, comp_status,
--			    scsi_status, resid_len, resid, cp->cmnd[0],
--			    cp->underflow));
-+			if (!lscsi_status &&
-+			    ((unsigned)(scsi_bufflen(cp) - resid) <
-+			    cp->underflow)) {
-+				qla_printk(KERN_INFO, ha,
-+				    "scsi(%ld:%d:%d:%d): Mid-layer underflow "
-+				    "detected (%x of %x bytes)...returning "
-+				    "error status.\n", vha->host_no,
-+				    cp->device->channel, cp->device->id,
-+				    cp->device->lun, resid, scsi_bufflen(cp));
+@@ -171,7 +174,7 @@ void pcibios_set_master(struct pci_dev *
+ 	** upper byte is PCI_LATENCY_TIMER.
+ 	*/
+ 	pci_write_config_word(dev, PCI_CACHE_LINE_SIZE,
+-				(0x80 << 8) | (L1_CACHE_BYTES / sizeof(u32)));
++			      (0x80 << 8) | pci_cache_line_size);
+ }
  
-+				cp->result = DID_ERROR << 16;
-+				break;
-+			}
-+		} else if (!lscsi_status) {
-+			DEBUG2(printk(
-+			    "scsi(%ld:%d:%d:%d) Dropped frame(s) detected "
-+			    "(%x of %x bytes)...firmware reported underrun..."
-+			    "retrying command.\n", vha->host_no,
-+			    cp->device->channel, cp->device->id,
-+			    cp->device->lun, resid, scsi_bufflen(cp)));
-+
-+			cp->result = DID_ERROR << 16;
-+			break;
- 		}
- 
-+		cp->result = DID_OK << 16 | lscsi_status;
-+
- 		/*
- 		 * Check to see if SCSI Status is non zero. If so report SCSI
- 		 * Status.
- 		 */
- 		if (lscsi_status != 0) {
--			cp->result = DID_OK << 16 | lscsi_status;
--
- 			if (lscsi_status == SAM_STAT_TASK_SET_FULL) {
- 				DEBUG2(printk(KERN_INFO
- 				    "scsi(%ld): QUEUE FULL status detected "
-@@ -1501,42 +1531,6 @@ qla2x00_status_entry(scsi_qla_host_t *vh
- 				break;
- 
- 			qla2x00_handle_sense(sp, sense_data, sense_len, rsp);
--		} else {
--			/*
--			 * If RISC reports underrun and target does not report
--			 * it then we must have a lost frame, so tell upper
--			 * layer to retry it by reporting an error.
--			 */
--			if (!(scsi_status & SS_RESIDUAL_UNDER)) {
--				DEBUG2(printk("scsi(%ld:%d:%d:%d) Dropped "
--					      "frame(s) detected (%x of %x bytes)..."
--					      "retrying command.\n",
--					vha->host_no, cp->device->channel,
--					cp->device->id, cp->device->lun, resid,
--					scsi_bufflen(cp)));
--
--				scsi_set_resid(cp, resid);
--				cp->result = DID_ERROR << 16;
--				break;
--			}
--
--			/* Handle mid-layer underflow */
--			if ((unsigned)(scsi_bufflen(cp) - resid) <
--			    cp->underflow) {
--				qla_printk(KERN_INFO, ha,
--					   "scsi(%ld:%d:%d:%d): Mid-layer underflow "
--					   "detected (%x of %x bytes)...returning "
--					   "error status.\n", vha->host_no,
--					   cp->device->channel, cp->device->id,
--					   cp->device->lun, resid,
--					   scsi_bufflen(cp));
--
--				cp->result = DID_ERROR << 16;
--				break;
--			}
--
--			/* Everybody online, looking good... */
--			cp->result = DID_OK << 16;
- 		}
- 		break;
  
 
 
