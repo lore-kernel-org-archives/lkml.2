@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933503Ab0EJXnm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:43:42 -0400
-Received: from kroah.org ([198.145.64.141]:32937 "EHLO coco.kroah.org"
+	id S933442Ab0EJXnV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:43:21 -0400
+Received: from kroah.org ([198.145.64.141]:32941 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932333Ab0EJWvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:51:49 -0400
+	id S932337Ab0EJWvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:51:50 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:19 2010
-Message-Id: <20100510223318.920040672@kvm.kroah.org>
+Message-Id: <20100510223319.012748121@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:31:50 -0700
+Date: Mon, 10 May 2010 15:31:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
        Ben Hutchings <bhutchings@solarflare.com>,
        "David S. Miller" <davem@davemloft.net>
-Subject: [019/117] sfc: Wait at most 10ms for the MC to finish reading out MAC statistics
+Subject: [020/117] sfc: Always close net device at the end of a disabling reset
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,39 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit aabc5649078310094cbffb430fcbf9c25b6268f9 upstream.
+commit f49a4589e9e25ef525da449b1ce5597cb659bbb5 upstream.
 
-The original code would wait indefinitely if MAC stats DMA failed.
+This fixes a regression introduced by commit
+eb9f6744cbfa97674c13263802259b5aa0034594 "sfc: Implement ethtool
+reset operation".
 
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/sfc/siena.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ drivers/net/sfc/efx.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/sfc/siena.c
-+++ b/drivers/net/sfc/siena.c
-@@ -454,8 +454,17 @@ static int siena_try_update_nic_stats(st
+--- a/drivers/net/sfc/efx.c
++++ b/drivers/net/sfc/efx.c
+@@ -1862,6 +1862,7 @@ out:
+ 	}
  
- static void siena_update_nic_stats(struct efx_nic *efx)
- {
--	while (siena_try_update_nic_stats(efx) == -EAGAIN)
--		cpu_relax();
-+	int retry;
-+
-+	/* If we're unlucky enough to read statistics wduring the DMA, wait
-+	 * up to 10ms for it to finish (typically takes <500us) */
-+	for (retry = 0; retry < 100; ++retry) {
-+		if (siena_try_update_nic_stats(efx) == 0)
-+			return;
-+		udelay(100);
-+	}
-+
-+	/* Use the old values instead */
+ 	if (disabled) {
++		dev_close(efx->net_dev);
+ 		EFX_ERR(efx, "has been disabled\n");
+ 		efx->state = STATE_DISABLED;
+ 	} else {
+@@ -1885,8 +1886,7 @@ static void efx_reset_work(struct work_s
+ 	}
+ 
+ 	rtnl_lock();
+-	if (efx_reset(efx, efx->reset_pending))
+-		dev_close(efx->net_dev);
++	(void)efx_reset(efx, efx->reset_pending);
+ 	rtnl_unlock();
  }
  
- static void siena_start_nic_stats(struct efx_nic *efx)
 
 
