@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932869Ab0EJXih (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:38:37 -0400
-Received: from kroah.org ([198.145.64.141]:33097 "EHLO coco.kroah.org"
+	id S933403Ab0EJXit (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:38:49 -0400
+Received: from kroah.org ([198.145.64.141]:33062 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932398Ab0EJWwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932394Ab0EJWwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 May 2010 18:52:09 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:21 2010
-Message-Id: <20100510223321.078509558@kvm.kroah.org>
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:20 2010
+Message-Id: <20100510223320.894816433@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:14 -0700
+Date: Mon, 10 May 2010 15:32:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       NeilBrown <neilb@suse.de>, Dan Williams <dan.j.williams@intel.com>
-Subject: [043/117] raid6: fix recovery performance regression
+       Jean Delvare <khali@linux-fr.org>, Hans de Goede <hdegoede@redhat.com>
+Subject: [041/117] i2c: Fix probing of FSC hardware monitoring chips
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,73 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 5157b4aa5b7de8787b6318e61bcc285031bb9088 upstream.
+commit b1d4b390ea4bb480e65974ce522a04022608a8df upstream.
 
-The raid6 recovery code should immediately drop back to the optimized
-synchronous path when a p+q dma resource is not available.  Otherwise we
-run the non-optimized/multi-pass async code in sync mode.
+Some FSC hardware monitoring chips (Syleus at least) doesn't like
+quick writes we typically use to probe for I2C chips. Use a regular
+byte read instead for the address they live at (0x73). These are the
+only known chips living at this address on PC systems.
 
-Verified with raid6test (NDISKS=255)
+For clarity, this fix should not be needed for kernels 2.6.30 and
+later, as we started instantiating the hwmon devices explicitly based
+on DMI data. Still, this fix is valuable in the following two cases:
+* Support for recent FSC chips on older kernels. The DMI-based device
+  instantiation is more difficult to backport than the device support
+  itself.
+* Case where the DMI-based device instantiation fails, whatever the
+  reason. We fall back to probing in that case, so it should work.
 
-Applies to kernels >= 2.6.32.
+This fixes kernel bug #15634:
+https://bugzilla.kernel.org/show_bug.cgi?id=15634
 
-Acked-by: NeilBrown <neilb@suse.de>
-Reported-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- crypto/async_tx/async_raid6_recov.c |   21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ drivers/i2c/i2c-core.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
---- a/crypto/async_tx/async_raid6_recov.c
-+++ b/crypto/async_tx/async_raid6_recov.c
-@@ -324,6 +324,7 @@ struct dma_async_tx_descriptor *
- async_raid6_2data_recov(int disks, size_t bytes, int faila, int failb,
- 			struct page **blocks, struct async_submit_ctl *submit)
- {
-+	void *scribble = submit->scribble;
- 	int non_zero_srcs, i;
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -1210,12 +1210,23 @@ static int i2c_detect_address(struct i2c
+ 		return 0;
  
- 	BUG_ON(faila == failb);
-@@ -332,11 +333,13 @@ async_raid6_2data_recov(int disks, size_
+ 	/* Make sure there is something at this address */
+-	if (i2c_smbus_xfer(adapter, addr, 0, 0, 0, I2C_SMBUS_QUICK, NULL) < 0)
+-		return 0;
++	if (addr == 0x73 && (adapter->class & I2C_CLASS_HWMON)) {
++		/* Special probe for FSC hwmon chips */
++		union i2c_smbus_data dummy;
++
++		if (i2c_smbus_xfer(adapter, addr, 0, I2C_SMBUS_READ, 0,
++				   I2C_SMBUS_BYTE_DATA, &dummy) < 0)
++			return 0;
++	} else {
++		if (i2c_smbus_xfer(adapter, addr, 0, I2C_SMBUS_WRITE, 0,
++				   I2C_SMBUS_QUICK, NULL) < 0)
++			return 0;
  
- 	pr_debug("%s: disks: %d len: %zu\n", __func__, disks, bytes);
+-	/* Prevent 24RF08 corruption */
+-	if ((addr & ~0x0f) == 0x50)
+-		i2c_smbus_xfer(adapter, addr, 0, 0, 0, I2C_SMBUS_QUICK, NULL);
++		/* Prevent 24RF08 corruption */
++		if ((addr & ~0x0f) == 0x50)
++			i2c_smbus_xfer(adapter, addr, 0, I2C_SMBUS_WRITE, 0,
++				       I2C_SMBUS_QUICK, NULL);
++	}
  
--	/* we need to preserve the contents of 'blocks' for the async
--	 * case, so punt to synchronous if a scribble buffer is not available
-+	/* if a dma resource is not available or a scribble buffer is not
-+	 * available punt to the synchronous path.  In the 'dma not
-+	 * available' case be sure to use the scribble buffer to
-+	 * preserve the content of 'blocks' as the caller intended.
- 	 */
--	if (!submit->scribble) {
--		void **ptrs = (void **) blocks;
-+	if (!async_dma_find_channel(DMA_PQ) || !scribble) {
-+		void **ptrs = scribble ? scribble : (void **) blocks;
- 
- 		async_tx_quiesce(&submit->depend_tx);
- 		for (i = 0; i < disks; i++)
-@@ -406,11 +409,13 @@ async_raid6_datap_recov(int disks, size_
- 
- 	pr_debug("%s: disks: %d len: %zu\n", __func__, disks, bytes);
- 
--	/* we need to preserve the contents of 'blocks' for the async
--	 * case, so punt to synchronous if a scribble buffer is not available
-+	/* if a dma resource is not available or a scribble buffer is not
-+	 * available punt to the synchronous path.  In the 'dma not
-+	 * available' case be sure to use the scribble buffer to
-+	 * preserve the content of 'blocks' as the caller intended.
- 	 */
--	if (!scribble) {
--		void **ptrs = (void **) blocks;
-+	if (!async_dma_find_channel(DMA_PQ) || !scribble) {
-+		void **ptrs = scribble ? scribble : (void **) blocks;
- 
- 		async_tx_quiesce(&submit->depend_tx);
- 		for (i = 0; i < disks; i++)
+ 	/* Finally call the custom detection function */
+ 	memset(&info, 0, sizeof(struct i2c_board_info));
 
 
