@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab0EJWw0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:52:26 -0400
-Received: from kroah.org ([198.145.64.141]:32956 "EHLO coco.kroah.org"
+	id S933325Ab0EJXdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:33:42 -0400
+Received: from kroah.org ([198.145.64.141]:33235 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932346Ab0EJWvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:51:54 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:19 2010
-Message-Id: <20100510223319.370862565@kvm.kroah.org>
+	id S932453Ab0EJWwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:30 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:23 2010
+Message-Id: <20100510223323.615188972@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:31:55 -0700
+Date: Mon, 10 May 2010 15:32:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       William Lightning <kassah@gmail.com>
-Subject: [024/117] USB: Add id for HP ev2210 a.k.a Sierra MC5725 miniPCI-e Cell Modem.
+       Bill Pemberton <wfp5p@virginia.edu>,
+       Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+       jfs-discussion@lists.sourceforge.net
+Subject: [069/117] jfs: fix diAllocExt error in resizing filesystem
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,26 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: William Lightning <kassah@gmail.com>
+From: Bill Pemberton <wfp5p@virginia.edu>
 
-commit cfbaa39347b34837f26e01fe8f4f8dbbae60b520 upstream.
+commit 2b0b39517d1af5294128dbc2fd7ed39c8effa540 upstream.
 
-Signed-off-by: William Lightning <kassah@gmail.com>
+Resizing the filesystem would result in an diAllocExt error in some
+instances because changes in bmp->db_agsize would not get noticed if
+goto extendBmap was called.
+
+Signed-off-by: Bill Pemberton <wfp5p@virginia.edu>
+Signed-off-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+Cc: jfs-discussion@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/sierra.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/jfs/resize.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -229,6 +229,7 @@ static const struct sierra_iface_info di
- static struct usb_device_id id_table [] = {
- 	{ USB_DEVICE(0x0F3D, 0x0112) }, /* Airprime/Sierra PC 5220 */
- 	{ USB_DEVICE(0x03F0, 0x1B1D) },	/* HP ev2200 a.k.a MC5720 */
-+	{ USB_DEVICE(0x03F0, 0x211D) }, /* HP ev2210 a.k.a MC5725 */
- 	{ USB_DEVICE(0x03F0, 0x1E1D) },	/* HP hs2300 a.k.a MC8775 */
+--- a/fs/jfs/resize.c
++++ b/fs/jfs/resize.c
+@@ -81,6 +81,7 @@ int jfs_extendfs(struct super_block *sb,
+ 	struct inode *iplist[1];
+ 	struct jfs_superblock *j_sb, *j_sb2;
+ 	uint old_agsize;
++	int agsizechanged = 0;
+ 	struct buffer_head *bh, *bh2;
  
- 	{ USB_DEVICE(0x1199, 0x0017) },	/* Sierra Wireless EM5625 */
+ 	/* If the volume hasn't grown, get out now */
+@@ -333,6 +334,9 @@ int jfs_extendfs(struct super_block *sb,
+ 	 */
+ 	if ((rc = dbExtendFS(ipbmap, XAddress, nblocks)))
+ 		goto error_out;
++
++	agsizechanged |= (bmp->db_agsize != old_agsize);
++
+ 	/*
+ 	 * the map now has extended to cover additional nblocks:
+ 	 * dn_mapsize = oldMapsize + nblocks;
+@@ -432,7 +436,7 @@ int jfs_extendfs(struct super_block *sb,
+ 	 * will correctly identify the new ag);
+ 	 */
+ 	/* if new AG size the same as old AG size, done! */
+-	if (bmp->db_agsize != old_agsize) {
++	if (agsizechanged) {
+ 		if ((rc = diExtendFS(ipimap, ipbmap)))
+ 			goto error_out;
+ 
 
 
