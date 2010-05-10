@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab0EJVnA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 17:43:00 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38343 "EHLO mx1.suse.de"
+	id S1757343Ab0EJVoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 17:44:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28939 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756598Ab0EJVm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 17:42:59 -0400
-Date: Mon, 10 May 2010 23:42:57 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Cc: linux-kernel@vger.kernel.org, Nick Piggin <npiggin@suse.de>,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-       Randy Dunlap <rdunlap@xenotime.net>, Christoph Hellwig <hch@lst.de>,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] trivial: inode uses a mutex instead of a semaphore.
-In-Reply-To: <1272385045-4037-1-git-send-email-cascardo@holoscopio.com>
-Message-ID: <alpine.LNX.2.00.1005102342350.28092@pobox.suse.cz>
-References: <1272385045-4037-1-git-send-email-cascardo@holoscopio.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756598Ab0EJVoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 17:44:14 -0400
+Date: Mon, 10 May 2010 23:41:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Cedric Le Goater <clg@fr.ibm.com>, Dave Hansen <haveblue@us.ibm.com>,
+       Eric Biederman <ebiederm@xmission.com>,
+       Herbert Poetzl <herbert@13thfloor.at>, Ingo Molnar <mingo@elte.hu>,
+       Mathias Krause <Mathias.Krause@secunet.com>,
+       Roland McGrath <roland@redhat.com>, Serge Hallyn <serue@us.ibm.com>,
+       Sukadev Bhattiprolu <sukadev@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] swapper fixes (Was: kernel panic on kill(0,
+	SIGTERM) with PGID == 0)
+Message-ID: <20100510214134.GA9318@redhat.com>
+References: <4BE01C86.3050908@secunet.com> <20100509184510.GA15219@redhat.com> <4BE7B3BD.70901@secunet.com> <20100510194917.GA5249@redhat.com> <20100510140820.0e84ecc8.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100510140820.0e84ecc8.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Apr 2010, Thadeu Lima de Souza Cascardo wrote:
+On 05/10, Andrew Morton wrote:
+>
+> On Mon, 10 May 2010 21:49:17 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > Hello,
+> >
+> > Mathias Krause reports that a buggy (or special) /sbin/init can
+> > crash the kernel if it sends a signal to its pgrp/sid before it
+> > changes its initial (0,0) pids. See the changelog for 1/4.
+> >
+> > git-bisect blames "start the global /sbin/init with 0,0 special pids"
+> > commit 430c623121ea88ca80595c99fdc63b7f8a803ae5, but in fact the
+> > problem was caused by another change, see 2/4.
+> >
+> > The patches do not depend on each other, 3/4 fixes another problem,
+> > 4/4 is purely cosmetic.
+> >
+>
+> Do you see a need to merge these into 2.6.34?  (I don't)
 
-> Replace the introduced i_sem by an i_mutex in the filesystem locking
-> documentation. This was introduced [1] after all occurrences were
-> already replaced in the same text [2]. However, the term "inode
-> semaphore" has not been replaced then, and it's replaced now.
-> 
-> [1] afddba49d18f346e5cc2938b6ed7c512db18ca68
-> [2] a7bc02f4f47fd0e7860c6589f0ad000d1476f7a3
-> 
-> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-> Cc: Nick Piggin <npiggin@suse.de>
-> Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> Cc: Randy Dunlap <rdunlap@xenotime.net>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> ---
->  Documentation/filesystems/Locking |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-> index 06bbbed..af16080 100644
-> --- a/Documentation/filesystems/Locking
-> +++ b/Documentation/filesystems/Locking
-> @@ -178,7 +178,7 @@ prototypes:
->  locking rules:
->  	All except set_page_dirty may block
->  
-> -			BKL	PageLocked(page)	i_sem
-> +			BKL	PageLocked(page)	i_mutex
->  writepage:		no	yes, unlocks (see below)
->  readpage:		no	yes, unlocks
->  sync_page:		no	maybe
-> @@ -429,7 +429,7 @@ check_flags:		no
->  implementations.  If your fs is not using generic_file_llseek, you
->  need to acquire and release the appropriate locks in your ->llseek().
->  For many filesystems, it is probably safe to acquire the inode
-> -semaphore.  Note some filesystems (i.e. remote ones) provide no
-> +mutex.  Note some filesystems (i.e. remote ones) provide no
->  protection for i_size so you will need to use the BKL.
->  
->  Note: ext2_release() was *the* source of contention on fs-intensive
+No, the problem is minor, it is not possible to exploit it unless
+/sbin/init does "bad things".
 
-This doesn't seem to be present in linux-next as of today. I have applied 
-the patch to trivial queue.
+And the long CC asks for review. Although 1/4 is "obviously good" in
+any case and I strongly believe 2/4 is right at least in general.
 
-Thanks,
+Oleg.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
