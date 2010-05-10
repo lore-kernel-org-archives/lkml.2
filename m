@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab0EJQNl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 12:13:41 -0400
-Received: from mail.elliptictech.com ([209.217.122.41]:48250 "EHLO
-	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752594Ab0EJQNh (ORCPT
+	id S1754786Ab0EJQQB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 12:16:01 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:50007 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754569Ab0EJQP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 12:13:37 -0400
-X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 May 2010 12:13:37 EDT
-Date: Mon, 10 May 2010 12:07:24 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
-Subject: Re: 2.6.34-rc6-git6: Reported regressions from 2.6.33
-Message-ID: <20100510160724.GA31416@elliptictech.com>
-Mail-Followup-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Maciej Rutecki <maciej.rutecki@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Kernel Testers List <kernel-testers@vger.kernel.org>,
-	Network Development <netdev@vger.kernel.org>,
-	Linux ACPI <linux-acpi@vger.kernel.org>,
-	Linux PM List <linux-pm@lists.linux-foundation.org>,
-	Linux SCSI List <linux-scsi@vger.kernel.org>,
-	Linux Wireless List <linux-wireless@vger.kernel.org>,
-	DRI <dri-devel@lists.sourceforge.net>
-References: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
+	Mon, 10 May 2010 12:15:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=rn7OmR5QTQtW6BW9Nd5SjOL5/ov7YKzd0fuUS4C7/yZ4axHyeyhFWjG1s50sgMiTlo
+         7kqybB5XxPtWGENO7EbgrMd4KpjK5wtdvh1b/foEh0bNXrmNwMPdx3YiMXSl3+8ptFhm
+         mk78JXA9rH8rTie7G/qjb7K17Czjl0OeCiiUo=
+Date: Mon, 10 May 2010 18:15:29 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Benny Halevy <bhalevy@panasas.com>, Avishay Traeger <avishay@gmail.com>,
+       osd-dev@open-osd.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] exofs: confusion between kmap() and kmap_atomic() api
+Message-ID: <20100510161528.GX27064@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Boaz Harrosh <bharrosh@panasas.com>,
+	Benny Halevy <bhalevy@panasas.com>,
+	Avishay Traeger <avishay@gmail.com>, osd-dev@open-osd.org,
+	linux-kernel@vger.kernel.org
+References: <20100507090532.GD27064@bicker> <4BE68B86.50707@panasas.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BE68B86.50707@panasas.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23:13 Sun 09 May     , Rafael J. Wysocki wrote:
-> This message contains a list of some regressions from 2.6.33,
-> for which there are no fixes in the mainline known to the tracking team.
-> If any of them have been fixed already, please let us know.
+On Sun, May 09, 2010 at 01:16:38PM +0300, Boaz Harrosh wrote:
+> On 05/07/2010 12:05 PM, Dan Carpenter wrote:
+> > For kmap_atomic() we call kunmap_atomic() on the returned pointer.
+> > That's different from kmap() and kunmap() and so it's easy to get them
+> > backwards.
+> > 
+> > Signed-off-by: Dan Carpenter <error27@gmail.com>
+> > 
 > 
-> If you know of any other unresolved regressions from 2.6.33, please let us
-> know either and we'll add them to the list.  Also, please let us know
-> if any of the entries below are invalid.
+> Thank you Dan, I'll push it ASAP. 
+> 
+> Looks like a bad bug. So this is actually a leak, right? kunmap_atomic
+> would detect the bad pointer and do nothing?
+> 
 
-Seems that
+I've looked at it, and I think you're right but I'm not the guy to ask...
 
-  r600 CS checker rejects narrow FBO renderbuffers
-  https://bugs.freedesktop.org/show_bug.cgi?id=27609
+I saw somenoe else fixing these and wrote a smatch check is all.  I'm at
+the "Monkey see, monkey do" level of kernel hacking.
 
-never got added to the list.  It is still an issue as of 2.6.34-rc7.
+regards,
+dan carpenter
 
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+ 
