@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453Ab0EJW5h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:57:37 -0400
-Received: from kroah.org ([198.145.64.141]:51566 "EHLO coco.kroah.org"
+	id S1757757Ab0EJXNV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:13:21 -0400
+Received: from kroah.org ([198.145.64.141]:51821 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757293Ab0EJW5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:20 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:34 2010
-Message-Id: <20100510223534.701279550@kvm.kroah.org>
+	id S932911Ab0EJW6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:21 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:40 2010
+Message-Id: <20100510223540.612507073@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:15 -0700
+Date: Mon, 10 May 2010 15:35:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       NeilBrown <neilb@suse.de>
-Subject: [03/98] md/raid5: allow for more than 2^31 chunks.
+       kvm <kvm@vger.kernel.org>, Jan Kiszka <jan.kiszka@web.de>,
+       Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [69/98] KVM: remove unused load_segment_descriptor_to_kvm_desct
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,80 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d upstream.
+Commit 78ce64a384 in v2.6.32.12 introduced a warning due to unused
+load_segment_descriptor_to_kvm_desct helper, which has been opencoded by
+this commit.
 
-With many large drives and small chunk sizes it is possible
-to create a RAID5 with more than 2^31 chunks.  Make sure this
-works.
+On upstream, the helper was removed as part of a different commit.
 
-Reported-by: Brett King <king.br@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Remove the now unused function.
+
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/raid5.c |   19 +++++++------------
- 1 file changed, 7 insertions(+), 12 deletions(-)
+ arch/x86/kvm/x86.c |   12 ------------
+ 1 file changed, 12 deletions(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -1649,8 +1649,8 @@ static sector_t raid5_compute_sector(rai
- 				     int previous, int *dd_idx,
- 				     struct stripe_head *sh)
- {
--	long stripe;
--	unsigned long chunk_number;
-+	sector_t stripe;
-+	sector_t chunk_number;
- 	unsigned int chunk_offset;
- 	int pd_idx, qd_idx;
- 	int ddf_layout = 0;
-@@ -1670,17 +1670,12 @@ static sector_t raid5_compute_sector(rai
- 	 */
- 	chunk_offset = sector_div(r_sector, sectors_per_chunk);
- 	chunk_number = r_sector;
--	BUG_ON(r_sector != chunk_number);
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4155,18 +4155,6 @@ static u16 get_segment_selector(struct k
+ 	return kvm_seg.selector;
+ }
  
- 	/*
- 	 * Compute the stripe number
- 	 */
--	stripe = chunk_number / data_disks;
+-static int load_segment_descriptor_to_kvm_desct(struct kvm_vcpu *vcpu,
+-						u16 selector,
+-						struct kvm_segment *kvm_seg)
+-{
+-	struct desc_struct seg_desc;
 -
--	/*
--	 * Compute the data disk and parity disk indexes inside the stripe
--	 */
--	*dd_idx = chunk_number % data_disks;
-+	stripe = chunk_number;
-+	*dd_idx = sector_div(stripe, data_disks);
- 
- 	/*
- 	 * Select the parity disk based on the user selected algorithm.
-@@ -1869,14 +1864,14 @@ static sector_t compute_blocknr(struct s
- 				 : conf->algorithm;
- 	sector_t stripe;
- 	int chunk_offset;
--	int chunk_number, dummy1, dd_idx = i;
-+	sector_t chunk_number;
-+	int dummy1, dd_idx = i;
- 	sector_t r_sector;
- 	struct stripe_head sh2;
- 
- 
- 	chunk_offset = sector_div(new_sector, sectors_per_chunk);
- 	stripe = new_sector;
--	BUG_ON(new_sector != stripe);
- 
- 	if (i == sh->pd_idx)
- 		return 0;
-@@ -1969,7 +1964,7 @@ static sector_t compute_blocknr(struct s
- 	}
- 
- 	chunk_number = stripe * data_disks + i;
--	r_sector = (sector_t)chunk_number * sectors_per_chunk + chunk_offset;
-+	r_sector = chunk_number * sectors_per_chunk + chunk_offset;
- 
- 	check = raid5_compute_sector(conf, r_sector,
- 				     previous, &dummy1, &sh2);
+-	if (load_guest_segment_descriptor(vcpu, selector, &seg_desc))
+-		return 1;
+-	seg_desct_to_kvm_desct(&seg_desc, selector, kvm_seg);
+-	return 0;
+-}
+-
+ static int kvm_load_realmode_segment(struct kvm_vcpu *vcpu, u16 selector, int seg)
+ {
+ 	struct kvm_segment segvar = {
 
 
