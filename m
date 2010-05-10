@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933302Ab0EJXc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:32:59 -0400
-Received: from kroah.org ([198.145.64.141]:33265 "EHLO coco.kroah.org"
+	id S932617Ab0EJXdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:33:10 -0400
+Received: from kroah.org ([198.145.64.141]:33258 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932469Ab0EJWwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:35 -0400
+	id S932379Ab0EJWwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:33 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:24 2010
-Message-Id: <20100510223324.153968147@kvm.kroah.org>
+Message-Id: <20100510223323.975685623@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:46 -0700
+Date: Mon, 10 May 2010 15:32:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [075/117] ath9k: reorder ieee80211_free_hw behind ath9k_uninit_hw to avoid oops
+       Francois Romieu <romieu@fr.zoreil.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [073/117] r8169: fix broken register writes
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,29 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John W. Linville <linville@tuxdriver.com>
+From: Francois Romieu <romieu@fr.zoreil.com>
 
-This code only exists in 2.6.33 -- 2.6.32 and 2.6.34 are not affected.
+commit 78f1cd02457252e1ffbc6caa44a17424a45286b8 upstream.
 
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This is quite similar to b39fe41f481d20c201012e4483e76c203802dda7
+though said registers are not even documented as 64-bit registers
+- as opposed to the initial TxDescStartAddress ones - but as single
+bytes which must be combined into 32 bits at the MMIO read/write
+level before being merged into a 64 bit logical entity.
+
+Credits go to Ben Hutchings <ben@decadent.org.uk> for the MAR
+registers (aka "multicast is broken for ages on ARM) and to
+Timo Teräs <timo.teras@iki.fi> for the MAC registers.
+
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
+ drivers/net/r8169.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
- drivers/net/wireless/ath/ath9k/main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1358,9 +1358,9 @@ void ath_cleanup(struct ath_softc *sc)
- 	free_irq(sc->irq, sc);
- 	ath_bus_cleanup(common);
- 	kfree(sc->sec_wiphy);
--	ieee80211_free_hw(sc->hw);
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -2832,8 +2832,8 @@ static void rtl_rar_set(struct rtl8169_p
+ 	spin_lock_irq(&tp->lock);
  
- 	ath9k_uninit_hw(sc);
-+	ieee80211_free_hw(sc->hw);
- }
+ 	RTL_W8(Cfg9346, Cfg9346_Unlock);
+-	RTL_W32(MAC0, low);
+ 	RTL_W32(MAC4, high);
++	RTL_W32(MAC0, low);
+ 	RTL_W8(Cfg9346, Cfg9346_Lock);
  
- static int ath9k_reg_notifier(struct wiphy *wiphy,
+ 	spin_unlock_irq(&tp->lock);
+@@ -4813,8 +4813,8 @@ static void rtl_set_rx_mode(struct net_d
+ 		mc_filter[1] = swab32(data);
+ 	}
+ 
+-	RTL_W32(MAR0 + 0, mc_filter[0]);
+ 	RTL_W32(MAR0 + 4, mc_filter[1]);
++	RTL_W32(MAR0 + 0, mc_filter[0]);
+ 
+ 	RTL_W32(RxConfig, tmp);
+ 
 
 
