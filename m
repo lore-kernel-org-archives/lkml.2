@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab0EJMyq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 08:54:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48387 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab0EJMym convert rfc822-to-8bit (ORCPT
+	id S1753944Ab0EJM4q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 08:56:46 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:21586 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab0EJM4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 08:54:42 -0400
-Subject: Re: [RFC][PATCH 2/9] perf: core, remove hw_perf_event_init
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100510122728.GB5563@nowhere>
-References: <1273483595.15998.56.camel@minggr.sh.intel.com>
-	 <1273484430.5605.3334.camel@twins>
-	 <1273486670.15998.80.camel@minggr.sh.intel.com>
-	 <1273486769.5605.3343.camel@twins>  <20100510122728.GB5563@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 10 May 2010 14:54:14 +0200
-Message-ID: <1273496054.5605.3400.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 10 May 2010 08:56:43 -0400
+Date: Mon, 10 May 2010 15:54:40 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: ext Paul Mundt <lethal@linux-sh.org>
+Cc: "Valentin Eduardo (Nokia-D/Helsinki)" <eduardo.valentin@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       Linux-OMAP <linux-omap@vger.kernel.org>,
+       Russell King <linux@arm.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       ext Tony Lindgren <tony@atomide.com>,
+       ext Kevin Hilman <khilman@deeprootsystems.com>,
+       "De-Schrijver Peter (Nokia-D/Helsinki)" 
+	<Peter.De-Schrijver@nokia.com>,
+       "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+       Ambresh <a0393775@ti.com>,
+       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
+Subject: Re: [PATCHv4 1/4] procfs: Introduce socinfo under /proc
+Message-ID: <20100510125440.GA31721@nokia.com>
+Reply-To: felipe.balbi@nokia.com
+References: <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com>
+ <1273487857-32281-3-git-send-email-eduardo.valentin@nokia.com>
+ <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com>
+ <1273487857-32281-2-git-send-email-eduardo.valentin@nokia.com>
+ <20100510111259.GA14680@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20100510111259.GA14680@linux-sh.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 10 May 2010 12:55:45.0528 (UTC) FILETIME=[1B03AF80:01CAF040]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 14:27 +0200, Frederic Weisbecker wrote:
-> On Mon, May 10, 2010 at 12:19:29PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2010-05-10 at 18:17 +0800, Lin Ming wrote:
-> > > On Mon, 2010-05-10 at 17:40 +0800, Peter Zijlstra wrote:
-> > > > On Mon, 2010-05-10 at 17:26 +0800, Lin Ming wrote:
-> > > > > +static struct pmu *perf_event_lookup_pmu(struct perf_event *event)
-> > > > > +{
-> > > > > +       struct pmu *pmu;
-> > > > > +       int pmu_id = event->attr.pmu_id;
-> > > > > +
-> > > > > +       list_for_each_entry(pmu, &pmus, entry) {
-> > > > > +               if (pmu->id == pmu_id)
-> > > > > +                       return pmu;
-> > > > > +       }
-> > > > > +
-> > > > > +       return NULL;
-> > > > > +}
-> > > > 
-> > > > > +void perf_event_register_pmu(struct pmu *pmu)
-> > > > > +{
-> > > > > +       pmu->id = pmu_id_curr++;
-> > > > > +       list_add_tail(&pmu->entry, &pmus);
-> > > > > +} 
-> > > > 
-> > > > That will be wanting some sort of synchronization
-> > > 
-> > > Will add a mutex to protect the list of pmus.
-> > 
-> > I'm thinking RCU might be better suited, a mutex for lookup doesn't
-> > sound ideal.
-> 
-> 
-> Is it really needed? I expect this function to be called on boot
-> only.
-> 
-> In fact I would even suggest to tag it as __init.
+On Mon, May 10, 2010 at 01:13:00PM +0200, ext Paul Mundt wrote:
+>You'll still need the show function, but all of the rest of this is just
+>duplicating what single_open() already does. If the socinfo string is
+>static you may also want to rework this a bit so you can just stash the
+>string in the proc_dir_entry private data. Combine this with something
+>like kstrdup() and you'll save yourself a bit of stack while you're at
+>it.
 
-Loadable modules as well as PCI-Hotplug need supporting.
+doesn't ksrtdup() cause memleak ?? Or is it only when used with 
+module parameters ??
+
+-- 
+balbi
+
+DefectiveByDesign.org
