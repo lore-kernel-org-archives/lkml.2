@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab0EJKS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 06:18:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58134 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab0EJKS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 06:18:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,361,1270450800"; 
-   d="scan'208";a="620320003"
-Subject: Re: [RFC][PATCH 2/9] perf: core, remove hw_perf_event_init
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1273484430.5605.3334.camel@twins>
-References: <1273483595.15998.56.camel@minggr.sh.intel.com>
-	 <1273484430.5605.3334.camel@twins>
-Content-Type: text/plain
-Date: Mon, 10 May 2010 18:17:50 +0800
-Message-Id: <1273486670.15998.80.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
-Content-Transfer-Encoding: 7bit
+	id S1756524Ab0EJKSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 06:18:42 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:46811 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390Ab0EJKSk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 06:18:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=kVseb+1uM+DtbicnQeqPR2t7Cf31Jrdk3VBS1FkIV38SsbCXY3gu7v7lV5Qtf5qIg/
+         6OvSbSB0rc0OBL+QxntF/Hf8igNsc0vpLSsHVMol6b7fvgXpTi8awW++o28wScIfvaVh
+         Xihl2RgOxrtvKzE2BdW9GrkIcijY1j8aLJvZE=
+MIME-Version: 1.0
+In-Reply-To: <20100510045252.GC3387@windriver.com>
+References: <AANLkTikTPkLID3e8HpT1jMeiF9tQ6-7oJWQBfiRF7xUN@mail.gmail.com>
+	 <20100510045252.GC3387@windriver.com>
+Date: Mon, 10 May 2010 12:18:38 +0200
+Message-ID: <AANLkTimOrMLWXV8L0V6LQuZLa4QO-adOlxNH190YyU6u@mail.gmail.com>
+Subject: Re: May the worker function free its struct_work (plus container)?
+From: Leon Woestenberg <leon.woestenberg@gmail.com>
+To: Yong Zhang <yong.zhang@windriver.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 17:40 +0800, Peter Zijlstra wrote:
-> On Mon, 2010-05-10 at 17:26 +0800, Lin Ming wrote:
-> > +static struct pmu *perf_event_lookup_pmu(struct perf_event *event)
-> > +{
-> > +       struct pmu *pmu;
-> > +       int pmu_id = event->attr.pmu_id;
-> > +
-> > +       list_for_each_entry(pmu, &pmus, entry) {
-> > +               if (pmu->id == pmu_id)
-> > +                       return pmu;
-> > +       }
-> > +
-> > +       return NULL;
-> > +}
-> 
-> > +void perf_event_register_pmu(struct pmu *pmu)
-> > +{
-> > +       pmu->id = pmu_id_curr++;
-> > +       list_add_tail(&pmu->entry, &pmus);
-> > +} 
-> 
-> That will be wanting some sort of synchronization
+Hello Yong,
 
-Will add a mutex to protect the list of pmus.
+On Mon, May 10, 2010 at 6:52 AM, Yong Zhang <yong.zhang@windriver.com> wrote:
+> On Mon, May 10, 2010 at 12:47:23AM +0200, Leon Woestenberg wrote:
+>> Hello,
+>>
+>> may the worker function kfree() it's own work data structure?
+>
+> Actually, workqueue has no restriction on this kind of operation.
+> But if you must be careful with the caller in case it will refer
+> the freed struct.
+>
+Thanks. Is there API documentation or source code documentation that
+confirms this is the case?
 
+I would hate to write code that gets buggy due to the underlying
+implementation assuming the work structure is available after the
+worker function returned.
+
+Regards,
+-- 
+Leon
