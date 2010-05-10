@@ -1,81 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab0EJIqZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 04:46:25 -0400
-Received: from outbound.icp-qv1-irony-out5.iinet.net.au ([203.59.1.105]:2730
-	"EHLO outbound.icp-qv1-irony-out5.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753364Ab0EJIqX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 04:46:23 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAB5l50vLzgH5/2dsb2JhbACDF5sBcatkgwqMa4EmgwFuBINA
-X-IronPort-AV: E=Sophos;i="4.52,361,1270396800"; 
-   d="scan'208";a="148060692"
-From: Ian Kent <raven@themaw.net>
-Subject: [PATCH] autofs4-2.6.34-rc1 - fix link_count usage
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Al Viro <viro@ZenIV.linux.org.uk>,
-       autofs mailing list <autofs@linux.kernel.org>
-Date: Mon, 10 May 2010 16:46:08 +0800
-Message-ID: <20100510084603.26099.56481.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1755582Ab0EJIsk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 04:48:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60137 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753364Ab0EJIsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 04:48:36 -0400
+Message-ID: <4BE7C857.1000600@redhat.com>
+Date: Mon, 10 May 2010 11:48:23 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Brian Gerst <brgerst@gmail.com>, Dexuan Cui <dexuan.cui@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH v3 0/2] x86 FPU API
+References: <1273135546-29690-1-git-send-email-avi@redhat.com>
+In-Reply-To: <1273135546-29690-1-git-send-email-avi@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following the commit below in 2.6.34-rc1 autofs direct mounts stop
-working. This is caused by current->link_count being 0 when
-->follow_link() is called from do_filp_open().
+On 05/06/2010 11:45 AM, Avi Kivity wrote:
+> Currently all fpu accessors are wedded to task_struct.  However kvm also uses
+> the fpu in a different context.  Introduce an FPU API, and replace the
+> current uses with the new API.
+>
+> While this patchset is oriented towards deeper changes, as a first step it
+> simlifies xsave for kvm.
+>    
 
-I can't work out why this hasn't been seen before Als patch series.
+Peter/Ingo, what are the plans for merging it?  The kvm xsave work 
+depends on this.
 
-This patch removes the autofs dependence on current->link_count.
-
-1f36f774b22a0ceb7dd33eca626746c81a97b6a5 is the first bad commit
-commit 1f36f774b22a0ceb7dd33eca626746c81a97b6a5
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Sat Dec 26 10:56:19 2009 -0500
-
-    Switch !O_CREAT case to use of do_last()
-
-    ... and now we have all intents crap well localized
-
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-
-:040000 040000 53c1effc5b22746bb83cdbc6a419bf898067882d 9606f7275fde188a056fd174aa1d622ac0630893 M	fs
-
-Signed-off-by: Ian Kent <raven@themaw.net>
----
-
- fs/autofs4/root.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 109a6c6..e8e5e63 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -177,8 +177,7 @@ static int try_to_fill_dentry(struct dentry *dentry, int flags)
- 		}
- 	/* Trigger mount for path component or follow link */
- 	} else if (ino->flags & AUTOFS_INF_PENDING ||
--			autofs4_need_mount(flags) ||
--			current->link_count) {
-+			autofs4_need_mount(flags)) {
- 		DPRINTK("waiting for mount name=%.*s",
- 			dentry->d_name.len, dentry->d_name.name);
- 
-@@ -262,7 +261,7 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
- 		spin_unlock(&dcache_lock);
- 		spin_unlock(&sbi->fs_lock);
- 
--		status = try_to_fill_dentry(dentry, 0);
-+		status = try_to_fill_dentry(dentry, nd->flags);
- 		if (status)
- 			goto out_error;
- 
+-- 
+error compiling committee.c: too many arguments to function
 
