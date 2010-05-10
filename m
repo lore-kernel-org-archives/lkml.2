@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729Ab0EJWzB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:55:01 -0400
-Received: from kroah.org ([198.145.64.141]:33362 "EHLO coco.kroah.org"
+	id S932636Ab0EJWxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:53:50 -0400
+Received: from kroah.org ([198.145.64.141]:33246 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932531Ab0EJWwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:53 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:26 2010
-Message-Id: <20100510223326.053630207@kvm.kroah.org>
+	id S932463Ab0EJWwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:32 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:23 2010
+Message-Id: <20100510223323.794659945@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:33:07 -0700
+Date: Mon, 10 May 2010 15:32:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [096/117] sparc64: Use correct pt_regs in decode_access_size() error paths.
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Kumar Gala <galak@kernel.crashing.org>, Wufei <fei.wu@windriver.com>,
+       Jason Wessel <jason.wessel@windriver.com>
+Subject: [071/117] kgdb: dont needlessly skip PAGE_USER test for Fsl booke
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Wufei <fei.wu@windriver.com>
 
-From: David S. Miller <davem@davemloft.net>
+commit 56151e753468e34aeb322af4b0309ab727c97d2e upstream.
 
-[ Upstream commit baa06775e224e9f74e5c2de894c95cd49678beff ]
+The bypassing of this test is a leftover from 2.4 vintage
+kernels, and is no longer appropriate, or even used by KGDB.
+Currently KGDB uses probe_kernel_write() for all access to
+memory via the KGDB core, so it can simply be deleted.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This fixes CVE-2010-1446.
+
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Wufei <fei.wu@windriver.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/sparc/kernel/unaligned_64.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/sparc/kernel/unaligned_64.c
-+++ b/arch/sparc/kernel/unaligned_64.c
-@@ -49,7 +49,7 @@ static inline enum direction decode_dire
- }
+---
+ arch/powerpc/mm/fsl_booke_mmu.c |    5 -----
+ 1 file changed, 5 deletions(-)
+
+--- a/arch/powerpc/mm/fsl_booke_mmu.c
++++ b/arch/powerpc/mm/fsl_booke_mmu.c
+@@ -155,15 +155,10 @@ static void settlbcam(int index, unsigne
+ 	if (cur_cpu_spec->cpu_features & MMU_FTR_BIG_PHYS)
+ 		TLBCAM[index].MAS7 = (u64)phys >> 32;
  
- /* 16 = double-word, 8 = extra-word, 4 = word, 2 = half-word */
--static inline int decode_access_size(unsigned int insn)
-+static inline int decode_access_size(struct pt_regs *regs, unsigned int insn)
- {
- 	unsigned int tmp;
+-#ifndef CONFIG_KGDB /* want user access for breakpoints */
+ 	if (flags & _PAGE_USER) {
+ 	   TLBCAM[index].MAS3 |= MAS3_UX | MAS3_UR;
+ 	   TLBCAM[index].MAS3 |= ((flags & _PAGE_RW) ? MAS3_UW : 0);
+ 	}
+-#else
+-	TLBCAM[index].MAS3 |= MAS3_UX | MAS3_UR;
+-	TLBCAM[index].MAS3 |= ((flags & _PAGE_RW) ? MAS3_UW : 0);
+-#endif
  
-@@ -65,7 +65,7 @@ static inline int decode_access_size(uns
- 		return 2;
- 	else {
- 		printk("Impossible unaligned trap. insn=%08x\n", insn);
--		die_if_kernel("Byte sized unaligned access?!?!", current_thread_info()->kregs);
-+		die_if_kernel("Byte sized unaligned access?!?!", regs);
- 
- 		/* GCC should never warn that control reaches the end
- 		 * of this function without returning a value because
-@@ -289,7 +289,7 @@ static void log_unaligned(struct pt_regs
- asmlinkage void kernel_unaligned_trap(struct pt_regs *regs, unsigned int insn)
- {
- 	enum direction dir = decode_direction(insn);
--	int size = decode_access_size(insn);
-+	int size = decode_access_size(regs, insn);
- 	int orig_asi, asi;
- 
- 	current_thread_info()->kern_una_regs = regs;
+ 	tlbcam_addrs[index].start = virt;
+ 	tlbcam_addrs[index].limit = virt + size - 1;
 
 
