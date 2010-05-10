@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab0EJXMH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:12:07 -0400
-Received: from kroah.org ([198.145.64.141]:45429 "EHLO coco.kroah.org"
+	id S932330Ab0EJXAN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:00:13 -0400
+Received: from kroah.org ([198.145.64.141]:51690 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932957Ab0EJW6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:39 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:42 2010
-Message-Id: <20100510223542.681274000@kvm.kroah.org>
+	id S932858Ab0EJW5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:57:49 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:37 2010
+Message-Id: <20100510223537.027223166@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:44 -0700
+Date: Mon, 10 May 2010 15:34:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tejun Heo <tj@kernel.org>, James Bottomley <James.Bottomley@suse.de>
-Subject: [92/98] SCSI: fix locking around blk_abort_request()
+       Joel Becker <joel.becker@oracle.com>
+Subject: [29/98] ocfs2_dlmfs: Fix math error when reading LVB.
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,63 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Joel Becker <joel.becker@oracle.com>
 
-commit 70b25f890ce9f0520c64075ce9225a5b020a513e upstream.
+commit a36d515c7a2dfacebcf41729f6812dbc424ebcf0 upstream.
 
-blk_abort_request() expects queue lock to be held by the caller.
-Grab it before calling the function.
+When asked for a partial read of the LVB in a dlmfs file, we can
+accidentally calculate a negative count.
 
-Lack of this synchronization led to infinite loop on corrupt
-q->timeout_list.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Reported-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Joel Becker <joel.becker@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/libsas/sas_ata.c       |    4 ++++
- drivers/scsi/libsas/sas_scsi_host.c |    4 ++++
- 2 files changed, 8 insertions(+)
+ fs/ocfs2/dlm/dlmfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/libsas/sas_ata.c
-+++ b/drivers/scsi/libsas/sas_ata.c
-@@ -394,11 +394,15 @@ int sas_ata_init_host_and_port(struct do
- void sas_ata_task_abort(struct sas_task *task)
- {
- 	struct ata_queued_cmd *qc = task->uldd_task;
-+	struct request_queue *q = qc->scsicmd->device->request_queue;
- 	struct completion *waiting;
-+	unsigned long flags;
+--- a/fs/ocfs2/dlm/dlmfs.c
++++ b/fs/ocfs2/dlm/dlmfs.c
+@@ -205,7 +205,7 @@ static ssize_t dlmfs_file_read(struct fi
+ 	if ((count + *ppos) > i_size_read(inode))
+ 		readlen = i_size_read(inode) - *ppos;
+ 	else
+-		readlen = count - *ppos;
++		readlen = count;
  
- 	/* Bounce SCSI-initiated commands to the SCSI EH */
- 	if (qc->scsicmd) {
-+		spin_lock_irqsave(q->queue_lock, flags);
- 		blk_abort_request(qc->scsicmd->request);
-+		spin_unlock_irqrestore(q->queue_lock, flags);
- 		scsi_schedule_eh(qc->scsicmd->device->host);
- 		return;
- 	}
---- a/drivers/scsi/libsas/sas_scsi_host.c
-+++ b/drivers/scsi/libsas/sas_scsi_host.c
-@@ -1025,6 +1025,8 @@ int __sas_task_abort(struct sas_task *ta
- void sas_task_abort(struct sas_task *task)
- {
- 	struct scsi_cmnd *sc = task->uldd_task;
-+	struct request_queue *q = sc->device->request_queue;
-+	unsigned long flags;
- 
- 	/* Escape for libsas internal commands */
- 	if (!sc) {
-@@ -1039,7 +1041,9 @@ void sas_task_abort(struct sas_task *tas
- 		return;
- 	}
- 
-+	spin_lock_irqsave(q->queue_lock, flags);
- 	blk_abort_request(sc->request);
-+	spin_unlock_irqrestore(q->queue_lock, flags);
- 	scsi_schedule_eh(sc->device->host);
- }
- 
+ 	lvb_buf = kmalloc(readlen, GFP_NOFS);
+ 	if (!lvb_buf)
 
 
