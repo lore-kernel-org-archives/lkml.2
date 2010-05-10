@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab0EJVKd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 17:10:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:55969 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757183Ab0EJVKa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 17:10:30 -0400
-X-Authority-Analysis: v=1.1 cv=nrqrmdtKPnrEe5McJVoaEKFzY/lexCxOe+Stj/aSkNs= c=1 sm=0 a=H3ye9l9LKTQA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=CrcsiEUOVWRLc7bLdHQA:9 a=AUtfvQEl0e0MPRh-irjT9w0Iz2YA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [rfc] x86,perf: P4 PMU -- use hash for p4_get_escr_idx
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <20100510152708.GS5104@lenovo>
-References: <20100510152708.GS5104@lenovo>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Mon, 10 May 2010 17:10:27 -0400
-Message-ID: <1273525827.22438.4489.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S932288Ab0EJVLZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 17:11:25 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38155 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932243Ab0EJVLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 17:11:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matt Helsley <matthltc@us.ibm.com>
+Subject: Re: [PATCH v21 015/100] cgroup freezer: Update stale locking comments
+Date: Mon, 10 May 2010 23:12:10 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Oren Laadan <orenl@cs.columbia.edu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Serge Hallyn <serue@us.ibm.com>, Pavel Emelyanov <xemul@openvz.org>,
+       Cedric Le Goater <legoater@free.fr>, Paul Menage <menage@google.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, linux-pm@lists.linux-foundation.org
+References: <1272723382-19470-1-git-send-email-orenl@cs.columbia.edu> <201005102301.45729.rjw@sisk.pl> <20100510210724.GP31830@count0.beaverton.ibm.com>
+In-Reply-To: <20100510210724.GP31830@count0.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005102312.10190.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 19:27 +0400, Cyrill Gorcunov wrote:
+On Monday 10 May 2010, Matt Helsley wrote:
+> On Mon, May 10, 2010 at 11:01:45PM +0200, Rafael J. Wysocki wrote:
+> > On Thursday 06 May 2010, Oren Laadan wrote:
+> > > 
+> > > On 05/06/2010 03:40 PM, Rafael J. Wysocki wrote:
+> > > > On Saturday 01 May 2010, Oren Laadan wrote:
+> > > >> From: Matt Helsley <matthltc@us.ibm.com>
+> > > >>
+> > > >> Update stale comments regarding locking order and add a little more detail
+> > > >> so it's easier to follow the locking between the cgroup freezer and the
+> > > >> power management freezer code.
+> > > > 
+> > > > I guess these three patches are for me.
+> > > > 
+> > > > Do you want me to handle them?
+> > > 
+> > > Yes, please, that would be great.
+> > 
+> > However, patches 16 and 17 seem to depend on checkpoint/restart and don't
+> > appear to be margeable at this point.  Is this correct?
+> 
+> Strictly speaking they do not depend on checkpoint/restart. However, only
+> checkpoint/restart uses the functionality introduced by those patches so I
+> think you are correct that they aren't mergeable at this point.
 
->  static int p4_get_escr_idx(unsigned int addr)
->  {
-> -	unsigned int i;
-> +	unsigned int idx = P4_ESCR_MSR_IDX(addr);
->  
-> -	for (i = 0; i < ARRAY_SIZE(p4_escr_map); i++) {
-> -		if (addr == p4_escr_map[i])
-> -			return i;
-> -	}
-> +	BUG_ON(idx >= P4_ESCR_MSR_TABLE_SIZE);
-> +	BUG_ON(!p4_escr_table[idx]);
-
-Is there any softer way to handle this. IOW, must it be a BUG_ON()? or
-can you add a WARN_ON() and pass back something that will cause it to
-fail a bit nicer.
-
-A BUG_ON() may panic the box and if you are in X on a laptop, all you
-see is that your box locked up hard. If this is a WARN_ON() and you can
-prevent further damage to the computer (no file corruption or anything)
-then the user may notice, "Oh, my dmesg has this nasty error here", and
-report something useful.
-
-You could do:
-
-	if (WARN_ON(idx >= P4_ESCR_MSR_TABLE_SIZE))
-		return -1;
-
-or whatever.
+OK, so I'm going to take patch 15 only for the upcoming merge window.
 
 Thanks,
-
--- Steve
-
->  
-> -	return -1;
-> +	return idx;
->  }
->  
-
+Rafael
