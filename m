@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933304Ab0EJXaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:30:24 -0400
-Received: from crca.org.au ([74.207.252.120]:57673 "EHLO crca.org.au"
+	id S932480Ab0EJWwi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:52:38 -0400
+Received: from kroah.org ([198.145.64.141]:33032 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932545Ab0EJXaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 19:30:10 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BE896FC.2050407@tuxonice.net>
-Date: Tue, 11 May 2010 09:30:04 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Daniel T Chen <crimsun@ubuntu.com>,
-       Takashi Iwai <tiwai@suse.de>
-Subject: Re: [057/117] ALSA: hda: Use STAC_DELL_M6_BOTH quirk for Dell Studio
- 1558
-References: <20100510223322.347254355@kvm.kroah.org>
-In-Reply-To: <20100510223322.347254355@kvm.kroah.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932380Ab0EJWwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:05 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:20 2010
+Message-Id: <20100510223320.541076958@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:32:08 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Chuck Lever <chuck.lever@oracle.com>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [037/117] NFS: rsize and wsize settings ignored on v4 mounts
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg et al.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-On 11/05/10 08:32, Greg KH wrote:
-> 2.6.33-stable review patch.  If anyone has any objections, please let us know.
->
-> ------------------
->
-> From: Daniel T Chen<crimsun@ubuntu.com>
->
-> commit 5c1bccf645d4ab65e4c7502acb42e8b9afdb5bdc upstream.
->
-> BugLink: https://launchpad.net/bugs/568600
->
-> The OR has verified that the dell-m6 model quirk is necessary for audio
-> to be audible by default on the Dell Studio XPS 1645.
+------------------
 
-Just that the commit comment doesn't match the code here.
+From: Chuck Lever <chuck.lever@oracle.com>
 
-Regards,
+commit 356e76b855bdbfd8d1c5e75bcf0c6bf0dfe83496 upstream.
 
-Nigel
+NFSv4 mounts ignore the rsize and wsize mount options, and always use
+the default transfer size for both.  This seems to be because all
+NFSv4 mounts are now cloned, and the cloning logic doesn't copy the
+rsize and wsize settings from the parent nfs_server.
 
-> This change is necessary for 2.6.32.11 and 2.6.33.2 alike.
->
-> Reported-by: Andy Ross<andy@plausible.org>
-> Tested-by: Andy Ross<andy@plausible.org>
-> Signed-off-by: Daniel T Chen<crimsun@ubuntu.com>
-> Signed-off-by: Takashi Iwai<tiwai@suse.de>
-> Signed-off-by: Greg Kroah-Hartman<gregkh@suse.de>
->
-> ---
->   sound/pci/hda/patch_sigmatel.c |    2 ++
->   1 file changed, 2 insertions(+)
->
-> --- a/sound/pci/hda/patch_sigmatel.c
-> +++ b/sound/pci/hda/patch_sigmatel.c
-> @@ -1604,6 +1604,8 @@ static struct snd_pci_quirk stac92hd73xx
->   				"Dell Studio 1557", STAC_DELL_M6_DMIC),
->   	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02fe,
->   				"Dell Studio XPS 1645", STAC_DELL_M6_BOTH),
-> +	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0413,
-> +				"Dell Studio 1558", STAC_DELL_M6_BOTH),
->   	{} /* terminator */
->   };
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+I tested Fedora's 2.6.32.11-99 and it seems to have this problem as
+well, so I'm guessing that .33, .32, and perhaps older kernels have
+this issue as well.
+
+Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/nfs/client.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -965,6 +965,8 @@ out_error:
+ static void nfs_server_copy_userdata(struct nfs_server *target, struct nfs_server *source)
+ {
+ 	target->flags = source->flags;
++	target->rsize = source->rsize;
++	target->wsize = source->wsize;
+ 	target->acregmin = source->acregmin;
+ 	target->acregmax = source->acregmax;
+ 	target->acdirmin = source->acdirmin;
+
 
