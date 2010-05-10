@@ -1,47 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab0EJDWm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 23:22:42 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64691 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751981Ab0EJDWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 23:22:41 -0400
-Message-ID: <4BE77C6B.5010402@cn.fujitsu.com>
-Date: Mon, 10 May 2010 11:24:27 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1755146Ab0EJD0O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 23:26:14 -0400
+Received: from mga05.intel.com ([192.55.52.89]:50826 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752181Ab0EJD0L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 23:26:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,359,1270450800"; 
+   d="scan'208";a="796883782"
+Date: Mon, 10 May 2010 11:35:25 +0800
+From: Huaxu Wan <huaxu.wan@linux.intel.com>
+To: Huaxu Wan <huaxu.wan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+       huaxu.wan@intel.com, Carsten Emde <Carsten.Emde@osadl.org>
+Subject: [PATCH 1/2 V2] hwmon: (coretemp) Detect the thermal sensors by
+ CPUID
+Message-ID: <20100510033525.GC9181@owl>
+References: <20100507095459.GA12190@owl>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-       Dhaval Giani <dhaval.giani@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sched: Remove a bogus comment
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100507095459.GA12190@owl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This comment should have been removed together with uids_mutex
-when removing user sched.
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+The thermal sensors of Intel(R) CPUs can be detected by CPUID instruction,
+indicated by CPUID.06H.EAX[0].
+
+Signed-off-by: Huaxu Wan <huaxu.wan@linux.intel.com>
+Signed-off-by: Carsten Emde <C.Emde@osadl.org>
 ---
- kernel/user.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/hwmon/coretemp.c |   24 +++++++-----------------
+ 1 files changed, 7 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/user.c b/kernel/user.c
-index 8e1c8c0..7e72614 100644
---- a/kernel/user.c
-+++ b/kernel/user.c
-@@ -136,7 +136,6 @@ struct user_struct *alloc_uid(struct user_namespace *ns, uid_t uid)
- 	struct hlist_head *hashent = uidhashentry(ns, uid);
- 	struct user_struct *up, *new;
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index e9b7fbc..d194207 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -440,6 +440,7 @@ static int __init coretemp_init(void)
+ {
+ 	int i, err = -ENODEV;
+ 	struct pdev_entry *p, *n;
++	u32 eax;
  
--	/* Make uid_hash_find() + uid_hash_insert() atomic. */
- 	spin_lock_irq(&uidhash_lock);
- 	up = uid_hash_find(uid, hashent);
- 	spin_unlock_irq(&uidhash_lock);
+ 	/* quick check if we run Intel */
+ 	if (cpu_data(0).x86_vendor != X86_VENDOR_INTEL)
+@@ -450,23 +451,12 @@ static int __init coretemp_init(void)
+ 		goto exit;
+ 
+ 	for_each_online_cpu(i) {
+-		struct cpuinfo_x86 *c = &cpu_data(i);
+-
+-		/* check if family 6, models 0xe (Pentium M DC),
+-		  0xf (Core 2 DC 65nm), 0x16 (Core 2 SC 65nm),
+-		  0x17 (Penryn 45nm), 0x1a (Nehalem), 0x1c (Atom),
+-		  0x1e (Lynnfield) */
+-		if ((c->cpuid_level < 0) || (c->x86 != 0x6) ||
+-		    !((c->x86_model == 0xe) || (c->x86_model == 0xf) ||
+-			(c->x86_model == 0x16) || (c->x86_model == 0x17) ||
+-			(c->x86_model == 0x1a) || (c->x86_model == 0x1c) ||
+-			(c->x86_model == 0x1e))) {
+-
+-			/* supported CPU not found, but report the unknown
+-			   family 6 CPU */
+-			if ((c->x86 == 0x6) && (c->x86_model > 0xf))
+-				printk(KERN_WARNING DRVNAME ": Unknown CPU "
+-					"model 0x%x\n", c->x86_model);
++ 		/* check if the CPU has thermal sensor */
++ 		eax = cpuid_eax(0x06);
++ 		if (!(eax & 0x01)) {
++ 			struct cpuinfo_x86 *c = &cpu_data(i);
++ 			printk(KERN_WARNING DRVNAME ": CPU (model=0x%x)"
++ 				" has no thermal sensor!\n", c->x86_model);
+ 			continue;
+ 		}
+ 
 -- 
-1.6.3
+1.6.3.3.363.g725cf7
 
