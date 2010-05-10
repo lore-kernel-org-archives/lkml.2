@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab0EJMwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 08:52:55 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:50062 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab0EJMwx (ORCPT
+	id S1753647Ab0EJMyq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 08:54:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48387 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab0EJMym convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 08:52:53 -0400
-Date: Mon, 10 May 2010 15:55:49 +0300
-From: Eduardo Valentin <eduardo.valentin@nokia.com>
-To: ext Paul Mundt <lethal@linux-sh.org>
-Cc: "Valentin Eduardo (Nokia-D/Helsinki)" <eduardo.valentin@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       Linux-OMAP <linux-omap@vger.kernel.org>,
-       Russell King <linux@arm.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       ext Tony Lindgren <tony@atomide.com>,
-       ext Kevin Hilman <khilman@deeprootsystems.com>,
-       "De-Schrijver Peter (Nokia-D/Helsinki)" 
-	<Peter.De-Schrijver@nokia.com>,
-       "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-       Ambresh <a0393775@ti.com>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Subject: Re: [PATCHv4 1/4] procfs: Introduce socinfo under /proc
-Message-ID: <20100510125548.GB11804@besouro.research.nokia.com>
-Reply-To: eduardo.valentin@nokia.com
-References: <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com>
- <1273487857-32281-3-git-send-email-eduardo.valentin@nokia.com>
- <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com>
- <1273487857-32281-2-git-send-email-eduardo.valentin@nokia.com>
- <20100510111259.GA14680@linux-sh.org>
- <20100510123514.GA11804@besouro.research.nokia.com>
- <20100510123902.GA15293@linux-sh.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100510123902.GA15293@linux-sh.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 10 May 2010 12:52:24.0816 (UTC) FILETIME=[A3617700:01CAF03F]
-X-Nokia-AV: Clean
+	Mon, 10 May 2010 08:54:42 -0400
+Subject: Re: [RFC][PATCH 2/9] perf: core, remove hw_perf_event_init
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100510122728.GB5563@nowhere>
+References: <1273483595.15998.56.camel@minggr.sh.intel.com>
+	 <1273484430.5605.3334.camel@twins>
+	 <1273486670.15998.80.camel@minggr.sh.intel.com>
+	 <1273486769.5605.3343.camel@twins>  <20100510122728.GB5563@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 10 May 2010 14:54:14 +0200
+Message-ID: <1273496054.5605.3400.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 02:39:02PM +0200, ext Paul Mundt wrote:
-> On Mon, May 10, 2010 at 03:35:14PM +0300, Eduardo Valentin wrote:
-> > On Mon, May 10, 2010 at 01:13:00PM +0200, ext Paul Mundt wrote:
-> > > On Mon, May 10, 2010 at 01:37:34PM +0300, Eduardo Valentin wrote:
-> > > > + */
-> > > > +#include <linux/fs.h>
-> > > > +#include <linux/init.h>
-> > > > +#include <linux/proc_fs.h>
-> > > > +#include <linux/seq_file.h>
-> > > > +
-> > > > +extern const struct seq_operations socinfo_op;
+On Mon, 2010-05-10 at 14:27 +0200, Frederic Weisbecker wrote:
+> On Mon, May 10, 2010 at 12:19:29PM +0200, Peter Zijlstra wrote:
+> > On Mon, 2010-05-10 at 18:17 +0800, Lin Ming wrote:
+> > > On Mon, 2010-05-10 at 17:40 +0800, Peter Zijlstra wrote:
+> > > > On Mon, 2010-05-10 at 17:26 +0800, Lin Ming wrote:
+> > > > > +static struct pmu *perf_event_lookup_pmu(struct perf_event *event)
+> > > > > +{
+> > > > > +       struct pmu *pmu;
+> > > > > +       int pmu_id = event->attr.pmu_id;
+> > > > > +
+> > > > > +       list_for_each_entry(pmu, &pmus, entry) {
+> > > > > +               if (pmu->id == pmu_id)
+> > > > > +                       return pmu;
+> > > > > +       }
+> > > > > +
+> > > > > +       return NULL;
+> > > > > +}
+> > > > 
+> > > > > +void perf_event_register_pmu(struct pmu *pmu)
+> > > > > +{
+> > > > > +       pmu->id = pmu_id_curr++;
+> > > > > +       list_add_tail(&pmu->entry, &pmus);
+> > > > > +} 
+> > > > 
+> > > > That will be wanting some sort of synchronization
 > > > 
-> > > This doesn't look promising..
+> > > Will add a mutex to protect the list of pmus.
 > > 
-> > Right.. as stated in patch description (maybe not that clear), this was
-> > basically same thing which you see under fs/proc/cpuinfo.c
-> > 
-> The cpuinfo case is a bit more complex since you have actual real work to
-> do in the ->start op and you will iterate over the ->show op for each
-> CPU. In your socinfo case you're just following the single_xxx()
-> semantics so using those helpers there simplifies things quite a bit.
-
-Yeah,
-
+> > I'm thinking RCU might be better suited, a mutex for lookup doesn't
+> > sound ideal.
 > 
-> Architectures that do not support SMP technically employ single_open()
-> semantics, but the fs/proc/cpuinfo.c abstraction requires the
-> architecture to provide seq ops regardless.
-
-OK.
-
 > 
-> Note that in the cpuinfo case there is often special handling for the
-> single (or boot CPU) case, such as printing out a descriptor for the
-> machine type and so on. You might be better off just extending cpuinfo
-> rather than introducing another /proc abstraction, presumably your
-> socinfo string will be fixed regardless of whether it's SMP or not.
+> Is it really needed? I expect this function to be called on boot
+> only.
+> 
+> In fact I would even suggest to tag it as __init.
 
-Yeah, I wouldn't expect it to change if it SMP or not. It should be fixed.
-Previous version of this change was actually extending ARM cpuinfo. The previous
-thread starts here:
-http://marc.info/?l=linux-omap&m=127304890312365&w=2
-
-But, the point of moving that to specific file was that soc info is not really cpu info.
-
-
-BR,
-
---
-Eduardo Valentin
+Loadable modules as well as PCI-Hotplug need supporting.
