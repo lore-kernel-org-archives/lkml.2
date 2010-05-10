@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933516Ab0EJXoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:44:06 -0400
-Received: from kroah.org ([198.145.64.141]:32929 "EHLO coco.kroah.org"
+	id S933503Ab0EJXnm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:43:42 -0400
+Received: from kroah.org ([198.145.64.141]:32937 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932329Ab0EJWvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:51:48 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:18 2010
-Message-Id: <20100510223318.739848639@kvm.kroah.org>
+	id S932333Ab0EJWvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:51:49 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:19 2010
+Message-Id: <20100510223318.920040672@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:31:48 -0700
+Date: Mon, 10 May 2010 15:31:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "J. Bruce Fields" <bfields@citi.umich.edu>
-Subject: [017/117] nfsd4: bug in read_buf
+       Ben Hutchings <bhutchings@solarflare.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [019/117] sfc: Wait at most 10ms for the MC to finish reading out MAC statistics
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Brown <neilb@suse.de>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 2bc3c1179c781b359d4f2f3439cb3df72afc17fc upstream.
+commit aabc5649078310094cbffb430fcbf9c25b6268f9 upstream.
 
-When read_buf is called to move over to the next page in the pagelist
-of an NFSv4 request, it sets argp->end to essentially a random
-number, certainly not an address within the page which argp->p now
-points to.  So subsequent calls to READ_BUF will think there is much
-more than a page of spare space (the cast to u32 ensures an unsigned
-comparison) so we can expect to fall off the end of the second
-page.
+The original code would wait indefinitely if MAC stats DMA failed.
 
-We never encountered thsi in testing because typically the only
-operations which use more than two pages are write-like operations,
-which have their own decoding logic.  Something like a getattr after a
-write may cross a page boundary, but it would be very unusual for it to
-cross another boundary after that.
-
-Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4xdr.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/sfc/siena.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -160,10 +160,10 @@ static __be32 *read_buf(struct nfsd4_com
- 	argp->p = page_address(argp->pagelist[0]);
- 	argp->pagelist++;
- 	if (argp->pagelen < PAGE_SIZE) {
--		argp->end = p + (argp->pagelen>>2);
-+		argp->end = argp->p + (argp->pagelen>>2);
- 		argp->pagelen = 0;
- 	} else {
--		argp->end = p + (PAGE_SIZE>>2);
-+		argp->end = argp->p + (PAGE_SIZE>>2);
- 		argp->pagelen -= PAGE_SIZE;
- 	}
- 	memcpy(((char*)p)+avail, argp->p, (nbytes - avail));
-@@ -1425,10 +1425,10 @@ nfsd4_decode_compound(struct nfsd4_compo
- 			argp->p = page_address(argp->pagelist[0]);
- 			argp->pagelist++;
- 			if (argp->pagelen < PAGE_SIZE) {
--				argp->end = p + (argp->pagelen>>2);
-+				argp->end = argp->p + (argp->pagelen>>2);
- 				argp->pagelen = 0;
- 			} else {
--				argp->end = p + (PAGE_SIZE>>2);
-+				argp->end = argp->p + (PAGE_SIZE>>2);
- 				argp->pagelen -= PAGE_SIZE;
- 			}
- 		}
+--- a/drivers/net/sfc/siena.c
++++ b/drivers/net/sfc/siena.c
+@@ -454,8 +454,17 @@ static int siena_try_update_nic_stats(st
+ 
+ static void siena_update_nic_stats(struct efx_nic *efx)
+ {
+-	while (siena_try_update_nic_stats(efx) == -EAGAIN)
+-		cpu_relax();
++	int retry;
++
++	/* If we're unlucky enough to read statistics wduring the DMA, wait
++	 * up to 10ms for it to finish (typically takes <500us) */
++	for (retry = 0; retry < 100; ++retry) {
++		if (siena_try_update_nic_stats(efx) == 0)
++			return;
++		udelay(100);
++	}
++
++	/* Use the old values instead */
+ }
+ 
+ static void siena_start_nic_stats(struct efx_nic *efx)
 
 
