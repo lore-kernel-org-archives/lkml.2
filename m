@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab0EJJrA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 05:47:00 -0400
-Received: from gate.crashing.org ([63.228.1.57]:60846 "EHLO gate.crashing.org"
+	id S1756223Ab0EJJrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 05:47:07 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60848 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753954Ab0EJJq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 05:46:58 -0400
+	id S1756168Ab0EJJrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 05:47:00 -0400
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
        davem@davemloft.net, lethal@linux-sh.org,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 24/25] lmb: Make lmb_alloc_try_nid() fallback to LMB_ALLOC_ANYWHERE
-Date: Mon, 10 May 2010 19:46:04 +1000
-Message-Id: <1273484765-29055-24-git-send-email-benh@kernel.crashing.org>
+Subject: [PATCH 25/25] lmb: Add debugfs files to dump the arrays content
+Date: Mon, 10 May 2010 19:46:05 +1000
+Message-Id: <1273484765-29055-25-git-send-email-benh@kernel.crashing.org>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1273484765-29055-23-git-send-email-benh@kernel.crashing.org>
+In-Reply-To: <1273484765-29055-24-git-send-email-benh@kernel.crashing.org>
 References: <1273484765-29055-1-git-send-email-benh@kernel.crashing.org>
  <1273484765-29055-2-git-send-email-benh@kernel.crashing.org>
  <1273484765-29055-3-git-send-email-benh@kernel.crashing.org>
@@ -39,41 +39,82 @@ References: <1273484765-29055-1-git-send-email-benh@kernel.crashing.org>
  <1273484765-29055-21-git-send-email-benh@kernel.crashing.org>
  <1273484765-29055-22-git-send-email-benh@kernel.crashing.org>
  <1273484765-29055-23-git-send-email-benh@kernel.crashing.org>
+ <1273484765-29055-24-git-send-email-benh@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lmb_alloc_nid() used to fallback to allocating anywhere by using
-lmb_alloc() as a fallback.
-
-However, some of my previous patches limit lmb_alloc() to the region
-covered by LMB_ALLOC_ACCESSIBLE which is not quite what we want
-for lmb_alloc_try_nid().
-
-So we fix it by explicitely using LMB_ALLOC_ANYWHERE.
-
-Not that so far only sparc uses lmb_alloc_nid() and it hasn't been updated
-to clamp the accessible zone yet. Thus the temporary "breakage" should have
-no effect.
-
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- lib/lmb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ lib/lmb.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 51 insertions(+), 0 deletions(-)
 
 diff --git a/lib/lmb.c b/lib/lmb.c
-index fd98261..6c38c87 100644
+index 6c38c87..1e11891 100644
 --- a/lib/lmb.c
 +++ b/lib/lmb.c
-@@ -531,7 +531,7 @@ phys_addr_t __init lmb_alloc_try_nid(phys_addr_t size, phys_addr_t align, int ni
+@@ -16,6 +16,8 @@
+ #include <linux/bitops.h>
+ #include <linux/poison.h>
+ #include <linux/pfn.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
+ #include <linux/lmb.h>
  
- 	if (res)
- 		return res;
--	return lmb_alloc(size, align);
-+	return lmb_alloc_base(size, align, LMB_ALLOC_ANYWHERE);
+ struct lmb lmb;
+@@ -696,3 +698,52 @@ static int __init early_lmb(char *p)
  }
+ early_param("lmb", early_lmb);
  
- 
++#ifdef CONFIG_DEBUG_FS
++
++static int lmb_debug_show(struct seq_file *m, void *private)
++{
++	struct lmb_type *type = m->private;
++	struct lmb_region *reg;
++	int i;
++
++	for (i = 0; i < type->cnt; i++) {
++		reg = &type->regions[i];
++		seq_printf(m, "%4d: ", i);
++		if (sizeof(phys_addr_t) == 4)
++			seq_printf(m, "0x%08lx..0x%08lx\n",
++				   (unsigned long)reg->base,
++				   (unsigned long)(reg->base + reg->size - 1));
++		else
++			seq_printf(m, "0x%016llx..0x%016llx\n",
++				   (unsigned long long)reg->base,
++				   (unsigned long long)(reg->base + reg->size - 1));
++
++	}
++	return 0;
++}
++
++static int lmb_debug_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, lmb_debug_show, inode->i_private);
++}
++
++static const struct file_operations lmb_debug_fops = {
++	.open = lmb_debug_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static int __init lmb_init_debugfs(void)
++{
++	struct dentry *root = debugfs_create_dir("lmb", NULL);
++	if (!root)
++		return -ENXIO;
++	debugfs_create_file("memory", S_IRUGO, root, &lmb.memory, &lmb_debug_fops);
++	debugfs_create_file("reserved", S_IRUGO, root, &lmb.reserved, &lmb_debug_fops);
++	
++	return 0;
++}
++__initcall(lmb_init_debugfs);
++
++#endif /* CONFIG_DEBUG_FS */
 -- 
 1.6.3.3
 
