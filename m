@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab0EJXBB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:01:01 -0400
-Received: from kroah.org ([198.145.64.141]:51704 "EHLO coco.kroah.org"
+	id S933116Ab0EJXBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:01:51 -0400
+Received: from kroah.org ([198.145.64.141]:51834 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932879Ab0EJW6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:00 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:38 2010
-Message-Id: <20100510223538.195128270@kvm.kroah.org>
+	id S932781Ab0EJW6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:07 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:39 2010
+Message-Id: <20100510223538.998531361@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:54 -0700
+Date: Mon, 10 May 2010 15:35:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Christian Lamparter <chunkeey@googlemail.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [42/98] p54pci: fix bugs in p54p_check_tx_ring
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [51/98] ALSA: hda: Use STAC_DELL_M6_BOTH quirk for Dell Studio 1558
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 0250ececdf6813457c98719e2d33b3684881fde0 upstream.
+commit 5c1bccf645d4ab65e4c7502acb42e8b9afdb5bdc upstream.
 
-Hans de Goede identified a bug in p54p_check_tx_ring:
+BugLink: https://launchpad.net/bugs/568600
 
-there are two ring indices. 1 => tx data and 3 => tx management.
-But the old code had a constant "1" and this resulted in spurious
-dma unmapping failures.
+The OR has verified that the dell-m6 model quirk is necessary for audio
+to be audible by default on the Dell Studio XPS 1645.
 
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=583623
-Bug-Identified-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This change is necessary for 2.6.32.11 and 2.6.33.2 alike.
+
+Reported-by: Andy Ross <andy@plausible.org>
+Tested-by: Andy Ross <andy@plausible.org>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/p54/p54pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_sigmatel.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/p54/p54pci.c
-+++ b/drivers/net/wireless/p54/p54pci.c
-@@ -237,7 +237,7 @@ static void p54p_check_tx_ring(struct ie
- 	u32 idx, i;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -1594,6 +1594,8 @@ static struct snd_pci_quirk stac92hd73xx
+ 				"Dell Studio 1557", STAC_DELL_M6_DMIC),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02fe,
+ 				"Dell Studio XPS 1645", STAC_DELL_M6_BOTH),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0413,
++				"Dell Studio 1558", STAC_DELL_M6_BOTH),
+ 	{} /* terminator */
+ };
  
- 	i = (*index) % ring_limit;
--	(*index) = idx = le32_to_cpu(ring_control->device_idx[1]);
-+	(*index) = idx = le32_to_cpu(ring_control->device_idx[ring_index]);
- 	idx %= ring_limit;
- 
- 	while (i != idx) {
 
 
