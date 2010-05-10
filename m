@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933500Ab0EJXoj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:44:39 -0400
-Received: from kroah.org ([198.145.64.141]:32923 "EHLO coco.kroah.org"
+	id S933375Ab0EJXoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:44:16 -0400
+Received: from ozlabs.org ([203.10.76.45]:48700 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932327Ab0EJWvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:51:47 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:18 2010
-Message-Id: <20100510223318.634906922@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:31:47 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jerome Marchand <jmarchan@redhat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Miklos Szeredi <mszeredi@suse.cz>,
-       Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [016/117] procfs: fix tid fdinfo
-In-Reply-To: <20100510223700.GA18404@kroah.com>
+	id S933477Ab0EJXnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 19:43:53 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: cpumask: fix compat getaffinity
+Date: Tue, 11 May 2010 09:13:47 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
+       Andi Kleen <andi@firstfloor.org>, Ken Werner <ken.werner@web.de>
+References: <201005071445.50147.arnd@arndb.de> <201005081800.48240.rusty@rustcorp.com.au> <201005081111.08720.arnd@arndb.de>
+In-Reply-To: <201005081111.08720.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005110913.49162.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+On Sat, 8 May 2010 06:41:08 pm Arnd Bergmann wrote:
+> On Saturday 08 May 2010 10:30:47 Rusty Russell wrote:
+> > 
+> > On Fri, 7 May 2010 10:15:49 pm Arnd Bergmann wrote:
+> > > Commit a45185d2d "cpumask: convert kernel/compat.c" broke
+> > > libnuma, which abuses sched_getaffinity to find out NR_CPUS
+> > > in order to parse /sys/devices/system/node/node*/cpumap.
+> > > 
+> > > On NUMA systems with less than 32 possibly CPUs, the
+> > > current compat_sys_sched_getaffinity now returns '4'
+> > > instead of the actual NR_CPUS/8, which makes libnuma
+> > > bail out when parsing the cpumap.
+> > 
+> > Really?  AFAICT the cpumap is printed using nr_cpu_ids too.  Can you
+> > give an example of what cpumap is on this system?
+> 
+> On Ken's PS3 running the Fedora 12 kernel (2.6.32-something), the output
+> from my memory is 00000000,00000000,00000000,00000003\n. NR_CPUs
+> is 128, nr_cpu_ids is most likely 2.
 
-------------------
+Ah, I see.  CONFIG_CPUMASK_OFFSTACK=n.
 
-From: Jerome Marchand <jmarchan@redhat.com>
+The nr_cpumask_bits is really an optimization for cpumask_first etc: making
+it a constant (NR_CPUS) rather than a variable (nr_cpu_ids) for small NR_CPUS
+makes it slightly faster.
 
-commit 3835541dd481091c4dbf5ef83c08aed12e50fd61 upstream.
+However, we also use this for scnprintf et al, revealing this inconsistency.
+Your patch would break libnuma on CONFIG_CPUMASK_OFFSTACK=y.
 
-Correct the file_operations struct in fdinfo entry of tid_base_stuff[].
+How's this?
 
-Presently /proc/*/task/*/fdinfo contains symlinks to opened files like
-/proc/*/fd/.
+cpumask: use nr_cpu_ids for printing and parsing cpumasks
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Commit a45185d2d "cpumask: convert kernel/compat.c" broke
+libnuma, which abuses sched_getaffinity to find out NR_CPUS
+in order to parse /sys/devices/system/node/node*/cpumap.
 
----
- fs/proc/base.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+However, the result now returned reflects nr_cpu_ids, and
+cpumask_scnprintf et al. use nr_cpumask_bits which is NR_CPUS (for
+CONFIG_CPUMASK_OFFSTACK=n) or nr_cpu_ids (for
+CONFIG_CPUMASK_OFFSTACK=y).
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2910,7 +2910,7 @@ out_no_task:
+We should use nr_cpu_ids consistently.
+
+Reported-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Cc: stable@kernel.org
+
+diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+--- a/include/linux/cpumask.h
++++ b/include/linux/cpumask.h
+@@ -529,7 +529,7 @@ static inline void cpumask_copy(struct c
+ static inline int cpumask_scnprintf(char *buf, int len,
+ 				    const struct cpumask *srcp)
+ {
+-	return bitmap_scnprintf(buf, len, cpumask_bits(srcp), nr_cpumask_bits);
++	return bitmap_scnprintf(buf, len, cpumask_bits(srcp), nr_cpu_ids);
+ }
+ 
+ /**
+@@ -543,7 +543,7 @@ static inline int cpumask_scnprintf(char
+ static inline int cpumask_parse_user(const char __user *buf, int len,
+ 				     struct cpumask *dstp)
+ {
+-	return bitmap_parse_user(buf, len, cpumask_bits(dstp), nr_cpumask_bits);
++	return bitmap_parse_user(buf, len, cpumask_bits(dstp), nr_cpu_ids);
+ }
+ 
+ /**
+@@ -558,8 +558,7 @@ static inline int cpumask_parse_user(con
+ static inline int cpulist_scnprintf(char *buf, int len,
+ 				    const struct cpumask *srcp)
+ {
+-	return bitmap_scnlistprintf(buf, len, cpumask_bits(srcp),
+-				    nr_cpumask_bits);
++	return bitmap_scnlistprintf(buf, len, cpumask_bits(srcp), nr_cpu_ids);
+ }
+ 
+ /**
+@@ -572,7 +571,7 @@ static inline int cpulist_scnprintf(char
   */
- static const struct pid_entry tid_base_stuff[] = {
- 	DIR("fd",        S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
--	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fd_operations),
-+	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
- 	REG("environ",   S_IRUSR, proc_environ_operations),
- 	INF("auxv",      S_IRUSR, proc_pid_auxv),
- 	ONE("status",    S_IRUGO, proc_pid_status),
-
-
+ static inline int cpulist_parse(const char *buf, struct cpumask *dstp)
+ {
+-	return bitmap_parselist(buf, cpumask_bits(dstp), nr_cpumask_bits);
++	return bitmap_parselist(buf, cpumask_bits(dstp), nr_cpu_ids);
+ }
+ 
+ /**
