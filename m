@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab0EJQWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 12:22:48 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:56446 "EHLO
+	id S1754018Ab0EJQWw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 12:22:52 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:56450 "EHLO
 	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab0EJQWo (ORCPT
+	with ESMTP id S1753195Ab0EJQWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 12:22:44 -0400
+	Mon, 10 May 2010 12:22:45 -0400
 From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
@@ -14,108 +14,135 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
        grant.likely@secretlab.ca, bryan.wu@canonical.com,
        amit.kucheria@canonical.com, Jun.Li@freescale.com,
        xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv2 2.6.34-rc7 2/3] mx5: change usb clock source from pll3 to pll2
-Date: Mon, 10 May 2010 11:21:58 -0500
-Message-Id: <1273508519-23033-2-git-send-email-Dinh.Nguyen@freescale.com>
+Subject: [PATCHv2 2.6.34-rc7 3/3] mx5: enable usb gadget for freescale mx51 babbage board
+Date: Mon, 10 May 2010 11:21:59 -0500
+Message-Id: <1273508519-23033-3-git-send-email-Dinh.Nguyen@freescale.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1273508519-23033-1-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <1273508519-23033-2-git-send-email-Dinh.Nguyen@freescale.com>
 References: <1273508519-23033-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1273508519-23033-2-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For power management reasons, pll2 should be used to source the USBOH3
-clock for mx51. PLL3 can be completely gated off when USB is not used.
+This patch enables usb gadget for freescale mx51 babbage hw. By default,
+the OTG port will be in device mode. To put the OTG port into Host mode,
+pass "otg_mode=host" in the exec command.
 
 This patch applies to 2.6.34-rc7.
 
 Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- arch/arm/mach-mx5/clock-mx51.c |   43 ++++++++++++++++++++++++++++++++++++---
- 1 files changed, 39 insertions(+), 4 deletions(-)
+ arch/arm/mach-mx5/board-mx51_babbage.c |   28 +++++++++++++++++++++++++++-
+ arch/arm/mach-mx5/clock-mx51.c         |    2 ++
+ arch/arm/mach-mx5/devices.c            |   12 ++++++++++++
+ arch/arm/mach-mx5/devices.h            |    1 +
+ 4 files changed, 42 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
-index 1fe40e1..b63ba71 100644
---- a/arch/arm/mach-mx5/clock-mx51.c
-+++ b/arch/arm/mach-mx5/clock-mx51.c
-@@ -37,6 +37,7 @@ static struct clk lp_apm_clk;
- static struct clk periph_apm_clk;
- static struct clk ahb_clk;
- static struct clk ipg_clk;
-+static struct clk usboh3_clk;
+diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
+index 99f7ea9..dacf506 100644
+--- a/arch/arm/mach-mx5/board-mx51_babbage.c
++++ b/arch/arm/mach-mx5/board-mx51_babbage.c
+@@ -15,6 +15,7 @@
+ #include <linux/gpio.h>
+ #include <linux/delay.h>
+ #include <linux/io.h>
++#include <linux/fsl_devices.h>
  
- #define MAX_DPLL_WAIT_TRIES	1000 /* 1000 * udelay(1) = 1ms */
- 
-@@ -570,6 +571,35 @@ static int _clk_uart_set_parent(struct clk *clk, struct clk *parent)
- 	return 0;
- }
- 
-+static unsigned long clk_usboh3_get_rate(struct clk *clk)
-+{
-+	u32 reg, prediv, podf;
-+	unsigned long parent_rate;
-+
-+	parent_rate = clk_get_rate(clk->parent);
-+
-+	reg = __raw_readl(MXC_CCM_CSCDR1);
-+	prediv = ((reg & MXC_CCM_CSCDR1_USBOH3_CLK_PRED_MASK) >>
-+		  MXC_CCM_CSCDR1_USBOH3_CLK_PRED_OFFSET) + 1;
-+	podf = ((reg & MXC_CCM_CSCDR1_USBOH3_CLK_PODF_MASK) >>
-+		MXC_CCM_CSCDR1_USBOH3_CLK_PODF_OFFSET) + 1;
-+
-+	return parent_rate / (prediv * podf);
-+}
-+
-+static int _clk_usboh3_set_parent(struct clk *clk, struct clk *parent)
-+{
-+	u32 reg, mux;
-+
-+	mux = _get_mux(parent, &pll1_sw_clk, &pll2_sw_clk, &pll3_sw_clk,
-+		       &lp_apm_clk);
-+	reg = __raw_readl(MXC_CCM_CSCMR1) & ~MXC_CCM_CSCMR1_USBOH3_CLK_SEL_MASK;
-+	reg |= mux << MXC_CCM_CSCMR1_USBOH3_CLK_SEL_OFFSET;
-+	__raw_writel(reg, MXC_CCM_CSCMR1);
-+
-+	return 0;
-+}
-+
- static unsigned long get_high_reference_clock_rate(struct clk *clk)
- {
- 	return external_high_reference;
-@@ -691,6 +721,12 @@ static struct clk uart_root_clk = {
- 	.set_parent = _clk_uart_set_parent,
+ #include <mach/common.h>
+ #include <mach/hardware.h>
+@@ -179,12 +180,32 @@ static struct mxc_usbh_platform_data dr_utmi_config = {
+ 	.flags	= MXC_EHCI_INTERNAL_PHY,
  };
  
-+static struct clk usboh3_clk = {
-+	.parent = &pll2_sw_clk,
-+	.get_rate = clk_usboh3_get_rate,
-+	.set_parent = _clk_usboh3_set_parent,
++static struct fsl_usb2_platform_data usb_pdata = {
++	.operating_mode	= FSL_USB2_DR_DEVICE,
++	.phy_mode	= FSL_USB2_PHY_UTMI_WIDE,
 +};
 +
- static struct clk ahb_max_clk = {
- 	.parent = &ahb_clk,
- 	.enable_reg = MXC_CCM_CCGR0,
-@@ -762,10 +798,6 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG9_OFFSET,
- DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
- 	NULL,  NULL, &ipg_clk, NULL);
+ static struct mxc_usbh_platform_data usbh1_config = {
+ 	.init		= initialize_usbh1_port,
+ 	.portsc	= MXC_EHCI_MODE_ULPI,
+ 	.flags	= (MXC_EHCI_POWER_PINS_ENABLED | MXC_EHCI_ITC_NO_THRESHOLD),
+ };
  
--/* USB */
--DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
--	NULL, NULL, &pll3_sw_clk, NULL);
--
- /* FEC */
- DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
- 	NULL,  NULL, &ipg_clk, NULL);
-@@ -827,6 +859,9 @@ int __init mx51_clocks_init(unsigned long ckil, unsigned long osc,
- 	clk_enable(&cpu_clk);
- 	clk_enable(&main_bus_clk);
- 
-+	/* set the usboh3_clk parent to pll2_sw_clk */
-+	clk_set_parent(&usboh3_clk, &pll2_sw_clk);
++static int otg_mode_host;
 +
- 	/* System timer */
- 	mxc_timer_init(&gpt_clk, MX51_IO_ADDRESS(MX51_GPT1_BASE_ADDR),
- 		MX51_MXC_INT_GPT);
++static int __init babbage_otg_mode(char *options)
++{
++	if (!strcmp(options, "host"))
++		otg_mode_host = 1;
++	else if (!strcmp(options, "device"))
++		otg_mode_host = 0;
++	else
++		pr_info("otg_mode neither \"host\" nor \"device\". "
++			"Defaulting to device\n");
++	return 0;
++}
++__setup("otg_mode=", babbage_otg_mode);
++
+ /*
+  * Board specific initialization.
+  */
+@@ -197,7 +218,12 @@ static void __init mxc_board_init(void)
+ 	mxc_init_imx_uart();
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
+ 
+-	mxc_register_device(&mxc_usbdr_host_device, &dr_utmi_config);
++	if (otg_mode_host)
++		mxc_register_device(&mxc_usbdr_host_device, &dr_utmi_config);
++	else {
++		initialize_otg_port(NULL);
++		mxc_register_device(&mxc_usbdr_udc_device, &usb_pdata);
++	}
+ 
+ 	gpio_usbh1_active();
+ 	mxc_register_device(&mxc_usbh1_device, &usbh1_config);
+diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
+index b63ba71..d9f612d 100644
+--- a/arch/arm/mach-mx5/clock-mx51.c
++++ b/arch/arm/mach-mx5/clock-mx51.c
+@@ -819,6 +819,8 @@ static struct clk_lookup lookups[] = {
+ 	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
+ 	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
+ 	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
++	_REGISTER_CLOCK("fsl-usb2-udc", "usb", usboh3_clk)
++	_REGISTER_CLOCK("fsl-usb2-udc", "usb_ahb", ahb_clk)
+ };
+ 
+ static void clk_tree_init(void)
+diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
+index e6262f3..23850e6 100644
+--- a/arch/arm/mach-mx5/devices.c
++++ b/arch/arm/mach-mx5/devices.c
+@@ -107,6 +107,18 @@ static struct resource usbotg_resources[] = {
+ 	},
+ };
+ 
++/* OTG gadget device */
++struct platform_device mxc_usbdr_udc_device = {
++	.name		= "fsl-usb2-udc",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(usbotg_resources),
++	.resource	= usbotg_resources,
++	.dev		= {
++		.dma_mask		= &usb_dma_mask,
++		.coherent_dma_mask	= DMA_BIT_MASK(32),
++	},
++};
++
+ struct platform_device mxc_usbdr_host_device = {
+ 	.name = "mxc-ehci",
+ 	.id = 0,
+diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
+index 95c45f9..0494d6b 100644
+--- a/arch/arm/mach-mx5/devices.h
++++ b/arch/arm/mach-mx5/devices.h
+@@ -4,3 +4,4 @@ extern struct platform_device mxc_uart_device2;
+ extern struct platform_device mxc_fec_device;
+ extern struct platform_device mxc_usbdr_host_device;
+ extern struct platform_device mxc_usbh1_device;
++extern struct platform_device mxc_usbdr_udc_device;
 -- 
 1.6.0.4
 
