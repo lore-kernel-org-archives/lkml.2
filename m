@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab0EJXQU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:16:20 -0400
-Received: from kroah.org ([198.145.64.141]:51821 "EHLO coco.kroah.org"
+	id S933192Ab0EJXDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:03:31 -0400
+Received: from kroah.org ([198.145.64.141]:45294 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757470Ab0EJW6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:05 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:38 2010
-Message-Id: <20100510223538.815477438@kvm.kroah.org>
+	id S932892Ab0EJW6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:22 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:40 2010
+Message-Id: <20100510223540.701362816@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:01 -0700
+Date: Mon, 10 May 2010 15:35:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Kunal Gangakhedkar <kunal.gangakhedkar@gmail.com>,
-       Takashi Iwai <tiwai@suse.de>
-Subject: [49/98] ALSA: hda - Add PCI quirk for HP dv6-1110ax.
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Kumar Gala <galak@kernel.crashing.org>, Wufei <fei.wu@windriver.com>,
+       Jason Wessel <jason.wessel@windriver.com>
+Subject: [70/98] kgdb: dont needlessly skip PAGE_USER test for Fsl booke
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kunal Gangakhedkar <kunal.gangakhedkar@gmail.com>
+From: Wufei <fei.wu@windriver.com>
 
-commit e3d2530a6cea80987f77b75d8784a00f3aaf22ff upstream.
+commit 56151e753468e34aeb322af4b0309ab727c97d2e upstream.
 
-Adding this PCI quirk fixes the board config detection.
-This also fixes jack sensing by using "hp_detect=1" via properly detected
-board config.
+The bypassing of this test is a leftover from 2.4 vintage
+kernels, and is no longer appropriate, or even used by KGDB.
+Currently KGDB uses probe_kernel_write() for all access to
+memory via the KGDB core, so it can simply be deleted.
 
-Signed-off-by: Kunal Gangakhedkar <kunal.gangakhedkar@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This fixes CVE-2010-1446.
+
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Wufei <fei.wu@windriver.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/mm/fsl_booke_mmu.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -1712,6 +1712,8 @@ static struct snd_pci_quirk stac92hd71bx
- 		      "HP HDX", STAC_HP_HDX),  /* HDX16 */
- 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xfff0, 0x3620,
- 		      "HP dv6", STAC_HP_DV5),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x3061,
-+		      "HP dv6", STAC_HP_DV5), /* HP dv6-1110ax */
- 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xfff0, 0x7010,
- 		      "HP", STAC_HP_DV5),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0233,
+--- a/arch/powerpc/mm/fsl_booke_mmu.c
++++ b/arch/powerpc/mm/fsl_booke_mmu.c
+@@ -131,15 +131,10 @@ void settlbcam(int index, unsigned long
+ 	TLBCAM[index].MAS3 = (phys & PAGE_MASK) | MAS3_SX | MAS3_SR;
+ 	TLBCAM[index].MAS3 |= ((flags & _PAGE_RW) ? MAS3_SW : 0);
+ 
+-#ifndef CONFIG_KGDB /* want user access for breakpoints */
+ 	if (flags & _PAGE_USER) {
+ 	   TLBCAM[index].MAS3 |= MAS3_UX | MAS3_UR;
+ 	   TLBCAM[index].MAS3 |= ((flags & _PAGE_RW) ? MAS3_UW : 0);
+ 	}
+-#else
+-	TLBCAM[index].MAS3 |= MAS3_UX | MAS3_UR;
+-	TLBCAM[index].MAS3 |= ((flags & _PAGE_RW) ? MAS3_UW : 0);
+-#endif
+ 
+ 	tlbcam_addrs[index].start = virt;
+ 	tlbcam_addrs[index].limit = virt + size - 1;
 
 
