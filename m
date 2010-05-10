@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab0EJQMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 12:12:55 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35892
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752634Ab0EJQMw (ORCPT
+	id S1754747Ab0EJQNl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 12:13:41 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:48250 "EHLO
+	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752594Ab0EJQNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 12:12:52 -0400
-Date: Mon, 10 May 2010 09:12:57 -0700 (PDT)
-Message-Id: <20100510.091257.51273494.davem@davemloft.net>
-To: kaber@trash.net
-Cc: eric.dumazet@gmail.com, Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org,
-       peterz@infradead.org, linux-kernel@vger.kernel.org,
-       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-       paulmck@linux.vnet.ibm.com
-Subject: Re: mmotm 2010-04-28 - RCU whinges
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4BE8290A.2080707@trash.net>
-References: <1272865436.2173.182.camel@edumazet-laptop>
-	<20100502.225509.233880079.davem@davemloft.net>
-	<4BE8290A.2080707@trash.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 10 May 2010 12:13:37 -0400
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 May 2010 12:13:37 EDT
+Date: Mon, 10 May 2010 12:07:24 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>
+Subject: Re: 2.6.34-rc6-git6: Reported regressions from 2.6.33
+Message-ID: <20100510160724.GA31416@elliptictech.com>
+Mail-Followup-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Maciej Rutecki <maciej.rutecki@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Kernel Testers List <kernel-testers@vger.kernel.org>,
+	Network Development <netdev@vger.kernel.org>,
+	Linux ACPI <linux-acpi@vger.kernel.org>,
+	Linux PM List <linux-pm@lists.linux-foundation.org>,
+	Linux SCSI List <linux-scsi@vger.kernel.org>,
+	Linux Wireless List <linux-wireless@vger.kernel.org>,
+	DRI <dri-devel@lists.sourceforge.net>
+References: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrick McHardy <kaber@trash.net>
-Date: Mon, 10 May 2010 17:40:58 +0200
+On 23:13 Sun 09 May     , Rafael J. Wysocki wrote:
+> This message contains a list of some regressions from 2.6.33,
+> for which there are no fixes in the mainline known to the tracking team.
+> If any of them have been fixed already, please let us know.
+> 
+> If you know of any other unresolved regressions from 2.6.33, please let us
+> know either and we'll add them to the list.  Also, please let us know
+> if any of the entries below are invalid.
 
-> I queued this patch in nf-next, the only reason why I haven't
-> submitted it yet is that I was unable to get git to cleanly export
-> only the proper set of patches meant for -next due to a few merges,
-> it insists on including 5 patches already merged upstream. If you
-> don't mind ignoring the first 5 patches in the series, I'll send a
-> pull request tonight.
+Seems that
 
-Something like "git format-patch origin" doesn't avoid those upstream
-commits?  Weird...
+  r600 CS checker rejects narrow FBO renderbuffers
+  https://bugs.freedesktop.org/show_bug.cgi?id=27609
 
-Another trick is to specify a commit range using triple-dot "..."
-notation, such as "origin...master"
+never got added to the list.  It is still an issue as of 2.6.34-rc7.
+
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
