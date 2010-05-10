@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab0EJAcx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 20:32:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42391 "EHLO smtps.tip.net.au"
+	id S1754790Ab0EJAdQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 20:33:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54398 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753411Ab0EJAcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 20:32:51 -0400
-Date: Mon, 10 May 2010 10:32:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-       Vaibhav Hiremath <hvaibhav@ti.com>
-Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
-Message-Id: <20100510103249.55e033bd.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1753411Ab0EJAdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 20:33:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,358,1270450800"; 
+   d="scan'208";a="516421984"
+Subject: Re: linux-next: Tree for May 7 (apei)
+From: Huang Ying <ying.huang@intel.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>, Len Brown <lenb@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+In-Reply-To: <20100507085509.fb5682d4.randy.dunlap@oracle.com>
+References: <20100507155520.75026a8b.sfr@canb.auug.org.au>
+	 <20100507085509.fb5682d4.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 May 2010 08:33:10 +0800
+Message-ID: <1273451590.3344.52.camel@yhuang-dev.sh.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+On Fri, 2010-05-07 at 23:55 +0800, Randy Dunlap wrote:
+> On Fri, 7 May 2010 15:55:20 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20100506:
+> 
+> 
+> drivers/acpi/apei/einj.c:127:error: implicit declaration of function 'ndelay'
+> => needs to #include <linux/delay.h>
+> 
+> 
+> 
+> ghes.c:(.text+0x119e71): undefined reference to `apei_mce_report_mem_error'
+> 
+> CONFIG_X86_MCE is not enabled, so make never descends into the
+> arch/x86/kernel/cpu/mcheck/ sub-directory to build mce-apei.o.
+> 
+> config attached.
 
-Today's linux-next merge of the v4l-dvb tree got a conflict in
-drivers/media/video/Makefile between commit
-b704e82a54591d69816b45f4324caf143f1a6fc8 ("V4L/DVB: V4L - Makfile:Removed
-duplicate entry of davinci") from Linus' tree and commit
-3b5ce90284aff5f8683cfd08e0e1b38f73ad0aa8 ("V4L/DVB: V4L: SuperH Video
-Output Unit (VOU) driver") from the v4l-dvb tree.
+Hi, Randy,
 
-Just context changes.  I fixed it up (see below) and can carry the fix
-for a while.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thank you for your reporting. I will fix it as soon as possible.
 
-diff --cc drivers/media/video/Makefile
-index c51c386,cc93859..0000000
---- a/drivers/media/video/Makefile
-+++ b/drivers/media/video/Makefile
-@@@ -160,6 -166,10 +166,8 @@@ obj-$(CONFIG_VIDEO_MX3)			+= mx3_camera
-  obj-$(CONFIG_VIDEO_PXA27x)		+= pxa_camera.o
-  obj-$(CONFIG_VIDEO_SH_MOBILE_CEU)	+= sh_mobile_ceu_camera.o
-  
- -obj-$(CONFIG_ARCH_DAVINCI)		+= davinci/
- -
-+ obj-$(CONFIG_VIDEO_SH_VOU)		+= sh_vou.o
-+ 
-  obj-$(CONFIG_VIDEO_AU0828) += au0828/
-  
-  obj-$(CONFIG_USB_VIDEO_CLASS)	+= uvc/
+Hi, Len,
+
+Fixing them in a new fixing patch or providing a update version (v2) of
+whole patch queue, which one do you prefer?
+
+Best Regards,
+Huang Ying
+
+
