@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757960Ab0EJXb3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:31:29 -0400
-Received: from kroah.org ([198.145.64.141]:33295 "EHLO coco.kroah.org"
+	id S1757994Ab0EJXbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:31:48 -0400
+Received: from crca.org.au ([74.207.252.120]:36922 "EHLO crca.org.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932486Ab0EJWwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:40 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:24 2010
-Message-Id: <20100510223324.601081932@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:51 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-       Gautham R Shenoy <ego@in.ibm.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [080/117] powerpc: Move checks in pseries_mach_cpu_die()
-In-Reply-To: <20100510223700.GA18404@kroah.com>
+	id S1757969Ab0EJXbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 19:31:40 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BE89757.4000307@tuxonice.net>
+Date: Tue, 11 May 2010 09:31:35 +1000
+From: Nigel Cunningham <nigel@tuxonice.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk, Daniel T Chen <crimsun@ubuntu.com>,
+       Takashi Iwai <tiwai@suse.de>
+Subject: Re: [51/98] ALSA: hda: Use STAC_DELL_M6_BOTH quirk for Dell Studio
+ 1558
+References: <20100510223538.998531361@kvm.kroah.org>
+In-Reply-To: <20100510223538.998531361@kvm.kroah.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+Hi again.
 
-------------------
+On 11/05/10 08:35, Greg KH wrote:
+> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+>
+> ------------------
+>
+> From: Daniel T Chen<crimsun@ubuntu.com>
+>
+> commit 5c1bccf645d4ab65e4c7502acb42e8b9afdb5bdc upstream.
+>
+> BugLink: https://launchpad.net/bugs/568600
+>
+> The OR has verified that the dell-m6 model quirk is necessary for audio
+> to be audible by default on the Dell Studio XPS 1645.
 
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+My previous comment (commit message doesn't match code) applies here too.
 
-commit 0212f2602a38e740d5a96aba4cebfc2ebc993ecf upstream.
+Regards,
 
-Rearrange condition checks for better code readability and
-	prevention of possible race conditions when
-	preferred_offline_state can potentially change during the
-	execution of pseries_mach_cpu_die().  The patch will make
-	pseries_mach_cpu_die() put cpu in one of the consistent states
-	and not hit the run over BUG()
+Nigel
 
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Cc: Gautham R Shenoy <ego@in.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/powerpc/platforms/pseries/hotplug-cpu.c |   30 +++++++++++++--------------
- 1 file changed, 15 insertions(+), 15 deletions(-)
-
---- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
-@@ -140,25 +140,25 @@ static void pseries_mach_cpu_die(void)
- 		if (!get_lppaca()->shared_proc)
- 			get_lppaca()->donate_dedicated_cpu = 0;
- 		get_lppaca()->idle = 0;
--	}
- 
--	if (get_preferred_offline_state(cpu) == CPU_STATE_ONLINE) {
--		unregister_slb_shadow(hwcpu, __pa(get_slb_shadow()));
-+		if (get_preferred_offline_state(cpu) == CPU_STATE_ONLINE) {
-+			unregister_slb_shadow(hwcpu, __pa(get_slb_shadow()));
- 
--		/*
--		 * Call to start_secondary_resume() will not return.
--		 * Kernel stack will be reset and start_secondary()
--		 * will be called to continue the online operation.
--		 */
--		start_secondary_resume();
-+			/*
-+			 * Call to start_secondary_resume() will not return.
-+			 * Kernel stack will be reset and start_secondary()
-+			 * will be called to continue the online operation.
-+			 */
-+			start_secondary_resume();
-+		}
-+	}
- 
--	} else if (get_preferred_offline_state(cpu) == CPU_STATE_OFFLINE) {
-+	/* Requested state is CPU_STATE_OFFLINE at this point */
-+	WARN_ON(get_preferred_offline_state(cpu) != CPU_STATE_OFFLINE);
- 
--		set_cpu_current_state(cpu, CPU_STATE_OFFLINE);
--		unregister_slb_shadow(hard_smp_processor_id(),
--					__pa(get_slb_shadow()));
--		rtas_stop_self();
--	}
-+	set_cpu_current_state(cpu, CPU_STATE_OFFLINE);
-+	unregister_slb_shadow(hwcpu, __pa(get_slb_shadow()));
-+	rtas_stop_self();
- 
- 	/* Should never get here... */
- 	BUG();
-
+> This change is necessary for 2.6.32.11 and 2.6.33.2 alike.
+>
+> Reported-by: Andy Ross<andy@plausible.org>
+> Tested-by: Andy Ross<andy@plausible.org>
+> Signed-off-by: Daniel T Chen<crimsun@ubuntu.com>
+> Signed-off-by: Takashi Iwai<tiwai@suse.de>
+> Signed-off-by: Greg Kroah-Hartman<gregkh@suse.de>
+>
+> ---
+>   sound/pci/hda/patch_sigmatel.c |    2 ++
+>   1 file changed, 2 insertions(+)
+>
+> --- a/sound/pci/hda/patch_sigmatel.c
+> +++ b/sound/pci/hda/patch_sigmatel.c
+> @@ -1594,6 +1594,8 @@ static struct snd_pci_quirk stac92hd73xx
+>   				"Dell Studio 1557", STAC_DELL_M6_DMIC),
+>   	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02fe,
+>   				"Dell Studio XPS 1645", STAC_DELL_M6_BOTH),
+> +	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0413,
+> +				"Dell Studio 1558", STAC_DELL_M6_BOTH),
+>   	{} /* terminator */
+>   };
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
