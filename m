@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab0EJViz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 17:38:55 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38197 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab0EJVix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 17:38:53 -0400
-Date: Mon, 10 May 2010 23:38:41 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Amerigo Wang <xiyou.wangcong@gmail.com>
-Cc: Jan Kiszka <jan.kiszka@web.de>, linux-kernel@vger.kernel.org,
-       user-mode-linux-devel@lists.sourceforge.net,
-       Jeff Dike <jdike@addtoit.com>
-Subject: Re: [PATCH 4/5] uml: i386: Avoid redefinition of NR_syscalls
-In-Reply-To: <20100421061205.GC4467@cr0.nay.redhat.com>
-Message-ID: <alpine.LNX.2.00.1005102338190.28092@pobox.suse.cz>
-References: <cover.1271713955.git.jan.kiszka@web.de> <3e07ad1a38e88a22d7298deb88a8f3962b101998.1271713955.git.jan.kiszka@web.de> <20100420101056.GC5317@cr0.nay.redhat.com> <4BCDE103.7080709@web.de> <20100421061205.GC4467@cr0.nay.redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757316Ab0EJVjE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 17:39:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43755 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756537Ab0EJVi5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 17:38:57 -0400
+Date: Mon, 10 May 2010 14:38:50 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cpuidle: Add a repeating pattern detector to the
+ menu governor
+Message-Id: <20100510143850.fde16046.akpm@linux-foundation.org>
+In-Reply-To: <20100509160444.260ca9c9@infradead.org>
+References: <20100509160242.2e351e6a@infradead.org>
+	<20100509160444.260ca9c9@infradead.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Apr 2010, Amerigo Wang wrote:
+On Sun, 9 May 2010 16:04:44 -0700
+Arjan van de Ven <arjan@infradead.org> wrote:
 
-> >> Where?
-> >
-> >Not sure if this answers your question:
-> >
-> >  CC      arch/um/kernel/skas/syscall.o
-> >/data/linux-2.6/arch/um/kernel/skas/syscall.c:13:1: warning:
-> >"NR_syscalls" redefined
-> >In file included from /data/linux-2.6/arch/x86/include/asm/unistd.h:3,
-> >                 from
-> >/data/linux-2.6/arch/um/sys-i386/shared/sysdep/syscalls.h:6,
-> >                 from /data/linux-2.6/arch/um/kernel/skas/syscall.c:10:
-> >/data/linux-2.6/arch/x86/include/asm/unistd_32.h:349:1: warning: this is
-> >the location of the previous definition
-> >
-> 
-> Ah, sure. I misunderstood your purpose, please do include the warning
-> messages you are trying to fix in your patch description.
+> +static void detect_repeating_patterns(struct menu_device *data)
+> +{
+> +	int i;
+> +	uint64_t avg = 0;
+> +	uint64_t stddev = 0; /* contains the square of the std deviation */
+> +
+> +	/* first calculate average and standard deviation of the past */
+> +	for (i = 0; i < INTERVALS; i++)
+> +		avg += data->intervals[i];
+> +
+> +	/* if the avg is beyond the known next tick, it's worthless */
+> +	if (avg > data->expected_us)
+> +		return;
+> +
+> +	avg = avg / INTERVALS;
+> +	for (i = 0; i < INTERVALS; i++)
+> +		stddev += (data->intervals[i] - avg) *
+> +			  (data->intervals[i] - avg);
+> +
+> +	stddev = stddev / INTERVALS;
+> +
+> +	/*
+> +	 * now.. if stddev is small.. then assume we have a
+> +	 * repeating pattern and predict we keep doing this.
+> +	 */
+> +
+> +	if (avg && stddev < STDDEV_THRESH)
+> +		data->predicted_us = avg;
+> +}
 
-The patch doesn't seem to be present in linux-next as of today. I have 
-applied it to my queue.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+You got lucky there, because INTERVALS is a power of two.  If someone
+changes INTERVALS to 7, this code will ask for __udivdi3 and won't link
+on i364.
