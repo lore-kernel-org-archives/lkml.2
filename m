@@ -1,136 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab0EJMcI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 08:32:08 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:26202 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab0EJMcE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 08:32:04 -0400
-Date: Mon, 10 May 2010 15:35:14 +0300
-From: Eduardo Valentin <eduardo.valentin@nokia.com>
-To: ext Paul Mundt <lethal@linux-sh.org>
-Cc: "Valentin Eduardo (Nokia-D/Helsinki)" <eduardo.valentin@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       Linux-OMAP <linux-omap@vger.kernel.org>,
-       Russell King <linux@arm.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       ext Tony Lindgren <tony@atomide.com>,
-       ext Kevin Hilman <khilman@deeprootsystems.com>,
-       "De-Schrijver Peter (Nokia-D/Helsinki)" 
-	<Peter.De-Schrijver@nokia.com>,
-       "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-       Ambresh <a0393775@ti.com>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Subject: Re: [PATCHv4 1/4] procfs: Introduce socinfo under /proc
-Message-ID: <20100510123514.GA11804@besouro.research.nokia.com>
-Reply-To: eduardo.valentin@nokia.com
-References: <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com>
- <1273487857-32281-3-git-send-email-eduardo.valentin@nokia.com>
- <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com>
- <1273487857-32281-2-git-send-email-eduardo.valentin@nokia.com>
- <20100510111259.GA14680@linux-sh.org>
+	id S1753344Ab0EJMeD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 08:34:03 -0400
+Received: from ozlabs.org ([203.10.76.45]:42647 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751956Ab0EJMd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 08:33:59 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: build warnings after merge of the rr tree
+Date: Mon, 10 May 2010 22:03:53 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100510134409.4bbf1873.sfr@canb.auug.org.au> <20100510134620.2e06495b.sfr@canb.auug.org.au>
+In-Reply-To: <20100510134620.2e06495b.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100510111259.GA14680@linux-sh.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 10 May 2010 12:31:43.0534 (UTC) FILETIME=[BF84DCE0:01CAF03C]
-X-Nokia-AV: Clean
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005102203.54784.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 01:13:00PM +0200, ext Paul Mundt wrote:
-> On Mon, May 10, 2010 at 01:37:34PM +0300, Eduardo Valentin wrote:
-> > + */
-> > +#include <linux/fs.h>
-> > +#include <linux/init.h>
-> > +#include <linux/proc_fs.h>
-> > +#include <linux/seq_file.h>
-> > +
-> > +extern const struct seq_operations socinfo_op;
+On Mon, 10 May 2010 01:16:20 pm Stephen Rothwell wrote:
+> Hi Rusty,
 > 
-> This doesn't look promising..
-
-Right.. as stated in patch description (maybe not that clear), this was
-basically same thing which you see under fs/proc/cpuinfo.c
-
+> On Mon, 10 May 2010 13:44:09 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > drivers/acpi/debug.c:141: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type
+> > include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, struct kernel_param *)' but argument is of type 'int (*)(const char *, const struct kernel_param *)'
+> > 
+> > Introduced by commit a1c3b92923eced4ee034fa15bf058f91e435e08c ("param:param_ops").
 > 
-> > +static int socinfo_open(struct inode *inode, struct file *file)
-> > +{
-> > +	return seq_open(file, &socinfo_op);
-> > +}
-> > +
-> If you use single_open() ..
+> Also
 > 
-> > +static const struct file_operations proc_socinfo_operations = {
-> > +	.open		= socinfo_open,
-> > +	.read		= seq_read,
-> > +	.llseek		= seq_lseek,
-> > +	.release	= seq_release,
-> > +};
-> > +
-> .. and single_release(), then none of the seq_operations are necessary.
+> drivers/message/fusion/mptbase.c:112: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type
+> include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, struct kernel_param *)' but argument is of type 'int (*)(const char *, const struct kernel_param *)'
 
-Good! will replace than with single_[open,release].
+Thanks, these are harmless, and I had followup patches outside linux-next
+which resolve them.
 
-> 
-> > +static int __init proc_socinfo_init(void)
-> > +{
-> > +	proc_create("socinfo", 0, NULL, &proc_socinfo_operations);
-> > +	return 0;
-> > +}
-> > +module_init(proc_socinfo_init);
-> 
-> proc_create() can fail, so some error handling here would be nice.
+I've now included them in the linux-next part of the series.
 
-right. will add it.
-
-> 
-> On Mon, May 10, 2010 at 01:37:35PM +0300, Eduardo Valentin wrote:
-> > +static int c_show(struct seq_file *m, void *v)
-> > +{
-> > +	seq_printf(m, "SoC\t: %s\n", socinfo);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void *c_start(struct seq_file *m, loff_t *pos)
-> > +{
-> > +	return *pos < 1 ? (void *)1 : NULL;
-> > +}
-> > +
-> > +static void *c_next(struct seq_file *m, void *v, loff_t *pos)
-> > +{
-> > +	++*pos;
-> > +	return NULL;
-> > +}
-> > +
-> > +static void c_stop(struct seq_file *m, void *v)
-> > +{
-> > +}
-> > +
-> > +const struct seq_operations socinfo_op = {
-> > +	.start	= c_start,
-> > +	.next	= c_next,
-> > +	.stop	= c_stop,
-> > +	.show	= c_show
-> > +};
-> 
-> You'll still need the show function, but all of the rest of this is just
-> duplicating what single_open() already does. If the socinfo string is
-> static you may also want to rework this a bit so you can just stash the
-> string in the proc_dir_entry private data. Combine this with something
-> like kstrdup() and you'll save yourself a bit of stack while you're at
-> it.
-
-yeah. will add those comments as well.
-
-
-Thanks for reviewing,
-
---
-Eduardo Valentin
+Thanks,
+Rusty.
