@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757737Ab0EJXNP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:13:15 -0400
-Received: from kroah.org ([198.145.64.141]:45322 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932923Ab0EJW6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:25 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:41 2010
-Message-Id: <20100510223541.063022214@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alex Chiang <achiang@canonical.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Garrett <mjg@redhat.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [74/98] PCI: Ensure we re-enable devices on resume
-In-Reply-To: <20100510223714.GA18416@kroah.com>
+	id S932832Ab0EJW4r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:56:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50157 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932596Ab0EJWxV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:53:21 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: [GIT PULL 00/10] perf fixes and improvements
+Date: Mon, 10 May 2010 19:52:58 -0300
+Message-Id: <1273531987-28956-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+LKML-Reference: <new-submission>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-------------------
+Hi Ingo,
 
-From: Matthew Garrett <mjg@redhat.com>
+        Please pull from:
 
-commit cc2893b6af5265baa1d68b17b136cffca9e40cfa upstream.
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
 
-If the firmware puts a device back into D0 state at resume time, we'll
-update its state in resume_noirq and thus skip the platform resume code.
-Calling that code twice should be safe and we ought to avoid getting to
-that point anyway, so remove the check and also allow the platform pci
-code to be called for D0.
+Regards,
 
-Fixes USB not being powered after resume on recent Lenovo machines.
+Arnaldo Carvalho de Melo (1):
+  perf hist: Calculate max_sym name len and nr_entries
 
-Acked-by: Alex Chiang <achiang@canonical.com>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Tom Zanussi (9):
+  perf/trace/scripting: failed-syscalls script cleanup
+  perf/trace/scripting: rw-by-pid script cleanup
+  perf/trace/scripting: rwtop script cleanup
+  perf/trace/scripting: wakeup-latency script cleanup
+  perf/trace/scripting: workqueue-stats script cleanup
+  perf/trace/scripting: don't show script start/stop messages by default
+  perf/trace/scripting: failed-syscalls-by-pid script cleanup
+  perf/trace/scripting: syscall-counts-by-pid script cleanup
+  perf/trace/scripting: syscall-counts script cleanup
 
----
- drivers/pci/pci.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -601,7 +601,7 @@ static void __pci_start_power_transition
-  */
- int __pci_complete_power_transition(struct pci_dev *dev, pci_power_t state)
- {
--	return state > PCI_D0 ?
-+	return state >= PCI_D0 ?
- 			pci_platform_power_transition(dev, state) : -EINVAL;
- }
- EXPORT_SYMBOL_GPL(__pci_complete_power_transition);
-@@ -638,10 +638,6 @@ int pci_set_power_state(struct pci_dev *
- 		 */
- 		return 0;
- 
--	/* Check if we're already there */
--	if (dev->current_state == state)
--		return 0;
--
- 	__pci_start_power_transition(dev, state);
- 
- 	/* This device is quirked not to be put into D3, so
-
+ tools/perf/builtin-report.c                        |    6 +-
+ tools/perf/builtin-trace.c                         |    3 +
+ tools/perf/scripts/perl/bin/failed-syscalls-report |    2 +-
+ tools/perf/scripts/perl/failed-syscalls.pl         |    6 ++-
+ tools/perf/scripts/perl/rw-by-pid.pl               |   60 ++++++++++++--------
+ tools/perf/scripts/perl/rwtop.pl                   |   48 +++++++++++----
+ tools/perf/scripts/perl/wakeup-latency.pl          |   12 +++-
+ tools/perf/scripts/perl/workqueue-stats.pl         |   12 ++--
+ .../python/bin/failed-syscalls-by-pid-report       |    2 +-
+ .../python/bin/syscall-counts-by-pid-report        |    2 +-
+ .../perf/scripts/python/bin/syscall-counts-report  |    2 +-
+ tools/perf/util/hist.c                             |   27 +++++++--
+ tools/perf/util/hist.h                             |    4 +-
+ .../perf/util/scripting-engines/trace-event-perl.c |    3 -
+ .../util/scripting-engines/trace-event-python.c    |    4 -
+ tools/perf/util/symbol.c                           |    5 +-
+ tools/perf/util/symbol.h                           |    1 +
+ 17 files changed, 128 insertions(+), 71 deletions(-)
 
