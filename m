@@ -1,105 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983Ab0EJW7B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:59:01 -0400
-Received: from kroah.org ([198.145.64.141]:51641 "EHLO coco.kroah.org"
+	id S932425Ab0EJWwU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:52:20 -0400
+Received: from kroah.org ([198.145.64.141]:32954 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757462Ab0EJW5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:38 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:35 2010
-Message-Id: <20100510223535.869870792@kvm.kroah.org>
+	id S932342Ab0EJWvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:51:53 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:19 2010
+Message-Id: <20100510223319.281986149@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:28 -0700
+Date: Mon, 10 May 2010 15:31:54 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>
-Subject: [16/98] keys: the request_key() syscall should link an existing key to the dest keyring
-In-Reply-To: <20100510223714.GA18416@kroah.com>
+       Alan Stern <stern@rowland.harvard.edu>
+Subject: [023/117] USB: fix remote wakeup settings during system sleep
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+This is a backport of commit 5f677f1d45b2bf08085bbba7394392dfa586fa8e.
+Some of the functionality had to be removed, but it should still fix
+the webcam problem.
 
-commit 03449cd9eaa4fa3a7faa4a59474bafe2e90bd143 upstream.
+This patch (as1363b) changes the way USB remote wakeup is handled
+during system sleeps.  It won't be enabled unless an interface driver
+specifically needs it.  Also, it won't be enabled during the FREEZE or
+QUIESCE phases of hibernation, when the system doesn't respond to
+wakeup events anyway.
 
-The request_key() system call and request_key_and_link() should make a
-link from an existing key to the destination keyring (if supplied), not
-just from a new key to the destination keyring.
+This will fix problems people have reported with certain USB webcams
+that generate wakeup requests when they shouldn't, and as a result
+cause system suspends to fail.  See
 
-This can be tested by:
+	https://bugs.launchpad.net/ubuntu/+source/linux/+bug/515109
 
-	ring=`keyctl newring fred @s`
-	keyctl request2 user debug:a a
-	keyctl request user debug:a $ring
-	keyctl list $ring
 
-If it says:
-
-	keyring is empty
-
-then it didn't work.  If it shows something like:
-
-	1 key in keyring:
-	1070462727: --alswrv     0     0 user: debug:a
-
-then it did.
-
-request_key() system call is meant to recursively search all your keyrings for
-the key you desire, and, optionally, if it doesn't exist, call out to userspace
-to create one for you.
-
-If request_key() finds or creates a key, it should, optionally, create a link
-to that key from the destination keyring specified.
-
-Therefore, if, after a successful call to request_key() with a desination
-keyring specified, you see the destination keyring empty, the code didn't work
-correctly.
-
-If you see the found key in the keyring, then it did - which is what the patch
-is required for.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: James Morris <jmorris@namei.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/keys/request_key.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/usb/core/driver.c |   32 ++++++++++++++++++++++++++++++--
+ 1 file changed, 30 insertions(+), 2 deletions(-)
 
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -336,8 +336,10 @@ static int construct_alloc_key(struct ke
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -1255,9 +1255,8 @@ static int usb_suspend_both(struct usb_d
+ 			udev->state == USB_STATE_SUSPENDED)
+ 		goto done;
  
- key_already_present:
- 	mutex_unlock(&key_construction_mutex);
--	if (dest_keyring)
-+	if (dest_keyring) {
-+		__key_link(dest_keyring, key_ref_to_ptr(key_ref));
- 		up_write(&dest_keyring->sem);
+-	udev->do_remote_wakeup = device_may_wakeup(&udev->dev);
+-
+ 	if (msg.event & PM_EVENT_AUTO) {
++		udev->do_remote_wakeup = device_may_wakeup(&udev->dev);
+ 		status = autosuspend_check(udev, 0);
+ 		if (status < 0)
+ 			goto done;
+@@ -1789,6 +1788,34 @@ int usb_external_resume_device(struct us
+ 	return status;
+ }
+ 
++static void choose_wakeup(struct usb_device *udev, pm_message_t msg)
++{
++	int			w, i;
++	struct usb_interface	*intf;
++
++	/* Remote wakeup is needed only when we actually go to sleep.
++	 * For things like FREEZE and QUIESCE, if the device is already
++	 * autosuspended then its current wakeup setting is okay.
++	 */
++	if (msg.event == PM_EVENT_FREEZE || msg.event == PM_EVENT_QUIESCE) {
++		udev->do_remote_wakeup = 0;
++		return;
 +	}
- 	mutex_unlock(&user->cons_lock);
- 	key_put(key);
- 	*_key = key = key_ref_to_ptr(key_ref);
-@@ -428,6 +430,11 @@ struct key *request_key_and_link(struct
- 
- 	if (!IS_ERR(key_ref)) {
- 		key = key_ref_to_ptr(key_ref);
-+		if (dest_keyring) {
-+			construct_get_dest_keyring(&dest_keyring);
-+			key_link(dest_keyring, key);
-+			key_put(dest_keyring);
++
++	/* If remote wakeup is permitted, see whether any interface drivers
++	 * actually want it.
++	 */
++	w = 0;
++	if (device_may_wakeup(&udev->dev) && udev->actconfig) {
++		for (i = 0; i < udev->actconfig->desc.bNumInterfaces; i++) {
++			intf = udev->actconfig->interface[i];
++			w |= intf->needs_remote_wakeup;
 +		}
- 	} else if (PTR_ERR(key_ref) != -EAGAIN) {
- 		key = ERR_CAST(key_ref);
- 	} else  {
++	}
++
++	udev->do_remote_wakeup = w;
++}
++
+ int usb_suspend(struct device *dev, pm_message_t msg)
+ {
+ 	struct usb_device	*udev;
+@@ -1808,6 +1835,7 @@ int usb_suspend(struct device *dev, pm_m
+ 	}
+ 
+ 	udev->skip_sys_resume = 0;
++	choose_wakeup(udev, msg);
+ 	return usb_external_suspend_device(udev, msg);
+ }
+ 
 
 
