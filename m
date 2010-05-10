@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab0EJTLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 15:11:54 -0400
-Received: from penguin.host-ns.co.uk ([213.229.84.196]:20948 "EHLO
-	penguin.host-ns.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755751Ab0EJTLu (ORCPT
+	id S1756196Ab0EJTPR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 15:15:17 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:33353 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755723Ab0EJTPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 15:11:50 -0400
-Subject: wlan-ng: hfa384x_usb.c patch: Fix Whitespace issues
-From: Adam Latham <adam.latham@unisontorbay.org.uk>
-Reply-To: adam.latham@unisontorbay.org.uk
-To: gregkh@suse.de, Andrew.Elwell@gmail.com, mithlesh@linsyssoft.com,
-       svenne@krap.dk, jkosina@suse.cz
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 May 2010 20:11:26 +0100
-Message-ID: <1273518686.2786.3.camel@ubuntu.ubuntu-domain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - penguin.host-ns.co.uk
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - unisontorbay.org.uk
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 10 May 2010 15:15:14 -0400
+Date: Mon, 10 May 2010 16:15:01 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+       lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       Roland McGrath <roland@redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>
+Subject: Re: [PATCH -tip] perf probe: Don't compile CFI related code if
+ elfutils is old
+Message-ID: <20100510191501.GC19192@ghostprotocols.net>
+References: <20100510171207.26029.97604.stgit@localhost6.localdomain6>
+ <20100510172854.GD30926@ghostprotocols.net>
+ <20100510183654.GH6450@erda.amd.com>
+ <4BE8571E.4020403@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BE8571E.4020403@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From bd66eecfcc4fa4c0340f55d73dd4ada3a5e0b00a Mon Sep 17 00:00:00 2001
-From: Adam Latham <adam.latham@unisontorbay.org.uk>
-Date: Mon, 10 May 2010 19:59:39 +0100
-Subject: [PATCH] Staging: wlan-ng: fix whitespace errors in hfa384x_usb.c
- This is a patch to fix a number of whitespace issues in the hfa384x_usb.c
- file found by the checkpatch.pl tool
+Em Mon, May 10, 2010 at 02:57:34PM -0400, Masami Hiramatsu escreveu:
+> Hmm, ok, version.h is also introduced at the same time.
+> 
+> # git log ./config/version.h.in
+> commit fbc7245df72ce0142f0a21fa0f4f88c97278bf60
+> Author: Roland McGrath <roland@redhat.com>
+> Date:   Tue Dec 16 17:03:03 2008 -0800
+> 
+>     Install elfutils/version.h header for library compatibility checking.
+> 
+> So, I think we'd better set NO_DWARF if the elfutils
+> is older than 0.138, since we can't check API compatibility
+> easily.
 
-Signed-off-by: Adam Latham <adam.latham@unisontorbay.org.uk>
----
- drivers/staging/wlan-ng/hfa384x_usb.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Well, for that you can just add some of the code you ifdefed in this
+patch into the tools/perf/Makefile test, or better, duplicate the test,
+including just the CPI stuff in the new test, and then set NO_DWARF_CFI
+and use it as the ifdef condition :-)
 
-diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
-index 5df56f0..562e7eb 100644
---- a/drivers/staging/wlan-ng/hfa384x_usb.c
-+++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-@@ -62,7 +62,7 @@
- *
- * hfa384x_drvr_xxxconfig  An example of the drvr level abstraction. These
- *			functions are wrappers for the RID get/set
--*			sequence. They 	call copy_[to|from]_bap() and
-+*			sequence. They call copy_[to|from]_bap() and
- *			cmd_access().	These functions operate on the
- *			RIDs and buffers without validation.  The caller
- *			is responsible for that.
-@@ -1226,7 +1226,7 @@ int hfa384x_corereset(hfa384x_t *hw, int holdtime, int settletime, int genesis)
- *
- * Arguments:
- *	hw		device structure
--*	ctlx	 	CTLX ptr
-+*	ctlx		CTLX ptr
- *	completor	functor object to decide what to
- *			do with the CTLX's result.
- *
-@@ -2133,7 +2133,7 @@ exit_proc:
- *	0		success
- *	>0		f/w reported error - f/w status code
- *	<0		driver reported error
--*	-ENODATA 	length mismatch between argument and retrieved
-+*	-ENODATA	length mismatch between argument and retrieved
- *			record.
- *
- * Side effects:
-
-1.7.0.4
-
-
-
+- Arnaldo
