@@ -1,130 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab0EJLma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 07:42:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43418 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756825Ab0EJLm1 convert rfc822-to-8bit (ORCPT
+	id S1756911Ab0EJLnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 07:43:13 -0400
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:48900 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756825Ab0EJLnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 07:42:27 -0400
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Will Deacon <will.deacon@arm.com>
-In-Reply-To: <1273490824.5605.3379.camel@twins>
-References: <1273483623.15998.57.camel@minggr.sh.intel.com>
-	 <1273484401.5605.3333.camel@twins>
-	 <1273486313.15998.76.camel@minggr.sh.intel.com>
-	 <1273486708.5605.3342.camel@twins>
-	 <1273487195.15998.85.camel@minggr.sh.intel.com>
-	 <1273490824.5605.3379.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 10 May 2010 13:42:05 +0200
-Message-ID: <1273491725.5605.3391.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 10 May 2010 07:43:09 -0400
+Message-ID: <4BE7F22E.9070504@oss.ntt.co.jp>
+Date: Mon, 10 May 2010 20:46:54 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, Avi Kivity <avi@redhat.com>,
+       mtosatti@redhat.com, agraf@suse.de, fernando@oss.ntt.co.jp,
+       kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org,
+       tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+       benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH resend 8/12] asm-generic: bitops: introduce le bit
+ offset macro
+References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <4BE04677.4060608@redhat.com> <20100505115924.7bb92036.takuya.yoshikawa@gmail.com> <201005061538.54326.arnd@arndb.de>
+In-Reply-To: <201005061538.54326.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Added Will Deacon)
+(2010/05/06 22:38), Arnd Bergmann wrote:
+> On Wednesday 05 May 2010, Takuya Yoshikawa wrote:
+>> Date:
+>> Yesterday 04:59:24
+>>> That's why the bitmaps are defined as little endian u64 aligned, even on
+>>> big endian 32-bit systems.  Little endian bitmaps are wordsize agnostic,
+>>> and u64 alignment ensures we can use long-sized bitops on mixed size
+>>> systems.
+>
+> Ok, I see.
+>
+>> There was a suggestion to propose set_le_bit_user() kind of macros.
+>> But what I thought was these have a constraint you two explained and seemed to be
+>> a little bit specific to some area, like KVM.
+>>
+>> So I decided to propose just the offset calculation macro.
+>
+> I'm not sure I understand how this macro is going to be used though.
+> If you are just using this in kernel space, that's fine, please go for
+> it.
 
-On Mon, 2010-05-10 at 13:27 +0200, Peter Zijlstra wrote:
-> On Mon, 2010-05-10 at 18:26 +0800, Lin Ming wrote:
-> 
-> > > No, I'm assuming there is only 1 PMU per CPU. Corey is the expert on
-> > > crazy hardware though, but I think the sanest way is to extend the CPU
-> > > topology if there's more structure to it.
-> > 
-> > But our goal is to support multiple pmus, don't we need to assume there
-> > are more than 1 PMU per CPU?
-> 
-> No, because as I said, then its ambiguous what pmu you want. If you have
-> that, you need to extend your topology information.
-> 
-> Anyway, I talked with Ingo on this and he'd like to see this somewhat
-> extended.
-> 
-> Instead of a pmu_id field, which we pass into a new
-> perf_event_attr::pmu_id field, how about creating an event_source sysfs
-> class. Then each class can have an event_source_id and a hierarchy of
-> 'generic' events.
-> 
-> We'd start using the PERF_TYPE_ space for this and express the
-> PERF_COUNT_ space in the event attributes found inside that class.
-> 
-> That way we can include all the existing event enumerations into this as
-> well.
-> 
-> This way we can create:
-> 
-> /sys/devices/system/cpu/cpuN/cpu_hardware_events 
->                              cpu_hardware_events/event_source_id
->                              cpu_hardware_events/cpu_cycles
->                              cpu_hardware_events/instructions
->                                                 /...
-> 
-> /sys/devices/system/cpu/cpuN/cpu_raw_events
->                              cpu_raw_events/event_source_id
-> 
-> 
-> These would match the current PERF_TYPE_* values for compatibility
-> 
-> For new PMUs we can start a dynamic range of PERF_TYPE_ (say at 64k but
-> that's not ABI and can be changed at any time, we've got u32 to play
-> with).
-> 
-> For uncore this would result in:
-> 
-> /sys/devices/system/node/nodeN/node_raw_events
->                                node_raw_events/event_source_id
-> 
-> and maybe:
-> 
-> /sys/devices/system/node/nodeN/node_events
->                                node_events/event_source_id
->                                node_events/local_misses
->                                           /local_hits
->                                           /remote_misses
->                                           /remote_hits
->                                           /...
-> 
-> 
-> The software events and tracepoints and kprobes stuff we could hang off
-> of /sys/kernel/ or something
-> 
-> So your registration would indeed look like something:
-> 
->  perf_event_register_pmu(struct pmu *pmu, int type),
-> 
-> where type would normally be -1 (dynamic) but would be PERF_TYPE_ for
-> those already laid down in ABI.
-> 
-> This approach will also give us a good overview
-> in /sys/class/event_source/, which will be a flat listing of all
-> existing event sources.
+Yes, I'm just using in kernel space: qemu has its own endian related helpers.
 
-So Russell reminded me that the ARM people have the problem that
-their /proc/cpuinfo isn't specific enough to map to a unique event map.
+So if you allow us to place this macro in asm-generic/bitops/* it will help us.
 
-Whilst extending ARM /proc/cpuinfo seems like a sensible option it will
-not cover anything but cpu events.
+Avi, what do you think? Do you want to place it in kvm.h ?
 
-So in that trend (and to avoid exhaustive in kernel event lists for no
-good reason), it might make sense to also add some event_source
-attributes that identify the thing, maybe a event_source_name or
-event_source_driver field that would allow unique maps to exhaustive
-event lists.
 
+>
+> However, if the intention is to use the same macro in user space, putting
+> it into asm-generic/bitops/* is not going to help, because those headers
+> are not available in user space, and I wouldn't want to change that.
+>
+> The definition of the macro is not part of the ABI, so just duplicate
+> it in KVM if you need it there.
+>
+> 	Arnd
 
