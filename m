@@ -1,160 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab0EJAUj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 20:20:39 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59309 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108Ab0EJAUI (ORCPT
+	id S1754723Ab0EJAVw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 20:21:52 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34212 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab0EJAVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 20:20:08 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 4/4] perf report: Allow limiting the number of entries to print in callchains
-Date: Sun,  9 May 2010 21:19:59 -0300
-Message-Id: <1273450799-12808-5-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1273450799-12808-1-git-send-email-acme@infradead.org>
-References: <1273450799-12808-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sun, 9 May 2010 20:21:49 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 10 May 2010 09:17:26 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, mathieu.desnoyers@polymtl.ca,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/urgent 08/10] memcg: css_id() must be called
+ under rcu_read_lock()
+Message-Id: <20100510091726.f9a0642f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100507121138.cc37dbe4.akpm@linux-foundation.org>
+References: <20100503185253.GA17672@linux.vnet.ibm.com>
+	<1272912799-17859-8-git-send-email-paulmck@linux.vnet.ibm.com>
+	<20100507121138.cc37dbe4.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Fri, 7 May 2010 12:11:38 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Works by adding a third parameter to the '-g' argument, after the graph
-type and minimum percentage, for example:
+> On Mon,  3 May 2010 11:53:17 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > This patch fixes task_in_mem_cgroup(), mem_cgroup_uncharge_swapcache(),
+> > mem_cgroup_move_swap_account(), and is_target_pte_for_mc() to protect
+> > calls to css_id().  An additional RCU lockdep splat was reported for
+> > memcg_oom_wake_function(), however, this function is not yet in
+> > mainline as of 2.6.34-rc5.
+> > 
+> > ...
+> >
+> > index f4ede99..e06490d 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -811,10 +811,12 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem)
+> >  	 * enabled in "curr" and "curr" is a child of "mem" in *cgroup*
+> >  	 * hierarchy(even if use_hierarchy is disabled in "mem").
+> >  	 */
+> > +	rcu_read_lock();
+> >  	if (mem->use_hierarchy)
+> >  		ret = css_is_ancestor(&curr->css, &mem->css);
+> >  	else
+> >  		ret = (curr == mem);
+> > +	rcu_read_unlock();
+> >  	css_put(&curr->css);
+> >  	return ret;
+> >  }
+> 
+> The above hunk seems to be locking around css_is_ancestor(), not
+> css_id() as the changelog states.
+> 
 
-[root@doppio linux-2.6-tip]# perf report -g fractal,0.5,2
+Hmm. I'll move rcu_xxx to cgroup.c::css_is_ancestor().
+(But .....because we have css's reference count, rcu_read_lock isn't
+ necessary...lock-check founds it as bug but this was intentional.)
 
-Will show only the first two symbols where at least 0.5% of the samples
-took place.
 
-All the other symbols that don't fall outside these constraints will be
-put together in the last entry, prefixed with "[...]" and the total
-percentage for them.
 
-Suggested-by: Arjan van de Ven <arjan@linux.intel.com>
-Acked-by: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-report.c |    5 ++++-
- tools/perf/util/callchain.h |    1 +
- tools/perf/util/hist.c      |   10 ++++++++++
- 3 files changed, 15 insertions(+), 1 deletions(-)
+> > @@ -2312,7 +2314,9 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+> >  
+> >  	/* record memcg information */
+> >  	if (do_swap_account && swapout && memcg) {
+> > +		rcu_read_lock();
+> >  		swap_cgroup_record(ent, css_id(&memcg->css));
+> > +		rcu_read_unlock();
+> >  		mem_cgroup_get(memcg);
+> >  	}
+> >  	if (swapout && memcg)
+> 
+> That makes some sense - the lock is held across the call and the use of
+> the result of the call.
+> 
+> 
+> > @@ -2369,8 +2373,10 @@ static int mem_cgroup_move_swap_account(swp_entry_t entry,
+> >  {
+> >  	unsigned short old_id, new_id;
+> >  
+> > +	rcu_read_lock();
+> >  	old_id = css_id(&from->css);
+> >  	new_id = css_id(&to->css);
+> > +	rcu_read_unlock();
+> >  
+> >  	if (swap_cgroup_cmpxchg(entry, old_id, new_id) == old_id) {
+> >  		mem_cgroup_swap_statistics(from, false);
+> 
+> This doesn't make sense.  We take the lock, read the values, drop the
+> lock and then use the now-possibly-wrong values.
+> 
+will fix.
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 5e2f47f..642a6d8 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -343,7 +343,7 @@ static int
- parse_callchain_opt(const struct option *opt __used, const char *arg,
- 		    int unset)
- {
--	char *tok;
-+	char *tok, *tok2;
- 	char *endptr;
- 
- 	/*
-@@ -388,10 +388,13 @@ parse_callchain_opt(const struct option *opt __used, const char *arg,
- 	if (!tok)
- 		goto setup;
- 
-+	tok2 = strtok(NULL, ",");
- 	callchain_param.min_percent = strtod(tok, &endptr);
- 	if (tok == endptr)
- 		return -1;
- 
-+	if (tok2)
-+		callchain_param.print_limit = strtod(tok2, &endptr);
- setup:
- 	if (register_callchain_param(&callchain_param) < 0) {
- 		fprintf(stderr, "Can't register callchain params\n");
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 0f4da09..1cba1f5 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -34,6 +34,7 @@ typedef void (*sort_chain_func_t)(struct rb_root *, struct callchain_node *,
- 
- struct callchain_param {
- 	enum chain_mode 	mode;
-+	u32			print_limit;
- 	double			min_percent;
- 	sort_chain_func_t	sort;
- };
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index e0c8a72..0f154a5 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -333,6 +333,7 @@ static size_t __callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
- 	u64 remaining;
- 	size_t ret = 0;
- 	int i;
-+	uint entries_printed = 0;
- 
- 	if (callchain_param.mode == CHAIN_GRAPH_REL)
- 		new_total = self->children_hit;
-@@ -379,6 +380,8 @@ static size_t __callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
- 						  new_depth_mask | (1 << depth),
- 						  left_margin);
- 		node = next;
-+		if (++entries_printed == callchain_param.print_limit)
-+			break;
- 	}
- 
- 	if (callchain_param.mode == CHAIN_GRAPH_REL &&
-@@ -404,6 +407,7 @@ static size_t callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
- 	bool printed = false;
- 	int i = 0;
- 	int ret = 0;
-+	u32 entries_printed = 0;
- 
- 	list_for_each_entry(chain, &self->val, list) {
- 		if (!i++ && sort__first_dimension == SORT_SYM)
-@@ -424,6 +428,9 @@ static size_t callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
- 			ret += fprintf(fp, " %s\n", chain->ms.sym->name);
- 		else
- 			ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
-+
-+		if (++entries_printed == callchain_param.print_limit)
-+			break;
- 	}
- 
- 	ret += __callchain__fprintf_graph(fp, self, total_samples, 1, 1, left_margin);
-@@ -462,6 +469,7 @@ static size_t hist_entry_callchain__fprintf(FILE *fp, struct hist_entry *self,
- 	struct rb_node *rb_node;
- 	struct callchain_node *chain;
- 	size_t ret = 0;
-+	u32 entries_printed = 0;
- 
- 	rb_node = rb_first(&self->sorted_chain);
- 	while (rb_node) {
-@@ -484,6 +492,8 @@ static size_t hist_entry_callchain__fprintf(FILE *fp, struct hist_entry *self,
- 			break;
- 		}
- 		ret += fprintf(fp, "\n");
-+		if (++entries_printed == callchain_param.print_limit)
-+			break;
- 		rb_node = rb_next(rb_node);
- 	}
- 
--- 
-1.6.2.5
+> > @@ -4038,11 +4044,16 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
+> >  			put_page(page);
+> >  	}
+> >  	/* throught */
+> > -	if (ent.val && do_swap_account && !ret &&
+> > -			css_id(&mc.from->css) == lookup_swap_cgroup(ent)) {
+> > -		ret = MC_TARGET_SWAP;
+> > -		if (target)
+> > -			target->ent = ent;
+> > +	if (ent.val && do_swap_account && !ret) {
+> > +		unsigned short id;
+> 
+> Please put a newline between end-of-locals and start-of-code.
+> 
+will fix.
+
+> > +		rcu_read_lock();
+> > +		id = css_id(&mc.from->css);
+> > +		rcu_read_unlock();
+> > +		if (id == lookup_swap_cgroup(ent)) {
+> > +			ret = MC_TARGET_SWAP;
+> > +			if (target)
+> > +				target->ent = ent;
+> > +		}
+> 
+> Again, when we use `id', the lock has been dropped.  The value which
+> css_id() returned might no longer be correct.
+> 
+> 
+will fix. 
+
+> 
+> The merge of this patch caused rejections in -mm's
+> memcg-clean-up-move-charge.patch (at least).  It may have caused more,
+> I haven't checked yet.  The code I have here now does:
+> 
+> 	if (ent.val && !ret) {
+> 		unsigned short id;
+> 
+> 		rcu_read_lock();
+> 		id = css_id(&mc.from->css);
+> 		rcu_read_unlock();
+> 		if (id == lookup_swap_cgroup(ent)) {
+> 			ret = MC_TARGET_SWAP;
+> 			if (target)
+> 				target->ent = ent;
+> 		}
+> 	}
+> 
+> however I suspect it would be saner to do
+> 
+> 	if (ent.val && !ret) {
+> 		rcu_read_lock();
+> 		if (css_id(&mc.from->css) == lookup_swap_cgroup(ent)) {
+> 			ret = MC_TARGET_SWAP;
+> 			if (target)
+> 				target->ent = ent;
+> 		}
+> 		rcu_read_unlock();
+> 	}
+> 
+
+I'll prepare for -rc6 patch and for -mm patch.
+
+
+> However this still doesn't make a lot of sense because three nanoseonds
+> after we've done rcu_read_unlock(), the value of
+> 
+> 	css_id(&mc.from->css) == lookup_swap_cgroup(ent)
+> 
+> might have changed.  So I'd ask the memcg guys to have a more serious
+> think about all of this please.  I get the feeling that the original
+> patch just splattered rcu_read_lock() around the place to silence a
+> runtime warning without digging into what the code is really supposed
+> to be doing.
+> 
+In most case, they are intentional and we have reference count of css.
+
+I can think of
+
+	- css_id_rcu()  .... use rcu_dereference().
+	- css_id()	... don't use rcu_dereference().
+
+But this seems crazy.
+
+
+
+> The mem_cgroup_move_swap_account() would benefit from some attention
+> also please.
+
+ok, I'll rewrite. If I find that I can't avoid rejection to -mm, I'll make
+a patch for -rc6 to do minimal fixes. And add a patch for fixining remaining
+things to -mm.
+
+Thanks,
+-Kame
+
 
