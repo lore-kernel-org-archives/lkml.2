@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab0EJF2K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 01:28:10 -0400
-Received: from outbound.icp-qv1-irony-out4.iinet.net.au ([203.59.1.104]:25034
-	"EHLO outbound.icp-qv1-irony-out4.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751899Ab0EJF2H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 01:28:07 -0400
-X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 May 2010 01:28:06 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAOYz50vLzgH5/2dsb2JhbACDF5p9catMgwqMTYEmgwFuBINA
-X-IronPort-AV: E=Sophos;i="4.52,359,1270396800"; 
-   d="scan'208";a="553921811"
-From: Ian Kent <raven@themaw.net>
-Subject: [PATCH] autofs4-2.6.34-rc1 - fix link_count usage
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Al Viro <viro@ZenIV.linux.org.uk>
-Date: Mon, 10 May 2010 13:18:30 +0800
-Message-ID: <20100510051830.10353.31165.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1754091Ab0EJFli (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 01:41:38 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:35951 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751899Ab0EJFlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 01:41:36 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: build failure after merge of the backlight tree
+Date: Mon, 10 May 2010 01:41:21 -0400
+User-Agent: KMail/1.13.1 (Linux/2.6.33.2; KDE/4.4.1; x86_64; ; )
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Michael Hennerich <michael.hennerich@analog.com>
+References: <20100510124304.2249532c.sfr@canb.auug.org.au>
+In-Reply-To: <20100510124304.2249532c.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed;
+  boundary="nextPart5394563.GBnx3Flnm4";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005100141.22985.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following the commit below in 2.6.34-rc1 autofs direct mounts stop
-working. This is caused by current->link_count being 0 when
-->follow_link() is called from do_filp_open().
+--nextPart5394563.GBnx3Flnm4
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-I can't work out why this hasn't been seen before Als patch series.
+On Sunday 09 May 2010 22:43:04 Stephen Rothwell wrote:
+> After merging the backlight tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> drivers/video/backlight/adp8860_bl.c: In function 'adp8860_led_probe':
+> drivers/video/backlight/adp8860_bl.c:215: error: implicit declaration of
+> function 'kzalloc' drivers/video/backlight/adp8860_bl.c:215: warning:
+> assignment makes pointer from integer without a cast
+> drivers/video/backlight/adp8860_bl.c:285: error: implicit declaration of
+> function 'kfree' drivers/video/backlight/adp8860_bl.c: In function
+> 'adp8860_probe': drivers/video/backlight/adp8860_bl.c:673: warning:
+> assignment makes pointer from integer without a cast
+> drivers/video/backlight/adp8860_bl.c:689: error: too few arguments to
+> function 'backlight_device_register'
+>=20
+> Caused by commit 6f1a02240dba279a389fd4a4138445bd3f13f67f ("backlight:
+> new driver for the ADP8860 backlight parts").  Use of kzalloc or kfree
+> requires including linux/slab.h (see Rule 1 in
+> Documentation/SubmitChecklist) and the prototype of
+> backlight_device_register changed before v2.6.34-rc2.
 
-This patch removes the autofs dependence on current->link_count.
+obviously the driver simply missed the tree-wide slab.h updates
 
-1f36f774b22a0ceb7dd33eca626746c81a97b6a5 is the first bad commit
-commit 1f36f774b22a0ceb7dd33eca626746c81a97b6a5
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Sat Dec 26 10:56:19 2009 -0500
+Richard: you want a new version to replace the one in your tree ?  or a one=
+=20
+line fix for this issue ?
+=2Dmike
 
-    Switch !O_CREAT case to use of do_last()
+--nextPart5394563.GBnx3Flnm4
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-    ... and now we have all intents crap well localized
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.14 (GNU/Linux)
 
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+iQIcBAABAgAGBQJL55yCAAoJEEFjO5/oN/WBkOkQANdFg43qkzc5Ju488VP4NalM
+m13rlhevsbibhZIn0LThrn8rGYfIDBRmdrOlfcKIJ9m9A8OwcMQF0Er31c+a+wL3
+wLHLwmBdq6GoZSwl1GgBrVdhsGjyag5rJ1Ev2j7frrMF9VIMemPMv5j4kP1Ce9A6
+eXwPKgVte0LQnFH3eGYmLqvOeIknbGv++iUWBhUt0++32A7+18U1XoFNwMC6XYl9
+9vGyBhTHjcWWYzOgk+35cTWae4oITbV/IGQTRBoxfYQOYtFviAPaMePbKhYG3wav
+pUwA7t0KLQdVMhG7wpOq9OZVDVivx5pDpA6BPW/71QM4hrRIQsJengqct1Ak6jGt
+b8zjy6W/x50tzzyDwc4prx9EBn0QWtEN1kcA0ztZBQFqjbSsC0AI0ZxgeFdORj2w
+o0hGJmysMfRdL2Gu8RlueL3bTiefcD+GYsoegZekNwq7/lbc21Myr3+x3uUNJLYM
+ZUx6tG0AW5SNMlHIRaoaQ39yXzAYeVxx3J6eDfX9gSE4Qp0NZ4LPHSz5813jXNvP
+2Jia/FYEa9fChZtyCuh1AiREHg5ZsWnyDOZ1NYN3/Oabh2num/jaZr70usXGR7T4
+RTIsCldUbute8wDq3b9wlT82aAsvyAeKKcwoEusZ1M1XJpEdZFUw7X29fJY/7Lm0
+amXk07ORWxb418W79u+k
+=n3TB
+-----END PGP SIGNATURE-----
 
-:040000 040000 53c1effc5b22746bb83cdbc6a419bf898067882d 9606f7275fde188a056fd174aa1d622ac0630893 M	fs
----
-
- fs/autofs4/root.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 109a6c6..a7e04ad 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -177,8 +177,7 @@ static int try_to_fill_dentry(struct dentry *dentry, int flags)
- 		}
- 	/* Trigger mount for path component or follow link */
- 	} else if (ino->flags & AUTOFS_INF_PENDING ||
--			autofs4_need_mount(flags) ||
--			current->link_count) {
-+			autofs4_need_mount(flags)) {
- 		DPRINTK("waiting for mount name=%.*s",
- 			dentry->d_name.len, dentry->d_name.name);
- 
-@@ -262,7 +261,7 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
- 		spin_unlock(&dcache_lock);
- 		spin_unlock(&sbi->fs_lock);
- 
--		status = try_to_fill_dentry(dentry, 0);
-+		status = try_to_fill_dentry(dentry, lookup_type);
- 		if (status)
- 			goto out_error;
- 
-
+--nextPart5394563.GBnx3Flnm4--
