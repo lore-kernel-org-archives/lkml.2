@@ -1,70 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab0EJShK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 14:37:10 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:46256 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab0EJShF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 14:37:05 -0400
-X-SpamScore: -21
-X-BigFish: VPS-21(zz1432P98dN936eM62a3L7cf0izz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L27VPH-01-3EI-02
-X-M-MSG: 
-Date: Mon, 10 May 2010 20:36:54 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-CC: Masami Hiramatsu <mhiramat@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       Roland McGrath <roland@redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>
-Subject: Re: [PATCH -tip] perf probe: Don't compile CFI related code if
- elfutils is old
-Message-ID: <20100510183654.GH6450@erda.amd.com>
-References: <20100510171207.26029.97604.stgit@localhost6.localdomain6>
- <20100510172854.GD30926@ghostprotocols.net>
+	id S1755371Ab0EJSnP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 14:43:15 -0400
+Received: from mail.gmx.net ([213.165.64.20]:40604 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750824Ab0EJSnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 14:43:12 -0400
+X-Authenticated: #20450766
+X-Provags-ID: V01U2FsdGVkX18YVUZYrDUYUT0zETWnIMNBmXcdKfXk5vx23Vs7+F
+	0HRy0OXpmKuXs1
+Date: Mon, 10 May 2010 20:43:12 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+cc: linux-kernel@vger.kernel.org, amit.kucheria@canonical.com,
+       s.hauer@pengutronix.de, linux-usb@vger.kernel.org, Jun.Li@freescale.com,
+       grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
+       daniel@caiaq.de, bryan.wu@canonical.com, xiao-lizhang@freescale.com,
+       valentin.longchamp@epfl.ch
+Subject: Re: [PATCHv2 2.6.34-rc7 1/3] mxc: gadget: remove 60mhz clock
+ requirement for freescale mx51 usb core
+In-Reply-To: <1273508519-23033-1-git-send-email-Dinh.Nguyen@freescale.com>
+Message-ID: <Pine.LNX.4.64.1005102041040.15250@axis700.grange>
+References: <1273508519-23033-1-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100510172854.GD30926@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.05.10 13:28:54, Arnaldo Carvalho de Melo wrote:
-> Em Mon, May 10, 2010 at 01:12:07PM -0400, Masami Hiramatsu escreveu:
-> > Check elfutils version, and if it is old don't compile
-> > CFI analysis code. This allows to compile perf with
-> > old elfutils.
+On Mon, 10 May 2010, Dinh Nguyen wrote:
+
+> renamed fsl_mx3_udc.c -> fsl_mxc_udc.c
+> for mx51, usb core is clocked from sources that are not 60mhz.
 > 
-> _ELFUTILS_PREREQ was introduced in:
+> This patch applies to 2.6.34-rc7.
+
+For such patches it helps to use the "-M -C" options to "git format 
+patch," which would then make reviewing your changes easier...
+
+Thanks
+Guennadi
+
 > 
-> commit fbc7245df72ce0142f0a21fa0f4f88c97278bf60
-> Author: Roland McGrath <roland@redhat.com>
-> Date:   Tue Dec 16 17:03:03 2008 -0800
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  drivers/usb/gadget/Makefile      |    2 +-
+>  drivers/usb/gadget/fsl_mx3_udc.c |  104 -------------------------------------
+>  drivers/usb/gadget/fsl_mxc_udc.c |  106 ++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 107 insertions(+), 105 deletions(-)
+>  delete mode 100644 drivers/usb/gadget/fsl_mx3_udc.c
+>  create mode 100644 drivers/usb/gadget/fsl_mxc_udc.c
 > 
-> Which was released in elfutils 0.138, guess this is coverage enough?
-> Richard, which version is in your machine?
+> diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
+> index 43b51da..c922eef 100644
+> --- a/drivers/usb/gadget/Makefile
+> +++ b/drivers/usb/gadget/Makefile
+> @@ -20,7 +20,7 @@ obj-$(CONFIG_USB_ATMEL_USBA)	+= atmel_usba_udc.o
+>  obj-$(CONFIG_USB_FSL_USB2)	+= fsl_usb2_udc.o
+>  fsl_usb2_udc-objs		:= fsl_udc_core.o
+>  ifeq ($(CONFIG_ARCH_MXC),y)
+> -fsl_usb2_udc-objs		+= fsl_mx3_udc.o
+> +fsl_usb2_udc-objs		+= fsl_mxc_udc.o
+>  endif
+>  obj-$(CONFIG_USB_M66592)	+= m66592-udc.o
+>  obj-$(CONFIG_USB_R8A66597)	+= r8a66597-udc.o
+> diff --git a/drivers/usb/gadget/fsl_mx3_udc.c b/drivers/usb/gadget/fsl_mx3_udc.c
+> deleted file mode 100644
+> index 20a802e..0000000
+> --- a/drivers/usb/gadget/fsl_mx3_udc.c
+> +++ /dev/null
+> @@ -1,104 +0,0 @@
+> -/*
+> - * Copyright (C) 2009
+> - * Guennadi Liakhovetski, DENX Software Engineering, <lg@denx.de>
+> - *
+> - * Description:
+> - * Helper routines for i.MX3x SoCs from Freescale, needed by the fsl_usb2_udc.c
+> - * driver to function correctly on these systems.
+> - *
+> - * This program is free software; you can redistribute  it and/or modify it
+> - * under  the terms of  the GNU General  Public License as published by the
+> - * Free Software Foundation;  either version 2 of the  License, or (at your
+> - * option) any later version.
+> - */
+> -#include <linux/clk.h>
+> -#include <linux/delay.h>
+> -#include <linux/err.h>
+> -#include <linux/fsl_devices.h>
+> -#include <linux/platform_device.h>
+> -
+> -#include <mach/hardware.h>
+> -
+> -static struct clk *mxc_ahb_clk;
+> -static struct clk *mxc_usb_clk;
+> -
+> -int fsl_udc_clk_init(struct platform_device *pdev)
+> -{
+> -	struct fsl_usb2_platform_data *pdata;
+> -	unsigned long freq;
+> -	int ret;
+> -
+> -	pdata = pdev->dev.platform_data;
+> -
+> -	if (!cpu_is_mx35()) {
+> -		mxc_ahb_clk = clk_get(&pdev->dev, "usb_ahb");
+> -		if (IS_ERR(mxc_ahb_clk))
+> -			return PTR_ERR(mxc_ahb_clk);
+> -
+> -		ret = clk_enable(mxc_ahb_clk);
+> -		if (ret < 0) {
+> -			dev_err(&pdev->dev, "clk_enable(\"usb_ahb\") failed\n");
+> -			goto eenahb;
+> -		}
+> -	}
+> -
+> -	/* make sure USB_CLK is running at 60 MHz +/- 1000 Hz */
+> -	mxc_usb_clk = clk_get(&pdev->dev, "usb");
+> -	if (IS_ERR(mxc_usb_clk)) {
+> -		dev_err(&pdev->dev, "clk_get(\"usb\") failed\n");
+> -		ret = PTR_ERR(mxc_usb_clk);
+> -		goto egusb;
+> -	}
+> -
+> -	freq = clk_get_rate(mxc_usb_clk);
+> -	if (pdata->phy_mode != FSL_USB2_PHY_ULPI &&
+> -	    (freq < 59999000 || freq > 60001000)) {
+> -		dev_err(&pdev->dev, "USB_CLK=%lu, should be 60MHz\n", freq);
+> -		ret = -EINVAL;
+> -		goto eclkrate;
+> -	}
+> -
+> -	ret = clk_enable(mxc_usb_clk);
+> -	if (ret < 0) {
+> -		dev_err(&pdev->dev, "clk_enable(\"usb_clk\") failed\n");
+> -		goto eenusb;
+> -	}
+> -
+> -	return 0;
+> -
+> -eenusb:
+> -eclkrate:
+> -	clk_put(mxc_usb_clk);
+> -	mxc_usb_clk = NULL;
+> -egusb:
+> -	if (!cpu_is_mx35())
+> -		clk_disable(mxc_ahb_clk);
+> -eenahb:
+> -	if (!cpu_is_mx35())
+> -		clk_put(mxc_ahb_clk);
+> -	return ret;
+> -}
+> -
+> -void fsl_udc_clk_finalize(struct platform_device *pdev)
+> -{
+> -	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
+> -
+> -	/* ULPI transceivers don't need usbpll */
+> -	if (pdata->phy_mode == FSL_USB2_PHY_ULPI) {
+> -		clk_disable(mxc_usb_clk);
+> -		clk_put(mxc_usb_clk);
+> -		mxc_usb_clk = NULL;
+> -	}
+> -}
+> -
+> -void fsl_udc_clk_release(void)
+> -{
+> -	if (mxc_usb_clk) {
+> -		clk_disable(mxc_usb_clk);
+> -		clk_put(mxc_usb_clk);
+> -	}
+> -	if (!cpu_is_mx35()) {
+> -		clk_disable(mxc_ahb_clk);
+> -		clk_put(mxc_ahb_clk);
+> -	}
+> -}
+> diff --git a/drivers/usb/gadget/fsl_mxc_udc.c b/drivers/usb/gadget/fsl_mxc_udc.c
+> new file mode 100644
+> index 0000000..d0b8bde
+> --- /dev/null
+> +++ b/drivers/usb/gadget/fsl_mxc_udc.c
+> @@ -0,0 +1,106 @@
+> +/*
+> + * Copyright (C) 2009
+> + * Guennadi Liakhovetski, DENX Software Engineering, <lg@denx.de>
+> + *
+> + * Description:
+> + * Helper routines for i.MX3x SoCs from Freescale, needed by the fsl_usb2_udc.c
+> + * driver to function correctly on these systems.
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +#include <linux/clk.h>
+> +#include <linux/delay.h>
+> +#include <linux/err.h>
+> +#include <linux/fsl_devices.h>
+> +#include <linux/platform_device.h>
+> +
+> +#include <mach/hardware.h>
+> +
+> +static struct clk *mxc_ahb_clk;
+> +static struct clk *mxc_usb_clk;
+> +
+> +int fsl_udc_clk_init(struct platform_device *pdev)
+> +{
+> +	struct fsl_usb2_platform_data *pdata;
+> +	unsigned long freq;
+> +	int ret;
+> +
+> +	pdata = pdev->dev.platform_data;
+> +
+> +	if (!cpu_is_mx35()) {
+> +		mxc_ahb_clk = clk_get(&pdev->dev, "usb_ahb");
+> +		if (IS_ERR(mxc_ahb_clk))
+> +			return PTR_ERR(mxc_ahb_clk);
+> +
+> +		ret = clk_enable(mxc_ahb_clk);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev, "clk_enable(\"usb_ahb\") failed\n");
+> +			goto eenahb;
+> +		}
+> +	}
+> +
+> +	/* make sure USB_CLK is running at 60 MHz +/- 1000 Hz */
+> +	mxc_usb_clk = clk_get(&pdev->dev, "usb");
+> +	if (IS_ERR(mxc_usb_clk)) {
+> +		dev_err(&pdev->dev, "clk_get(\"usb\") failed\n");
+> +		ret = PTR_ERR(mxc_usb_clk);
+> +		goto egusb;
+> +	}
+> +
+> +	if (!cpu_is_mx51()) {
+> +		freq = clk_get_rate(mxc_usb_clk);
+> +		if (pdata->phy_mode != FSL_USB2_PHY_ULPI &&
+> +		    (freq < 59999000 || freq > 60001000)) {
+> +			dev_err(&pdev->dev, "USB_CLK=%lu, should be 60MHz\n", freq);
+> +			ret = -EINVAL;
+> +			goto eclkrate;
+> +		}
+> +	}
+> +
+> +	ret = clk_enable(mxc_usb_clk);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "clk_enable(\"usb_clk\") failed\n");
+> +		goto eenusb;
+> +	}
+> +
+> +	return 0;
+> +
+> +eenusb:
+> +eclkrate:
+> +	clk_put(mxc_usb_clk);
+> +	mxc_usb_clk = NULL;
+> +egusb:
+> +	if (!cpu_is_mx35())
+> +		clk_disable(mxc_ahb_clk);
+> +eenahb:
+> +	if (!cpu_is_mx35())
+> +		clk_put(mxc_ahb_clk);
+> +	return ret;
+> +}
+> +
+> +void fsl_udc_clk_finalize(struct platform_device *pdev)
+> +{
+> +	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
+> +
+> +	/* ULPI transceivers don't need usbpll */
+> +	if (pdata->phy_mode == FSL_USB2_PHY_ULPI) {
+> +		clk_disable(mxc_usb_clk);
+> +		clk_put(mxc_usb_clk);
+> +		mxc_usb_clk = NULL;
+> +	}
+> +}
+> +
+> +void fsl_udc_clk_release(void)
+> +{
+> +	if (mxc_usb_clk) {
+> +		clk_disable(mxc_usb_clk);
+> +		clk_put(mxc_usb_clk);
+> +	}
+> +	if (!cpu_is_mx35()) {
+> +		clk_disable(mxc_ahb_clk);
+> +		clk_put(mxc_ahb_clk);
+> +	}
+> +}
+> -- 
+> 1.6.0.4
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
-Right, this does not work, I am using 0.131. As expected,
-"_ELFUTILS_PREREQ" is not defined:
-
-gcc -o builtin-probe.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstack-protector -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wvolatile-register-var -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement  -fstack-protector-all -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -Iarch/x86/include -I/usr/include/elfutils -DDWARF_SUPPORT -DNO_NEWT_SUPPORT -DNO_LIBPERL -DSHA1_HEADER='<openssl/sha.h>'  builtin-probe.c
-In file included from builtin-probe.c:43:
-util/probe-finder.h:47:5: error: "_ELFUTILS_PREREQ" is not defined
-util/probe-finder.h:47:21: error: missing binary operator before token "("
-make: *** [builtin-probe.o] Error 1
-
-Why not create a compile test as for NO_DWARF in tools/perf/Makefile?
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
-
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
