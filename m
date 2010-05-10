@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933359Ab0EJXg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:36:57 -0400
+	id S933373Ab0EJXhI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:37:08 -0400
 Received: from kroah.org ([198.145.64.141]:33075 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932340Ab0EJWwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:17 -0400
+	id S932410Ab0EJWwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:15 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:21 2010
-Message-Id: <20100510223321.798329218@kvm.kroah.org>
+Message-Id: <20100510223321.615065209@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:22 -0700
+Date: Mon, 10 May 2010 15:32:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Colin Ian King <colin.king@canonical.com>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [051/117] x86: Disable large pages on CPUs with Atom erratum AAE44
+       Borislav Petkov <borislav.petkov@amd.com>
+Subject: [049/117] edac, mce: Fix wrong mask and macro usage
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,72 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H. Peter Anvin <hpa@linux.intel.com>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit 7a0fc404ae663776e96db43879a0fa24fec1fa3a upstream.
+commit 35d824b28fc5544d1eb7c1e3db15a1740df8ec4b upstream.
 
-Atom erratum AAE44/AAF40/AAG38/AAH41:
+Correct two mishaps which prevented reporting error type (CECC vs UECC)
+and extended error description.
 
-"If software clears the PS (page size) bit in a present PDE (page
-directory entry), that will cause linear addresses mapped through this
-PDE to use 4-KByte pages instead of using a large page after old TLB
-entries are invalidated. Due to this erratum, if a code fetch uses
-this PDE before the TLB entry for the large page is invalidated then
-it may fetch from a different physical address than specified by
-either the old large page translation or the new 4-KByte page
-translation. This erratum may also cause speculative code fetches from
-incorrect addresses."
-
-[http://download.intel.com/design/processor/specupdt/319536.pdf]
-
-Where as commit 211b3d03c7400f48a781977a50104c9d12f4e229 seems to
-workaround errata AAH41 (mixed 4K TLBs) it reduces the window of
-opportunity for the bug to occur and does not totally remove it.  This
-patch disables mixed 4K/4MB page tables totally avoiding the page
-splitting and not tripping this processor issue.
-
-This is based on an original patch by Colin King.
-
-Originally-by: Colin Ian King <colin.king@canonical.com>
-Cc: Colin Ian King <colin.king@canonical.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-LKML-Reference: <1269271251-19775-1-git-send-email-colin.king@canonical.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/intel.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ drivers/edac/edac_mce_amd.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -47,6 +47,27 @@ static void __cpuinit early_init_intel(s
- 		(c->x86 == 0x6 && c->x86_model >= 0x0e))
- 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+--- a/drivers/edac/edac_mce_amd.c
++++ b/drivers/edac/edac_mce_amd.c
+@@ -294,7 +294,6 @@ wrong_ls_mce:
+ void amd_decode_nb_mce(int node_id, struct err_regs *regs, int handle_errors)
+ {
+ 	u32 ec  = ERROR_CODE(regs->nbsl);
+-	u32 xec = EXT_ERROR_CODE(regs->nbsl);
  
-+	/*
-+	 * Atom erratum AAE44/AAF40/AAG38/AAH41:
-+	 *
-+	 * A race condition between speculative fetches and invalidating
-+	 * a large page.  This is worked around in microcode, but we
-+	 * need the microcode to have already been loaded... so if it is
-+	 * not, recommend a BIOS update and disable large pages.
-+	 */
-+	if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2) {
-+		u32 ucode, junk;
-+
-+		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
-+		sync_core();
-+		rdmsr(MSR_IA32_UCODE_REV, junk, ucode);
-+
-+		if (ucode < 0x20e) {
-+			printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
-+			clear_cpu_cap(c, X86_FEATURE_PSE);
-+		}
-+	}
-+
- #ifdef CONFIG_X86_64
- 	set_cpu_cap(c, X86_FEATURE_SYSENTER32);
- #else
+ 	if (!handle_errors)
+ 		return;
+@@ -324,7 +323,7 @@ void amd_decode_nb_mce(int node_id, stru
+ 		pr_cont("\n");
+ 	}
+ 
+-	pr_emerg("%s.\n", EXT_ERR_MSG(xec));
++	pr_emerg("%s.\n", EXT_ERR_MSG(regs->nbsl));
+ 
+ 	if (BUS_ERROR(ec) && nb_bus_decoder)
+ 		nb_bus_decoder(node_id, regs);
+@@ -374,7 +373,7 @@ static int amd_decode_mce(struct notifie
+ 		 ((m->status & MCI_STATUS_PCC) ? "yes" : "no"));
+ 
+ 	/* do the two bits[14:13] together */
+-	ecc = m->status & (3ULL << 45);
++	ecc = (m->status >> 45) & 0x3;
+ 	if (ecc)
+ 		pr_cont(", %sECC Error", ((ecc == 2) ? "C" : "U"));
+ 
 
 
