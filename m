@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755032Ab0EJChb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 22:37:31 -0400
-Received: from mail.redflag-linux.com ([219.237.229.196]:49592 "EHLO
-	mail.redflag-linux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab0EJCh3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 22:37:29 -0400
-Message-ID: <4BE77149.8050307@redflag-linux.com>
-Date: Mon, 10 May 2010 10:36:57 +0800
-From: =?UTF-8?B?Iua9mOWNq+W5syhQZXRlciBQYW4pIg==?= 
-	<wppan@redflag-linux.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100324 RedFlag/3.0.1-1rf2.dt8 Thunderbird/3.0.1
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: tj@kernel.org, Christoph Lameter <cl@linux-foundation.org>, hch@lst.de,
-       akpm@linux-foundation.org, adilger@sun.com, linux-ext4@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] ext2/ext3:useless code for return value
-References: <4BE2C5D5.2050207@redflag-linux.com> <20100507162348.GD3265@atrey.karlin.mff.cuni.cz>
-In-Reply-To: <20100507162348.GD3265@atrey.karlin.mff.cuni.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1755075Ab0EJClP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 22:41:15 -0400
+Received: from gate.crashing.org ([63.228.1.57]:37522 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755008Ab0EJClN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 22:41:13 -0400
+Subject: Re: [PATCH -v14 00/22] Use lmb with x86
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <1273331860-14325-1-git-send-email-yinghai@kernel.org>
+References: <1273331860-14325-1-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 May 2010 12:38:59 +1000
+Message-ID: <1273459139.23699.4.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2010 12:23 AM, Jan Kara wrote:
->> When rsv is the right hand side of goal, we should return NULL,
->> because now rsv's prev is NULL, or we return rsv.
->>
->> Signed-off-by: Peter Pan(潘卫平)<wppan@redflag-linux.com>
->>
->> ---
->>   fs/ext2/balloc.c |    6 +-----
->>   fs/ext3/balloc.c |    6 +-----
->>   2 files changed, 2 insertions(+), 10 deletions(-)
->>
->> diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
->> index 3cf038c..023990f 100644
->> --- a/fs/ext2/balloc.c
->> +++ b/fs/ext2/balloc.c
->> @@ -323,11 +323,7 @@ search_reserve_window(struct rb_root *root,
->> ext2_fsblk_t goal)
->>   	 * side of the interval containing the goal.  If it's the RHS,
->>   	 * we need to back up one.
->>   	 */
->> -	if (rsv->rsv_start>  goal) {
->> -		n = rb_prev(&rsv->rsv_node);
->> -		rsv = rb_entry(n, struct ext2_reserve_window_node, rsv_node);
->> -	}
->> -	return rsv;
->> +    return (rsv->rsv_start<  goal) ? rsv : NULL;
->    Hmm, I'm not sure I understand your reasoning. Suppose we have an RB-tree
-> with two intervals 0-10, 20-30. Interval 0-10 is in the root. Now we search
-> for goal 15. In the root we go to right because 10<15, in the next node we go
-> to left because 15<  20. Then the loop terminates. Now your code would return
-> NULL but previous code would return rb_prev of interval 20-30 which is 0-10.
-> And that is what we want as far as I understand what we expect from the
-> function...
->
-> 								Honza
-You got the point!
-Many thanks.
+On Sat, 2010-05-08 at 08:17 -0700, Yinghai Lu wrote:
+> the new lmb could be used to replace early_res in x86.
+> 
+> Suggested by: David, Ben, and Thomas
 
-Regards
--- 
-Peter Pan
-Red Flag Software Co.,Ltd
+ .../...
+
+> Only first three patches in this set could affect original lmb users.
+> lmb.c lines from 567 to 996
+> If lmb guys are still not happy, we could move that 360 lines to arch/x86/mm/lmb.c
+> 
+> still hope Ben could do lmb clean up on top of this patchset.
+
+I would still like to do it the other way around :-)
+
+My patches replace (and in some case are equivalent) to part of this
+series, though I believe are cleaner, provide more readable changeset
+comments and justifications, etc... it would be awkward to just apply
+your stuff with "cleanup" passes from me on top of it.
+
+I really prefer providing you with all the LMB infrastructure you need
+so you can simply drop LMB changes from your series.
+
+I'll be working on that today, finishing what I plan to finish and if I
+get a chance (it's hard with one of the kids having a double ear
+infection) see if I can rebase your work and at least compile test it.
+
+Stay tuned...
+
+Cheers,
+Ben.
+
+
