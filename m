@@ -1,303 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab0EJSnP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 14:43:15 -0400
-Received: from mail.gmx.net ([213.165.64.20]:40604 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750824Ab0EJSnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 14:43:12 -0400
-X-Authenticated: #20450766
-X-Provags-ID: V01U2FsdGVkX18YVUZYrDUYUT0zETWnIMNBmXcdKfXk5vx23Vs7+F
-	0HRy0OXpmKuXs1
-Date: Mon, 10 May 2010 20:43:12 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-To: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-cc: linux-kernel@vger.kernel.org, amit.kucheria@canonical.com,
-       s.hauer@pengutronix.de, linux-usb@vger.kernel.org, Jun.Li@freescale.com,
-       grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
-       daniel@caiaq.de, bryan.wu@canonical.com, xiao-lizhang@freescale.com,
-       valentin.longchamp@epfl.ch
-Subject: Re: [PATCHv2 2.6.34-rc7 1/3] mxc: gadget: remove 60mhz clock
- requirement for freescale mx51 usb core
-In-Reply-To: <1273508519-23033-1-git-send-email-Dinh.Nguyen@freescale.com>
-Message-ID: <Pine.LNX.4.64.1005102041040.15250@axis700.grange>
-References: <1273508519-23033-1-git-send-email-Dinh.Nguyen@freescale.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Y-GMX-Trusted: 0
+	id S1755336Ab0EJSq0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 14:46:26 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:40841 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab0EJSqZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 14:46:25 -0400
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, Jun.Li@freescale.com,
+       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv3 2.6.34-rc7 2/3] mx5: change usb clock source from pll3 to pll2
+Date: Mon, 10 May 2010 13:45:58 -0500
+Message-Id: <1273517159-25173-2-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1273517159-25173-1-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1273517159-25173-1-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 May 2010, Dinh Nguyen wrote:
+For power management reasons, pll2 should be used to source the USBOH3
+clock for mx51. PLL3 can be completely gated off when USB is not used.
 
-> renamed fsl_mx3_udc.c -> fsl_mxc_udc.c
-> for mx51, usb core is clocked from sources that are not 60mhz.
-> 
-> This patch applies to 2.6.34-rc7.
+This patch applies to 2.6.34-rc7.
 
-For such patches it helps to use the "-M -C" options to "git format 
-patch," which would then make reviewing your changes easier...
-
-Thanks
-Guennadi
-
-> 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  drivers/usb/gadget/Makefile      |    2 +-
->  drivers/usb/gadget/fsl_mx3_udc.c |  104 -------------------------------------
->  drivers/usb/gadget/fsl_mxc_udc.c |  106 ++++++++++++++++++++++++++++++++++++++
->  3 files changed, 107 insertions(+), 105 deletions(-)
->  delete mode 100644 drivers/usb/gadget/fsl_mx3_udc.c
->  create mode 100644 drivers/usb/gadget/fsl_mxc_udc.c
-> 
-> diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
-> index 43b51da..c922eef 100644
-> --- a/drivers/usb/gadget/Makefile
-> +++ b/drivers/usb/gadget/Makefile
-> @@ -20,7 +20,7 @@ obj-$(CONFIG_USB_ATMEL_USBA)	+= atmel_usba_udc.o
->  obj-$(CONFIG_USB_FSL_USB2)	+= fsl_usb2_udc.o
->  fsl_usb2_udc-objs		:= fsl_udc_core.o
->  ifeq ($(CONFIG_ARCH_MXC),y)
-> -fsl_usb2_udc-objs		+= fsl_mx3_udc.o
-> +fsl_usb2_udc-objs		+= fsl_mxc_udc.o
->  endif
->  obj-$(CONFIG_USB_M66592)	+= m66592-udc.o
->  obj-$(CONFIG_USB_R8A66597)	+= r8a66597-udc.o
-> diff --git a/drivers/usb/gadget/fsl_mx3_udc.c b/drivers/usb/gadget/fsl_mx3_udc.c
-> deleted file mode 100644
-> index 20a802e..0000000
-> --- a/drivers/usb/gadget/fsl_mx3_udc.c
-> +++ /dev/null
-> @@ -1,104 +0,0 @@
-> -/*
-> - * Copyright (C) 2009
-> - * Guennadi Liakhovetski, DENX Software Engineering, <lg@denx.de>
-> - *
-> - * Description:
-> - * Helper routines for i.MX3x SoCs from Freescale, needed by the fsl_usb2_udc.c
-> - * driver to function correctly on these systems.
-> - *
-> - * This program is free software; you can redistribute  it and/or modify it
-> - * under  the terms of  the GNU General  Public License as published by the
-> - * Free Software Foundation;  either version 2 of the  License, or (at your
-> - * option) any later version.
-> - */
-> -#include <linux/clk.h>
-> -#include <linux/delay.h>
-> -#include <linux/err.h>
-> -#include <linux/fsl_devices.h>
-> -#include <linux/platform_device.h>
-> -
-> -#include <mach/hardware.h>
-> -
-> -static struct clk *mxc_ahb_clk;
-> -static struct clk *mxc_usb_clk;
-> -
-> -int fsl_udc_clk_init(struct platform_device *pdev)
-> -{
-> -	struct fsl_usb2_platform_data *pdata;
-> -	unsigned long freq;
-> -	int ret;
-> -
-> -	pdata = pdev->dev.platform_data;
-> -
-> -	if (!cpu_is_mx35()) {
-> -		mxc_ahb_clk = clk_get(&pdev->dev, "usb_ahb");
-> -		if (IS_ERR(mxc_ahb_clk))
-> -			return PTR_ERR(mxc_ahb_clk);
-> -
-> -		ret = clk_enable(mxc_ahb_clk);
-> -		if (ret < 0) {
-> -			dev_err(&pdev->dev, "clk_enable(\"usb_ahb\") failed\n");
-> -			goto eenahb;
-> -		}
-> -	}
-> -
-> -	/* make sure USB_CLK is running at 60 MHz +/- 1000 Hz */
-> -	mxc_usb_clk = clk_get(&pdev->dev, "usb");
-> -	if (IS_ERR(mxc_usb_clk)) {
-> -		dev_err(&pdev->dev, "clk_get(\"usb\") failed\n");
-> -		ret = PTR_ERR(mxc_usb_clk);
-> -		goto egusb;
-> -	}
-> -
-> -	freq = clk_get_rate(mxc_usb_clk);
-> -	if (pdata->phy_mode != FSL_USB2_PHY_ULPI &&
-> -	    (freq < 59999000 || freq > 60001000)) {
-> -		dev_err(&pdev->dev, "USB_CLK=%lu, should be 60MHz\n", freq);
-> -		ret = -EINVAL;
-> -		goto eclkrate;
-> -	}
-> -
-> -	ret = clk_enable(mxc_usb_clk);
-> -	if (ret < 0) {
-> -		dev_err(&pdev->dev, "clk_enable(\"usb_clk\") failed\n");
-> -		goto eenusb;
-> -	}
-> -
-> -	return 0;
-> -
-> -eenusb:
-> -eclkrate:
-> -	clk_put(mxc_usb_clk);
-> -	mxc_usb_clk = NULL;
-> -egusb:
-> -	if (!cpu_is_mx35())
-> -		clk_disable(mxc_ahb_clk);
-> -eenahb:
-> -	if (!cpu_is_mx35())
-> -		clk_put(mxc_ahb_clk);
-> -	return ret;
-> -}
-> -
-> -void fsl_udc_clk_finalize(struct platform_device *pdev)
-> -{
-> -	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
-> -
-> -	/* ULPI transceivers don't need usbpll */
-> -	if (pdata->phy_mode == FSL_USB2_PHY_ULPI) {
-> -		clk_disable(mxc_usb_clk);
-> -		clk_put(mxc_usb_clk);
-> -		mxc_usb_clk = NULL;
-> -	}
-> -}
-> -
-> -void fsl_udc_clk_release(void)
-> -{
-> -	if (mxc_usb_clk) {
-> -		clk_disable(mxc_usb_clk);
-> -		clk_put(mxc_usb_clk);
-> -	}
-> -	if (!cpu_is_mx35()) {
-> -		clk_disable(mxc_ahb_clk);
-> -		clk_put(mxc_ahb_clk);
-> -	}
-> -}
-> diff --git a/drivers/usb/gadget/fsl_mxc_udc.c b/drivers/usb/gadget/fsl_mxc_udc.c
-> new file mode 100644
-> index 0000000..d0b8bde
-> --- /dev/null
-> +++ b/drivers/usb/gadget/fsl_mxc_udc.c
-> @@ -0,0 +1,106 @@
-> +/*
-> + * Copyright (C) 2009
-> + * Guennadi Liakhovetski, DENX Software Engineering, <lg@denx.de>
-> + *
-> + * Description:
-> + * Helper routines for i.MX3x SoCs from Freescale, needed by the fsl_usb2_udc.c
-> + * driver to function correctly on these systems.
-> + *
-> + * This program is free software; you can redistribute  it and/or modify it
-> + * under  the terms of  the GNU General  Public License as published by the
-> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> + * option) any later version.
-> + */
-> +#include <linux/clk.h>
-> +#include <linux/delay.h>
-> +#include <linux/err.h>
-> +#include <linux/fsl_devices.h>
-> +#include <linux/platform_device.h>
-> +
-> +#include <mach/hardware.h>
-> +
-> +static struct clk *mxc_ahb_clk;
-> +static struct clk *mxc_usb_clk;
-> +
-> +int fsl_udc_clk_init(struct platform_device *pdev)
-> +{
-> +	struct fsl_usb2_platform_data *pdata;
-> +	unsigned long freq;
-> +	int ret;
-> +
-> +	pdata = pdev->dev.platform_data;
-> +
-> +	if (!cpu_is_mx35()) {
-> +		mxc_ahb_clk = clk_get(&pdev->dev, "usb_ahb");
-> +		if (IS_ERR(mxc_ahb_clk))
-> +			return PTR_ERR(mxc_ahb_clk);
-> +
-> +		ret = clk_enable(mxc_ahb_clk);
-> +		if (ret < 0) {
-> +			dev_err(&pdev->dev, "clk_enable(\"usb_ahb\") failed\n");
-> +			goto eenahb;
-> +		}
-> +	}
-> +
-> +	/* make sure USB_CLK is running at 60 MHz +/- 1000 Hz */
-> +	mxc_usb_clk = clk_get(&pdev->dev, "usb");
-> +	if (IS_ERR(mxc_usb_clk)) {
-> +		dev_err(&pdev->dev, "clk_get(\"usb\") failed\n");
-> +		ret = PTR_ERR(mxc_usb_clk);
-> +		goto egusb;
-> +	}
-> +
-> +	if (!cpu_is_mx51()) {
-> +		freq = clk_get_rate(mxc_usb_clk);
-> +		if (pdata->phy_mode != FSL_USB2_PHY_ULPI &&
-> +		    (freq < 59999000 || freq > 60001000)) {
-> +			dev_err(&pdev->dev, "USB_CLK=%lu, should be 60MHz\n", freq);
-> +			ret = -EINVAL;
-> +			goto eclkrate;
-> +		}
-> +	}
-> +
-> +	ret = clk_enable(mxc_usb_clk);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "clk_enable(\"usb_clk\") failed\n");
-> +		goto eenusb;
-> +	}
-> +
-> +	return 0;
-> +
-> +eenusb:
-> +eclkrate:
-> +	clk_put(mxc_usb_clk);
-> +	mxc_usb_clk = NULL;
-> +egusb:
-> +	if (!cpu_is_mx35())
-> +		clk_disable(mxc_ahb_clk);
-> +eenahb:
-> +	if (!cpu_is_mx35())
-> +		clk_put(mxc_ahb_clk);
-> +	return ret;
-> +}
-> +
-> +void fsl_udc_clk_finalize(struct platform_device *pdev)
-> +{
-> +	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
-> +
-> +	/* ULPI transceivers don't need usbpll */
-> +	if (pdata->phy_mode == FSL_USB2_PHY_ULPI) {
-> +		clk_disable(mxc_usb_clk);
-> +		clk_put(mxc_usb_clk);
-> +		mxc_usb_clk = NULL;
-> +	}
-> +}
-> +
-> +void fsl_udc_clk_release(void)
-> +{
-> +	if (mxc_usb_clk) {
-> +		clk_disable(mxc_usb_clk);
-> +		clk_put(mxc_usb_clk);
-> +	}
-> +	if (!cpu_is_mx35()) {
-> +		clk_disable(mxc_ahb_clk);
-> +		clk_put(mxc_ahb_clk);
-> +	}
-> +}
-> -- 
-> 1.6.0.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
-
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ arch/arm/mach-mx5/clock-mx51.c |   43 ++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 39 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
+index 1fe40e1..b63ba71 100644
+--- a/arch/arm/mach-mx5/clock-mx51.c
++++ b/arch/arm/mach-mx5/clock-mx51.c
+@@ -37,6 +37,7 @@ static struct clk lp_apm_clk;
+ static struct clk periph_apm_clk;
+ static struct clk ahb_clk;
+ static struct clk ipg_clk;
++static struct clk usboh3_clk;
+ 
+ #define MAX_DPLL_WAIT_TRIES	1000 /* 1000 * udelay(1) = 1ms */
+ 
+@@ -570,6 +571,35 @@ static int _clk_uart_set_parent(struct clk *clk, struct clk *parent)
+ 	return 0;
+ }
+ 
++static unsigned long clk_usboh3_get_rate(struct clk *clk)
++{
++	u32 reg, prediv, podf;
++	unsigned long parent_rate;
++
++	parent_rate = clk_get_rate(clk->parent);
++
++	reg = __raw_readl(MXC_CCM_CSCDR1);
++	prediv = ((reg & MXC_CCM_CSCDR1_USBOH3_CLK_PRED_MASK) >>
++		  MXC_CCM_CSCDR1_USBOH3_CLK_PRED_OFFSET) + 1;
++	podf = ((reg & MXC_CCM_CSCDR1_USBOH3_CLK_PODF_MASK) >>
++		MXC_CCM_CSCDR1_USBOH3_CLK_PODF_OFFSET) + 1;
++
++	return parent_rate / (prediv * podf);
++}
++
++static int _clk_usboh3_set_parent(struct clk *clk, struct clk *parent)
++{
++	u32 reg, mux;
++
++	mux = _get_mux(parent, &pll1_sw_clk, &pll2_sw_clk, &pll3_sw_clk,
++		       &lp_apm_clk);
++	reg = __raw_readl(MXC_CCM_CSCMR1) & ~MXC_CCM_CSCMR1_USBOH3_CLK_SEL_MASK;
++	reg |= mux << MXC_CCM_CSCMR1_USBOH3_CLK_SEL_OFFSET;
++	__raw_writel(reg, MXC_CCM_CSCMR1);
++
++	return 0;
++}
++
+ static unsigned long get_high_reference_clock_rate(struct clk *clk)
+ {
+ 	return external_high_reference;
+@@ -691,6 +721,12 @@ static struct clk uart_root_clk = {
+ 	.set_parent = _clk_uart_set_parent,
+ };
+ 
++static struct clk usboh3_clk = {
++	.parent = &pll2_sw_clk,
++	.get_rate = clk_usboh3_get_rate,
++	.set_parent = _clk_usboh3_set_parent,
++};
++
+ static struct clk ahb_max_clk = {
+ 	.parent = &ahb_clk,
+ 	.enable_reg = MXC_CCM_CCGR0,
+@@ -762,10 +798,6 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG9_OFFSET,
+ DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
+ 	NULL,  NULL, &ipg_clk, NULL);
+ 
+-/* USB */
+-DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
+-	NULL, NULL, &pll3_sw_clk, NULL);
+-
+ /* FEC */
+ DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
+ 	NULL,  NULL, &ipg_clk, NULL);
+@@ -827,6 +859,9 @@ int __init mx51_clocks_init(unsigned long ckil, unsigned long osc,
+ 	clk_enable(&cpu_clk);
+ 	clk_enable(&main_bus_clk);
+ 
++	/* set the usboh3_clk parent to pll2_sw_clk */
++	clk_set_parent(&usboh3_clk, &pll2_sw_clk);
++
+ 	/* System timer */
+ 	mxc_timer_init(&gpt_clk, MX51_IO_ADDRESS(MX51_GPT1_BASE_ADDR),
+ 		MX51_MXC_INT_GPT);
+-- 
+1.6.0.4
+
