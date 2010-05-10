@@ -1,75 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab0EJVXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 17:23:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48020 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752084Ab0EJVXQ (ORCPT
+	id S1754744Ab0EJVZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 17:25:58 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:46823 "HELO
+	outbound-mail-158.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751754Ab0EJVZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 17:23:16 -0400
-Date: Mon, 10 May 2010 14:22:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Oskar Schirmer" <os@emlix.com>
-Cc: Michael Hennerich <Michael.Hennerich@analog.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Mike Frysinger <vapier@gentoo.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Daniel =?ISO-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>
-Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
-Message-Id: <20100510142225.4bf215ef.akpm@linux-foundation.org>
-In-Reply-To: <1273488154-2993-1-git-send-email-os@emlix.com>
-References: <1273487642-2169-1-git-send-email-os@emlix.com>
-	<1273488154-2993-1-git-send-email-os@emlix.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Mon, 10 May 2010 17:25:56 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=YIellI97/TNp6mCmym6FaShpolDQQtkQipUKmyA1trPBG9Dbz/7CZdOnS49OzaJWDw2Qfidz9xv6sQRpWP0fVYXMbRluAAFFPorTHFcKiBL9/+jcT+NCP/9q73dY03GL;
+Date: Mon, 10 May 2010 14:25:21 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+       Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Intelligent power sharing driver
+Message-ID: <20100510142521.5a705dea@virtuousgeek.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 May 2010 12:42:34 +0200
-"Oskar Schirmer" <os@emlix.com> wrote:
+This patchset adds the core IPS driver to drivers/platform/x86, along
+with some helper code in the timer subsystem to allow for deferrable
+on-stack timers.
 
-> With dma based spi transmission, data corruption
-> is observed occasionally. With dma buffers located
-> right next to msg and xfer fields, cache lines
-> correctly flushed in preparation for dma usage
-> may be polluted again when writing to fields
-> in the same cache line.
-> 
-> Make sure cache fields used with dma do not
-> share cache lines with fields changed during
-> dma handling. As both fields are part of a
-> struct that is allocated via kzalloc, thus
-> cache aligned, moving the fields to the 1st
-> position and insert padding for alignment
-> does the job.
+Note that this patchset doesn't include the i915 specific bits for
+monitoring power consumption.  We're doing final validation on those
+now so I expect to be able to post them soon.
 
-This sounds odd.  Doesn't it imply that some code somewhere is missing
-some DMA synchronisation actions?
-
-> 
-> v2: add a comment to explain why alignment is needed
-> 
-> v3: fix the typo in comment and layout (- to end of line)
-> 
-> diff --git a/drivers/input/touchscreen/ad7877.c b/drivers/input/touchscreen/ad7877.c
-> index 885354c..9ebb1b4 100644
-> --- a/drivers/input/touchscreen/ad7877.c
-> +++ b/drivers/input/touchscreen/ad7877.c
-> @@ -153,15 +153,29 @@ enum {
->   */
->  
->  struct ser_req {
-> +	u16			sample;
-> +	/*
-> +	 * DMA (thus cache coherency maintenance) requires the
-> +	 * transfer buffers to live in their own cache lines.
-> +	 */
-> +	char			__padalign[L1_CACHE_BYTES - sizeof(u16)];
-
-It would be better to use __cacheline_aligned, rather than open-coding
-things in this manner.
-
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
