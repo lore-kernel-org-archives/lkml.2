@@ -1,74 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806Ab0EJW4M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:56:12 -0400
-Received: from kroah.org ([198.145.64.141]:33447 "EHLO coco.kroah.org"
+	id S932983Ab0EJW7B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:59:01 -0400
+Received: from kroah.org ([198.145.64.141]:51641 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932567Ab0EJWxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:53:06 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:27 2010
-Message-Id: <20100510223327.582023299@kvm.kroah.org>
+	id S1757462Ab0EJW5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:57:38 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:35 2010
+Message-Id: <20100510223535.869870792@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:33:24 -0700
+Date: Mon, 10 May 2010 15:34:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mike Christie <michaelc@cs.wisc.edu>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: [113/117] SCSI: libiscsi: regression: fix header digest errors
-In-Reply-To: <20100510223700.GA18404@kroah.com>
+       David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>
+Subject: [16/98] keys: the request_key() syscall should link an existing key to the dest keyring
+In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+From: David Howells <dhowells@redhat.com>
 
-commit 96b1f96dcab87756c0a1e7ba76bc5dc2add82b88 upstream.
+commit 03449cd9eaa4fa3a7faa4a59474bafe2e90bd143 upstream.
 
-This fixes a regression introduced with this commit:
+The request_key() system call and request_key_and_link() should make a
+link from an existing key to the destination keyring (if supplied), not
+just from a new key to the destination keyring.
 
-commit d3305f3407fa3e9452079ec6cc8379067456e4aa
-Author: Mike Christie <michaelc@cs.wisc.edu>
-Date:   Thu Aug 20 15:10:58 2009 -0500
+This can be tested by:
 
-    [SCSI] libiscsi: don't increment cmdsn if cmd is not sent
+	ring=`keyctl newring fred @s`
+	keyctl request2 user debug:a a
+	keyctl request user debug:a $ring
+	keyctl list $ring
 
-in 2.6.32.
+If it says:
 
-When I moved the hdr->cmdsn after init_task, I added
-a bug when header digests are used. The problem is
-that the LLD may calculate the header digest in init_task,
-so if we then set the cmdsn after the init_task call we
-change what the digest will be calculated by the target.
+	keyring is empty
 
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+then it didn't work.  If it shows something like:
+
+	1 key in keyring:
+	1070462727: --alswrv     0     0 user: debug:a
+
+then it did.
+
+request_key() system call is meant to recursively search all your keyrings for
+the key you desire, and, optionally, if it doesn't exist, call out to userspace
+to create one for you.
+
+If request_key() finds or creates a key, it should, optionally, create a link
+to that key from the destination keyring specified.
+
+Therefore, if, after a successful call to request_key() with a desination
+keyring specified, you see the destination keyring empty, the code didn't work
+correctly.
+
+If you see the found key in the keyring, then it did - which is what the patch
+is required for.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/libiscsi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/keys/request_key.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -470,12 +470,12 @@ static int iscsi_prep_scsi_cmd_pdu(struc
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -336,8 +336,10 @@ static int construct_alloc_key(struct ke
  
- 	WARN_ON(hdrlength >= 256);
- 	hdr->hlength = hdrlength & 0xFF;
-+	hdr->cmdsn = task->cmdsn = cpu_to_be32(session->cmdsn);
+ key_already_present:
+ 	mutex_unlock(&key_construction_mutex);
+-	if (dest_keyring)
++	if (dest_keyring) {
++		__key_link(dest_keyring, key_ref_to_ptr(key_ref));
+ 		up_write(&dest_keyring->sem);
++	}
+ 	mutex_unlock(&user->cons_lock);
+ 	key_put(key);
+ 	*_key = key = key_ref_to_ptr(key_ref);
+@@ -428,6 +430,11 @@ struct key *request_key_and_link(struct
  
- 	if (session->tt->init_task && session->tt->init_task(task))
- 		return -EIO;
- 
- 	task->state = ISCSI_TASK_RUNNING;
--	hdr->cmdsn = task->cmdsn = cpu_to_be32(session->cmdsn);
- 	session->cmdsn++;
- 
- 	conn->scsicmd_pdus_cnt++;
+ 	if (!IS_ERR(key_ref)) {
+ 		key = key_ref_to_ptr(key_ref);
++		if (dest_keyring) {
++			construct_get_dest_keyring(&dest_keyring);
++			key_link(dest_keyring, key);
++			key_put(dest_keyring);
++		}
+ 	} else if (PTR_ERR(key_ref) != -EAGAIN) {
+ 		key = ERR_CAST(key_ref);
+ 	} else  {
 
 
