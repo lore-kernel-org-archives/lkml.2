@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab0EJR03 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 13:26:29 -0400
-Received: from mail.gmx.net ([213.165.64.20]:49280 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751248Ab0EJR02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 13:26:28 -0400
-Cc: akpm@osdl.org, trond.myklebust@fys.uio.no, riel@redhat.com, major@mhtx.net
-Content-Type: text/plain; charset="utf-8"
-Date: Mon, 10 May 2010 19:26:21 +0200
-From: "Alexander Stohr" <Alexander.Stohr@gmx.de>
-Message-ID: <20100510172621.284310@gmx.net>
+	id S1755921Ab0EJR3L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 13:29:11 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58661 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604Ab0EJR3H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 13:29:07 -0400
+Date: Mon, 10 May 2010 14:28:54 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       Robert Richter <robert.richter@amd.com>,
+       systemtap <systemtap@sources.redhat.com>,
+       Roland McGrath <roland@redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>
+Subject: Re: [PATCH -tip] perf probe: Don't compile CFI related code if
+	elfutils is old
+Message-ID: <20100510172854.GD30926@ghostprotocols.net>
+References: <20100510171207.26029.97604.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-Subject: Re: [BUG?] vfs_cache_pressure=0 does not free inode caches
-To: linux-kernel@vger.kernel.org
-X-Authenticated: #15156664
-X-Flags: 0001
-X-Mailer: WWW-Mail 6100 (Global Message Exchange)
-X-Priority: 3
-X-Provags-ID: V01U2FsdGVkX19MizoVy7FM+1mbvA8i6XYs54hF5mticP2K3SLtuQ
- ZdScMx8wCy3a6Lj/DNUuqMKRBjwvAMUx/Y+Q== 
-Content-Transfer-Encoding: 8bit
-X-GMX-UID: hXPbf2UmX1V6K4woi2FyIvZ/SDc4NMy9
-X-FuHaFi: 0.59999999999999998
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100510171207.26029.97604.stgit@localhost6.localdomain6>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this is a follow up to:
-http://lkml.indiana.edu/hypermail/linux/kernel/0904.1/03026.html
+Em Mon, May 10, 2010 at 01:12:07PM -0400, Masami Hiramatsu escreveu:
+> Check elfutils version, and if it is old don't compile
+> CFI analysis code. This allows to compile perf with
+> old elfutils.
 
-> The server is going to die a slow death,
-> all user space memory is swapped out,
-> then all processes are OOM killed 
-> until it dies from complete memory exhaustion."
+_ELFUTILS_PREREQ was introduced in:
 
-> a cache is supposed to be a cache and not a memory hog
+commit fbc7245df72ce0142f0a21fa0f4f88c97278bf60
+Author: Roland McGrath <roland@redhat.com>
+Date:   Tue Dec 16 17:03:03 2008 -0800
 
-i'm running an embedded system with NFS as my working area.
-the system has only few ram leftover, any MiBi counts.
+Which was released in elfutils 0.138, guess this is coverage enough?
+Richard, which version is in your machine?
 
-my current best guess to resolve low memory situations
-is a manual one (no, i could not see any smart kernel reaction
-with that relatively old but patched 2.6.18 kernel) is this:
-
-echo 100000 >/proc/sys/vm/vfs_cache_pressure
-sync
-echo 1 >/proc/sys/vm/drop_caches
-echo 2 >/proc/sys/vm/drop_caches
-
-any hints on that?
-is this still an issue in current kernels
-or is this already addressed in some way?
-
-regards, Alex.
-
-
-here is the link to the initial patch set applied to 2.6.8:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/old-2.6-bkcvs.git;a=commit;h=95afb3658a8217ff2c262e202601340323ef2803
-
-some other people spotting similar effects:
-http://rackerhacker.com/2008/12/03/reducing-inode-and-dentry-caches-to-keep-oom-killer-at-bay/
--- 
-GRATIS für alle GMX-Mitglieder: Die maxdome Movie-FLAT!
-Jetzt freischalten unter http://portal.gmx.net/de/go/maxdome01
+- Arnaldo
+ 
+> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+> Reported-by: Robert Richter <robert.richter@amd.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> ---
+> 
+>  tools/perf/util/probe-finder.c |    4 ++++
+>  tools/perf/util/probe-finder.h |    3 +++
+>  2 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> index 562b144..93583eb 100644
+> --- a/tools/perf/util/probe-finder.c
+> +++ b/tools/perf/util/probe-finder.c
+> @@ -668,6 +668,7 @@ static int convert_probe_point(Dwarf_Die *sp_die, struct probe_finder *pf)
+>  	ret = dwarf_getlocation_addr(&fb_attr, pf->addr, &pf->fb_ops, &nops, 1);
+>  	if (ret <= 0 || nops == 0) {
+>  		pf->fb_ops = NULL;
+> +#if _ELFUTILS_PREREQ(0, 142)
+>  	} else if (nops == 1 && pf->fb_ops[0].atom == DW_OP_call_frame_cfa &&
+>  		   pf->cfi != NULL) {
+>  		Dwarf_Frame *frame;
+> @@ -677,6 +678,7 @@ static int convert_probe_point(Dwarf_Die *sp_die, struct probe_finder *pf)
+>  				   (uintmax_t)pf->addr);
+>  			return -ENOENT;
+>  		}
+> +#endif
+>  	}
+>  
+>  	/* Find each argument */
+> @@ -956,8 +958,10 @@ int find_kprobe_trace_events(int fd, struct perf_probe_event *pev,
+>  		return -EBADF;
+>  	}
+>  
+> +#if _ELFUTILS_PREREQ(0, 142)
+>  	/* Get the call frame information from this dwarf */
+>  	pf.cfi = dwarf_getcfi(dbg);
+> +#endif
+>  
+>  	off = 0;
+>  	line_list__init(&pf.lcache);
+> diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+> index 66f1980..e1f61dc 100644
+> --- a/tools/perf/util/probe-finder.h
+> +++ b/tools/perf/util/probe-finder.h
+> @@ -29,6 +29,7 @@ extern int find_line_range(int fd, struct line_range *lr);
+>  
+>  #include <dwarf.h>
+>  #include <libdw.h>
+> +#include <version.h>
+>  
+>  struct probe_finder {
+>  	struct perf_probe_event	*pev;		/* Target probe event */
+> @@ -44,7 +45,9 @@ struct probe_finder {
+>  	struct list_head	lcache;		/* Line cache for lazy match */
+>  
+>  	/* For variable searching */
+> +#if _ELFUTILS_PREREQ(0, 142)
+>  	Dwarf_CFI		*cfi;		/* Call Frame Information */
+> +#endif
+>  	Dwarf_Op		*fb_ops;	/* Frame base attribute */
+>  	struct perf_probe_arg	*pvar;		/* Current target variable */
+>  	struct kprobe_trace_arg	*tvar;		/* Current result variable */
+> 
+> 
+> -- 
+> Masami Hiramatsu
+> e-mail: mhiramat@redhat.com
