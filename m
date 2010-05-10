@@ -1,276 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab0EJQWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 12:22:54 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:56455 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab0EJQWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 12:22:47 -0400
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-       grant.likely@secretlab.ca, bryan.wu@canonical.com,
-       amit.kucheria@canonical.com, Jun.Li@freescale.com,
-       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv2 2.6.34-rc7 1/3] mxc: gadget: remove 60mhz clock requirement for freescale mx51 usb core
-Date: Mon, 10 May 2010 11:21:57 -0500
-Message-Id: <1273508519-23033-1-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
+	id S1754916Ab0EJQY6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 12:24:58 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:38149 "EHLO mgw1.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754736Ab0EJQYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 12:24:51 -0400
+From: Nicolas Palix <npalix@diku.dk>
+To: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
+       Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
+       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
+       linux-kbuild@vger.kernel.org, cocci@diku.dk,
+       Wolfram Sang <w.sang@pengutronix.de>
+Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
+       Nicolas Palix <npalix@diku.dk>, Julia Lawall <julia@diku.dk>
+Subject: [PATCH 3/4] Add scripts/coccinelle/kzalloc-simple.cocci
+Date: Mon, 10 May 2010 18:24:26 +0200
+Message-Id: <1273508667-5152-4-git-send-email-npalix@diku.dk>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1273508667-5152-1-git-send-email-npalix@diku.dk>
+References: <1273508667-5152-1-git-send-email-npalix@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-renamed fsl_mx3_udc.c -> fsl_mxc_udc.c
-for mx51, usb core is clocked from sources that are not 60mhz.
+This semantic patch replaces a pair of calls to kmalloc and memset
+by a single call to kzalloc.
 
-This patch applies to 2.6.34-rc7.
+It only looks for simple cases to avoid false positives.
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Signed-off-by: Nicolas Palix <npalix@diku.dk>
+Signed-off-by: Julia Lawall <julia@diku.dk>
 ---
- drivers/usb/gadget/Makefile      |    2 +-
- drivers/usb/gadget/fsl_mx3_udc.c |  104 -------------------------------------
- drivers/usb/gadget/fsl_mxc_udc.c |  106 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 107 insertions(+), 105 deletions(-)
- delete mode 100644 drivers/usb/gadget/fsl_mx3_udc.c
- create mode 100644 drivers/usb/gadget/fsl_mxc_udc.c
+ scripts/coccinelle/kzalloc-simple.cocci |   83 +++++++++++++++++++++++++++++++
+ 1 files changed, 83 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/coccinelle/kzalloc-simple.cocci
 
-diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
-index 43b51da..c922eef 100644
---- a/drivers/usb/gadget/Makefile
-+++ b/drivers/usb/gadget/Makefile
-@@ -20,7 +20,7 @@ obj-$(CONFIG_USB_ATMEL_USBA)	+= atmel_usba_udc.o
- obj-$(CONFIG_USB_FSL_USB2)	+= fsl_usb2_udc.o
- fsl_usb2_udc-objs		:= fsl_udc_core.o
- ifeq ($(CONFIG_ARCH_MXC),y)
--fsl_usb2_udc-objs		+= fsl_mx3_udc.o
-+fsl_usb2_udc-objs		+= fsl_mxc_udc.o
- endif
- obj-$(CONFIG_USB_M66592)	+= m66592-udc.o
- obj-$(CONFIG_USB_R8A66597)	+= r8a66597-udc.o
-diff --git a/drivers/usb/gadget/fsl_mx3_udc.c b/drivers/usb/gadget/fsl_mx3_udc.c
-deleted file mode 100644
-index 20a802e..0000000
---- a/drivers/usb/gadget/fsl_mx3_udc.c
-+++ /dev/null
-@@ -1,104 +0,0 @@
--/*
-- * Copyright (C) 2009
-- * Guennadi Liakhovetski, DENX Software Engineering, <lg@denx.de>
-- *
-- * Description:
-- * Helper routines for i.MX3x SoCs from Freescale, needed by the fsl_usb2_udc.c
-- * driver to function correctly on these systems.
-- *
-- * This program is free software; you can redistribute  it and/or modify it
-- * under  the terms of  the GNU General  Public License as published by the
-- * Free Software Foundation;  either version 2 of the  License, or (at your
-- * option) any later version.
-- */
--#include <linux/clk.h>
--#include <linux/delay.h>
--#include <linux/err.h>
--#include <linux/fsl_devices.h>
--#include <linux/platform_device.h>
--
--#include <mach/hardware.h>
--
--static struct clk *mxc_ahb_clk;
--static struct clk *mxc_usb_clk;
--
--int fsl_udc_clk_init(struct platform_device *pdev)
--{
--	struct fsl_usb2_platform_data *pdata;
--	unsigned long freq;
--	int ret;
--
--	pdata = pdev->dev.platform_data;
--
--	if (!cpu_is_mx35()) {
--		mxc_ahb_clk = clk_get(&pdev->dev, "usb_ahb");
--		if (IS_ERR(mxc_ahb_clk))
--			return PTR_ERR(mxc_ahb_clk);
--
--		ret = clk_enable(mxc_ahb_clk);
--		if (ret < 0) {
--			dev_err(&pdev->dev, "clk_enable(\"usb_ahb\") failed\n");
--			goto eenahb;
--		}
--	}
--
--	/* make sure USB_CLK is running at 60 MHz +/- 1000 Hz */
--	mxc_usb_clk = clk_get(&pdev->dev, "usb");
--	if (IS_ERR(mxc_usb_clk)) {
--		dev_err(&pdev->dev, "clk_get(\"usb\") failed\n");
--		ret = PTR_ERR(mxc_usb_clk);
--		goto egusb;
--	}
--
--	freq = clk_get_rate(mxc_usb_clk);
--	if (pdata->phy_mode != FSL_USB2_PHY_ULPI &&
--	    (freq < 59999000 || freq > 60001000)) {
--		dev_err(&pdev->dev, "USB_CLK=%lu, should be 60MHz\n", freq);
--		ret = -EINVAL;
--		goto eclkrate;
--	}
--
--	ret = clk_enable(mxc_usb_clk);
--	if (ret < 0) {
--		dev_err(&pdev->dev, "clk_enable(\"usb_clk\") failed\n");
--		goto eenusb;
--	}
--
--	return 0;
--
--eenusb:
--eclkrate:
--	clk_put(mxc_usb_clk);
--	mxc_usb_clk = NULL;
--egusb:
--	if (!cpu_is_mx35())
--		clk_disable(mxc_ahb_clk);
--eenahb:
--	if (!cpu_is_mx35())
--		clk_put(mxc_ahb_clk);
--	return ret;
--}
--
--void fsl_udc_clk_finalize(struct platform_device *pdev)
--{
--	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
--
--	/* ULPI transceivers don't need usbpll */
--	if (pdata->phy_mode == FSL_USB2_PHY_ULPI) {
--		clk_disable(mxc_usb_clk);
--		clk_put(mxc_usb_clk);
--		mxc_usb_clk = NULL;
--	}
--}
--
--void fsl_udc_clk_release(void)
--{
--	if (mxc_usb_clk) {
--		clk_disable(mxc_usb_clk);
--		clk_put(mxc_usb_clk);
--	}
--	if (!cpu_is_mx35()) {
--		clk_disable(mxc_ahb_clk);
--		clk_put(mxc_ahb_clk);
--	}
--}
-diff --git a/drivers/usb/gadget/fsl_mxc_udc.c b/drivers/usb/gadget/fsl_mxc_udc.c
+diff --git a/scripts/coccinelle/kzalloc-simple.cocci b/scripts/coccinelle/kzalloc-simple.cocci
 new file mode 100644
-index 0000000..d0b8bde
+index 0000000..b099fea
 --- /dev/null
-+++ b/drivers/usb/gadget/fsl_mxc_udc.c
-@@ -0,0 +1,106 @@
-+/*
-+ * Copyright (C) 2009
-+ * Guennadi Liakhovetski, DENX Software Engineering, <lg@denx.de>
-+ *
-+ * Description:
-+ * Helper routines for i.MX3x SoCs from Freescale, needed by the fsl_usb2_udc.c
-+ * driver to function correctly on these systems.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+#include <linux/clk.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/fsl_devices.h>
-+#include <linux/platform_device.h>
++++ b/scripts/coccinelle/kzalloc-simple.cocci
+@@ -0,0 +1,83 @@
++///
++/// kzalloc should be used rather than kmalloc followed by memset 0
++///
++// Confidence: High
++// Copyright: (C) 2009-2010 Julia Lawall, Nicolas Palix, DIKU.  GPLv2.
++// Copyright: (C) 2009-2010 Gilles Muller, INRIA/LiP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/rules/kzalloc.html
++// Options: -no_includes -include_headers
++//
++// Keywords: kmalloc, kzalloc
++// Version min: < 12 kmalloc
++// Version min:   14 kzalloc
++// Version max: *
++//
 +
-+#include <mach/hardware.h>
++virtual context
++virtual patch
++virtual org
++virtual report
 +
-+static struct clk *mxc_ahb_clk;
-+static struct clk *mxc_usb_clk;
++//----------------------------------------------------------
++//  For context mode
++//----------------------------------------------------------
 +
-+int fsl_udc_clk_init(struct platform_device *pdev)
-+{
-+	struct fsl_usb2_platform_data *pdata;
-+	unsigned long freq;
-+	int ret;
++@depends on context@
++type T, T2;
++expression x;
++expression E1,E2;
++statement S;
++@@
 +
-+	pdata = pdev->dev.platform_data;
++* x = (T)kmalloc(E1,E2);
++  if ((x==NULL) || ...) S
++* memset((T2)x,0,E1);
 +
-+	if (!cpu_is_mx35()) {
-+		mxc_ahb_clk = clk_get(&pdev->dev, "usb_ahb");
-+		if (IS_ERR(mxc_ahb_clk))
-+			return PTR_ERR(mxc_ahb_clk);
++//----------------------------------------------------------
++//  For patch mode
++//----------------------------------------------------------
 +
-+		ret = clk_enable(mxc_ahb_clk);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "clk_enable(\"usb_ahb\") failed\n");
-+			goto eenahb;
-+		}
-+	}
++@depends on patch@
++type T, T2;
++expression x;
++expression E1,E2;
++statement S;
++@@
 +
-+	/* make sure USB_CLK is running at 60 MHz +/- 1000 Hz */
-+	mxc_usb_clk = clk_get(&pdev->dev, "usb");
-+	if (IS_ERR(mxc_usb_clk)) {
-+		dev_err(&pdev->dev, "clk_get(\"usb\") failed\n");
-+		ret = PTR_ERR(mxc_usb_clk);
-+		goto egusb;
-+	}
++- x = (T)kmalloc(E1,E2);
+++ x = kzalloc(E1,E2);
++  if ((x==NULL) || ...) S
++- memset((T2)x,0,E1);
 +
-+	if (!cpu_is_mx51()) {
-+		freq = clk_get_rate(mxc_usb_clk);
-+		if (pdata->phy_mode != FSL_USB2_PHY_ULPI &&
-+		    (freq < 59999000 || freq > 60001000)) {
-+			dev_err(&pdev->dev, "USB_CLK=%lu, should be 60MHz\n", freq);
-+			ret = -EINVAL;
-+			goto eclkrate;
-+		}
-+	}
++//----------------------------------------------------------
++//  For org mode
++//----------------------------------------------------------
 +
-+	ret = clk_enable(mxc_usb_clk);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "clk_enable(\"usb_clk\") failed\n");
-+		goto eenusb;
-+	}
++@r depends on org || report@
++type T, T2;
++expression x;
++expression E1,E2;
++statement S;
++position p;
++@@
 +
-+	return 0;
++ x = (T)kmalloc@p(E1,E2);
++ if ((x==NULL) || ...) S
++ memset((T2)x,0,E1);
 +
-+eenusb:
-+eclkrate:
-+	clk_put(mxc_usb_clk);
-+	mxc_usb_clk = NULL;
-+egusb:
-+	if (!cpu_is_mx35())
-+		clk_disable(mxc_ahb_clk);
-+eenahb:
-+	if (!cpu_is_mx35())
-+		clk_put(mxc_ahb_clk);
-+	return ret;
-+}
++@script:python depends on org@
++p << r.p;
++x << r.x;
++@@
 +
-+void fsl_udc_clk_finalize(struct platform_device *pdev)
-+{
-+	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
++msg="%s" % (x)
++msg_safe=msg.replace("[","@(").replace("]",")")
++coccilib.org.print_todo(p[0], msg_safe)
 +
-+	/* ULPI transceivers don't need usbpll */
-+	if (pdata->phy_mode == FSL_USB2_PHY_ULPI) {
-+		clk_disable(mxc_usb_clk);
-+		clk_put(mxc_usb_clk);
-+		mxc_usb_clk = NULL;
-+	}
-+}
++@script:python depends on report@
++p << r.p;
++x << r.x;
++@@
 +
-+void fsl_udc_clk_release(void)
-+{
-+	if (mxc_usb_clk) {
-+		clk_disable(mxc_usb_clk);
-+		clk_put(mxc_usb_clk);
-+	}
-+	if (!cpu_is_mx35()) {
-+		clk_disable(mxc_ahb_clk);
-+		clk_put(mxc_ahb_clk);
-+	}
-+}
++msg="WARNING: kzalloc should be used for %s, instead of kmalloc/memset" % (x)
++coccilib.report.print_report(p[0], msg_safe)
 -- 
-1.6.0.4
+1.7.0.4
 
