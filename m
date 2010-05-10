@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425Ab0EJXFu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:05:50 -0400
-Received: from kroah.org ([198.145.64.141]:45416 "EHLO coco.kroah.org"
+	id S933225Ab0EJXET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:04:19 -0400
+Received: from kroah.org ([198.145.64.141]:45359 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932956Ab0EJW6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:38 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:42 2010
-Message-Id: <20100510223542.581257614@kvm.kroah.org>
+	id S932935Ab0EJW6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:30 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:41 2010
+Message-Id: <20100510223541.597252373@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:43 -0700
+Date: Mon, 10 May 2010 15:35:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel Mack <daniel@caiaq.de>,
-       Jakob Viketoft <jakob.viketoft@bitsim.com>,
-       Eric Miao <eric.y.miao@gmail.com>
-Subject: [91/98] [ARM] pxa/colibri: fix missing #include <mach/mfp.h> in colibri.h
+       Michael Chan <mchan@broadcom.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [80/98] bnx2: Fix lost MSI-X problem on 5709 NICs.
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,30 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jakob Viketoft <jakob.viketoft@bitsim.com>
+From: Michael Chan <mchan@broadcom.com>
 
-commit ccb8d8d070b8f25f0163da5c9ceacf63a5169540 upstream.
+commit c441b8d2cb2194b05550a558d6d95d8944e56a84 upstream.
 
-The use of mfp_cfg_t causes build errors without including <mach/mfp.h>.
+It has been reported that under certain heavy traffic conditions in MSI-X
+mode, the driver can lose an MSI-X vector causing all packets in the
+associated rx/tx ring pair to be dropped.  The problem is caused by
+the chip dropping the write to unmask the MSI-X vector by the kernel
+(when migrating the IRQ for example).
 
-CC: Daniel Mack <daniel@caiaq.de>
-Signed-off-by: Jakob Viketoft <jakob.viketoft@bitsim.com>
-Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
+This can be prevented by increasing the GRC timeout value for these
+register read and write operations.
+
+Thanks to Dell for helping us debug this problem.
+
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-pxa/include/mach/colibri.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/bnx2.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-pxa/include/mach/colibri.h
-+++ b/arch/arm/mach-pxa/include/mach/colibri.h
-@@ -2,6 +2,7 @@
- #define _COLIBRI_H_
+--- a/drivers/net/bnx2.c
++++ b/drivers/net/bnx2.c
+@@ -4752,8 +4752,12 @@ bnx2_reset_chip(struct bnx2 *bp, u32 res
+ 		rc = bnx2_alloc_bad_rbuf(bp);
+ 	}
  
- #include <net/ax88796.h>
-+#include <mach/mfp.h>
+-	if (bp->flags & BNX2_FLAG_USING_MSIX)
++	if (bp->flags & BNX2_FLAG_USING_MSIX) {
+ 		bnx2_setup_msix_tbl(bp);
++		/* Prevent MSIX table reads and write from timing out */
++		REG_WR(bp, BNX2_MISC_ECO_HW_CTL,
++			BNX2_MISC_ECO_HW_CTL_LARGE_GRC_TMOUT_EN);
++	}
  
- /*
-  * common settings for all modules
+ 	return rc;
+ }
 
 
