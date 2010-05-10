@@ -1,102 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933360Ab0EJXhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:37:38 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49341 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933372Ab0EJXhH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 19:37:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=U+PpeJ8Qhdszkzc42LcvVDZrCEUl8bDBiBiFdXuFfo5pdJnmbhiTt8GOuwA79ebDo+
-         PuoPhy9lgvAGemgYPfvlxQ+t/uHlutg8gOxyC8sxQffErnDz5as0aqyOXnyzj6P3BsbD
-         dDkVMGTr+tDbDkRgnGRi9oUZ6qmODwSDUdbdU=
-MIME-Version: 1.0
-In-Reply-To: <1273484339-28911-22-git-send-email-benh@kernel.crashing.org>
-References: <1273484339-28911-1-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-14-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-15-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-16-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-17-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-18-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-19-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-20-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-21-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-22-git-send-email-benh@kernel.crashing.org>
-Date: Mon, 10 May 2010 16:37:05 -0700
-Message-ID: <AANLkTimhvJUX2S2eIY8rpw4TnUrDUFicMxEZkLK3hu1N@mail.gmail.com>
-Subject: Re: [PATCH 21/25] lmb: Add "start" argument to lmb_find_base()
-From: Yinghai Lu <yhlu.kernel@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linuxtronix.de,
-       mingo@elte.hu, davem@davemloft.net, lethal@linux-sh.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933359Ab0EJXg5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:36:57 -0400
+Received: from kroah.org ([198.145.64.141]:33075 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932340Ab0EJWwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:17 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:21 2010
+Message-Id: <20100510223321.798329218@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:32:22 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Colin Ian King <colin.king@canonical.com>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [051/117] x86: Disable large pages on CPUs with Atom erratum AAE44
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 2:38 AM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> To constraint the search of a region between two boundaries,
-> which will be used by the new NUMA aware allocator among others.
->
-> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> ---
->  lib/lmb.c |   27 ++++++++++++++++-----------
->  1 files changed, 16 insertions(+), 11 deletions(-)
->
-> diff --git a/lib/lmb.c b/lib/lmb.c
-> index 84ac3a9..848f908 100644
-> --- a/lib/lmb.c
-> +++ b/lib/lmb.c
-> @@ -117,19 +117,18 @@ static phys_addr_t __init lmb_find_region(phys_addr_t start, phys_addr_t end,
->        return LMB_ERROR;
->  }
->
-> -static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
-> +static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align,
-> +                                       phys_addr_t start, phys_addr_t end)
->  {
->        long i;
-> -       phys_addr_t base = 0;
-> -       phys_addr_t res_base;
->
->        BUG_ON(0 == size);
->
->        size = lmb_align_up(size, align);
->
->        /* Pump up max_addr */
-> -       if (max_addr == LMB_ALLOC_ACCESSIBLE)
-> -               max_addr = lmb.current_limit;
-> +       if (end == LMB_ALLOC_ACCESSIBLE)
-> +               end = lmb.current_limit;
->
->        /* We do a top-down search, this tends to limit memory
->         * fragmentation by keeping early boot allocs near the
-> @@ -138,13 +137,19 @@ static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align, phy
->        for (i = lmb.memory.cnt - 1; i >= 0; i--) {
->                phys_addr_t lmbbase = lmb.memory.regions[i].base;
->                phys_addr_t lmbsize = lmb.memory.regions[i].size;
-> +               phys_addr_t bottom, top, found;
->
->                if (lmbsize < size)
->                        continue;
-> -               base = min(lmbbase + lmbsize, max_addr);
-> -               res_base = lmb_find_region(lmbbase, base, size, align);
-> -               if (res_base != LMB_ERROR)
-> -                       return res_base;
-> +               if ((lmbbase + lmbsize) <= start)
-> +                       break;
-> +               bottom = max(lmbbase, start);
-> +               top = min(lmbbase + lmbsize, end);
-> +               if (bottom >= top)
-> +                       continue;
-> +               found = lmb_find_region(lmbbase, top, size, align);
-                                                               ^^^^^^^^^
-should use bottom  here
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-YH
+------------------
+
+From: H. Peter Anvin <hpa@linux.intel.com>
+
+commit 7a0fc404ae663776e96db43879a0fa24fec1fa3a upstream.
+
+Atom erratum AAE44/AAF40/AAG38/AAH41:
+
+"If software clears the PS (page size) bit in a present PDE (page
+directory entry), that will cause linear addresses mapped through this
+PDE to use 4-KByte pages instead of using a large page after old TLB
+entries are invalidated. Due to this erratum, if a code fetch uses
+this PDE before the TLB entry for the large page is invalidated then
+it may fetch from a different physical address than specified by
+either the old large page translation or the new 4-KByte page
+translation. This erratum may also cause speculative code fetches from
+incorrect addresses."
+
+[http://download.intel.com/design/processor/specupdt/319536.pdf]
+
+Where as commit 211b3d03c7400f48a781977a50104c9d12f4e229 seems to
+workaround errata AAH41 (mixed 4K TLBs) it reduces the window of
+opportunity for the bug to occur and does not totally remove it.  This
+patch disables mixed 4K/4MB page tables totally avoiding the page
+splitting and not tripping this processor issue.
+
+This is based on an original patch by Colin King.
+
+Originally-by: Colin Ian King <colin.king@canonical.com>
+Cc: Colin Ian King <colin.king@canonical.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+LKML-Reference: <1269271251-19775-1-git-send-email-colin.king@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/x86/kernel/cpu/intel.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -47,6 +47,27 @@ static void __cpuinit early_init_intel(s
+ 		(c->x86 == 0x6 && c->x86_model >= 0x0e))
+ 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+ 
++	/*
++	 * Atom erratum AAE44/AAF40/AAG38/AAH41:
++	 *
++	 * A race condition between speculative fetches and invalidating
++	 * a large page.  This is worked around in microcode, but we
++	 * need the microcode to have already been loaded... so if it is
++	 * not, recommend a BIOS update and disable large pages.
++	 */
++	if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2) {
++		u32 ucode, junk;
++
++		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
++		sync_core();
++		rdmsr(MSR_IA32_UCODE_REV, junk, ucode);
++
++		if (ucode < 0x20e) {
++			printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
++			clear_cpu_cap(c, X86_FEATURE_PSE);
++		}
++	}
++
+ #ifdef CONFIG_X86_64
+ 	set_cpu_cap(c, X86_FEATURE_SYSENTER32);
+ #else
+
+
