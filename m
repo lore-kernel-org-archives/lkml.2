@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933027Ab0EJXAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:00:01 -0400
-Received: from kroah.org ([198.145.64.141]:51657 "EHLO coco.kroah.org"
+	id S933023Ab0EJXPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:15:19 -0400
+Received: from kroah.org ([198.145.64.141]:51876 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932604Ab0EJW5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:48 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:37 2010
-Message-Id: <20100510223536.941978589@kvm.kroah.org>
+	id S932894Ab0EJW6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:14 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:39 2010
+Message-Id: <20100510223539.801042695@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:40 -0700
+Date: Mon, 10 May 2010 15:35:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Joel Becker <joel.becker@oracle.com>, Mark Fasheh <mfasheh@suse.com>
-Subject: [28/98] ocfs2: Compute metaecc for superblocks during online resize.
+       Leonard Michlmayr <leonard.michlmayr@gmail.com>,
+       "Theodore Tso" <tytso@mit.edu>
+Subject: [60/98] ext4: correctly calculate number of blocks for fiemap
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joel Becker <joel.becker@oracle.com>
+From: Leonard Michlmayr <leonard.michlmayr@gmail.com>
 
-commit a42ab8e1a37257da37e0f018e707bf365ac24531 upstream.
+commit aca92ff6f57c000d1b4523e383c8bd6b8269b8b1 upstream.
 
-Online resize writes out the new superblock and its backups directly.
-The metaecc data wasn't being recomputed.  Let's do that directly.
+ext4_fiemap() rounds the length of the requested range down to
+blocksize, which is is not the true number of blocks that cover the
+requested region.  This problem is especially impressive if the user
+requests only the first byte of a file: not a single extent will be
+reported.
 
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
-Acked-by: Mark Fasheh <mfasheh@suse.com>
+We fix this by calculating the last block of the region and then
+subtract to find the number of blocks in the extents.
+
+Signed-off-by: Leonard Michlmayr <leonard.michlmayr@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/buffer_head_io.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/ext4/extents.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/fs/ocfs2/buffer_head_io.c
-+++ b/fs/ocfs2/buffer_head_io.c
-@@ -407,6 +407,7 @@ int ocfs2_write_super_or_backup(struct o
- 				struct buffer_head *bh)
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -3711,7 +3711,6 @@ int ext4_fiemap(struct inode *inode, str
+ 		__u64 start, __u64 len)
  {
- 	int ret = 0;
-+	struct ocfs2_dinode *di = (struct ocfs2_dinode *)bh->b_data;
+ 	ext4_lblk_t start_blk;
+-	ext4_lblk_t len_blks;
+ 	int error = 0;
  
- 	mlog_entry_void();
+ 	/* fallback to generic here if not in extents fmt */
+@@ -3725,8 +3724,14 @@ int ext4_fiemap(struct inode *inode, str
+ 	if (fieinfo->fi_flags & FIEMAP_FLAG_XATTR) {
+ 		error = ext4_xattr_fiemap(inode, fieinfo);
+ 	} else {
++		ext4_lblk_t len_blks;
++		__u64 last_blk;
++
+ 		start_blk = start >> inode->i_sb->s_blocksize_bits;
+-		len_blks = len >> inode->i_sb->s_blocksize_bits;
++		last_blk = (start + len - 1) >> inode->i_sb->s_blocksize_bits;
++		if (last_blk >= EXT_MAX_BLOCK)
++			last_blk = EXT_MAX_BLOCK-1;
++		len_blks = ((ext4_lblk_t) last_blk) - start_blk + 1;
  
-@@ -426,6 +427,7 @@ int ocfs2_write_super_or_backup(struct o
- 
- 	get_bh(bh); /* for end_buffer_write_sync() */
- 	bh->b_end_io = end_buffer_write_sync;
-+	ocfs2_compute_meta_ecc(osb->sb, bh->b_data, &di->i_check);
- 	submit_bh(WRITE, bh);
- 
- 	wait_on_buffer(bh);
+ 		/*
+ 		 * Walk the extent tree gathering extent information.
 
 
