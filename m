@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab0EJA3d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 20:29:33 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41599 "EHLO smtps.tip.net.au"
+	id S1754756Ab0EJAcx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 20:32:53 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42391 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753411Ab0EJA3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 20:29:31 -0400
-Date: Mon, 10 May 2010 10:29:24 +1000
+	id S1753411Ab0EJAcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 20:32:51 -0400
+Date: Mon, 10 May 2010 10:32:49 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Mauro Carvalho Chehab <mchehab@infradead.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       =?UTF-8?B?IkJqw7hybiBNb3JrIg==?= <bjorn@mork.no>
+       Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+       Vaibhav Hiremath <hvaibhav@ti.com>
 Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
-Message-Id: <20100510102924.cb973cfc.sfr@canb.auug.org.au>
+Message-Id: <20100510103249.55e033bd.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__10_May_2010_10_29_24_+1000_/=5Fu5RjjJwEBEQY"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_May_2010_10_29_24_+1000_/=5Fu5RjjJwEBEQY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
 Hi Mauro,
 
 Today's linux-next merge of the v4l-dvb tree got a conflict in
-drivers/media/dvb/ttpci/budget.c between commit
-6f550dc08369ee0bc6402963c377e65f0f2e3b71 ("V4L/DVB: budget: Oops: "BUG:
-unable to handle kernel NULL pointer 	dereference"") from Linus'
-tree and commit 2bf92108b679637c2e50114f4c655d7cc608a1d9 ("[v2, for,
-v4l-dvb, 	master] V4L/DVB: budget: Oops: "BUG: unable to handle
-kernel NULL 	pointer dereference"") from the v4l-dvb tree.
+drivers/media/video/Makefile between commit
+b704e82a54591d69816b45f4324caf143f1a6fc8 ("V4L/DVB: V4L - Makfile:Removed
+duplicate entry of davinci") from Linus' tree and commit
+3b5ce90284aff5f8683cfd08e0e1b38f73ad0aa8 ("V4L/DVB: V4L: SuperH Video
+Output Unit (VOU) driver") from the v4l-dvb tree.
 
-I just used the version of that file from the v4l-dvb tree.
---=20
+Just context changes.  I fixed it up (see below) and can carry the fix
+for a while.
+-- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__10_May_2010_10_29_24_+1000_/=5Fu5RjjJwEBEQY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvnU2QACgkQjjKRsyhoI8w1xQCeKTP6EAt36n0wqJI8OLDm6Qtb
-XlsAoJ/xDpVNtmBYm24zSyX+aCDMcyfa
-=2ggq
------END PGP SIGNATURE-----
-
---Signature=_Mon__10_May_2010_10_29_24_+1000_/=5Fu5RjjJwEBEQY--
+diff --cc drivers/media/video/Makefile
+index c51c386,cc93859..0000000
+--- a/drivers/media/video/Makefile
++++ b/drivers/media/video/Makefile
+@@@ -160,6 -166,10 +166,8 @@@ obj-$(CONFIG_VIDEO_MX3)			+= mx3_camera
+  obj-$(CONFIG_VIDEO_PXA27x)		+= pxa_camera.o
+  obj-$(CONFIG_VIDEO_SH_MOBILE_CEU)	+= sh_mobile_ceu_camera.o
+  
+ -obj-$(CONFIG_ARCH_DAVINCI)		+= davinci/
+ -
++ obj-$(CONFIG_VIDEO_SH_VOU)		+= sh_vou.o
++ 
+  obj-$(CONFIG_VIDEO_AU0828) += au0828/
+  
+  obj-$(CONFIG_USB_VIDEO_CLASS)	+= uvc/
