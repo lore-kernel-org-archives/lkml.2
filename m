@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab0EJSCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 14:02:36 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:37101 "EHLO
+	id S1756140Ab0EJSC6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 14:02:58 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:37099 "EHLO
 	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1755956Ab0EJSBa (ORCPT
+	with ESMTP id S1755954Ab0EJSB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 14:01:30 -0400
+	Mon, 10 May 2010 14:01:29 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: akpm@linux-foundation.org
 Cc: adobriyan@gmail.com, nhorman@tuxdriver.com, oleg@redhat.com,
-       linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-       Heiko Carstens <heiko.carstens@de.ibm.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH v3 06/11] rlimits: do security check under task_lock
-Date: Mon, 10 May 2010 20:00:46 +0200
-Message-Id: <1273514451-28894-6-git-send-email-jslaby@suse.cz>
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH v3 02/11] rlimits: add task_struct to update_rlimit_cpu
+Date: Mon, 10 May 2010 20:00:42 +0200
+Message-Id: <1273514451-28894-2-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1273514451-28894-1-git-send-email-jslaby@suse.cz>
 References: <1273514451-28894-1-git-send-email-jslaby@suse.cz>
@@ -22,61 +21,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do security_task_setrlimit under task_lock. Other tasks may
-change limits under our hands while we are checking limits
-inside the function. From now on, they can't.
+From: Jiri Slaby <jirislaby@gmail.com>
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Add task_struct as a parameter to update_rlimit_cpu to be able to set
+rlimit_cpu of different task than current.
+
+Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
 Acked-by: James Morris <jmorris@namei.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sys.c |   16 +++++++---------
- 1 files changed, 7 insertions(+), 9 deletions(-)
+ include/linux/posix-timers.h |    2 +-
+ kernel/posix-cpu-timers.c    |    8 ++++----
+ kernel/sys.c                 |    2 +-
+ security/selinux/hooks.c     |    3 ++-
+ 4 files changed, 8 insertions(+), 7 deletions(-)
 
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index 4f71bf4..3e23844 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -117,6 +117,6 @@ void set_process_cpu_timer(struct task_struct *task, unsigned int clock_idx,
+ 
+ long clock_nanosleep_restart(struct restart_block *restart_block);
+ 
+-void update_rlimit_cpu(unsigned long rlim_new);
++void update_rlimit_cpu(struct task_struct *task, unsigned long rlim_new);
+ 
+ #endif
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 9829646..0513900 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -16,13 +16,13 @@
+  * siglock protection since other code may update expiration cache as
+  * well.
+  */
+-void update_rlimit_cpu(unsigned long rlim_new)
++void update_rlimit_cpu(struct task_struct *task, unsigned long rlim_new)
+ {
+ 	cputime_t cputime = secs_to_cputime(rlim_new);
+ 
+-	spin_lock_irq(&current->sighand->siglock);
+-	set_process_cpu_timer(current, CPUCLOCK_PROF, &cputime, NULL);
+-	spin_unlock_irq(&current->sighand->siglock);
++	spin_lock_irq(&task->sighand->siglock);
++	set_process_cpu_timer(task, CPUCLOCK_PROF, &cputime, NULL);
++	spin_unlock_irq(&task->sighand->siglock);
+ }
+ 
+ static int check_clock(const clockid_t which_clock)
 diff --git a/kernel/sys.c b/kernel/sys.c
-index eb21661..9e9a3a7 100644
+index 1ba4522..f5183b0 100644
 --- a/kernel/sys.c
 +++ b/kernel/sys.c
-@@ -1277,7 +1277,7 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
- 		struct rlimit *new_rlim)
- {
- 	struct rlimit *old_rlim;
--	int retval;
-+	int retval = 0;
- 
- 	if (resource >= RLIM_NLIMITS)
- 		return -EINVAL;
-@@ -1293,10 +1293,6 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
+@@ -1320,7 +1320,7 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+ 	if (new_rlim.rlim_cur == RLIM_INFINITY)
  		goto out;
+ 
+-	update_rlimit_cpu(new_rlim.rlim_cur);
++	update_rlimit_cpu(current, new_rlim.rlim_cur);
+ out:
+ 	return 0;
+ }
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 674992f..740a71f 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -2360,7 +2360,8 @@ static void selinux_bprm_committing_creds(struct linux_binprm *bprm)
+ 			initrlim = init_task.signal->rlim + i;
+ 			rlim->rlim_cur = min(rlim->rlim_max, initrlim->rlim_cur);
+ 		}
+-		update_rlimit_cpu(current->signal->rlim[RLIMIT_CPU].rlim_cur);
++		update_rlimit_cpu(current,
++				current->signal->rlim[RLIMIT_CPU].rlim_cur);
  	}
+ }
  
--	retval = security_task_setrlimit(tsk, resource, new_rlim);
--	if (retval)
--		goto out;
--
- 	if (resource == RLIMIT_CPU && new_rlim->rlim_cur == 0) {
- 		/*
- 		 * The caller is asking for an immediate RLIMIT_CPU
-@@ -1309,11 +1305,13 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
- 
- 	old_rlim = tsk->signal->rlim + resource;
- 	task_lock(tsk->group_leader);
--	if ((new_rlim->rlim_max <= old_rlim->rlim_max) ||
--				capable(CAP_SYS_RESOURCE))
--		*old_rlim = *new_rlim;
--	else
-+	if ((new_rlim->rlim_max > old_rlim->rlim_max) &&
-+				!capable(CAP_SYS_RESOURCE))
- 		retval = -EPERM;
-+	if (!retval)
-+		retval = security_task_setrlimit(tsk, resource, new_rlim);
-+	if (!retval)
-+		*old_rlim = *new_rlim;
- 	task_unlock(tsk->group_leader);
- 
- 	if (retval || resource != RLIMIT_CPU)
 -- 
 1.7.1
 
