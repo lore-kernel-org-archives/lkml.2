@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab0EJCnP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 22:43:15 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41396 "EHLO smtps.tip.net.au"
+	id S1755108Ab0EJCwh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 22:52:37 -0400
+Received: from sh.osrg.net ([192.16.179.4]:52380 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754987Ab0EJCnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 22:43:12 -0400
-Date: Mon, 10 May 2010 12:43:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Michael Hennerich <michael.hennerich@analog.com>,
-       Mike Frysinger <vapier@gentoo.org>
-Subject: linux-next: build failure after merge of the backlight tree
-Message-Id: <20100510124304.2249532c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1755027Ab0EJCwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 22:52:36 -0400
+Date: Mon, 10 May 2010 11:50:56 +0900
+To: stern@rowland.harvard.edu
+Cc: daniel@caiaq.de, clemens@ladisch.de, tiwai@suse.de,
+       alsa-devel@alsa-project.org, gregkh@suse.de, konrad.wilk@oracle.com,
+       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+       chrisw@sous-sol.org, iommu@lists.linux-foundation.org,
+       andi@firstfloor.org, pedrib@gmail.com, akpm@linux-foundation.org,
+       dwmw2@infradead.org
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <Pine.LNX.4.44L0.1005071048220.1804-100000@iolanthe.rowland.org>
+References: <20100507102408.GM30801@buzzloop.caiaq.de>
+	<Pine.LNX.4.44L0.1005071048220.1804-100000@iolanthe.rowland.org>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__10_May_2010_12_43_04_+1000_JNySHyVdKvuXstgs"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100510115048E.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 10 May 2010 11:51:04 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_May_2010_12_43_04_+1000_JNySHyVdKvuXstgs
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 7 May 2010 10:51:10 -0400 (EDT)
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-Hi Richard,
+> On Fri, 7 May 2010, Daniel Mack wrote:
+> 
+> > > At least the audio class and ua101 drivers don't do this and fill the
+> > > buffers before they are submitted.
+> > 
+> > Gnaa, you're right. I _thought_ my code does it the way I described, but
+> > what I wrote is how I _wanted_ to do it, not how it's currently done. I
+> > have a plan to change this in the future.
+> > 
+> > So unfortunately, that doesn't explain it either. Sorry for the noise.
+> 
+> At one point we tried an experiment, printing out the buffer and DMA 
+> addresses.  I don't recall seeing anything obviously wrong, but if an 
+> IOMMU was in use then that might not mean anything.  Is it possible 
+> that the IOMMU mappings sometimes get messed up for addresses above 4 
+> GB?
 
-After merging the backlight tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-drivers/video/backlight/adp8860_bl.c: In function 'adp8860_led_probe':
-drivers/video/backlight/adp8860_bl.c:215: error: implicit declaration of fu=
-nction 'kzalloc'
-drivers/video/backlight/adp8860_bl.c:215: warning: assignment makes pointer=
- from integer without a cast
-drivers/video/backlight/adp8860_bl.c:285: error: implicit declaration of fu=
-nction 'kfree'
-drivers/video/backlight/adp8860_bl.c: In function 'adp8860_probe':
-drivers/video/backlight/adp8860_bl.c:673: warning: assignment makes pointer=
- from integer without a cast
-drivers/video/backlight/adp8860_bl.c:689: error: too few arguments to funct=
-ion 'backlight_device_register'
-
-Caused by commit 6f1a02240dba279a389fd4a4138445bd3f13f67f ("backlight:
-new driver for the ADP8860 backlight parts").  Use of kzalloc or kfree
-requires including linux/slab.h (see Rule 1 in
-Documentation/SubmitChecklist) and the prototype of
-backlight_device_register changed before v2.6.34-rc2.
-
-Was this even build tested?
-
-I have used the version of the backlight tree from next-20100507 for
-today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__10_May_2010_12_43_04_+1000_JNySHyVdKvuXstgs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvncrgACgkQjjKRsyhoI8wFUwCeLRFfJQLf0DKUfjM4BfA/YM3g
-hXcAn3fmW/f6NAKGYfuR5xAaORAnpaBK
-=aa/0
------END PGP SIGNATURE-----
-
---Signature=_Mon__10_May_2010_12_43_04_+1000_JNySHyVdKvuXstgs--
+You mean that an IOMMU could allocate an address above 4GB wrongly? If
+so, IIRC, all the IOMMU implementations use dev->dma_mask and
+dev->coherent_dma_mask properly. And the DMA address space of the
+majority of IOMMUs are limited less than 4GB.
