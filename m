@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933249Ab0EJXE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:04:26 -0400
-Received: from kroah.org ([198.145.64.141]:45366 "EHLO coco.kroah.org"
+	id S933017Ab0EJW7w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:59:52 -0400
+Received: from kroah.org ([198.145.64.141]:51661 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932936Ab0EJW6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:31 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:41 2010
-Message-Id: <20100510223541.684442497@kvm.kroah.org>
+	id S932749Ab0EJW5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:57:46 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:36 2010
+Message-Id: <20100510223536.761858914@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:33 -0700
+Date: Mon, 10 May 2010 15:34:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeff Mahoney <jeffm@suse.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Andreas Radke <a.radke@arcor.de>
-Subject: [81/98] tracing: Fix ftrace_event_call alignment for use with gcc 4.5
+       Tao Ma <tao.ma@oracle.com>, Joel Becker <joel.becker@oracle.com>
+Subject: [26/98] ocfs2: Update VFS inodes id info after reflink.
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,91 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Tao Ma <tao.ma@oracle.com>
 
-commit 86c38a31aa7f2dd6e74a262710bf8ebf7455acc5 upstream.
+commit c21a534e2f24968cf74976a4e721ac194db30ded upstream.
 
-GCC 4.5 introduces behavior that forces the alignment of structures to
- use the largest possible value. The default value is 32 bytes, so if
- some structures are defined with a 4-byte alignment and others aren't
- declared with an alignment constraint at all - it will align at 32-bytes.
+In reflink we update the id info on the disk but forgot to update
+the corresponding information in the VFS inode.  Update them
+accordingly when we want to preserve the attributes.
 
- For things like the ftrace events, this results in a non-standard array.
- When initializing the ftrace subsystem, we traverse the _ftrace_events
- section and call the initialization callback for each event. When the
- structures are misaligned, we could be treating another part of the
- structure (or the zeroed out space between them) as a function pointer.
-
- This patch forces the alignment for all the ftrace_event_call structures
- to 4 bytes.
-
- Without this patch, the kernel fails to boot very early when built with
- gcc 4.5.
-
- It's trivial to check the alignment of the members of the array, so it
- might be worthwhile to add something to the build system to do that
- automatically. Unfortunately, that only covers this case. I've asked one
- of the gcc developers about adding a warning when this condition is seen.
-
-Cc: stable@kernel.org
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-LKML-Reference: <4B85770B.6010901@suse.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andreas Radke <a.radke@arcor.de>
+Reported-by: Jeff Liu <jeff.liu@oracle.com>
+Signed-off-by: Tao Ma <tao.ma@oracle.com>
+Signed-off-by: Joel Becker <joel.becker@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- include/linux/syscalls.h |    6 ++++--
- include/trace/ftrace.h   |    3 ++-
- kernel/trace/trace.h     |    3 ++-
- 3 files changed, 8 insertions(+), 4 deletions(-)
+ fs/ocfs2/refcounttree.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -153,7 +153,8 @@ static void prof_sysexit_disable_##sname
- #define __SC_STR_TDECL6(t, a, ...)	#t, __SC_STR_TDECL5(__VA_ARGS__)
+--- a/fs/ocfs2/refcounttree.c
++++ b/fs/ocfs2/refcounttree.c
+@@ -3995,6 +3995,9 @@ static int ocfs2_complete_reflink(struct
+ 	di->i_attr = s_di->i_attr;
  
- #define SYSCALL_TRACE_ENTER_EVENT(sname)				\
--	static struct ftrace_event_call event_enter_##sname;		\
-+	static struct ftrace_event_call					\
-+	__attribute__((__aligned__(4))) event_enter_##sname;		\
- 	struct trace_event enter_syscall_print_##sname = {		\
- 		.trace                  = print_syscall_enter,		\
- 	};								\
-@@ -189,7 +190,8 @@ static void prof_sysexit_disable_##sname
- 	}
- 
- #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
--	static struct ftrace_event_call event_exit_##sname;		\
-+	static struct ftrace_event_call					\
-+	__attribute__((__aligned__(4))) event_exit_##sname;		\
- 	struct trace_event exit_syscall_print_##sname = {		\
- 		.trace                  = print_syscall_exit,		\
- 	};								\
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -43,7 +43,8 @@
- 		tstruct						\
- 		char			__data[0];		\
- 	};							\
--	static struct ftrace_event_call event_##name
-+	static struct ftrace_event_call			\
-+	__attribute__((__aligned__(4))) event_##name
- 
- #undef __cpparg
- #define __cpparg(arg...) arg
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -746,7 +746,8 @@ extern const char *__stop___trace_bprint
- 
- #undef FTRACE_ENTRY
- #define FTRACE_ENTRY(call, struct_name, id, tstruct, print)		\
--	extern struct ftrace_event_call event_##call;
-+	extern struct ftrace_event_call					\
-+	__attribute__((__aligned__(4))) event_##call;
- #undef FTRACE_ENTRY_DUP
- #define FTRACE_ENTRY_DUP(call, struct_name, id, tstruct, print)		\
- 	FTRACE_ENTRY(call, struct_name, id, PARAMS(tstruct), PARAMS(print))
+ 	if (preserve) {
++		t_inode->i_uid = s_inode->i_uid;
++		t_inode->i_gid = s_inode->i_gid;
++		t_inode->i_mode = s_inode->i_mode;
+ 		di->i_uid = s_di->i_uid;
+ 		di->i_gid = s_di->i_gid;
+ 		di->i_mode = s_di->i_mode;
 
 
