@@ -1,143 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933465Ab0EJXlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:41:31 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:62010 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933425Ab0EJXlD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 19:41:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=NxueDjTXQXUvwi0wgi6LrrgqleXIv+KJJOL1g2YyLKds5TGSteyeIHlwSr0IcHwjoR
-         1wUddJa7UaO2Hdfyi74ORx67ijgtpzAfiC13a0Ps7IGAbWJyjxTBwjqlrwZGXdpg+wge
-         dPSfCUOrbIMNaEuWUxQ0jfDwOUqLC/FPclTzc=
-Message-ID: <4BE8998A.4040905@gmail.com>
-Date: Mon, 10 May 2010 17:40:58 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Thomas Fjellstrom <tfjellstrom@strangesoft.net>,
-       linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-       linux-scsi@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: burning small isos repeatedly failing with hangcheck error
-References: <201004261855.29335.tfjellstrom@strangesoft.net> <20100510140121.0e2e2d3e.akpm@linux-foundation.org>
-In-Reply-To: <20100510140121.0e2e2d3e.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933417Ab0EJXmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:42:06 -0400
+Received: from kroah.org ([198.145.64.141]:32986 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932320Ab0EJWv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:51:58 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:19 2010
+Message-Id: <20100510223319.815178996@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:32:00 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [029/117] USB: xhci: properly set the "Mult" field of the endpoint context.
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2010 03:01 PM, Andrew Morton wrote:
-> (lotsa cc's added)
->
-> On Mon, 26 Apr 2010 18:55:28 -0600
-> Thomas Fjellstrom<tfjellstrom@strangesoft.net>  wrote:
->
->> I'm having problems burning a small iso image to a DVDR,
->> every single attempt leads to the following type of errors:
->>
->> [  192.190114] cdrom: This disc doesn't have any tracks I recognize!
->> [  192.220213] sr 1:0:0:0: [sr0] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
->> [  192.220217] sr 1:0:0:0: [sr0] Sense Key : Illegal Request [current]
->> [  192.220220] Info fld=0x0
->> [  192.220221] sr 1:0:0:0: [sr0] Add. Sense: Logical block address out of range
->> [  192.220231] sr 1:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 00 00 00 00 01 00
->> [  192.220242] end_request: I/O error, dev sr0, sector 0
->> [  192.220246] Buffer I/O error on device sr0, logical block 0
->> [  192.222931] sr 1:0:0:0: [sr0] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
->> [  192.222934] sr 1:0:0:0: [sr0] Sense Key : Illegal Request [current]
->> [  192.222936] Info fld=0x0
->> [  192.222938] sr 1:0:0:0: [sr0] Add. Sense: Logical block address out of range
->> [  192.222940] sr 1:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 00 00 00 00 01 00
->> [  192.222946] end_request: I/O error, dev sr0, sector 0
->> [  192.222948] Buffer I/O error on device sr0, logical block 0
->> [  600.489102] INFO: task wodim:3587 blocked for more than 120 seconds.
->> [  600.489106] "echo 0>  /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->> [  600.489107] wodim         D ffff880005515680     0  3587   2994 0x00000000
->> [  600.489111]  ffff88011ad80700 0000000000000082 0000000000000000 ffff88013b7700d0
->> [  600.489115]  ffff88013b771e50 000000000000f8e0 ffff880078d6dfd8 0000000000015680
->> [  600.489118]  0000000000015680 ffff8800a891e200 ffff8800a891e4f0 000000013b771e50
->> [  600.489121] Call Trace:
->> [  600.489147]  [<ffffffffa00e10d7>] ? atapi_xlat+0x0/0x125 [libata]
->> [  600.489153]  [<ffffffffa00998cc>] ? scsi_done+0x0/0xc [scsi_mod]
->> [  600.489160]  [<ffffffffa00e18d8>] ? __ata_scsi_queuecmd+0x185/0x1dc [libata]
->> [  600.489170]  [<ffffffff812ed4cb>] ? schedule_timeout+0x2e/0xdd
->> [  600.489174]  [<ffffffff81171918>] ? blk_peek_request+0x18b/0x19f
->> [  600.489179]  [<ffffffffa0099bb0>] ? scsi_dispatch_cmd+0x1d2/0x23f [scsi_mod]
->> [  600.489185]  [<ffffffffa009f4ab>] ? scsi_request_fn+0x429/0x506 [scsi_mod]
->> [  600.489187]  [<ffffffff812ed366>] ? wait_for_common+0xde/0x15b
->> [  600.489191]  [<ffffffff81042cc2>] ? default_wake_function+0x0/0x9
->> [  600.489194]  [<ffffffff8117556c>] ? blk_execute_rq+0x9c/0xcc
->> [  600.489197]  [<ffffffff81171418>] ? __freed_request+0x26/0x83
->> [  600.489199]  [<ffffffff81171498>] ? freed_request+0x23/0x43
->> [  600.489202]  [<ffffffff8104f5ce>] ? capable+0x22/0x41
->> [  600.489204]  [<ffffffff81178824>] ? sg_io+0x26e/0x396
->> [  600.489207]  [<ffffffff81178e59>] ? scsi_cmd_ioctl+0x217/0x3fe
->> [  600.489210]  [<ffffffff811806a6>] ? cpumask_next_and+0x2a/0x3a
->> [  600.489213]  [<ffffffff81038ba4>] ? update_curr+0xa6/0x147
->> [  600.489218]  [<ffffffffa014dfd2>] ? cdrom_ioctl+0x42/0xef7 [cdrom]
->> [  600.489222]  [<ffffffff8100f76f>] ? sched_clock+0x5/0x8
->> [  600.489224]  [<ffffffff81063b8f>] ? sched_clock_local+0x13/0x74
->> [  600.489227]  [<ffffffff81042cb5>] ? try_to_wake_up+0x248/0x255
->> [  600.489230]  [<ffffffff810f7bc4>] ? pollwake+0x53/0x5b
->> [  600.489233]  [<ffffffff8104b129>] ? current_fs_time+0x1e/0x24
->> [  600.489235]  [<ffffffff81042cc2>] ? default_wake_function+0x0/0x9
->> [  600.489239]  [<ffffffffa016f33c>] ? sr_block_ioctl+0x49/0x85 [sr_mod]
->> [  600.489242]  [<ffffffff81176738>] ? __blkdev_driver_ioctl+0x7c/0xa4
->> [  600.489245]  [<ffffffff81177005>] ? blkdev_ioctl+0x880/0x8d3
->> [  600.489247]  [<ffffffff812ed0d9>] ? schedule+0x7f6/0x875
->> [  600.489250]  [<ffffffff810e9b69>] ? do_sync_write+0xab/0xed
->> [  600.489254]  [<ffffffff8110c8d5>] ? block_ioctl+0x38/0x3c
->> [  600.489257]  [<ffffffff810f5923>] ? vfs_ioctl+0x21/0x92
->> [  600.489259]  [<ffffffff810f5e9f>] ? do_vfs_ioctl+0x495/0x4d3
->> [  600.489262]  [<ffffffff810ea4b5>] ? vfs_write+0xcd/0x102
->> [  600.489264]  [<ffffffff810f5f2e>] ? sys_ioctl+0x51/0x70
->> [  600.489267]  [<ffffffff81008ac2>] ? system_call_fastpath+0x16/0x1b
->> [  640.816056] ata2.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
->> [  640.816061] sr 1:0:0:0: [sr0] CDB: Synchronize Cache(10): 35 00 00 00 00 00 00 00 00 00
->> [  640.816070] ata2.00: cmd a0/00:00:00:00:00/00:00:00:00:00/a0 tag 0
->> [  640.816071]          res 40/00:03:00:00:f8/00:00:00:00:00/a0 Emask 0x4 (timeout)
->> [  640.816073] ata2.00: status: { DRDY }
->> [  640.816078] ata2: hard resetting link
->> [  641.137050] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
->> [  641.141821] ata2.00: ACPI cmd ef/10:06:00:00:00:a0 (SET FEATURES) succeeded
->> [  641.141824] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
->> [  641.151672] ata2.00: ACPI cmd ef/10:06:00:00:00:a0 (SET FEATURES) succeeded
->> [  641.151675] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
->> [  641.155383] ata2.00: configured for UDMA/133
->> [  641.160639] ata2: EH complete
->>
->> What can I do to fix this problem?
->>
->> The machine is a Lenovo SL500 laptop, w 2.53ghz core2duo, 4G ram,
->> kernel 2.6.33-2-amd64 from debian sid (also happens with 2.6.32-5 from sid)
->>
->
-> You appear to have hit several problems here.  The initial IO error is
-> one.  The 440-second sulk is another.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-The initial I/O error might just be from something trying to read the 
-disc before it's burned.
+------------------
 
->
-> Does wodim _ever_ terminate, or is a reboot required after this has happened?
->
-> Are you able to determine whether the hardware is OK?  Does it burn OK
-> with other versions of Linux, or other OS'es?
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-Indeed.. For a synchronize cache command to take that long, I would 
-suspect that the drive is having trouble with the media somehow..
+commit 1cf62246c0e394021e494e0a8f1013e80db1a1a9 upstream.
 
->
-> Thanks.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+A SuperSpeed interrupt or isochronous endpoint can define the number of
+"burst transactions" it can handle in a service interval.  This is
+indicated by the "Mult" bits in the bmAttributes of the SuperSpeed
+Endpoint Companion Descriptor.  For example, if it has a max packet size
+of 1024, a max burst of 11, and a mult of 3, the host may send 33
+1024-byte packets in one service interval.
+
+We must tell the xHCI host controller the number of multiple service
+opportunities (mults) the device can handle when the endpoint is
+installed.  We do that by setting the Mult field of the Endpoint Context
+before a configure endpoint command is sent down.  The Mult field is
+invalid for control or bulk SuperSpeed endpoints.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/usb/host/xhci-mem.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -549,6 +549,19 @@ static inline unsigned int xhci_get_endp
+ 	return EP_INTERVAL(interval);
+ }
+ 
++/* The "Mult" field in the endpoint context is only set for SuperSpeed devices.
++ * High speed endpoint descriptors can define "the number of additional
++ * transaction opportunities per microframe", but that goes in the Max Burst
++ * endpoint context field.
++ */
++static inline u32 xhci_get_endpoint_mult(struct usb_device *udev,
++		struct usb_host_endpoint *ep)
++{
++	if (udev->speed != USB_SPEED_SUPER || !ep->ss_ep_comp)
++		return 0;
++	return ep->ss_ep_comp->desc.bmAttributes;
++}
++
+ static inline u32 xhci_get_endpoint_type(struct usb_device *udev,
+ 		struct usb_host_endpoint *ep)
+ {
+@@ -611,6 +624,7 @@ int xhci_endpoint_init(struct xhci_hcd *
+ 	ep_ctx->deq = ep_ring->first_seg->dma | ep_ring->cycle_state;
+ 
+ 	ep_ctx->ep_info = xhci_get_endpoint_interval(udev, ep);
++	ep_ctx->ep_info |= EP_MULT(xhci_get_endpoint_mult(udev, ep));
+ 
+ 	/* FIXME dig Mult and streams info out of ep companion desc */
+ 
+
 
