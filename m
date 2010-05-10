@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962Ab0EJXSw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:18:52 -0400
-Received: from kroah.org ([198.145.64.141]:51657 "EHLO coco.kroah.org"
+	id S932809Ab0EJW4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:56:21 -0400
+Received: from kroah.org ([198.145.64.141]:33454 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932847Ab0EJW5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:45 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:36 2010
-Message-Id: <20100510223536.669838721@kvm.kroah.org>
+	id S932423Ab0EJWxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:53:08 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:27 2010
+Message-Id: <20100510223327.845875867@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:37 -0700
+Date: Mon, 10 May 2010 15:33:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jerome Marchand <jmarchan@redhat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Miklos Szeredi <mszeredi@suse.cz>,
-       Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [25/98] procfs: fix tid fdinfo
-In-Reply-To: <20100510223714.GA18416@kroah.com>
+       Hannes Reinecke <hare@suse.de>,
+       James Bottomley <James.Bottomley@suse.de>
+Subject: [116/117] SCSI: Retry commands with UNIT_ATTENTION sense codes to fix ext3/ext4 I/O error
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Jerome Marchand <jmarchan@redhat.com>
+From: James Bottomley <James.Bottomley@suse.de>
 
-commit 3835541dd481091c4dbf5ef83c08aed12e50fd61 upstream.
+commit 77a4229719e511a0d38d9c355317ae1469adeb54 upstream.
 
-Correct the file_operations struct in fdinfo entry of tid_base_stuff[].
+There's nastyness in the way we currently handle barriers (and
+discards): They're effectively filesystem commands, but they get
+processed as BLOCK_PC commands.  Unfortunately BLOCK_PC commands are
+taken by SCSI to be SG_IO commands and the issuer expects to see and
+handle any returned errors, however trivial.  This leads to a huge
+problem, because the block layer doesn't expect this to happen and any
+trivially retryable error on a barrier causes an immediate I/O error
+to the filesystem.
 
-Presently /proc/*/task/*/fdinfo contains symlinks to opened files like
-/proc/*/fd/.
+The only real way to hack around this is to take the usual class of
+offending errors (unit attentions) and make them all retryable in the
+case of a REQ_HARDBARRIER.  A correct fix would involve a rework of
+the entire block and SCSI submit system, and so is out of scope for a
+quick fix.
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hannes Reinecke <hare@suse.de>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/base.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/scsi_error.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2844,7 +2844,7 @@ out_no_task:
-  */
- static const struct pid_entry tid_base_stuff[] = {
- 	DIR("fd",        S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
--	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fd_operations),
-+	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
- 	REG("environ",   S_IRUSR, proc_environ_operations),
- 	INF("auxv",      S_IRUSR, proc_pid_auxv),
- 	ONE("status",    S_IRUGO, proc_pid_status),
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -301,7 +301,20 @@ static int scsi_check_sense(struct scsi_
+ 		if (scmd->device->allow_restart &&
+ 		    (sshdr.asc == 0x04) && (sshdr.ascq == 0x02))
+ 			return FAILED;
+-		return SUCCESS;
++
++		if (blk_barrier_rq(scmd->request))
++			/*
++			 * barrier requests should always retry on UA
++			 * otherwise block will get a spurious error
++			 */
++			return NEEDS_RETRY;
++		else
++			/*
++			 * for normal (non barrier) commands, pass the
++			 * UA upwards for a determination in the
++			 * completion functions
++			 */
++			return SUCCESS;
+ 
+ 		/* these three are not supported */
+ 	case COPY_ABORTED:
 
 
