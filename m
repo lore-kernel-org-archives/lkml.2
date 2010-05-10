@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192Ab0EJXDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:03:31 -0400
-Received: from kroah.org ([198.145.64.141]:45294 "EHLO coco.kroah.org"
+	id S933197Ab0EJXFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:05:05 -0400
+Received: from kroah.org ([198.145.64.141]:45405 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932892Ab0EJW6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:22 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:40 2010
-Message-Id: <20100510223540.701362816@kvm.kroah.org>
+	id S932948Ab0EJW6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:35 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:42 2010
+Message-Id: <20100510223542.221366082@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:22 -0700
+Date: Mon, 10 May 2010 15:35:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>,
-       Kumar Gala <galak@kernel.crashing.org>, Wufei <fei.wu@windriver.com>,
-       Jason Wessel <jason.wessel@windriver.com>
-Subject: [70/98] kgdb: dont needlessly skip PAGE_USER test for Fsl booke
+       Colin King <colin.king@canonical.com>,
+       Alex Chiang <achiang@canonical.com>, Len Brown <len.brown@intel.com>
+Subject: [87/98] ACPI: DMI init_set_sci_en_on_resume for multiple Lenovo ThinkPads
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,45 +26,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wufei <fei.wu@windriver.com>
+From: Alex Chiang <achiang@canonical.com>
 
-commit 56151e753468e34aeb322af4b0309ab727c97d2e upstream.
+commit 07bedca29b0973f36a6b6db36936deed367164ed upstream.
 
-The bypassing of this test is a leftover from 2.4 vintage
-kernels, and is no longer appropriate, or even used by KGDB.
-Currently KGDB uses probe_kernel_write() for all access to
-memory via the KGDB core, so it can simply be deleted.
+Multiple Lenovo ThinkPad models with Intel Core i5/i7 CPUs can
+successfully suspend/resume once, and then hang on the second s/r
+cycle.
 
-This fixes CVE-2010-1446.
+We got confirmation that this was due to a BIOS defect. The BIOS
+did not properly set SCI_EN coming out of S3. The BIOS guys
+hinted that The Other Leading OS ignores the fact that hardware
+owns the bit and sets it manually.
 
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Kumar Gala <galak@kernel.crashing.org>
-Signed-off-by: Wufei <fei.wu@windriver.com>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+In any case, an existing DMI table exists for machines where this
+defect is a known problem. Lenovo promise to fix their BIOS, but
+for folks who either won't or can't upgrade their BIOS, allow
+Linux to workaround the issue.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=15407
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/532374
+
+Confirmed by numerous testers in the launchpad bug that using
+acpi_sleep=sci_force_enable fixes the issue. We add the machines
+to acpisleep_dmi_table[] to automatically enable this workaround.
+
+Cc: Colin King <colin.king@canonical.com>
+Signed-off-by: Alex Chiang <achiang@canonical.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/mm/fsl_booke_mmu.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/acpi/sleep.c |  120 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 120 insertions(+)
 
---- a/arch/powerpc/mm/fsl_booke_mmu.c
-+++ b/arch/powerpc/mm/fsl_booke_mmu.c
-@@ -131,15 +131,10 @@ void settlbcam(int index, unsigned long
- 	TLBCAM[index].MAS3 = (phys & PAGE_MASK) | MAS3_SX | MAS3_SR;
- 	TLBCAM[index].MAS3 |= ((flags & _PAGE_RW) ? MAS3_SW : 0);
- 
--#ifndef CONFIG_KGDB /* want user access for breakpoints */
- 	if (flags & _PAGE_USER) {
- 	   TLBCAM[index].MAS3 |= MAS3_UX | MAS3_UR;
- 	   TLBCAM[index].MAS3 |= ((flags & _PAGE_RW) ? MAS3_UW : 0);
- 	}
--#else
--	TLBCAM[index].MAS3 |= MAS3_UX | MAS3_UR;
--	TLBCAM[index].MAS3 |= ((flags & _PAGE_RW) ? MAS3_UW : 0);
--#endif
- 
- 	tlbcam_addrs[index].start = virt;
- 	tlbcam_addrs[index].limit = virt + size - 1;
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -450,6 +450,126 @@ static struct dmi_system_id __initdata a
+ 		},
+ 	},
+ 	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad T410",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad T510",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad W510",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad X201",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad X201",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201s"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad T410",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad T510",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad W510",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad X201",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad X201",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201s"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad T410",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad T510",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad W510",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad X201",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad X201",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201s"),
++		},
++	},
++	{
+ 	.callback = init_old_suspend_ordering,
+ 	.ident = "Panasonic CF51-2L",
+ 	.matches = {
 
 
