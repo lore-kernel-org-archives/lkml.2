@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab0EJJ3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 05:29:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56283 "EHLO mga09.intel.com"
+	id S1755876Ab0EJJ33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 05:29:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29223 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755653Ab0EJJ3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 05:29:03 -0400
+	id S1755665Ab0EJJ30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 05:29:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,361,1270450800"; 
-   d="scan'208";a="516521039"
-Subject: [RFC][PATCH 7/9] perf: sh, convert to new API pmu->init_event
+   d="scan'208";a="620310585"
+Subject: [RFC][PATCH 8/9] perf: sparc, convert to new API pmu->init_event
 From: Lin Ming <ming.m.lin@intel.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,8 +23,8 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
        Russell King <rmk+kernel@arm.linux.org.uk>,
        Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain
-Date: Mon, 10 May 2010 17:28:29 +0800
-Message-Id: <1273483709.15998.61.camel@minggr.sh.intel.com>
+Date: Mon, 10 May 2010 17:28:53 +0800
+Message-Id: <1273483733.15998.62.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
 Content-Transfer-Encoding: 7bit
@@ -32,59 +32,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf: sh, convert to new API pmu->init_event
+perf: sparc, convert to new API pmu->init_event
 
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
- arch/sh/kernel/perf_event.c |   21 ++++++++++++---------
- 1 files changed, 12 insertions(+), 9 deletions(-)
+ arch/sparc/kernel/perf_event.c |   19 ++++++++++---------
+ 1 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
-index 6e3a95f..1892f94 100644
---- a/arch/sh/kernel/perf_event.c
-+++ b/arch/sh/kernel/perf_event.c
-@@ -257,24 +257,24 @@ static void sh_pmu_read(struct perf_event *event)
- 	sh_perf_event_update(event, &event->hw, event->hw.idx);
- }
- 
--static struct pmu pmu = {
--	.enable		= sh_pmu_enable,
--	.disable	= sh_pmu_disable,
--	.read		= sh_pmu_read,
--};
--
--struct pmu *hw_perf_event_init(struct perf_event *event)
-+static int *sh_pmu_init_event(struct perf_event *event)
- {
- 	int err = __hw_perf_event_init(event);
- 	if (unlikely(err)) {
- 		if (event->destroy)
- 			event->destroy(event);
--		return ERR_PTR(err);
- 	}
- 
--	return &pmu;
-+	return err;
- }
- 
-+static struct pmu sh_pmu = {
-+	.enable		= sh_pmu_enable,
-+	.disable	= sh_pmu_disable,
-+	.read		= sh_pmu_read,
-+	.init_event	= sh_pmu_init_event,
-+};
-+
- static void sh_pmu_setup(int cpu)
- {
- 	struct cpu_hw_events *cpuhw = &per_cpu(cpu_hw_events, cpu);
-@@ -326,5 +326,8 @@ int __cpuinit register_sh_pmu(struct sh_pmu *pmu)
- 	WARN_ON(pmu->num_events > MAX_HWEVENTS);
- 
- 	perf_cpu_notifier(sh_pmu_notifier);
-+
-+	perf_event_register_pmu(&sh_pmu);
-+
+diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
+index a163f55..ef7fafc 100644
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1128,22 +1128,21 @@ static int __hw_perf_event_init(struct perf_event *event)
  	return 0;
  }
+ 
++static int sparc_pmu_init_event(struct perf_event *event)
++{
++	int err = __hw_perf_event_init(event);
++
++	return err;
++}
++
+ static struct pmu pmu = {
+ 	.enable		= sparc_pmu_enable,
+ 	.disable	= sparc_pmu_disable,
+ 	.read		= sparc_pmu_read,
+ 	.unthrottle	= sparc_pmu_unthrottle,
++	.init_event	= sparc_pmu_init_event,
+ };
+ 
+-struct pmu *hw_perf_event_init(struct perf_event *event)
+-{
+-	int err = __hw_perf_event_init(event);
+-
+-	if (err)
+-		return ERR_PTR(err);
+-	return &pmu;
+-}
+-
+ void perf_event_print_debug(void)
+ {
+ 	unsigned long flags;
+@@ -1264,6 +1263,8 @@ void __init init_hw_perf_events(void)
+ 	perf_max_events = 2;
+ 
+ 	register_die_notifier(&perf_event_nmi_notifier);
++
++	perf_event_register_pmu(&pmu);
+ }
+ 
+ static inline void callchain_store(struct perf_callchain_entry *entry, u64 ip)
 
 
