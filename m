@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab0EJUmE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 16:42:04 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:33862 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932191Ab0EJUl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 16:41:57 -0400
-Date: Mon, 10 May 2010 21:41:49 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: nofpu and nodsp only affect CPU0
-Message-ID: <20100510204148.GA959@linux-mips.org>
-References: <0b6db1ee1efbe0daa1320b59ab5093ba5af377b8@localhost.localdomain>
- <20100510201959.GB28820@linux-mips.org>
+	id S932197Ab0EJUnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 16:43:40 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45483 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab0EJUnh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 16:43:37 -0400
+Date: Mon, 10 May 2010 16:43:35 -0400
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: allow forcing use of cplus_demangle
+Message-ID: <20100510204335.GA7565@bombadil.infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100510201959.GB28820@linux-mips.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 09:19:59PM +0100, Ralf Baechle wrote:
+For Fedora, I want to force perf to link against libiberty.a for
+cplus_demangle, rather than libbfd.a for bfd_demangle due to licensing
+insanity on binutils. (libiberty is LGPL2, libbfd is GPL3.)
 
-> > The "nofpu" and "nodsp" kernel command line options currently do not
-> > affect CPUs that are brought online later in the boot process or
-> > hotplugged at runtime.  It is desirable to apply the nofpu/nodsp options
-> > to all CPUs in the system, so that surprising results are not seen when
-> > a process migrates from one CPU to another.
-> 
-> I like this patch; this solution is also cleaner than iterating over the
-> cpu data array.  However as it constitutes a change in established kernel
-> behaviour I prefer to queue this patch for 2.6.35 rather than applying it
-> immediately.
+If we just rely on autodetection, we'll end up with libbfd linked
+against us, since they're both in binutils-static in the buildroot.
 
-I've moved definitions of mips_fpu_disabled, fpu_disable, mips_dsp_disabled
-and dsp_disable from setup.c to cpu-probe.c to allow mips_fpu_disabled and
-mips_dsp_disabled to become static.
-
-  Ralf
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+---
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index bc0f670..429bace 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -541,6 +541,9 @@ endif
+ 
+ ifdef NO_DEMANGLE
+ 	BASIC_CFLAGS += -DNO_DEMANGLE
++else ifdef HAVE_CPLUS_DEMANGLE
++	EXTLIBS += -liberty
++	BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+ else
+ 	has_bfd := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd "$(QUIET_STDERR)" && echo y")
+ 
