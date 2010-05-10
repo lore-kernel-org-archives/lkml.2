@@ -1,56 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780Ab0EJX1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:27:00 -0400
-Received: from kroah.org ([198.145.64.141]:33440 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932563Ab0EJWxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:53:05 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:27 2010
-Message-Id: <20100510223327.400112847@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:33:22 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel Mack <daniel@caiaq.de>,
-       Jakob Viketoft <jakob.viketoft@bitsim.com>,
-       Eric Miao <eric.y.miao@gmail.com>
-Subject: [111/117] [ARM] pxa/colibri: fix missing #include <mach/mfp.h> in colibri.h
-In-Reply-To: <20100510223700.GA18404@kroah.com>
+	id S932748Ab0EJXZT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:25:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50144 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932588Ab0EJWxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:53:17 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tzanussi@gmail.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 03/10] perf/trace/scripting: rw-by-pid script cleanup
+Date: Mon, 10 May 2010 19:53:01 -0300
+Message-Id: <1273531987-28956-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1273531987-28956-1-git-send-email-acme@infradead.org>
+References: <1273531987-28956-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+From: Tom Zanussi <tzanussi@gmail.com>
 
-------------------
+Some minor fixes for the rw-by-pid script:
 
-From: Jakob Viketoft <jakob.viketoft@bitsim.com>
+- Fix nuisance 'use of uninitialized value' warnings
 
-commit ccb8d8d070b8f25f0163da5c9ceacf63a5169540 upstream.
+- Change the failed read/write sections to sort by error counts
 
-The use of mfp_cfg_t causes build errors without including <mach/mfp.h>.
-
-CC: Daniel Mack <daniel@caiaq.de>
-Signed-off-by: Jakob Viketoft <jakob.viketoft@bitsim.com>
-Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+LKML-Reference: <1273466820-9330-3-git-send-email-tzanussi@gmail.com>
+Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/arm/mach-pxa/include/mach/colibri.h |    1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/scripts/perl/rw-by-pid.pl |   60 +++++++++++++++++++++-------------
+ 1 files changed, 37 insertions(+), 23 deletions(-)
 
---- a/arch/arm/mach-pxa/include/mach/colibri.h
-+++ b/arch/arm/mach-pxa/include/mach/colibri.h
-@@ -2,6 +2,7 @@
- #define _COLIBRI_H_
+diff --git a/tools/perf/scripts/perl/rw-by-pid.pl b/tools/perf/scripts/perl/rw-by-pid.pl
+index da601fa..9db23c9 100644
+--- a/tools/perf/scripts/perl/rw-by-pid.pl
++++ b/tools/perf/scripts/perl/rw-by-pid.pl
+@@ -79,12 +79,12 @@ sub trace_end
+     printf("%6s  %-20s  %10s  %10s  %10s\n", "------", "--------------------",
+ 	   "-----------", "----------", "----------");
  
- #include <net/ax88796.h>
-+#include <mach/mfp.h>
+-    foreach my $pid (sort {$reads{$b}{bytes_read} <=>
+-			       $reads{$a}{bytes_read}} keys %reads) {
+-	my $comm = $reads{$pid}{comm};
+-	my $total_reads = $reads{$pid}{total_reads};
+-	my $bytes_requested = $reads{$pid}{bytes_requested};
+-	my $bytes_read = $reads{$pid}{bytes_read};
++    foreach my $pid (sort { ($reads{$b}{bytes_read} || 0) <=>
++				($reads{$a}{bytes_read} || 0) } keys %reads) {
++	my $comm = $reads{$pid}{comm} || "";
++	my $total_reads = $reads{$pid}{total_reads} || 0;
++	my $bytes_requested = $reads{$pid}{bytes_requested} || 0;
++	my $bytes_read = $reads{$pid}{bytes_read} || 0;
  
- /*
-  * common settings for all modules
-
+ 	printf("%6s  %-20s  %10s  %10s  %10s\n", $pid, $comm,
+ 	       $total_reads, $bytes_requested, $bytes_read);
+@@ -96,16 +96,23 @@ sub trace_end
+     printf("%6s  %20s  %6s  %10s\n", "------", "--------------------",
+ 	   "------", "----------");
+ 
+-    foreach my $pid (keys %reads) {
+-	my $comm = $reads{$pid}{comm};
+-	foreach my $err (sort {$reads{$b}{comm} cmp $reads{$a}{comm}}
+-			 keys %{$reads{$pid}{errors}}) {
+-	    my $errors = $reads{$pid}{errors}{$err};
++    my @errcounts = ();
+ 
+-	    printf("%6d  %-20s  %6d  %10s\n", $pid, $comm, $err, $errors);
++    foreach my $pid (keys %reads) {
++	foreach my $error (keys %{$reads{$pid}{errors}}) {
++	    my $comm = $reads{$pid}{comm} || "";
++	    my $errcount = $reads{$pid}{errors}{$error} || 0;
++	    push @errcounts, [$pid, $comm, $error, $errcount];
+ 	}
+     }
+ 
++    @errcounts = sort { $b->[3] <=> $a->[3] } @errcounts;
++
++    for my $i (0 .. $#errcounts) {
++	printf("%6d  %-20s  %6d  %10s\n", $errcounts[$i][0],
++	       $errcounts[$i][1], $errcounts[$i][2], $errcounts[$i][3]);
++    }
++
+     printf("\nwrite counts by pid:\n\n");
+ 
+     printf("%6s  %20s  %10s  %10s\n", "pid", "comm",
+@@ -113,11 +120,11 @@ sub trace_end
+     printf("%6s  %-20s  %10s  %10s\n", "------", "--------------------",
+ 	   "-----------", "----------");
+ 
+-    foreach my $pid (sort {$writes{$b}{bytes_written} <=>
+-			       $writes{$a}{bytes_written}} keys %writes) {
+-	my $comm = $writes{$pid}{comm};
+-	my $total_writes = $writes{$pid}{total_writes};
+-	my $bytes_written = $writes{$pid}{bytes_written};
++    foreach my $pid (sort { ($writes{$b}{bytes_written} || 0) <=>
++			($writes{$a}{bytes_written} || 0)} keys %writes) {
++	my $comm = $writes{$pid}{comm} || "";
++	my $total_writes = $writes{$pid}{total_writes} || 0;
++	my $bytes_written = $writes{$pid}{bytes_written} || 0;
+ 
+ 	printf("%6s  %-20s  %10s  %10s\n", $pid, $comm,
+ 	       $total_writes, $bytes_written);
+@@ -129,16 +136,23 @@ sub trace_end
+     printf("%6s  %20s  %6s  %10s\n", "------", "--------------------",
+ 	   "------", "----------");
+ 
+-    foreach my $pid (keys %writes) {
+-	my $comm = $writes{$pid}{comm};
+-	foreach my $err (sort {$writes{$b}{comm} cmp $writes{$a}{comm}}
+-			 keys %{$writes{$pid}{errors}}) {
+-	    my $errors = $writes{$pid}{errors}{$err};
++    @errcounts = ();
+ 
+-	    printf("%6d  %-20s  %6d  %10s\n", $pid, $comm, $err, $errors);
++    foreach my $pid (keys %writes) {
++	foreach my $error (keys %{$writes{$pid}{errors}}) {
++	    my $comm = $writes{$pid}{comm} || "";
++	    my $errcount = $writes{$pid}{errors}{$error} || 0;
++	    push @errcounts, [$pid, $comm, $error, $errcount];
+ 	}
+     }
+ 
++    @errcounts = sort { $b->[3] <=> $a->[3] } @errcounts;
++
++    for my $i (0 .. $#errcounts) {
++	printf("%6d  %-20s  %6d  %10s\n", $errcounts[$i][0],
++	       $errcounts[$i][1], $errcounts[$i][2], $errcounts[$i][3]);
++    }
++
+     print_unhandled();
+ }
+ 
+-- 
+1.6.2.5
 
