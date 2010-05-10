@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab0EJQFU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 12:05:20 -0400
-Received: from mtagate6.de.ibm.com ([195.212.17.166]:34987 "EHLO
-	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab0EJQFR (ORCPT
+	id S1754414Ab0EJQMz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 12:12:55 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35892
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752634Ab0EJQMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 12:05:17 -0400
-Date: Mon, 10 May 2010 18:05:05 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, Avi Kivity <avi@redhat.com>,
-       Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
-       ngupta@vflare.org, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-Message-ID: <20100510180505.3e60e2da@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <1272643680.23895.2537.camel@nimitz>
-References: <4BD16D09.2030803@redhat.com>
-	<b01d7882-1a72-4ba9-8f46-ba539b668f56@default>
-	<4BD1A74A.2050003@redhat.com>
-	<4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
-	<4BD1B427.9010905@redhat.com>
-	<4BD1B626.7020702@redhat.com>
-	<5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>
-	<4BD3377E.6010303@redhat.com>
-	<1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default4BD43033.7090706@redhat.com>
-	<ce808441-fae6-4a33-8335-f7702740097a@default>
-	<20100428055538.GA1730@ucw.cz>
-	<1272591924.23895.807.camel@nimitz
- 4BDA8324.7090409@redhat.com>
-	<084f72bf-21fd-4721-8844-9d10cccef316@default>
-	<1272643680.23895.2537.camel@nimitz>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; i486-pc-linux-gnu)
+	Mon, 10 May 2010 12:12:52 -0400
+Date: Mon, 10 May 2010 09:12:57 -0700 (PDT)
+Message-Id: <20100510.091257.51273494.davem@davemloft.net>
+To: kaber@trash.net
+Cc: eric.dumazet@gmail.com, Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org,
+       peterz@infradead.org, linux-kernel@vger.kernel.org,
+       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+       paulmck@linux.vnet.ibm.com
+Subject: Re: mmotm 2010-04-28 - RCU whinges
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4BE8290A.2080707@trash.net>
+References: <1272865436.2173.182.camel@edumazet-laptop>
+	<20100502.225509.233880079.davem@davemloft.net>
+	<4BE8290A.2080707@trash.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010 09:08:00 -0700
-Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+From: Patrick McHardy <kaber@trash.net>
+Date: Mon, 10 May 2010 17:40:58 +0200
 
-> On Fri, 2010-04-30 at 08:59 -0700, Dan Magenheimer wrote:
-> > Dave or others can correct me if I am wrong, but I think CMM2 also
-> > handles dirty pages that must be retained by the hypervisor.  The
-> > difference between CMM2 (for dirty pages) and frontswap is that
-> > CMM2 sets hints that can be handled asynchronously while frontswap
-> > provides explicit hooks that synchronously succeed/fail.
-> 
-> Once pages were dirtied (or I guess just slightly before), they became
-> volatile, and I don't think the hypervisor could do anything with them.
-> It could still swap them out like usual, but none of the CMM-specific
-> optimizations could be performed.
+> I queued this patch in nf-next, the only reason why I haven't
+> submitted it yet is that I was unable to get git to cleanly export
+> only the proper set of patches meant for -next due to a few merges,
+> it insists on including 5 patches already merged upstream. If you
+> don't mind ignoring the first 5 patches in the series, I'll send a
+> pull request tonight.
 
-Well, almost correct :-)
-A dirty page (or one that is about to become dirty) can be in one of two
-CMMA states:
-1) stable
-This is the case for pages where the kernel is doing some operation on
-the page that will make it dirty, e.g. I/O. Before the kernel can
-allow the operation the page has to be made stable. If the state
-conversion to stable fails because the hypervisor removed the page the
-page needs to get deleted from page cache and recreated from scratch.
-2) potentially-volatile
-This state is used for page cache pages for which a writable mapping
-exists. The page can be removed by the hypervisor as long as the
-physical per-page dirty bit is not set. As soon as the bit is set the
-page is considered stable although the CMMA state still is potentially-
-volatile.
+Something like "git format-patch origin" doesn't avoid those upstream
+commits?  Weird...
 
-In both cases the only thing the hypervisor can do with a dirty page is
-to swap it as usual.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Another trick is to specify a commit range using triple-dot "..."
+notation, such as "origin...master"
