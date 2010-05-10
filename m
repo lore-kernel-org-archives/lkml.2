@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464Ab0EJWwc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:52:32 -0400
-Received: from kroah.org ([198.145.64.141]:33028 "EHLO coco.kroah.org"
+	id S1758002Ab0EJXcL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:32:11 -0400
+Received: from kroah.org ([198.145.64.141]:33278 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932379Ab0EJWwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:04 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:20 2010
-Message-Id: <20100510223320.447017067@kvm.kroah.org>
+	id S932476Ab0EJWwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:37 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:24 2010
+Message-Id: <20100510223324.330497050@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:07 -0700
+Date: Mon, 10 May 2010 15:32:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: [036/117] nfs d_revalidate() is too trigger-happy with d_drop()
+       Andre Detsch <adetsch@br.ibm.com>, Michael Chan <mchan@broadcom.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Brandon Philips <bphilips@suse.de>
+Subject: [077/117] tg3: Fix INTx fallback when MSI fails
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Andre Detsch <adetsch@br.ibm.com>
 
-commit d9e80b7de91db05c1c4d2e5ebbfd70b3b3ba0e0f upstream.
+commit dc8bf1b1a6edfc92465526de19772061302f0929 upstream.
 
-If dentry found stale happens to be a root of disconnected tree, we
-can't d_drop() it; its d_hash is actually part of s_anon and d_drop()
-would simply hide it from shrink_dcache_for_umount(), leading to
-all sorts of fun, including busy inodes on umount and oopsen after
-that.
+tg3: Fix INTx fallback when MSI fails
 
-Bug had been there since at least 2006 (commit c636eb already has it),
-so it's definitely -stable fodder.
+MSI setup changes the value of irq_vec in struct tg3 *tp.
+This attribute must be taken into account and restored before
+we try to do a new request_irq for INTx fallback.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In powerpc, the original code was leading to an EINVAL return within
+request_irq, because the driver was trying to use the disabled MSI
+virtual irq number instead of tp->pdev->irq.
+
+Signed-off-by: Andre Detsch <adetsch@br.ibm.com>
+Acked-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Brandon Philips <bphilips@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/dir.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/tg3.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -837,6 +837,8 @@ out_zap_parent:
- 		/* If we have submounts, don't unhash ! */
- 		if (have_submounts(dentry))
- 			goto out_valid;
-+		if (dentry->d_flags & DCACHE_DISCONNECTED)
-+			goto out_valid;
- 		shrink_dcache_parent(dentry);
- 	}
- 	d_drop(dentry);
+--- a/drivers/net/tg3.c
++++ b/drivers/net/tg3.c
+@@ -8572,6 +8572,7 @@ static int tg3_test_msi(struct tg3 *tp)
+ 	pci_disable_msi(tp->pdev);
+ 
+ 	tp->tg3_flags2 &= ~TG3_FLG2_USING_MSI;
++	tp->napi[0].irq_vec = tp->pdev->irq;
+ 
+ 	err = tg3_request_irq(tp, 0);
+ 	if (err)
 
 
