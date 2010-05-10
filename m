@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933049Ab0EJXBo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:01:44 -0400
-Received: from kroah.org ([198.145.64.141]:51827 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757472Ab0EJW6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:06 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:38 2010
-Message-Id: <20100510223538.911121927@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:02 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [50/98] ALSA: hda: Use STAC_DELL_M6_BOTH quirk for Dell Studio XPS 1645
-In-Reply-To: <20100510223714.GA18416@kroah.com>
+	id S1755815Ab0EJXJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:09:26 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:57103 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757476Ab0EJXJS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 19:09:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vaIHadbelY/2X8OWQ3tQwB60ztSoK/TR/IsAuU998WqGaI/D+vP52eG5nD38OXEGyb
+         S73ZN0FprEoXz8hJMBj+kS3uGh8I7q2okrqNTdqc0+q092szuPsqPWn7rc/m6Zly8S1q
+         fjuw984IcGkMhL1+XwxnnPCASxWvcX4qnB+Xk=
+Date: Tue, 11 May 2010 01:09:13 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 2/9] perf: core, remove hw_perf_event_init
+Message-ID: <20100510230911.GB5895@nowhere>
+References: <1273483595.15998.56.camel@minggr.sh.intel.com> <1273484430.5605.3334.camel@twins> <1273486670.15998.80.camel@minggr.sh.intel.com> <1273486769.5605.3343.camel@twins> <20100510122728.GB5563@nowhere> <1273496054.5605.3400.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273496054.5605.3400.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Mon, May 10, 2010 at 02:54:14PM +0200, Peter Zijlstra wrote:
+> On Mon, 2010-05-10 at 14:27 +0200, Frederic Weisbecker wrote:
+> > On Mon, May 10, 2010 at 12:19:29PM +0200, Peter Zijlstra wrote:
+> > > On Mon, 2010-05-10 at 18:17 +0800, Lin Ming wrote:
+> > > > On Mon, 2010-05-10 at 17:40 +0800, Peter Zijlstra wrote:
+> > > > > On Mon, 2010-05-10 at 17:26 +0800, Lin Ming wrote:
+> > > > > > +static struct pmu *perf_event_lookup_pmu(struct perf_event *event)
+> > > > > > +{
+> > > > > > +       struct pmu *pmu;
+> > > > > > +       int pmu_id = event->attr.pmu_id;
+> > > > > > +
+> > > > > > +       list_for_each_entry(pmu, &pmus, entry) {
+> > > > > > +               if (pmu->id == pmu_id)
+> > > > > > +                       return pmu;
+> > > > > > +       }
+> > > > > > +
+> > > > > > +       return NULL;
+> > > > > > +}
+> > > > > 
+> > > > > > +void perf_event_register_pmu(struct pmu *pmu)
+> > > > > > +{
+> > > > > > +       pmu->id = pmu_id_curr++;
+> > > > > > +       list_add_tail(&pmu->entry, &pmus);
+> > > > > > +} 
+> > > > > 
+> > > > > That will be wanting some sort of synchronization
+> > > > 
+> > > > Will add a mutex to protect the list of pmus.
+> > > 
+> > > I'm thinking RCU might be better suited, a mutex for lookup doesn't
+> > > sound ideal.
+> > 
+> > 
+> > Is it really needed? I expect this function to be called on boot
+> > only.
+> > 
+> > In fact I would even suggest to tag it as __init.
+> 
+> Loadable modules as well as PCI-Hotplug need supporting.
 
-------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+Which module do you have in mind that could register a pmu?
+And I don't understand the problem with pci-hotplug.
 
-commit aac78daf8f37256283f56820ae858add7139c56c upstream.
-
-BugLink: https://launchpad.net/bugs/553002
-
-The OR has verified that the dell-m6 model quirk is necessary for audio
-to be audible by default on the Dell Studio XPS 1645.
-
-This change is necessary for 2.6.32.11 and 2.6.33.2 alike.
-
-Reported-by: Robert Chambers
-Tested-by: Robert Chambers
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- sound/pci/hda/patch_sigmatel.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -1592,6 +1592,8 @@ static struct snd_pci_quirk stac92hd73xx
- 				"Dell Studio 1555", STAC_DELL_M6_DMIC),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02bd,
- 				"Dell Studio 1557", STAC_DELL_M6_DMIC),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02fe,
-+				"Dell Studio XPS 1645", STAC_DELL_M6_BOTH),
- 	{} /* terminator */
- };
- 
-
+Thanks.
 
