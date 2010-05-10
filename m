@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044Ab0EJX1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:27:20 -0400
-Received: from kroah.org ([198.145.64.141]:33426 "EHLO coco.kroah.org"
+	id S932723Ab0EJX0H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:26:07 -0400
+Received: from kroah.org ([198.145.64.141]:33471 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932559Ab0EJWxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:53:02 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:27 2010
-Message-Id: <20100510223327.130186726@kvm.kroah.org>
+	id S932576Ab0EJWxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:53:09 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:28 2010
+Message-Id: <20100510223327.940053372@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:33:19 -0700
+Date: Mon, 10 May 2010 15:33:28 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>, Len Brown <lenb@kernel.org>,
-       "Darrick J. Wong" <djwong@us.ibm.com>, Len Brown <len.brown@intel.com>
-Subject: [108/117] power_meter: acpi_device_class "power_meter_resource" too long
+       Ralf Baechle <ralf@linux-mips.org>,
+       Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [117/117] MIPS: Sibyte: Apply M3 workaround only on affected chip types and versions.
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+(cherry picked from commit e65c7f33d75e977350ca350573d93c517ec02776)
 
-commit 18262714ca0fb65c290b8ea1807b2b02bb52d0e3 upstream.
+Previously it was unconditionally used on all Sibyte family SOCs.  The
+M3 bug has to be handled in the TLB exception handler which is extremly
+performance sensitive, so this modification is expected to deliver around
+2-3% performance improvment.  This is important as required changes to the
+M3 workaround will make it more costly.
 
-acpi_device_class can only be 19 characters and a NULL terminator.
-
-The current code has a buffer overflow in acpi_power_meter_add():
-       strcpy(acpi_device_class(device), ACPI_POWER_METER_CLASS);
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: "Darrick J. Wong" <djwong@us.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/power_meter.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/include/asm/mach-sibyte/war.h |    6 +++++-
+ arch/mips/sibyte/sb1250/setup.c         |   15 +++++++++++++++
+ 2 files changed, 20 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/power_meter.c
-+++ b/drivers/acpi/power_meter.c
-@@ -34,7 +34,7 @@
- #define ACPI_POWER_METER_NAME		"power_meter"
- ACPI_MODULE_NAME(ACPI_POWER_METER_NAME);
- #define ACPI_POWER_METER_DEVICE_NAME	"Power Meter"
--#define ACPI_POWER_METER_CLASS		"power_meter_resource"
-+#define ACPI_POWER_METER_CLASS		"pwr_meter_resource"
+--- a/arch/mips/include/asm/mach-sibyte/war.h
++++ b/arch/mips/include/asm/mach-sibyte/war.h
+@@ -16,7 +16,11 @@
+ #if defined(CONFIG_SB1_PASS_1_WORKAROUNDS) || \
+     defined(CONFIG_SB1_PASS_2_WORKAROUNDS)
  
- #define NUM_SENSORS			17
+-#define BCM1250_M3_WAR	1
++#ifndef __ASSEMBLY__
++extern int sb1250_m3_workaround_needed(void);
++#endif
++
++#define BCM1250_M3_WAR	sb1250_m3_workaround_needed()
+ #define SIBYTE_1956_WAR	1
  
+ #else
+--- a/arch/mips/sibyte/sb1250/setup.c
++++ b/arch/mips/sibyte/sb1250/setup.c
+@@ -87,6 +87,21 @@ static int __init setup_bcm1250(void)
+ 	return ret;
+ }
+ 
++int sb1250_m3_workaround_needed(void)
++{
++	switch (soc_type) {
++	case K_SYS_SOC_TYPE_BCM1250:
++	case K_SYS_SOC_TYPE_BCM1250_ALT:
++	case K_SYS_SOC_TYPE_BCM1250_ALT2:
++	case K_SYS_SOC_TYPE_BCM1125:
++	case K_SYS_SOC_TYPE_BCM1125H:
++		return soc_pass < K_SYS_REVISION_BCM1250_C0;
++
++	default:
++		return 0;
++	}
++}
++
+ static int __init setup_bcm112x(void)
+ {
+ 	int ret = 0;
 
 
