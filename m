@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932798Ab0EJW4E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:56:04 -0400
-Received: from kroah.org ([198.145.64.141]:33432 "EHLO coco.kroah.org"
+	id S932597Ab0EJWxV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:53:21 -0400
+Received: from kroah.org ([198.145.64.141]:33105 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932408Ab0EJWxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:53:03 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:27 2010
-Message-Id: <20100510223327.218678447@kvm.kroah.org>
+	id S932428Ab0EJWwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:21 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:22 2010
+Message-Id: <20100510223322.434340274@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:33:20 -0700
+Date: Mon, 10 May 2010 15:32:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Kamal Mostafa <kamal@canonical.com>,
-       Alex Chiang <achiang@canonical.com>, Len Brown <len.brown@intel.com>
-Subject: [109/117] ACPI: sleep: init_set_sci_en_on_resume for Dell Studio 155x
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [058/117] ALSA: hda: Use ALC880_F1734 quirk for Fujitsu Siemens AMILO Xi 1526
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,56 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamal Mostafa <kamal@canonical.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit ea5bc73f4f56449b2d450068d492bcd17a675d7a upstream.
+commit 3353541fe533350a22a03e2fb7dc085b35912575 upstream.
 
-Add Dell Studio models (1558, 1557, 1555) to the 'set_sci_en_on_resume'
-list to fix hang on resume.
+BugLink: https://launchpad.net/bugs/567494
 
-BugLink: http://bugs.launchpad.net/bugs/553498
+The OR has verified that the existing model quirk, ALC880_UNIWILL,
+is insufficient for audible playback and capture by default. Instead,
+the ALC880_F1734 model quirk needs to be used.
 
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-Acked-by: Alex Chiang <achiang@canonical.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+This change is necessary for both 2.6.32.11 and 2.6.33.2.
+
+Reported-by: Arnaud Malpeyre <amalpeyre@gmail.com>
+Tested-by: Arnaud Malpeyre <amalpeyre@gmail.com>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/sleep.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ sound/pci/hda/patch_realtek.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -578,6 +578,30 @@ static struct dmi_system_id __initdata a
- 		DMI_MATCH(DMI_BOARD_NAME, "CF51-2L"),
- 		},
- 	},
-+	{
-+	.callback = init_set_sci_en_on_resume,
-+	.ident = "Dell Studio 1558",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1558"),
-+		},
-+	},
-+	{
-+	.callback = init_set_sci_en_on_resume,
-+	.ident = "Dell Studio 1557",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1557"),
-+		},
-+	},
-+	{
-+	.callback = init_set_sci_en_on_resume,
-+	.ident = "Dell Studio 1555",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1555"),
-+		},
-+	},
- 	{},
- };
- #endif /* CONFIG_SUSPEND */
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4033,7 +4033,7 @@ static struct snd_pci_quirk alc880_cfg_t
+ 	SND_PCI_QUIRK(0x1695, 0x4012, "EPox EP-5LDA", ALC880_5ST_DIG),
+ 	SND_PCI_QUIRK(0x1734, 0x107c, "FSC F1734", ALC880_F1734),
+ 	SND_PCI_QUIRK(0x1734, 0x1094, "FSC Amilo M1451G", ALC880_FUJITSU),
+-	SND_PCI_QUIRK(0x1734, 0x10ac, "FSC", ALC880_UNIWILL),
++	SND_PCI_QUIRK(0x1734, 0x10ac, "FSC AMILO Xi 1526", ALC880_F1734),
+ 	SND_PCI_QUIRK(0x1734, 0x10b0, "Fujitsu", ALC880_FUJITSU),
+ 	SND_PCI_QUIRK(0x1854, 0x0018, "LG LW20", ALC880_LG_LW),
+ 	SND_PCI_QUIRK(0x1854, 0x003b, "LG", ALC880_LG),
 
 
