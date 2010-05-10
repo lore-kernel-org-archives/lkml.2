@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab0EJUlz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 16:41:55 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:61742 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112Ab0EJUlw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 16:41:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=ld660EMcB6g9vfD1E6H+mMsWqs7zATUBJjXQG7pKTv8/tsivP22ZUfizpFSuRGvi7S
-         LEJ+52rzxs4/yPBwIawWHo/I/Nzjb3Hiq5kCDbigMAeeLyVHfTb5oPN3/Z5nHB9vCc0i
-         a/8Prpn2tBDf4gSUJ2vGYqF5prUZ4VUVxONrg=
+	id S932202Ab0EJUmE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 16:42:04 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:33862 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932191Ab0EJUl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 16:41:57 -0400
+Date: Mon, 10 May 2010 21:41:49 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MIPS: nofpu and nodsp only affect CPU0
+Message-ID: <20100510204148.GA959@linux-mips.org>
+References: <0b6db1ee1efbe0daa1320b59ab5093ba5af377b8@localhost.localdomain>
+ <20100510201959.GB28820@linux-mips.org>
 MIME-Version: 1.0
-Date: Mon, 10 May 2010 13:41:52 -0700
-Message-ID: <j2idd18b0c31005101341o43b652c1zf8729f5f9a60e0d3@mail.gmail.com>
-Subject: magicmouse: claimed by neither input, hiddev nor hidraw
-From: Justin Mattock <justinmattock@gmail.com>
-To: linux-bluetooth@vger.kernel.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100510201959.GB28820@linux-mips.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-is it me, or is there something wrong
-with the magicmouse connecting
-i.g. I've had my system setup to use the
-magicmouse with 2.6.33* with no issues
-now coming back after sometime
-seems everything is connecting,but then no movement:
-(and some thing in dmesg):
-[  116.267993] magicmouse 0005:05AC:030D.0007: claimed by neither
-input, hiddev nor hidraw
-[  116.268053] magicmouse 0005:05AC:030D.0007: magicmouse hw start failed
+On Mon, May 10, 2010 at 09:19:59PM +0100, Ralf Baechle wrote:
 
-using osx  magicmouse connects fine.
-Using standard mightymouse everything connects.
- are there any reports of such things?
+> > The "nofpu" and "nodsp" kernel command line options currently do not
+> > affect CPUs that are brought online later in the boot process or
+> > hotplugged at runtime.  It is desirable to apply the nofpu/nodsp options
+> > to all CPUs in the system, so that surprising results are not seen when
+> > a process migrates from one CPU to another.
+> 
+> I like this patch; this solution is also cleaner than iterating over the
+> cpu data array.  However as it constitutes a change in established kernel
+> behaviour I prefer to queue this patch for 2.6.35 rather than applying it
+> immediately.
 
+I've moved definitions of mips_fpu_disabled, fpu_disable, mips_dsp_disabled
+and dsp_disable from setup.c to cpu-probe.c to allow mips_fpu_disabled and
+mips_dsp_disabled to become static.
 
--- 
-Justin P. Mattock
+  Ralf
