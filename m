@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932711Ab0EJXZG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:25:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50153 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932594Ab0EJWxT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:53:19 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tzanussi@gmail.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/10] perf/trace/scripting: workqueue-stats script cleanup
-Date: Mon, 10 May 2010 19:53:04 -0300
-Message-Id: <1273531987-28956-7-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1273531987-28956-1-git-send-email-acme@infradead.org>
-References: <1273531987-28956-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S933284Ab0EJXFP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:05:15 -0400
+Received: from kroah.org ([198.145.64.141]:45410 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932949Ab0EJW6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:36 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:42 2010
+Message-Id: <20100510223542.311349651@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:35:40 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Dan Carpenter <error27@gmail.com>, Len Brown <lenb@kernel.org>,
+       "Darrick J. Wong" <djwong@us.ibm.com>, Len Brown <len.brown@intel.com>
+Subject: [88/98] power_meter: acpi_device_class "power_meter_resource" too long
+In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Zanussi <tzanussi@gmail.com>
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Some minor fixes for the workqueue-stats script:
+------------------
 
- - Fix nuisance 'use of uninitialized value' warnings
+From: Dan Carpenter <error27@gmail.com>
 
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-LKML-Reference: <1273466820-9330-6-git-send-email-tzanussi@gmail.com>
-Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+commit 18262714ca0fb65c290b8ea1807b2b02bb52d0e3 upstream.
+
+acpi_device_class can only be 19 characters and a NULL terminator.
+
+The current code has a buffer overflow in acpi_power_meter_add():
+       strcpy(acpi_device_class(device), ACPI_POWER_METER_CLASS);
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Cc: Len Brown <lenb@kernel.org>
+Cc: "Darrick J. Wong" <djwong@us.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- tools/perf/scripts/perl/workqueue-stats.pl |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/acpi/power_meter.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/scripts/perl/workqueue-stats.pl b/tools/perf/scripts/perl/workqueue-stats.pl
-index 511302c..b84b126 100644
---- a/tools/perf/scripts/perl/workqueue-stats.pl
-+++ b/tools/perf/scripts/perl/workqueue-stats.pl
-@@ -71,9 +71,9 @@ sub trace_end
-     printf("%3s %6s %6s\t%-20s\n", "---", "---", "----", "----");
-     foreach my $pidhash (@cpus) {
- 	while ((my $pid, my $wqhash) = each %$pidhash) {
--	    my $ins = $$wqhash{'inserted'};
--	    my $exe = $$wqhash{'executed'};
--	    my $comm = $$wqhash{'comm'};
-+	    my $ins = $$wqhash{'inserted'} || 0;
-+	    my $exe = $$wqhash{'executed'} || 0;
-+	    my $comm = $$wqhash{'comm'} || "";
- 	    if ($ins || $exe) {
- 		printf("%3u %6u %6u\t%-20s\n", $cpu, $ins, $exe, $comm);
- 	    }
-@@ -87,9 +87,9 @@ sub trace_end
-     printf("%3s %6s %6s\t%-20s\n", "---", "-------", "---------", "----");
-     foreach my $pidhash (@cpus) {
- 	while ((my $pid, my $wqhash) = each %$pidhash) {
--	    my $created = $$wqhash{'created'};
--	    my $destroyed = $$wqhash{'destroyed'};
--	    my $comm = $$wqhash{'comm'};
-+	    my $created = $$wqhash{'created'} || 0;
-+	    my $destroyed = $$wqhash{'destroyed'} || 0;
-+	    my $comm = $$wqhash{'comm'} || "";
- 	    if ($created || $destroyed) {
- 		printf("%3u %6u %6u\t%-20s\n", $cpu, $created, $destroyed,
- 		       $comm);
--- 
-1.6.2.5
+--- a/drivers/acpi/power_meter.c
++++ b/drivers/acpi/power_meter.c
+@@ -34,7 +34,7 @@
+ #define ACPI_POWER_METER_NAME		"power_meter"
+ ACPI_MODULE_NAME(ACPI_POWER_METER_NAME);
+ #define ACPI_POWER_METER_DEVICE_NAME	"Power Meter"
+-#define ACPI_POWER_METER_CLASS		"power_meter_resource"
++#define ACPI_POWER_METER_CLASS		"pwr_meter_resource"
+ 
+ #define NUM_SENSORS			17
+ 
+
 
