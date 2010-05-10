@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277Ab0EJVIQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 17:08:16 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:43841 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755410Ab0EJVIL (ORCPT
+	id S1757301Ab0EJVJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 17:09:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41291 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757183Ab0EJVJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 17:08:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=BJ+7Z27OMst0/o4BTZ18/Rmv2yqgfLxjS+P6s8PRf9oJbdH6kKX17XQOuCfd3dzb2z
-         LxKCdJwqFuThdnvQjfqWdHKujFfO9TKxB9+oBfg2KVBwa+eQyXz2wu9L1/LJ5SwyldH1
-         y+GTtrkrkDuyatQjK36YZlCcGnsckFF2fQMVg=
-Message-ID: <4BE875C8.8050202@gmail.com>
-Date: Mon, 10 May 2010 14:08:24 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: linux-bluetooth@vger.kernel.org
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: magicmouse: claimed by neither input, hiddev nor hidraw
-References: <j2idd18b0c31005101341o43b652c1zf8729f5f9a60e0d3@mail.gmail.com>
-In-Reply-To: <j2idd18b0c31005101341o43b652c1zf8729f5f9a60e0d3@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 10 May 2010 17:09:16 -0400
+Date: Mon, 10 May 2010 14:08:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Cedric Le Goater <clg@fr.ibm.com>, Dave Hansen <haveblue@us.ibm.com>,
+       Eric Biederman <ebiederm@xmission.com>,
+       Herbert Poetzl <herbert@13thfloor.at>, Ingo Molnar <mingo@elte.hu>,
+       Mathias Krause <Mathias.Krause@secunet.com>,
+       Roland McGrath <roland@redhat.com>, Serge Hallyn <serue@us.ibm.com>,
+       Sukadev Bhattiprolu <sukadev@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] swapper fixes (Was: kernel panic on kill(0,
+ SIGTERM) with PGID == 0)
+Message-Id: <20100510140820.0e84ecc8.akpm@linux-foundation.org>
+In-Reply-To: <20100510194917.GA5249@redhat.com>
+References: <4BE01C86.3050908@secunet.com>
+	<20100509184510.GA15219@redhat.com>
+	<4BE7B3BD.70901@secunet.com>
+	<20100510194917.GA5249@redhat.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2010 01:41 PM, Justin Mattock wrote:
-> is it me, or is there something wrong
-> with the magicmouse connecting
-> i.g. I've had my system setup to use the
-> magicmouse with 2.6.33* with no issues
-> now coming back after sometime
-> seems everything is connecting,but then no movement:
-> (and some thing in dmesg):
-> [  116.267993] magicmouse 0005:05AC:030D.0007: claimed by neither
-> input, hiddev nor hidraw
-> [  116.268053] magicmouse 0005:05AC:030D.0007: magicmouse hw start failed
->
-> using osx  magicmouse connects fine.
-> Using standard mightymouse everything connects.
->   are there any reports of such things?
->
->
+On Mon, 10 May 2010 21:49:17 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-nevermind.. my bad, ended up not
-having hiddraw enabled in the kernel.
+> Hello,
+> 
+> Mathias Krause reports that a buggy (or special) /sbin/init can
+> crash the kernel if it sends a signal to its pgrp/sid before it
+> changes its initial (0,0) pids. See the changelog for 1/4.
+> 
+> git-bisect blames "start the global /sbin/init with 0,0 special pids"
+> commit 430c623121ea88ca80595c99fdc63b7f8a803ae5, but in fact the
+> problem was caused by another change, see 2/4.
+> 
+> The patches do not depend on each other, 3/4 fixes another problem,
+> 4/4 is purely cosmetic.
+> 
 
-everything looks good, suspend etc..
-
-Justin P. Mattock
+Do you see a need to merge these into 2.6.34?  (I don't)
