@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab0EJVts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 17:49:48 -0400
-Received: from straum.hexapodia.org ([207.7.131.186]:33957 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756082Ab0EJVtq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 17:49:46 -0400
-Date: Mon, 10 May 2010 14:49:46 -0700
-From: Andy Isaacson <adi@hexapodia.org>
-To: Steven Liu <lingjiujianke@gmail.com>,
-       Nigel Cunningham <nigel@tuxonice.net>
-Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Check kmalloc return value before use the buffer
-Message-ID: <20100510214946.GA4361@hexapodia.org>
-References: <v2ubd0d95d71005061941j4f9272d1he7dc9bcf5daa6457@mail.gmail.com> <CEE6BB42CAD6E947908279175AF8470A025A68CE5C@EXDCVYMBSTM006.EQ1STM.local> <z2mbd0d95d71005070017w7aa97001m2b81be6dbc1021b9@mail.gmail.com> <4BE3DF5A.9070601@tuxonice.net> <v2gbd0d95d71005070247j1f615a65mcbd52b5b6474206e@mail.gmail.com> <CEE6BB42CAD6E947908279175AF8470A025A68D366@EXDCVYMBSTM006.EQ1STM.local> <4BE4BDED.5050406@tuxonice.net> <v2ubd0d95d71005061941j4f9272d1he7dc9bcf5daa6457@mail.gmail.com> <CEE6BB42CAD6E947908279175AF8470A025A68CE5C@EXDCVYMBSTM006.EQ1STM.local> <z2mbd0d95d71005070017w7aa97001m2b81be6dbc1021b9@mail.gmail.com>
+	id S1757212Ab0EJVvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 17:51:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42770 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756035Ab0EJVvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 17:51:32 -0400
+X-User-Agent: K-9 Mail for Android
+In-Reply-To: <4BE84BE7.1020404@oracle.com>
+References: =?US-ASCII?Q?=3C1273331860-14325-1-git-send-email-yinghai?= =?US-ASCII?Q?=40kernel=2Eorg=3E=09_=3C1273331860-14325-6-git-send-em?= =?US-ASCII?Q?ail-yinghai=40kernel=2Eorg=3E_=3C1273475438=2E23699=2E7?= =?US-ASCII?Q?4=2Ecamel=40pasglop=3E_=3C4BE8?= =?US-ASCII?Q?4BE7=2E1020404=40oracle=2Ecom=3E?=
+Content-Type: multipart/mixed; boundary="----HNFI7KP8SEM5OW3O5SF8JQGHV2J00O"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BE4BDED.5050406@tuxonice.net> <z2mbd0d95d71005070017w7aa97001m2b81be6dbc1021b9@mail.gmail.com>
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: Re: [PATCH 05/22] lmb: Add lmb_reserve_area/lmb_free_area
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 10 May 2010 14:44:05 -0700
+To: Yinghai <yinghai.lu@oracle.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Message-ID: <5391ec1a-7d5d-43e9-ac5f-ff882029bbdc@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 03:17:39PM +0800, Steven Liu wrote:
->  	bigrxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
-> +	if (bigrxbuf_virtual == NULL) {
-> +		status = -ENOMEM;
-> +		kfree(bigtxbuf_virtual);
-> +		goto out;
-> +	}
+------HNFI7KP8SEM5OW3O5SF8JQGHV2J00O
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: base64
 
-On Sat, May 08, 2010 at 11:27:09AM +1000, Nigel Cunningham wrote:
->> Acked-by: Linus Walleij<linus.walleij@stericsson.com>
->
-> Acked-by: Nigel Cunningham <nigel@tuxonice.net>
+U28gcHJvbW90ZSB0aGVtIHRvIG1lbWluaXQuLi4KCiJZaW5naGFpIiA8eWluZ2hhaS5sdUBvcmFj
+bGUuY29tPiB3cm90ZToKCj5PbiAwNS8xMC8yMDEwIDEyOjEwIEFNLCBCZW5qYW1pbiBIZXJyZW5z
+Y2htaWR0IHdyb3RlOgo+PiBPbiBTYXQsIDIwMTAtMDUtMDggYXQgMDg6MTcgLTA3MDAsIFlpbmdo
+YWkgTHUgd3JvdGU6Cj4+PiBUaGV5IHdpbGwgY2hlY2sgaWYgdGhlIHJlZ2lvbiBhcnJheSBpcyBi
+aWcgZW5vdWdoLgo+Pj4KPj4+IF9fY2hlY2tfYW5kX2RvdWJsZV9yZWdpb25fYXJyYXkgd2lsbCB0
+cnkgdG8gZG91YmxlIHRoZSByZWdpb24gYXJyYXkgaWYgdGhhdAo+Pj4gYXJyYXkgc3BhcmUgc2xv
+dHMgaXMgbm90IGJpZyBlbm91Z2guICBPbGQgYXJyYXkgd2lsbCBiZSBjb3BpZWQgdG8gbmV3IGFy
+cmF5Lgo+Pj4KPj4+IEFyY2ggY29kZSBzaG91bGQgc2V0IGxtYi5kZWZhdWx0X2FsbG9jX2xpbWl0
+IGFjY29yZGluZ2x5LCBzbyB0aGUgbmV3IGFycmF5IGlzIGluCj4+PiBhY2Nlc3NpYWJsZSBhZGRy
+ZXNzLgo+PiAKPj4gTW9yZSBpc3N1ZXMuLi4KPj4gCj4+PiArc3RhdGljIHZvaWQgX19pbml0IF9f
+Y2hlY2tfYW5kX2RvdWJsZV9yZWdpb25fYXJyYXkoc3RydWN0IGxtYl9yZWdpb24gKnR5cGUsCj4+
+PiArCQkJIHN0cnVjdCBsbWJfcHJvcGVydHkgKnN0YXRpY19yZWdpb24pCj4+PiArewo+Pj4gKwl1
+NjQgc2l6ZSwgbWVtOwo+Pj4gKwlzdHJ1Y3QgbG1iX3Byb3BlcnR5ICpuZXcsICpvbGQ7Cj4+PiAr
+CXVuc2lnbmVkIGxvbmcgcmduc3ogPSB0eXBlLT5ucl9yZWdpb25zOwo+Pj4gKwo+Pj4gKwkvKiBE
+byB3ZSBoYXZlIGVub3VnaCBzbG90cyBsZWZ0ID8gKi8KPj4+ICsJaWYgKChyZ25zeiAtIHR5cGUt
+PmNudCkgPiAyKQo+Pj4gKwkJcmV0dXJuOwo+Pj4gKwo+Pj4gKwlvbGQgPSB0eXBlLT5yZWdpb247
+Cj4+PiArCS8qIERvdWJsZSB0aGUgYXJyYXkgc2l6ZSAqLwo+Pj4gKwlzaXplID0gc2l6ZW9mKHN0
+cnVjdCBsbWJfcHJvcGVydHkpICogcmduc3ogKiAyOwo+Pj4gKwo+Pj4gKwltZW0gPSBfX2xtYl9h
+bGxvY19iYXNlKHNpemUsIHNpemVvZihzdHJ1Y3QgbG1iX3Byb3BlcnR5KSwgbG1iLmRlZmF1bHRf
+YWxsb2NfbGltaXQpOwo+Pj4gKwlpZiAobWVtID09IDApCj4+PiArCQlwYW5pYygiY2FuIG5vdCBm
+aW5kIG1vcmUgc3BhY2UgZm9yIGxtYi5yZXNlcnZlZC5yZWdpb24gYXJyYXkiKTsKPj4gCj4+IE5v
+dywgdGhhdCBpcyBub3QgcmlnaHQgYmVjYXVzZSB3ZSBkbyBtZW1vcnkgaG90cGx1Zy4gVGh1cyBs
+bWJfYWRkKCkgbXVzdAo+PiBiZSBhYmxlIHRvIGRlYWwgd2l0aCB0aGluZ3MgcnVubmluZyBwYXN0
+IExNQiBpbml0Lgo+PiAKPj4gc2xhYl9pc19hdmFpbGFibGUoKSB3aWxsIGRvIHRoZSBqb2IgZm9y
+IG5vdywgdW5sZXNzIHNvbWVib2R5IGhhcyBib290bWVtCj4+IGFuZCB0cmllcyB0byBsbWJfYWRk
+KCkgbWVtb3J5IHdoaWxlIGJvb3RtZW0gaXMgYWN0aXZlLCBidXQgc2NyZXcgdGhhdAo+PiBmb3Ig
+bm93LiBTZWUgdGhlIGNvZGUgSSdsbCBwb3N0IHRvbmlnaHQuCj4+IAo+Pj4gKwluZXcgPSBfX3Zh
+KG1lbSk7Cj4+PiArCS8qIENvcHkgb2xkIHRvIG5ldyAqLwo+Pj4gKwltZW1jcHkoJm5ld1swXSwg
+Jm9sZFswXSwgc2l6ZW9mKHN0cnVjdCBsbWJfcHJvcGVydHkpICogcmduc3opOwo+Pj4gKwltZW1z
+ZXQoJm5ld1tyZ25zel0sIDAsIHNpemVvZihzdHJ1Y3QgbG1iX3Byb3BlcnR5KSAqIHJnbnN6KTsK
+Pj4+ICsKPj4+ICsJbWVtc2V0KCZvbGRbMF0sIDAsIHNpemVvZihzdHJ1Y3QgbG1iX3Byb3BlcnR5
+KSAqIHJnbnN6KTsKPj4+ICsJdHlwZS0+cmVnaW9uID0gbmV3Owo+Pj4gKwl0eXBlLT5ucl9yZWdp
+b25zID0gcmduc3ogKiAyOwo+Pj4gKwlwcmludGsoS0VSTl9ERUJVRyAibG1iLnJlc2VydmVkLnJl
+Z2lvbiBhcnJheSBpcyBkb3VibGVkIHRvICVsZCBhdCBbJWxseCAtICVsbHhdXG4iLAo+Pj4gKwkJ
+dHlwZS0+bnJfcmVnaW9ucywgbWVtLCBtZW0gKyBzaXplIC0gMSk7Cj4+PiArCj4+PiArCS8qIEZy
+ZWUgb2xkIG9uZSA/Ki8KPj4+ICsJaWYgKG9sZCAhPSBzdGF0aWNfcmVnaW9uKQo+Pj4gKwkJbG1i
+X2ZyZWUoX19wYShvbGQpLCBzaXplb2Yoc3RydWN0IGxtYl9wcm9wZXJ0eSkgKiByZ25zeik7Cj4+
+PiArfQo+PiAKPj4gU2ltaWxhciBjb21tZW50LCBkb24ndCBib3RoZXIgaWYgc2xhYiBpcyBhdmFp
+bGFibGUuCj4+IAo+Pj4gK3ZvaWQgX19pbml0IGxtYl9hZGRfbWVtb3J5KHU2NCBzdGFydCwgdTY0
+IGVuZCkKPj4+ICt7Cj4+PiArCWxtYl9hZGRfcmVnaW9uKCZsbWIubWVtb3J5LCBzdGFydCwgZW5k
+IC0gc3RhcnQpOwo+Pj4gKwlfX2NoZWNrX2FuZF9kb3VibGVfcmVnaW9uX2FycmF5KCZsbWIubWVt
+b3J5LCAmbG1iX21lbW9yeV9yZWdpb25bMF0pOwo+Pj4gK30KPj4gCj4+IFNvIHlvdSBkdXBsaWNh
+dGUgbG1iX2FkZCgpIGdyYXR1aXR1b3VzbHkgPyAKPj4gCj4+PiArdm9pZCBfX2luaXQgbG1iX3Jl
+c2VydmVfYXJlYSh1NjQgc3RhcnQsIHU2NCBlbmQsIGNoYXIgKm5hbWUpCj4+PiArewo+Pj4gKwlp
+ZiAoc3RhcnQgPT0gZW5kKQo+Pj4gKwkJcmV0dXJuOwo+Pj4gKwo+Pj4gKwlpZiAoV0FSTl9PTkNF
+KHN0YXJ0ID4gZW5kLCAibG1iX3Jlc2VydmVfYXJlYTogd3JvbmcgcmFuZ2UgWyUjbGx4LCAlI2xs
+eF1cbiIsIHN0YXJ0LCBlbmQpKQo+Pj4gKwkJcmV0dXJuOwo+Pj4gKwo+Pj4gKwlsbWJfYWRkX3Jl
+Z2lvbigmbG1iLnJlc2VydmVkLCBzdGFydCwgZW5kIC0gc3RhcnQpOwo+Pj4gKwlfX2NoZWNrX2Fu
+ZF9kb3VibGVfcmVnaW9uX2FycmF5KCZsbWIucmVzZXJ2ZWQsICZsbWJfcmVzZXJ2ZWRfcmVnaW9u
+WzBdKTsKPj4+ICt9Cj4+IAo+PiBBbmQgbG1iX3Jlc2VydmUoKSA/Cj4+IAo+PiBEbyB3ZSB3YW50
+IHRvIGVuZCB1cCB3aXRoIDUgY29waWVzIG9mIHRoZSBzYW1lIEFQSSB3aXRoIHN1YnRsZQo+PiBk
+aWZmZXJlbmNlcyBqdXN0IGZvciBmdW4gPwo+Cj50aG9zZSBmdW5jdGlvbnMgaGF2ZSBfX2luaXQg
+bWFya2VycywgYW5kIG9ubHkgY2FuIGJlIHVzZWQgb24gYm9vdCBzdGFnZS4gc28gZG8gbmVlZCB0
+byB3b3JyeSBhYm91dCBob3RwbHVnIG1lbS4KPgo+d2hhdCBJIGRvIGlzOiB1c2UgY3VycmVudCBs
+bWIgY29kZSBmb3IgeDg2LCBhbmQga2VlcCB0aGUgYWZmZWN0cyB0byBvcmlnaW5hbCBsbWIgdXNl
+cnMgdG8gbWluaW11bS4gKHNob3VsZCBiZSBuZWFyIDApCj4KPllICgotLSAKU2VudCBmcm9tIG15
+IEFuZHJvaWQgcGhvbmUgd2l0aCBLLTkgTWFpbC4gUGxlYXNlIGV4Y3VzZSBteSBicmV2aXR5Lg==
+------HNFI7KP8SEM5OW3O5SF8JQGHV2J00O--
 
-NACK.  Don't duplicate kfree(), instead do something like
-
---- a/arch/arm/mach-u300/dummyspichip.c
-+++ b/arch/arm/mach-u300/dummyspichip.c
-@@ -58,12 +58,13 @@ static ssize_t dummy_looptest(struct device *dev,
-        if (mutex_lock_interruptible(&p_dummy->lock))
-                return -ERESTARTSYS;
- 
-+       status = -ENOMEM;
-        bigtxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
--       if (bigtxbuf_virtual == NULL) {
--               status = -ENOMEM;
-+       if (bigtxbuf_virtual == NULL)
-                goto out;
--       }
-        bigrxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
-+       if (bigrxbuf_virtual == NULL)
-+               goto out_free_tx;
- 
-        /* Fill TXBUF with some happy pattern */
-        memset(bigtxbuf_virtual, 0xAA, DMA_TEST_SIZE);
-@@ -215,6 +216,7 @@ static ssize_t dummy_looptest(struct device *dev,
- 
-        status = sprintf(buf, "loop test complete\n");
-        kfree(bigrxbuf_virtual);
-+ out_free_tx:
-        kfree(bigtxbuf_virtual);
-  out:
-        mutex_unlock(&p_dummy->lock);
-
--andy
+------HNFI7KP8SEM5OW3O5SF8JQGHV2J00O--
