@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932929Ab0EJXO5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:14:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61871 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757481Ab0EJW6O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:14 -0400
-Message-ID: <4BE88F22.3060408@oracle.com>
-Date: Mon, 10 May 2010 15:56:34 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Netdev <netdev@vger.kernel.org>
-CC: "David J. Choi" <david.choi@micrel.com>
-Subject: Re: bug: micrel phy init (2.6.34-rc7)
-References: <4BE88BED.4030400@oracle.com>
-In-Reply-To: <4BE88BED.4030400@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090207.4BE88F83.000B:SCFMA4539811,ss=1,fgs=0
+	id S932969Ab0EJW6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:58:47 -0400
+Received: from kroah.org ([198.145.64.141]:51599 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755128Ab0EJW5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:57:30 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:35 2010
+Message-Id: <20100510223535.336359739@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:34:22 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Changli Gao <xiaosuo@gmail.com>, Patrick McHardy <kaber@trash.net>,
+       David Rientjes <rientjes@google.com>
+Subject: [10/98] flex_array: fix the panic when calling flex_array_alloc() without __GFP_ZERO
+In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/10 15:42, Randy Dunlap wrote:
-> Loading the micrel phy driver BUGs (no device present):
-> 
-> [  623.821462] BUG: unable to handle kernel NULL pointer dereference at (null)
-> [  623.822164] IP: [<ffffffff8123c9f0>] strcmp+0x6/0x44
-> [  623.822164] PGD 7d4bd067 PUD 7d6bb067 PMD 0 
-> [  623.822164] Oops: 0000 [#1] SMP
-> 
-> 
-> Full kernel log and config are attached.
-> 
-> Not a regression -- this is a new driver.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-OK, I see that this was reported & fixed on May-06.  :)
+------------------
+
+From: Changli Gao <xiaosuo@gmail.com>
+
+commit e59464c735db19619cde2aa331609adb02005f5b upstream.
+
+memset() is called with the wrong address and the kernel panics.
+
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ lib/flex_array.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/lib/flex_array.c
++++ b/lib/flex_array.c
+@@ -99,7 +99,7 @@ struct flex_array *flex_array_alloc(int
+ 	ret->element_size = element_size;
+ 	ret->total_nr_elements = total;
+ 	if (elements_fit_in_base(ret) && !(flags & __GFP_ZERO))
+-		memset(ret->parts[0], FLEX_ARRAY_FREE,
++		memset(&ret->parts[0], FLEX_ARRAY_FREE,
+ 						FLEX_ARRAY_BASE_BYTES_LEFT);
+ 	return ret;
+ }
 
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
