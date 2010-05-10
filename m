@@ -1,154 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab0EJAqs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 20:46:48 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39368 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720Ab0EJAqp (ORCPT
+	id S1754853Ab0EJB1X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 21:27:23 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:64374 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754788Ab0EJB1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 20:46:45 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 10 May 2010 09:42:38 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] mm,migration: Fix race between shift_arg_pages and
- rmap_walk by guaranteeing rmap_walk finds PTEs created within the temporary
- stack
-Message-Id: <20100510094238.5781d6fc.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.LFD.2.00.1005091245000.3711@i5.linux-foundation.org>
-References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie>
-	<1273188053-26029-3-git-send-email-mel@csn.ul.ie>
-	<alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org>
-	<20100507105712.18fc90c4.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.LFD.2.00.1005061905230.901@i5.linux-foundation.org>
-	<20100509192145.GI4859@csn.ul.ie>
-	<alpine.LFD.2.00.1005091245000.3711@i5.linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+	Sun, 9 May 2010 21:27:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Vl5wF9Ow6np2tZzS9MZRDBREw52mn+yjXWvOk2BlhJIXhGNa9DlzHKVSz36sO3SxGS
+         0tjc4U/fukkl5c8VNFbLG0WoWOvbzq5BFVBxafhTEJeMctZhanbo6Kc1+D8c11HIiyeC
+         r6zjuqs+5JzlmQZ5igxzDke+k8wTY4I1ddwAM=
+Subject: [PATCH] max8925_bl: properly unregisters a backlight device object
+	in error handling
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Richard Purdie <rpurdie@linux.intel.com>
+Content-Type: text/plain
+Date: Mon, 10 May 2010 09:27:34 +0800
+Message-Id: <1273454854.6536.3.camel@mola>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 9 May 2010 12:56:49 -0700 (PDT)
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Properly unregisters a previously registered backlight device object in error handling of max8925_backlight_probe.
 
-> 
-> 
-> On Sun, 9 May 2010, Mel Gorman wrote:
-> > 
-> > It turns out not to be easy to the preallocating of PUDs, PMDs and PTEs
-> > move_page_tables() needs.  To avoid overallocating, it has to follow the same
-> > logic as move_page_tables duplicating some code in the process. The ugliest
-> > aspect of all is passing those pre-allocated pages back into move_page_tables
-> > where they need to be passed down to such functions as __pte_alloc. It turns
-> > extremely messy.
-> 
-> Umm. What?
-> 
-> That's crazy talk. I'm not talking about preallocating stuff in order to 
-> pass it in to move_page_tables(). I'm talking about just _creating_ the 
-> dang page tables early - preallocating them IN THE PROCESS VM SPACE.
-> 
-> IOW, a patch like this (this is a pseudo-patch, totally untested, won't 
-> compile, yadda yadda - you need to actually make the people who call 
-> "move_page_tables()" call that prepare function first etc etc)
-> 
-> Yeah, if we care about holes in the page tables, we can certainly copy 
-> more of the move_page_tables() logic, but it certainly doesn't matter for 
-> execve(). This just makes sure that the destination page tables exist 
-> first.
-> 
-IMHO, I think move_page_tables() itself should be implemented as your patch.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/backlight/max8925_bl.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-But, move_page_tables()'s failure is not a big problem. At failure,
-exec will abort and no page fault will occur later. What we have to do in
-this migration-patch-series is avoding inconsistent update of sets of
-[page, vma->vm_start, vma->pg_off, ptes] or "dont' migrate pages in exec's
-statk".
-
-Considering cost, as Mel shows, "don't migrate pages in exec's stack" seems
-reasonable. But, I still doubt this check.
-
-+static bool is_vma_temporary_stack(struct vm_area_struct *vma)
-+{
-+	int maybe_stack = vma->vm_flags & (VM_GROWSDOWN | VM_GROWSUP);
-+
-+	if (!maybe_stack)
-+		return false;
-+
-+	/* If only the stack is mapped, assume exec is in progress */
-+	if (vma->vm_mm->map_count == 1) -------------------(*)
-+		return true; 
-+
-+	return false;
-+}
-+
+diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
+index b5accc9..b2b2c7b 100644
+--- a/drivers/video/backlight/max8925_bl.c
++++ b/drivers/video/backlight/max8925_bl.c
+@@ -162,6 +162,7 @@ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
+ 	backlight_update_status(bl);
+ 	return 0;
+ out:
++	backlight_device_unregister(bl);
+ 	kfree(data);
+ 	return ret;
+ }
+-- 
+1.5.4.3
 
 
-Mel, can (*) be safe even on a.out format (format other than ELFs) ?
-
-Thanks,
--Kame
-
-
-
-
-
-
-
-> 		Linus
-> 
-> ---
->  mm/mremap.c |   22 +++++++++++++++++++++-
->  1 files changed, 21 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/mremap.c b/mm/mremap.c
-> index cde56ee..c14505c 100644
-> --- a/mm/mremap.c
-> +++ b/mm/mremap.c
-> @@ -128,6 +128,26 @@ static void move_ptes(struct vm_area_struct *vma, pmd_t *old_pmd,
->  
->  #define LATENCY_LIMIT	(64 * PAGE_SIZE)
->  
-> +/*
-> + * Preallocate the page tables, so that we can do the actual move
-> + * without any allocations, and thus no error handling etc.
-> + */
-> +int prepare_move_page_tables(struct vm_area_struct *vma,
-> +	unsigned long old_addr, struct vm_area_struct *new_vma,
-> +	unsigned long new_addr, unsigned long len)
-> +{
-> +	unsigned long end_addr = new_addr + len;
-> +
-> +	while (new_addr < end_addr) {
-> +		pmd_t *new_pmd;
-> +		new_pmd = alloc_new_pmd(vma->vm_mm, new_addr);
-> +		if (!new_pmd)
-> +			return -ENOMEM;
-> +		new_addr = (new_addr + PMD_SIZE) & PMD_MASK;
-> +	}
-> +	return 0;
-> +}
-> +
->  unsigned long move_page_tables(struct vm_area_struct *vma,
->  		unsigned long old_addr, struct vm_area_struct *new_vma,
->  		unsigned long new_addr, unsigned long len)
-> @@ -147,7 +167,7 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
->  		old_pmd = get_old_pmd(vma->vm_mm, old_addr);
->  		if (!old_pmd)
->  			continue;
-> -		new_pmd = alloc_new_pmd(vma->vm_mm, new_addr);
-> +		new_pmd = get_old_pmd(vma->vm_mm, new_addr);
->  		if (!new_pmd)
->  			break;
->  		next = (new_addr + PMD_SIZE) & PMD_MASK;
-> 
 
