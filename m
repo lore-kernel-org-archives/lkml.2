@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab0EJKhV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 06:37:21 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:36832 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756604Ab0EJKhO (ORCPT
+	id S1756650Ab0EJKhq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 06:37:46 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:61260 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756594Ab0EJKg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 06:37:14 -0400
+	Mon, 10 May 2010 06:36:57 -0400
 From: Eduardo Valentin <eduardo.valentin@nokia.com>
 To: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
        Linux-OMAP <linux-omap@vger.kernel.org>
@@ -17,13 +17,13 @@ Cc: Russell King <linux@arm.linux.org.uk>,
        Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
        santosh.shilimkar@ti.com, Ambresh <a0393775@ti.com>,
        felipe.balbi@nokia.com, Eduardo Valentin <eduardo.valentin@nokia.com>
-Subject: [PATCHv4 3/4] mach-omap1: export omap1 info under /proc/socinfo
-Date: Mon, 10 May 2010 13:37:36 +0300
-Message-Id: <1273487857-32281-4-git-send-email-eduardo.valentin@nokia.com>
+Subject: [PATCHv4 1/4] procfs: Introduce socinfo under /proc
+Date: Mon, 10 May 2010 13:37:34 +0300
+Message-Id: <1273487857-32281-2-git-send-email-eduardo.valentin@nokia.com>
 X-Mailer: git-send-email 1.7.0.4.361.g8b5fe.dirty
 In-Reply-To: <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com>
 References: <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com>
-X-OriginalArrivalTime: 10 May 2010 10:35:43.0353 (UTC) FILETIME=[8AED8690:01CAF02C]
+X-OriginalArrivalTime: 10 May 2010 10:35:36.0259 (UTC) FILETIME=[86B31130:01CAF02C]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,85 +31,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eduardo Valentin <eduardo.valentin@nokia.com>
 
-Report OMAP name and rev under /proc/socinfo node.
+This patch introduce the /proc/socinfo node. Its purpose is to
+export System on Chip information and specific bits.
+
+The way it is done is basically same structure which is used to build
+/proc/cpuinfo. Thus, it relies on the existence of socinfo_op seq_operation
+structure. This structure must be provided by soc core code.
 
 Signed-off-by: Eduardo Valentin <eduardo.valentin@nokia.com>
 ---
- arch/arm/mach-omap1/id.c |   45 +++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 39 insertions(+), 6 deletions(-)
+ Documentation/filesystems/proc.txt |    1 +
+ fs/proc/Kconfig                    |    7 +++++++
+ fs/proc/Makefile                   |    1 +
+ fs/proc/socinfo.c                  |   33 +++++++++++++++++++++++++++++++++
+ 4 files changed, 42 insertions(+), 0 deletions(-)
+ create mode 100644 fs/proc/socinfo.c
 
-diff --git a/arch/arm/mach-omap1/id.c b/arch/arm/mach-omap1/id.c
-index a0e3560..917892b 100644
---- a/arch/arm/mach-omap1/id.c
-+++ b/arch/arm/mach-omap1/id.c
-@@ -15,6 +15,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/io.h>
-+#include <linux/seq_file.h>
- #include <plat/cpu.h>
- 
- #define OMAP_DIE_ID_0		0xfffe1800
-@@ -118,9 +119,12 @@ static u8 __init omap_get_die_rev(void)
- 	return die_rev;
- }
- 
-+#define SOCINFO_SZ		128
-+static char socinfo[SOCINFO_SZ];
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index a4f30fa..039bcb7 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -415,6 +415,7 @@ Table 1-5: Kernel info in /proc
+  bus         Directory containing bus specific information     
+  cmdline     Kernel command line                               
+  cpuinfo     Info about the CPU                                
++ socinfo     Info about the System on Chip                     
+  devices     Available devices (block and character)           
+  dma         Used DMS channels                                 
+  filesystems Supported filesystems                             
+diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+index 50f8f06..e683d62 100644
+--- a/fs/proc/Kconfig
++++ b/fs/proc/Kconfig
+@@ -67,3 +67,10 @@ config PROC_PAGE_MONITOR
+ 	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
+ 	  /proc/kpagecount, and /proc/kpageflags. Disabling these
+           interfaces will reduce the size of the kernel by approximately 4kb.
 +
- void __init omap_check_revision(void)
- {
--	int i;
-+	int i, sz;
- 	u16 jtag_id;
- 	u8 die_rev;
- 	u32 omap_id;
-@@ -194,11 +198,40 @@ void __init omap_check_revision(void)
- 		printk(KERN_INFO "Unknown OMAP cpu type: 0x%02x\n", cpu_type);
- 	}
- 
--	printk(KERN_INFO "OMAP%04x", omap_revision >> 16);
-+	sz = snprintf(socinfo, SOCINFO_SZ, "OMAP%04x", omap_revision >> 16);
- 	if ((omap_revision >> 8) & 0xff)
--		printk(KERN_INFO "%x", (omap_revision >> 8) & 0xff);
--	printk(KERN_INFO " revision %i handled as %02xxx id: %08x%08x\n",
--	       die_rev, omap_revision & 0xff, system_serial_low,
--	       system_serial_high);
-+		snprintf(socinfo + sz, SOCINFO_SZ - sz, "%x",
-+						(omap_revision >> 8) & 0xff);
-+	pr_info("%s revision %i handled as %02xxx id: %08x%08x\n",
-+		socinfo, die_rev, omap_revision & 0xff, system_serial_low,
-+		system_serial_high);
++config PROC_SOCINFO
++ 	default y
++	depends on PROC_FS
++	bool "Enable /proc/socinfo" if EMBEDDED
++ 	help
++	  Say Y here if you need to see information about the your System on Chip.
+diff --git a/fs/proc/Makefile b/fs/proc/Makefile
+index 11a7b5c..7757d44 100644
+--- a/fs/proc/Makefile
++++ b/fs/proc/Makefile
+@@ -26,3 +26,4 @@ proc-$(CONFIG_PROC_VMCORE)	+= vmcore.o
+ proc-$(CONFIG_PROC_DEVICETREE)	+= proc_devtree.o
+ proc-$(CONFIG_PRINTK)	+= kmsg.o
+ proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
++proc-$(CONFIG_PROC_SOCINFO)	+= socinfo.o
+diff --git a/fs/proc/socinfo.c b/fs/proc/socinfo.c
+new file mode 100644
+index 0000000..05bfc4f
+--- /dev/null
++++ b/fs/proc/socinfo.c
+@@ -0,0 +1,33 @@
++/*
++ *  fs/proc/socinfo.c
++ *
++ *  Copyright (C) 2010 Nokia Corporation
++ *
++ *  Contact: Eduardo Valentin <eduardo.valentin@nokia.com>
++ *
++ *  proc socinfo file
++ */
++#include <linux/fs.h>
++#include <linux/init.h>
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
++
++extern const struct seq_operations socinfo_op;
++static int socinfo_open(struct inode *inode, struct file *file)
++{
++	return seq_open(file, &socinfo_op);
 +}
 +
-+static int c_show(struct seq_file *m, void *v)
-+{
-+	seq_printf(m, "SoC\t: %s\n", socinfo);
++static const struct file_operations proc_socinfo_operations = {
++	.open		= socinfo_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= seq_release,
++};
 +
++static int __init proc_socinfo_init(void)
++{
++	proc_create("socinfo", 0, NULL, &proc_socinfo_operations);
 +	return 0;
 +}
-+
-+static void *c_start(struct seq_file *m, loff_t *pos)
-+{
-+	return *pos < 1 ? (void *)1 : NULL;
- }
- 
-+static void *c_next(struct seq_file *m, void *v, loff_t *pos)
-+{
-+	++*pos;
-+	return NULL;
-+}
-+
-+static void c_stop(struct seq_file *m, void *v)
-+{
-+}
-+
-+const struct seq_operations socinfo_op = {
-+	.start	= c_start,
-+	.next	= c_next,
-+	.stop	= c_stop,
-+	.show	= c_show
-+};
++module_init(proc_socinfo_init);
 -- 
 1.7.0.4.361.g8b5fe.dirty
 
