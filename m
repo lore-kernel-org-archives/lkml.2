@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815Ab0EJXJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:09:26 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:57103 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757476Ab0EJXJS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 19:09:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vaIHadbelY/2X8OWQ3tQwB60ztSoK/TR/IsAuU998WqGaI/D+vP52eG5nD38OXEGyb
-         S73ZN0FprEoXz8hJMBj+kS3uGh8I7q2okrqNTdqc0+q092szuPsqPWn7rc/m6Zly8S1q
-         fjuw984IcGkMhL1+XwxnnPCASxWvcX4qnB+Xk=
-Date: Tue, 11 May 2010 01:09:13 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 2/9] perf: core, remove hw_perf_event_init
-Message-ID: <20100510230911.GB5895@nowhere>
-References: <1273483595.15998.56.camel@minggr.sh.intel.com> <1273484430.5605.3334.camel@twins> <1273486670.15998.80.camel@minggr.sh.intel.com> <1273486769.5605.3343.camel@twins> <20100510122728.GB5563@nowhere> <1273496054.5605.3400.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273496054.5605.3400.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933180Ab0EJXDI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:03:08 -0400
+Received: from kroah.org ([198.145.64.141]:51821 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932907Ab0EJW6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:19 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:40 2010
+Message-Id: <20100510223540.438517663@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:35:19 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Darren Jenkins <darrenrjenkins@gmail.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [67/98] drivers/net/wireless/p54/txrx.c Fix off by one error
+In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 02:54:14PM +0200, Peter Zijlstra wrote:
-> On Mon, 2010-05-10 at 14:27 +0200, Frederic Weisbecker wrote:
-> > On Mon, May 10, 2010 at 12:19:29PM +0200, Peter Zijlstra wrote:
-> > > On Mon, 2010-05-10 at 18:17 +0800, Lin Ming wrote:
-> > > > On Mon, 2010-05-10 at 17:40 +0800, Peter Zijlstra wrote:
-> > > > > On Mon, 2010-05-10 at 17:26 +0800, Lin Ming wrote:
-> > > > > > +static struct pmu *perf_event_lookup_pmu(struct perf_event *event)
-> > > > > > +{
-> > > > > > +       struct pmu *pmu;
-> > > > > > +       int pmu_id = event->attr.pmu_id;
-> > > > > > +
-> > > > > > +       list_for_each_entry(pmu, &pmus, entry) {
-> > > > > > +               if (pmu->id == pmu_id)
-> > > > > > +                       return pmu;
-> > > > > > +       }
-> > > > > > +
-> > > > > > +       return NULL;
-> > > > > > +}
-> > > > > 
-> > > > > > +void perf_event_register_pmu(struct pmu *pmu)
-> > > > > > +{
-> > > > > > +       pmu->id = pmu_id_curr++;
-> > > > > > +       list_add_tail(&pmu->entry, &pmus);
-> > > > > > +} 
-> > > > > 
-> > > > > That will be wanting some sort of synchronization
-> > > > 
-> > > > Will add a mutex to protect the list of pmus.
-> > > 
-> > > I'm thinking RCU might be better suited, a mutex for lookup doesn't
-> > > sound ideal.
-> > 
-> > 
-> > Is it really needed? I expect this function to be called on boot
-> > only.
-> > 
-> > In fact I would even suggest to tag it as __init.
-> 
-> Loadable modules as well as PCI-Hotplug need supporting.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
+------------------
 
-Which module do you have in mind that could register a pmu?
-And I don't understand the problem with pci-hotplug.
+From: Darren Jenkins <darrenrjenkins@gmail.com>
 
-Thanks.
+commit 088ea189c4c75cdf211146faa4b341a0f7476be6 upstream.
+
+fix off by one error in the queue size check of p54_tx_qos_accounting_alloc()
+
+Coverity CID: 13314
+
+Signed-off-by: Darren Jenkins <darrenrjenkins@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/net/wireless/p54/txrx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/p54/txrx.c
++++ b/drivers/net/wireless/p54/txrx.c
+@@ -186,7 +186,7 @@ static int p54_tx_qos_accounting_alloc(s
+ 	struct ieee80211_tx_queue_stats *queue;
+ 	unsigned long flags;
+ 
+-	if (WARN_ON(p54_queue > P54_QUEUE_NUM))
++	if (WARN_ON(p54_queue >= P54_QUEUE_NUM))
+ 		return -EINVAL;
+ 
+ 	queue = &priv->tx_stats[p54_queue];
+
 
