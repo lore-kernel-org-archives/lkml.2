@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab0EJKeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 06:34:17 -0400
-Received: from mx1.emlix.com ([193.175.82.87]:55169 "EHLO mx1.emlix.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752650Ab0EJKeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 06:34:13 -0400
-From: "Oskar Schirmer" <os@emlix.com>
-To: Michael Hennerich <Michael.Hennerich@analog.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Mike Frysinger <vapier@gentoo.org>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Oskar Schirmer <os@emlix.com>,
-       =?utf-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>
-Subject: [PATCH v2] ad7877: keep dma rx buffers in seperate cache lines
-Date: Mon, 10 May 2010 12:34:02 +0200
-Message-Id: <1273487642-2169-1-git-send-email-os@emlix.com>
-In-Reply-To: <1273142265-11929-2-git-send-email-os@emlix.com>
-References: <1273142265-11929-2-git-send-email-os@emlix.com>
+	id S1756563Ab0EJKgc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 06:36:32 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:34723 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755665Ab0EJKgb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 06:36:31 -0400
+Date: Mon, 10 May 2010 19:35:47 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+Message-ID: <20100510103546.GB14278@linux-sh.org>
+References: <1273483623.15998.57.camel@minggr.sh.intel.com> <1273484401.5605.3333.camel@twins> <1273486313.15998.76.camel@minggr.sh.intel.com> <1273486708.5605.3342.camel@twins> <1273487195.15998.85.camel@minggr.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Organization: emlix gmbh, Goettingen, Germany
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273487195.15998.85.camel@minggr.sh.intel.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With dma based spi transmission, data corruption
-is observed occasionally. With dma buffers located
-right next to msg and xfer fields, cache lines
-correctly flushed in preparation for dma usage
-may be polluted again when writing to fields
-in the same cache line.
+On Mon, May 10, 2010 at 06:26:35PM +0800, Lin Ming wrote:
+> On Mon, 2010-05-10 at 18:18 +0800, Peter Zijlstra wrote:
+> > On Mon, 2010-05-10 at 18:11 +0800, Lin Ming wrote:
+> > > On Mon, 2010-05-10 at 17:40 +0800, Peter Zijlstra wrote:
+> > > > On Mon, 2010-05-10 at 17:27 +0800, Lin Ming wrote:
+> > > > > Export pmus via sysfs /sys/devices/system/cpu/pmus/0...N
+> > > > > The file name is the pmu id, ie, /sys/devices/system/cpu/pmus/N
+> > > > > represents pmu id N.
+> > > > > So perf tool can use it to initialize perf_event_attr. 
+> > > > 
+> > > > Why create a whole new directory, why not:
+> > > > 
+> > > >  /sys/devices/system/cpu/cpuN/pmu_id ?
+> > > 
+> > > 
+> > > Do you mean /sys/devices/system/cpu/cpuN/pmu_id contain all ids?
+> > > 
+> > > For example, each cpu has 4 pmus and the file pmu_id shows something
+> > > like,
+> > > 
+> > > #cat /sys/devices/system/cpu/cpu0/pmu_id
+> > > 0 1 2 3
+> > 
+> > No, I'm assuming there is only 1 PMU per CPU. Corey is the expert on
+> > crazy hardware though, but I think the sanest way is to extend the CPU
+> > topology if there's more structure to it.
+> 
+> But our goal is to support multiple pmus, don't we need to assume there
+> are more than 1 PMU per CPU?
+> 
+The multiple PMU case still suggests 1 per CPU in most (all?) cases. If
+you're thinking of PMUs in the northbridge case this would sit under its
+own topology given that most CPUs will have a shared view of it. Do you
+have some cases with performance counters in per-CPU memory controllers
+or something similar?
 
-Make sure cache fields used with dma do not
-share cache lines with fields changed during
-dma handling. As both fields are part of a
-struct that is allocated via kzalloc, thus
-cache aligned, moving the fields to the 1st
-position and insert padding for alignment
-does the job.
-
-Signed-off-by: Oskar Schirmer <os@emlix.com>
-Signed-off-by: Daniel Glöckner <dg@emlix.com>
-Signed-off-by: Oliver Schneidewind <osw@emlix.com>
-Signed-off-by: Johannes Weiner <jw@emlix.com>
----
- drivers/input/touchscreen/ad7877.c |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
-
-v2: add a comment to explain why alignment is needed
-
-diff --git a/drivers/input/touchscreen/ad7877.c b/drivers/input/touchscreen/ad7877.c
-index 9cfc8b5..69ebacf 100644
---- a/drivers/input/touchscreen/ad7877.c
-+++ b/drivers/input/touchscreen/ad7877.c
-@@ -153,15 +153,29 @@ enum {
-  */
- 
- struct ser_req {
-+	u16			sample;
-+	/*
-+	 * DMA (thus cache coherency maintainance) requires the
-+	 * transfer buffers to live in their own cache lines.
-+	 */
-+	char			__padalign[L1_CACHE_BYTES - sizeof(u16)];
-+
- 	u16			reset;
- 	u16			ref_on;
- 	u16			command;
--	u16			sample;
- 	struct spi_message	msg;
- 	struct spi_transfer	xfer[6];
- };
- 
- struct ad7877 {
-+	u16			conversion_data[AD7877_NR_SENSE];
-+	/*
-+	 * DMA (thus cache coherency maintainance) requires the
-+	 * transfer buffers to live in their own cache lines.
-+	 */
-+	char			__padalign[L1_CACHE_BYTES
-+					- AD7877_NR_SENSE * sizeof(u16)];
-+
- 	struct input_dev	*input;
- 	char			phys[32];
- 
-@@ -182,8 +196,6 @@ struct ad7877 {
- 	u8			averaging;
- 	u8			pen_down_acc_interval;
- 
--	u16			conversion_data[AD7877_NR_SENSE];
--
- 	struct spi_transfer	xfer[AD7877_NR_SENSE + 2];
- 	struct spi_message	msg;
- 
--- 
-1.5.3.7
-
+> How about
+> /sys/devices/system/cpu/cpuN/pmu_0
+> /sys/devices/system/cpu/cpuN/pmu_1
+> /sys/devices/system/cpu/cpuN/pmu_2
+> /sys/devices/system/cpu/cpuN/pmu_3
+> ....?
+> 
+If you're following driver model naming conventions, then these should
+all be pmu.0, pmu.1, etc, etc.
