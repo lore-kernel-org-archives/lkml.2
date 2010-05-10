@@ -1,125 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab0EJNti (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 09:49:38 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:41919 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885Ab0EJNtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 09:49:36 -0400
-Date: Mon, 10 May 2010 14:49:17 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] mm,migration: Fix race between shift_arg_pages and
-	rmap_walk by guaranteeing rmap_walk finds PTEs created within the
-	temporary stack
-Message-ID: <20100510134916.GG26611@csn.ul.ie>
-References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie> <1273188053-26029-3-git-send-email-mel@csn.ul.ie> <alpine.LFD.2.00.1005061836110.901@i5.linux-foundation.org> <20100507105712.18fc90c4.kamezawa.hiroyu@jp.fujitsu.com> <alpine.LFD.2.00.1005061905230.901@i5.linux-foundation.org> <20100509192145.GI4859@csn.ul.ie> <alpine.LFD.2.00.1005091245000.3711@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005091245000.3711@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1754979Ab0EJOAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 10:00:37 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60119 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754736Ab0EJOAe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 10:00:34 -0400
+Subject: Re: [RFC PATCH] Update the cachetlb.txt file WRT
+ flush_dcache_pageand update_mmu_cache
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+       James.Bottomley@HansenPartnership.com, benh@kernel.crashing.org,
+       davem@davemloft.net, rmk@arm.linux.org.uk
+In-Reply-To: <20100510115552.GD10452@parisc-linux.org>
+References: <20100507132418.28009.6013.stgit@e102109-lin.cambridge.arm.com>
+	 <20100510170616O.fujita.tomonori@lab.ntt.co.jp>
+	 <1273486607.3023.37.camel@e102109-lin.cambridge.arm.com>
+	 <20100510115552.GD10452@parisc-linux.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Mon, 10 May 2010 15:00:10 +0100
+Message-ID: <1273500010.10282.25.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 May 2010 14:00:10.0800 (UTC) FILETIME=[1AE56300:01CAF049]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 09, 2010 at 12:56:49PM -0700, Linus Torvalds wrote:
+On Mon, 2010-05-10 at 12:55 +0100, Matthew Wilcox wrote:
+> On Mon, May 10, 2010 at 11:16:47AM +0100, Catalin Marinas wrote:
+> > In most situations, just doing flushing in set_pte_at() would suffice
+> > and flush_dcache_page() can be ignored. There are two situations where I
+> > still see flush_dcache_page() useful:
+> >
+> >      1. SMP systems where the cache maintenance operations aren't
+> >         automatically broadcast in hardware
+> >      2. The kernel modifies a page cache page that is already mapped in
+> >         user space
+> >
+> > (1) can be worked around on some architectures (though not sure about
+> > all of them).
+> >
+> > Is (2) a valid scenario?
 > 
-> 
-> On Sun, 9 May 2010, Mel Gorman wrote:
-> > 
-> > It turns out not to be easy to the preallocating of PUDs, PMDs and PTEs
-> > move_page_tables() needs.  To avoid overallocating, it has to follow the same
-> > logic as move_page_tables duplicating some code in the process. The ugliest
-> > aspect of all is passing those pre-allocated pages back into move_page_tables
-> > where they need to be passed down to such functions as __pte_alloc. It turns
-> > extremely messy.
-> 
-> Umm. What?
-> 
-> That's crazy talk. I'm not talking about preallocating stuff in order to 
-> pass it in to move_page_tables(). I'm talking about just _creating_ the 
-> dang page tables early - preallocating them IN THE PROCESS VM SPACE.
-> 
+> The kernel always calls kmap() / kunmap() around accesses to page cache
+> pages (thanks to x86-32's ability to support 64GB).  There are three
+> ways I know of that architectures use this:
 
-Ok, I took the totally wrong approach by pre-allocating the pages and passing
-them in to move_page_tables. Pages from the list were then taken in preference
-to calling the page allocator. At the time, I thought the cleanup for ENOMEM
-would be easier as well as avoiding complications with overlapping temporary
-stack and new stack location. It was a bad choice, wrong and damn fugly.
+I think this was mentioned in some past discussions. There are
+situations where page cache pages aren't highmem pages and kmap/kunmap
+isn't used:
 
-> IOW, a patch like this (this is a pseudo-patch, totally untested, won't 
-> compile, yadda yadda - you need to actually make the people who call 
-> "move_page_tables()" call that prepare function first etc etc)
-> 
+http://thread.gmane.org/gmane.linux.ide/44847
 
-Sounds reasonable as a general approach. I'll tinker with it for a bit to
-see if exec can be made any faster when combined with your other suggestion
-to avoid mprotect_fixup. In the meantime though, can the patch that avoids
-migrating within the temporary stack be picked up? It closes the worst of
-the migrate vs exec race without impacting performance. At least, I'm
-no longer able to cause an oops with it applied.
+But yes, that's a possible solution that ideally would need to be agreed
+with the other architectures and write the recommendations in
+cachetlb.txt. It may need, however, to update some of the drivers in
+Linux.
 
-> Yeah, if we care about holes in the page tables, we can certainly copy 
-> more of the move_page_tables() logic, but it certainly doesn't matter for 
-> execve(). This just makes sure that the destination page tables exist 
-> first.
-> 
-> 		Linus
-> 
-> ---
->  mm/mremap.c |   22 +++++++++++++++++++++-
->  1 files changed, 21 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/mremap.c b/mm/mremap.c
-> index cde56ee..c14505c 100644
-> --- a/mm/mremap.c
-> +++ b/mm/mremap.c
-> @@ -128,6 +128,26 @@ static void move_ptes(struct vm_area_struct *vma, pmd_t *old_pmd,
->  
->  #define LATENCY_LIMIT	(64 * PAGE_SIZE)
->  
-> +/*
-> + * Preallocate the page tables, so that we can do the actual move
-> + * without any allocations, and thus no error handling etc.
-> + */
-> +int prepare_move_page_tables(struct vm_area_struct *vma,
-> +	unsigned long old_addr, struct vm_area_struct *new_vma,
-> +	unsigned long new_addr, unsigned long len)
-> +{
-> +	unsigned long end_addr = new_addr + len;
-> +
-> +	while (new_addr < end_addr) {
-> +		pmd_t *new_pmd;
-> +		new_pmd = alloc_new_pmd(vma->vm_mm, new_addr);
-> +		if (!new_pmd)
-> +			return -ENOMEM;
-> +		new_addr = (new_addr + PMD_SIZE) & PMD_MASK;
-> +	}
-> +	return 0;
-> +}
-> +
->  unsigned long move_page_tables(struct vm_area_struct *vma,
->  		unsigned long old_addr, struct vm_area_struct *new_vma,
->  		unsigned long new_addr, unsigned long len)
-> @@ -147,7 +167,7 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
->  		old_pmd = get_old_pmd(vma->vm_mm, old_addr);
->  		if (!old_pmd)
->  			continue;
-> -		new_pmd = alloc_new_pmd(vma->vm_mm, new_addr);
-> +		new_pmd = get_old_pmd(vma->vm_mm, new_addr);
->  		if (!new_pmd)
->  			break;
->  		next = (new_addr + PMD_SIZE) & PMD_MASK;
-> 
+It would also mean that some architectures need to implement the kmap
+API even if they don't need it. That's David Miller's comment on
+sparc64:
+
+http://article.gmane.org/gmane.linux.ide/44872
+
+> 1) No-ops.  These architectures don't have cache problems.
+> 2) Flush the kernel's mapping in kunmap().  This can have bad consequences
+> in SMP systems with threaded programs.
+> 3) Select an address in kmap() that will alias to the user's address.
+
+3rd point above would help with the D-cache aliasing. Does the I/D cache
+coherency need to be handled differently? On PIPT Harvard architectures,
+we don't actually have D-cache aliasing but we may end up flushing too
+much in kunmap() just in case such page would be mapped in user space
+with executable permission.
+
+An alternative for a PIO API which would require fixing individual
+drivers was proposed here:
+
+http://thread.gmane.org/gmane.linux.kernel.cross-arch/5136
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Catalin
+
