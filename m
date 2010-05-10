@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab0EJKSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 06:18:42 -0400
-Received: from fg-out-1718.google.com ([72.14.220.159]:46811 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab0EJKSk (ORCPT
+	id S1756539Ab0EJKSw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 06:18:52 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57673 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756515Ab0EJKSs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 06:18:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=kVseb+1uM+DtbicnQeqPR2t7Cf31Jrdk3VBS1FkIV38SsbCXY3gu7v7lV5Qtf5qIg/
-         6OvSbSB0rc0OBL+QxntF/Hf8igNsc0vpLSsHVMol6b7fvgXpTi8awW++o28wScIfvaVh
-         Xihl2RgOxrtvKzE2BdW9GrkIcijY1j8aLJvZE=
-MIME-Version: 1.0
-In-Reply-To: <20100510045252.GC3387@windriver.com>
-References: <AANLkTikTPkLID3e8HpT1jMeiF9tQ6-7oJWQBfiRF7xUN@mail.gmail.com>
-	 <20100510045252.GC3387@windriver.com>
-Date: Mon, 10 May 2010 12:18:38 +0200
-Message-ID: <AANLkTimOrMLWXV8L0V6LQuZLa4QO-adOlxNH190YyU6u@mail.gmail.com>
-Subject: Re: May the worker function free its struct_work (plus container)?
-From: Leon Woestenberg <leon.woestenberg@gmail.com>
-To: Yong Zhang <yong.zhang@windriver.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 10 May 2010 06:18:48 -0400
+Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1273486313.15998.76.camel@minggr.sh.intel.com>
+References: <1273483623.15998.57.camel@minggr.sh.intel.com>
+	 <1273484401.5605.3333.camel@twins>
+	 <1273486313.15998.76.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 10 May 2010 12:18:28 +0200
+Message-ID: <1273486708.5605.3342.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Yong,
+On Mon, 2010-05-10 at 18:11 +0800, Lin Ming wrote:
+> On Mon, 2010-05-10 at 17:40 +0800, Peter Zijlstra wrote:
+> > On Mon, 2010-05-10 at 17:27 +0800, Lin Ming wrote:
+> > > Export pmus via sysfs /sys/devices/system/cpu/pmus/0...N
+> > > The file name is the pmu id, ie, /sys/devices/system/cpu/pmus/N
+> > > represents pmu id N.
+> > > So perf tool can use it to initialize perf_event_attr. 
+> > 
+> > Why create a whole new directory, why not:
+> > 
+> >  /sys/devices/system/cpu/cpuN/pmu_id ?
+> 
+> 
+> Do you mean /sys/devices/system/cpu/cpuN/pmu_id contain all ids?
+> 
+> For example, each cpu has 4 pmus and the file pmu_id shows something
+> like,
+> 
+> #cat /sys/devices/system/cpu/cpu0/pmu_id
+> 0 1 2 3
 
-On Mon, May 10, 2010 at 6:52 AM, Yong Zhang <yong.zhang@windriver.com> wrote:
-> On Mon, May 10, 2010 at 12:47:23AM +0200, Leon Woestenberg wrote:
->> Hello,
->>
->> may the worker function kfree() it's own work data structure?
->
-> Actually, workqueue has no restriction on this kind of operation.
-> But if you must be careful with the caller in case it will refer
-> the freed struct.
->
-Thanks. Is there API documentation or source code documentation that
-confirms this is the case?
+No, I'm assuming there is only 1 PMU per CPU. Corey is the expert on
+crazy hardware though, but I think the sanest way is to extend the CPU
+topology if there's more structure to it.
 
-I would hate to write code that gets buggy due to the underlying
-implementation assuming the work structure is available after the
-worker function returned.
+It simply doesn't make sense to have multiple PMU IDs on a single
+topology entry, how would you choose?
 
-Regards,
--- 
-Leon
