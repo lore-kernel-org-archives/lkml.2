@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab0EJXAN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:00:13 -0400
-Received: from kroah.org ([198.145.64.141]:51690 "EHLO coco.kroah.org"
+	id S932806Ab0EJW4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:56:12 -0400
+Received: from kroah.org ([198.145.64.141]:33447 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932858Ab0EJW5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:49 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:37 2010
-Message-Id: <20100510223537.027223166@kvm.kroah.org>
+	id S932567Ab0EJWxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:53:06 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:27 2010
+Message-Id: <20100510223327.582023299@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:41 -0700
+Date: Mon, 10 May 2010 15:33:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Joel Becker <joel.becker@oracle.com>
-Subject: [29/98] ocfs2_dlmfs: Fix math error when reading LVB.
-In-Reply-To: <20100510223714.GA18416@kroah.com>
+       Mike Christie <michaelc@cs.wisc.edu>,
+       James Bottomley <James.Bottomley@suse.de>
+Subject: [113/117] SCSI: libiscsi: regression: fix header digest errors
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Joel Becker <joel.becker@oracle.com>
+From: Mike Christie <michaelc@cs.wisc.edu>
 
-commit a36d515c7a2dfacebcf41729f6812dbc424ebcf0 upstream.
+commit 96b1f96dcab87756c0a1e7ba76bc5dc2add82b88 upstream.
 
-When asked for a partial read of the LVB in a dlmfs file, we can
-accidentally calculate a negative count.
+This fixes a regression introduced with this commit:
 
-Reported-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
+commit d3305f3407fa3e9452079ec6cc8379067456e4aa
+Author: Mike Christie <michaelc@cs.wisc.edu>
+Date:   Thu Aug 20 15:10:58 2009 -0500
+
+    [SCSI] libiscsi: don't increment cmdsn if cmd is not sent
+
+in 2.6.32.
+
+When I moved the hdr->cmdsn after init_task, I added
+a bug when header digests are used. The problem is
+that the LLD may calculate the header digest in init_task,
+so if we then set the cmdsn after the init_task call we
+change what the digest will be calculated by the target.
+
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/dlm/dlmfs.c |    2 +-
+ drivers/scsi/libiscsi.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ocfs2/dlm/dlmfs.c
-+++ b/fs/ocfs2/dlm/dlmfs.c
-@@ -205,7 +205,7 @@ static ssize_t dlmfs_file_read(struct fi
- 	if ((count + *ppos) > i_size_read(inode))
- 		readlen = i_size_read(inode) - *ppos;
- 	else
--		readlen = count - *ppos;
-+		readlen = count;
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -470,12 +470,12 @@ static int iscsi_prep_scsi_cmd_pdu(struc
  
- 	lvb_buf = kmalloc(readlen, GFP_NOFS);
- 	if (!lvb_buf)
+ 	WARN_ON(hdrlength >= 256);
+ 	hdr->hlength = hdrlength & 0xFF;
++	hdr->cmdsn = task->cmdsn = cpu_to_be32(session->cmdsn);
+ 
+ 	if (session->tt->init_task && session->tt->init_task(task))
+ 		return -EIO;
+ 
+ 	task->state = ISCSI_TASK_RUNNING;
+-	hdr->cmdsn = task->cmdsn = cpu_to_be32(session->cmdsn);
+ 	session->cmdsn++;
+ 
+ 	conn->scsicmd_pdus_cnt++;
 
 
