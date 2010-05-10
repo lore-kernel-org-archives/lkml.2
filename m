@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933569Ab0EJXqq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:46:46 -0400
-Received: from kroah.org ([198.145.64.141]:32865 "EHLO coco.kroah.org"
+	id S933532Ab0EJXrN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:47:13 -0400
+Received: from kroah.org ([198.145.64.141]:32851 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932275Ab0EJWvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:51:37 -0400
+	id S932117Ab0EJWvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:51:35 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:17 2010
-Message-Id: <20100510223317.560996616@kvm.kroah.org>
+Message-Id: <20100510223317.380330489@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:31:35 -0700
+Date: Mon, 10 May 2010 15:31:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel Vetter <daniel.vetter@ffwll.ch>, Eric Anholt <eric@anholt.net>
-Subject: [004/117] drm/i915: fix tiling limits for i915 class hw v2
+       Shimada Hirofumi <hirofumi@flycat.org>,
+       YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       maximilian attems <max@stro.at>
+Subject: [002/117] p54usb: Add usbid for Corega CG-WLUSB2GT.
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,100 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Shimada Hirofumi <hirofumi@flycat.org>
 
-commit c36a2a6de59e4a141a68b7575de837d3b0bd96b3 upstream.
+commit 15a69a81731d337a3d9db51692ff8704c1114f43 upstream.
 
-Current code is definitely crap: Largest pitch allowed spills into
-the TILING_Y bit of the fence registers ... :(
-
-I've rewritten the limits check under the assumption that 3rd gen hw
-has a 3d pitch limit of 8kb (like 2nd gen). This is supported by an
-otherwise totally misleading XXX comment.
-
-This bug mostly resulted in tiling-corrupted pixmaps because the kernel
-allowed too wide buffers to be tiled. Bug brought to the light by the
-xf86-video-intel 2.11 release because that unconditionally enabled
-tiling for pixmaps, relying on the kernel to check things. Tiling for
-the framebuffer was not affected because the ddx does some additional
-checks there ensure the buffer is within hw-limits.
-
-v2: Instead of computing the value that would be written into the
-hw fence registers and then checking the limits simply check whether
-the stride is above the 8kb limit. To better document the hw, add
-some WARN_ONs in i915_write_fence_reg like I've done for the i830
-case (using the right limits).
-
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=27449
-Tested-by: Alexander Lam <lambchop468@gmail.com>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Shimada Hirofumi <hirofumi@flycat.org>
+Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c        |    6 ++++++
- drivers/gpu/drm/i915/i915_gem_tiling.c |   22 +++++++++-------------
- drivers/gpu/drm/i915/i915_reg.h        |    2 +-
- 3 files changed, 16 insertions(+), 14 deletions(-)
+ drivers/net/wireless/p54/p54usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -2316,6 +2316,12 @@ static void i915_write_fence_reg(struct
- 	pitch_val = obj_priv->stride / tile_width;
- 	pitch_val = ffs(pitch_val) - 1;
- 
-+	if (obj_priv->tiling_mode == I915_TILING_Y &&
-+	    HAS_128_BYTE_Y_TILING(dev))
-+		WARN_ON(pitch_val > I830_FENCE_MAX_PITCH_VAL);
-+	else
-+		WARN_ON(pitch_val > I915_FENCE_MAX_PITCH_VAL);
-+
- 	val = obj_priv->gtt_offset;
- 	if (obj_priv->tiling_mode == I915_TILING_Y)
- 		val |= 1 << I830_FENCE_TILING_Y_SHIFT;
---- a/drivers/gpu/drm/i915/i915_gem_tiling.c
-+++ b/drivers/gpu/drm/i915/i915_gem_tiling.c
-@@ -357,21 +357,17 @@ i915_tiling_ok(struct drm_device *dev, i
- 		 * reg, so dont bother to check the size */
- 		if (stride / 128 > I965_FENCE_MAX_PITCH_VAL)
- 			return false;
--	} else if (IS_I9XX(dev)) {
--		uint32_t pitch_val = ffs(stride / tile_width) - 1;
--
--		/* XXX: For Y tiling, FENCE_MAX_PITCH_VAL is actually 6 (8KB)
--		 * instead of 4 (2KB) on 945s.
--		 */
--		if (pitch_val > I915_FENCE_MAX_PITCH_VAL ||
--		    size > (I830_FENCE_MAX_SIZE_VAL << 20))
-+	} else if (IS_GEN3(dev) || IS_GEN2(dev)) {
-+		if (stride > 8192)
- 			return false;
--	} else {
--		uint32_t pitch_val = ffs(stride / tile_width) - 1;
- 
--		if (pitch_val > I830_FENCE_MAX_PITCH_VAL ||
--		    size > (I830_FENCE_MAX_SIZE_VAL << 19))
--			return false;
-+		if (IS_GEN3(dev)) {
-+			if (size > I830_FENCE_MAX_SIZE_VAL << 20)
-+				return false;
-+		} else {
-+			if (size > I830_FENCE_MAX_SIZE_VAL << 19)
-+				return false;
-+		}
- 	}
- 
- 	/* 965+ just needs multiples of tile width */
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -221,7 +221,7 @@
- #define   I830_FENCE_SIZE_BITS(size)	((ffs((size) >> 19) - 1) << 8)
- #define   I830_FENCE_PITCH_SHIFT	4
- #define   I830_FENCE_REG_VALID		(1<<0)
--#define   I915_FENCE_MAX_PITCH_VAL	0x10
-+#define   I915_FENCE_MAX_PITCH_VAL	4
- #define   I830_FENCE_MAX_PITCH_VAL	6
- #define   I830_FENCE_MAX_SIZE_VAL	(1<<8)
- 
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -36,6 +36,7 @@ static struct usb_device_id p54u_table[]
+ 	/* Version 1 devices (pci chip + net2280) */
+ 	{USB_DEVICE(0x0506, 0x0a11)},	/* 3COM 3CRWE254G72 */
+ 	{USB_DEVICE(0x0707, 0xee06)},	/* SMC 2862W-G */
++	{USB_DEVICE(0x07aa, 0x001c)},	/* Corega CG-WLUSB2GT */
+ 	{USB_DEVICE(0x083a, 0x4501)},	/* Accton 802.11g WN4501 USB */
+ 	{USB_DEVICE(0x083a, 0x4502)},	/* Siemens Gigaset USB Adapter */
+ 	{USB_DEVICE(0x083a, 0x5501)},	/* Phillips CPWUA054 */
 
 
