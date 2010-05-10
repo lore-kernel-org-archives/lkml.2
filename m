@@ -1,33 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab0EJOLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 10:11:44 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:22770 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379Ab0EJOLn (ORCPT
+	id S1751075Ab0EJOSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 10:18:50 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38368 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750701Ab0EJOSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 10:11:43 -0400
-From: Gene Heskett <gene.heskett@gmail.com>
-Organization: Organization? very little
-To: linux-kernel@vger.kernel.org
-Subject: test, last 3 postings have not come through.
-Date: Mon, 10 May 2010 10:11:31 -0400
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6; KDE/4.3.5; x86_64; ; )
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-Message-id: <201005101011.32022.gene.heskett@gmail.com>
+	Mon, 10 May 2010 10:18:49 -0400
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Todd Fischer <todd.fischer@ridgerun.com>, linux-kernel@vger.kernel.org,
+       davinci-linux-open-source@linux.davincidsp.com, lrg@slimlogic.co.uk,
+       broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 4/4]-V3 Add MFD driver for TPS6507x family of multi-function chips and move TPS6507x regulator driver from being stand-alone to using the MFD driver.
+References: <1270520639-20516-1-git-send-email-todd.fischer@ridgerun.com>
+	<1270520639-20516-2-git-send-email-todd.fischer@ridgerun.com>
+	<1270520639-20516-3-git-send-email-todd.fischer@ridgerun.com>
+	<1270520639-20516-4-git-send-email-todd.fischer@ridgerun.com>
+	<1270520639-20516-5-git-send-email-todd.fischer@ridgerun.com>
+	<87633kacmq.fsf@deeprootsystems.com>
+	<20100509210940.GA3269@sortiz.org>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Mon, 10 May 2010 07:18:45 -0700
+In-Reply-To: <20100509210940.GA3269@sortiz.org> (Samuel Ortiz's message of "Sun\, 9 May 2010 23\:09\:41 +0200")
+Message-ID: <87tyqfq1q2.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Have I been blacklisted, or is one of todays .config's too big? 2.6.34-rc7 
-won't boot, hangs on first USB device detected.
+Samuel Ortiz <sameo@linux.intel.com> writes:
 
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-"Now we'll have to kill you."
-        -- Linus Torvalds
+> Hi Kevin,
+>
+> On Wed, Apr 21, 2010 at 11:23:09AM -0700, Kevin Hilman wrote:
+>> Todd Fischer <todd.fischer@ridgerun.com> writes:
+>> 
+>> > Add MFD driver for TPS6507x family of multi-function chips.  Move TPS6507x 
+>> > regulator driver from being stand-alone driver to using the MFD TPS6507x driver.
+>> >
+>> > Signed-off-by: Todd Fischer <todd.fischer@ridgerun.com>
+>> 
+>> [...]
+>> 
+>> Not sure whose tree this is queued in currently, but testing with
+>> current davinci git, I had a compile problem...
+>
+> This is fixed in the MFD tree.
+>
+
+Thanks!
+
+Kevin
