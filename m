@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab0EJUIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 16:08:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40225 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756522Ab0EJUIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 16:08:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=uP55Xj/jrGMYy2PfsJ7w4iRBZYmiGaLmp6fqA3bu8fuTN2oQlBhZ89+K87NZyIq7Em
-         D3sD4k4Sdux4jUr5/LJuFKnq/hlZ3VBSt0myyPDKGMnGXIHbkym6hOJ/c0aZbXcvJvS/
-         XkvSABbHoOodlBel7mapP+UPgxejrfjksKTIE=
-From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-To: paulius.zaleckas@gmail.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       linux@arm.linux.org.uk, Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Subject: [PATCH 4/4] MAINTAINERS: update for ARM/Gemini
-Date: Mon, 10 May 2010 22:07:01 +0200
-Message-Id: <1273522021-14436-5-git-send-email-ulli.kroll@googlemail.com>
-X-Mailer: git-send-email 1.7.0.3
-In-Reply-To: <1273522021-14436-1-git-send-email-ulli.kroll@googlemail.com>
-References: <1273522021-14436-1-git-send-email-ulli.kroll@googlemail.com>
+	id S1756556Ab0EJUMx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 16:12:53 -0400
+Received: from mail.atheros.com ([12.36.123.2]:12291 "EHLO mail.atheros.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756339Ab0EJUMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 16:12:52 -0400
+Date: Mon, 10 May 2010 13:12:50 -0700
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: Suraj Sumangala <Suraj.Sumangala@atheros.com>,
+       David Miller <davem@davemloft.net>,
+       "marcel@holtmann.org" <marcel@holtmann.org>,
+       Jothikumar Mothilal <Jothikumar.Mothilal@atheros.com>
+CC: "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+       Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+       "gfpadovan@gmail.com" <gfpadovan@gmail.com>,
+       <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5] Add support for the Atheros AR300x Bluetooth Chip
+Message-ID: <20100510201250.GL2177@tux>
+References: <1268629296.21425.23.camel@atheros013-desktop>
+ <1271758832.6585.33.camel@atheros013-desktop>
+ <1271845337.15010.1.camel@atheros013-desktop>
+ <1271927414.1409.3.camel@atheros013-desktop>
+ <1272279623.11239.1.camel@atheros013-desktop>
+ <1273062798.19162.6.camel@atheros013-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1273062798.19162.6.camel@atheros013-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
----
- MAINTAINERS |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+On Wed, May 05, 2010 at 05:33:18AM -0700, Suraj Sumangala wrote:
+> Hi Marcel,
+> 
+> Can you take a look at the patch? Your review has been pending for
+> sometime.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 449d444..8a0fe7f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -620,10 +620,10 @@ M:	Richard Purdie <rpurdie@rpsys.net>
- S:	Maintained
- 
- ARM/CORTINA SYSTEMS GEMINI ARM ARCHITECTURE
--M:	Paulius Zaleckas <paulius.zaleckas@gmail.com>
-+M:	Hans Ulli Kroll <ulli.kroll@googlemail.com>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
--T:	git git://gitorious.org/linux-gemini/mainline.git
--S:	Odd Fixes
-+T:	git git://git.berlios.de/gemini-board
-+S:	Maintained
- F:	arch/arm/mach-gemini/
- 
- ARM/EBSA110 MACHINE SUPPORT
-@@ -645,9 +645,10 @@ T:	topgit git://git.openezx.org/openezx.git
- F:	arch/arm/mach-pxa/ezx.c
- 
- ARM/FARADAY FA526 PORT
--M:	Paulius Zaleckas <paulius.zaleckas@gmail.com>
-+M:	Hans Ulli Kroll <ulli.kroll@googlemail.com>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
--S:	Odd Fixes
-+S:	Maintained
-+T:	git://git.berlios.de/gemini-board
- F:	arch/arm/mm/*-fa*
- 
- ARM/FOOTBRIDGE ARCHITECTURE
--- 
-1.7.0.3
+Marcel, new timeline:
 
+----------
+02-22-2010 - Marcel responded to your first patch version for UART bluetooth
+02-22-2010 - Suarj posted resplies to Marcel's questions
+03-01-2010 - Suraj poked Marcel for feedback based on Suraj's comments
+----------
+03-11-2010 - Suraj posts new V2 patch but its sent busted with tabs/space mixup
+03-11-2010 - Marcel asks for a resend
+----------
+03-14-2010 - Suaraj posts V3 patch with tabs/spaces fixed
+03-23-2010 - First poke to Marcel and list
+03-29-2010 - Second poke to Marcel and list
+03-31-2010 - Patch for userspace hciattach.c changes posted
+----------
+04-20-2010 - v3 patch posted
+04-21-2010 - v4 patch posted
+04-22-2010 - v5 patch posted
+04-26-2010 - v5 first poke
+05-05-2010 - v5 second poke
+----------
+
+What else can our team do?
+
+:(
+
+  Luis
