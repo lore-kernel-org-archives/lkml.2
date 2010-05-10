@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab0EJWwB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:52:01 -0400
-Received: from kroah.org ([198.145.64.141]:32882 "EHLO coco.kroah.org"
+	id S932628Ab0EJWxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:53:41 -0400
+Received: from kroah.org ([198.145.64.141]:33242 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932274Ab0EJWvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:51:45 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:18 2010
-Message-Id: <20100510223318.448981612@kvm.kroah.org>
+	id S932459Ab0EJWwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:31 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:23 2010
+Message-Id: <20100510223323.705996130@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:31:45 -0700
+Date: Mon, 10 May 2010 15:32:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeff Mahoney <jeffm@suse.com>,
-       Edward Shishkin <edward.shishkin@gmail.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: [014/117] reiserfs: fix permissions on .reiserfs_priv
+       Darren Jenkins <darrenrjenkins@gmail.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [070/117] drivers/net/wireless/p54/txrx.c Fix off by one error
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,91 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Darren Jenkins <darrenrjenkins@gmail.com>
 
-commit cac36f707119b792b2396aed371d6b5cdc194890 upstream.
+commit 088ea189c4c75cdf211146faa4b341a0f7476be6 upstream.
 
-Commit 677c9b2e393a0cd203bd54e9c18b012b2c73305a ("reiserfs: remove
-privroot hiding in lookup") removed the magic from the lookup code to hide
-the .reiserfs_priv directory since it was getting loaded at mount-time
-instead.  The intent was that the entry would be hidden from the user via
-a poisoned d_compare, but this was faulty.
+fix off by one error in the queue size check of p54_tx_qos_accounting_alloc()
 
-This introduced a security issue where unprivileged users could access and
-modify extended attributes or ACLs belonging to other users, including
-root.
+Coverity CID: 13314
 
-This patch resolves the issue by properly hiding .reiserfs_priv.  This was
-the intent of the xattr poisoning code, but it appears to have never
-worked as expected.  This is fixed by using d_revalidate instead of
-d_compare.
-
-This patch makes -oexpose_privroot a no-op.  I'm fine leaving it this way.
-The effort involved in working out the corner cases wrt permissions and
-caching outweigh the benefit of the feature.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Acked-by: Edward Shishkin <edward.shishkin@gmail.com>
-Reported-by: Matt McCutchen <matt@mattmccutchen.net>
-Tested-by: Matt McCutchen <matt@mattmccutchen.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Darren Jenkins <darrenrjenkins@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/reiserfs/dir.c   |    2 --
- fs/reiserfs/xattr.c |   17 ++++-------------
- 2 files changed, 4 insertions(+), 15 deletions(-)
+ drivers/net/wireless/p54/txrx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/reiserfs/dir.c
-+++ b/fs/reiserfs/dir.c
-@@ -45,8 +45,6 @@ static inline bool is_privroot_deh(struc
- 				   struct reiserfs_de_head *deh)
- {
- 	struct dentry *privroot = REISERFS_SB(dir->d_sb)->priv_root;
--	if (reiserfs_expose_privroot(dir->d_sb))
--		return 0;
- 	return (dir == dir->d_parent && privroot->d_inode &&
- 	        deh->deh_objectid == INODE_PKEY(privroot->d_inode)->k_objectid);
- }
---- a/fs/reiserfs/xattr.c
-+++ b/fs/reiserfs/xattr.c
-@@ -976,21 +976,13 @@ int reiserfs_permission(struct inode *in
- 	return generic_permission(inode, mask, NULL);
- }
+--- a/drivers/net/wireless/p54/txrx.c
++++ b/drivers/net/wireless/p54/txrx.c
+@@ -186,7 +186,7 @@ static int p54_tx_qos_accounting_alloc(s
+ 	struct ieee80211_tx_queue_stats *queue;
+ 	unsigned long flags;
  
--/* This will catch lookups from the fs root to .reiserfs_priv */
--static int
--xattr_lookup_poison(struct dentry *dentry, struct qstr *q1, struct qstr *name)
-+static int xattr_hide_revalidate(struct dentry *dentry, struct nameidata *nd)
- {
--	struct dentry *priv_root = REISERFS_SB(dentry->d_sb)->priv_root;
--	if (container_of(q1, struct dentry, d_name) == priv_root)
--		return -ENOENT;
--	if (q1->len == name->len &&
--		   !memcmp(q1->name, name->name, name->len))
--		return 0;
--	return 1;
-+	return -EPERM;
- }
+-	if (WARN_ON(p54_queue > P54_QUEUE_NUM))
++	if (WARN_ON(p54_queue >= P54_QUEUE_NUM))
+ 		return -EINVAL;
  
- static const struct dentry_operations xattr_lookup_poison_ops = {
--	.d_compare = xattr_lookup_poison,
-+	.d_revalidate = xattr_hide_revalidate,
- };
- 
- int reiserfs_lookup_privroot(struct super_block *s)
-@@ -1004,8 +996,7 @@ int reiserfs_lookup_privroot(struct supe
- 				strlen(PRIVROOT_NAME));
- 	if (!IS_ERR(dentry)) {
- 		REISERFS_SB(s)->priv_root = dentry;
--		if (!reiserfs_expose_privroot(s))
--			s->s_root->d_op = &xattr_lookup_poison_ops;
-+		dentry->d_op = &xattr_lookup_poison_ops;
- 		if (dentry->d_inode)
- 			dentry->d_inode->i_flags |= S_PRIVATE;
- 	} else
+ 	queue = &priv->tx_stats[p54_queue];
 
 
