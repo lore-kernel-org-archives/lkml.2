@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933392Ab0EJXiL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:38:11 -0400
-Received: from kroah.org ([198.145.64.141]:33075 "EHLO coco.kroah.org"
+	id S932869Ab0EJXih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:38:37 -0400
+Received: from kroah.org ([198.145.64.141]:33097 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932401Ab0EJWwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:12 -0400
+	id S932398Ab0EJWwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:09 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:21 2010
-Message-Id: <20100510223321.258816132@kvm.kroah.org>
+Message-Id: <20100510223321.078509558@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:16 -0700
+Date: Mon, 10 May 2010 15:32:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Richard Kennedy <richard@rsk.demon.co.uk>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: [045/117] block: ensure jiffies wrap is handled correctly in blk_rq_timed_out_timer
+       NeilBrown <neilb@suse.de>, Dan Williams <dan.j.williams@intel.com>
+Subject: [043/117] raid6: fix recovery performance regression
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Kennedy <richard@rsk.demon.co.uk>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit a534dbe96e9929c7245924d8252d89048c23d569 upstream.
+commit 5157b4aa5b7de8787b6318e61bcc285031bb9088 upstream.
 
-blk_rq_timed_out_timer() relied on blk_add_timer() never returning a
-timer value of zero, but commit 7838c15b8dd18e78a523513749e5b54bda07b0cb
-removed the code that bumped this value when it was zero.
-Therefore when jiffies is near wrap we could get unlucky & not set the
-timeout value correctly.
+The raid6 recovery code should immediately drop back to the optimized
+synchronous path when a p+q dma resource is not available.  Otherwise we
+run the non-optimized/multi-pass async code in sync mode.
 
-This patch uses a flag to indicate that the timeout value was set and so
-handles jiffies wrap correctly, and it keeps all the logic in one
-function so should be easier to maintain in the future.
+Verified with raid6test (NDISKS=255)
 
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
-Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
+Applies to kernels >= 2.6.32.
+
+Acked-by: NeilBrown <neilb@suse.de>
+Reported-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/blk-timeout.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ crypto/async_tx/async_raid6_recov.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
---- a/block/blk-timeout.c
-+++ b/block/blk-timeout.c
-@@ -109,6 +109,7 @@ void blk_rq_timed_out_timer(unsigned lon
- 	struct request_queue *q = (struct request_queue *) data;
- 	unsigned long flags, next = 0;
- 	struct request *rq, *tmp;
-+	int next_set = 0;
+--- a/crypto/async_tx/async_raid6_recov.c
++++ b/crypto/async_tx/async_raid6_recov.c
+@@ -324,6 +324,7 @@ struct dma_async_tx_descriptor *
+ async_raid6_2data_recov(int disks, size_t bytes, int faila, int failb,
+ 			struct page **blocks, struct async_submit_ctl *submit)
+ {
++	void *scribble = submit->scribble;
+ 	int non_zero_srcs, i;
  
- 	spin_lock_irqsave(q->queue_lock, flags);
+ 	BUG_ON(faila == failb);
+@@ -332,11 +333,13 @@ async_raid6_2data_recov(int disks, size_
  
-@@ -122,16 +123,13 @@ void blk_rq_timed_out_timer(unsigned lon
- 			if (blk_mark_rq_complete(rq))
- 				continue;
- 			blk_rq_timed_out(rq);
--		} else if (!next || time_after(next, rq->deadline))
-+		} else if (!next_set || time_after(next, rq->deadline)) {
- 			next = rq->deadline;
-+			next_set = 1;
-+		}
- 	}
+ 	pr_debug("%s: disks: %d len: %zu\n", __func__, disks, bytes);
  
--	/*
--	 * next can never be 0 here with the list non-empty, since we always
--	 * bump ->deadline to 1 so we can detect if the timer was ever added
--	 * or not. See comment in blk_add_timer()
--	 */
--	if (next)
-+	if (next_set)
- 		mod_timer(&q->timeout, round_jiffies_up(next));
+-	/* we need to preserve the contents of 'blocks' for the async
+-	 * case, so punt to synchronous if a scribble buffer is not available
++	/* if a dma resource is not available or a scribble buffer is not
++	 * available punt to the synchronous path.  In the 'dma not
++	 * available' case be sure to use the scribble buffer to
++	 * preserve the content of 'blocks' as the caller intended.
+ 	 */
+-	if (!submit->scribble) {
+-		void **ptrs = (void **) blocks;
++	if (!async_dma_find_channel(DMA_PQ) || !scribble) {
++		void **ptrs = scribble ? scribble : (void **) blocks;
  
- 	spin_unlock_irqrestore(q->queue_lock, flags);
+ 		async_tx_quiesce(&submit->depend_tx);
+ 		for (i = 0; i < disks; i++)
+@@ -406,11 +409,13 @@ async_raid6_datap_recov(int disks, size_
+ 
+ 	pr_debug("%s: disks: %d len: %zu\n", __func__, disks, bytes);
+ 
+-	/* we need to preserve the contents of 'blocks' for the async
+-	 * case, so punt to synchronous if a scribble buffer is not available
++	/* if a dma resource is not available or a scribble buffer is not
++	 * available punt to the synchronous path.  In the 'dma not
++	 * available' case be sure to use the scribble buffer to
++	 * preserve the content of 'blocks' as the caller intended.
+ 	 */
+-	if (!scribble) {
+-		void **ptrs = (void **) blocks;
++	if (!async_dma_find_channel(DMA_PQ) || !scribble) {
++		void **ptrs = scribble ? scribble : (void **) blocks;
+ 
+ 		async_tx_quiesce(&submit->depend_tx);
+ 		for (i = 0; i < disks; i++)
 
 
