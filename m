@@ -1,46 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab0EJVzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 17:55:39 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35766 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753859Ab0EJVzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 17:55:35 -0400
-Subject: Re: [PATCH 05/22] lmb: Add lmb_reserve_area/lmb_free_area
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai <yinghai.lu@oracle.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <4BE84BE7.1020404@oracle.com>
-References: <1273331860-14325-1-git-send-email-yinghai@kernel.org>
-	 <1273331860-14325-6-git-send-email-yinghai@kernel.org>
-	 <1273475438.23699.74.camel@pasglop>  <4BE84BE7.1020404@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 May 2010 07:53:42 +1000
-Message-ID: <1273528422.23699.109.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757388Ab0EJV5Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 17:57:16 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:58330 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859Ab0EJV5P convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 17:57:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Yn6nJuuGFDADIqBXy56goYPJgjby0oPLTrXrbFgmfvp2YEuyHr8/SkMAp+gn3NHyeW
+         ap4FaGdgmuyK6V/dtOA0L9zVQv5sPVyf5kZCjTlHQYMcRBxvrf++No5nwthZ3MS4XdeF
+         ok8atY7aWytXN9fAuKxtAfjY7kFoNXU9cL9p4=
+MIME-Version: 1.0
+In-Reply-To: <1273525827.22438.4489.camel@gandalf.stny.rr.com>
+References: <20100510152708.GS5104@lenovo>
+	 <1273525827.22438.4489.camel@gandalf.stny.rr.com>
+Date: Tue, 11 May 2010 01:57:14 +0400
+Message-ID: <l2xaa79d98a1005101457n3526dafag13ea897000c8066b@mail.gmail.com>
+Subject: Re: [rfc] x86,perf: P4 PMU -- use hash for p4_get_escr_idx
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "rostedt@goodmis.org" <rostedt@goodmis.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 11:09 -0700, Yinghai wrote:
-> those functions have __init markers, and only can be used on boot
-> stage. so do need to worry about hotplug mem.
-> 
-> what I do is: use current lmb code for x86, and keep the affects to
-> original lmb users to minimum. (should be near 0)
+On Tuesday, May 11, 2010, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2010-05-10 at 19:27 +0400, Cyrill Gorcunov wrote:
+>
+>>  static int p4_get_escr_idx(unsigned int addr)
+>>  {
+>> -     unsigned int i;
+>> +     unsigned int idx = P4_ESCR_MSR_IDX(addr);
+>>
+>> -     for (i = 0; i < ARRAY_SIZE(p4_escr_map); i++) {
+>> -             if (addr == p4_escr_map[i])
+>> -                     return i;
+>> -     }
+>> +     BUG_ON(idx >= P4_ESCR_MSR_TABLE_SIZE);
+>> +     BUG_ON(!p4_escr_table[idx]);
+>
+> Is there any softer way to handle this. IOW, must it be a BUG_ON()? or
+> can you add a WARN_ON() and pass back something that will cause it to
+> fail a bit nicer.
+>
 
-But that's just wrong. You are just duplicating functionality all over
-the place. That doesn't make any sense.
+yes, we could warn here and just drop such an event from scheduling.
+Thanks Steven! Dont know why i didnt use it initially ;)
 
-Cheers,
-Ben.
-
-
+> A BUG_ON() may panic the box and if you are in X on a laptop, all you
+> see is that your box locked up hard. If this is a WARN_ON() and you can
+> prevent further damage to the computer (no file corruption or anything)
+> then the user may notice, "Oh, my dmesg has this nasty error here", and
+> report something useful.
+>
+> You could do:
+>
+>         if (WARN_ON(idx >= P4_ESCR_MSR_TABLE_SIZE))
+>                 return -1;
+>
+> or whatever.
+>
+> Thanks,
+>
+> -- Steve
+>
+>>
+>> -     return -1;
+>> +     return idx;
+>>  }
+>>
+>
+>
