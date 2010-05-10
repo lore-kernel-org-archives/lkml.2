@@ -1,58 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab0EJUBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 16:01:13 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38816 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756066Ab0EJUBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 16:01:10 -0400
-Subject: Re: [RFC][PATCH 5/9] perf: arm, convert to new API pmu->init_event
-From: Will Deacon <will.deacon@arm.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>, eranian@gmail.com,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>, arjan@linux.intel.com,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1273485637.15998.67.camel@minggr.sh.intel.com>
-References: <1273483672.15998.59.camel@minggr.sh.intel.com>
-	 <1273485637.15998.67.camel@minggr.sh.intel.com>
+	id S1756441Ab0EJUCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 16:02:50 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46391 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756312Ab0EJUCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 16:02:48 -0400
+Subject: Re: 2.6.33.3-rt19 kernel BUG's
+From: john stultz <johnstul@us.ibm.com>
+To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+       rt-users <linux-rt-users@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
+In-Reply-To: <1273511465.21774.11.camel@localhost.localdomain>
+References: <1273197218.6768.10.camel@localhost.localdomain>
+	 <alpine.LFD.2.00.1005071240350.3401@localhost.localdomain>
+	 <1273275821.2776.3.camel@localhost.localdomain>
+	 <1273276725.17045.4.camel@localhost.localdomain>
+	 <1273279153.2776.7.camel@localhost.localdomain>
+	 <1273511465.21774.11.camel@localhost.localdomain>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 May 2010 21:01:02 +0100
-Message-ID: <1273521662.25588.9.camel@e200755-lin.cambridge.arm.com>
+Date: Mon, 10 May 2010 13:02:41 -0700
+Message-ID: <1273521761.3843.33.camel@localhost.localdomain>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 May 2010 20:01:07.0825 (UTC) FILETIME=[877D2610:01CAF07B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lin [thanks to Russell for the CC],
+On Mon, 2010-05-10 at 10:11 -0700, Fernando Lopez-Lezcano wrote:
+> On Fri, 2010-05-07 at 17:39 -0700, john stultz wrote:
+> > On Fri, 2010-05-07 at 23:58 +0000, Fernando Lopez-Lezcano wrote:
+> > > On Fri, 2010-05-07 at 16:43 -0700, john stultz wrote:
+> > > > On Fri, 2010-05-07 at 12:41 +0200, Thomas Gleixner wrote:
+> > > > > On Thu, 6 May 2010, Fernando Lopez-Lezcano wrote:
+> > > > > 
+> > > > > CC'ed John and Nick
+> > > > > 
+> > > > > > See below... just trying to boot (quad core desktop machine).
+> > > > 
+> > > > Ok. Got this to reproduce. Will hopefully have a fix for your soon.
+> > > > 
+> > > > Thanks for the bug report!
+> > > 
+> > > Thanks for looking at it! It had been a while since I had problems with
+> > > rt so I could not understand why I could not login :-) 
+> > 
+> > Bah! I should have caught this faster. I kept thinking it had to be some
+> > missed unlock of the sbi->fs_lock, but it ends up its just the
+> > autofs4_lock.
+> > 
+> > Apparently the conversion from using the dcache_lock -> autofs4_lock
+> > forgot that this function already grabs the autofs_lock for a small
+> > moment, so we end up grabbing the lock, then a moment later grab it
+> > again. Splat.
+> > 
+> > This patch should resolve it.
+> 
+> I'm still having problems when trying to use autofs, even with your
+> previous patch:
 
-On Mon, 2010-05-10 at 11:00 +0100, Lin Ming wrote:
-> On Mon, 2010-05-10 at 17:27 +0800, Lin Ming wrote:
-> > perf: arm, convert to new API pmu->init_event
-> >
-> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > ---
-> >  arch/arm/kernel/perf_event.c |   28 +++++++++++++++-------------
-> >  1 files changed, 15 insertions(+), 13 deletions(-)
-> >
+Oof.. More of the same autofs4_lock misuse.  I skimmed over the rest of
+its use, and it seems ok,  so hopefully we won't hit any more problems
+caused by it.
+
+Here's both autofs4_lock changes together.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com.
+
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index 5b26088..40ca936 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -317,7 +317,6 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
+ 	 * multi-mount with no root mount offset. So don't try to
+ 	 * mount it again.
+ 	 */
+-	spin_lock(&autofs4_lock);
+ 	spin_lock(&dentry->d_lock);
+ 	if (ino->flags & AUTOFS_INF_PENDING ||
+ 	    (!d_mountpoint(dentry) && list_empty(&dentry->d_subdirs))) {
+@@ -438,12 +437,10 @@ static int autofs4_revalidate(struct dentry *dentry, struct nameidata *nd)
+ 	}
  
---------8<--------
+ 	/* Check for a non-mountpoint directory with no contents */
+-	spin_lock(&autofs4_lock);
+ 	if (S_ISDIR(dentry->d_inode->i_mode) &&
+ 	    !d_mountpoint(dentry) && list_empty(&dentry->d_subdirs)) {
+ 		DPRINTK("dentry=%p %.*s, emptydir",
+ 			 dentry, dentry->d_name.len, dentry->d_name.name);
+-		spin_unlock(&autofs4_lock);
+ 
+ 		if (autofs4_need_mount(flags) || current->link_count) {
+ 			int status;
 
-The changes I've made to perf_event.c that result in conflicts
-with this patch shouldn't cause you any trouble. If you rebase
-the patch then everything should work as expected. Please CC me
-when you submit the next iteration.
 
-Cheers,
-
-Will
 
