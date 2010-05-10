@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075Ab0EJClP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 22:41:15 -0400
-Received: from gate.crashing.org ([63.228.1.57]:37522 "EHLO gate.crashing.org"
+	id S1755096Ab0EJCnP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 22:43:15 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41396 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755008Ab0EJClN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 22:41:13 -0400
-Subject: Re: [PATCH -v14 00/22] Use lmb with x86
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
+	id S1754987Ab0EJCnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 May 2010 22:43:12 -0400
+Date: Mon, 10 May 2010 12:43:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
        Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <1273331860-14325-1-git-send-email-yinghai@kernel.org>
-References: <1273331860-14325-1-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 May 2010 12:38:59 +1000
-Message-ID: <1273459139.23699.4.camel@pasglop>
+       Michael Hennerich <michael.hennerich@analog.com>,
+       Mike Frysinger <vapier@gentoo.org>
+Subject: linux-next: build failure after merge of the backlight tree
+Message-Id: <20100510124304.2249532c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__10_May_2010_12_43_04_+1000_JNySHyVdKvuXstgs"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-08 at 08:17 -0700, Yinghai Lu wrote:
-> the new lmb could be used to replace early_res in x86.
-> 
-> Suggested by: David, Ben, and Thomas
+--Signature=_Mon__10_May_2010_12_43_04_+1000_JNySHyVdKvuXstgs
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- .../...
+Hi Richard,
 
-> Only first three patches in this set could affect original lmb users.
-> lmb.c lines from 567 to 996
-> If lmb guys are still not happy, we could move that 360 lines to arch/x86/mm/lmb.c
-> 
-> still hope Ben could do lmb clean up on top of this patchset.
+After merging the backlight tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-I would still like to do it the other way around :-)
+drivers/video/backlight/adp8860_bl.c: In function 'adp8860_led_probe':
+drivers/video/backlight/adp8860_bl.c:215: error: implicit declaration of fu=
+nction 'kzalloc'
+drivers/video/backlight/adp8860_bl.c:215: warning: assignment makes pointer=
+ from integer without a cast
+drivers/video/backlight/adp8860_bl.c:285: error: implicit declaration of fu=
+nction 'kfree'
+drivers/video/backlight/adp8860_bl.c: In function 'adp8860_probe':
+drivers/video/backlight/adp8860_bl.c:673: warning: assignment makes pointer=
+ from integer without a cast
+drivers/video/backlight/adp8860_bl.c:689: error: too few arguments to funct=
+ion 'backlight_device_register'
 
-My patches replace (and in some case are equivalent) to part of this
-series, though I believe are cleaner, provide more readable changeset
-comments and justifications, etc... it would be awkward to just apply
-your stuff with "cleanup" passes from me on top of it.
+Caused by commit 6f1a02240dba279a389fd4a4138445bd3f13f67f ("backlight:
+new driver for the ADP8860 backlight parts").  Use of kzalloc or kfree
+requires including linux/slab.h (see Rule 1 in
+Documentation/SubmitChecklist) and the prototype of
+backlight_device_register changed before v2.6.34-rc2.
 
-I really prefer providing you with all the LMB infrastructure you need
-so you can simply drop LMB changes from your series.
+Was this even build tested?
 
-I'll be working on that today, finishing what I plan to finish and if I
-get a chance (it's hard with one of the kids having a double ear
-infection) see if I can rebase your work and at least compile test it.
-
-Stay tuned...
-
+I have used the version of the backlight tree from next-20100507 for
+today.
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Mon__10_May_2010_12_43_04_+1000_JNySHyVdKvuXstgs
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvncrgACgkQjjKRsyhoI8wFUwCeLRFfJQLf0DKUfjM4BfA/YM3g
+hXcAn3fmW/f6NAKGYfuR5xAaORAnpaBK
+=aa/0
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__10_May_2010_12_43_04_+1000_JNySHyVdKvuXstgs--
