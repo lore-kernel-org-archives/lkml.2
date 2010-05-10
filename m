@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442Ab0EJXnV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:43:21 -0400
-Received: from kroah.org ([198.145.64.141]:32941 "EHLO coco.kroah.org"
+	id S933445Ab0EJXny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:43:54 -0400
+Received: from kroah.org ([198.145.64.141]:32933 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932337Ab0EJWvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:51:50 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:19 2010
-Message-Id: <20100510223319.012748121@kvm.kroah.org>
+	id S932332Ab0EJWvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:51:49 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:18 2010
+Message-Id: <20100510223318.853672440@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:31:51 -0700
+Date: Mon, 10 May 2010 15:31:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ben Hutchings <bhutchings@solarflare.com>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [020/117] sfc: Always close net device at the end of a disabling reset
+       David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>
+Subject: [018/117] keys: the request_key() syscall should link an existing key to the dest keyring
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +25,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: David Howells <dhowells@redhat.com>
 
-commit f49a4589e9e25ef525da449b1ce5597cb659bbb5 upstream.
+commit 03449cd9eaa4fa3a7faa4a59474bafe2e90bd143 upstream.
 
-This fixes a regression introduced by commit
-eb9f6744cbfa97674c13263802259b5aa0034594 "sfc: Implement ethtool
-reset operation".
+The request_key() system call and request_key_and_link() should make a
+link from an existing key to the destination keyring (if supplied), not
+just from a new key to the destination keyring.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This can be tested by:
+
+	ring=`keyctl newring fred @s`
+	keyctl request2 user debug:a a
+	keyctl request user debug:a $ring
+	keyctl list $ring
+
+If it says:
+
+	keyring is empty
+
+then it didn't work.  If it shows something like:
+
+	1 key in keyring:
+	1070462727: --alswrv     0     0 user: debug:a
+
+then it did.
+
+request_key() system call is meant to recursively search all your keyrings for
+the key you desire, and, optionally, if it doesn't exist, call out to userspace
+to create one for you.
+
+If request_key() finds or creates a key, it should, optionally, create a link
+to that key from the destination keyring specified.
+
+Therefore, if, after a successful call to request_key() with a desination
+keyring specified, you see the destination keyring empty, the code didn't work
+correctly.
+
+If you see the found key in the keyring, then it did - which is what the patch
+is required for.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/sfc/efx.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ security/keys/request_key.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/net/sfc/efx.c
-+++ b/drivers/net/sfc/efx.c
-@@ -1862,6 +1862,7 @@ out:
- 	}
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -336,8 +336,10 @@ static int construct_alloc_key(struct ke
  
- 	if (disabled) {
-+		dev_close(efx->net_dev);
- 		EFX_ERR(efx, "has been disabled\n");
- 		efx->state = STATE_DISABLED;
- 	} else {
-@@ -1885,8 +1886,7 @@ static void efx_reset_work(struct work_s
- 	}
+ key_already_present:
+ 	mutex_unlock(&key_construction_mutex);
+-	if (dest_keyring)
++	if (dest_keyring) {
++		__key_link(dest_keyring, key_ref_to_ptr(key_ref));
+ 		up_write(&dest_keyring->sem);
++	}
+ 	mutex_unlock(&user->cons_lock);
+ 	key_put(key);
+ 	*_key = key = key_ref_to_ptr(key_ref);
+@@ -428,6 +430,11 @@ struct key *request_key_and_link(struct
  
- 	rtnl_lock();
--	if (efx_reset(efx, efx->reset_pending))
--		dev_close(efx->net_dev);
-+	(void)efx_reset(efx, efx->reset_pending);
- 	rtnl_unlock();
- }
- 
+ 	if (!IS_ERR(key_ref)) {
+ 		key = key_ref_to_ptr(key_ref);
++		if (dest_keyring) {
++			construct_get_dest_keyring(&dest_keyring);
++			key_link(dest_keyring, key);
++			key_put(dest_keyring);
++		}
+ 	} else if (PTR_ERR(key_ref) != -EAGAIN) {
+ 		key = ERR_CAST(key_ref);
+ 	} else  {
 
 
