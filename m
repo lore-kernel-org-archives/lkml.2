@@ -1,73 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab0EJPku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 11:40:50 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:56057 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753700Ab0EJPks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 11:40:48 -0400
-Date: Mon, 10 May 2010 16:40:30 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
-       linux-arm-kernel@lists.infradead.org,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Yinghai Lu <yinghai@kernel.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>, apw@shadowen.org,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: Suspicious compilation warning
-Message-ID: <20100510154029.GK26611@csn.ul.ie>
-References: <k2ncecb6d8f1004191627w3cd36450xf797f746460abb09@mail.gmail.com> <20100420155122.6f2c26eb.akpm@linux-foundation.org>
+	id S1753988Ab0EJPlG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 11:41:06 -0400
+Received: from stinky.trash.net ([213.144.137.162]:48737 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910Ab0EJPlA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 11:41:00 -0400
+Message-ID: <4BE8290A.2080707@trash.net>
+Date: Mon, 10 May 2010 17:40:58 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100420155122.6f2c26eb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: David Miller <davem@davemloft.net>
+CC: eric.dumazet@gmail.com, Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org,
+       peterz@infradead.org, linux-kernel@vger.kernel.org,
+       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+       paulmck@linux.vnet.ibm.com
+Subject: Re: mmotm 2010-04-28 - RCU whinges
+References: <1272865137.2173.179.camel@edumazet-laptop>	<1272865267.2173.180.camel@edumazet-laptop>	<1272865436.2173.182.camel@edumazet-laptop> <20100502.225509.233880079.davem@davemloft.net>
+In-Reply-To: <20100502.225509.233880079.davem@davemloft.net>
+X-Enigmail-Version: 0.95.0
+Content-Type: multipart/mixed;
+ boundary="------------030908070500050408000807"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 03:51:22PM -0700, Andrew Morton wrote:
-> On Mon, 19 Apr 2010 20:27:43 -0300
-> Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br> wrote:
+This is a multi-part message in MIME format.
+--------------030908070500050408000807
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
+
+David Miller wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Mon, 03 May 2010 07:43:56 +0200
 > 
-> > I get this warning while compiling for ARM/SA1100:
-> > 
-> > mm/sparse.c: In function '__section_nr':
-> > mm/sparse.c:135: warning: 'root' is used uninitialized in this function
-> > 
-> > With a small patch in fs/proc/meminfo.c, I find that NR_SECTION_ROOTS
-> > is zero, which certainly explains the warning.
-> > 
-> > # cat /proc/meminfo
-> > NR_SECTION_ROOTS=0
-> > NR_MEM_SECTIONS=32
-> > SECTIONS_PER_ROOT=512
-> > SECTIONS_SHIFT=5
-> > MAX_PHYSMEM_BITS=32
+>> Le lundi 03 mai 2010 à 07:41 +0200, Eric Dumazet a écrit :
+>>
+>>> Oops scratch that, I'll resend a correct version.
+>>>
+>>>
+>> Sorry, patch _is_ fine, I had one brain collapse when re-reading it, I
+>> thought a different mutex was in use in one of the functions.
 > 
-> hm, who owns sparsemem nowadays? Nobody identifiable.
-> 
+> Ok, Patrick please review, thanks.
 
-The closest entity to a SPARSEMEM owner was Andy Whitcroft but I don't
-believe he is active in mainline at the moment. I used to know SPARSEMEM to
-some extent but my memory is limited at the best of times.
+Actually we don't need the rcu_dereference() calls at all since
+registration and unregistration are protected by the mutexes.
 
-> Does it make physical sense to have SECTIONS_PER_ROOT > NR_MEM_SECTIONS?
-> 
+I queued this patch in nf-next, the only reason why I haven't
+submitted it yet is that I was unable to get git to cleanly export
+only the proper set of patches meant for -next due to a few merges,
+it insists on including 5 patches already merged upstream. If you
+don't mind ignoring the first 5 patches in the series, I'll send a
+pull request tonight.
 
-Yes. NR_MEM_SECTIONS depends on MAX_PHYSMEM_BITS but SECTIONS_PER_ROOT is based
-on PAGE_SIZE. If MAX_PHYSMEM_BITS is particularly small due to architectural
-limitations, it's perfectly possible there are fewer sections that can be
-active (NR_MEM_SECTIONS) than is possible to fit within one root. While
-not physicaly impossible, it was probably not expected.
 
-Using DIV_ROUND_UP on SECTIONS_PER_ROOT to ensure NR_MEM_SECTIONS is
-aligned to SECTIONS_PER_ROOT should be a fix for this.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+--------------030908070500050408000807
+Content-Type: text/plain;
+ name="x"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="x"
+
+commit ed86308f6179d8fa6151c2d0f652aad0091548e2
+Author: Patrick McHardy <kaber@trash.net>
+Date:   Fri Apr 9 16:42:15 2010 +0200
+
+    netfilter: remove invalid rcu_dereference() calls
+    
+    The CONFIG_PROVE_RCU option discovered a few invalid uses of
+    rcu_dereference() in netfilter. In all these cases, the code code
+    intends to check whether a pointer is already assigned when
+    performing registration or whether the assigned pointer matches
+    when performing unregistration. The entire registration/
+    unregistration is protected by a mutex, so we don't need the
+    rcu_dereference() calls.
+    
+    Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+    Tested-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+    Signed-off-by: Patrick McHardy <kaber@trash.net>
+
+diff --git a/net/netfilter/nf_conntrack_ecache.c b/net/netfilter/nf_conntrack_ecache.c
+index d5a9bcd..849614a 100644
+--- a/net/netfilter/nf_conntrack_ecache.c
++++ b/net/netfilter/nf_conntrack_ecache.c
+@@ -81,11 +81,9 @@ EXPORT_SYMBOL_GPL(nf_ct_deliver_cached_events);
+ int nf_conntrack_register_notifier(struct nf_ct_event_notifier *new)
+ {
+ 	int ret = 0;
+-	struct nf_ct_event_notifier *notify;
+ 
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_conntrack_event_cb);
+-	if (notify != NULL) {
++	if (nf_conntrack_event_cb != NULL) {
+ 		ret = -EBUSY;
+ 		goto out_unlock;
+ 	}
+@@ -101,11 +99,8 @@ EXPORT_SYMBOL_GPL(nf_conntrack_register_notifier);
+ 
+ void nf_conntrack_unregister_notifier(struct nf_ct_event_notifier *new)
+ {
+-	struct nf_ct_event_notifier *notify;
+-
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_conntrack_event_cb);
+-	BUG_ON(notify != new);
++	BUG_ON(nf_conntrack_event_cb != new);
+ 	rcu_assign_pointer(nf_conntrack_event_cb, NULL);
+ 	mutex_unlock(&nf_ct_ecache_mutex);
+ }
+@@ -114,11 +109,9 @@ EXPORT_SYMBOL_GPL(nf_conntrack_unregister_notifier);
+ int nf_ct_expect_register_notifier(struct nf_exp_event_notifier *new)
+ {
+ 	int ret = 0;
+-	struct nf_exp_event_notifier *notify;
+ 
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_expect_event_cb);
+-	if (notify != NULL) {
++	if (nf_expect_event_cb != NULL) {
+ 		ret = -EBUSY;
+ 		goto out_unlock;
+ 	}
+@@ -134,11 +127,8 @@ EXPORT_SYMBOL_GPL(nf_ct_expect_register_notifier);
+ 
+ void nf_ct_expect_unregister_notifier(struct nf_exp_event_notifier *new)
+ {
+-	struct nf_exp_event_notifier *notify;
+-
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_expect_event_cb);
+-	BUG_ON(notify != new);
++	BUG_ON(nf_expect_event_cb != new);
+ 	rcu_assign_pointer(nf_expect_event_cb, NULL);
+ 	mutex_unlock(&nf_ct_ecache_mutex);
+ }
+diff --git a/net/netfilter/nf_log.c b/net/netfilter/nf_log.c
+index 015725a..908f599 100644
+--- a/net/netfilter/nf_log.c
++++ b/net/netfilter/nf_log.c
+@@ -35,7 +35,6 @@ static struct nf_logger *__find_logger(int pf, const char *str_logger)
+ /* return EEXIST if the same logger is registred, 0 on success. */
+ int nf_log_register(u_int8_t pf, struct nf_logger *logger)
+ {
+-	const struct nf_logger *llog;
+ 	int i;
+ 
+ 	if (pf >= ARRAY_SIZE(nf_loggers))
+@@ -52,8 +51,7 @@ int nf_log_register(u_int8_t pf, struct nf_logger *logger)
+ 	} else {
+ 		/* register at end of list to honor first register win */
+ 		list_add_tail(&logger->list[pf], &nf_loggers_l[pf]);
+-		llog = rcu_dereference(nf_loggers[pf]);
+-		if (llog == NULL)
++		if (nf_loggers[pf] == NULL)
+ 			rcu_assign_pointer(nf_loggers[pf], logger);
+ 	}
+ 
+@@ -65,13 +63,11 @@ EXPORT_SYMBOL(nf_log_register);
+ 
+ void nf_log_unregister(struct nf_logger *logger)
+ {
+-	const struct nf_logger *c_logger;
+ 	int i;
+ 
+ 	mutex_lock(&nf_log_mutex);
+ 	for (i = 0; i < ARRAY_SIZE(nf_loggers); i++) {
+-		c_logger = rcu_dereference(nf_loggers[i]);
+-		if (c_logger == logger)
++		if (nf_loggers[i] == logger)
+ 			rcu_assign_pointer(nf_loggers[i], NULL);
+ 		list_del(&logger->list[i]);
+ 	}
+
+--------------030908070500050408000807--
