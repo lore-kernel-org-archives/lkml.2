@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab0EJMKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 08:10:31 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:64813 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab0EJMK3 (ORCPT
+	id S1752937Ab0EJMLJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 08:11:09 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:37015 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751554Ab0EJMLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 08:10:29 -0400
-Date: Mon, 10 May 2010 15:13:05 +0300
-From: Eduardo Valentin <eduardo.valentin@nokia.com>
-To: ext Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Valentin Eduardo (Nokia-D/Helsinki)" <eduardo.valentin@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       Linux-OMAP <linux-omap@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       ext Tony Lindgren <tony@atomide.com>,
-       ext Kevin Hilman <khilman@deeprootsystems.com>,
-       "De-Schrijver Peter (Nokia-D/Helsinki)" 
-	<Peter.De-Schrijver@nokia.com>,
-       "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-       Ambresh <a0393775@ti.com>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Subject: Re: [PATCHv4 3/4] mach-omap1: export omap1 info under /proc/socinfo
-Message-ID: <20100510121305.GB8441@besouro.research.nokia.com>
-Reply-To: eduardo.valentin@nokia.com
-References: <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com>
- <1273487857-32281-4-git-send-email-eduardo.valentin@nokia.com>
- <20100510105200.GA14337@n2100.arm.linux.org.uk>
+	Mon, 10 May 2010 08:11:06 -0400
+X-Sasl-enc: 41yRjVpNbRQG5tQPZeFNuGhGROob3GwVA+tEUcoEGYdN 1273493438
+Date: Mon, 10 May 2010 09:10:34 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+Cc: borislav@users.sf.net, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] thinkpad_acpi: add support for thinkpad x100e
+Message-ID: <20100510121034.GA7164@khazad-dum.debian.net>
+References: <4BE70795.6060403@udo.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100510105200.GA14337@n2100.arm.linux.org.uk>
+In-Reply-To: <4BE70795.6060403@udo.edu>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 10 May 2010 12:09:42.0427 (UTC) FILETIME=[AC13EEB0:01CAF039]
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 12:52:00PM +0200, Russell King wrote:
-> On Mon, May 10, 2010 at 01:37:36PM +0300, Eduardo Valentin wrote:
-> > From: Eduardo Valentin <eduardo.valentin@nokia.com>
-> > 
-> > Report OMAP name and rev under /proc/socinfo node.
-> 
-> I think this needs to be combined with the previous patch.  The previous
-> patch enables the socinfo file, which means with patch 2 applied but not
-> patch 3, OMAP1 breaks.
+On Sun, 09 May 2010, Andrej Gelenberg wrote:
+> Embedded controller path is "\\_SB.PCI0.LPC0.EC" on Lenovo Thinkpad X100e.
 
-yes, indeed. I will squash both.
+Yeah, and I have a proper fix queued already, that locates the EC by
+HID, so NACK.
 
-Tks,
+However, even that is not enough.  The vid_handle needs to be fixed as
+well, and there are a few bugs in that area that make it somewhat
+not-a-good-idea to just fix the EC detection.
 
---
-Eduardo Valentin
+This is why I didn't push the simple fix yet.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
