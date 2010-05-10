@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932977Ab0EJXPs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:15:48 -0400
-Received: from kroah.org ([198.145.64.141]:51821 "EHLO coco.kroah.org"
+	id S1757453Ab0EJW5h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:57:37 -0400
+Received: from kroah.org ([198.145.64.141]:51566 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932895Ab0EJW6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:58:13 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:39 2010
-Message-Id: <20100510223539.449347387@kvm.kroah.org>
+	id S1757293Ab0EJW5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:57:20 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:34 2010
+Message-Id: <20100510223534.701279550@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:35:08 -0700
+Date: Mon, 10 May 2010 15:34:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [56/98] ALSA: hda: Fix 0 dB for Packard Bell models using Conexant CX20549 (Venice)
+       NeilBrown <neilb@suse.de>
+Subject: [03/98] md/raid5: allow for more than 2^31 chunks.
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 8f0f5ff6777104084b4b2e1ae079541c2a6ed6d9 upstream.
+commit 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d upstream.
 
-BugLink: https://launchpad.net/bugs/541802
+With many large drives and small chunk sizes it is possible
+to create a RAID5 with more than 2^31 chunks.  Make sure this
+works.
 
-The OR's hardware distorts at PCM 100% because it does not correspond to
-0 dB. Fix this in patch_cxt5045() for all Packard Bell models.
-
-Reported-by: Valombre
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Brett King <king.br@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_conexant.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/md/raid5.c |   19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -1175,9 +1175,10 @@ static int patch_cxt5045(struct hda_code
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -1649,8 +1649,8 @@ static sector_t raid5_compute_sector(rai
+ 				     int previous, int *dd_idx,
+ 				     struct stripe_head *sh)
+ {
+-	long stripe;
+-	unsigned long chunk_number;
++	sector_t stripe;
++	sector_t chunk_number;
+ 	unsigned int chunk_offset;
+ 	int pd_idx, qd_idx;
+ 	int ddf_layout = 0;
+@@ -1670,17 +1670,12 @@ static sector_t raid5_compute_sector(rai
+ 	 */
+ 	chunk_offset = sector_div(r_sector, sectors_per_chunk);
+ 	chunk_number = r_sector;
+-	BUG_ON(r_sector != chunk_number);
  
- 	switch (codec->subsystem_id >> 16) {
- 	case 0x103c:
-+	case 0x1631:
- 	case 0x1734:
--		/* HP & Fujitsu-Siemens laptops have really bad sound over 0dB
--		 * on NID 0x17. Fix max PCM level to 0 dB
-+		/* HP, Packard Bell, & Fujitsu-Siemens laptops have really bad
-+		 * sound over 0dB on NID 0x17. Fix max PCM level to 0 dB
- 		 * (originally it has 0x2b steps with 0dB offset 0x14)
- 		 */
- 		snd_hda_override_amp_caps(codec, 0x17, HDA_INPUT,
+ 	/*
+ 	 * Compute the stripe number
+ 	 */
+-	stripe = chunk_number / data_disks;
+-
+-	/*
+-	 * Compute the data disk and parity disk indexes inside the stripe
+-	 */
+-	*dd_idx = chunk_number % data_disks;
++	stripe = chunk_number;
++	*dd_idx = sector_div(stripe, data_disks);
+ 
+ 	/*
+ 	 * Select the parity disk based on the user selected algorithm.
+@@ -1869,14 +1864,14 @@ static sector_t compute_blocknr(struct s
+ 				 : conf->algorithm;
+ 	sector_t stripe;
+ 	int chunk_offset;
+-	int chunk_number, dummy1, dd_idx = i;
++	sector_t chunk_number;
++	int dummy1, dd_idx = i;
+ 	sector_t r_sector;
+ 	struct stripe_head sh2;
+ 
+ 
+ 	chunk_offset = sector_div(new_sector, sectors_per_chunk);
+ 	stripe = new_sector;
+-	BUG_ON(new_sector != stripe);
+ 
+ 	if (i == sh->pd_idx)
+ 		return 0;
+@@ -1969,7 +1964,7 @@ static sector_t compute_blocknr(struct s
+ 	}
+ 
+ 	chunk_number = stripe * data_disks + i;
+-	r_sector = (sector_t)chunk_number * sectors_per_chunk + chunk_offset;
++	r_sector = chunk_number * sectors_per_chunk + chunk_offset;
+ 
+ 	check = raid5_compute_sector(conf, r_sector,
+ 				     previous, &dummy1, &sh2);
 
 
