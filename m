@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933311Ab0EJXeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:34:12 -0400
-Received: from kroah.org ([198.145.64.141]:33227 "EHLO coco.kroah.org"
+	id S933339Ab0EJXeX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:34:23 -0400
+Received: from kroah.org ([198.145.64.141]:33220 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932449Ab0EJWw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:29 -0400
+	id S932384Ab0EJWw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:27 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:23 2010
-Message-Id: <20100510223323.416439918@kvm.kroah.org>
+Message-Id: <20100510223323.169843615@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:38 -0700
+Date: Mon, 10 May 2010 15:32:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Phillip Lougher <phillip@lougher.demon.co.uk>
-Subject: [067/117] initramfs: handle unrecognised decompressor when unpacking
+       Mark Lord <mlord@pobox.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [065/117] libata: Fix accesses at LBA28 boundary (old bug, but nasty) (v2)
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
+From: Mark Lord <kernel@teksavvy.com>
 
-commit df37bd156dcb4f5441beaf5bde444adac974e9a0 upstream.
+commit 45c4d015a92f72ec47acd0c7557abdc0c8a6499d upstream.
 
-The unpack routine fails to handle the decompress_method() returning
-unrecognised decompressor (compress_name == NULL).  This results in the
-routine looping eventually oopsing on an out of bounds memory access.
+Most drives from Seagate, Hitachi, and possibly other brands,
+do not allow LBA28 access to sector number 0x0fffffff (2^28 - 1).
+So instead use LBA48 for such accesses.
 
-Note this bug is usually hidden, only triggering on trailing junk after
-one or more correct compressed blocks.  The case of the compressed archive
-being complete junk is (by accident?) caught by the if (state != Reset)
-check because state is initialised to Start, but not updated due to the
-decompressor not having been called.  Obviously if the junk is trailing a
-correctly decompressed buffer, state == Reset from the previous call to
-the decompressor.
+This bug could bite a lot of systems, especially when the user has
+taken care to align partitions to 4KB boundaries. On misaligned systems,
+it is less likely to be encountered, since a 4KB read would end at
+0x10000000 rather than at 0x0fffffff.
 
-Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
-Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mark Lord <mlord@pobox.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- init/initramfs.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/ata.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/init/initramfs.c
-+++ b/init/initramfs.c
-@@ -457,7 +457,8 @@ static char * __init unpack_to_rootfs(ch
- 					 compress_name);
- 				message = msg_buf;
- 			}
--		}
-+		} else
-+			error("junk in compressed archive");
- 		if (state != Reset)
- 			error("junk in compressed archive");
- 		this_header = saved_offset + my_inptr;
+--- a/include/linux/ata.h
++++ b/include/linux/ata.h
+@@ -1024,8 +1024,8 @@ static inline int ata_ok(u8 status)
+ 
+ static inline int lba_28_ok(u64 block, u32 n_block)
+ {
+-	/* check the ending block number */
+-	return ((block + n_block) < ((u64)1 << 28)) && (n_block <= 256);
++	/* check the ending block number: must be LESS THAN 0x0fffffff */
++	return ((block + n_block) < ((1 << 28) - 1)) && (n_block <= 256);
+ }
+ 
+ static inline int lba_48_ok(u64 block, u32 n_block)
 
 
