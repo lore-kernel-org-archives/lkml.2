@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933481Ab0EJXnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:43:14 -0400
-Received: from kroah.org ([198.145.64.141]:32946 "EHLO coco.kroah.org"
+	id S933516Ab0EJXoG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:44:06 -0400
+Received: from kroah.org ([198.145.64.141]:32929 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932105Ab0EJWvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:51:51 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:19 2010
-Message-Id: <20100510223319.101913409@kvm.kroah.org>
+	id S932329Ab0EJWvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:51:48 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:18 2010
+Message-Id: <20100510223318.739848639@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:31:52 -0700
+Date: Mon, 10 May 2010 15:31:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ben Hutchings <bhutchings@solarflare.com>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [021/117] sfc: Change falcon_probe_board() to fail for unsupported boards
+       "J. Bruce Fields" <bfields@citi.umich.edu>
+Subject: [017/117] nfsd4: bug in read_buf
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,77 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Neil Brown <neilb@suse.de>
 
-commit e41c11ee0cc602bcde68916be85fb97d1a484324 upstream.
+commit 2bc3c1179c781b359d4f2f3439cb3df72afc17fc upstream.
 
-The driver needs specific PHY and board support code for each SFC4000
-board; there is no point trying to continue if it is missing.
-Currently unsupported boards can trigger an 'oops'.
+When read_buf is called to move over to the next page in the pagelist
+of an NFSv4 request, it sets argp->end to essentially a random
+number, certainly not an address within the page which argp->p now
+points to.  So subsequent calls to READ_BUF will think there is much
+more than a page of spare space (the cast to u32 ensures an unsigned
+comparison) so we can expect to fall off the end of the second
+page.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+We never encountered thsi in testing because typically the only
+operations which use more than two pages are write-like operations,
+which have their own decoding logic.  Something like a getattr after a
+write may cross a page boundary, but it would be very unusual for it to
+cross another boundary after that.
+
+Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/sfc/falcon.c        |    4 +++-
- drivers/net/sfc/falcon_boards.c |   13 +++----------
- drivers/net/sfc/nic.h           |    2 +-
- 3 files changed, 7 insertions(+), 12 deletions(-)
+ fs/nfsd/nfs4xdr.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/sfc/falcon.c
-+++ b/drivers/net/sfc/falcon.c
-@@ -1317,7 +1317,9 @@ static int falcon_probe_nvconfig(struct
- 
- 	EFX_LOG(efx, "PHY is %d phy_id %d\n", efx->phy_type, efx->mdio.prtad);
- 
--	falcon_probe_board(efx, board_rev);
-+	rc = falcon_probe_board(efx, board_rev);
-+	if (rc)
-+		goto fail2;
- 
- 	kfree(nvconfig);
- 	return 0;
---- a/drivers/net/sfc/falcon_boards.c
-+++ b/drivers/net/sfc/falcon_boards.c
-@@ -728,15 +728,7 @@ static const struct falcon_board_type bo
- 	},
- };
- 
--static const struct falcon_board_type falcon_dummy_board = {
--	.init		= efx_port_dummy_op_int,
--	.init_phy	= efx_port_dummy_op_void,
--	.fini		= efx_port_dummy_op_void,
--	.set_id_led	= efx_port_dummy_op_set_id_led,
--	.monitor	= efx_port_dummy_op_int,
--};
--
--void falcon_probe_board(struct efx_nic *efx, u16 revision_info)
-+int falcon_probe_board(struct efx_nic *efx, u16 revision_info)
- {
- 	struct falcon_board *board = falcon_board(efx);
- 	u8 type_id = FALCON_BOARD_TYPE(revision_info);
-@@ -754,8 +746,9 @@ void falcon_probe_board(struct efx_nic *
- 			 (efx->pci_dev->subsystem_vendor == EFX_VENDID_SFC)
- 			 ? board->type->ref_model : board->type->gen_type,
- 			 'A' + board->major, board->minor);
-+		return 0;
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -160,10 +160,10 @@ static __be32 *read_buf(struct nfsd4_com
+ 	argp->p = page_address(argp->pagelist[0]);
+ 	argp->pagelist++;
+ 	if (argp->pagelen < PAGE_SIZE) {
+-		argp->end = p + (argp->pagelen>>2);
++		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
  	} else {
- 		EFX_ERR(efx, "unknown board type %d\n", type_id);
--		board->type = &falcon_dummy_board;
-+		return -ENODEV;
+-		argp->end = p + (PAGE_SIZE>>2);
++		argp->end = argp->p + (PAGE_SIZE>>2);
+ 		argp->pagelen -= PAGE_SIZE;
  	}
- }
---- a/drivers/net/sfc/nic.h
-+++ b/drivers/net/sfc/nic.h
-@@ -156,7 +156,7 @@ extern struct efx_nic_type siena_a0_nic_
-  **************************************************************************
-  */
- 
--extern void falcon_probe_board(struct efx_nic *efx, u16 revision_info);
-+extern int falcon_probe_board(struct efx_nic *efx, u16 revision_info);
- 
- /* TX data path */
- extern int efx_nic_probe_tx(struct efx_tx_queue *tx_queue);
+ 	memcpy(((char*)p)+avail, argp->p, (nbytes - avail));
+@@ -1425,10 +1425,10 @@ nfsd4_decode_compound(struct nfsd4_compo
+ 			argp->p = page_address(argp->pagelist[0]);
+ 			argp->pagelist++;
+ 			if (argp->pagelen < PAGE_SIZE) {
+-				argp->end = p + (argp->pagelen>>2);
++				argp->end = argp->p + (argp->pagelen>>2);
+ 				argp->pagelen = 0;
+ 			} else {
+-				argp->end = p + (PAGE_SIZE>>2);
++				argp->end = argp->p + (PAGE_SIZE>>2);
+ 				argp->pagelen -= PAGE_SIZE;
+ 			}
+ 		}
 
 
