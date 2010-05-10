@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969Ab0EJW6r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:58:47 -0400
-Received: from kroah.org ([198.145.64.141]:51599 "EHLO coco.kroah.org"
+	id S1757731Ab0EJXMd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:12:33 -0400
+Received: from kroah.org ([198.145.64.141]:45388 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755128Ab0EJW5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:30 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:35 2010
-Message-Id: <20100510223535.336359739@kvm.kroah.org>
+	id S932941Ab0EJW6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:32 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:41 2010
+Message-Id: <20100510223541.866815310@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:22 -0700
+Date: Mon, 10 May 2010 15:35:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Changli Gao <xiaosuo@gmail.com>, Patrick McHardy <kaber@trash.net>,
-       David Rientjes <rientjes@google.com>
-Subject: [10/98] flex_array: fix the panic when calling flex_array_alloc() without __GFP_ZERO
+       NeilBrown <neilb@suse.de>
+Subject: [83/98] md: restore ability of spare drives to spin down.
 In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +25,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Changli Gao <xiaosuo@gmail.com>
+From: NeilBrown <neilb@suse.de>
 
-commit e59464c735db19619cde2aa331609adb02005f5b upstream.
+commit 1176568de7e066c0be9e46c37503b9fd4730edcf upstream.
 
-memset() is called with the wrong address and the kernel panics.
+Some time ago we stopped the clean/active metadata updates
+from being written to a 'spare' device in most cases so that
+it could spin down and say spun down.  Device failure/removal
+etc are still recorded on spares.
 
-Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+However commit 51d5668cb2e3fd1827a55 broke this 50% of the time,
+depending on whether the event count is even or odd.
+The change log entry said:
+
+   This means that the alignment between 'odd/even' and
+    'clean/dirty' might take a little longer to attain,
+
+how ever the code makes no attempt to create that alignment, so it
+could take arbitrarily long.
+
+So when we find that clean/dirty is not aligned with odd/even,
+force a second metadata-update immediately.  There are already cases
+where a second metadata-update is needed immediately (e.g. when a
+device fails during the metadata update).  We just piggy-back on that.
+
+Reported-by: Joe Bryant <tenminjoe@yahoo.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- lib/flex_array.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/md.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/lib/flex_array.c
-+++ b/lib/flex_array.c
-@@ -99,7 +99,7 @@ struct flex_array *flex_array_alloc(int
- 	ret->element_size = element_size;
- 	ret->total_nr_elements = total;
- 	if (elements_fit_in_base(ret) && !(flags & __GFP_ZERO))
--		memset(ret->parts[0], FLEX_ARRAY_FREE,
-+		memset(&ret->parts[0], FLEX_ARRAY_FREE,
- 						FLEX_ARRAY_BASE_BYTES_LEFT);
- 	return ret;
- }
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -2011,12 +2011,18 @@ repeat:
+ 		if (!mddev->in_sync || mddev->recovery_cp != MaxSector) { /* not clean */
+ 			/* .. if the array isn't clean, an 'even' event must also go
+ 			 * to spares. */
+-			if ((mddev->events&1)==0)
++			if ((mddev->events&1)==0) {
+ 				nospares = 0;
++				sync_req = 2; /* force a second update to get the
++					       * even/odd in sync */
++			}
+ 		} else {
+ 			/* otherwise an 'odd' event must go to spares */
+-			if ((mddev->events&1))
++			if ((mddev->events&1)) {
+ 				nospares = 0;
++				sync_req = 2; /* force a second update to get the
++					       * even/odd in sync */
++			}
+ 		}
+ 	}
+ 
 
 
