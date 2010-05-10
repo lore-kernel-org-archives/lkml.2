@@ -1,105 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803Ab0EJLNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 07:13:46 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:38820 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756728Ab0EJLNp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 07:13:45 -0400
-Date: Mon, 10 May 2010 20:13:00 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Eduardo Valentin <eduardo.valentin@nokia.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
-       Linux-OMAP <linux-omap@vger.kernel.org>,
-       Russell King <linux@arm.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       ext Tony Lindgren <tony@atomide.com>,
-       ext Kevin Hilman <khilman@deeprootsystems.com>,
-       Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
-       santosh.shilimkar@ti.com, Ambresh <a0393775@ti.com>,
-       felipe.balbi@nokia.com
-Subject: Re: [PATCHv4 1/4] procfs: Introduce socinfo under /proc
-Message-ID: <20100510111259.GA14680@linux-sh.org>
-References: <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com> <1273487857-32281-3-git-send-email-eduardo.valentin@nokia.com> <1273487857-32281-1-git-send-email-eduardo.valentin@nokia.com> <1273487857-32281-2-git-send-email-eduardo.valentin@nokia.com>
+	id S1756813Ab0EJLOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 07:14:21 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34066 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753119Ab0EJLOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 07:14:20 -0400
+Date: Mon, 10 May 2010 13:14:11 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+       oprofile-list <oprofile-list@lists.sourceforge.net>
+Subject: Re: [GIT PULL] oprofile hotplug fixes for x86
+Message-ID: <20100510111411.GA25913@elte.hu>
+References: <1273152374-9392-1-git-send-email-robert.richter@amd.com>
+ <20100510103330.GE6450@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273487857-32281-3-git-send-email-eduardo.valentin@nokia.com> <1273487857-32281-2-git-send-email-eduardo.valentin@nokia.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <20100510103330.GE6450@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 01:37:34PM +0300, Eduardo Valentin wrote:
-> + */
-> +#include <linux/fs.h>
-> +#include <linux/init.h>
-> +#include <linux/proc_fs.h>
-> +#include <linux/seq_file.h>
-> +
-> +extern const struct seq_operations socinfo_op;
 
-This doesn't look promising..
+* Robert Richter <robert.richter@amd.com> wrote:
 
-> +static int socinfo_open(struct inode *inode, struct file *file)
-> +{
-> +	return seq_open(file, &socinfo_op);
-> +}
-> +
-If you use single_open() ..
+> On 06.05.10 15:26:07, Robert Richter wrote:
+> > Ingo, I will send a separate pull request.
+> 
+> Ingo,
+> 
+> please pull oprofile hotplug fixes for x86 from:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
+> 
+> Thanks,
+> 
+> -Robert
+> 
+> --
+> 
+> The following changes since commit 5bdb7934ca4115a12c7d585c5a45312b1c36909b:
+>   Robert Richter (1):
+>         oprofile/x86: remove duplicate IBS capability check
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
+> 
+> Robert Richter (7):
+>       oprofile/x86: fix uninitialized counter usage during cpu hotplug
+>       oprofile/x86: remove CONFIG_SMP macros
+>       oprofile/x86: protect cpu hotplug sections
+>       oprofile/x86: stop disabled counters in nmi handler
+>       oprofile/x86: reordering some functions
+>       oprofile/x86: notify cpus only when daemon is running
+>       oprofile/x86: make AMD IBS hotplug capable
+> 
+>  arch/x86/oprofile/nmi_int.c      |  187 +++++++++++++++++++++++---------------
+>  arch/x86/oprofile/op_model_amd.c |   54 +++--------
+>  arch/x86/oprofile/op_x86_model.h |    2 +-
+>  3 files changed, 130 insertions(+), 113 deletions(-)
 
-> +static const struct file_operations proc_socinfo_operations = {
-> +	.open		= socinfo_open,
-> +	.read		= seq_read,
-> +	.llseek		= seq_lseek,
-> +	.release	= seq_release,
-> +};
-> +
-.. and single_release(), then none of the seq_operations are necessary.
+Pulled, thanks Robert!
 
-> +static int __init proc_socinfo_init(void)
-> +{
-> +	proc_create("socinfo", 0, NULL, &proc_socinfo_operations);
-> +	return 0;
-> +}
-> +module_init(proc_socinfo_init);
-
-proc_create() can fail, so some error handling here would be nice.
-
-On Mon, May 10, 2010 at 01:37:35PM +0300, Eduardo Valentin wrote:
-> +static int c_show(struct seq_file *m, void *v)
-> +{
-> +	seq_printf(m, "SoC\t: %s\n", socinfo);
-> +
-> +	return 0;
-> +}
-> +
-> +static void *c_start(struct seq_file *m, loff_t *pos)
-> +{
-> +	return *pos < 1 ? (void *)1 : NULL;
-> +}
-> +
-> +static void *c_next(struct seq_file *m, void *v, loff_t *pos)
-> +{
-> +	++*pos;
-> +	return NULL;
-> +}
-> +
-> +static void c_stop(struct seq_file *m, void *v)
-> +{
-> +}
-> +
-> +const struct seq_operations socinfo_op = {
-> +	.start	= c_start,
-> +	.next	= c_next,
-> +	.stop	= c_stop,
-> +	.show	= c_show
-> +};
-
-You'll still need the show function, but all of the rest of this is just
-duplicating what single_open() already does. If the socinfo string is
-static you may also want to rework this a bit so you can just stash the
-string in the proc_dir_entry private data. Combine this with something
-like kstrdup() and you'll save yourself a bit of stack while you're at
-it.
+	Ingo
