@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab0EJLk5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 07:40:57 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34212 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756825Ab0EJLkz (ORCPT
+	id S1756896Ab0EJLma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 07:42:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43418 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756825Ab0EJLm1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 07:40:55 -0400
-Date: Mon, 10 May 2010 12:39:30 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
+	Mon, 10 May 2010 07:42:27 -0400
+Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
        "eranian@gmail.com" <eranian@gmail.com>,
        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -19,31 +18,113 @@ Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
        Paul Mackerras <paulus@samba.org>,
        "David S. Miller" <davem@davemloft.net>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-Message-ID: <20100510113930.GA28337@flint.arm.linux.org.uk>
-References: <1273483623.15998.57.camel@minggr.sh.intel.com> <1273484401.5605.3333.camel@twins> <1273486313.15998.76.camel@minggr.sh.intel.com> <1273486708.5605.3342.camel@twins> <1273487195.15998.85.camel@minggr.sh.intel.com> <1273490824.5605.3379.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
+       Will Deacon <will.deacon@arm.com>
 In-Reply-To: <1273490824.5605.3379.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+References: <1273483623.15998.57.camel@minggr.sh.intel.com>
+	 <1273484401.5605.3333.camel@twins>
+	 <1273486313.15998.76.camel@minggr.sh.intel.com>
+	 <1273486708.5605.3342.camel@twins>
+	 <1273487195.15998.85.camel@minggr.sh.intel.com>
+	 <1273490824.5605.3379.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 10 May 2010 13:42:05 +0200
+Message-ID: <1273491725.5605.3391.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This really needs to loop the ARM PMU guys on this topic.  ARM PMU is
-not something I know very much about, and I really don't understand
-why I'm on the CC list and not the ARM PMU folk.
+(Added Will Deacon)
 
-I may be mis-stating a problem, but I believe that we have issues with
-exporting event IDs in that they're SoC implementation specific - but
-as I say, the ARM PMU guys know the details not me.
+On Mon, 2010-05-10 at 13:27 +0200, Peter Zijlstra wrote:
+> On Mon, 2010-05-10 at 18:26 +0800, Lin Ming wrote:
+> 
+> > > No, I'm assuming there is only 1 PMU per CPU. Corey is the expert on
+> > > crazy hardware though, but I think the sanest way is to extend the CPU
+> > > topology if there's more structure to it.
+> > 
+> > But our goal is to support multiple pmus, don't we need to assume there
+> > are more than 1 PMU per CPU?
+> 
+> No, because as I said, then its ambiguous what pmu you want. If you have
+> that, you need to extend your topology information.
+> 
+> Anyway, I talked with Ingo on this and he'd like to see this somewhat
+> extended.
+> 
+> Instead of a pmu_id field, which we pass into a new
+> perf_event_attr::pmu_id field, how about creating an event_source sysfs
+> class. Then each class can have an event_source_id and a hierarchy of
+> 'generic' events.
+> 
+> We'd start using the PERF_TYPE_ space for this and express the
+> PERF_COUNT_ space in the event attributes found inside that class.
+> 
+> That way we can include all the existing event enumerations into this as
+> well.
+> 
+> This way we can create:
+> 
+> /sys/devices/system/cpu/cpuN/cpu_hardware_events 
+>                              cpu_hardware_events/event_source_id
+>                              cpu_hardware_events/cpu_cycles
+>                              cpu_hardware_events/instructions
+>                                                 /...
+> 
+> /sys/devices/system/cpu/cpuN/cpu_raw_events
+>                              cpu_raw_events/event_source_id
+> 
+> 
+> These would match the current PERF_TYPE_* values for compatibility
+> 
+> For new PMUs we can start a dynamic range of PERF_TYPE_ (say at 64k but
+> that's not ABI and can be changed at any time, we've got u32 to play
+> with).
+> 
+> For uncore this would result in:
+> 
+> /sys/devices/system/node/nodeN/node_raw_events
+>                                node_raw_events/event_source_id
+> 
+> and maybe:
+> 
+> /sys/devices/system/node/nodeN/node_events
+>                                node_events/event_source_id
+>                                node_events/local_misses
+>                                           /local_hits
+>                                           /remote_misses
+>                                           /remote_hits
+>                                           /...
+> 
+> 
+> The software events and tracepoints and kprobes stuff we could hang off
+> of /sys/kernel/ or something
+> 
+> So your registration would indeed look like something:
+> 
+>  perf_event_register_pmu(struct pmu *pmu, int type),
+> 
+> where type would normally be -1 (dynamic) but would be PERF_TYPE_ for
+> those already laid down in ABI.
+> 
+> This approach will also give us a good overview
+> in /sys/class/event_source/, which will be a flat listing of all
+> existing event sources.
 
-I strongly suggest no further discussion without at least looping Will
-Deacon in on this.
+So Russell reminded me that the ARM people have the problem that
+their /proc/cpuinfo isn't specific enough to map to a unique event map.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Whilst extending ARM /proc/cpuinfo seems like a sensible option it will
+not cover anything but cpu events.
+
+So in that trend (and to avoid exhaustive in kernel event lists for no
+good reason), it might make sense to also add some event_source
+attributes that identify the thing, maybe a event_source_name or
+event_source_driver field that would allow unique maps to exhaustive
+event lists.
+
+
