@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932941Ab0EJXON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:14:13 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:44404 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757786Ab0EJXNn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 19:13:43 -0400
-Message-ID: <4BE8931C.9070106@linux.vnet.ibm.com>
-Date: Mon, 10 May 2010 16:13:32 -0700
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-CC: Lin Ming <ming.m.lin@intel.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, Paul Mackerras <paulus@samba.org>
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-References: <1273483623.15998.57.camel@minggr.sh.intel.com> <1273484401.5605.3333.camel@twins> <1273486313.15998.76.camel@minggr.sh.intel.com> <1273486708.5605.3342.camel@twins> <1273487195.15998.85.camel@minggr.sh.intel.com> <1273490824.5605.3379.camel@twins> <20100510114311.GA6449@elte.hu> <1273492164.5605.3397.camel@twins> <20100510115344.GA11238@elte.hu>
-In-Reply-To: <20100510115344.GA11238@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932896Ab0EJW6Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:58:16 -0400
+Received: from kroah.org ([198.145.64.141]:51574 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757365Ab0EJW5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:57:22 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:34 2010
+Message-Id: <20100510223534.889748823@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:34:17 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+       Jeff Garzik <jgarzik@redhat.com>
+Subject: [05/98] libata: fix locking around blk_abort_request()
+In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/10/2010 4:53 AM, Ingo Molnar wrote:
-> 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
->> On Mon, 2010-05-10 at 13:43 +0200, Ingo Molnar wrote:
->>>
->>> Yeah, we really want a mechanism like this in place instead of continuing with 
->>> the somewhat ad-hoc extensions to the event enumeration space.
->>>
->>> One detail: i think we want one more level. Instead of:
->>>
->>>  /sys/devices/system/node/nodeN/node_events
->>>                                 node_events/event_source_id
->>>                                 node_events/local_misses
->>>                                            /local_hits
->>>                                            /remote_misses
->>>                                            /remote_hits
->>>                                            /...
->>>
->>> We want the individual events to be a directory, containing the event_id:
->>>
->>>  /sys/devices/system/node/nodeN/node_events
->>>                                 node_events/event_source_id
->>>                                 node_events/local_misses/event_id
->>>                                            /local_hits/event_id
->>>                                            /remote_misses/event_id
->>>                                            /remote_hits/event_id
->>>                                            /...
->>>
->>> The reason is that we want to keep our options open to add more attributes to 
->>> individual events. (In fact extended attributes already exist for certain 
->>> event classes - such as the 'format' info for tracepoints.)
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Having extra fields for each event would allow us to describe hardware-specific event attributes.  For example:
-/sys/devices/system/node/nodeN/node_events
-                               node_events/event_source_id
-                               node_events/local_misses/event_id
-                                          /local_hits/event_id
-                                          /crypto_datamover  <- specific node PMU
-                                              /marked_crb_rcv_des
-                                                  /event_id
-                                                  /attrib
-                                                         /lpid <- attribute name
-                                                         /lpid/type <- type of attribute (boolean, integer, etc.)
-                                                         /lpid/min  <- min value of int attribute
-                                                         /lpid/max  <- max value of int attribute
-                                                         /lpid/bit_offset <- amount to shift attribute value before OR'ing into the raw event code
-                                                         /marking_mode <- attribute name
-                                                         /marking_mode/type
-                                                         /...
+------------------
 
-Of course, these nodes would need to be replicated for each event that needs them or other attributes.
+From: Tejun Heo <tj@kernel.org>
 
+commit fa41efdae7de61191a7bda3a00e88ef69afb5bb9 upstream.
 
->>
->> Sure, sounds like a sensible suggestion.
->>
->> One thing I'd also like to clarify is that !raw events should not be 
->> exhaustive hardware event lists, those are best left for userspace, but 
->> instead are generally useful events that can be expected to be implemented 
->> by any hardware of that particular class.
+blk_abort_request() expectes queue lock to be held by the caller.
+Grab it before calling the function.
 
-Why exactly is this?  I got the impression this was something you and Ingo wanted earlier.  As big of an impact as it will be, it would be nice to unify the two event spaces (generic and raw) into one space that can be explored by a user space tool (or even crudely by /bin/ls).
+Lack of this synchronization led to infinite loop on corrupt
+q->timeout_list.
 
->>
->> So a GPU might have things like 'vsync' and 'cmd_pipeline_stall' or whatever 
->> is a generic GPU feature, but not very implementation specific things that 
->> the next generation of hardware won't ever have.
-> 
-> Definitely so.
-> 
-> 	Ingo
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Hi Ingo,
+---
+ drivers/ata/libata-eh.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-In the past, you said that you didn't want to have user space anything enumerate raw hardware events that are supported by the kernel.  So does the above represent a re-thinking of that position?
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -870,6 +870,8 @@ static void ata_eh_set_pending(struct at
+ void ata_qc_schedule_eh(struct ata_queued_cmd *qc)
+ {
+ 	struct ata_port *ap = qc->ap;
++	struct request_queue *q = qc->scsicmd->device->request_queue;
++	unsigned long flags;
+ 
+ 	WARN_ON(!ap->ops->error_handler);
+ 
+@@ -881,7 +883,9 @@ void ata_qc_schedule_eh(struct ata_queue
+ 	 * Note that ATA_QCFLAG_FAILED is unconditionally set after
+ 	 * this function completes.
+ 	 */
++	spin_lock_irqsave(q->queue_lock, flags);
+ 	blk_abort_request(qc->scsicmd->request);
++	spin_unlock_irqrestore(q->queue_lock, flags);
+ }
+ 
+ /**
 
-We'd like to have the capability of hardware-specific symbolic event names in the perf tool by some mechanism, unified or otherwise.  Right now, for the IBM Wire-Speed processor, we are currently not able to use the perf tool because of its lack of symbolic raw event name support.
-
-In the mean time, we are using a pair of demo programs from Stephane Eranian's libpfm4 source tree called "task" and "syst".  These tools use the symbolic event names provided by libpfm4, and use the kernel support from perf_events.
-
-Regards,
-
-- Corey
 
