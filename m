@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025Ab0EJSgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 14:36:53 -0400
-Received: from relay01.mx.bawue.net ([193.7.176.67]:44854 "EHLO
-	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab0EJSgv (ORCPT
+	id S1755413Ab0EJShK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 14:37:10 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:46256 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab0EJShF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 14:36:51 -0400
-Date: Mon, 10 May 2010 20:36:39 +0200
-From: Nils Radtke <lkml@Think-Future.de>
-To: linville@tuxdriver.com
-Cc: linux-kernel@vger.kernel.org, reinette.chatre@intel.com,
-       linux-wireless@vger.kernel.org
-Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some
- accesspoint == hardlock
-Message-ID: <20100510183639.GA17523@localhost>
-Reply-To: Nils Radtke <lkml@Think-Future.de>
+	Mon, 10 May 2010 14:37:05 -0400
+X-SpamScore: -21
+X-BigFish: VPS-21(zz1432P98dN936eM62a3L7cf0izz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L27VPH-01-3EI-02
+X-M-MSG: 
+Date: Mon, 10 May 2010 20:36:54 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+CC: Masami Hiramatsu <mhiramat@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       Roland McGrath <roland@redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>
+Subject: Re: [PATCH -tip] perf probe: Don't compile CFI related code if
+ elfutils is old
+Message-ID: <20100510183654.GH6450@erda.amd.com>
+References: <20100510171207.26029.97604.stgit@localhost6.localdomain6>
+ <20100510172854.GD30926@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100503192219.GE25748@tuxdriver.com>
-X-Url: http://www.Think-Future.de
-X-Editor: Vi it! http://www.vim.org
-X-Bkp: p2mi
+In-Reply-To: <20100510172854.GD30926@ghostprotocols.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi John,
+On 10.05.10 13:28:54, Arnaldo Carvalho de Melo wrote:
+> Em Mon, May 10, 2010 at 01:12:07PM -0400, Masami Hiramatsu escreveu:
+> > Check elfutils version, and if it is old don't compile
+> > CFI analysis code. This allows to compile perf with
+> > old elfutils.
+> 
+> _ELFUTILS_PREREQ was introduced in:
+> 
+> commit fbc7245df72ce0142f0a21fa0f4f88c97278bf60
+> Author: Roland McGrath <roland@redhat.com>
+> Date:   Tue Dec 16 17:03:03 2008 -0800
+> 
+> Which was released in elfutils 0.138, guess this is coverage enough?
+> Richard, which version is in your machine?
 
-  Today weather was fine again, finally. So testing with .33.3 w/ the patch applied: 
+Right, this does not work, I am using 0.131. As expected,
+"_ELFUTILS_PREREQ" is not defined:
 
-  http://marc.info/?l=linux-wireless&m=127290931304496&w=2
+gcc -o builtin-probe.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstack-protector -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wvolatile-register-var -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement  -fstack-protector-all -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -Iarch/x86/include -I/usr/include/elfutils -DDWARF_SUPPORT -DNO_NEWT_SUPPORT -DNO_LIBPERL -DSHA1_HEADER='<openssl/sha.h>'  builtin-probe.c
+In file included from builtin-probe.c:43:
+util/probe-finder.h:47:5: error: "_ELFUTILS_PREREQ" is not defined
+util/probe-finder.h:47:21: error: missing binary operator before token "("
+make: *** [builtin-probe.o] Error 1
 
-The kernel kernel .32 was still running before it crashed immediately on wireless activation.
-The crash log showed again at least two messages, the last was as already described in my first
-message, bug from 2010-04-30: I think even the 0x2030 was the same:
+Why not create a compile test as for NO_DWARF in tools/perf/Makefile?
 
-EIP rs_tx_status +x8f/x2030 
+-Robert
 
-
-
-
-W/ .33.3 and the above patch applied:
-
-Linux mypole 2.6.33.3 #18 SMP PREEMPT Thu May 6 21:51:37 CEST 2010 i686 GNU/Linux
-
-May 10 19:14:11 [   80.586637] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-May 10 19:23:17 [  626.476078] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-May 10 19:23:30 [  638.913740] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-May 10 19:23:32 [  641.232425] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-May 10 19:23:54 [  663.392697] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-May 10 19:23:58 [  666.980247] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-May 10 19:24:02 [  671.121826] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-
-
-Additionally these were logged, could you tell why they're there and what to do? (also .33.3 w/ patch)
-
-May 10 19:24:16 [  685.079617] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
-May 10 19:24:22 [  691.026737] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
-May 10 19:28:02 [  911.406162] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
-May 10 19:35:38 [ 1367.251240] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
-
-The above "iwl_tx_agg_start" lines happen when connecting - again to a Cisco AP - and the connection gets
-dropped the exact moment when a download is started. It even often drops when dhcp is still negotiating, has
-got it's IP but the nego isn't finished yet. Conn drops, same procedure again and again. This happens only
-with this Cisco AP (which is BTW another one from the "expected_tpt should have been calculated by now" 
-problem).
-
-
-
-Another type occurred: (probably .33.2 or something)
-
-May  3 17:58:11 [ 3946.608743] iwlagn 0000:03:00.0: request scan called when driver not ready.
-May  3 17:58:12 [ 3948.082684] iwlagn 0000:03:00.0: TX Power requested while scanning!
-May  3 18:01:00 [ 4115.282852] iwlagn 0000:03:00.0: RF_KILL bit toggled to disable radio.
-
-Is this "TX Power requested while scanning" because of RF_KILL set to off?
-
-
-
-  Thank you,
-
-  Nils
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
 
