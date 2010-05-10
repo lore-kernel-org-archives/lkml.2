@@ -1,75 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab0EJIyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 04:54:16 -0400
-Received: from ozlabs.org ([203.10.76.45]:46891 "EHLO ozlabs.org"
+	id S1755661Ab0EJI4B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 04:56:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17222 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755535Ab0EJIyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 04:54:14 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: virtio: put last_used and last_avail index into ring itself.
-Date: Mon, 10 May 2010 12:41:56 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       linux-mm@kvack.org, akpm@linux-foundation.org, hpa@zytor.com,
-       gregory.haskins@gmail.com, s.hetze@linux-ag.com,
-       Daniel Walker <dwalker@fifo99.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>
-References: <cover.1257349249.git.mst@redhat.com> <201005071235.40590.rusty@rustcorp.com.au> <20100509085733.GD16775@redhat.com>
-In-Reply-To: <20100509085733.GD16775@redhat.com>
+	id S1753364Ab0EJIz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 04:55:59 -0400
+Message-ID: <4BE7CA19.1030405@redhat.com>
+Date: Mon, 10 May 2010 11:55:53 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Joerg Roedel <joro@8bytes.org>,
+       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+Subject: Re: [RFC PATCH] kvm: calculate correct gfn for small host pages which
+ emulates large guest pages
+References: <4BD97AC1.8070704@cn.fujitsu.com> <4BDA4342.9070603@cn.fujitsu.com>
+In-Reply-To: <4BDA4342.9070603@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005101241.57237.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 9 May 2010 06:27:33 pm Michael S. Tsirkin wrote:
-> On Fri, May 07, 2010 at 12:35:39PM +0930, Rusty Russell wrote:
-> > Then there's padding to page boundary.  That puts us on a cacheline again
-> > for the used ring; also 2 bytes per entry.
-> > 
-> 
-> Hmm, is used ring really 2 bytes per entry?
+On 04/30/2010 05:41 AM, Lai Jiangshan wrote:
+> Lai Jiangshan wrote:
+>    
+>> RFC, because maybe I missing something with the old code.
+>>
+>> Frome: Lai Jiangshan<laijs@cn.fujitsu.com>
+>>
+>> In Document/kvm/mmu.txt:
+>>    gfn:
+>>      Either the guest page table containing the translations shadowed by this
+>>      page, or the base page frame for linear translations. See role.direct.
+>>
+>> But in function FNAME(fetch)(), sp->gfn is incorrect when one of following
+>> situations occurred:
+>>   1) guest is 32bit paging and guest uses pse-36 and the guest PDE maps
+>>      a 4-MByte page(backed by 4k host pages) and bits 20:13 of the guest PDE
+>>      is not equals to 0.
+>>   2) guest is long mode paging and the guest PDPTE maps a 1-GByte page
+>>      (backed by 4k or 2M host pages)
+>>
+>>      
+> Resend this patch with the changelog changed.
+>
+> As Marcelo Tosatti and Gui Jianfeng points out,
+> FNAME(fetch)() miss quadrant on 4mb large page emulation with shadow.
+>
+> Subject: [PATCH] kvm: calculate correct gfn for small host pages which emulates large guest pages
+>
+> In Document/kvm/mmu.txt:
+>    gfn:
+>      Either the guest page table containing the translations shadowed by this
+>      page, or the base page frame for linear translations. See role.direct.
+>
+> But in function FNAME(fetch)(), sp->gfn is incorrect when one of following
+> situations occurred:
+>   1) guest is 32bit paging and the guest PDE maps a 4-MByte page
+>      (backed by 4k host pages), FNAME(fetch)() miss handling the quadrant.
+>
+>      And if guest use pse-36, "table_gfn = gpte_to_gfn(gw->ptes[level - delta]);"
+>      is incorrect.
+>   2) guest is long mode paging and the guest PDPTE maps a 1-GByte page
+>      (backed by 4k or 2M host pages).
+>
+> So we fix it to suit to the document and suit to the code which
+> requires sp->gfn correct when sp->role.direct=1.
+>
+> We use the goal mapping gfn(gw->gfn) to calculate the base page frame
+> for linear translations, it is simple and easy to be understood.
+>
+> Signed-off-by: Lai Jiangshan<laijs@cn.fujitsu.com>
+> ---
+> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> index 702c016..958e9c6 100644
+> --- a/arch/x86/kvm/paging_tmpl.h
+> +++ b/arch/x86/kvm/paging_tmpl.h
+> @@ -338,10 +338,13 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+>   			direct = 1;
+>   			if (!is_dirty_gpte(gw->ptes[level - delta]))
+>   				access&= ~ACC_WRITE_MASK;
+> -			table_gfn = gpte_to_gfn(gw->ptes[level - delta]);
+> -			/* advance table_gfn when emulating 1gb pages with 4k */
+> -			if (delta == 0)
+> -				table_gfn += PT_INDEX(addr, level);
+> +			/*
+> +			 * It is a large guest pages backed by small host pages,
+> +			 * So we set @direct(@shadow_page->role.direct)=1, and
+> +			 * set @table_gfn(@shadow_page->gfn)=the base page frame
+> +			 * for linear translations.
+> +			 */
+> +			table_gfn = gw->gfn&  ~(KVM_PAGES_PER_HPAGE(level) - 1);
+>   		} else {
+>   			direct = 0;
+>   			table_gfn = gw->table_gfn[level - 2];
+>    
 
-Err, no, I am an idiot.
+Looks good, indeed it is a lot easier to understand than the original 
+calculation (a minor issue is that the variable name is misleading, but 
+that's a problem with kvm_mmu_page definition and not this patch).
 
-> /* u32 is used here for ids for padding reasons. */
-> struct vring_used_elem {
->         /* Index of start of used descriptor chain. */
->         __u32 id;
->         /* Total length of the descriptor chain which was used (written to) */
->         __u32 len;
-> };
-> 
-> struct vring_used {
->         __u16 flags;
->         __u16 idx;
->         struct vring_used_elem ring[];
-> };
+-- 
+error compiling committee.c: too many arguments to function
 
-OK, now I get it.  Sorry, I was focussed on the avail ring.
-
-> I thought that used ring has 8 bytes per entry, and that struct
-> vring_used is aligned at page boundary, this
-> would mean that ring element is at offset 4 bytes from page boundary.
-> Thus with cacheline size 128 bytes, each 4th element crosses
-> a cacheline boundary. If we had a 4 byte padding after idx, each
-> used element would always be completely within a single cacheline.
-
-I think the numbers are: every 16th entry hits two cachelines.  So currently
-the first 15 entries are "free" (assuming we hit the idx cacheline anyway),
-then 1 in 16 cost 2 cachelines.  That makes the aligned version win when
-N > 240.
-
-But, we access the array linearly.  So the extra cacheline cost is in fact
-amortized.  I doubt it could be measured, but maybe vring_get_buf() should
-prefetch?  While you're there, we could use an & rather than a mod on the
-calculation, which may actually be measurable :)
-
-Cheers,
-Rusty.
