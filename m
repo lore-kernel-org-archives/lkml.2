@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932844Ab0EJW44 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:56:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50162 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932603Ab0EJWxX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:53:23 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tzanussi@gmail.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/10] perf/trace/scripting: syscall-counts-by-pid script cleanup
-Date: Mon, 10 May 2010 19:53:07 -0300
-Message-Id: <1273531987-28956-10-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1273531987-28956-1-git-send-email-acme@infradead.org>
-References: <1273531987-28956-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S933080Ab0EJXBB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 19:01:01 -0400
+Received: from kroah.org ([198.145.64.141]:51704 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932879Ab0EJW6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:58:00 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:38 2010
+Message-Id: <20100510223538.195128270@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:34:54 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Christian Lamparter <chunkeey@googlemail.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [42/98] p54pci: fix bugs in p54p_check_tx_ring
+In-Reply-To: <20100510223714.GA18416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Zanussi <tzanussi@gmail.com>
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-A small fix for the syscall counts by pid script:
+------------------
 
-- silence the match output in the shell script
+From: Hans de Goede <hdegoede@redhat.com>
 
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-LKML-Reference: <1273466820-9330-9-git-send-email-tzanussi@gmail.com>
-Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+commit 0250ececdf6813457c98719e2d33b3684881fde0 upstream.
+
+Hans de Goede identified a bug in p54p_check_tx_ring:
+
+there are two ring indices. 1 => tx data and 3 => tx management.
+But the old code had a constant "1" and this resulted in spurious
+dma unmapping failures.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=583623
+Bug-Identified-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- .../python/bin/syscall-counts-by-pid-report        |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/wireless/p54/p54pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/scripts/python/bin/syscall-counts-by-pid-report b/tools/perf/scripts/python/bin/syscall-counts-by-pid-report
-index c53362e..9e9d8dd 100644
---- a/tools/perf/scripts/python/bin/syscall-counts-by-pid-report
-+++ b/tools/perf/scripts/python/bin/syscall-counts-by-pid-report
-@@ -2,7 +2,7 @@
- # description: system-wide syscall counts, by pid
- # args: [comm]
- if [ $# -gt 0 ] ; then
--    if ! expr match "$1" "-" ; then
-+    if ! expr match "$1" "-" > /dev/null ; then
- 	comm=$1
- 	shift
-     fi
--- 
-1.6.2.5
+--- a/drivers/net/wireless/p54/p54pci.c
++++ b/drivers/net/wireless/p54/p54pci.c
+@@ -237,7 +237,7 @@ static void p54p_check_tx_ring(struct ie
+ 	u32 idx, i;
+ 
+ 	i = (*index) % ring_limit;
+-	(*index) = idx = le32_to_cpu(ring_control->device_idx[1]);
++	(*index) = idx = le32_to_cpu(ring_control->device_idx[ring_index]);
+ 	idx %= ring_limit;
+ 
+ 	while (i != idx) {
+
 
