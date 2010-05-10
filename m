@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab0EJXIv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:08:51 -0400
-Received: from mga05.intel.com ([192.55.52.89]:48244 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932907Ab0EJXIm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 19:08:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,203,1272870000"; 
-   d="scan'208";a="797188629"
-Date: Tue, 11 May 2010 01:09:25 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mfd: use menuconfig for quicker config editing
-Message-ID: <20100510230924.GF3288@sortiz.org>
-References: <20100507150525.70d76e17.rdunlap@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100507150525.70d76e17.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932703Ab0EJWyj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:54:39 -0400
+Received: from kroah.org ([198.145.64.141]:33330 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932504Ab0EJWwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:45 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:25 2010
+Message-Id: <20100510223325.243058423@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Mon, 10 May 2010 15:32:58 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Vlad Yasevich <vladislav.yasevich@hp.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [087/117] sctp: fix potential reference of a freed pointer
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-On Fri, May 07, 2010 at 03:05:25PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Change MFD 'menu' to 'menuconfig' to facilitate easy (one-click)
-> disabling of all MFD drivers.
-Thanks, patch applied.
-
-Cheers,
-Samuel.
+------------------
 
 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> ---
->  drivers/mfd/Kconfig |   10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> --- linux-2.6.34-rc6-git5.orig/drivers/mfd/Kconfig
-> +++ linux-2.6.34-rc6-git5/drivers/mfd/Kconfig
-> @@ -2,8 +2,14 @@
->  # Multifunction miscellaneous devices
->  #
->  
-> -menu "Multifunction device drivers"
-> +menuconfig MFD_SUPPORT
-> +	bool "Multifunction device drivers"
->  	depends on HAS_IOMEM
-> +	default y
-> +	help
-> +	  Configure MFD device drivers.
-> +
-> +if MFD_SUPPORT
->  
->  config MFD_CORE
->  	tristate
-> @@ -399,7 +405,7 @@ config LPC_SCH
->  	  LPC bridge function of the Intel SCH provides support for
->  	  System Management Bus and General Purpose I/O.
->  
-> -endmenu
-> +endif # MFD_SUPPORT
->  
->  menu "Multimedia Capabilities Port drivers"
->  	depends on ARCH_SA1100
+From: Vlad Yasevich <vladislav.yasevich@hp.com>
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+[ Upstream commit 0c42749cffbb4a06be86c5e5db6c7ebad548781f ]
+
+When sctp attempts to update an assocition, it removes any
+addresses that were not in the updated INITs.  However, the loop
+may attempt to refrence a transport with address after removing it.
+
+Signed-off-by: Vlad Yasevich <vladislav.yasevich@hp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ net/sctp/associola.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -1194,8 +1194,10 @@ void sctp_assoc_update(struct sctp_assoc
+ 	/* Remove any peer addresses not present in the new association. */
+ 	list_for_each_safe(pos, temp, &asoc->peer.transport_addr_list) {
+ 		trans = list_entry(pos, struct sctp_transport, transports);
+-		if (!sctp_assoc_lookup_paddr(new, &trans->ipaddr))
+-			sctp_assoc_del_peer(asoc, &trans->ipaddr);
++		if (!sctp_assoc_lookup_paddr(new, &trans->ipaddr)) {
++			sctp_assoc_rm_peer(asoc, trans);
++			continue;
++		}
+ 
+ 		if (asoc->state >= SCTP_STATE_ESTABLISHED)
+ 			sctp_transport_reset(trans);
+
+
