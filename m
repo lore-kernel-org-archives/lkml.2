@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab0EJPx1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 11:53:27 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45973 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753641Ab0EJPxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 11:53:25 -0400
-Date: Tue, 11 May 2010 01:53:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warnings after merge of the rr tree
-Message-Id: <20100511015319.24a07e09.sfr@canb.auug.org.au>
-In-Reply-To: <201005102203.54784.rusty@rustcorp.com.au>
-References: <20100510134409.4bbf1873.sfr@canb.auug.org.au>
-	<20100510134620.2e06495b.sfr@canb.auug.org.au>
-	<201005102203.54784.rusty@rustcorp.com.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1754065Ab0EJPxx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 11:53:53 -0400
+Received: from mtagate7.de.ibm.com ([195.212.17.167]:35117 "EHLO
+	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab0EJPxv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 11:53:51 -0400
+Date: Mon, 10 May 2010 17:53:38 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mundt <lethal@linux-sh.org>, Jim Cromie <jim.cromie@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH 3/3] Try to convert non-trivial clocksources to
+ clocksource_register_hz
+Message-ID: <20100510175338.05ef5db8@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <1272677785-23881-3-git-send-email-johnstul@us.ibm.com>
+References: <1272677785-23881-1-git-send-email-johnstul@us.ibm.com>
+	<1272677785-23881-2-git-send-email-johnstul@us.ibm.com>
+	<1272677785-23881-3-git-send-email-johnstul@us.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__11_May_2010_01_53_19_+1000_S+QaYzv81S3nc/Fi"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__11_May_2010_01_53_19_+1000_S+QaYzv81S3nc/Fi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 30 Apr 2010 18:36:25 -0700
+John Stultz <johnstul@us.ibm.com> wrote:
 
-Hi Rusty,
+> NOT FOR INCLUSION!
+> NOT FOR INCLUSION!
+> 
+> I've already gone through and converted the rest of the clocksources 
+> to use clocksource_register_hz, and I'll be hopefully pushing those 
+> to arch maintainers for 2.6.36-2.6.37.
+> 
+> However, in going through all the clocksources, I hit a few
+> non-trivial conversions and wanted to bring them up on the list
+> early so they can be handled soon.
+> 
+> The following patch tries to convert the non-trival clocksources
+> to use clocksource_register_hz/khz. It is likely broken. I will
+> need arch maintainer help to figure out the best way to resovle 
+> these clocksources.
+> 
+> This patch requires the previous "Add clocksource_register_hz/khz 
+> interface" patch to build. 
+> 
+> So any help maintainers can provide in finding solutions to
+> break the mult/shift assumptions in the arch code would be
+> greatly appreciated!
+> 
+> thanks
+> -john
+> 
+> NOT FOR INCLUSION!
+> NOT FOR INCLUSION!
 
-On Mon, 10 May 2010 22:03:53 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
-ote:
->
-> Thanks, these are harmless, and I had followup patches outside linux-next
-> which resolve them.
->=20
-> I've now included them in the linux-next part of the series.
+The s390 conversion to clocksource_register_khz looks good - at least
+the kilo hertz value is correct. Bit 2^12 of the TOD value are
+microseconds, which makes one millisecond (1000<<12). 
 
-Excellent, thanks.  The problem with "harmless" warnings is that they
-make the important warnings harder to spot. :-(
+-- 
+blue skies,
+   Martin.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+"Reality continues to ruin my life." - Calvin.
 
---Signature=_Tue__11_May_2010_01_53_19_+1000_S+QaYzv81S3nc/Fi
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvoK+8ACgkQjjKRsyhoI8wEvQCgn+d7jA8ElNqcEZ15sEDz413t
-xksAoJvmThJWu4dxc5nzZTymJ5u+5XYI
-=xolY
------END PGP SIGNATURE-----
-
---Signature=_Tue__11_May_2010_01_53_19_+1000_S+QaYzv81S3nc/Fi--
