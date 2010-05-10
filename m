@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab0EJUIQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 16:08:16 -0400
+	id S1756574Ab0EJUIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 16:08:22 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:40225 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756411Ab0EJUIJ (ORCPT
+	with ESMTP id S1756538Ab0EJUIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 16:08:09 -0400
+	Mon, 10 May 2010 16:08:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=googlemail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=iKL2pu3stOVkJlOtB5f2Tg2qJhAT0hrvIeGU34AYyyQXzli76HS77ikW/h2j6IrRYE
-         7mujk4ms5BJgdpZJjLRycSu8UMxNANU9Gk03/HgtZK4U5MP/AwZAYXxLbW3mTxHVAzO9
-         qIF2PDbUuWaFzmwHYZQhh9FWmbboPuTTQSVNM=
+        b=x6ZpVpsqoD04rmYMJD3ALZJ03u1g69ZFC/4RFrvdUXVPq9jlK1anvqL5tosYDTu/GC
+         1t+ogs4Cjm96PimsqKCr6JJrh8b8oGjiqO5Z7FulPHaQQ7tvI8gDbRHvsG8irHzZe6BF
+         zuSvDKkeA1se5wF9avMznzAiVXhgvU68h5cY8=
 From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
 To: paulius.zaleckas@gmail.com
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
        linux@arm.linux.org.uk, Imre Kaloz <kaloz@openwrt.org>,
        Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Subject: [PATCH 1/4] ARM: Gemini: add support for Wiligear WBD-111
-Date: Mon, 10 May 2010 22:06:58 +0200
-Message-Id: <1273522021-14436-2-git-send-email-ulli.kroll@googlemail.com>
+Subject: [PATCH 2/4] ARM: Gemini: add support for Wiliboard WBD-222
+Date: Mon, 10 May 2010 22:06:59 +0200
+Message-Id: <1273522021-14436-3-git-send-email-ulli.kroll@googlemail.com>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <1273522021-14436-1-git-send-email-ulli.kroll@googlemail.com>
 References: <1273522021-14436-1-git-send-email-ulli.kroll@googlemail.com>
@@ -30,49 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Imre Kaloz <kaloz@openwrt.org>
 
+Add support for Wiliboard WBD-222.
+
 Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
 ---
  arch/arm/mach-gemini/Kconfig        |    7 ++
  arch/arm/mach-gemini/Makefile       |    1 +
- arch/arm/mach-gemini/board-wbd111.c |  143 +++++++++++++++++++++++++++++++++++
+ arch/arm/mach-gemini/board-wbd222.c |  143 +++++++++++++++++++++++++++++++++++
  3 files changed, 151 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-gemini/board-wbd111.c
+ create mode 100644 arch/arm/mach-gemini/board-wbd222.c
 
 diff --git a/arch/arm/mach-gemini/Kconfig b/arch/arm/mach-gemini/Kconfig
-index 515b75c..4de67ce 100644
+index 4de67ce..7997500 100644
 --- a/arch/arm/mach-gemini/Kconfig
 +++ b/arch/arm/mach-gemini/Kconfig
-@@ -9,6 +9,13 @@ config MACH_RUT100
+@@ -16,6 +16,13 @@ config MACH_WBD111
  	  Say Y here if you intend to run this kernel on a
- 	  Teltonika 3G Router RUT100.
+ 	  Wiliboard WBD-111.
  
-+config MACH_WBD111
-+	bool "Wiliboard WBD-111"
-+	select GEMINI_MEM_SWAP
-+	help
-+	  Say Y here if you intend to run this kernel on a
-+	  Wiliboard WBD-111.
++config MACH_WBD222
++        bool "Wiliboard WBD-222"
++        select GEMINI_MEM_SWAP
++        help
++          Say Y here if you intend to run this kernel on a
++          Wiliboard WBD-222.
 +
  endmenu
  
  config GEMINI_MEM_SWAP
 diff --git a/arch/arm/mach-gemini/Makefile b/arch/arm/mach-gemini/Makefile
-index 719505b..3997487 100644
+index 3997487..8e02c47 100644
 --- a/arch/arm/mach-gemini/Makefile
 +++ b/arch/arm/mach-gemini/Makefile
-@@ -8,3 +8,4 @@ obj-y			:= irq.o mm.o time.o devices.o gpio.o
- 
+@@ -9,3 +9,4 @@ obj-y			:= irq.o mm.o time.o devices.o gpio.o
  # Board-specific support
  obj-$(CONFIG_MACH_RUT100)	+= board-rut1xx.o
-+obj-$(CONFIG_MACH_WBD111)	+= board-wbd111.o
-diff --git a/arch/arm/mach-gemini/board-wbd111.c b/arch/arm/mach-gemini/board-wbd111.c
+ obj-$(CONFIG_MACH_WBD111)	+= board-wbd111.o
++obj-$(CONFIG_MACH_WBD222)	+= board-wbd222.o
+diff --git a/arch/arm/mach-gemini/board-wbd222.c b/arch/arm/mach-gemini/board-wbd222.c
 new file mode 100644
-index 0000000..36538c1
+index 0000000..ece8b4c
 --- /dev/null
-+++ b/arch/arm/mach-gemini/board-wbd111.c
++++ b/arch/arm/mach-gemini/board-wbd222.c
 @@ -0,0 +1,143 @@
 +/*
-+ *  Support for Wiliboard WBD-111
++ *  Support for Wiliboard WBD-222
 + *
 + *  Copyright (C) 2009 Imre Kaloz <kaloz@openwrt.org>
 + *
@@ -98,7 +100,7 @@ index 0000000..36538c1
 +
 +#include "common.h"
 +
-+static struct gpio_keys_button wbd111_keys[] = {
++static struct gpio_keys_button wbd222_keys[] = {
 +	{
 +		.code		= KEY_SETUP,
 +		.gpio		= 5,
@@ -108,20 +110,20 @@ index 0000000..36538c1
 +	},
 +};
 +
-+static struct gpio_keys_platform_data wbd111_keys_data = {
-+	.buttons	= wbd111_keys,
-+	.nbuttons	= ARRAY_SIZE(wbd111_keys),
++static struct gpio_keys_platform_data wbd222_keys_data = {
++	.buttons	= wbd222_keys,
++	.nbuttons	= ARRAY_SIZE(wbd222_keys),
 +};
 +
-+static struct platform_device wbd111_keys_device = {
++static struct platform_device wbd222_keys_device = {
 +	.name	= "gpio-keys",
 +	.id	= -1,
 +	.dev	= {
-+		.platform_data = &wbd111_keys_data,
++		.platform_data = &wbd222_keys_data,
 +	},
 +};
 +
-+static struct gpio_led wbd111_leds[] = {
++static struct gpio_led wbd222_leds[] = {
 +	{
 +		.name			= "L3red",
 +		.gpio			= 1,
@@ -140,25 +142,25 @@ index 0000000..36538c1
 +	},
 +};
 +
-+static struct gpio_led_platform_data wbd111_leds_data = {
-+	.num_leds	= ARRAY_SIZE(wbd111_leds),
-+	.leds		= wbd111_leds,
++static struct gpio_led_platform_data wbd222_leds_data = {
++	.num_leds	= ARRAY_SIZE(wbd222_leds),
++	.leds		= wbd222_leds,
 +};
 +
-+static struct platform_device wbd111_leds_device = {
++static struct platform_device wbd222_leds_device = {
 +	.name	= "leds-gpio",
 +	.id	= -1,
 +	.dev	= {
-+		.platform_data = &wbd111_leds_data,
++		.platform_data = &wbd222_leds_data,
 +	},
 +};
 +
-+static struct sys_timer wbd111_timer = {
++static struct sys_timer wbd222_timer = {
 +	.init	= gemini_timer_init,
 +};
 +
 +#ifdef CONFIG_MTD_PARTITIONS
-+static struct mtd_partition wbd111_partitions[] = {
++static struct mtd_partition wbd222_partitions[] = {
 +	{
 +		.name		= "RedBoot",
 +		.offset		= 0,
@@ -189,30 +191,30 @@ index 0000000..36538c1
 +		.mask_flags	= MTD_WRITEABLE,
 +	}
 +};
-+#define wbd111_num_partitions	ARRAY_SIZE(wbd111_partitions)
++#define wbd222_num_partitions	ARRAY_SIZE(wbd222_partitions)
 +#else
-+#define wbd111_partitions	NULL
-+#define wbd111_num_partitions	0
++#define wbd222_partitions	NULL
++#define wbd222_num_partitions	0
 +#endif /* CONFIG_MTD_PARTITIONS */
 +
-+static void __init wbd111_init(void)
++static void __init wbd222_init(void)
 +{
 +	gemini_gpio_init();
 +	platform_register_uart();
-+	platform_register_pflash(SZ_8M, wbd111_partitions,
-+				 wbd111_num_partitions);
-+	platform_device_register(&wbd111_leds_device);
-+	platform_device_register(&wbd111_keys_device);
++	platform_register_pflash(SZ_8M, wbd222_partitions,
++		wbd222_num_partitions);
++	platform_device_register(&wbd222_leds_device);
++	platform_device_register(&wbd222_keys_device);
 +}
 +
-+MACHINE_START(WBD111, "Wiliboard WBD-111")
++MACHINE_START(WBD222, "Wiliboard WBD-222")
 +	.phys_io	= 0x7fffc000,
 +	.io_pg_offst	= ((0xffffc000) >> 18) & 0xfffc,
 +	.boot_params	= 0x100,
 +	.map_io		= gemini_map_io,
 +	.init_irq	= gemini_init_irq,
-+	.timer		= &wbd111_timer,
-+	.init_machine	= wbd111_init,
++	.timer		= &wbd222_timer,
++	.init_machine	= wbd222_init,
 +MACHINE_END
 -- 
 1.7.0.3
