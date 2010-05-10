@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756353Ab0EJTxt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 15:53:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47557 "EHLO mx1.redhat.com"
+	id S1756377Ab0EJTyP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 15:54:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53731 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754469Ab0EJTxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 15:53:47 -0400
-Date: Mon, 10 May 2010 21:50:38 +0200
+	id S1750990Ab0EJTyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 15:54:14 -0400
+Date: Mon, 10 May 2010 21:51:04 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Cedric Le Goater <clg@fr.ibm.com>, Dave Hansen <haveblue@us.ibm.com>,
@@ -15,8 +15,8 @@ Cc: Cedric Le Goater <clg@fr.ibm.com>, Dave Hansen <haveblue@us.ibm.com>,
        Mathias Krause <Mathias.Krause@secunet.com>,
        Roland McGrath <roland@redhat.com>, Serge Hallyn <serue@us.ibm.com>,
        Sukadev Bhattiprolu <sukadev@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] pids: fix fork_idle() to setup ->pids correctly
-Message-ID: <20100510195038.GD5249@redhat.com>
+Subject: [PATCH 4/4] INIT_SIGHAND: use SIG_DFL instead of NULL
+Message-ID: <20100510195104.GE5249@redhat.com>
 References: <4BE01C86.3050908@secunet.com> <20100509184510.GA15219@redhat.com> <4BE7B3BD.70901@secunet.com> <20100510194917.GA5249@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,54 +27,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-copy_process(pid => &init_struct_pid) doesn't do attach_pid/etc.
+Cosmetic, no changes in the compiled code. Just s/NULL/SIG_DFL/ to make
+it more readable and grep-friendly.
 
-It shouldn't, but this means that the idle threads run with the wrong
-pids copied from the caller's task_struct. In x86 case the caller is
-either kernel_init() thread or keventd.
-
-In particular, this means that after the series of cpu_up/cpu_down an
-idle thread (which never exits) can run with .pid pointing to nowhere.
-
-Change fork_idle() to initialize idle->pids[] correctly. We only set
-.pid = &init_struct_pid but do not add .node to list, INIT_TASK() does
-the same for the boot-cpu idle thread (swapper).
+Note: probably SIG_IGN makes more sense, we could kill ignore_signals().
+But then kernel_init() should do flush_signal_handlers() before exec().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
 
- kernel/fork.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ include/linux/init_task.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- 34-rc1/kernel/fork.c~3_FORK_IDLE_SET_PIDS	2010-03-24 18:07:03.000000000 +0100
-+++ 34-rc1/kernel/fork.c	2010-05-10 20:45:33.000000000 +0200
-@@ -1339,6 +1339,16 @@ noinline struct pt_regs * __cpuinit __at
- 	return regs;
- }
+--- 34-rc1/include/linux/init_task.h~4_INIT_SIGHAND_USE_SIG_DFL	2010-05-10 20:26:08.000000000 +0200
++++ 34-rc1/include/linux/init_task.h	2010-05-10 21:06:03.000000000 +0200
+@@ -43,7 +43,7 @@ extern struct nsproxy init_nsproxy;
  
-+static inline void init_idle_pids(struct pid_link *links)
-+{
-+	enum pid_type type;
-+
-+	for (type = PIDTYPE_PID; type < PIDTYPE_MAX; ++type) {
-+		INIT_HLIST_NODE(&links[type].node); /* not really needed */
-+		links[type].pid = &init_struct_pid;
-+	}
-+}
-+
- struct task_struct * __cpuinit fork_idle(int cpu)
- {
- 	struct task_struct *task;
-@@ -1346,8 +1356,10 @@ struct task_struct * __cpuinit fork_idle
- 
- 	task = copy_process(CLONE_VM, 0, idle_regs(&regs), 0, NULL,
- 			    &init_struct_pid, 0);
--	if (!IS_ERR(task))
-+	if (!IS_ERR(task)) {
-+		init_idle_pids(task->pids);
- 		init_idle(task, cpu);
-+	}
- 
- 	return task;
+ #define INIT_SIGHAND(sighand) {						\
+ 	.count		= ATOMIC_INIT(1), 				\
+-	.action		= { { { .sa_handler = NULL, } }, },		\
++	.action		= { { { .sa_handler = SIG_DFL, } }, },		\
+ 	.siglock	= __SPIN_LOCK_UNLOCKED(sighand.siglock),	\
+ 	.signalfd_wqh	= __WAIT_QUEUE_HEAD_INITIALIZER(sighand.signalfd_wqh),	\
  }
 
