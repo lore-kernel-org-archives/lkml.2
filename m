@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab0EJQwJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 12:52:09 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:25068 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026Ab0EJQwG (ORCPT
+	id S1755474Ab0EJQwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 12:52:18 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50900 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755026Ab0EJQwN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 12:52:06 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Huang Ying <ying.huang@intel.com>
-Subject: Re: [BUGFIX] ACPI, APEI, Fix building of APEI EINJ and GHES
-Date: Mon, 10 May 2010 10:50:48 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, Randy Dunlap <randy.dunlap@oracle.com>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-References: <1273483482.3344.65.camel@yhuang-dev.sh.intel.com>
-In-Reply-To: <1273483482.3344.65.camel@yhuang-dev.sh.intel.com>
+	Mon, 10 May 2010 12:52:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=o6PNwwrx/IyE0wIoB/yBA3hiZHTF1Zx2aTEjRLiQ7WsvoyDBUUFYbvMXTCIwNb6AHl
+         SdS/hjMOMjXpKB54w+CdvWVeuIDoufssDhkXKKnHJ332PVzlz9AJhMVydY0mrgzunC66
+         EuwYiLwpqharrFFQRWG0KWdd9DkKT85IIX7iA=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005101050.49328.bjorn.helgaas@hp.com>
+In-Reply-To: <1273508667-5152-5-git-send-email-npalix@diku.dk>
+References: <1273508667-5152-1-git-send-email-npalix@diku.dk>
+	 <1273508667-5152-5-git-send-email-npalix@diku.dk>
+Date: Mon, 10 May 2010 19:52:10 +0300
+X-Google-Sender-Auth: 21f9bf1db5ff7ae6
+Message-ID: <o2y84144f021005100952z1a7e991dt21341fb8f7c76af@mail.gmail.com>
+Subject: Re: [PATCH 4/4] Add scripts/coccinelle/resource_size.cocci
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Nicolas Palix <npalix@diku.dk>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
+       Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
+       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
+       linux-kbuild@vger.kernel.org, cocci@diku.dk,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Kernel Janitors <kernel-janitors@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 10, 2010 03:24:42 am Huang Ying wrote:
-> Randy reported building warnings and errors for APEI EINJ and GHES as follow:
-> 
-> drivers/acpi/apei/einj.c:127:error: implicit declaration of function 'ndelay'
-> 
-> ghes.c:(.text+0x119e71): undefined reference to `apei_mce_report_mem_error'
-> CONFIG_X86_MCE is not enabled
-> 
-> This patch fixes these two bugs.
-> 
-> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> ---
->  drivers/acpi/apei/einj.c |    1 +
->  drivers/acpi/apei/ghes.c |    2 ++
->  2 files changed, 3 insertions(+)
+On Mon, May 10, 2010 at 7:24 PM, Nicolas Palix <npalix@diku.dk> wrote:
+> @@ -0,0 +1,94 @@
+> +///
+> +/// Use resource_size function on resource object
+> +/// instead of explicit computation.
+> +///
+> +//  Confidence: High
+> +//  Copyright: (C) 2009, 2010 Nicolas Palix, DIKU.  GPLv2.
+> +//  Copyright: (C) 2009, 2010 Julia Lawall, DIKU.  GPLv2.
+> +//  Copyright: (C) 2009, 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
+> +//  URL: http://coccinelle.lip6.fr/
+> +//  Options:
+> +//
+> +//  Keywords: resource_size
+> +//  Version min: 2.6.27 resource_size
 
-The drivers/acpi/apei directory isn't in Linus' tree yet, so this should
-be fixed by reposting the original submission with this change included.
-Otherwise, there will be a series of commits that is not bisectable
-because of this build failure.
-
-> --- a/drivers/acpi/apei/einj.c
-> +++ b/drivers/acpi/apei/einj.c
-> @@ -29,6 +29,7 @@
->  #include <linux/init.h>
->  #include <linux/io.h>
->  #include <linux/debugfs.h>
-> +#include <linux/delay.h>
->  #include <linux/seq_file.h>
->  #include <linux/nmi.h>
->  #include <acpi/acpi.h>
-> --- a/drivers/acpi/apei/ghes.c
-> +++ b/drivers/acpi/apei/ghes.c
-> @@ -242,6 +242,7 @@ static void ghes_do_proc(struct ghes *gh
->  
->  	ser = ghes_severity(ghes->estatus->error_severity);
->  	apei_estatus_for_each_section(ghes->estatus, gdata) {
-> +#ifdef CONFIG_X86_MCE
->  		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
->  				 CPER_SEC_PLATFORM_MEM)) {
->  			apei_mce_report_mem_error(
-> @@ -249,6 +250,7 @@ static void ghes_do_proc(struct ghes *gh
->  				(struct cper_sec_mem_err *)(gdata+1));
->  			processed = 1;
->  		}
-> +#endif
->  	}
->  
->  	if (!processed && printk_ratelimit())
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+I guess we don't need this versioning in mainline?
