@@ -1,369 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab0EJGCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 02:02:46 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33277 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab0EJGCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 02:02:43 -0400
-Date: Mon, 10 May 2010 16:02:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for May 10
-Message-Id: <20100510160234.54f76c0a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1755197Ab0EJGFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 02:05:09 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:37617 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753942Ab0EJGFG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 02:05:06 -0400
+X-Sasl-enc: pT35T+v4m0EF5ungg9dvhqseM1EH2ooqimISm+a2lSSR 1273471493
+Subject: Re: [PATCH] autofs4-2.6.34-rc1 - fix link_count usage
+From: Ian Kent <raven@themaw.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Al Viro <viro@ZenIV.linux.org.uk>
+In-Reply-To: <20100510051830.10353.31165.stgit@localhost.localdomain>
+References: <20100510051830.10353.31165.stgit@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 May 2010 14:04:47 +0800
+Message-ID: <1273471487.2246.1.camel@localhost>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__10_May_2010_16_02_34_+1000_EIDxRFWRjEsz2sI+"
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_May_2010_16_02_34_+1000_EIDxRFWRjEsz2sI+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2010-05-10 at 13:18 +0800, Ian Kent wrote:
 
-Hi all,
+Sorry, this isn't right, please ignore it.
+Apart from the lack of a Signed-off-by: I hadn't tested against
+the current kernel source when I posted.
 
-Changes since 20100507:
+> Following the commit below in 2.6.34-rc1 autofs direct mounts stop
+> working. This is caused by current->link_count being 0 when
+> ->follow_link() is called from do_filp_open().
+> 
+> I can't work out why this hasn't been seen before Als patch series.
+> 
+> This patch removes the autofs dependence on current->link_count.
+> 
+> 1f36f774b22a0ceb7dd33eca626746c81a97b6a5 is the first bad commit
+> commit 1f36f774b22a0ceb7dd33eca626746c81a97b6a5
+> Author: Al Viro <viro@zeniv.linux.org.uk>
+> Date:   Sat Dec 26 10:56:19 2009 -0500
+> 
+>     Switch !O_CREAT case to use of do_last()
+> 
+>     ... and now we have all intents crap well localized
+> 
+>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> 
+> :040000 040000 53c1effc5b22746bb83cdbc6a419bf898067882d 9606f7275fde188a056fd174aa1d622ac0630893 M	fs
+> ---
+> 
+>  fs/autofs4/root.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+> index 109a6c6..a7e04ad 100644
+> --- a/fs/autofs4/root.c
+> +++ b/fs/autofs4/root.c
+> @@ -177,8 +177,7 @@ static int try_to_fill_dentry(struct dentry *dentry, int flags)
+>  		}
+>  	/* Trigger mount for path component or follow link */
+>  	} else if (ino->flags & AUTOFS_INF_PENDING ||
+> -			autofs4_need_mount(flags) ||
+> -			current->link_count) {
+> +			autofs4_need_mount(flags)) {
+>  		DPRINTK("waiting for mount name=%.*s",
+>  			dentry->d_name.len, dentry->d_name.name);
+>  
+> @@ -262,7 +261,7 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
+>  		spin_unlock(&dcache_lock);
+>  		spin_unlock(&sbi->fs_lock);
+>  
+> -		status = try_to_fill_dentry(dentry, 0);
+> +		status = try_to_fill_dentry(dentry, lookup_type);
+>  		if (status)
+>  			goto out_error;
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Dropped trees: tmio-mmc (long unresolved conflicts and unable to fetch)
-	hwlat (at the maintainer's request)
 
-The wireless-current tree gained a conflict against a fix patch I am
-carrying.
-
-The v4l-dvb tree gained 3 conflicts against Linus' tree.
-
-The wireless tree gained a conflict against Linus' tree.
-
-The rr tree gained a conflict against wireless tree.
-
-The backlight tree gained a build failure so I used the version from
-next-20100507.
-
-The tip tree gained a build failure so I used the version from
-next-20100507.
-
-The staging-next tree gained a conflict against the rr tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 162 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Applying: ar9170: fix for driver-core ABI change
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/ath/ar9170/usb.c
-Merging kbuild-current/for-linus
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Applying: staging: update gfp/slab.h includes
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Applying: arm: update gfp/slab.h includes
-Merging davinci/davinci-next
-Applying: davinci: update gfp/slab.h includes
-Merging i.MX/for-next
-Merging msm/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/Kconfig
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-Merging sparc/master
-Merging xtensa/master
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Applying: ocfs2: update gfp/slab.h includes
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-CONFLICT (content): Merge conflict in fs/9p/vfs_super.c
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-CONFLICT (content): Merge conflict in fs/cifs/file.c
-CONFLICT (content): Merge conflict in fs/namei.c
-CONFLICT (content): Merge conflict in fs/nfs/inode.c
-CONFLICT (content): Merge conflict in fs/nfsd/nfs4xdr.c
-CONFLICT (content): Merge conflict in fs/nfsd/vfs.c
-CONFLICT (content): Merge conflict in fs/ufs/inode.c
-CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
-CONFLICT (content): Merge conflict in security/tomoyo/realpath.c
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-CONFLICT (content): Merge conflict in drivers/media/dvb/ttpci/budget.c
-CONFLICT (content): Merge conflict in drivers/media/video/Makefile
-CONFLICT (content): Merge conflict in drivers/media/video/gspca/sn9c20x.c
-Applying: v4l-dvb: update gfp/slab.h includes
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Applying: acpi: update gfp/slab.h includes
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-CONFLICT (content): Merge conflict in drivers/scsi/iscsi_tcp.c
-Merging wireless/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/ath/ar9170/main.c
-Applying: wireless: update gfp/slab.h includes
-Merging mtd/master
-CONFLICT (content): Merge conflict in drivers/mtd/mtdcore.c
-Applying: mtd: update gfp/slab.h includes
-Merging crypto/master
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-CONFLICT (content): Merge conflict in drivers/net/virtio_net.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/libertas_tf/if_u=
-sb.c
-CONFLICT (content): Merge conflict in include/linux/mod_devicetable.h
-CONFLICT (content): Merge conflict in scripts/mod/file2alias.c
-Merging mmc/next
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-CONFLICT (content): Merge conflict in fs/ext3/fsync.c
-CONFLICT (content): Merge conflict in fs/ext4/fsync.c
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-CONFLICT (content): Merge conflict in drivers/net/pcmcia/3c589_cs.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/orinoco/orinoco_=
-cs.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/orinoco/spectrum=
-_cs.c
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-$ git reset --hard HEAD^
-Merging refs/next/20100507/backlight
-Merging kgdb/kgdb-next
-Applying: kgdb: update for sysrq handling change
-Applying: kdb: update gfp/slab.h includes
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/dma/Makefile
-CONFLICT (add/add): Merge conflict in drivers/dma/timb_dma.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/i915_drv.h
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/r300.c
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Applying: wireless: update for pm_qos_requirement to pm_qos_request rename
-Merging bluetooth/master
-Merging fsnotify/for-next
-Applying: fsnotify: update gfp/slab.h includes
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging drbd/for-jens
-Merging catalin/for-next
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-CONFLICT (content): Merge conflict in lib/Kconfig
-Applying: vbus: use of kzalloc/kfree requires the include of slab.h
-Applying: vbus: update gfp/slab.h includes
-Merging i7core_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging omap_dss2/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-rx51-periph=
-erals.c
-Merging tip/auto-latest
-$ git reset --hard HEAD^
-Merging refs/next/20100507/tip
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging bkl-core/bkl/core
-Merging bkl-procfs/bkl/procfs
-Merging bkl-ioctl/bkl/ioctl
-CONFLICT (content): Merge conflict in arch/cris/arch-v10/drivers/ds1302.c
-CONFLICT (content): Merge conflict in drivers/block/pktcdvd.c
-Merging quilt/driver-core
-CONFLICT (content): Merge conflict in drivers/base/platform.c
-CONFLICT (content): Merge conflict in drivers/staging/comedi/drivers/quatec=
-h_daqp_cs.c
-Applying: md: fixup for sysfs_get_dirent API change
-Merging quilt/tty
-CONFLICT (content): Merge conflict in include/linux/tty.h
-Merging quilt/usb
-CONFLICT (content): Merge conflict in drivers/input/tablet/acecad.c
-CONFLICT (content): Merge conflict in drivers/input/tablet/kbtab.c
-CONFLICT (content): Merge conflict in drivers/input/tablet/wacom_sys.c
-CONFLICT (delete/modify): sound/usb/usbaudio.c deleted in HEAD and modified=
- in quilt/usb. Version quilt/usb of sound/usb/usbaudio.c left in tree.
-$ git rm -f sound/usb/usbaudio.c
-Applying: usb: update gfp/slab.h includes
-Applying: sound: fixup for usb_buffer_alloc/free rename
-Merging staging-next/staging-next
-CONFLICT (rename/modify): Merge conflict in drivers/staging/hv/hv.c
-CONFLICT (delete/modify): drivers/staging/arlan/arlan-main.c deleted in sta=
-ging-next/staging-next and modified in HEAD. Version HEAD of drivers/stagin=
-g/arlan/arlan-main.c left in tree.
-CONFLICT (content): Merge conflict in drivers/staging/comedi/drivers/cb_das=
-16_cs.c
-CONFLICT (content): Merge conflict in drivers/staging/cx25821/cx25821-alsa.c
-CONFLICT (content): Merge conflict in drivers/staging/dt3155/dt3155_drv.c
-CONFLICT (delete/modify): drivers/staging/netwave/netwave_cs.c deleted in s=
-taging-next/staging-next and modified in HEAD. Version HEAD of drivers/stag=
-ing/netwave/netwave_cs.c left in tree.
-CONFLICT (content): Merge conflict in drivers/staging/rtl8187se/r8180_core.c
-CONFLICT (delete/modify): drivers/staging/wavelan/wavelan.c deleted in stag=
-ing-next/staging-next and modified in HEAD. Version HEAD of drivers/staging=
-/wavelan/wavelan.c left in tree.
-CONFLICT (delete/modify): drivers/staging/wavelan/wavelan_cs.c deleted in s=
-taging-next/staging-next and modified in HEAD. Version HEAD of drivers/stag=
-ing/wavelan/wavelan_cs.c left in tree.
-$ git rm -f drivers/staging/arlan/arlan-main.c
-$ git rm -f drivers/staging/netwave/netwave_cs.c
-$ git rm -f drivers/staging/wavelan/wavelan.c
-$ git rm -f drivers/staging/wavelan/wavelan_cs.c
-Merging slabh/slabh
-Merging scsi-post-merge/master
-
---Signature=_Mon__10_May_2010_16_02_34_+1000_EIDxRFWRjEsz2sI+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvnoXoACgkQjjKRsyhoI8wUPQCgrUdnnw4rGy3mXCZOmInw+MWY
-oSUAn0i4zELm51DCFEpvOeFL7U2w3ToN
-=DPIE
------END PGP SIGNATURE-----
-
---Signature=_Mon__10_May_2010_16_02_34_+1000_EIDxRFWRjEsz2sI+--
