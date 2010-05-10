@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab0EJWaP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:30:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56227 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757119Ab0EJWaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:30:10 -0400
+	id S932100Ab0EJWdr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:33:47 -0400
+Received: from mga10.intel.com ([192.55.52.92]:36819 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757119Ab0EJWdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:33:45 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,202,1272870000"; 
-   d="scan'208";a="620524066"
-Date: Tue, 11 May 2010 00:30:51 +0200
+X-IronPort-AV: E=Sophos;i="4.53,203,1272870000"; 
+   d="scan'208";a="797178597"
+Date: Tue, 11 May 2010 00:34:26 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
 To: Linus Walleij <linus.walleij@stericsson.com>
 Cc: linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
        Mattias Wallin <mattias.wallin@stericsson.com>
-Subject: Re: [PATCH 2/4] MFD: AB3100 register access change to abx500 API v2
-Message-ID: <20100510223049.GB3288@sortiz.org>
-References: <1272731180-29973-1-git-send-email-linus.walleij@stericsson.com>
+Subject: Re: [PATCH 3/4] MFD: AB3550 core driver v2
+Message-ID: <20100510223424.GC3288@sortiz.org>
+References: <1272731191-30233-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1272731180-29973-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1272731191-30233-1-git-send-email-linus.walleij@stericsson.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,950 +29,1491 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-On Sat, May 01, 2010 at 06:26:20PM +0200, Linus Walleij wrote:
+On Sat, May 01, 2010 at 06:26:31PM +0200, Linus Walleij wrote:
 > From: Mattias Wallin <mattias.wallin@stericsson.com>
 > 
-> The interface for the AB3100 is changed to make way for the
-> ABX500 family of chips: AB3550, AB5500 and future ST-Ericsson
-> Analog Baseband chips. The register access functions are moved
-> out to a separate struct abx500_ops. In this way the interface
-> is moved from the implementation and the sub functionality drivers
-> can keep their interface intact when chip infrastructure and
-> communication mechanisms changes. We also define the AB3550
-> device IDs and the AB3550 platform data struct and convert
-> the catenated 32bit event to an array of 3 x 8bits.
-Patch applied, thanks a lot.
-
-Cheers,
-Samuel.
-
+> This adds a core driver for the AB3550 mixed-signal circuit
+> found in the ST-Ericsson U300 platforms. This driver
+> is a singleton proxy for all access to the AB3550 sub
+> functionality drivers which can be added on top of this one:
+> RTC, regulators, battery and system power control, vibrator,
+> LEDs and an ALSA codec.
+> 
 > Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
 > Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 > ---
->  drivers/mfd/Kconfig        |   12 +++-
->  drivers/mfd/Makefile       |    1 +
->  drivers/mfd/ab3100-core.c  |   95 ++++++++++++++++++--------
->  drivers/mfd/ab3100-otp.c   |   11 +--
->  drivers/mfd/abx500-core.c  |  157 ++++++++++++++++++++++++++++++++++++++++++++
->  drivers/regulator/ab3100.c |   33 +++++-----
->  drivers/rtc/rtc-ab3100.c   |   39 +++++-------
->  include/linux/mfd/abx500.h |  134 +++++++++++++++++++++++++++++++++----
->  8 files changed, 390 insertions(+), 92 deletions(-)
->  create mode 100644 drivers/mfd/abx500-core.c
+> Changes from v1:
+> - Separated machine changes for U300 into a separate patch
+> - Had to keep struct ab3550_reg_range: no permissions possible
+>   on struct resource...
+> - Simplified ab3550_i2c_master_send() and ab3550_i2c_master_recv()
+>   as suggested by Sam.
+> - Adopted the new struct abx500_ops so that you can actually have
+>   AB3100 and AB3550 at the same time (no namespace clashes!)
+> - Use a local variable for init_settings as suggested.
+> - Spaced up the code with some more newlines to increase
+>   readability.
+> - Use struct mfd_cell and MFD core mfd_add_devices() to
+>   register sub-devices!
+Thanks for the changes, looks much better.
+
+I applied this patch with some additions:
+- It now depends on GENERIC_HARDIRQS
+- It no longer is tristate but bool, as the genirq API is not exported to
+modules.
+- I added an ifdef ARM around your set_irq_flags() call to have this driver
+build in other archs than ARM.
+
+Cheersm
+Samuel.
+
+> ---
+>  drivers/mfd/Kconfig       |   14 +
+>  drivers/mfd/Makefile      |    1 +
+>  drivers/mfd/ab3550-core.c | 1397 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 1412 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/mfd/ab3550-core.c
 > 
 > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 2515b6a..3b13202 100644
+> index 3b13202..8673aa2 100644
 > --- a/drivers/mfd/Kconfig
 > +++ b/drivers/mfd/Kconfig
-> @@ -357,9 +357,19 @@ config PCF50633_GPIO
->  	 Say yes here if you want to include support GPIO for pins on
->  	 the PCF50633 chip.
+> @@ -406,6 +406,20 @@ config AB4500_CORE
+>  	  read/write functions for the devices to get access to this chip.
+>  	  This chip embeds various other multimedia funtionalities as well.
 >  
-> +config ABX500_CORE
-> +	bool "ST-Ericsson ABX500 Mixed Signal Circuit register functions"
-> +	default y if ARCH_U300
-> +	help
-> +	  Say yes here if you have the ABX500 Mixed Signal IC family
-> +	  chips. This core driver expose register access functions.
-> +	  Functionality specific drivers using these functions can
-> +	  remain unchanged when IC changes. Binding of the functions to
-> +	  actual register access is done by the IC core driver.
-> +
->  config AB3100_CORE
->  	bool "ST-Ericsson AB3100 Mixed Signal Circuit core functions"
-> -	depends on I2C=y
+> +config AB3550_CORE
+> +	tristate "ST-Ericsson AB3550 Mixed Signal Circuit core functions"
+> +	select MFD_CORE
 > +	depends on I2C=y && ABX500_CORE
->  	default y if ARCH_U300
->  	help
->  	  Select this to enable the AB3100 Mixed Signal IC core
+> +	help
+> +	  Select this to enable the AB3550 Mixed Signal IC core
+> +	  functionality. This connects to a AB3550 on the I2C bus
+> +	  and expose a number of symbols needed for dependent devices
+> +	  to read and write registers and subscribe to events from
+> +	  this multi-functional IC. This is needed to use other features
+> +	  of the AB3550 such as battery-backed RTC, charging control,
+> +	  LEDs, vibrator, system power and temperature, power management
+> +	  and ALSA sound.
+> +
+>  config MFD_TIMBERDALE
+>  	tristate "Support for the Timberdale FPGA"
+>  	select MFD_CORE
 > diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index abf6f17..8da1257 100644
+> index 8da1257..f493ff4 100644
 > --- a/drivers/mfd/Makefile
 > +++ b/drivers/mfd/Makefile
-> @@ -59,6 +59,7 @@ obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
->  obj-$(CONFIG_MFD_PCF50633)	+= pcf50633-core.o
->  obj-$(CONFIG_PCF50633_ADC)	+= pcf50633-adc.o
->  obj-$(CONFIG_PCF50633_GPIO)	+= pcf50633-gpio.o
-> +obj-$(CONFIG_ABX500_CORE)	+= abx500-core.o
+> @@ -63,6 +63,7 @@ obj-$(CONFIG_ABX500_CORE)	+= abx500-core.o
 >  obj-$(CONFIG_AB3100_CORE)	+= ab3100-core.o
 >  obj-$(CONFIG_AB3100_OTP)	+= ab3100-otp.o
 >  obj-$(CONFIG_AB4500_CORE)	+= ab4500-core.o
-> diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
-> index f8c4a33..53ebfee 100644
-> --- a/drivers/mfd/ab3100-core.c
-> +++ b/drivers/mfd/ab3100-core.c
-> @@ -59,24 +59,15 @@
->   * The AB3100 is usually assigned address 0x48 (7-bit)
->   * The chip is defined in the platform i2c_board_data section.
->   */
-> -
-> -u8 ab3100_get_chip_type(struct ab3100 *ab3100)
-> +static int ab3100_get_chip_id(struct device *dev)
->  {
-> -	u8 chip = ABUNKNOWN;
-> -
-> -	switch (ab3100->chip_id & 0xf0) {
-> -	case  0xa0:
-> -		chip = AB3000;
-> -		break;
-> -	case  0xc0:
-> -		chip = AB3100;
-> -		break;
-> -	}
-> -	return chip;
-> +	struct ab3100 *ab3100 = dev_get_drvdata(dev->parent);
-> +
-> +	return (int)ab3100->chip_id;
->  }
-> -EXPORT_SYMBOL(ab3100_get_chip_type);
->  
-> -int ab3100_set_register_interruptible(struct ab3100 *ab3100, u8 reg, u8 regval)
-> +static int ab3100_set_register_interruptible(struct ab3100 *ab3100,
-> +	u8 reg, u8 regval)
->  {
->  	u8 regandval[2] = {reg, regval};
->  	int err;
-> @@ -108,8 +99,14 @@ int ab3100_set_register_interruptible(struct ab3100 *ab3100, u8 reg, u8 regval)
->  	mutex_unlock(&ab3100->access_mutex);
->  	return err;
->  }
-> -EXPORT_SYMBOL(ab3100_set_register_interruptible);
->  
-> +static int set_register_interruptible(struct device *dev,
-> +	u8 bank, u8 reg, u8 value)
-> +{
-> +	struct ab3100 *ab3100 = dev_get_drvdata(dev->parent);
-> +
-> +	return ab3100_set_register_interruptible(ab3100, reg, value);
-> +}
->  
->  /*
->   * The test registers exist at an I2C bus address up one
-> @@ -148,8 +145,8 @@ static int ab3100_set_test_register_interruptible(struct ab3100 *ab3100,
->  	return err;
->  }
->  
-> -
-> -int ab3100_get_register_interruptible(struct ab3100 *ab3100, u8 reg, u8 *regval)
-> +static int ab3100_get_register_interruptible(struct ab3100 *ab3100,
-> +	u8 reg, u8 *regval)
->  {
->  	int err;
->  
-> @@ -203,10 +200,16 @@ int ab3100_get_register_interruptible(struct ab3100 *ab3100, u8 reg, u8 *regval)
->  	mutex_unlock(&ab3100->access_mutex);
->  	return err;
->  }
-> -EXPORT_SYMBOL(ab3100_get_register_interruptible);
->  
-> +static int get_register_interruptible(struct device *dev, u8 bank, u8 reg,
-> +	u8 *value)
-> +{
-> +	struct ab3100 *ab3100 = dev_get_drvdata(dev->parent);
-> +
-> +	return ab3100_get_register_interruptible(ab3100, reg, value);
-> +}
->  
-> -int ab3100_get_register_page_interruptible(struct ab3100 *ab3100,
-> +static int ab3100_get_register_page_interruptible(struct ab3100 *ab3100,
->  			     u8 first_reg, u8 *regvals, u8 numregs)
->  {
->  	int err;
-> @@ -260,10 +263,17 @@ int ab3100_get_register_page_interruptible(struct ab3100 *ab3100,
->  	mutex_unlock(&ab3100->access_mutex);
->  	return err;
->  }
-> -EXPORT_SYMBOL(ab3100_get_register_page_interruptible);
->  
-> +static int get_register_page_interruptible(struct device *dev, u8 bank,
-> +	u8 first_reg, u8 *regvals, u8 numregs)
-> +{
-> +	struct ab3100 *ab3100 = dev_get_drvdata(dev->parent);
-> +
-> +	return ab3100_get_register_page_interruptible(ab3100,
-> +			first_reg, regvals, numregs);
-> +}
->  
-> -int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
-> +static int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
->  				 u8 reg, u8 andmask, u8 ormask)
->  {
->  	u8 regandval[2] = {reg, 0};
-> @@ -331,8 +341,15 @@ int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
->  	mutex_unlock(&ab3100->access_mutex);
->  	return err;
->  }
-> -EXPORT_SYMBOL(ab3100_mask_and_set_register_interruptible);
->  
-> +static int mask_and_set_register_interruptible(struct device *dev, u8 bank,
-> +	u8 reg, u8 bitmask, u8 bitvalues)
-> +{
-> +	struct ab3100 *ab3100 = dev_get_drvdata(dev->parent);
-> +
-> +	return ab3100_mask_and_set_register_interruptible(ab3100,
-> +			reg, bitmask, (bitmask & bitvalues));
-> +}
->  
->  /*
->   * Register a simple callback for handling any AB3100 events.
-> @@ -357,15 +374,27 @@ int ab3100_event_unregister(struct ab3100 *ab3100,
->  EXPORT_SYMBOL(ab3100_event_unregister);
->  
->  
-> -int ab3100_event_registers_startup_state_get(struct ab3100 *ab3100,
-> -					     u32 *fatevent)
-> +static int ab3100_event_registers_startup_state_get(struct device *dev,
-> +					     u8 *event)
->  {
-> +	struct ab3100 *ab3100 = dev_get_drvdata(dev->parent);
->  	if (!ab3100->startup_events_read)
->  		return -EAGAIN; /* Try again later */
-> -	*fatevent = ab3100->startup_events;
-> +	memcpy(event, ab3100->startup_events, 3);
->  	return 0;
->  }
-> -EXPORT_SYMBOL(ab3100_event_registers_startup_state_get);
-> +
-> +static struct abx500_ops ab3100_ops = {
-> +	.get_chip_id = ab3100_get_chip_id,
-> +	.set_register = set_register_interruptible,
-> +	.get_register = get_register_interruptible,
-> +	.get_register_page = get_register_page_interruptible,
-> +	.set_register_page = NULL,
-> +	.mask_and_set_register = mask_and_set_register_interruptible,
-> +	.event_registers_startup_state_get =
-> +		ab3100_event_registers_startup_state_get,
-> +	.startup_irq_enabled = NULL,
-> +};
->  
->  /*
->   * This is a threaded interrupt handler so we can make some
-> @@ -390,7 +419,9 @@ static irqreturn_t ab3100_irq_handler(int irq, void *data)
->  		event_regs[2];
->  
->  	if (!ab3100->startup_events_read) {
-> -		ab3100->startup_events = fatevent;
-> +		ab3100->startup_events[0] = event_regs[0];
-> +		ab3100->startup_events[1] = event_regs[1];
-> +		ab3100->startup_events[2] = event_regs[2];
->  		ab3100->startup_events_read = true;
->  	}
->  	/*
-> @@ -703,7 +734,8 @@ static int __init ab3100_setup(struct ab3100 *ab3100)
->  		dev_warn(ab3100->dev,
->  			 "AB3100 P1E variant detected, "
->  			 "forcing chip to 32KHz\n");
-> -		err = ab3100_set_test_register_interruptible(ab3100, 0x02, 0x08);
-> +		err = ab3100_set_test_register_interruptible(ab3100,
-> +			0x02, 0x08);
->  	}
->  
->   exit_no_setup:
-> @@ -898,6 +930,10 @@ static int __init ab3100_probe(struct i2c_client *client,
->  	if (err)
->  		goto exit_no_irq;
->  
-> +	err = abx500_register_ops(&client->dev, &ab3100_ops);
-> +	if (err)
-> +		goto exit_no_ops;
-> +
->  	/* Set parent and a pointer back to the container in device data */
->  	for (i = 0; i < ARRAY_SIZE(ab3100_platform_devs); i++) {
->  		ab3100_platform_devs[i]->dev.parent =
-> @@ -915,6 +951,7 @@ static int __init ab3100_probe(struct i2c_client *client,
->  
->  	return 0;
->  
-> + exit_no_ops:
->   exit_no_irq:
->   exit_no_setup:
->  	i2c_unregister_device(ab3100->testreg_client);
-> diff --git a/drivers/mfd/ab3100-otp.c b/drivers/mfd/ab3100-otp.c
-> index 7093f1a..63d2b72 100644
-> --- a/drivers/mfd/ab3100-otp.c
-> +++ b/drivers/mfd/ab3100-otp.c
-> @@ -30,7 +30,6 @@
->  /**
->   * struct ab3100_otp
->   * @dev containing device
-> - * @ab3100 a pointer to the parent ab3100 device struct
->   * @locked whether the OTP is locked, after locking, no more bits
->   *       can be changed but before locking it is still possible
->   *       to change bits from 1->0.
-> @@ -49,7 +48,6 @@
->   */
->  struct ab3100_otp {
->  	struct device *dev;
-> -	struct ab3100 *ab3100;
->  	bool locked;
->  	u32 freq;
->  	bool paf;
-> @@ -63,19 +61,19 @@ struct ab3100_otp {
->  
->  static int __init ab3100_otp_read(struct ab3100_otp *otp)
->  {
-> -	struct ab3100 *ab = otp->ab3100;
->  	u8 otpval[8];
->  	u8 otpp;
->  	int err;
->  
-> -	err = ab3100_get_register_interruptible(ab, AB3100_OTPP, &otpp);
-> +	err = abx500_get_register_interruptible(otp->dev, 0,
-> +		AB3100_OTPP, &otpp);
->  	if (err) {
->  		dev_err(otp->dev, "unable to read OTPP register\n");
->  		return err;
->  	}
->  
-> -	err = ab3100_get_register_page_interruptible(ab, AB3100_OTP0,
-> -						     otpval, 8);
-> +	err = abx500_get_register_page_interruptible(otp->dev, 0,
-> +		AB3100_OTP0, otpval, 8);
->  	if (err) {
->  		dev_err(otp->dev, "unable to read OTP register page\n");
->  		return err;
-> @@ -197,7 +195,6 @@ static int __init ab3100_otp_probe(struct platform_device *pdev)
->  	otp->dev = &pdev->dev;
->  
->  	/* Replace platform data coming in with a local struct */
-> -	otp->ab3100 = platform_get_drvdata(pdev);
->  	platform_set_drvdata(pdev, otp);
->  
->  	err = ab3100_otp_read(otp);
-> diff --git a/drivers/mfd/abx500-core.c b/drivers/mfd/abx500-core.c
+> +obj-$(CONFIG_AB3550_CORE)	+= ab3550-core.o
+>  obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
+>  obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
+>  obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
+> diff --git a/drivers/mfd/ab3550-core.c b/drivers/mfd/ab3550-core.c
 > new file mode 100644
-> index 0000000..3b3b97e
+> index 0000000..0e13c4b
 > --- /dev/null
-> +++ b/drivers/mfd/abx500-core.c
-> @@ -0,0 +1,157 @@
+> +++ b/drivers/mfd/ab3550-core.c
+> @@ -0,0 +1,1397 @@
 > +/*
 > + * Copyright (C) 2007-2010 ST-Ericsson
 > + * License terms: GNU General Public License (GPL) version 2
-> + * Register access functions for the ABX500 Mixed Signal IC family.
+> + * Low-level core for exclusive access to the AB3550 IC on the I2C bus
+> + * and some basic chip-configuration.
+> + * Author: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+> + * Author: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
 > + * Author: Mattias Wallin <mattias.wallin@stericsson.com>
+> + * Author: Rickard Andersson <rickard.andersson@stericsson.com>
 > + */
 > +
-> +#include <linux/list.h>
-> +#include <linux/slab.h>
+> +#include <linux/i2c.h>
+> +#include <linux/mutex.h>
 > +#include <linux/err.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/device.h>
+> +#include <linux/irq.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/random.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/debugfs.h>
+> +#include <linux/seq_file.h>
+> +#include <linux/uaccess.h>
 > +#include <linux/mfd/abx500.h>
+> +#include <linux/list.h>
+> +#include <linux/bitops.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/mfd/core.h>
 > +
-> +static LIST_HEAD(abx500_list);
+> +#define AB3550_NAME_STRING "ab3550"
+> +#define AB3550_ID_FORMAT_STRING "AB3550 %s"
+> +#define AB3550_NUM_BANKS 2
+> +#define AB3550_NUM_EVENT_REG 5
 > +
-> +struct abx500_device_entry {
-> +	struct list_head list;
-> +	struct abx500_ops ops;
-> +	struct device *dev;
+> +/* These are the only registers inside AB3550 used in this main file */
+> +
+> +/* Chip ID register */
+> +#define AB3550_CID_REG           0x20
+> +
+> +/* Interrupt event registers */
+> +#define AB3550_EVENT_BANK        0
+> +#define AB3550_EVENT_REG         0x22
+> +
+> +/* Read/write operation values. */
+> +#define AB3550_PERM_RD (0x01)
+> +#define AB3550_PERM_WR (0x02)
+> +
+> +/* Read/write permissions. */
+> +#define AB3550_PERM_RO (AB3550_PERM_RD)
+> +#define AB3550_PERM_RW (AB3550_PERM_RD | AB3550_PERM_WR)
+> +
+> +/**
+> + * struct ab3550
+> + * @access_mutex: lock out concurrent accesses to the AB registers
+> + * @i2c_client: I2C client for this chip
+> + * @chip_name: name of this chip variant
+> + * @chip_id: 8 bit chip ID for this chip variant
+> + * @mask_work: a worker for writing to mask registers
+> + * @event_lock: a lock to protect the event_mask
+> + * @event_mask: a local copy of the mask event registers
+> + * @startup_events: a copy of the first reading of the event registers
+> + * @startup_events_read: whether the first events have been read
+> + */
+> +struct ab3550 {
+> +	struct mutex access_mutex;
+> +	struct i2c_client *i2c_client[AB3550_NUM_BANKS];
+> +	char chip_name[32];
+> +	u8 chip_id;
+> +	struct work_struct mask_work;
+> +	spinlock_t event_lock;
+> +	u8 event_mask[AB3550_NUM_EVENT_REG];
+> +	u8 startup_events[AB3550_NUM_EVENT_REG];
+> +	bool startup_events_read;
+> +#ifdef CONFIG_DEBUG_FS
+> +	unsigned int debug_bank;
+> +	unsigned int debug_address;
+> +#endif
 > +};
 > +
-> +static void lookup_ops(struct device *dev, struct abx500_ops **ops)
+> +/**
+> + * struct ab3550_reg_range
+> + * @first: the first address of the range
+> + * @last: the last address of the range
+> + * @perm: access permissions for the range
+> + */
+> +struct ab3550_reg_range {
+> +	u8 first;
+> +	u8 last;
+> +	u8 perm;
+> +};
+> +
+> +/**
+> + * struct ab3550_reg_ranges
+> + * @count: the number of ranges in the list
+> + * @range: the list of register ranges
+> + */
+> +struct ab3550_reg_ranges {
+> +	u8 count;
+> +	const struct ab3550_reg_range *range;
+> +};
+> +
+> +/*
+> + * Permissible register ranges for reading and writing per device and bank.
+> + *
+> + * The ranges must be listed in increasing address order, and no overlaps are
+> + * allowed. It is assumed that write permission implies read permission
+> + * (i.e. only RO and RW permissions should be used).  Ranges with write
+> + * permission must not be split up.
+> + */
+> +
+> +#define NO_RANGE {.count = 0, .range = NULL,}
+> +
+> +static struct
+> +ab3550_reg_ranges ab3550_reg_ranges[AB3550_NUM_DEVICES][AB3550_NUM_BANKS] = {
+> +	[AB3550_DEVID_DAC] = {
+> +		NO_RANGE,
+> +		{
+> +			.count = 2,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0xb0,
+> +					.last = 0xba,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +				{
+> +					.first = 0xbc,
+> +					.last = 0xc3,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +			},
+> +		},
+> +	},
+> +	[AB3550_DEVID_LEDS] = {
+> +		NO_RANGE,
+> +		{
+> +			.count = 2,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x5a,
+> +					.last = 0x88,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +				{
+> +					.first = 0x8a,
+> +					.last = 0xad,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +			}
+> +		},
+> +	},
+> +	[AB3550_DEVID_POWER] = {
+> +		{
+> +			.count = 1,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x21,
+> +					.last = 0x21,
+> +					.perm = AB3550_PERM_RO,
+> +				},
+> +			}
+> +		},
+> +		NO_RANGE,
+> +	},
+> +	[AB3550_DEVID_REGULATORS] = {
+> +		{
+> +			.count = 1,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x69,
+> +					.last = 0xa3,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +			}
+> +		},
+> +		{
+> +			.count = 1,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x14,
+> +					.last = 0x16,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +			}
+> +		},
+> +	},
+> +	[AB3550_DEVID_SIM] = {
+> +		{
+> +			.count = 1,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x21,
+> +					.last = 0x21,
+> +					.perm = AB3550_PERM_RO,
+> +				},
+> +			}
+> +		},
+> +		{
+> +			.count = 1,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x14,
+> +					.last = 0x17,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +			}
+> +
+> +		},
+> +	},
+> +	[AB3550_DEVID_UART] = {
+> +		NO_RANGE,
+> +		NO_RANGE,
+> +	},
+> +	[AB3550_DEVID_RTC] = {
+> +		{
+> +			.count = 1,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x00,
+> +					.last = 0x0c,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +			}
+> +		},
+> +		NO_RANGE,
+> +	},
+> +	[AB3550_DEVID_CHARGER] = {
+> +		{
+> +			.count = 2,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x10,
+> +					.last = 0x1a,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +				{
+> +					.first = 0x21,
+> +					.last = 0x21,
+> +					.perm = AB3550_PERM_RO,
+> +				},
+> +			}
+> +		},
+> +		NO_RANGE,
+> +	},
+> +	[AB3550_DEVID_ADC] = {
+> +		NO_RANGE,
+> +		{
+> +			.count = 1,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x20,
+> +					.last = 0x56,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +
+> +			}
+> +		},
+> +	},
+> +	[AB3550_DEVID_FUELGAUGE] = {
+> +		{
+> +			.count = 1,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x21,
+> +					.last = 0x21,
+> +					.perm = AB3550_PERM_RO,
+> +				},
+> +			}
+> +		},
+> +		{
+> +			.count = 1,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x00,
+> +					.last = 0x0e,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +			}
+> +		},
+> +	},
+> +	[AB3550_DEVID_VIBRATOR] = {
+> +		NO_RANGE,
+> +		{
+> +			.count = 1,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x10,
+> +					.last = 0x13,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +
+> +			}
+> +		},
+> +	},
+> +	[AB3550_DEVID_CODEC] = {
+> +		{
+> +			.count = 2,
+> +			.range = (struct ab3550_reg_range[]) {
+> +				{
+> +					.first = 0x31,
+> +					.last = 0x63,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +				{
+> +					.first = 0x65,
+> +					.last = 0x68,
+> +					.perm = AB3550_PERM_RW,
+> +				},
+> +			}
+> +		},
+> +		NO_RANGE,
+> +	},
+> +};
+> +
+> +static struct mfd_cell ab3550_devs[AB3550_NUM_DEVICES] = {
+> +	[AB3550_DEVID_DAC] = {
+> +		.name = "ab3550-dac",
+> +		.id = AB3550_DEVID_DAC,
+> +		.num_resources = 0,
+> +	},
+> +	[AB3550_DEVID_LEDS] = {
+> +		.name = "ab3550-leds",
+> +		.id = AB3550_DEVID_LEDS,
+> +	},
+> +	[AB3550_DEVID_POWER] = {
+> +		.name = "ab3550-power",
+> +		.id = AB3550_DEVID_POWER,
+> +	},
+> +	[AB3550_DEVID_REGULATORS] = {
+> +		.name = "ab3550-regulators",
+> +		.id = AB3550_DEVID_REGULATORS,
+> +	},
+> +	[AB3550_DEVID_SIM] = {
+> +		.name = "ab3550-sim",
+> +		.id = AB3550_DEVID_SIM,
+> +	},
+> +	[AB3550_DEVID_UART] = {
+> +		.name = "ab3550-uart",
+> +		.id = AB3550_DEVID_UART,
+> +	},
+> +	[AB3550_DEVID_RTC] = {
+> +		.name = "ab3550-rtc",
+> +		.id = AB3550_DEVID_RTC,
+> +	},
+> +	[AB3550_DEVID_CHARGER] = {
+> +		.name = "ab3550-charger",
+> +		.id = AB3550_DEVID_CHARGER,
+> +	},
+> +	[AB3550_DEVID_ADC] = {
+> +		.name = "ab3550-adc",
+> +		.id = AB3550_DEVID_ADC,
+> +		.num_resources = 10,
+> +		.resources = (struct resource[]) {
+> +			{
+> +				.name = "TRIGGER-0",
+> +				.flags = IORESOURCE_IRQ,
+> +				.start = 16,
+> +				.end = 16,
+> +			},
+> +			{
+> +				.name = "TRIGGER-1",
+> +				.flags = IORESOURCE_IRQ,
+> +				.start = 17,
+> +				.end = 17,
+> +			},
+> +			{
+> +				.name = "TRIGGER-2",
+> +				.flags = IORESOURCE_IRQ,
+> +				.start = 18,
+> +				.end = 18,
+> +			},
+> +			{
+> +				.name = "TRIGGER-3",
+> +				.flags = IORESOURCE_IRQ,
+> +				.start = 19,
+> +				.end = 19,
+> +			},
+> +			{
+> +				.name = "TRIGGER-4",
+> +				.flags = IORESOURCE_IRQ,
+> +				.start = 20,
+> +				.end = 20,
+> +			},
+> +			{
+> +				.name = "TRIGGER-5",
+> +				.flags = IORESOURCE_IRQ,
+> +				.start = 21,
+> +				.end = 21,
+> +			},
+> +			{
+> +				.name = "TRIGGER-6",
+> +				.flags = IORESOURCE_IRQ,
+> +				.start = 22,
+> +				.end = 22,
+> +			},
+> +			{
+> +				.name = "TRIGGER-7",
+> +				.flags = IORESOURCE_IRQ,
+> +				.start = 23,
+> +				.end = 23,
+> +			},
+> +			{
+> +				.name = "TRIGGER-VBAT-TXON",
+> +				.flags = IORESOURCE_IRQ,
+> +				.start = 13,
+> +				.end = 13,
+> +			},
+> +			{
+> +				.name = "TRIGGER-VBAT",
+> +				.flags = IORESOURCE_IRQ,
+> +				.start = 12,
+> +				.end = 12,
+> +			},
+> +		},
+> +	},
+> +	[AB3550_DEVID_FUELGAUGE] = {
+> +		.name = "ab3550-fuelgauge",
+> +		.id = AB3550_DEVID_FUELGAUGE,
+> +	},
+> +	[AB3550_DEVID_VIBRATOR] = {
+> +		.name = "ab3550-vibrator",
+> +		.id = AB3550_DEVID_VIBRATOR,
+> +	},
+> +	[AB3550_DEVID_CODEC] = {
+> +		.name = "ab3550-codec",
+> +		.id = AB3550_DEVID_CODEC,
+> +	},
+> +};
+> +
+> +/*
+> + * I2C transactions with error messages.
+> + */
+> +static int ab3550_i2c_master_send(struct ab3550 *ab, u8 bank, u8 *data,
+> +	u8 count)
 > +{
-> +	struct abx500_device_entry *dev_entry;
+> +	int err;
 > +
-> +	*ops = NULL;
-> +	list_for_each_entry(dev_entry, &abx500_list, list) {
-> +		if (dev_entry->dev == dev) {
-> +			*ops = &dev_entry->ops;
-> +			return;
-> +		}
+> +	err = i2c_master_send(ab->i2c_client[bank], data, count);
+> +	if (err < 0) {
+> +		dev_err(&ab->i2c_client[0]->dev, "send error: %d\n", err);
+> +		return err;
 > +	}
-> +}
-> +
-> +int abx500_register_ops(struct device *dev, struct abx500_ops *ops)
-> +{
-> +	struct abx500_device_entry *dev_entry;
-> +
-> +	dev_entry = kzalloc(sizeof(struct abx500_device_entry), GFP_KERNEL);
-> +	if (IS_ERR(dev_entry)) {
-> +		dev_err(dev, "register_ops kzalloc failed");
-> +		return -ENOMEM;
-> +	}
-> +	dev_entry->dev = dev;
-> +	memcpy(&dev_entry->ops, ops, sizeof(struct abx500_ops));
-> +
-> +	list_add_tail(&dev_entry->list, &abx500_list);
 > +	return 0;
 > +}
-> +EXPORT_SYMBOL(abx500_register_ops);
 > +
-> +void abx500_remove_ops(struct device *dev)
+> +static int ab3550_i2c_master_recv(struct ab3550 *ab, u8 bank, u8 *data,
+> +	u8 count)
 > +{
-> +	struct abx500_device_entry *dev_entry, *tmp;
+> +	int err;
 > +
-> +	list_for_each_entry_safe(dev_entry, tmp, &abx500_list, list)
-> +	{
-> +		if (dev_entry->dev == dev) {
-> +			list_del(&dev_entry->list);
-> +			kfree(dev_entry);
-> +		}
+> +	err = i2c_master_recv(ab->i2c_client[bank], data, count);
+> +	if (err < 0) {
+> +		dev_err(&ab->i2c_client[0]->dev, "receive error: %d\n", err);
+> +		return err;
 > +	}
+> +	return 0;
 > +}
-> +EXPORT_SYMBOL(abx500_remove_ops);
 > +
-> +int abx500_set_register_interruptible(struct device *dev, u8 bank, u8 reg,
-> +	u8 value)
-> +{
-> +	struct abx500_ops *ops;
-> +
-> +	lookup_ops(dev->parent, &ops);
-> +	if ((ops != NULL) && (ops->set_register != NULL))
-> +		return ops->set_register(dev, bank, reg, value);
-> +	else
-> +		return -ENOTSUPP;
-> +}
-> +EXPORT_SYMBOL(abx500_set_register_interruptible);
-> +
-> +int abx500_get_register_interruptible(struct device *dev, u8 bank, u8 reg,
+> +/*
+> + * Functionality for getting/setting register values.
+> + */
+> +static int get_register_interruptible(struct ab3550 *ab, u8 bank, u8 reg,
 > +	u8 *value)
 > +{
-> +	struct abx500_ops *ops;
+> +	int err;
 > +
-> +	lookup_ops(dev->parent, &ops);
-> +	if ((ops != NULL) && (ops->get_register != NULL))
-> +		return ops->get_register(dev, bank, reg, value);
-> +	else
-> +		return -ENOTSUPP;
+> +	err = mutex_lock_interruptible(&ab->access_mutex);
+> +	if (err)
+> +		return err;
+> +
+> +	err = ab3550_i2c_master_send(ab, bank, &reg, 1);
+> +	if (!err)
+> +		err = ab3550_i2c_master_recv(ab, bank, value, 1);
+> +
+> +	mutex_unlock(&ab->access_mutex);
+> +	return err;
 > +}
-> +EXPORT_SYMBOL(abx500_get_register_interruptible);
 > +
-> +int abx500_get_register_page_interruptible(struct device *dev, u8 bank,
+> +static int get_register_page_interruptible(struct ab3550 *ab, u8 bank,
 > +	u8 first_reg, u8 *regvals, u8 numregs)
 > +{
-> +	struct abx500_ops *ops;
+> +	int err;
 > +
-> +	lookup_ops(dev->parent, &ops);
-> +	if ((ops != NULL) && (ops->get_register_page != NULL))
-> +		return ops->get_register_page(dev, bank,
-> +			first_reg, regvals, numregs);
-> +	else
-> +		return -ENOTSUPP;
+> +	err = mutex_lock_interruptible(&ab->access_mutex);
+> +	if (err)
+> +		return err;
+> +
+> +	err = ab3550_i2c_master_send(ab, bank, &first_reg, 1);
+> +	if (!err)
+> +		err = ab3550_i2c_master_recv(ab, bank, regvals, numregs);
+> +
+> +	mutex_unlock(&ab->access_mutex);
+> +	return err;
 > +}
-> +EXPORT_SYMBOL(abx500_get_register_page_interruptible);
 > +
-> +int abx500_mask_and_set_register_interruptible(struct device *dev, u8 bank,
+> +static int mask_and_set_register_interruptible(struct ab3550 *ab, u8 bank,
 > +	u8 reg, u8 bitmask, u8 bitvalues)
 > +{
-> +	struct abx500_ops *ops;
+> +	int err = 0;
 > +
-> +	lookup_ops(dev->parent, &ops);
-> +	if ((ops != NULL) && (ops->mask_and_set_register != NULL))
-> +		return ops->mask_and_set_register(dev, bank,
-> +			reg, bitmask, bitvalues);
-> +	else
-> +		return -ENOTSUPP;
+> +	if (likely(bitmask)) {
+> +		u8 reg_bits[2] = {reg, 0};
+> +
+> +		err = mutex_lock_interruptible(&ab->access_mutex);
+> +		if (err)
+> +			return err;
+> +
+> +		if (bitmask == 0xFF) /* No need to read in this case. */
+> +			reg_bits[1] = bitvalues;
+> +		else { /* Read and modify the register value. */
+> +			u8 bits;
+> +
+> +			err = ab3550_i2c_master_send(ab, bank, &reg, 1);
+> +			if (err)
+> +				goto unlock_and_return;
+> +			err = ab3550_i2c_master_recv(ab, bank, &bits, 1);
+> +			if (err)
+> +				goto unlock_and_return;
+> +			reg_bits[1] = ((~bitmask & bits) |
+> +				(bitmask & bitvalues));
+> +		}
+> +		/* Write the new value. */
+> +		err = ab3550_i2c_master_send(ab, bank, reg_bits, 2);
+> +unlock_and_return:
+> +		mutex_unlock(&ab->access_mutex);
+> +	}
+> +	return err;
 > +}
-> +EXPORT_SYMBOL(abx500_mask_and_set_register_interruptible);
 > +
-> +int abx500_get_chip_id(struct device *dev)
+> +/*
+> + * Read/write permission checking functions.
+> + */
+> +static bool page_write_allowed(const struct ab3550_reg_ranges *ranges,
+> +	u8 first_reg, u8 last_reg)
 > +{
-> +	struct abx500_ops *ops;
+> +	u8 i;
 > +
-> +	lookup_ops(dev->parent, &ops);
-> +	if ((ops != NULL) && (ops->get_chip_id != NULL))
-> +		return ops->get_chip_id(dev);
-> +	else
-> +		return -ENOTSUPP;
+> +	if (last_reg < first_reg)
+> +		return false;
+> +
+> +	for (i = 0; i < ranges->count; i++) {
+> +		if (first_reg < ranges->range[i].first)
+> +			break;
+> +		if ((last_reg <= ranges->range[i].last) &&
+> +			(ranges->range[i].perm & AB3550_PERM_WR))
+> +			return true;
+> +	}
+> +	return false;
 > +}
-> +EXPORT_SYMBOL(abx500_get_chip_id);
 > +
-> +int abx500_event_registers_startup_state_get(struct device *dev, u8 *event)
+> +static bool reg_write_allowed(const struct ab3550_reg_ranges *ranges, u8 reg)
 > +{
-> +	struct abx500_ops *ops;
-> +
-> +	lookup_ops(dev->parent, &ops);
-> +	if ((ops != NULL) && (ops->event_registers_startup_state_get != NULL))
-> +		return ops->event_registers_startup_state_get(dev, event);
-> +	else
-> +		return -ENOTSUPP;
+> +	return page_write_allowed(ranges, reg, reg);
 > +}
-> +EXPORT_SYMBOL(abx500_event_registers_startup_state_get);
 > +
-> +int abx500_startup_irq_enabled(struct device *dev, unsigned int irq)
+> +static bool page_read_allowed(const struct ab3550_reg_ranges *ranges,
+> +	u8 first_reg, u8 last_reg)
 > +{
-> +	struct abx500_ops *ops;
+> +	u8 i;
 > +
-> +	lookup_ops(dev->parent, &ops);
-> +	if ((ops != NULL) && (ops->startup_irq_enabled != NULL))
-> +		return ops->startup_irq_enabled(dev, irq);
-> +	else
-> +		return -ENOTSUPP;
+> +	if (last_reg < first_reg)
+> +		return false;
+> +	/* Find the range (if it exists in the list) that includes first_reg. */
+> +	for (i = 0; i < ranges->count; i++) {
+> +		if (first_reg < ranges->range[i].first)
+> +			return false;
+> +		if (first_reg <= ranges->range[i].last)
+> +			break;
+> +	}
+> +	/* Make sure that the entire range up to and including last_reg is
+> +	 * readable. This may span several of the ranges in the list.
+> +	 */
+> +	while ((i < ranges->count) &&
+> +		(ranges->range[i].perm & AB3550_PERM_RD)) {
+> +		if (last_reg <= ranges->range[i].last)
+> +			return true;
+> +		if ((++i >= ranges->count) ||
+> +			(ranges->range[i].first !=
+> +			 (ranges->range[i - 1].last + 1))) {
+> +			break;
+> +		}
+> +	}
+> +	return false;
 > +}
-> +EXPORT_SYMBOL(abx500_startup_irq_enabled);
+> +
+> +static bool reg_read_allowed(const struct ab3550_reg_ranges *ranges, u8 reg)
+> +{
+> +	return page_read_allowed(ranges, reg, reg);
+> +}
+> +
+> +/*
+> + * The exported register access functionality.
+> + */
+> +int ab3550_get_chip_id(struct device *dev)
+> +{
+> +	struct ab3550 *ab = dev_get_drvdata(dev->parent);
+> +	return (int)ab->chip_id;
+> +}
+> +
+> +int ab3550_mask_and_set_register_interruptible(struct device *dev, u8 bank,
+> +	u8 reg, u8 bitmask, u8 bitvalues)
+> +{
+> +	struct ab3550 *ab;
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +
+> +	if ((AB3550_NUM_BANKS <= bank) ||
+> +		!reg_write_allowed(&ab3550_reg_ranges[pdev->id][bank], reg))
+> +		return -EINVAL;
+> +
+> +	ab = dev_get_drvdata(dev->parent);
+> +	return mask_and_set_register_interruptible(ab, bank, reg,
+> +		bitmask, bitvalues);
+> +}
+> +
+> +int ab3550_set_register_interruptible(struct device *dev, u8 bank, u8 reg,
+> +	u8 value)
+> +{
+> +	return ab3550_mask_and_set_register_interruptible(dev, bank, reg, 0xFF,
+> +		value);
+> +}
+> +
+> +int ab3550_get_register_interruptible(struct device *dev, u8 bank, u8 reg,
+> +	u8 *value)
+> +{
+> +	struct ab3550 *ab;
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +
+> +	if ((AB3550_NUM_BANKS <= bank) ||
+> +		!reg_read_allowed(&ab3550_reg_ranges[pdev->id][bank], reg))
+> +		return -EINVAL;
+> +
+> +	ab = dev_get_drvdata(dev->parent);
+> +	return get_register_interruptible(ab, bank, reg, value);
+> +}
+> +
+> +int ab3550_get_register_page_interruptible(struct device *dev, u8 bank,
+> +	u8 first_reg, u8 *regvals, u8 numregs)
+> +{
+> +	struct ab3550 *ab;
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +
+> +	if ((AB3550_NUM_BANKS <= bank) ||
+> +		!page_read_allowed(&ab3550_reg_ranges[pdev->id][bank],
+> +			first_reg, (first_reg + numregs - 1)))
+> +		return -EINVAL;
+> +
+> +	ab = dev_get_drvdata(dev->parent);
+> +	return get_register_page_interruptible(ab, bank, first_reg, regvals,
+> +		numregs);
+> +}
+> +
+> +int ab3550_event_registers_startup_state_get(struct device *dev, u8 *event)
+> +{
+> +	struct ab3550 *ab;
+> +
+> +	ab = dev_get_drvdata(dev->parent);
+> +	if (!ab->startup_events_read)
+> +		return -EAGAIN; /* Try again later */
+> +
+> +	memcpy(event, ab->startup_events, AB3550_NUM_EVENT_REG);
+> +	return 0;
+> +}
+> +
+> +int ab3550_startup_irq_enabled(struct device *dev, unsigned int irq)
+> +{
+> +	struct ab3550 *ab;
+> +	struct ab3550_platform_data *plf_data;
+> +	bool val;
+> +
+> +	ab = get_irq_chip_data(irq);
+> +	plf_data = ab->i2c_client[0]->dev.platform_data;
+> +	irq -= plf_data->irq.base;
+> +	val = ((ab->startup_events[irq / 8] & BIT(irq % 8)) != 0);
+> +
+> +	return val;
+> +}
+> +
+> +static struct abx500_ops ab3550_ops = {
+> +	.get_chip_id = ab3550_get_chip_id,
+> +	.get_register = ab3550_get_register_interruptible,
+> +	.set_register = ab3550_set_register_interruptible,
+> +	.get_register_page = ab3550_get_register_page_interruptible,
+> +	.set_register_page = NULL,
+> +	.mask_and_set_register = ab3550_mask_and_set_register_interruptible,
+> +	.event_registers_startup_state_get =
+> +		ab3550_event_registers_startup_state_get,
+> +	.startup_irq_enabled = ab3550_startup_irq_enabled,
+> +};
+> +
+> +static irqreturn_t ab3550_irq_handler(int irq, void *data)
+> +{
+> +	struct ab3550 *ab = data;
+> +	int err;
+> +	unsigned int i;
+> +	u8 e[AB3550_NUM_EVENT_REG];
+> +	u8 *events;
+> +	unsigned long flags;
+> +
+> +	events = (ab->startup_events_read ? e : ab->startup_events);
+> +
+> +	err = get_register_page_interruptible(ab, AB3550_EVENT_BANK,
+> +		AB3550_EVENT_REG, events, AB3550_NUM_EVENT_REG);
+> +	if (err)
+> +		goto err_event_rd;
+> +
+> +	if (!ab->startup_events_read) {
+> +		dev_info(&ab->i2c_client[0]->dev,
+> +			"startup events 0x%x,0x%x,0x%x,0x%x,0x%x\n",
+> +			ab->startup_events[0], ab->startup_events[1],
+> +			ab->startup_events[2], ab->startup_events[3],
+> +			ab->startup_events[4]);
+> +		ab->startup_events_read = true;
+> +		goto out;
+> +	}
+> +
+> +	/* The two highest bits in event[4] are not used. */
+> +	events[4] &= 0x3f;
+> +
+> +	spin_lock_irqsave(&ab->event_lock, flags);
+> +	for (i = 0; i < AB3550_NUM_EVENT_REG; i++)
+> +		events[i] &= ~ab->event_mask[i];
+> +	spin_unlock_irqrestore(&ab->event_lock, flags);
+> +
+> +	for (i = 0; i < AB3550_NUM_EVENT_REG; i++) {
+> +		u8 bit;
+> +		u8 event_reg;
+> +
+> +		dev_dbg(&ab->i2c_client[0]->dev, "IRQ Event[%d]: 0x%2x\n",
+> +			i, events[i]);
+> +
+> +		event_reg = events[i];
+> +		for (bit = 0; event_reg; bit++, event_reg /= 2) {
+> +			if (event_reg % 2) {
+> +				unsigned int irq;
+> +				struct ab3550_platform_data *plf_data;
+> +
+> +				plf_data = ab->i2c_client[0]->dev.platform_data;
+> +				irq = plf_data->irq.base + (i * 8) + bit;
+> +				handle_nested_irq(irq);
+> +			}
+> +		}
+> +	}
+> +out:
+> +	return IRQ_HANDLED;
+> +
+> +err_event_rd:
+> +	dev_dbg(&ab->i2c_client[0]->dev, "error reading event registers\n");
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +#ifdef CONFIG_DEBUG_FS
+> +static struct ab3550_reg_ranges debug_ranges[AB3550_NUM_BANKS] = {
+> +	{
+> +		.count = 6,
+> +		.range = (struct ab3550_reg_range[]) {
+> +			{
+> +				.first = 0x00,
+> +				.last = 0x0e,
+> +			},
+> +			{
+> +				.first = 0x10,
+> +				.last = 0x1a,
+> +			},
+> +			{
+> +				.first = 0x1e,
+> +				.last = 0x4f,
+> +			},
+> +			{
+> +				.first = 0x51,
+> +				.last = 0x63,
+> +			},
+> +			{
+> +				.first = 0x65,
+> +				.last = 0xa3,
+> +			},
+> +			{
+> +				.first = 0xa5,
+> +				.last = 0xa8,
+> +			},
+> +		}
+> +	},
+> +	{
+> +		.count = 8,
+> +		.range = (struct ab3550_reg_range[]) {
+> +			{
+> +				.first = 0x00,
+> +				.last = 0x0e,
+> +			},
+> +			{
+> +				.first = 0x10,
+> +				.last = 0x17,
+> +			},
+> +			{
+> +				.first = 0x1a,
+> +				.last = 0x1c,
+> +			},
+> +			{
+> +				.first = 0x20,
+> +				.last = 0x56,
+> +			},
+> +			{
+> +				.first = 0x5a,
+> +				.last = 0x88,
+> +			},
+> +			{
+> +				.first = 0x8a,
+> +				.last = 0xad,
+> +			},
+> +			{
+> +				.first = 0xb0,
+> +				.last = 0xba,
+> +			},
+> +			{
+> +				.first = 0xbc,
+> +				.last = 0xc3,
+> +			},
+> +		}
+> +	},
+> +};
+> +
+> +static int ab3550_registers_print(struct seq_file *s, void *p)
+> +{
+> +	struct ab3550 *ab = s->private;
+> +	int bank;
+> +
+> +	seq_printf(s, AB3550_NAME_STRING " register values:\n");
+> +
+> +	for (bank = 0; bank < AB3550_NUM_BANKS; bank++) {
+> +		unsigned int i;
+> +
+> +		seq_printf(s, " bank %d:\n", bank);
+> +		for (i = 0; i < debug_ranges[bank].count; i++) {
+> +			u8 reg;
+> +
+> +			for (reg = debug_ranges[bank].range[i].first;
+> +				reg <= debug_ranges[bank].range[i].last;
+> +				reg++) {
+> +				u8 value;
+> +
+> +				get_register_interruptible(ab, bank, reg,
+> +					&value);
+> +				seq_printf(s, "  [%d/0x%02X]: 0x%02X\n", bank,
+> +					reg, value);
+> +			}
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int ab3550_registers_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, ab3550_registers_print, inode->i_private);
+> +}
+> +
+> +static const struct file_operations ab3550_registers_fops = {
+> +	.open = ab3550_registers_open,
+> +	.read = seq_read,
+> +	.llseek = seq_lseek,
+> +	.release = single_release,
+> +	.owner = THIS_MODULE,
+> +};
+> +
+> +static int ab3550_bank_print(struct seq_file *s, void *p)
+> +{
+> +	struct ab3550 *ab = s->private;
+> +
+> +	seq_printf(s, "%d\n", ab->debug_bank);
+> +	return 0;
+> +}
+> +
+> +static int ab3550_bank_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, ab3550_bank_print, inode->i_private);
+> +}
+> +
+> +static ssize_t ab3550_bank_write(struct file *file,
+> +	const char __user *user_buf,
+> +	size_t count, loff_t *ppos)
+> +{
+> +	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+> +	char buf[32];
+> +	int buf_size;
+> +	unsigned long user_bank;
+> +	int err;
+> +
+> +	/* Get userspace string and assure termination */
+> +	buf_size = min(count, (sizeof(buf) - 1));
+> +	if (copy_from_user(buf, user_buf, buf_size))
+> +		return -EFAULT;
+> +	buf[buf_size] = 0;
+> +
+> +	err = strict_strtoul(buf, 0, &user_bank);
+> +	if (err)
+> +		return -EINVAL;
+> +
+> +	if (user_bank >= AB3550_NUM_BANKS) {
+> +		dev_err(&ab->i2c_client[0]->dev,
+> +			"debugfs error input > number of banks\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	ab->debug_bank = user_bank;
+> +
+> +	return buf_size;
+> +}
+> +
+> +static int ab3550_address_print(struct seq_file *s, void *p)
+> +{
+> +	struct ab3550 *ab = s->private;
+> +
+> +	seq_printf(s, "0x%02X\n", ab->debug_address);
+> +	return 0;
+> +}
+> +
+> +static int ab3550_address_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, ab3550_address_print, inode->i_private);
+> +}
+> +
+> +static ssize_t ab3550_address_write(struct file *file,
+> +	const char __user *user_buf,
+> +	size_t count, loff_t *ppos)
+> +{
+> +	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+> +	char buf[32];
+> +	int buf_size;
+> +	unsigned long user_address;
+> +	int err;
+> +
+> +	/* Get userspace string and assure termination */
+> +	buf_size = min(count, (sizeof(buf) - 1));
+> +	if (copy_from_user(buf, user_buf, buf_size))
+> +		return -EFAULT;
+> +	buf[buf_size] = 0;
+> +
+> +	err = strict_strtoul(buf, 0, &user_address);
+> +	if (err)
+> +		return -EINVAL;
+> +	if (user_address > 0xff) {
+> +		dev_err(&ab->i2c_client[0]->dev,
+> +			"debugfs error input > 0xff\n");
+> +		return -EINVAL;
+> +	}
+> +	ab->debug_address = user_address;
+> +	return buf_size;
+> +}
+> +
+> +static int ab3550_val_print(struct seq_file *s, void *p)
+> +{
+> +	struct ab3550 *ab = s->private;
+> +	int err;
+> +	u8 regvalue;
+> +
+> +	err = get_register_interruptible(ab, (u8)ab->debug_bank,
+> +		(u8)ab->debug_address, &regvalue);
+> +	if (err)
+> +		return -EINVAL;
+> +	seq_printf(s, "0x%02X\n", regvalue);
+> +
+> +	return 0;
+> +}
+> +
+> +static int ab3550_val_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, ab3550_val_print, inode->i_private);
+> +}
+> +
+> +static ssize_t ab3550_val_write(struct file *file,
+> +	const char __user *user_buf,
+> +	size_t count, loff_t *ppos)
+> +{
+> +	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+> +	char buf[32];
+> +	int buf_size;
+> +	unsigned long user_val;
+> +	int err;
+> +	u8 regvalue;
+> +
+> +	/* Get userspace string and assure termination */
+> +	buf_size = min(count, (sizeof(buf)-1));
+> +	if (copy_from_user(buf, user_buf, buf_size))
+> +		return -EFAULT;
+> +	buf[buf_size] = 0;
+> +
+> +	err = strict_strtoul(buf, 0, &user_val);
+> +	if (err)
+> +		return -EINVAL;
+> +	if (user_val > 0xff) {
+> +		dev_err(&ab->i2c_client[0]->dev,
+> +			"debugfs error input > 0xff\n");
+> +		return -EINVAL;
+> +	}
+> +	err = mask_and_set_register_interruptible(
+> +		ab, (u8)ab->debug_bank,
+> +		(u8)ab->debug_address, 0xFF, (u8)user_val);
+> +	if (err)
+> +		return -EINVAL;
+> +
+> +	get_register_interruptible(ab, (u8)ab->debug_bank,
+> +		(u8)ab->debug_address, &regvalue);
+> +	if (err)
+> +		return -EINVAL;
+> +
+> +	return buf_size;
+> +}
+> +
+> +static const struct file_operations ab3550_bank_fops = {
+> +	.open = ab3550_bank_open,
+> +	.write = ab3550_bank_write,
+> +	.read = seq_read,
+> +	.llseek = seq_lseek,
+> +	.release = single_release,
+> +	.owner = THIS_MODULE,
+> +};
+> +
+> +static const struct file_operations ab3550_address_fops = {
+> +	.open = ab3550_address_open,
+> +	.write = ab3550_address_write,
+> +	.read = seq_read,
+> +	.llseek = seq_lseek,
+> +	.release = single_release,
+> +	.owner = THIS_MODULE,
+> +};
+> +
+> +static const struct file_operations ab3550_val_fops = {
+> +	.open = ab3550_val_open,
+> +	.write = ab3550_val_write,
+> +	.read = seq_read,
+> +	.llseek = seq_lseek,
+> +	.release = single_release,
+> +	.owner = THIS_MODULE,
+> +};
+> +
+> +static struct dentry *ab3550_dir;
+> +static struct dentry *ab3550_reg_file;
+> +static struct dentry *ab3550_bank_file;
+> +static struct dentry *ab3550_address_file;
+> +static struct dentry *ab3550_val_file;
+> +
+> +static inline void ab3550_setup_debugfs(struct ab3550 *ab)
+> +{
+> +	ab->debug_bank = 0;
+> +	ab->debug_address = 0x00;
+> +
+> +	ab3550_dir = debugfs_create_dir(AB3550_NAME_STRING, NULL);
+> +	if (!ab3550_dir)
+> +		goto exit_no_debugfs;
+> +
+> +	ab3550_reg_file = debugfs_create_file("all-registers",
+> +		S_IRUGO, ab3550_dir, ab, &ab3550_registers_fops);
+> +	if (!ab3550_reg_file)
+> +		goto exit_destroy_dir;
+> +
+> +	ab3550_bank_file = debugfs_create_file("register-bank",
+> +		(S_IRUGO | S_IWUGO), ab3550_dir, ab, &ab3550_bank_fops);
+> +	if (!ab3550_bank_file)
+> +		goto exit_destroy_reg;
+> +
+> +	ab3550_address_file = debugfs_create_file("register-address",
+> +		(S_IRUGO | S_IWUGO), ab3550_dir, ab, &ab3550_address_fops);
+> +	if (!ab3550_address_file)
+> +		goto exit_destroy_bank;
+> +
+> +	ab3550_val_file = debugfs_create_file("register-value",
+> +		(S_IRUGO | S_IWUGO), ab3550_dir, ab, &ab3550_val_fops);
+> +	if (!ab3550_val_file)
+> +		goto exit_destroy_address;
+> +
+> +	return;
+> +
+> +exit_destroy_address:
+> +	debugfs_remove(ab3550_address_file);
+> +exit_destroy_bank:
+> +	debugfs_remove(ab3550_bank_file);
+> +exit_destroy_reg:
+> +	debugfs_remove(ab3550_reg_file);
+> +exit_destroy_dir:
+> +	debugfs_remove(ab3550_dir);
+> +exit_no_debugfs:
+> +	dev_err(&ab->i2c_client[0]->dev, "failed to create debugfs entries.\n");
+> +	return;
+> +}
+> +
+> +static inline void ab3550_remove_debugfs(void)
+> +{
+> +	debugfs_remove(ab3550_val_file);
+> +	debugfs_remove(ab3550_address_file);
+> +	debugfs_remove(ab3550_bank_file);
+> +	debugfs_remove(ab3550_reg_file);
+> +	debugfs_remove(ab3550_dir);
+> +}
+> +
+> +#else /* !CONFIG_DEBUG_FS */
+> +static inline void ab3550_setup_debugfs(struct ab3550 *ab)
+> +{
+> +}
+> +static inline void ab3550_remove_debugfs(void)
+> +{
+> +}
+> +#endif
+> +
+> +/*
+> + * Basic set-up, datastructure creation/destruction and I2C interface.
+> + * This sets up a default config in the AB3550 chip so that it
+> + * will work as expected.
+> + */
+> +static int __init ab3550_setup(struct ab3550 *ab)
+> +{
+> +	int err = 0;
+> +	int i;
+> +	struct ab3550_platform_data *plf_data;
+> +	struct abx500_init_settings *settings;
+> +
+> +	plf_data = ab->i2c_client[0]->dev.platform_data;
+> +	settings = plf_data->init_settings;
+> +
+> +	for (i = 0; i < plf_data->init_settings_sz; i++) {
+> +		err = mask_and_set_register_interruptible(ab,
+> +			settings[i].bank,
+> +			settings[i].reg,
+> +			0xFF, settings[i].setting);
+> +		if (err)
+> +			goto exit_no_setup;
+> +
+> +		/* If event mask register update the event mask in ab3550 */
+> +		if ((settings[i].bank == 0) &&
+> +			(AB3550_IMR1 <= settings[i].reg) &&
+> +			(settings[i].reg <= AB3550_IMR5)) {
+> +			ab->event_mask[settings[i].reg - AB3550_IMR1] =
+> +				settings[i].setting;
+> +		}
+> +	}
+> +exit_no_setup:
+> +	return err;
+> +}
+> +
+> +static void ab3550_mask_work(struct work_struct *work)
+> +{
+> +	struct ab3550 *ab = container_of(work, struct ab3550, mask_work);
+> +	int i;
+> +	unsigned long flags;
+> +	u8 mask[AB3550_NUM_EVENT_REG];
+> +
+> +	spin_lock_irqsave(&ab->event_lock, flags);
+> +	for (i = 0; i < AB3550_NUM_EVENT_REG; i++)
+> +		mask[i] = ab->event_mask[i];
+> +	spin_unlock_irqrestore(&ab->event_lock, flags);
+> +
+> +	for (i = 0; i < AB3550_NUM_EVENT_REG; i++) {
+> +		int err;
+> +
+> +		err = mask_and_set_register_interruptible(ab, 0,
+> +			(AB3550_IMR1 + i), ~0, mask[i]);
+> +		if (err)
+> +			dev_err(&ab->i2c_client[0]->dev,
+> +				"ab3550_mask_work failed 0x%x,0x%x\n",
+> +				(AB3550_IMR1 + i), mask[i]);
+> +	}
+> +}
+> +
+> +static void ab3550_mask(unsigned int irq)
+> +{
+> +	unsigned long flags;
+> +	struct ab3550 *ab;
+> +	struct ab3550_platform_data *plf_data;
+> +
+> +	ab = get_irq_chip_data(irq);
+> +	plf_data = ab->i2c_client[0]->dev.platform_data;
+> +	irq -= plf_data->irq.base;
+> +
+> +	spin_lock_irqsave(&ab->event_lock, flags);
+> +	ab->event_mask[irq / 8] |= BIT(irq % 8);
+> +	spin_unlock_irqrestore(&ab->event_lock, flags);
+> +
+> +	schedule_work(&ab->mask_work);
+> +}
+> +
+> +static void ab3550_unmask(unsigned int irq)
+> +{
+> +	unsigned long flags;
+> +	struct ab3550 *ab;
+> +	struct ab3550_platform_data *plf_data;
+> +
+> +	ab = get_irq_chip_data(irq);
+> +	plf_data = ab->i2c_client[0]->dev.platform_data;
+> +	irq -= plf_data->irq.base;
+> +
+> +	spin_lock_irqsave(&ab->event_lock, flags);
+> +	ab->event_mask[irq / 8] &= ~BIT(irq % 8);
+> +	spin_unlock_irqrestore(&ab->event_lock, flags);
+> +
+> +	schedule_work(&ab->mask_work);
+> +}
+> +
+> +static void noop(unsigned int irq)
+> +{
+> +}
+> +
+> +static struct irq_chip ab3550_irq_chip = {
+> +	.name		= "ab3550-core", /* Keep the same name as the request */
+> +	.startup	= NULL, /* defaults to enable */
+> +	.shutdown	= NULL, /* defaults to disable */
+> +	.enable		= NULL, /* defaults to unmask */
+> +	.disable	= ab3550_mask, /* No default to mask in chip.c */
+> +	.ack		= noop,
+> +	.mask		= ab3550_mask,
+> +	.unmask		= ab3550_unmask,
+> +	.end		= NULL,
+> +};
+> +
+> +struct ab_family_id {
+> +	u8	id;
+> +	char	*name;
+> +};
+> +
+> +static const struct ab_family_id ids[] __initdata = {
+> +	/* AB3550 */
+> +	{
+> +		.id = AB3550_P1A,
+> +		.name = "P1A"
+> +	},
+> +	/* Terminator */
+> +	{
+> +		.id = 0x00,
+> +	}
+> +};
+> +
+> +static int __init ab3550_probe(struct i2c_client *client,
+> +	const struct i2c_device_id *id)
+> +{
+> +	struct ab3550 *ab;
+> +	struct ab3550_platform_data *ab3550_plf_data =
+> +		client->dev.platform_data;
+> +	int err;
+> +	int i;
+> +	int num_i2c_clients = 0;
+> +
+> +	ab = kzalloc(sizeof(struct ab3550), GFP_KERNEL);
+> +	if (!ab) {
+> +		dev_err(&client->dev,
+> +			"could not allocate " AB3550_NAME_STRING " device\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	/* Initialize data structure */
+> +	mutex_init(&ab->access_mutex);
+> +	spin_lock_init(&ab->event_lock);
+> +	ab->i2c_client[0] = client;
+> +
+> +	i2c_set_clientdata(client, ab);
+> +
+> +	/* Read chip ID register */
+> +	err = get_register_interruptible(ab, 0, AB3550_CID_REG, &ab->chip_id);
+> +	if (err) {
+> +		dev_err(&client->dev, "could not communicate with the analog "
+> +			"baseband chip\n");
+> +		goto exit_no_detect;
+> +	}
+> +
+> +	for (i = 0; ids[i].id != 0x0; i++) {
+> +		if (ids[i].id == ab->chip_id) {
+> +			snprintf(&ab->chip_name[0], sizeof(ab->chip_name) - 1,
+> +				AB3550_ID_FORMAT_STRING, ids[i].name);
+> +			break;
+> +		}
+> +	}
+> +
+> +	if (ids[i].id == 0x0) {
+> +		dev_err(&client->dev, "unknown analog baseband chip id: 0x%x\n",
+> +			ab->chip_id);
+> +		dev_err(&client->dev, "driver not started!\n");
+> +		goto exit_no_detect;
+> +	}
+> +
+> +	dev_info(&client->dev, "detected AB chip: %s\n", &ab->chip_name[0]);
+> +
+> +	/* Attach other dummy I2C clients. */
+> +	while (++num_i2c_clients < AB3550_NUM_BANKS) {
+> +		ab->i2c_client[num_i2c_clients] =
+> +			i2c_new_dummy(client->adapter,
+> +				(client->addr + num_i2c_clients));
+> +		if (!ab->i2c_client[num_i2c_clients]) {
+> +			err = -ENOMEM;
+> +			goto exit_no_dummy_client;
+> +		}
+> +		strlcpy(ab->i2c_client[num_i2c_clients]->name, id->name,
+> +			sizeof(ab->i2c_client[num_i2c_clients]->name));
+> +	}
+> +
+> +	err = ab3550_setup(ab);
+> +	if (err)
+> +		goto exit_no_setup;
+> +
+> +	INIT_WORK(&ab->mask_work, ab3550_mask_work);
+> +
+> +	for (i = 0; i < ab3550_plf_data->irq.count; i++) {
+> +		unsigned int irq;
+> +
+> +		irq = ab3550_plf_data->irq.base + i;
+> +		set_irq_chip_data(irq, ab);
+> +		set_irq_chip_and_handler(irq, &ab3550_irq_chip,
+> +			handle_simple_irq);
+> +		set_irq_nested_thread(irq, 1);
+> +		set_irq_flags(irq, IRQF_VALID);
+> +	}
+> +
+> +	err = request_threaded_irq(client->irq, NULL, ab3550_irq_handler,
+> +		IRQF_ONESHOT, "ab3550-core", ab);
+> +	/* This real unpredictable IRQ is of course sampled for entropy */
+> +	rand_initialize_irq(client->irq);
+> +
+> +	if (err)
+> +		goto exit_no_irq;
+> +
+> +	err = abx500_register_ops(&client->dev, &ab3550_ops);
+> +	if (err)
+> +		goto exit_no_ops;
+> +
+> +	/* Set up and register the platform devices. */
+> +	for (i = 0; i < AB3550_NUM_DEVICES; i++) {
+> +		ab3550_devs[i].platform_data = ab3550_plf_data->dev_data[i];
+> +		ab3550_devs[i].data_size = ab3550_plf_data->dev_data_sz[i];
+> +	}
+> +
+> +	err = mfd_add_devices(&client->dev, 0, ab3550_devs,
+> +		ARRAY_SIZE(ab3550_devs), NULL,
+> +		ab3550_plf_data->irq.base);
+> +
+> +	ab3550_setup_debugfs(ab);
+> +
+> +	return 0;
+> +
+> +exit_no_ops:
+> +exit_no_irq:
+> +exit_no_setup:
+> +exit_no_dummy_client:
+> +	/* Unregister the dummy i2c clients. */
+> +	while (--num_i2c_clients)
+> +		i2c_unregister_device(ab->i2c_client[num_i2c_clients]);
+> +exit_no_detect:
+> +	kfree(ab);
+> +	return err;
+> +}
+> +
+> +static int __exit ab3550_remove(struct i2c_client *client)
+> +{
+> +	struct ab3550 *ab = i2c_get_clientdata(client);
+> +	int num_i2c_clients = AB3550_NUM_BANKS;
+> +
+> +	mfd_remove_devices(&client->dev);
+> +	ab3550_remove_debugfs();
+> +
+> +	while (--num_i2c_clients)
+> +		i2c_unregister_device(ab->i2c_client[num_i2c_clients]);
+> +
+> +	/*
+> +	 * At this point, all subscribers should have unregistered
+> +	 * their notifiers so deactivate IRQ
+> +	 */
+> +	free_irq(client->irq, ab);
+> +	i2c_set_clientdata(client, NULL);
+> +	kfree(ab);
+> +	return 0;
+> +}
+> +
+> +static const struct i2c_device_id ab3550_id[] = {
+> +	{AB3550_NAME_STRING, 0},
+> +	{}
+> +};
+> +MODULE_DEVICE_TABLE(i2c, ab3550_id);
+> +
+> +static struct i2c_driver ab3550_driver = {
+> +	.driver = {
+> +		.name	= AB3550_NAME_STRING,
+> +		.owner	= THIS_MODULE,
+> +	},
+> +	.id_table	= ab3550_id,
+> +	.probe		= ab3550_probe,
+> +	.remove		= __exit_p(ab3550_remove),
+> +};
+> +
+> +static int __init ab3550_i2c_init(void)
+> +{
+> +	return i2c_add_driver(&ab3550_driver);
+> +}
+> +
+> +static void __exit ab3550_i2c_exit(void)
+> +{
+> +	i2c_del_driver(&ab3550_driver);
+> +}
+> +
+> +subsys_initcall(ab3550_i2c_init);
+> +module_exit(ab3550_i2c_exit);
 > +
 > +MODULE_AUTHOR("Mattias Wallin <mattias.wallin@stericsson.com>");
-> +MODULE_DESCRIPTION("ABX500 core driver");
+> +MODULE_DESCRIPTION("AB3550 core driver");
 > +MODULE_LICENSE("GPL");
-> diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
-> index 1b8b0ab..6580e26 100644
-> --- a/drivers/regulator/ab3100.c
-> +++ b/drivers/regulator/ab3100.c
-> @@ -41,7 +41,7 @@
->   * struct ab3100_regulator
->   * A struct passed around the individual regulator functions
->   * @platform_device: platform device holding this regulator
-> - * @ab3100: handle to the AB3100 parent chip
-> + * @dev: handle to the device
->   * @plfdata: AB3100 platform data passed in at probe time
->   * @regreg: regulator register number in the AB3100
->   * @fixed_voltage: a fixed voltage for this regulator, if this
-> @@ -52,7 +52,7 @@
->   */
->  struct ab3100_regulator {
->  	struct regulator_dev *rdev;
-> -	struct ab3100 *ab3100;
-> +	struct device *dev;
->  	struct ab3100_platform_data *plfdata;
->  	u8 regreg;
->  	int fixed_voltage;
-> @@ -183,7 +183,7 @@ static int ab3100_enable_regulator(struct regulator_dev *reg)
->  	int err;
->  	u8 regval;
->  
-> -	err = ab3100_get_register_interruptible(abreg->ab3100, abreg->regreg,
-> +	err = abx500_get_register_interruptible(abreg->dev, 0, abreg->regreg,
->  						&regval);
->  	if (err) {
->  		dev_warn(&reg->dev, "failed to get regid %d value\n",
-> @@ -197,7 +197,7 @@ static int ab3100_enable_regulator(struct regulator_dev *reg)
->  
->  	regval |= AB3100_REG_ON_MASK;
->  
-> -	err = ab3100_set_register_interruptible(abreg->ab3100, abreg->regreg,
-> +	err = abx500_set_register_interruptible(abreg->dev, 0, abreg->regreg,
->  						regval);
->  	if (err) {
->  		dev_warn(&reg->dev, "failed to set regid %d value\n",
-> @@ -245,14 +245,14 @@ static int ab3100_disable_regulator(struct regulator_dev *reg)
->  	if (abreg->regreg == AB3100_LDO_D) {
->  		dev_info(&reg->dev, "disabling LDO D - shut down system\n");
->  		/* Setting LDO D to 0x00 cuts the power to the SoC */
-> -		return ab3100_set_register_interruptible(abreg->ab3100,
-> +		return abx500_set_register_interruptible(abreg->dev, 0,
->  							 AB3100_LDO_D, 0x00U);
->  	}
->  
->  	/*
->  	 * All other regulators are handled here
->  	 */
-> -	err = ab3100_get_register_interruptible(abreg->ab3100, abreg->regreg,
-> +	err = abx500_get_register_interruptible(abreg->dev, 0, abreg->regreg,
->  						&regval);
->  	if (err) {
->  		dev_err(&reg->dev, "unable to get register 0x%x\n",
-> @@ -260,7 +260,7 @@ static int ab3100_disable_regulator(struct regulator_dev *reg)
->  		return err;
->  	}
->  	regval &= ~AB3100_REG_ON_MASK;
-> -	return ab3100_set_register_interruptible(abreg->ab3100, abreg->regreg,
-> +	return abx500_set_register_interruptible(abreg->dev, 0, abreg->regreg,
->  						 regval);
->  }
->  
-> @@ -270,7 +270,7 @@ static int ab3100_is_enabled_regulator(struct regulator_dev *reg)
->  	u8 regval;
->  	int err;
->  
-> -	err = ab3100_get_register_interruptible(abreg->ab3100, abreg->regreg,
-> +	err = abx500_get_register_interruptible(abreg->dev, 0, abreg->regreg,
->  						&regval);
->  	if (err) {
->  		dev_err(&reg->dev, "unable to get register 0x%x\n",
-> @@ -305,7 +305,7 @@ static int ab3100_get_voltage_regulator(struct regulator_dev *reg)
->  	 * For variable types, read out setting and index into
->  	 * supplied voltage list.
->  	 */
-> -	err = ab3100_get_register_interruptible(abreg->ab3100,
-> +	err = abx500_get_register_interruptible(abreg->dev, 0,
->  						abreg->regreg, &regval);
->  	if (err) {
->  		dev_warn(&reg->dev,
-> @@ -373,7 +373,7 @@ static int ab3100_set_voltage_regulator(struct regulator_dev *reg,
->  	if (bestindex < 0)
->  		return bestindex;
->  
-> -	err = ab3100_get_register_interruptible(abreg->ab3100,
-> +	err = abx500_get_register_interruptible(abreg->dev, 0,
->  						abreg->regreg, &regval);
->  	if (err) {
->  		dev_warn(&reg->dev,
-> @@ -386,7 +386,7 @@ static int ab3100_set_voltage_regulator(struct regulator_dev *reg,
->  	regval &= ~0xE0;
->  	regval |= (bestindex << 5);
->  
-> -	err = ab3100_set_register_interruptible(abreg->ab3100,
-> +	err = abx500_set_register_interruptible(abreg->dev, 0,
->  						abreg->regreg, regval);
->  	if (err)
->  		dev_warn(&reg->dev, "failed to set regulator register %02x\n",
-> @@ -414,7 +414,7 @@ static int ab3100_set_suspend_voltage_regulator(struct regulator_dev *reg,
->  	/* LDO E and BUCK have special suspend voltages you can set */
->  	bestindex = ab3100_get_best_voltage_index(reg, uV, uV);
->  
-> -	err = ab3100_get_register_interruptible(abreg->ab3100,
-> +	err = abx500_get_register_interruptible(abreg->dev, 0,
->  						targetreg, &regval);
->  	if (err) {
->  		dev_warn(&reg->dev,
-> @@ -427,7 +427,7 @@ static int ab3100_set_suspend_voltage_regulator(struct regulator_dev *reg,
->  	regval &= ~0xE0;
->  	regval |= (bestindex << 5);
->  
-> -	err = ab3100_set_register_interruptible(abreg->ab3100,
-> +	err = abx500_set_register_interruptible(abreg->dev, 0,
->  						targetreg, regval);
->  	if (err)
->  		dev_warn(&reg->dev, "failed to set regulator register %02x\n",
-> @@ -564,13 +564,12 @@ ab3100_regulator_desc[AB3100_NUM_REGULATORS] = {
->  static int __devinit ab3100_regulators_probe(struct platform_device *pdev)
->  {
->  	struct ab3100_platform_data *plfdata = pdev->dev.platform_data;
-> -	struct ab3100 *ab3100 = platform_get_drvdata(pdev);
->  	int err = 0;
->  	u8 data;
->  	int i;
->  
->  	/* Check chip state */
-> -	err = ab3100_get_register_interruptible(ab3100,
-> +	err = abx500_get_register_interruptible(&pdev->dev, 0,
->  						AB3100_LDO_D, &data);
->  	if (err) {
->  		dev_err(&pdev->dev, "could not read initial status of LDO_D\n");
-> @@ -585,7 +584,7 @@ static int __devinit ab3100_regulators_probe(struct platform_device *pdev)
->  
->  	/* Set up regulators */
->  	for (i = 0; i < ARRAY_SIZE(ab3100_reg_init_order); i++) {
-> -		err = ab3100_set_register_interruptible(ab3100,
-> +		err = abx500_set_register_interruptible(&pdev->dev, 0,
->  					ab3100_reg_init_order[i],
->  					plfdata->reg_initvals[i]);
->  		if (err) {
-> @@ -607,7 +606,7 @@ static int __devinit ab3100_regulators_probe(struct platform_device *pdev)
->  		 * see what it looks like for a certain machine, go
->  		 * into the machine I2C setup.
->  		 */
-> -		reg->ab3100 = ab3100;
-> +		reg->dev = &pdev->dev;
->  		reg->plfdata = plfdata;
->  
->  		/*
-> diff --git a/drivers/rtc/rtc-ab3100.c b/drivers/rtc/rtc-ab3100.c
-> index b46b85d..d26780e 100644
-> --- a/drivers/rtc/rtc-ab3100.c
-> +++ b/drivers/rtc/rtc-ab3100.c
-> @@ -45,7 +45,6 @@
->   */
->  static int ab3100_rtc_set_mmss(struct device *dev, unsigned long secs)
->  {
-> -	struct ab3100 *ab3100_data = dev_get_drvdata(dev);
->  	u8 regs[] = {AB3100_TI0, AB3100_TI1, AB3100_TI2,
->  		     AB3100_TI3, AB3100_TI4, AB3100_TI5};
->  	unsigned char buf[6];
-> @@ -61,27 +60,26 @@ static int ab3100_rtc_set_mmss(struct device *dev, unsigned long secs)
->  	buf[5] = (fat_time >> 40) & 0xFF;
->  
->  	for (i = 0; i < 6; i++) {
-> -		err = ab3100_set_register_interruptible(ab3100_data,
-> +		err = abx500_set_register_interruptible(dev, 0,
->  							regs[i], buf[i]);
->  		if (err)
->  			return err;
->  	}
->  
->  	/* Set the flag to mark that the clock is now set */
-> -	return ab3100_mask_and_set_register_interruptible(ab3100_data,
-> +	return abx500_mask_and_set_register_interruptible(dev, 0,
->  							  AB3100_RTC,
-> -							  0xFE, 0x01);
-> +							  0x01, 0x01);
->  
->  }
->  
->  static int ab3100_rtc_read_time(struct device *dev, struct rtc_time *tm)
->  {
-> -	struct ab3100 *ab3100_data = dev_get_drvdata(dev);
->  	unsigned long time;
->  	u8 rtcval;
->  	int err;
->  
-> -	err = ab3100_get_register_interruptible(ab3100_data,
-> +	err = abx500_get_register_interruptible(dev, 0,
->  						AB3100_RTC, &rtcval);
->  	if (err)
->  		return err;
-> @@ -94,7 +92,7 @@ static int ab3100_rtc_read_time(struct device *dev, struct rtc_time *tm)
->  		u8 buf[6];
->  
->  		/* Read out time registers */
-> -		err = ab3100_get_register_page_interruptible(ab3100_data,
-> +		err = abx500_get_register_page_interruptible(dev, 0,
->  							     AB3100_TI0,
->  							     buf, 6);
->  		if (err != 0)
-> @@ -114,7 +112,6 @@ static int ab3100_rtc_read_time(struct device *dev, struct rtc_time *tm)
->  
->  static int ab3100_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
->  {
-> -	struct ab3100 *ab3100_data = dev_get_drvdata(dev);
->  	unsigned long time;
->  	u64 fat_time;
->  	u8 buf[6];
-> @@ -122,7 +119,7 @@ static int ab3100_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
->  	int err;
->  
->  	/* Figure out if alarm is enabled or not */
-> -	err = ab3100_get_register_interruptible(ab3100_data,
-> +	err = abx500_get_register_interruptible(dev, 0,
->  						AB3100_RTC, &rtcval);
->  	if (err)
->  		return err;
-> @@ -133,7 +130,7 @@ static int ab3100_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
->  	/* No idea how this could be represented */
->  	alarm->pending = 0;
->  	/* Read out alarm registers, only 4 bytes */
-> -	err = ab3100_get_register_page_interruptible(ab3100_data,
-> +	err = abx500_get_register_page_interruptible(dev, 0,
->  						     AB3100_AL0, buf, 4);
->  	if (err)
->  		return err;
-> @@ -148,7 +145,6 @@ static int ab3100_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
->  
->  static int ab3100_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
->  {
-> -	struct ab3100 *ab3100_data = dev_get_drvdata(dev);
->  	u8 regs[] = {AB3100_AL0, AB3100_AL1, AB3100_AL2, AB3100_AL3};
->  	unsigned char buf[4];
->  	unsigned long secs;
-> @@ -165,21 +161,19 @@ static int ab3100_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
->  
->  	/* Set the alarm */
->  	for (i = 0; i < 4; i++) {
-> -		err = ab3100_set_register_interruptible(ab3100_data,
-> +		err = abx500_set_register_interruptible(dev, 0,
->  							regs[i], buf[i]);
->  		if (err)
->  			return err;
->  	}
->  	/* Then enable the alarm */
-> -	return ab3100_mask_and_set_register_interruptible(ab3100_data,
-> -							  AB3100_RTC, ~(1 << 2),
-> +	return abx500_mask_and_set_register_interruptible(dev, 0,
-> +							  AB3100_RTC, (1 << 2),
->  							  alarm->enabled << 2);
->  }
->  
->  static int ab3100_rtc_irq_enable(struct device *dev, unsigned int enabled)
->  {
-> -	struct ab3100 *ab3100_data = dev_get_drvdata(dev);
-> -
->  	/*
->  	 * It's not possible to enable/disable the alarm IRQ for this RTC.
->  	 * It does not actually trigger any IRQ: instead its only function is
-> @@ -188,12 +182,12 @@ static int ab3100_rtc_irq_enable(struct device *dev, unsigned int enabled)
->  	 * and need to be handled there instead.
->  	 */
->  	if (enabled)
-> -		return ab3100_mask_and_set_register_interruptible(ab3100_data,
-> -						    AB3100_RTC, ~(1 << 2),
-> +		return abx500_mask_and_set_register_interruptible(dev, 0,
-> +						    AB3100_RTC, (1 << 2),
->  						    1 << 2);
->  	else
-> -		return ab3100_mask_and_set_register_interruptible(ab3100_data,
-> -						    AB3100_RTC, ~(1 << 2),
-> +		return abx500_mask_and_set_register_interruptible(dev, 0,
-> +						    AB3100_RTC, (1 << 2),
->  						    0);
->  }
->  
-> @@ -210,10 +204,9 @@ static int __init ab3100_rtc_probe(struct platform_device *pdev)
->  	int err;
->  	u8 regval;
->  	struct rtc_device *rtc;
-> -	struct ab3100 *ab3100_data = platform_get_drvdata(pdev);
->  
->  	/* The first RTC register needs special treatment */
-> -	err = ab3100_get_register_interruptible(ab3100_data,
-> +	err = abx500_get_register_interruptible(&pdev->dev, 0,
->  						AB3100_RTC, &regval);
->  	if (err) {
->  		dev_err(&pdev->dev, "unable to read RTC register\n");
-> @@ -231,7 +224,7 @@ static int __init ab3100_rtc_probe(struct platform_device *pdev)
->  		 * This bit remains until RTC power is lost.
->  		 */
->  		regval = 1 | RTC_SETTING;
-> -		err = ab3100_set_register_interruptible(ab3100_data,
-> +		err = abx500_set_register_interruptible(&pdev->dev, 0,
->  							AB3100_RTC, regval);
->  		/* Ignore any error on this write */
->  	}
-> diff --git a/include/linux/mfd/abx500.h b/include/linux/mfd/abx500.h
-> index 9a881c3..390726f 100644
-> --- a/include/linux/mfd/abx500.h
-> +++ b/include/linux/mfd/abx500.h
-> @@ -3,17 +3,37 @@
->   * License terms: GNU General Public License (GPL) version 2
->   * AB3100 core access functions
->   * Author: Linus Walleij <linus.walleij@stericsson.com>
-> + *
-> + * ABX500 core access functions.
-> + * The abx500 interface is used for the Analog Baseband chip
-> + * ab3100, ab3550, ab5500 and possibly comming. It is not used for
-> + * ab4500 and ab8500 since they are another family of chip.
-> + *
-> + * Author: Mattias Wallin <mattias.wallin@stericsson.com>
-> + * Author: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
-> + * Author: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-> + * Author: Rickard Andersson <rickard.andersson@stericsson.com>
->   */
->  
->  #include <linux/device.h>
->  #include <linux/regulator/machine.h>
->  
-> -#ifndef MFD_AB3100_H
-> -#define MFD_AB3100_H
-> +#ifndef MFD_ABX500_H
-> +#define MFD_ABX500_H
->  
-> -#define ABUNKNOWN	0
-> -#define	AB3000		1
-> -#define	AB3100		2
-> +#define AB3100_P1A	0xc0
-> +#define AB3100_P1B	0xc1
-> +#define AB3100_P1C	0xc2
-> +#define AB3100_P1D	0xc3
-> +#define AB3100_P1E	0xc4
-> +#define AB3100_P1F	0xc5
-> +#define AB3100_P1G	0xc6
-> +#define AB3100_R2A	0xc7
-> +#define AB3100_R2B	0xc8
-> +#define AB3550_P1A	0x10
-> +#define AB5500_1_0	0x20
-> +#define AB5500_2_0	0x21
-> +#define AB5500_2_1	0x22
->  
->  /*
->   * AB3100, EVENTA1, A2 and A3 event register flags
-> @@ -89,7 +109,7 @@ struct ab3100 {
->  	char chip_name[32];
->  	u8 chip_id;
->  	struct blocking_notifier_head event_subscribers;
-> -	u32 startup_events;
-> +	u8 startup_events[3];
->  	bool startup_events_read;
->  };
->  
-> @@ -112,18 +132,102 @@ struct ab3100_platform_data {
->  	int external_voltage;
->  };
->  
-> -int ab3100_set_register_interruptible(struct ab3100 *ab3100, u8 reg, u8 regval);
-> -int ab3100_get_register_interruptible(struct ab3100 *ab3100, u8 reg, u8 *regval);
-> -int ab3100_get_register_page_interruptible(struct ab3100 *ab3100,
-> -			     u8 first_reg, u8 *regvals, u8 numregs);
-> -int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
-> -				 u8 reg, u8 andmask, u8 ormask);
-> -u8 ab3100_get_chip_type(struct ab3100 *ab3100);
->  int ab3100_event_register(struct ab3100 *ab3100,
->  			  struct notifier_block *nb);
->  int ab3100_event_unregister(struct ab3100 *ab3100,
->  			    struct notifier_block *nb);
-> -int ab3100_event_registers_startup_state_get(struct ab3100 *ab3100,
-> -					     u32 *fatevent);
->  
-> +/* AB3550, STR register flags */
-> +#define AB3550_STR_ONSWA				(0x01)
-> +#define AB3550_STR_ONSWB				(0x02)
-> +#define AB3550_STR_ONSWC				(0x04)
-> +#define AB3550_STR_DCIO					(0x08)
-> +#define AB3550_STR_BOOT_MODE				(0x10)
-> +#define AB3550_STR_SIM_OFF				(0x20)
-> +#define AB3550_STR_BATT_REMOVAL				(0x40)
-> +#define AB3550_STR_VBUS					(0x80)
-> +
-> +/* Interrupt mask registers */
-> +#define AB3550_IMR1 0x29
-> +#define AB3550_IMR2 0x2a
-> +#define AB3550_IMR3 0x2b
-> +#define AB3550_IMR4 0x2c
-> +#define AB3550_IMR5 0x2d
-> +
-> +enum ab3550_devid {
-> +	AB3550_DEVID_ADC,
-> +	AB3550_DEVID_DAC,
-> +	AB3550_DEVID_LEDS,
-> +	AB3550_DEVID_POWER,
-> +	AB3550_DEVID_REGULATORS,
-> +	AB3550_DEVID_SIM,
-> +	AB3550_DEVID_UART,
-> +	AB3550_DEVID_RTC,
-> +	AB3550_DEVID_CHARGER,
-> +	AB3550_DEVID_FUELGAUGE,
-> +	AB3550_DEVID_VIBRATOR,
-> +	AB3550_DEVID_CODEC,
-> +	AB3550_NUM_DEVICES,
-> +};
-> +
-> +/**
-> + * struct abx500_init_setting
-> + * Initial value of the registers for driver to use during setup.
-> + */
-> +struct abx500_init_settings {
-> +	u8 bank;
-> +	u8 reg;
-> +	u8 setting;
-> +};
-> +
-> +/**
-> + * struct ab3550_platform_data
-> + * Data supplied to initialize board connections to the AB3550
-> + */
-> +struct ab3550_platform_data {
-> +	struct {unsigned int base; unsigned int count; } irq;
-> +	void *dev_data[AB3550_NUM_DEVICES];
-> +	size_t dev_data_sz[AB3550_NUM_DEVICES];
-> +	struct abx500_init_settings *init_settings;
-> +	unsigned int init_settings_sz;
-> +};
-> +
-> +int abx500_set_register_interruptible(struct device *dev, u8 bank, u8 reg,
-> +	u8 value);
-> +int abx500_get_register_interruptible(struct device *dev, u8 bank, u8 reg,
-> +	u8 *value);
-> +int abx500_get_register_page_interruptible(struct device *dev, u8 bank,
-> +	u8 first_reg, u8 *regvals, u8 numregs);
-> +int abx500_set_register_page_interruptible(struct device *dev, u8 bank,
-> +	u8 first_reg, u8 *regvals, u8 numregs);
-> +/**
-> + * abx500_mask_and_set_register_inerruptible() - Modifies selected bits of a
-> + *	target register
-> + *
-> + * @dev: The AB sub device.
-> + * @bank: The i2c bank number.
-> + * @bitmask: The bit mask to use.
-> + * @bitvalues: The new bit values.
-> + *
-> + * Updates the value of an AB register:
-> + * value -> ((value & ~bitmask) | (bitvalues & bitmask))
-> + */
-> +int abx500_mask_and_set_register_interruptible(struct device *dev, u8 bank,
-> +	u8 reg, u8 bitmask, u8 bitvalues);
-> +int abx500_get_chip_id(struct device *dev);
-> +int abx500_event_registers_startup_state_get(struct device *dev, u8 *event);
-> +int abx500_startup_irq_enabled(struct device *dev, unsigned int irq);
-> +
-> +struct abx500_ops {
-> +	int (*get_chip_id) (struct device *);
-> +	int (*get_register) (struct device *, u8, u8, u8 *);
-> +	int (*set_register) (struct device *, u8, u8, u8);
-> +	int (*get_register_page) (struct device *, u8, u8, u8 *, u8);
-> +	int (*set_register_page) (struct device *, u8, u8, u8 *, u8);
-> +	int (*mask_and_set_register) (struct device *, u8, u8, u8, u8);
-> +	int (*event_registers_startup_state_get) (struct device *, u8 *);
-> +	int (*startup_irq_enabled) (struct device *, unsigned int);
-> +};
-> +
-> +int abx500_register_ops(struct device *core_dev, struct abx500_ops *ops);
->  #endif
 > -- 
 > 1.7.0.1
 > 
