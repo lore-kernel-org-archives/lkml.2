@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab0EJAo6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 May 2010 20:44:58 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39270 "EHLO
+	id S1754827Ab0EJAqs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 May 2010 20:46:48 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39368 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720Ab0EJAo5 (ORCPT
+	with ESMTP id S1754720Ab0EJAqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 May 2010 20:44:57 -0400
+	Sun, 9 May 2010 20:46:45 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 10 May 2010 09:40:50 +0900
+Date: Mon, 10 May 2010 09:42:38 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
@@ -19,7 +19,7 @@ Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
 Subject: Re: [PATCH 2/2] mm,migration: Fix race between shift_arg_pages and
  rmap_walk by guaranteeing rmap_walk finds PTEs created within the temporary
  stack
-Message-Id: <20100510094050.8cb79143.kamezawa.hiroyu@jp.fujitsu.com>
+Message-Id: <20100510094238.5781d6fc.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <alpine.LFD.2.00.1005091245000.3711@i5.linux-foundation.org>
 References: <1273188053-26029-1-git-send-email-mel@csn.ul.ie>
 	<1273188053-26029-3-git-send-email-mel@csn.ul.ie>
@@ -74,7 +74,7 @@ this migration-patch-series is avoding inconsistent update of sets of
 [page, vma->vm_start, vma->pg_off, ptes] or "dont' migrate pages in exec's
 statk".
 
-Considering cost, as Mel shows, "don't migrate apges in exec's stack" seems
+Considering cost, as Mel shows, "don't migrate pages in exec's stack" seems
 reasonable. But, I still doubt this check.
 
 +static bool is_vma_temporary_stack(struct vm_area_struct *vma)
@@ -91,7 +91,8 @@ reasonable. But, I still doubt this check.
 +	return false;
 +}
 +
-\
+
+
 Mel, can (*) be safe even on a.out format (format other than ELFs) ?
 
 Thanks,
