@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586Ab0EJWxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:53:13 -0400
-Received: from kroah.org ([198.145.64.141]:33075 "EHLO coco.kroah.org"
+	id S932745Ab0EJWzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:55:22 -0400
+Received: from kroah.org ([198.145.64.141]:33382 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932427Ab0EJWwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:52:21 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:22 2010
-Message-Id: <20100510223322.347254355@kvm.kroah.org>
+	id S932538Ab0EJWwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:54 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:26 2010
+Message-Id: <20100510223326.235702413@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:32:28 -0700
+Date: Mon, 10 May 2010 15:33:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [057/117] ALSA: hda: Use STAC_DELL_M6_BOTH quirk for Dell Studio 1558
+       "David S. Miller" <davem@davemloft.net>
+Subject: [098/117] sparc64: Fix hardirq tracing in trap return path.
 In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 5c1bccf645d4ab65e4c7502acb42e8b9afdb5bdc upstream.
+From: David S. Miller <davem@davemloft.net>
 
-BugLink: https://launchpad.net/bugs/568600
+[ Upstream commit 28a1f533ae8606020238b840b82ae70a3f87609e ]
 
-The OR has verified that the dell-m6 model quirk is necessary for audio
-to be audible by default on the Dell Studio XPS 1645.
+We can overflow the hardirq stack if we set the %pil here
+so early, just let the normal control flow do it.
 
-This change is necessary for 2.6.32.11 and 2.6.33.2 alike.
+This is fine as we are allowed to do the actual IRQ enable
+at any point after we call trace_hardirqs_on.
 
-Reported-by: Andy Ross <andy@plausible.org>
-Tested-by: Andy Ross <andy@plausible.org>
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- sound/pci/hda/patch_sigmatel.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sparc/kernel/rtrap_64.S |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -1604,6 +1604,8 @@ static struct snd_pci_quirk stac92hd73xx
- 				"Dell Studio 1557", STAC_DELL_M6_DMIC),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02fe,
- 				"Dell Studio XPS 1645", STAC_DELL_M6_BOTH),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0413,
-+				"Dell Studio 1558", STAC_DELL_M6_BOTH),
- 	{} /* terminator */
- };
- 
+--- a/arch/sparc/kernel/rtrap_64.S
++++ b/arch/sparc/kernel/rtrap_64.S
+@@ -172,7 +172,17 @@ rtrap_xcall:
+ 		 nop
+ 		call			trace_hardirqs_on
+ 		 nop
+-		wrpr			%l4, %pil
++		/* Do not actually set the %pil here.  We will do that
++		 * below after we clear PSTATE_IE in the %pstate register.
++		 * If we re-enable interrupts here, we can recurse down
++		 * the hardirq stack potentially endlessly, causing a
++		 * stack overflow.
++		 *
++		 * It is tempting to put this test and trace_hardirqs_on
++		 * call at the 'rt_continue' label, but that will not work
++		 * as that path hits unconditionally and we do not want to
++		 * execute this in NMI return paths, for example.
++		 */
+ #endif
+ rtrap_no_irq_enable:
+ 		andcc			%l1, TSTATE_PRIV, %l3
 
 
