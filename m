@@ -1,51 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab0EJWIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 18:08:34 -0400
-Received: from crca.org.au ([74.207.252.120]:46359 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756239Ab0EJWIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:08:32 -0400
-X-Bogosity: Ham, spamicity=0.000002
-Message-ID: <4BE883DB.1040504@tuxonice.net>
-Date: Tue, 11 May 2010 08:08:27 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-Reply-To: nigel@tuxonice.net
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1757395Ab0EJWPp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:15:45 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51916 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878Ab0EJWPo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:15:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=wsNlU5NSe0ZGK08qIVjsss61IZF+ctFlhz/6VWV6xsMJ0CNVxdtuTkjXjEWM0vN/CG
+         oetZYUAblcbYIHTIJUjd88c44T+g+x0Vvaito1Ic2D4DdfHItO/B8vyYdc4bebYsl7Kw
+         S8lxFMGVX35QnseqOePnLr1e9cIrThmYyHUM0=
+Message-ID: <4BE8859E.3090305@gmail.com>
+Date: Mon, 10 May 2010 15:15:58 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-To: Andy Isaacson <adi@hexapodia.org>
-CC: Steven Liu <lingjiujianke@gmail.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Check kmalloc return value before use the buffer
-References: <v2ubd0d95d71005061941j4f9272d1he7dc9bcf5daa6457@mail.gmail.com> <CEE6BB42CAD6E947908279175AF8470A025A68CE5C@EXDCVYMBSTM006.EQ1STM.local> <z2mbd0d95d71005070017w7aa97001m2b81be6dbc1021b9@mail.gmail.com> <4BE3DF5A.9070601@tuxonice.net> <v2gbd0d95d71005070247j1f615a65mcbd52b5b6474206e@mail.gmail.com> <CEE6BB42CAD6E947908279175AF8470A025A68D366@EXDCVYMBSTM006.EQ1STM.local> <4BE4BDED.5050406@tuxonice.net> <v2ubd0d95d71005061941j4f9272d1he7dc9bcf5daa6457@mail.gmail.com> <CEE6BB42CAD6E947908279175AF8470A025A68CE5C@EXDCVYMBSTM006.EQ1STM.local> <z2mbd0d95d71005070017w7aa97001m2b81be6dbc1021b9@mail.gmail.com> <20100510214946.GA4361@hexapodia.org>
-In-Reply-To: <20100510214946.GA4361@hexapodia.org>
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-bluetooth@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: magicmouse: claimed by neither input, hiddev nor hidraw
+References: <j2idd18b0c31005101341o43b652c1zf8729f5f9a60e0d3@mail.gmail.com>  <alpine.LRH.2.00.1005102334140.14809@twin.jikos.cz> <s2odd18b0c31005101439v22d03bfdw4e65d7c4b8315b6a@mail.gmail.com> <alpine.LNX.2.00.1005102351220.28092@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1005102351220.28092@pobox.suse.cz>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
-
-On 11/05/10 07:49, Andy Isaacson wrote:
-> On Fri, May 07, 2010 at 03:17:39PM +0800, Steven Liu wrote:
->>   	bigrxbuf_virtual = kmalloc(DMA_TEST_SIZE, GFP_KERNEL);
->> +	if (bigrxbuf_virtual == NULL) {
->> +		status = -ENOMEM;
->> +		kfree(bigtxbuf_virtual);
->> +		goto out;
->> +	}
+On 05/10/2010 02:52 PM, Jiri Kosina wrote:
+> On Mon, 10 May 2010, Justin Mattock wrote:
 >
-> On Sat, May 08, 2010 at 11:27:09AM +1000, Nigel Cunningham wrote:
->>> Acked-by: Linus Walleij<linus.walleij@stericsson.com>
+>>>> with the magicmouse connecting i.g. I've had my system setup to use
+>>>> the magicmouse with 2.6.33* with no issues now coming back after
+>>>> sometime seems everything is connecting,but then no movement: (and
+>>>> some thing in dmesg):
+>>>> [  116.267993] magicmouse 0005:05AC:030D.0007: claimed by neither
+>>>> input, hiddev nor hidraw
+>>>> [  116.268053] magicmouse 0005:05AC:030D.0007: magicmouse hw start failed
+>>>> using osx  magicmouse connects fine.
+>>>> Using standard mightymouse everything connects.
+>>>>   are there any reports of such things?
+>>>
+>>> Adding Michael Poole to CC.
+>>>
+>>> No, I haven't seen any such reports. First -- could you please provide
+>>> complete dmesg?
 >>
->> Acked-by: Nigel Cunningham<nigel@tuxonice.net>
+>> everything seems to be working o.k. now, just had to enable HIDRAW=y
+>> maybe something changed to where I needed this(I remember never really
+>> using hidraw, just HIDDEV(but could be wrong)).
 >
-> NACK.  Don't duplicate kfree(), instead do something like
+> This sounds a bit strange.
+>
+> hidraw shouldn't be making too much difference in the case you describe.
+> hidraw is basically just a mean of relaying HID events to userspace so
+> that any driver/application in userspace can access them. But magicmouse
+> driver is written completely in kernelspace.
+>
+> Does anything on your system have /dev/hidraw* nodes open? (you could
+> check by lsof).
+>
 
-Yeah... that is a better way of doing it.
 
-Regards,
+right now I see
+/dev/hidraw0,1,2,3
 
-Nigel
+./lsof | grep /dev
+(showing bluetooth)
+
+bluetooth 2020   root    0u      CHR                1,3       0t0 2551 
+/dev/null
+bluetooth 2020   root    1u      CHR                1,3       0t0 2551 
+/dev/null
+bluetooth 2020   root    2u      CHR                1,3       0t0 2551 
+/dev/null
+bluetooth 2020   root   14u      CHR              10,62       0t0 3895 
+/dev/rfkill
+
+I can try a bisect on this and see.
+
+
+Justin P. Mattock
