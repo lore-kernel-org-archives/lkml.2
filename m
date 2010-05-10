@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757912Ab0EJXSB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 19:18:01 -0400
-Received: from kroah.org ([198.145.64.141]:51716 "EHLO coco.kroah.org"
+	id S932586Ab0EJWxN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 18:53:13 -0400
+Received: from kroah.org ([198.145.64.141]:33075 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932867Ab0EJW5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 18:57:54 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:35:37 2010
-Message-Id: <20100510223537.565188251@kvm.kroah.org>
+	id S932427Ab0EJWwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 18:52:21 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Mon May 10 15:33:22 2010
+Message-Id: <20100510223322.347254355@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Mon, 10 May 2010 15:34:47 -0700
+Date: Mon, 10 May 2010 15:32:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Stephen Hemminger <shemminger@vyatta.com>,
-       Hank Janssen <hjanssen@microsoft.com>
-Subject: [35/98] Staging: hv: name network device ethX rather than sethX
-In-Reply-To: <20100510223714.GA18416@kroah.com>
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [057/117] ALSA: hda: Use STAC_DELL_M6_BOTH quirk for Dell Studio 1558
+In-Reply-To: <20100510223700.GA18404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Stephen Hemminger <shemminger@vyatta.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 546d9e101e7a71e6202f47a13ddcd9b8fb05a52e upstream.
+commit 5c1bccf645d4ab65e4c7502acb42e8b9afdb5bdc upstream.
 
-This patch makes the HyperV network device use the same naming scheme as
-other virtual drivers (Xen, KVM). In an ideal world, userspace tools
-would not care what the name is, but some users and applications do
-care. Vyatta CLI is one of the tools that does depend on what the name
-is.
+BugLink: https://launchpad.net/bugs/568600
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Hank Janssen <hjanssen@microsoft.com>
+The OR has verified that the dell-m6 model quirk is necessary for audio
+to be audible by default on the Dell Studio XPS 1645.
+
+This change is necessary for 2.6.32.11 and 2.6.33.2 alike.
+
+Reported-by: Andy Ross <andy@plausible.org>
+Tested-by: Andy Ross <andy@plausible.org>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/hv/netvsc_drv.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -413,8 +413,7 @@ static int netvsc_probe(struct device *d
- 	if (!net_drv_obj->Base.OnDeviceAdd)
- 		return -1;
- 
--	net = alloc_netdev(sizeof(struct net_device_context), "seth%d",
--			   ether_setup);
-+	net = alloc_etherdev(sizeof(struct net_device_context));
- 	if (!net)
- 		return -1;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -1604,6 +1604,8 @@ static struct snd_pci_quirk stac92hd73xx
+ 				"Dell Studio 1557", STAC_DELL_M6_DMIC),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02fe,
+ 				"Dell Studio XPS 1645", STAC_DELL_M6_BOTH),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0413,
++				"Dell Studio 1558", STAC_DELL_M6_BOTH),
+ 	{} /* terminator */
+ };
  
 
 
