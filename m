@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab0EKLeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 07:34:08 -0400
-Received: from nessie.weebeastie.net ([220.233.7.36]:56641 "EHLO
-	bunyip.billabong.weebeastie.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754287Ab0EKLeF (ORCPT
+	id S1751591Ab0EKLxo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 07:53:44 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:46915 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab0EKLxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 07:34:05 -0400
-Date: Tue, 11 May 2010 21:33:50 +1000
-From: CaT <cat@zip.com.au>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Yong Zhang <yong.zhang@windriver.com>, lkml@zip.com.au,
-       mtosatti@redhat.com, kvm@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Avi Kivity <avi@redhat.com>, Greg KH <gregkh@suse.de>
-Subject: Re: 2.6.33.3: possible recursive locking detected
-Message-ID: <20100511113350.GW2657@zip.com.au>
-References: <20100504070334.GN2657@zip.com.au> <4BDFDCD1.70202@redhat.com> <20100505023220.GC20236@windriver.com> <h2p2375c9f91005041952k422e7701vf7e726fc5440e953@mail.gmail.com>
+	Tue, 11 May 2010 07:53:43 -0400
+Message-ID: <4BE94543.3030204@canonical.com>
+Date: Tue, 11 May 2010 13:53:39 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <h2p2375c9f91005041952k422e7701vf7e726fc5440e953@mail.gmail.com>
-Organisation: Furball Inc.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>,
+       Ralf Baechle <ralf@linux-mips.org>,
+       Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [98/98] MIPS: uasm: Add OR instruction.
+References: <20100510223543.205125755@kvm.kroah.org>
+In-Reply-To: <20100510223543.205125755@kvm.kroah.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 10:52:50AM +0800, Américo Wang wrote:
-> On Wed, May 5, 2010 at 10:32 AM, Yong Zhang <yong.zhang@windriver.com> wrote:
-> > On Tue, May 04, 2010 at 11:37:37AM +0300, Avi Kivity wrote:
-> >> On 05/04/2010 10:03 AM, CaT wrote:
-> >> >I'm currently running 2.6.33.3 in a KVM instance emulating a core2duo
-> >> >on 1 cpu with virtio HDs running on top of a core2duo host running 2.6.33.3.
-> >> >qemu-kvm version 0.12.3.
-> >
-> > Can you try commit 6992f5334995af474c2b58d010d08bc597f0f2fe in the latest
-> > kernel?
-> >
-> 
-> Hmm, 2.6.33 -stable has commit 846f99749ab68bbc7f75c74fec305de675b1a1bf?
-> 
-> Actually, these 3 commits fixed it:
-> 
-> 6992f5334995af474c2b58d010d08bc597f0f2fe sysfs: Use one lockdep class
-> per sysfs ttribute.
-> a2db6842873c8e5a70652f278d469128cb52db70 sysfs: Only take active
-> references on attributes.
-> e72ceb8ccac5f770b3e696e09bb673dca7024b20 sysfs: Remove sysfs_get/put_active_two
-> 
-> However, there are many other patches needed to amend these, so I think
-> it's not suitable for -stable to include, perhaps a revert of
-> 846f99749ab68bbc7f75c74fec305de675b1a1bf is better.
+That seems to fail to apply to a 2.6.32.12 tree
 
-Slightly at a loss as to what to do, now. It's a virt instance so I can
-apply patches at will but, well, clarity is good. :)
+Stefan
 
--- 
-  "A search of his car uncovered pornography, a homemade sex aid, women's 
-  stockings and a Jack Russell terrier."
-    - http://www.news.com.au/story/0%2C27574%2C24675808-421%2C00.html
+On 05/11/2010 12:35 AM, Greg KH wrote:
+> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+> 
+> ------------------
+> 
+> (cherry picked from commit 9c6befe8c744fa2f03cab36dead503c77950c3b8)
+> 
+> This is needed for the fix of the M3 workaround.
+> 
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> --- a/arch/mips/include/asm/uasm.h
+> +++ b/arch/mips/include/asm/uasm.h
+> @@ -84,6 +84,7 @@ Ip_u2s3u1(_lw);
+>  Ip_u1u2u3(_mfc0);
+>  Ip_u1u2u3(_mtc0);
+>  Ip_u2u1u3(_ori);
+> +Ip_u3u1u2(_or);
+>  Ip_u2s3u1(_pref);
+>  Ip_0(_rfe);
+>  Ip_u2s3u1(_sc);
+> diff --git a/arch/mips/mm/uasm.c b/arch/mips/mm/uasm.c
+> index e3ca0f7..29bbd10 100644
+> --- a/arch/mips/mm/uasm.c
+> +++ b/arch/mips/mm/uasm.c
+> @@ -61,7 +61,7 @@ enum opcode {
+>  	insn_dmtc0, insn_dsll, insn_dsll32, insn_dsra, insn_dsrl,
+>  	insn_dsrl32, insn_drotr, insn_dsubu, insn_eret, insn_j, insn_jal,
+>  	insn_jr, insn_ld, insn_ll, insn_lld, insn_lui, insn_lw, insn_mfc0,
+> -	insn_mtc0, insn_ori, insn_pref, insn_rfe, insn_sc, insn_scd,
+> +	insn_mtc0, insn_or, insn_ori, insn_pref, insn_rfe, insn_sc, insn_scd,
+>  	insn_sd, insn_sll, insn_sra, insn_srl, insn_subu, insn_sw,
+>  	insn_tlbp, insn_tlbwi, insn_tlbwr, insn_xor, insn_xori, insn_dins
+>  };
+> @@ -116,6 +116,7 @@ static struct insn insn_table[] __cpuinitdata = {
+>  	{ insn_lw,  M(lw_op, 0, 0, 0, 0, 0),  RS | RT | SIMM },
+>  	{ insn_mfc0,  M(cop0_op, mfc_op, 0, 0, 0, 0),  RT | RD | SET},
+>  	{ insn_mtc0,  M(cop0_op, mtc_op, 0, 0, 0, 0),  RT | RD | SET},
+> +	{ insn_or,  M(spec_op, 0, 0, 0, 0, or_op),  RS | RT | RD },
+>  	{ insn_ori,  M(ori_op, 0, 0, 0, 0, 0),  RS | RT | UIMM },
+>  	{ insn_pref,  M(pref_op, 0, 0, 0, 0, 0),  RS | RT | SIMM },
+>  	{ insn_rfe,  M(cop0_op, cop_op, 0, 0, 0, rfe_op),  0 },
+> @@ -370,6 +371,7 @@ I_u2s3u1(_lw)
+>  I_u1u2u3(_mfc0)
+>  I_u1u2u3(_mtc0)
+>  I_u2u1u3(_ori)
+> +I_u3u1u2(_or)
+>  I_u2s3u1(_pref)
+>  I_0(_rfe)
+>  I_u2s3u1(_sc)
+
