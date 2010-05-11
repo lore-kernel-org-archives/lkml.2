@@ -1,135 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932955Ab0EKGhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 02:37:46 -0400
-Received: from mail-yx0-f171.google.com ([209.85.210.171]:56310 "EHLO
-	mail-yx0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933010Ab0EKGhl convert rfc822-to-8bit (ORCPT
+	id S933026Ab0EKGjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 02:39:14 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51706 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932744Ab0EKGjK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 02:37:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=YYktNsiQukvJESHLH6l1XiGfjG5s+j23gnakOV1bAPsLIvjmr+xL0GQNajqiDmyCkg
-         3nSYu9TsNTp/VmGY0ICg339lGlAgpS9b4d5W/tFG0PB67vM/HK7iFKT0UDd6sGsKaS9+
-         iHdsEb+Cklk9h6CopHmH8jKYmMUQMqN8wzcW4=
-MIME-Version: 1.0
-In-Reply-To: <20100511063309.GC9644@core.coreip.homeip.net>
-References: <1273487642-2169-1-git-send-email-os@emlix.com> 
-	<1273488154-2993-1-git-send-email-os@emlix.com> <20100510142225.4bf215ef.akpm@linux-foundation.org> 
-	<20100511060547.GA9644@core.coreip.homeip.net> <AANLkTikA9s6lpO2uDuIup8BwGOYYHQ9yQxS36PBSIttX@mail.gmail.com> 
-	<20100511062110.GB9644@core.coreip.homeip.net> <AANLkTiktu7N5IXknkkJ9D5L4z5plhuGvD45IVqJm9zG1@mail.gmail.com> 
-	<20100511063309.GC9644@core.coreip.homeip.net>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Tue, 11 May 2010 02:37:21 -0400
-Message-ID: <AANLkTimgZTNi6eevEAJw1BdbAJwkyCfgYe7srqmHVrUX@mail.gmail.com>
-Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oskar Schirmer <os@emlix.com>,
-       Michael Hennerich <Michael.Hennerich@analog.com>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       =?UTF-8?Q?Daniel_Gl=C3=B6ckner?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 May 2010 02:39:10 -0400
+Subject: Re: [RFC][PATCH 2/9] perf: core, remove hw_perf_event_init
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100510230911.GB5895@nowhere>
+References: <1273483595.15998.56.camel@minggr.sh.intel.com>
+	 <1273484430.5605.3334.camel@twins>
+	 <1273486670.15998.80.camel@minggr.sh.intel.com>
+	 <1273486769.5605.3343.camel@twins> <20100510122728.GB5563@nowhere>
+	 <1273496054.5605.3400.camel@twins>  <20100510230911.GB5895@nowhere>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Tue, 11 May 2010 08:38:55 +0200
+Message-ID: <1273559935.5605.3418.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 02:33, Dmitry Torokhov wrote:
-> On Tue, May 11, 2010 at 02:23:34AM -0400, Mike Frysinger wrote:
->> On Tue, May 11, 2010 at 02:21, Dmitry Torokhov wrote:
->> > On Tue, May 11, 2010 at 02:11:41AM -0400, Mike Frysinger wrote:
->> >> On Tue, May 11, 2010 at 02:05, Dmitry Torokhov wrote:
->> >> > Dmitry
->> >> >
->> >> > Input: ad7877 - keep dma rx buffers in seperate cache lines
->> >> >
->> >> > From: Oskar Schirmer <os@emlix.com>
->> >> >
->> >> > With dma based spi transmission, data corruption is observed
->> >> > occasionally. With dma buffers located right next to msg and
->> >> > xfer fields, cache lines correctly flushed in preparation for
->> >> > dma usage may be polluted again when writing to fields in the
->> >> > same cache line.
->> >> >
->> >> > Make sure cache fields used with dma do not share cache lines
->> >> > with fields changed during dma handling. As both fields are part
->> >> > of a struct that is allocated via kzalloc, thus cache aligned,
->> >> > moving the fields to the 1st position and insert padding for
->> >> > alignment does the job.
->> >> >
->> >> > Signed-off-by: Oskar Schirmer <os@emlix.com>
->> >> > Signed-off-by: Daniel Glöckner <dg@emlix.com>
->> >> > Signed-off-by: Oliver Schneidewind <osw@emlix.com>
->> >> > Signed-off-by: Johannes Weiner <jw@emlix.com>
->> >> > Acked-by: Mike Frysinger <vapier@gentoo.org>
->> >> > [dtor@mail.ru - changed to use ___cacheline_aligned at suggestion
->> >> >  of akpm]
->> >> > Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
->> >> > ---
->> >> >
->> >> >  drivers/input/touchscreen/ad7877.c |   15 ++++++++++++---
->> >> >  1 files changed, 12 insertions(+), 3 deletions(-)
->> >> >
->> >> >
->> >> > diff --git a/drivers/input/touchscreen/ad7877.c b/drivers/input/touchscreen/ad7877.c
->> >> > index e019d53..0d2d7e5 100644
->> >> > --- a/drivers/input/touchscreen/ad7877.c
->> >> > +++ b/drivers/input/touchscreen/ad7877.c
->> >> > @@ -156,9 +156,14 @@ struct ser_req {
->> >> >        u16                     reset;
->> >> >        u16                     ref_on;
->> >> >        u16                     command;
->> >> > -       u16                     sample;
->> >> >        struct spi_message      msg;
->> >> >        struct spi_transfer     xfer[6];
->> >> > +
->> >> > +       /*
->> >> > +        * DMA (thus cache coherency maintenance) requires the
->> >> > +        * transfer buffers to live in their own cache lines.
->> >> > +        */
->> >> > +       u16 sample ____cacheline_aligned;
->> >> >  };
->> >> >
->> >> >  struct ad7877 {
->> >> > @@ -182,8 +187,6 @@ struct ad7877 {
->> >> >        u8                      averaging;
->> >> >        u8                      pen_down_acc_interval;
->> >> >
->> >> > -       u16                     conversion_data[AD7877_NR_SENSE];
->> >> > -
->> >> >        struct spi_transfer     xfer[AD7877_NR_SENSE + 2];
->> >> >        struct spi_message      msg;
->> >> >
->> >> > @@ -195,6 +198,12 @@ struct ad7877 {
->> >> >        spinlock_t              lock;
->> >> >        struct timer_list       timer;          /* P: lock */
->> >> >        unsigned                pending:1;      /* P: lock */
->> >> > +
->> >> > +       /*
->> >> > +        * DMA (thus cache coherency maintenance) requires the
->> >> > +        * transfer buffers to live in their own cache lines.
->> >> > +        */
->> >> > +       u16 conversion_data[AD7877_NR_SENSE] ____cacheline_aligned;
->> >> >  };
->> >>
->> >> i'm not sure this is correct.  the cached_aligned attribute makes sure
->> >> it starts on a cache boundary, but it doesnt make sure it pads out to
->> >> one.  so it might work more of the time, but i dont think it's
->> >> guaranteed.
->> >
->> > The buffers are moved to the end of the structure - there is nothing
->> > else there.
->>
->> what guarantee exactly do you have for that statement ?
->
-> The data is kmalloced, kmalloc aligns on cacheline boundary AFAIK which
-> means that next kmalloc data chunk will not share "our" cacheline.
+On Tue, 2010-05-11 at 01:09 +0200, Frederic Weisbecker wrote:
 
-so obvious once you say it out loud.  as long as kmalloc() guarantees
-it, your patch sounds fine to me.  once Oskar double checks, ship it!
+> Which module do you have in mind that could register a pmu?
+> And I don't understand the problem with pci-hotplug.
 
-thanks :)
--mike
+Well, the DRM drivers for one, but basically the trend is for every
+aspect of the machine to include PMUs of some form, this includes bus
+bridges and fancy devices.
+
+The point about PCI-hotplug is that GPUs live on the PCI bus and once
+they start adding their PMU drivers we need to be able to unplug them.
+
+Same for when the PCI bridge devices start featuring PMU
+implementations.
