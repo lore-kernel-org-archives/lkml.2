@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab0EKQ4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:56:11 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:61275 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab0EKQ4J (ORCPT
+	id S932148Ab0EKQ6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:58:37 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:61084 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756111Ab0EKQ6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:56:09 -0400
-Date: Tue, 11 May 2010 19:58:46 +0300
-From: Eduardo Valentin <eduardo.valentin@nokia.com>
-To: ext Nishanth Menon <nm@ti.com>
-Cc: "Valentin Eduardo (Nokia-D/Helsinki)" <eduardo.valentin@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       Linux-OMAP <linux-omap@vger.kernel.org>,
-       Russell King <linux@arm.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       ext Tony Lindgren <tony@atomide.com>,
-       ext Kevin Hilman <khilman@deeprootsystems.com>,
-       "De-Schrijver Peter (Nokia-D/Helsinki)" 
-	<Peter.De-Schrijver@nokia.com>,
-       "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-       "K, Ambresh" <ambresh@ti.com>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
-       "Hogander Jouni (Nokia-D/Tampere)" <jouni.hogander@nokia.com>,
-       Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCHv5 2/3] OMAP: export OMAP info under /proc/socinfo
-Message-ID: <20100511165846.GA10609@besouro.research.nokia.com>
-Reply-To: eduardo.valentin@nokia.com
-References: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>
- <1273587331-24604-3-git-send-email-eduardo.valentin@nokia.com>
- <4BE9697F.80308@ti.com>
+	Tue, 11 May 2010 12:58:35 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 69.181.193.102
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+htPZe4XUuEBvNCLUKiq6T
+Date: Tue, 11 May 2010 09:58:21 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100511165821.GA13931@atomide.com>
+References: <1272667021-21312-1-git-send-email-arve@android.com>
+ <87wrvl5479.fsf@deeprootsystems.com>
+ <87632vhbs8.fsf@deeprootsystems.com>
+ <201005102225.52431.rjw@sisk.pl>
+ <20100511161227.GD13600@atomide.com>
+ <20100511161448.GA16148@srcf.ucam.org>
+ <20100511163632.GE13600@atomide.com>
+ <20100511164554.GA17016@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BE9697F.80308@ti.com>
+In-Reply-To: <20100511164554.GA17016@srcf.ucam.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 11 May 2010 16:55:05.0907 (UTC) FILETIME=[B4E16030:01CAF12A]
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Nishanth,
-
-On Tue, May 11, 2010 at 04:28:15PM +0200, ext Nishanth Menon wrote:
-> Eduardo Valentin had written, on 05/11/2010 09:15 AM, the following:
-> > From: Eduardo Valentin <eduardo.valentin@nokia.com>
+* Matthew Garrett <mjg@redhat.com> [100511 09:41]:
+> On Tue, May 11, 2010 at 09:36:33AM -0700, Tony Lindgren wrote:
+> > OK, so can the suspend blocker then become just:
 > > 
-> > Export OMAP name and rev under /proc/socinfo node.
+> > # Block suspend while idle, system stays running
+> > # echo default > /sys/power/policy
 > > 
-> > Signed-off-by: Eduardo Valentin <eduardo.valentin@nokia.com>
-> > ---
-> >  arch/arm/Kconfig         |    1 +
-> >  arch/arm/mach-omap1/id.c |   31 ++++++++++++++++++++++++-------
-> >  arch/arm/mach-omap2/id.c |   32 ++++++++++++++++++++++++++------
-> >  3 files changed, 51 insertions(+), 13 deletions(-)
+> > and the when it's OK to suspend:
 > > 
-> [..]
+> > # Allow suspend while idle, system suspends when it hits kernel idle loop
+> > # echo opportunistic > /sys/power/policy
+> > 
+> > or do you still need something more to ensure the data gets into your
+> > app and be handled?
 > 
-> > diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
-> > index 37b8a1a..b67486b 100644
-> > --- a/arch/arm/mach-omap2/id.c
-> > +++ b/arch/arm/mach-omap2/id.c
-> [..]
-> 
-> > @@ -356,7 +363,8 @@ void __init omap3_cpuinfo(void)
-> >  	}
-> >  
-> >  	/* Print verbose information */
-> > -	pr_info("%s ES%s (", cpu_name, cpu_rev);
-> > +	snprintf(socinfo, SOCINFO_SZ, "%s ES%s", cpu_name, cpu_rev);
-> > +	pr_info("%s (", socinfo);
-> >  
-> >  	OMAP3_SHOW_FEATURE(l2cache);
-> >  	OMAP3_SHOW_FEATURE(iva);
-> Just a minor comment -> is it a good idea to pushin the features to SOC 
-> info as well? currently this is being displayed at bootlog and not 
-> beyond.. might be a better approach to move it into socinfo..
+> Yes. You still need suspend blocks.
 
-Yeah. I would expect that someone would ask this. When I was writing this part
-I also thought that would be nice to just duplicate all info which is printed
-into kernel log buffer. But then I decided to proceed with only the info we are
-needing from userspace. If you think that would be useful to know those as well,
-then why not adding them.
+Maybe not if echo opportunistic > /sys/power/policy gets cleared by
+the kernel if the kernel idle loop can't make it. That means something
+has blocked the suspend attempt in a driver for example. The system
+keeps running, and the userspace can deal with the situation.
+ 
+> > The part I really don't like is the idea of patching all over the drivers
+> > and userspace for the wakelocks/suspendblocks.
+> 
+> I don't like the idea either, but given that nobody has actually 
+> provided any other ideas that would actually work then I don't think 
+> we've got a great deal of choice.
 
-> 
-> 
-> [..]
-> 
-> -- 
-> Regards,
-> Nishanth Menon
+If the opportunistic kernel flag is one time attempt only, then you
+could take care of the wakelock/suspendblock handling in the userspace
+completely. And once the userspace wakelock/suspendblock is cleared,
+the userspace can again echo opportunistic > /sys/power/policy.
+
+Regards,
+
+Tony
