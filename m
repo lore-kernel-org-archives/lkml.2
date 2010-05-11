@@ -1,72 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab0EKS2M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 14:28:12 -0400
-Received: from fmailhost01.isp.att.net ([204.127.217.101]:52960 "EHLO
-	fmailhost01.isp.att.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932470Ab0EKS2K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 14:28:10 -0400
-X-Greylist: delayed 15605 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 14:28:10 EDT
-X-Originating-IP: [65.7.130.205]
-Message-ID: <4BE9A1B3.3020208@turmel.org>
-Date: Tue, 11 May 2010 14:28:03 -0400
-From: Phil Turmel <pturmel-kernel@turmel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100417 Thunderbird/3.0.4
+	id S932558Ab0EKS2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 14:28:23 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:57169 "EHLO mgw1.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932543Ab0EKS2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 14:28:20 -0400
+Date: Tue, 11 May 2010 20:28:14 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>,
+       ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 4/5] fs/ocfs2/dlm: Drop memory allocation cast
+Message-ID: <Pine.LNX.4.64.1005112027000.4330@ask.diku.dk>
 MIME-Version: 1.0
-To: Phil Reynolds <phil-linux@tinsleyviaduct.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: Marvell eSATA - 88SE6121 on Asus M3A79-T Deluxe - not in AHCI
-References: <20100509151358.84896yzx8vt059gm@topdeck.tinsleyviaduct.com>	<4BE964C2.1010702@turmel.org> <20100511182128.216144e4uzjtufbs@topdeck.tinsleyviaduct.com>
-In-Reply-To: <20100511182128.216144e4uzjtufbs@topdeck.tinsleyviaduct.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2010 01:21 PM, Phil Reynolds wrote:
-> Quoting "Phil Turmel" <pturmel-kernel@turmel.org>:
-> 
->> I have a similar chipset in my office server: 88SE6145.  If yours can run
->> in AHCI mode, you just need "ahci.marvell_enable=1" on your kernel
->> command
->> line, or "options ahci marvell_enable=1" in your modprobe.conf.  (I have
->> ahci built-in, and no initramfs, so I put the option in my grub.conf.)
-> 
-> Neither works for me unfortunately.
-> 
+From: Julia Lawall <julia@diku.dk>
 
-Hmmm.  If you post your dmesg, lspci, and config, I'll be happy to compare
-to my setup.  It might be something as simple as the Marvell driver loading
-first and claiming the device.
+Drop cast on the result of kmalloc and similar functions.
 
-The relevant part of my dmesg looks like this:
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
 
-[    4.802703] ahci 0000:06:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-[    4.806351] ahci 0000:06:00.0: controller can't do NCQ, turning off CAP_NCQ
-[    4.809921] ahci 0000:06:00.0: controller can't do PMP, turning off CAP_PMP
-[    4.813334] ahci 0000:06:00.0: MV_AHCI HACK: port_map 1f -> f
-[    4.816656] ahci 0000:06:00.0: Disabling your PATA port. Use the boot option 'ahci.marvell_enable=0' to avoid this.
-[    4.823333] ahci: SSS flag set, parallel bus scan disabled
-[    4.826765] ahci 0000:06:00.0: AHCI 0001.0000 32 slots 5 ports 3 Gbps 0xf impl RAID mode
-[    4.830240] ahci 0000:06:00.0: flags: 64bit stag slum part
-[    4.833810] ahci 0000:06:00.0: setting latency timer to 64
-[    4.834021] scsi4 : ahci
-[    4.837755] scsi5 : ahci
-[    4.841426] scsi6 : ahci
-[    4.844997] scsi7 : ahci
-[    4.848509] scsi8 : ahci
-[    4.851956] ata5: SATA max UDMA/133 irq_stat 0x02400000, PHY RDY changed irq 17
-[    4.855423] ata6: SATA max UDMA/133 irq_stat 0x02400000, PHY RDY changed irq 17
-[    4.858814] ata7: SATA max UDMA/133 abar m1024@0xfbfffc00 port 0xfbfffe00 irq 17
-[    4.862177] ata8: SATA max UDMA/133 abar m1024@0xfbfffc00 port 0xfbfffe80 irq 17
-[    4.865472] ata9: DUMMY
+// <smpl>
+@@
+type T;
+@@
 
-The Marvell driver never gets a chance to claim my device, as it is disabled in
-my kernel config.  If you are using modules, you might want to blacklist "sata_mv".
+- (T *)
+  (\(kmalloc\|kzalloc\|kcalloc\|kmem_cache_alloc\|kmem_cache_zalloc\|
+   kmem_cache_alloc_node\|kmalloc_node\|kzalloc_node\)(...))
+// </smpl>
 
-If you are using modules from an initramfs, you might need to update your
-initramfs, too.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Phil
+---
+ fs/ocfs2/dlm/dlmlock.c   |    2 +-
+ fs/ocfs2/dlm/dlmmaster.c |   18 ++++++------------
+ 2 files changed, 7 insertions(+), 13 deletions(-)
+
+diff --git a/fs/ocfs2/dlm/dlmlock.c b/fs/ocfs2/dlm/dlmlock.c
+index f1fba2a..69cf369 100644
+--- a/fs/ocfs2/dlm/dlmlock.c
++++ b/fs/ocfs2/dlm/dlmlock.c
+@@ -431,7 +431,7 @@ struct dlm_lock * dlm_new_lock(int type, u8 node, u64 cookie,
+ 	struct dlm_lock *lock;
+ 	int kernel_allocated = 0;
+ 
+-	lock = (struct dlm_lock *) kmem_cache_zalloc(dlm_lock_cache, GFP_NOFS);
++	lock = kmem_cache_zalloc(dlm_lock_cache, GFP_NOFS);
+ 	if (!lock)
+ 		return NULL;
+ 
+diff --git a/fs/ocfs2/dlm/dlmmaster.c b/fs/ocfs2/dlm/dlmmaster.c
+index 4fc6fd2..4a7506a 100644
+--- a/fs/ocfs2/dlm/dlmmaster.c
++++ b/fs/ocfs2/dlm/dlmmaster.c
+@@ -617,13 +617,11 @@ struct dlm_lock_resource *dlm_new_lockres(struct dlm_ctxt *dlm,
+ {
+ 	struct dlm_lock_resource *res = NULL;
+ 
+-	res = (struct dlm_lock_resource *)
+-				kmem_cache_zalloc(dlm_lockres_cache, GFP_NOFS);
++	res = kmem_cache_zalloc(dlm_lockres_cache, GFP_NOFS);
+ 	if (!res)
+ 		goto error;
+ 
+-	res->lockname.name = (char *)
+-				kmem_cache_zalloc(dlm_lockname_cache, GFP_NOFS);
++	res->lockname.name = kmem_cache_zalloc(dlm_lockname_cache, GFP_NOFS);
+ 	if (!res->lockname.name)
+ 		goto error;
+ 
+@@ -757,8 +755,7 @@ lookup:
+ 		spin_unlock(&dlm->spinlock);
+ 		mlog(0, "allocating a new resource\n");
+ 		/* nothing found and we need to allocate one. */
+-		alloc_mle = (struct dlm_master_list_entry *)
+-			kmem_cache_alloc(dlm_mle_cache, GFP_NOFS);
++		alloc_mle = kmem_cache_alloc(dlm_mle_cache, GFP_NOFS);
+ 		if (!alloc_mle)
+ 			goto leave;
+ 		res = dlm_new_lockres(dlm, lockid, namelen);
+@@ -1542,8 +1539,7 @@ way_up_top:
+ 			spin_unlock(&dlm->master_lock);
+ 			spin_unlock(&dlm->spinlock);
+ 
+-			mle = (struct dlm_master_list_entry *)
+-				kmem_cache_alloc(dlm_mle_cache, GFP_NOFS);
++			mle = kmem_cache_alloc(dlm_mle_cache, GFP_NOFS);
+ 			if (!mle) {
+ 				response = DLM_MASTER_RESP_ERROR;
+ 				mlog_errno(-ENOMEM);
+@@ -2456,8 +2452,7 @@ static int dlm_migrate_lockres(struct dlm_ctxt *dlm,
+ 		goto leave;
+ 	}
+ 
+-	mle = (struct dlm_master_list_entry *) kmem_cache_alloc(dlm_mle_cache,
+-								GFP_NOFS);
++	mle = kmem_cache_alloc(dlm_mle_cache, GFP_NOFS);
+ 	if (!mle) {
+ 		mlog_errno(ret);
+ 		goto leave;
+@@ -3039,8 +3034,7 @@ int dlm_migrate_request_handler(struct o2net_msg *msg, u32 len, void *data,
+ 	hash = dlm_lockid_hash(name, namelen);
+ 
+ 	/* preallocate.. if this fails, abort */
+-	mle = (struct dlm_master_list_entry *) kmem_cache_alloc(dlm_mle_cache,
+-							 GFP_NOFS);
++	mle = kmem_cache_alloc(dlm_mle_cache, GFP_NOFS);
+ 
+ 	if (!mle) {
+ 		ret = -ENOMEM;
