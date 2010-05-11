@@ -1,105 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab0EKLDM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 07:03:12 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:40599 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757891Ab0EKLDE (ORCPT
+	id S1751772Ab0EKLPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 07:15:21 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51069 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332Ab0EKLPS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 07:03:04 -0400
-X-Sasl-enc: hD0Phcq8JN/rNZTXR0BcH0A6dXu73h2cipfLC52pfex9 1273575781
-Message-ID: <4BE93963.5070200@ladisch.de>
-Date: Tue, 11 May 2010 13:02:59 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Tue, 11 May 2010 07:15:18 -0400
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Nicolas Pitre <nico@marvell.com>, Saeed Bishara <saeed@marvell.com>,
+       "James E.J. Bottomley" <jejb@parisc-linux.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 11 May 2010 16:44:47 +0530
+Subject: RE: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
+	88f5182)
+Thread-Topic: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
+	88f5182)
+Thread-Index: Acrw+Z3yV5aw6z9dQWKm2/UJOYlEmgAADinQ
+Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB02C545537F@dbde02.ent.ti.com>
+References: <1273569821.21352.19.camel@pasglop>
+ <1273575478.21352.29.camel@pasglop>
+In-Reply-To: <1273575478.21352.29.camel@pasglop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: David Airlie <airlied@linux.ie>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       dri-devel@lists.freedesktop.org, linux-fbdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: fb+drm: possible circular locking dependency detected
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With radeon KMS, after using a program accessing the framebuffer,
-I started X and got this:
+> -----Original Message-----
+> From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-kernel-
+> bounces@lists.infradead.org] On Behalf Of Benjamin Herrenschmidt
+> Sent: Tuesday, May 11, 2010 4:28 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: Nicolas Pitre; Saeed Bishara; James E.J. Bottomley; Andrew Morton; linux-ext4@vger.kernel.org;
+> linux-arm-kernel@lists.infradead.org
+> Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell 88f5182)
+> 
+> On Tue, 2010-05-11 at 19:23 +1000, Benjamin Herrenschmidt wrote:
+> 
+> > Since I doubt ext3 is busted so dramatically in mainline for "normal" machines,
+> > I tend to suspect things could be related to the infamous vivt caches. On the
+> > other hand, it's pretty clearly metadata or journal corruption and I'm not
+> > sure we ever do things that could cause aliases (such as vmap etc..) on
+> > these things, and they shouldn't be mapped into userspace... unless it's fsck
+> > itself that causes aliases to occur at the block device level ? (I do unmount
+> > though before I run fsck).
+> >
+> > On the other hand, it could also be a busticated marvell SATA driver :-)
+> >
+> > I have no problem with the vendor kernel, but it's ancient (2.6.12) and based
+> > on an out of tree variant of a Marvell originated BSP, so everything is
+> > completely different, especially in the area of drivers for the chipset.
+> >
+> > Anyways, I'll see if I can gather more data tomorrow as time, viruses and sick
+> > kids permits.
+> >
+> > In the meantime, any hint appreciated.
+> 
+> A quick other test which brings more infos, using a smaller (about 5GB)
+> partition and no md or raid involved:
+> 
+>  - Boot with NFS root
+>  - mkfs /dev/sdb2 (no md or raid involved)
+>  - mount /dev/sdb2 /mnt/test
+>  - rsync -avx /test-stuff /mnt/test
+>  - cd /mnt/test
+>  - md5sum -c ~/test-stuff-sums.txt
+> 
+> That gives me a whole bunch of:
+> 
+> md5sum: ./usr/bin/debconf-escape: No such file or directory
+> ./usr/bin/debconf-escape: FAILED open or read
+> ./usr/bin/stat: OK
+> md5sum: ./usr/bin/chrt: No such file or directory
+> ./usr/bin/chrt: FAILED open or read
+> 
+> In fact, if I do ls /mnt/test/usr/bin/ I see debconf but if I do
+> ls /mnt/test/usr/bin/chrt then I get No such file or directory.
+> 
+> So something is badly wrong :-)
+> 
+> Now, trying without the dir_index feature (mkfs.ext3 -O ^dir_index)
+> and it works fine. All my md5sum's are correct and fsck passes.
+> 
+> So there's what looks like a problem specific to htree's. I don't think
+> it's a SATA driver problem (doesn't smell like it but we can't
+> completely dismiss the possibility yet). Could be a VIVT issue but then
+> why ? I don't see ext3 playing with virtual mappings and none of that
+> should alias with userspace...
+> 
+> Or is it incorrectly accessing pages while they are DMA'ed to or from ?
+> IE. Accessing with the CPU pages between dma_map_* and dma_unmap_* ?
+> That will break on a number of setups including swiotlb on x86 so I tend
+> to doubt it but who knows...
 
-=======================================================
-[ INFO: possible circular locking dependency detected ]
-2.6.34-rc6 #117
--------------------------------------------------------
-X/1846 is trying to acquire lock:
- (&mm->mmap_sem){++++++}, at: [<ffffffff8108d36f>] might_fault+0x57/0xa4
+Not sure if it is related but we saw similar issue with MMC driver on
+Cortex-A9 MP core. I was seeing similar weird issues with EXT3 and 
+everything use to be fine with EXT2.
 
-but task is already holding lock:
- (&dev->mode_config.mutex){+.+.+.}, at: [<ffffffff8125f258>] drm_mode_getresources+0x33/0x54d
+All those errors you mentioned use to come and at times whole FS
+Use to get corrupted.
 
-which lock already depends on the new lock.
+It was root-caused to MMC driver which uses DMA engine for TX/RX. The
+issue was mainly with writes and hence EXT3 was having issue which does
+journaling and hence more writes.
+There was a memory write barrier missing before the DMA descriptors 
+are handed over to DMA controller.
 
+Regards,
+Santosh
 
-the existing dependency chain (in reverse order) is:
-
--> #2 (&dev->mode_config.mutex){+.+.+.}:
-       [<ffffffff8105d185>] __lock_acquire+0x1408/0x1747
-       [<ffffffff8105d51e>] lock_acquire+0x5a/0x71
-       [<ffffffff8143284a>] mutex_lock_nested+0x58/0x2b1
-       [<ffffffff8124e1d8>] drm_fb_helper_set_par+0x9c/0xf2
-       [<ffffffff811de45f>] fb_set_var+0x1de/0x2d9
-       [<ffffffff811de694>] do_fb_ioctl+0x13a/0x46e
-       [<ffffffff811dede2>] fb_ioctl+0x21/0x23
-       [<ffffffff810b3c80>] vfs_ioctl+0x2a/0x9e
-       [<ffffffff810b4235>] do_vfs_ioctl+0x4b7/0x4f4
-       [<ffffffff810b42b4>] sys_ioctl+0x42/0x65
-       [<ffffffff81001feb>] system_call_fastpath+0x16/0x1b
-
--> #1 (&fb_info->lock){+.+.+.}:
-       [<ffffffff8105d185>] __lock_acquire+0x1408/0x1747
-       [<ffffffff8105d51e>] lock_acquire+0x5a/0x71
-       [<ffffffff8143284a>] mutex_lock_nested+0x58/0x2b1
-       [<ffffffff811dd60a>] fb_release+0x1c/0x54
-       [<ffffffff810a8585>] __fput+0x120/0x1e3
-       [<ffffffff810a8660>] fput+0x18/0x1a
-       [<ffffffff81093287>] remove_vma+0x51/0x76
-       [<ffffffff81094245>] do_munmap+0x30a/0x32e
-       [<ffffffff810942a4>] sys_munmap+0x3b/0x54
-       [<ffffffff81001feb>] system_call_fastpath+0x16/0x1b
-
--> #0 (&mm->mmap_sem){++++++}:
-       [<ffffffff8105ceaa>] __lock_acquire+0x112d/0x1747
-       [<ffffffff8105d51e>] lock_acquire+0x5a/0x71
-       [<ffffffff8108d39c>] might_fault+0x84/0xa4
-       [<ffffffff8125f4a5>] drm_mode_getresources+0x280/0x54d
-       [<ffffffff8125519f>] drm_ioctl+0x255/0x34b
-       [<ffffffff810b3c80>] vfs_ioctl+0x2a/0x9e
-       [<ffffffff810b4235>] do_vfs_ioctl+0x4b7/0x4f4
-       [<ffffffff810b42b4>] sys_ioctl+0x42/0x65
-       [<ffffffff81001feb>] system_call_fastpath+0x16/0x1b
-
-other info that might help us debug this:
-
-1 lock held by X/1846:
- #0:  (&dev->mode_config.mutex){+.+.+.}, at: [<ffffffff8125f258>] drm_mode_getresources+0x33/0x54d
-
-stack backtrace:
-Pid: 1846, comm: X Not tainted 2.6.34-rc6 #117
-Call Trace:
- [<ffffffff8105b82f>] print_circular_bug+0xb3/0xc2
- [<ffffffff8105ceaa>] __lock_acquire+0x112d/0x1747
- [<ffffffff8105aef4>] ? mark_held_locks+0x4d/0x6b
- [<ffffffff81432a88>] ? mutex_lock_nested+0x296/0x2b1
- [<ffffffff8105d51e>] lock_acquire+0x5a/0x71
- [<ffffffff8108d36f>] ? might_fault+0x57/0xa4
- [<ffffffff8108d39c>] might_fault+0x84/0xa4
- [<ffffffff8108d36f>] ? might_fault+0x57/0xa4
- [<ffffffff8125f4a5>] drm_mode_getresources+0x280/0x54d
- [<ffffffff8125519f>] drm_ioctl+0x255/0x34b
- [<ffffffff8125f225>] ? drm_mode_getresources+0x0/0x54d
- [<ffffffff8104f629>] ? up_read+0x1e/0x35
- [<ffffffff810b3c80>] vfs_ioctl+0x2a/0x9e
- [<ffffffff810b4235>] do_vfs_ioctl+0x4b7/0x4f4
- [<ffffffff8100201c>] ? sysret_check+0x27/0x62
- [<ffffffff810b42b4>] sys_ioctl+0x42/0x65
- [<ffffffff81001feb>] system_call_fastpath+0x16/0x1b
