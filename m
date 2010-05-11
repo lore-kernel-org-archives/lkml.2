@@ -1,104 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757757Ab0EKUO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 16:14:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43595 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab0EKUOy (ORCPT
+	id S1757587Ab0EKUW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 16:22:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61638 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab0EKUWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 16:14:54 -0400
-X-Authority-Analysis: v=1.1 cv=RZg5C6NCKrCZril9sGGnsuGk01/OiP2z3O3lo0hXATg= c=1 sm=0 a=5sH3s8HGSoAA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=-QAX7fqwHxs1iD0xHTYA:9 a=oxYwB29kg5CcHwT__LEA:7 a=mkP7VyLuk5dhtMVc12DwFgY5yrIA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 00/10] [GIT PULL] tracing: Lowering the footprint of
- TRACE_EVENTs
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Mathieu Desnoyers <compudj@krystal.dyndns.org>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-In-Reply-To: <20100511182022.826921702@goodmis.org>
-References: <20100511182022.826921702@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Tue, 11 May 2010 16:14:51 -0400
-Message-ID: <1273608891.27703.5.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 11 May 2010 16:22:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=q1SZtMeB6mJyWvov0XIvp2/MbwsXzJB5Cz0sUumJ2u7wTTN3STlPX/rth0HCGwrF7I
+         D895SxEwDOQWQ7G8z/G6Ir1p3Yrr3qL0k20jG0NAFEoiTGhYQkKPPIY9dghDRAr70WfQ
+         s0O65jMMhcb5bvjP3oHekBK4aGM5PpgIESFi4=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com>
+References: <1273487642-2169-1-git-send-email-os@emlix.com>
+	 <20100511060547.GA9644@core.coreip.homeip.net>
+	 <AANLkTikA9s6lpO2uDuIup8BwGOYYHQ9yQxS36PBSIttX@mail.gmail.com>
+	 <20100511062110.GB9644@core.coreip.homeip.net>
+	 <AANLkTiktu7N5IXknkkJ9D5L4z5plhuGvD45IVqJm9zG1@mail.gmail.com>
+	 <20100511063309.GC9644@core.coreip.homeip.net>
+	 <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com>
+	 <AANLkTinV79HZqS1cktHDsTsHDel-0Nti_Uk4i7mGaRiK@mail.gmail.com>
+	 <1273608441.15067.1002.camel@calx>
+	 <AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com>
+Date: Tue, 11 May 2010 23:22:22 +0300
+X-Google-Sender-Auth: FHvHCOIXILMs7ifWEwgroTfC9x0
+Message-ID: <AANLkTim20ALiZiIVGQZyAye-3kUL_i3aYyoOk-P4Z84k@mail.gmail.com>
+Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Matt Mackall <mpm@selenic.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oskar Schirmer <os@emlix.com>,
+       Michael Hennerich <Michael.Hennerich@analog.com>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       =?ISO-8859-1?Q?Daniel_Gl=F6ckner?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 14:20 -0400, Steven Rostedt wrote:
-> [ Final version! ]
-> 
-> Ingo,
+On Tue, May 11, 2010 at 11:10 PM, Mike Frysinger <vapier.adi@gmail.com> wrote:
+>> Make your own slab cache with the alignment flag set, as Pekka already
+>> mentioned.
+>
+> and like i said, that doesnt sound like a reasonable solution when
+> every single SPI driver (over 100 atm) out there is affected
 
-> 
-> Please pull the latest tip/tracing/core tree, which can be found at:
-
-Ingo,
-
-Hold on, this breaks a few places on a allyesconfig. I missed some
-places that use the register_trace_* and this changes the API.
-
-I'll have another patch set later tonight.
-
--- Steve
-
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/tracing/core
-> 
-> 
-> Mathieu Desnoyers (1):
->       tracepoints: Add check trace callback type
-> 
-> Steven Rostedt (9):
->       tracing: Create class struct for events
->       tracing: Let tracepoints have data passed to tracepoint callbacks
->       tracing: Remove per event trace registering
->       tracing: Move fields from event to class structure
->       tracing: Move raw_init from events to class
->       tracing: Allow events to share their print functions
->       tracing: Move print functions into event class
->       tracing: Remove duplicate id information in event structure
->       tracing: Combine event filter_active and enable into single flags field
-> 
-> ----
->  include/linux/ftrace_event.h                   |   73 ++++++--
->  include/linux/syscalls.h                       |   57 ++----
->  include/linux/tracepoint.h                     |   98 ++++++++---
->  include/trace/ftrace.h                         |  233 +++++++++---------------
->  include/trace/syscall.h                        |   10 +-
->  kernel/trace/blktrace.c                        |  138 ++++++++------
->  kernel/trace/ftrace.c                          |    7 +-
->  kernel/trace/kmemtrace.c                       |   70 +++++---
->  kernel/trace/trace.c                           |    9 +-
->  kernel/trace/trace.h                           |    5 +-
->  kernel/trace/trace_event_perf.c                |   17 ++-
->  kernel/trace/trace_events.c                    |  131 +++++++++-----
->  kernel/trace/trace_events_filter.c             |   28 ++--
->  kernel/trace/trace_export.c                    |   16 +-
->  kernel/trace/trace_functions_graph.c           |   13 +-
->  kernel/trace/trace_kprobe.c                    |  104 +++++++----
->  kernel/trace/trace_output.c                    |  137 ++++++++++-----
->  kernel/trace/trace_output.h                    |    2 +-
->  kernel/trace/trace_sched_switch.c              |   23 ++-
->  kernel/trace/trace_sched_wakeup.c              |   27 ++--
->  kernel/trace/trace_syscalls.c                  |  137 ++++++++++++---
->  kernel/trace/trace_workqueue.c                 |   26 ++-
->  kernel/tracepoint.c                            |   91 +++++----
->  samples/tracepoints/tp-samples-trace.h         |    4 +-
->  samples/tracepoints/tracepoint-probe-sample.c  |   13 +-
->  samples/tracepoints/tracepoint-probe-sample2.c |    7 +-
->  26 files changed, 879 insertions(+), 597 deletions(-)
-
-
+Why do you need to do it in every driver? Why not create a cache of
+size cache_line_size()*2 or something in the SPI stack and add a
+helper function spi_alloc_whatever_this_is_about() for the drivers to
+use?
