@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab0EKXqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 19:46:10 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52009 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab0EKXqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 19:46:06 -0400
-Date: Tue, 11 May 2010 16:45:23 -0700
-From: Greg KH <gregkh@suse.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH RFC tip/core/rcu 06/11] staging: remove all rcu head
- initializations
-Message-ID: <20100511234523.GA1450@suse.de>
-References: <20100511233241.GA20250@linux.vnet.ibm.com>
- <1273620786-20392-6-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1753173Ab0EKXxq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 19:53:46 -0400
+Received: from web58207.mail.re3.yahoo.com ([68.142.236.145]:46075 "HELO
+	web58207.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751123Ab0EKXxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 19:53:44 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 19:53:44 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
+  b=zaqxY2SaUw68Hu5x9dZLUIpb1FmpjorXxCg4HFN/c77WOMeUUIAbgidMqqEEEAVWwWC/d0amUrGVbo9//K8uVCWGc/4OA8tWruvqWt0WIj2caJH9VQrL2qeW4rvVVyiuLQIcdVNcf9c6JPcsvew/aHCHCCevNalPOEbm8tUd1kw=;
+Message-ID: <924237.86306.qm@web58207.mail.re3.yahoo.com>
+X-YMail-OSG: YTrpQfcVM1mWyM7DDONX2hvmifZlqzt2SHwdV9ZX5TS4zBl
+ 8ujkUIzMWX6Y5jri2O.2ouL7UuHeupbuf7OX.l7NgMYxllupJE_ni2E8C1RP
+ kysg4HKHyknMZHoH2Kf3HxlOSFtamMVpfeHXV0GxqlwpYqEI7IVzw0yclKVn
+ DpwMU1JY.hbWpdt0zlzwXsWlBmyuEJc1K6PO8vZr4nB9iGH5lC2z2cAgP.I8
+ 8StgkOCgj7D9eGYtoph3yRwCgKsmwedSrddqbXjW9xKsTZg_8Od6ecQXUtb.
+ F06ud3jWqqc4MX0OB1Ja0Xmg-
+X-Mailer: YahooMailClassic/10.1.11 YahooMailWebService/0.8.103.269680
+Date: Tue, 11 May 2010 16:47:01 -0700 (PDT)
+From: Billy Simrell <bill_simrell@yahoo.com>
+Subject: [PATCH 1/1] Documentation: usb/CREDITS
+To: rdunlap@xenotime.net
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273620786-20392-6-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 04:33:01PM -0700, Paul E. McKenney wrote:
-> Remove all rcu head inits. We don't care about the RCU head state before passing
-> it to call_rcu() anyway. Only leave the "on_stack" variants so debugobjects can
-> keep track of objects on stack.
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> ---
->  drivers/staging/batman-adv/hard-interface.c |    1 -
+From: Billy Simrell <bill_simrell@yahoo.com>
 
-Is this safe to apply to my tree now?  Or do you want to take it through
-your tree as it depends on other stuff?
+Fixed a spelling error in Documentation/usb/CREDITS on line 104.
+Signed-off-by: Billy Simrell <bill_simrell@yahoo.com>
+-----------------------------------------------------------------------------
+--- usb/CREDITS.orig	2010-05-11 17:26:53.000000000 -0500
++++ usb/CREDITS	2010-05-11 17:30:48.000000000 -0500
+@@ -101,7 +101,7 @@ THANKS file in Inaky's driver):
+           other USB hardware.
+ 
+           Logitech is official sponsor of the Linux Conference on
+-          Feb. 11th 1999 in Vienna, where we'll will present the
++          Feb. 11th 1999 in Vienna, where we will present the
+           current state of the Linux USB effort.
+ 
+         - CATC has provided means to uncover dark corners of the UHCI
 
-If your tree, no objection from me, feel free to add:
-	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-thanks,
-
-greg k-h
+      
