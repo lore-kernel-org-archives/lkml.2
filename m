@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052Ab0EKSSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 14:18:07 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43102 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756983Ab0EKSSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 14:18:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Date: Tue, 11 May 2010 20:19:02 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Tony Lindgren <tony@atomide.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>
-References: <87wrvl5479.fsf@deeprootsystems.com> <20100511172442.GB13931@atomide.com> <20100511173036.GB17868@srcf.ucam.org>
-In-Reply-To: <20100511173036.GB17868@srcf.ucam.org>
+	id S1757105Ab0EKSSb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 14:18:31 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:56761 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757022Ab0EKSS2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 14:18:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Bn1LCjfbwAlddhTxLG6q4V+inLc0hLQJIb8xa35oIyQo3ZZUQbwE0eScQTVH0yj/9N
+         SGAOZPjdEl2I6vWdMYspWaiG3fGRdtlpsa9S2bT1Kj5Q/6uuPsvlE3c6+8n89tCPJ4Ur
+         bV07abXa+a6eUsYx3BjnCmdzk4SNz8xCgxj0M=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005112019.02670.rjw@sisk.pl>
+In-Reply-To: <20100511104818.8382a7de.akpm@linux-foundation.org>
+References: <AANLkTilSNZ11CaRUH5s3w6NoAnDQ5t7U9Y0Ce-iHpq3O@mail.gmail.com>
+	 <89kc63$grtht6@fmsmga002.fm.intel.com>
+	 <20100511104818.8382a7de.akpm@linux-foundation.org>
+Date: Tue, 11 May 2010 23:48:27 +0530
+Message-ID: <AANLkTinchPgyuDt1YWZKCSWco5kT57m6VGDPtbAq3BvG@mail.gmail.com>
+Subject: Re: DRM Error on Acer Aspire One
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, dri-devel@lists.freedesktop.org,
+       Dave Airlie <airlied@linux.ie>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 May 2010, Matthew Garrett wrote:
-> On Tue, May 11, 2010 at 10:24:43AM -0700, Tony Lindgren wrote:
-> 
-> > For the failed suspend path in the kernel, currently the kernel would
-> > unwind back all the drivers because of the failed driver, but that path
-> > should be possible to optimize.
-> 
-> If you think it's possible to make this work then feel free to. But at 
-> the point where you're adding code to every driver's suspend function to 
-> determine whether or not it's got any pending events that userspace 
-> hasn't consumed yet, and adding code to every bit of userspace to allow 
-> it to indicate whether or not it's busy consuming events or just busy 
-> drawing 3D bouncing cattle, I think you've reinvented suspend blocks.
+Hello Andrew,
 
-Yeah, pretty much so.
+On Tue, May 11, 2010 at 8:18 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 11 May 2010 17:10:53 +0100 Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>
+>> On Tue, 11 May 2010 20:30:07 +0530, Jaswinder Singh Rajput <jaswinderlinux@gmail.com> wrote:
+>> > Hello,
+>> >
+>> > With latest git kernel, I am getting following DRM error and not
+>> > getting XWindows :
+>>
+>> [snip]
+>>
+>> Hmm, there are still patches for capturing error state that haven't gone
+>> upstream, shame on me.
+>>
+>> That error is a secondary issue to the GPU hang that is being reported. If
+>> it is a regression caused by a kernel update it would be very useful if
+>> you could bisect to the erroneous commit.
+>
+> It helps if one reads the code and the trace...
+>
+> i915_error_object_create() is using KM_USER0 from softirq context.
+> That's a bug, and a pretty serious one.  If some innocent civilian is
+> writing highmem data to disk and this timer interrupt fires and trashes
+> his KM_USER0 slot, the disk contents will be corrupted.
+>
+> Something like this...
+>
+> --- a/drivers/gpu/drm/i915/i915_irq.c~a
+> +++ a/drivers/gpu/drm/i915/i915_irq.c
+> @@ -456,11 +456,15 @@ i915_error_object_create(struct drm_devi
+>
+>        for (page = 0; page < page_count; page++) {
+>                void *s, *d = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+> +               unsigned long flags;
+> +
+>                if (d == NULL)
+>                        goto unwind;
+> -               s = kmap_atomic(src_priv->pages[page], KM_USER0);
+> +               local_irq_save(flags);
+> +               s = kmap_atomic(src_priv->pages[page], KM_IRQ0);
+>                memcpy(d, s, PAGE_SIZE);
+> -               kunmap_atomic(s, KM_USER0);
+> +               kunmap_atomic(s, KM_IRQ0);
+> +               local_irq_restore(flags);
+>                dst->pages[page] = d;
+>        }
+>        dst->page_count = page_count;
+> _
+>
+> Please let's get a tested fix for this into 2.6.34.
+>
+
+I tested your patch with latest linus git and it works, it fixes the
+softirq error.
+
+Now I am only getting DRM errors :
+
+[   42.276059] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
+elapsed... GPU hung
+[   42.276398] render error detected, EIR: 0x00000000
+[   42.276460] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request
+returns -5 (awaiting 18 at 17)
 
 Thanks,
-Rafael
+--
+Jaswinder Singh.
