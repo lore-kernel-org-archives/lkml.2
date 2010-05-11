@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab0EKXd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 19:33:27 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:41164 "EHLO e4.ny.us.ibm.com"
+	id S1753431Ab0EKXdT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 19:33:19 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:44071 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752992Ab0EKXdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 19:33:15 -0400
+	id S1752629Ab0EKXdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 19:33:12 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,12 +14,12 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       "David S. Miller" <davem@davemloft.net>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       "David S. Miller" <davem@davemloft.net>,
        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH RFC tip/core/rcu 10/11] rcu head remove init
-Date: Tue, 11 May 2010 16:33:05 -0700
-Message-Id: <1273620786-20392-10-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 02/11] rcu head introduce rcu head init on stack
+Date: Tue, 11 May 2010 16:32:57 -0700
+Message-Id: <1273620786-20392-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100511233241.GA20250@linux.vnet.ibm.com>
 References: <20100511233241.GA20250@linux.vnet.ibm.com>
@@ -29,15 +29,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-RCU heads really don't need to be initialized. Their state before call_rcu()
-really does not matter.
+PEM:
+o     Would it be possible to make this bisectable as follows?
 
-We need to keep init/destroy_rcu_head_on_stack() though, since we want
-debugobjects to be able to keep track of these objects.
+      a.      Insert a new patch after current patch 4/6 that
+              defines destroy_rcu_head_on_stack(),
+              init_rcu_head_on_stack(), and init_rcu_head() with
+              their !CONFIG_DEBUG_OBJECTS_RCU_HEAD definitions.
+
+This patch performs this transition.
 
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: David S. Miller <davem@davemloft.net>
 CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: David S. Miller <davem@davemloft.net>
 CC: akpm@linux-foundation.org
 CC: mingo@elte.hu
 CC: laijs@cn.fujitsu.com
@@ -54,26 +58,28 @@ CC: eric.dumazet@gmail.com
 CC: Alexey Dobriyan <adobriyan@gmail.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ include/linux/rcupdate.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index b653b4a..3a1a70d 100644
+index 23be3a7..b653b4a 100644
 --- a/include/linux/rcupdate.h
 +++ b/include/linux/rcupdate.h
-@@ -73,12 +73,6 @@ extern void rcu_init(void);
- #error "Unknown RCU implementation specified to kernel configuration"
- #endif
+@@ -79,6 +79,14 @@ extern void rcu_init(void);
+        (ptr)->next = NULL; (ptr)->func = NULL; \
+ } while (0)
  
--#define RCU_HEAD_INIT	{ .next = NULL, .func = NULL }
--#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
--#define INIT_RCU_HEAD(ptr) do { \
--       (ptr)->next = NULL; (ptr)->func = NULL; \
--} while (0)
--
- static inline void init_rcu_head_on_stack(struct rcu_head *head)
- {
- }
++static inline void init_rcu_head_on_stack(struct rcu_head *head)
++{
++}
++
++static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
++{
++}
++
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 
+ extern struct lockdep_map rcu_lock_map;
 -- 
 1.7.0.6
 
