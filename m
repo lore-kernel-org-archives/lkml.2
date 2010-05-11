@@ -1,62 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab0EKJZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 05:25:24 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60406 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974Ab0EKJZV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 05:25:21 -0400
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Lin Ming <ming.m.lin@intel.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>
-In-Reply-To: <20100511091833.GB18869@elte.hu>
-References: <20100510114311.GA6449@elte.hu>
-	 <1273492164.5605.3397.camel@twins> <20100510115344.GA11238@elte.hu>
-	 <4BE8931C.9070106@linux.vnet.ibm.com> <1273560419.5605.3426.camel@twins>
-	 <20100511072127.GB10421@elte.hu>
-	 <1273566031.30322.31.camel@minggr.sh.intel.com>
-	 <1273567815.5605.3491.camel@twins>
-	 <1273568620.30322.42.camel@minggr.sh.intel.com>
-	 <1273569154.5605.3499.camel@twins>  <20100511091833.GB18869@elte.hu>
+	id S1757419Ab0EKJ11 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 05:27:27 -0400
+Received: from gate.crashing.org ([63.228.1.57]:41705 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753454Ab0EKJ1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 05:27:25 -0400
+Subject: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
+ 88f5182)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, Saeed Bishara <saeed@marvell.com>,
+       Nicolas Pitre <nico@marvell.com>, linux-ext4@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "James E.J. Bottomley" <jejb@parisc-linux.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 11 May 2010 11:24:37 +0200
-Message-ID: <1273569877.5605.3509.camel@twins>
+Date: Tue, 11 May 2010 19:23:41 +1000
+Message-ID: <1273569821.21352.19.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 11:18 +0200, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > The new PMUs will use a dynamic range that starts at PERF_TYPE_MAX.
-> 
-> I dont think we should use a dynamic range of event sources - it's a 
-> completely useless indirection that has no meaning to humans.
-> 
-> As far as machine interfaces go a much cleaner approach would be to allow an 
-> open fd to a sysfs file to be passed to sys_perf_event_open() - this would 
-> identify the event source. This needs a small extension of the ABI but we 
-> could thus get rid of the 'type' enumeration altogether and express _all_ 
-> event sources via fds to sysfs files.
+Hi folks !
 
-Whatever, that's almost identical. What we can do is reserve
-perf_event_attr::type with bit 31 set for fd's and use the fd->file
-lookup instead of the type->pmu lookup.
+So I've been adapting upstream to my little D-Link DNS323 NAS box, which
+is based on a Marvell 88f5182 chipset, ie, orion5 family) and started
+hitting a problem with both ext3 and ext4 (on top of md/raid1). 
+
+First, the setup: This is a VIVT cache ARM CPU (so it -could- be some
+cache issues though it's a bit weird as I would expect metadata to be
+normal kernel pages and thus not hit cache aliases but then I'm no
+specialist of how we deal with those critters).
+
+Linux version 2.6.34-rc7-00019-g6c4f192-dirty (benh@pasglop) (gcc version 4.4.0 (GCC) ) #6 PREEMPT Tue May 11 17:02:04 EST 2010
+CPU: Feroceon [41069260] revision 0 (ARMv5TEJ), cr=a0053177
+CPU: VIVT data cache, VIVT instruction cache
+
+There's two 1T disk using the built-in SATA chipset. There's an almost-1T
+partition on each (sda1 and sdb1) which are setup as a raid1 md.
+
+Then, I create a filesystem (I started with ext4 and mkfs'ed it back to ext3
+after I started having problems but things persist).
+
+I'm booted off an nfs root and basically the problem happens when I rsync over
+a pre-made root to the disks.
+
+On a freshly mkfs'ed ext3 or 4, mounted in /mnt/raid, I rsync the thing over,
+used it a bit and generally observe the first symptoms in the form of a few
+
+EXT3-fs (md0): warning: ext3_rename: Deleting old file (34103297), 2, error=-2
+EXT3-fs (md0): warning: ext3_rename: Deleting old file (34113314), 2, error=-2
+EXT3-fs (md0): warning: ext3_rename: Deleting old file (34127945), 2, error=-2
+
+in my kernel log. I had a very similar message with ext4 iirc.
+
+I unmount the filesystem and fsck it (it takes almost 1h) and I then get
+a bunch of:
+
+Problem in HTREE directory inode 5005385: node (12) has bad max hash
+Problem in HTREE directory inode 5005385: node (13) has bad max hash
+Problem in HTREE directory inode 5005385: node (14) has bad max hash
+Invalid HTREE directory inode 5005385 (/raid-foo/var/lib/dpkg/info).  Clear HTree index<y>? yes
+
+followed by a bunch of
+
+Inode 4981405 ref count is 1, should be 2.  Fix<y>? yes                        
+
+This is reasonably reproducable, as I have re-done it twice and I get similar
+errors.
+
+Tomorrow, if time permits, I'll see if I can reproduce on a smaller partition
+without md, and eventually narrow it to a smaller and more predictible set of
+operations.
+
+Since I doubt ext3 is busted so dramatically in mainline for "normal" machines,
+I tend to suspect things could be related to the infamous vivt caches. On the
+other hand, it's pretty clearly metadata or journal corruption and I'm not
+sure we ever do things that could cause aliases (such as vmap etc..) on
+these things, and they shouldn't be mapped into userspace... unless it's fsck
+itself that causes aliases to occur at the block device level ? (I do unmount
+though before I run fsck).
+
+On the other hand, it could also be a busticated marvell SATA driver :-)
+
+I have no problem with the vendor kernel, but it's ancient (2.6.12) and based
+on an out of tree variant of a Marvell originated BSP, so everything is
+completely different, especially in the area of drivers for the chipset.
+
+Anyways, I'll see if I can gather more data tomorrow as time, viruses and sick
+kids permits.
+
+In the meantime, any hint appreciated.
+
+Cheers,
+Ben.
+
+
