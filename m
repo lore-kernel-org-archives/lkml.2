@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624Ab0EKGTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 02:19:09 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:54694 "EHLO poutre.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab0EKGTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 02:19:04 -0400
-Date: Tue, 11 May 2010 08:19:00 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, Greg KH <gregkh@suse.de>,
-       Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: platform_bus: Allow runtime PM by default
-Message-ID: <20100511081900.0e7a1956@hyperion.delvare>
-In-Reply-To: <201005102310.55838.rjw@sisk.pl>
-References: <1269625370-17754-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<20100507132746.GA3425@sirena.org.uk>
-	<20100507162028.022a737c@hyperion.delvare>
-	<201005102310.55838.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932681Ab0EKGUv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 02:20:51 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36017 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab0EKGUt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 02:20:49 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Greg KH <greg@kroah.com>
+Subject: Re: [stable] cpumask: fix compat getaffinity
+Cc: kosaki.motohiro@jp.fujitsu.com, Rusty Russell <rusty@rustcorp.com.au>,
+       Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       Ken Werner <ken.werner@web.de>, Andi Kleen <andi@firstfloor.org>,
+       stable@kernel.org
+In-Reply-To: <20100511031354.GA9327@kroah.com>
+References: <20100511104334.E572.A69D9226@jp.fujitsu.com> <20100511031354.GA9327@kroah.com>
+Message-Id: <20100511151526.E578.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 11 May 2010 15:20:45 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 May 2010 23:10:55 +0200, Rafael J. Wysocki wrote:
-> On Friday 07 May 2010, Jean Delvare wrote:
-> > I'm sorry, I never received Rafael's initial message. I just checked
-> > through my mailbox and it isn't there.
+> On Tue, May 11, 2010 at 10:47:03AM +0900, KOSAKI Motohiro wrote:
+> > > How's this?
+> > > 
+> > > cpumask: use nr_cpu_ids for printing and parsing cpumasks
+> > > 
+> > > Commit a45185d2d "cpumask: convert kernel/compat.c" broke
+> > > libnuma, which abuses sched_getaffinity to find out NR_CPUS
+> > > in order to parse /sys/devices/system/node/node*/cpumap.
+> > > 
+> > > However, the result now returned reflects nr_cpu_ids, and
+> > > cpumask_scnprintf et al. use nr_cpumask_bits which is NR_CPUS (for
+> > > CONFIG_CPUMASK_OFFSTACK=n) or nr_cpu_ids (for
+> > > CONFIG_CPUMASK_OFFSTACK=y).
+> > > 
+> > > We should use nr_cpu_ids consistently.
+> > >
+> > > Reported-by: Arnd Bergmann <arnd@arndb.de>
+> > > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> > > Cc: stable@kernel.org
 > > 
-> > The current status is that patch "i2c: Fix bus-level power management
-> > callbacks" is currently queued in my i2c tree at:
-> > ftp://ftp.kernel.org/pub/linux/kernel/people/jdelvare/linux-2.6/jdelvare-i2c/i2c-fix-bus-level-power-management-callbacks.patch
-> > and is scheduled to be merged in 2.6.35-rc1. If this isn't OK, we can
-> > change the plan.
-> > 
-> > Merging a core PM patch through the i2c tree would be quite confusing,
-> > I think, and might draw even more odd dependencies. So I'd rather have
-> > the i2c patch moved to the PM staging tree (or whatever tree the
-> > dependent patch lives in.) Just let me know and I'll drop my copy.
+> > Well, This patch seems to have ABI change. please don't send abi-change to -stable.
 > 
-> The patch above has been applied to suspend-2.6/linux-next along with the
-> Mark's $subject patch.
+> Why?  There is no such thing as a "stable" internal abi in the kernel,
+> and that includes the -stable kernel releases.
+> 
+> If it fixes a bug, that's all the requirement is.
 
-OK, I've dropped it from my i2c tree.
+AFAIK, -stable is mainly used for distro and they have many and many
+packages. we can't assume no app read /sys files directly.
+IOW, To change /sys printing format is a bit risky change. frequently
+compatibility breaking natually break code stability.
 
-> I have converted your sign-off into an ack, hope that's fine.
 
-Perfectly fine, yes, thanks.
+> > note: I'm not against this patch itself.
+> 
+> Great, then it should be just fine, right?
 
--- 
-Jean Delvare
+Yup, fine.
+
+
+Thanks.
+
+
+
