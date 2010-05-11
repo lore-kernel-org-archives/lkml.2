@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab0EKAgV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 20:36:21 -0400
-Received: from mail-qy0-f183.google.com ([209.85.221.183]:48025 "EHLO
-	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754534Ab0EKAgT convert rfc822-to-8bit (ORCPT
+	id S1757086Ab0EKAhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 20:37:54 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60069 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab0EKAhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 20:36:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TtVuCCSW5sdeckRF5RQBKHNtaTNY4BW0Eo2LYHyO0/DA2uUitrYNkc5XPVCnAZ3j0E
-         5FFYyxz86j5R2Rlcli6TXkku+mvIRRbCuzORZv//YUzBVe9xPF0nBfXu5GdgY3GAJKBW
-         kZ9glU5KIqWhfd4d1yHdlqJndu/jZZii+T8ro=
-MIME-Version: 1.0
-In-Reply-To: <20100510153111.GA28889@fujitsu>
-References: <1273484217-4073-1-git-send-email-reodge@gmail.com>
-	 <20100510153111.GA28889@fujitsu>
-Date: Tue, 11 May 2010 08:36:18 +0800
-Message-ID: <AANLkTikab-UamrSjFAyaBNnY6ySIDoaeWYpN9rlfNRPg@mail.gmail.com>
-Subject: Re: [PATCH] Staging: comedi: Fix long line lengths in comedi_fops.c
-From: Mark Rankilor <reodge@gmail.com>
-To: =?ISO-8859-1?Q?Charles_Cl=E9ment?= <caratorn@gmail.com>
-Cc: gregkh@suse.de, shawn.bohrer@gmail.com, fmhess@users.sourceforge.net,
-       andrea.gelmini@gelma.net, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 10 May 2010 20:37:52 -0400
+Subject: Re: [RFC][PATCH 3/3] Try to convert non-trivial clocksources to
+ clocksource_register_hz
+From: john stultz <johnstul@us.ibm.com>
+To: Jim Cromie <jim.cromie@gmail.com>, Darryl Veitch <dveitch@unimelb.edu.au>,
+       Julien Ridoux <jridoux@unimelb.edu.au>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <AANLkTik35lel9vGzepy10zshOnvY1_P7Vbr91Q_G0PkC@mail.gmail.com>
+References: <1272677785-23881-1-git-send-email-johnstul@us.ibm.com>
+	 <1272677785-23881-2-git-send-email-johnstul@us.ibm.com>
+	 <1272677785-23881-3-git-send-email-johnstul@us.ibm.com>
+	 <AANLkTik35lel9vGzepy10zshOnvY1_P7Vbr91Q_G0PkC@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 May 2010 17:37:41 -0700
+Message-ID: <1273538261.3843.99.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/10 Charles Clément <caratorn@gmail.com>:
-> I think it'd be better to keep the opening parenthesis on the same line
-> of the function and maybe the first argument, too.
+On Mon, 2010-05-10 at 17:33 -0400, Jim Cromie wrote:
+> <OT - out of scope in this thread>
+> 
+> on 5/3, slashdot had a synopsis of this item:
+> http://queue.acm.org/detail.cfm?id=1773943
+> It proposes a different split of duty between kernel and NTP daemon,
+> but oddly doesnt mention PTP.
 
-Charles, I agree with you here. I did it this way since there is a
-very similar line in the code paragraph above it, so I figured I'd
-stay consistent.
+Yea, I emailed with some the RADclocks folks last year. They have done
+quite a bit of very interesting work, but to my knowledge, they haven't
+been working with upstream very much to push the patches.
 
-I'll revisit this and change both of them to be in the style you suggested.
+Julien/Darryl: Sorry for dragging you out here, but I was curious if you
+had any plans to push your patches to lkml in the near term? From the
+patches in the tarball, it looks like you're structurally fairly clean
+(and you're using git, so that's good!) so they're probably a good
+starting point.
 
-Cheers,
-Mark
+However, I do still have some concerns about the new interfaces that
+expose the raw counter values. From your paper (its very nice btw,
+congrats!) you mentioned CLOCK_MONOTONIC_RAW as a possible C_c(t) clock,
+but from the patches it seems that you found it insufficient? It would
+be really interesting to hear more about that, as well as your thoughts
+about the dual-system in-kernel and out of kernel NTP adjustment loops. 
+
+I'm curious if the RADclocks calculation of C_a(t) = Cd(t) - E(t) can
+actually be done in the kernel, assuming E(t) is provided by userland.
+Or is that missing something core to RADclocks design?
+
+> Does this or PTP make any sense in Linux ?
+
+Folks are working on using PTP with Linux. My understanding is that the
+interfaces don't really change except for the packet timestamping.
+Google up Patrick Ohly's work for some details (although I've not heard
+too much on this recently, so I'm not sure how active it is).
+
+thanks
+-john
+
