@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab0EKSXE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 14:23:04 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:33394 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932416Ab0EKSXB (ORCPT
+	id S932464Ab0EKSX4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 14:23:56 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:46877 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab0EKSXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 14:23:01 -0400
-Date: Tue, 11 May 2010 19:22:53 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Len Brown <lenb@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [git pull request] ACPI patches for 2.6.34-rc6
-Message-ID: <20100511182253.GB19264@srcf.ucam.org>
-References: <alpine.LFD.2.00.1005061926460.901@i5.linux-foundation.org> <20100507061203.GA8779@srcf.ucam.org> <alpine.LFD.2.00.1005071402080.901@i5.linux-foundation.org> <20100507211331.GA28906@srcf.ucam.org> <alpine.LFD.2.00.1005071418200.901@i5.linux-foundation.org> <20100507213600.GC28906@srcf.ucam.org> <20100511172543.GA17868@srcf.ucam.org> <alpine.LFD.2.00.1005111031260.3711@i5.linux-foundation.org> <20100511175904.GA18797@srcf.ucam.org> <alpine.LFD.2.00.1005111107020.3711@i5.linux-foundation.org>
+	Tue, 11 May 2010 14:23:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=iXuUE5mfAxpitWpLRFjBQyqugsnevAi1QIsKhdPnc2JPiXoS8RFcnhQZAhw3oMM/zY
+         PM7Qmr3jt+BgTGmPkHxqbrfSkhiZU+u7fRTGWQuLJJ2p9aROcB8xjQxbhsKtmqxvc/nn
+         OFMOfJhjQ2URUwqn9byu26SRvzD0fgKkEKfMg=
+Date: Tue, 11 May 2010 22:23:47 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+       Alexey Starikovskiy <astarikovskiy@suse.de>,
+       Len Brown <len.brown@intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Matt Reimer <mreimer@vpop.net>, Evgeniy Polyakov <zbr@ioremap.net>,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/3] pda_power: add support for writeable properties
+Message-ID: <20100511182347.GA31831@oksana.dev.rtsoft.ru>
+References: <1273595926-26249-1-git-send-email-daniel@caiaq.de>
+ <20100511174708.GA26777@oksana.dev.rtsoft.ru>
+ <20100511175812.GH30801@buzzloop.caiaq.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005111107020.3711@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20100511175812.GH30801@buzzloop.caiaq.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 11:17:34AM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Tue, 11 May 2010, Matthew Garrett wrote:
-> > 
-> > I see Windows write the SCI_EN bit without reading it first and without 
-> > calling the ACPI enable SMM function.
-> 
-> Hmm. So presumably Windows doesn't even do them bit-by-bit, but simply 
-> does a "restore PM1 Control register value" on resume.
+On Tue, May 11, 2010 at 07:58:12PM +0200, Daniel Mack wrote:
+[...]
+> Hmm, no. The code defaults to (S_IRUSR | S_IRGRP | S_IROTH) which is
+> 0444, just like it was before. So there shouldn't be any regression. The
+> mode is only changed if the psy defines a property_is_writeable()
+> callback which returns 1. Or do I miss your point?
 
-Yup.
+Yes, power_supply_attrs is a global array, and you shouldn't change
+it between power_supply_register() calls.
 
-> And I guess it probably does the same for the PM1_ENABLE register and the 
-> PM2 control registers too?
+If you don't see why it's a bad idea in general, think about it
+other way, a race:
 
-Haven't checked those, but could do so easily enough.
+...someone registers psy0 with attr X marked as read-only...
+...code flow stops before device_create_file(psy0, global->mode)..
+[preempt]
+...someone registers psy1 with attr X marked as writable...
+...you set up global->mode to 0644...
+[preempt again]
+...we end up calling device_create_file(psy0, 0644)...
 
-(I say easily enough. Turns out that getting Windows to do S3 under qemu 
-is a fair amount of work)
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
