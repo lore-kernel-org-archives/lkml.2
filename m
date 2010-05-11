@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab0EKBZO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 21:25:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43060 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844Ab0EKBZK (ORCPT
+	id S1756989Ab0EKB2F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 21:28:05 -0400
+Received: from mail.windriver.com ([147.11.1.11]:54663 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844Ab0EKB2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 21:25:10 -0400
-Date: Mon, 10 May 2010 18:27:46 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
+	Mon, 10 May 2010 21:28:01 -0400
+Date: Tue, 11 May 2010 09:27:56 +0800
+From: Yong Zhang <yong.zhang@windriver.com>
+To: Leon Woestenberg <leon.woestenberg@gmail.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cpuidle: Add a repeating pattern detector to the
- menu governor
-Message-ID: <20100510182746.7e923812@infradead.org>
-In-Reply-To: <20100510143850.fde16046.akpm@linux-foundation.org>
-References: <20100509160242.2e351e6a@infradead.org>
-	<20100509160444.260ca9c9@infradead.org>
-	<20100510143850.fde16046.akpm@linux-foundation.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Subject: Re: May the worker function free its struct_work (plus container)?
+Message-ID: <20100511012756.GB18062@windriver.com>
+Reply-To: Yong Zhang <yong.zhang@windriver.com>
+References: <AANLkTikTPkLID3e8HpT1jMeiF9tQ6-7oJWQBfiRF7xUN@mail.gmail.com>
+ <20100510045252.GC3387@windriver.com>
+ <AANLkTimOrMLWXV8L0V6LQuZLa4QO-adOlxNH190YyU6u@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AANLkTimOrMLWXV8L0V6LQuZLa4QO-adOlxNH190YyU6u@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 11 May 2010 01:27:58.0817 (UTC) FILETIME=[308D0D10:01CAF0A9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 May 2010 14:38:50 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Mon, May 10, 2010 at 12:18:38PM +0200, Leon Woestenberg wrote:
+> Thanks. Is there API documentation or source code documentation that
+> confirms this is the case?
 
-> > +	if (avg && stddev < STDDEV_THRESH)
-> > +		data->predicted_us = avg;
-> > +}
-> 
-> You got lucky there, because INTERVALS is a power of two.  If someone
-> changes INTERVALS to 7, this code will ask for __udivdi3 and won't
-> link on i364.
+static void run_workqueue(struct cpu_workqueue_struct *cwq)
+{
+	....
 
-yeah you'd think it almost isn't an accident ;-)
+#ifdef CONFIG_LOCKDEP
+		/*
+		 * It is permissible to free the struct work_struct
+		 * from inside the function that is called from it,
+		 * this we need to take into account for lockdep too.
+		 * To avoid bogus "held lock freed" warnings as well
+		 * as problems when looking into work->lockdep_map,
+		 * make a copy and use that here.
+		 */
+		struct lockdep_map lockdep_map = work->lockdep_map;
+#endif
+	....
+}
 
+I think the above comments in run_workqueue() can reflect that
+from a certain point.
 
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+Thanks,
+Yong
