@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab0EKOzf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 10:55:35 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:48113 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab0EKOzd (ORCPT
+	id S1757232Ab0EKO5M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 10:57:12 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35506 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755974Ab0EKO5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 10:55:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=UBYS2Eiuff8LFtUP8aAdXakjebxqF3MjslRkmxCv1FHvq4mPjwDGx8+ITMnG6dCBj6
-         dRandQFzOzYRSc1CLT4iKcrkkLkQPsVAwzErjfwlfyiuFZiMcRE3ubflobXO5hB3BHek
-         vOOOY1+5fd3pEo9Rc7mPMLF3o40Adzn3NLnPw=
+	Tue, 11 May 2010 10:57:10 -0400
+Date: Tue, 11 May 2010 10:57:07 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       USB list <linux-usb@vger.kernel.org>, <tiwai@suse.de>, <gregkh@suse.de>,
+       <clemens@ladisch.de>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       <chrisw@sous-sol.org>, <iommu@lists.linux-foundation.org>,
+       <andi@firstfloor.org>, <daniel@caiaq.de>, <pedrib@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, <dwmw2@infradead.org>
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+In-Reply-To: <20100511142439.GA4898@phenom.dumpdata.com>
+Message-ID: <Pine.LNX.4.44L0.1005111052260.1834-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Date: Tue, 11 May 2010 20:25:31 +0530
-Message-ID: <AANLkTilF304TbgACKtvc_FA01uxHrdRBS2Q-o6Tm-n8Q@mail.gmail.com>
-Subject: ACPI Errors on Acer Aspire One
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: Linux ACPI <linux-acpi@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 11 May 2010, Konrad Rzeszutek Wilk wrote:
 
-With latest git kernel, I am getting following ACPI errors :
+> > > > Either the data isn't getting written to the buffer correctly or else
+> > > > the buffer isn't getting sent to the device correctly.  Can anybody
+> > > > suggest a means of determining which is the case?
+> > > 
+> > > I can't say anything about this log that including only DMA addresses.
+> > > I'm not familiar with how the USB core does DMA stuff. And the USB
+> > > stack design that the USB core does DMA stuff (allocating, mappings,
+> > > etc) makes debugging DMA issues really difficult.
+> > 
+> > The DMA stuff is simple enough in this case.  The urb->transfer_buffer
+> > address is passed to dma_map_single(), and the DMA address it returns
+> > is stored in urb->transfer_dma.  Those are the two values printed out
+> > by the debugging patch.
+> 
+> Is that address (urb->transfer_dma) the same as 
+'virt_to_phys(urb->transfer_buffer)'
 
-[    0.289038] ACPI Error (dsfield-0143): [CAPB] Namespace lookup
-failure, AE_ALREADY_EXISTS
-[    0.289399] ACPI Error (psparse-0537): Method parse/execution
-failed [\_SB_.PCI0._OSC] (Node f70477e8), AE_ALREADY_EXISTS
-[    0.299684] ACPI Error (dsfield-0143): [CAPB] Namespace lookup
-failure, AE_ALREADY_EXISTS
-[    0.300007] ACPI Error (psparse-0537): Method parse/execution
-failed [\_SB_.PCI0._OSC] (Node f70477e8), AE_ALREADY_EXISTS
+I don't know.  We didn't print out the value of
+virt_to_phys(urb->transfer_buffer).  All I can say is that
+urb->transfer_dma is the value returned by dma_map_single().
 
+> (if not, then SWIOTLB is being utilized) and is the dma_sync_* done on the
+> urb->transfer_dma (to properly sync the data from the SWIOTLB to the
+> transfer_buffer) before you start using the urb->transfer_buffer?
 
-dmesg : http://userweb.kernel.org/~jaswinder/acer_netbook/dmesg_2634-rc7.txt
-.config : http://userweb.kernel.org/~jaswinder/acer_netbook/config_2634-rc7.txt
+There are no calls to any dma_sync_* routines.  Daniel will have to
+check me on this, but I believe that urb->transfer_buffer is filled
+before dma_map_single() is called and it isn't touched again until
+after dma_unmap_single() (which occurs before urb's completion handler
+is called).
 
-How can I fix these errors.
+Alan Stern
 
-Thanks,
---
-Jaswinder Singh.
