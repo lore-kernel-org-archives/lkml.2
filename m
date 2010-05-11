@@ -1,58 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757792Ab0EKJin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 05:38:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16527 "EHLO mx1.redhat.com"
+	id S932377Ab0EKJll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 05:41:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60385 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755958Ab0EKJil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 05:38:41 -0400
-Date: Tue, 11 May 2010 12:34:39 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Michal Schmidt <mschmidt@redhat.com>
-Cc: linux-pci@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] PCI: return correct value when writing to the "reset"
-	attribute
-Message-ID: <20100511093439.GA32498@redhat.com>
-References: <20100511093004.12167.9460.stgit@leela.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100511093004.12167.9460.stgit@leela.lan>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1755714Ab0EKJlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 05:41:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,206,1272870000"; 
+   d="scan'208";a="566051605"
+Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>
+In-Reply-To: <1273569154.5605.3499.camel@twins>
+References: <1273484401.5605.3333.camel@twins>
+	 <1273486313.15998.76.camel@minggr.sh.intel.com>
+	 <1273486708.5605.3342.camel@twins>
+	 <1273487195.15998.85.camel@minggr.sh.intel.com>
+	 <1273490824.5605.3379.camel@twins> <20100510114311.GA6449@elte.hu>
+	 <1273492164.5605.3397.camel@twins> <20100510115344.GA11238@elte.hu>
+	 <4BE8931C.9070106@linux.vnet.ibm.com> <1273560419.5605.3426.camel@twins>
+	 <20100511072127.GB10421@elte.hu>
+	 <1273566031.30322.31.camel@minggr.sh.intel.com>
+	 <1273567815.5605.3491.camel@twins>
+	 <1273568620.30322.42.camel@minggr.sh.intel.com>
+	 <1273569154.5605.3499.camel@twins>
+Content-Type: text/plain
+Date: Tue, 11 May 2010 17:40:45 +0800
+Message-Id: <1273570845.30322.59.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 11:30:06AM +0200, Michal Schmidt wrote:
-> A successful write() to the "reset" sysfs attribute should return the
-> number of bytes written, not 0. Otherwise userspace (bash) retries the
-> write over and over again.
+On Tue, 2010-05-11 at 17:12 +0800, Peter Zijlstra wrote:
+> On Tue, 2010-05-11 at 17:03 +0800, Lin Ming wrote:
+> > On Tue, 2010-05-11 at 16:50 +0800, Peter Zijlstra wrote:
+> > > On Tue, 2010-05-11 at 16:20 +0800, Lin Ming wrote:
+> > > 
+> > > > How will this sysfs interface be used for userspace tool?
+> > > > 
+> > > >  /sys/devices/system/node/nodeN/node_events
+> > > >                                node_events/event_source_id
+> > > > 
+> > > >                                node_events/local_misses/event_id
+> > > >                                           /local_hits/event_id
+> > > >                                           /remote_misses/event_id
+> > > >                                           /remote_hits/event_id
+> > > > 
+> > > > For example, to monitor node event local_misses on node 0, does it work
+> > > > as below?
+> > > > 
+> > > > 1. perf top -e local_misses -n 0 (-n 0 means node 0)
+> > > > 
+> > > > 2. read /sys/devices/system/node/node0/node_events/event_source_id to
+> > > > get the pmu_id
+> > > > 
+> > > > 3. read /sys/devices/system/node/node0/node_events/local_misses/event_id
+> > > > to get the event_id
+> > > > 
+> > > > 4. event_attr::pmu_id=pmu_id, event::config=event_id
+> > > > 
+> > > > 5. other setting...
+> > > > 
+> > > > 6. call syscall perf_event_open(....)
+> > > 
+> > > No, you'll use event_source_id as perf_event_attr::type, use event_id as
+> > > perf_event_attr::config and then use a cpu-wide counter on a cpu
+> > > contained in node0.
+> > 
+> > Is event_source_id a link to event_source class?
 > 
-> Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+> No its an attribute of said class.
+> 
+> > For example, 2 event sources on Nehalem
+> > /sys/class/event_sources/core_pmu
+> > /sys/class/event_sources/uncore_pmu
+> > 
+> > Then,
+> > /sys/devices/system/node/nodeN/node_events/event_source_id is a link
+> > to /sys/class/event_sources/uncore_pmu.
+> 
+> > /sys/devices/system/cpu/cpuN/cpu_hardware_events/event_source_id is a
+> > link to /sys/class/event_sources/core_pmu.
+> 
+> The other way around, look in /sys/class/*/, they're all symlinks.
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+/sys/devices/system/cpu/cpu0/cpu_hw_events/*
+/sys/devices/system/cpu/cpu0/cpu_hw_cache_events/*
+/sys/devices/system/cpu/cpu0/cpu_raw_events/*
+....
+....
+/sys/devices/system/cpu/cpuN/cpu_hw_events/*
+/sys/devices/system/cpu/cpuN/cpu_hw_cache_events/*
+/sys/devices/system/cpu/cpuN/cpu_raw_events/*
 
-> ---
+Is /sys/class/event_sources/* looks like,
+
+/sys/class/event_sources/cpu_hw_events0
+-> /sys/devices/system/cpu/cpu0/cpu_hw_events
+...
+/sys/class/event_sources/cpu_hw_eventsN
+-> /sys/devices/system/cpu/cpuN/cpu_hw_events
+
+/sys/class/event_sources/cpu_hw_cache_events0
+-> /sys/devices/system/cpu/cpu0/cpu_hw_events
+...
+/sys/class/event_sources/cpu_hw_cache_eventsN
+-> /sys/devices/system/cpu/cpuN/cpu_hw_events
+
+?
+
 > 
->  drivers/pci/pci-sysfs.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
+> > And, the event_source_id
+> > #cat /sys/class/event_sources/core_pmu
+> > 0
 > 
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index fad9398..ba88a2f 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -960,7 +960,12 @@ static ssize_t reset_store(struct device *dev,
->  
->  	if (val != 1)
->  		return -EINVAL;
-> -	return pci_reset_function(pdev);
-> +
-> +	result = pci_reset_function(pdev);
-> +	if (result < 0)
-> +		return result;
-> +
-> +	return count;
->  }
->  
->  static struct device_attribute reset_attr = __ATTR(reset, 0200, NULL, reset_store);
+> > #cat /sys/class/event_sources/uncore_pmu
+> > 1
+> 
+> You can't cat a directory. You'd cat something
+> like: /sys/class/event_sources/core_pmu/event_source_id
+> 
+> And they would contain PERF_TYPE_* like things.
+> 
+> So for the current CPU PMUs we'd already create 3 event classes,
+> cpu_hw_events, cpu_hw_cache_events, cpu_raw_events, with resp.
+> event_source_id of 0, 3 and 4.
+> 
+> The new PMUs will use a dynamic range that starts at PERF_TYPE_MAX.
+
