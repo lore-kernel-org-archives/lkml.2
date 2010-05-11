@@ -1,102 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab0EKXJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 19:09:31 -0400
-Received: from aeryn.fluff.org.uk ([87.194.8.8]:18923 "EHLO
-	kira.home.fluff.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751317Ab0EKXJa (ORCPT
+	id S1751992Ab0EKXRM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 19:17:12 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:65465 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab0EKXRK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 19:09:30 -0400
-Date: Wed, 12 May 2010 00:09:01 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: linux-i2c@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-       uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Michael Hennerich <michael.hennerich@analog.com>
-Subject: Re: [PATCH v2] i2c-bfin-twi: handle faulty slave devices better
-Message-ID: <20100511230901.GA31325@fluff.org.uk>
-References: <1273403087-3326-1-git-send-email-vapier@gentoo.org>
- <1273505624-30920-1-git-send-email-vapier@gentoo.org>
+	Tue, 11 May 2010 19:17:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=csPUtjLvykS1Zuczwqfqymh3125KzEVekHlHd3VN1X5zbYcF0U6eoP6k60HaQECyGV
+         5Fn/1kV5OWUenZr0S0tgACvdHB81RjC73/TrfTr1gh3/oytoeucKJAR0LWCiKi/thKxC
+         QQzm0yp4+ApFoDg3gLtDrpzjB0mB5rJB/Tk0Y=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273505624-30920-1-git-send-email-vapier@gentoo.org>
-X-Disclaimer: These are my own opinions, so there!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100511155600.5c416992.akpm@linux-foundation.org>
+References: <AANLkTilSNZ11CaRUH5s3w6NoAnDQ5t7U9Y0Ce-iHpq3O@mail.gmail.com>
+	 <89khjo$fd26d3@orsmga002.jf.intel.com>
+	 <20100511113555.a78c9c8e.akpm@linux-foundation.org>
+	 <89kc63$grv1m8@fmsmga002.fm.intel.com>
+	 <20100511121001.0731a9c2.akpm@linux-foundation.org>
+	 <89k77n$noi3t4@fmsmga001.fm.intel.com>
+	 <AANLkTikM916RlCBudL9_Pw--cpiu5mg_xcLFG9N1l9tL@mail.gmail.com>
+	 <20100511153217.5c7661d7.akpm@linux-foundation.org>
+	 <AANLkTilMWTbgcjx8_T-jCwykQmd7hwfXd2ijfP6flIiO@mail.gmail.com>
+	 <20100511155600.5c416992.akpm@linux-foundation.org>
+Date: Wed, 12 May 2010 09:17:09 +1000
+Message-ID: <AANLkTimNX2T_HWWxKCYsBdxz6LrvrTOz5MbFcyxTy1br@mail.gmail.com>
+Subject: Re: DRM Error on Acer Aspire One
+From: Dave Airlie <airlied@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+       Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
+       dri-devel@lists.freedesktop.org, Dave Airlie <airlied@linux.ie>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Keith Packard <keithp@keithp.com>, Eric Anholt <eric@anholt.net>,
+       Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 11:33:44AM -0400, Mike Frysinger wrote:
-> From: Michael Hennerich <michael.hennerich@analog.com>
-> 
-> Faulty slave devices might drive SDA low after a transfer finishes.  So,
-> when this scenario is detected, have the master generate up to 9 extra
-> clocks until the SDA is properly released.
+On Wed, May 12, 2010 at 8:56 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 12 May 2010 08:51:05 +1000
+> Dave Airlie <airlied@gmail.com> wrote:
+>
+>> On Wed, May 12, 2010 at 8:32 AM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>> > On Wed, 12 May 2010 08:22:49 +1000
+>> > Dave Airlie <airlied@gmail.com> wrote:
+>> >
+>> >> On Wed, May 12, 2010 at 5:57 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> >> > On Tue, 11 May 2010 12:10:01 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
+>> >> >> On Tue, 11 May 2010 19:52:31 +0100
+>> >> >> Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> >> >>
+>> >> >> > On Tue, 11 May 2010 11:35:55 -0400, Andrew Morton <akpm@linux-foundation.org> wrote:
+>> >> >> > > No, io_mapping_map_atomic_wc() cannot be used from [soft]irq context:
+>> >> >> > > it hardwires use of KM_USER0. __I suggest that io_mapping_create_wc(),
+>> >> >> > > io_mapping_map_atomic_wc() etc be changed so that the caller passes in the
+>> >> >> > > KM_foo kmap slot index.
+>> >> >> >
+>> >> >> > Argh, sorry for the noise, read the mail in the wrong order. Thanks for
+>> >> >> > the review. It would be sensible to go with your simpler patch whilst
+>> >> >> > io_mapping_map_atomic_wc() is improved.
+>> >> >>
+>> >> >> OK. __I'll be sending a bunch of fixes Linuswards in an hour or two.
+>> >> >> Should I include this?
+>> >> >
+>> >> > Yes.
+>> >> >
+>> >> > Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+>> >> >
+>> >>
+>> >> I'm not sure pushing this in at this point is a good idea, if I'm
+>> >> reading it correctly we've no idea what KM_IRQ is being used for,
+>> >
+>> > It's used for taking kmaps from IRQ contexts.
+>> >
+>> >> and
+>> >> this codepath is called from non-irq contexts just as much as irq
+>> >> contexts.
+>> >
+>> > That's fine. __As long as we do a local_irq_disable(), KM_IRQ0 can be
+>> > used from both irq- and non-irq contexts. __All we need to do is to
+>> > ensure that some interrupt cannot come along on this CPU and corrupt
+>> > the slot.
+>>
+>> I don't think we do that in a lot of places, and I'd rather not add
+>> that in to fix this problem at this point in the release cycle, as
+>> we've no idea what it might break/regress.
+>
+> What is "that"?  The switch to irq-protected KM_IRQ0?  That won't break
+> anything.
+>
 
-This doesn't apply to my for-2635/i2c-bfin tree, can't find the BUFWERR
-patch. will check to see if theres's something i've missed..
- 
-> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-> ---
-> v2
-> 	- fix typo in comment pointed out by Ben
-> 	- use 9 clocks rather than 8 to cover a possible NACK pointed out by Michael
-> 
->  drivers/i2c/busses/i2c-bfin-twi.c |   22 ++++++++++++++++++++++
->  1 files changed, 22 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
-> index fb26e5c..1ee9d5a 100644
-> --- a/drivers/i2c/busses/i2c-bfin-twi.c
-> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
-> @@ -20,6 +20,7 @@
->  #include <linux/completion.h>
->  #include <linux/interrupt.h>
->  #include <linux/platform_device.h>
-> +#include <linux/delay.h>
->  
->  #include <asm/blackfin.h>
->  #include <asm/portmux.h>
-> @@ -159,6 +160,27 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
->  		if (mast_stat & BUFWRERR)
->  			dev_dbg(&iface->adap.dev, "Buffer Write Error\n");
->  
-> +		/* Faulty slave devices, may drive SDA low after a transfer
-> +		 * finishes. To release the bus this code generates up to 9
-> +		 * extra clocks until SDA is released.
-> +		 */
-> +
-> +		if (read_MASTER_STAT(iface) & SDASEN) {
-> +			int cnt = 9;
-> +			do {
-> +				write_MASTER_CTL(iface, SCLOVR);
-> +				udelay(6);
-> +				write_MASTER_CTL(iface, 0);
-> +				udelay(6);
-> +			} while ((read_MASTER_STAT(iface) & SDASEN) && cnt--);
-> +
-> +			write_MASTER_CTL(iface, SDAOVR | SCLOVR);
-> +			udelay(6);
-> +			write_MASTER_CTL(iface, SDAOVR);
-> +			udelay(6);
-> +			write_MASTER_CTL(iface, 0);
-> +		}
-> +
->  		/* If it is a quick transfer, only address without data,
->  		 * not an err, return 1.
->  		 */
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+disabling local cpu irqs around all these kmap mappings.
 
--- 
-Ben (ben@fluff.org, http://www.fluff.org/)
-
-  'a smiley only costs 4 bytes'
+Dave.
