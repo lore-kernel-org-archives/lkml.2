@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab0EKRcN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 13:32:13 -0400
-Received: from mail-yw0-f198.google.com ([209.85.211.198]:55083 "EHLO
-	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab0EKRcJ (ORCPT
+	id S1753951Ab0EKRcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 13:32:54 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:41246 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab0EKRcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 13:32:09 -0400
+	Tue, 11 May 2010 13:32:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=Y/5mC6+rZc8E8VRz/8c2lDWExJYYIBQlqAoiw1XbUYt8q0sOU6fUo8rxF1qHNQEf7p
-         g7O3NHmtlbz//laNvAmerYjVnmPfvHBfuiiW8D2FVWUu0OeCPRSqvawqis9lv8qvnfqi
-         HT2LF73F1FiN90eQ0RVWd5yrKT5QRrxSBz5xg=
+        b=UU4TOsHqNvjSGJ48Tz9y3K4OT1xZ5BgCYLBttsPz5NbC6nSxv4tILbGraKmTaFEknt
+         QBUvP5xCU6Fqy50RlfxNU0tButXdDqmLyE1rl0A6ywV/DKHawoA+aJRirxc7qvMPZLgh
+         kMmEC5+sivnPx+FbqmUtquqgGnDN/TUYGCACI=
 MIME-Version: 1.0
-In-Reply-To: <20100511165228.GC7396@core.coreip.homeip.net>
-References: <1273487642-2169-1-git-send-email-os@emlix.com> 
-	<1273488154-2993-1-git-send-email-os@emlix.com> <20100510142225.4bf215ef.akpm@linux-foundation.org> 
-	<20100511060547.GA9644@core.coreip.homeip.net> <AANLkTikA9s6lpO2uDuIup8BwGOYYHQ9yQxS36PBSIttX@mail.gmail.com> 
-	<20100511062110.GB9644@core.coreip.homeip.net> <AANLkTiktu7N5IXknkkJ9D5L4z5plhuGvD45IVqJm9zG1@mail.gmail.com> 
-	<20100511063309.GC9644@core.coreip.homeip.net> <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com> 
-	<20100511165228.GC7396@core.coreip.homeip.net>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Tue, 11 May 2010 13:31:48 -0400
-Message-ID: <AANLkTimxBtepO6A63Tv7UPxJDgQovjBTvscKUSpVPH8p@mail.gmail.com>
-Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Oskar Schirmer <os@emlix.com>,
-       Michael Hennerich <Michael.Hennerich@analog.com>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       =?UTF-8?Q?Daniel_Gl=C3=B6ckner?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>,
-       Matt Mackall <mpm@selenic.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20100511171025.GB30801@buzzloop.caiaq.de>
+References: <20100512003450P.fujita.tomonori@lab.ntt.co.jp>
+	 <Pine.LNX.4.44L0.1005111158420.1834-100000@iolanthe.rowland.org>
+	 <AANLkTikoF4qgkN9p0SpDEOrHAMxdh4jzPusCdrq1tRag@mail.gmail.com>
+	 <20100511171025.GB30801@buzzloop.caiaq.de>
+Date: Tue, 11 May 2010 18:32:50 +0100
+Message-ID: <AANLkTimdsIJt69TKf2CgXjEXDJXSNib2jt9JSapmuJyW@mail.gmail.com>
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+From: Pedro Ribeiro <pedrib@gmail.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, gregkh@suse.de,
+       konrad.wilk@oracle.com, tiwai@suse.de,
+       USB list <linux-usb@vger.kernel.org>, clemens@ladisch.de,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       chrisw@sous-sol.org, iommu@lists.linux-foundation.org,
+       andi@firstfloor.org, Andrew Morton <akpm@linux-foundation.org>,
+       dwmw2@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 12:52, Dmitry Torokhov wrote:
-> On Tue, May 11, 2010 at 09:42:03AM +0300, Pekka Enberg wrote:
->> On Tue, May 11, 2010 at 9:33 AM, Dmitry Torokhov wrote:
->> >> what guarantee exactly do you have for that statement ?
->> >
->> > The data is kmalloced, kmalloc aligns on cacheline boundary AFAIK which
->> > means that next kmalloc data chunk will not share "our" cacheline.
+On 11 May 2010 18:10, Daniel Mack <daniel@caiaq.de> wrote:
+> On Tue, May 11, 2010 at 05:48:11PM +0100, Pedro Ribeiro wrote:
+>> I'm clueless about the whole underlying process but I don't think it
+>> is related to playing a file from the disk or another USB device.
 >>
->> No, there are no such guarantees. kmalloc() aligns on
->> ARCH_KMALLOC_MINALIGN or ARCH_SLAB_MINALIGN depending on which is
->> bigger but beyond that, there are no guarantees. You can, of course,
->> use kmem_cache_create() with SLAB_HWCACHE_ALIGN to align on cacheline
->> boundary.
+>> I don't need to play any file for this interference to be heard - I
+>> just need to "open" the device. By this I mean that if I create a JACK
 >
-> The architectures that we are trying to deal with here should be forcing
-> kmalloc to the cache boundary already though - otherwise they would not
-> be able to used kmalloced memory for DMA buffers at all. Or am I utterly
-> lost here?
+> ... which will stream zeros. Sure, that should also trigger the bug
+> then.
+>
+>> server or if I open the device using the ALSA backed in a program like
+>> Mixxx I immediately start hearing the cracks and pops in the speaker.
+>> But to answer your question, playing a file from the hard drive using
+>> aplay I can also hear the interference - but only when the sound is
+>> playing. As soon as the sound stops and the audio device is "closed",
+>> no interference occurs.
+>
+> Yes, because the stream is stopped, pending URBs are unlinked etc.
+> That's completely expected.
+>
+>> However, when using the JACK server, which probably opens and polls
+>> the audio card constantly (its a low latency audio server) I don't
+>> even need to be playing any sound for the interference to be constant.
+>
+> That shouldn't affect the driver itself but just put the ALSA core under
+> pressure.
+>
+>> I can also see it since I have 4 output leds in the USB audio card and
+>> even if I'm only using 2 channels, the 4 channel leds light up with
+>> interference as the sound cracks and pops.
+>
+> No surprise here. The 4 channels are mux'ed in an interleaved fashion,
+> so if the buffers contain rubbish, you will hear artefacts on all
+> channels.
+>
+> Daniel
+>
+>
 
-i dont want to restrict the driver so that it implicitly only works on
-certain arches.  that kind of goes against the entire point of the
-driver model.  the only thing this driver needs is a SPI bus, and
-people can easily do that on most every arch.
--mike
+So what would be the testcase you would like me to try?
+
+Pedro
