@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933590Ab0EKACr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 20:02:47 -0400
-Received: from mail.perches.com ([173.55.12.10]:2128 "EHLO mail.perches.com"
+	id S932314Ab0EKAFN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 20:05:13 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:33394 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933574Ab0EKACl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 20:02:41 -0400
-Subject: Re: [PATCH 1/1] staging: hv: Optimize adj_guesttime function and
- add more detailed comments
-From: Joe Perches <joe@perches.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-       "'gregkh@suse.de'" <gregkh@suse.de>
-In-Reply-To: <1FB5E1D5CA062146B38059374562DF72662AA29C@TK5EX14MBXC130.redmond.corp.microsoft.com>
-References: <1FB5E1D5CA062146B38059374562DF72662AA29C@TK5EX14MBXC130.redmond.corp.microsoft.com>
+	id S932157Ab0EKAFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 20:05:08 -0400
+Subject: Re: [RFC][PATCH 3/3] Try to convert non-trivial clocksources to
+ clocksource_register_hz
+From: john stultz <johnstul@us.ibm.com>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <AANLkTik35lel9vGzepy10zshOnvY1_P7Vbr91Q_G0PkC@mail.gmail.com>
+References: <1272677785-23881-1-git-send-email-johnstul@us.ibm.com>
+	 <1272677785-23881-2-git-send-email-johnstul@us.ibm.com>
+	 <1272677785-23881-3-git-send-email-johnstul@us.ibm.com>
+	 <AANLkTik35lel9vGzepy10zshOnvY1_P7Vbr91Q_G0PkC@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 May 2010 17:02:38 -0700
-Message-ID: <1273536158.20514.31.camel@Joe-Laptop.home>
+Date: Mon, 10 May 2010 17:04:56 -0700
+Message-ID: <1273536296.3843.66.camel@localhost.localdomain>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -26,71 +29,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 18:12 +0000, Haiyang Zhang wrote:
-> diff --git a/drivers/staging/hv/hv_utils.c b/drivers/staging/hv/hv_utils.c
-> index 8f1d3ba..c0f57a1 100644
-> --- a/drivers/staging/hv/hv_utils.c
-> +++ b/drivers/staging/hv/hv_utils.c
-> @@ -106,28 +106,45 @@ static void shutdown_onchannelcallback(void *context)
->  		orderly_poweroff(false);
->  }
->  
-> -
->  /*
-> - * Synchronize time with host after reboot, restore, etc.
-> + * Set guest time to host UTC time.
->   */
-> -static void adj_guesttime(u64 hosttime, u8 flags)
-> +static inline void do_adj_guesttime(u64 hosttime)
->  {
->  	s64 host_tns;
->  	struct timespec host_ts;
-> -	static s32 scnt = 50;
->  
->  	host_tns = (hosttime - WLTIMEDELTA) * 100;
->  	host_ts = ns_to_timespec(host_tns);
->  
-> +	do_settimeofday(&host_ts);
-> +
-> +	return;
-> +}
+On Mon, 2010-05-10 at 17:33 -0400, Jim Cromie wrote:
+> On Fri, Apr 30, 2010 at 9:36 PM, John Stultz <johnstul@us.ibm.com> wrote:
+> hi John,
+> 
+> On casual inspection, this looks good, however
+> I wont be able to try it on the hardware til early June earliest.
+> 
+> I have a few qs, (idle musings really)
+> 
+> - scx200_hrt cannot be rmmod'd, due iirc to the clocksource design.
+> This is not a problem, but I wonder if it might be added later, and what
+> it might mean to the drivers (in a new module_exit())
 
-Just a couple of style nits.
 
-return at the end of a void function() is unnecessary.
+I've not really heard much of a compelling argument for clocksource
+driver removal, nor has anyone wanted to put much effort there so far.
+That said, I'm not opposed to it right off.  It just not a priority.
 
-> +
-> +/*
-> + * Synchronize time with host after reboot, restore, etc.
-> + *
-> + * ICTIMESYNCFLAG_SYNC flag bit indicates reboot, restore events of the VM.
-> + * After reboot the flag ICTIMESYNCFLAG_SYNC is included in the first time
-> + * message after the timesync channel is opened. Since the hv_utils module is
-> + * loaded after hv_vmbus, the first message is usually missed. The other
-> + * thing is, systime is automatically set to emulated hardware clock which may
-> + * not be UTC time or in the same time zone. So, to override these effects, we
-> + * use the first 50 time samples for initial system time setting.
-> + */
-> +static inline void adj_guesttime(u64 hosttime, u8 flags)
-> +{
-> +	static s32 scnt = 50;
-> +
->  	if ((flags & ICTIMESYNCFLAG_SYNC) != 0) {
-> -		do_settimeofday(&host_ts);
-> +		do_adj_guesttime(hosttime);
->  		return;
->  	}
->  
-> -	if ((flags & ICTIMESYNCFLAG_SAMPLE) != 0 &&
-> -	    scnt > 0) {
-> +	if ((flags & ICTIMESYNCFLAG_SAMPLE) != 0 && scnt > 0) {
->  		scnt--;
-> -		do_settimeofday(&host_ts);
-> +		do_adj_guesttime(hosttime);
->  	}
->  
->  	return;
 
-here too
+> - HRT_SHIFT_1/_27 macros are removed, and now calculated in clocksource code.
+> I chose a 1:16 shift ratio for the 1:27 input clocks.  I suppose I could have
+> used 1:32, I dont recall thinking of it or trying it then.
+> What would/should your new code do ?
+
+I'm not sure I'm following what you mean with the ratios, but the new
+code will select the largest shift value possible, where the resulting
+mult won't overflow 64bits when multiplied against 5 seconds (that
+interval length may be changed in the future) worth of cycles.
+
+
+> - when writing scx200_hrt, I chose to adjust by ppm, not +/- hz
+> partly cuz it was easier to describe in a 1-line mod-desc, and partly
+> cuz 1/27ppm vernier-knob is overkill on a $0.25 crystal.
+> The new API name (with _hz suffix) suggests that I could change
+> the mod-param-name, and add it in after the 1:27 multiplier.
+
+I believe its still mathematically identical to what you had before, but
+let me know if I'm mistaken here.
+
+thanks
+-john
 
 
