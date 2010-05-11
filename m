@@ -1,75 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab0EKHs0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 03:48:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45429 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782Ab0EKHsZ convert rfc822-to-8bit (ORCPT
+	id S1754541Ab0EKHst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 03:48:49 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58935 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab0EKHso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 03:48:25 -0400
-Subject: Re: [BUG] perf_event: crash in perf_output_begin
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       perfmon2-devel@lists.sf.net
-In-Reply-To: <AANLkTinNDC2g79VzfKjpm0bN1LOE5OeuVxvacjrNsz7s@mail.gmail.com>
-References: <AANLkTilxN7Lq8yywpsz8voqYo0hqOX0DGcoqHmAdmFW_@mail.gmail.com>
-	 <1273506739.5605.3407.camel@twins>
-	 <AANLkTinNDC2g79VzfKjpm0bN1LOE5OeuVxvacjrNsz7s@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 11 May 2010 09:47:57 +0200
-Message-ID: <1273564077.5605.3489.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 11 May 2010 03:48:44 -0400
+Date: Tue, 11 May 2010 09:48:33 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: florian@mickler.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       linux-kernel@vger.kernel.org, Stephen Hemminger <shemminger@vyatta.com>,
+       Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] scripts/get_maintainer.pl: default to not include
+	unspecified tags
+Message-ID: <20100511074833.GC24844@pengutronix.de>
+References: <30a2fd47565ff33d6f47d9a76746b56d923856ac.1273466698.git.joe@perches.com> <1273559797-6910-1-git-send-email-florian@mickler.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0lnxQi9hkpPO77W3"
+Content-Disposition: inline
+In-Reply-To: <1273559797-6910-1-git-send-email-florian@mickler.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 22:03 +0200, Stephane Eranian wrote:
-> On Mon, May 10, 2010 at 5:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Mon, 2010-05-10 at 17:33 +0200, Stephane Eranian wrote:
-> >> Hi,
-> >>
-> >> While testing 2.6.34-rc7 I ran into the following issue when
-> >> using BTS sampling on Intel Core. It seems like something
-> >> is not terminated properly. I am sampling BTS per-thread
-> >> on a test program, then hit CTRL-C, one second later my
-> >> machine crashes while running bash. Crash dump below:
-> >>
-> >> [  750.249109] general protection fault: 0000 [#1] SMP
-> >> [  750.249270] CPU 3
-> >> [  750.249270] Pid: 6132, comm: bash Not tainted 2.6.34-rc7-tip+ #46
-> >
-> > Can you try and reverting 4fd38e4595e2f6c9d27732c042a0e16b2753049c, I
-> > spend most of the day chasing that, and I can't say I'm much wiser.
-> >
-> 
-> It seems to avoid my problem. So that means with STATE_FREE, some code
-> path is exercised differently and there is leftover state that
-> generates spurious
-> interrupts, as if some event_sched_out() code was not executed.
 
-You're spot on. I'll send a full new patch Ingo wards as he already
-pushed out the revert.
+--0lnxQi9hkpPO77W3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
----
- kernel/perf_event.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Tue, May 11, 2010 at 08:36:36AM +0200, florian@mickler.org wrote:
+> This changes the default of the option --git-all-signature-types to be
+> disabled by default.
+>=20
+> The effect being, that only certain (currently  Signed-Off-By:,
+> Acked-By: and Reviewed-By:) tags are used to get adresses of potential
+> maintainers.
+>=20
+> Motivated is this change by the desire to not 'spam' people unnecessary:
+> A Tested-By or a Reported-By is not ment as a hint that those people
+> want to/are able to review patches to the code in question.
+>=20
+> In a quest to find resilient statistics for this i came up with this:
+>=20
+> I produced a list of all the tag-signers not already covered
+> with a signed-off/acked/reviewed tag somewhere in the last year of git hi=
+story.
+>=20
+> Those were 650 addresses of "assumed non-developers".
+>=20
+> And to check if those "assumed non-developers" are professional
+> testers/reporters worth cc'ing, i then counted their total appearences
+> in the git log:
+>=20
+> 469 were mentioned only once.
+> 123 were mentioned twice.
+> 38 three times
+> 8 four times
+> 5 six times
+> 5 five times
+> 1 eight times
+> 1 fourteen times
+>=20
+> I believe this supports my thesis, that the ''non-maintainer-tags'' are
+> not actively useful for patch-review. (except probably the guy
+> mentioned fourteen times...)
+>=20
+> But of course one could also find arguments to poke holes in this
+> statistics, for example does this statistic not include code-locality:
+> A tested-by on a patch that touches some specific piece of
+> code can be more worth than a signed-off in another part of the tree.
+>=20
+> But... let's play it safe and let's err on the "safe" side
+> meaning to not spam those people when in doubt. We already have the
+> signed-off's and Maintainers file. So this should be ok. And if need be,=
+=20
+> the maintainers can always forward the patch.
+>=20
+> [i probably could make a diploma thesis out of this changelog :)]
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 180151f..91f277e 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -1871,6 +1871,7 @@ int perf_event_release_kernel(struct perf_event *event)
- {
- 	struct perf_event_context *ctx = event->ctx;
- 
-+	perf_event_disable(event);
- 	event->state = PERF_EVENT_STATE_FREE;
- 
- 	WARN_ON_ONCE(ctx->parent_ctx);
+:D
 
+>=20
+> Signed-off-by: Florian Mickler <florian@mickler.org>
+
+I second this reasoning:
+
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--0lnxQi9hkpPO77W3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkvpC9EACgkQD27XaX1/VRsuQACeLyeANzNVSQJLbMgDXcbDJ872
+IiMAn2wVoewGEl66d9hs+MtgpQojM6Du
+=W2Xd
+-----END PGP SIGNATURE-----
+
+--0lnxQi9hkpPO77W3--
