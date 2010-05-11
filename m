@@ -1,23 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab0EKHP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 03:15:58 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34782 "EHLO mx3.mail.elte.hu"
+	id S1756672Ab0EKHVs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 03:21:48 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57262 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750960Ab0EKHP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 03:15:56 -0400
-Date: Tue, 11 May 2010 09:15:26 +0200
+	id S1753441Ab0EKHVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 03:21:46 -0400
+Date: Tue, 11 May 2010 09:21:27 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de
-Subject: Re: [GIT PULL] RCU changes for 2.6.35
-Message-ID: <20100511071526.GA10421@elte.hu>
-References: <20100510203750.GA12918@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Lin Ming <ming.m.lin@intel.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>
+Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+Message-ID: <20100511072127.GB10421@elte.hu>
+References: <1273484401.5605.3333.camel@twins>
+ <1273486313.15998.76.camel@minggr.sh.intel.com>
+ <1273486708.5605.3342.camel@twins>
+ <1273487195.15998.85.camel@minggr.sh.intel.com>
+ <1273490824.5605.3379.camel@twins>
+ <20100510114311.GA6449@elte.hu>
+ <1273492164.5605.3397.camel@twins>
+ <20100510115344.GA11238@elte.hu>
+ <4BE8931C.9070106@linux.vnet.ibm.com>
+ <1273560419.5605.3426.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100510203750.GA12918@linux.vnet.ibm.com>
+In-Reply-To: <1273560419.5605.3426.camel@twins>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -31,65 +52,27 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> Hello, Ingo,
-> 
-> Here are the first installment of RCU changes for 2.6.35, this time
-> rebased to 2.6.34-rc7.
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
-> 
-> As noted earlier, Mathieu's debugobjects changes and Arnd's "sparse"
-> checks are also in the works.
-> 
-> 							Thanx, Paul
-> 
-> ------------------>
->  Lai Jiangshan (4)
-> 	 rcu: optionally leave lockdep enabled after RCU lockdep splat
-> 	 rcu: make dead code really dead
-> 	 rcu: move some code from macro to function
-> 	 rcu: ignore offline CPUs in last non-dyntick-idle CPU check
-> 
->  Paul E. McKenney (17)
-> 	 rcu: substitute set_need_resched for sending resched IPIs
-> 	 rcu: Fix bogus CONFIG_PROVE_LOCKING in comments to reflect reality.
-> 	 rcu: fix now-bogus rcu_scheduler_active comments.
-> 	 rcu: shrink rcutiny by making synchronize_rcu_bh() be inline
-> 	 rcu: rename rcutiny rcu_ctrlblk to rcu_sched_ctrlblk
-> 	 rcu: refactor RCU's context-switch handling
-> 	 rcu: slim down rcutiny by removing rcu_scheduler_active and friends
-> 	 rcu: enable CPU_STALL_VERBOSE by default
-> 	 rcu: disable CPU stall warnings upon panic
-> 	 rcu: print boot-time console messages if RCU configs out of ordinary
-> 	 rcu: improve RCU CPU stall-warning messages
-> 	 rcu: permit discontiguous cpu_possible_mask CPU numbering
-> 	 rcu: reduce the number of spurious RCU_SOFTIRQ invocations
-> 	 rcu: improve the RCU CPU-stall warning documentation
-> 	 rcu: make SRCU usable in modules
-> 	 rcu: RCU_FAST_NO_HZ must check RCU dyntick state
-> 	 rcu: fix build bug in RCU_FAST_NO_HZ builds
-> 
->  Documentation/RCU/stallwarn.txt |   94 ++++++++++++++++++++++-------
->  Documentation/RCU/trace.txt     |   35 +++++------
->  include/linux/rcupdate.h        |   42 +++++++------
->  include/linux/rcutiny.h         |   29 ++++++++-
->  include/linux/rcutree.h         |    6 +
->  include/linux/srcu.h            |    6 +
->  kernel/lockdep.c                |    3 
->  kernel/rcupdate.c               |   19 -----
->  kernel/rcutiny.c                |   29 +++++----
->  kernel/rcutiny_plugin.h         |   39 ++++++++++++
->  kernel/rcutree.c                |  127 ++++++++++++++++++++++++++++------------
->  kernel/rcutree.h                |    2 
->  kernel/rcutree_plugin.h         |   67 ++++++++++++++++++---
->  kernel/rcutree_trace.c          |    4 -
->  kernel/sched.c                  |    2 
->  kernel/softirq.c                |    2 
->  lib/Kconfig.debug               |   14 ++++
->  17 files changed, 381 insertions(+), 139 deletions(-)
+> What we do not want are exhaustive event lists for specific PMU 
+> implementations, those are best left for userspace.
 
-Pulled, thanks a lot Paul!
+I'd refine this the following way:
+
+ - We mandate proper in-kernel enumeration of all things event sources, for
+   example /sys/devices/system/node/nodeN/node_events. Obviously an event source
+   needs to be addressable for it to be useful to userspace.
+
+ - We want generalized events expressed in those event containers that
+   are used commonly. Whatever people find useful we can enumerate and what
+   is enumerated is an ABI.
+
+ - The 'rest' can go into /sys/devices/system/node/nodeN/node_events/raw_event/.
+   These will never be guaranteed in an ABI way really (although will work in
+   some cases) - those using raw event codes are really up to themselves and 
+   if it ever gets in the way of proper, more expressive 
+   enumeration/generalization it will have to yield.
+
+These are the ground rules as i see them.
 
 	Ingo
