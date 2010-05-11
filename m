@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757860Ab0EKUrx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 16:47:53 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:54217 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060Ab0EKUrv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 16:47:51 -0400
-Message-ID: <4BE9C258.10706@cs.helsinki.fi>
-Date: Tue, 11 May 2010 23:47:20 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
-MIME-Version: 1.0
-To: Mike Frysinger <vapier.adi@gmail.com>
-CC: Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Oskar Schirmer <os@emlix.com>,
-       Michael Hennerich <Michael.Hennerich@analog.com>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "=?UTF-8?B?RGFuaWVsIEdsw7Zja25lcg==?=" <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>,
-       Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
-References: <1273487642-2169-1-git-send-email-os@emlix.com> 	<AANLkTiktu7N5IXknkkJ9D5L4z5plhuGvD45IVqJm9zG1@mail.gmail.com> 	<20100511063309.GC9644@core.coreip.homeip.net> <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com> 	<AANLkTinV79HZqS1cktHDsTsHDel-0Nti_Uk4i7mGaRiK@mail.gmail.com> 	<1273608441.15067.1002.camel@calx> <AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com> 	<alpine.DEB.2.00.1005111520260.1500@router.home> <AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com> 	<4BE9C033.2020106@cs.helsinki.fi> <AANLkTinZe1N2NFOzU32PL2AIZi9TovHj5pQ2Y65eOc1T@mail.gmail.com>
-In-Reply-To: <AANLkTinZe1N2NFOzU32PL2AIZi9TovHj5pQ2Y65eOc1T@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757584Ab0EKUtk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 16:49:40 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39503 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751631Ab0EKUtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 16:49:39 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: [PATCH] iBFT features: Update to iBFT 1.03 and separate ibft parsing from sysfs interface
+Date: Tue, 11 May 2010 18:04:13 +0000
+Message-Id: <1273601057-5907-1-git-send-email-konrad@kernel.org>
+X-Mailer: git-send-email 1.7.1
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 11 May 2010 20:49:35 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Frysinger wrote:
-> On Tue, May 11, 2010 at 16:38, Pekka Enberg wrote:
->> Mike Frysinger wrote:
->>> that is a question for David/Grant.  i'm not the SPI core maintainer,
->>> i'm merely watching over some SPI drivers.  however, this answer also
->>> doesnt sound like it's thinking big enough because what you're
->>> proposing isnt specific to the SPI bus -- any time a DMA safe buffer
->>> is needed dynamically, this function could be used.
->> Well, we have dma_alloc_coherent(), shouldn't you be using that instead?
-> 
-> my understanding is that dma_alloc_coherent() gives you a buffer that
-> is always coherent.  the SPI layers take care of flushing and such on
-> the fly which means allocating coherent memory is overkill and bad for
-> performance.
 
-OK, I'm out of my expert area here but if dma_alloc_coherent() doesn't 
-work for you, you should probably extend the DMA API, not kmalloc().
+The following changes since commit 94b849aaf6e22ab7bf54b0d0377a882d4892396d
 
-			Pekka
+    Merge branch 'fix/hda' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6
+    
+are available in the git repository at:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/konrad/ibft-2.6.git for-akpm
+
+Konrad Rzeszutek Wilk (1):
+      ibft: For UEFI machines actually do scan ACPI for iBFT.
+
+Mike Christie (2):
+      ibft: separate ibft parsing from sysfs interface
+      ibft: convert iscsi_ibft module to iscsi boot lib
+
+Peter Jones (1):
+      ibft: Update iBFT handling for v1.03 of the spec.
+
+ drivers/firmware/Kconfig            |    9 +
+ drivers/firmware/Makefile           |    1 +
+ drivers/firmware/iscsi_boot_sysfs.c |  481 +++++++++++++++++++++++
+ drivers/firmware/iscsi_ibft.c       |  726 +++++++++++++----------------------
+ drivers/firmware/iscsi_ibft_find.c  |   55 ++-
+ include/linux/iscsi_boot_sysfs.h    |  123 ++++++
+ include/linux/iscsi_ibft.h          |   12 +-
+ 7 files changed, 923 insertions(+), 484 deletions(-)
+ create mode 100644 drivers/firmware/iscsi_boot_sysfs.c
+ create mode 100644 include/linux/iscsi_boot_sysfs.h
+
+This pull requests consists of features to the iBFT driver. Specifically:
+
+ - support v1.03 of the spec. The spec in question is available at:
+   ftp://ftp.software.ibm.com/systems/support/bladecenter/iscsi_boot_firmware_table_v1.03.pdf
+ - separate the iBFT parsing from the SysFS interface.
+
+
+What is iBFT?
+The iBFT is an equivalent to the Boot Flag, except that its geared
+towards iSCSI and hence requires much more information (such as
+the IP of target, passwords, which device to login, etc). iBFT
+is a data structure populated by the BIOS or the NIC to contain this
+so that the OS can read it and login to the iSCSI and present
+the boot device to the initrd for mounting / FS.
+
+Thanks,
+
+	Konrad
