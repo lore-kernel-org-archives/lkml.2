@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab0EKVyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 17:54:13 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:62731 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab0EKVyK (ORCPT
+	id S1753327Ab0EKV5W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 17:57:22 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61797 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab0EKV5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 17:54:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=S4wk0rzI9YsZe2H9W/bjrTEaJcP+NBs83lSDon5AIsxURwSBaoG45IGb3Dvr3301ZU
-         4fPC9UVXUdF3FH3rZQt7Nc8scX/hyX3LmxnhzBGGO3WkMFd6DbtFTqw6My+wP/OObfe7
-         /8ZPmJhDMrEGiz+9pnmB6rHMuA3aUVeo0ofWk=
-Date: Tue, 11 May 2010 14:53:59 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Johannes Weiner <jw@emlix.com>
-Cc: Mike Frysinger <vapier.adi@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+	Tue, 11 May 2010 17:57:20 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: linux-mmc@vger.kernel.org
+Cc: linux-omap@vger.kernel.org, Madhusudhan Chikkature <madhu.cr@ti.com>,
+       Adrian Hunter <adrian.hunter@nokia.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Oskar Schirmer <os@emlix.com>,
-       Michael Hennerich <Michael.Hennerich@analog.com>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Daniel =?iso-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>, Nick Piggin <npiggin@suse.de>,
-       David Rientjes <rientjes@google.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
-Message-ID: <20100511215359.GF7396@core.coreip.homeip.net>
-References: <20100511063309.GC9644@core.coreip.homeip.net>
- <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com>
- <AANLkTinV79HZqS1cktHDsTsHDel-0Nti_Uk4i7mGaRiK@mail.gmail.com>
- <1273608441.15067.1002.camel@calx>
- <AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com>
- <alpine.DEB.2.00.1005111520260.1500@router.home>
- <AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com>
- <alpine.DEB.2.00.1005111544330.8388@router.home>
- <AANLkTimzxrZyQAfocTwIt5zCVyXP7bReKOvP4K7m8epO@mail.gmail.com>
- <20100511214836.GH1726@emlix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100511214836.GH1726@emlix.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+       Matt Fleming <matt@console-pimps.org>, Tony Lindgren <tony@atomide.com>,
+       Denis Karpov <ext-denis.2.karpov@nokia.com>,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] MMC: OMAP HS-MMC: convert to dev_pm_ops
+Date: Tue, 11 May 2010 14:57:16 -0700
+Message-Id: <1273615036-4516-1-git-send-email-khilman@deeprootsystems.com>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 11:48:36PM +0200, Johannes Weiner wrote:
-> On Tue, May 11, 2010 at 04:54:41PM -0400, Mike Frysinger wrote:
-> > does the phrase "DMA safe buffer" imply cache alignment ?
-> 
-> I guess that depends on the architectural requirements.  On x86,
-> apparently, not so much.  On ARM, probably yes, as it's the
-> requirement to properly maintain coherency.
+Convert PM operations to use dev_pm_ops.  This will facilitate
+the runtime PM coversion which will add to dev_pm_ops hooks.
 
-It looks liek ARM (and a few others) do this:
+Note that dev_pm_ops version of the suspend hook no longer takes a
+'state' argument.  However, the MMC core function mmc_suspend_host()
+still takes a 'state' argument, but it is unused, so a dummy
+state variable was created to pass to the MMC core.
 
-[dtor@hammer work]$ grep -r ARCH_KMALLOC_MINALIGN arch/
-arch/sh/include/asm/page.h:#define ARCH_KMALLOC_MINALIGN        L1_CACHE_BYTES
-arch/frv/include/asm/mem-layout.h:#define       ARCH_KMALLOC_MINALIGN           8
-arch/powerpc/include/asm/page_32.h:#define ARCH_KMALLOC_MINALIGN        L1_CACHE_BYTES
-arch/arm/include/asm/cache.h:#define ARCH_KMALLOC_MINALIGN      L1_CACHE_BYTES
-arch/microblaze/include/asm/page.h:#define ARCH_KMALLOC_MINALIGN        L1_CACHE_BYTES
-arch/mips/include/asm/mach-tx49xx/kmalloc.h: * All happy, no need to define ARCH_KMALLOC_MINALIGN
-arch/mips/include/asm/mach-ip27/kmalloc.h: * All happy, no need to define ARCH_KMALLOC_MINALIGN
-arch/mips/include/asm/mach-ip32/kmalloc.h:#define ARCH_KMALLOC_MINALIGN 32
-arch/mips/include/asm/mach-ip32/kmalloc.h:#define ARCH_KMALLOC_MINALIGN 128
-arch/mips/include/asm/mach-generic/kmalloc.h:#define ARCH_KMALLOC_MINALIGN      128
-arch/avr32/include/asm/cache.h:#define ARCH_KMALLOC_MINALIGN    L1_CACHE_BYTES
+In the future, the MMC core should be converted to drop this
+state argument and the rest of the MMC drivers could be easily
+converted to dev_pm_ops as well.
 
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+---
+Applies on v2.6.34-rc6
+
+ drivers/mmc/host/omap_hsmmc.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index e9caf69..8112d54 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -2258,10 +2258,12 @@ static int omap_hsmmc_remove(struct platform_device *pdev)
+ }
+ 
+ #ifdef CONFIG_PM
+-static int omap_hsmmc_suspend(struct platform_device *pdev, pm_message_t state)
++static int omap_hsmmc_suspend(struct device *dev)
+ {
+ 	int ret = 0;
++	struct platform_device *pdev = to_platform_device(dev);
+ 	struct omap_hsmmc_host *host = platform_get_drvdata(pdev);
++	pm_message_t state = PMSG_SUSPEND; /* unused by MMC core */
+ 
+ 	if (host && host->suspended)
+ 		return 0;
+@@ -2310,9 +2312,10 @@ static int omap_hsmmc_suspend(struct platform_device *pdev, pm_message_t state)
+ }
+ 
+ /* Routine to resume the MMC device */
+-static int omap_hsmmc_resume(struct platform_device *pdev)
++static int omap_hsmmc_resume(struct device *dev)
+ {
+ 	int ret = 0;
++	struct platform_device *pdev = to_platform_device(dev);
+ 	struct omap_hsmmc_host *host = platform_get_drvdata(pdev);
+ 
+ 	if (host && !host->suspended)
+@@ -2363,13 +2366,17 @@ clk_en_err:
+ #define omap_hsmmc_resume		NULL
+ #endif
+ 
+-static struct platform_driver omap_hsmmc_driver = {
+-	.remove		= omap_hsmmc_remove,
++static struct dev_pm_ops omap_hsmmc_dev_pm_ops = {
+ 	.suspend	= omap_hsmmc_suspend,
+ 	.resume		= omap_hsmmc_resume,
++};
++
++static struct platform_driver omap_hsmmc_driver = {
++	.remove		= omap_hsmmc_remove,
+ 	.driver		= {
+ 		.name = DRIVER_NAME,
+ 		.owner = THIS_MODULE,
++		.pm = &omap_hsmmc_dev_pm_ops,
+ 	},
+ };
+ 
 -- 
-Dmitry
+1.7.0.2
+
