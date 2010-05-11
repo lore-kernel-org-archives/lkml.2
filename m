@@ -1,47 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab0EKTvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 15:51:48 -0400
-Received: from mail.fairfield.edu ([192.160.243.82]:14188 "EHLO
-	mail.fairfield.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755403Ab0EKTvq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 15:51:46 -0400
-X-Greylist: delayed 611 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 15:51:45 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlIgAKtP6UsKDQEi/2dsb2JhbACRZIhUhGMxAQEEAQGFboIBphuBIYQMiF4WgkgNgiYE
-X-IronPort-AV: E=Sophos;i="4.53,209,1272859200"; 
-   d="scan'208";a="36071183"
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1757295Ab0EKTw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 15:52:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33063 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752827Ab0EKTw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 15:52:56 -0400
+Date: Tue, 11 May 2010 22:48:48 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Ryan Harper <ryanh@us.ibm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+       qemu-devel@nongnu.org
+Subject: Re: [PATCH RFC] virtio: put last seen used index into ring itself
+Message-ID: <20100511194848.GA10544@redhat.com>
+References: <20100505205814.GA7090@redhat.com> <20100511184607.GU14379@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: Your mailbox is over Quota ! ! !
-Date: Tue, 11 May 2010 15:41:05 -0400
-Message-ID: <14CCFC3805A9AD4EA8B7E18EA1E9EA191BD30E@fdsms2.univ.fairfield.local>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Your mailbox is over Quota ! ! !
-Thread-Index: AcrxQeUzGJcS0sm7RaKADcKAh1SDsg==
-From: "Umansky, Ellen" <EUmansky@fairfield.edu>
-To: <admin@helpdesk.com>
-X-OriginalArrivalTime: 11 May 2010 19:41:21.0008 (UTC) FILETIME=[EE80FF00:01CAF141]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100511184607.GU14379@us.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your mailbox has exceeded one or more size limits set by your administrator.
-Your mailbox size is 102145 KB.
-Mailbox size limits:
+On Tue, May 11, 2010 at 01:46:08PM -0500, Ryan Harper wrote:
+> * Michael S. Tsirkin <mst@redhat.com> [2010-05-05 16:37]:
+> > Generally, the Host end of the virtio ring doesn't need to see where
+> > Guest is up to in consuming the ring.  However, to completely understand
+> > what's going on from the outside, this information must be exposed.
+> > For example, host can reduce the number of interrupts by detecting
+> > that the guest is currently handling previous buffers.
+> > 
+> > Fortunately, we have room to expand: the ring is always a whole number
+> > of pages and there's hundreds of bytes of padding after the avail ring
+> > and the used ring, whatever the number of descriptors (which must be a
+> > power of 2).
+> > 
+> > We add a feature bit so the guest can tell the host that it's writing
+> > out the current value there, if it wants to use that.
+> > 
+> > This is based on a patch by Rusty Russell, with the main difference
+> > being that we dedicate a feature bit to guest to tell the host it is
+> > writing the used index.  This way we don't need to force host to publish
+> > the last available index until we have a use for it.
+> > 
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> > 
+> > Rusty,
+> > this is a simplified form of a patch you posted in the past.
+> > I have a vhost patch that, using this feature, shows external
+> > to host bandwidth grow from 5 to 7 GB/s, by avoiding
+> > an interrupt in the window after previous interrupt
+> > was sent and before interrupts were disabled for the vq.
+> > With vhost under some external to host loads I see
+> > this window being hit about 30% sometimes.
+> > 
+> > I'm finalizing the host bits and plan to send
+> > the final version for inclusion when all's ready,
+> > but I'd like to hear comments meanwhile.
+> > 
+> >  drivers/virtio/virtio_ring.c |   28 +++++++++++++++++-----------
+> >  include/linux/virtio_ring.h  |   14 +++++++++++++-
+> >  2 files changed, 30 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> > index 1ca8890..7729aba 100644
+> > --- a/drivers/virtio/virtio_ring.c
+> > +++ b/drivers/virtio/virtio_ring.c
+> > @@ -89,9 +89,6 @@ struct vring_virtqueue
+> >  	/* Number we've added since last sync. */
+> >  	unsigned int num_added;
+> > 
+> > -	/* Last used index we've seen. */
+> > -	u16 last_used_idx;
+> > -
+> >  	/* How to notify other side. FIXME: commonalize hcalls! */
+> >  	void (*notify)(struct virtqueue *vq);
+> > 
+> > @@ -285,12 +282,13 @@ static void detach_buf(struct vring_virtqueue *vq, unsigned int head)
+> > 
+> >  static inline bool more_used(const struct vring_virtqueue *vq)
+> >  {
+> > -	return vq->last_used_idx != vq->vring.used->idx;
+> > +	return *vq->vring.last_used_idx != vq->vring.used->idx;
+> >  }
+> > 
+> >  void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
+> >  {
+> >  	struct vring_virtqueue *vq = to_vvq(_vq);
+> > +	struct vring_used_elem *u;
+> >  	void *ret;
+> >  	unsigned int i;
+> > 
+> > @@ -307,12 +305,13 @@ void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
+> >  		return NULL;
+> >  	}
+> > 
+> > -	/* Only get used array entries after they have been exposed by host. */
+> > -	virtio_rmb();
+> > -
+> > -	i = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].id;
+> > -	*len = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].len;
+> > +	/* Only get used array entries after they have been exposed by host.
+> > +	 * Need mb(), not just rmb() because we write last_used_idx below. */
+> > +	virtio_mb();
+> > 
+> > +	u = &vq->vring.used->ring[*vq->vring.last_used_idx % vq->vring.num];
+> > +	i = u->id;
+> > +	*len = u->len;
+> >  	if (unlikely(i >= vq->vring.num)) {
+> >  		BAD_RING(vq, "id %u out of range\n", i);
+> >  		return NULL;
+> > @@ -325,7 +324,8 @@ void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
+> >  	/* detach_buf clears data, so grab it now. */
+> >  	ret = vq->data[i];
+> >  	detach_buf(vq, i);
+> > -	vq->last_used_idx++;
+> > +	(*vq->vring.last_used_idx)++;
+> > +
+> >  	END_USE(vq);
+> >  	return ret;
+> >  }
+> > @@ -431,7 +431,7 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+> >  	vq->vq.name = name;
+> >  	vq->notify = notify;
+> >  	vq->broken = false;
+> > -	vq->last_used_idx = 0;
+> > +	*vq->vring.last_used_idx = 0;
+> >  	vq->num_added = 0;
+> >  	list_add_tail(&vq->vq.list, &vdev->vqs);
+> >  #ifdef DEBUG
+> > @@ -440,6 +440,10 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+> > 
+> >  	vq->indirect = virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC);
+> > 
+> > +	/* We publish used index whether Host offers it or not: if not, it's
+> > +	 * junk space anyway.  But calling this acknowledges the feature. */
+> > +	virtio_has_feature(vdev, VIRTIO_RING_F_PUBLISH_USED);
+> > +
+> 
+> You use VIRTIO_RING_F_PUBLISH_USED here, but
+> VIRTIO_RING_F_PUBLISH_INDICES below... 
+> 
+> 
+> >  	/* No callback?  Tell other side not to bother us. */
+> >  	if (!callback)
+> >  		vq->vring.avail->flags |= VRING_AVAIL_F_NO_INTERRUPT;
+> > @@ -473,6 +477,8 @@ void vring_transport_features(struct virtio_device *vdev)
+> >  		switch (i) {
+> >  		case VIRTIO_RING_F_INDIRECT_DESC:
+> >  			break;
+> > +		case VIRTIO_RING_F_PUBLISH_INDICES:
+> > +			break;
+> 
+> Here ^^^
+> 
+> >  		default:
+> >  			/* We don't understand this bit. */
+> >  			clear_bit(i, vdev->features);
+> > diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+> > index e4d144b..9d01de9 100644
+> > --- a/include/linux/virtio_ring.h
+> > +++ b/include/linux/virtio_ring.h
+> > @@ -29,6 +29,9 @@
+> >  /* We support indirect buffer descriptors */
+> >  #define VIRTIO_RING_F_INDIRECT_DESC	28
+> > 
+> > +/* The Guest publishes last-seen used index at the end of the avail ring. */
+> > +#define VIRTIO_RING_F_PUBLISH_USED	29
+> > +
+> 
+> And here; is it PUBLISHED_USED or PUBLISHED_INDICIES ?
+> 
+> 
+> -- 
+> Ryan Harper
+> Software Engineer; Linux Technology Center
+> IBM Corp., Austin, Tx
+> ryanh@us.ibm.com
 
-        You will receive a warning when your mailbox reaches 90000 KB.
-        You cannot send mail when your mailbox reaches 100000 KB.
-        You cannot send or receive mail when your mailbox reaches 100000 KB.You may not be able to send or receive new mail until you reduce your mailbox size.
-To make more space available by clicking the below link,
- 
-Increase now <http://p7892.9hz.com/> 
- 
-Failure To Click This Link And Validate Your Quota May Result In Loss Of Important Information In Your Mailbox/Or Cause Limited Access To It.
-Thanks
-HELP DESK
+
+Thanks, this is PUBLISHED_USED all over.
+This is fixed in the version I'm testing.
+
+-- 
+MST
