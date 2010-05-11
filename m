@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab0EKIdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 04:33:49 -0400
-Received: from www.tglx.de ([62.245.132.106]:51871 "EHLO www.tglx.de"
+	id S1757357Ab0EKIf2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 04:35:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44500 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753762Ab0EKIdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 04:33:44 -0400
-Date: Tue, 11 May 2010 10:33:35 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Iram Shahzad <iram.shahzad@jp.fujitsu.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: hrtimer: about hres_active
-In-Reply-To: <D1C79E74038141C1BCD3EF70A5032E34@rainbow>
-Message-ID: <alpine.LFD.2.00.1005111032200.3401@localhost.localdomain>
-References: <20090206060328.181057235@goodmis.org> <9D38EE7159934A5C85505E9517638040@rainbow> <alpine.LFD.2.00.1005101707410.3401@localhost.localdomain> <D1C79E74038141C1BCD3EF70A5032E34@rainbow>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752740Ab0EKIfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 04:35:25 -0400
+Message-ID: <4BE916CA.6030501@redhat.com>
+Date: Tue, 11 May 2010 11:35:22 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, zamsden@redhat.com
+Subject: Re: [PATCH v3 0/8] pvclock fixes - v3
+References: <1273094839-18655-1-git-send-email-glommer@redhat.com>
+In-Reply-To: <1273094839-18655-1-git-send-email-glommer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Iram,
+On 05/06/2010 12:27 AM, Glauber Costa wrote:
+> Hello,
+>
+> Avi, this version fixes the issues you raised in the last
+> review. Hopte it is better now.
+>
+>    
 
-please do _NOT_ top post.
+Sorry about the late review.  Looks reasonable, apart from a couple of 
+minor points.
 
-On Tue, 11 May 2010, Iram Shahzad wrote:
-> > No. The system switches to high resolution mode late in the boot
-> > process and it does so only when there is high res capable hardware
-> > available.
-> 
-> So far as I checked, hres_active is set to 1 in hrtimer_switch_to_hres.
-> hrtimer_switch_to_hres is only called from hrtimer_run_pending.
-> And hrtimer_run_pending is called from timer wheel softirq.
-> That is why I concluded that hres_active is set at 1st timer softirq.
-> Do you just mean that it is not the 1st softirq, or do you
-> mean that in some other place in the late boot process
-> there is another code which sets hres_active?
+> A cpuid.txt wil follow as soon as we're set on everything, so
+> I am not including it yet.
+>    
 
-It happens from softirq context, but not from the 1st softirq.
- 
-> And is it correct that hres_active remains 1 forever once set to it?
+Pity, for a reviewer it is a lot easier to review a spec, then the 
+code's conformity to the spec, instead of having to reverse engineer the 
+intent from the code.  Please include it next time.
 
-Yes. There is no way back.
- 
-Thanks,
+-- 
+error compiling committee.c: too many arguments to function
 
-	tglx
