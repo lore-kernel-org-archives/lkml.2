@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab0EKPqh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 11:46:37 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38290 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347Ab0EKPqg (ORCPT
+	id S1754744Ab0EKPuV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:50:21 -0400
+Received: from mtagate6.de.ibm.com ([195.212.17.166]:38251 "EHLO
+	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab0EKPuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 11:46:36 -0400
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-In-Reply-To: <20100511153757.GA14408@aftab>
-References: <1273483623.15998.57.camel@minggr.sh.intel.com>
-	 <1273484401.5605.3333.camel@twins>
-	 <1273486313.15998.76.camel@minggr.sh.intel.com>
-	 <1273486708.5605.3342.camel@twins>
-	 <1273487195.15998.85.camel@minggr.sh.intel.com>
-	 <1273490824.5605.3379.camel@twins> <20100510114311.GA6449@elte.hu>
-	 <20100511141511.GA14034@aftab> <1273587915.1810.1.camel@laptop>
-	 <20100511153757.GA14408@aftab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 May 2010 17:46:29 +0200
-Message-ID: <1273592789.1810.41.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 11 May 2010 11:50:19 -0400
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+Organization: IBM
+To: reinette chatre <reinette.chatre@intel.com>
+Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some accesspoint == hardlock
+Date: Tue, 11 May 2010 17:50:08 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-self-00018-g05dc687; KDE/4.3.4; x86_64; ; )
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+       "NilsRadtkelkml@think-future.de" <NilsRadtkelkml@think-future.de>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+References: <20100503191756.GA3479@localhost> <201005061114.35480.borntraeger@de.ibm.com> <1273163328.2226.2530.camel@rchatre-DESK>
+In-Reply-To: <1273163328.2226.2530.camel@rchatre-DESK>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005111750.08533.borntraeger@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 17:37 +0200, Borislav Petkov wrote:
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Tue, May 11, 2010 at 10:25:15AM -0400
+Am Donnerstag 06 Mai 2010 18:28:48 schrieb reinette chatre:
+> Below seven iwlwifi patches were added after rc4. If you are unable to
+> bisect ... perhaps you can run a while by reverting more and more from
+> this list?
 > 
-> > On Tue, 2010-05-11 at 16:15 +0200, Borislav Petkov wrote:
-> > > Another point I have is that MCEs don't need pmus so we should consider
-> > > having the ability to decouple events from pmus.
-> > 
-> > Strictly speaking tracepoints are software events, which run off of a
-> > software 'pmu'. So no, we can't decouple, they need a 'pmu' context.
-> 
-> We could make this configurable depending on the severity of the error.
-> I'm guessing for further event handling through the perf infrastructure
-> we cannot run without a sw pmu context but on critical conditions
-> we need to run as fast and as sparingly as possible so I'm thinking
-> maybe adding some specially tailored callbacks to the MCE tracepoint
-> trace_mce_record, as Steven suggested.
+> f2fa1b015e9c199e45c836c769d94db595150731 iwlwifi: correct 6000 EEPROM regulatory address
+> 88be026490ed89c2ffead81a52531fbac5507e01 iwlwifi: fix scan races
+> 8b9fce77737ae9983f61ec56cd53f52fb738b2c7 iwlwifi: work around bogus active chains detection
+> ece6444c2fe80dab679beb5f0d58b091f1933b00 iwlwifi: need check for valid qos packet before free
+> de0f60ea94e132c858caa64a44b2012e1e8580b0 iwlwifi: avoid Tx queue memory allocation in interface down
+> 04f2dec1c3d375c4072613880f28f43b66524876 iwlwifi: use consistent table for tx data collect
+> dd48744964296b5713032ea1d66eb9e3d990e287 iwlwifi: fix DMA allocation warnings
 
-Well, all the tracepoint stuff should already be NMI-safe (all of perf
-events needs to be because the PMI is an NMI) and I think perf as a
-whole would like to run as fast as possible, so I don't yet see the need
-for special purpose hooks (which I'll try to resist as much as
-possible).
+Just to give you some feedback. Sometimes it takes a while until it crashes.
+My hand made bisect is currently at two remaining patches:
 
+de0f60ea94e132c858caa64a44b2012e1e8580b0
+8b9fce77737ae9983f61ec56cd53f52fb738b2c7
 
+reverting both solves my hard lockup. I will try to isolate the "bad" patch
+but this takes some more days since I wont be in the "hazardous environment"
+this week.
 
+Christian
