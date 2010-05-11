@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab0EKR3T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 13:29:19 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:34646 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137Ab0EKR3S (ORCPT
+	id S932268Ab0EKRaj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 13:30:39 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:55881 "HELO
+	outbound-mail-313.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932228Ab0EKRah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 13:29:18 -0400
-Date: Tue, 11 May 2010 19:28:59 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Matt Reimer <mreimer@vpop.net>,
-       Evgeniy Polyakov <zbr@ioremap.net>, Tejun Heo <tj@kernel.org>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Andres Salomon <dilinger@collabora.co.uk>,
-       Alexey Starikovskiy <astarikovskiy@suse.de>,
-       Len Brown <len.brown@intel.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 2/3] power/ds2760_battery: make charge_now and
- charge_full writeable
-Message-ID: <20100511172859.GE30801@buzzloop.caiaq.de>
-References: <1273595926-26249-1-git-send-email-daniel@caiaq.de>
- <1273595926-26249-2-git-send-email-daniel@caiaq.de>
- <20100511172003.GA19937@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100511172003.GA19937@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 11 May 2010 13:30:37 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=nHqhq2XoCzJcN2WoKvnQ6bsmQEKhei4Vr/Gl7xXLoDupJp40QdLd9WNq9wDfjZRTn5D68KiAn1n5vC9faoj1fyCYHc6MQiIvr00Fk6RGfhPcZ/riiaITO6FfPRCatUa4;
+Date: Tue, 11 May 2010 10:29:57 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Michal Schmidt <mschmidt@redhat.com>
+Cc: linux-pci@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI: return correct value when writing to the "reset"
+ attribute
+Message-ID: <20100511102957.377cccfa@virtuousgeek.org>
+In-Reply-To: <20100511094453.12485.43792.stgit@leela.lan>
+References: <20100511094453.12485.43792.stgit@leela.lan>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 09:20:03PM +0400, Anton Vorontsov wrote:
+On Tue, 11 May 2010 11:44:54 +0200
+Michal Schmidt <mschmidt@redhat.com> wrote:
+
+> A successful write() to the "reset" sysfs attribute should return the
+> number of bytes written, not 0. Otherwise userspace (bash) retries the
+> write over and over again.
 > 
-> On Tue, May 11, 2010 at 06:38:45PM +0200, Daniel Mack wrote:
-> [...]
-> > +static int ds2760_battery_set_property(struct power_supply *psy,
-> > +				       enum power_supply_property psp,
-> > +				       const union power_supply_propval *val)
-> > +{
-> > +	int ret = -EPERM;
-> > +	unsigned char tmp;
-> > +	struct ds2760_device_info *di = to_ds2760_device_info(psy);
-> > +
-> > +	switch (psp) {
-> > +	case POWER_SUPPLY_PROP_CHARGE_FULL:
-> > +		/* the interface counts in uAh, convert the value */
-> > +		ds2760_battery_write_rated_capacity(di, (val->intval / 1000L) /
-> > +							RATED_CAPACITY_FACTOR);
+> Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+> ---
 > 
-> OK, Mark hinted that you should not change rated (design)
-> capacity, ever. You've made CHARGE_FULL writable, which now
-> actually changes CHARGE_FULL_DESIGN (which reports
-> rated_capacity). Obviously, this isn't acceptable.
-
-Of course, sorry.
-
-> I understand that you might want to change rated capacity for
-> your custom battery setups, and that's fine. After all, it's
-> your hardware, and you have a right to break it. :-)
-
-Well, if it was a hack purely for my hardware, I wouldn't share it beat
-it upstream ;) I believe that this feature is something all users of
-battery-driven devices need, as all batteries age.
-
-> But to do so,
+>  drivers/pci/pci-sysfs.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
 > 
-> 1. Could you at least change this back to
->    POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN, so it'll be clear what
->    exactly this prop is actually changing, and
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index fad9398..ba88a2f 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -960,7 +960,12 @@ static ssize_t reset_store(struct device *dev,
+>  
+>  	if (val != 1)
+>  		return -EINVAL;
+> -	return pci_reset_function(pdev);
+> +
+> +	result = pci_reset_function(pdev);
+> +	if (result < 0)
+> +		return result;
+> +
+> +	return count;
+>  }
+>  
+>  static struct device_attribute reset_attr = __ATTR(reset, 0200, NULL, reset_store);
 
-Do you see any other way to store the actual rated capacity (not the one
-the battery had in its good days) inside the chip?
+Applied to my linux-next branch, thanks.  I think it's probably too
+late to get this into 2.6.34, but if it's affecting real users we can
+try; otherwise you could get it into the stable tree.
 
-> 2. Can we introduce Kconfig symbol BATTERY_DS2760_UNSAFE_OPS,
->    and put an #ifdefs for this property? It should be
->    'default n', of course. Plus we can #ifdef the rated_capacity
->    module param as well.
-
-Hmm, I see that this is one way. I can do this, but I'm hessitant and
-would rather go a cleaer way ...
-
-
-Thanks,
-Daniel
+-- 
+Jesse Barnes, Intel Open Source Technology Center
