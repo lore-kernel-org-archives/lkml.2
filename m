@@ -1,116 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598Ab0EKJNM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 05:13:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50929 "EHLO
+	id S1756453Ab0EKJTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 05:19:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49920 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab0EKJNK convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751234Ab0EKJTC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 05:13:10 -0400
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+	Tue, 11 May 2010 05:19:02 -0400
+Subject: Re: [RFC][PATCH 2/9] perf: core, remove hw_perf_event_init
 From: Peter Zijlstra <peterz@infradead.org>
 To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
        "eranian@gmail.com" <eranian@gmail.com>,
        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
        "arjan@linux.intel.com" <arjan@linux.intel.com>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
        Paul Mackerras <paulus@samba.org>,
        "David S. Miller" <davem@davemloft.net>,
        Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>
-In-Reply-To: <1273568620.30322.42.camel@minggr.sh.intel.com>
-References: <1273484401.5605.3333.camel@twins>
-	 <1273486313.15998.76.camel@minggr.sh.intel.com>
-	 <1273486708.5605.3342.camel@twins>
-	 <1273487195.15998.85.camel@minggr.sh.intel.com>
-	 <1273490824.5605.3379.camel@twins> <20100510114311.GA6449@elte.hu>
-	 <1273492164.5605.3397.camel@twins> <20100510115344.GA11238@elte.hu>
-	 <4BE8931C.9070106@linux.vnet.ibm.com> <1273560419.5605.3426.camel@twins>
-	 <20100511072127.GB10421@elte.hu>
-	 <1273566031.30322.31.camel@minggr.sh.intel.com>
-	 <1273567815.5605.3491.camel@twins>
-	 <1273568620.30322.42.camel@minggr.sh.intel.com>
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1273560280.30322.12.camel@minggr.sh.intel.com>
+References: <1273483595.15998.56.camel@minggr.sh.intel.com>
+	 <1273484430.5605.3334.camel@twins>
+	 <1273486670.15998.80.camel@minggr.sh.intel.com>
+	 <1273486769.5605.3343.camel@twins> <20100510122728.GB5563@nowhere>
+	 <1273496054.5605.3400.camel@twins>  <20100510230911.GB5895@nowhere>
+	 <1273559935.5605.3418.camel@twins>
+	 <1273560280.30322.12.camel@minggr.sh.intel.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 11 May 2010 11:12:34 +0200
-Message-ID: <1273569154.5605.3499.camel@twins>
+Date: Tue, 11 May 2010 11:18:37 +0200
+Message-ID: <1273569517.5605.3505.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 17:03 +0800, Lin Ming wrote:
-> On Tue, 2010-05-11 at 16:50 +0800, Peter Zijlstra wrote:
-> > On Tue, 2010-05-11 at 16:20 +0800, Lin Ming wrote:
+On Tue, 2010-05-11 at 14:44 +0800, Lin Ming wrote:
+> On Tue, 2010-05-11 at 14:38 +0800, Peter Zijlstra wrote:
+> > On Tue, 2010-05-11 at 01:09 +0200, Frederic Weisbecker wrote:
 > > 
-> > > How will this sysfs interface be used for userspace tool?
-> > > 
-> > >  /sys/devices/system/node/nodeN/node_events
-> > >                                node_events/event_source_id
-> > > 
-> > >                                node_events/local_misses/event_id
-> > >                                           /local_hits/event_id
-> > >                                           /remote_misses/event_id
-> > >                                           /remote_hits/event_id
-> > > 
-> > > For example, to monitor node event local_misses on node 0, does it work
-> > > as below?
-> > > 
-> > > 1. perf top -e local_misses -n 0 (-n 0 means node 0)
-> > > 
-> > > 2. read /sys/devices/system/node/node0/node_events/event_source_id to
-> > > get the pmu_id
-> > > 
-> > > 3. read /sys/devices/system/node/node0/node_events/local_misses/event_id
-> > > to get the event_id
-> > > 
-> > > 4. event_attr::pmu_id=pmu_id, event::config=event_id
-> > > 
-> > > 5. other setting...
-> > > 
-> > > 6. call syscall perf_event_open(....)
+> > > Which module do you have in mind that could register a pmu?
+> > > And I don't understand the problem with pci-hotplug.
 > > 
-> > No, you'll use event_source_id as perf_event_attr::type, use event_id as
-> > perf_event_attr::config and then use a cpu-wide counter on a cpu
-> > contained in node0.
+> > Well, the DRM drivers for one, but basically the trend is for every
+> > aspect of the machine to include PMUs of some form, this includes bus
+> > bridges and fancy devices.
 > 
-> Is event_source_id a link to event_source class?
+> So the concept of "PMU" is really broadened here?
+> Not just only the performance monitoring hardware in CPU?
 
-No its an attribute of said class.
+Arguably the uncore unit is already outside of what we traditionally
+call a CPU ;-)
 
-> For example, 2 event sources on Nehalem
-> /sys/class/event_sources/core_pmu
-> /sys/class/event_sources/uncore_pmu
-> 
-> Then,
-> /sys/devices/system/node/nodeN/node_events/event_source_id is a link
-> to /sys/class/event_sources/uncore_pmu.
-
-> /sys/devices/system/cpu/cpuN/cpu_hardware_events/event_source_id is a
-> link to /sys/class/event_sources/core_pmu.
-
-The other way around, look in /sys/class/*/, they're all symlinks.
-
-> And, the event_source_id
-> #cat /sys/class/event_sources/core_pmu
-> 0
-
-> #cat /sys/class/event_sources/uncore_pmu
-> 1
-
-You can't cat a directory. You'd cat something
-like: /sys/class/event_sources/core_pmu/event_source_id
-
-And they would contain PERF_TYPE_* like things.
-
-So for the current CPU PMUs we'd already create 3 event classes,
-cpu_hw_events, cpu_hw_cache_events, cpu_raw_events, with resp.
-event_source_id of 0, 3 and 4.
-
-The new PMUs will use a dynamic range that starts at PERF_TYPE_MAX.
+But yeah, PMUs are found in lots of things these days.
