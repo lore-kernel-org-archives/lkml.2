@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578Ab0EKT4T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 15:56:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21141 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752827Ab0EKT4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 15:56:17 -0400
-Date: Tue, 11 May 2010 22:52:08 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] [PATCH RFC] virtio: put last seen used index into
-	ring itself
-Message-ID: <20100511195208.GB10544@redhat.com>
-References: <20100505205814.GA7090@redhat.com> <4BE29320.5090506@redhat.com> <201005071253.53393.rusty@rustcorp.com.au> <4BE9AF9A.8080005@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BE9AF9A.8080005@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1757592Ab0EKT5P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 15:57:15 -0400
+Received: from mga10.intel.com ([192.55.52.92]:45893 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752827Ab0EKT5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 15:57:13 -0400
+Message-Id: <89k77n$noi3t4@fmsmga001.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,209,1272870000"; 
+   d="scan'208";a="797511588"
+Date: Tue, 11 May 2010 20:57:08 +0100
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: DRM Error on Acer Aspire One
+Cc: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
+       dri-devel@lists.freedesktop.org, Dave Airlie <airlied@linux.ie>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Keith Packard <keithp@keithp.com>, Eric Anholt <eric@anholt.net>,
+       Ingo Molnar <mingo@elte.hu>
+References: <AANLkTilSNZ11CaRUH5s3w6NoAnDQ5t7U9Y0Ce-iHpq3O@mail.gmail.com> <89kc63$grtht6@fmsmga002.fm.intel.com> <20100511104818.8382a7de.akpm@linux-foundation.org> <89khjo$fd26d3@orsmga002.jf.intel.com> <20100511113555.a78c9c8e.akpm@linux-foundation.org> <89kc63$grv1m8@fmsmga002.fm.intel.com> <20100511121001.0731a9c2.akpm@linux-foundation.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <20100511121001.0731a9c2.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 10:27:22PM +0300, Avi Kivity wrote:
-> On 05/07/2010 06:23 AM, Rusty Russell wrote:
->> On Thu, 6 May 2010 07:30:00 pm Avi Kivity wrote:
->>    
->>> On 05/05/2010 11:58 PM, Michael S. Tsirkin wrote:
->>>      
->>>> +	/* We publish the last-seen used index at the end of the available ring.
->>>> +	 * It is at the end for backwards compatibility. */
->>>> +	vr->last_used_idx =&(vr)->avail->ring[num];
->>>> +	/* Verify that last used index does not spill over the used ring. */
->>>> +	BUG_ON((void *)vr->last_used_idx +
->>>> +	       sizeof *vr->last_used_idx>   (void *)vr->used);
->>>>    }
->>>>
->>>>        
->>> Shouldn't this be on its own cache line?
->>>      
->> It's next to the available ring; because that's where the guest publishes
->> its data.  That whole page is guest-write, host-read.
->>
->> Putting it on a cacheline by itself would be a slight pessimization; the host
->> cpu would have to get the last_used_idx cacheline and the avail descriptor
->> cacheline every time.  This way, they are sometimes the same cacheline.
->>    
->
-> If one peer writes the tail of the available ring, while the other reads  
-> last_used_idx, it's a false bounce, no?
->
-> Having things on the same cacheline is only worthwhile if they are  
-> accessed at the same time.
+On Tue, 11 May 2010 12:10:01 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Tue, 11 May 2010 19:52:31 +0100
+> Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> 
+> > On Tue, 11 May 2010 11:35:55 -0400, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > > No, io_mapping_map_atomic_wc() cannot be used from [soft]irq context:
+> > > it hardwires use of KM_USER0.  I suggest that io_mapping_create_wc(),
+> > > io_mapping_map_atomic_wc() etc be changed so that the caller passes in the
+> > > KM_foo kmap slot index.
+> > 
+> > Argh, sorry for the noise, read the mail in the wrong order. Thanks for
+> > the review. It would be sensible to go with your simpler patch whilst
+> > io_mapping_map_atomic_wc() is improved.
+> 
+> OK.  I'll be sending a bunch of fixes Linuswards in an hour or two.  
+> Should I include this?
 
-Yes, this is what I was trying to say.
-avail flags and used index *are* accessed at the same time, so
-there could be an advantage to sharing a cache line there.
+Yes.
 
-All this should be kept in mind if we ever do
-VIRTIO_RING_F_NEW_LAYOUT.
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
 
 -- 
-MST
+Chris Wilson, Intel Open Source Technology Centre
