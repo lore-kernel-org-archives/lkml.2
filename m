@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933205Ab0EKGwP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 02:52:15 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40936 "EHLO mx3.mail.elte.hu"
+	id S933252Ab0EKGzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 02:55:25 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:33587 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933045Ab0EKGwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 02:52:12 -0400
-Date: Tue, 11 May 2010 08:51:31 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 2/9] perf: core, remove hw_perf_event_init
-Message-ID: <20100511065131.GA31863@elte.hu>
-References: <1273483595.15998.56.camel@minggr.sh.intel.com>
- <1273484430.5605.3334.camel@twins>
- <1273486670.15998.80.camel@minggr.sh.intel.com>
- <1273486769.5605.3343.camel@twins>
- <20100510122728.GB5563@nowhere>
- <1273496054.5605.3400.camel@twins>
- <20100510230911.GB5895@nowhere>
- <1273559935.5605.3418.camel@twins>
- <1273560280.30322.12.camel@minggr.sh.intel.com>
+	id S933045Ab0EKGzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 02:55:22 -0400
+Date: Tue, 11 May 2010 08:55:20 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+       Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC PATCH 1/2] block: allow initialization of previously
+	allocated request_queue
+Message-ID: <20100511065520.GK27497@kernel.dk>
+References: <1273532139-23043-1-git-send-email-snitzer@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273560280.30322.12.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1273532139-23043-1-git-send-email-snitzer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Lin Ming <ming.m.lin@intel.com> wrote:
-
-> On Tue, 2010-05-11 at 14:38 +0800, Peter Zijlstra wrote:
-> > On Tue, 2010-05-11 at 01:09 +0200, Frederic Weisbecker wrote:
-> > 
-> > > Which module do you have in mind that could register a pmu?
-> > > And I don't understand the problem with pci-hotplug.
-> > 
-> > Well, the DRM drivers for one, but basically the trend is for every
-> > aspect of the machine to include PMUs of some form, this includes bus
-> > bridges and fancy devices.
+On Mon, May 10 2010, Mike Snitzer wrote:
+> blk_init_queue() allocates the request_queue structure and then
+> initializes it as needed (request_fn, elevator, etc).
 > 
-> So the concept of "PMU" is really broadened here?
-> Not just only the performance monitoring hardware in CPU?
+> Split initialization out to blk_init_allocated_queue_node.
+> Introduce blk_init_allocated_queue wrapper function to model existing
+> blk_init_queue and blk_init_queue_node interfaces.
+> 
+> Export elv_register_queue to allow a newly added elevator to be
+> registered with sysfs.  Export elv_unregister_queue for symmetry.
+> 
+> These changes allow DM to initialize a device's request_queue with more
+> precision.  In particular, DM no longer unconditionally initializes a
+> full request_queue (elevator et al).  It only does so for a
+> request-based DM device.
 
-We _really_ dont want to call it a 'PMU' but 'events coming from an event 
-source'.
+Looks good, I'll apply this. I don't think the exports need to be _GPL
+in this case, generally I've only done that with the exports for hooking
+in a new IO scheduler.
 
-The reason is that a PMU is an existing term that is quite attached to a CPU - 
-while many hardware events come not from a PMU. Interrupts, error conditions, 
-hotplug events, etc. etc.
+-- 
+Jens Axboe
 
-Furthermore, the name 'PMU' is even less correct for software events.
-
-So lets stick with 'events' and with some container that originates them. 
-(event_source) Ok?
-
-	Ingo
