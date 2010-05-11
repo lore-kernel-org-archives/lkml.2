@@ -1,103 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab0EKPy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 11:54:57 -0400
-Received: from mail-wy0-f180.google.com ([74.125.82.180]:33119 "EHLO
-	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab0EKPyz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 11:54:55 -0400
-X-Greylist: delayed 1129 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 11:54:54 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mWDVvR8pA/PffJLpMjJEXYcK0bWYvnx5gZ5UgHuxKfnReogjP6hDJqCZ9HRJamvd3E
-         4U60uzD14rnYuEFhlU8ZU9wV5rwB4SluiIMQOstd2jEr9Ac7AQ4zUyV3sukqJntCs06X
-         odEkspwj5p/J4/1/SKiXN//sM7UsMYnDSn858=
+	id S1752869Ab0EKPzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:55:49 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39379 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751338Ab0EKPzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 11:55:46 -0400
+Message-ID: <4BE97DFA.1060408@suse.de>
+Date: Tue, 11 May 2010 17:55:38 +0200
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikkSRI6u_mp6mNQReECB84t3oh-_MPVzAYEQULN@mail.gmail.com>
-References: <AANLkTikkSRI6u_mp6mNQReECB84t3oh-_MPVzAYEQULN@mail.gmail.com>
-Date: Tue, 11 May 2010 18:27:52 +0300
-Message-ID: <AANLkTikoNc6oAY5JthYX1jWx1w2KeJ1fGab72Z-OvIVG@mail.gmail.com>
-Subject: Re: [BUG] bug when enabling VM DEBUG
-From: saeed bishara <saeed.bishara@gmail.com>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: "DE/ATA development list" <linux-ide@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Cc: avi@redhat.com, mtosatti@redhat.com, yoshikawa.takuya@oss.ntt.co.jp,
+       fernando@oss.ntt.co.jp, kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+       kvm-ia64@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+       hpa@zytor.com, x86@kernel.org, benh@kernel.crashing.org,
+       paulus@samba.org, linuxppc-dev@ozlabs.org, arnd@arndb.de,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/12] KVM, x86, ppc, asm-generic: moving dirty bitmaps
+ to user space
+References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com>
+In-Reply-To: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff,
-seems that the libata do pio to buffer which was allocated with
-kmalloc, and under arm arch, the flush_dcache_page() is needed to
-prevent cache aliasing, the later function calls the page_mapping
-which falls on PageSlab(page)
-
-as the flush_dcache_page() is needed to prevent aliasing, it can be
-skipped if the page is Slab as such pages are used only by the kernel.
-here a suggested patch:
-
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -894,7 +894,7 @@ static void ata_pio_sector(struct ata_queued_cmd *qc)
-                                       do_write);
-        }
-
--       if (!do_write)
-+       if (!do_write && !PageSlab(page))
-                flush_dcache_page(page);
-
-saeed
-
-
-On Mon, May 10, 2010 at 4:06 PM, saeed bishara <saeed.bishara@gmail.com> wrote:
-> Hi,
->  I got the following bug when enabling the VM_DEBGU on 2.6.34-rc6:
+Takuya Yoshikawa wrote:
+> Hi, sorry for sending from my personal account.
+> The following series are all from me:
 >
-> Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> pgd = c0004000
-> [00000000] *pgd=00000000
-> Internal error: Oops: 805 [#1]
-> last sysfs file:
-> Modules linked in:
-> CPU: 0    Not tainted  (2.6.34-rc6-00176-g00047b8-dirty #331)
-> PC is at flush_dcache_page+0x2c/0xc4
-> LR is at ata_pio_sector+0xd8/0x124
-> pc : [<c002d30c>]    lr : [<c01c29d4>]    psr: 20000013
-> sp : f5513ee8  ip : 79a50000  fp : 00001ee8
-> r10: 00000058  r9 : f54f0000  r8 : 00000000
-> r7 : f54f1358  r6 : c03e6b84  r5 : 00000000  r4 : 00000000
-> r3 : 00000000  r2 : 00000000  r1 : f54f17b8  r0 : c0ac4e20
-> Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 10c5387d  Table: 00004019  DAC: 00000017
-> Process ata/0 (pid: 145, stack limit = 0xf55122f0)
-> Stack: (0xf5513ee8 to 0xf5514000)
-> 3ee0:                   c0ac4e20 c01c29d4 00000009 f54f1358 f54f1358 00000001
-> 3f00: c040d18c c01c2ad8 00000005 00000009 f54f0000 c01c3204 c03cfe78 00000000
-> 3f20: 00200200 f54f13d4 c00446e4 00000001 f54f1424 00000000 00000000 00000000
-> 3f40: 00000000 00000000 ffffffff 00000009 f54f0000 f54f1358 00000001 c040d18c
-> 3f60: 00000005 0000000a 00001ee8 c01c46d8 f5413c70 f54b5b68 c01c45d4 f54b5b60
-> 3f80: f5512000 f5513f9c 00000000 00000000 00000000 c004b2c0 00000000 00000000
-> 3fa0: f54be0c0 c004e12c f5513fa8 f5513fa8 f5429ec8 f5513fd4 f5429ec8 f54b5b60
-> 3fc0: c004b1c8 00000000 00000000 c004e014 00000000 00000000 f5513fd8 f5513fd8
-> 3fe0: 00000000 00000000 00000000 00000000 00000000 c0026dec bc7e4afb 6a3a8a30
-> [<c002d30c>] (flush_dcache_page+0x2c/0xc4) from [<c01c29d4>]
-> (ata_pio_sector+0xd8/0x124)
-> [<c01c29d4>] (ata_pio_sector+0xd8/0x124) from [<c01c2ad8>]
-> (ata_pio_sectors+0xb8/0xc4)
-> [<c01c2ad8>] (ata_pio_sectors+0xb8/0xc4) from [<c01c3204>]
-> (ata_sff_hsm_move+0x618/0x76c)
-> [<c01c3204>] (ata_sff_hsm_move+0x618/0x76c) from [<c01c46d8>]
-> (ata_pio_task+0x104/0x124)
-> [<c01c46d8>] (ata_pio_task+0x104/0x124) from [<c004b2c0>]
-> (worker_thread+0xf8/0x170)
-> [<c004b2c0>] (worker_thread+0xf8/0x170) from [<c004e014>] (kthread+0x78/0x80)
-> [<c004e014>] (kthread+0x78/0x80) from [<c0026dec>] (kernel_thread_exit+0x0/0x8)
-> Code: e5904010 e3130080 0a000002 e3a03000 (e5833000)
-> ---[ end trace 8a7ce1ae66250005 ]---
+>   From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
 >
+>   The 3rd version of "moving dirty bitmaps to user space".
+>
+> From this version, we add x86 and ppc and asm-generic people to CC lists.
+>
+>
+> [To KVM people]
+>
+> Sorry for being late to reply your comments.
+>
+> Avi,
+>  - I've wrote an answer to your question in patch 5/12: drivers/vhost/vhost.c .
+>
+>  - I've considered to change the set_bit_user_non_atomic to an inline function,
+>    but did not change because the other helpers in the uaccess.h are written as
+>    macros. Anyway, I hope that x86 people will give us appropriate suggestions
+>    about this.
+>
+>  - I thought that documenting about making bitmaps 64-bit aligned will be
+>    written when we add an API to register user-allocated bitmaps. So probably
+>    in the next series.
+>
+> Avi, Alex,
+>  - Could you check the ia64 and ppc parts, please? I tried to keep the logical
+>    changes as small as possible.
+>
+>    I personally tried to build these with cross compilers. For ia64, I could check
+>    build success with my patch series. But book3s, even without my patch series,
+>    it failed with the following errors:
+>
+>   arch/powerpc/kvm/book3s_paired_singles.c: In function 'kvmppc_emulate_paired_single':
+>   arch/powerpc/kvm/book3s_paired_singles.c:1289: error: the frame size of 2288 bytes is larger than 2048 bytes
+>   make[1]: *** [arch/powerpc/kvm/book3s_paired_singles.o] Error 1
+>   make: *** [arch/powerpc/kvm] Error 2
+>   
+
+This is bad. I haven't encountered that one at all so far, but I guess
+my compiler version is different from yours. Sigh.
+
+>
+> About changelog: there are two main changes from the 2nd version:
+>   1. I changed the treatment of clean slots (see patch 1/12).
+>      This was already applied today, thanks!
+>   2. I changed the switch API. (see patch 11/12).
+>
+> To show this API's advantage, I also did a test (see the end of this mail).
+>
+>
+> [To x86 people]
+>
+> Hi, Thomas, Ingo, Peter,
+>
+> Please review the patches 4,5/12. Because this is the first experience for
+> me to send patches to x86, please tell me if this lacks anything.
+>
+>
+> [To ppc people]
+>
+> Hi, Benjamin, Paul, Alex,
+>
+> Please see the patches 6,7/12. I first say sorry for that I've not tested these
+> yet. In that sense, these may not be in the quality for precise reviews. But I
+> will be happy if you would give me any comments.
+>
+> Alex, could you help me? Though I have a plan to get PPC box in the future,
+> currently I cannot test these.
+>   
+
+Could you please point me to a git tree where everything's readily
+applied? That would make testing a lot easier.
+
+Alex
+
