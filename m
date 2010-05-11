@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab0EKQxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:53:30 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:58444 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755697Ab0EKQx0 convert rfc822-to-8bit (ORCPT
+	id S1756173Ab0EKQyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:54:37 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:45584 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755624Ab0EKQyf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:53:26 -0400
+	Tue, 11 May 2010 12:54:35 -0400
+X-Greylist: delayed 379 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 12:54:34 EDT
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=HQFkkYtzJCPi5S5uOG2tXy3GlCcjLYYCrtxOBfhPtbkNEuxS31jMMe1cO8wJYL5gCP
-         Lx2XbBEEFS2asgKGxMvWdb9WbzCY739IKvw7SUrJmKL9Gmqn2k82h3r0uscTm4NLBy5b
-         xXIdH9d8Ezm791QPYK19MBqc4WRVBMnnBwrvU=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=jPU7S3LBjBXwKdMx1LZ2oQd3HbqYKQjodkejg20pfYtEUg914Zc8HOLHI1TsiZErHl
+         hRG+0CQhKS6lrwqy62NiVFiMDuOuebChrrRWmgM8mOwer1qzMG7tAhMCyl3Qr+pxVS01
+         1CwO4oONEkRTnc9eJYoOjHURZRnCLSqcTX1jI=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinAVhnpjgVTtbZYYKb1t_DInVwTKkkJRzcO97RX@mail.gmail.com>
-References: <1272848076-28315-1-git-send-email-linus.walleij@stericsson.com>
-	 <AANLkTinAVhnpjgVTtbZYYKb1t_DInVwTKkkJRzcO97RX@mail.gmail.com>
-Date: Tue, 11 May 2010 09:53:23 -0700
-X-Google-Sender-Auth: SPE9rGJQCoOC44PbkPzlaXsoB3o
-Message-ID: <AANLkTim7Tp8lCwMbQwW5QiQ49j7idFFUWdU3x8azIlok@mail.gmail.com>
-Subject: Re: [PATCH 1/7] DMAENGINE: add generic PrimeCell interface to COH 901 
-	318 v6
-From: Dan Williams <dan.j.williams@intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-       linux-kernel@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.44L0.1005111158420.1834-100000@iolanthe.rowland.org>
+References: <20100512003450P.fujita.tomonori@lab.ntt.co.jp>
+	 <Pine.LNX.4.44L0.1005111158420.1834-100000@iolanthe.rowland.org>
+Date: Tue, 11 May 2010 17:48:11 +0100
+Message-ID: <AANLkTikoF4qgkN9p0SpDEOrHAMxdh4jzPusCdrq1tRag@mail.gmail.com>
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+From: Pedro Ribeiro <pedrib@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, gregkh@suse.de,
+       konrad.wilk@oracle.com, tiwai@suse.de,
+       USB list <linux-usb@vger.kernel.org>, clemens@ladisch.de,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       chrisw@sous-sol.org, iommu@lists.linux-foundation.org,
+       andi@firstfloor.org, daniel@caiaq.de,
+       Andrew Morton <akpm@linux-foundation.org>, dwmw2@infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 9:37 AM, Dan Williams <dan.j.williams@intel.com> wrote:
-> On Sun, May 2, 2010 at 5:54 PM, Linus Walleij
-> <linus.walleij@stericsson.com> wrote:
->> This extends the DMA engine driver for the COH 901 318 used in the
->> U300 platform with the generic PrimeCell interface.
->>
->> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
->> ---
->>  drivers/dma/coh901318.c |  146 +++++++++++++++++++++++++++++++++++++++++++++++
->>  1 files changed, 146 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
->> index 4233440..1d5ed16 100644
->> --- a/drivers/dma/coh901318.c
->> +++ b/drivers/dma/coh901318.c
-> [..]
->> +void dma_set_ambaconfig(struct dma_chan *chan,
->> +                       struct amba_dma_channel_config *config)
+On 11 May 2010 17:06, Alan Stern <stern@rowland.harvard.edu> wrote:
 >
-> What happens when two primecell dma devices are present on one soc?
-> Can that happen?  In that case we'll have conflicting providers of
-> dma_set_ambaconfig().
+> The particular test that Pedro is running uses audio output only --
+> he's sending sound data to a speaker and it comes out noisy.
+>
+> But the audio data has to come from somewhere, and I don't remember
+> where.  Pedro, does the noise occur only when you're playing sound that
+> comes from a different USB device?  What happens if you play sounds
+> that are stored on your hard disk, like an MP3 file?
+
+> Or what happens if you take the incoming sound data and store it in a
+> disk file, and then later play that file out through the speaker?
+>
+> Alan Stern
+>
 >
 
-...the ->device_control() method is already approaching an ioctl()
-let's just add the argument parameter to complete the capability,
-i.e.:
+I'm clueless about the whole underlying process but I don't think it
+is related to playing a file from the disk or another USB device.
 
-int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
-unsigned long arg);
+I don't need to play any file for this interference to be heard - I
+just need to "open" the device. By this I mean that if I create a JACK
+server or if I open the device using the ALSA backed in a program like
+Mixxx I immediately start hearing the cracks and pops in the speaker.
+But to answer your question, playing a file from the hard drive using
+aplay I can also hear the interference - but only when the sound is
+playing. As soon as the sound stops and the audio device is "closed",
+no interference occurs.
 
-This might also be useful be useful for the mux case to change that
-configuration at runtime.
+However, when using the JACK server, which probably opens and polls
+the audio card constantly (its a low latency audio server) I don't
+even need to be playing any sound for the interference to be constant.
 
---
-Dan
+I can also see it since I have 4 output leds in the USB audio card and
+even if I'm only using 2 channels, the 4 channel leds light up with
+interference as the sound cracks and pops.
+
+Regards,
+Pedro
