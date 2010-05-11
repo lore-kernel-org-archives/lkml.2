@@ -1,91 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab0EKQXJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:23:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8520 "EHLO mx1.redhat.com"
+	id S1756482Ab0EKQXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:23:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33549 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752107Ab0EKQVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752083Ab0EKQVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 May 2010 12:21:24 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com
-Subject: [PATCH 3/9] change msr numbers for kvmclock
-Date: Tue, 11 May 2010 12:17:41 -0400
-Message-Id: <1273594667-17175-4-git-send-email-glommer@redhat.com>
-In-Reply-To: <1273594667-17175-3-git-send-email-glommer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com,
+       Jeremy Fitzhardinge <jeremy@goop.org>,
+       Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [PATCH 2/9] Add a global synchronization point for pvclock
+Date: Tue, 11 May 2010 12:17:40 -0400
+Message-Id: <1273594667-17175-3-git-send-email-glommer@redhat.com>
+In-Reply-To: <1273594667-17175-2-git-send-email-glommer@redhat.com>
 References: <1273594667-17175-1-git-send-email-glommer@redhat.com>
  <1273594667-17175-2-git-send-email-glommer@redhat.com>
- <1273594667-17175-3-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi pointed out a while ago that those MSRs falls into the pentium
-PMU range. So the idea here is to add new ones, and after a while,
-deprecate the old ones.
+In recent stress tests, it was found that pvclock-based systems
+could seriously warp in smp systems. Using ingo's time-warp-test.c,
+I could trigger a scenario as bad as 1.5mi warps a minute in some systems.
+(to be fair, it wasn't that bad in most of them). Investigating further, I
+found out that such warps were caused by the very offset-based calculation
+pvclock is based on.
+
+This happens even on some machines that report constant_tsc in its tsc flags,
+specially on multi-socket ones.
+
+Two reads of the same kernel timestamp at approx the same time, will likely
+have tsc timestamped in different occasions too. This means the delta we
+calculate is unpredictable at best, and can probably be smaller in a cpu
+that is legitimately reading clock in a forward ocasion.
+
+Some adjustments on the host could make this window less likely to happen,
+but still, it pretty much poses as an intrinsic problem of the mechanism.
+
+A while ago, I though about using a shared variable anyway, to hold clock
+last state, but gave up due to the high contention locking was likely
+to introduce, possibly rendering the thing useless on big machines. I argue,
+however, that locking is not necessary.
+
+We do a read-and-return sequence in pvclock, and between read and return,
+the global value can have changed. However, it can only have changed
+by means of an addition of a positive value. So if we detected that our
+clock timestamp is less than the current global, we know that we need to
+return a higher one, even though it is not exactly the one we compared to.
+
+OTOH, if we detect we're greater than the current time source, we atomically
+replace the value with our new readings. This do causes contention on big
+boxes (but big here means *BIG*), but it seems like a good trade off, since
+it provide us with a time source guaranteed to be stable wrt time warps.
+
+After this patch is applied, I don't see a single warp in time during 5 days
+of execution, in any of the machines I saw them before.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/include/asm/kvm_para.h |    4 ++++
- arch/x86/kvm/x86.c              |    7 ++++++-
- 2 files changed, 10 insertions(+), 1 deletions(-)
+ arch/x86/kernel/pvclock.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index ffae142..9734808 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -20,6 +20,10 @@
- #define MSR_KVM_WALL_CLOCK  0x11
- #define MSR_KVM_SYSTEM_TIME 0x12
+diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
+index f7fdd56..f5bc40e 100644
+--- a/arch/x86/kernel/pvclock.c
++++ b/arch/x86/kernel/pvclock.c
+@@ -118,11 +118,14 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src)
+ 	return pv_tsc_khz;
+ }
  
-+/* Custom MSRs falls in the range 0x4b564d00-0x4b564dff */
-+#define MSR_KVM_WALL_CLOCK_NEW  0x4b564d00
-+#define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
++static atomic64_t last_value = ATOMIC64_INIT(0);
 +
- #define KVM_MAX_MMU_OP_BATCH           32
+ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
+ {
+ 	struct pvclock_shadow_time shadow;
+ 	unsigned version;
+ 	cycle_t ret, offset;
++	u64 last;
  
- /* Operations for KVM_HC_MMU_OP */
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 6b2ce1d..eb84947 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -664,9 +664,10 @@ static inline u32 bit(int bitno)
-  * kvm-specific. Those are put in the beginning of the list.
-  */
+ 	do {
+ 		version = pvclock_get_time_values(&shadow, src);
+@@ -132,6 +135,27 @@ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
+ 		barrier();
+ 	} while (version != src->version);
  
--#define KVM_SAVE_MSRS_BEGIN	5
-+#define KVM_SAVE_MSRS_BEGIN	7
- static u32 msrs_to_save[] = {
- 	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
-+	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
- 	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
- 	HV_X64_MSR_APIC_ASSIST_PAGE,
- 	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
-@@ -1192,10 +1193,12 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
- 	case MSR_IA32_MISC_ENABLE:
- 		vcpu->arch.ia32_misc_enable_msr = data;
- 		break;
-+	case MSR_KVM_WALL_CLOCK_NEW:
- 	case MSR_KVM_WALL_CLOCK:
- 		vcpu->kvm->arch.wall_clock = data;
- 		kvm_write_wall_clock(vcpu->kvm, data);
- 		break;
-+	case MSR_KVM_SYSTEM_TIME_NEW:
- 	case MSR_KVM_SYSTEM_TIME: {
- 		if (vcpu->arch.time_page) {
- 			kvm_release_page_dirty(vcpu->arch.time_page);
-@@ -1467,9 +1470,11 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
- 		data = vcpu->arch.efer;
- 		break;
- 	case MSR_KVM_WALL_CLOCK:
-+	case MSR_KVM_WALL_CLOCK_NEW:
- 		data = vcpu->kvm->arch.wall_clock;
- 		break;
- 	case MSR_KVM_SYSTEM_TIME:
-+	case MSR_KVM_SYSTEM_TIME_NEW:
- 		data = vcpu->arch.time;
- 		break;
- 	case MSR_IA32_P5_MC_ADDR:
++	/*
++	 * Assumption here is that last_value, a global accumulator, always goes
++	 * forward. If we are less than that, we should not be much smaller.
++	 * We assume there is an error marging we're inside, and then the correction
++	 * does not sacrifice accuracy.
++	 *
++	 * For reads: global may have changed between test and return,
++	 * but this means someone else updated poked the clock at a later time.
++	 * We just need to make sure we are not seeing a backwards event.
++	 *
++	 * For updates: last_value = ret is not enough, since two vcpus could be
++	 * updating at the same time, and one of them could be slightly behind,
++	 * making the assumption that last_value always go forward fail to hold.
++	 */
++	last = atomic64_read(&last_value);
++	do {
++		if (ret < last)
++			return last;
++		last = atomic64_cmpxchg(&last_value, last, ret);
++	} while (unlikely(last != ret));
++
+ 	return ret;
+ }
+ 
 -- 
 1.6.2.2
 
