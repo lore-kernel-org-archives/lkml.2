@@ -1,101 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab0EKHZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 03:25:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50758 "EHLO hera.kernel.org"
+	id S1757274Ab0EKH0X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 03:26:23 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55153 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750960Ab0EKHZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 03:25:22 -0400
-Date: Tue, 11 May 2010 07:24:46 GMT
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
+	id S1753439Ab0EKH0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 03:26:19 -0400
+Date: Tue, 11 May 2010 07:25:20 GMT
+From: tip-bot for Masami Hiramatsu <mhiramat@redhat.com>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, paulus@samba.org,
-       eranian@google.com, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, efault@gmx.de, fweisbec@gmail.com,
-       ming.m.lin@intel.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
+       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
+       ananth@in.ibm.com, anderson@redhat.com, fweisbec@gmail.com,
+       dle-develop@lists.sourceforge.net, tglx@linutronix.de,
+       mhiramat@redhat.com, mingo@elte.hu, systemtap@sources.redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, efault@gmx.de,
+       anderson@redhat.com, ananth@in.ibm.com,
+       dle-develop@lists.sourceforge.net, fweisbec@gmail.com,
+       tglx@linutronix.de, mhiramat@redhat.com, systemtap@sources.redhat.com,
        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org,
-       fweisbec@gmail.com, a.p.zijlstra@chello.nl, efault@gmx.de,
-       ming.m.lin@intel.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-       mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
+In-Reply-To: <20100427223348.2322.9112.stgit@localhost6.localdomain6>
+References: <20100427223348.2322.9112.stgit@localhost6.localdomain6>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] Revert "perf: Fix exit() vs PERF_FORMAT_GROUP"
-Message-ID: <tip-e3174cfd2a1e28fff774681f00a0eef3d31da970@git.kernel.org>
-Git-Commit-ID: e3174cfd2a1e28fff774681f00a0eef3d31da970
+Subject: [tip:perf/urgent] kprobes/x86: Fix removed int3 checking order
+Message-ID: <tip-829e92458532b1dbfeb972435d45bb060cdbf5a3@git.kernel.org>
+Git-Commit-ID: 829e92458532b1dbfeb972435d45bb060cdbf5a3
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 11 May 2010 07:24:46 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 11 May 2010 07:25:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e3174cfd2a1e28fff774681f00a0eef3d31da970
-Gitweb:     http://git.kernel.org/tip/e3174cfd2a1e28fff774681f00a0eef3d31da970
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Tue, 11 May 2010 08:31:49 +0200
+Commit-ID:  829e92458532b1dbfeb972435d45bb060cdbf5a3
+Gitweb:     http://git.kernel.org/tip/829e92458532b1dbfeb972435d45bb060cdbf5a3
+Author:     Masami Hiramatsu <mhiramat@redhat.com>
+AuthorDate: Tue, 27 Apr 2010 18:33:49 -0400
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 11 May 2010 08:31:49 +0200
+CommitDate: Tue, 11 May 2010 09:14:25 +0200
 
-Revert "perf: Fix exit() vs PERF_FORMAT_GROUP"
+kprobes/x86: Fix removed int3 checking order
 
-This reverts commit 4fd38e4595e2f6c9d27732c042a0e16b2753049c.
+Fix kprobe/x86 to check removed int3 when failing to get kprobe
+from hlist. Since we have a time window between checking int3
+exists on probed address and getting kprobe on that address,
+we can have following scenario:
 
-It causes various crashes and hangs when events are activated.
+ -------
+ CPU1                     CPU2
+ hit int3
+ check int3 exists
+                          remove int3
+                          remove kprobe from hlist
+ get kprobe from hlist
+ no kprobe->OOPS!
+ -------
 
-The cause is not fully understood yet but we need to revert it
-because the effects are severe.
+This patch moves int3 checking if there is no kprobe on that
+address for fixing this problem as follows:
 
-Reported-by: Stephane Eranian <eranian@google.com>
-Reported-by: Lin Ming <ming.m.lin@intel.com>
+ ------
+ CPU1                     CPU2
+ hit int3
+                          remove int3
+                          remove kprobe from hlist
+ get kprobe from hlist
+ no kprobe->check int3 exists
+          ->rollback&retry
+ ------
+
+Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: systemtap <systemtap@sources.redhat.com>
+Cc: DLE <dle-develop@lists.sourceforge.net>
+Cc: Dave Anderson <anderson@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <new-submission>
+LKML-Reference: <20100427223348.2322.9112.stgit@localhost6.localdomain6>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/perf_event.h |    1 -
- kernel/perf_event.c        |    5 -----
- 2 files changed, 0 insertions(+), 6 deletions(-)
+ arch/x86/kernel/kprobes.c |   27 +++++++++++++--------------
+ 1 files changed, 13 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 4924c96..3fd5c82 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -575,7 +575,6 @@ struct pmu {
-  * enum perf_event_active_state - the states of a event
-  */
- enum perf_event_active_state {
--	PERF_EVENT_STATE_FREE		= -3,
- 	PERF_EVENT_STATE_ERROR		= -2,
- 	PERF_EVENT_STATE_OFF		= -1,
- 	PERF_EVENT_STATE_INACTIVE	=  0,
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 180151f..a904746 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -334,9 +334,6 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- 	if (event->state > PERF_EVENT_STATE_OFF)
- 		event->state = PERF_EVENT_STATE_OFF;
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index b43bbae..1658efd 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -534,20 +534,6 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+ 	struct kprobe_ctlblk *kcb;
  
--	if (event->state > PERF_EVENT_STATE_FREE)
--		return;
+ 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
+-	if (*addr != BREAKPOINT_INSTRUCTION) {
+-		/*
+-		 * The breakpoint instruction was removed right
+-		 * after we hit it.  Another cpu has removed
+-		 * either a probepoint or a debugger breakpoint
+-		 * at this address.  In either case, no further
+-		 * handling of this interrupt is appropriate.
+-		 * Back up over the (now missing) int3 and run
+-		 * the original instruction.
+-		 */
+-		regs->ip = (unsigned long)addr;
+-		return 1;
+-	}
 -
  	/*
- 	 * If this was a group event with sibling events then
- 	 * upgrade the siblings to singleton events by adding them
-@@ -1871,8 +1868,6 @@ int perf_event_release_kernel(struct perf_event *event)
- {
- 	struct perf_event_context *ctx = event->ctx;
- 
--	event->state = PERF_EVENT_STATE_FREE;
--
- 	WARN_ON_ONCE(ctx->parent_ctx);
- 	/*
- 	 * There are two ways this annotation is useful:
+ 	 * We don't want to be preempted for the entire
+ 	 * duration of kprobe processing. We conditionally
+@@ -579,6 +565,19 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+ 				setup_singlestep(p, regs, kcb, 0);
+ 			return 1;
+ 		}
++	} else if (*addr != BREAKPOINT_INSTRUCTION) {
++		/*
++		 * The breakpoint instruction was removed right
++		 * after we hit it.  Another cpu has removed
++		 * either a probepoint or a debugger breakpoint
++		 * at this address.  In either case, no further
++		 * handling of this interrupt is appropriate.
++		 * Back up over the (now missing) int3 and run
++		 * the original instruction.
++		 */
++		regs->ip = (unsigned long)addr;
++		preempt_enable_no_resched();
++		return 1;
+ 	} else if (kprobe_running()) {
+ 		p = __get_cpu_var(current_kprobe);
+ 		if (p->break_handler && p->break_handler(p, regs)) {
