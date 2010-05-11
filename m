@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab0EKW2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 18:28:45 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:36730 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753368Ab0EKW2n (ORCPT
+	id S1753647Ab0EKWay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 18:30:54 -0400
+Received: from kunzite.stewarts.org.uk ([80.68.93.148]:46623 "EHLO
+	kunzite.stewarts.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab0EKWaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 18:28:43 -0400
-Date: Wed, 12 May 2010 00:28:25 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-       Alexey Starikovskiy <astarikovskiy@suse.de>,
-       Len Brown <len.brown@intel.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Matt Reimer <mreimer@vpop.net>, Evgeniy Polyakov <zbr@ioremap.net>,
-       Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 1/3] pda_power: add support for writeable properties
-Message-ID: <20100511222825.GJ30801@buzzloop.caiaq.de>
-References: <1273595926-26249-1-git-send-email-daniel@caiaq.de>
- <20100511174708.GA26777@oksana.dev.rtsoft.ru>
- <20100511175812.GH30801@buzzloop.caiaq.de>
- <20100511182347.GA31831@oksana.dev.rtsoft.ru>
+	Tue, 11 May 2010 18:30:52 -0400
+X-Greylist: delayed 2264 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 18:30:52 EDT
+Date: Tue, 11 May 2010 22:53:04 +0100
+From: Thomas Stewart <thomas@stewarts.org.uk>
+To: linux-kernel@vger.kernel.org
+Subject: Mounting BorderWare UFS File Systems
+Message-ID: <20100511215300.GA22152@stewarts.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100511182347.GA31831@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 10:23:47PM +0400, Anton Vorontsov wrote:
-> On Tue, May 11, 2010 at 07:58:12PM +0200, Daniel Mack wrote:
-> [...]
-> > Hmm, no. The code defaults to (S_IRUSR | S_IRGRP | S_IROTH) which is
-> > 0444, just like it was before. So there shouldn't be any regression. The
-> > mode is only changed if the psy defines a property_is_writeable()
-> > callback which returns 1. Or do I miss your point?
-> 
-> Yes, power_supply_attrs is a global array, and you shouldn't change
-> it between power_supply_register() calls.
-> 
-> If you don't see why it's a bad idea in general, think about it
-> other way, a race:
-> 
-> ...someone registers psy0 with attr X marked as read-only...
-> ...code flow stops before device_create_file(psy0, global->mode)..
-> [preempt]
-> ...someone registers psy1 with attr X marked as writable...
-> ...you set up global->mode to 0644...
-> [preempt again]
-> ...we end up calling device_create_file(psy0, 0644)...
+Hi,
 
-Ah, I see. But the struct passed in is just used as template, right? So
-for the particular case you outlined, a simple lock should do the trick,
-right? I would prefer this over always-writeable file entries.
+I recently had to recover some files from an old broken machine that was
+running BorderWare Document Gateway. It's basically a drop in web server
+for sharing files. From the look of the init process and using strings
+on of a few files it seems to be based on FreeBSD 3.3. The process
+turned out to be more difficult than I imagined, but to cut a long story
+short BorderWare in their wisdom use a nonstandard magic number in their
+UFS (ufstype=44bsd) file systems. Thus Linux refuses to mount the file
+systems in order to recover the data. After a bit of hunting I was able
+to make a quick fix to fs/ufs/super.c in order to detect the new magic
+number. I don't think this needs to get into mainline, but hopefully
+this will hit the archives to save anyone else the effort. I'm assume
+that this number is the same for all installations. It's quite easy to
+find out from ufs_fs.h. The superblock sits 8k into the block device and
+the magic number its 1372 bytes into the superblock struct.
 
-Daniel
+# dd if=/dev/sda5 skip=$(( 8192 + 1372 )) bs=1 count=4 2> /dev/null | hd
+00000000  97 26 24 0f                                       |.&$.|
+#
+
+Here is the patch, please cc any questions or comments as I'm off list.
+
+diff -urN linux-2.6.33.1.orig/fs/ufs/super.c linux-2.6.33.1/fs/ufs/super.c
+--- linux-2.6.33.1.orig/fs/ufs/super.c  2010-05-11 20:07:08.000000000 +0100
++++ linux-2.6.33.1/fs/ufs/super.c       2010-05-11 21:23:06.000000000 +0100
+@@ -918,6 +918,7 @@
+        sbi->s_bytesex = BYTESEX_LE;
+        switch ((uspi->fs_magic = fs32_to_cpu(sb, usb3->fs_magic))) {
+                case UFS_MAGIC:
++               case UFS_MAGIC_BW:
+                case UFS2_MAGIC:
+                case UFS_MAGIC_LFN:
+                case UFS_MAGIC_FEA:
+@@ -927,6 +928,7 @@
+        sbi->s_bytesex = BYTESEX_BE;
+        switch ((uspi->fs_magic = fs32_to_cpu(sb, usb3->fs_magic))) {
+                case UFS_MAGIC:
++               case UFS_MAGIC_BW:
+                case UFS2_MAGIC:
+                case UFS_MAGIC_LFN:
+                case UFS_MAGIC_FEA:
+diff -urN linux-2.6.33.1.orig/fs/ufs/ufs_fs.h linux-2.6.33.1/fs/ufs/ufs_fs.h
+--- linux-2.6.33.1.orig/fs/ufs/ufs_fs.h 2010-03-15 16:09:39.000000000 +0000
++++ linux-2.6.33.1/fs/ufs/ufs_fs.h      2010-05-11 21:20:35.000000000 +0100
+@@ -48,6 +48,7 @@
+ #define UFS_SECTOR_SIZE 512
+ #define UFS_SECTOR_BITS 9
+ #define UFS_MAGIC  0x00011954
++#define UFS_MAGIC_BW 0x0f242697
+ #define UFS2_MAGIC 0x19540119
+ #define UFS_CIGAM  0x54190100 /* byteswapped MAGIC */
+ 
+Regards
+--
+Tom
