@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933026Ab0EKGjO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 02:39:14 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51706 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932744Ab0EKGjK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 02:39:10 -0400
-Subject: Re: [RFC][PATCH 2/9] perf: core, remove hw_perf_event_init
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100510230911.GB5895@nowhere>
-References: <1273483595.15998.56.camel@minggr.sh.intel.com>
-	 <1273484430.5605.3334.camel@twins>
-	 <1273486670.15998.80.camel@minggr.sh.intel.com>
-	 <1273486769.5605.3343.camel@twins> <20100510122728.GB5563@nowhere>
-	 <1273496054.5605.3400.camel@twins>  <20100510230911.GB5895@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 11 May 2010 08:38:55 +0200
-Message-ID: <1273559935.5605.3418.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S933051Ab0EKGk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 02:40:57 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:33752 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932354Ab0EKGkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 02:40:55 -0400
+Date: Tue, 11 May 2010 07:40:36 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
+Subject: [git pull] drm regression fix
+Message-ID: <alpine.DEB.2.00.1005110738530.28472@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 01:09 +0200, Frederic Weisbecker wrote:
 
-> Which module do you have in mind that could register a pmu?
-> And I don't understand the problem with pci-hotplug.
+Just one patch from Jean to fix some regressions in the buffer code 
+rework. Thanks to Jean for tracking this down.
 
-Well, the DRM drivers for one, but basically the trend is for every
-aspect of the machine to include PMUs of some form, this includes bus
-bridges and fancy devices.
+The following changes since commit 8cfe92d683a0041ac8e016a0b0a487c99a78f6c1:
+  Thomas Hellstrom (1):
+        drm/ttm: Remove the ttm_bo_block_reservation() function.
 
-The point about PCI-hotplug is that GPUs live on the PCI bus and once
-they start adding their PMU drivers we need to be able to unplug them.
+are available in the git repository at:
 
-Same for when the PCI bridge devices start featuring PMU
-implementations.
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-linus
+
+Jean Delvare (1):
+      drm/radeon: Fix 3 regressions - since buffer rework
+
+ drivers/gpu/drm/radeon/radeon_state.c |   19 ++++++++++---------
+ 1 files changed, 10 insertions(+), 9 deletions(-)
