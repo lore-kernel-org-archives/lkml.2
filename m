@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757476Ab0EKTPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 15:15:13 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:34050 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab0EKTPL (ORCPT
+	id S1757558Ab0EKTPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 15:15:54 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:47523 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab0EKTPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 15:15:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=na0hC+nl0vXH3TnwbSAg7e9InkgF2BKeorqeDh/mKa0LESu3Vp7OOBDaE0lhcj77Lp
-         9+JBb6VppKpwtovA0sfFUbiLCrMx9bttuXf8EH7N+6Z6ZsPDcRmJXeY0YOUTvRx3+pSp
-         p+oR1AYFfAdAPQTntw/YV+1Zz8ltY7JDE++y8=
+	Tue, 11 May 2010 15:15:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <20100511150730.GD14895@suse.de>
-References: <20100510223322.347254355@kvm.kroah.org>
-	 <4BE896FC.2050407@tuxonice.net>
-	 <AANLkTinUQ-ra-0lknwTAPIp996NU40o0LKjsq1sXc6Va@mail.gmail.com>
-	 <20100511150730.GD14895@suse.de>
-Date: Tue, 11 May 2010 21:15:10 +0200
-Message-ID: <AANLkTim6VIWZzvRfzJkbKfVKNispi0hiNm_gy8L0OutT@mail.gmail.com>
-Subject: Re: [057/117] ALSA: hda: Use STAC_DELL_M6_BOTH quirk for Dell Studio 
-	1558
-From: Daniel Chen <seven.steps@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Nigel Cunningham <nigel@tuxonice.net>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Daniel T Chen <crimsun@ubuntu.com>,
-       Takashi Iwai <tiwai@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19433.44163.776781.931987@stoffel.org>
+Date: Tue, 11 May 2010 15:14:11 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: "Phil Reynolds" <phil-linux@tinsleyviaduct.com>
+Cc: "Phil Turmel" <pturmel-kernel@turmel.org>, linux-kernel@vger.kernel.org,
+       linux-scsi@vger.kernel.org
+Subject: Re: Marvell eSATA - 88SE6121 on Asus M3A79-T Deluxe - not in AHCI
+In-Reply-To: <20100511182128.216144e4uzjtufbs@topdeck.tinsleyviaduct.com>
+References: <20100509151358.84896yzx8vt059gm@topdeck.tinsleyviaduct.com>
+	<4BE964C2.1010702@turmel.org>
+	<20100511182128.216144e4uzjtufbs@topdeck.tinsleyviaduct.com>
+X-Mailer: VM 8.0.9 under Emacs 22.3.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 5:07 PM, Greg KH <gregkh@suse.de> wrote:
-> As this mirrors what is in Linus's tree, I say we just leave it alone,
-> is that ok?
+>>>>> "Phil" == Phil Reynolds <phil-linux@tinsleyviaduct.com> writes:
 
-That, too, is fine. The quirk is correct in the source code.
+Phil> Quoting "Phil Turmel" <pturmel-kernel@turmel.org>:
+>> I have a similar chipset in my office server: 88SE6145.  If yours can run
+>> in AHCI mode, you just need "ahci.marvell_enable=1" on your kernel command
+>> line, or "options ahci marvell_enable=1" in your modprobe.conf.  (I have
+>> ahci built-in, and no initramfs, so I put the option in my grub.conf.)
 
--Dan
+Phil> Neither works for me unfortunately.
+
+Can you post your dmesg output from both bootups?  Are there any
+differences?  Also submit the lspci -vvv output as well, just so
+people can help you better.
+
+John
