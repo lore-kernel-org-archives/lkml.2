@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab0EKWWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 18:22:51 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:35281 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753404Ab0EKWWu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 18:22:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nhQpcQcAZ29xKANFytxiwPlJJP+R4VHCZChy8d1Tn0CozIavazPqdxpvnv96v/cOSD
-         l8QG+r+JbaHiv1JnBrabMOZUzFouLiYHiLiiNvBQrDS1VxXQVB4A/s79kcTgp1qBbzq7
-         m2TRUf4CSs4EfuSMIM/h/qc6gW6rnkCAoCn3Q=
-MIME-Version: 1.0
-In-Reply-To: <89k77n$noi3t4@fmsmga001.fm.intel.com>
-References: <AANLkTilSNZ11CaRUH5s3w6NoAnDQ5t7U9Y0Ce-iHpq3O@mail.gmail.com>
-	 <89kc63$grtht6@fmsmga002.fm.intel.com>
-	 <20100511104818.8382a7de.akpm@linux-foundation.org>
-	 <89khjo$fd26d3@orsmga002.jf.intel.com>
-	 <20100511113555.a78c9c8e.akpm@linux-foundation.org>
-	 <89kc63$grv1m8@fmsmga002.fm.intel.com>
-	 <20100511121001.0731a9c2.akpm@linux-foundation.org>
-	 <89k77n$noi3t4@fmsmga001.fm.intel.com>
-Date: Wed, 12 May 2010 08:22:49 +1000
-Message-ID: <AANLkTikM916RlCBudL9_Pw--cpiu5mg_xcLFG9N1l9tL@mail.gmail.com>
-Subject: Re: DRM Error on Acer Aspire One
-From: Dave Airlie <airlied@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       dri-devel@lists.freedesktop.org, Dave Airlie <airlied@linux.ie>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Keith Packard <keithp@keithp.com>, Eric Anholt <eric@anholt.net>,
-       Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753491Ab0EKWZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 18:25:10 -0400
+Received: from gate.crashing.org ([63.228.1.57]:33671 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752079Ab0EKWZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 18:25:08 -0400
+Subject: Re: [PATCH 05/25] lmb: Factor the lowest level alloc function
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linuxtronix.de,
+       mingo@elte.hu, davem@davemloft.net, lethal@linux-sh.org
+In-Reply-To: <alpine.LFD.2.00.1005111428470.3401@localhost.localdomain>
+References: <1273484339-28911-1-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-2-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-3-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-4-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-5-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-6-git-send-email-benh@kernel.crashing.org>
+	 <alpine.LFD.2.00.1005111428470.3401@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 May 2010 08:24:09 +1000
+Message-ID: <1273616649.21352.44.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 5:57 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Tue, 11 May 2010 12:10:01 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
->> On Tue, 11 May 2010 19:52:31 +0100
->> Chris Wilson <chris@chris-wilson.co.uk> wrote:
->>
->> > On Tue, 11 May 2010 11:35:55 -0400, Andrew Morton <akpm@linux-foundation.org> wrote:
->> > > No, io_mapping_map_atomic_wc() cannot be used from [soft]irq context:
->> > > it hardwires use of KM_USER0.  I suggest that io_mapping_create_wc(),
->> > > io_mapping_map_atomic_wc() etc be changed so that the caller passes in the
->> > > KM_foo kmap slot index.
->> >
->> > Argh, sorry for the noise, read the mail in the wrong order. Thanks for
->> > the review. It would be sensible to go with your simpler patch whilst
->> > io_mapping_map_atomic_wc() is improved.
->>
->> OK.  I'll be sending a bunch of fixes Linuswards in an hour or two.
->> Should I include this?
->
-> Yes.
->
-> Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
->
+On Tue, 2010-05-11 at 14:30 +0200, Thomas Gleixner wrote:
+> > @@ -396,33 +406,24 @@ u64 __init __lmb_alloc_base(u64 size, u64
+> align, u64 max_addr)
+> >       if (max_addr == LMB_ALLOC_ANYWHERE)
+> >               max_addr = LMB_REAL_LIMIT;
+> >  
+> > +     /* Pump up max_addr */
+> > +     if (max_addr == LMB_ALLOC_ANYWHERE)
+> > +             max_addr = ~(u64)0;
+> > +     
+> 
+>   That if is pretty useless as you set max_addr to LMB_REAL_LIMIT
+>   right above.
 
-I'm not sure pushing this in at this point is a good idea, if I'm
-reading it correctly we've no idea what KM_IRQ is being used for, and
-this codepath is called from non-irq contexts just as much as irq
-contexts.
+This is a mismerge/mis-rebase of one of my patches actually. I'll dbl
+check what's up but I think the first hunk should go along with
+LMB_REAL_LIMIT in favor of the new default limit thing. But we first
+need to make sure the default is set sensibly and I haven't fixed all
+archs yet.
 
-I'd rather we just backout the hangcheck stuff touching copies at all
-at this point, and try again doing it properly with a slow work or
-something for later.
+I'll dbl check what's up there.
 
-Dave.
+Cheers,
+Benm.
+
+
