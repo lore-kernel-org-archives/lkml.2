@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987Ab0EKSJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 14:09:16 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41098 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756890Ab0EKSJL convert rfc822-to-8bit (ORCPT
+	id S1755961Ab0EKSN2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 14:13:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50984 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab0EKSN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 14:09:11 -0400
-From: "Arce, Abraham" <x0066660@ti.com>
-To: "trivial@kernel.org" <trivial@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "khali@linux-fr.org" <khali@linux-fr.org>,
-       "greg@kroah.com" <greg@kroah.com>,
-       "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-       "bgardner@wabtec.com" <bgardner@wabtec.com>
-Date: Tue, 11 May 2010 13:08:03 -0500
-Subject: [PATCH 0/3] EEPROM: Clean up headers in files
-Thread-Topic: [PATCH 0/3] EEPROM: Clean up headers in files
-Thread-Index: AcrxNOYIBiETXGBWRPu4lrdPcmVGmQ==
-Message-ID: <27F9C60D11D683428E133F85D2BB4A53043DFD5807@dlee03.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 May 2010 14:13:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=slajiYLK+KB/ffHORKdzXw9OVERXrXsgnGWNuAZDG/L3uhS4NROS3oQhkU0b7qJ3bY
+         djlFzvoepJLYNlhF2BxrGzKOiPunVH0d1NskyMjUqm1WRJXY8uPFdmCDl4mkqRIVLKcB
+         25y4UDtv2eQyqNEPo1Fh+DtJh264CW2wrootM=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Subject: Re: ACPI Errors on Acer Aspire One
+Date: Tue, 11 May 2010 20:13:17 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7; KDE/4.3.4; i686; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <AANLkTilF304TbgACKtvc_FA01uxHrdRBS2Q-o6Tm-n8Q@mail.gmail.com>
+In-Reply-To: <AANLkTilF304TbgACKtvc_FA01uxHrdRBS2Q-o6Tm-n8Q@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005112013.17282.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the top header of the required files under driver/misc/eeprom
-directory to follow the comment guidelines.
+On wtorek, 11 maja 2010 o 16:55:31 Jaswinder Singh Rajput wrote:
+> Hello,
+> 
+> With latest git kernel, I am getting following ACPI errors :
+> 
 
-These patches are against trivial/for-next.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=15962
+for your bug report, please add your address to the CC list in there, thanks!
 
---
-
-[PATCH] EEPROM: Header file cleanup
-[PATCH] EEPROM: 93cx6: Header file cleanup
-[PATCH] EEPROM: max6875: Header file cleanup
-
---
- 
- eeprom.c       |   40 ++++++++++++++++++++--------------------
- eeprom_93cx6.c |   44 +++++++++++++++++++++-----------------------
- max6875.c      |   52 ++++++++++++++++++++++++++--------------------------
- 3 files changed, 67 insertions(+), 69 deletions(-)
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
