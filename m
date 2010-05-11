@@ -1,35 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757161Ab0EKNad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 09:30:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:40127 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756908Ab0EKNac (ORCPT
+	id S1757264Ab0EKNiS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 09:38:18 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63468 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757186Ab0EKNiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 09:30:32 -0400
-X-Authority-Analysis: v=1.1 cv=GuuPm/R9MDBdMhOgsQZYzj+bBK5woo0X8cuc0sTVRtI= c=1 sm=0 a=SSFxOwRvCusA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=FrnrjfBQz4aWZdQfCjsA:9 a=hioD9iauXAMR3Zk0mu4A:7 a=bu827zggH1xBhAvqdUEnTSaPJbMA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 10/10 -v3][RFC] tracing: Combine event filter_active
- and enable into single flags field
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-In-Reply-To: <20100511033026.GA28162@Krystal>
-References: <20100511030020.837892321@goodmis.org>
-	 <20100511030911.927339838@goodmis.org>  <20100511033026.GA28162@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Tue, 11 May 2010 09:30:28 -0400
-Message-ID: <1273584628.22438.4501.camel@gandalf.stny.rr.com>
+	Tue, 11 May 2010 09:38:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=PoDBGIwTr7Hk820PoAPLT1dFFe04/sKAyHi6loKZ6s9UGq6NSFK/lGrJrdaTVXOrbq
+         LaHMMlq+iOxrcnNy0KZwinZvROJvJzmqNq4uDBlZiehe96xQnLJ0xoDycMuL33IIEUHw
+         eTlUeHOmwjZqSi73s69MuZmITSL4JqDZlzAAM=
+Subject: Re: [PATCH] [OOPS] apbuart.c: Two problems related to
+ grlib_apbuart_configure()
+From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+To: kristoffer@gaisler.com, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1273355935.13191.6.camel@carter>
+References: <1273355935.13191.6.camel@carter>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 May 2010 15:38:04 +0200
+Message-ID: <1273585084.8948.12.camel@carter>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -37,35 +31,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 23:30 -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > From: Steven Rostedt <srostedt@redhat.com>
-> > 
-> > The filter_active and enable both use an int (4 bytes each) to
-> > set a single flag. We can save 4 bytes per event by combining the
-> > two into a single integer.
-> > 
+Hi,
 
-> I would also comment about flags read-side:
-> 
->  * Flags are read concurrently without locking.
+Kristoffer, please check this one instead.
 
-That can go in outside this patch set. As we discussed before, the
-filter_active which does the same today as flags does here also has the
-issue you are concerned with. IOW, this issue has nothing to do with
-this patch set, because the issue existed before the patch set and has
-not changed after the patch set.
+Changes:
+1. Added the grlib_apbuart_port_nr = 0 line.
+2. Returned -ENODEV instead of 0 in the "no ports found branch" in
+init(), because if compiled as a module, exit() will try to unregister
+things that were not registered. In addition, this will alert the users
+that modprobe'd.
+3. Deleted the unused __FILE__ argument of the previous patch (oops
+sorry :).
 
-The comment should also be in Documentation, not here, since it would
-affect users more than the developers.
+Andrew, if Kristoffer agrees, please drop the older patch from -mm and
+merge this one instead.
 
-> 
-> Besides that minor nit, the whole patchset has my
-> 
-> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
-Thanks!  I'll get an official release ready.
-
--- Steve
-
+Signed-off-by: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+---
+--- drivers/serial/apbuart.c.orig	2010-04-26 16:48:30.000000000 +0200
++++ drivers/serial/apbuart.c	2010-05-11 15:21:28.984666230 +0200
+@@ -525,6 +525,9 @@ static void grlib_apbuart_configure(void
+ static int __init apbuart_console_init(void)
+ {
+ 	grlib_apbuart_configure();
++	if (grlib_apbuart_port_nr == 0)
++		return 0;
++
+ 	register_console(&grlib_apbuart_console);
+ 	return 0;
+ }
+@@ -612,6 +615,10 @@ static void grlib_apbuart_configure(void
+ 	rp = of_find_node_by_path("/");
+ 	rp = of_get_next_child(rp, NULL);
+ 	prop = of_get_property(rp, "clock-frequency", NULL);
++	if (prop == NULL) {
++		grlib_apbuart_port_nr = 0;
++		return;
++	}
+ 	freq_khz = *prop;
+ 
+ 	line = 0;
+@@ -666,6 +673,10 @@ static int __init grlib_apbuart_init(voi
+ 
+ 	/* Find all APBUARTS in device the tree and initialize their ports */
+ 	grlib_apbuart_configure();
++	if (grlib_apbuart_port_nr == 0) {
++		printk(KERN_INFO "Serial: GRLIB APBUART: No ports found.\n");
++		return -ENODEV;
++	}
+ 
+ 	printk(KERN_INFO "Serial: GRLIB APBUART driver\n");
+ 
 
