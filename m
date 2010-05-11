@@ -1,97 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab0EKV5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 17:57:22 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61797 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab0EKV5U (ORCPT
+	id S1753374Ab0EKWGS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 18:06:18 -0400
+Received: from smtp-out110.alice.it ([85.37.17.110]:1352 "EHLO
+	smtp-out110.alice.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752618Ab0EKWGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 17:57:20 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: linux-mmc@vger.kernel.org
-Cc: linux-omap@vger.kernel.org, Madhusudhan Chikkature <madhu.cr@ti.com>,
-       Adrian Hunter <adrian.hunter@nokia.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Matt Fleming <matt@console-pimps.org>, Tony Lindgren <tony@atomide.com>,
-       Denis Karpov <ext-denis.2.karpov@nokia.com>,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] MMC: OMAP HS-MMC: convert to dev_pm_ops
-Date: Tue, 11 May 2010 14:57:16 -0700
-Message-Id: <1273615036-4516-1-git-send-email-khilman@deeprootsystems.com>
-X-Mailer: git-send-email 1.7.0.2
+	Tue, 11 May 2010 18:06:16 -0400
+X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 18:06:16 EDT
+From: Morgan Gatti <morgan.gatti@gmail.com>
+To: gregkh@suse.de, jkosina@suse.cz
+Cc: linux-kernel@vger.kernel.org, Morgan Gatti <morgan.gatti@gmail.com>
+Subject: [PATCH] Staging:comedi:Fix bug and coding style issue in usbdux.c This is a patch to the usbdux.c file that resolve 2 errors in coding and fix the warning about lengt of code lines Signed-off-by: Morgan Gatti <morgan.gatti@gmail.com>
+Date: Tue, 11 May 2010 23:55:53 +0200
+Message-Id: <1273614953-3263-1-git-send-email-morgan.gatti@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <patch usbdux>
+References: <patch usbdux>
+X-OriginalArrivalTime: 11 May 2010 21:55:58.0493 (UTC) FILETIME=[BD0F64D0:01CAF154]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert PM operations to use dev_pm_ops.  This will facilitate
-the runtime PM coversion which will add to dev_pm_ops hooks.
-
-Note that dev_pm_ops version of the suspend hook no longer takes a
-'state' argument.  However, the MMC core function mmc_suspend_host()
-still takes a 'state' argument, but it is unused, so a dummy
-state variable was created to pass to the MMC core.
-
-In the future, the MMC core should be converted to drop this
-state argument and the rest of the MMC drivers could be easily
-converted to dev_pm_ops as well.
-
-Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
 ---
-Applies on v2.6.34-rc6
+ drivers/staging/comedi/drivers/usbdux.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
- drivers/mmc/host/omap_hsmmc.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index e9caf69..8112d54 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -2258,10 +2258,12 @@ static int omap_hsmmc_remove(struct platform_device *pdev)
+diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
+index 8942ae4..c39c36a 100644
+--- a/drivers/staging/comedi/drivers/usbdux.c
++++ b/drivers/staging/comedi/drivers/usbdux.c
+@@ -793,7 +793,7 @@ static int usbduxsub_stop(struct usbduxsub *usbduxsub)
  }
  
- #ifdef CONFIG_PM
--static int omap_hsmmc_suspend(struct platform_device *pdev, pm_message_t state)
-+static int omap_hsmmc_suspend(struct device *dev)
+ static int usbduxsub_upload(struct usbduxsub *usbduxsub,
+-			    uint8_t * local_transfer_buffer,
++			    uint8_t *local_transfer_buffer,
+ 			    unsigned int startAddr, unsigned int len)
  {
- 	int ret = 0;
-+	struct platform_device *pdev = to_platform_device(dev);
- 	struct omap_hsmmc_host *host = platform_get_drvdata(pdev);
-+	pm_message_t state = PMSG_SUSPEND; /* unused by MMC core */
+ 	int errcode;
+@@ -825,7 +825,7 @@ static int usbduxsub_upload(struct usbduxsub *usbduxsub,
+ #define FIRMWARE_MAX_LEN 0x2000
  
- 	if (host && host->suspended)
- 		return 0;
-@@ -2310,9 +2312,10 @@ static int omap_hsmmc_suspend(struct platform_device *pdev, pm_message_t state)
- }
- 
- /* Routine to resume the MMC device */
--static int omap_hsmmc_resume(struct platform_device *pdev)
-+static int omap_hsmmc_resume(struct device *dev)
+ static int firmwareUpload(struct usbduxsub *usbduxsub,
+-			  const u8 * firmwareBinary, int sizeFirmware)
++			  const u8 *firmwareBinary, int sizeFirmware)
  {
- 	int ret = 0;
-+	struct platform_device *pdev = to_platform_device(dev);
- 	struct omap_hsmmc_host *host = platform_get_drvdata(pdev);
+ 	int ret;
+ 	uint8_t *fwBuf;
+@@ -835,7 +835,7 @@ static int firmwareUpload(struct usbduxsub *usbduxsub,
  
- 	if (host && !host->suspended)
-@@ -2363,13 +2366,17 @@ clk_en_err:
- #define omap_hsmmc_resume		NULL
- #endif
+ 	if (sizeFirmware > FIRMWARE_MAX_LEN) {
+ 		dev_err(&usbduxsub->interface->dev,
+-			"comedi_: usbdux firmware binary it too large for FX2.\n");
++		"comedi_: usbdux firmware binary it too large for FX2.\n");
+ 		return -ENOMEM;
+ 	}
  
--static struct platform_driver omap_hsmmc_driver = {
--	.remove		= omap_hsmmc_remove,
-+static struct dev_pm_ops omap_hsmmc_dev_pm_ops = {
- 	.suspend	= omap_hsmmc_suspend,
- 	.resume		= omap_hsmmc_resume,
-+};
-+
-+static struct platform_driver omap_hsmmc_driver = {
-+	.remove		= omap_hsmmc_remove,
- 	.driver		= {
- 		.name = DRIVER_NAME,
- 		.owner = THIS_MODULE,
-+		.pm = &omap_hsmmc_dev_pm_ops,
- 	},
- };
- 
+@@ -1264,8 +1264,8 @@ static int usbdux_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 			    (this_usbduxsub->ai_interval) * 2;
+ 		}
+ 		this_usbduxsub->ai_timer = cmd->scan_begin_arg / (125000 *
+-								  (this_usbduxsub->
+-								   ai_interval));
++					  (this_usbduxsub->
++					   ai_interval));
+ 	} else {
+ 		/* interval always 1ms */
+ 		this_usbduxsub->ai_interval = 1;
 -- 
-1.7.0.2
+1.7.0.4
 
