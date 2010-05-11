@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab0EKHVs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 03:21:48 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57262 "EHLO mx3.mail.elte.hu"
+	id S1756961Ab0EKHZZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 03:25:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50758 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753441Ab0EKHVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 03:21:46 -0400
-Date: Tue, 11 May 2010 09:21:27 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Lin Ming <ming.m.lin@intel.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-Message-ID: <20100511072127.GB10421@elte.hu>
-References: <1273484401.5605.3333.camel@twins>
- <1273486313.15998.76.camel@minggr.sh.intel.com>
- <1273486708.5605.3342.camel@twins>
- <1273487195.15998.85.camel@minggr.sh.intel.com>
- <1273490824.5605.3379.camel@twins>
- <20100510114311.GA6449@elte.hu>
- <1273492164.5605.3397.camel@twins>
- <20100510115344.GA11238@elte.hu>
- <4BE8931C.9070106@linux.vnet.ibm.com>
- <1273560419.5605.3426.camel@twins>
+	id S1750960Ab0EKHZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 03:25:22 -0400
+Date: Tue, 11 May 2010 07:24:46 GMT
+From: tip-bot for Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, paulus@samba.org,
+       eranian@google.com, hpa@zytor.com, mingo@redhat.com,
+       a.p.zijlstra@chello.nl, efault@gmx.de, fweisbec@gmail.com,
+       ming.m.lin@intel.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org,
+       fweisbec@gmail.com, a.p.zijlstra@chello.nl, efault@gmx.de,
+       ming.m.lin@intel.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
+       mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] Revert "perf: Fix exit() vs PERF_FORMAT_GROUP"
+Message-ID: <tip-e3174cfd2a1e28fff774681f00a0eef3d31da970@git.kernel.org>
+Git-Commit-ID: e3174cfd2a1e28fff774681f00a0eef3d31da970
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1273560419.5605.3426.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 11 May 2010 07:24:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  e3174cfd2a1e28fff774681f00a0eef3d31da970
+Gitweb:     http://git.kernel.org/tip/e3174cfd2a1e28fff774681f00a0eef3d31da970
+Author:     Ingo Molnar <mingo@elte.hu>
+AuthorDate: Tue, 11 May 2010 08:31:49 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 11 May 2010 08:31:49 +0200
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Revert "perf: Fix exit() vs PERF_FORMAT_GROUP"
 
-> What we do not want are exhaustive event lists for specific PMU 
-> implementations, those are best left for userspace.
+This reverts commit 4fd38e4595e2f6c9d27732c042a0e16b2753049c.
 
-I'd refine this the following way:
+It causes various crashes and hangs when events are activated.
 
- - We mandate proper in-kernel enumeration of all things event sources, for
-   example /sys/devices/system/node/nodeN/node_events. Obviously an event source
-   needs to be addressable for it to be useful to userspace.
+The cause is not fully understood yet but we need to revert it
+because the effects are severe.
 
- - We want generalized events expressed in those event containers that
-   are used commonly. Whatever people find useful we can enumerate and what
-   is enumerated is an ABI.
+Reported-by: Stephane Eranian <eranian@google.com>
+Reported-by: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ include/linux/perf_event.h |    1 -
+ kernel/perf_event.c        |    5 -----
+ 2 files changed, 0 insertions(+), 6 deletions(-)
 
- - The 'rest' can go into /sys/devices/system/node/nodeN/node_events/raw_event/.
-   These will never be guaranteed in an ABI way really (although will work in
-   some cases) - those using raw event codes are really up to themselves and 
-   if it ever gets in the way of proper, more expressive 
-   enumeration/generalization it will have to yield.
-
-These are the ground rules as i see them.
-
-	Ingo
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 4924c96..3fd5c82 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -575,7 +575,6 @@ struct pmu {
+  * enum perf_event_active_state - the states of a event
+  */
+ enum perf_event_active_state {
+-	PERF_EVENT_STATE_FREE		= -3,
+ 	PERF_EVENT_STATE_ERROR		= -2,
+ 	PERF_EVENT_STATE_OFF		= -1,
+ 	PERF_EVENT_STATE_INACTIVE	=  0,
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 180151f..a904746 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -334,9 +334,6 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+ 	if (event->state > PERF_EVENT_STATE_OFF)
+ 		event->state = PERF_EVENT_STATE_OFF;
+ 
+-	if (event->state > PERF_EVENT_STATE_FREE)
+-		return;
+-
+ 	/*
+ 	 * If this was a group event with sibling events then
+ 	 * upgrade the siblings to singleton events by adding them
+@@ -1871,8 +1868,6 @@ int perf_event_release_kernel(struct perf_event *event)
+ {
+ 	struct perf_event_context *ctx = event->ctx;
+ 
+-	event->state = PERF_EVENT_STATE_FREE;
+-
+ 	WARN_ON_ONCE(ctx->parent_ctx);
+ 	/*
+ 	 * There are two ways this annotation is useful:
