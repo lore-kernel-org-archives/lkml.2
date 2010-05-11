@@ -1,34 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab0EKWde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 18:33:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57316 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753581Ab0EKWdc (ORCPT
+	id S1753981Ab0EKWdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 18:33:55 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39674 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753581Ab0EKWdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 18:33:32 -0400
-Date: Tue, 11 May 2010 15:32:17 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-       Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       dri-devel@lists.freedesktop.org, Dave Airlie <airlied@linux.ie>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Keith Packard <keithp@keithp.com>, Eric Anholt <eric@anholt.net>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: DRM Error on Acer Aspire One
-Message-Id: <20100511153217.5c7661d7.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTikM916RlCBudL9_Pw--cpiu5mg_xcLFG9N1l9tL@mail.gmail.com>
-References: <AANLkTilSNZ11CaRUH5s3w6NoAnDQ5t7U9Y0Ce-iHpq3O@mail.gmail.com>
-	<89kc63$grtht6@fmsmga002.fm.intel.com>
-	<20100511104818.8382a7de.akpm@linux-foundation.org>
-	<89khjo$fd26d3@orsmga002.jf.intel.com>
-	<20100511113555.a78c9c8e.akpm@linux-foundation.org>
-	<89kc63$grv1m8@fmsmga002.fm.intel.com>
-	<20100511121001.0731a9c2.akpm@linux-foundation.org>
-	<89k77n$noi3t4@fmsmga001.fm.intel.com>
-	<AANLkTikM916RlCBudL9_Pw--cpiu5mg_xcLFG9N1l9tL@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Tue, 11 May 2010 18:33:53 -0400
+Date: Tue, 11 May 2010 23:37:42 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       Matt Mackall <mpm@selenic.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oskar Schirmer <os@emlix.com>,
+       Michael Hennerich <Michael.Hennerich@analog.com>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Daniel =?ISO-8859-14?B?R2z2Y2tuZXI=?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>,
+       Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
+Message-ID: <20100511233742.61cf0a6b@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com>
+References: <1273487642-2169-1-git-send-email-os@emlix.com>
+	<AANLkTikA9s6lpO2uDuIup8BwGOYYHQ9yQxS36PBSIttX@mail.gmail.com>
+	<20100511062110.GB9644@core.coreip.homeip.net>
+	<AANLkTiktu7N5IXknkkJ9D5L4z5plhuGvD45IVqJm9zG1@mail.gmail.com>
+	<20100511063309.GC9644@core.coreip.homeip.net>
+	<y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com>
+	<AANLkTinV79HZqS1cktHDsTsHDel-0Nti_Uk4i7mGaRiK@mail.gmail.com>
+	<1273608441.15067.1002.camel@calx>
+	<AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com>
+	<alpine.DEB.2.00.1005111520260.1500@router.home>
+	<AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -36,48 +44,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 08:22:49 +1000
-Dave Airlie <airlied@gmail.com> wrote:
+> SPI transfer into a DMA safe buffer.  what is the exact API to
+> dynamically allocate memory for the structure with this buffer
+> embedded in it such that the start of the structure is cached aligned
+> ?  creating a dedicated kmem cache may work, but it isnt a scalable
+> solution if every SPI driver needs to create its own cache.
 
-> On Wed, May 12, 2010 at 5:57 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > On Tue, 11 May 2010 12:10:01 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
-> >> On Tue, 11 May 2010 19:52:31 +0100
-> >> Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> >>
-> >> > On Tue, 11 May 2010 11:35:55 -0400, Andrew Morton <akpm@linux-foundation.org> wrote:
-> >> > > No, io_mapping_map_atomic_wc() cannot be used from [soft]irq context:
-> >> > > it hardwires use of KM_USER0. __I suggest that io_mapping_create_wc(),
-> >> > > io_mapping_map_atomic_wc() etc be changed so that the caller passes in the
-> >> > > KM_foo kmap slot index.
-> >> >
-> >> > Argh, sorry for the noise, read the mail in the wrong order. Thanks for
-> >> > the review. It would be sensible to go with your simpler patch whilst
-> >> > io_mapping_map_atomic_wc() is improved.
-> >>
-> >> OK. __I'll be sending a bunch of fixes Linuswards in an hour or two.
-> >> Should I include this?
-> >
-> > Yes.
-> >
-> > Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-> >
-> 
-> I'm not sure pushing this in at this point is a good idea, if I'm
-> reading it correctly we've no idea what KM_IRQ is being used for,
+If you are embedding structures then one solution is to cheat a bit and
+make the structure, compiler and existing kernel compile abuse do the
+work. Something like
 
-It's used for taking kmaps from IRQ contexts.
+struct {
+	void *except_where_prohibited;
+	long boat;
+	unsigned photograph;
 
-> and
-> this codepath is called from non-irq contexts just as much as irq
-> contexts.
+	u8 pad[0] __cacheline_aligned;
+}..
 
-That's fine.  As long as we do a local_irq_disable(), KM_IRQ0 can be
-used from both irq- and non-irq contexts.  All we need to do is to
-ensure that some interrupt cannot come along on this CPU and corrupt
-the slot.
+ought to do the trick providing you align the start of the object - which
+should happen naturally with kmalloc or dma_* apis
 
-> I'd rather we just backout the hangcheck stuff touching copies at all
-> at this point, and try again doing it properly with a slow work or
-> something for later.
-> 
-> Dave.
+
