@@ -1,123 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772Ab0EKLPV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 07:15:21 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51069 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751332Ab0EKLPS convert rfc822-to-8bit (ORCPT
+	id S1752445Ab0EKLVU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 07:21:20 -0400
+Received: from postbode01.c.iops.be ([212.53.5.91]:56701 "EHLO
+	postbode01.versateladsl.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751987Ab0EKLVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 07:15:18 -0400
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Nicolas Pitre <nico@marvell.com>, Saeed Bishara <saeed@marvell.com>,
-       "James E.J. Bottomley" <jejb@parisc-linux.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 11 May 2010 16:44:47 +0530
-Subject: RE: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
-	88f5182)
-Thread-Topic: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
-	88f5182)
-Thread-Index: Acrw+Z3yV5aw6z9dQWKm2/UJOYlEmgAADinQ
-Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB02C545537F@dbde02.ent.ti.com>
-References: <1273569821.21352.19.camel@pasglop>
- <1273575478.21352.29.camel@pasglop>
-In-Reply-To: <1273575478.21352.29.camel@pasglop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 May 2010 07:21:17 -0400
 MIME-Version: 1.0
+Date: Tue, 11 May 2010 13:11:00 +0200
+From: MAGARETH WILLIAMS <amadeus1@base.be>
+To: undisclosed-recipients:;
+Subject: I WILL SEND YOU FURTHER DETAILS
+Organization: Mr. Jerry Ntai.
+Reply-To: <bc101707bc@yahoo.co.jp>
+Message-ID: <96318d2a361a605be0d176d3364c4dab@base.be>
+User-Agent: RoundCube Webmail/0.3-stable
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-kernel-
-> bounces@lists.infradead.org] On Behalf Of Benjamin Herrenschmidt
-> Sent: Tuesday, May 11, 2010 4:28 PM
-> To: linux-kernel@vger.kernel.org
-> Cc: Nicolas Pitre; Saeed Bishara; James E.J. Bottomley; Andrew Morton; linux-ext4@vger.kernel.org;
-> linux-arm-kernel@lists.infradead.org
-> Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell 88f5182)
-> 
-> On Tue, 2010-05-11 at 19:23 +1000, Benjamin Herrenschmidt wrote:
-> 
-> > Since I doubt ext3 is busted so dramatically in mainline for "normal" machines,
-> > I tend to suspect things could be related to the infamous vivt caches. On the
-> > other hand, it's pretty clearly metadata or journal corruption and I'm not
-> > sure we ever do things that could cause aliases (such as vmap etc..) on
-> > these things, and they shouldn't be mapped into userspace... unless it's fsck
-> > itself that causes aliases to occur at the block device level ? (I do unmount
-> > though before I run fsck).
-> >
-> > On the other hand, it could also be a busticated marvell SATA driver :-)
-> >
-> > I have no problem with the vendor kernel, but it's ancient (2.6.12) and based
-> > on an out of tree variant of a Marvell originated BSP, so everything is
-> > completely different, especially in the area of drivers for the chipset.
-> >
-> > Anyways, I'll see if I can gather more data tomorrow as time, viruses and sick
-> > kids permits.
-> >
-> > In the meantime, any hint appreciated.
-> 
-> A quick other test which brings more infos, using a smaller (about 5GB)
-> partition and no md or raid involved:
-> 
->  - Boot with NFS root
->  - mkfs /dev/sdb2 (no md or raid involved)
->  - mount /dev/sdb2 /mnt/test
->  - rsync -avx /test-stuff /mnt/test
->  - cd /mnt/test
->  - md5sum -c ~/test-stuff-sums.txt
-> 
-> That gives me a whole bunch of:
-> 
-> md5sum: ./usr/bin/debconf-escape: No such file or directory
-> ./usr/bin/debconf-escape: FAILED open or read
-> ./usr/bin/stat: OK
-> md5sum: ./usr/bin/chrt: No such file or directory
-> ./usr/bin/chrt: FAILED open or read
-> 
-> In fact, if I do ls /mnt/test/usr/bin/ I see debconf but if I do
-> ls /mnt/test/usr/bin/chrt then I get No such file or directory.
-> 
-> So something is badly wrong :-)
-> 
-> Now, trying without the dir_index feature (mkfs.ext3 -O ^dir_index)
-> and it works fine. All my md5sum's are correct and fsck passes.
-> 
-> So there's what looks like a problem specific to htree's. I don't think
-> it's a SATA driver problem (doesn't smell like it but we can't
-> completely dismiss the possibility yet). Could be a VIVT issue but then
-> why ? I don't see ext3 playing with virtual mappings and none of that
-> should alias with userspace...
-> 
-> Or is it incorrectly accessing pages while they are DMA'ed to or from ?
-> IE. Accessing with the CPU pages between dma_map_* and dma_unmap_* ?
-> That will break on a number of setups including swiotlb on x86 so I tend
-> to doubt it but who knows...
 
-Not sure if it is related but we saw similar issue with MMC driver on
-Cortex-A9 MP core. I was seeing similar weird issues with EXT3 and 
-everything use to be fine with EXT2.
 
-All those errors you mentioned use to come and at times whole FS
-Use to get corrupted.
+Dearest,
 
-It was root-caused to MMC driver which uses DMA engine for TX/RX. The
-issue was mainly with writes and hence EXT3 was having issue which does
-journaling and hence more writes.
-There was a memory write barrier missing before the DMA descriptors 
-are handed over to DMA controller.
+I am Ms Magareth Williams,now undergoing medical treatment for cancer in
+Malaysia. Before I took ill, I was the, Principal Assurance manager of BNP
+Paribas Private Bank.I am getting in touch with you regarding the estate of
+one Mr. Goudie  and an investment placed under my management 7 years ago. 
+He instructed that we liquidate the principal sum (18,350,000.00 Million
+United State Dollars) because he needed to make an urgent investment that
+requires cash payment in Europe. We got in touch with his nominated
+financial institution  in Europe, who agreed to receive this money for a
+fee and make cash available to Mr. Goudie  for his business operations.
 
-Regards,
-Santosh
+To my surprise, the corresponding bank in Europe got in touch with us last
+year that nobody has come forward to claim the money and it has reached the
+threshold for the bank to declare it to the government as unclaimed
+deposit. On further enquiry, I found that, Mr. Goudie  was involved in an
+accident in Mainland China and that he died intestate. Because he has no
+next of kin all his assets in Europe are about to go to the government. I
+write you to makes you  to stand as his next of kin and surviving heir to
+his assets and the beneficiary of the deposit valued 18,350,000.00 Million
+United State Dollars
 
+My condition has become hopeless, my Doctor recently told me that my
+cancer has spread and that I have a few months to live. Having known the
+hopelessness of my health condition, and the urgency to act, I am
+compelled to seek your assistance to get this money out by standing as the
+beneficiary and using part of these funds to help the poor and sick people
+in society. I have exclusive access to Mr. Goudie’s file and all his
+investment record.  I hope you are somebody that can be trusted.
+
+If we can be of one accord, we should act swiftly on this. If you are
+interested in this deal, kindly get back to me quickly with your full
+details and I will proceed to give you full modalities on how this can be
+acheived.
+
+I await your response
+
+Ms Magareth Williams
