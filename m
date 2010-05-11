@@ -1,97 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab0EKPlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 11:41:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58251 "EHLO
+	id S1755310Ab0EKPlO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:41:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58448 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042Ab0EKPlF (ORCPT
+	with ESMTP id S1753985Ab0EKPlL (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 11 May 2010 11:41:05 -0400
+	Tue, 11 May 2010 11:41:11 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
        iommu@lists.linux-foundation.org
 Cc: albert_herranz@yahoo.es, chrisw@sous-sol.org, Ian.Campbell@eu.citrix.com,
        jeremy@goop.org, dwmw2@infradead.org
-Subject: [PATCH 1/6] swiotlb: add swiotlb_tbl_map_single library function
-Date: Tue, 11 May 2010 11:39:08 -0400
-Message-Id: <1273592353-23224-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 2/6] swiotlb: add the swiotlb initialization function with iotlb memory
+Date: Tue, 11 May 2010 11:39:09 -0400
+Message-Id: <1273592353-23224-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1273592353-23224-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1273592353-23224-2-git-send-email-konrad.wilk@oracle.com>
 References: <1273592353-23224-1-git-send-email-konrad.wilk@oracle.com>
+ <1273592353-23224-2-git-send-email-konrad.wilk@oracle.com>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090202.4BE97A82.0139:SCFMA4539811,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090204.4BE97A89.018A:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
-swiotlb_tbl_map_single() takes the dma address of iotlb instead of
-using swiotlb_virt_to_bus().
+This enables the caller to initialize swiotlb with its own iotlb
+memory.
 
-[v2: changed swiotlb_tlb to swiotlb_tbl]
+[v2: changed ..with_tlb to ..with_tbl]
 
 Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- lib/swiotlb.c |   25 +++++++++++++++++--------
- 1 files changed, 17 insertions(+), 8 deletions(-)
+ include/linux/swiotlb.h |    1 +
+ lib/swiotlb.c           |   48 +++++++++++++++++++++++++++++-----------------
+ 2 files changed, 31 insertions(+), 18 deletions(-)
 
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index febedcf..ab005a5 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -23,6 +23,7 @@ extern int swiotlb_force;
+ #define IO_TLB_SHIFT 11
+ 
+ extern void swiotlb_init(int verbose);
++extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+ 
+ extern void
+ *swiotlb_alloc_coherent(struct device *hwdev, size_t size,
 diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 5fddf72..cb83d54 100644
+index cb83d54..843aa54 100644
 --- a/lib/swiotlb.c
 +++ b/lib/swiotlb.c
-@@ -361,25 +361,22 @@ static void swiotlb_bounce(phys_addr_t phys, char *dma_addr, size_t size,
- 	}
+@@ -140,28 +140,14 @@ void swiotlb_print_info(void)
+ 	       (unsigned long long)pend);
  }
  
 -/*
-- * Allocates bounce buffer and returns its kernel virtual address.
+- * Statically reserve bounce buffer space and initialize bounce buffer data
+- * structures for the software IO TLB used to implement the DMA API.
 - */
--static void *
--map_single(struct device *hwdev, phys_addr_t phys, size_t size, int dir)
-+void *swiotlb_tbl_map_single(struct device *hwdev, u64 tbl_dma_addr,
-+			     phys_addr_t phys, size_t size, int dir)
+-void __init
+-swiotlb_init_with_default_size(size_t default_size, int verbose)
++void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
  {
- 	unsigned long flags;
- 	char *dma_addr;
- 	unsigned int nslots, stride, index, wrap;
- 	int i;
--	unsigned long start_dma_addr;
- 	unsigned long mask;
- 	unsigned long offset_slots;
- 	unsigned long max_slots;
+ 	unsigned long i, bytes;
  
- 	mask = dma_get_seg_boundary(hwdev);
--	start_dma_addr = swiotlb_virt_to_bus(hwdev, io_tlb_start) & mask;
+-	if (!io_tlb_nslabs) {
+-		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
+-		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
+-	}
++	bytes = nslabs << IO_TLB_SHIFT;
  
--	offset_slots = ALIGN(start_dma_addr, 1 << IO_TLB_SHIFT) >> IO_TLB_SHIFT;
-+	tbl_dma_addr &= mask;
-+
-+	offset_slots = ALIGN(tbl_dma_addr, 1 << IO_TLB_SHIFT) >> IO_TLB_SHIFT;
+-	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
+-
+-	/*
+-	 * Get IO TLB memory from the low pages
+-	 */
+-	io_tlb_start = alloc_bootmem_low_pages(bytes);
+-	if (!io_tlb_start)
+-		panic("Cannot allocate SWIOTLB buffer");
++	io_tlb_nslabs = nslabs;
++	io_tlb_start = tlb;
+ 	io_tlb_end = io_tlb_start + bytes;
  
  	/*
-  	 * Carefully handle integer overflow which can occur when mask == ~0UL.
-@@ -468,6 +465,18 @@ found:
+@@ -185,6 +171,32 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
+ 		swiotlb_print_info();
  }
  
- /*
-+ * Allocates bounce buffer and returns its kernel virtual address.
++/*
++ * Statically reserve bounce buffer space and initialize bounce buffer data
++ * structures for the software IO TLB used to implement the DMA API.
 + */
-+
-+static void *
-+map_single(struct device *hwdev, phys_addr_t phys, size_t size, int dir)
++void __init
++swiotlb_init_with_default_size(size_t default_size, int verbose)
 +{
-+	u64 start_dma_addr = swiotlb_virt_to_bus(hwdev, io_tlb_start);
++	unsigned long bytes;
 +
-+	return swiotlb_tbl_map_single(hwdev, start_dma_addr, phys, size, dir);
++	if (!io_tlb_nslabs) {
++		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
++		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
++	}
++
++	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
++
++	/*
++	 * Get IO TLB memory from the low pages
++	 */
++	io_tlb_start = alloc_bootmem_low_pages(bytes);
++	if (!io_tlb_start)
++		panic("Cannot allocate SWIOTLB buffer");
++
++	swiotlb_init_with_tbl(io_tlb_start, io_tlb_nslabs, verbose);
 +}
 +
-+/*
-  * dma_addr is the kernel virtual address of the bounce buffer to unmap.
-  */
- static void
+ void __init
+ swiotlb_init(int verbose)
+ {
 -- 
 1.6.2.5
 
