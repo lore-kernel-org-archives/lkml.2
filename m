@@ -1,95 +1,4944 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab0EKW4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 18:56:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54767 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752391Ab0EKW4W (ORCPT
+	id S1753627Ab0EKW5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 18:57:11 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:33819 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302Ab0EKW5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 18:56:22 -0400
-Date: Tue, 11 May 2010 15:56:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-       Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       dri-devel@lists.freedesktop.org, Dave Airlie <airlied@linux.ie>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Keith Packard <keithp@keithp.com>, Eric Anholt <eric@anholt.net>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: DRM Error on Acer Aspire One
-Message-Id: <20100511155600.5c416992.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTilMWTbgcjx8_T-jCwykQmd7hwfXd2ijfP6flIiO@mail.gmail.com>
-References: <AANLkTilSNZ11CaRUH5s3w6NoAnDQ5t7U9Y0Ce-iHpq3O@mail.gmail.com>
-	<89kc63$grtht6@fmsmga002.fm.intel.com>
-	<20100511104818.8382a7de.akpm@linux-foundation.org>
-	<89khjo$fd26d3@orsmga002.jf.intel.com>
-	<20100511113555.a78c9c8e.akpm@linux-foundation.org>
-	<89kc63$grv1m8@fmsmga002.fm.intel.com>
-	<20100511121001.0731a9c2.akpm@linux-foundation.org>
-	<89k77n$noi3t4@fmsmga001.fm.intel.com>
-	<AANLkTikM916RlCBudL9_Pw--cpiu5mg_xcLFG9N1l9tL@mail.gmail.com>
-	<20100511153217.5c7661d7.akpm@linux-foundation.org>
-	<AANLkTilMWTbgcjx8_T-jCwykQmd7hwfXd2ijfP6flIiO@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 May 2010 18:57:05 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,5979"; a="41028373"
+From: Daniel Walker <dwalker@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Walker <dwalker@codeaurora.org>, Pavel Machek <pavel@ucw.cz>,
+       Greg KH <greg@kroah.com>, linux-arm-msm@vger.kernel.org
+Subject: [PATCH] staging: dream: smd: remove all smd related code
+Date: Tue, 11 May 2010 15:56:44 -0700
+Message-Id: <1273618604-8817-1-git-send-email-dwalker@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 08:51:05 +1000
-Dave Airlie <airlied@gmail.com> wrote:
+Part of this code is already in my MSM tree. I'll move the rest
+forward through my tree also.
 
-> On Wed, May 12, 2010 at 8:32 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Wed, 12 May 2010 08:22:49 +1000
-> > Dave Airlie <airlied@gmail.com> wrote:
-> >
-> >> On Wed, May 12, 2010 at 5:57 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> >> > On Tue, 11 May 2010 12:10:01 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
-> >> >> On Tue, 11 May 2010 19:52:31 +0100
-> >> >> Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> >> >>
-> >> >> > On Tue, 11 May 2010 11:35:55 -0400, Andrew Morton <akpm@linux-foundation.org> wrote:
-> >> >> > > No, io_mapping_map_atomic_wc() cannot be used from [soft]irq context:
-> >> >> > > it hardwires use of KM_USER0. __I suggest that io_mapping_create_wc(),
-> >> >> > > io_mapping_map_atomic_wc() etc be changed so that the caller passes in the
-> >> >> > > KM_foo kmap slot index.
-> >> >> >
-> >> >> > Argh, sorry for the noise, read the mail in the wrong order. Thanks for
-> >> >> > the review. It would be sensible to go with your simpler patch whilst
-> >> >> > io_mapping_map_atomic_wc() is improved.
-> >> >>
-> >> >> OK. __I'll be sending a bunch of fixes Linuswards in an hour or two.
-> >> >> Should I include this?
-> >> >
-> >> > Yes.
-> >> >
-> >> > Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-> >> >
-> >>
-> >> I'm not sure pushing this in at this point is a good idea, if I'm
-> >> reading it correctly we've no idea what KM_IRQ is being used for,
-> >
-> > It's used for taking kmaps from IRQ contexts.
-> >
-> >> and
-> >> this codepath is called from non-irq contexts just as much as irq
-> >> contexts.
-> >
-> > That's fine. __As long as we do a local_irq_disable(), KM_IRQ0 can be
-> > used from both irq- and non-irq contexts. __All we need to do is to
-> > ensure that some interrupt cannot come along on this CPU and corrupt
-> > the slot.
-> 
-> I don't think we do that in a lot of places, and I'd rather not add
-> that in to fix this problem at this point in the release cycle, as
-> we've no idea what it might break/regress.
+Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
+CC: Pavel Machek <pavel@ucw.cz>
+CC: Greg KH <greg@kroah.com>
+CC: linux-arm-msm@vger.kernel.org
+---
+ drivers/staging/dream/Kconfig                      |    1 -
+ drivers/staging/dream/Makefile                     |    2 +-
+ drivers/staging/dream/smd/Kconfig                  |   26 -
+ drivers/staging/dream/smd/Makefile                 |    7 -
+ .../staging/dream/smd/rpc_server_dog_keepalive.c   |   68 -
+ drivers/staging/dream/smd/rpc_server_time_remote.c |   77 --
+ drivers/staging/dream/smd/smd.c                    | 1330 --------------------
+ drivers/staging/dream/smd/smd_private.h            |  164 ---
+ drivers/staging/dream/smd/smd_qmi.c                |  851 -------------
+ drivers/staging/dream/smd/smd_rpcrouter.c          | 1261 -------------------
+ drivers/staging/dream/smd/smd_rpcrouter.h          |  193 ---
+ drivers/staging/dream/smd/smd_rpcrouter_device.c   |  377 ------
+ drivers/staging/dream/smd/smd_rpcrouter_servers.c  |  226 ----
+ drivers/staging/dream/smd/smd_tty.c                |  208 ---
+ 14 files changed, 1 insertions(+), 4790 deletions(-)
+ delete mode 100644 drivers/staging/dream/smd/Kconfig
+ delete mode 100644 drivers/staging/dream/smd/Makefile
+ delete mode 100644 drivers/staging/dream/smd/rpc_server_dog_keepalive.c
+ delete mode 100644 drivers/staging/dream/smd/rpc_server_time_remote.c
+ delete mode 100644 drivers/staging/dream/smd/smd.c
+ delete mode 100644 drivers/staging/dream/smd/smd_private.h
+ delete mode 100644 drivers/staging/dream/smd/smd_qmi.c
+ delete mode 100644 drivers/staging/dream/smd/smd_rpcrouter.c
+ delete mode 100644 drivers/staging/dream/smd/smd_rpcrouter.h
+ delete mode 100644 drivers/staging/dream/smd/smd_rpcrouter_device.c
+ delete mode 100644 drivers/staging/dream/smd/smd_rpcrouter_servers.c
+ delete mode 100644 drivers/staging/dream/smd/smd_tty.c
 
-What is "that"?  The switch to irq-protected KM_IRQ0?  That won't break
-anything.
-
-> Its easier to just disable the hangcheck copy and try again for 2.6.35
-> with a workqueue or slow work.
+diff --git a/drivers/staging/dream/Kconfig b/drivers/staging/dream/Kconfig
+index 707cc71..0c30b19 100644
+--- a/drivers/staging/dream/Kconfig
++++ b/drivers/staging/dream/Kconfig
+@@ -3,7 +3,6 @@ config DREAM
+ 	depends on MACH_TROUT
+ 
+ if DREAM
+-source "drivers/staging/dream/smd/Kconfig"
+ 
+ source "drivers/staging/dream/camera/Kconfig"
+ 
+diff --git a/drivers/staging/dream/Makefile b/drivers/staging/dream/Makefile
+index 43d1eec..fbea0ab 100644
+--- a/drivers/staging/dream/Makefile
++++ b/drivers/staging/dream/Makefile
+@@ -1,5 +1,5 @@
+ EXTRA_CFLAGS=-Idrivers/staging/dream/include
+-obj-$(CONFIG_MSM_ADSP)		+= qdsp5/ smd/
++obj-$(CONFIG_MSM_ADSP)		+= qdsp5/
+ obj-$(CONFIG_MSM_CAMERA)	+= camera/
+ obj-$(CONFIG_INPUT_GPIO)	+= gpio_axis.o gpio_event.o gpio_input.o gpio_matrix.o gpio_output.o
+ 
+diff --git a/drivers/staging/dream/smd/Kconfig b/drivers/staging/dream/smd/Kconfig
+deleted file mode 100644
+index 17b8bdc..0000000
+--- a/drivers/staging/dream/smd/Kconfig
++++ /dev/null
+@@ -1,26 +0,0 @@
+-config MSM_SMD
+-	depends on ARCH_MSM
+-	default y
+-	bool "MSM Shared Memory Driver (SMD)"
+-	help
+-	  Support for the shared memory interface between the apps
+-	  processor and the baseband processor.  Provides access to
+-	  the "shared heap", as well as virtual serial channels
+-	  used to communicate with various services on the baseband
+-	  processor.
+-
+-config MSM_ONCRPCROUTER
+-	depends on MSM_SMD
+-	default y
+-	bool "MSM ONCRPC router support"
+-	help
+-	  Support for the MSM ONCRPC router for communication between
+-	  the ARM9 and ARM11
+-
+-config MSM_RPCSERVERS
+-	depends on MSM_ONCRPCROUTER
+-	default y
+-	bool "Kernel side RPC server bundle"
+-	help
+-	  none
+-
+diff --git a/drivers/staging/dream/smd/Makefile b/drivers/staging/dream/smd/Makefile
+deleted file mode 100644
+index 1c87618..0000000
+--- a/drivers/staging/dream/smd/Makefile
++++ /dev/null
+@@ -1,7 +0,0 @@
+-EXTRA_CFLAGS=-Idrivers/staging/dream/include
+-obj-$(CONFIG_MSM_SMD) += smd.o smd_tty.o smd_qmi.o
+-obj-$(CONFIG_MSM_ONCRPCROUTER) += smd_rpcrouter.o
+-obj-$(CONFIG_MSM_ONCRPCROUTER) += smd_rpcrouter_device.o
+-obj-$(CONFIG_MSM_ONCRPCROUTER) += smd_rpcrouter_servers.o
+-obj-$(CONFIG_MSM_RPCSERVERS) += rpc_server_dog_keepalive.o
+-obj-$(CONFIG_MSM_RPCSERVERS) += rpc_server_time_remote.o
+diff --git a/drivers/staging/dream/smd/rpc_server_dog_keepalive.c b/drivers/staging/dream/smd/rpc_server_dog_keepalive.c
+deleted file mode 100644
+index b23fccf..0000000
+--- a/drivers/staging/dream/smd/rpc_server_dog_keepalive.c
++++ /dev/null
+@@ -1,68 +0,0 @@
+-/* arch/arm/mach-msm/rpc_server_dog_keepalive.c
+- *
+- * Copyright (C) 2007 Google, Inc.
+- * Author: Iliyan Malchev <ibm@android.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <mach/msm_rpcrouter.h>
+-
+-/* dog_keepalive server definitions */
+-
+-#define DOG_KEEPALIVE_PROG 0x30000015
+-#if CONFIG_MSM_AMSS_VERSION==6210
+-#define DOG_KEEPALIVE_VERS 0
+-#define RPC_DOG_KEEPALIVE_BEACON 1
+-#elif (CONFIG_MSM_AMSS_VERSION==6220) || (CONFIG_MSM_AMSS_VERSION==6225)
+-#define DOG_KEEPALIVE_VERS 0x731fa727
+-#define RPC_DOG_KEEPALIVE_BEACON 2
+-#elif CONFIG_MSM_AMSS_VERSION==6350
+-#define DOG_KEEPALIVE_VERS 0x00010000
+-#define RPC_DOG_KEEPALIVE_BEACON 2
+-#else
+-#error "Unsupported AMSS version"
+-#endif
+-#define RPC_DOG_KEEPALIVE_NULL 0
+-
+-
+-/* TODO: Remove server registration with _VERS when modem is upated with _COMP*/
+-
+-static int handle_rpc_call(struct msm_rpc_server *server,
+-			   struct rpc_request_hdr *req, unsigned len)
+-{
+-	switch (req->procedure) {
+-	case RPC_DOG_KEEPALIVE_NULL:
+-		return 0;
+-	case RPC_DOG_KEEPALIVE_BEACON:
+-		printk(KERN_INFO "DOG KEEPALIVE PING\n");
+-		return 0;
+-	default:
+-		return -ENODEV;
+-	}
+-}
+-
+-static struct msm_rpc_server rpc_server = {
+-	.prog = DOG_KEEPALIVE_PROG,
+-	.vers = DOG_KEEPALIVE_VERS,
+-	.rpc_call = handle_rpc_call,
+-};
+-
+-static int __init rpc_server_init(void)
+-{
+-	/* Dual server registration to support backwards compatibility vers */
+-	return msm_rpc_create_server(&rpc_server);
+-}
+-
+-
+-module_init(rpc_server_init);
+diff --git a/drivers/staging/dream/smd/rpc_server_time_remote.c b/drivers/staging/dream/smd/rpc_server_time_remote.c
+deleted file mode 100644
+index 2f90fc8..0000000
+--- a/drivers/staging/dream/smd/rpc_server_time_remote.c
++++ /dev/null
+@@ -1,77 +0,0 @@
+-/* arch/arm/mach-msm/rpc_server_time_remote.c
+- *
+- * Copyright (C) 2007 Google, Inc.
+- * Author: Iliyan Malchev <ibm@android.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <mach/msm_rpcrouter.h>
+-
+-/* time_remote_mtoa server definitions. */
+-
+-#define TIME_REMOTE_MTOA_PROG 0x3000005d
+-#if CONFIG_MSM_AMSS_VERSION==6210
+-#define TIME_REMOTE_MTOA_VERS 0
+-#elif (CONFIG_MSM_AMSS_VERSION==6220) || (CONFIG_MSM_AMSS_VERSION==6225)
+-#define TIME_REMOTE_MTOA_VERS 0x9202a8e4
+-#elif CONFIG_MSM_AMSS_VERSION==6350
+-#define TIME_REMOTE_MTOA_VERS 0x00010000
+-#else
+-#error "Unknown AMSS version"
+-#endif
+-#define RPC_TIME_REMOTE_MTOA_NULL   0
+-#define RPC_TIME_TOD_SET_APPS_BASES 2
+-
+-struct rpc_time_tod_set_apps_bases_args {
+-	uint32_t tick;
+-	uint64_t stamp;
+-};
+-
+-static int handle_rpc_call(struct msm_rpc_server *server,
+-			   struct rpc_request_hdr *req, unsigned len)
+-{
+-	switch (req->procedure) {
+-	case RPC_TIME_REMOTE_MTOA_NULL:
+-		return 0;
+-
+-	case RPC_TIME_TOD_SET_APPS_BASES: {
+-		struct rpc_time_tod_set_apps_bases_args *args;
+-		args = (struct rpc_time_tod_set_apps_bases_args *)(req + 1);
+-		args->tick = be32_to_cpu(args->tick);
+-		args->stamp = be64_to_cpu(args->stamp);
+-		printk(KERN_INFO "RPC_TIME_TOD_SET_APPS_BASES:\n"
+-		       "\ttick = %d\n"
+-		       "\tstamp = %lld\n",
+-		       args->tick, args->stamp);
+-		return 0;
+-	}
+-	default:
+-		return -ENODEV;
+-	}
+-}
+-
+-static struct msm_rpc_server rpc_server = {
+-	.prog = TIME_REMOTE_MTOA_PROG,
+-	.vers = TIME_REMOTE_MTOA_VERS,
+-	.rpc_call = handle_rpc_call,
+-};
+-
+-static int __init rpc_server_init(void)
+-{
+-	/* Dual server registration to support backwards compatibility vers */
+-	return msm_rpc_create_server(&rpc_server);
+-}
+-
+-
+-module_init(rpc_server_init);
+diff --git a/drivers/staging/dream/smd/smd.c b/drivers/staging/dream/smd/smd.c
+deleted file mode 100644
+index 8f35be7..0000000
+--- a/drivers/staging/dream/smd/smd.c
++++ /dev/null
+@@ -1,1330 +0,0 @@
+-/* arch/arm/mach-msm/smd.c
+- *
+- * Copyright (C) 2007 Google, Inc.
+- * Author: Brian Swetland <swetland@google.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#include <linux/platform_device.h>
+-#include <linux/module.h>
+-#include <linux/fs.h>
+-#include <linux/cdev.h>
+-#include <linux/device.h>
+-#include <linux/wait.h>
+-#include <linux/interrupt.h>
+-#include <linux/irq.h>
+-#include <linux/list.h>
+-#include <linux/slab.h>
+-#include <linux/debugfs.h>
+-#include <linux/delay.h>
+-#include <linux/io.h>
+-
+-#include <mach/msm_smd.h>
+-#include <mach/msm_iomap.h>
+-#include <mach/system.h>
+-
+-#include "smd_private.h"
+-#include "../../../../arch/arm/mach-msm/proc_comm.h"
+-
+-void (*msm_hw_reset_hook)(void);
+-
+-#define MODULE_NAME "msm_smd"
+-
+-enum {
+-	MSM_SMD_DEBUG = 1U << 0,
+-	MSM_SMSM_DEBUG = 1U << 0,
+-};
+-
+-static int msm_smd_debug_mask;
+-
+-module_param_named(debug_mask, msm_smd_debug_mask,
+-		   int, S_IRUGO | S_IWUSR | S_IWGRP);
+-
+-void *smem_find(unsigned id, unsigned size);
+-static void smd_diag(void);
+-
+-static unsigned last_heap_free = 0xffffffff;
+-
+-#define MSM_A2M_INT(n) (MSM_CSR_BASE + 0x400 + (n) * 4)
+-
+-static inline void notify_other_smsm(void)
+-{
+-	writel(1, MSM_A2M_INT(5));
+-}
+-
+-static inline void notify_other_smd(void)
+-{
+-	writel(1, MSM_A2M_INT(0));
+-}
+-
+-static void smd_diag(void)
+-{
+-	char *x;
+-
+-	x = smem_find(ID_DIAG_ERR_MSG, SZ_DIAG_ERR_MSG);
+-	if (x != 0) {
+-		x[SZ_DIAG_ERR_MSG - 1] = 0;
+-		pr_info("smem: DIAG '%s'\n", x);
+-	}
+-}
+-
+-/* call when SMSM_RESET flag is set in the A9's smsm_state */
+-static void handle_modem_crash(void)
+-{
+-	pr_err("ARM9 has CRASHED\n");
+-	smd_diag();
+-
+-	/* hard reboot if possible */
+-	if (msm_hw_reset_hook)
+-		msm_hw_reset_hook();
+-
+-	/* in this case the modem or watchdog should reboot us */
+-	for (;;)
+-		;
+-}
+-
+-extern int (*msm_check_for_modem_crash)(void);
+-
+-static int check_for_modem_crash(void)
+-{
+-	struct smsm_shared *smsm;
+-
+-	smsm = smem_find(ID_SHARED_STATE, 2 * sizeof(struct smsm_shared));
+-
+-	/* if the modem's not ready yet, we have to hope for the best */
+-	if (!smsm)
+-		return 0;
+-
+-	if (smsm[1].state & SMSM_RESET) {
+-		handle_modem_crash();
+-		return -1;
+-	} else {
+-		return 0;
+-	}
+-}
+-
+-#define SMD_SS_CLOSED            0x00000000
+-#define SMD_SS_OPENING           0x00000001
+-#define SMD_SS_OPENED            0x00000002
+-#define SMD_SS_FLUSHING          0x00000003
+-#define SMD_SS_CLOSING           0x00000004
+-#define SMD_SS_RESET             0x00000005
+-#define SMD_SS_RESET_OPENING     0x00000006
+-
+-#define SMD_BUF_SIZE 8192
+-#define SMD_CHANNELS 64
+-
+-#define SMD_HEADER_SIZE 20
+-
+-
+-/* the spinlock is used to synchronize between the
+-** irq handler and code that mutates the channel
+-** list or fiddles with channel state
+-*/
+-static DEFINE_SPINLOCK(smd_lock);
+-static DEFINE_SPINLOCK(smem_lock);
+-
+-/* the mutex is used during open() and close()
+-** operations to avoid races while creating or
+-** destroying smd_channel structures
+-*/
+-static DEFINE_MUTEX(smd_creation_mutex);
+-
+-static int smd_initialized;
+-
+-struct smd_alloc_elm {
+-	char name[20];
+-	uint32_t cid;
+-	uint32_t ctype;
+-	uint32_t ref_count;
+-};
+-
+-struct smd_half_channel {
+-	unsigned state;
+-	unsigned char fDSR;
+-	unsigned char fCTS;
+-	unsigned char fCD;
+-	unsigned char fRI;
+-	unsigned char fHEAD;
+-	unsigned char fTAIL;
+-	unsigned char fSTATE;
+-	unsigned char fUNUSED;
+-	unsigned tail;
+-	unsigned head;
+-	unsigned char data[SMD_BUF_SIZE];
+-};
+-
+-struct smd_shared {
+-	struct smd_half_channel ch0;
+-	struct smd_half_channel ch1;
+-};
+-
+-struct smd_channel {
+-	volatile struct smd_half_channel *send;
+-	volatile struct smd_half_channel *recv;
+-	struct list_head ch_list;
+-
+-	unsigned current_packet;
+-	unsigned n;
+-	void *priv;
+-	void (*notify)(void *priv, unsigned flags);
+-
+-	int (*read)(smd_channel_t *ch, void *data, int len);
+-	int (*write)(smd_channel_t *ch, const void *data, int len);
+-	int (*read_avail)(smd_channel_t *ch);
+-	int (*write_avail)(smd_channel_t *ch);
+-
+-	void (*update_state)(smd_channel_t *ch);
+-	unsigned last_state;
+-
+-	char name[32];
+-	struct platform_device pdev;
+-};
+-
+-static LIST_HEAD(smd_ch_closed_list);
+-static LIST_HEAD(smd_ch_list);
+-
+-static unsigned char smd_ch_allocated[64];
+-static struct work_struct probe_work;
+-
+-static void smd_alloc_channel(const char *name, uint32_t cid, uint32_t type);
+-
+-static void smd_channel_probe_worker(struct work_struct *work)
+-{
+-	struct smd_alloc_elm *shared;
+-	unsigned n;
+-
+-	shared = smem_find(ID_CH_ALLOC_TBL, sizeof(*shared) * 64);
+-
+-	for (n = 0; n < 64; n++) {
+-		if (smd_ch_allocated[n])
+-			continue;
+-		if (!shared[n].ref_count)
+-			continue;
+-		if (!shared[n].name[0])
+-			continue;
+-		smd_alloc_channel(shared[n].name,
+-				  shared[n].cid,
+-				  shared[n].ctype);
+-		smd_ch_allocated[n] = 1;
+-	}
+-}
+-
+-static char *chstate(unsigned n)
+-{
+-	switch (n) {
+-	case SMD_SS_CLOSED:
+-		return "CLOSED";
+-	case SMD_SS_OPENING:
+-		return "OPENING";
+-	case SMD_SS_OPENED:
+-		return "OPENED";
+-	case SMD_SS_FLUSHING:
+-		return "FLUSHING";
+-	case SMD_SS_CLOSING:
+-		return "CLOSING";
+-	case SMD_SS_RESET:
+-		return "RESET";
+-	case SMD_SS_RESET_OPENING:
+-		return "ROPENING";
+-	default:
+-		return "UNKNOWN";
+-	}
+-}
+-
+-/* how many bytes are available for reading */
+-static int smd_stream_read_avail(struct smd_channel *ch)
+-{
+-	return (ch->recv->head - ch->recv->tail) & (SMD_BUF_SIZE - 1);
+-}
+-
+-/* how many bytes we are free to write */
+-static int smd_stream_write_avail(struct smd_channel *ch)
+-{
+-	return (SMD_BUF_SIZE - 1) -
+-		((ch->send->head - ch->send->tail) & (SMD_BUF_SIZE - 1));
+-}
+-
+-static int smd_packet_read_avail(struct smd_channel *ch)
+-{
+-	if (ch->current_packet) {
+-		int n = smd_stream_read_avail(ch);
+-		if (n > ch->current_packet)
+-			n = ch->current_packet;
+-		return n;
+-	} else {
+-		return 0;
+-	}
+-}
+-
+-static int smd_packet_write_avail(struct smd_channel *ch)
+-{
+-	int n = smd_stream_write_avail(ch);
+-	return n > SMD_HEADER_SIZE ? n - SMD_HEADER_SIZE : 0;
+-}
+-
+-static int ch_is_open(struct smd_channel *ch)
+-{
+-	return (ch->recv->state == SMD_SS_OPENED) &&
+-		(ch->send->state == SMD_SS_OPENED);
+-}
+-
+-/* provide a pointer and length to readable data in the fifo */
+-static unsigned ch_read_buffer(struct smd_channel *ch, void **ptr)
+-{
+-	unsigned head = ch->recv->head;
+-	unsigned tail = ch->recv->tail;
+-	*ptr = (void *) (ch->recv->data + tail);
+-
+-	if (tail <= head)
+-		return head - tail;
+-	else
+-		return SMD_BUF_SIZE - tail;
+-}
+-
+-/* advance the fifo read pointer after data from ch_read_buffer is consumed */
+-static void ch_read_done(struct smd_channel *ch, unsigned count)
+-{
+-	BUG_ON(count > smd_stream_read_avail(ch));
+-	ch->recv->tail = (ch->recv->tail + count) & (SMD_BUF_SIZE - 1);
+-	ch->recv->fTAIL = 1;
+-}
+-
+-/* basic read interface to ch_read_{buffer,done} used
+-** by smd_*_read() and update_packet_state()
+-** will read-and-discard if the _data pointer is null
+-*/
+-static int ch_read(struct smd_channel *ch, void *_data, int len)
+-{
+-	void *ptr;
+-	unsigned n;
+-	unsigned char *data = _data;
+-	int orig_len = len;
+-
+-	while (len > 0) {
+-		n = ch_read_buffer(ch, &ptr);
+-		if (n == 0)
+-			break;
+-
+-		if (n > len)
+-			n = len;
+-		if (_data)
+-			memcpy(data, ptr, n);
+-
+-		data += n;
+-		len -= n;
+-		ch_read_done(ch, n);
+-	}
+-
+-	return orig_len - len;
+-}
+-
+-static void update_stream_state(struct smd_channel *ch)
+-{
+-	/* streams have no special state requiring updating */
+-}
+-
+-static void update_packet_state(struct smd_channel *ch)
+-{
+-	unsigned hdr[5];
+-	int r;
+-
+-	/* can't do anything if we're in the middle of a packet */
+-	if (ch->current_packet != 0)
+-		return;
+-
+-	/* don't bother unless we can get the full header */
+-	if (smd_stream_read_avail(ch) < SMD_HEADER_SIZE)
+-		return;
+-
+-	r = ch_read(ch, hdr, SMD_HEADER_SIZE);
+-	BUG_ON(r != SMD_HEADER_SIZE);
+-
+-	ch->current_packet = hdr[0];
+-}
+-
+-/* provide a pointer and length to next free space in the fifo */
+-static unsigned ch_write_buffer(struct smd_channel *ch, void **ptr)
+-{
+-	unsigned head = ch->send->head;
+-	unsigned tail = ch->send->tail;
+-	*ptr = (void *) (ch->send->data + head);
+-
+-	if (head < tail) {
+-		return tail - head - 1;
+-	} else {
+-		if (tail == 0)
+-			return SMD_BUF_SIZE - head - 1;
+-		else
+-			return SMD_BUF_SIZE - head;
+-	}
+-}
+-
+-/* advace the fifo write pointer after freespace
+- * from ch_write_buffer is filled
+- */
+-static void ch_write_done(struct smd_channel *ch, unsigned count)
+-{
+-	BUG_ON(count > smd_stream_write_avail(ch));
+-	ch->send->head = (ch->send->head + count) & (SMD_BUF_SIZE - 1);
+-	ch->send->fHEAD = 1;
+-}
+-
+-static void hc_set_state(volatile struct smd_half_channel *hc, unsigned n)
+-{
+-	if (n == SMD_SS_OPENED) {
+-		hc->fDSR = 1;
+-		hc->fCTS = 1;
+-		hc->fCD = 1;
+-	} else {
+-		hc->fDSR = 0;
+-		hc->fCTS = 0;
+-		hc->fCD = 0;
+-	}
+-	hc->state = n;
+-	hc->fSTATE = 1;
+-	notify_other_smd();
+-}
+-
+-static void do_smd_probe(void)
+-{
+-	struct smem_shared *shared = (void *) MSM_SHARED_RAM_BASE;
+-	if (shared->heap_info.free_offset != last_heap_free) {
+-		last_heap_free = shared->heap_info.free_offset;
+-		schedule_work(&probe_work);
+-	}
+-}
+-
+-static void smd_state_change(struct smd_channel *ch,
+-			     unsigned last, unsigned next)
+-{
+-	ch->last_state = next;
+-
+-	pr_info("SMD: ch %d %s -> %s\n", ch->n,
+-		chstate(last), chstate(next));
+-
+-	switch (next) {
+-	case SMD_SS_OPENING:
+-		ch->recv->tail = 0;
+-	case SMD_SS_OPENED:
+-		if (ch->send->state != SMD_SS_OPENED)
+-			hc_set_state(ch->send, SMD_SS_OPENED);
+-		ch->notify(ch->priv, SMD_EVENT_OPEN);
+-		break;
+-	case SMD_SS_FLUSHING:
+-	case SMD_SS_RESET:
+-		/* we should force them to close? */
+-	default:
+-		ch->notify(ch->priv, SMD_EVENT_CLOSE);
+-	}
+-}
+-
+-static irqreturn_t smd_irq_handler(int irq, void *data)
+-{
+-	unsigned long flags;
+-	struct smd_channel *ch;
+-	int do_notify = 0;
+-	unsigned ch_flags;
+-	unsigned tmp;
+-
+-	spin_lock_irqsave(&smd_lock, flags);
+-	list_for_each_entry(ch, &smd_ch_list, ch_list) {
+-		ch_flags = 0;
+-		if (ch_is_open(ch)) {
+-			if (ch->recv->fHEAD) {
+-				ch->recv->fHEAD = 0;
+-				ch_flags |= 1;
+-				do_notify |= 1;
+-			}
+-			if (ch->recv->fTAIL) {
+-				ch->recv->fTAIL = 0;
+-				ch_flags |= 2;
+-				do_notify |= 1;
+-			}
+-			if (ch->recv->fSTATE) {
+-				ch->recv->fSTATE = 0;
+-				ch_flags |= 4;
+-				do_notify |= 1;
+-			}
+-		}
+-		tmp = ch->recv->state;
+-		if (tmp != ch->last_state)
+-			smd_state_change(ch, ch->last_state, tmp);
+-		if (ch_flags) {
+-			ch->update_state(ch);
+-			ch->notify(ch->priv, SMD_EVENT_DATA);
+-		}
+-	}
+-	if (do_notify)
+-		notify_other_smd();
+-	spin_unlock_irqrestore(&smd_lock, flags);
+-	do_smd_probe();
+-	return IRQ_HANDLED;
+-}
+-
+-static void smd_fake_irq_handler(unsigned long arg)
+-{
+-	smd_irq_handler(0, NULL);
+-}
+-
+-static DECLARE_TASKLET(smd_fake_irq_tasklet, smd_fake_irq_handler, 0);
+-
+-void smd_sleep_exit(void)
+-{
+-	unsigned long flags;
+-	struct smd_channel *ch;
+-	unsigned tmp;
+-	int need_int = 0;
+-
+-	spin_lock_irqsave(&smd_lock, flags);
+-	list_for_each_entry(ch, &smd_ch_list, ch_list) {
+-		if (ch_is_open(ch)) {
+-			if (ch->recv->fHEAD) {
+-				if (msm_smd_debug_mask & MSM_SMD_DEBUG)
+-					pr_info("smd_sleep_exit ch %d fHEAD "
+-						"%x %x %x\n",
+-						ch->n, ch->recv->fHEAD,
+-						ch->recv->head, ch->recv->tail);
+-				need_int = 1;
+-				break;
+-			}
+-			if (ch->recv->fTAIL) {
+-				if (msm_smd_debug_mask & MSM_SMD_DEBUG)
+-					pr_info("smd_sleep_exit ch %d fTAIL "
+-						"%x %x %x\n",
+-						ch->n, ch->recv->fTAIL,
+-						ch->send->head, ch->send->tail);
+-				need_int = 1;
+-				break;
+-			}
+-			if (ch->recv->fSTATE) {
+-				if (msm_smd_debug_mask & MSM_SMD_DEBUG)
+-					pr_info("smd_sleep_exit ch %d fSTATE %x"
+-						"\n", ch->n, ch->recv->fSTATE);
+-				need_int = 1;
+-				break;
+-			}
+-			tmp = ch->recv->state;
+-			if (tmp != ch->last_state) {
+-				if (msm_smd_debug_mask & MSM_SMD_DEBUG)
+-					pr_info("smd_sleep_exit ch %d "
+-						"state %x != %x\n",
+-						ch->n, tmp, ch->last_state);
+-				need_int = 1;
+-				break;
+-			}
+-		}
+-	}
+-	spin_unlock_irqrestore(&smd_lock, flags);
+-	do_smd_probe();
+-	if (need_int) {
+-		if (msm_smd_debug_mask & MSM_SMD_DEBUG)
+-			pr_info("smd_sleep_exit need interrupt\n");
+-		tasklet_schedule(&smd_fake_irq_tasklet);
+-	}
+-}
+-
+-
+-void smd_kick(smd_channel_t *ch)
+-{
+-	unsigned long flags;
+-	unsigned tmp;
+-
+-	spin_lock_irqsave(&smd_lock, flags);
+-	ch->update_state(ch);
+-	tmp = ch->recv->state;
+-	if (tmp != ch->last_state) {
+-		ch->last_state = tmp;
+-		if (tmp == SMD_SS_OPENED)
+-			ch->notify(ch->priv, SMD_EVENT_OPEN);
+-		else
+-			ch->notify(ch->priv, SMD_EVENT_CLOSE);
+-	}
+-	ch->notify(ch->priv, SMD_EVENT_DATA);
+-	notify_other_smd();
+-	spin_unlock_irqrestore(&smd_lock, flags);
+-}
+-
+-static int smd_is_packet(int chn)
+-{
+-	if ((chn > 4) || (chn == 1))
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+-static int smd_stream_write(smd_channel_t *ch, const void *_data, int len)
+-{
+-	void *ptr;
+-	const unsigned char *buf = _data;
+-	unsigned xfer;
+-	int orig_len = len;
+-
+-	if (len < 0)
+-		return -EINVAL;
+-
+-	while ((xfer = ch_write_buffer(ch, &ptr)) != 0) {
+-		if (!ch_is_open(ch))
+-			break;
+-		if (xfer > len)
+-			xfer = len;
+-		memcpy(ptr, buf, xfer);
+-		ch_write_done(ch, xfer);
+-		len -= xfer;
+-		buf += xfer;
+-		if (len == 0)
+-			break;
+-	}
+-
+-	notify_other_smd();
+-
+-	return orig_len - len;
+-}
+-
+-static int smd_packet_write(smd_channel_t *ch, const void *_data, int len)
+-{
+-	unsigned hdr[5];
+-
+-	if (len < 0)
+-		return -EINVAL;
+-
+-	if (smd_stream_write_avail(ch) < (len + SMD_HEADER_SIZE))
+-		return -ENOMEM;
+-
+-	hdr[0] = len;
+-	hdr[1] = hdr[2] = hdr[3] = hdr[4] = 0;
+-
+-	smd_stream_write(ch, hdr, sizeof(hdr));
+-	smd_stream_write(ch, _data, len);
+-
+-	return len;
+-}
+-
+-static int smd_stream_read(smd_channel_t *ch, void *data, int len)
+-{
+-	int r;
+-
+-	if (len < 0)
+-		return -EINVAL;
+-
+-	r = ch_read(ch, data, len);
+-	if (r > 0)
+-		notify_other_smd();
+-
+-	return r;
+-}
+-
+-static int smd_packet_read(smd_channel_t *ch, void *data, int len)
+-{
+-	unsigned long flags;
+-	int r;
+-
+-	if (len < 0)
+-		return -EINVAL;
+-
+-	if (len > ch->current_packet)
+-		len = ch->current_packet;
+-
+-	r = ch_read(ch, data, len);
+-	if (r > 0)
+-		notify_other_smd();
+-
+-	spin_lock_irqsave(&smd_lock, flags);
+-	ch->current_packet -= r;
+-	update_packet_state(ch);
+-	spin_unlock_irqrestore(&smd_lock, flags);
+-
+-	return r;
+-}
+-
+-static void smd_alloc_channel(const char *name, uint32_t cid, uint32_t type)
+-{
+-	struct smd_channel *ch;
+-	struct smd_shared *shared;
+-
+-	shared = smem_alloc(ID_SMD_CHANNELS + cid, sizeof(*shared));
+-	if (!shared) {
+-		pr_err("smd_alloc_channel() cid %d does not exist\n", cid);
+-		return;
+-	}
+-
+-	ch = kzalloc(sizeof(struct smd_channel), GFP_KERNEL);
+-	if (ch == 0) {
+-		pr_err("smd_alloc_channel() out of memory\n");
+-		return;
+-	}
+-
+-	ch->send = &shared->ch0;
+-	ch->recv = &shared->ch1;
+-	ch->n = cid;
+-
+-	if (smd_is_packet(cid)) {
+-		ch->read = smd_packet_read;
+-		ch->write = smd_packet_write;
+-		ch->read_avail = smd_packet_read_avail;
+-		ch->write_avail = smd_packet_write_avail;
+-		ch->update_state = update_packet_state;
+-	} else {
+-		ch->read = smd_stream_read;
+-		ch->write = smd_stream_write;
+-		ch->read_avail = smd_stream_read_avail;
+-		ch->write_avail = smd_stream_write_avail;
+-		ch->update_state = update_stream_state;
+-	}
+-
+-	memcpy(ch->name, "SMD_", 4);
+-	memcpy(ch->name + 4, name, 20);
+-	ch->name[23] = 0;
+-	ch->pdev.name = ch->name;
+-	ch->pdev.id = -1;
+-
+-	pr_info("smd_alloc_channel() '%s' cid=%d, shared=%p\n",
+-		ch->name, ch->n, shared);
+-
+-	mutex_lock(&smd_creation_mutex);
+-	list_add(&ch->ch_list, &smd_ch_closed_list);
+-	mutex_unlock(&smd_creation_mutex);
+-
+-	platform_device_register(&ch->pdev);
+-}
+-
+-static void do_nothing_notify(void *priv, unsigned flags)
+-{
+-}
+-
+-struct smd_channel *smd_get_channel(const char *name)
+-{
+-	struct smd_channel *ch;
+-
+-	mutex_lock(&smd_creation_mutex);
+-	list_for_each_entry(ch, &smd_ch_closed_list, ch_list) {
+-		if (!strcmp(name, ch->name)) {
+-			list_del(&ch->ch_list);
+-			mutex_unlock(&smd_creation_mutex);
+-			return ch;
+-		}
+-	}
+-	mutex_unlock(&smd_creation_mutex);
+-
+-	return NULL;
+-}
+-
+-int smd_open(const char *name, smd_channel_t **_ch,
+-	     void *priv, void (*notify)(void *, unsigned))
+-{
+-	struct smd_channel *ch;
+-	unsigned long flags;
+-
+-	if (smd_initialized == 0) {
+-		pr_info("smd_open() before smd_init()\n");
+-		return -ENODEV;
+-	}
+-
+-	ch = smd_get_channel(name);
+-	if (!ch)
+-		return -ENODEV;
+-
+-	if (notify == 0)
+-		notify = do_nothing_notify;
+-
+-	ch->notify = notify;
+-	ch->current_packet = 0;
+-	ch->last_state = SMD_SS_CLOSED;
+-	ch->priv = priv;
+-
+-	*_ch = ch;
+-
+-	spin_lock_irqsave(&smd_lock, flags);
+-	list_add(&ch->ch_list, &smd_ch_list);
+-
+-	/* If the remote side is CLOSING, we need to get it to
+-	 * move to OPENING (which we'll do by moving from CLOSED to
+-	 * OPENING) and then get it to move from OPENING to
+-	 * OPENED (by doing the same state change ourselves).
+-	 *
+-	 * Otherwise, it should be OPENING and we can move directly
+-	 * to OPENED so that it will follow.
+-	 */
+-	if (ch->recv->state == SMD_SS_CLOSING) {
+-		ch->send->head = 0;
+-		hc_set_state(ch->send, SMD_SS_OPENING);
+-	} else {
+-		hc_set_state(ch->send, SMD_SS_OPENED);
+-	}
+-	spin_unlock_irqrestore(&smd_lock, flags);
+-	smd_kick(ch);
+-
+-	return 0;
+-}
+-
+-int smd_close(smd_channel_t *ch)
+-{
+-	unsigned long flags;
+-
+-	pr_info("smd_close(%p)\n", ch);
+-
+-	if (ch == 0)
+-		return -1;
+-
+-	spin_lock_irqsave(&smd_lock, flags);
+-	ch->notify = do_nothing_notify;
+-	list_del(&ch->ch_list);
+-	hc_set_state(ch->send, SMD_SS_CLOSED);
+-	spin_unlock_irqrestore(&smd_lock, flags);
+-
+-	mutex_lock(&smd_creation_mutex);
+-	list_add(&ch->ch_list, &smd_ch_closed_list);
+-	mutex_unlock(&smd_creation_mutex);
+-
+-	return 0;
+-}
+-
+-int smd_read(smd_channel_t *ch, void *data, int len)
+-{
+-	return ch->read(ch, data, len);
+-}
+-
+-int smd_write(smd_channel_t *ch, const void *data, int len)
+-{
+-	return ch->write(ch, data, len);
+-}
+-
+-int smd_read_avail(smd_channel_t *ch)
+-{
+-	return ch->read_avail(ch);
+-}
+-
+-int smd_write_avail(smd_channel_t *ch)
+-{
+-	return ch->write_avail(ch);
+-}
+-
+-int smd_wait_until_readable(smd_channel_t *ch, int bytes)
+-{
+-	return -1;
+-}
+-
+-int smd_wait_until_writable(smd_channel_t *ch, int bytes)
+-{
+-	return -1;
+-}
+-
+-int smd_cur_packet_size(smd_channel_t *ch)
+-{
+-	return ch->current_packet;
+-}
+-
+-
+-/* ------------------------------------------------------------------------- */
+-
+-void *smem_alloc(unsigned id, unsigned size)
+-{
+-	return smem_find(id, size);
+-}
+-
+-static void *_smem_find(unsigned id, unsigned *size)
+-{
+-	struct smem_shared *shared = (void *) MSM_SHARED_RAM_BASE;
+-	struct smem_heap_entry *toc = shared->heap_toc;
+-
+-	if (id >= SMEM_NUM_ITEMS)
+-		return 0;
+-
+-	if (toc[id].allocated) {
+-		*size = toc[id].size;
+-		return (void *) (MSM_SHARED_RAM_BASE + toc[id].offset);
+-	}
+-
+-	return 0;
+-}
+-
+-void *smem_find(unsigned id, unsigned size_in)
+-{
+-	unsigned size;
+-	void *ptr;
+-
+-	ptr = _smem_find(id, &size);
+-	if (!ptr)
+-		return 0;
+-
+-	size_in = ALIGN(size_in, 8);
+-	if (size_in != size) {
+-		pr_err("smem_find(%d, %d): wrong size %d\n",
+-		       id, size_in, size);
+-		return 0;
+-	}
+-
+-	return ptr;
+-}
+-
+-static irqreturn_t smsm_irq_handler(int irq, void *data)
+-{
+-	unsigned long flags;
+-	struct smsm_shared *smsm;
+-
+-	spin_lock_irqsave(&smem_lock, flags);
+-	smsm = smem_alloc(ID_SHARED_STATE,
+-			  2 * sizeof(struct smsm_shared));
+-
+-	if (smsm == 0) {
+-		pr_info("<SM NO STATE>\n");
+-	} else {
+-		unsigned apps = smsm[0].state;
+-		unsigned modm = smsm[1].state;
+-
+-		if (msm_smd_debug_mask & MSM_SMSM_DEBUG)
+-			pr_info("<SM %08x %08x>\n", apps, modm);
+-		if (modm & SMSM_RESET) {
+-			handle_modem_crash();
+-		} else {
+-			apps |= SMSM_INIT;
+-			if (modm & SMSM_SMDINIT)
+-				apps |= SMSM_SMDINIT;
+-			if (modm & SMSM_RPCINIT)
+-				apps |= SMSM_RPCINIT;
+-		}
+-
+-		if (smsm[0].state != apps) {
+-			if (msm_smd_debug_mask & MSM_SMSM_DEBUG)
+-				pr_info("<SM %08x NOTIFY>\n", apps);
+-			smsm[0].state = apps;
+-			do_smd_probe();
+-			notify_other_smsm();
+-		}
+-	}
+-	spin_unlock_irqrestore(&smem_lock, flags);
+-	return IRQ_HANDLED;
+-}
+-
+-int smsm_change_state(uint32_t clear_mask, uint32_t set_mask)
+-{
+-	unsigned long flags;
+-	struct smsm_shared *smsm;
+-
+-	spin_lock_irqsave(&smem_lock, flags);
+-
+-	smsm = smem_alloc(ID_SHARED_STATE,
+-			  2 * sizeof(struct smsm_shared));
+-
+-	if (smsm) {
+-		if (smsm[1].state & SMSM_RESET)
+-			handle_modem_crash();
+-		smsm[0].state = (smsm[0].state & ~clear_mask) | set_mask;
+-		if (msm_smd_debug_mask & MSM_SMSM_DEBUG)
+-			pr_info("smsm_change_state %x\n",
+-			       smsm[0].state);
+-		notify_other_smsm();
+-	}
+-
+-	spin_unlock_irqrestore(&smem_lock, flags);
+-
+-	if (smsm == NULL) {
+-		pr_err("smsm_change_state <SM NO STATE>\n");
+-		return -EIO;
+-	}
+-	return 0;
+-}
+-
+-uint32_t smsm_get_state(void)
+-{
+-	unsigned long flags;
+-	struct smsm_shared *smsm;
+-	uint32_t rv;
+-
+-	spin_lock_irqsave(&smem_lock, flags);
+-
+-	smsm = smem_alloc(ID_SHARED_STATE,
+-			  2 * sizeof(struct smsm_shared));
+-
+-	if (smsm)
+-		rv = smsm[1].state;
+-	else
+-		rv = 0;
+-
+-	if (rv & SMSM_RESET)
+-		handle_modem_crash();
+-
+-	spin_unlock_irqrestore(&smem_lock, flags);
+-
+-	if (smsm == NULL)
+-		pr_err("smsm_get_state <SM NO STATE>\n");
+-	return rv;
+-}
+-
+-int smsm_set_sleep_duration(uint32_t delay)
+-{
+-	uint32_t *ptr;
+-
+-	ptr = smem_alloc(SMEM_SMSM_SLEEP_DELAY, sizeof(*ptr));
+-	if (ptr == NULL) {
+-		pr_err("smsm_set_sleep_duration <SM NO SLEEP_DELAY>\n");
+-		return -EIO;
+-	}
+-	if (msm_smd_debug_mask & MSM_SMSM_DEBUG)
+-		pr_info("smsm_set_sleep_duration %d -> %d\n",
+-		       *ptr, delay);
+-	*ptr = delay;
+-	return 0;
+-}
+-
+-int smsm_set_interrupt_info(struct smsm_interrupt_info *info)
+-{
+-	struct smsm_interrupt_info *ptr;
+-
+-	ptr = smem_alloc(SMEM_SMSM_INT_INFO, sizeof(*ptr));
+-	if (ptr == NULL) {
+-		pr_err("smsm_set_sleep_duration <SM NO INT_INFO>\n");
+-		return -EIO;
+-	}
+-	if (msm_smd_debug_mask & MSM_SMSM_DEBUG)
+-		pr_info("smsm_set_interrupt_info %x %x -> %x %x\n",
+-		       ptr->aArm_en_mask, ptr->aArm_interrupts_pending,
+-		       info->aArm_en_mask, info->aArm_interrupts_pending);
+-	*ptr = *info;
+-	return 0;
+-}
+-
+-#define MAX_NUM_SLEEP_CLIENTS		64
+-#define MAX_SLEEP_NAME_LEN		8
+-
+-#define NUM_GPIO_INT_REGISTERS		6
+-#define GPIO_SMEM_NUM_GROUPS		2
+-#define GPIO_SMEM_MAX_PC_INTERRUPTS	8
+-
+-struct tramp_gpio_save {
+-	unsigned int enable;
+-	unsigned int detect;
+-	unsigned int polarity;
+-};
+-
+-struct tramp_gpio_smem {
+-	uint16_t num_fired[GPIO_SMEM_NUM_GROUPS];
+-	uint16_t fired[GPIO_SMEM_NUM_GROUPS][GPIO_SMEM_MAX_PC_INTERRUPTS];
+-	uint32_t enabled[NUM_GPIO_INT_REGISTERS];
+-	uint32_t detection[NUM_GPIO_INT_REGISTERS];
+-	uint32_t polarity[NUM_GPIO_INT_REGISTERS];
+-};
+-
+-
+-void smsm_print_sleep_info(void)
+-{
+-	unsigned long flags;
+-	uint32_t *ptr;
+-	struct tramp_gpio_smem *gpio;
+-	struct smsm_interrupt_info *int_info;
+-
+-
+-	spin_lock_irqsave(&smem_lock, flags);
+-
+-	ptr = smem_alloc(SMEM_SMSM_SLEEP_DELAY, sizeof(*ptr));
+-	if (ptr)
+-		pr_info("SMEM_SMSM_SLEEP_DELAY: %x\n", *ptr);
+-
+-	ptr = smem_alloc(SMEM_SMSM_LIMIT_SLEEP, sizeof(*ptr));
+-	if (ptr)
+-		pr_info("SMEM_SMSM_LIMIT_SLEEP: %x\n", *ptr);
+-
+-	ptr = smem_alloc(SMEM_SLEEP_POWER_COLLAPSE_DISABLED, sizeof(*ptr));
+-	if (ptr)
+-		pr_info("SMEM_SLEEP_POWER_COLLAPSE_DISABLED: %x\n", *ptr);
+-
+-	int_info = smem_alloc(SMEM_SMSM_INT_INFO, sizeof(*int_info));
+-	if (int_info)
+-		pr_info("SMEM_SMSM_INT_INFO %x %x %x\n",
+-			int_info->aArm_en_mask,
+-			int_info->aArm_interrupts_pending,
+-			int_info->aArm_wakeup_reason);
+-
+-	gpio = smem_alloc(SMEM_GPIO_INT, sizeof(*gpio));
+-	if (gpio) {
+-		int i;
+-		for (i = 0; i < NUM_GPIO_INT_REGISTERS; i++)
+-			pr_info("SMEM_GPIO_INT: %d: e %x d %x p %x\n",
+-				i, gpio->enabled[i], gpio->detection[i],
+-				gpio->polarity[i]);
+-
+-		for (i = 0; i < GPIO_SMEM_NUM_GROUPS; i++)
+-			pr_info("SMEM_GPIO_INT: %d: f %d: %d %d...\n",
+-				i, gpio->num_fired[i], gpio->fired[i][0],
+-				gpio->fired[i][1]);
+-	}
+-
+-	spin_unlock_irqrestore(&smem_lock, flags);
+-}
+-
+-int smd_core_init(void)
+-{
+-	int r;
+-	pr_info("smd_core_init()\n");
+-
+-	r = request_irq(INT_A9_M2A_0, smd_irq_handler,
+-			IRQF_TRIGGER_RISING, "smd_dev", 0);
+-	if (r < 0)
+-		return r;
+-	r = enable_irq_wake(INT_A9_M2A_0);
+-	if (r < 0)
+-		pr_err("smd_core_init: enable_irq_wake failed for A9_M2A_0\n");
+-
+-	r = request_irq(INT_A9_M2A_5, smsm_irq_handler,
+-			IRQF_TRIGGER_RISING, "smsm_dev", 0);
+-	if (r < 0) {
+-		free_irq(INT_A9_M2A_0, 0);
+-		return r;
+-	}
+-	r = enable_irq_wake(INT_A9_M2A_5);
+-	if (r < 0)
+-		pr_err("smd_core_init: enable_irq_wake failed for A9_M2A_5\n");
+-
+-	/* we may have missed a signal while booting -- fake
+-	 * an interrupt to make sure we process any existing
+-	 * state
+-	 */
+-	smsm_irq_handler(0, 0);
+-
+-	pr_info("smd_core_init() done\n");
+-
+-	return 0;
+-}
+-
+-#if defined(CONFIG_DEBUG_FS)
+-
+-static int dump_ch(char *buf, int max, int n,
+-		  struct smd_half_channel *s,
+-		  struct smd_half_channel *r)
+-{
+-	return scnprintf(
+-		buf, max,
+-		"ch%02d:"
+-		" %8s(%04d/%04d) %c%c%c%c%c%c%c <->"
+-		" %8s(%04d/%04d) %c%c%c%c%c%c%c\n", n,
+-		chstate(s->state), s->tail, s->head,
+-		s->fDSR ? 'D' : 'd',
+-		s->fCTS ? 'C' : 'c',
+-		s->fCD ? 'C' : 'c',
+-		s->fRI ? 'I' : 'i',
+-		s->fHEAD ? 'W' : 'w',
+-		s->fTAIL ? 'R' : 'r',
+-		s->fSTATE ? 'S' : 's',
+-		chstate(r->state), r->tail, r->head,
+-		r->fDSR ? 'D' : 'd',
+-		r->fCTS ? 'R' : 'r',
+-		r->fCD ? 'C' : 'c',
+-		r->fRI ? 'I' : 'i',
+-		r->fHEAD ? 'W' : 'w',
+-		r->fTAIL ? 'R' : 'r',
+-		r->fSTATE ? 'S' : 's'
+-		);
+-}
+-
+-static int debug_read_stat(char *buf, int max)
+-{
+-	struct smsm_shared *smsm;
+-	char *msg;
+-	int i = 0;
+-
+-	smsm = smem_find(ID_SHARED_STATE,
+-			 2 * sizeof(struct smsm_shared));
+-
+-	msg = smem_find(ID_DIAG_ERR_MSG, SZ_DIAG_ERR_MSG);
+-
+-	if (smsm) {
+-		if (smsm[1].state & SMSM_RESET)
+-			i += scnprintf(buf + i, max - i,
+-				       "smsm: ARM9 HAS CRASHED\n");
+-		i += scnprintf(buf + i, max - i, "smsm: a9: %08x a11: %08x\n",
+-			       smsm[0].state, smsm[1].state);
+-	} else {
+-		i += scnprintf(buf + i, max - i, "smsm: cannot find\n");
+-	}
+-	if (msg) {
+-		msg[SZ_DIAG_ERR_MSG - 1] = 0;
+-		i += scnprintf(buf + i, max - i, "diag: '%s'\n", msg);
+-	}
+-	return i;
+-}
+-
+-static int debug_read_mem(char *buf, int max)
+-{
+-	unsigned n;
+-	struct smem_shared *shared = (void *) MSM_SHARED_RAM_BASE;
+-	struct smem_heap_entry *toc = shared->heap_toc;
+-	int i = 0;
+-
+-	i += scnprintf(buf + i, max - i,
+-		       "heap: init=%d free=%d remain=%d\n",
+-		       shared->heap_info.initialized,
+-		       shared->heap_info.free_offset,
+-		       shared->heap_info.heap_remaining);
+-
+-	for (n = 0; n < SMEM_NUM_ITEMS; n++) {
+-		if (toc[n].allocated == 0)
+-			continue;
+-		i += scnprintf(buf + i, max - i,
+-			       "%04d: offsed %08x size %08x\n",
+-			       n, toc[n].offset, toc[n].size);
+-	}
+-	return i;
+-}
+-
+-static int debug_read_ch(char *buf, int max)
+-{
+-	struct smd_shared *shared;
+-	int n, i = 0;
+-
+-	for (n = 0; n < SMD_CHANNELS; n++) {
+-		shared = smem_find(ID_SMD_CHANNELS + n,
+-				   sizeof(struct smd_shared));
+-		if (shared == 0)
+-			continue;
+-		i += dump_ch(buf + i, max - i, n, &shared->ch0, &shared->ch1);
+-	}
+-
+-	return i;
+-}
+-
+-static int debug_read_version(char *buf, int max)
+-{
+-	struct smem_shared *shared = (void *) MSM_SHARED_RAM_BASE;
+-	unsigned version = shared->version[VERSION_MODEM];
+-	return sprintf(buf, "%d.%d\n", version >> 16, version & 0xffff);
+-}
+-
+-static int debug_read_build_id(char *buf, int max)
+-{
+-	unsigned size;
+-	void *data;
+-
+-	data = _smem_find(SMEM_HW_SW_BUILD_ID, &size);
+-	if (!data)
+-		return 0;
+-
+-	if (size >= max)
+-		size = max;
+-	memcpy(buf, data, size);
+-
+-	return size;
+-}
+-
+-static int debug_read_alloc_tbl(char *buf, int max)
+-{
+-	struct smd_alloc_elm *shared;
+-	int n, i = 0;
+-
+-	shared = smem_find(ID_CH_ALLOC_TBL, sizeof(*shared) * 64);
+-
+-	for (n = 0; n < 64; n++) {
+-		if (shared[n].ref_count == 0)
+-			continue;
+-		i += scnprintf(buf + i, max - i,
+-			       "%03d: %20s cid=%02d ctype=%d ref_count=%d\n",
+-			       n, shared[n].name, shared[n].cid,
+-			       shared[n].ctype, shared[n].ref_count);
+-	}
+-
+-	return i;
+-}
+-
+-static int debug_boom(char *buf, int max)
+-{
+-	unsigned ms = 5000;
+-	msm_proc_comm(PCOM_RESET_MODEM, &ms, 0);
+-	return 0;
+-}
+-
+-#define DEBUG_BUFMAX 4096
+-static char debug_buffer[DEBUG_BUFMAX];
+-
+-static ssize_t debug_read(struct file *file, char __user *buf,
+-			  size_t count, loff_t *ppos)
+-{
+-	int (*fill)(char *buf, int max) = file->private_data;
+-	int bsize = fill(debug_buffer, DEBUG_BUFMAX);
+-	return simple_read_from_buffer(buf, count, ppos, debug_buffer, bsize);
+-}
+-
+-static int debug_open(struct inode *inode, struct file *file)
+-{
+-	file->private_data = inode->i_private;
+-	return 0;
+-}
+-
+-static const struct file_operations debug_ops = {
+-	.read = debug_read,
+-	.open = debug_open,
+-};
+-
+-static void debug_create(const char *name, mode_t mode,
+-			 struct dentry *dent,
+-			 int (*fill)(char *buf, int max))
+-{
+-	debugfs_create_file(name, mode, dent, fill, &debug_ops);
+-}
+-
+-static void smd_debugfs_init(void)
+-{
+-	struct dentry *dent;
+-
+-	dent = debugfs_create_dir("smd", 0);
+-	if (IS_ERR(dent))
+-		return;
+-
+-	debug_create("ch", 0444, dent, debug_read_ch);
+-	debug_create("stat", 0444, dent, debug_read_stat);
+-	debug_create("mem", 0444, dent, debug_read_mem);
+-	debug_create("version", 0444, dent, debug_read_version);
+-	debug_create("tbl", 0444, dent, debug_read_alloc_tbl);
+-	debug_create("build", 0444, dent, debug_read_build_id);
+-	debug_create("boom", 0444, dent, debug_boom);
+-}
+-#else
+-static void smd_debugfs_init(void) {}
+-#endif
+-
+-static int __init msm_smd_probe(struct platform_device *pdev)
+-{
+-	pr_info("smd_init()\n");
+-
+-	INIT_WORK(&probe_work, smd_channel_probe_worker);
+-
+-	if (smd_core_init()) {
+-		pr_err("smd_core_init() failed\n");
+-		return -1;
+-	}
+-
+-	do_smd_probe();
+-
+-	msm_check_for_modem_crash = check_for_modem_crash;
+-
+-	smd_debugfs_init();
+-	smd_initialized = 1;
+-
+-	return 0;
+-}
+-
+-static struct platform_driver msm_smd_driver = {
+-	.probe = msm_smd_probe,
+-	.driver = {
+-		.name = MODULE_NAME,
+-		.owner = THIS_MODULE,
+-	},
+-};
+-
+-static int __init msm_smd_init(void)
+-{
+-	return platform_driver_register(&msm_smd_driver);
+-}
+-
+-module_init(msm_smd_init);
+-
+-MODULE_DESCRIPTION("MSM Shared Memory Core");
+-MODULE_AUTHOR("Brian Swetland <swetland@google.com>");
+-MODULE_LICENSE("GPL");
+diff --git a/drivers/staging/dream/smd/smd_private.h b/drivers/staging/dream/smd/smd_private.h
+deleted file mode 100644
+index 1b2e1c8..0000000
+--- a/drivers/staging/dream/smd/smd_private.h
++++ /dev/null
+@@ -1,164 +0,0 @@
+-/* arch/arm/mach-msm/smd_private.h
+- *
+- * Copyright (C) 2007 Google, Inc.
+- * Copyright (c) 2007 QUALCOMM Incorporated
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-#ifndef _ARCH_ARM_MACH_MSM_MSM_SMD_PRIVATE_H_
+-#define _ARCH_ARM_MACH_MSM_MSM_SMD_PRIVATE_H_
+-
+-struct smem_heap_info {
+-	unsigned initialized;
+-	unsigned free_offset;
+-	unsigned heap_remaining;
+-	unsigned reserved;
+-};
+-
+-struct smem_heap_entry {
+-	unsigned allocated;
+-	unsigned offset;
+-	unsigned size;
+-	unsigned reserved;
+-};
+-
+-struct smem_proc_comm {
+-	unsigned command;
+-	unsigned status;
+-	unsigned data1;
+-	unsigned data2;
+-};
+-
+-#define PC_APPS  0
+-#define PC_MODEM 1
+-
+-#define VERSION_QDSP6     4
+-#define VERSION_APPS_SBL  6
+-#define VERSION_MODEM_SBL 7
+-#define VERSION_APPS      8
+-#define VERSION_MODEM     9
+-
+-struct smem_shared {
+-	struct smem_proc_comm proc_comm[4];
+-	unsigned version[32];
+-	struct smem_heap_info heap_info;
+-	struct smem_heap_entry heap_toc[128];
+-};
+-
+-struct smsm_shared {
+-	unsigned host;
+-	unsigned state;
+-};
+-
+-struct smsm_interrupt_info {
+-	uint32_t aArm_en_mask;
+-	uint32_t aArm_interrupts_pending;
+-	uint32_t aArm_wakeup_reason;
+-};
+-
+-#define SZ_DIAG_ERR_MSG 0xC8
+-#define ID_DIAG_ERR_MSG SMEM_DIAG_ERR_MESSAGE
+-#define ID_SMD_CHANNELS SMEM_SMD_BASE_ID
+-#define ID_SHARED_STATE SMEM_SMSM_SHARED_STATE
+-#define ID_CH_ALLOC_TBL SMEM_CHANNEL_ALLOC_TBL
+-
+-#define SMSM_INIT          0x000001
+-#define SMSM_SMDINIT       0x000008
+-#define SMSM_RPCINIT       0x000020
+-#define SMSM_RESET         0x000040
+-#define SMSM_RSA               0x0080
+-#define SMSM_RUN           0x000100
+-#define SMSM_PWRC              0x0200
+-#define SMSM_TIMEWAIT          0x0400
+-#define SMSM_TIMEINIT          0x0800
+-#define SMSM_PWRC_EARLY_EXIT   0x1000
+-#define SMSM_WFPI              0x2000
+-#define SMSM_SLEEP             0x4000
+-#define SMSM_SLEEPEXIT         0x8000
+-#define SMSM_OEMSBL_RELEASE    0x10000
+-#define SMSM_PWRC_SUSPEND      0x200000
+-
+-#define SMSM_WKUP_REASON_RPC	0x00000001
+-#define SMSM_WKUP_REASON_INT	0x00000002
+-#define SMSM_WKUP_REASON_GPIO	0x00000004
+-#define SMSM_WKUP_REASON_TIMER	0x00000008
+-#define SMSM_WKUP_REASON_ALARM	0x00000010
+-#define SMSM_WKUP_REASON_RESET	0x00000020
+-
+-void *smem_alloc(unsigned id, unsigned size);
+-int smsm_change_state(uint32_t clear_mask, uint32_t set_mask);
+-uint32_t smsm_get_state(void);
+-int smsm_set_sleep_duration(uint32_t delay);
+-int smsm_set_interrupt_info(struct smsm_interrupt_info *info);
+-void smsm_print_sleep_info(void);
+-
+-#define SMEM_NUM_SMD_CHANNELS        64
+-
+-typedef enum {
+-	/* fixed items */
+-	SMEM_PROC_COMM = 0,
+-	SMEM_HEAP_INFO,
+-	SMEM_ALLOCATION_TABLE,
+-	SMEM_VERSION_INFO,
+-	SMEM_HW_RESET_DETECT,
+-	SMEM_AARM_WARM_BOOT,
+-	SMEM_DIAG_ERR_MESSAGE,
+-	SMEM_SPINLOCK_ARRAY,
+-	SMEM_MEMORY_BARRIER_LOCATION,
+-
+-	/* dynamic items */
+-	SMEM_AARM_PARTITION_TABLE,
+-	SMEM_AARM_BAD_BLOCK_TABLE,
+-	SMEM_RESERVE_BAD_BLOCKS,
+-	SMEM_WM_UUID,
+-	SMEM_CHANNEL_ALLOC_TBL,
+-	SMEM_SMD_BASE_ID,
+-	SMEM_SMEM_LOG_IDX = SMEM_SMD_BASE_ID + SMEM_NUM_SMD_CHANNELS,
+-	SMEM_SMEM_LOG_EVENTS,
+-	SMEM_SMEM_STATIC_LOG_IDX,
+-	SMEM_SMEM_STATIC_LOG_EVENTS,
+-	SMEM_SMEM_SLOW_CLOCK_SYNC,
+-	SMEM_SMEM_SLOW_CLOCK_VALUE,
+-	SMEM_BIO_LED_BUF,
+-	SMEM_SMSM_SHARED_STATE,
+-	SMEM_SMSM_INT_INFO,
+-	SMEM_SMSM_SLEEP_DELAY,
+-	SMEM_SMSM_LIMIT_SLEEP,
+-	SMEM_SLEEP_POWER_COLLAPSE_DISABLED,
+-	SMEM_KEYPAD_KEYS_PRESSED,
+-	SMEM_KEYPAD_STATE_UPDATED,
+-	SMEM_KEYPAD_STATE_IDX,
+-	SMEM_GPIO_INT,
+-	SMEM_MDDI_LCD_IDX,
+-	SMEM_MDDI_HOST_DRIVER_STATE,
+-	SMEM_MDDI_LCD_DISP_STATE,
+-	SMEM_LCD_CUR_PANEL,
+-	SMEM_MARM_BOOT_SEGMENT_INFO,
+-	SMEM_AARM_BOOT_SEGMENT_INFO,
+-	SMEM_SLEEP_STATIC,
+-	SMEM_SCORPION_FREQUENCY,
+-	SMEM_SMD_PROFILES,
+-	SMEM_TSSC_BUSY,
+-	SMEM_HS_SUSPEND_FILTER_INFO,
+-	SMEM_BATT_INFO,
+-	SMEM_APPS_BOOT_MODE,
+-	SMEM_VERSION_FIRST,
+-	SMEM_VERSION_LAST = SMEM_VERSION_FIRST + 24,
+-	SMEM_OSS_RRCASN1_BUF1,
+-	SMEM_OSS_RRCASN1_BUF2,
+-	SMEM_ID_VENDOR0,
+-	SMEM_ID_VENDOR1,
+-	SMEM_ID_VENDOR2,
+-	SMEM_HW_SW_BUILD_ID,
+-	SMEM_NUM_ITEMS,
+-} smem_mem_type;
+-
+-#endif
+diff --git a/drivers/staging/dream/smd/smd_qmi.c b/drivers/staging/dream/smd/smd_qmi.c
+deleted file mode 100644
+index 76fce51..0000000
+--- a/drivers/staging/dream/smd/smd_qmi.c
++++ /dev/null
+@@ -1,851 +0,0 @@
+-/* arch/arm/mach-msm/smd_qmi.c
+- *
+- * QMI Control Driver -- Manages network data connections.
+- *
+- * Copyright (C) 2007 Google, Inc.
+- * Author: Brian Swetland <swetland@google.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#include <linux/module.h>
+-#include <linux/fs.h>
+-#include <linux/cdev.h>
+-#include <linux/device.h>
+-#include <linux/sched.h>
+-#include <linux/wait.h>
+-#include <linux/miscdevice.h>
+-#include <linux/workqueue.h>
+-
+-#include <linux/uaccess.h>
+-#include <mach/msm_smd.h>
+-
+-#define QMI_CTL 0x00
+-#define QMI_WDS 0x01
+-#define QMI_DMS 0x02
+-#define QMI_NAS 0x03
+-
+-#define QMI_RESULT_SUCCESS 0x0000
+-#define QMI_RESULT_FAILURE 0x0001
+-
+-struct qmi_msg {
+-	unsigned char service;
+-	unsigned char client_id;
+-	unsigned short txn_id;
+-	unsigned short type;
+-	unsigned short size;
+-	unsigned char *tlv;
+-};
+-
+-#define qmi_ctl_client_id 0
+-
+-#define STATE_OFFLINE    0
+-#define STATE_QUERYING   1
+-#define STATE_ONLINE     2
+-
+-struct qmi_ctxt {
+-	struct miscdevice misc;
+-
+-	struct mutex lock;
+-
+-	unsigned char ctl_txn_id;
+-	unsigned char wds_client_id;
+-	unsigned short wds_txn_id;
+-
+-	unsigned wds_busy;
+-	unsigned wds_handle;
+-	unsigned state_dirty;
+-	unsigned state;
+-
+-	unsigned char addr[4];
+-	unsigned char mask[4];
+-	unsigned char gateway[4];
+-	unsigned char dns1[4];
+-	unsigned char dns2[4];
+-
+-	smd_channel_t *ch;
+-	const char *ch_name;
+-
+-	struct work_struct open_work;
+-	struct work_struct read_work;
+-};
+-
+-static struct qmi_ctxt *qmi_minor_to_ctxt(unsigned n);
+-
+-static void qmi_read_work(struct work_struct *ws);
+-static void qmi_open_work(struct work_struct *work);
+-
+-void qmi_ctxt_init(struct qmi_ctxt *ctxt, unsigned n)
+-{
+-	mutex_init(&ctxt->lock);
+-	INIT_WORK(&ctxt->read_work, qmi_read_work);
+-	INIT_WORK(&ctxt->open_work, qmi_open_work);
+-	ctxt->ctl_txn_id = 1;
+-	ctxt->wds_txn_id = 1;
+-	ctxt->wds_busy = 1;
+-	ctxt->state = STATE_OFFLINE;
+-
+-}
+-
+-static struct workqueue_struct *qmi_wq;
+-
+-static int verbose = 0;
+-
+-/* anyone waiting for a state change waits here */
+-static DECLARE_WAIT_QUEUE_HEAD(qmi_wait_queue);
+-
+-
+-static void qmi_dump_msg(struct qmi_msg *msg, const char *prefix)
+-{
+-	unsigned sz, n;
+-	unsigned char *x;
+-
+-	if (!verbose)
+-		return;
+-
+-	printk(KERN_INFO
+-	       "qmi: %s: svc=%02x cid=%02x tid=%04x type=%04x size=%04x\n",
+-	       prefix, msg->service, msg->client_id,
+-	       msg->txn_id, msg->type, msg->size);
+-
+-	x = msg->tlv;
+-	sz = msg->size;
+-
+-	while (sz >= 3) {
+-		sz -= 3;
+-
+-		n = x[1] | (x[2] << 8);
+-		if (n > sz)
+-			break;
+-
+-		printk(KERN_INFO "qmi: %s: tlv: %02x %04x { ",
+-		       prefix, x[0], n);
+-		x += 3;
+-		sz -= n;
+-		while (n-- > 0)
+-			printk("%02x ", *x++);
+-		printk("}\n");
+-	}
+-}
+-
+-int qmi_add_tlv(struct qmi_msg *msg,
+-		unsigned type, unsigned size, const void *data)
+-{
+-	unsigned char *x = msg->tlv + msg->size;
+-
+-	x[0] = type;
+-	x[1] = size;
+-	x[2] = size >> 8;
+-
+-	memcpy(x + 3, data, size);
+-
+-	msg->size += (size + 3);
+-
+-	return 0;
+-}
+-
+-/* Extract a tagged item from a qmi message buffer,
+-** taking care not to overrun the buffer.
+-*/
+-static int qmi_get_tlv(struct qmi_msg *msg,
+-		       unsigned type, unsigned size, void *data)
+-{
+-	unsigned char *x = msg->tlv;
+-	unsigned len = msg->size;
+-	unsigned n;
+-
+-	while (len >= 3) {
+-		len -= 3;
+-
+-		/* size of this item */
+-		n = x[1] | (x[2] << 8);
+-		if (n > len)
+-			break;
+-
+-		if (x[0] == type) {
+-			if (n != size)
+-				return -1;
+-			memcpy(data, x + 3, size);
+-			return 0;
+-		}
+-
+-		x += (n + 3);
+-		len -= n;
+-	}
+-
+-	return -1;
+-}
+-
+-static unsigned qmi_get_status(struct qmi_msg *msg, unsigned *error)
+-{
+-	unsigned short status[2];
+-	if (qmi_get_tlv(msg, 0x02, sizeof(status), status)) {
+-		*error = 0;
+-		return QMI_RESULT_FAILURE;
+-	} else {
+-		*error = status[1];
+-		return status[0];
+-	}
+-}
+-
+-/* 0x01 <qmux-header> <payload> */
+-#define QMUX_HEADER    13
+-
+-/* should be >= HEADER + FOOTER */
+-#define QMUX_OVERHEAD  16
+-
+-static int qmi_send(struct qmi_ctxt *ctxt, struct qmi_msg *msg)
+-{
+-	unsigned char *data;
+-	unsigned hlen;
+-	unsigned len;
+-	int r;
+-
+-	qmi_dump_msg(msg, "send");
+-
+-	if (msg->service == QMI_CTL)
+-		hlen = QMUX_HEADER - 1;
+-	else
+-		hlen = QMUX_HEADER;
+-
+-	/* QMUX length is total header + total payload - IFC selector */
+-	len = hlen + msg->size - 1;
+-	if (len > 0xffff)
+-		return -1;
+-
+-	data = msg->tlv - hlen;
+-
+-	/* prepend encap and qmux header */
+-	*data++ = 0x01; /* ifc selector */
+-
+-	/* qmux header */
+-	*data++ = len;
+-	*data++ = len >> 8;
+-	*data++ = 0x00; /* flags: client */
+-	*data++ = msg->service;
+-	*data++ = msg->client_id;
+-
+-	/* qmi header */
+-	*data++ = 0x00; /* flags: send */
+-	*data++ = msg->txn_id;
+-	if (msg->service != QMI_CTL)
+-		*data++ = msg->txn_id >> 8;
+-
+-	*data++ = msg->type;
+-	*data++ = msg->type >> 8;
+-	*data++ = msg->size;
+-	*data++ = msg->size >> 8;
+-
+-	/* len + 1 takes the interface selector into account */
+-	r = smd_write(ctxt->ch, msg->tlv - hlen, len + 1);
+-
+-	if (r != len)
+-		return -1;
+-	else
+-		return 0;
+-}
+-
+-static void qmi_process_ctl_msg(struct qmi_ctxt *ctxt, struct qmi_msg *msg)
+-{
+-	unsigned err;
+-	if (msg->type == 0x0022) {
+-		unsigned char n[2];
+-		if (qmi_get_status(msg, &err))
+-			return;
+-		if (qmi_get_tlv(msg, 0x01, sizeof(n), n))
+-			return;
+-		if (n[0] == QMI_WDS) {
+-			printk(KERN_INFO
+-			       "qmi: ctl: wds use client_id 0x%02x\n", n[1]);
+-			ctxt->wds_client_id = n[1];
+-			ctxt->wds_busy = 0;
+-		}
+-	}
+-}
+-
+-static int qmi_network_get_profile(struct qmi_ctxt *ctxt);
+-
+-static void swapaddr(unsigned char *src, unsigned char *dst)
+-{
+-	dst[0] = src[3];
+-	dst[1] = src[2];
+-	dst[2] = src[1];
+-	dst[3] = src[0];
+-}
+-
+-static unsigned char zero[4];
+-static void qmi_read_runtime_profile(struct qmi_ctxt *ctxt, struct qmi_msg *msg)
+-{
+-	unsigned char tmp[4];
+-	unsigned r;
+-
+-	r = qmi_get_tlv(msg, 0x1e, 4, tmp);
+-	swapaddr(r ? zero : tmp, ctxt->addr);
+-	r = qmi_get_tlv(msg, 0x21, 4, tmp);
+-	swapaddr(r ? zero : tmp, ctxt->mask);
+-	r = qmi_get_tlv(msg, 0x20, 4, tmp);
+-	swapaddr(r ? zero : tmp, ctxt->gateway);
+-	r = qmi_get_tlv(msg, 0x15, 4, tmp);
+-	swapaddr(r ? zero : tmp, ctxt->dns1);
+-	r = qmi_get_tlv(msg, 0x16, 4, tmp);
+-	swapaddr(r ? zero : tmp, ctxt->dns2);
+-}
+-
+-static void qmi_process_unicast_wds_msg(struct qmi_ctxt *ctxt,
+-					struct qmi_msg *msg)
+-{
+-	unsigned err;
+-	switch (msg->type) {
+-	case 0x0021:
+-		if (qmi_get_status(msg, &err)) {
+-			printk(KERN_ERR
+-			       "qmi: wds: network stop failed (%04x)\n", err);
+-		} else {
+-			printk(KERN_INFO
+-			       "qmi: wds: network stopped\n");
+-			ctxt->state = STATE_OFFLINE;
+-			ctxt->state_dirty = 1;
+-		}
+-		break;
+-	case 0x0020:
+-		if (qmi_get_status(msg, &err)) {
+-			printk(KERN_ERR
+-			       "qmi: wds: network start failed (%04x)\n", err);
+-		} else if (qmi_get_tlv(msg, 0x01, sizeof(ctxt->wds_handle), &ctxt->wds_handle)) {
+-			printk(KERN_INFO
+-			       "qmi: wds no handle?\n");
+-		} else {
+-			printk(KERN_INFO
+-			       "qmi: wds: got handle 0x%08x\n",
+-			       ctxt->wds_handle);
+-		}
+-		break;
+-	case 0x002D:
+-		printk("qmi: got network profile\n");
+-		if (ctxt->state == STATE_QUERYING) {
+-			qmi_read_runtime_profile(ctxt, msg);
+-			ctxt->state = STATE_ONLINE;
+-			ctxt->state_dirty = 1;
+-		}
+-		break;
+-	default:
+-		printk(KERN_ERR "qmi: unknown msg type 0x%04x\n", msg->type);
+-	}
+-	ctxt->wds_busy = 0;
+-}
+-
+-static void qmi_process_broadcast_wds_msg(struct qmi_ctxt *ctxt,
+-					  struct qmi_msg *msg)
+-{
+-	if (msg->type == 0x0022) {
+-		unsigned char n[2];
+-		if (qmi_get_tlv(msg, 0x01, sizeof(n), n))
+-			return;
+-		switch (n[0]) {
+-		case 1:
+-			printk(KERN_INFO "qmi: wds: DISCONNECTED\n");
+-			ctxt->state = STATE_OFFLINE;
+-			ctxt->state_dirty = 1;
+-			break;
+-		case 2:
+-			printk(KERN_INFO "qmi: wds: CONNECTED\n");
+-			ctxt->state = STATE_QUERYING;
+-			ctxt->state_dirty = 1;
+-			qmi_network_get_profile(ctxt);
+-			break;
+-		case 3:
+-			printk(KERN_INFO "qmi: wds: SUSPENDED\n");
+-			ctxt->state = STATE_OFFLINE;
+-			ctxt->state_dirty = 1;
+-		}
+-	} else {
+-		printk(KERN_ERR "qmi: unknown bcast msg type 0x%04x\n", msg->type);
+-	}
+-}
+-
+-static void qmi_process_wds_msg(struct qmi_ctxt *ctxt,
+-				struct qmi_msg *msg)
+-{
+-	printk(KERN_INFO "wds: %04x @ %02x\n", msg->type, msg->client_id);
+-	if (msg->client_id == ctxt->wds_client_id) {
+-		qmi_process_unicast_wds_msg(ctxt, msg);
+-	} else if (msg->client_id == 0xff) {
+-		qmi_process_broadcast_wds_msg(ctxt, msg);
+-	} else {
+-		printk(KERN_ERR
+-		       "qmi_process_wds_msg client id 0x%02x unknown\n",
+-		       msg->client_id);
+-	}
+-}
+-
+-static void qmi_process_qmux(struct qmi_ctxt *ctxt,
+-			     unsigned char *buf, unsigned sz)
+-{
+-	struct qmi_msg msg;
+-
+-	/* require a full header */
+-	if (sz < 5)
+-		return;
+-
+-	/* require a size that matches the buffer size */
+-	if (sz != (buf[0] | (buf[1] << 8)))
+-		return;
+-
+-	/* only messages from a service (bit7=1) are allowed */
+-	if (buf[2] != 0x80)
+-		return;
+-
+-	msg.service = buf[3];
+-	msg.client_id = buf[4];
+-
+-	/* annoyingly, CTL messages have a shorter TID */
+-	if (buf[3] == 0) {
+-		if (sz < 7)
+-			return;
+-		msg.txn_id = buf[6];
+-		buf += 7;
+-		sz -= 7;
+-	} else {
+-		if (sz < 8)
+-			return;
+-		msg.txn_id = buf[6] | (buf[7] << 8);
+-		buf += 8;
+-		sz -= 8;
+-	}
+-
+-	/* no type and size!? */
+-	if (sz < 4)
+-		return;
+-	sz -= 4;
+-
+-	msg.type = buf[0] | (buf[1] << 8);
+-	msg.size = buf[2] | (buf[3] << 8);
+-	msg.tlv = buf + 4;
+-
+-	if (sz != msg.size)
+-		return;
+-
+-	qmi_dump_msg(&msg, "recv");
+-
+-	mutex_lock(&ctxt->lock);
+-	switch (msg.service) {
+-	case QMI_CTL:
+-		qmi_process_ctl_msg(ctxt, &msg);
+-		break;
+-	case QMI_WDS:
+-		qmi_process_wds_msg(ctxt, &msg);
+-		break;
+-	default:
+-		printk(KERN_ERR "qmi: msg from unknown svc 0x%02x\n",
+-		       msg.service);
+-		break;
+-	}
+-	mutex_unlock(&ctxt->lock);
+-	wake_up(&qmi_wait_queue);
+-}
+-
+-#define QMI_MAX_PACKET (256 + QMUX_OVERHEAD)
+-
+-static void qmi_read_work(struct work_struct *ws)
+-{
+-	struct qmi_ctxt *ctxt = container_of(ws, struct qmi_ctxt, read_work);
+-	struct smd_channel *ch = ctxt->ch;
+-	unsigned char buf[QMI_MAX_PACKET];
+-	int sz;
+-
+-	for (;;) {
+-		sz = smd_cur_packet_size(ch);
+-		if (sz == 0)
+-			break;
+-		if (sz < smd_read_avail(ch))
+-			break;
+-		if (sz > QMI_MAX_PACKET) {
+-			smd_read(ch, 0, sz);
+-			continue;
+-		}
+-		if (smd_read(ch, buf, sz) != sz) {
+-			printk(KERN_ERR "qmi: not enough data?!\n");
+-			continue;
+-		}
+-
+-		/* interface selector must be 1 */
+-		if (buf[0] != 0x01)
+-			continue;
+-
+-		qmi_process_qmux(ctxt, buf + 1, sz - 1);
+-	}
+-}
+-
+-static int qmi_request_wds_cid(struct qmi_ctxt *ctxt);
+-
+-static void qmi_open_work(struct work_struct *ws)
+-{
+-	struct qmi_ctxt *ctxt = container_of(ws, struct qmi_ctxt, open_work);
+-	mutex_lock(&ctxt->lock);
+-	qmi_request_wds_cid(ctxt);
+-	mutex_unlock(&ctxt->lock);
+-}
+-
+-static void qmi_notify(void *priv, unsigned event)
+-{
+-	struct qmi_ctxt *ctxt = priv;
+-
+-	switch (event) {
+-	case SMD_EVENT_DATA: {
+-		int sz;
+-		sz = smd_cur_packet_size(ctxt->ch);
+-		if ((sz > 0) && (sz <= smd_read_avail(ctxt->ch)))
+-			queue_work(qmi_wq, &ctxt->read_work);
+-		break;
+-	}
+-	case SMD_EVENT_OPEN:
+-		printk(KERN_INFO "qmi: smd opened\n");
+-		queue_work(qmi_wq, &ctxt->open_work);
+-		break;
+-	case SMD_EVENT_CLOSE:
+-		printk(KERN_INFO "qmi: smd closed\n");
+-		break;
+-	}
+-}
+-
+-static int qmi_request_wds_cid(struct qmi_ctxt *ctxt)
+-{
+-	unsigned char data[64 + QMUX_OVERHEAD];
+-	struct qmi_msg msg;
+-	unsigned char n;
+-
+-	msg.service = QMI_CTL;
+-	msg.client_id = qmi_ctl_client_id;
+-	msg.txn_id = ctxt->ctl_txn_id;
+-	msg.type = 0x0022;
+-	msg.size = 0;
+-	msg.tlv = data + QMUX_HEADER;
+-
+-	ctxt->ctl_txn_id += 2;
+-
+-	n = QMI_WDS;
+-	qmi_add_tlv(&msg, 0x01, 0x01, &n);
+-
+-	return qmi_send(ctxt, &msg);
+-}
+-
+-static int qmi_network_get_profile(struct qmi_ctxt *ctxt)
+-{
+-	unsigned char data[96 + QMUX_OVERHEAD];
+-	struct qmi_msg msg;
+-
+-	msg.service = QMI_WDS;
+-	msg.client_id = ctxt->wds_client_id;
+-	msg.txn_id = ctxt->wds_txn_id;
+-	msg.type = 0x002D;
+-	msg.size = 0;
+-	msg.tlv = data + QMUX_HEADER;
+-
+-	ctxt->wds_txn_id += 2;
+-
+-	return qmi_send(ctxt, &msg);
+-}
+-
+-static int qmi_network_up(struct qmi_ctxt *ctxt, char *apn)
+-{
+-	unsigned char data[96 + QMUX_OVERHEAD];
+-	struct qmi_msg msg;
+-	char *auth_type;
+-	char *user;
+-	char *pass;
+-
+-	for (user = apn; *user; user++) {
+-		if (*user == ' ') {
+-			*user++ = 0;
+-			break;
+-		}
+-	}
+-	for (pass = user; *pass; pass++) {
+-		if (*pass == ' ') {
+-			*pass++ = 0;
+-			break;
+-		}
+-	}
+-
+-	for (auth_type = pass; *auth_type; auth_type++) {
+-		if (*auth_type == ' ') {
+-			*auth_type++ = 0;
+-			break;
+-		}
+-	}
+-
+-	msg.service = QMI_WDS;
+-	msg.client_id = ctxt->wds_client_id;
+-	msg.txn_id = ctxt->wds_txn_id;
+-	msg.type = 0x0020;
+-	msg.size = 0;
+-	msg.tlv = data + QMUX_HEADER;
+-
+-	ctxt->wds_txn_id += 2;
+-
+-	qmi_add_tlv(&msg, 0x14, strlen(apn), apn);
+-	if (*auth_type)
+-		qmi_add_tlv(&msg, 0x16, strlen(auth_type), auth_type);
+-	if (*user) {
+-		if (!*auth_type) {
+-			unsigned char x;
+-			x = 3;
+-			qmi_add_tlv(&msg, 0x16, 1, &x);
+-		}
+-		qmi_add_tlv(&msg, 0x17, strlen(user), user);
+-		if (*pass)
+-			qmi_add_tlv(&msg, 0x18, strlen(pass), pass);
+-	}
+-	return qmi_send(ctxt, &msg);
+-}
+-
+-static int qmi_network_down(struct qmi_ctxt *ctxt)
+-{
+-	unsigned char data[16 + QMUX_OVERHEAD];
+-	struct qmi_msg msg;
+-
+-	msg.service = QMI_WDS;
+-	msg.client_id = ctxt->wds_client_id;
+-	msg.txn_id = ctxt->wds_txn_id;
+-	msg.type = 0x0021;
+-	msg.size = 0;
+-	msg.tlv = data + QMUX_HEADER;
+-
+-	ctxt->wds_txn_id += 2;
+-
+-	qmi_add_tlv(&msg, 0x01, sizeof(ctxt->wds_handle), &ctxt->wds_handle);
+-
+-	return qmi_send(ctxt, &msg);
+-}
+-
+-static int qmi_print_state(struct qmi_ctxt *ctxt, char *buf, int max)
+-{
+-	int i;
+-	char *statename;
+-
+-	if (ctxt->state == STATE_ONLINE) {
+-		statename = "up";
+-	} else if (ctxt->state == STATE_OFFLINE) {
+-		statename = "down";
+-	} else {
+-		statename = "busy";
+-	}
+-
+-	i = scnprintf(buf, max, "STATE=%s\n", statename);
+-	i += scnprintf(buf + i, max - i, "CID=%d\n", ctxt->wds_client_id);
+-
+-	if (ctxt->state != STATE_ONLINE)
+-		return i;
+-
+-	i += scnprintf(buf + i, max - i, "ADDR=%d.%d.%d.%d\n",
+-		ctxt->addr[0], ctxt->addr[1], ctxt->addr[2], ctxt->addr[3]);
+-	i += scnprintf(buf + i, max - i, "MASK=%d.%d.%d.%d\n",
+-		ctxt->mask[0], ctxt->mask[1], ctxt->mask[2], ctxt->mask[3]);
+-	i += scnprintf(buf + i, max - i, "GATEWAY=%d.%d.%d.%d\n",
+-		ctxt->gateway[0], ctxt->gateway[1], ctxt->gateway[2],
+-		ctxt->gateway[3]);
+-	i += scnprintf(buf + i, max - i, "DNS1=%d.%d.%d.%d\n",
+-		ctxt->dns1[0], ctxt->dns1[1], ctxt->dns1[2], ctxt->dns1[3]);
+-	i += scnprintf(buf + i, max - i, "DNS2=%d.%d.%d.%d\n",
+-		ctxt->dns2[0], ctxt->dns2[1], ctxt->dns2[2], ctxt->dns2[3]);
+-
+-	return i;
+-}
+-
+-static ssize_t qmi_read(struct file *fp, char __user *buf,
+-			size_t count, loff_t *pos)
+-{
+-	struct qmi_ctxt *ctxt = fp->private_data;
+-	char msg[256];
+-	int len;
+-	int r;
+-
+-	mutex_lock(&ctxt->lock);
+-	for (;;) {
+-		if (ctxt->state_dirty) {
+-			ctxt->state_dirty = 0;
+-			len = qmi_print_state(ctxt, msg, 256);
+-			break;
+-		}
+-		mutex_unlock(&ctxt->lock);
+-		r = wait_event_interruptible(qmi_wait_queue, ctxt->state_dirty);
+-		if (r < 0)
+-			return r;
+-		mutex_lock(&ctxt->lock);
+-	}
+-	mutex_unlock(&ctxt->lock);
+-
+-	if (len > count)
+-		len = count;
+-
+-	if (copy_to_user(buf, msg, len))
+-		return -EFAULT;
+-
+-	return len;
+-}
+-
+-
+-static ssize_t qmi_write(struct file *fp, const char __user *buf,
+-			 size_t count, loff_t *pos)
+-{
+-	struct qmi_ctxt *ctxt = fp->private_data;
+-	unsigned char cmd[64];
+-	int len;
+-	int r;
+-
+-	if (count < 1)
+-		return 0;
+-
+-	len = count > 63 ? 63 : count;
+-
+-	if (copy_from_user(cmd, buf, len))
+-		return -EFAULT;
+-
+-	cmd[len] = 0;
+-
+-	/* lazy */
+-	if (cmd[len-1] == '\n') {
+-		cmd[len-1] = 0;
+-		len--;
+-	}
+-
+-	if (!strncmp(cmd, "verbose", 7)) {
+-		verbose = 1;
+-	} else if (!strncmp(cmd, "terse", 5)) {
+-		verbose = 0;
+-	} else if (!strncmp(cmd, "poll", 4)) {
+-		ctxt->state_dirty = 1;
+-		wake_up(&qmi_wait_queue);
+-	} else if (!strncmp(cmd, "down", 4)) {
+-retry_down:
+-		mutex_lock(&ctxt->lock);
+-		if (ctxt->wds_busy) {
+-			mutex_unlock(&ctxt->lock);
+-			r = wait_event_interruptible(qmi_wait_queue, !ctxt->wds_busy);
+-			if (r < 0)
+-				return r;
+-			goto retry_down;
+-		}
+-		ctxt->wds_busy = 1;
+-		qmi_network_down(ctxt);
+-		mutex_unlock(&ctxt->lock);
+-	} else if (!strncmp(cmd, "up:", 3)) {
+-retry_up:
+-		mutex_lock(&ctxt->lock);
+-		if (ctxt->wds_busy) {
+-			mutex_unlock(&ctxt->lock);
+-			r = wait_event_interruptible(qmi_wait_queue, !ctxt->wds_busy);
+-			if (r < 0)
+-				return r;
+-			goto retry_up;
+-		}
+-		ctxt->wds_busy = 1;
+-		qmi_network_up(ctxt, cmd+3);
+-		mutex_unlock(&ctxt->lock);
+-	} else {
+-		return -EINVAL;
+-	}
+-
+-	return count;
+-}
+-
+-static int qmi_open(struct inode *ip, struct file *fp)
+-{
+-	struct qmi_ctxt *ctxt = qmi_minor_to_ctxt(MINOR(ip->i_rdev));
+-	int r = 0;
+-
+-	if (!ctxt) {
+-		printk(KERN_ERR "unknown qmi misc %d\n", MINOR(ip->i_rdev));
+-		return -ENODEV;
+-	}
+-
+-	fp->private_data = ctxt;
+-
+-	mutex_lock(&ctxt->lock);
+-	if (ctxt->ch == 0)
+-		r = smd_open(ctxt->ch_name, &ctxt->ch, ctxt, qmi_notify);
+-	if (r == 0)
+-		wake_up(&qmi_wait_queue);
+-	mutex_unlock(&ctxt->lock);
+-
+-	return r;
+-}
+-
+-static int qmi_release(struct inode *ip, struct file *fp)
+-{
+-	return 0;
+-}
+-
+-static struct file_operations qmi_fops = {
+-	.owner = THIS_MODULE,
+-	.read = qmi_read,
+-	.write = qmi_write,
+-	.open = qmi_open,
+-	.release = qmi_release,
+-};
+-
+-static struct qmi_ctxt qmi_device0 = {
+-	.ch_name = "SMD_DATA5_CNTL",
+-	.misc = {
+-		.minor = MISC_DYNAMIC_MINOR,
+-		.name = "qmi0",
+-		.fops = &qmi_fops,
+-	}
+-};
+-static struct qmi_ctxt qmi_device1 = {
+-	.ch_name = "SMD_DATA6_CNTL",
+-	.misc = {
+-		.minor = MISC_DYNAMIC_MINOR,
+-		.name = "qmi1",
+-		.fops = &qmi_fops,
+-	}
+-};
+-static struct qmi_ctxt qmi_device2 = {
+-	.ch_name = "SMD_DATA7_CNTL",
+-	.misc = {
+-		.minor = MISC_DYNAMIC_MINOR,
+-		.name = "qmi2",
+-		.fops = &qmi_fops,
+-	}
+-};
+-
+-static struct qmi_ctxt *qmi_minor_to_ctxt(unsigned n)
+-{
+-	if (n == qmi_device0.misc.minor)
+-		return &qmi_device0;
+-	if (n == qmi_device1.misc.minor)
+-		return &qmi_device1;
+-	if (n == qmi_device2.misc.minor)
+-		return &qmi_device2;
+-	return 0;
+-}
+-
+-static int __init qmi_init(void)
+-{
+-	int ret;
+-
+-	qmi_wq = create_singlethread_workqueue("qmi");
+-	if (qmi_wq == 0)
+-		return -ENOMEM;
+-
+-	qmi_ctxt_init(&qmi_device0, 0);
+-	qmi_ctxt_init(&qmi_device1, 1);
+-	qmi_ctxt_init(&qmi_device2, 2);
+-
+-	ret = misc_register(&qmi_device0.misc);
+-	if (ret == 0)
+-		ret = misc_register(&qmi_device1.misc);
+-	if (ret == 0)
+-		ret = misc_register(&qmi_device2.misc);
+-	return ret;
+-}
+-
+-module_init(qmi_init);
+diff --git a/drivers/staging/dream/smd/smd_rpcrouter.c b/drivers/staging/dream/smd/smd_rpcrouter.c
+deleted file mode 100644
+index 8744a6e..0000000
+--- a/drivers/staging/dream/smd/smd_rpcrouter.c
++++ /dev/null
+@@ -1,1261 +0,0 @@
+-/* arch/arm/mach-msm/smd_rpcrouter.c
+- *
+- * Copyright (C) 2007 Google, Inc.
+- * Copyright (c) 2007-2009 QUALCOMM Incorporated.
+- * Author: San Mehat <san@android.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-/* TODO: handle cases where smd_write() will tempfail due to full fifo */
+-/* TODO: thread priority? schedule a work to bump it? */
+-/* TODO: maybe make server_list_lock a mutex */
+-/* TODO: pool fragments to avoid kmalloc/kfree churn */
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/string.h>
+-#include <linux/errno.h>
+-#include <linux/cdev.h>
+-#include <linux/init.h>
+-#include <linux/device.h>
+-#include <linux/types.h>
+-#include <linux/delay.h>
+-#include <linux/fs.h>
+-#include <linux/err.h>
+-#include <linux/sched.h>
+-#include <linux/poll.h>
+-#include <linux/slab.h>
+-#include <asm/uaccess.h>
+-#include <asm/byteorder.h>
+-#include <linux/platform_device.h>
+-#include <linux/uaccess.h>
+-
+-#include <mach/msm_smd.h>
+-#include "smd_rpcrouter.h"
+-
+-#define TRACE_R2R_MSG 0
+-#define TRACE_R2R_RAW 0
+-#define TRACE_RPC_MSG 0
+-#define TRACE_NOTIFY_MSG 0
+-
+-#define MSM_RPCROUTER_DEBUG 0
+-#define MSM_RPCROUTER_DEBUG_PKT 0
+-#define MSM_RPCROUTER_R2R_DEBUG 0
+-#define DUMP_ALL_RECEIVED_HEADERS 0
+-
+-#define DIAG(x...) printk("[RR] ERROR " x)
+-
+-#if MSM_RPCROUTER_DEBUG
+-#define D(x...) printk(x)
+-#else
+-#define D(x...) do {} while (0)
+-#endif
+-
+-#if TRACE_R2R_MSG
+-#define RR(x...) printk("[RR] "x)
+-#else
+-#define RR(x...) do {} while (0)
+-#endif
+-
+-#if TRACE_RPC_MSG
+-#define IO(x...) printk("[RPC] "x)
+-#else
+-#define IO(x...) do {} while (0)
+-#endif
+-
+-#if TRACE_NOTIFY_MSG
+-#define NTFY(x...) printk(KERN_ERR "[NOTIFY] "x)
+-#else
+-#define NTFY(x...) do {} while (0)
+-#endif
+-
+-static LIST_HEAD(local_endpoints);
+-static LIST_HEAD(remote_endpoints);
+-
+-static LIST_HEAD(server_list);
+-
+-static smd_channel_t *smd_channel;
+-static int initialized;
+-static wait_queue_head_t newserver_wait;
+-static wait_queue_head_t smd_wait;
+-
+-static DEFINE_SPINLOCK(local_endpoints_lock);
+-static DEFINE_SPINLOCK(remote_endpoints_lock);
+-static DEFINE_SPINLOCK(server_list_lock);
+-static DEFINE_SPINLOCK(smd_lock);
+-
+-static struct workqueue_struct *rpcrouter_workqueue;
+-static int rpcrouter_need_len;
+-
+-static atomic_t next_xid = ATOMIC_INIT(1);
+-static uint8_t next_pacmarkid;
+-
+-static void do_read_data(struct work_struct *work);
+-static void do_create_pdevs(struct work_struct *work);
+-static void do_create_rpcrouter_pdev(struct work_struct *work);
+-
+-static DECLARE_WORK(work_read_data, do_read_data);
+-static DECLARE_WORK(work_create_pdevs, do_create_pdevs);
+-static DECLARE_WORK(work_create_rpcrouter_pdev, do_create_rpcrouter_pdev);
+-
+-#define RR_STATE_IDLE    0
+-#define RR_STATE_HEADER  1
+-#define RR_STATE_BODY    2
+-#define RR_STATE_ERROR   3
+-
+-struct rr_context {
+-	struct rr_packet *pkt;
+-	uint8_t *ptr;
+-	uint32_t state; /* current assembly state */
+-	uint32_t count; /* bytes needed in this state */
+-};
+-
+-static struct rr_context the_rr_context;
+-
+-static struct platform_device rpcrouter_pdev = {
+-	.name		= "oncrpc_router",
+-	.id		= -1,
+-};
+-
+-
+-static int rpcrouter_send_control_msg(union rr_control_msg *msg)
+-{
+-	struct rr_header hdr;
+-	unsigned long flags;
+-	int need;
+-
+-	if (!(msg->cmd == RPCROUTER_CTRL_CMD_HELLO) && !initialized) {
+-		printk(KERN_ERR "rpcrouter_send_control_msg(): Warning, "
+-		       "router not initialized\n");
+-		return -EINVAL;
+-	}
+-
+-	hdr.version = RPCROUTER_VERSION;
+-	hdr.type = msg->cmd;
+-	hdr.src_pid = RPCROUTER_PID_LOCAL;
+-	hdr.src_cid = RPCROUTER_ROUTER_ADDRESS;
+-	hdr.confirm_rx = 0;
+-	hdr.size = sizeof(*msg);
+-	hdr.dst_pid = 0;
+-	hdr.dst_cid = RPCROUTER_ROUTER_ADDRESS;
+-
+-	/* TODO: what if channel is full? */
+-
+-	need = sizeof(hdr) + hdr.size;
+-	spin_lock_irqsave(&smd_lock, flags);
+-	while (smd_write_avail(smd_channel) < need) {
+-		spin_unlock_irqrestore(&smd_lock, flags);
+-		msleep(250);
+-		spin_lock_irqsave(&smd_lock, flags);
+-	}
+-	smd_write(smd_channel, &hdr, sizeof(hdr));
+-	smd_write(smd_channel, msg, hdr.size);
+-	spin_unlock_irqrestore(&smd_lock, flags);
+-	return 0;
+-}
+-
+-static struct rr_server *rpcrouter_create_server(uint32_t pid,
+-							uint32_t cid,
+-							uint32_t prog,
+-							uint32_t ver)
+-{
+-	struct rr_server *server;
+-	unsigned long flags;
+-	int rc;
+-
+-	server = kmalloc(sizeof(struct rr_server), GFP_KERNEL);
+-	if (!server)
+-		return ERR_PTR(-ENOMEM);
+-
+-	memset(server, 0, sizeof(struct rr_server));
+-	server->pid = pid;
+-	server->cid = cid;
+-	server->prog = prog;
+-	server->vers = ver;
+-
+-	spin_lock_irqsave(&server_list_lock, flags);
+-	list_add_tail(&server->list, &server_list);
+-	spin_unlock_irqrestore(&server_list_lock, flags);
+-
+-	if (pid == RPCROUTER_PID_REMOTE) {
+-		rc = msm_rpcrouter_create_server_cdev(server);
+-		if (rc < 0)
+-			goto out_fail;
+-	}
+-	return server;
+-out_fail:
+-	spin_lock_irqsave(&server_list_lock, flags);
+-	list_del(&server->list);
+-	spin_unlock_irqrestore(&server_list_lock, flags);
+-	kfree(server);
+-	return ERR_PTR(rc);
+-}
+-
+-static void rpcrouter_destroy_server(struct rr_server *server)
+-{
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&server_list_lock, flags);
+-	list_del(&server->list);
+-	spin_unlock_irqrestore(&server_list_lock, flags);
+-	device_destroy(msm_rpcrouter_class, server->device_number);
+-	kfree(server);
+-}
+-
+-static struct rr_server *rpcrouter_lookup_server(uint32_t prog, uint32_t ver)
+-{
+-	struct rr_server *server;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&server_list_lock, flags);
+-	list_for_each_entry(server, &server_list, list) {
+-		if (server->prog == prog
+-		 && server->vers == ver) {
+-			spin_unlock_irqrestore(&server_list_lock, flags);
+-			return server;
+-		}
+-	}
+-	spin_unlock_irqrestore(&server_list_lock, flags);
+-	return NULL;
+-}
+-
+-static struct rr_server *rpcrouter_lookup_server_by_dev(dev_t dev)
+-{
+-	struct rr_server *server;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&server_list_lock, flags);
+-	list_for_each_entry(server, &server_list, list) {
+-		if (server->device_number == dev) {
+-			spin_unlock_irqrestore(&server_list_lock, flags);
+-			return server;
+-		}
+-	}
+-	spin_unlock_irqrestore(&server_list_lock, flags);
+-	return NULL;
+-}
+-
+-struct msm_rpc_endpoint *msm_rpcrouter_create_local_endpoint(dev_t dev)
+-{
+-	struct msm_rpc_endpoint *ept;
+-	unsigned long flags;
+-
+-	ept = kmalloc(sizeof(struct msm_rpc_endpoint), GFP_KERNEL);
+-	if (!ept)
+-		return NULL;
+-	memset(ept, 0, sizeof(struct msm_rpc_endpoint));
+-
+-	/* mark no reply outstanding */
+-	ept->reply_pid = 0xffffffff;
+-
+-	ept->cid = (uint32_t) ept;
+-	ept->pid = RPCROUTER_PID_LOCAL;
+-	ept->dev = dev;
+-
+-	if ((dev != msm_rpcrouter_devno) && (dev != MKDEV(0, 0))) {
+-		struct rr_server *srv;
+-		/*
+-		 * This is a userspace client which opened
+-		 * a program/ver devicenode. Bind the client
+-		 * to that destination
+-		 */
+-		srv = rpcrouter_lookup_server_by_dev(dev);
+-		/* TODO: bug? really? */
+-		BUG_ON(!srv);
+-
+-		ept->dst_pid = srv->pid;
+-		ept->dst_cid = srv->cid;
+-		ept->dst_prog = cpu_to_be32(srv->prog);
+-		ept->dst_vers = cpu_to_be32(srv->vers);
+-
+-		D("Creating local ept %p @ %08x:%08x\n", ept, srv->prog, srv->vers);
+-	} else {
+-		/* mark not connected */
+-		ept->dst_pid = 0xffffffff;
+-		D("Creating a master local ept %p\n", ept);
+-	}
+-
+-	init_waitqueue_head(&ept->wait_q);
+-	INIT_LIST_HEAD(&ept->read_q);
+-	spin_lock_init(&ept->read_q_lock);
+-	INIT_LIST_HEAD(&ept->incomplete);
+-
+-	spin_lock_irqsave(&local_endpoints_lock, flags);
+-	list_add_tail(&ept->list, &local_endpoints);
+-	spin_unlock_irqrestore(&local_endpoints_lock, flags);
+-	return ept;
+-}
+-
+-int msm_rpcrouter_destroy_local_endpoint(struct msm_rpc_endpoint *ept)
+-{
+-	int rc;
+-	union rr_control_msg msg;
+-
+-	msg.cmd = RPCROUTER_CTRL_CMD_REMOVE_CLIENT;
+-	msg.cli.pid = ept->pid;
+-	msg.cli.cid = ept->cid;
+-
+-	RR("x REMOVE_CLIENT id=%d:%08x\n", ept->pid, ept->cid);
+-	rc = rpcrouter_send_control_msg(&msg);
+-	if (rc < 0)
+-		return rc;
+-
+-	list_del(&ept->list);
+-	kfree(ept);
+-	return 0;
+-}
+-
+-static int rpcrouter_create_remote_endpoint(uint32_t cid)
+-{
+-	struct rr_remote_endpoint *new_c;
+-	unsigned long flags;
+-
+-	new_c = kmalloc(sizeof(struct rr_remote_endpoint), GFP_KERNEL);
+-	if (!new_c)
+-		return -ENOMEM;
+-	memset(new_c, 0, sizeof(struct rr_remote_endpoint));
+-
+-	new_c->cid = cid;
+-	new_c->pid = RPCROUTER_PID_REMOTE;
+-	init_waitqueue_head(&new_c->quota_wait);
+-	spin_lock_init(&new_c->quota_lock);
+-
+-	spin_lock_irqsave(&remote_endpoints_lock, flags);
+-	list_add_tail(&new_c->list, &remote_endpoints);
+-	spin_unlock_irqrestore(&remote_endpoints_lock, flags);
+-	return 0;
+-}
+-
+-static struct msm_rpc_endpoint *rpcrouter_lookup_local_endpoint(uint32_t cid)
+-{
+-	struct msm_rpc_endpoint *ept;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&local_endpoints_lock, flags);
+-	list_for_each_entry(ept, &local_endpoints, list) {
+-		if (ept->cid == cid) {
+-			spin_unlock_irqrestore(&local_endpoints_lock, flags);
+-			return ept;
+-		}
+-	}
+-	spin_unlock_irqrestore(&local_endpoints_lock, flags);
+-	return NULL;
+-}
+-
+-static struct rr_remote_endpoint *rpcrouter_lookup_remote_endpoint(uint32_t cid)
+-{
+-	struct rr_remote_endpoint *ept;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&remote_endpoints_lock, flags);
+-	list_for_each_entry(ept, &remote_endpoints, list) {
+-		if (ept->cid == cid) {
+-			spin_unlock_irqrestore(&remote_endpoints_lock, flags);
+-			return ept;
+-		}
+-	}
+-	spin_unlock_irqrestore(&remote_endpoints_lock, flags);
+-	return NULL;
+-}
+-
+-static int process_control_msg(union rr_control_msg *msg, int len)
+-{
+-	union rr_control_msg ctl;
+-	struct rr_server *server;
+-	struct rr_remote_endpoint *r_ept;
+-	int rc = 0;
+-	unsigned long flags;
+-
+-	if (len != sizeof(*msg)) {
+-		printk(KERN_ERR "rpcrouter: r2r msg size %d != %d\n",
+-		       len, sizeof(*msg));
+-		return -EINVAL;
+-	}
+-
+-	switch (msg->cmd) {
+-	case RPCROUTER_CTRL_CMD_HELLO:
+-		RR("o HELLO\n");
+-
+-		RR("x HELLO\n");
+-		memset(&ctl, 0, sizeof(ctl));
+-		ctl.cmd = RPCROUTER_CTRL_CMD_HELLO;
+-		rpcrouter_send_control_msg(&ctl);
+-
+-		initialized = 1;
+-
+-		/* Send list of servers one at a time */
+-		ctl.cmd = RPCROUTER_CTRL_CMD_NEW_SERVER;
+-
+-		/* TODO: long time to hold a spinlock... */
+-		spin_lock_irqsave(&server_list_lock, flags);
+-		list_for_each_entry(server, &server_list, list) {
+-			ctl.srv.pid = server->pid;
+-			ctl.srv.cid = server->cid;
+-			ctl.srv.prog = server->prog;
+-			ctl.srv.vers = server->vers;
+-
+-			RR("x NEW_SERVER id=%d:%08x prog=%08x:%08x\n",
+-			   server->pid, server->cid,
+-			   server->prog, server->vers);
+-
+-			rpcrouter_send_control_msg(&ctl);
+-		}
+-		spin_unlock_irqrestore(&server_list_lock, flags);
+-
+-		queue_work(rpcrouter_workqueue, &work_create_rpcrouter_pdev);
+-		break;
+-
+-	case RPCROUTER_CTRL_CMD_RESUME_TX:
+-		RR("o RESUME_TX id=%d:%08x\n", msg->cli.pid, msg->cli.cid);
+-
+-		r_ept = rpcrouter_lookup_remote_endpoint(msg->cli.cid);
+-		if (!r_ept) {
+-			printk(KERN_ERR
+-			       "rpcrouter: Unable to resume client\n");
+-			break;
+-		}
+-		spin_lock_irqsave(&r_ept->quota_lock, flags);
+-		r_ept->tx_quota_cntr = 0;
+-		spin_unlock_irqrestore(&r_ept->quota_lock, flags);
+-		wake_up(&r_ept->quota_wait);
+-		break;
+-
+-	case RPCROUTER_CTRL_CMD_NEW_SERVER:
+-		RR("o NEW_SERVER id=%d:%08x prog=%08x:%08x\n",
+-		   msg->srv.pid, msg->srv.cid, msg->srv.prog, msg->srv.vers);
+-
+-		server = rpcrouter_lookup_server(msg->srv.prog, msg->srv.vers);
+-
+-		if (!server) {
+-			server = rpcrouter_create_server(
+-				msg->srv.pid, msg->srv.cid,
+-				msg->srv.prog, msg->srv.vers);
+-			if (!server)
+-				return -ENOMEM;
+-			/*
+-			 * XXX: Verify that its okay to add the
+-			 * client to our remote client list
+-			 * if we get a NEW_SERVER notification
+-			 */
+-			if (!rpcrouter_lookup_remote_endpoint(msg->srv.cid)) {
+-				rc = rpcrouter_create_remote_endpoint(
+-					msg->srv.cid);
+-				if (rc < 0)
+-					printk(KERN_ERR
+-						"rpcrouter:Client create"
+-						"error (%d)\n", rc);
+-			}
+-			schedule_work(&work_create_pdevs);
+-			wake_up(&newserver_wait);
+-		} else {
+-			if ((server->pid == msg->srv.pid) &&
+-			    (server->cid == msg->srv.cid)) {
+-				printk(KERN_ERR "rpcrouter: Duplicate svr\n");
+-			} else {
+-				server->pid = msg->srv.pid;
+-				server->cid = msg->srv.cid;
+-			}
+-		}
+-		break;
+-
+-	case RPCROUTER_CTRL_CMD_REMOVE_SERVER:
+-		RR("o REMOVE_SERVER prog=%08x:%d\n",
+-		   msg->srv.prog, msg->srv.vers);
+-		server = rpcrouter_lookup_server(msg->srv.prog, msg->srv.vers);
+-		if (server)
+-			rpcrouter_destroy_server(server);
+-		break;
+-
+-	case RPCROUTER_CTRL_CMD_REMOVE_CLIENT:
+-		RR("o REMOVE_CLIENT id=%d:%08x\n", msg->cli.pid, msg->cli.cid);
+-		if (msg->cli.pid != RPCROUTER_PID_REMOTE) {
+-			printk(KERN_ERR
+-			       "rpcrouter: Denying remote removal of "
+-			       "local client\n");
+-			break;
+-		}
+-		r_ept = rpcrouter_lookup_remote_endpoint(msg->cli.cid);
+-		if (r_ept) {
+-			spin_lock_irqsave(&remote_endpoints_lock, flags);
+-			list_del(&r_ept->list);
+-			spin_unlock_irqrestore(&remote_endpoints_lock, flags);
+-			kfree(r_ept);
+-		}
+-
+-		/* Notify local clients of this event */
+-		printk(KERN_ERR "rpcrouter: LOCAL NOTIFICATION NOT IMP\n");
+-		rc = -ENOSYS;
+-
+-		break;
+-	default:
+-		RR("o UNKNOWN(%08x)\n", msg->cmd);
+-		rc = -ENOSYS;
+-	}
+-
+-	return rc;
+-}
+-
+-static void do_create_rpcrouter_pdev(struct work_struct *work)
+-{
+-	platform_device_register(&rpcrouter_pdev);
+-}
+-
+-static void do_create_pdevs(struct work_struct *work)
+-{
+-	unsigned long flags;
+-	struct rr_server *server;
+-
+-	/* TODO: race if destroyed while being registered */
+-	spin_lock_irqsave(&server_list_lock, flags);
+-	list_for_each_entry(server, &server_list, list) {
+-		if (server->pid == RPCROUTER_PID_REMOTE) {
+-			if (server->pdev_name[0] == 0) {
+-				spin_unlock_irqrestore(&server_list_lock,
+-						       flags);
+-				msm_rpcrouter_create_server_pdev(server);
+-				schedule_work(&work_create_pdevs);
+-				return;
+-			}
+-		}
+-	}
+-	spin_unlock_irqrestore(&server_list_lock, flags);
+-}
+-
+-static void rpcrouter_smdnotify(void *_dev, unsigned event)
+-{
+-	if (event != SMD_EVENT_DATA)
+-		return;
+-
+-	wake_up(&smd_wait);
+-}
+-
+-static void *rr_malloc(unsigned sz)
+-{
+-	void *ptr = kmalloc(sz, GFP_KERNEL);
+-	if (ptr)
+-		return ptr;
+-
+-	printk(KERN_ERR "rpcrouter: kmalloc of %d failed, retrying...\n", sz);
+-	do {
+-		ptr = kmalloc(sz, GFP_KERNEL);
+-	} while (!ptr);
+-
+-	return ptr;
+-}
+-
+-/* TODO: deal with channel teardown / restore */
+-static int rr_read(void *data, int len)
+-{
+-	int rc;
+-	unsigned long flags;
+-//	printk("rr_read() %d\n", len);
+-	for(;;) {
+-		spin_lock_irqsave(&smd_lock, flags);
+-		if (smd_read_avail(smd_channel) >= len) {
+-			rc = smd_read(smd_channel, data, len);
+-			spin_unlock_irqrestore(&smd_lock, flags);
+-			if (rc == len)
+-				return 0;
+-			else
+-				return -EIO;
+-		}
+-		rpcrouter_need_len = len;
+-		spin_unlock_irqrestore(&smd_lock, flags);
+-
+-//		printk("rr_read: waiting (%d)\n", len);
+-		wait_event(smd_wait, smd_read_avail(smd_channel) >= len);
+-	}
+-	return 0;
+-}
+-
+-static uint32_t r2r_buf[RPCROUTER_MSGSIZE_MAX];
+-
+-static void do_read_data(struct work_struct *work)
+-{
+-	struct rr_header hdr;
+-	struct rr_packet *pkt;
+-	struct rr_fragment *frag;
+-	struct msm_rpc_endpoint *ept;
+-	uint32_t pm, mid;
+-	unsigned long flags;
+-
+-	if (rr_read(&hdr, sizeof(hdr)))
+-		goto fail_io;
+-
+-#if TRACE_R2R_RAW
+-	RR("- ver=%d type=%d src=%d:%08x crx=%d siz=%d dst=%d:%08x\n",
+-	   hdr.version, hdr.type, hdr.src_pid, hdr.src_cid,
+-	   hdr.confirm_rx, hdr.size, hdr.dst_pid, hdr.dst_cid);
+-#endif
+-
+-	if (hdr.version != RPCROUTER_VERSION) {
+-		DIAG("version %d != %d\n", hdr.version, RPCROUTER_VERSION);
+-		goto fail_data;
+-	}
+-	if (hdr.size > RPCROUTER_MSGSIZE_MAX) {
+-		DIAG("msg size %d > max %d\n", hdr.size, RPCROUTER_MSGSIZE_MAX);
+-		goto fail_data;
+-	}
+-
+-	if (hdr.dst_cid == RPCROUTER_ROUTER_ADDRESS) {
+-		if (rr_read(r2r_buf, hdr.size))
+-			goto fail_io;
+-		process_control_msg((void*) r2r_buf, hdr.size);
+-		goto done;
+-	}
+-
+-	if (hdr.size < sizeof(pm)) {
+-		DIAG("runt packet (no pacmark)\n");
+-		goto fail_data;
+-	}
+-	if (rr_read(&pm, sizeof(pm)))
+-		goto fail_io;
+-
+-	hdr.size -= sizeof(pm);
+-
+-	frag = rr_malloc(hdr.size + sizeof(*frag));
+-	frag->next = NULL;
+-	frag->length = hdr.size;
+-	if (rr_read(frag->data, hdr.size))
+-		goto fail_io;
+-
+-	ept = rpcrouter_lookup_local_endpoint(hdr.dst_cid);
+-	if (!ept) {
+-		DIAG("no local ept for cid %08x\n", hdr.dst_cid);
+-		kfree(frag);
+-		goto done;
+-	}
+-
+-	/* See if there is already a partial packet that matches our mid
+-	 * and if so, append this fragment to that packet.
+-	 */
+-	mid = PACMARK_MID(pm);
+-	list_for_each_entry(pkt, &ept->incomplete, list) {
+-		if (pkt->mid == mid) {
+-			pkt->last->next = frag;
+-			pkt->last = frag;
+-			pkt->length += frag->length;
+-			if (PACMARK_LAST(pm)) {
+-				list_del(&pkt->list);
+-				goto packet_complete;
+-			}
+-			goto done;
+-		}
+-	}
+-	/* This mid is new -- create a packet for it, and put it on
+-	 * the incomplete list if this fragment is not a last fragment,
+-	 * otherwise put it on the read queue.
+-	 */
+-	pkt = rr_malloc(sizeof(struct rr_packet));
+-	pkt->first = frag;
+-	pkt->last = frag;
+-	memcpy(&pkt->hdr, &hdr, sizeof(hdr));
+-	pkt->mid = mid;
+-	pkt->length = frag->length;
+-	if (!PACMARK_LAST(pm)) {
+-		list_add_tail(&pkt->list, &ept->incomplete);
+-		goto done;
+-	}
+-
+-packet_complete:
+-	spin_lock_irqsave(&ept->read_q_lock, flags);
+-	list_add_tail(&pkt->list, &ept->read_q);
+-	wake_up(&ept->wait_q);
+-	spin_unlock_irqrestore(&ept->read_q_lock, flags);
+-done:
+-
+-	if (hdr.confirm_rx) {
+-		union rr_control_msg msg;
+-
+-		msg.cmd = RPCROUTER_CTRL_CMD_RESUME_TX;
+-		msg.cli.pid = hdr.dst_pid;
+-		msg.cli.cid = hdr.dst_cid;
+-
+-		RR("x RESUME_TX id=%d:%08x\n", msg.cli.pid, msg.cli.cid);
+-		rpcrouter_send_control_msg(&msg);
+-	}
+-
+-	queue_work(rpcrouter_workqueue, &work_read_data);
+-	return;
+-
+-fail_io:
+-fail_data:
+-	printk(KERN_ERR "rpc_router has died\n");
+-}
+-
+-void msm_rpc_setup_req(struct rpc_request_hdr *hdr, uint32_t prog,
+-		       uint32_t vers, uint32_t proc)
+-{
+-	memset(hdr, 0, sizeof(struct rpc_request_hdr));
+-	hdr->xid = cpu_to_be32(atomic_add_return(1, &next_xid));
+-	hdr->rpc_vers = cpu_to_be32(2);
+-	hdr->prog = cpu_to_be32(prog);
+-	hdr->vers = cpu_to_be32(vers);
+-	hdr->procedure = cpu_to_be32(proc);
+-}
+-
+-struct msm_rpc_endpoint *msm_rpc_open(void)
+-{
+-	struct msm_rpc_endpoint *ept;
+-
+-	ept = msm_rpcrouter_create_local_endpoint(MKDEV(0, 0));
+-	if (ept == NULL)
+-		return ERR_PTR(-ENOMEM);
+-
+-	return ept;
+-}
+-
+-int msm_rpc_close(struct msm_rpc_endpoint *ept)
+-{
+-	return msm_rpcrouter_destroy_local_endpoint(ept);
+-}
+-EXPORT_SYMBOL(msm_rpc_close);
+-
+-int msm_rpc_write(struct msm_rpc_endpoint *ept, void *buffer, int count)
+-{
+-	struct rr_header hdr;
+-	uint32_t pacmark;
+-	struct rpc_request_hdr *rq = buffer;
+-	struct rr_remote_endpoint *r_ept;
+-	unsigned long flags;
+-	int needed;
+-	DEFINE_WAIT(__wait);
+-
+-	/* TODO: fragmentation for large outbound packets */
+-	if (count > (RPCROUTER_MSGSIZE_MAX - sizeof(uint32_t)) || !count)
+-		return -EINVAL;
+-
+-	/* snoop the RPC packet and enforce permissions */
+-
+-	/* has to have at least the xid and type fields */
+-	if (count < (sizeof(uint32_t) * 2)) {
+-		printk(KERN_ERR "rr_write: rejecting runt packet\n");
+-		return -EINVAL;
+-	}
+-
+-	if (rq->type == 0) {
+-		/* RPC CALL */
+-		if (count < (sizeof(uint32_t) * 6)) {
+-			printk(KERN_ERR
+-			       "rr_write: rejecting runt call packet\n");
+-			return -EINVAL;
+-		}
+-		if (ept->dst_pid == 0xffffffff) {
+-			printk(KERN_ERR "rr_write: not connected\n");
+-			return -ENOTCONN;
+-		}
+-
+-#if CONFIG_MSM_AMSS_VERSION >= 6350
+-		if ((ept->dst_prog != rq->prog) ||
+-			!msm_rpc_is_compatible_version(
+-					be32_to_cpu(ept->dst_vers),
+-					be32_to_cpu(rq->vers))) {
+-#else
+-		if (ept->dst_prog != rq->prog || ept->dst_vers != rq->vers) {
+-#endif
+-			printk(KERN_ERR
+-			       "rr_write: cannot write to %08x:%d "
+-			       "(bound to %08x:%d)\n",
+-			       be32_to_cpu(rq->prog), be32_to_cpu(rq->vers),
+-			       be32_to_cpu(ept->dst_prog),
+-			       be32_to_cpu(ept->dst_vers));
+-			return -EINVAL;
+-		}
+-		hdr.dst_pid = ept->dst_pid;
+-		hdr.dst_cid = ept->dst_cid;
+-		IO("CALL on ept %p to %08x:%08x @ %d:%08x (%d bytes) (xid %x proc %x)\n",
+-		   ept,
+-		   be32_to_cpu(rq->prog), be32_to_cpu(rq->vers),
+-		   ept->dst_pid, ept->dst_cid, count,
+-		   be32_to_cpu(rq->xid), be32_to_cpu(rq->procedure));
+-	} else {
+-		/* RPC REPLY */
+-		/* TODO: locking */
+-		if (ept->reply_pid == 0xffffffff) {
+-			printk(KERN_ERR
+-			       "rr_write: rejecting unexpected reply\n");
+-			return -EINVAL;
+-		}
+-		if (ept->reply_xid != rq->xid) {
+-			printk(KERN_ERR
+-			       "rr_write: rejecting packet w/ bad xid\n");
+-			return -EINVAL;
+-		}
+-
+-		hdr.dst_pid = ept->reply_pid;
+-		hdr.dst_cid = ept->reply_cid;
+-
+-		/* consume this reply */
+-		ept->reply_pid = 0xffffffff;
+-
+-		IO("REPLY on ept %p to xid=%d @ %d:%08x (%d bytes)\n",
+-		   ept,
+-		   be32_to_cpu(rq->xid), hdr.dst_pid, hdr.dst_cid, count);
+-	}
+-
+-	r_ept = rpcrouter_lookup_remote_endpoint(hdr.dst_cid);
+-
+-	if (!r_ept) {
+-		printk(KERN_ERR
+-			"msm_rpc_write(): No route to ept "
+-			"[PID %x CID %x]\n", hdr.dst_pid, hdr.dst_cid);
+-		return -EHOSTUNREACH;
+-	}
+-
+-	/* Create routing header */
+-	hdr.type = RPCROUTER_CTRL_CMD_DATA;
+-	hdr.version = RPCROUTER_VERSION;
+-	hdr.src_pid = ept->pid;
+-	hdr.src_cid = ept->cid;
+-	hdr.confirm_rx = 0;
+-	hdr.size = count + sizeof(uint32_t);
+-
+-	for (;;) {
+-		prepare_to_wait(&r_ept->quota_wait, &__wait,
+-				TASK_INTERRUPTIBLE);
+-		spin_lock_irqsave(&r_ept->quota_lock, flags);
+-		if (r_ept->tx_quota_cntr < RPCROUTER_DEFAULT_RX_QUOTA)
+-			break;
+-		if (signal_pending(current) &&
+-		    (!(ept->flags & MSM_RPC_UNINTERRUPTIBLE)))
+-			break;
+-		spin_unlock_irqrestore(&r_ept->quota_lock, flags);
+-		schedule();
+-	}
+-	finish_wait(&r_ept->quota_wait, &__wait);
+-
+-	if (signal_pending(current) &&
+-	    (!(ept->flags & MSM_RPC_UNINTERRUPTIBLE))) {
+-		spin_unlock_irqrestore(&r_ept->quota_lock, flags);
+-		return -ERESTARTSYS;
+-	}
+-	r_ept->tx_quota_cntr++;
+-	if (r_ept->tx_quota_cntr == RPCROUTER_DEFAULT_RX_QUOTA)
+-		hdr.confirm_rx = 1;
+-
+-	/* bump pacmark while interrupts disabled to avoid race
+-	 * probably should be atomic op instead
+-	 */
+-	pacmark = PACMARK(count, ++next_pacmarkid, 0, 1);
+-
+-	spin_unlock_irqrestore(&r_ept->quota_lock, flags);
+-
+-	spin_lock_irqsave(&smd_lock, flags);
+-
+-	needed = sizeof(hdr) + hdr.size;
+-	while (smd_write_avail(smd_channel) < needed) {
+-		spin_unlock_irqrestore(&smd_lock, flags);
+-		msleep(250);
+-		spin_lock_irqsave(&smd_lock, flags);
+-	}
+-
+-	/* TODO: deal with full fifo */
+-	smd_write(smd_channel, &hdr, sizeof(hdr));
+-	smd_write(smd_channel, &pacmark, sizeof(pacmark));
+-	smd_write(smd_channel, buffer, count);
+-
+-	spin_unlock_irqrestore(&smd_lock, flags);
+-
+-	return count;
+-}
+-EXPORT_SYMBOL(msm_rpc_write);
+-
+-/*
+- * NOTE: It is the responsibility of the caller to kfree buffer
+- */
+-int msm_rpc_read(struct msm_rpc_endpoint *ept, void **buffer,
+-		 unsigned user_len, long timeout)
+-{
+-	struct rr_fragment *frag, *next;
+-	char *buf;
+-	int rc;
+-
+-	rc = __msm_rpc_read(ept, &frag, user_len, timeout);
+-	if (rc <= 0)
+-		return rc;
+-
+-	/* single-fragment messages conveniently can be
+-	 * returned as-is (the buffer is at the front)
+-	 */
+-	if (frag->next == 0) {
+-		*buffer = (void*) frag;
+-		return rc;
+-	}
+-
+-	/* multi-fragment messages, we have to do it the
+-	 * hard way, which is rather disgusting right now
+-	 */
+-	buf = rr_malloc(rc);
+-	*buffer = buf;
+-
+-	while (frag != NULL) {
+-		memcpy(buf, frag->data, frag->length);
+-		next = frag->next;
+-		buf += frag->length;
+-		kfree(frag);
+-		frag = next;
+-	}
+-
+-	return rc;
+-}
+-
+-int msm_rpc_call(struct msm_rpc_endpoint *ept, uint32_t proc,
+-		 void *_request, int request_size,
+-		 long timeout)
+-{
+-	return msm_rpc_call_reply(ept, proc,
+-				  _request, request_size,
+-				  NULL, 0, timeout);
+-}
+-EXPORT_SYMBOL(msm_rpc_call);
+-
+-int msm_rpc_call_reply(struct msm_rpc_endpoint *ept, uint32_t proc,
+-		       void *_request, int request_size,
+-		       void *_reply, int reply_size,
+-		       long timeout)
+-{
+-	struct rpc_request_hdr *req = _request;
+-	struct rpc_reply_hdr *reply;
+-	int rc;
+-
+-	if (request_size < sizeof(*req))
+-		return -ETOOSMALL;
+-
+-	if (ept->dst_pid == 0xffffffff)
+-		return -ENOTCONN;
+-
+-	/* We can't use msm_rpc_setup_req() here, because dst_prog and
+-	 * dst_vers here are already in BE.
+-	 */
+-	memset(req, 0, sizeof(*req));
+-	req->xid = cpu_to_be32(atomic_add_return(1, &next_xid));
+-	req->rpc_vers = cpu_to_be32(2);
+-	req->prog = ept->dst_prog;
+-	req->vers = ept->dst_vers;
+-	req->procedure = cpu_to_be32(proc);
+-
+-	rc = msm_rpc_write(ept, req, request_size);
+-	if (rc < 0)
+-		return rc;
+-
+-	for (;;) {
+-		rc = msm_rpc_read(ept, (void*) &reply, -1, timeout);
+-		if (rc < 0)
+-			return rc;
+-		if (rc < (3 * sizeof(uint32_t))) {
+-			rc = -EIO;
+-			break;
+-		}
+-		/* we should not get CALL packets -- ignore them */
+-		if (reply->type == 0) {
+-			kfree(reply);
+-			continue;
+-		}
+-		/* If an earlier call timed out, we could get the (no
+-		 * longer wanted) reply for it.  Ignore replies that
+-		 * we don't expect.
+-		 */
+-		if (reply->xid != req->xid) {
+-			kfree(reply);
+-			continue;
+-		}
+-		if (reply->reply_stat != 0) {
+-			rc = -EPERM;
+-			break;
+-		}
+-		if (reply->data.acc_hdr.accept_stat != 0) {
+-			rc = -EINVAL;
+-			break;
+-		}
+-		if (_reply == NULL) {
+-			rc = 0;
+-			break;
+-		}
+-		if (rc > reply_size) {
+-			rc = -ENOMEM;
+-		} else {
+-			memcpy(_reply, reply, rc);
+-		}
+-		break;
+-	}
+-	kfree(reply);
+-	return rc;
+-}
+-EXPORT_SYMBOL(msm_rpc_call_reply);
+-
+-
+-static inline int ept_packet_available(struct msm_rpc_endpoint *ept)
+-{
+-	unsigned long flags;
+-	int ret;
+-	spin_lock_irqsave(&ept->read_q_lock, flags);
+-	ret = !list_empty(&ept->read_q);
+-	spin_unlock_irqrestore(&ept->read_q_lock, flags);
+-	return ret;
+-}
+-
+-int __msm_rpc_read(struct msm_rpc_endpoint *ept,
+-		   struct rr_fragment **frag_ret,
+-		   unsigned len, long timeout)
+-{
+-	struct rr_packet *pkt;
+-	struct rpc_request_hdr *rq;
+-	DEFINE_WAIT(__wait);
+-	unsigned long flags;
+-	int rc;
+-
+-	IO("READ on ept %p\n", ept);
+-
+-	if (ept->flags & MSM_RPC_UNINTERRUPTIBLE) {
+-		if (timeout < 0) {
+-			wait_event(ept->wait_q, ept_packet_available(ept));
+-		} else {
+-			rc = wait_event_timeout(
+-				ept->wait_q, ept_packet_available(ept),
+-				timeout);
+-			if (rc == 0)
+-				return -ETIMEDOUT;
+-		}
+-	} else {
+-		if (timeout < 0) {
+-			rc = wait_event_interruptible(
+-				ept->wait_q, ept_packet_available(ept));
+-			if (rc < 0)
+-				return rc;
+-		} else {
+-			rc = wait_event_interruptible_timeout(
+-				ept->wait_q, ept_packet_available(ept),
+-				timeout);
+-			if (rc == 0)
+-				return -ETIMEDOUT;
+-		}
+-	}
+-
+-	spin_lock_irqsave(&ept->read_q_lock, flags);
+-	if (list_empty(&ept->read_q)) {
+-		spin_unlock_irqrestore(&ept->read_q_lock, flags);
+-		return -EAGAIN;
+-	}
+-	pkt = list_first_entry(&ept->read_q, struct rr_packet, list);
+-	if (pkt->length > len) {
+-		spin_unlock_irqrestore(&ept->read_q_lock, flags);
+-		return -ETOOSMALL;
+-	}
+-	list_del(&pkt->list);
+-	spin_unlock_irqrestore(&ept->read_q_lock, flags);
+-
+-	rc = pkt->length;
+-
+-	*frag_ret = pkt->first;
+-	rq = (void*) pkt->first->data;
+-	if ((rc >= (sizeof(uint32_t) * 3)) && (rq->type == 0)) {
+-		IO("READ on ept %p is a CALL on %08x:%08x proc %d xid %d\n",
+-			ept, be32_to_cpu(rq->prog), be32_to_cpu(rq->vers),
+-			be32_to_cpu(rq->procedure),
+-			be32_to_cpu(rq->xid));
+-		/* RPC CALL */
+-		if (ept->reply_pid != 0xffffffff) {
+-			printk(KERN_WARNING
+-			       "rr_read: lost previous reply xid...\n");
+-		}
+-		/* TODO: locking? */
+-		ept->reply_pid = pkt->hdr.src_pid;
+-		ept->reply_cid = pkt->hdr.src_cid;
+-		ept->reply_xid = rq->xid;
+-	}
+-#if TRACE_RPC_MSG
+-	else if ((rc >= (sizeof(uint32_t) * 3)) && (rq->type == 1))
+-		IO("READ on ept %p is a REPLY\n", ept);
+-	else IO("READ on ept %p (%d bytes)\n", ept, rc);
+-#endif
+-
+-	kfree(pkt);
+-	return rc;
+-}
+-
+-#if CONFIG_MSM_AMSS_VERSION >= 6350
+-int msm_rpc_is_compatible_version(uint32_t server_version,
+-				  uint32_t client_version)
+-{
+-	if ((server_version & RPC_VERSION_MODE_MASK) !=
+-	    (client_version & RPC_VERSION_MODE_MASK))
+-		return 0;
+-
+-	if (server_version & RPC_VERSION_MODE_MASK)
+-		return server_version == client_version;
+-
+-	return ((server_version & RPC_VERSION_MAJOR_MASK) ==
+-		(client_version & RPC_VERSION_MAJOR_MASK)) &&
+-		((server_version & RPC_VERSION_MINOR_MASK) >=
+-		(client_version & RPC_VERSION_MINOR_MASK));
+-}
+-EXPORT_SYMBOL(msm_rpc_is_compatible_version);
+-
+-static int msm_rpc_get_compatible_server(uint32_t prog,
+-					uint32_t ver,
+-					uint32_t *found_vers)
+-{
+-	struct rr_server *server;
+-	unsigned long     flags;
+-	if (found_vers == NULL)
+-		return 0;
+-
+-	spin_lock_irqsave(&server_list_lock, flags);
+-	list_for_each_entry(server, &server_list, list) {
+-		if ((server->prog == prog) &&
+-		    msm_rpc_is_compatible_version(server->vers, ver)) {
+-			*found_vers = server->vers;
+-			spin_unlock_irqrestore(&server_list_lock, flags);
+-			return 0;
+-		}
+-	}
+-	spin_unlock_irqrestore(&server_list_lock, flags);
+-	return -1;
+-}
+-#endif
+-
+-struct msm_rpc_endpoint *msm_rpc_connect(uint32_t prog, uint32_t vers, unsigned flags)
+-{
+-	struct msm_rpc_endpoint *ept;
+-	struct rr_server *server;
+-
+-#if CONFIG_MSM_AMSS_VERSION >= 6350
+-	if (!(vers & RPC_VERSION_MODE_MASK)) {
+-		uint32_t found_vers;
+-		if (msm_rpc_get_compatible_server(prog, vers, &found_vers) < 0)
+-			return ERR_PTR(-EHOSTUNREACH);
+-		if (found_vers != vers) {
+-			D("RPC using new version %08x:{%08x --> %08x}\n",
+-			 	prog, vers, found_vers);
+-			vers = found_vers;
+-		}
+-	}
+-#endif
+-
+-	server = rpcrouter_lookup_server(prog, vers);
+-	if (!server)
+-		return ERR_PTR(-EHOSTUNREACH);
+-
+-	ept = msm_rpc_open();
+-	if (IS_ERR(ept))
+-		return ept;
+-
+-	ept->flags = flags;
+-	ept->dst_pid = server->pid;
+-	ept->dst_cid = server->cid;
+-	ept->dst_prog = cpu_to_be32(prog);
+-	ept->dst_vers = cpu_to_be32(vers);
+-
+-	return ept;
+-}
+-EXPORT_SYMBOL(msm_rpc_connect);
+-
+-uint32_t msm_rpc_get_vers(struct msm_rpc_endpoint *ept)
+-{
+-	return be32_to_cpu(ept->dst_vers);
+-}
+-EXPORT_SYMBOL(msm_rpc_get_vers);
+-
+-/* TODO: permission check? */
+-int msm_rpc_register_server(struct msm_rpc_endpoint *ept,
+-			    uint32_t prog, uint32_t vers)
+-{
+-	int rc;
+-	union rr_control_msg msg;
+-	struct rr_server *server;
+-
+-	server = rpcrouter_create_server(ept->pid, ept->cid,
+-					 prog, vers);
+-	if (!server)
+-		return -ENODEV;
+-
+-	msg.srv.cmd = RPCROUTER_CTRL_CMD_NEW_SERVER;
+-	msg.srv.pid = ept->pid;
+-	msg.srv.cid = ept->cid;
+-	msg.srv.prog = prog;
+-	msg.srv.vers = vers;
+-
+-	RR("x NEW_SERVER id=%d:%08x prog=%08x:%08x\n",
+-	   ept->pid, ept->cid, prog, vers);
+-
+-	rc = rpcrouter_send_control_msg(&msg);
+-	if (rc < 0)
+-		return rc;
+-
+-	return 0;
+-}
+-
+-/* TODO: permission check -- disallow unreg of somebody else's server */
+-int msm_rpc_unregister_server(struct msm_rpc_endpoint *ept,
+-			      uint32_t prog, uint32_t vers)
+-{
+-	struct rr_server *server;
+-	server = rpcrouter_lookup_server(prog, vers);
+-
+-	if (!server)
+-		return -ENOENT;
+-	rpcrouter_destroy_server(server);
+-	return 0;
+-}
+-
+-static int msm_rpcrouter_probe(struct platform_device *pdev)
+-{
+-	int rc;
+-
+-	/* Initialize what we need to start processing */
+-	INIT_LIST_HEAD(&local_endpoints);
+-	INIT_LIST_HEAD(&remote_endpoints);
+-
+-	init_waitqueue_head(&newserver_wait);
+-	init_waitqueue_head(&smd_wait);
+-
+-	rpcrouter_workqueue = create_singlethread_workqueue("rpcrouter");
+-	if (!rpcrouter_workqueue)
+-		return -ENOMEM;
+-
+-	rc = msm_rpcrouter_init_devices();
+-	if (rc < 0)
+-		goto fail_destroy_workqueue;
+-
+-	/* Open up SMD channel 2 */
+-	initialized = 0;
+-	rc = smd_open("SMD_RPCCALL", &smd_channel, NULL, rpcrouter_smdnotify);
+-	if (rc < 0)
+-		goto fail_remove_devices;
+-
+-	queue_work(rpcrouter_workqueue, &work_read_data);
+-	return 0;
+-
+- fail_remove_devices:
+-	msm_rpcrouter_exit_devices();
+- fail_destroy_workqueue:
+-	destroy_workqueue(rpcrouter_workqueue);
+-	return rc;
+-}
+-
+-static struct platform_driver msm_smd_channel2_driver = {
+-	.probe		= msm_rpcrouter_probe,
+-	.driver		= {
+-			.name	= "SMD_RPCCALL",
+-			.owner	= THIS_MODULE,
+-	},
+-};
+-
+-static int __init rpcrouter_init(void)
+-{
+-	return platform_driver_register(&msm_smd_channel2_driver);
+-}
+-
+-module_init(rpcrouter_init);
+-MODULE_DESCRIPTION("MSM RPC Router");
+-MODULE_AUTHOR("San Mehat <san@android.com>");
+-MODULE_LICENSE("GPL");
+diff --git a/drivers/staging/dream/smd/smd_rpcrouter.h b/drivers/staging/dream/smd/smd_rpcrouter.h
+deleted file mode 100644
+index 86ab997..0000000
+--- a/drivers/staging/dream/smd/smd_rpcrouter.h
++++ /dev/null
+@@ -1,193 +0,0 @@
+-/** arch/arm/mach-msm/smd_rpcrouter.h
+- *
+- * Copyright (C) 2007 Google, Inc.
+- * Copyright (c) 2007-2008 QUALCOMM Incorporated.
+- * Author: San Mehat <san@android.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#ifndef _ARCH_ARM_MACH_MSM_SMD_RPCROUTER_H
+-#define _ARCH_ARM_MACH_MSM_SMD_RPCROUTER_H
+-
+-#include <linux/types.h>
+-#include <linux/list.h>
+-#include <linux/cdev.h>
+-#include <linux/platform_device.h>
+-
+-#include <mach/msm_smd.h>
+-#include <mach/msm_rpcrouter.h>
+-
+-/* definitions for the R2R wire protcol */
+-
+-#define RPCROUTER_VERSION			1
+-#define RPCROUTER_PROCESSORS_MAX		4
+-#define RPCROUTER_MSGSIZE_MAX			512
+-
+-#define RPCROUTER_CLIENT_BCAST_ID		0xffffffff
+-#define RPCROUTER_ROUTER_ADDRESS		0xfffffffe
+-
+-#define RPCROUTER_PID_LOCAL			1
+-#define RPCROUTER_PID_REMOTE			0
+-
+-#define RPCROUTER_CTRL_CMD_DATA			1
+-#define RPCROUTER_CTRL_CMD_HELLO		2
+-#define RPCROUTER_CTRL_CMD_BYE			3
+-#define RPCROUTER_CTRL_CMD_NEW_SERVER		4
+-#define RPCROUTER_CTRL_CMD_REMOVE_SERVER	5
+-#define RPCROUTER_CTRL_CMD_REMOVE_CLIENT	6
+-#define RPCROUTER_CTRL_CMD_RESUME_TX		7
+-#define RPCROUTER_CTRL_CMD_EXIT			8
+-
+-#define RPCROUTER_DEFAULT_RX_QUOTA	5
+-
+-union rr_control_msg {
+-	uint32_t cmd;
+-	struct {
+-		uint32_t cmd;
+-		uint32_t prog;
+-		uint32_t vers;
+-		uint32_t pid;
+-		uint32_t cid;
+-	} srv;
+-	struct {
+-		uint32_t cmd;
+-		uint32_t pid;
+-		uint32_t cid;
+-	} cli;
+-};
+-
+-struct rr_header {
+-	uint32_t version;
+-	uint32_t type;
+-	uint32_t src_pid;
+-	uint32_t src_cid;
+-	uint32_t confirm_rx;
+-	uint32_t size;
+-	uint32_t dst_pid;
+-	uint32_t dst_cid;
+-};
+-
+-/* internals */
+-
+-#define RPCROUTER_MAX_REMOTE_SERVERS		100
+-
+-struct rr_fragment {
+-	unsigned char data[RPCROUTER_MSGSIZE_MAX];
+-	uint32_t length;
+-	struct rr_fragment *next;
+-};
+-
+-struct rr_packet {
+-	struct list_head list;
+-	struct rr_fragment *first;
+-	struct rr_fragment *last;
+-	struct rr_header hdr;
+-	uint32_t mid;
+-	uint32_t length;
+-};
+-
+-#define PACMARK_LAST(n) ((n) & 0x80000000)
+-#define PACMARK_MID(n)  (((n) >> 16) & 0xFF)
+-#define PACMARK_LEN(n)  ((n) & 0xFFFF)
+-
+-static inline uint32_t PACMARK(uint32_t len, uint32_t mid, uint32_t first,
+-			       uint32_t last)
+-{
+-	return (len & 0xFFFF) |
+-	  ((mid & 0xFF) << 16) |
+-	  ((!!first) << 30) |
+-	  ((!!last) << 31);
+-}
+-
+-struct rr_server {
+-	struct list_head list;
+-
+-	uint32_t pid;
+-	uint32_t cid;
+-	uint32_t prog;
+-	uint32_t vers;
+-
+-	dev_t device_number;
+-	struct cdev cdev;
+-	struct device *device;
+-	struct rpcsvr_platform_device p_device;
+-	char pdev_name[32];
+-};
+-
+-struct rr_remote_endpoint {
+-	uint32_t pid;
+-	uint32_t cid;
+-
+-	int tx_quota_cntr;
+-	spinlock_t quota_lock;
+-	wait_queue_head_t quota_wait;
+-
+-	struct list_head list;
+-};
+-
+-struct msm_rpc_endpoint {
+-	struct list_head list;
+-
+-	/* incomplete packets waiting for assembly */
+-	struct list_head incomplete;
+-
+-	/* complete packets waiting to be read */
+-	struct list_head read_q;
+-	spinlock_t read_q_lock;
+-	wait_queue_head_t wait_q;
+-	unsigned flags;
+-
+-	/* endpoint address */
+-	uint32_t pid;
+-	uint32_t cid;
+-
+-	/* bound remote address
+-	 * if not connected (dst_pid == 0xffffffff) RPC_CALL writes fail
+-	 * RPC_CALLs must be to the prog/vers below or they will fail
+-	 */
+-	uint32_t dst_pid;
+-	uint32_t dst_cid;
+-	uint32_t dst_prog; /* be32 */
+-	uint32_t dst_vers; /* be32 */
+-
+-	/* reply remote address
+-	 * if reply_pid == 0xffffffff, none available
+-	 * RPC_REPLY writes may only go to the pid/cid/xid of the
+-	 * last RPC_CALL we received.
+-	 */
+-	uint32_t reply_pid;
+-	uint32_t reply_cid;
+-	uint32_t reply_xid; /* be32 */
+-	uint32_t next_pm;   /* Pacmark sequence */
+-
+-	/* device node if this endpoint is accessed via userspace */
+-	dev_t dev;
+-};
+-
+-/* shared between smd_rpcrouter*.c */
+-
+-int __msm_rpc_read(struct msm_rpc_endpoint *ept,
+-		   struct rr_fragment **frag,
+-		   unsigned len, long timeout);
+-
+-struct msm_rpc_endpoint *msm_rpcrouter_create_local_endpoint(dev_t dev);
+-int msm_rpcrouter_destroy_local_endpoint(struct msm_rpc_endpoint *ept);
+-
+-int msm_rpcrouter_create_server_cdev(struct rr_server *server);
+-int msm_rpcrouter_create_server_pdev(struct rr_server *server);
+-
+-int msm_rpcrouter_init_devices(void);
+-void msm_rpcrouter_exit_devices(void);
+-
+-extern dev_t msm_rpcrouter_devno;
+-extern struct class *msm_rpcrouter_class;
+-#endif
+diff --git a/drivers/staging/dream/smd/smd_rpcrouter_device.c b/drivers/staging/dream/smd/smd_rpcrouter_device.c
+deleted file mode 100644
+index e9c28ed..0000000
+--- a/drivers/staging/dream/smd/smd_rpcrouter_device.c
++++ /dev/null
+@@ -1,377 +0,0 @@
+-/* arch/arm/mach-msm/smd_rpcrouter_device.c
+- *
+- * Copyright (C) 2007 Google, Inc.
+- * Copyright (c) 2007-2009 QUALCOMM Incorporated.
+- * Author: San Mehat <san@android.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+- * GNU General Public License for more details.
+- *
+- */
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/string.h>
+-#include <linux/errno.h>
+-#include <linux/cdev.h>
+-#include <linux/init.h>
+-#include <linux/device.h>
+-#include <linux/types.h>
+-#include <linux/delay.h>
+-#include <linux/fs.h>
+-#include <linux/err.h>
+-#include <linux/sched.h>
+-#include <linux/poll.h>
+-#include <linux/platform_device.h>
+-#include <linux/msm_rpcrouter.h>
+-#include <linux/slab.h>
+-
+-#include <asm/uaccess.h>
+-#include <asm/byteorder.h>
+-
+-#include "smd_rpcrouter.h"
+-
+-#define SAFETY_MEM_SIZE 65536
+-
+-/* Next minor # available for a remote server */
+-static int next_minor = 1;
+-
+-struct class *msm_rpcrouter_class;
+-dev_t msm_rpcrouter_devno;
+-
+-static struct cdev rpcrouter_cdev;
+-static struct device *rpcrouter_device;
+-
+-static int rpcrouter_open(struct inode *inode, struct file *filp)
+-{
+-	int rc;
+-	struct msm_rpc_endpoint *ept;
+-
+-	rc = nonseekable_open(inode, filp);
+-	if (rc < 0)
+-		return rc;
+-
+-	ept = msm_rpcrouter_create_local_endpoint(inode->i_rdev);
+-	if (!ept)
+-		return -ENOMEM;
+-
+-	filp->private_data = ept;
+-	return 0;
+-}
+-
+-static int rpcrouter_release(struct inode *inode, struct file *filp)
+-{
+-	struct msm_rpc_endpoint *ept;
+-	ept = (struct msm_rpc_endpoint *) filp->private_data;
+-
+-	return msm_rpcrouter_destroy_local_endpoint(ept);
+-}
+-
+-static ssize_t rpcrouter_read(struct file *filp, char __user *buf,
+-			      size_t count, loff_t *ppos)
+-{
+-	struct msm_rpc_endpoint *ept;
+-	struct rr_fragment *frag, *next;
+-	int rc;
+-
+-	ept = (struct msm_rpc_endpoint *) filp->private_data;
+-
+-	rc = __msm_rpc_read(ept, &frag, count, -1);
+-	if (rc < 0)
+-		return rc;
+-
+-	count = rc;
+-
+-	while (frag != NULL) {
+-		if (copy_to_user(buf, frag->data, frag->length)) {
+-			printk(KERN_ERR
+-			       "rpcrouter: could not copy all read data to user!\n");
+-			rc = -EFAULT;
+-		}
+-		buf += frag->length;
+-		next = frag->next;
+-		kfree(frag);
+-		frag = next;
+-	}
+-
+-	return rc;
+-}
+-
+-static ssize_t rpcrouter_write(struct file *filp, const char __user *buf,
+-				size_t count, loff_t *ppos)
+-{
+-	struct msm_rpc_endpoint	*ept;
+-	int rc = 0;
+-	void *k_buffer;
+-
+-	ept = (struct msm_rpc_endpoint *) filp->private_data;
+-
+-	/* A check for safety, this seems non-standard */
+-	if (count > SAFETY_MEM_SIZE)
+-		return -EINVAL;
+-
+-	k_buffer = kmalloc(count, GFP_KERNEL);
+-	if (!k_buffer)
+-		return -ENOMEM;
+-
+-	if (copy_from_user(k_buffer, buf, count)) {
+-		rc = -EFAULT;
+-		goto write_out_free;
+-	}
+-
+-	rc = msm_rpc_write(ept, k_buffer, count);
+-	if (rc < 0)
+-		goto write_out_free;
+-
+-	rc = count;
+-write_out_free:
+-	kfree(k_buffer);
+-	return rc;
+-}
+-
+-static unsigned int rpcrouter_poll(struct file *filp,
+-				   struct poll_table_struct *wait)
+-{
+-	struct msm_rpc_endpoint *ept;
+-	unsigned mask = 0;
+-	ept = (struct msm_rpc_endpoint *) filp->private_data;
+-
+-	/* If there's data already in the read queue, return POLLIN.
+-	 * Else, wait for the requested amount of time, and check again.
+-	 */
+-
+-	if (!list_empty(&ept->read_q))
+-		mask |= POLLIN;
+-
+-	if (!mask) {
+-		poll_wait(filp, &ept->wait_q, wait);
+-		if (!list_empty(&ept->read_q))
+-			mask |= POLLIN;
+-	}
+-
+-	return mask;
+-}
+-
+-static long rpcrouter_ioctl(struct file *filp, unsigned int cmd,
+-			    unsigned long arg)
+-{
+-	struct msm_rpc_endpoint *ept;
+-	struct rpcrouter_ioctl_server_args server_args;
+-	int rc = 0;
+-	uint32_t n;
+-
+-	ept = (struct msm_rpc_endpoint *) filp->private_data;
+-	switch (cmd) {
+-
+-	case RPC_ROUTER_IOCTL_GET_VERSION:
+-		n = RPC_ROUTER_VERSION_V1;
+-		rc = put_user(n, (unsigned int *) arg);
+-		break;
+-
+-	case RPC_ROUTER_IOCTL_GET_MTU:
+-		/* the pacmark word reduces the actual payload
+-		 * possible per message
+-		 */
+-		n = RPCROUTER_MSGSIZE_MAX - sizeof(uint32_t);
+-		rc = put_user(n, (unsigned int *) arg);
+-		break;
+-
+-	case RPC_ROUTER_IOCTL_REGISTER_SERVER:
+-		rc = copy_from_user(&server_args, (void *) arg,
+-				    sizeof(server_args));
+-		if (rc < 0)
+-			break;
+-		msm_rpc_register_server(ept,
+-					server_args.prog,
+-					server_args.vers);
+-		break;
+-
+-	case RPC_ROUTER_IOCTL_UNREGISTER_SERVER:
+-		rc = copy_from_user(&server_args, (void *) arg,
+-				    sizeof(server_args));
+-		if (rc < 0)
+-			break;
+-
+-		msm_rpc_unregister_server(ept,
+-					  server_args.prog,
+-					  server_args.vers);
+-		break;
+-
+-	case RPC_ROUTER_IOCTL_GET_MINOR_VERSION:
+-		n = MSM_RPC_GET_MINOR(msm_rpc_get_vers(ept));
+-		rc = put_user(n, (unsigned int *)arg);
+-		break;
+-
+-	default:
+-		rc = -EINVAL;
+-		break;
+-	}
+-
+-	return rc;
+-}
+-
+-static struct file_operations rpcrouter_server_fops = {
+-	.owner	 = THIS_MODULE,
+-	.open	 = rpcrouter_open,
+-	.release = rpcrouter_release,
+-	.read	 = rpcrouter_read,
+-	.write	 = rpcrouter_write,
+-	.poll    = rpcrouter_poll,
+-	.unlocked_ioctl	 = rpcrouter_ioctl,
+-};
+-
+-static struct file_operations rpcrouter_router_fops = {
+-	.owner	 = THIS_MODULE,
+-	.open	 = rpcrouter_open,
+-	.release = rpcrouter_release,
+-	.read	 = rpcrouter_read,
+-	.write	 = rpcrouter_write,
+-	.poll    = rpcrouter_poll,
+-	.unlocked_ioctl = rpcrouter_ioctl,
+-};
+-
+-int msm_rpcrouter_create_server_cdev(struct rr_server *server)
+-{
+-	int rc;
+-	uint32_t dev_vers;
+-
+-	if (next_minor == RPCROUTER_MAX_REMOTE_SERVERS) {
+-		printk(KERN_ERR
+-		       "rpcrouter: Minor numbers exhausted - Increase "
+-		       "RPCROUTER_MAX_REMOTE_SERVERS\n");
+-		return -ENOBUFS;
+-	}
+-
+-#if CONFIG_MSM_AMSS_VERSION >= 6350
+-	/* Servers with bit 31 set are remote msm servers with hashkey version.
+-	 * Servers with bit 31 not set are remote msm servers with
+-	 * backwards compatible version type in which case the minor number
+-	 * (lower 16 bits) is set to zero.
+-	 *
+-	 */
+-	if ((server->vers & RPC_VERSION_MODE_MASK))
+-		dev_vers = server->vers;
+-	else
+-		dev_vers = server->vers & RPC_VERSION_MAJOR_MASK;
+-#else
+-	dev_vers = server->vers;
+-#endif
+-
+-	server->device_number =
+-		MKDEV(MAJOR(msm_rpcrouter_devno), next_minor++);
+-
+-	server->device =
+-		device_create(msm_rpcrouter_class, rpcrouter_device,
+-			      server->device_number, NULL, "%.8x:%.8x",
+-			      server->prog, dev_vers);
+-	if (IS_ERR(server->device)) {
+-		printk(KERN_ERR
+-		       "rpcrouter: Unable to create device (%ld)\n",
+-		       PTR_ERR(server->device));
+-		return PTR_ERR(server->device);;
+-	}
+-
+-	cdev_init(&server->cdev, &rpcrouter_server_fops);
+-	server->cdev.owner = THIS_MODULE;
+-
+-	rc = cdev_add(&server->cdev, server->device_number, 1);
+-	if (rc < 0) {
+-		printk(KERN_ERR
+-		       "rpcrouter: Unable to add chrdev (%d)\n", rc);
+-		device_destroy(msm_rpcrouter_class, server->device_number);
+-		return rc;
+-	}
+-	return 0;
+-}
+-
+-/* for backward compatible version type (31st bit cleared)
+- * clearing minor number (lower 16 bits) in device name
+- * is neccessary for driver binding
+- */
+-int msm_rpcrouter_create_server_pdev(struct rr_server *server)
+-{
+-	sprintf(server->pdev_name, "rs%.8x:%.8x",
+-		server->prog,
+-#if CONFIG_MSM_AMSS_VERSION >= 6350
+-		(server->vers & RPC_VERSION_MODE_MASK) ? server->vers :
+-		(server->vers & RPC_VERSION_MAJOR_MASK));
+-#else
+-		server->vers);
+-#endif
+-
+-	server->p_device.base.id = -1;
+-	server->p_device.base.name = server->pdev_name;
+-
+-	server->p_device.prog = server->prog;
+-	server->p_device.vers = server->vers;
+-
+-	platform_device_register(&server->p_device.base);
+-	return 0;
+-}
+-
+-int msm_rpcrouter_init_devices(void)
+-{
+-	int rc;
+-	int major;
+-
+-	/* Create the device nodes */
+-	msm_rpcrouter_class = class_create(THIS_MODULE, "oncrpc");
+-	if (IS_ERR(msm_rpcrouter_class)) {
+-		rc = -ENOMEM;
+-		printk(KERN_ERR
+-		       "rpcrouter: failed to create oncrpc class\n");
+-		goto fail;
+-	}
+-
+-	rc = alloc_chrdev_region(&msm_rpcrouter_devno, 0,
+-				 RPCROUTER_MAX_REMOTE_SERVERS + 1,
+-				 "oncrpc");
+-	if (rc < 0) {
+-		printk(KERN_ERR
+-		       "rpcrouter: Failed to alloc chardev region (%d)\n", rc);
+-		goto fail_destroy_class;
+-	}
+-
+-	major = MAJOR(msm_rpcrouter_devno);
+-	rpcrouter_device = device_create(msm_rpcrouter_class, NULL,
+-					 msm_rpcrouter_devno, NULL, "%.8x:%d",
+-					 0, 0);
+-	if (IS_ERR(rpcrouter_device)) {
+-		rc = -ENOMEM;
+-		goto fail_unregister_cdev_region;
+-	}
+-
+-	cdev_init(&rpcrouter_cdev, &rpcrouter_router_fops);
+-	rpcrouter_cdev.owner = THIS_MODULE;
+-
+-	rc = cdev_add(&rpcrouter_cdev, msm_rpcrouter_devno, 1);
+-	if (rc < 0)
+-		goto fail_destroy_device;
+-
+-	return 0;
+-
+-fail_destroy_device:
+-	device_destroy(msm_rpcrouter_class, msm_rpcrouter_devno);
+-fail_unregister_cdev_region:
+-	unregister_chrdev_region(msm_rpcrouter_devno,
+-				 RPCROUTER_MAX_REMOTE_SERVERS + 1);
+-fail_destroy_class:
+-	class_destroy(msm_rpcrouter_class);
+-fail:
+-	return rc;
+-}
+-
+-void msm_rpcrouter_exit_devices(void)
+-{
+-	cdev_del(&rpcrouter_cdev);
+-	device_destroy(msm_rpcrouter_class, msm_rpcrouter_devno);
+-	unregister_chrdev_region(msm_rpcrouter_devno,
+-				 RPCROUTER_MAX_REMOTE_SERVERS + 1);
+-	class_destroy(msm_rpcrouter_class);
+-}
+-
+diff --git a/drivers/staging/dream/smd/smd_rpcrouter_servers.c b/drivers/staging/dream/smd/smd_rpcrouter_servers.c
+deleted file mode 100644
+index bec3ee9..0000000
+--- a/drivers/staging/dream/smd/smd_rpcrouter_servers.c
++++ /dev/null
+@@ -1,226 +0,0 @@
+-/* arch/arm/mach-msm/rpc_servers.c
+- *
+- * Copyright (C) 2007 Google, Inc.
+- * Author: Iliyan Malchev <ibm@android.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/string.h>
+-#include <linux/errno.h>
+-#include <linux/cdev.h>
+-#include <linux/init.h>
+-#include <linux/device.h>
+-#include <linux/types.h>
+-#include <linux/fs.h>
+-#include <linux/kthread.h>
+-#include <linux/delay.h>
+-#include <linux/platform_device.h>
+-#include <linux/wakelock.h>
+-#include <linux/slab.h>
+-
+-#include <linux/msm_rpcrouter.h>
+-#include <linux/uaccess.h>
+-
+-#include <mach/msm_rpcrouter.h>
+-#include "smd_rpcrouter.h"
+-
+-static struct msm_rpc_endpoint *endpoint;
+-
+-#define FLAG_REGISTERED 0x0001
+-
+-static LIST_HEAD(rpc_server_list);
+-static DEFINE_MUTEX(rpc_server_list_lock);
+-static int rpc_servers_active;
+-
+-static void rpc_server_register(struct msm_rpc_server *server)
+-{
+-	int rc;
+-	rc = msm_rpc_register_server(endpoint, server->prog, server->vers);
+-	if (rc < 0)
+-		printk(KERN_ERR "[rpcserver] error registering %p @ %08x:%d\n",
+-		       server, server->prog, server->vers);
+-}
+-
+-static struct msm_rpc_server *rpc_server_find(uint32_t prog, uint32_t vers)
+-{
+-	struct msm_rpc_server *server;
+-
+-	mutex_lock(&rpc_server_list_lock);
+-	list_for_each_entry(server, &rpc_server_list, list) {
+-		if ((server->prog == prog) &&
+-#if CONFIG_MSM_AMSS_VERSION >= 6350
+-		    msm_rpc_is_compatible_version(server->vers, vers)) {
+-#else
+-		    server->vers == vers) {
+-#endif
+-			mutex_unlock(&rpc_server_list_lock);
+-			return server;
+-		}
+-	}
+-	mutex_unlock(&rpc_server_list_lock);
+-	return NULL;
+-}
+-
+-static void rpc_server_register_all(void)
+-{
+-	struct msm_rpc_server *server;
+-
+-	mutex_lock(&rpc_server_list_lock);
+-	list_for_each_entry(server, &rpc_server_list, list) {
+-		if (!(server->flags & FLAG_REGISTERED)) {
+-			rpc_server_register(server);
+-			server->flags |= FLAG_REGISTERED;
+-		}
+-	}
+-	mutex_unlock(&rpc_server_list_lock);
+-}
+-
+-int msm_rpc_create_server(struct msm_rpc_server *server)
+-{
+-	/* make sure we're in a sane state first */
+-	server->flags = 0;
+-	INIT_LIST_HEAD(&server->list);
+-
+-	mutex_lock(&rpc_server_list_lock);
+-	list_add(&server->list, &rpc_server_list);
+-	if (rpc_servers_active) {
+-		rpc_server_register(server);
+-		server->flags |= FLAG_REGISTERED;
+-	}
+-	mutex_unlock(&rpc_server_list_lock);
+-
+-	return 0;
+-}
+-
+-static int rpc_send_accepted_void_reply(struct msm_rpc_endpoint *client,
+-					uint32_t xid, uint32_t accept_status)
+-{
+-	int rc = 0;
+-	uint8_t reply_buf[sizeof(struct rpc_reply_hdr)];
+-	struct rpc_reply_hdr *reply = (struct rpc_reply_hdr *)reply_buf;
+-
+-	reply->xid = cpu_to_be32(xid);
+-	reply->type = cpu_to_be32(1); /* reply */
+-	reply->reply_stat = cpu_to_be32(RPCMSG_REPLYSTAT_ACCEPTED);
+-
+-	reply->data.acc_hdr.accept_stat = cpu_to_be32(accept_status);
+-	reply->data.acc_hdr.verf_flavor = 0;
+-	reply->data.acc_hdr.verf_length = 0;
+-
+-	rc = msm_rpc_write(client, reply_buf, sizeof(reply_buf));
+-	if (rc < 0)
+-		printk(KERN_ERR
+-		       "%s: could not write response: %d\n",
+-		       __FUNCTION__, rc);
+-
+-	return rc;
+-}
+-
+-static int rpc_servers_thread(void *data)
+-{
+-	void *buffer;
+-	struct rpc_request_hdr *req;
+-	struct msm_rpc_server *server;
+-	int rc;
+-
+-	for (;;) {
+-		rc = wait_event_interruptible(endpoint->wait_q,
+-						!list_empty(&endpoint->read_q));
+-		rc = msm_rpc_read(endpoint, &buffer, -1, -1);
+-		if (rc < 0) {
+-			printk(KERN_ERR "%s: could not read: %d\n",
+-			       __FUNCTION__, rc);
+-			break;
+-		}
+-		req = (struct rpc_request_hdr *)buffer;
+-
+-		req->type = be32_to_cpu(req->type);
+-		req->xid = be32_to_cpu(req->xid);
+-		req->rpc_vers = be32_to_cpu(req->rpc_vers);
+-		req->prog = be32_to_cpu(req->prog);
+-		req->vers = be32_to_cpu(req->vers);
+-		req->procedure = be32_to_cpu(req->procedure);
+-
+-		server = rpc_server_find(req->prog, req->vers);
+-
+-		if (req->rpc_vers != 2)
+-			continue;
+-		if (req->type != 0)
+-			continue;
+-		if (!server) {
+-			rpc_send_accepted_void_reply(
+-				endpoint, req->xid,
+-				RPC_ACCEPTSTAT_PROG_UNAVAIL);
+-			continue;
+-		}
+-
+-		rc = server->rpc_call(server, req, rc);
+-
+-		switch (rc) {
+-		case 0:
+-			rpc_send_accepted_void_reply(
+-				endpoint, req->xid,
+-				RPC_ACCEPTSTAT_SUCCESS);
+-			break;
+-		default:
+-			rpc_send_accepted_void_reply(
+-				endpoint, req->xid,
+-				RPC_ACCEPTSTAT_PROG_UNAVAIL);
+-			break;
+-		}
+-
+-		kfree(buffer);
+-	}
+-
+-	do_exit(0);
+-}
+-
+-static int rpcservers_probe(struct platform_device *pdev)
+-{
+-	struct task_struct *server_thread;
+-
+-	endpoint = msm_rpc_open();
+-	if (IS_ERR(endpoint))
+-		return PTR_ERR(endpoint);
+-
+-	/* we're online -- register any servers installed beforehand */
+-	rpc_servers_active = 1;
+-	rpc_server_register_all();
+-
+-	/* start the kernel thread */
+-	server_thread = kthread_run(rpc_servers_thread, NULL, "krpcserversd");
+-	if (IS_ERR(server_thread))
+-		return PTR_ERR(server_thread);
+-
+-	return 0;
+-}
+-
+-static struct platform_driver rpcservers_driver = {
+-	.probe	= rpcservers_probe,
+-	.driver	= {
+-		.name	= "oncrpc_router",
+-		.owner	= THIS_MODULE,
+-	},
+-};
+-
+-static int __init rpc_servers_init(void)
+-{
+-	return platform_driver_register(&rpcservers_driver);
+-}
+-
+-module_init(rpc_servers_init);
+-
+-MODULE_DESCRIPTION("MSM RPC Servers");
+-MODULE_AUTHOR("Iliyan Malchev <ibm@android.com>");
+-MODULE_LICENSE("GPL");
+diff --git a/drivers/staging/dream/smd/smd_tty.c b/drivers/staging/dream/smd/smd_tty.c
+deleted file mode 100644
+index f409449..0000000
+--- a/drivers/staging/dream/smd/smd_tty.c
++++ /dev/null
+@@ -1,208 +0,0 @@
+-/* arch/arm/mach-msm/smd_tty.c
+- *
+- * Copyright (C) 2007 Google, Inc.
+- * Author: Brian Swetland <swetland@google.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#include <linux/module.h>
+-#include <linux/fs.h>
+-#include <linux/cdev.h>
+-#include <linux/device.h>
+-#include <linux/wait.h>
+-
+-#include <linux/tty.h>
+-#include <linux/tty_driver.h>
+-#include <linux/tty_flip.h>
+-
+-#include <mach/msm_smd.h>
+-
+-#define MAX_SMD_TTYS 32
+-
+-static DEFINE_MUTEX(smd_tty_lock);
+-
+-struct smd_tty_info {
+-	smd_channel_t *ch;
+-	struct tty_struct *tty;
+-	int open_count;
+-};
+-
+-static struct smd_tty_info smd_tty[MAX_SMD_TTYS];
+-
+-
+-static void smd_tty_notify(void *priv, unsigned event)
+-{
+-	unsigned char *ptr;
+-	int avail;
+-	struct smd_tty_info *info = priv;
+-	struct tty_struct *tty = info->tty;
+-
+-	if (!tty)
+-		return;
+-
+-	if (event != SMD_EVENT_DATA)
+-		return;
+-
+-	for (;;) {
+-		if (test_bit(TTY_THROTTLED, &tty->flags)) break;
+-		avail = smd_read_avail(info->ch);
+-		if (avail == 0) break;
+-
+-		avail = tty_prepare_flip_string(tty, &ptr, avail);
+-
+-		if (smd_read(info->ch, ptr, avail) != avail) {
+-			/* shouldn't be possible since we're in interrupt
+-			** context here and nobody else could 'steal' our
+-			** characters.
+-			*/
+-			printk(KERN_ERR "OOPS - smd_tty_buffer mismatch?!");
+-		}
+-
+-		tty_flip_buffer_push(tty);
+-	}
+-
+-	/* XXX only when writable and necessary */
+-	tty_wakeup(tty);
+-}
+-
+-static int smd_tty_open(struct tty_struct *tty, struct file *f)
+-{
+-	int res = 0;
+-	int n = tty->index;
+-	struct smd_tty_info *info;
+-	const char *name;
+-
+-	if (n == 0) {
+-		name = "SMD_DS";
+-	} else if (n == 27) {
+-		name = "SMD_GPSNMEA";
+-	} else {
+-		return -ENODEV;
+-	}
+-
+-	info = smd_tty + n;
+-
+-	mutex_lock(&smd_tty_lock);
+-	tty->driver_data = info;
+-
+-	if (info->open_count++ == 0) {
+-		info->tty = tty;
+-		if (info->ch) {
+-			smd_kick(info->ch);
+-		} else {
+-			res = smd_open(name, &info->ch, info, smd_tty_notify);
+-		}
+-	}
+-	mutex_unlock(&smd_tty_lock);
+-
+-	return res;
+-}
+-
+-static void smd_tty_close(struct tty_struct *tty, struct file *f)
+-{
+-	struct smd_tty_info *info = tty->driver_data;
+-
+-	if (info == 0)
+-		return;
+-
+-	mutex_lock(&smd_tty_lock);
+-	if (--info->open_count == 0) {
+-		info->tty = 0;
+-		tty->driver_data = 0;
+-		if (info->ch) {
+-			smd_close(info->ch);
+-			info->ch = 0;
+-		}
+-	}
+-	mutex_unlock(&smd_tty_lock);
+-}
+-
+-static int smd_tty_write(struct tty_struct *tty, const unsigned char *buf, int len)
+-{
+-	struct smd_tty_info *info = tty->driver_data;
+-	int avail;
+-
+-	/* if we're writing to a packet channel we will
+-	** never be able to write more data than there
+-	** is currently space for
+-	*/
+-	avail = smd_write_avail(info->ch);
+-	if (len > avail)
+-		len = avail;
+-
+-	return smd_write(info->ch, buf, len);
+-}
+-
+-static int smd_tty_write_room(struct tty_struct *tty)
+-{
+-	struct smd_tty_info *info = tty->driver_data;
+-	return smd_write_avail(info->ch);
+-}
+-
+-static int smd_tty_chars_in_buffer(struct tty_struct *tty)
+-{
+-	struct smd_tty_info *info = tty->driver_data;
+-	return smd_read_avail(info->ch);
+-}
+-
+-static void smd_tty_unthrottle(struct tty_struct *tty)
+-{
+-	struct smd_tty_info *info = tty->driver_data;
+-	smd_kick(info->ch);
+-}
+-
+-static struct tty_operations smd_tty_ops = {
+-	.open = smd_tty_open,
+-	.close = smd_tty_close,
+-	.write = smd_tty_write,
+-	.write_room = smd_tty_write_room,
+-	.chars_in_buffer = smd_tty_chars_in_buffer,
+-	.unthrottle = smd_tty_unthrottle,
+-};
+-
+-static struct tty_driver *smd_tty_driver;
+-
+-static int __init smd_tty_init(void)
+-{
+-	int ret;
+-
+-	smd_tty_driver = alloc_tty_driver(MAX_SMD_TTYS);
+-	if (smd_tty_driver == 0)
+-		return -ENOMEM;
+-
+-	smd_tty_driver->owner = THIS_MODULE;
+-	smd_tty_driver->driver_name = "smd_tty_driver";
+-	smd_tty_driver->name = "smd";
+-	smd_tty_driver->major = 0;
+-	smd_tty_driver->minor_start = 0;
+-	smd_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
+-	smd_tty_driver->subtype = SERIAL_TYPE_NORMAL;
+-	smd_tty_driver->init_termios = tty_std_termios;
+-	smd_tty_driver->init_termios.c_iflag = 0;
+-	smd_tty_driver->init_termios.c_oflag = 0;
+-	smd_tty_driver->init_termios.c_cflag = B38400 | CS8 | CREAD;
+-	smd_tty_driver->init_termios.c_lflag = 0;
+-	smd_tty_driver->flags = TTY_DRIVER_RESET_TERMIOS |
+-		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
+-	tty_set_operations(smd_tty_driver, &smd_tty_ops);
+-
+-	ret = tty_register_driver(smd_tty_driver);
+-	if (ret) return ret;
+-
+-	/* this should be dynamic */
+-	tty_register_device(smd_tty_driver, 0, 0);
+-	tty_register_device(smd_tty_driver, 27, 0);
+-
+-	return 0;
+-}
+-
+-module_init(smd_tty_init);
+-- 
+1.7.0.4
 
