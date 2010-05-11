@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab0EKQqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:46:17 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:39282 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab0EKQqQ (ORCPT
+	id S932114Ab0EKQwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:52:38 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:37508 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab0EKQwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:46:16 -0400
-Date: Tue, 11 May 2010 17:45:54 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100511164554.GA17016@srcf.ucam.org>
-References: <1272667021-21312-1-git-send-email-arve@android.com> <87wrvl5479.fsf@deeprootsystems.com> <87632vhbs8.fsf@deeprootsystems.com> <201005102225.52431.rjw@sisk.pl> <20100511161227.GD13600@atomide.com> <20100511161448.GA16148@srcf.ucam.org> <20100511163632.GE13600@atomide.com>
+	Tue, 11 May 2010 12:52:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ixtjNnjvivCpwY9rwxCE1Dfu5hxGLgjvtYaV3vr1ECJWu3830IyTSOuv70Mokln9Jn
+         /mr4IHlF+HXkuW1gVLNiwhufwn94tEEkAkU/nb2FGCWzf+NVoEngXRG/VQwN3xCzbAOU
+         HyVEjNEJ1r5Z5nPZlXD8KvFbwsoRraIGFHwHA=
+Date: Tue, 11 May 2010 09:52:28 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Mike Frysinger <vapier.adi@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oskar Schirmer <os@emlix.com>,
+       Michael Hennerich <Michael.Hennerich@analog.com>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Daniel =?iso-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>,
+       Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
+Message-ID: <20100511165228.GC7396@core.coreip.homeip.net>
+References: <1273487642-2169-1-git-send-email-os@emlix.com>
+ <1273488154-2993-1-git-send-email-os@emlix.com>
+ <20100510142225.4bf215ef.akpm@linux-foundation.org>
+ <20100511060547.GA9644@core.coreip.homeip.net>
+ <AANLkTikA9s6lpO2uDuIup8BwGOYYHQ9yQxS36PBSIttX@mail.gmail.com>
+ <20100511062110.GB9644@core.coreip.homeip.net>
+ <AANLkTiktu7N5IXknkkJ9D5L4z5plhuGvD45IVqJm9zG1@mail.gmail.com>
+ <20100511063309.GC9644@core.coreip.homeip.net>
+ <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100511163632.GE13600@atomide.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 09:36:33AM -0700, Tony Lindgren wrote:
-> OK, so can the suspend blocker then become just:
+On Tue, May 11, 2010 at 09:42:03AM +0300, Pekka Enberg wrote:
+> Hi Dmitry,
 > 
-> # Block suspend while idle, system stays running
-> # echo default > /sys/power/policy
+> On Tue, May 11, 2010 at 9:33 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> >> what guarantee exactly do you have for that statement ?
+> >
+> > The data is kmalloced, kmalloc aligns on cacheline boundary AFAIK which
+> > means that next kmalloc data chunk will not share "our" cacheline.
 > 
-> and the when it's OK to suspend:
+> No, there are no such guarantees. kmalloc() aligns on
+> ARCH_KMALLOC_MINALIGN or ARCH_SLAB_MINALIGN depending on which is
+> bigger but beyond that, there are no guarantees. You can, of course,
+> use kmem_cache_create() with SLAB_HWCACHE_ALIGN to align on cacheline
+> boundary.
 > 
-> # Allow suspend while idle, system suspends when it hits kernel idle loop
-> # echo opportunistic > /sys/power/policy
-> 
-> or do you still need something more to ensure the data gets into your
-> app and be handled?
 
-Yes. You still need suspend blocks.
-
-> The part I really don't like is the idea of patching all over the drivers
-> and userspace for the wakelocks/suspendblocks.
-
-I don't like the idea either, but given that nobody has actually 
-provided any other ideas that would actually work then I don't think 
-we've got a great deal of choice.
+The architectures that we are trying to deal with here should be forcing
+kmalloc to the cache boundary already though - otherwise they would not
+be able to used kmalloced memory for DMA buffers at all. Or am I utterly
+lost here?
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Dmitry
