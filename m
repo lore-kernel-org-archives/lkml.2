@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab0EKSjv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 14:39:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53564 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750957Ab0EKSju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 14:39:50 -0400
-Date: Tue, 11 May 2010 11:37:22 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: intel-gfx@lists.freedesktop.org,
-       Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       dri-devel@lists.freedesktop.org, Dave Airlie <airlied@linux.ie>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: Record error batch buffers using iomem
-Message-Id: <20100511113722.65ab2f4a.akpm@linux-foundation.org>
-In-Reply-To: <1273602134-6359-1-git-send-email-chris@chris-wilson.co.uk>
-References: <0100511104818.8382a7de.akpm@linux-foundation.org>
-	<1273602134-6359-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757140Ab0EKSkF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 14:40:05 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43248 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754614Ab0EKSkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 14:40:00 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] acpi: Unconditionally set SCI_EN on resume
+Date: Tue, 11 May 2010 20:41:02 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org
+References: <1273600165-16681-1-git-send-email-mjg@redhat.com> <201005112027.36923.rjw@sisk.pl> <20100511183343.GA19783@srcf.ucam.org>
+In-Reply-To: <20100511183343.GA19783@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005112041.02339.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 May 2010 19:22:14 +0100 Chris Wilson <chris@chris-wilson.co.uk> wrote:
+On Tuesday 11 May 2010, Matthew Garrett wrote:
+> On Tue, May 11, 2010 at 08:27:36PM +0200, Rafael J. Wysocki wrote:
+> 
+> > No, this breaks my MSI Wind U100 right away.
+> > 
+> > If you called acpi_enable() before that and do that depending on its result,
+> > _that_ would work.
+> 
+> Calling acpi_enable breaks some HPs. What version of Windows did the 
+> Wind ship with?
 
-> +	reloc_offset = src_priv->gtt_offset;
->  	for (page = 0; page < page_count; page++) {
-> -		void *s, *d = kmalloc(PAGE_SIZE, GFP_ATOMIC);
-> +		void __iomem *s;
-> +		void *d;
-> +
-> +		d = kmalloc(PAGE_SIZE, GFP_ATOMIC);
->  		if (d == NULL)
->  			goto unwind;
-> -		s = kmap_atomic(src_priv->pages[page], KM_USER0);
-> -		memcpy(d, s, PAGE_SIZE);
-> -		kunmap_atomic(s, KM_USER0);
-> +
-> +		s = io_mapping_map_atomic_wc(dev_priv->mm.gtt_mapping,
-> +					     reloc_offset);
-> +		memcpy_fromio(d, s, PAGE_SIZE);
-> +		io_mapping_unmap_atomic(s);
+Without any.  It shipped with SLED 10. :-)
 
-As mentioned in the other email, this will still corrupt the KM_USER0
-slot, and will generate a debug_kmap_atomic() warning.
-
+Rafael
