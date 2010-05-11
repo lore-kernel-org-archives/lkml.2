@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757030Ab0EKNWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 09:22:00 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:42869 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755428Ab0EKNV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 09:21:59 -0400
-Date: Tue, 11 May 2010 15:21:57 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-       Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       Vivek Goyal <vgoyal@redhat.com>, Nikanth Karthikesan <knikanth@suse.de>
-Subject: Re: [RFC PATCH 1/2] block: allow initialization of previously
-	allocated request_queue
-Message-ID: <20100511132156.GX27497@kernel.dk>
-References: <1273532139-23043-1-git-send-email-snitzer@redhat.com> <20100511065520.GK27497@kernel.dk> <20100511131856.GB25211@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100511131856.GB25211@redhat.com>
+	id S1757161Ab0EKNad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 09:30:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:40127 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756908Ab0EKNac (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 09:30:32 -0400
+X-Authority-Analysis: v=1.1 cv=GuuPm/R9MDBdMhOgsQZYzj+bBK5woo0X8cuc0sTVRtI= c=1 sm=0 a=SSFxOwRvCusA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=FrnrjfBQz4aWZdQfCjsA:9 a=hioD9iauXAMR3Zk0mu4A:7 a=bu827zggH1xBhAvqdUEnTSaPJbMA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 10/10 -v3][RFC] tracing: Combine event filter_active
+ and enable into single flags field
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
+In-Reply-To: <20100511033026.GA28162@Krystal>
+References: <20100511030020.837892321@goodmis.org>
+	 <20100511030911.927339838@goodmis.org>  <20100511033026.GA28162@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 11 May 2010 09:30:28 -0400
+Message-ID: <1273584628.22438.4501.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11 2010, Mike Snitzer wrote:
-> On Tue, May 11 2010 at  2:55am -0400,
-> Jens Axboe <jens.axboe@oracle.com> wrote:
-> 
-> > On Mon, May 10 2010, Mike Snitzer wrote:
-> > > blk_init_queue() allocates the request_queue structure and then
-> > > initializes it as needed (request_fn, elevator, etc).
-> > > 
-> > > Split initialization out to blk_init_allocated_queue_node.
-> > > Introduce blk_init_allocated_queue wrapper function to model existing
-> > > blk_init_queue and blk_init_queue_node interfaces.
-> > > 
-> > > Export elv_register_queue to allow a newly added elevator to be
-> > > registered with sysfs.  Export elv_unregister_queue for symmetry.
-> > > 
-> > > These changes allow DM to initialize a device's request_queue with more
-> > > precision.  In particular, DM no longer unconditionally initializes a
-> > > full request_queue (elevator et al).  It only does so for a
-> > > request-based DM device.
+On Mon, 2010-05-10 at 23:30 -0400, Mathieu Desnoyers wrote:
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > From: Steven Rostedt <srostedt@redhat.com>
 > > 
-> > Looks good, I'll apply this. I don't think the exports need to be _GPL
-> > in this case, generally I've only done that with the exports for hooking
-> > in a new IO scheduler.
+> > The filter_active and enable both use an int (4 bytes each) to
+> > set a single flag. We can save 4 bytes per event by combining the
+> > two into a single integer.
+> > 
+
+> I would also comment about flags read-side:
 > 
-> OK, thanks for picking this up.  Do you want me to send v2 that drops
-> the _GPL or will you make those changes?
+>  * Flags are read concurrently without locking.
 
-I just hand-edited that part. I can add the dm bit as well, when it has
-been reviewed and acked.
+That can go in outside this patch set. As we discussed before, the
+filter_active which does the same today as flags does here also has the
+issue you are concerned with. IOW, this issue has nothing to do with
+this patch set, because the issue existed before the patch set and has
+not changed after the patch set.
 
--- 
-Jens Axboe
+The comment should also be in Documentation, not here, since it would
+affect users more than the developers.
+
+> 
+> Besides that minor nit, the whole patchset has my
+> 
+> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+
+Thanks!  I'll get an official release ready.
+
+-- Steve
+
 
