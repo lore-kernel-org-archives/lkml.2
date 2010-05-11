@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab0EKILj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 04:11:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52403 "EHLO mx2.suse.de"
+	id S1756642Ab0EKINZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 04:13:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49996 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531Ab0EKILg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 04:11:36 -0400
-Date: Tue, 11 May 2010 10:11:34 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Bill Pemberton <wfp5p@virginia.edu>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/11] agp:  use NULL instead of 0 when pointer is
- needed
-In-Reply-To: <1272634478-4127-3-git-send-email-wfp5p@virginia.edu>
-Message-ID: <alpine.LNX.2.00.1005111011110.28092@pobox.suse.cz>
-References: <1272634478-4127-1-git-send-email-wfp5p@virginia.edu> <1272634478-4127-3-git-send-email-wfp5p@virginia.edu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756167Ab0EKINT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 04:13:19 -0400
+Subject: Re: [PATCH -tip] perf probe: Don't compile CFI related code if
+ elfutils is old
+From: Mark Wielaard <mjw@redhat.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+       lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       Roland McGrath <roland@redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>
+In-Reply-To: <4BE85C51.704@redhat.com>
+References: <20100510171207.26029.97604.stgit@localhost6.localdomain6>
+	 <20100510172854.GD30926@ghostprotocols.net>
+	 <20100510183654.GH6450@erda.amd.com> <4BE8571E.4020403@redhat.com>
+	 <20100510191501.GC19192@ghostprotocols.net>  <4BE85C51.704@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 May 2010 10:12:56 +0200
+Message-ID: <1273565576.2660.17.camel@hermans.wildebeest.org>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010, Bill Pemberton wrote:
+On Mon, 2010-05-10 at 15:19 -0400, Masami Hiramatsu wrote:
+> Hm, I'd like to add just '#ifndef _ELFUTILS_PREREQ;#error;#endif' to
+> NO_DWARF checking in Makefile, because it's easier to expand to another
+> API dependency.
 
-> Fixes sparse warning:
-> 
-> drivers/char/agp/generic.c:1217:33: warning: Using plain integer as
-> NULL pointer
-> 
-> Signed-off-by: Bill Pemberton <wfp5p@virginia.edu>
-> CC: linux-kernel@vger.kernel.org
-> ---
->  drivers/char/agp/generic.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/char/agp/generic.c b/drivers/char/agp/generic.c
-> index fb86708..4b51982 100644
-> --- a/drivers/char/agp/generic.c
-> +++ b/drivers/char/agp/generic.c
-> @@ -1214,7 +1214,7 @@ struct agp_memory *agp_generic_alloc_user(size_t page_count, int type)
->  		return NULL;
->  
->  	for (i = 0; i < page_count; i++)
-> -		new->pages[i] = 0;
-> +		new->pages[i] = NULL;
->  	new->page_count = 0;
->  	new->type = type;
->  	new->num_scratch_pages = pages;
+You might want to check systemtap/dwarf-wrappers.h which handles missing
+_ELFUTILS_PREREQ, so you can use it as if it is always defined. That
+said, 0.138 is pretty old (latest is 0.147), so just requiring something
+fresh might not be a bad thing.
 
-As this patch isn't present in linux-next as of today, I have applied the 
-patch to my queue.
+Cheers,
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Mark
+
