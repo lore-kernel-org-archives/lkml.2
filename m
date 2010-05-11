@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab0EKQP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:15:26 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:53032 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab0EKQPZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:15:25 -0400
-Date: Tue, 11 May 2010 17:14:48 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100511161448.GA16148@srcf.ucam.org>
-References: <1272667021-21312-1-git-send-email-arve@android.com> <87wrvl5479.fsf@deeprootsystems.com> <87632vhbs8.fsf@deeprootsystems.com> <201005102225.52431.rjw@sisk.pl> <20100511161227.GD13600@atomide.com>
+	id S932120Ab0EKQPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:15:37 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:38359 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753849Ab0EKQPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 12:15:35 -0400
+Date: Tue, 11 May 2010 17:15:16 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
+	and rmap_walk() during migration by not migrating temporary stacks
+Message-ID: <20100511161516.GU26611@csn.ul.ie>
+References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie> <1272529930-29505-3-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1005012055010.2663@router.home> <20100504094522.GA20979@csn.ul.ie> <alpine.DEB.2.00.1005101239400.13652@router.home> <20100510175654.GL26611@csn.ul.ie> <alpine.DEB.2.00.1005110857350.1500@router.home> <20100511151142.GS26611@csn.ul.ie> <alpine.DEB.2.00.1005111055070.1500@router.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100511161227.GD13600@atomide.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <alpine.DEB.2.00.1005111055070.1500@router.home>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 09:12:28AM -0700, Tony Lindgren wrote:
+On Tue, May 11, 2010 at 10:56:00AM -0500, Christoph Lameter wrote:
+> On Tue, 11 May 2010, Mel Gorman wrote:
+> 
+> > Or just identify the temporary stack from the migration side instead of
+> > adding to the cost of exec?
+> 
+> Adding one off checks to a generic mechanism isnt really clean
+> programming. Using the provided means of disabling a generic mechanism is.
+> 
 
-> To me it sounds like this should only be allowed to happen when you do:
-> 
-> # echo 1 > /sys/power/suspend_while_idle
-> 
-> As it kills the timers and leads to non-standard behaviour of the apps
-> as they won't run :)
-> 
-> And then the remaining question is how to make sure the use cases
-> below can be handled in a clean way.
+Andrea's solution is likely lighter than yours as it is one kmalloc and
+an insertion into the VM as opposed to a page table walk with reference
+counting. Better yet, it exists as a patch that has been tested and it
+fits in with the generic mechanism by guaranteeing that rmap_walk finds
+all the migration PTEs during the second walk.
 
-That's handled by the /sys/power/policy opportunistic/forced switch.
+The problem remains the same - that class of solution increases the cost of
+a common operation (exec) to keep a much less operation (migration) happy.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
