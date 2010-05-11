@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab0EKQAq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:00:46 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39569 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431Ab0EKQAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:00:43 -0400
-Message-ID: <4BE97F2A.5080900@suse.de>
-Date: Tue, 11 May 2010 18:00:42 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1754377Ab0EKQBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:01:30 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:39607 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab0EKQB2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 12:01:28 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=XYHcV3tFsVDyqxgRHC+N9tTOuYG6hhOthb1qiWXSLg+I+qS4jXsLqrAw/X8UXD5Xg
+	I1PpjK0ZE+D1jooADs3Wg==
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: avi@redhat.com, mtosatti@redhat.com, yoshikawa.takuya@oss.ntt.co.jp,
-       fernando@oss.ntt.co.jp, kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-       kvm-ia64@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-       hpa@zytor.com, x86@kernel.org, benh@kernel.crashing.org,
-       paulus@samba.org, linuxppc-dev@ozlabs.org, arnd@arndb.de,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 7/12 not tested yet] PPC: introduce __set_bit() like
- function for bitmaps in user space
-References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <20100504220418.083929bc.takuya.yoshikawa@gmail.com>
-In-Reply-To: <20100504220418.083929bc.takuya.yoshikawa@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100511155611.GG19192@ghostprotocols.net>
+References: <AANLkTinsEANHEicdjOaE6jwUa0bVqH5PBwuGQ3_L59hT@mail.gmail.com>
+	 <20100511150052.GE19192@ghostprotocols.net>
+	 <1273590800.1810.19.camel@laptop>
+	 <20100511155039.GF19192@ghostprotocols.net>
+	 <1273593131.1810.42.camel@laptop>
+	 <20100511155611.GG19192@ghostprotocols.net>
+Date: Tue, 11 May 2010 18:01:24 +0200
+Message-ID: <AANLkTikPIwvT4xD9Re2PMOnLa1NlRcdo9jD4Vt-L-ELk@mail.gmail.com>
+Subject: Re: [RFC] perf: perf record sets inherit by default
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+       mingo@elte.hu, Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>, perfmon2-devel@lists.sf.net
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takuya Yoshikawa wrote:
-> During the work of KVM's dirty page logging optimization, we encountered
-> the need of manipulating bitmaps in user space efficiantly. To achive this,
-> we introduce a uaccess function for setting a bit in user space following
-> Avi's suggestion.
+On Tue, May 11, 2010 at 5:56 PM, Arnaldo Carvalho de Melo
+<acme@infradead.org> wrote:
+> Em Tue, May 11, 2010 at 05:52:11PM +0200, Peter Zijlstra escreveu:
+>> On Tue, 2010-05-11 at 12:50 -0300, Arnaldo Carvalho de Melo wrote:
+>>
+>> > Nope, see above.
+>>
+>> Ah, -p/-t might make sense to default to inherit off indeed.
 >
->   KVM is now using dirty bitmaps for live-migration and VGA. Although we need
->   to update them from kernel side, copying them every time for updating the
->   dirty log is a big bottleneck. Especially, we tested that zero-copy bitmap
->   manipulation improves responses of GUI manipulations a lot.
+> That is what Stephane wanted in the first place, right?
 >
-> We also found one similar need in drivers/vhost/vhost.c in which the author
-> implemented set_bit_to_user() locally using inefficient functions: see TODO
-> at the top of that.
->
-> Probably, this kind of need would be common for virtualization area.
->
-> So we introduce a function set_bit_user_non_atomic().
->
-> Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-> Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-> CC: Alexander Graf <agraf@suse.de>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> ---
->  arch/powerpc/include/asm/uaccess.h |   19 +++++++++++++++++++
->  1 files changed, 19 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/powerpc/include/asm/uaccess.h b/arch/powerpc/include/asm/uaccess.h
-> index 3a01ce8..f878326 100644
-> --- a/arch/powerpc/include/asm/uaccess.h
-> +++ b/arch/powerpc/include/asm/uaccess.h
-> @@ -321,6 +321,25 @@ do {								\
->  	__gu_err;						\
->  })
->  
-> +static inline int set_bit_user_non_atomic(int nr, void __user *addr)
-> +{
-> +	u8 __user *p;
-> +	u8 val;
-> +
-> +	p = (u8 __user *)((unsigned long)addr + nr / BITS_PER_BYTE);
->   
+I was asking about the general behavior of the tool and
+the contradictory meaning of the -i options.
 
-Does C do the + or the / first? Either way, I'd like to see brackets here :)
+perf record foo       -> default=inherit on, use -i to disable
+perf record -t 1234  -> default=inherit off
+perf record -p 1234  -> default=on, use -i to disable
 
-
-Alex
-
+What about that?
