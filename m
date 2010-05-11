@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848Ab0EKUZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 16:25:13 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45881 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754958Ab0EKUZK (ORCPT
+	id S1757882Ab0EKUZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 16:25:56 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:60213 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078Ab0EKUZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 16:25:10 -0400
-Date: Tue, 11 May 2010 13:24:20 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Florian Fainelli <florian@openwrt.org>
-Subject: [PATCH -next] gpio: rdc321x needs to select MFD_CORE
-Message-Id: <20100511132420.29654430.randy.dunlap@oracle.com>
-In-Reply-To: <20100511155324.3c9019ef.sfr@canb.auug.org.au>
-References: <20100511155324.3c9019ef.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4BE9BD14.0131:SCFMA922111,ss=1,fgs=0
+	Tue, 11 May 2010 16:25:54 -0400
+Date: Tue, 11 May 2010 15:21:53 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mike Frysinger <vapier.adi@gmail.com>
+cc: Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oskar Schirmer <os@emlix.com>,
+       Michael Hennerich <Michael.Hennerich@analog.com>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       =?ISO-8859-15?Q?Daniel_Gl=F6ckner?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>,
+       Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
+In-Reply-To: <AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1005111520260.1500@router.home>
+References: <1273487642-2169-1-git-send-email-os@emlix.com>  <20100510142225.4bf215ef.akpm@linux-foundation.org> <20100511060547.GA9644@core.coreip.homeip.net>  <AANLkTikA9s6lpO2uDuIup8BwGOYYHQ9yQxS36PBSIttX@mail.gmail.com>  <20100511062110.GB9644@core.coreip.homeip.net>
+ <AANLkTiktu7N5IXknkkJ9D5L4z5plhuGvD45IVqJm9zG1@mail.gmail.com>  <20100511063309.GC9644@core.coreip.homeip.net> <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com>  <AANLkTinV79HZqS1cktHDsTsHDel-0Nti_Uk4i7mGaRiK@mail.gmail.com> 
+ <1273608441.15067.1002.camel@calx> <AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, 11 May 2010, Mike Frysinger wrote:
 
-Fix rdc321x-southbridge build:  GPIO_RDC321X needs to select
-MFD_CORE so that the core is built at the same (or higher)
-tristate level.
+> and like i said, that doesnt sound like a reasonable solution when
+> every single SPI driver (over 100 atm) out there is affected
 
-rdc321x-southbridge.c:(.devinit.text+0x6103): undefined reference to `mfd_add_devices'
-rdc321x-southbridge.c:(.devexit.text+0xe5f): undefined reference to `mfd_remove_devices'
+If you are on an embedded arch then you can of course set the default
+kmalloc alignment.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	Florian Fainelli <florian@openwrt.org>
----
+The requirement for kmalloc is that it returns memory that can be used for
+DMA. If the arch can only DMA into cacheline aligned objects then the
+correct method is to force kmalloc alignment to cacheline size.
 
-Who merges gpio patches?
-
- drivers/gpio/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- linux-next-20100511.orig/drivers/gpio/Kconfig
-+++ linux-next-20100511/drivers/gpio/Kconfig
-@@ -285,6 +285,7 @@ config GPIO_TIMBERDALE
- config GPIO_RDC321X
- 	tristate "RDC R-321x GPIO support"
- 	depends on PCI && GPIOLIB
-+	select MFD_CORE
- 	select MFD_RDC321X
- 	help
- 	  Support for the RDC R321x SoC GPIOs over southbridge
