@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab0EKPMu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 11:12:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38263 "EHLO mx2.suse.de"
+	id S1756717Ab0EKPMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:12:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38238 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754284Ab0EKPMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 11:12:48 -0400
-Date: Tue, 11 May 2010 08:10:49 -0700
+	id S1756237Ab0EKPM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 11:12:28 -0400
+Date: Tue, 11 May 2010 08:04:29 -0700
 From: Greg KH <gregkh@suse.de>
-To: Alex Chiang <achiang@canonical.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, stable-review@kernel.org,
+To: Eric Anholt <eric@anholt.net>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Colin King <colin.king@canonical.com>,
-       Len Brown <len.brown@intel.com>
-Subject: Re: [107/117] ACPI: DMI init_set_sci_en_on_resume for multiple
- Lenovo ThinkPads
-Message-ID: <20100511151049.GH14895@suse.de>
-References: <20100510223700.GA18404@kroah.com>
- <20100510223327.043329892@kvm.kroah.org>
- <20100511033825.GA7513@canonical.com>
+       alan@lxorguk.ukuu.org.uk
+Subject: Re: [003/117] drm/i915: Add initial bits for VGA modesetting
+ bringup on Sandybridge.
+Message-ID: <20100511150429.GC14895@suse.de>
+References: <20100510223317.484832756@kvm.kroah.org>
+ <87hbmfm9wn.fsf@pollan.anholt.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100511033825.GA7513@canonical.com>
+In-Reply-To: <87hbmfm9wn.fsf@pollan.anholt.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 09:38:25PM -0600, Alex Chiang wrote:
-> Hm, this patch looks a little wonky.
+On Mon, May 10, 2010 at 07:47:52PM -0700, Eric Anholt wrote:
+> On Mon, 10 May 2010 15:31:34 -0700, Greg KH <gregkh@suse.de> wrote:
+> > 2.6.33-stable review patch.  If anyone has any objections, please let us know.
+> > 
+> > ------------------
+> > From: Eric Anholt <eric@anholt.net>
+> > 
+> > commit bad720ff3e8e47a04bd88d9bbc8317e7d7e049d3 upstream.
+> > 
+> > [needed for stable as it's just a bunch of macros that other drm patches
+> > need, it changes no code functionality besides adding support for a new
+> > device type. - gregkh]
+> > 
+> > Signed-off-by: Eric Anholt <eric@anholt.net>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> Why is every entry repeated 3x?
+> This patch should not go in stable because of this hunk:
 > 
-> > +	.callback = init_set_sci_en_on_resume,
-> > +	.ident = "Lenovo ThinkPad T410",
+> > --- a/include/drm/drm_pciids.h
+> > +++ b/include/drm/drm_pciids.h
+> > @@ -560,4 +560,5 @@
+> >  	{0x8086, 0x35e8, PCI_ANY_ID, PCI_ANY_ID, PCI_CLASS_DISPLAY_VGA << 8, 0xffff00, 0}, \
+> >  	{0x8086, 0x0042, PCI_ANY_ID, PCI_ANY_ID, PCI_CLASS_DISPLAY_VGA << 8, 0xffff00, 0}, \
+> >  	{0x8086, 0x0046, PCI_ANY_ID, PCI_ANY_ID, PCI_CLASS_DISPLAY_VGA << 8, 0xffff00, 0}, \
+> > +	{0x8086, 0x0102, PCI_ANY_ID, PCI_ANY_ID, PCI_CLASS_DISPLAY_VGA << 8, 0xffff00, 0}, \
+> >  	{0, 0, 0}
 > 
-> [snip]
-> 
-> > +	.callback = init_set_sci_en_on_resume,
-> > +	.ident = "Lenovo ThinkPad T410",
-> 
-> [snip[
-> 
-> > +	.callback = init_set_sci_en_on_resume,
-> > +	.ident = "Lenovo ThinkPad T410",
-> 
-> Oh crap, it's broken upstream too. :(
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=patch;h=07bedca29b0973f36a6b6db36936deed367164ed
-> 
-> Not sure what happened, but I think some sort of hiccup occurred
-> when the patch was applied, since this is what hit the mailing
-> lists:
-> 
-> https://patchwork.kernel.org/patch/94711/
-> 
-> Len, Greg, what would you like me to do? I think the cleanest
-> thing to do to help keep -stable clean would be to:
-> 
-> 	a) drop this patch from current -stable queue
-> 	b) revert 07bedca29b09 upstream
-> 	c) apply the patch from patchwork
-> 	d) re-apply to -stable
-> 
-> Thoughts?
+> Without that, it would be fine.
 
-How about getting a fixup patch into Linus's tree and then I'll apply
-that fixup patch to stable as well?
-
-In the meantime, triplicates don't hurt anyone :)
-
-thanks,
+Ok, thanks, I've dropped this hunk from the patch now.
 
 greg k-h
