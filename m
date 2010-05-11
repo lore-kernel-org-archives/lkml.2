@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab0EKP5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 11:57:06 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43955 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751915Ab0EKP5B (ORCPT
+	id S932109Ab0EKP5R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:57:17 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:40434 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140Ab0EKP5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 11:57:01 -0400
-Date: Tue, 11 May 2010 17:03:14 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Alek Du <alek.du@intel.com>, Arjan van de Ven <arjan@linux.intel.com>,
-       Feng Tang <feng.tang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-       Jacob Pan <jacob.jun.pan@intel.com>
-Subject: Re: [PATCH 4/8] x86/mrst: change clock selection logic to support
- medfield
-Message-ID: <20100511170314.3e9f4d22@lxorguk.ukuu.org.uk>
-In-Reply-To: <alpine.LFD.2.00.1005111748040.3401@localhost.localdomain>
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1273254108-3234-5-git-send-email-jacob.jun.pan@linux.intel.com>
-	<alpine.LFD.2.00.1005111546260.3401@localhost.localdomain>
-	<20100511163054.365239fe@lxorguk.ukuu.org.uk>
-	<alpine.LFD.2.00.1005111748040.3401@localhost.localdomain>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 May 2010 11:57:13 -0400
+Date: Tue, 11 May 2010 10:56:00 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
+ and rmap_walk() during migration by not migrating temporary stacks
+In-Reply-To: <20100511151142.GS26611@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1005111055070.1500@router.home>
+References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie> <1272529930-29505-3-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1005012055010.2663@router.home> <20100504094522.GA20979@csn.ul.ie> <alpine.DEB.2.00.1005101239400.13652@router.home>
+ <20100510175654.GL26611@csn.ul.ie> <alpine.DEB.2.00.1005110857350.1500@router.home> <20100511151142.GS26611@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 May 2010 17:50:28 +0200 (CEST)
-Thomas Gleixner <tglx@linutronix.de> wrote:
+On Tue, 11 May 2010, Mel Gorman wrote:
 
-> On Tue, 11 May 2010, Alan Cox wrote:
-> 
-> > > > +	pr_debug("cpuid result %x\n", regs[CR_EAX]);
-> > > > +	pr_info("Moorestown CPU %s identified\n",
-> > > > +		(mrst_cpu_chip == MRST_CPU_CHIP_LINCROFT) ?
-> > > > +		"Lincroft" : "Penwell");
-> > > 
-> > >   Are we going to add one of those for each new family ? This is
-> > >   really redundant bloat with no value.
-> > > 
-> > > > +	return mrst_cpu_chip;
-> > 
-> > From the driver side we need this value determined and visible to the
-> > drivers because some things like the IPC interface need to know rather
-> > than getting the cpuid magic replicated around.
-> 
-> Ok. That makes sense. Is there more what MRST drivers need to know ?
+> Or just identify the temporary stack from the migration side instead of
+> adding to the cost of exec?
 
-At some point they will need to know what platform they are booting on, I
-have a possible patch for that which just exposes the boot loader value
-but I'm not sure what the final direction on that will be.
-
-For CPU they need to know which CPU type as it affects some bits like the
-message formats in use. Probably that means the mrst_cpu_type enum or
-function should have an enum value of 0 which means "Not a moorestown
-device".
+Adding one off checks to a generic mechanism isnt really clean
+programming. Using the provided means of disabling a generic mechanism is.
 
