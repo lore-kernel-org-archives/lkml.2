@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab0EKE46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 00:56:58 -0400
-Received: from web34405.mail.mud.yahoo.com ([66.163.178.154]:38572 "HELO
-	web34405.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751559Ab0EKE44 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 00:56:56 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com.br;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=0kCNoyMdfapzpqIplCREXdI+cy8po6ljaV+rem4+6s1Njgju+qNZ2L0/CLDKwX8atgm33n1ejmUaaY5aI9CMUsump/GTGpM3bsoN51t654oxwKBfYOFOw0+jJOdvajsaEIqebQ8M3CV2iKARvBsjvadYNYUsyIBT5vYAehDnX9o=;
-Message-ID: <873867.32648.qm@web34405.mail.mud.yahoo.com>
-X-YMail-OSG: O7umHisVM1mGDPTBAeuO9bTm0.zS641JyXrWtp.pNHopysY
- c5Dd8EZOO9lNREHp2BEvMbtlNJSox4zDpO7Hdez_0bTqQy3Chi2zSZK4V0H7
- Mu_XV77p_yx8SLADQDuH8T96pFGdE1uNHLtaY5EF3uf0.uCbBLRg0Aromw0g
- psp69ltQx8_MwtuiFUh_vQMWhE7EnFTYzX1Lhy1fK1ggONv2EcJ_VOKqv66d
- nW5.emTXVPz1fuuEcNWDdGq8CQH8yHjPVjV7llpEKoOKXCnyju6QVRYL5ozR
- UiZetV25DSTodVJ8dNYQHvRMj_DO86czAG44lY.J0gftFTmwa7gJ12A--
-X-Mailer: YahooMailClassic/10.1.11 YahooMailWebService/0.8.103.269680
-Date: Mon, 10 May 2010 21:56:55 -0700 (PDT)
-From: Jose Luis Marchetti <joseluismarchetti@yahoo.com.br>
-Subject: What locks are needed to safely use vma->vm_file ?
-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753308Ab0EKE5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 00:57:10 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59077 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752877Ab0EKE5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 00:57:06 -0400
+Subject: Re: [PATCH 21/25] lmb: Add "start" argument to lmb_find_base()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yhlu.kernel@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linuxtronix.de,
+       mingo@elte.hu, davem@davemloft.net, lethal@linux-sh.org
+In-Reply-To: <AANLkTimhvJUX2S2eIY8rpw4TnUrDUFicMxEZkLK3hu1N@mail.gmail.com>
+References: <1273484339-28911-1-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-14-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-15-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-16-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-17-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-18-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-19-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-20-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-21-git-send-email-benh@kernel.crashing.org>
+	 <1273484339-28911-22-git-send-email-benh@kernel.crashing.org>
+	 <AANLkTimhvJUX2S2eIY8rpw4TnUrDUFicMxEZkLK3hu1N@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 May 2010 14:56:26 +1000
+Message-ID: <1273553786.21352.2.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2010-05-10 at 16:37 -0700, Yinghai Lu wrote:
 
-It appears that doing down_read(&mm->mmap_sem) is enough to safely use vma->vm_file, is it correct ?
+> >                if (lmbsize < size)
+> >                        continue;
+> > -               base = min(lmbbase + lmbsize, max_addr);
+> > -               res_base = lmb_find_region(lmbbase, base, size, align);
+> > -               if (res_base != LMB_ERROR)
+> > -                       return res_base;
+> > +               if ((lmbbase + lmbsize) <= start)
+> > +                       break;
+> > +               bottom = max(lmbbase, start);
+> > +               top = min(lmbbase + lmbsize, end);
+> > +               if (bottom >= top)
+> > +                       continue;
+> > +               found = lmb_find_region(lmbbase, top, size, align);
+>                                                                ^^^^^^^^^
+> should use bottom  here
 
-Also in the lock subject, to get to all vm_files in the system, is the following correct or something is missing ?
+Correct, I missed that when converting.
 
-read_lock(&tasklist_lock);
-for_each_process(p)
-{
-    mm = get_task_mm(p);
-    down_read(&mm->mmap_sem);
-
-    // ... Here what I need to do with this mm vm_file objects
-
-    up_read(&mm->mmap_sem);
-    mmput(mm);
-}
-read_unlock(&tasklist_lock);
-
-Thanks in advance for your answer
-José Luís Marchetti
+Cheers,
+Ben.
 
 
-      
