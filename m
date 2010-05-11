@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735Ab0EKPNU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 11:13:20 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37905 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756248Ab0EKPM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 11:12:26 -0400
-Date: Tue, 11 May 2010 08:03:20 -0700
-From: Greg KH <gregkh@suse.de>
-To: CaT <cat@zip.com.au>
-Cc: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-       Yong Zhang <yong.zhang@windriver.com>, lkml@zip.com.au,
-       mtosatti@redhat.com, kvm@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Avi Kivity <avi@redhat.com>
-Subject: Re: 2.6.33.3: possible recursive locking detected
-Message-ID: <20100511150320.GB14895@suse.de>
-References: <20100504070334.GN2657@zip.com.au>
- <4BDFDCD1.70202@redhat.com>
- <20100505023220.GC20236@windriver.com>
- <h2p2375c9f91005041952k422e7701vf7e726fc5440e953@mail.gmail.com>
- <20100511113350.GW2657@zip.com.au>
+	id S1753924Ab0EKPRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:17:19 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:24122 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517Ab0EKPRQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 11:17:16 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=PgW4rW2UYkREfR6gK16haFBaUnSAyF4JawF5hCswk2/vZwimetM8afcloNYj/nHih
+	doImI8cAdPrIJARhOdCmw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100511113350.GW2657@zip.com.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1273590800.1810.19.camel@laptop>
+References: <AANLkTinsEANHEicdjOaE6jwUa0bVqH5PBwuGQ3_L59hT@mail.gmail.com>
+	 <20100511150052.GE19192@ghostprotocols.net>
+	 <1273590800.1810.19.camel@laptop>
+Date: Tue, 11 May 2010 17:17:11 +0200
+Message-ID: <AANLkTilvtBMOE6MecY4P51MLRz0-LRgru4lDBQrQnXbZ@mail.gmail.com>
+Subject: Re: [RFC] perf: perf record sets inherit by default
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+       mingo@elte.hu, Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>, perfmon2-devel@lists.sf.net
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 09:33:50PM +1000, CaT wrote:
-> On Wed, May 05, 2010 at 10:52:50AM +0800, Américo Wang wrote:
-> > On Wed, May 5, 2010 at 10:32 AM, Yong Zhang <yong.zhang@windriver.com> wrote:
-> > > On Tue, May 04, 2010 at 11:37:37AM +0300, Avi Kivity wrote:
-> > >> On 05/04/2010 10:03 AM, CaT wrote:
-> > >> >I'm currently running 2.6.33.3 in a KVM instance emulating a core2duo
-> > >> >on 1 cpu with virtio HDs running on top of a core2duo host running 2.6.33.3.
-> > >> >qemu-kvm version 0.12.3.
-> > >
-> > > Can you try commit 6992f5334995af474c2b58d010d08bc597f0f2fe in the latest
-> > > kernel?
-> > >
-> > 
-> > Hmm, 2.6.33 -stable has commit 846f99749ab68bbc7f75c74fec305de675b1a1bf?
-> > 
-> > Actually, these 3 commits fixed it:
-> > 
-> > 6992f5334995af474c2b58d010d08bc597f0f2fe sysfs: Use one lockdep class
-> > per sysfs ttribute.
-> > a2db6842873c8e5a70652f278d469128cb52db70 sysfs: Only take active
-> > references on attributes.
-> > e72ceb8ccac5f770b3e696e09bb673dca7024b20 sysfs: Remove sysfs_get/put_active_two
-> > 
-> > However, there are many other patches needed to amend these, so I think
-> > it's not suitable for -stable to include, perhaps a revert of
-> > 846f99749ab68bbc7f75c74fec305de675b1a1bf is better.
-> 
-> Slightly at a loss as to what to do, now. It's a virt instance so I can
-> apply patches at will but, well, clarity is good. :)
+On Tue, May 11, 2010 at 5:13 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-05-11 at 12:00 -0300, Arnaldo Carvalho de Melo wrote:
+>>
+>> Humm, since for -C and -a using -i doesn't make sense, I guess it should
+>> be off by default and only be auto-activated if we don't specify any
+>> option, i.e. when using it like:
+>>
+>> perf record ./hackbench
+>>
+>> What do you think?
+>
+> -ENOPARSE
+>
+> -a/-C usage creates per-cpu counters and will thus ignore any and all
+> perf_event_attr::inherit state.
+>
+> Your above suggestion would still have inherit enabled by default, and
+> would thus not change anything.
+>
+> The thing is that perf-record defaults to inherited per-task-per-cpu
+> counters, which, I think, is a reasonable default, just sub-optimal for
+> single threaded/!forking subjects.
+>
+> So what would make sense is for -i to mean --no-inherit, and for !
+> inherit create a per-task counter instead of a per-task-per-cpu counter.
+>
 
-Just ignore the lockdep warnings as they are bogus, or turn them off, or
-use .34-rc7, as they are resolved there.
-
-thanks,
-
-greg k-h
+If inherit is the preferred default, then yes, the solution is to revert
+the meaning of -i. You'd have to be consistent across all commands
+using -i for inherit such as perf stat.
