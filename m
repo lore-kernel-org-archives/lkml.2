@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab0EKEYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 00:24:38 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:60648 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab0EKEYg (ORCPT
+	id S1751632Ab0EKE03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 00:26:29 -0400
+Received: from 64-56-119-18.donet.com ([64.56.119.18]:57396 "EHLO
+	wcschool.donet.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab0EKE01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 00:24:36 -0400
-Message-ID: <4BE8DBB0.5060701@ct.jp.nec.com>
-Date: Tue, 11 May 2010 13:23:12 +0900
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	Tue, 11 May 2010 00:26:27 -0400
+Message-ID: <20100511001900.aantdy2ari3wog0g@webmail.wcsd.k12.oh.us>
+Date: Tue, 11 May 2010 00:19:00 -0400
+From: "Mr. Vincent Hong" <vincent@yahoo.com.hk>
+Reply-to: hg.vincent33@gmail.com
+To: sisenbarger@wcsd.k12.oh.us
+Subject: Re:
+References: <20100510223054.luv5qlqdlp28g08o@webmail.wcsd.k12.oh.us>
+	<20100510223506.77ylw39bns84c80c@webmail.wcsd.k12.oh.us>
+	<20100510223656.m8nzy8mwqf44g8g8@webmail.wcsd.k12.oh.us>
+In-Reply-To: <20100510223656.m8nzy8mwqf44g8g8@webmail.wcsd.k12.oh.us>
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [RFC PATCH 2/2] dm: only initialize full request_queue for request-based
- device
-References: <1273532139-23043-1-git-send-email-snitzer@redhat.com> <1273532139-23043-2-git-send-email-snitzer@redhat.com>
-In-Reply-To: <1273532139-23043-2-git-send-email-snitzer@redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+Dear Friend,
+I have a business transaction which I need your assistant, your share will be
+40%; please if you are interested do contact me for more details on my  
+personal
+email: hg.vincent33@gmail.com
+Vincent Hong
 
-On 05/11/2010 07:55 AM +0900, Mike Snitzer wrote:
-> Revert back to only allocating a minimalist request_queue structure
-> initially (needed for both bio and request-based DM).  Initialization of
-> a full request_queue (request_fn, elevator, etc) is deferred until it is
-> known that the DM device is request-based.
 
-Thank you for working on this.
-However, I still disagree with this patch as we discussed on this thread:
-http://marc.info/?t=124990138700003&r=1&w=2
-(Exporting a part of queue's features may cause some maintenance costs
- in future.)
+Quoting sisenbarger@wcsd.k12.oh.us:
 
-As I mentioned on the last email of the thread above (see below),
-specifying device type at the device creation time by userspace tools
-should make dm code very simple.  So that may be a better approach.
+>
 
-> By the way, another approach to optimizing the memory usage would be
-> to determine whether the dm device is bio-based or request-based
-> at the device creation time, instead of the table binding time.
-> We want the delayed allocation, since kernel can't decide the device
-> type until the first table is bound because of the auto-detection
-> mechanism.  The auto-detection is good for keeping compatibility with
-> existing user-space tools.  But once user-space tools are changed to
-> specify device type at the device creation time, we can eventually
-> remove the auto-detection.
-> Then, kernel can decide device type in alloc_dev(), so
-> the initialization code in kernel will become very simple.
 
-Thanks,
-Kiyoshi Ueda
+
