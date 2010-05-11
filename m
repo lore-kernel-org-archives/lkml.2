@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936Ab0EKOAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 10:00:08 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:32797 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756902Ab0EKOAE (ORCPT
+	id S1757979Ab0EKOAy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 10:00:54 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41838 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757957Ab0EKOAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 10:00:04 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Nils Radtke <lkml@Think-Future.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.34-rc7: keyboard CAPS on/off indifferent, always capital
-In-Reply-To: Your message of "Tue, 11 May 2010 13:33:47 +0200."
-             <20100511113347.GD9838@localhost>
-From: Valdis.Kletnieks@vt.edu
-References: <20100511113347.GD9838@localhost>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1273586399_5047P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 11 May 2010 09:59:59 -0400
-Message-ID: <71911.1273586399@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A02020A.4BE962E0.0270,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	Tue, 11 May 2010 10:00:51 -0400
+Date: Tue, 11 May 2010 10:00:50 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+cc: dwmw2@infradead.org, <daniel@caiaq.de>, <clemens@ladisch.de>,
+       <tiwai@suse.de>, <alsa-devel@alsa-project.org>, <gregkh@suse.de>,
+       <konrad.wilk@oracle.com>, <linux-usb@vger.kernel.org>,
+       <linux-kernel@vger.kernel.org>, <chrisw@sous-sol.org>,
+       <iommu@lists.linux-foundation.org>, <andi@firstfloor.org>,
+       <pedrib@gmail.com>, <akpm@linux-foundation.org>
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+In-Reply-To: <20100511100637D.fujita.tomonori@lab.ntt.co.jp>
+Message-ID: <Pine.LNX.4.44L0.1005110956330.1834-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1273586399_5047P
-Content-Type: text/plain; charset=us-ascii
+On Tue, 11 May 2010, FUJITA Tomonori wrote:
 
-On Tue, 11 May 2010 13:33:47 +0200, Nils Radtke said:
->   When resuming, the keys are capitalized but the CAPS LED is not lit. shift+key doesn't
->   switch. Suspend-resume does temporarily fix it. As well as switching to console and back
->   to X.
+> > > > > At one point we tried an experiment, printing out the buffer and DMA 
+> > > > > addresses.  I don't recall seeing anything obviously wrong, but if an 
+> > > > > IOMMU was in use then that might not mean anything.  Is it possible 
+> > > > > that the IOMMU mappings sometimes get messed up for addresses above 4 
+> > > > > GB?
+> > > > 
+> > > > You mean that an IOMMU could allocate an address above 4GB wrongly? If
+> > > > so, IIRC, all the IOMMU implementations use dev->dma_mask and
+> > > > dev->coherent_dma_mask properly. And the DMA address space of the
+> > > > majority of IOMMUs are limited less than 4GB.
+> > > 
+> > > The Intel IOMMU code will use dev->dma_mask and dev->coherent_dma_mask
+> > > properly. It is not limited to 4GiB, but it will tend to give virtual
+> > > DMA addresses below 4GiB even when a device is capable of more; it'll
+> > > only give out higher addresses when the address space below 4GiB is
+> > > exhausted.
+> > 
+> > What I meant was: Is it possible that the IOMMU code will return a
+> > virtual DMA address before 4 GB but will somehow forget to actually map
+> > that address to the data buffer?
+> 
+> Then, the IOMMU is completely broken. Then, we would get tons of DMA
+> bugs not only about USB, I guess. So I'm not sure.
 
-For what it's worth, I'm seeing a similar thing intermittently on my laptop
-running 2.6.34-rc5-mmotm0428.  It will about 50% of the time boot with
-caps-lock set, but hitting Shift or Caps-Lock key won't light the corresponding
-light (but it *does* actually change state).
+Yes, you're right about that.
 
-Really sucks when the first thing you need to enter is the encryption key
-for the disk.  Try twice, hit caps-lock, have it work. Of course, the key is
-masked, so you can't tell which way it's set.
+> > The problem goes away when Pedro boots with mem=4G.  And the dma_mask
+> > value is set properly (in fact, the ehci-hcd driver currently doesn't
+> > use 64-bit DMA at all).
+> > 
+> > If anyone wants to see the debug log entries showing the buffer and DMA
+> > addresses, they are attached to this email message:
+> > 
+> > 	http://marc.info/?l=linux-kernel&m=127076841801054&w=2
+> > 
+> > Either the data isn't getting written to the buffer correctly or else
+> > the buffer isn't getting sent to the device correctly.  Can anybody
+> > suggest a means of determining which is the case?
+> 
+> I can't say anything about this log that including only DMA addresses.
+> I'm not familiar with how the USB core does DMA stuff. And the USB
+> stack design that the USB core does DMA stuff (allocating, mappings,
+> etc) makes debugging DMA issues really difficult.
 
-Problem resolves once the X server starts up.
+The DMA stuff is simple enough in this case.  The urb->transfer_buffer
+address is passed to dma_map_single(), and the DMA address it returns
+is stored in urb->transfer_dma.  Those are the two values printed out
+by the debugging patch.
 
-
---==_Exmh_1273586399_5047P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFL6WLfcC3lWbTT17ARAn7EAJ9p+6Xsw2FKLJp7P/K5xuaMz2CSKQCglN8W
-Nw8Sg8wwj2IiAxp4PnmR1lo=
-=NvUx
------END PGP SIGNATURE-----
-
---==_Exmh_1273586399_5047P--
+Alan Stern
 
