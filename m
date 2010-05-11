@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab0EKFSc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 01:18:32 -0400
-Received: from n14-vm0.bullet.mail.in.yahoo.com ([202.86.5.219]:35946 "HELO
-	n14-vm0.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753005Ab0EKFS2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 01:18:28 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 742987.35385.bm@omp102.mail.in2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=q+Se9AzkP/1F1jW3m7h2NnHXBk2CE6EsjaIuZ0FX+mJZ1jkWd9v8kVr07eLdWHRmNTX/G8mvU0yxqhaIgV9Eegsa/KCpzeokV5Y7nM3I4hA1AmC5xTCoNpVSU09KaEid+iN34BJNBsf+Rjm2G7XGnIKRR1jBVlegKwN369keM7U=;
-Message-ID: <214673.68504.qm@web95620.mail.in.yahoo.com>
-X-YMail-OSG: il_uxDoVM1k73V6ZW06LKpgwctEvGfUjaA23bRVq64cCwpX
- n2S6esVMZ62a3dBzXsyVMwHaIl74F4mL9ft3.UaJvkoQAEr9x.QQl.yTZiOx
- fHSx.21qcuLykMVOgUxAPLGdHuDdQGtlKWA7QP_6I4cJRSkt_9w9O.c.6gOP
- 8JEDFRSqEpJZGL..Br6.Hoe2riBXw.xmelSid
-X-Mailer: YahooMailRC/374.4 YahooMailWebService/0.8.103.269680
-Date: Tue, 11 May 2010 10:21:43 +0530 (IST)
-From: Oza Oza <ozaoza1982@yahoo.com>
-Subject: [PROPOSAL] NMI & register handling infrastructure
-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1754240Ab0EKFT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 01:19:57 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35900 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753186Ab0EKFTw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 01:19:52 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Date: Tue, 11 May 2010 10:49:37 +0530
+Subject: RE: linux-next: manual merge of the v4l-dvb tree with Linus' tree
+Thread-Topic: linux-next: manual merge of the v4l-dvb tree with Linus' tree
+Thread-Index: Acrv2FSlRnadsU1aTWWw+XefsJNO5wA79crw
+Message-ID: <19F8576C6E063C45BE387C64729E7394044E404AA4@dbde02.ent.ti.com>
+References: <20100510103249.55e033bd.sfr@canb.auug.org.au>
+In-Reply-To: <20100510103249.55e033bd.sfr@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> -----Original Message-----
+> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
+> Sent: Monday, May 10, 2010 6:03 AM
+> To: Mauro Carvalho Chehab
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Guennadi
+> Liakhovetski; Hiremath, Vaibhav
+> Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
+> 
+> Hi Mauro,
+> 
+> Today's linux-next merge of the v4l-dvb tree got a conflict in
+> drivers/media/video/Makefile between commit
+> b704e82a54591d69816b45f4324caf143f1a6fc8 ("V4L/DVB: V4L - Makfile:Removed
+> duplicate entry of davinci") from Linus' tree and commit
+> 3b5ce90284aff5f8683cfd08e0e1b38f73ad0aa8 ("V4L/DVB: V4L: SuperH Video
+> Output Unit (VOU) driver") from the v4l-dvb tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix
+> for a while.
+[Hiremath, Vaibhav] Thanks Stephen,
 
+Looks ok to me.
 
-This is my first post to the group, please excuse me, If I unknowingly miss to follow writing ethics.
+Thanks,
+Vaibhav
 
-Proposal/Need: 
-
-I was working on providing accurate process usage support, and writing a kernel module, 
-I configured cpu-core-unhalted-event and configured LVT (local vector table) with NMI (non-maskable interrupt), and surprisingly Oprofile stopped working, 
-Then I realized, that set_nmi_call back just overwrites nmi_callback function pointer. 
-
-My proposal/idea/thinking is; 
-have a kernel module which accepts NMI registration from any kernel component, and providing support to the the any kernel service which basically need to service NMI.
-It may not only supports this, but also can provide central infrastructure which has capabilities such as granting MSR (model specific register) access to the the modules, which may avoid potential clash of MSRs (e.g. two modules are trying to configure same MSR), control NMI registration-unregisteration events etc..
-
-I am not sure, whether this is a good idea or bad idea, but I thought it adds flexibility and some value addition in kernel, 
-and I find this place precisely right to post this idea. 
-
-Any feedback/suggestions/additions would be appreciated. 
-
-Regards,
-Oza.
-
-
-
-
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc drivers/media/video/Makefile
+> index c51c386,cc93859..0000000
+> --- a/drivers/media/video/Makefile
+> +++ b/drivers/media/video/Makefile
+> @@@ -160,6 -166,10 +166,8 @@@ obj-$(CONFIG_VIDEO_MX3)			+=
+> mx3_camera
+>   obj-$(CONFIG_VIDEO_PXA27x)		+= pxa_camera.o
+>   obj-$(CONFIG_VIDEO_SH_MOBILE_CEU)	+= sh_mobile_ceu_camera.o
+> 
+>  -obj-$(CONFIG_ARCH_DAVINCI)		+= davinci/
+>  -
+> + obj-$(CONFIG_VIDEO_SH_VOU)		+= sh_vou.o
+> +
+>   obj-$(CONFIG_VIDEO_AU0828) += au0828/
+> 
+>   obj-$(CONFIG_USB_VIDEO_CLASS)	+= uvc/
