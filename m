@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab0EKQJn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:09:43 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:49349 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab0EKQJm (ORCPT
+	id S1754659Ab0EKQKZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:10:25 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:55629 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752934Ab0EKQKX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:09:42 -0400
-Date: Tue, 11 May 2010 18:09:23 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, gregkh@suse.de,
-       konrad.wilk@oracle.com, tiwai@suse.de,
-       USB list <linux-usb@vger.kernel.org>, clemens@ladisch.de,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       chrisw@sous-sol.org, iommu@lists.linux-foundation.org,
-       andi@firstfloor.org, pedrib@gmail.com,
-       Andrew Morton <akpm@linux-foundation.org>, dwmw2@infradead.org
-Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
-Message-ID: <20100511160923.GZ30801@buzzloop.caiaq.de>
-References: <20100512003450P.fujita.tomonori@lab.ntt.co.jp>
- <Pine.LNX.4.44L0.1005111158420.1834-100000@iolanthe.rowland.org>
+	Tue, 11 May 2010 12:10:23 -0400
+X-Greylist: delayed 479 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 12:10:22 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MxNEfygtL0N6Pjj9lX5wd+EOZrrImD7ufWf8hSrmFWuzDEQPSvLok62NL1m95PYIA/
+         31Jb8cD/ItTGrZAanLOzeZaZ7KahXAjJlCSdegyDqZGaswrOU5XfD1ziOpuhudXz2QtR
+         hkI6vgh/0r3qlQNqSOeRh01G/VRUWOwOhHkqY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1005111158420.1834-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100511154108.11546.12066.stgit@muvarov>
+References: <20100511154108.11546.12066.stgit@muvarov>
+Date: Tue, 11 May 2010 18:02:21 +0200
+Message-ID: <AANLkTinTprEzXRIFeJfu6TEvPqj24UBjrrZN3MtZD6LH@mail.gmail.com>
+Subject: Re: [PATCH] [POWEPC] crashdump: do not fail on null pointer 
+	dereferencing
+From: Vitaly Wool <vitalywool@gmail.com>
+To: Maxim Uvarov <muvarov@gmail.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+       uvarov@dev.rtsoft.ru
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 12:06:09PM -0400, Alan Stern wrote:
-> On Wed, 12 May 2010, FUJITA Tomonori wrote:
-> 
-> > > > Can you tell me all the exact process of DMA that the usb core and the
-> > > > driver do?
-> > > 
-> > > 1. The audio driver stores data in urb->transfer_buffer.
-> > 
-> > How urb->transfer_buffer is allocated?
-> 
-> By kmalloc().  Right, Daniel?
+Hi,
 
-Yes, and that's precisely the reason for the whole thread ;)
+> diff --git a/arch/powerpc/kernel/crash.c b/arch/powerpc/kernel/crash.c
+> index 6f4613d..341d8af 100644
+> --- a/arch/powerpc/kernel/crash.c
+> +++ b/arch/powerpc/kernel/crash.c
+> @@ -375,6 +375,9 @@ void default_machine_crash_shutdown(struct pt_regs *regs)
+>        for_each_irq(i) {
+>                struct irq_desc *desc = irq_to_desc(i);
+>
+> +               if (!desc || !desc->chip || !desc->chip->eoi)
+> +                       continue;
+> +
 
-[...]
+Kinda unlikely that desc can be NULL here :)
 
-> > The driver does only DMA_TO_DEVICE? Or you see DMA problems only with
-> > DMA_TO_DEVICE?
-> 
-> The particular test that Pedro is running uses audio output only -- 
-> he's sending sound data to a speaker and it comes out noisy.
-> 
-> But the audio data has to come from somewhere, and I don't remember 
-> where.  Pedro, does the noise occur only when you're playing sound that 
-> comes from a different USB device?  What happens if you play sounds 
-> that are stored on your hard disk, like an MP3 file?
-
-AFAIK that was playback from a file, yes. It would be interesting to
-have some results for the other direction as well, that's true.
-
-Thanks,
-Daniel
-
+~Vitaly
