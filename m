@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab0EKQLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:11:00 -0400
-Received: from mga10.intel.com ([192.55.52.92]:15811 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751963Ab0EKQK7 (ORCPT
+	id S1755396Ab0EKQLN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:11:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44960 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752576Ab0EKQLK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:10:59 -0400
-Message-Id: <89kc63$grtht6@fmsmga002.fm.intel.com>
+	Tue, 11 May 2010 12:11:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,208,1272870000"; 
-   d="scan'208";a="566151078"
-Date: Tue, 11 May 2010 17:10:53 +0100
-To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       dri-devel@lists.freedesktop.org, Dave Airlie <airlied@linux.ie>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: DRM Error on Acer Aspire One
-References: <AANLkTilSNZ11CaRUH5s3w6NoAnDQ5t7U9Y0Ce-iHpq3O@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <AANLkTilSNZ11CaRUH5s3w6NoAnDQ5t7U9Y0Ce-iHpq3O@mail.gmail.com>
+   d="scan'208";a="620750745"
+From: "Du, Alek" <alek.du@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Ondrej Zary <linux@rainbow-software.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       USB list <linux-usb@vger.kernel.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>
+Date: Wed, 12 May 2010 00:10:54 +0800
+Subject: RE: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
+ (WKOC_E) and disconnect (WKDISC_E)
+Thread-Topic: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
+ (WKOC_E) and disconnect (WKDISC_E)
+Thread-Index: AcrxItTNml+mzW4XRziCgLhaBWKgEQAAVBoQ
+Message-ID: <1865303E0DED764181A9D882DEF65FB61A82CECA8A@shsmsx502.ccr.corp.intel.com>
+References: <20100511113120.02787f96@dxy2>
+ <Pine.LNX.4.44L0.1005111156150.1834-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1005111156150.1834-100000@iolanthe.rowland.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 May 2010 20:30:07 +0530, Jaswinder Singh Rajput <jaswinderlinux@gmail.com> wrote:
-> Hello,
-> 
-> With latest git kernel, I am getting following DRM error and not
-> getting XWindows :
+>-----Original Message-----
+>From: Alan Stern [mailto:stern@rowland.harvard.edu]
+>Sent: Tuesday, May 11, 2010 11:58 PM
+>To: Du, Alek
+>Cc: Ondrej Zary; Linux-pm mailing list; USB list; Kernel development list
+>Subject: Re: [linux-pm] [PATCH v2] [RFC] ehci: Disable wake on overcurrent
+>(WKOC_E) and disconnect (WKDISC_E)
+>
+>Alek:
+>
+>By the way, does the Moorestown platform support multiple ports
+>on the root hub?  If it does then using a single time delay (instead of
+>a separate delay for each port) makes sense.  But if it doesn't then
+>there's no reason to move the power-up and power-down delays outside
+>the port loops.
+>
+>Alan Stern
 
-[snip]
+Alan,
 
-Hmm, there are still patches for capturing error state that haven't gone
-upstream, shame on me.
+Yes, the Moorestown platform supports multi-ports, actually my test board has three ports on the root hub.
 
-That error is a secondary issue to the GPU hang that is being reported. If
-it is a regression caused by a kernel update it would be very useful if
-you could bisect to the erroneous commit.
+Thanks,
+Alek
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+
