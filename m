@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758011Ab0EKOZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 10:25:30 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54307 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885Ab0EKOZ2 (ORCPT
+	id S1758213Ab0EKO0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 10:26:09 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61783 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757708Ab0EKO0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 10:25:28 -0400
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-In-Reply-To: <20100511141511.GA14034@aftab>
-References: <1273483623.15998.57.camel@minggr.sh.intel.com>
-	 <1273484401.5605.3333.camel@twins>
-	 <1273486313.15998.76.camel@minggr.sh.intel.com>
-	 <1273486708.5605.3342.camel@twins>
-	 <1273487195.15998.85.camel@minggr.sh.intel.com>
-	 <1273490824.5605.3379.camel@twins> <20100510114311.GA6449@elte.hu>
-	 <20100511141511.GA14034@aftab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 May 2010 16:25:15 +0200
-Message-ID: <1273587915.1810.1.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 11 May 2010 10:26:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=r7cZYBK/R4RGZxqchB6rK07VufeS+iKuz9KinS59PmpR753NEfWFd7+a67hIY8s+MX
+         K6YpVfB5SgbRIVDL3l+yy09iWU2wohXf4sQgIc0DGYxiDcCDEJsSx9KpirtAvFbJLwV9
+         bPEctpxW5tZLndSctZ1P593KXae4SGMamir5s=
+Message-ID: <4BE96910.7090602@gmail.com>
+Date: Tue, 11 May 2010 07:26:24 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-bluetooth@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: magicmouse: claimed by neither input, hiddev nor hidraw
+References: <j2idd18b0c31005101341o43b652c1zf8729f5f9a60e0d3@mail.gmail.com>  <alpine.LRH.2.00.1005102334140.14809@twin.jikos.cz> <s2odd18b0c31005101439v22d03bfdw4e65d7c4b8315b6a@mail.gmail.com> <alpine.LNX.2.00.1005102351220.28092@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1005102351220.28092@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 16:15 +0200, Borislav Petkov wrote:
-> Another point I have is that MCEs don't need pmus so we should consider
-> having the ability to decouple events from pmus.
+o.k... I went and tested individual commits
+and right now if I git revert 28918c
+on the latest head, I don't receive
+the "claimed by neither input, hiddev nor hidraw"
+message, and I get all functionality back with the mouse.
+(without having hiddraw enabled in the kernel.
 
-Strictly speaking tracepoints are software events, which run off of a
-software 'pmu'. So no, we can't decouple, they need a 'pmu' context.
-
-> What you basically want to have is a tracepoint which is "persistent,"
-> as Ingo suggested earlier, and it buffers MCEs occurring at any time
-> into a ring buffer until a userspace daemon or similar sucks that data
-> out for processing (critical stuff is handled differently, of course).
-> And this should work on any x86 hw supporting MCA without hw perf
-> monitoring features. 
-
-Try building x86 without perf hw support :/
-
+Justin P. Mattock
