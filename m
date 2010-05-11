@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab0EKXea (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 19:34:30 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:42212 "EHLO e8.ny.us.ibm.com"
+	id S1752975Ab0EKXdO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 19:33:14 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:41151 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753292Ab0EKXdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 19:33:16 -0400
+	id S1751615Ab0EKXdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 19:33:11 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,12 +13,12 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@parisplace.org>
-Subject: [PATCH RFC tip/core/rcu 09/11] selinux: remove all rcu head initializations
-Date: Tue, 11 May 2010 16:33:04 -0700
-Message-Id: <1273620786-20392-9-git-send-email-paulmck@linux.vnet.ibm.com>
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>
+Subject: [PATCH RFC tip/core/rcu 01/11] Debugobjects transition check
+Date: Tue, 11 May 2010 16:32:56 -0700
+Message-Id: <1273620786-20392-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100511233241.GA20250@linux.vnet.ibm.com>
 References: <20100511233241.GA20250@linux.vnet.ibm.com>
@@ -26,45 +26,185 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove all rcu head inits. We don't care about the RCU head state before passing
-it to call_rcu() anyway. Only leave the "on_stack" variants so debugobjects can
-keep track of objects on stack.
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+
+Implement a basic state machine checker in the debugobjects.
+
+This state machine checker detects races and inconsistencies within the "active"
+life of a debugobject. The checker only keeps track of the current state; all
+the state machine logic is kept at the object instance level.
+
+The checker works by adding a supplementary "unsigned int astate" field to the
+debug_obj structure. It keeps track of the current "active state" of the object.
+
+The only constraints that are imposed on the states by the debugobjects system
+is that:
+
+- activation of an object sets the current active state to 0,
+- deactivation of an object expects the current active state to be 0.
+
+For the rest of the states, the state mapping is determined by the specific
+object instance. Therefore, the logic keeping track of the state machine is
+within the specialized instance, without any need to know about it at the
+debugobject level.
+
+The current object active state is changed by calling:
+
+debug_object_active_state(addr, descr, expect, next)
+
+where "expect" is the expected state and "next" is the next state to move to if
+the expected state is found. A warning is generated if the expected is not
+found.
 
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: David S. Miller <davem@davemloft.net>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org
+CC: mingo@elte.hu
+CC: laijs@cn.fujitsu.com
+CC: dipankar@in.ibm.com
+CC: josh@joshtriplett.org
+CC: dvhltc@us.ibm.com
+CC: niv@us.ibm.com
+CC: peterz@infradead.org
+CC: rostedt@goodmis.org
+CC: Valdis.Kletnieks@vt.edu
+CC: dhowells@redhat.com
+CC: eric.dumazet@gmail.com
+CC: Alexey Dobriyan <adobriyan@gmail.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>
-Reviewed-by: James Morris <jmorris@namei.org>
-Cc: Eric Paris <eparis@parisplace.org>
 ---
- security/selinux/avc.c     |    1 -
- security/selinux/netnode.c |    2 --
- 2 files changed, 0 insertions(+), 3 deletions(-)
+ include/linux/debugobjects.h |   11 ++++++++
+ lib/debugobjects.c           |   59 +++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 67 insertions(+), 3 deletions(-)
 
-diff --git a/security/selinux/avc.c b/security/selinux/avc.c
-index 989fef8..bf4e3bc 100644
---- a/security/selinux/avc.c
-+++ b/security/selinux/avc.c
-@@ -288,7 +288,6 @@ static struct avc_node *avc_alloc_node(void)
- 	if (!node)
- 		goto out;
+diff --git a/include/linux/debugobjects.h b/include/linux/debugobjects.h
+index 8c243aa..597692f 100644
+--- a/include/linux/debugobjects.h
++++ b/include/linux/debugobjects.h
+@@ -20,12 +20,14 @@ struct debug_obj_descr;
+  * struct debug_obj - representaion of an tracked object
+  * @node:	hlist node to link the object into the tracker list
+  * @state:	tracked object state
++ * @astate:	current active state
+  * @object:	pointer to the real object
+  * @descr:	pointer to an object type specific debug description structure
+  */
+ struct debug_obj {
+ 	struct hlist_node	node;
+ 	enum debug_obj_state	state;
++	unsigned int		astate;
+ 	void			*object;
+ 	struct debug_obj_descr	*descr;
+ };
+@@ -60,6 +62,15 @@ extern void debug_object_deactivate(void *addr, struct debug_obj_descr *descr);
+ extern void debug_object_destroy   (void *addr, struct debug_obj_descr *descr);
+ extern void debug_object_free      (void *addr, struct debug_obj_descr *descr);
  
--	INIT_RCU_HEAD(&node->rhead);
- 	INIT_HLIST_NODE(&node->list);
- 	avc_cache_stats_incr(allocations);
++/*
++ * Active state:
++ * - Set at 0 upon initialization.
++ * - Must return to 0 before deactivation.
++ */
++extern void
++debug_object_active_state(void *addr, struct debug_obj_descr *descr,
++			  unsigned int expect, unsigned int next);
++
+ extern void debug_objects_early_init(void);
+ extern void debug_objects_mem_init(void);
+ #else
+diff --git a/lib/debugobjects.c b/lib/debugobjects.c
+index b862b30..076464f 100644
+--- a/lib/debugobjects.c
++++ b/lib/debugobjects.c
+@@ -141,6 +141,7 @@ alloc_object(void *addr, struct debug_bucket *b, struct debug_obj_descr *descr)
+ 		obj->object = addr;
+ 		obj->descr  = descr;
+ 		obj->state  = ODEBUG_STATE_NONE;
++		obj->astate = 0;
+ 		hlist_del(&obj->node);
  
-diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
-index dc92792..65ebfe9 100644
---- a/security/selinux/netnode.c
-+++ b/security/selinux/netnode.c
-@@ -183,8 +183,6 @@ static void sel_netnode_insert(struct sel_netnode *node)
- 		BUG();
+ 		hlist_add_head(&obj->node, &b->list);
+@@ -252,8 +253,10 @@ static void debug_print_object(struct debug_obj *obj, char *msg)
+ 
+ 	if (limit < 5 && obj->descr != descr_test) {
+ 		limit++;
+-		WARN(1, KERN_ERR "ODEBUG: %s %s object type: %s\n", msg,
+-		       obj_states[obj->state], obj->descr->name);
++		WARN(1, KERN_ERR "ODEBUG: %s %s (active state %u) "
++				 "object type: %s\n",
++			msg, obj_states[obj->state], obj->astate,
++			obj->descr->name);
  	}
+ 	debug_objects_warnings++;
+ }
+@@ -447,7 +450,10 @@ void debug_object_deactivate(void *addr, struct debug_obj_descr *descr)
+ 		case ODEBUG_STATE_INIT:
+ 		case ODEBUG_STATE_INACTIVE:
+ 		case ODEBUG_STATE_ACTIVE:
+-			obj->state = ODEBUG_STATE_INACTIVE;
++			if (!obj->astate)
++				obj->state = ODEBUG_STATE_INACTIVE;
++			else
++				debug_print_object(obj, "deactivate");
+ 			break;
  
--	INIT_RCU_HEAD(&node->rcu);
--
- 	/* we need to impose a limit on the growth of the hash table so check
- 	 * this bucket to make sure it is within the specified bounds */
- 	list_add_rcu(&node->list, &sel_netnode_hash[idx].list);
+ 		case ODEBUG_STATE_DESTROYED:
+@@ -553,6 +559,53 @@ out_unlock:
+ 	raw_spin_unlock_irqrestore(&db->lock, flags);
+ }
+ 
++/**
++ * debug_object_active_state - debug checks object usage state machine
++ * @addr:	address of the object
++ * @descr:	pointer to an object specific debug description structure
++ * @expect:	expected state
++ * @next:	state to move to if expected state is found
++ */
++void
++debug_object_active_state(void *addr, struct debug_obj_descr *descr,
++			  unsigned int expect, unsigned int next)
++{
++	struct debug_bucket *db;
++	struct debug_obj *obj;
++	unsigned long flags;
++
++	if (!debug_objects_enabled)
++		return;
++
++	db = get_bucket((unsigned long) addr);
++
++	raw_spin_lock_irqsave(&db->lock, flags);
++
++	obj = lookup_object(addr, db);
++	if (obj) {
++		switch (obj->state) {
++		case ODEBUG_STATE_ACTIVE:
++			if (obj->astate == expect)
++				obj->astate = next;
++			else
++				debug_print_object(obj, "active_state");
++			break;
++
++		default:
++			debug_print_object(obj, "active_state");
++			break;
++		}
++	} else {
++		struct debug_obj o = { .object = addr,
++				       .state = ODEBUG_STATE_NOTAVAILABLE,
++				       .descr = descr };
++
++		debug_print_object(&o, "active_state");
++	}
++
++	raw_spin_unlock_irqrestore(&db->lock, flags);
++}
++
+ #ifdef CONFIG_DEBUG_OBJECTS_FREE
+ static void __debug_check_no_obj_freed(const void *address, unsigned long size)
+ {
 -- 
 1.7.0.6
 
