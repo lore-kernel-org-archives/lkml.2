@@ -1,68 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab0EKRtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 13:49:15 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:62547 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754832Ab0EKRtN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 13:49:13 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 69.181.193.102
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18NoadW0NX5Pv8aD/bSUsxK
-Date: Tue, 11 May 2010 10:48:58 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100511174857.GC13931@atomide.com>
-References: <87632vhbs8.fsf@deeprootsystems.com>
- <201005102225.52431.rjw@sisk.pl>
- <20100511161227.GD13600@atomide.com>
- <20100511161448.GA16148@srcf.ucam.org>
- <20100511163632.GE13600@atomide.com>
- <20100511164554.GA17016@srcf.ucam.org>
- <20100511165821.GA13931@atomide.com>
- <20100511170348.GA17443@srcf.ucam.org>
- <20100511172442.GB13931@atomide.com>
- <20100511173036.GB17868@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100511173036.GB17868@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756777Ab0EKRtd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 13:49:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754832Ab0EKRta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 13:49:30 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-acpi@vger.kernel.org
+Cc: lenb@kernel.org, linux-kernel@vger.kernel.org,
+       Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] acpi: Unconditionally set SCI_EN on resume
+Date: Tue, 11 May 2010 13:49:25 -0400
+Message-Id: <1273600165-16681-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.234.200
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Matthew Garrett <mjg@redhat.com> [100511 10:25]:
-> On Tue, May 11, 2010 at 10:24:43AM -0700, Tony Lindgren wrote:
-> 
-> > For the failed suspend path in the kernel, currently the kernel would
-> > unwind back all the drivers because of the failed driver, but that path
-> > should be possible to optimize.
-> 
-> If you think it's possible to make this work then feel free to. But at 
-> the point where you're adding code to every driver's suspend function to 
-> determine whether or not it's got any pending events that userspace 
-> hasn't consumed yet, and adding code to every bit of userspace to allow 
-> it to indicate whether or not it's busy consuming events or just busy 
-> drawing 3D bouncing cattle, I think you've reinvented suspend blocks.
+The ACPI spec tells us that the firmware will reenable SCI_EN on resume.
+Reality disagrees in some cases. The ACPI spec tells us that the only way
+to set SCI_EN is via an SMM call.
+https://bugzilla.kernel.org/show_bug.cgi?id=13745 shows us that doing so
+may break machines. Tracing the ACPI calls made by Windows shows that it
+unconditionally sets SCI_EN on resume with a direct register write, and
+therefore the overwhelming probability is that everything is fine with
+this behaviour.
 
-Sorry, I have a working system that idles nicely and stays up on
-batteries for a long time while running. I don't need to implement
-anything like this :)
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ arch/x86/kernel/acpi/sleep.c |    2 -
+ drivers/acpi/sleep.c         |  157 +-----------------------------------------
+ include/linux/acpi.h         |    1 -
+ 3 files changed, 2 insertions(+), 158 deletions(-)
 
-Cheers,
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index f996103..82e5086 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -162,8 +162,6 @@ static int __init acpi_sleep_setup(char *str)
+ #endif
+ 		if (strncmp(str, "old_ordering", 12) == 0)
+ 			acpi_old_suspend_ordering();
+-		if (strncmp(str, "sci_force_enable", 16) == 0)
+-			acpi_set_sci_en_on_resume();
+ 		str = strchr(str, ',');
+ 		if (str != NULL)
+ 			str += strspn(str, ", \t");
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index baa76bb..4ab2275 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -80,22 +80,6 @@ static int acpi_sleep_prepare(u32 acpi_state)
+ 
+ #ifdef CONFIG_ACPI_SLEEP
+ static u32 acpi_target_sleep_state = ACPI_STATE_S0;
+-/*
+- * According to the ACPI specification the BIOS should make sure that ACPI is
+- * enabled and SCI_EN bit is set on wake-up from S1 - S3 sleep states.  Still,
+- * some BIOSes don't do that and therefore we use acpi_enable() to enable ACPI
+- * on such systems during resume.  Unfortunately that doesn't help in
+- * particularly pathological cases in which SCI_EN has to be set directly on
+- * resume, although the specification states very clearly that this flag is
+- * owned by the hardware.  The set_sci_en_on_resume variable will be set in such
+- * cases.
+- */
+-static bool set_sci_en_on_resume;
+-
+-void __init acpi_set_sci_en_on_resume(void)
+-{
+-	set_sci_en_on_resume = true;
+-}
+ 
+ /*
+  * ACPI 1.0 wants us to execute _PTS before suspending devices, so we allow the
+@@ -253,11 +237,8 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+ 		break;
+ 	}
+ 
+-	/* If ACPI is not enabled by the BIOS, we need to enable it here. */
+-	if (set_sci_en_on_resume)
+-		acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
+-	else
+-		acpi_enable();
++	/* This violates the spec but is required for bug compatibility. */
++	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
+ 
+ 	/* Reprogram control registers and execute _BFS */
+ 	acpi_leave_sleep_state_prep(acpi_state);
+@@ -346,12 +327,6 @@ static int __init init_old_suspend_ordering(const struct dmi_system_id *d)
+ 	return 0;
+ }
+ 
+-static int __init init_set_sci_en_on_resume(const struct dmi_system_id *d)
+-{
+-	set_sci_en_on_resume = true;
+-	return 0;
+-}
+-
+ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
+ 	{
+ 	.callback = init_old_suspend_ordering,
+@@ -370,22 +345,6 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
+ 		},
+ 	},
+ 	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Apple MacBook 1,1",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "MacBook1,1"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Apple MacMini 1,1",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Macmini1,1"),
+-		},
+-	},
+-	{
+ 	.callback = init_old_suspend_ordering,
+ 	.ident = "Asus Pundit P1-AH2 (M2N8L motherboard)",
+ 	.matches = {
+@@ -394,94 +353,6 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
+ 		},
+ 	},
+ 	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Toshiba Satellite L300",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard HP G7000 Notebook PC",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "HP G7000 Notebook PC"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard HP Pavilion dv3 Notebook PC",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv3 Notebook PC"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard Pavilion dv4",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard Pavilion dv7",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv7"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard Compaq Presario C700 Notebook PC",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Compaq Presario C700 Notebook PC"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard Compaq Presario CQ40 Notebook PC",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Compaq Presario CQ40 Notebook PC"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T410",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad W510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201[s]",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
+-		},
+-	},
+-	{
+ 	.callback = init_old_suspend_ordering,
+ 	.ident = "Panasonic CF51-2L",
+ 	.matches = {
+@@ -490,30 +361,6 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
+ 		DMI_MATCH(DMI_BOARD_NAME, "CF51-2L"),
+ 		},
+ 	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Dell Studio 1558",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1558"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Dell Studio 1557",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1557"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Dell Studio 1555",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1555"),
+-		},
+-	},
+ 	{},
+ };
+ #endif /* CONFIG_SUSPEND */
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index b926afe..87ca491 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -251,7 +251,6 @@ int acpi_check_mem_region(resource_size_t start, resource_size_t n,
+ void __init acpi_no_s4_hw_signature(void);
+ void __init acpi_old_suspend_ordering(void);
+ void __init acpi_s4_no_nvs(void);
+-void __init acpi_set_sci_en_on_resume(void);
+ #endif /* CONFIG_PM_SLEEP */
+ 
+ struct acpi_osc_context {
+-- 
+1.7.0.1
 
-Tony
