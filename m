@@ -1,81 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab0EKUej (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 16:34:39 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57011 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab0EKUeh (ORCPT
+	id S1752466Ab0EKUio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 16:38:44 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:47620 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab0EKUin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 16:34:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=He6qRowvimbFQh0Kvt9v07bJXS9q9Oy1HIiCNBk+hSEb1sRBugrRbbwPcXRXYJgUu8
-         gFoe+XfbCDL9xdPeFqa9bQS6P6zGs63gD5rb8+qb7g3rTUwzhPErJpaAdstpSi9hLLeM
-         o0lAwamj09Z+D9sM0aX4fP4dOpOM+3sOyAdHY=
+	Tue, 11 May 2010 16:38:43 -0400
+Message-ID: <4BE9C033.2020106@cs.helsinki.fi>
+Date: Tue, 11 May 2010 23:38:11 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1005111520260.1500@router.home>
-References: <1273487642-2169-1-git-send-email-os@emlix.com> 
-	<AANLkTikA9s6lpO2uDuIup8BwGOYYHQ9yQxS36PBSIttX@mail.gmail.com> 
-	<20100511062110.GB9644@core.coreip.homeip.net> <AANLkTiktu7N5IXknkkJ9D5L4z5plhuGvD45IVqJm9zG1@mail.gmail.com> 
-	<20100511063309.GC9644@core.coreip.homeip.net> <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com> 
-	<AANLkTinV79HZqS1cktHDsTsHDel-0Nti_Uk4i7mGaRiK@mail.gmail.com> 
-	<1273608441.15067.1002.camel@calx> <AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com> 
-	<alpine.DEB.2.00.1005111520260.1500@router.home>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Tue, 11 May 2010 16:34:14 -0400
-Message-ID: <AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com>
-Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
-To: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Matt Mackall <mpm@selenic.com>,
+To: Mike Frysinger <vapier.adi@gmail.com>
+CC: Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
        Andrew Morton <akpm@linux-foundation.org>,
        Oskar Schirmer <os@emlix.com>,
        Michael Hennerich <Michael.Hennerich@analog.com>,
        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       =?UTF-8?Q?Daniel_Gl=C3=B6ckner?= <dg@emlix.com>,
+       "=?UTF-8?B?RGFuaWVsIEdsw7Zja25lcg==?=" <dg@emlix.com>,
        Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>,
        Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>,
        David Brownell <dbrownell@users.sourceforge.net>,
        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
+References: <1273487642-2169-1-git-send-email-os@emlix.com> 	<AANLkTikA9s6lpO2uDuIup8BwGOYYHQ9yQxS36PBSIttX@mail.gmail.com> 	<20100511062110.GB9644@core.coreip.homeip.net> <AANLkTiktu7N5IXknkkJ9D5L4z5plhuGvD45IVqJm9zG1@mail.gmail.com> 	<20100511063309.GC9644@core.coreip.homeip.net> <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com> 	<AANLkTinV79HZqS1cktHDsTsHDel-0Nti_Uk4i7mGaRiK@mail.gmail.com> 	<1273608441.15067.1002.camel@calx> <AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com> 	<alpine.DEB.2.00.1005111520260.1500@router.home> <AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com>
+In-Reply-To: <AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 16:21, Christoph Lameter wrote:
-> On Tue, 11 May 2010, Mike Frysinger wrote:
->> and like i said, that doesnt sound like a reasonable solution when
->> every single SPI driver (over 100 atm) out there is affected
->
-> If you are on an embedded arch then you can of course set the default
-> kmalloc alignment.
->
-> The requirement for kmalloc is that it returns memory that can be used for
-> DMA. If the arch can only DMA into cacheline aligned objects then the
-> correct method is to force kmalloc alignment to cacheline size.
+Mike Frysinger wrote:
+> that is a question for David/Grant.  i'm not the SPI core maintainer,
+> i'm merely watching over some SPI drivers.  however, this answer also
+> doesnt sound like it's thinking big enough because what you're
+> proposing isnt specific to the SPI bus -- any time a DMA safe buffer
+> is needed dynamically, this function could be used.
 
-these are SPI drivers and are usable on any arch that supports a SPI
-bus (which is pretty much every arch).  forget about "embedded"
-arches.
-
-the issue here is simple: a SPI driver (AD7877) needs to do a receive
-SPI transfer into a DMA safe buffer.  what is the exact API to
-dynamically allocate memory for the structure with this buffer
-embedded in it such that the start of the structure is cached aligned
-?  creating a dedicated kmem cache may work, but it isnt a scalable
-solution if every SPI driver needs to create its own cache.
-
-On Tue, May 11, 2010 at 16:22, Pekka Enberg wrote:
-> Why do you need to do it in every driver? Why not create a cache of
-> size cache_line_size()*2 or something in the SPI stack and add a
-> helper function spi_alloc_whatever_this_is_about() for the drivers to
-> use?
-
-that is a question for David/Grant.  i'm not the SPI core maintainer,
-i'm merely watching over some SPI drivers.  however, this answer also
-doesnt sound like it's thinking big enough because what you're
-proposing isnt specific to the SPI bus -- any time a DMA safe buffer
-is needed dynamically, this function could be used.
--mike
+Well, we have dma_alloc_coherent(), shouldn't you be using that instead?
