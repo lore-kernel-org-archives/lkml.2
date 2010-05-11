@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab0EKXnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 19:43:23 -0400
-Received: from kroah.org ([198.145.64.141]:57808 "EHLO coco.kroah.org"
+	id S1752607Ab0EKXqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 19:46:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52009 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751019Ab0EKXnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 19:43:20 -0400
-Subject: patch usb-gadget-f_fs.c-needs-to-include-pagemap.h.patch added to gregkh-2.6 tree
-To: randy.dunlap@oracle.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-       linux-usb@vger.kernel.org, m.nazarewicz@samsung.com,
-       sfr@canb.auug.org.au
-From: <gregkh@suse.de>
-Date: Tue, 11 May 2010 16:43:06 -0700
-In-Reply-To: <20100510105136.eee3e58a.randy.dunlap@oracle.com>
-Message-ID: <12736213864040@kroah.org>
+	id S1751074Ab0EKXqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 19:46:06 -0400
+Date: Tue, 11 May 2010 16:45:23 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH RFC tip/core/rcu 06/11] staging: remove all rcu head
+ initializations
+Message-ID: <20100511234523.GA1450@suse.de>
+References: <20100511233241.GA20250@linux.vnet.ibm.com>
+ <1273620786-20392-6-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273620786-20392-6-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 11, 2010 at 04:33:01PM -0700, Paul E. McKenney wrote:
+> Remove all rcu head inits. We don't care about the RCU head state before passing
+> it to call_rcu() anyway. Only leave the "on_stack" variants so debugobjects can
+> keep track of objects on stack.
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> ---
+>  drivers/staging/batman-adv/hard-interface.c |    1 -
 
-This is a note to let you know that I've just added the patch titled
+Is this safe to apply to my tree now?  Or do you want to take it through
+your tree as it depends on other stuff?
 
-    Subject: USB: gadget: f_fs.c needs to include pagemap.h
+If your tree, no objection from me, feel free to add:
+	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-to my gregkh-2.6 tree.  Its filename is
+thanks,
 
-    usb-gadget-f_fs.c-needs-to-include-pagemap.h.patch
-
-This tree can be found at 
-    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
-
-
->From randy.dunlap@oracle.com  Tue May 11 16:34:16 2010
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Mon, 10 May 2010 10:51:36 -0700
-Subject: USB: gadget: f_fs.c needs to include pagemap.h
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Michal Nazarewicz <m.nazarewicz@samsung.com>, gregkh@suse.de
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, lud <linux-usb@vger.kernel.org>
-Message-ID: <20100510105136.eee3e58a.randy.dunlap@oracle.com>
-
-
-From: Randy Dunlap <randy.dunlap@oracle.com>
-
-Fix g_ffs build error, add a needed header file:
-
-drivers/usb/gadget/f_fs.c:1064:error: 'PAGE_CACHE_SIZE' undeclared (first use in this function)
-drivers/usb/gadget/f_fs.c:1065:error: 'PAGE_CACHE_SHIFT' undeclared (first use in this function)
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Acked-by: Michał Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/gadget/f_fs.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -28,6 +28,7 @@
- /* #define VERBOSE_DEBUG */
- 
- #include <linux/blkdev.h>
-+#include <linux/pagemap.h>
- #include <asm/unaligned.h>
- #include <linux/smp_lock.h>
- 
-
+greg k-h
