@@ -1,87 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab0EKPhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 11:37:46 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54543 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab0EKPhm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 11:37:42 -0400
-Date: Tue, 11 May 2010 17:37:57 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-Message-ID: <20100511153757.GA14408@aftab>
-References: <1273483623.15998.57.camel@minggr.sh.intel.com>
- <1273484401.5605.3333.camel@twins>
- <1273486313.15998.76.camel@minggr.sh.intel.com>
- <1273486708.5605.3342.camel@twins>
- <1273487195.15998.85.camel@minggr.sh.intel.com>
- <1273490824.5605.3379.camel@twins>
- <20100510114311.GA6449@elte.hu>
- <20100511141511.GA14034@aftab>
- <1273587915.1810.1.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273587915.1810.1.camel@laptop>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_bei_M=FCnchen=2C_Gesc?=
-	=?iso-8859-1?Q?h=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuliano_Meroni=2C?=
-	=?iso-8859-1?Q?_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_Aschheim=2C_La?=
-	=?iso-8859-1?Q?ndkreis_M=FCnchen=2C_Registergericht_M=FCnchen?=
-	=?iso-8859-1?Q?=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754096Ab0EKPjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:39:43 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56792 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab0EKPjm (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 11 May 2010 11:39:42 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+       iommu@lists.linux-foundation.org
+Cc: albert_herranz@yahoo.es, chrisw@sous-sol.org, Ian.Campbell@eu.citrix.com,
+       jeremy@goop.org, dwmw2@infradead.org,
+       Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 4/6] swiotlb: search and replace "int dir" with "enum dma_data_direction dir"
+Date: Tue, 11 May 2010 11:39:11 -0400
+Message-Id: <1273592353-23224-5-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1273592353-23224-4-git-send-email-konrad.wilk@oracle.com>
+References: <1273592353-23224-1-git-send-email-konrad.wilk@oracle.com>
+ <1273592353-23224-2-git-send-email-konrad.wilk@oracle.com>
+ <1273592353-23224-3-git-send-email-konrad.wilk@oracle.com>
+ <1273592353-23224-4-git-send-email-konrad.wilk@oracle.com>
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4BE97A2E.0131:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Tue, May 11, 2010 at 10:25:15AM -0400
+. to catch anybody doing something funky.
 
-> On Tue, 2010-05-11 at 16:15 +0200, Borislav Petkov wrote:
-> > Another point I have is that MCEs don't need pmus so we should consider
-> > having the ability to decouple events from pmus.
-> 
-> Strictly speaking tracepoints are software events, which run off of a
-> software 'pmu'. So no, we can't decouple, they need a 'pmu' context.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ include/linux/swiotlb.h |    4 ++--
+ lib/swiotlb.c           |   25 ++++++++++++++-----------
+ 2 files changed, 16 insertions(+), 13 deletions(-)
 
-We could make this configurable depending on the severity of the error.
-I'm guessing for further event handling through the perf infrastructure
-we cannot run without a sw pmu context but on critical conditions
-we need to run as fast and as sparingly as possible so I'm thinking
-maybe adding some specially tailored callbacks to the MCE tracepoint
-trace_mce_record, as Steven suggested.
-
-> > What you basically want to have is a tracepoint which is "persistent,"
-> > as Ingo suggested earlier, and it buffers MCEs occurring at any time
-> > into a ring buffer until a userspace daemon or similar sucks that data
-> > out for processing (critical stuff is handled differently, of course).
-> > And this should work on any x86 hw supporting MCA without hw perf
-> > monitoring features. 
-> 
-> Try building x86 without perf hw support :/
-
-I dunno, maybe decoupling wouldn't be necessary per se but I was simply
-pointing out that MCEs shouldn't necessarily depend on the presence on
-hardware performance counters.
-
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index ab005a5..f3fc331 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -43,11 +43,11 @@ extern void swiotlb_unmap_page(struct device *hwdev, dma_addr_t dev_addr,
+ 
+ extern int
+ swiotlb_map_sg(struct device *hwdev, struct scatterlist *sg, int nents,
+-	       int direction);
++	       enum dma_data_direction direction);
+ 
+ extern void
+ swiotlb_unmap_sg(struct device *hwdev, struct scatterlist *sg, int nents,
+-		 int direction);
++		 enum dma_data_direction direction);
+ 
+ extern int
+ swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl, int nelems,
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 1ed01fe..a1bde96 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -374,7 +374,8 @@ static void swiotlb_bounce(phys_addr_t phys, char *dma_addr, size_t size,
+ }
+ 
+ void *swiotlb_tbl_map_single(struct device *hwdev, u64 tbl_dma_addr,
+-			     phys_addr_t phys, size_t size, int dir)
++			     phys_addr_t phys, size_t size,
++			     enum dma_data_direction dir)
+ {
+ 	unsigned long flags;
+ 	char *dma_addr;
+@@ -481,7 +482,8 @@ found:
+  */
+ 
+ static void *
+-map_single(struct device *hwdev, phys_addr_t phys, size_t size, int dir)
++map_single(struct device *hwdev, phys_addr_t phys, size_t size,
++	   enum dma_data_direction dir)
+ {
+ 	u64 start_dma_addr = swiotlb_virt_to_bus(hwdev, io_tlb_start);
+ 
+@@ -493,7 +495,7 @@ map_single(struct device *hwdev, phys_addr_t phys, size_t size, int dir)
+  */
+ static void
+ swiotlb_tbl_unmap_single(struct device *hwdev, char *dma_addr, size_t size,
+-			int dir)
++			enum dma_data_direction dir)
+ {
+ 	unsigned long flags;
+ 	int i, count, nslots = ALIGN(size, 1 << IO_TLB_SHIFT) >> IO_TLB_SHIFT;
+@@ -534,7 +536,7 @@ swiotlb_tbl_unmap_single(struct device *hwdev, char *dma_addr, size_t size,
+ 
+ static void
+ swiotlb_tbl_sync_single(struct device *hwdev, char *dma_addr, size_t size,
+-	    int dir, int target)
++	    enum dma_data_direction dir, int target)
+ {
+ 	int index = (dma_addr - io_tlb_start) >> IO_TLB_SHIFT;
+ 	phys_addr_t phys = io_tlb_orig_addr[index];
+@@ -624,7 +626,8 @@ swiotlb_free_coherent(struct device *hwdev, size_t size, void *vaddr,
+ EXPORT_SYMBOL(swiotlb_free_coherent);
+ 
+ static void
+-swiotlb_full(struct device *dev, size_t size, int dir, int do_panic)
++swiotlb_full(struct device *dev, size_t size, enum dma_data_direction dir,
++	     int do_panic)
+ {
+ 	/*
+ 	 * Ran out of IOMMU space for this operation. This is very bad.
+@@ -702,7 +705,7 @@ EXPORT_SYMBOL_GPL(swiotlb_map_page);
+  * whatever the device wrote there.
+  */
+ static void unmap_single(struct device *hwdev, dma_addr_t dev_addr,
+-			 size_t size, int dir)
++			 size_t size, enum dma_data_direction dir)
+ {
+ 	phys_addr_t paddr = dma_to_phys(hwdev, dev_addr);
+ 
+@@ -745,7 +748,7 @@ EXPORT_SYMBOL_GPL(swiotlb_unmap_page);
+  */
+ static void
+ swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
+-		    size_t size, int dir, int target)
++		    size_t size, enum dma_data_direction dir, int target)
+ {
+ 	phys_addr_t paddr = dma_to_phys(hwdev, dev_addr);
+ 
+@@ -785,7 +788,7 @@ EXPORT_SYMBOL(swiotlb_sync_single_for_device);
+ static void
+ swiotlb_sync_single_range(struct device *hwdev, dma_addr_t dev_addr,
+ 			  unsigned long offset, size_t size,
+-			  int dir, int target)
++			  enum dma_data_direction dir, int target)
+ {
+ 	swiotlb_sync_single(hwdev, dev_addr + offset, size, dir, target);
+ }
+@@ -863,7 +866,7 @@ EXPORT_SYMBOL(swiotlb_map_sg_attrs);
+ 
+ int
+ swiotlb_map_sg(struct device *hwdev, struct scatterlist *sgl, int nelems,
+-	       int dir)
++	       enum dma_data_direction dir)
+ {
+ 	return swiotlb_map_sg_attrs(hwdev, sgl, nelems, dir, NULL);
+ }
+@@ -890,7 +893,7 @@ EXPORT_SYMBOL(swiotlb_unmap_sg_attrs);
+ 
+ void
+ swiotlb_unmap_sg(struct device *hwdev, struct scatterlist *sgl, int nelems,
+-		 int dir)
++		 enum dma_data_direction dir)
+ {
+ 	return swiotlb_unmap_sg_attrs(hwdev, sgl, nelems, dir, NULL);
+ }
+@@ -905,7 +908,7 @@ EXPORT_SYMBOL(swiotlb_unmap_sg);
+  */
+ static void
+ swiotlb_sync_sg(struct device *hwdev, struct scatterlist *sgl,
+-		int nelems, int dir, int target)
++		int nelems, enum dma_data_direction dir, int target)
+ {
+ 	struct scatterlist *sg;
+ 	int i;
 -- 
-Regards/Gruss,
-Boris.
+1.6.2.5
 
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
