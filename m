@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab0EKUDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 16:03:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60692 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752946Ab0EKUDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 16:03:23 -0400
-Message-ID: <4BE9B8DD.9080004@redhat.com>
-Date: Tue, 11 May 2010 16:06:53 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+	id S1757623Ab0EKUDt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 16:03:49 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50102 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab0EKUDq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 16:03:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=rocM9vOWFUnRObAXkhAh/+/TPXHfGr3SodMRMkYmuK/xuWk4wJpD1lBIyCJsi3yNNE
+         Y6k/Wh23IpVOUCHC6Vd4ldiv/m1naGBitTXMJ2SThCnojvy/4Ft4bforHDIh3bEdDP9s
+         75WN04OglX9uGNZgwDA6BvBUfGM2NDucxm3Jc=
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@us.ibm.com>, Jason Baron <jbaron@redhat.com>
-Subject: Re: [PATCH -tip 1/5] [CLEANUP] kprobes: Remove redundant	text_mutex
- lock in optimize
-References: <20100510175313.27396.34605.stgit@localhost6.localdomain6> <20100510175320.27396.49896.stgit@localhost6.localdomain6> <20100511123550.GB25418@Krystal>
-In-Reply-To: <20100511123550.GB25418@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com>
+References: <1273487642-2169-1-git-send-email-os@emlix.com> 
+	<1273488154-2993-1-git-send-email-os@emlix.com> <20100510142225.4bf215ef.akpm@linux-foundation.org> 
+	<20100511060547.GA9644@core.coreip.homeip.net> <AANLkTikA9s6lpO2uDuIup8BwGOYYHQ9yQxS36PBSIttX@mail.gmail.com> 
+	<20100511062110.GB9644@core.coreip.homeip.net> <AANLkTiktu7N5IXknkkJ9D5L4z5plhuGvD45IVqJm9zG1@mail.gmail.com> 
+	<20100511063309.GC9644@core.coreip.homeip.net> <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Tue, 11 May 2010 16:03:25 -0400
+Message-ID: <AANLkTinV79HZqS1cktHDsTsHDel-0Nti_Uk4i7mGaRiK@mail.gmail.com>
+Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oskar Schirmer <os@emlix.com>,
+       Michael Hennerich <Michael.Hennerich@analog.com>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       =?UTF-8?Q?Daniel_Gl=C3=B6ckner?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>,
+       Matt Mackall <mpm@selenic.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mathieu,
+On Tue, May 11, 2010 at 02:42, Pekka Enberg wrote:
+> On Tue, May 11, 2010 at 9:33 AM, Dmitry Torokhov wrote:
+>>> what guarantee exactly do you have for that statement ?
+>>
+>> The data is kmalloced, kmalloc aligns on cacheline boundary AFAIK which
+>> means that next kmalloc data chunk will not share "our" cacheline.
+>
+> No, there are no such guarantees. kmalloc() aligns on
+> ARCH_KMALLOC_MINALIGN or ARCH_SLAB_MINALIGN depending on which is
+> bigger but beyond that, there are no guarantees. You can, of course,
+> use kmem_cache_create() with SLAB_HWCACHE_ALIGN to align on cacheline
+> boundary.
 
-Mathieu Desnoyers wrote:
-> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
->> Remove text_mutex locking in optimize_all_kprobes, because
->> that function doesn't modify text but just order optimization
->> to worker.
-> 
-> Hi Masami,
-> 
-> A few comments:
-> 
-> 1) optimize_all_kprobes/unoptimize_all_kprobes should have comments saying that
-> they are always called with kprobe_mutex held.
-> 
-> 2) The sentence above in the changelog could be changed into:
-> 
->  ..."because this function doesn't modify text. It simply queues optimizations
-> for the kprobe_optimizer worker thread."
-> 
-> 3)
-> 
-> static DEFINE_MUTEX(kprobe_mutex);      /* Protects kprobe_table */
-> 
-> .. should also state that it protects optimizing_list.
-> 
+so how is this to be addressed in general ?  this is a problem for any
+device that does SPI transactions, and having every driver create its
+own kmem cache isnt the answer.
 
-Thanks! all comments are good to me!
-
-Thank you again,
-
-
-
-
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
-
+do people need to kmalloc() like 2x the desired size and manually
+align it themselves ?  declaring alignments on struct members doesnt
+matter if the base of the struct isnt aligned.  seems like we need a
+new GFP flag that says we need a cache aligned pointer so we can give
+that to kmalloc() and such.
+-mike
