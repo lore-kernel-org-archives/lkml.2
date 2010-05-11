@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab0EKQa6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:30:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44818 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753153Ab0EKQay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:30:54 -0400
-Date: Tue, 11 May 2010 18:29:09 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Christoph Lameter <cl@linux.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
- and rmap_walk() during migration by not migrating temporary stacks
-Message-ID: <20100511162909.GI10631@random.random>
-References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie>
- <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
- <alpine.DEB.2.00.1005012055010.2663@router.home>
- <20100504094522.GA20979@csn.ul.ie>
- <alpine.DEB.2.00.1005101239400.13652@router.home>
- <20100510175654.GL26611@csn.ul.ie>
- <alpine.DEB.2.00.1005110857350.1500@router.home>
- <20100511151142.GS26611@csn.ul.ie>
- <alpine.DEB.2.00.1005111055070.1500@router.home>
- <20100511161516.GU26611@csn.ul.ie>
+	id S1755998Ab0EKQb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:31:56 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:56282 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963Ab0EKQbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 12:31:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=bqGsUnXZ3O1tamSl0xoAdCTZEwznyvohVYQGI/8+FMCVYyfgzqRy+GiPYx265s4gbd
+         ruVgfvC3K6tIy8MVpyTlSr8DhK6+vFj/vHPmupgcmSkhDt6be3Qiupq4H4qvKLXc7sku
+         viiO4cTIyLW4AHATLeZITUkb2hULK1Dt2ites=
+Message-ID: <4BE9868B.5060601@gmail.com>
+Date: Tue, 11 May 2010 09:32:11 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100511161516.GU26611@csn.ul.ie>
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-bluetooth@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: magicmouse: claimed by neither input, hiddev nor hidraw
+References: <j2idd18b0c31005101341o43b652c1zf8729f5f9a60e0d3@mail.gmail.com>  <alpine.LRH.2.00.1005102334140.14809@twin.jikos.cz> <s2odd18b0c31005101439v22d03bfdw4e65d7c4b8315b6a@mail.gmail.com> <alpine.LNX.2.00.1005102351220.28092@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1005102351220.28092@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 05:15:16PM +0100, Mel Gorman wrote:
-> On Tue, May 11, 2010 at 10:56:00AM -0500, Christoph Lameter wrote:
-> > On Tue, 11 May 2010, Mel Gorman wrote:
-> > 
-> > > Or just identify the temporary stack from the migration side instead of
-> > > adding to the cost of exec?
-> > 
-> > Adding one off checks to a generic mechanism isnt really clean
-> > programming. Using the provided means of disabling a generic mechanism is.
-> > 
-> 
-> Andrea's solution is likely lighter than yours as it is one kmalloc and
-> an insertion into the VM as opposed to a page table walk with reference
-> counting. Better yet, it exists as a patch that has been tested and it
-> fits in with the generic mechanism by guaranteeing that rmap_walk finds
-> all the migration PTEs during the second walk.
-> 
-> The problem remains the same - that class of solution increases the cost of
-> a common operation (exec) to keep a much less operation (migration) happy.
+o.k. peoples.. I've posted a patch
+that gets everything(hopefully), working
+over here.
+subject: HID:magicmouse: This fixes a connection problem with the 
+magicmouse.
 
-page table walk adding reference counting is still a one off check,
-the generic rmap_walk mechanism won't care about the reference
-counting, still only migrate checks the page count... so it doesn't
-move the needle in clean programming terms.
+please check it out, and let me know..
+
+Justin P. Mattock
