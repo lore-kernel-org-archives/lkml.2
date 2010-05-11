@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab0EKFT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 01:19:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35900 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753186Ab0EKFTw convert rfc822-to-8bit (ORCPT
+	id S1754381Ab0EKFXd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 01:23:33 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39221 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab0EKFXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 01:19:52 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Date: Tue, 11 May 2010 10:49:37 +0530
-Subject: RE: linux-next: manual merge of the v4l-dvb tree with Linus' tree
-Thread-Topic: linux-next: manual merge of the v4l-dvb tree with Linus' tree
-Thread-Index: Acrv2FSlRnadsU1aTWWw+XefsJNO5wA79crw
-Message-ID: <19F8576C6E063C45BE387C64729E7394044E404AA4@dbde02.ent.ti.com>
-References: <20100510103249.55e033bd.sfr@canb.auug.org.au>
-In-Reply-To: <20100510103249.55e033bd.sfr@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 11 May 2010 01:23:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=QrtEWX/PUANhjEDsLjicqI57GG7ZCYljxQUHQp7N6OhoHczfzwMctB5ahsHf0DTkUP
+         QtubvnVSspEzJRqElFsR3vbvhiI+yY+dxyJlbfuNvHXNpRHUR0WOls3ybo5EK696G8Rt
+         Cav63GgDenxtmfhpMlMF7E03PIZvSNaJBzBKk=
+Subject: Re: Question about more headroom in skb
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sharat Masetty <sharat_masetty@yahoo.com>
+Cc: netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <682359.68270.qm@web112510.mail.gq1.yahoo.com>
+References: <682359.68270.qm@web112510.mail.gq1.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 May 2010 07:06:27 +0200
+Message-ID: <1273554387.10889.23.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
-> Sent: Monday, May 10, 2010 6:03 AM
-> To: Mauro Carvalho Chehab
-> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Guennadi
-> Liakhovetski; Hiremath, Vaibhav
-> Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
-> 
-> Hi Mauro,
-> 
-> Today's linux-next merge of the v4l-dvb tree got a conflict in
-> drivers/media/video/Makefile between commit
-> b704e82a54591d69816b45f4324caf143f1a6fc8 ("V4L/DVB: V4L - Makfile:Removed
-> duplicate entry of davinci") from Linus' tree and commit
-> 3b5ce90284aff5f8683cfd08e0e1b38f73ad0aa8 ("V4L/DVB: V4L: SuperH Video
-> Output Unit (VOU) driver") from the v4l-dvb tree.
-> 
-> Just context changes.  I fixed it up (see below) and can carry the fix
-> for a while.
-[Hiremath, Vaibhav] Thanks Stephen,
+Le lundi 10 mai 2010 à 13:09 -0700, Sharat Masetty a écrit :
+> Hello All,
 
-Looks ok to me.
+Please dont use too long lines
 
-Thanks,
-Vaibhav
+> 
+> For my project I need 3 words of headroom in the skb in the network
 
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+>  driver level, to add a  custom header to the ethernet packet. I 
+
+> looked into the tcp code and figured out tcp uses sk->sk_prot->max_header 
+
+> for header allocation size. But I was not able to confirm that all other 
+
+> transport protocol use the same mechanism(?) For example in UDP/ICMP I was 
+
+> not able to figure out from the code where the allocation and header
+
+>  reservation happens(Any light here would be really helpful.)
 > 
-> diff --cc drivers/media/video/Makefile
-> index c51c386,cc93859..0000000
-> --- a/drivers/media/video/Makefile
-> +++ b/drivers/media/video/Makefile
-> @@@ -160,6 -166,10 +166,8 @@@ obj-$(CONFIG_VIDEO_MX3)			+=
-> mx3_camera
->   obj-$(CONFIG_VIDEO_PXA27x)		+= pxa_camera.o
->   obj-$(CONFIG_VIDEO_SH_MOBILE_CEU)	+= sh_mobile_ceu_camera.o
-> 
->  -obj-$(CONFIG_ARCH_DAVINCI)		+= davinci/
->  -
-> + obj-$(CONFIG_VIDEO_SH_VOU)		+= sh_vou.o
-> +
->   obj-$(CONFIG_VIDEO_AU0828) += au0828/
-> 
->   obj-$(CONFIG_USB_VIDEO_CLASS)	+= uvc/
+> I have also looked at an API in skbuff skb_pad() which does what I want
+
+> (add either headroom or tailroom), but I want to avoid that for performance
+
+>  reasons(skb_pad does kmalloc and memcpy). I want to figure out a good way
+
+> (may be tune some parameters) to allocate extra 3 words for any skbuff 
+
+> independant of the transport protocol being used. 
+
+> Any light here would be very much appreciated.
+
+LL_RESERVED_SPACE() is the magic you need.
+
+#define LL_RESERVED_SPACE(dev) \
+	((((dev)->hard_header_len+(dev)->needed_headroom)&~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
+
+sendmsg() -> ip_append_data()
+...
+hh_len = LL_RESERVED_SPACE(rt->u.dst.dev);
+fragheaderlen = sizeof(struct iphdr) + (opt ? opt->optlen : 0);
+...
+
+                if (transhdrlen) {
+                        skb = sock_alloc_send_skb(sk,
+                                        alloclen + hh_len + 15,
+                                        (flags & MSG_DONTWAIT), &err);
+                } else {
+                        skb = NULL;
+                        if (atomic_read(&sk->sk_wmem_alloc) <=
+                            2 * sk->sk_sndbuf)
+                                skb = sock_wmalloc(sk,
+                                                   alloclen + hh_len + 15, 1,
+                                                   sk->sk_allocation);
+
+
