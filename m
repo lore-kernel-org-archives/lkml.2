@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757057Ab0EKUoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 16:44:08 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59296 "EHLO
+	id S932191Ab0EKUp2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 16:45:28 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59374 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756538Ab0EKUoE (ORCPT
+	with ESMTP id S1752074Ab0EKUp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 16:44:04 -0400
+	Tue, 11 May 2010 16:45:27 -0400
 Subject: Re: [PATCH v2 7/11] Uprobes Implementation
 From: Peter Zijlstra <peterz@infradead.org>
 To: Oleg Nesterov <oleg@redhat.com>
@@ -38,8 +38,8 @@ References: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6>
 	 <20100422133154.GA10776@linux.vnet.ibm.com>
 	 <20100422154059.GA5916@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 May 2010 22:44:00 +0200
-Message-ID: <1273610640.1810.103.camel@laptop>
+Date: Tue, 11 May 2010 22:45:23 +0200
+Message-ID: <1273610723.1810.105.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -49,8 +49,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 2010-04-22 at 17:40 +0200, Oleg Nesterov wrote:
 > 
-> Hmm. And if this vma is VM_SHARED, then this bp could be actually
-> written to vm_file after mprotect(). 
+> Either way, I think register_uprobe() should disallow the probes in
+> VM_SHARED/VM_MAYWRITE vmas. 
 
-I don't think we should allow breakpoints on VM_SHARED maps.
+VM_SHARED, fully agreed, MAYWRITE not so sure, MAP_PRIVATE has MAYWRITE
+iirc and its perfectly fine to poke at those.
 
