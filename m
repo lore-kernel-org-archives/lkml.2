@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab0EKQak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:30:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37547 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425Ab0EKQaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:30:05 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Robert Richter <robert.richter@amd.com>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: [GIT PULL 0/3] perf improvements
-Date: Tue, 11 May 2010 13:29:47 -0300
-Message-Id: <1273595390-6486-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1755728Ab0EKQa6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:30:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44818 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753153Ab0EKQay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 12:30:54 -0400
+Date: Tue, 11 May 2010 18:29:09 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Christoph Lameter <cl@linux.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm,migration: Avoid race between shift_arg_pages()
+ and rmap_walk() during migration by not migrating temporary stacks
+Message-ID: <20100511162909.GI10631@random.random>
+References: <1272529930-29505-1-git-send-email-mel@csn.ul.ie>
+ <1272529930-29505-3-git-send-email-mel@csn.ul.ie>
+ <alpine.DEB.2.00.1005012055010.2663@router.home>
+ <20100504094522.GA20979@csn.ul.ie>
+ <alpine.DEB.2.00.1005101239400.13652@router.home>
+ <20100510175654.GL26611@csn.ul.ie>
+ <alpine.DEB.2.00.1005110857350.1500@router.home>
+ <20100511151142.GS26611@csn.ul.ie>
+ <alpine.DEB.2.00.1005111055070.1500@router.home>
+ <20100511161516.GU26611@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100511161516.GU26611@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Tue, May 11, 2010 at 05:15:16PM +0100, Mel Gorman wrote:
+> On Tue, May 11, 2010 at 10:56:00AM -0500, Christoph Lameter wrote:
+> > On Tue, 11 May 2010, Mel Gorman wrote:
+> > 
+> > > Or just identify the temporary stack from the migration side instead of
+> > > adding to the cost of exec?
+> > 
+> > Adding one off checks to a generic mechanism isnt really clean
+> > programming. Using the provided means of disabling a generic mechanism is.
+> > 
+> 
+> Andrea's solution is likely lighter than yours as it is one kmalloc and
+> an insertion into the VM as opposed to a page table walk with reference
+> counting. Better yet, it exists as a patch that has been tested and it
+> fits in with the generic mechanism by guaranteeing that rmap_walk finds
+> all the migration PTEs during the second walk.
+> 
+> The problem remains the same - that class of solution increases the cost of
+> a common operation (exec) to keep a much less operation (migration) happy.
 
-        Please pull from:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
-
-	Tested Kyle's patch and it works as advertised:
-
-[acme@doppio linux-2.6-tip]$ nm /tmp/perf.before | grep bfd_ | head -5
-00000000004a5810 t MY_bfd_copy_private_section_data
-000000000045a2e0 T _bfd_abort
-00000000004c89a0 T _bfd_add_bfd_to_archive_cache
-00000000004d1b30 T _bfd_add_merge_section
-00000000004c7310 T _bfd_ar_spacepad
-[acme@doppio linux-2.6-tip]$ nm /tmp/perf.before | grep cplus_demangle | head -2
-00000000004d5500 T cplus_demangle
-000000000071ce60 D cplus_demangle_builtin_types
-[acme@doppio linux-2.6-tip]$ nm ~/bin/perf | grep bfd_ | head -5
-[acme@doppio linux-2.6-tip]$ nm ~/bin/perf | grep cplus_demangle | head -2
-000000000045c210 T cplus_demangle
-000000000067ff60 D cplus_demangle_builtin_types
-[acme@doppio linux-2.6-tip]$
-
-	But I guess we should make the autodetection better and not require
-passing that define explicitely? Anyway, for now it solves Fedora's srpm problem,
-so should go in now.
-
-Regards,
-
-Arnaldo Carvalho de Melo (1):
-  perf hist: Adopt filter by dso and by thread methods from the newt browser
-
-Kyle McMartin (1):
-  perf symbols: allow forcing use of cplus_demangle
-
-Masami Hiramatsu (1):
-  perf probe: Check older elfutils and set NO_DWARF
-
- tools/perf/Makefile         |    7 +++-
- tools/perf/builtin-report.c |    5 +--
- tools/perf/util/hist.c      |   59 +++++++++++++++++++++++++++++++
- tools/perf/util/hist.h      |   15 ++++++++
- tools/perf/util/newt.c      |   80 +++++++-----------------------------------
- tools/perf/util/session.h   |   15 --------
- 6 files changed, 94 insertions(+), 87 deletions(-)
-
+page table walk adding reference counting is still a one off check,
+the generic rmap_walk mechanism won't care about the reference
+counting, still only migrate checks the page count... so it doesn't
+move the needle in clean programming terms.
