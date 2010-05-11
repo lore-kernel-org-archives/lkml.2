@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab0EKWZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 18:25:10 -0400
-Received: from gate.crashing.org ([63.228.1.57]:33671 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752079Ab0EKWZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 18:25:08 -0400
-Subject: Re: [PATCH 05/25] lmb: Factor the lowest level alloc function
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linuxtronix.de,
-       mingo@elte.hu, davem@davemloft.net, lethal@linux-sh.org
-In-Reply-To: <alpine.LFD.2.00.1005111428470.3401@localhost.localdomain>
-References: <1273484339-28911-1-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-2-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-3-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-4-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-5-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-6-git-send-email-benh@kernel.crashing.org>
-	 <alpine.LFD.2.00.1005111428470.3401@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 May 2010 08:24:09 +1000
-Message-ID: <1273616649.21352.44.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753553Ab0EKW2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 18:28:45 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:36730 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab0EKW2n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 18:28:43 -0400
+Date: Wed, 12 May 2010 00:28:25 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+       Alexey Starikovskiy <astarikovskiy@suse.de>,
+       Len Brown <len.brown@intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Matt Reimer <mreimer@vpop.net>, Evgeniy Polyakov <zbr@ioremap.net>,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/3] pda_power: add support for writeable properties
+Message-ID: <20100511222825.GJ30801@buzzloop.caiaq.de>
+References: <1273595926-26249-1-git-send-email-daniel@caiaq.de>
+ <20100511174708.GA26777@oksana.dev.rtsoft.ru>
+ <20100511175812.GH30801@buzzloop.caiaq.de>
+ <20100511182347.GA31831@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100511182347.GA31831@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 14:30 +0200, Thomas Gleixner wrote:
-> > @@ -396,33 +406,24 @@ u64 __init __lmb_alloc_base(u64 size, u64
-> align, u64 max_addr)
-> >       if (max_addr == LMB_ALLOC_ANYWHERE)
-> >               max_addr = LMB_REAL_LIMIT;
-> >  
-> > +     /* Pump up max_addr */
-> > +     if (max_addr == LMB_ALLOC_ANYWHERE)
-> > +             max_addr = ~(u64)0;
-> > +     
+On Tue, May 11, 2010 at 10:23:47PM +0400, Anton Vorontsov wrote:
+> On Tue, May 11, 2010 at 07:58:12PM +0200, Daniel Mack wrote:
+> [...]
+> > Hmm, no. The code defaults to (S_IRUSR | S_IRGRP | S_IROTH) which is
+> > 0444, just like it was before. So there shouldn't be any regression. The
+> > mode is only changed if the psy defines a property_is_writeable()
+> > callback which returns 1. Or do I miss your point?
 > 
->   That if is pretty useless as you set max_addr to LMB_REAL_LIMIT
->   right above.
+> Yes, power_supply_attrs is a global array, and you shouldn't change
+> it between power_supply_register() calls.
+> 
+> If you don't see why it's a bad idea in general, think about it
+> other way, a race:
+> 
+> ...someone registers psy0 with attr X marked as read-only...
+> ...code flow stops before device_create_file(psy0, global->mode)..
+> [preempt]
+> ...someone registers psy1 with attr X marked as writable...
+> ...you set up global->mode to 0644...
+> [preempt again]
+> ...we end up calling device_create_file(psy0, 0644)...
 
-This is a mismerge/mis-rebase of one of my patches actually. I'll dbl
-check what's up but I think the first hunk should go along with
-LMB_REAL_LIMIT in favor of the new default limit thing. But we first
-need to make sure the default is set sensibly and I haven't fixed all
-archs yet.
+Ah, I see. But the struct passed in is just used as template, right? So
+for the particular case you outlined, a simple lock should do the trick,
+right? I would prefer this over always-writeable file entries.
 
-I'll dbl check what's up there.
-
-Cheers,
-Benm.
-
-
+Daniel
