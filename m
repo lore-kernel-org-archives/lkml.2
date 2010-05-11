@@ -1,17 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757660Ab0EKJGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 05:06:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:62846 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753441Ab0EKJGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 05:06:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,206,1272870000"; 
-   d="scan'208";a="275674088"
+	id S1756598Ab0EKJNM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 05:13:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50929 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab0EKJNK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 05:13:10 -0400
 Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lin Ming <ming.m.lin@intel.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        "eranian@gmail.com" <eranian@gmail.com>,
@@ -37,12 +35,12 @@ References: <1273484401.5605.3333.camel@twins>
 	 <1273566031.30322.31.camel@minggr.sh.intel.com>
 	 <1273567815.5605.3491.camel@twins>
 	 <1273568620.30322.42.camel@minggr.sh.intel.com>
-Content-Type: text/plain
-Date: Tue, 11 May 2010 17:05:42 +0800
-Message-Id: <1273568742.30322.44.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 11 May 2010 11:12:34 +0200
+Message-ID: <1273569154.5605.3499.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -83,7 +81,9 @@ On Tue, 2010-05-11 at 17:03 +0800, Lin Ming wrote:
 > > contained in node0.
 > 
 > Is event_source_id a link to event_source class?
-> 
+
+No its an attribute of said class.
+
 > For example, 2 event sources on Nehalem
 > /sys/class/event_sources/core_pmu
 > /sys/class/event_sources/uncore_pmu
@@ -91,19 +91,26 @@ On Tue, 2010-05-11 at 17:03 +0800, Lin Ming wrote:
 > Then,
 > /sys/devices/system/node/nodeN/node_events/event_source_id is a link
 > to /sys/class/event_sources/uncore_pmu.
-> 
+
 > /sys/devices/system/cpu/cpuN/cpu_hardware_events/event_source_id is a
 > link to /sys/class/event_sources/core_pmu.
-> 
+
+The other way around, look in /sys/class/*/, they're all symlinks.
+
 > And, the event_source_id
 > #cat /sys/class/event_sources/core_pmu
 > 0
-> 
+
 > #cat /sys/class/event_sources/uncore_pmu
 > 1
 
-Oh, no. 
+You can't cat a directory. You'd cat something
+like: /sys/class/event_sources/core_pmu/event_source_id
 
-/sys/class/event_sources/uncore_pmu is not 1, but other dynamic value.
+And they would contain PERF_TYPE_* like things.
 
+So for the current CPU PMUs we'd already create 3 event classes,
+cpu_hw_events, cpu_hw_cache_events, cpu_raw_events, with resp.
+event_source_id of 0, 3 and 4.
 
+The new PMUs will use a dynamic range that starts at PERF_TYPE_MAX.
