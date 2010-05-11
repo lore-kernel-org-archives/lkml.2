@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab0EKKdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 06:33:16 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:56058 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab0EKKdP (ORCPT
+	id S1753198Ab0EKKl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 06:41:29 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:33978
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750818Ab0EKKl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 06:33:15 -0400
+	Tue, 11 May 2010 06:41:27 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz98dN936eM4015L62a3Lzz1202hzzz32i2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L294CK-02-3JK-02
+X-M-MSG: 
+Date: Tue, 11 May 2010 12:41:08 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>
+Subject: Re: [PATCH -tip] perf probe: Check older elfutils and set NO_DWARF
+Message-ID: <20100511104108.GK6450@erda.amd.com>
+References: <4BE85C51.704@redhat.com>
+ <20100511045953.9913.19485.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-Date: Tue, 11 May 2010 13:33:14 +0300
-Message-ID: <AANLkTilVp0xvAJNns3TEe4SzEUpN8hMC9DdwmwW7i9yX@mail.gmail.com>
-Subject: [PATCH v2] [RESEND] Handle instruction cache maintenance fault 
-	properly
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-       Siarhei Siamashka <siarhei.siamashka@nokia.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       Aaro Koskinen <aaro.koskinen@nokia.com>, Valdis.Kletnieks@vt.edu
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100511045953.9913.19485.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Between "clean D line..." and "invalidate I line" operations in
-v7_coherent_user_range(), the memory page may get swapped out.
-And the fault on "invalidate I line" could not be properly handled
-causing the oops.
+On 11.05.10 00:59:53, Masami Hiramatsu wrote:
+> Check whether elfutils is older than 0.138 (from which version checking
+> routine has been introduced). And if so, set NO_DWARF because it is hard
+> to check the API dependency without version checking.
 
-In ARMv6 "external abort on linefetch" replaced by "instruction cache
-maintenance fault". Let's handle it as translation fault. It fixes the
-issue.
+This works for me, now the DWARF_SUPPORT macro is undefined and a
+warning is generated:
 
-I'm not sure if it's reasonable to check arch version in run-time.
-Let's do it in compile time for now.
+Makefile:510: No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev
 
-Signed-off-by: Siarhei Siamashka <siarhei.siamashka@nokia.com>
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
+Thanks,
 
-Sorry for resend. I've made mistake in maillist address.
+-Robert
 
----
- arch/arm/mm/fault.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index 9d40c34..7f193ea 100644
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -463,7 +463,12 @@ static struct fsr_info {
- 	{ do_bad,		SIGILL,	 BUS_ADRALN,	"alignment exception"		   },
- 	{ do_bad,		SIGKILL, 0,		"terminal exception"		   },
- 	{ do_bad,		SIGILL,	 BUS_ADRALN,	"alignment exception"		   },
-+/* Do we need runtime check ? */
-+#if __LINUX_ARM_ARCH__ < 6
- 	{ do_bad,		SIGBUS,	 0,		"external abort on linefetch"	   },
-+#else
-+	{ do_translation_fault,	SIGSEGV, SEGV_MAPPER,	"I-cache maintenance
-fault"	   },
-+#endif
- 	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"section translation
-fault"	   },
- 	{ do_bad,		SIGBUS,	 0,		"external abort on linefetch"	   },
- 	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"page translation fault"	   },
 -- 
-1.7.0.4
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
+
