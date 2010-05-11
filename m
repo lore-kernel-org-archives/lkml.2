@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837Ab0EKKIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 06:08:09 -0400
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:44908 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757730Ab0EKKIF (ORCPT
+	id S932475Ab0EKKPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 06:15:38 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:51081 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747Ab0EKKPd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 06:08:05 -0400
-Message-ID: <4BE92D66.1050000@oss.ntt.co.jp>
-Date: Tue, 11 May 2010 19:11:50 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Tue, 11 May 2010 06:15:33 -0400
+X-Greylist: delayed 386 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 06:15:33 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=avt4F7fjhQYwezVBFK1FiA0Ynk5H+0wGhG0h5fCX74nEtj3J311oOsCvphjdYAbjgD
+         G3Ojb0oZ5BuLBHpxaUrKZ86BJjmoJ7ZInzv2uPDFtibrQYCmaA5L53/YIu/IpZOxgCkl
+         UwMTEXFVc1wYwKg9uW4a9j+P73vjZyl6fOtqM=
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, mtosatti@redhat.com,
-       agraf@suse.de, fernando@oss.ntt.co.jp, kvm@vger.kernel.org,
-       kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org, tglx@linutronix.de,
-       mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-       benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
-       arnd@arndb.de, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 0/12] KVM, x86, ppc, asm-generic: moving dirty bitmaps
- to user space
-References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <4BE7F6D7.3060005@redhat.com> <4BE7FB7B.5010600@oss.ntt.co.jp>
-In-Reply-To: <4BE7FB7B.5010600@oss.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: eranian@gmail.com
+In-Reply-To: <4BE8931C.9070106@linux.vnet.ibm.com>
+References: <1273483623.15998.57.camel@minggr.sh.intel.com>
+	 <1273484401.5605.3333.camel@twins>
+	 <1273486313.15998.76.camel@minggr.sh.intel.com>
+	 <1273486708.5605.3342.camel@twins>
+	 <1273487195.15998.85.camel@minggr.sh.intel.com>
+	 <1273490824.5605.3379.camel@twins> <20100510114311.GA6449@elte.hu>
+	 <1273492164.5605.3397.camel@twins> <20100510115344.GA11238@elte.hu>
+	 <4BE8931C.9070106@linux.vnet.ibm.com>
+Date: Tue, 11 May 2010 12:09:06 +0200
+Message-ID: <g2h7c86c4471005110309rf886837bu3578717edc89153b@mail.gmail.com>
+Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+From: stephane eranian <eranian@googlemail.com>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Lin Ming <ming.m.lin@intel.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Corey,
 
->>>
->>> In usual workload, the number of dirty pages varies a lot for each
->>> iteration
->>> and we should gain really a lot for relatively clean cases.
->>
->> Can you post such a test, for an idle large guest?
+On Tue, May 11, 2010 at 1:13 AM, Corey Ashford
+<cjashfor@linux.vnet.ibm.com> wrote:
+> We'd like to have the capability of hardware-specific symbolic event names in the perf tool by some mechanism, unified or otherwise.  Right now, for the IBM Wire-Speed processor, we are currently not able to use the perf tool because of its lack of symbolic raw event name support.
 >
-> OK, I'll do!
-
-
-Result of "low workload test" (running top during migration) first,
-
-4GB guest
-picked up slots[1](len=3757047808) only
-*****************************************
-     get.org     get.opt    switch.opt
-
-     1060875     310292     190335
-     1076754     301295     188600
-      655504     318284     196029
-      529769     301471        325
-      694796      70216     221172
-      651868     353073     196184
-      543339     312865     213236
-     1061938      72785     203090
-      689527     323901     249519
-      621364     323881        473
-     1063671      70703     192958
-      915903     336318     174008
-     1046462     332384        782
-     1037942      72783     190655
-      680122     318305     243544
-      688156     314935     193526
-      558658     265934     190550
-      652454     372135     196270
-      660140      68613        352
-     1101947     378642     186575
-         ...        ...        ...
-*****************************************
-
-As expected we've got the difference more clearly.
-
-In this case, switch.opt reduced 1/3 (.1 msec) compared to get.opt
-for each iteration.
-
-And when the slot is cleaner, the ratio is bigger.
-
-
-
-
+> In the mean time, we are using a pair of demo programs from Stephane Eranian's libpfm4 source tree called "task" and "syst".  These tools use the symbolic event names provided by libpfm4, and use the kernel support from perf_events.
 >
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-
+I will soon post a patch to make use of libpfm4 in perf, thereby
+giving access to all events
+unit masks, filters, using symbolic names.
