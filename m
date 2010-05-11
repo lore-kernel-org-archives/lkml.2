@@ -1,89 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab0EKQVn (ORCPT <rfc822;w@1wt.eu>);
+	id S1755049Ab0EKQVu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:21:50 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:38565 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522Ab0EKQVn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 May 2010 12:21:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55649 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753604Ab0EKQVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:21:31 -0400
-From: Glauber Costa <glommer@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com
-Subject: [PATCH 9/9] Add cpuid.txt file
-Date: Tue, 11 May 2010 12:17:47 -0400
-Message-Id: <1273594667-17175-10-git-send-email-glommer@redhat.com>
-In-Reply-To: <1273594667-17175-9-git-send-email-glommer@redhat.com>
-References: <1273594667-17175-1-git-send-email-glommer@redhat.com>
- <1273594667-17175-2-git-send-email-glommer@redhat.com>
- <1273594667-17175-3-git-send-email-glommer@redhat.com>
- <1273594667-17175-4-git-send-email-glommer@redhat.com>
- <1273594667-17175-5-git-send-email-glommer@redhat.com>
- <1273594667-17175-6-git-send-email-glommer@redhat.com>
- <1273594667-17175-7-git-send-email-glommer@redhat.com>
- <1273594667-17175-8-git-send-email-glommer@redhat.com>
- <1273594667-17175-9-git-send-email-glommer@redhat.com>
+Date: Tue, 11 May 2010 10:21:38 -0600
+From: Alex Chiang <achiang@canonical.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk, Colin King <colin.king@canonical.com>,
+       Len Brown <len.brown@intel.com>
+Subject: Re: [107/117] ACPI: DMI init_set_sci_en_on_resume for multiple
+ Lenovo ThinkPads
+Message-ID: <20100511162138.GA1893@canonical.com>
+Mail-Followup-To: Alex Chiang <achiang@canonical.com>,
+	Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+	stable@kernel.org, stable-review@kernel.org,
+	torvalds@linux-foundation.org, akpm@linux-foundation.org,
+	alan@lxorguk.ukuu.org.uk, Colin King <colin.king@canonical.com>,
+	Len Brown <len.brown@intel.com>
+References: <20100510223700.GA18404@kroah.com>
+ <20100510223327.043329892@kvm.kroah.org>
+ <20100511033825.GA7513@canonical.com>
+ <20100511151049.GH14895@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100511151049.GH14895@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file documents cpuid bits used by KVM.
+* Greg KH <gregkh@suse.de>:
+> 
+> > Len, Greg, what would you like me to do? I think the cleanest
+> > thing to do to help keep -stable clean would be to:
+> > 
+> >	a) drop this patch from current -stable queue
+> >	b) revert 07bedca29b09 upstream
+> >	c)  apply the patch from patchwork
+> >	d) re-apply to -stable
+>
+> How about getting a fixup patch into Linus's tree and then I'll
+> apply that fixup patch to stable as well?
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
+Sure, here's a patch against Linus's latest. I'll leave it up to
+Len to decide which approach he'd prefer.
+
+From: Alex Chiang <achiang@canonical.com>
+
+ACPI: sleep: eliminate duplicate entries in acpisleep_dmi_table[]
+
+Duplicate entries ended up acpisleep_dmi_table[] by accident.
+They don't hurt functionality, but they are ugly, so let's get
+rid of them.
+
+Cc: stable@kernel.org
+Signed-off-by: Alex Chiang <achiang@canonical.com>
 ---
- Documentation/kvm/cpuid.txt |   44 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/kvm/cpuid.txt
-
-diff --git a/Documentation/kvm/cpuid.txt b/Documentation/kvm/cpuid.txt
-new file mode 100644
-index 0000000..ca1e89f
---- /dev/null
-+++ b/Documentation/kvm/cpuid.txt
-@@ -0,0 +1,44 @@
-+KVM CPUID bits
-+Glauber Costa <glommer@redhat.com>, Red Hat Inc, 2010
-+=====================================================
-+
-+A guest running on a kvm host, can check some of its features using
-+cpuid. This is not always guaranteed to work, since userspace can
-+mask-out some, or even all KVM-related cpuid features before launching
-+a guest.
-+
-+KVM cpuid functions are:
-+
-+function: KVM_CPUID_SIGNATURE (0x40000000)
-+returns : eax = 0,
-+          ebx = 0x4b4d564b,
-+          ecx = 0x564b4d56,
-+          edx = 0x4d.
-+Note that this value in ebx, ecx and edx corresponds to the string "KVMKVMKVM".
-+This function queries the presence of KVM cpuid leafs.
-+
-+
-+function: define KVM_CPUID_FEATURES (0x40000001)
-+returns : ebx, ecx, edx = 0
-+          eax = and OR'ed group of (1 << flag), where each flags is:
-+
-+
-+flag                               || value || meaning
-+=============================================================================
-+KVM_FEATURE_CLOCKSOURCE            ||     0 || kvmclock available at msrs
-+                                   ||       || 0x11 and 0x12. 
-+------------------------------------------------------------------------------
-+KVM_FEATURE_NOP_IO_DELAY           ||     1 || not necessary to perform delays
-+                                   ||       || on PIO operations.
-+------------------------------------------------------------------------------
-+KVM_FEATURE_MMU_OP                 ||     2 || deprecated.
-+------------------------------------------------------------------------------
-+KVM_FEATURE_CLOCKSOURCE2           ||     3 || kvmclock available at msrs
-+                                   ||       || 0x4b564d00 and 0x4b564d01
-+------------------------------------------------------------------------------
-+KVM_FEATURE_CLOCKSOURCE_STABLE_BIT ||    24 || host will wanr if no guest-side
-+                                   ||       || per-cpu warps are expected in
-+                                   ||       || kvmclock.
-+------------------------------------------------------------------------------
-+
-+
--- 
-1.6.2.2
-
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index e2e9925..baa76bb 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -475,101 +475,13 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
+ 	},
+ 	{
+ 	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
++	.ident = "Lenovo ThinkPad X201[s]",
+ 	.matches = {
+ 		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+ 		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
+ 		},
+ 	},
+ 	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201s"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T410",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad W510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201s"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T410",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad W510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201s"),
+-		},
+-	},
+-	{
+ 	.callback = init_old_suspend_ordering,
+ 	.ident = "Panasonic CF51-2L",
+ 	.matches = {
