@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab0EKJzA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 05:55:00 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:49453 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757808Ab0EKJy6 (ORCPT
+	id S932359Ab0EKKBl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 06:01:41 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:29244 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757719Ab0EKKBj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 05:54:58 -0400
-Date: Tue, 11 May 2010 04:54:10 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Cedric Le Goater <clg@vnet.ibm.com>, Dave Hansen <haveblue@us.ibm.com>,
-       Eric Biederman <ebiederm@xmission.com>,
-       Herbert Poetzl <herbert@13thfloor.at>, Ingo Molnar <mingo@elte.hu>,
-       Mathias Krause <Mathias.Krause@secunet.com>,
-       Roland McGrath <roland@redhat.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] pids: init_struct_pid.tasks should never see the
- swapper process
-Message-ID: <20100511095410.GA27850@us.ibm.com>
-References: <4BE01C86.3050908@secunet.com>
- <20100509184510.GA15219@redhat.com>
- <4BE7B3BD.70901@secunet.com>
- <20100510194917.GA5249@redhat.com>
- <20100510195014.GC5249@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100510195014.GC5249@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 11 May 2010 06:01:39 -0400
+Date: Tue, 11 May 2010 12:02:03 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH -next] gadget: f_fs.c needs to include pagemap.h
+In-reply-to: <20100510105136.eee3e58a.randy.dunlap@oracle.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       lud <linux-usb@vger.kernel.org>
+Message-id: <op.vcjctphf7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.10 (Linux)
+References: <20100510160234.54f76c0a.sfr@canb.auug.org.au>
+ <20100510105136.eee3e58a.randy.dunlap@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> "statically initialize struct pid for swapper" commit 820e45db says:
-> 
-> 	Statically initialize a struct pid for the swapper process (pid_t == 0)
-> 	and attach it to init_task.  This is needed so task_pid(), task_pgrp()
-> 	and task_session() interfaces work on the swapper process also.
-> 
-> OK, but:
-> 
-> 	- it doesn't make sense to add init_task.pids[].node into
-> 	  init_struct_pid.tasks[], and in fact this just wrong.
-> 
-> 	  idle threads are special, they shouldn't be visible on any
-> 	  global list. In particular do_each_pid_task(init_struct_pid)
-> 	  shouldn't see swapper.
-> 
-> 	  This is the actual reason why kill(0, SIGKILL) from /sbin/init
-> 	  (which starts with 0,0 special pids) crashes the kernel. The
-> 	  signal sent to pgid/sid == 0 must never see idle threads, even
-> 	  if the previous patch fixed the crash itself.
-> 
-> 	- we have other idle threads running on the non-boot CPUs, see
-> 	  the next patch.
-> Change INIT_STRUCT_PID/INIT_PID_LINK to create the empty/unhashed
-> hlist_head/hlist_node. Like any other idle thread swapper can never exit,
-> so detach_pid()->__hlist_del() is not possible, but we could change
-> INIT_PID_LINK() to set pprev = &next if needed.
-> 
-> All we need is the valid swapper->pids[].pid == &init_struct_pid.
-> 
-> Reported-by: Mathias Krause <mathias.krause@secunet.com>
+On Mon, 10 May 2010 19:51:36 +0200, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> Fix g_ffs build error, add a needed header file:
+>
+> drivers/usb/gadget/f_fs.c:1064:error: 'PAGE_CACHE_SIZE' undeclared (first use in this function)
+> drivers/usb/gadget/f_fs.c:1065:error: 'PAGE_CACHE_SHIFT' undeclared (first use in this function)
 
-Crimey, trying to find some way this could get dereferenced, finding
-myself impressed with the likes of set_ftrace_swapper().
+> --- linux-next-20100510.orig/drivers/usb/gadget/f_fs.c
+> +++ linux-next-20100510/drivers/usb/gadget/f_fs.c
+> @@ -28,6 +28,7 @@
+>  /* #define VERBOSE_DEBUG */
+> #include <linux/blkdev.h>
+> +#include <linux/pagemap.h>
+>  #include <asm/unaligned.h>
+>  #include <linux/smp_lock.h>
 
-Anyway, not finding anything, so
+Needles to say, this looks reasonable.
 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-
-thanks,
--serge
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
