@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab0EKBIu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 21:08:50 -0400
-Received: from sh.osrg.net ([192.16.179.4]:51119 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751271Ab0EKBIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 21:08:48 -0400
-Date: Tue, 11 May 2010 10:06:27 +0900
-To: stern@rowland.harvard.edu
-Cc: dwmw2@infradead.org, fujita.tomonori@lab.ntt.co.jp, daniel@caiaq.de,
-       clemens@ladisch.de, tiwai@suse.de, alsa-devel@alsa-project.org,
-       gregkh@suse.de, konrad.wilk@oracle.com, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org, chrisw@sous-sol.org,
-       iommu@lists.linux-foundation.org, andi@firstfloor.org, pedrib@gmail.com,
-       akpm@linux-foundation.org
-Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <Pine.LNX.4.44L0.1005101049100.1626-100000@iolanthe.rowland.org>
-References: <1273483265.372.3383.camel@macbook.infradead.org>
-	<Pine.LNX.4.44L0.1005101049100.1626-100000@iolanthe.rowland.org>
+	id S932084Ab0EKBMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 21:12:32 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:48153 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880Ab0EKBM3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 21:12:29 -0400
+Subject: Re: PROBLEM: tickless scheduling
+From: john stultz <johnstul@us.ibm.com>
+To: Donald Allen <donaldcallen@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <AANLkTimnlZYonxKzfGHZTV8vwaDptOPHEPBjNhwnV55Y@mail.gmail.com>
+References: <AANLkTin6D2GP0yJJbPYGH1AcAM9-g219rAxSyW_ZlrXV@mail.gmail.com>
+	 <AANLkTikjgoBQWqvNxncMUFqWOEXtq4ePvGkvF-m0sGUE@mail.gmail.com>
+	 <AANLkTimnlZYonxKzfGHZTV8vwaDptOPHEPBjNhwnV55Y@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 May 2010 18:12:24 -0700
+Message-ID: <1273540344.3843.101.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100511100637D.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 11 May 2010 10:06:35 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 May 2010 10:58:37 -0400 (EDT)
-Alan Stern <stern@rowland.harvard.edu> wrote:
-
-> On Mon, 10 May 2010, David Woodhouse wrote:
+On Mon, 2010-05-10 at 20:59 -0400, Donald Allen wrote:
+> On Mon, May 10, 2010 at 8:54 PM, john stultz <johnstul@us.ibm.com> wrote:
+> > On Mon, May 10, 2010 at 5:18 PM, Donald Allen <donaldcallen@gmail.com> wrote:
+> >> 1. Network file transfers and fscks stop on Toshiba netbook unless
+> >> system receives external events
+> >
+> > Can you provide /proc/timer_list output?
 > 
-> > On Mon, 2010-05-10 at 11:50 +0900, FUJITA Tomonori wrote:
-> > > On Fri, 7 May 2010 10:51:10 -0400 (EDT)
-> > > Alan Stern <stern@rowland.harvard.edu> wrote:
-> > > 
-> > > > On Fri, 7 May 2010, Daniel Mack wrote:
-> > > > 
-> > > > > > At least the audio class and ua101 drivers don't do this and fill the
-> > > > > > buffers before they are submitted.
-> > > > > 
-> > > > > Gnaa, you're right. I _thought_ my code does it the way I described, but
-> > > > > what I wrote is how I _wanted_ to do it, not how it's currently done. I
-> > > > > have a plan to change this in the future.
-> > > > > 
-> > > > > So unfortunately, that doesn't explain it either. Sorry for the noise.
-> > > > 
-> > > > At one point we tried an experiment, printing out the buffer and DMA 
-> > > > addresses.  I don't recall seeing anything obviously wrong, but if an 
-> > > > IOMMU was in use then that might not mean anything.  Is it possible 
-> > > > that the IOMMU mappings sometimes get messed up for addresses above 4 
-> > > > GB?
-> > > 
-> > > You mean that an IOMMU could allocate an address above 4GB wrongly? If
-> > > so, IIRC, all the IOMMU implementations use dev->dma_mask and
-> > > dev->coherent_dma_mask properly. And the DMA address space of the
-> > > majority of IOMMUs are limited less than 4GB.
-> > 
-> > The Intel IOMMU code will use dev->dma_mask and dev->coherent_dma_mask
-> > properly. It is not limited to 4GiB, but it will tend to give virtual
-> > DMA addresses below 4GiB even when a device is capable of more; it'll
-> > only give out higher addresses when the address space below 4GiB is
-> > exhausted.
-> 
-> What I meant was: Is it possible that the IOMMU code will return a
-> virtual DMA address before 4 GB but will somehow forget to actually map
-> that address to the data buffer?
+> Attached, but again, this is from the system running with tickless disabled.
 
-Then, the IOMMU is completely broken. Then, we would get tons of DMA
-bugs not only about USB, I guess. So I'm not sure.
+Is it possible to boot with the kernel showing the issue and provide the
+details?
 
 
-> The problem goes away when Pedro boots with mem=4G.  And the dma_mask
-> value is set properly (in fact, the ehci-hcd driver currently doesn't
-> use 64-bit DMA at all).
+> > I assume booting with nohz=off from grub resolves the issue?
 > 
-> If anyone wants to see the debug log entries showing the buffer and DMA
-> addresses, they are attached to this email message:
-> 
-> 	http://marc.info/?l=linux-kernel&m=127076841801054&w=2
-> 
-> Either the data isn't getting written to the buffer correctly or else
-> the buffer isn't getting sent to the device correctly.  Can anybody
-> suggest a means of determining which is the case?
+> Didn't know about the boot-time option (thanks for pointing it out),
+> but I wanted to build a custom kernel anyway, so i did so and disabled
+> tickless.
 
-I can't say anything about this log that including only DMA addresses.
-I'm not familiar with how the USB core does DMA stuff. And the USB
-stack design that the USB core does DMA stuff (allocating, mappings,
-etc) makes debugging DMA issues really difficult.
+Ok. It may still be of value to know booting with nohz=off does avoid
+the problem.
+
+
+thanks
+-john
+
