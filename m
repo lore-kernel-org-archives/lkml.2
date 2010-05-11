@@ -1,116 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab0EKPn2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 11:43:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37723 "EHLO hera.kernel.org"
+	id S1754644Ab0EKPng (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:43:36 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37729 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751135Ab0EKPn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 11:43:26 -0400
-Date: Tue, 11 May 2010 15:42:43 GMT
-From: tip-bot for Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
-       eranian@google.com, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, peterz@infradead.org, fweisbec@gmail.com,
-       tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com, acme@redhat.com,
-       paulus@samba.org, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-       a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
-       cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1273571513.5605.3527.camel@twins>
-References: <1273571513.5605.3527.camel@twins>
+	id S1753981Ab0EKPnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 11:43:32 -0400
+Date: Tue, 11 May 2010 15:43:01 GMT
+From: tip-bot for Tony Breeds <tony@bakeyournoodle.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       a.p.zijlstra@chello.nl, benh@kernel.crashing.org, stable@kernel.org,
+       tglx@linutronix.de, mingo@elte.hu, tony@bakeyournoodle.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       a.p.zijlstra@chello.nl, benh@kernel.crashing.org, stable@kernel.org,
+       tglx@linutronix.de, mingo@elte.hu, tony@bakeyournoodle.com
+In-Reply-To: <20100507042010.GR12389@ozlabs.org>
+References: <20100507042010.GR12389@ozlabs.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Fix exit() vs PERF_FORMAT_GROUP
-Message-ID: <tip-050735b08ca8a016bbace4445fa025b88fee770b@git.kernel.org>
-Git-Commit-ID: 050735b08ca8a016bbace4445fa025b88fee770b
+Subject: [tip:core/locking] mutex: Fix optimistic spinning vs. BKL
+Message-ID: <tip-227945799cc10d77c6ef812f3eb8a61a78689454@git.kernel.org>
+Git-Commit-ID: 227945799cc10d77c6ef812f3eb8a61a78689454
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 11 May 2010 15:42:45 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 11 May 2010 15:43:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  050735b08ca8a016bbace4445fa025b88fee770b
-Gitweb:     http://git.kernel.org/tip/050735b08ca8a016bbace4445fa025b88fee770b
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 11 May 2010 11:51:53 +0200
+Commit-ID:  227945799cc10d77c6ef812f3eb8a61a78689454
+Gitweb:     http://git.kernel.org/tip/227945799cc10d77c6ef812f3eb8a61a78689454
+Author:     Tony Breeds <tony@bakeyournoodle.com>
+AuthorDate: Fri, 7 May 2010 14:20:10 +1000
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 11 May 2010 15:46:43 +0200
+CommitDate: Tue, 11 May 2010 17:07:24 +0200
 
-perf: Fix exit() vs PERF_FORMAT_GROUP
+mutex: Fix optimistic spinning vs. BKL
 
-Both Stephane and Corey reported that PERF_FORMAT_GROUP didn't
-work as expected if the task the counters were attached to quit
-before the read() call.
+Currently, we can hit a nasty case with optimistic spinning on
+mutexes:
 
-The cause is that we unconditionally destroy the grouping when
-we remove counters from their context. Fix this by splitting off
-the group destroy from the list removal such that
-perf_event_remove_from_context() does not do this and change
-perf_event_release() to do so.
+    CPU A tries to take a mutex, while holding the BKL
 
-Reported-by: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Reported-by: Stephane Eranian <eranian@google.com>
+    CPU B tried to take the BLK while holding the mutex
+
+This looks like a AB-BA scenario but in practice, is allowed and
+happens due to the auto-release-on-schedule nature of the BKL.
+
+In that case, the optimistic spinning code can get us into a situation
+where instead of going to sleep, A will spin waiting for B who is
+spinning waiting for A, and the only way out of that loop is the
+need_resched() test in mutex_spin_on_owner().
+
+Now, that's bad enough since we may end up having those two processors
+deadlocked for a while, thus introducing latencies, but I've had cases
+where it completely stopped making forward progress. I suspect CPU A
+had nothing else waiting to run, and see need_resched() was never set.
+
+This patch fixes both in a rather crude way. I completely disable
+spinning if we own the BKL, and I add a safety timeout using jiffies
+to fallback to sleeping if we end up spinning for more than 1 or 2
+jiffies.
+
+Now, we -could- make it a bit smarter about the BKL by introducing a
+contention counter and only go out if we own the BKL and it is
+contended, but I didn't feel like this was worth the effort, time is
+better spent removing the BKL from sensitive code path instead.
+
+Regarding the choice of 1 or 2 jiffies, it's completely arbitrary. I
+prefer that to an arbitrary number of milliseconds mostly because it's
+expected that a 1000HZ kernel is run on a workload that expects
+smaller latencies, and as such reflects better the idea that if we're
+going to spin for more than a scheduler tick, we may as well schedule
+(and save power by doing so if we hit the idle thread).
+
+This timeout is also a safeguard in case we find another weird
+deadlock scenario with optimistic spinning (that's the second one I
+found so far, the other one was with CPU hotplug). At least we have
+some kind of forward progress guarantee now.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: <stable@kernel.org> # .34.x
-LKML-Reference: <1273571513.5605.3527.camel@twins>
+Cc: <stable@kernel.org>
+LKML-Reference: <20100507042010.GR12389@ozlabs.org>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/perf_event.c |   19 ++++++++++++++++---
- 1 files changed, 16 insertions(+), 3 deletions(-)
+ include/linux/sched.h |    3 ++-
+ kernel/mutex.c        |   12 ++++++++++--
+ kernel/sched.c        |    5 +++--
+ 3 files changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index a904746..c97e825 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -308,8 +308,6 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- static void
- list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- {
--	struct perf_event *sibling, *tmp;
--
- 	if (list_empty(&event->group_entry))
- 		return;
- 	ctx->nr_events--;
-@@ -333,6 +331,12 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index dad7f66..bc6bd9a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -361,7 +361,8 @@ extern signed long schedule_timeout_interruptible(signed long timeout);
+ extern signed long schedule_timeout_killable(signed long timeout);
+ extern signed long schedule_timeout_uninterruptible(signed long timeout);
+ asmlinkage void schedule(void);
+-extern int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner);
++extern int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner,
++			       unsigned long timeout);
+ 
+ struct nsproxy;
+ struct user_namespace;
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index 632f04c..7d4626b 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -145,6 +145,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 	struct task_struct *task = current;
+ 	struct mutex_waiter waiter;
+ 	unsigned long flags;
++	unsigned long timeout;
+ 
+ 	preempt_disable();
+ 	mutex_acquire(&lock->dep_map, subclass, 0, ip);
+@@ -168,15 +169,22 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 	 * to serialize everything.
  	 */
- 	if (event->state > PERF_EVENT_STATE_OFF)
- 		event->state = PERF_EVENT_STATE_OFF;
-+}
-+
-+static void
-+perf_destroy_group(struct perf_event *event, struct perf_event_context *ctx)
-+{
-+	struct perf_event *sibling, *tmp;
  
- 	/*
- 	 * If this was a group event with sibling events then
-@@ -1868,6 +1872,12 @@ int perf_event_release_kernel(struct perf_event *event)
+-	for (;;) {
++	for (timeout = jiffies + 2; time_before(jiffies, timeout);) {
+ 		struct thread_info *owner;
+ 
+ 		/*
++		 * If we own the BKL, then don't spin. The owner of the mutex
++		 * might be waiting on us to release the BKL.
++		 */
++		if (current->lock_depth >= 0)
++			break;
++
++		/*
+ 		 * If there's an owner, wait for it to either
+ 		 * release the lock or go to sleep.
+ 		 */
+ 		owner = ACCESS_ONCE(lock->owner);
+-		if (owner && !mutex_spin_on_owner(lock, owner))
++		if (owner && !mutex_spin_on_owner(lock, owner, timeout))
+ 			break;
+ 
+ 		if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3c2a54f..e613160 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3775,7 +3775,8 @@ EXPORT_SYMBOL(schedule);
+  * Look out! "owner" is an entirely speculative pointer
+  * access and not reliable.
+  */
+-int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
++int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner,
++			unsigned long timeout)
  {
- 	struct perf_event_context *ctx = event->ctx;
+ 	unsigned int cpu;
+ 	struct rq *rq;
+@@ -3811,7 +3812,7 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
  
-+	/*
-+	 * Remove from the PMU, can't get re-enabled since we got
-+	 * here because the last ref went.
-+	 */
-+	perf_event_disable(event);
-+
- 	WARN_ON_ONCE(ctx->parent_ctx);
- 	/*
- 	 * There are two ways this annotation is useful:
-@@ -1882,7 +1892,10 @@ int perf_event_release_kernel(struct perf_event *event)
- 	 *     to trigger the AB-BA case.
- 	 */
- 	mutex_lock_nested(&ctx->mutex, SINGLE_DEPTH_NESTING);
--	perf_event_remove_from_context(event);
-+	raw_spin_lock_irq(&ctx->lock);
-+	list_del_event(event, ctx);
-+	perf_destroy_group(event, ctx);
-+	raw_spin_unlock_irq(&ctx->lock);
- 	mutex_unlock(&ctx->mutex);
+ 	rq = cpu_rq(cpu);
  
- 	mutex_lock(&event->owner->perf_event_mutex);
+-	for (;;) {
++	while (time_before(jiffies, timeout)) {
+ 		/*
+ 		 * Owner changed, break to re-assess state.
+ 		 */
