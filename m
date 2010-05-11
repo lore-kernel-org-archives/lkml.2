@@ -1,147 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377Ab0EKJll (ORCPT <rfc822;w@1wt.eu>);
+	id S932403Ab0EKJlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 05:41:50 -0400
+Received: from relay01.mx.bawue.net ([193.7.176.67]:55060 "EHLO
+	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757711Ab0EKJll (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 May 2010 05:41:41 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60385 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755714Ab0EKJlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 05:41:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,206,1272870000"; 
-   d="scan'208";a="566051605"
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>
-In-Reply-To: <1273569154.5605.3499.camel@twins>
-References: <1273484401.5605.3333.camel@twins>
-	 <1273486313.15998.76.camel@minggr.sh.intel.com>
-	 <1273486708.5605.3342.camel@twins>
-	 <1273487195.15998.85.camel@minggr.sh.intel.com>
-	 <1273490824.5605.3379.camel@twins> <20100510114311.GA6449@elte.hu>
-	 <1273492164.5605.3397.camel@twins> <20100510115344.GA11238@elte.hu>
-	 <4BE8931C.9070106@linux.vnet.ibm.com> <1273560419.5605.3426.camel@twins>
-	 <20100511072127.GB10421@elte.hu>
-	 <1273566031.30322.31.camel@minggr.sh.intel.com>
-	 <1273567815.5605.3491.camel@twins>
-	 <1273568620.30322.42.camel@minggr.sh.intel.com>
-	 <1273569154.5605.3499.camel@twins>
-Content-Type: text/plain
-Date: Tue, 11 May 2010 17:40:45 +0800
-Message-Id: <1273570845.30322.59.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
-Content-Transfer-Encoding: 7bit
+Date: Tue, 11 May 2010 11:41:34 +0200
+From: Nils Radtke <lkml@Think-Future.de>
+To: reinette.chatre@intel.com
+Cc: linville@tuxdriver.com, linux-kernel@vger.kernel.org,
+       linux-wireless@vger.kernel.org
+Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some
+ accesspoint == hardlock
+Message-ID: <20100511094134.GC9838@localhost>
+Reply-To: Nils Radtke <lkml@Think-Future.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Url: http://www.Think-Future.de
+X-Editor: Vi it! http://www.vim.org
+X-Bkp: p2mi
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 17:12 +0800, Peter Zijlstra wrote:
-> On Tue, 2010-05-11 at 17:03 +0800, Lin Ming wrote:
-> > On Tue, 2010-05-11 at 16:50 +0800, Peter Zijlstra wrote:
-> > > On Tue, 2010-05-11 at 16:20 +0800, Lin Ming wrote:
-> > > 
-> > > > How will this sysfs interface be used for userspace tool?
-> > > > 
-> > > >  /sys/devices/system/node/nodeN/node_events
-> > > >                                node_events/event_source_id
-> > > > 
-> > > >                                node_events/local_misses/event_id
-> > > >                                           /local_hits/event_id
-> > > >                                           /remote_misses/event_id
-> > > >                                           /remote_hits/event_id
-> > > > 
-> > > > For example, to monitor node event local_misses on node 0, does it work
-> > > > as below?
-> > > > 
-> > > > 1. perf top -e local_misses -n 0 (-n 0 means node 0)
-> > > > 
-> > > > 2. read /sys/devices/system/node/node0/node_events/event_source_id to
-> > > > get the pmu_id
-> > > > 
-> > > > 3. read /sys/devices/system/node/node0/node_events/local_misses/event_id
-> > > > to get the event_id
-> > > > 
-> > > > 4. event_attr::pmu_id=pmu_id, event::config=event_id
-> > > > 
-> > > > 5. other setting...
-> > > > 
-> > > > 6. call syscall perf_event_open(....)
-> > > 
-> > > No, you'll use event_source_id as perf_event_attr::type, use event_id as
-> > > perf_event_attr::config and then use a cpu-wide counter on a cpu
-> > > contained in node0.
-> > 
-> > Is event_source_id a link to event_source class?
-> 
-> No its an attribute of said class.
-> 
-> > For example, 2 event sources on Nehalem
-> > /sys/class/event_sources/core_pmu
-> > /sys/class/event_sources/uncore_pmu
-> > 
-> > Then,
-> > /sys/devices/system/node/nodeN/node_events/event_source_id is a link
-> > to /sys/class/event_sources/uncore_pmu.
-> 
-> > /sys/devices/system/cpu/cpuN/cpu_hardware_events/event_source_id is a
-> > link to /sys/class/event_sources/core_pmu.
-> 
-> The other way around, look in /sys/class/*/, they're all symlinks.
+  Hi,
 
-/sys/devices/system/cpu/cpu0/cpu_hw_events/*
-/sys/devices/system/cpu/cpu0/cpu_hw_cache_events/*
-/sys/devices/system/cpu/cpu0/cpu_raw_events/*
-....
-....
-/sys/devices/system/cpu/cpuN/cpu_hw_events/*
-/sys/devices/system/cpu/cpuN/cpu_hw_cache_events/*
-/sys/devices/system/cpu/cpuN/cpu_raw_events/*
+Thanks a lot for the driver not hanging w/ bug_on() any more. At least the machine 
+keeps working and when on battery no repeated reboots are required any more. That alone
+already means a lot.
 
-Is /sys/class/event_sources/* looks like,
+# On Mon, 2010-05-10 at 11:36 -0700, Nils Radtke wrote:
+# >   Today weather was fine again, finally. So testing with .33.3 w/ the patch applied: 
+# > 
+# >   http://marc.info/?l=linux-wireless&m=127290931304496&w=2
+# > 
+# > The kernel kernel .32 was still running before it crashed immediately on wireless activation.
+# > The crash log showed again at least two messages, the last was as already described in my first
+# > message, bug from 2010-04-30: I think even the 0x2030 was the same:
+# > 
+# > EIP rs_tx_status +x8f/x2030 
+# 
+# You report an issue on 2.6.32 ...
+Yes. These errors happened to be the same regardless of .32 or .33
 
-/sys/class/event_sources/cpu_hw_events0
--> /sys/devices/system/cpu/cpu0/cpu_hw_events
-...
-/sys/class/event_sources/cpu_hw_eventsN
--> /sys/devices/system/cpu/cpuN/cpu_hw_events
+# > W/ .33.3 and the above patch applied:
+# 
+# ... but then test the patch with 2.6.33.
+# 
+# Which kernel are you focused on?
+Sorry, no intention to confuse or show erratic behaviour.. :)
 
-/sys/class/event_sources/cpu_hw_cache_events0
--> /sys/devices/system/cpu/cpu0/cpu_hw_events
-...
-/sys/class/event_sources/cpu_hw_cache_eventsN
--> /sys/devices/system/cpu/cpuN/cpu_hw_events
+It's just that the errors occur on both of them. Then I accidently booted the old one again (now
+removed from the system), but again, the error showed up on .32, .33{1,2,3} . But you always had
+had an indication which kernel it happened on.
 
-?
+OTH, it's basically the same, the identical error persists, so I can't seem the difference here. 
+Except for a scientific approach one shouldn't do that, ACK. But, hey, I'd like to use the machine in
+the meantime and happened to update the kernel source. 
 
-> 
-> > And, the event_source_id
-> > #cat /sys/class/event_sources/core_pmu
-> > 0
-> 
-> > #cat /sys/class/event_sources/uncore_pmu
-> > 1
-> 
-> You can't cat a directory. You'd cat something
-> like: /sys/class/event_sources/core_pmu/event_source_id
-> 
-> And they would contain PERF_TYPE_* like things.
-> 
-> So for the current CPU PMUs we'd already create 3 event classes,
-> cpu_hw_events, cpu_hw_cache_events, cpu_raw_events, with resp.
-> event_source_id of 0, 3 and 4.
-> 
-> The new PMUs will use a dynamic range that starts at PERF_TYPE_MAX.
+# > Linux mypole 2.6.33.3 #18 SMP PREEMPT Thu May 6 21:51:37 CEST 2010 i686 GNU/Linux
+# > 
+# > May 10 19:14:11 [   80.586637] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
+# > May 10 19:23:17 [  626.476078] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
+# > May 10 19:23:30 [  638.913740] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
+# > May 10 19:23:32 [  641.232425] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
+# > May 10 19:23:54 [  663.392697] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
+# > May 10 19:23:58 [  666.980247] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
+# > May 10 19:24:02 [  671.121826] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
+# Can you see any impact on your connection speed that can be connected to
+# these messages?
+I'm glad you're asking. Yes, indeed, speed it exceptionally low to what might be achievable. Around 30k/s
+average, burst with maybe 200k/s, instead of 700k/s.
+
+# > Additionally these were logged, could you tell why they're there and what to do? (also .33.3 w/ patch)
+# > 
+# > May 10 19:24:16 [  685.079617] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
+# > May 10 19:24:22 [  691.026737] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
+# > May 10 19:28:02 [  911.406162] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
+# > May 10 19:35:38 [ 1367.251240] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:12:23:25 tid = 0
+# > 
+# > The above "iwl_tx_agg_start" lines happen when connecting - again to a Cisco AP - and the connection gets
+# > dropped the exact moment when a download is started. It even often drops when dhcp is still negotiating, has
+# > got it's IP but the nego isn't finished yet. Conn drops, same procedure again and again. This happens only
+# > with this Cisco AP (which is BTW another one from the "expected_tpt should have been calculated by now" 
+# > problem).
+# It could be that some of the queues get stuck. Can you try with the
+# patches in
+# http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2037#c113 ? They
+# are based on 2.6.33.
+Good, no wait, bad, now running on .34-rc7. *sigh
+
+I'll apply the patches to .33. .34-rc7 hadn't brought the desired success w/ the olicard100 usb-umts-stick.
+
+Update: noticed you mean 2.6.33 not .33.x ;) On .33.3 it doesn't apply cleanly for a couple of files..
+Any objections if I apply it to .33.3 anyway? (Fixing the rej of course..)
+
+Interestingly enough, quilt import 0001*patch imports, quilt push patches but it applies the patch w/o
+rej. patch -p1 0001*patch does recognize the patch already applied and rejects..
+
+All patches applied successfully, trying again these days.
+
+Thanks for your comments.
+
+Will keep you informed.
+
+Nils
 
