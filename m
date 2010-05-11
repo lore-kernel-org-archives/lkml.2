@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385Ab0EKGNt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 02:13:49 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33696 "EHLO mx2.mail.elte.hu"
+	id S932624Ab0EKGTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 02:19:09 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:54694 "EHLO poutre.nerim.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751187Ab0EKGNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 02:13:48 -0400
-Date: Tue, 11 May 2010 08:13:33 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [GIT PULL 00/10] perf fixes and improvements
-Message-ID: <20100511061333.GC4282@elte.hu>
-References: <1273531987-28956-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273531987-28956-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751467Ab0EKGTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 02:19:04 -0400
+Date: Tue, 11 May 2010 08:19:00 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, Greg KH <gregkh@suse.de>,
+       Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+       linux-pm@lists.linux-foundation.org
+Subject: Re: platform_bus: Allow runtime PM by default
+Message-ID: <20100511081900.0e7a1956@hyperion.delvare>
+In-Reply-To: <201005102310.55838.rjw@sisk.pl>
+References: <1269625370-17754-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	<20100507132746.GA3425@sirena.org.uk>
+	<20100507162028.022a737c@hyperion.delvare>
+	<201005102310.55838.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 10 May 2010 23:10:55 +0200, Rafael J. Wysocki wrote:
+> On Friday 07 May 2010, Jean Delvare wrote:
+> > I'm sorry, I never received Rafael's initial message. I just checked
+> > through my mailbox and it isn't there.
+> > 
+> > The current status is that patch "i2c: Fix bus-level power management
+> > callbacks" is currently queued in my i2c tree at:
+> > ftp://ftp.kernel.org/pub/linux/kernel/people/jdelvare/linux-2.6/jdelvare-i2c/i2c-fix-bus-level-power-management-callbacks.patch
+> > and is scheduled to be merged in 2.6.35-rc1. If this isn't OK, we can
+> > change the plan.
+> > 
+> > Merging a core PM patch through the i2c tree would be quite confusing,
+> > I think, and might draw even more odd dependencies. So I'd rather have
+> > the i2c patch moved to the PM staging tree (or whatever tree the
+> > dependent patch lives in.) Just let me know and I'll drop my copy.
+> 
+> The patch above has been applied to suspend-2.6/linux-next along with the
+> Mark's $subject patch.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+OK, I've dropped it from my i2c tree.
 
-> From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> Hi Ingo,
-> 
->         Please pull from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
-> 
-> Regards,
-> 
-> Arnaldo Carvalho de Melo (1):
->   perf hist: Calculate max_sym name len and nr_entries
-> 
-> Tom Zanussi (9):
->   perf/trace/scripting: failed-syscalls script cleanup
->   perf/trace/scripting: rw-by-pid script cleanup
->   perf/trace/scripting: rwtop script cleanup
->   perf/trace/scripting: wakeup-latency script cleanup
->   perf/trace/scripting: workqueue-stats script cleanup
->   perf/trace/scripting: don't show script start/stop messages by default
->   perf/trace/scripting: failed-syscalls-by-pid script cleanup
->   perf/trace/scripting: syscall-counts-by-pid script cleanup
->   perf/trace/scripting: syscall-counts script cleanup
-> 
->  tools/perf/builtin-report.c                        |    6 +-
->  tools/perf/builtin-trace.c                         |    3 +
->  tools/perf/scripts/perl/bin/failed-syscalls-report |    2 +-
->  tools/perf/scripts/perl/failed-syscalls.pl         |    6 ++-
->  tools/perf/scripts/perl/rw-by-pid.pl               |   60 ++++++++++++--------
->  tools/perf/scripts/perl/rwtop.pl                   |   48 +++++++++++----
->  tools/perf/scripts/perl/wakeup-latency.pl          |   12 +++-
->  tools/perf/scripts/perl/workqueue-stats.pl         |   12 ++--
->  .../python/bin/failed-syscalls-by-pid-report       |    2 +-
->  .../python/bin/syscall-counts-by-pid-report        |    2 +-
->  .../perf/scripts/python/bin/syscall-counts-report  |    2 +-
->  tools/perf/util/hist.c                             |   27 +++++++--
->  tools/perf/util/hist.h                             |    4 +-
->  .../perf/util/scripting-engines/trace-event-perl.c |    3 -
->  .../util/scripting-engines/trace-event-python.c    |    4 -
->  tools/perf/util/symbol.c                           |    5 +-
->  tools/perf/util/symbol.h                           |    1 +
->  17 files changed, 128 insertions(+), 71 deletions(-)
+> I have converted your sign-off into an ack, hope that's fine.
 
-Pulled, thanks Arnaldo!
+Perfectly fine, yes, thanks.
 
-	Ingo
+-- 
+Jean Delvare
