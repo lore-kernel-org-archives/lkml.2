@@ -1,96 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab0EKOJZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 10:09:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59711 "EHLO mx1.redhat.com"
+	id S1758083Ab0EKOMY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 10:12:24 -0400
+Received: from mx1.emlix.com ([193.175.82.87]:56745 "EHLO mx1.emlix.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756715Ab0EKOJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 10:09:21 -0400
-Date: Tue, 11 May 2010 11:07:12 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, avi@redhat.com,
-       agraf@suse.de, fernando@oss.ntt.co.jp, kvm@vger.kernel.org,
-       kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org, tglx@linutronix.de,
-       mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-       benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
-       arnd@arndb.de, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 11/12] KVM: introduce new API for getting/switching
- dirty bitmaps
-Message-ID: <20100511140712.GA7063@amt.cnet>
-References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com>
- <20100504220821.d68bde57.takuya.yoshikawa@gmail.com>
- <20100511034329.GB3458@amt.cnet>
- <4BE8F0F2.60706@oss.ntt.co.jp>
+	id S1751449Ab0EKOMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 10:12:22 -0400
+From: "Oskar Schirmer" <os@emlix.com>
+Date: Tue, 11 May 2010 16:12:11 +0200
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oskar Schirmer <os@emlix.com>,
+       Michael Hennerich <Michael.Hennerich@analog.com>,
+       Mike Frysinger <vapier@gentoo.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       Daniel =?utf-8?B?R2zDtmNrbmVy?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>
+Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
+Message-ID: <20100511141210.GA28765@emlix.com>
+References: <1273487642-2169-1-git-send-email-os@emlix.com>
+ <1273488154-2993-1-git-send-email-os@emlix.com>
+ <20100510142225.4bf215ef.akpm@linux-foundation.org>
+ <20100511060547.GA9644@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4BE8F0F2.60706@oss.ntt.co.jp>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100511060547.GA9644@core.coreip.homeip.net>
+Organization: emlix GmbH
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 02:53:54PM +0900, Takuya Yoshikawa wrote:
-> (2010/05/11 12:43), Marcelo Tosatti wrote:
-> >On Tue, May 04, 2010 at 10:08:21PM +0900, Takuya Yoshikawa wrote:
-> >>+How to Get
-> >>+
-> >>+Before calling this, you have to set the slot member of kvm_user_dirty_log
-> >>+to indicate the target memory slot.
-> >>+
-> >>+struct kvm_user_dirty_log {
-> >>+	__u32 slot;
-> >>+	__u32 flags;
-> >>+	__u64 dirty_bitmap;
-> >>+	__u64 dirty_bitmap_old;
-> >>+};
-> >>+
-> >>+The addresses will be set in the paired members: dirty_bitmap and _old.
-> >
-> >Why not pass the bitmap address to the kernel, instead of having the
-> >kernel allocate it. Because apparently you plan to do that in a new
-> >generation anyway?
-> 
-> Yes, we want to make qemu allocate and free bitmaps in the future.
-> But currently, those are strictly tied with memory slot registration and
-> changing it in one patch set is really difficult.
-> 
-> Anyway, we need kernel side allocation mechanism to keep the current
-> GET_DIRTY_LOG api. I don't mind not exporting kernel allocated bitmaps
-> in this patch set and later introducing a bitmap registration mechanism
-> in another patch set.
-> 
-> As this RFC is suggesting, kernel side double buffering infrastructure is
-> designed as general as possible and adding a new API like SWITCH can be done
-> naturally.
-> 
-> >
-> >Also, why does the kernel need to know about different bitmaps?
-> 
-> Because we need to support current GET API. We don't have any way to get
-> a new bitmap in the case of GET and we don't want to do_mmap() every time
-> for GET.
-> 
-> >
-> >One alternative would be:
-> >
-> >KVM_SWITCH_DIRTY_LOG passing the address of a bitmap. If the active
-> >bitmap was clean, it returns 0, no switch performed. If the active
-> >bitmap was dirty, the kernel switches to the new bitmap and returns 1.
-> >
-> >And the responsability of cleaning the new bitmap could also be left
-> >for userspace.
-> >
-> 
-> That is a beautiful approach but we can do that only when we give up using
-> GET api.
-> 
-> 
-> I follow you and Avi's advice about that kind of maintenance policy!
-> What do you think?
+On Mon, May 10, 2010 at 23:05:47 -0700, Dmitry Torokhov wrote:
+> OK, then I have the following which I will apply unless someone shouts.
 
-If you introduce a switch ioctl that frees the bitmap vmalloc'ed by the
-current set_memory_region (if its not freed already), after pointing the
-memslot to the user supplied one, it should be fine?
+Looks good, we tested it on G45, works fine.
 
+  Oskar
+
+
+> -- 
+> Dmitry
+> 
+> Input: ad7877 - keep dma rx buffers in seperate cache lines
+> 
+> From: Oskar Schirmer <os@emlix.com>
+> 
+> With dma based spi transmission, data corruption is observed
+> occasionally. With dma buffers located right next to msg and
+> xfer fields, cache lines correctly flushed in preparation for
+> dma usage may be polluted again when writing to fields in the
+> same cache line.
+> 
+> Make sure cache fields used with dma do not share cache lines
+> with fields changed during dma handling. As both fields are part
+> of a struct that is allocated via kzalloc, thus cache aligned,
+> moving the fields to the 1st position and insert padding for
+> alignment does the job.
+> 
+> Signed-off-by: Oskar Schirmer <os@emlix.com>
+> Signed-off-by: Daniel Glöckner <dg@emlix.com>
+> Signed-off-by: Oliver Schneidewind <osw@emlix.com>
+> Signed-off-by: Johannes Weiner <jw@emlix.com>
+> Acked-by: Mike Frysinger <vapier@gentoo.org>
+> [dtor@mail.ru - changed to use ___cacheline_aligned at suggestion
+>  of akpm]
+> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+> ---
+> 
+>  drivers/input/touchscreen/ad7877.c |   15 ++++++++++++---
+>  1 files changed, 12 insertions(+), 3 deletions(-)
+> 
+> 
+> diff --git a/drivers/input/touchscreen/ad7877.c b/drivers/input/touchscreen/ad7877.c
+> index e019d53..0d2d7e5 100644
+> --- a/drivers/input/touchscreen/ad7877.c
+> +++ b/drivers/input/touchscreen/ad7877.c
+> @@ -156,9 +156,14 @@ struct ser_req {
+>  	u16			reset;
+>  	u16			ref_on;
+>  	u16			command;
+> -	u16			sample;
+>  	struct spi_message	msg;
+>  	struct spi_transfer	xfer[6];
+> +
+> +	/*
+> +	 * DMA (thus cache coherency maintenance) requires the
+> +	 * transfer buffers to live in their own cache lines.
+> +	 */
+> +	u16 sample ____cacheline_aligned;
+>  };
+>  
+>  struct ad7877 {
+> @@ -182,8 +187,6 @@ struct ad7877 {
+>  	u8			averaging;
+>  	u8			pen_down_acc_interval;
+>  
+> -	u16			conversion_data[AD7877_NR_SENSE];
+> -
+>  	struct spi_transfer	xfer[AD7877_NR_SENSE + 2];
+>  	struct spi_message	msg;
+>  
+> @@ -195,6 +198,12 @@ struct ad7877 {
+>  	spinlock_t		lock;
+>  	struct timer_list	timer;		/* P: lock */
+>  	unsigned		pending:1;	/* P: lock */
+> +
+> +	/*
+> +	 * DMA (thus cache coherency maintenance) requires the
+> +	 * transfer buffers to live in their own cache lines.
+> +	 */
+> +	u16 conversion_data[AD7877_NR_SENSE] ____cacheline_aligned;
+>  };
+>  
+>  static int gpio3;
+> 
+> 
+
+-- 
+oskar schirmer, emlix gmbh, http://www.emlix.com
+fon +49 551 30664-0, fax -11, bahnhofsallee 1b, 37081 göttingen, germany
+sitz der gesellschaft: göttingen, amtsgericht göttingen hr b 3160
+geschäftsführer: dr. uwe kracke, ust-idnr.: de 205 198 055
+
+emlix - your embedded linux partner
