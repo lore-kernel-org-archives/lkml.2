@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab0EKPRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 11:17:19 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:24122 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab0EKPRQ (ORCPT
+	id S1754284Ab0EKPYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:24:42 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37572 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752823Ab0EKPYl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 11:17:16 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=PgW4rW2UYkREfR6gK16haFBaUnSAyF4JawF5hCswk2/vZwimetM8afcloNYj/nHih
-	doImI8cAdPrIJARhOdCmw==
-MIME-Version: 1.0
-In-Reply-To: <1273590800.1810.19.camel@laptop>
-References: <AANLkTinsEANHEicdjOaE6jwUa0bVqH5PBwuGQ3_L59hT@mail.gmail.com>
-	 <20100511150052.GE19192@ghostprotocols.net>
-	 <1273590800.1810.19.camel@laptop>
-Date: Tue, 11 May 2010 17:17:11 +0200
-Message-ID: <AANLkTilvtBMOE6MecY4P51MLRz0-LRgru4lDBQrQnXbZ@mail.gmail.com>
-Subject: Re: [RFC] perf: perf record sets inherit by default
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-       mingo@elte.hu, Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>, perfmon2-devel@lists.sf.net
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Tue, 11 May 2010 11:24:41 -0400
+Date: Tue, 11 May 2010 16:30:54 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Alek Du <alek.du@intel.com>, Arjan van de Ven <arjan@linux.intel.com>,
+       Feng Tang <feng.tang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+       Jacob Pan <jacob.jun.pan@intel.com>
+Subject: Re: [PATCH 4/8] x86/mrst: change clock selection logic to support
+ medfield
+Message-ID: <20100511163054.365239fe@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.LFD.2.00.1005111546260.3401@localhost.localdomain>
+References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1273254108-3234-5-git-send-email-jacob.jun.pan@linux.intel.com>
+	<alpine.LFD.2.00.1005111546260.3401@localhost.localdomain>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 5:13 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2010-05-11 at 12:00 -0300, Arnaldo Carvalho de Melo wrote:
->>
->> Humm, since for -C and -a using -i doesn't make sense, I guess it should
->> be off by default and only be auto-activated if we don't specify any
->> option, i.e. when using it like:
->>
->> perf record ./hackbench
->>
->> What do you think?
->
-> -ENOPARSE
->
-> -a/-C usage creates per-cpu counters and will thus ignore any and all
-> perf_event_attr::inherit state.
->
-> Your above suggestion would still have inherit enabled by default, and
-> would thus not change anything.
->
-> The thing is that perf-record defaults to inherited per-task-per-cpu
-> counters, which, I think, is a reasonable default, just sub-optimal for
-> single threaded/!forking subjects.
->
-> So what would make sense is for -i to mean --no-inherit, and for !
-> inherit create a per-task counter instead of a per-task-per-cpu counter.
->
+> > +	pr_debug("cpuid result %x\n", regs[CR_EAX]);
+> > +	pr_info("Moorestown CPU %s identified\n",
+> > +		(mrst_cpu_chip == MRST_CPU_CHIP_LINCROFT) ?
+> > +		"Lincroft" : "Penwell");
+> 
+>   Are we going to add one of those for each new family ? This is
+>   really redundant bloat with no value.
+> 
+> > +	return mrst_cpu_chip;
 
-If inherit is the preferred default, then yes, the solution is to revert
-the meaning of -i. You'd have to be consistent across all commands
-using -i for inherit such as perf stat.
+>From the driver side we need this value determined and visible to the
+drivers because some things like the IPC interface need to know rather
+than getting the cpuid magic replicated around.
+
