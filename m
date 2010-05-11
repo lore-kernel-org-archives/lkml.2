@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab0EKRVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 13:21:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7751 "EHLO mga09.intel.com"
+	id S1756756Ab0EKRWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 13:22:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19070 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752834Ab0EKRVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 13:21:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,209,1272870000"; 
-   d="scan'208";a="620774410"
-Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some
- accesspoint == hardlock
-From: reinette chatre <reinette.chatre@intel.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-       "NilsRadtkelkml@think-future.de" <NilsRadtkelkml@think-future.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <201005111750.08533.borntraeger@de.ibm.com>
-References: <20100503191756.GA3479@localhost>
-	 <201005061114.35480.borntraeger@de.ibm.com>
-	 <1273163328.2226.2530.camel@rchatre-DESK>
-	 <201005111750.08533.borntraeger@de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 May 2010 10:21:33 -0700
-Message-ID: <1273598493.2370.7891.camel@rchatre-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1752834Ab0EKRWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 13:22:30 -0400
+Message-ID: <4BE9920C.3020901@redhat.com>
+Date: Tue, 11 May 2010 13:21:16 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] mm,migration: Avoid race between shift_arg_pages() and
+ rmap_walk() during migration by not migrating temporary stacks
+References: <20100511085752.GM26611@csn.ul.ie> <alpine.LFD.2.00.1005111009500.3711@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1005111009500.3711@i5.linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 08:50 -0700, Christian Borntraeger wrote:
-> Am Donnerstag 06 Mai 2010 18:28:48 schrieb reinette chatre:
-> > Below seven iwlwifi patches were added after rc4. If you are unable to
-> > bisect ... perhaps you can run a while by reverting more and more from
-> > this list?
-> > 
-> > f2fa1b015e9c199e45c836c769d94db595150731 iwlwifi: correct 6000 EEPROM regulatory address
-> > 88be026490ed89c2ffead81a52531fbac5507e01 iwlwifi: fix scan races
-> > 8b9fce77737ae9983f61ec56cd53f52fb738b2c7 iwlwifi: work around bogus active chains detection
-> > ece6444c2fe80dab679beb5f0d58b091f1933b00 iwlwifi: need check for valid qos packet before free
-> > de0f60ea94e132c858caa64a44b2012e1e8580b0 iwlwifi: avoid Tx queue memory allocation in interface down
-> > 04f2dec1c3d375c4072613880f28f43b66524876 iwlwifi: use consistent table for tx data collect
-> > dd48744964296b5713032ea1d66eb9e3d990e287 iwlwifi: fix DMA allocation warnings
-> 
-> Just to give you some feedback. Sometimes it takes a while until it crashes.
-> My hand made bisect is currently at two remaining patches:
-> 
-> de0f60ea94e132c858caa64a44b2012e1e8580b0
-> 8b9fce77737ae9983f61ec56cd53f52fb738b2c7
-> 
-> reverting both solves my hard lockup. I will try to isolate the "bad" patch
-> but this takes some more days since I wont be in the "hazardous environment"
-> this week.
+On 05/11/2010 01:11 PM, Linus Torvalds wrote:
+> On Tue, 11 May 2010, Mel Gorman wrote:
+>>
+>> This patch closes the most important race in relation to exec and
+>> migration. With it applied, the swapops bug is no longer triggering for
+>> known problem workloads. If you pick it up, it should go with the other
+>> mmmigration-* fixes in mm.
+>
+> Ack. _Much_ better and clearer.
+>
+> I'm not entirely sure we need that "maybe_stack" (if we need it, that
+> would sound like a problem anyway), but I guess it can't hurt either.
 
-Thank you for digging into this. It will be very helpful it you can get
-us a trace of the crash - any chance that netconsole may work?
+Just a heads up - I am looking at creating a patch now that
+allows us to _always_ lock the root anon_vma lock, when locking
+the anon_vma.
 
-Reinette
+That should take care of the other issue pretty cleanly, while
+still allowing us to only walk the VMAs we have to walk in
+places like rmap_walk.
 
-
+-- 
+All rights reversed
