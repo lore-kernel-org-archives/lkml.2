@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab0EKPzt (ORCPT <rfc822;w@1wt.eu>);
+	id S1755090Ab0EKPzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:55:51 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:37462 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752376Ab0EKPzt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 May 2010 11:55:49 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39379 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338Ab0EKPzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 11:55:46 -0400
-Message-ID: <4BE97DFA.1060408@suse.de>
-Date: Tue, 11 May 2010 17:55:38 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=BKFmwlsxqILFPgB0wU0ijRPC7Mw7TUhfOEfas/m9zjY+qny+VpPjq5zmi1KILR4G3
+	TiF2b2rekDyV8DwaC1FwA==
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: avi@redhat.com, mtosatti@redhat.com, yoshikawa.takuya@oss.ntt.co.jp,
-       fernando@oss.ntt.co.jp, kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-       kvm-ia64@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-       hpa@zytor.com, x86@kernel.org, benh@kernel.crashing.org,
-       paulus@samba.org, linuxppc-dev@ozlabs.org, arnd@arndb.de,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 0/12] KVM, x86, ppc, asm-generic: moving dirty bitmaps
- to user space
-References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com>
-In-Reply-To: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1273593131.1810.42.camel@laptop>
+References: <AANLkTinsEANHEicdjOaE6jwUa0bVqH5PBwuGQ3_L59hT@mail.gmail.com>
+	 <20100511150052.GE19192@ghostprotocols.net>
+	 <1273590800.1810.19.camel@laptop>
+	 <20100511155039.GF19192@ghostprotocols.net>
+	 <1273593131.1810.42.camel@laptop>
+Date: Tue, 11 May 2010 17:55:44 +0200
+Message-ID: <AANLkTin5a3ghAUzFiQFoWNA1g9v-yFFC7uwyJEQ3zzu0@mail.gmail.com>
+Subject: Re: [RFC] perf: perf record sets inherit by default
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+       mingo@elte.hu, Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>, perfmon2-devel@lists.sf.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takuya Yoshikawa wrote:
-> Hi, sorry for sending from my personal account.
-> The following series are all from me:
+On Tue, May 11, 2010 at 5:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-05-11 at 12:50 -0300, Arnaldo Carvalho de Melo wrote:
 >
->   From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+>> Nope, see above.
 >
->   The 3rd version of "moving dirty bitmaps to user space".
->
-> From this version, we add x86 and ppc and asm-generic people to CC lists.
+> Ah, -p/-t might make sense to default to inherit off indeed.
 >
 >
-> [To KVM people]
->
-> Sorry for being late to reply your comments.
->
-> Avi,
->  - I've wrote an answer to your question in patch 5/12: drivers/vhost/vhost.c .
->
->  - I've considered to change the set_bit_user_non_atomic to an inline function,
->    but did not change because the other helpers in the uaccess.h are written as
->    macros. Anyway, I hope that x86 people will give us appropriate suggestions
->    about this.
->
->  - I thought that documenting about making bitmaps 64-bit aligned will be
->    written when we add an API to register user-allocated bitmaps. So probably
->    in the next series.
->
-> Avi, Alex,
->  - Could you check the ia64 and ppc parts, please? I tried to keep the logical
->    changes as small as possible.
->
->    I personally tried to build these with cross compilers. For ia64, I could check
->    build success with my patch series. But book3s, even without my patch series,
->    it failed with the following errors:
->
->   arch/powerpc/kvm/book3s_paired_singles.c: In function 'kvmppc_emulate_paired_single':
->   arch/powerpc/kvm/book3s_paired_singles.c:1289: error: the frame size of 2288 bytes is larger than 2048 bytes
->   make[1]: *** [arch/powerpc/kvm/book3s_paired_singles.o] Error 1
->   make: *** [arch/powerpc/kvm] Error 2
->   
+I would rather think that -p would inherit but not -t.
+If I attach to a multi-threaded app with -p, I'd like all threads monitored.
+But if I use -t to point to a specific thread within a process, then most
+likely I care only about that thread.
 
-This is bad. I haven't encountered that one at all so far, but I guess
-my compiler version is different from yours. Sigh.
 
->
-> About changelog: there are two main changes from the 2nd version:
->   1. I changed the treatment of clean slots (see patch 1/12).
->      This was already applied today, thanks!
->   2. I changed the switch API. (see patch 11/12).
->
-> To show this API's advantage, I also did a test (see the end of this mail).
->
->
-> [To x86 people]
->
-> Hi, Thomas, Ingo, Peter,
->
-> Please review the patches 4,5/12. Because this is the first experience for
-> me to send patches to x86, please tell me if this lacks anything.
->
->
-> [To ppc people]
->
-> Hi, Benjamin, Paul, Alex,
->
-> Please see the patches 6,7/12. I first say sorry for that I've not tested these
-> yet. In that sense, these may not be in the quality for precise reviews. But I
-> will be happy if you would give me any comments.
->
-> Alex, could you help me? Though I have a plan to get PPC box in the future,
-> currently I cannot test these.
->   
 
-Could you please point me to a git tree where everything's readily
-applied? That would make testing a lot easier.
 
-Alex
-
+-- 
+Stephane Eranian  | EMEA Software Engineering
+Google France | 38 avenue de l'Opéra | 75002 Paris
+Tel : +33 (0) 1 42 68 53 00
+This email may be confidential or privileged. If you received this
+communication by mistake, please
+don't forward it to anyone else, please erase all copies and
+attachments, and please let me know that
+it went to the wrong person. Thanks
