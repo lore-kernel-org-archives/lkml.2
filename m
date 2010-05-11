@@ -1,60 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab0EKQhp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:37:45 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:65338 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab0EKQhm convert rfc822-to-8bit (ORCPT
+	id S1754290Ab0EKQjl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:39:41 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:33738 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab0EKQjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:37:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=HXmCpCE9YEBu+OvHpHC9gzgvIxmyPpNWI4+m0CriUbULq9Pvy6i1HL/HXDE2hfOkqO
-         44wmdrvwNI3BWfTJJSf+hH+9ACrv6jN5a/IixL94zMniJunvnlLSjIfbk++ZuQDCdjm3
-         QlO6CKqUSY7i40QWHpqJWIS5AskvaLhsizOp8=
-MIME-Version: 1.0
-In-Reply-To: <1272848076-28315-1-git-send-email-linus.walleij@stericsson.com>
-References: <1272848076-28315-1-git-send-email-linus.walleij@stericsson.com>
-Date: Tue, 11 May 2010 09:37:42 -0700
-X-Google-Sender-Auth: MQVC3i8lAtPxjc_2l8IlIuxz7LE
-Message-ID: <AANLkTinAVhnpjgVTtbZYYKb1t_DInVwTKkkJRzcO97RX@mail.gmail.com>
-Subject: Re: [PATCH 1/7] DMAENGINE: add generic PrimeCell interface to COH 901 
-	318 v6
-From: Dan Williams <dan.j.williams@intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 May 2010 12:39:37 -0400
+From: Daniel Mack <daniel@caiaq.de>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Mack <daniel@caiaq.de>, Anton Vorontsov <cbou@mail.ru>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Andres Salomon <dilinger@collabora.co.uk>,
+       Alexey Starikovskiy <astarikovskiy@suse.de>,
+       Len Brown <len.brown@intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Matt Reimer <mreimer@vpop.net>, Evgeniy Polyakov <zbr@ioremap.net>,
+       Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/3] pda_power: add support for writeable properties
+Date: Tue, 11 May 2010 18:38:44 +0200
+Message-Id: <1273595926-26249-1-git-send-email-daniel@caiaq.de>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 2, 2010 at 5:54 PM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-> This extends the DMA engine driver for the COH 901 318 used in the
-> U300 platform with the generic PrimeCell interface.
->
-> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
-> ---
->  drivers/dma/coh901318.c |  146 +++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 146 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
-> index 4233440..1d5ed16 100644
-> --- a/drivers/dma/coh901318.c
-> +++ b/drivers/dma/coh901318.c
-[..]
-> +void dma_set_ambaconfig(struct dma_chan *chan,
-> +                       struct amba_dma_channel_config *config)
+This patch adds support for writeable power supply properties and
+exposes them as writeable to sysfs.
 
-What happens when two primecell dma devices are present on one soc?
-Can that happen?  In that case we'll have conflicting providers of
-dma_set_ambaconfig().
+A power supply implementation must implement two new function calls in
+order to use that feature:
 
---
-Dan
+  int set_property(struct power_supply *psy,
+                   enum power_supply_property psp,
+                   const union power_supply_propval *val);
+
+  int property_is_writeable(struct power_supply *psy,
+                            enum power_supply_property psp);
+
+Signed-off-by: Daniel Mack <daniel@caiaq.de>
+Cc: Anton Vorontsov <cbou@mail.ru>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Andres Salomon <dilinger@collabora.co.uk>
+Cc: Alexey Starikovskiy <astarikovskiy@suse.de>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Matt Reimer <mreimer@vpop.net>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Tejun Heo <tj@kernel.org>
+---
+ drivers/power/power_supply_sysfs.c |   31 +++++++++++++++++++++++++++++--
+ include/linux/power_supply.h       |    5 +++++
+ 2 files changed, 34 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index 5b6e352..5cfb410 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -31,9 +31,9 @@
+ 
+ #define POWER_SUPPLY_ATTR(_name)					\
+ {									\
+-	.attr = { .name = #_name, .mode = 0444 },	\
++	.attr = { .name = #_name },					\
+ 	.show = power_supply_show_property,				\
+-	.store = NULL,							\
++	.store = power_supply_store_property,				\
+ }
+ 
+ static struct device_attribute power_supply_attrs[];
+@@ -91,6 +91,25 @@ static ssize_t power_supply_show_property(struct device *dev,
+ 	return sprintf(buf, "%d\n", value.intval);
+ }
+ 
++static ssize_t power_supply_store_property(struct device *dev,
++					   struct device_attribute *attr,
++					   const char *buf, size_t count) {
++	ssize_t ret;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	const ptrdiff_t off = attr - power_supply_attrs;
++	union power_supply_propval value;
++	long long_val;
++
++	/* TODO: support other types than int */
++	ret = strict_strtol(buf, 10, &long_val);
++	if (ret < 0)
++		return ret;
++
++	value.intval = long_val;
++
++	return psy->set_property(psy, off, &value);
++}
++
+ /* Must be in the same order as POWER_SUPPLY_PROP_* */
+ static struct device_attribute power_supply_attrs[] = {
+ 	/* Properties of type `int' */
+@@ -164,6 +183,14 @@ int power_supply_create_attrs(struct power_supply *psy)
+ 	}
+ 
+ 	for (j = 0; j < psy->num_properties; j++) {
++		mode_t mode = S_IRUSR | S_IRGRP | S_IROTH;
++
++		if (psy->property_is_writeable &&
++		    psy->property_is_writeable(psy, psy->properties[j]) > 0)
++			mode |= S_IWUSR;
++
++		power_supply_attrs[psy->properties[j]].attr.mode = mode;
++
+ 		rc = device_create_file(psy->dev,
+ 			    &power_supply_attrs[psy->properties[j]]);
+ 		if (rc)
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index ebd2b8f..f02f7fd 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -144,6 +144,11 @@ struct power_supply {
+ 	int (*get_property)(struct power_supply *psy,
+ 			    enum power_supply_property psp,
+ 			    union power_supply_propval *val);
++	int (*set_property)(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    const union power_supply_propval *val);
++	int (*property_is_writeable)(struct power_supply *psy,
++				     enum power_supply_property psp);
+ 	void (*external_power_changed)(struct power_supply *psy);
+ 	void (*set_charged)(struct power_supply *psy);
+ 
+-- 
+1.7.1
+
