@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab0EKRao (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 13:30:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17573 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932195Ab0EKRak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 13:30:40 -0400
-Date: Tue, 11 May 2010 20:26:33 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>, Juan Quintela <quintela@redhat.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       "David S. Miller" <davem@davemloft.net>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-       virtualization@lists.osdl.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH RFC] vhost: fix barrier pairing
-Message-ID: <20100511172633.GA9091@redhat.com>
+	id S932350Ab0EKRbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 13:31:09 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:33407 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197Ab0EKRbC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 13:31:02 -0400
+Date: Tue, 11 May 2010 18:30:36 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100511173036.GB17868@srcf.ucam.org>
+References: <87wrvl5479.fsf@deeprootsystems.com> <87632vhbs8.fsf@deeprootsystems.com> <201005102225.52431.rjw@sisk.pl> <20100511161227.GD13600@atomide.com> <20100511161448.GA16148@srcf.ucam.org> <20100511163632.GE13600@atomide.com> <20100511164554.GA17016@srcf.ucam.org> <20100511165821.GA13931@atomide.com> <20100511170348.GA17443@srcf.ucam.org> <20100511172442.GB13931@atomide.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100511172442.GB13931@atomide.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to memory-barriers.txt, an smp memory barrier
-should always be paired with another smp memory barrier,
-and I quote "a lack of appropriate pairing is almost certainly an
-error".
+On Tue, May 11, 2010 at 10:24:43AM -0700, Tony Lindgren wrote:
 
-In case of vhost, failure to flush out used index
-update before looking at the interrupt disable flag
-could result in missed interrupts, resulting in
-networking hang under stress.
+> For the failed suspend path in the kernel, currently the kernel would
+> unwind back all the drivers because of the failed driver, but that path
+> should be possible to optimize.
 
-This might happen when flags read bypasses used index write.
-So we see interrupts disabled and do not interrupt, at the
-same time guest writes flags value to enable interrupt,
-reads an old used index value, thinks that
-used ring is empty and waits for interrupt.
+If you think it's possible to make this work then feel free to. But at 
+the point where you're adding code to every driver's suspend function to 
+determine whether or not it's got any pending events that userspace 
+hasn't consumed yet, and adding code to every bit of userspace to allow 
+it to indicate whether or not it's busy consuming events or just busy 
+drawing 3D bouncing cattle, I think you've reinvented suspend blocks.
 
-Note: the barrier we pair with here is in
-drivers/virtio/virtio_ring.c, function
-vring_enable_cb.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
-
-Dave, I think this is needed in 2.6.34, I'll send a pull
-request after doing some more testing.
-
-Rusty, Juan, could you take a look as well please?
-Thanks!
-
- drivers/vhost/vhost.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index e69d238..14fa2f5 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -1035,7 +1035,10 @@ int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head, int len)
- /* This actually signals the guest, using eventfd. */
- void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- {
--	__u16 flags = 0;
-+	__u16 flags;
-+	/* Flush out used index updates. */
-+	smp_mb();
-+
- 	if (get_user(flags, &vq->avail->flags)) {
- 		vq_err(vq, "Failed to get flags");
- 		return;
 -- 
-1.7.1.12.g42b7f
+Matthew Garrett | mjg59@srcf.ucam.org
