@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592Ab0EKT5P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 15:57:15 -0400
-Received: from mga10.intel.com ([192.55.52.92]:45893 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752827Ab0EKT5N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 15:57:13 -0400
-Message-Id: <89k77n$noi3t4@fmsmga001.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,209,1272870000"; 
-   d="scan'208";a="797511588"
-Date: Tue, 11 May 2010 20:57:08 +0100
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: DRM Error on Acer Aspire One
-Cc: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       dri-devel@lists.freedesktop.org, Dave Airlie <airlied@linux.ie>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Keith Packard <keithp@keithp.com>, Eric Anholt <eric@anholt.net>,
-       Ingo Molnar <mingo@elte.hu>
-References: <AANLkTilSNZ11CaRUH5s3w6NoAnDQ5t7U9Y0Ce-iHpq3O@mail.gmail.com> <89kc63$grtht6@fmsmga002.fm.intel.com> <20100511104818.8382a7de.akpm@linux-foundation.org> <89khjo$fd26d3@orsmga002.jf.intel.com> <20100511113555.a78c9c8e.akpm@linux-foundation.org> <89kc63$grv1m8@fmsmga002.fm.intel.com> <20100511121001.0731a9c2.akpm@linux-foundation.org>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <20100511121001.0731a9c2.akpm@linux-foundation.org>
+	id S1757481Ab0EKUDZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 16:03:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60692 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752946Ab0EKUDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 16:03:23 -0400
+Message-ID: <4BE9B8DD.9080004@redhat.com>
+Date: Tue, 11 May 2010 16:06:53 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@us.ibm.com>, Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH -tip 1/5] [CLEANUP] kprobes: Remove redundant	text_mutex
+ lock in optimize
+References: <20100510175313.27396.34605.stgit@localhost6.localdomain6> <20100510175320.27396.49896.stgit@localhost6.localdomain6> <20100511123550.GB25418@Krystal>
+In-Reply-To: <20100511123550.GB25418@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 May 2010 12:10:01 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Tue, 11 May 2010 19:52:31 +0100
-> Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> 
-> > On Tue, 11 May 2010 11:35:55 -0400, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > > No, io_mapping_map_atomic_wc() cannot be used from [soft]irq context:
-> > > it hardwires use of KM_USER0.  I suggest that io_mapping_create_wc(),
-> > > io_mapping_map_atomic_wc() etc be changed so that the caller passes in the
-> > > KM_foo kmap slot index.
-> > 
-> > Argh, sorry for the noise, read the mail in the wrong order. Thanks for
-> > the review. It would be sensible to go with your simpler patch whilst
-> > io_mapping_map_atomic_wc() is improved.
-> 
-> OK.  I'll be sending a bunch of fixes Linuswards in an hour or two.  
-> Should I include this?
+Hi Mathieu,
 
-Yes.
+Mathieu Desnoyers wrote:
+> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
+>> Remove text_mutex locking in optimize_all_kprobes, because
+>> that function doesn't modify text but just order optimization
+>> to worker.
+> 
+> Hi Masami,
+> 
+> A few comments:
+> 
+> 1) optimize_all_kprobes/unoptimize_all_kprobes should have comments saying that
+> they are always called with kprobe_mutex held.
+> 
+> 2) The sentence above in the changelog could be changed into:
+> 
+>  ..."because this function doesn't modify text. It simply queues optimizations
+> for the kprobe_optimizer worker thread."
+> 
+> 3)
+> 
+> static DEFINE_MUTEX(kprobe_mutex);      /* Protects kprobe_table */
+> 
+> .. should also state that it protects optimizing_list.
+> 
 
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Thanks! all comments are good to me!
+
+Thank you again,
+
+
+
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
+
