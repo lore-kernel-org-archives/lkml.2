@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121Ab0EKCSz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 22:18:55 -0400
-Received: from mga14.intel.com ([143.182.124.37]:32191 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752203Ab0EKCSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 22:18:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,204,1272870000"; 
-   d="scan'208";a="275571206"
-Date: Tue, 11 May 2010 10:30:44 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       Jacob Pan <jacob.jun.pan@linux.intel.com>,
-       Thomas Gleixner <tglx@linutronix.de>, "Ingo Molnar" <mingo@elte.hu>,
-       "Du, Alek" <alek.du@intel.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] x86/mrst: add vrtc driver which serves as a wall
- clock device
-Message-ID: <20100511103044.25fed8e7@feng-i7>
-In-Reply-To: <4BE84ED7.5010207@zytor.com>
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1273254108-3234-8-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1273258266.1540.63.camel@Joe-Laptop.home>
-	<20100507200208.09b2941d@lxorguk.ukuu.org.uk>
-	<1273259187.1540.75.camel@Joe-Laptop.home>
-	<4BE47059.8090101@zytor.com>
-	<20100510171707.28da6795@feng-i7>
-	<4BE84ED7.5010207@zytor.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; i486-pc-linux-gnu)
+	id S1757602Ab0EKC2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 22:28:39 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:54631 "HELO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752052Ab0EKC2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 22:28:37 -0400
+From: Michael Poole <mdpoole@troilus.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-bluetooth@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: magicmouse: claimed by neither input, hiddev nor hidraw
+References: <j2idd18b0c31005101341o43b652c1zf8729f5f9a60e0d3@mail.gmail.com>
+	<alpine.LRH.2.00.1005102334140.14809@twin.jikos.cz>
+	<s2odd18b0c31005101439v22d03bfdw4e65d7c4b8315b6a@mail.gmail.com>
+	<alpine.LNX.2.00.1005102351220.28092@pobox.suse.cz>
+	<4BE8859E.3090305@gmail.com>
+Date: Mon, 10 May 2010 22:28:32 -0400
+In-Reply-To: <4BE8859E.3090305@gmail.com> (Justin P. Mattock's message of
+	"Mon, 10 May 2010 15:15:58 -0700")
+Message-ID: <87mxw7i33j.fsf@troilus.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 May 2010 02:22:15 +0800
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+Justin P. Mattock writes:
 
-> On 05/10/2010 02:17 AM, Feng Tang wrote:
-> > 
-> > Thank you all for the comments. please review this follow-on patch.
-> > 
-> > - Feng
-> 
-> That doesn't move it to common code, though.  I'd rather see existing
-> common style used, then merged (centralized) and *then* the style
-> corrected.
-> 
-> 	-hpa
+> On 05/10/2010 02:52 PM, Jiri Kosina wrote:
+[snip]
+>> This sounds a bit strange.
+>>
+>> hidraw shouldn't be making too much difference in the case you describe.
+>> hidraw is basically just a mean of relaying HID events to userspace so
+>> that any driver/application in userspace can access them. But magicmouse
+>> driver is written completely in kernelspace.
+>>
+>> Does anything on your system have /dev/hidraw* nodes open? (you could
+>> check by lsof).
+>>
+>
+>
+> right now I see
+> /dev/hidraw0,1,2,3
+>
+> ./lsof | grep /dev
+> (showing bluetooth)
+>
+> bluetooth 2020   root    0u      CHR                1,3       0t0 2551
+> /dev/null
+> bluetooth 2020   root    1u      CHR                1,3       0t0 2551
+> /dev/null
+> bluetooth 2020   root    2u      CHR                1,3       0t0 2551
+> /dev/null
+> bluetooth 2020   root   14u      CHR              10,62       0t0 3895
+> /dev/rfkill
+>
+> I can try a bisect on this and see.
 
-Hi Peter,
+A list of which patches you have applied would also be helpful.  The
+standard 2.6.33.* kernels predate the merge of the hid-magicmouse
+driver, but the dmesg entry you pasted makes it look like the driver was
+present.
 
-The reason I didn't move it to rtc common code is, this vrtc.c sits in
-arch/x86/kernel/ and better not to depend on drivers/rtc, as drivers/rtc
-may not be always enabled in kernel configuration.
-
-I also have another general driver for vrtc which will be in drivers/rtc/,
-just like general x86 kernel which has a rtc.c in arch/ and a rtc-cmos.c
-in drivers/rtc, I will clean my code up and try to move these funcs to a
-common code. 
-
-Thanks,
-Feng
+Michael Poole
