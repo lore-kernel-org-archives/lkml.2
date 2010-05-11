@@ -1,108 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab0EKBiJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 21:38:09 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51978 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756572Ab0EKBiF (ORCPT
+	id S1757650Ab0EKBrN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 21:47:13 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:40239 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756794Ab0EKBrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 21:38:05 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <D1C79E74038141C1BCD3EF70A5032E34@rainbow>
-From: "Iram Shahzad" <iram.shahzad@jp.fujitsu.com>
-To: "Thomas Gleixner" <tglx@linutronix.de>
-Cc: <linux-kernel@vger.kernel.org>
-References: <20090206060328.181057235@goodmis.org> <9D38EE7159934A5C85505E9517638040@rainbow> <alpine.LFD.2.00.1005101707410.3401@localhost.localdomain>
-Subject: Re: hrtimer: about hres_active
-Date: Tue, 11 May 2010 10:39:12 +0900
+	Mon, 10 May 2010 21:47:08 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: cpumask: fix compat getaffinity
+Cc: kosaki.motohiro@jp.fujitsu.com, Arnd Bergmann <arnd@arndb.de>,
+       linux-kernel@vger.kernel.org, stable@kernel.org,
+       Andi Kleen <andi@firstfloor.org>, Ken Werner <ken.werner@web.de>
+In-Reply-To: <201005110913.49162.rusty@rustcorp.com.au>
+References: <201005081111.08720.arnd@arndb.de> <201005110913.49162.rusty@rustcorp.com.au>
+Message-Id: <20100511104334.E572.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-2022-jp";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5843
-X-MIMEOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 11 May 2010 10:47:03 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
-
-Many thanks for the reply. I understood why hrtimer list
-is not checked in hrtimer_get_next_event in the case of
-high res active.
-
-Please let me ask more about the following.
-
-> No. The system switches to high resolution mode late in the boot
-> process and it does so only when there is high res capable hardware
-> available.
-
-So far as I checked, hres_active is set to 1 in hrtimer_switch_to_hres.
-hrtimer_switch_to_hres is only called from hrtimer_run_pending.
-And hrtimer_run_pending is called from timer wheel softirq.
-That is why I concluded that hres_active is set at 1st timer softirq.
-Do you just mean that it is not the 1st softirq, or do you
-mean that in some other place in the late boot process
-there is another code which sets hres_active?
-
-And is it correct that hres_active remains 1 forever once set to it?
-
-Best regards
-Iram
-
------ Original Message ----- 
-From: "Thomas Gleixner" <tglx@linutronix.de>
-To: "Iram Shahzad" <iram.shahzad@jp.fujitsu.com>
-Cc: <linux-kernel@vger.kernel.org>
-Sent: Tuesday, May 11, 2010 12:12 AM
-Subject: Re: hrtimer: about hres_active
-
-
-> Iram,
+> How's this?
 > 
-> On Mon, 10 May 2010, Iram Shahzad wrote:
+> cpumask: use nr_cpu_ids for printing and parsing cpumasks
 > 
->> I am trying to understand the purpose of "hres_active" of hrtimer
->> and have the following question in this regard.
->> 
->> It seems "hres_active" indicates whether high resolution mode is
->> active or not. But I am not clear about the idea behind it.
->> 
->> I see that hres_active is initialized to 0 here:
->>    hrtimer_init_hres
->> 
->> and set to 1 here:
->>    hrtimer_run_pending
->>       -> hrtimer_switch_to_hres
->> 
->> That means hrtimer becomes "active" at the 1st timer softirq
->> and remains so forever. Is this understanding correct?
+> Commit a45185d2d "cpumask: convert kernel/compat.c" broke
+> libnuma, which abuses sched_getaffinity to find out NR_CPUS
+> in order to parse /sys/devices/system/node/node*/cpumap.
 > 
-> No. The system switches to high resolution mode late in the boot
-> process and it does so only when there is high res capable hardware
-> available.
+> However, the result now returned reflects nr_cpu_ids, and
+> cpumask_scnprintf et al. use nr_cpumask_bits which is NR_CPUS (for
+> CONFIG_CPUMASK_OFFSTACK=n) or nr_cpu_ids (for
+> CONFIG_CPUMASK_OFFSTACK=y).
 > 
->> My original concern is as follows:
->> 
->> hrtimer_get_next_event returns KTIME_MAX when hrtimer is "active".
->> So if the above understanding is correct, then after the 1st timer
->> softirq it will always return KTIME_MAX. This means cpu_idle will never
->> take the hrtimer event into account and will always base its decision
->> on the next event of the timer wheel. Is this intended behaviour?
-> 
-> Yes it is. In the case of high res active the hrtimer which is the
-> next to expire is already armed on that CPU in the clock event
-> device. Therefor we know already when the next hrtimer will fire. No
-> need to lookup further. But we have to check the timer wheel as it
-> might have a timer which is due earlier than the first to expire
-> hrtimer.
-> 
-> Thanks,
-> 
-> tglx
+> We should use nr_cpu_ids consistently.
 >
+> Reported-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: stable@kernel.org
+
+Well, This patch seems to have ABI change. please don't send abi-change to -stable.
+
+note: I'm not against this patch itself.
+
+
+> 
+> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+> --- a/include/linux/cpumask.h
+> +++ b/include/linux/cpumask.h
+> @@ -529,7 +529,7 @@ static inline void cpumask_copy(struct c
+>  static inline int cpumask_scnprintf(char *buf, int len,
+>  				    const struct cpumask *srcp)
+>  {
+> -	return bitmap_scnprintf(buf, len, cpumask_bits(srcp), nr_cpumask_bits);
+> +	return bitmap_scnprintf(buf, len, cpumask_bits(srcp), nr_cpu_ids);
+>  }
+>  
+>  /**
+> @@ -543,7 +543,7 @@ static inline int cpumask_scnprintf(char
+>  static inline int cpumask_parse_user(const char __user *buf, int len,
+>  				     struct cpumask *dstp)
+>  {
+> -	return bitmap_parse_user(buf, len, cpumask_bits(dstp), nr_cpumask_bits);
+> +	return bitmap_parse_user(buf, len, cpumask_bits(dstp), nr_cpu_ids);
+>  }
+>  
+>  /**
+> @@ -558,8 +558,7 @@ static inline int cpumask_parse_user(con
+>  static inline int cpulist_scnprintf(char *buf, int len,
+>  				    const struct cpumask *srcp)
+>  {
+> -	return bitmap_scnlistprintf(buf, len, cpumask_bits(srcp),
+> -				    nr_cpumask_bits);
+> +	return bitmap_scnlistprintf(buf, len, cpumask_bits(srcp), nr_cpu_ids);
+>  }
+>  
+>  /**
+> @@ -572,7 +571,7 @@ static inline int cpulist_scnprintf(char
+>   */
+>  static inline int cpulist_parse(const char *buf, struct cpumask *dstp)
+>  {
+> -	return bitmap_parselist(buf, cpumask_bits(dstp), nr_cpumask_bits);
+> +	return bitmap_parselist(buf, cpumask_bits(dstp), nr_cpu_ids);
+>  }
+>  
+>  /**
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
 
