@@ -1,127 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083Ab0EKOMY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 10:12:24 -0400
-Received: from mx1.emlix.com ([193.175.82.87]:56745 "EHLO mx1.emlix.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751449Ab0EKOMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 10:12:22 -0400
-From: "Oskar Schirmer" <os@emlix.com>
-Date: Tue, 11 May 2010 16:12:11 +0200
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oskar Schirmer <os@emlix.com>,
-       Michael Hennerich <Michael.Hennerich@analog.com>,
-       Mike Frysinger <vapier@gentoo.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Daniel =?utf-8?B?R2zDtmNrbmVy?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>
-Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
-Message-ID: <20100511141210.GA28765@emlix.com>
-References: <1273487642-2169-1-git-send-email-os@emlix.com>
- <1273488154-2993-1-git-send-email-os@emlix.com>
- <20100510142225.4bf215ef.akpm@linux-foundation.org>
- <20100511060547.GA9644@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100511060547.GA9644@core.coreip.homeip.net>
-Organization: emlix GmbH
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758202Ab0EKOMt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 10:12:49 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:50760 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758104Ab0EKOMl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 10:12:41 -0400
+From: Eduardo Valentin <eduardo.valentin@nokia.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
+       Linux-OMAP <linux-omap@vger.kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       ext Tony Lindgren <tony@atomide.com>,
+       ext Kevin Hilman <khilman@deeprootsystems.com>,
+       Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
+       santosh.shilimkar@ti.com, Ambresh <a0393775@ti.com>,
+       felipe.balbi@nokia.com, Jouni Hogander <jouni.hogander@nokia.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       Eduardo Valentin <eduardo.valentin@nokia.com>
+Subject: [PATCHv5 2/3] OMAP: export OMAP info under /proc/socinfo
+Date: Tue, 11 May 2010 17:15:30 +0300
+Message-Id: <1273587331-24604-3-git-send-email-eduardo.valentin@nokia.com>
+X-Mailer: git-send-email 1.7.0.4.361.g8b5fe.dirty
+In-Reply-To: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>
+References: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>
+X-OriginalArrivalTime: 11 May 2010 14:12:08.0954 (UTC) FILETIME=[F15CBDA0:01CAF113]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 23:05:47 -0700, Dmitry Torokhov wrote:
-> OK, then I have the following which I will apply unless someone shouts.
+From: Eduardo Valentin <eduardo.valentin@nokia.com>
 
-Looks good, we tested it on G45, works fine.
+Export OMAP name and rev under /proc/socinfo node.
 
-  Oskar
+Signed-off-by: Eduardo Valentin <eduardo.valentin@nokia.com>
+---
+ arch/arm/Kconfig         |    1 +
+ arch/arm/mach-omap1/id.c |   31 ++++++++++++++++++++++++-------
+ arch/arm/mach-omap2/id.c |   32 ++++++++++++++++++++++++++------
+ 3 files changed, 51 insertions(+), 13 deletions(-)
 
-
-> -- 
-> Dmitry
-> 
-> Input: ad7877 - keep dma rx buffers in seperate cache lines
-> 
-> From: Oskar Schirmer <os@emlix.com>
-> 
-> With dma based spi transmission, data corruption is observed
-> occasionally. With dma buffers located right next to msg and
-> xfer fields, cache lines correctly flushed in preparation for
-> dma usage may be polluted again when writing to fields in the
-> same cache line.
-> 
-> Make sure cache fields used with dma do not share cache lines
-> with fields changed during dma handling. As both fields are part
-> of a struct that is allocated via kzalloc, thus cache aligned,
-> moving the fields to the 1st position and insert padding for
-> alignment does the job.
-> 
-> Signed-off-by: Oskar Schirmer <os@emlix.com>
-> Signed-off-by: Daniel Glöckner <dg@emlix.com>
-> Signed-off-by: Oliver Schneidewind <osw@emlix.com>
-> Signed-off-by: Johannes Weiner <jw@emlix.com>
-> Acked-by: Mike Frysinger <vapier@gentoo.org>
-> [dtor@mail.ru - changed to use ___cacheline_aligned at suggestion
->  of akpm]
-> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-> ---
-> 
->  drivers/input/touchscreen/ad7877.c |   15 ++++++++++++---
->  1 files changed, 12 insertions(+), 3 deletions(-)
-> 
-> 
-> diff --git a/drivers/input/touchscreen/ad7877.c b/drivers/input/touchscreen/ad7877.c
-> index e019d53..0d2d7e5 100644
-> --- a/drivers/input/touchscreen/ad7877.c
-> +++ b/drivers/input/touchscreen/ad7877.c
-> @@ -156,9 +156,14 @@ struct ser_req {
->  	u16			reset;
->  	u16			ref_on;
->  	u16			command;
-> -	u16			sample;
->  	struct spi_message	msg;
->  	struct spi_transfer	xfer[6];
-> +
-> +	/*
-> +	 * DMA (thus cache coherency maintenance) requires the
-> +	 * transfer buffers to live in their own cache lines.
-> +	 */
-> +	u16 sample ____cacheline_aligned;
->  };
->  
->  struct ad7877 {
-> @@ -182,8 +187,6 @@ struct ad7877 {
->  	u8			averaging;
->  	u8			pen_down_acc_interval;
->  
-> -	u16			conversion_data[AD7877_NR_SENSE];
-> -
->  	struct spi_transfer	xfer[AD7877_NR_SENSE + 2];
->  	struct spi_message	msg;
->  
-> @@ -195,6 +198,12 @@ struct ad7877 {
->  	spinlock_t		lock;
->  	struct timer_list	timer;		/* P: lock */
->  	unsigned		pending:1;	/* P: lock */
-> +
-> +	/*
-> +	 * DMA (thus cache coherency maintenance) requires the
-> +	 * transfer buffers to live in their own cache lines.
-> +	 */
-> +	u16 conversion_data[AD7877_NR_SENSE] ____cacheline_aligned;
->  };
->  
->  static int gpio3;
-> 
-> 
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 92622eb..fbd3c50 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -326,6 +326,7 @@ config ARCH_EP93XX
+ 	select COMMON_CLKDEV
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
++	select PROC_SOC_INFO
+ 	help
+ 	  This enables support for the Cirrus EP93xx series of CPUs.
+ 
+diff --git a/arch/arm/mach-omap1/id.c b/arch/arm/mach-omap1/id.c
+index a0e3560..ef3caf1 100644
+--- a/arch/arm/mach-omap1/id.c
++++ b/arch/arm/mach-omap1/id.c
+@@ -15,6 +15,8 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
++#include <linux/socinfo.h>
++#include <linux/seq_file.h>
+ #include <plat/cpu.h>
+ 
+ #define OMAP_DIE_ID_0		0xfffe1800
+@@ -118,9 +120,21 @@ static u8 __init omap_get_die_rev(void)
+ 	return die_rev;
+ }
+ 
++#define SOCINFO_SZ		128
++
++static int omap1_socinfo_show(struct seq_file *m, void *v)
++{
++	char *socinfo = v;
++
++	seq_printf(m, "SoC\t: %s\n", socinfo);
++
++	return 0;
++}
++
+ void __init omap_check_revision(void)
+ {
+-	int i;
++	int i, sz;
++	char socinfo[SOCINFO_SZ];
+ 	u16 jtag_id;
+ 	u8 die_rev;
+ 	u32 omap_id;
+@@ -194,11 +208,14 @@ void __init omap_check_revision(void)
+ 		printk(KERN_INFO "Unknown OMAP cpu type: 0x%02x\n", cpu_type);
+ 	}
+ 
+-	printk(KERN_INFO "OMAP%04x", omap_revision >> 16);
++	sz = snprintf(socinfo, SOCINFO_SZ, "OMAP%04x", omap_revision >> 16);
+ 	if ((omap_revision >> 8) & 0xff)
+-		printk(KERN_INFO "%x", (omap_revision >> 8) & 0xff);
+-	printk(KERN_INFO " revision %i handled as %02xxx id: %08x%08x\n",
+-	       die_rev, omap_revision & 0xff, system_serial_low,
+-	       system_serial_high);
++		snprintf(socinfo + sz, SOCINFO_SZ - sz, "%x",
++						(omap_revision >> 8) & 0xff);
++	pr_info("%s revision %i handled as %02xxx id: %08x%08x\n",
++		socinfo, die_rev, omap_revision & 0xff, system_serial_low,
++		system_serial_high);
++
++	/* register function to show SoC info under /proc/socinfo */
++	register_socinfo_show(omap1_socinfo_show, kstrdup(socinfo, GFP_KERNEL));
+ }
+-
+diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
+index 37b8a1a..b67486b 100644
+--- a/arch/arm/mach-omap2/id.c
++++ b/arch/arm/mach-omap2/id.c
+@@ -18,6 +18,8 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
++#include <linux/socinfo.h>
++#include <linux/seq_file.h>
+ 
+ #include <asm/cputype.h>
+ 
+@@ -101,10 +103,12 @@ static struct omap_id omap_ids[] __initdata = {
+ 
+ static void __iomem *tap_base;
+ static u16 tap_prod_id;
++#define SOCINFO_SZ		128
++static char socinfo[SOCINFO_SZ];
+ 
+ void __init omap24xx_check_revision(void)
+ {
+-	int i, j;
++	int i, j, sz;
+ 	u32 idcode, prod_id;
+ 	u16 hawkeye;
+ 	u8  dev_type, rev;
+@@ -152,10 +156,11 @@ void __init omap24xx_check_revision(void)
+ 		j = i;
+ 	}
+ 
+-	pr_info("OMAP%04x", omap_rev() >> 16);
++	sz = snprintf(socinfo, SOCINFO_SZ, "OMAP%04x", omap_rev() >> 16);
+ 	if ((omap_rev() >> 8) & 0x0f)
+-		pr_info("ES%x", (omap_rev() >> 12) & 0xf);
+-	pr_info("\n");
++		snprintf(socinfo + sz, SOCINFO_SZ - sz, "ES%x",
++						(omap_rev() >> 12) & 0xf);
++	pr_info("%s\n", socinfo);
+ }
+ 
+ #define OMAP3_CHECK_FEATURE(status,feat)				\
+@@ -286,7 +291,9 @@ void __init omap4_check_revision(void)
+ 	if ((hawkeye == 0xb852) && (rev == 0x0)) {
+ 		omap_revision = OMAP4430_REV_ES1_0;
+ 		omap_chip.oc |= CHIP_IS_OMAP4430ES1;
+-		pr_info("OMAP%04x %s\n", omap_rev() >> 16, rev_name);
++		snprintf(socinfo, SOCINFO_SZ, "OMAP%04x %s\n",
++				omap_rev() >> 16, rev_name);
++		pr_info("%s\n", socinfo);
+ 		return;
+ 	}
+ 
+@@ -356,7 +363,8 @@ void __init omap3_cpuinfo(void)
+ 	}
+ 
+ 	/* Print verbose information */
+-	pr_info("%s ES%s (", cpu_name, cpu_rev);
++	snprintf(socinfo, SOCINFO_SZ, "%s ES%s", cpu_name, cpu_rev);
++	pr_info("%s (", socinfo);
+ 
+ 	OMAP3_SHOW_FEATURE(l2cache);
+ 	OMAP3_SHOW_FEATURE(iva);
+@@ -368,6 +376,15 @@ void __init omap3_cpuinfo(void)
+ 	printk(")\n");
+ }
+ 
++static int omap_socinfo_show(struct seq_file *m, void *v)
++{
++	char *socinfop = v;
++
++	seq_printf(m, "SoC\t: %s\n", socinfop);
++
++	return 0;
++}
++
+ /*
+  * Try to detect the exact revision of the omap we're running on
+  */
+@@ -391,6 +408,9 @@ void __init omap2_check_revision(void)
+ 		pr_err("OMAP revision unknown, please fix!\n");
+ 	}
+ 
++	/* also register call back to report SoC data under /proc/socinfo */
++	register_socinfo_show(omap_socinfo_show, socinfo);
++
+ 	/*
+ 	 * OK, now we know the exact revision. Initialize omap_chip bits
+ 	 * for powerdowmain and clockdomain code.
 -- 
-oskar schirmer, emlix gmbh, http://www.emlix.com
-fon +49 551 30664-0, fax -11, bahnhofsallee 1b, 37081 göttingen, germany
-sitz der gesellschaft: göttingen, amtsgericht göttingen hr b 3160
-geschäftsführer: dr. uwe kracke, ust-idnr.: de 205 198 055
+1.7.0.4.361.g8b5fe.dirty
 
-emlix - your embedded linux partner
