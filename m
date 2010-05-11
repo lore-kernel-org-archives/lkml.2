@@ -1,124 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab0EKTmz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 15:42:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62214 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752676Ab0EKTmw convert rfc822-to-8bit (ORCPT
+	id S1755752Ab0EKTo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 15:44:29 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:39629 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689Ab0EKTo1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 15:42:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,209,1272870000"; 
-   d="scan'208";a="517041073"
-From: "Pan, Jacob jun" <jacob.jun.pan@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-       Jacob Pan <jacob.jun.pan@linux.intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       "Du, Alek" <alek.du@intel.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       "Tang, Feng" <feng.tang@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 11 May 2010 12:42:51 -0700
-Subject: RE: [PATCH 3/8] x86/apic: allow use of lapic timer early
- calibration result
-Thread-Topic: [PATCH 3/8] x86/apic: allow use of lapic timer early
- calibration result
-Thread-Index: AcrxEGPaZ+K/RjRJTL27ELvCfu02RQALUVag
-Message-ID: <43F901BD926A4E43B106BF17856F0755A74B2827@orsmsx508.amr.corp.intel.com>
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1273254108-3234-4-git-send-email-jacob.jun.pan@linux.intel.com>
- <alpine.LFD.2.00.1005111514471.3401@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1005111514471.3401@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 May 2010 15:44:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=sFn7cVMv4jAUZ3Vmi/vLw39IRuWUIQzJJHAs8WtCN/cx8HI16qqJMxKqEsczgaLyQ4
+         oA3K0APYZ3qhCUGFcKlEI2UUvgeh33JUmxr/5hVKv4eyj71icM67D8IGH+xTYBlUGaRC
+         D9jL3TDu41//5qjviafm1+Uvd6ty4yQXspUog=
 MIME-Version: 1.0
+In-Reply-To: <AANLkTimglAyS94q0Y3DEx9RROPxus-7l3OfF2_b-zAR3@mail.gmail.com>
+References: <0100511104818.8382a7de.akpm@linux-foundation.org>
+	 <1273602134-6359-1-git-send-email-chris@chris-wilson.co.uk>
+	 <AANLkTimglAyS94q0Y3DEx9RROPxus-7l3OfF2_b-zAR3@mail.gmail.com>
+Date: Wed, 12 May 2010 01:08:23 +0530
+Message-ID: <AANLkTinmXAAq1HQTb_k3A-bl4uCz1ERhOIHNoCjqzEB4@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915: Record error batch buffers using iomem
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, dri-devel@lists.freedesktop.org,
+       Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the review.
+Hello Chris and Andrew,
 
-> >
-> > lapic timer calibration can be combined with tsc in platform specific
-> > calibration functions. if such calibration result is obtained early,
-> > we can skip the redundent calibration loops.
-> 
-> I'd rather move lapic calibration into TSC calibration in general as
-> we do the same thing twice for no good reason.
-> 
-> That needs some code restructuring, but that's worth it.
-> 
-I am trying to avoid the risks of completely remove the current lapic 
-calibration code since there are so many platforms with different timer
-options. And I don't understand things like why pm timer is preferred.
-Why not use the rating in clocksource?
+I did further testing and noticed that this patch fixes the boot
+errors and warnings and I get the XWindows.
 
-> > Signed-off-by: Jacob Pan <jacob.jun.pan@intel.com>
-> > Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> 
-> Hehe. So you handed the patch to yourself :)
-> 
-> > ---
-> >  arch/x86/kernel/apic/apic.c |   21 ++++++++++++++++++++-
-> >  1 files changed, 20 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/arch/x86/kernel/apic/apic.c
-> b/arch/x86/kernel/apic/apic.c
-> > index e5a4a1e..8ef56ac 100644
-> > --- a/arch/x86/kernel/apic/apic.c
-> > +++ b/arch/x86/kernel/apic/apic.c
-> > @@ -175,7 +175,7 @@ static struct resource lapic_resource = {
-> >  	.flags = IORESOURCE_MEM | IORESOURCE_BUSY,
-> >  };
-> >
-> > -static unsigned int calibration_result;
-> > +unsigned int calibration_result;
-> 
-> Aside of my general objection it'd be not a good idea to make this
-> global w/o renaming it to something sensible like
-> lapic_timer_frequency.
-> 
-perhaps, the calibration data can directly be assigned to lapic timer
-clock_event_device.mult? There is no need for the device specific result
-scale (e.g. bus clocks per tick)
+But XWindows freezes after some time.
 
-> >  static int lapic_next_event(unsigned long delta,
-> >  			    struct clock_event_device *evt);
-> > @@ -597,6 +597,25 @@ static int __init calibrate_APIC_clock(void)
-> >  	long delta, deltatsc;
-> >  	int pm_referenced = 0;
-> >
-> > +	/**
-> > +	 * check if lapic timer has already been calibrated by platform
-> > +	 * specific routine, such as tsc calibration code. if so, we just
-> fill
-> > +	 * in the clockevent structure and return.
-> > +	 */
-> > +	if (calibration_result) {
-> > +		apic_printk(APIC_VERBOSE, "lapic timer already calibrated
-> %d\n",
-> > +				calibration_result);
-> > +		lapic_clockevent.mult =
-> div_sc(calibration_result/APIC_DIVISOR,
-> > +					TICK_NSEC, lapic_clockevent.shift);
-> > +		lapic_clockevent.max_delta_ns =
-> > +			clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
-> > +		lapic_clockevent.min_delta_ns =
-> > +			clockevent_delta2ns(0xF, &lapic_clockevent);
-> > +		lapic_clockevent.features &= ~CLOCK_EVT_FEAT_DUMMY;
-> > +		return 0;
-> 
->   Grr. I hate duplicated code.
-> 
-> > +	}
-> > +
-> >  	local_irq_disable();
-> >
-> >  	/* Replace the global interrupt handler */
-> > --
-> > 1.6.3.3
-> >
+Thanks,
+--
+Jaswinder Singh.
+
+On Wed, May 12, 2010 at 12:52 AM, Jaswinder Singh Rajput
+<jaswinderlinux@gmail.com> wrote:
+> Hello Chris and Andrew,
+>
+> On Tue, May 11, 2010 at 11:52 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> Directly read the GTT mapping for the contents of the batch buffers
+>> rather than relying on possibly stale CPU caches. Also for completeness
+>> scan the flushing/inactive lists for the current buffers - we are
+>> collecting error state after all.
+>>
+>> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+>
+> Yes, I have tested this patch.
+>
+> I booted 3 times, and this patch fixes the DRM as well as softirq
+> warnings and I am getting Xwindows with this patch.
+>
+> I am still doing more testing.
+>
+> Thanks,
+> --
+> Jaswinder Singh.
+>> ---
+>>  drivers/gpu/drm/i915/i915_irq.c |   64 ++++++++++++++++++++++++++++++++++----
+>>  1 files changed, 57 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+>> index 87113da..14301a4 100644
+>> --- a/drivers/gpu/drm/i915/i915_irq.c
+>> +++ b/drivers/gpu/drm/i915/i915_irq.c
+>> @@ -441,9 +441,11 @@ static struct drm_i915_error_object *
+>>  i915_error_object_create(struct drm_device *dev,
+>>                         struct drm_gem_object *src)
+>>  {
+>> +       drm_i915_private_t *dev_priv = dev->dev_private;
+>>        struct drm_i915_error_object *dst;
+>>        struct drm_i915_gem_object *src_priv;
+>>        int page, page_count;
+>> +       u32 reloc_offset;
+>>
+>>        if (src == NULL)
+>>                return NULL;
+>> @@ -458,14 +460,23 @@ i915_error_object_create(struct drm_device *dev,
+>>        if (dst == NULL)
+>>                return NULL;
+>>
+>> +       reloc_offset = src_priv->gtt_offset;
+>>        for (page = 0; page < page_count; page++) {
+>> -               void *s, *d = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+>> +               void __iomem *s;
+>> +               void *d;
+>> +
+>> +               d = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+>>                if (d == NULL)
+>>                        goto unwind;
+>> -               s = kmap_atomic(src_priv->pages[page], KM_USER0);
+>> -               memcpy(d, s, PAGE_SIZE);
+>> -               kunmap_atomic(s, KM_USER0);
+>> +
+>> +               s = io_mapping_map_atomic_wc(dev_priv->mm.gtt_mapping,
+>> +                                            reloc_offset);
+>> +               memcpy_fromio(d, s, PAGE_SIZE);
+>> +               io_mapping_unmap_atomic(s);
+>> +
+>>                dst->pages[page] = d;
+>> +
+>> +               reloc_offset += PAGE_SIZE;
+>>        }
+>>        dst->page_count = page_count;
+>>        dst->gtt_offset = src_priv->gtt_offset;
+>> @@ -621,18 +632,57 @@ static void i915_capture_error_state(struct drm_device *dev)
+>>
+>>                if (batchbuffer[1] == NULL &&
+>>                    error->acthd >= obj_priv->gtt_offset &&
+>> -                   error->acthd < obj_priv->gtt_offset + obj->size &&
+>> -                   batchbuffer[0] != obj)
+>> +                   error->acthd < obj_priv->gtt_offset + obj->size)
+>>                        batchbuffer[1] = obj;
+>>
+>>                count++;
+>>        }
+>> +       /* Scan the other lists for completeness for those bizarre errors. */
+>> +       if (batchbuffer[0] == NULL || batchbuffer[1] == NULL) {
+>> +               list_for_each_entry(obj_priv, &dev_priv->mm.flushing_list, list) {
+>> +                       struct drm_gem_object *obj = obj_priv->obj;
+>> +
+>> +                       if (batchbuffer[0] == NULL &&
+>> +                           bbaddr >= obj_priv->gtt_offset &&
+>> +                           bbaddr < obj_priv->gtt_offset + obj->size)
+>> +                               batchbuffer[0] = obj;
+>> +
+>> +                       if (batchbuffer[1] == NULL &&
+>> +                           error->acthd >= obj_priv->gtt_offset &&
+>> +                           error->acthd < obj_priv->gtt_offset + obj->size)
+>> +                               batchbuffer[1] = obj;
+>> +
+>> +                       if (batchbuffer[0] && batchbuffer[1])
+>> +                               break;
+>> +               }
+>> +       }
+>> +       if (batchbuffer[0] == NULL || batchbuffer[1] == NULL) {
+>> +               list_for_each_entry(obj_priv, &dev_priv->mm.inactive_list, list) {
+>> +                       struct drm_gem_object *obj = obj_priv->obj;
+>> +
+>> +                       if (batchbuffer[0] == NULL &&
+>> +                           bbaddr >= obj_priv->gtt_offset &&
+>> +                           bbaddr < obj_priv->gtt_offset + obj->size)
+>> +                               batchbuffer[0] = obj;
+>> +
+>> +                       if (batchbuffer[1] == NULL &&
+>> +                           error->acthd >= obj_priv->gtt_offset &&
+>> +                           error->acthd < obj_priv->gtt_offset + obj->size)
+>> +                               batchbuffer[1] = obj;
+>> +
+>> +                       if (batchbuffer[0] && batchbuffer[1])
+>> +                               break;
+>> +               }
+>> +       }
+>>
+>>        /* We need to copy these to an anonymous buffer as the simplest
+>>         * method to avoid being overwritten by userpace.
+>>         */
+>>        error->batchbuffer[0] = i915_error_object_create(dev, batchbuffer[0]);
+>> -       error->batchbuffer[1] = i915_error_object_create(dev, batchbuffer[1]);
+>> +       if (batchbuffer[1] != batchbuffer[0])
+>> +               error->batchbuffer[1] = i915_error_object_create(dev, batchbuffer[1]);
+>> +       else
+>> +               error->batchbuffer[1] = NULL;
+>>
+>>        /* Record the ringbuffer */
+>>        error->ringbuffer = i915_error_object_create(dev, dev_priv->ring.ring_obj);
+>> --
+>> 1.7.1
+>>
+>>
+>
