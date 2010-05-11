@@ -1,109 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab0EKSzl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 14:55:41 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7130 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757279Ab0EKSzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 14:55:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,209,1272870000"; 
-   d="scan'208";a="566200838"
-From: Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH 1/2] ioat: convert to circ_buf
-To: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-       netdev@vger.kernel.org
-Cc: Dan Williams <dan.j.williams@intel.com>
-Date: Tue, 11 May 2010 11:51:36 -0700
-Message-ID: <20100511185135.6139.67069.stgit@localhost.localdomain>
-In-Reply-To: <20100511184949.6139.96826.stgit@localhost.localdomain>
-References: <20100511184949.6139.96826.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1757352Ab0EKSz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 14:55:57 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:33915 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757282Ab0EKSzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 14:55:39 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: linux-next: April 27 (iscsi_ibft)
+Date: Tue, 11 May 2010 13:58:48 -0400
+User-Agent: KMail/1.9.10
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>,
+       "Linux-Kernel" <linux-kernel@vger.kernel.org>,
+       Peter Jones <pjones@redhat.com>, linux-next@vger.kernel.org
+References: <80edf231-ef31-4f21-ab1b-1a21fda35809@default> <20100427230121.GA31743@andromeda.dapyr.net> <4BD85393.8020400@oracle.com>
+In-Reply-To: <4BD85393.8020400@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201005111358.49290.konrad@darnok.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the common power-of-2 circular buffer macros.
+> > It is all b/c we now use the 'struct acpi_table_ibft *ibft_addr' which
+> > is gone when !CONFIG_ACPI.
+> >
+> > Peter, if we did in an #ifdef !CONFIG_ACPI in iscsi_ibft.h and included
+> > a copy of the old ibft_struct that should work.
+> >
+> > Or we make the code dependent on CONFIG_ACPI (in the Kconfig
+> > file).
+> >
+> > Peter, Randy: Which option do you think makes more sense?
+>
+> I think that you and Peter know more about that than I do.
+> I'd go for the Kconfig dependency.
 
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
-
- drivers/dma/ioat/dma_v2.c |    2 +-
- drivers/dma/ioat/dma_v2.h |   18 +++++++-----------
- 2 files changed, 8 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
-index b5ae56c..b6699a3 100644
---- a/drivers/dma/ioat/dma_v2.c
-+++ b/drivers/dma/ioat/dma_v2.c
-@@ -553,7 +553,7 @@ bool reshape_ring(struct ioat2_dma_chan *ioat, int order)
- 	 */
- 	struct ioat_chan_common *chan = &ioat->base;
- 	struct dma_chan *c = &chan->common;
--	const u16 curr_size = ioat2_ring_mask(ioat) + 1;
-+	const u16 curr_size = ioat2_ring_size(ioat);
- 	const u16 active = ioat2_ring_active(ioat);
- 	const u16 new_size = 1 << order;
- 	struct ioat_ring_ent **ring;
-diff --git a/drivers/dma/ioat/dma_v2.h b/drivers/dma/ioat/dma_v2.h
-index ef2871f..d7b64f1 100644
---- a/drivers/dma/ioat/dma_v2.h
-+++ b/drivers/dma/ioat/dma_v2.h
-@@ -22,6 +22,7 @@
- #define IOATDMA_V2_H
- 
- #include <linux/dmaengine.h>
-+#include <linux/circ_buf.h>
- #include "dma.h"
- #include "hw.h"
- 
-@@ -71,31 +72,26 @@ static inline struct ioat2_dma_chan *to_ioat2_chan(struct dma_chan *c)
- 	return container_of(chan, struct ioat2_dma_chan, base);
- }
- 
--static inline u16 ioat2_ring_mask(struct ioat2_dma_chan *ioat)
-+static inline u16 ioat2_ring_size(struct ioat2_dma_chan *ioat)
- {
--	return (1 << ioat->alloc_order) - 1;
-+	return 1 << ioat->alloc_order;
- }
- 
- /* count of descriptors in flight with the engine */
- static inline u16 ioat2_ring_active(struct ioat2_dma_chan *ioat)
- {
--	return (ioat->head - ioat->tail) & ioat2_ring_mask(ioat);
-+	return CIRC_CNT(ioat->head, ioat->tail, ioat2_ring_size(ioat));
- }
- 
- /* count of descriptors pending submission to hardware */
- static inline u16 ioat2_ring_pending(struct ioat2_dma_chan *ioat)
- {
--	return (ioat->head - ioat->issued) & ioat2_ring_mask(ioat);
-+	return CIRC_CNT(ioat->head, ioat->issued, ioat2_ring_size(ioat));
- }
- 
- static inline u16 ioat2_ring_space(struct ioat2_dma_chan *ioat)
- {
--	u16 num_descs = ioat2_ring_mask(ioat) + 1;
--	u16 active = ioat2_ring_active(ioat);
--
--	BUG_ON(active > num_descs);
--
--	return num_descs - active;
-+	return ioat2_ring_size(ioat) - ioat2_ring_active(ioat);
- }
- 
- /* assumes caller already checked space */
-@@ -151,7 +147,7 @@ struct ioat_ring_ent {
- static inline struct ioat_ring_ent *
- ioat2_get_ring_ent(struct ioat2_dma_chan *ioat, u16 idx)
- {
--	return ioat->ring[idx & ioat2_ring_mask(ioat)];
-+	return ioat->ring[idx & (ioat2_ring_size(ioat) - 1)];
- }
- 
- static inline void ioat2_set_chainaddr(struct ioat2_dma_chan *ioat, u64 addr)
-
+Found a way that makes this go away. This is by including #include 
+<linux/iscsi_ibft.h> in the module and it fixed the problem.
