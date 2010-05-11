@@ -1,109 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933296Ab0EKHBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 03:01:40 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44881
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933062Ab0EKHBf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 03:01:35 -0400
-Date: Tue, 11 May 2010 00:01:43 -0700 (PDT)
-Message-Id: <20100511.000143.221595639.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933317Ab0EKHCW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 03:02:22 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:43406 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933062Ab0EKHCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 03:02:20 -0400
+Date: Tue, 11 May 2010 09:02:20 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH] paride: fix menu indentation
+Message-ID: <20100511070219.GL27497@kernel.dk>
+References: <20100507144756.fbebdebe.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100507144756.fbebdebe.randy.dunlap@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 07 2010, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Make the PARIDE menu be displayed correctly, with proper/expected
+> indentation, by moving the GDROM kconfig symbol, which was
+> splitting the PARIDE kconfig symbol from its dependent symbols.
 
-1) Fix SCTP race between connect() and ICMP unreachable, from Vlad Yasevich.
+Thanks Randy, applied to for-2.6.35.
 
-2) Micrel phy driver OOPS fix, based upon a report by Ingo Molnar.
+-- 
+Jens Axboe
 
-3) Firmware loading warn_on fix from Christian Lamparter.
-
-4) UDP logs garbage addresses on short packets.  Fix from Bjørn Mork.
-
-5) IPV6_RECVERR incorrectly handles locally generated errors, fix from
-   Brian Haley.
-
-6) IPV4 multicast purges routes too quickly due to mishandling of timers.
-   Fix from Andreas Meissner.
-
-7) Passive scans busted in iwlwifi, fix from Johannes Berg.
-
-8) De-auth request handling fix in mac80211 from Reinette Chatre.
-
-9) gianfar needs to purge cached recycled SKBs on MTU change, fix from
-   Sebastian Andrzej Siewior
-
-Please pull, thanks a lot!
-
-The following changes since commit 8777c793d6a24c7f3adf52b1b1086e9706de4589:
-  Linus Torvalds (1):
-        Merge branch 'for-linus' of git://git.kernel.org/.../tj/wq
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Andreas Meissner (1):
-      IPv4: unresolved multicast route cleanup
-
-Bjørn Mork (1):
-      ipv4: udp: fix short packet and bad checksum logging
-
-Brian Haley (1):
-      IPv6: fix IPV6_RECVERR handling of locally-generated errors
-
-Christian Lamparter (1):
-      ar9170: wait for asynchronous firmware loading
-
-David S. Miller (3):
-      phy: Fix initialization in micrel driver.
-      net: Fix FDDI and TR config checks in ipv4 arp and LLC.
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
-
-Eric Dumazet (1):
-      veth: Dont kfree_skb() after dev_forward_skb()
-
-Johannes Berg (1):
-      iwlwifi: work around passive scan issue
-
-Reinette Chatre (1):
-      mac80211: remove association work when processing deauth request
-
-Sebastian Andrzej Siewior (1):
-      net/gianfar: drop recycled skbs on MTU change
-
-Vlad Yasevich (1):
-      sctp: Fix a race between ICMP protocol unreachable and connect()
-
- drivers/net/gianfar.c                       |    2 +-
- drivers/net/phy/micrel.c                    |    1 +
- drivers/net/veth.c                          |    1 -
- drivers/net/wireless/ath/ar9170/usb.c       |   11 ++++++++
- drivers/net/wireless/ath/ar9170/usb.h       |    1 +
- drivers/net/wireless/iwlwifi/iwl-commands.h |    4 ++-
- drivers/net/wireless/iwlwifi/iwl-scan.c     |   23 ++++++++++++++----
- drivers/net/wireless/iwlwifi/iwl3945-base.c |    3 +-
- include/net/sctp/sm.h                       |    1 +
- include/net/sctp/structs.h                  |    3 ++
- net/core/dev.c                              |   11 ++++----
- net/ipv4/arp.c                              |    6 ++--
- net/ipv4/ipmr.c                             |    3 +-
- net/ipv4/udp.c                              |    6 ++--
- net/ipv6/datagram.c                         |    8 ++++-
- net/llc/llc_sap.c                           |    2 +-
- net/mac80211/mlme.c                         |    3 +-
- net/sctp/input.c                            |   22 ++++++++++++++---
- net/sctp/sm_sideeffect.c                    |   35 +++++++++++++++++++++++++++
- net/sctp/transport.c                        |    2 +
- 20 files changed, 118 insertions(+), 30 deletions(-)
