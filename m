@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab0EKPBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 11:01:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60105 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab0EKPBQ (ORCPT
+	id S1755743Ab0EKPE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:04:58 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49640 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753775Ab0EKPE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 11:01:16 -0400
-Date: Tue, 11 May 2010 12:00:52 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       mingo@elte.hu, Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>, perfmon2-devel@lists.sf.net
-Subject: Re: [RFC] perf: perf record sets inherit by default
-Message-ID: <20100511150052.GE19192@ghostprotocols.net>
-References: <AANLkTinsEANHEicdjOaE6jwUa0bVqH5PBwuGQ3_L59hT@mail.gmail.com>
+	Tue, 11 May 2010 11:04:56 -0400
+Date: Tue, 11 May 2010 11:04:55 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+cc: konrad.wilk@oracle.com, <alsa-devel@alsa-project.org>,
+       <linux-usb@vger.kernel.org>, <tiwai@suse.de>, <gregkh@suse.de>,
+       <clemens@ladisch.de>, <linux-kernel@vger.kernel.org>,
+       <chrisw@sous-sol.org>, <iommu@lists.linux-foundation.org>,
+       <andi@firstfloor.org>, <daniel@caiaq.de>, <pedrib@gmail.com>,
+       <akpm@linux-foundation.org>, <dwmw2@infradead.org>
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+In-Reply-To: <20100511233852B.fujita.tomonori@lab.ntt.co.jp>
+Message-ID: <Pine.LNX.4.44L0.1005111057540.1834-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinsEANHEicdjOaE6jwUa0bVqH5PBwuGQ3_L59hT@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, May 11, 2010 at 04:04:17PM +0200, Stephane Eranian escreveu:
-> I am confused by the inheritance cmd line option of perf record:
+On Tue, 11 May 2010, FUJITA Tomonori wrote:
 
->  usage: perf record [<options>] [<command>]
->     or: perf record [<options>] -- <command> [<options>]
->     -p, --pid <n>         record events on existing process id
->     -t, --tid <n>         record events on existing thread id
->     -a, --all-cpus        system-wide collection from all CPUs
->     -C, --profile_cpu <n> CPU to profile on
->     -i, --inherit         child tasks inherit counters
- 
-> This leads to believe that by default inheritance in children is off.
- 
-> However, builtin-record.c says:
-> static bool                     inherit    =   true;
- 
-> If that's the case, what's the point of the -i option?
+> On Tue, 11 May 2010 10:24:40 -0400
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> 
+> > > > > Either the data isn't getting written to the buffer correctly or else
+> > > > > the buffer isn't getting sent to the device correctly.  Can anybody
+> > > > > suggest a means of determining which is the case?
+> > > > 
+> > > > I can't say anything about this log that including only DMA addresses.
+> > > > I'm not familiar with how the USB core does DMA stuff. And the USB
+> > > > stack design that the USB core does DMA stuff (allocating, mappings,
+> > > > etc) makes debugging DMA issues really difficult.
+> > > 
+> > > The DMA stuff is simple enough in this case.  The urb->transfer_buffer
+> > > address is passed to dma_map_single(), and the DMA address it returns
+> > > is stored in urb->transfer_dma.  Those are the two values printed out
+> > > by the debugging patch.
+> > 
+> > Is that address (urb->transfer_dma) the same as 'virt_to_phys(urb->transfer_buffer)'
+> > (if not, then SWIOTLB is being utilized) and is the dma_sync_* done on the
+> > urb->transfer_dma (to properly sync the data from the SWIOTLB to the
+> > transfer_buffer) before you start using the urb->transfer_buffer?
+> 
+> Or calling dma_unmap_single.
+> 
+> Can you tell me all the exact process of DMA that the usb core and the
+> driver do?
 
-Humm, since for -C and -a using -i doesn't make sense, I guess it should
-be off by default and only be auto-activated if we don't specify any
-option, i.e. when using it like:
+1. The audio driver stores data in urb->transfer_buffer.
 
-perf record ./hackbench
+2. The audio driver calls usb_submit_urb(urb).
 
-What do you think?
- 
-> Another side effect of inheritance is that in per-thread mode, perf
-> creates as many "sessions" as you have CPUs. So on a 16-way processor,
-> sampling on cycles, perf creates 16 events and 16 x 2-page sampling
-> buffers. That's a lot of resources consumed if I am just interested in
-> monitoring a single-threaded workload.
- 
-> Am I missing something here?
+3. The USB core does
+		urb->transfer_dma = dma_map_single(controller, 
+			urb->transfer_buffer,
+			urb->transfer_buffer_length,
+			DMA_TO_DEVICE);
 
-I don't think so, but maybe I'm missing too :-)
+4. The host controller driver tells the hardware to carry out the data 
+   transfer.
 
-- Arnaldo
+5. When the hardware says the transfer is finished, the USB core does
+		dma_unmap_single(controller,
+			urb->transfer_dma,
+			urb->transfer_buffer_length,
+			DMA_TO_DEVICE);
+
+6. The audio driver's completion handler is called:
+		(urb->complete)(urb);
+
+Alan Stern
+
