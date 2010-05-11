@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101Ab0EKBwY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 21:52:24 -0400
-Received: from mail-gx0-f227.google.com ([209.85.217.227]:48655 "EHLO
-	mail-gx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754055Ab0EKBwX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 21:52:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ob6zkTDoY+Ag39MFeeQIm8M7qW26/V7FA3WE6i6P84hABLnds9cNsRwVD55Im2fDb+
-         4ZTVlO66TGAU5HrubbC9fq1Rkn+Jhh5kw/Ih0IL5zZRFKEvXVk95uQNkzazd+7PlFW8w
-         SqaKdsOoOJYANgaaB++HCcqWGu/0kN80qf4JQ=
-MIME-Version: 1.0
-In-Reply-To: <1273540344.3843.101.camel@localhost.localdomain>
-References: <AANLkTin6D2GP0yJJbPYGH1AcAM9-g219rAxSyW_ZlrXV@mail.gmail.com>
-	 <AANLkTikjgoBQWqvNxncMUFqWOEXtq4ePvGkvF-m0sGUE@mail.gmail.com>
-	 <AANLkTimnlZYonxKzfGHZTV8vwaDptOPHEPBjNhwnV55Y@mail.gmail.com>
-	 <1273540344.3843.101.camel@localhost.localdomain>
-Date: Mon, 10 May 2010 21:52:21 -0400
-Message-ID: <AANLkTilg2cn3lAIOruz6oZE7V-9uAFDORlbvTX3qxmwF@mail.gmail.com>
-Subject: Re: PROBLEM: tickless scheduling
-From: Donald Allen <donaldcallen@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758113Ab0EKB5l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 21:57:41 -0400
+Received: from sh.osrg.net ([192.16.179.4]:46183 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756794Ab0EKB5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 21:57:38 -0400
+Date: Tue, 11 May 2010 10:56:34 +0900
+To: konrad.wilk@oracle.com
+Cc: fujita.tomonori@lab.ntt.co.jp, chrisw@sous-sol.org, jeremy@goop.org,
+       albert_herranz@yahoo.es, linux-kernel@vger.kernel.org,
+       Ian.Campbell@eu.citrix.com, linux@eikelenboom.it,
+       iommu@lists.linux-foundation.org, dwmw2@infradead.org,
+       alex.williamson@hp.com
+Subject: Re: [PATCH 3/6] swiotlb: Make exportable bookkeeping functions and
+	variables have same prefix.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100510193344.GB5906@phenom.dumpdata.com>
+References: <1270672170-31833-4-git-send-email-konrad.wilk@oracle.com>
+	<20100509224021S.fujita.tomonori@lab.ntt.co.jp>
+	<20100510193344.GB5906@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100511105619Z.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 11 May 2010 10:56:35 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 9:12 PM, john stultz <johnstul@us.ibm.com> wrote:
-> On Mon, 2010-05-10 at 20:59 -0400, Donald Allen wrote:
->> On Mon, May 10, 2010 at 8:54 PM, john stultz <johnstul@us.ibm.com> wrote:
->> > On Mon, May 10, 2010 at 5:18 PM, Donald Allen <donaldcallen@gmail.com> wrote:
->> >> 1. Network file transfers and fscks stop on Toshiba netbook unless
->> >> system receives external events
->> >
->> > Can you provide /proc/timer_list output?
->>
->> Attached, but again, this is from the system running with tickless disabled.
->
-> Is it possible to boot with the kernel showing the issue and provide the
-> details?
+On Mon, 10 May 2010 15:33:44 -0400
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-It's a minor pain, but I'll do it.
+> On Sun, May 09, 2010 at 10:41:25PM +0900, FUJITA Tomonori wrote:
+> > On Wed,  7 Apr 2010 16:29:27 -0400
+> > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > 
+> > > We prefix pertient book keeping functions and variables with the
+> > > 'swiotlb_tbl' prefix.
+> > > 
+> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > ---
+> > >  lib/swiotlb.c |  149 +++++++++++++++++++++++++++++---------------------------
+> > >  1 files changed, 77 insertions(+), 72 deletions(-)
+> > 
+> > Can we create the swiotlb initialization function instead of lots of
+> > renaming and exporting iotlb values?
+> 
+> Yes, this would definitly do it! Let me rebase my tree on top of your
+> patches.
+> 
+> Thought I was thinking to modify your patches so they have the _tbl, instead
+> of _tlb in their name?
 
->
->
->> > I assume booting with nohz=off from grub resolves the issue?
->>
->> Didn't know about the boot-time option (thanks for pointing it out),
->> but I wanted to build a custom kernel anyway, so i did so and disabled
->> tickless.
->
-> Ok. It may still be of value to know booting with nohz=off does avoid
-> the problem.
-
-Ok. When I've got the original kernel installed and bootable, I'll try
-it. I won't be able to get to this for a day or so.
-
-/Don
-
->
->
-> thanks
-> -john
->
->
+Yeah, please replace tlb with tbl.
