@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab0EKOr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 10:47:59 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:38591 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753924Ab0EKOr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 10:47:57 -0400
-Subject: Re: [078/117] xfs: add a shrinker to background inode reclaim
-From: Alex Elder <aelder@sgi.com>
-Reply-To: aelder@sgi.com
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, xfs@oss.sgi.com,
-       Dave Chinner <dchinner@redhat.com>
-In-Reply-To: <20100510223324.424796921@kvm.kroah.org>
-References: <20100510223324.424796921@kvm.kroah.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 May 2010 09:46:56 -0500
-Message-ID: <1273589216.2674.14.camel@doink>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 May 2010 14:46:56.0752 (UTC) FILETIME=[CDC96F00:01CAF118]
+	id S1756002Ab0EKOzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 10:55:35 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:48113 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab0EKOzd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 10:55:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=UBYS2Eiuff8LFtUP8aAdXakjebxqF3MjslRkmxCv1FHvq4mPjwDGx8+ITMnG6dCBj6
+         dRandQFzOzYRSc1CLT4iKcrkkLkQPsVAwzErjfwlfyiuFZiMcRE3ubflobXO5hB3BHek
+         vOOOY1+5fd3pEo9Rc7mPMLF3o40Adzn3NLnPw=
+MIME-Version: 1.0
+Date: Tue, 11 May 2010 20:25:31 +0530
+Message-ID: <AANLkTilF304TbgACKtvc_FA01uxHrdRBS2Q-o6Tm-n8Q@mail.gmail.com>
+Subject: ACPI Errors on Acer Aspire One
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Linux ACPI <linux-acpi@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-10 at 15:32 -0700, Greg KH wrote:
-> 2.6.33-stable review patch.  If anyone has any objections, please let us know.
+Hello,
 
-Acked-by: Alex Elder <aelder@sgi.com>
+With latest git kernel, I am getting following ACPI errors :
 
-> ------------------
-> 
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> commit 9bf729c0af67897ea8498ce17c29b0683f7f2028 upstream
-> 
-> On low memory boxes or those with highmem, kernel can OOM before the
-> background reclaims inodes via xfssyncd. Add a shrinker to run inode
-> reclaim so that it inode reclaim is expedited when memory is low.
-> 
-...
+[    0.289038] ACPI Error (dsfield-0143): [CAPB] Namespace lookup
+failure, AE_ALREADY_EXISTS
+[    0.289399] ACPI Error (psparse-0537): Method parse/execution
+failed [\_SB_.PCI0._OSC] (Node f70477e8), AE_ALREADY_EXISTS
+[    0.299684] ACPI Error (dsfield-0143): [CAPB] Namespace lookup
+failure, AE_ALREADY_EXISTS
+[    0.300007] ACPI Error (psparse-0537): Method parse/execution
+failed [\_SB_.PCI0._OSC] (Node f70477e8), AE_ALREADY_EXISTS
 
+
+dmesg : http://userweb.kernel.org/~jaswinder/acer_netbook/dmesg_2634-rc7.txt
+.config : http://userweb.kernel.org/~jaswinder/acer_netbook/config_2634-rc7.txt
+
+How can I fix these errors.
+
+Thanks,
+--
+Jaswinder Singh.
