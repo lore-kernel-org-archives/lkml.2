@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab0EKBNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 21:13:31 -0400
-Received: from sh.osrg.net ([192.16.179.4]:44983 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753880Ab0EKBN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 21:13:28 -0400
-Date: Tue, 11 May 2010 10:13:23 +0900
-To: akpm@linux-foundation.org
+	id S932082Ab0EKBZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 21:25:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43060 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844Ab0EKBZK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 21:25:10 -0400
+Date: Mon, 10 May 2010 18:27:46 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH -mm] remove deprecated dma_sync_single and dma_sync_sg API
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [PATCH 2/2] cpuidle: Add a repeating pattern detector to the
+ menu governor
+Message-ID: <20100510182746.7e923812@infradead.org>
+In-Reply-To: <20100510143850.fde16046.akpm@linux-foundation.org>
+References: <20100509160242.2e351e6a@infradead.org>
+	<20100509160444.260ca9c9@infradead.org>
+	<20100510143850.fde16046.akpm@linux-foundation.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100511101308R.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 11 May 2010 10:13:24 +0900 (JST)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 2.6.5, it had been commented, 'for backwards compatibility,
-removed in 2.7.x'. Since 2.6.31, it have been marked as __deprecated.
+On Mon, 10 May 2010 14:38:50 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-I think that we can remove the API safely now.
+> > +	if (avg && stddev < STDDEV_THRESH)
+> > +		data->predicted_us = avg;
+> > +}
+> 
+> You got lucky there, because INTERVALS is a power of two.  If someone
+> changes INTERVALS to 7, this code will ask for __udivdi3 and won't
+> link on i364.
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- include/linux/dma-mapping.h |   15 ---------------
- 1 files changed, 0 insertions(+), 15 deletions(-)
+yeah you'd think it almost isn't an accident ;-)
 
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index 2ea1494..89b7e1a 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -95,21 +95,6 @@ static inline int is_device_dma_capable(struct device *dev)
- #include <asm-generic/dma-mapping-broken.h>
- #endif
- 
--/* for backwards compatibility, removed soon */
--static inline void __deprecated dma_sync_single(struct device *dev,
--						dma_addr_t addr, size_t size,
--						enum dma_data_direction dir)
--{
--	dma_sync_single_for_cpu(dev, addr, size, dir);
--}
--
--static inline void __deprecated dma_sync_sg(struct device *dev,
--					    struct scatterlist *sg, int nelems,
--					    enum dma_data_direction dir)
--{
--	dma_sync_sg_for_cpu(dev, sg, nelems, dir);
--}
--
- static inline u64 dma_get_mask(struct device *dev)
- {
- 	if (dev && dev->dma_mask && *dev->dma_mask)
+
 -- 
-1.6.5
-
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
