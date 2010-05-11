@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab0EKAZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 20:25:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35656 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752383Ab0EKAZC (ORCPT
+	id S1754237Ab0EKA1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 20:27:40 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55115 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab0EKA1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 20:25:02 -0400
-Date: Mon, 10 May 2010 17:22:54 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: InKi Dae <daeinki@gmail.com>
-Cc: linux-fbdev-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-       kyungmin.park@samsung.com, Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH] s3c-fb: added patch series for s5pv210 and some
- features.
-Message-Id: <20100510172254.1f28f07c.akpm@linux-foundation.org>
-In-Reply-To: <m2g90b950fc1005070059k99d138efr4bfa7de44c58fdd0@mail.gmail.com>
-References: <m2g90b950fc1005070059k99d138efr4bfa7de44c58fdd0@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 10 May 2010 20:27:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Pk1+66GfjBidKuz4lNtwiuyJN+1rMP40u+H8xFlrPTC2EQ0KZ6q5VXgp9LUNco4vDe
+         NJMahr5o9eJFslCkpY7GKcNP7Znq7hi38xwgUjrw35uEx26+zn3zx7K6AmzoVxnmM9K4
+         AUgf5tCEJ26BO+gQm5Nz59UFFIbTYlYJGPIQA=
+Message-ID: <4BE8A477.9080703@gmail.com>
+Date: Mon, 10 May 2010 18:27:35 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Donald Allen <donaldcallen@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: tickless scheduling
+References: <AANLkTin6D2GP0yJJbPYGH1AcAM9-g219rAxSyW_ZlrXV@mail.gmail.com>
+In-Reply-To: <AANLkTin6D2GP0yJJbPYGH1AcAM9-g219rAxSyW_ZlrXV@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 May 2010 16:59:56 +0900 InKi Dae <daeinki@gmail.com> wrote:
+On 05/10/2010 06:18 PM, Donald Allen wrote:
+> 1. Network file transfers and fscks stop on Toshiba netbook unless
+> system receives external events
+> 2. I have a new Toshiba NB305 on which I installed the beta release of
+> Slackware 13.1, which provides a 2.6.33.3 kernel with the tickless
+> option enabled. With this machine on my ethernet, I attempted to rsync
+> my home directory to it, about 9 Gb, from a workstation that is my
+> primary system (running Slackware 13). The transfer proceeded normally
+> for awhile and then stopped, which I could see in the xterm on the
+> workstation. I went to the netbook to see what was going on there and
+> when I began typing, the transfer resumed. I ran 'top' on the netbook
+> and it would freeze after a few updates, coinciding with the file
+> transfer pausing again. Typing would get things moving. At another
+> point, I tested pm-suspend on the netbook. Suspending worked, but
+> awakening did not, so I had to power-cycle the machine. I use ext2 for
+> reasons which I won't attempt to justify here, so when the machine
+> came back up, it fsck'ed the root filesystem. Here again I saw things
+> grind to a halt -- the progress meter stopped and the there was no
+> disk activity. But if I moved my finger on the touchpad, things would
+> get moving again. The only way to get the fsck to complete was to
+> constantly be tickling the touchpad. I corresponded with Patrick
+> Volkerding, telling him I suspected a scheduling problem and he
+> informed me that the 13.1 kernel had tickless enabled, unlike 13. So I
+> built a 2.6.33.3 kernel (from the Slackware-supplied kernel sources)
+> with tickless disabled. With that kernel running, I power-cycled the
+> machine to force a fsck of the root filesystem. This one proceeded to
+> completion normally -- no external stimuli needed.
+> 3. Tickless, scheduler
+> 4. 2.6.33.3
+> 7.1 ver_linux output attached
+> 7.2 /proc/cpuinfo attached
+> 7.3 /proc/modules attached
+> 7.4 /proc/ioports, /proc/iomem attached
+> 7.5 lspci attached
+> 7.6 /proc/scsi/scsi attached
 
-> this includes three patch series and divides previous patch
-> into smaller part.
-> 
-> so Andrew, please remove my previous patch,
-> s3c-fb-add-s5pv210-support-and-some-features.patch from mm tree.
-> 
-> patch contents are as following.
-> 
-> 1. s3c_fb_1_3.patch
->   - as patch for supporting s5pv210, CH_ENABLE bit of SHAD
->     register should be enabled to enable window layer on s5pv210.
-> 
-> 2. s3c_fb_2_3.patch
->    - s5pv210 has five window layers (window0 ~ 4), among them,
->      window0 ~ 2 could be used for local path with fimc(capture device)
->      and fimd writeback feature so this patch makes default window
->      layer for UI to be set at machine code.
-> 
-> 3. s3c_fb_3_3.patch
->    - it has been working fine at 16bpp but in case of pixel format
->      more then 24bpp it would occur distortedness situation
->      on that mode. so this patch set the word swap control bit of
->      WINCONx to 1 as default value. but it should be set to 0
->      in case that each ENLOCAL bit of WINCON0 ~ 2 registers
->      is enabled. this issue would be solved with local path feature soon.
-
-I prefer not to receive patches this way, sorry.  I will need to detach
-the attachments, copy-n-paste the changelogs and signoffs and then
-invent meaningful English-language titles for each patch.
-
-The problem is the last part.  The titles I choose may be
-inappropriate, and if anyone in a year's time tries to find the history
-of a patch by googling for the title, they may not be able to find this
-email thread.  A well-chosen title becomes a nice search key for looking
-up the patch in reviewion control systems and on the 'net.
-
-There are reasons for the conventions, so please let's be conventional.
-Send it as three sequences-numbered emails, one with a carefully chosen
-title/Subject: and each one with its own changelog, signoffs, etc.
-
-Also, if you _must_ use attachments, please use text/plain mimetypes,
-thanks.
+Can you post dmesg output from bootup?
