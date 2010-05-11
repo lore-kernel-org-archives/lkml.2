@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052Ab0EKXZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 19:25:21 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37323 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751235Ab0EKXZT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 19:25:19 -0400
-Date: Tue, 11 May 2010 16:24:58 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-       Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       dri-devel@lists.freedesktop.org, Dave Airlie <airlied@linux.ie>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Keith Packard <keithp@keithp.com>, Eric Anholt <eric@anholt.net>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: DRM Error on Acer Aspire One
-Message-Id: <20100511162458.51a2da8b.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTimNX2T_HWWxKCYsBdxz6LrvrTOz5MbFcyxTy1br@mail.gmail.com>
-References: <AANLkTilSNZ11CaRUH5s3w6NoAnDQ5t7U9Y0Ce-iHpq3O@mail.gmail.com>
-	<89khjo$fd26d3@orsmga002.jf.intel.com>
-	<20100511113555.a78c9c8e.akpm@linux-foundation.org>
-	<89kc63$grv1m8@fmsmga002.fm.intel.com>
-	<20100511121001.0731a9c2.akpm@linux-foundation.org>
-	<89k77n$noi3t4@fmsmga001.fm.intel.com>
-	<AANLkTikM916RlCBudL9_Pw--cpiu5mg_xcLFG9N1l9tL@mail.gmail.com>
-	<20100511153217.5c7661d7.akpm@linux-foundation.org>
-	<AANLkTilMWTbgcjx8_T-jCwykQmd7hwfXd2ijfP6flIiO@mail.gmail.com>
-	<20100511155600.5c416992.akpm@linux-foundation.org>
-	<AANLkTimNX2T_HWWxKCYsBdxz6LrvrTOz5MbFcyxTy1br@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752727Ab0EKXcs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 19:32:48 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:37312 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751615Ab0EKXcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 19:32:47 -0400
+Date: Tue, 11 May 2010 16:32:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: [PATCH tip/core/rcu 0/11] Add debugobjects checking to RCU
+ callbacks
+Message-ID: <20100511233241.GA20250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 09:17:09 +1000
-Dave Airlie <airlied@gmail.com> wrote:
+Hello!
 
-> >> >> and
-> >> >> this codepath is called from non-irq contexts just as much as irq
-> >> >> contexts.
-> >> >
-> >> > That's fine. __As long as we do a local_irq_disable(), KM_IRQ0 can be
-> >> > used from both irq- and non-irq contexts. __All we need to do is to
-> >> > ensure that some interrupt cannot come along on this CPU and corrupt
-> >> > the slot.
-> >>
-> >> I don't think we do that in a lot of places, and I'd rather not add
-> >> that in to fix this problem at this point in the release cycle, as
-> >> we've no idea what it might break/regress.
-> >
-> > What is "that"? __The switch to irq-protected KM_IRQ0? __That won't break
-> > anything.
-> >
-> 
-> disabling local cpu irqs around all these kmap mappings.
-> 
+This patchset pulls Mathieu's debugobject-specific commits out of the
+earlier patchbomb (http://lkml.org/lkml/2010/5/4/298):
 
-Ah.  Well if there are other uses of KM_USER0 from interrupt context
-then yes, we have more problems.  CONFIG_DEBUG_HIGHMEM &&
-CONFIG_TRACE_IRQFLAGS_SUPPORT will detect that and as long as Jaswinder
-has hit all code paths in his testing, we're good.  Some manual review
-for this would be good.
+1.	Add transition-check capability to debugobjects.
+2.	Add init_rcu_head_on_stack() and destroy_rcu_head_on_stack() APIs.
+3.	Remove rcu_head initializations from RCU, except for those
+	for on-stack rcu_head structures, which must use the APIs
+	introduced in #2 above.
+4-9.	Ditto for powerpc, block, staging, fs, mm, and selinux.
+10.	Remove the old rcu_head initialization APIs.
+11.	Add the debugobjects workings to RCU, enabled by
+	CONFIG_DEBUG_OBJECTS_RCU_HEAD.
 
+These have been reordered and consolidated to reduce inter-commit
+dependencies.
+
+							Thanx, Paul
+
+ b/arch/powerpc/mm/pgtable.c                   |    1 
+ b/block/cfq-iosched.c                         |    1 
+ b/block/genhd.c                               |    1 
+ b/drivers/staging/batman-adv/hard-interface.c |    1 
+ b/fs/file.c                                   |    3 
+ b/fs/fs-writeback.c                           |   31 +++-
+ b/fs/partitions/check.c                       |    1 
+ b/include/linux/debugobjects.h                |   11 +
+ b/include/linux/init_task.h                   |    1 
+ b/include/linux/rcupdate.h                    |    8 +
+ b/kernel/rcupdate.c                           |  170 ++++++++++++++++++++++++++
+ b/kernel/rcutiny.c                            |    6 
+ b/kernel/rcutorture.c                         |    2 
+ b/kernel/rcutree.c                            |    4 
+ b/kernel/rcutree_plugin.h                     |    2 
+ b/lib/Kconfig.debug                           |    6 
+ b/lib/debugobjects.c                          |   59 ++++++++-
+ b/mm/backing-dev.c                            |    1 
+ b/mm/slob.c                                   |    1 
+ b/security/selinux/avc.c                      |    1 
+ b/security/selinux/netnode.c                  |    2 
+ include/linux/rcupdate.h                      |   55 +++++++-
+ kernel/rcutiny.c                              |    2 
+ kernel/rcutree.c                              |    2 
+ 24 files changed, 344 insertions(+), 28 deletions(-)
