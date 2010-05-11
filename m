@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab0EKPuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 11:50:21 -0400
-Received: from mtagate6.de.ibm.com ([195.212.17.166]:38251 "EHLO
-	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab0EKPuT (ORCPT
+	id S1755571Ab0EKPuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 11:50:54 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42480 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755122Ab0EKPuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 11:50:19 -0400
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-Organization: IBM
-To: reinette chatre <reinette.chatre@intel.com>
-Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some accesspoint == hardlock
-Date: Tue, 11 May 2010 17:50:08 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-self-00018-g05dc687; KDE/4.3.4; x86_64; ; )
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-       "NilsRadtkelkml@think-future.de" <NilsRadtkelkml@think-future.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-References: <20100503191756.GA3479@localhost> <201005061114.35480.borntraeger@de.ibm.com> <1273163328.2226.2530.camel@rchatre-DESK>
-In-Reply-To: <1273163328.2226.2530.camel@rchatre-DESK>
+	Tue, 11 May 2010 11:50:52 -0400
+Date: Tue, 11 May 2010 12:50:39 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       mingo@elte.hu, Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>, perfmon2-devel@lists.sf.net
+Subject: Re: [RFC] perf: perf record sets inherit by default
+Message-ID: <20100511155039.GF19192@ghostprotocols.net>
+References: <AANLkTinsEANHEicdjOaE6jwUa0bVqH5PBwuGQ3_L59hT@mail.gmail.com>
+ <20100511150052.GE19192@ghostprotocols.net>
+ <1273590800.1810.19.camel@laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005111750.08533.borntraeger@de.ibm.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273590800.1810.19.camel@laptop>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag 06 Mai 2010 18:28:48 schrieb reinette chatre:
-> Below seven iwlwifi patches were added after rc4. If you are unable to
-> bisect ... perhaps you can run a while by reverting more and more from
-> this list?
-> 
-> f2fa1b015e9c199e45c836c769d94db595150731 iwlwifi: correct 6000 EEPROM regulatory address
-> 88be026490ed89c2ffead81a52531fbac5507e01 iwlwifi: fix scan races
-> 8b9fce77737ae9983f61ec56cd53f52fb738b2c7 iwlwifi: work around bogus active chains detection
-> ece6444c2fe80dab679beb5f0d58b091f1933b00 iwlwifi: need check for valid qos packet before free
-> de0f60ea94e132c858caa64a44b2012e1e8580b0 iwlwifi: avoid Tx queue memory allocation in interface down
-> 04f2dec1c3d375c4072613880f28f43b66524876 iwlwifi: use consistent table for tx data collect
-> dd48744964296b5713032ea1d66eb9e3d990e287 iwlwifi: fix DMA allocation warnings
+Em Tue, May 11, 2010 at 05:13:20PM +0200, Peter Zijlstra escreveu:
+> On Tue, 2010-05-11 at 12:00 -0300, Arnaldo Carvalho de Melo wrote:
+> > Humm, since for -C and -a using -i doesn't make sense, I guess it should
+> > be off by default and only be auto-activated if we don't specify any
+> > option, i.e. when using it like:
 
-Just to give you some feedback. Sometimes it takes a while until it crashes.
-My hand made bisect is currently at two remaining patches:
+> > perf record ./hackbench
+ 
+> -ENOPARSE
+ 
+> -a/-C usage creates per-cpu counters and will thus ignore any and all
+> perf_event_attr::inherit state.
 
-de0f60ea94e132c858caa64a44b2012e1e8580b0
-8b9fce77737ae9983f61ec56cd53f52fb738b2c7
+What I tried to say was that if one does:
 
-reverting both solves my hard lockup. I will try to isolate the "bad" patch
-but this takes some more days since I wont be in the "hazardous environment"
-this week.
+perf record -t 1234
 
-Christian
+then inherit would be off, or if:
+
+perf record -p 5678
+
+it would also be off.
+
+but when just pass some program to run, like in:
+
+perf record make -j allmodconfig
+
+we would then assume that the user is interested in everything that the
+program perf is starting does, i.e. the user is interested in the whole
+workload started from perf, thus we would auto-enable -i.
+
+> Your above suggestion would still have inherit enabled by default, and
+> would thus not change anything.
+
+Nope, see above.
+ 
+- Arnaldo
