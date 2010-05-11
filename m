@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263Ab0EKOmi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 10:42:38 -0400
-Received: from www.tglx.de ([62.245.132.106]:40219 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755921Ab0EKOmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 10:42:36 -0400
-Date: Tue, 11 May 2010 16:42:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Alek Du <alek.du@intel.com>, Arjan van de Ven <arjan@linux.intel.com>,
-       Feng Tang <feng.tang@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/8] x86/platform: add a wallclock_init func to x86_platforms
- ops
-In-Reply-To: <1273254108-3234-7-git-send-email-jacob.jun.pan@linux.intel.com>
-Message-ID: <alpine.LFD.2.00.1005111637000.3401@localhost.localdomain>
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com> <1273254108-3234-7-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758191Ab0EKOoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 10:44:07 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:46151 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab0EKOoC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 10:44:02 -0400
+Date: Tue, 11 May 2010 08:57:01 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Mike Frysinger <vapier.adi@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oskar Schirmer <os@emlix.com>,
+       Michael Hennerich <Michael.Hennerich@analog.com>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       =?ISO-8859-15?Q?Daniel_Gl=F6ckner?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>, Johannes Weiner <jw@emlix.com>,
+       Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>,
+       Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
+In-Reply-To: <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1005110854560.1500@router.home>
+References: <1273487642-2169-1-git-send-email-os@emlix.com>  <1273488154-2993-1-git-send-email-os@emlix.com>  <20100510142225.4bf215ef.akpm@linux-foundation.org>  <20100511060547.GA9644@core.coreip.homeip.net>  <AANLkTikA9s6lpO2uDuIup8BwGOYYHQ9yQxS36PBSIttX@mail.gmail.com>
+  <20100511062110.GB9644@core.coreip.homeip.net>  <AANLkTiktu7N5IXknkkJ9D5L4z5plhuGvD45IVqJm9zG1@mail.gmail.com>  <20100511063309.GC9644@core.coreip.homeip.net> <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 May 2010, Jacob Pan wrote:
+On Tue, 11 May 2010, Pekka Enberg wrote:
 
-> From: Feng Tang <feng.tang@intel.com>
-> 
-> Some wall clock devices use MMIO based HW register, this new function will
-> give them a chance to do some initialization work before their get/set_time
-> service get called.
-> 
-> Signed-off-by: Feng Tang <feng.tang@intel.com>
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> ---
->  arch/x86/include/asm/x86_init.h |    2 ++
->  arch/x86/kernel/setup.c         |    2 ++
->  arch/x86/kernel/x86_init.c      |    2 ++
->  3 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-> index 519b543..be027a8 100644
-> --- a/arch/x86/include/asm/x86_init.h
-> +++ b/arch/x86/include/asm/x86_init.h
-> @@ -138,6 +138,7 @@ struct x86_cpuinit_ops {
->  /**
->   * struct x86_platform_ops - platform specific runtime functions
->   * @calibrate_tsc:		calibrate TSC
-> + * @wallclock_init:		init the wallclock device
+> > The data is kmalloced, kmalloc aligns on cacheline boundary AFAIK which
+> > means that next kmalloc data chunk will not share "our" cacheline.
+>
+> No, there are no such guarantees. kmalloc() aligns on
+> ARCH_KMALLOC_MINALIGN or ARCH_SLAB_MINALIGN depending on which is
+> bigger but beyond that, there are no guarantees. You can, of course,
+> use kmem_cache_create() with SLAB_HWCACHE_ALIGN to align on cacheline
+> boundary.
 
+Note the difference between kmalloc aligment and the alignment of manually
+created slabs.
 
-  wallclock_init is an init function and should be in x86_init.timers
+Kmalloc data is often aligned on cacheline boundary due to the allocator
+methods of placing data in pages. But there is no guarantee that this will
+always be the case. In particular if slab debugging is on then the
+alignments become different.
 
->   * @get_wallclock:		get time from HW clock like RTC etc.
->   * @set_wallclock:		set time back to HW clock
->   * @is_untracked_pat_range	exclude from PAT logic
-> @@ -145,6 +146,7 @@ struct x86_cpuinit_ops {
->   */
->  struct x86_platform_ops {
->  	unsigned long (*calibrate_tsc)(void);
-> +	void (*wallclock_init)(void);
->  	unsigned long (*get_wallclock)(void);
->  	int (*set_wallclock)(unsigned long nowtime);
->  	void (*iommu_shutdown)(void);
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index c4851ef..d001d8c 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -1050,6 +1050,8 @@ void __init setup_arch(char **cmdline_p)
->  #endif
->  	x86_init.oem.banner();
->  
-> +	x86_platform.wallclock_init();
-> +
->  	mcheck_init();
->  }
->  
-> diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-> index 61a1e8c..ee00d76 100644
-> --- a/arch/x86/kernel/x86_init.c
-> +++ b/arch/x86/kernel/x86_init.c
-> @@ -24,6 +24,7 @@ void __init x86_init_uint_noop(unsigned int unused) { }
->  void __init x86_init_pgd_noop(pgd_t *unused) { }
->  int __init iommu_init_noop(void) { return 0; }
->  void iommu_shutdown_noop(void) { }
-> +void wallclock_init_noop(void) { }
-
-No need for that.
-
-Thanks,
-
-	tglx
