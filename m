@@ -1,114 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab0EKJFU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 05:05:20 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49336 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755946Ab0EKJFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 05:05:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: cpumask: fix compat getaffinity
-Date: Tue, 11 May 2010 11:05:03 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-       Andi Kleen <andi@firstfloor.org>, Ken Werner <ken.werner@web.de>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-References: <201005071445.50147.arnd@arndb.de> <201005081111.08720.arnd@arndb.de> <201005110913.49162.rusty@rustcorp.com.au>
-In-Reply-To: <201005110913.49162.rusty@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1757660Ab0EKJGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 05:06:37 -0400
+Received: from mga14.intel.com ([143.182.124.37]:62846 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753441Ab0EKJGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 05:06:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,206,1272870000"; 
+   d="scan'208";a="275674088"
+Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>
+In-Reply-To: <1273568620.30322.42.camel@minggr.sh.intel.com>
+References: <1273484401.5605.3333.camel@twins>
+	 <1273486313.15998.76.camel@minggr.sh.intel.com>
+	 <1273486708.5605.3342.camel@twins>
+	 <1273487195.15998.85.camel@minggr.sh.intel.com>
+	 <1273490824.5605.3379.camel@twins> <20100510114311.GA6449@elte.hu>
+	 <1273492164.5605.3397.camel@twins> <20100510115344.GA11238@elte.hu>
+	 <4BE8931C.9070106@linux.vnet.ibm.com> <1273560419.5605.3426.camel@twins>
+	 <20100511072127.GB10421@elte.hu>
+	 <1273566031.30322.31.camel@minggr.sh.intel.com>
+	 <1273567815.5605.3491.camel@twins>
+	 <1273568620.30322.42.camel@minggr.sh.intel.com>
+Content-Type: text/plain
+Date: Tue, 11 May 2010 17:05:42 +0800
+Message-Id: <1273568742.30322.44.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005111105.03475.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/faiCo7oYelOAAEaRggP5mTMX4z80Ba2OdkjS
- 7wry9EbQizhfRiVQdHjbEeLYdAYxPywQ+35y8LjAmSFSrykmXn
- AYGWNFDCoGXsjJthvxZTg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 May 2010, Rusty Russell wrote:
-> cpumask: use nr_cpu_ids for printing and parsing cpumasks
+On Tue, 2010-05-11 at 17:03 +0800, Lin Ming wrote:
+> On Tue, 2010-05-11 at 16:50 +0800, Peter Zijlstra wrote:
+> > On Tue, 2010-05-11 at 16:20 +0800, Lin Ming wrote:
+> > 
+> > > How will this sysfs interface be used for userspace tool?
+> > > 
+> > >  /sys/devices/system/node/nodeN/node_events
+> > >                                node_events/event_source_id
+> > > 
+> > >                                node_events/local_misses/event_id
+> > >                                           /local_hits/event_id
+> > >                                           /remote_misses/event_id
+> > >                                           /remote_hits/event_id
+> > > 
+> > > For example, to monitor node event local_misses on node 0, does it work
+> > > as below?
+> > > 
+> > > 1. perf top -e local_misses -n 0 (-n 0 means node 0)
+> > > 
+> > > 2. read /sys/devices/system/node/node0/node_events/event_source_id to
+> > > get the pmu_id
+> > > 
+> > > 3. read /sys/devices/system/node/node0/node_events/local_misses/event_id
+> > > to get the event_id
+> > > 
+> > > 4. event_attr::pmu_id=pmu_id, event::config=event_id
+> > > 
+> > > 5. other setting...
+> > > 
+> > > 6. call syscall perf_event_open(....)
+> > 
+> > No, you'll use event_source_id as perf_event_attr::type, use event_id as
+> > perf_event_attr::config and then use a cpu-wide counter on a cpu
+> > contained in node0.
 > 
-> Commit a45185d2d "cpumask: convert kernel/compat.c" broke
-> libnuma, which abuses sched_getaffinity to find out NR_CPUS
-> in order to parse /sys/devices/system/node/node*/cpumap.
+> Is event_source_id a link to event_source class?
 > 
-> However, the result now returned reflects nr_cpu_ids, and
-> cpumask_scnprintf et al. use nr_cpumask_bits which is NR_CPUS (for
-> CONFIG_CPUMASK_OFFSTACK=n) or nr_cpu_ids (for
-> CONFIG_CPUMASK_OFFSTACK=y).
+> For example, 2 event sources on Nehalem
+> /sys/class/event_sources/core_pmu
+> /sys/class/event_sources/uncore_pmu
 > 
-> We should use nr_cpu_ids consistently.
+> Then,
+> /sys/devices/system/node/nodeN/node_events/event_source_id is a link
+> to /sys/class/event_sources/uncore_pmu.
 > 
-> Reported-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: stable@kernel.org
+> /sys/devices/system/cpu/cpuN/cpu_hardware_events/event_source_id is a
+> link to /sys/class/event_sources/core_pmu.
+> 
+> And, the event_source_id
+> #cat /sys/class/event_sources/core_pmu
+> 0
+> 
+> #cat /sys/class/event_sources/uncore_pmu
+> 1
 
-It looks like this changes fixes the compat case, but now
-the native system call would be inconsistent with the
-sysfs output. 
+Oh, no. 
 
-Wouldn't you also need something like the change below
-to make the return value of sched_getaffinity() independent
-of NR_CPUS?
+/sys/class/event_sources/uncore_pmu is not 1, but other dynamic value.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -495,12 +495,9 @@ asmlinkage long compat_sys_sched_getaffinity(compat_pid_t pid, unsigned int len,
- 	int ret;
- 	cpumask_var_t mask;
- 	unsigned long *k;
--	unsigned int min_length = cpumask_size();
-+	size_t size = BITS_TO_COMPAT_LONGS(nr_cpu_ids) * sizeof(compat_ulong_t);
- 
--	if (nr_cpu_ids <= BITS_PER_COMPAT_LONG)
--		min_length = sizeof(compat_ulong_t);
--
--	if (len < min_length)
-+	if (len < size)
- 		return -EINVAL;
- 
- 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-@@ -511,9 +508,9 @@ asmlinkage long compat_sys_sched_getaffinity(compat_pid_t pid, unsigned int len,
- 		goto out;
- 
- 	k = cpumask_bits(mask);
--	ret = compat_put_bitmap(user_mask_ptr, k, min_length * 8);
-+	ret = compat_put_bitmap(user_mask_ptr, k, size * 8);
- 	if (ret == 0)
--		ret = min_length;
-+		ret = size;
- 
- out:
- 	free_cpumask_var(mask);
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -6693,8 +6693,9 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
- {
- 	int ret;
- 	cpumask_var_t mask;
-+	size_t size = BITS_TO_LONGS(nr_cpu_ids) * sizeof(long);
- 
--	if (len < cpumask_size())
-+	if (len < size)
- 		return -EINVAL;
- 
- 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-@@ -6702,10 +6703,10 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
- 
- 	ret = sched_getaffinity(pid, mask);
- 	if (ret == 0) {
--		if (copy_to_user(user_mask_ptr, mask, cpumask_size()))
-+		if (copy_to_user(user_mask_ptr, mask, size))
- 			ret = -EFAULT;
- 		else
--			ret = cpumask_size();
-+			ret = size;
- 	}
- 	free_cpumask_var(mask);
- 
