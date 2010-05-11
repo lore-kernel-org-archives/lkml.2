@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab0EKQg4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:36:56 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:59383 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab0EKQgy (ORCPT
+	id S1754052Ab0EKQhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:37:45 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:65338 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab0EKQhm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:36:54 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 69.181.193.102
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/TlN/6Dq9ZOWeu3WV6UPp+
-Date: Tue, 11 May 2010 09:36:33 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100511163632.GE13600@atomide.com>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
- <87wrvl5479.fsf@deeprootsystems.com>
- <87632vhbs8.fsf@deeprootsystems.com>
- <201005102225.52431.rjw@sisk.pl>
- <20100511161227.GD13600@atomide.com>
- <20100511161448.GA16148@srcf.ucam.org>
+	Tue, 11 May 2010 12:37:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=HXmCpCE9YEBu+OvHpHC9gzgvIxmyPpNWI4+m0CriUbULq9Pvy6i1HL/HXDE2hfOkqO
+         44wmdrvwNI3BWfTJJSf+hH+9ACrv6jN5a/IixL94zMniJunvnlLSjIfbk++ZuQDCdjm3
+         QlO6CKqUSY7i40QWHpqJWIS5AskvaLhsizOp8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100511161448.GA16148@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1272848076-28315-1-git-send-email-linus.walleij@stericsson.com>
+References: <1272848076-28315-1-git-send-email-linus.walleij@stericsson.com>
+Date: Tue, 11 May 2010 09:37:42 -0700
+X-Google-Sender-Auth: MQVC3i8lAtPxjc_2l8IlIuxz7LE
+Message-ID: <AANLkTinAVhnpjgVTtbZYYKb1t_DInVwTKkkJRzcO97RX@mail.gmail.com>
+Subject: Re: [PATCH 1/7] DMAENGINE: add generic PrimeCell interface to COH 901 
+	318 v6
+From: Dan Williams <dan.j.williams@intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Matthew Garrett <mjg@redhat.com> [100511 09:10]:
-> On Tue, May 11, 2010 at 09:12:28AM -0700, Tony Lindgren wrote:
-> 
-> > To me it sounds like this should only be allowed to happen when you do:
-> > 
-> > # echo 1 > /sys/power/suspend_while_idle
-> > 
-> > As it kills the timers and leads to non-standard behaviour of the apps
-> > as they won't run :)
-> > 
-> > And then the remaining question is how to make sure the use cases
-> > below can be handled in a clean way.
-> 
-> That's handled by the /sys/power/policy opportunistic/forced switch.
+On Sun, May 2, 2010 at 5:54 PM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
+> This extends the DMA engine driver for the COH 901 318 used in the
+> U300 platform with the generic PrimeCell interface.
+>
+> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+> ---
+>  drivers/dma/coh901318.c |  146 +++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 146 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+> index 4233440..1d5ed16 100644
+> --- a/drivers/dma/coh901318.c
+> +++ b/drivers/dma/coh901318.c
+[..]
+> +void dma_set_ambaconfig(struct dma_chan *chan,
+> +                       struct amba_dma_channel_config *config)
 
-OK, so can the suspend blocker then become just:
+What happens when two primecell dma devices are present on one soc?
+Can that happen?  In that case we'll have conflicting providers of
+dma_set_ambaconfig().
 
-# Block suspend while idle, system stays running
-# echo default > /sys/power/policy
-
-and the when it's OK to suspend:
-
-# Allow suspend while idle, system suspends when it hits kernel idle loop
-# echo opportunistic > /sys/power/policy
-
-or do you still need something more to ensure the data gets into your
-app and be handled?
-
-The part I really don't like is the idea of patching all over the drivers
-and userspace for the wakelocks/suspendblocks.
-
-Regards,
-
-Tony
+--
+Dan
