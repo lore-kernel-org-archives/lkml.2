@@ -1,97 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610Ab0EKNqh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 09:46:37 -0400
-Received: from www.tglx.de ([62.245.132.106]:46520 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757186Ab0EKNqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 09:46:34 -0400
-Date: Tue, 11 May 2010 15:46:15 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Alek Du <alek.du@intel.com>, Arjan van de Ven <arjan@linux.intel.com>,
-       Feng Tang <feng.tang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-       Jacob Pan <jacob.jun.pan@intel.com>
-Subject: Re: [PATCH 3/8] x86/apic: allow use of lapic timer early calibration
- result
-In-Reply-To: <1273254108-3234-4-git-send-email-jacob.jun.pan@linux.intel.com>
-Message-ID: <alpine.LFD.2.00.1005111514471.3401@localhost.localdomain>
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com> <1273254108-3234-4-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757231Ab0EKNtM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 09:49:12 -0400
+Received: from mail168c2.megamailservers.com ([69.49.111.68]:46260 "EHLO
+	mail168c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757218Ab0EKNtL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 09:49:11 -0400
+X-Authenticated-User: kristoffer.gaisler.com
+Message-ID: <4BE95EC4.9040007@gaisler.com>
+Date: Tue, 11 May 2010 15:42:28 +0200
+From: Kristoffer Glembo <kristoffer@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.4) Gecko/20070601 SeaMonkey/1.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] [OOPS] apbuart.c: Two problems related to grlib_apbuart_configure()
+References: <1273355935.13191.6.camel@carter> <1273585084.8948.12.camel@carter>
+In-Reply-To: <1273585084.8948.12.camel@carter>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-CHA: v=1.1 cv=xtCnJSom9T2N2UelX0toS8pAVgrNlnn4sCvERQ3pbX4= c=1 sm=1
+		a=BiUTNxJIdrUA:10 a=IkcTkHD0fZMA:10 a=jXKJviUpWSOlMmIvGrHOfw==:17
+		a=ebG-ZW-8AAAA:8 a=pGLkceISAAAA:8 a=t-zvxfE_yFA8KV9oKpoA:9
+		a=lzMLTxmbwYwclHfjIqoA:7 a=9UdasKBbNJ6dCqVdXwY1_WJCU24A:4 a=QEXdDO2ut3YA:10
+		a=cCYF7-FHeg4A:10 a=MSl-tDqOz04A:10 a=jXKJviUpWSOlMmIvGrHOfw==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 May 2010, Jacob Pan wrote:
+Hi,
 
-> From: Jacob Pan <jacob.jun.pan@intel.com>
+Looks finer :-)
+
+Acked-by: Kristoffer Glembo <kristoffer@gaisler.com>
+
+
+Miguel Ojeda wrote:
+> Hi,
 > 
-> lapic timer calibration can be combined with tsc in platform specific
-> calibration functions. if such calibration result is obtained early,
-> we can skip the redundent calibration loops.
-
-I'd rather move lapic calibration into TSC calibration in general as
-we do the same thing twice for no good reason.
-
-That needs some code restructuring, but that's worth it.
-
-> Signed-off-by: Jacob Pan <jacob.jun.pan@intel.com>
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-
-Hehe. So you handed the patch to yourself :)
-
+> Kristoffer, please check this one instead.
+> 
+> Changes:
+> 1. Added the grlib_apbuart_port_nr = 0 line.
+> 2. Returned -ENODEV instead of 0 in the "no ports found branch" in
+> init(), because if compiled as a module, exit() will try to unregister
+> things that were not registered. In addition, this will alert the users
+> that modprobe'd.
+> 3. Deleted the unused __FILE__ argument of the previous patch (oops
+> sorry :).
+> 
+> Andrew, if Kristoffer agrees, please drop the older patch from -mm and
+> merge this one instead.
+> 
+> Signed-off-by: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
 > ---
->  arch/x86/kernel/apic/apic.c |   21 ++++++++++++++++++++-
->  1 files changed, 20 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index e5a4a1e..8ef56ac 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -175,7 +175,7 @@ static struct resource lapic_resource = {
->  	.flags = IORESOURCE_MEM | IORESOURCE_BUSY,
->  };
->  
-> -static unsigned int calibration_result;
-> +unsigned int calibration_result;
-
-Aside of my general objection it'd be not a good idea to make this
-global w/o renaming it to something sensible like
-lapic_timer_frequency.
-  
->  static int lapic_next_event(unsigned long delta,
->  			    struct clock_event_device *evt);
-> @@ -597,6 +597,25 @@ static int __init calibrate_APIC_clock(void)
->  	long delta, deltatsc;
->  	int pm_referenced = 0;
->  
-> +	/**
-> +	 * check if lapic timer has already been calibrated by platform
-> +	 * specific routine, such as tsc calibration code. if so, we just fill
-> +	 * in the clockevent structure and return.
-> +	 */
-> +	if (calibration_result) {
-> +		apic_printk(APIC_VERBOSE, "lapic timer already calibrated %d\n",
-> +				calibration_result);
-> +		lapic_clockevent.mult = div_sc(calibration_result/APIC_DIVISOR,
-> +					TICK_NSEC, lapic_clockevent.shift);
-> +		lapic_clockevent.max_delta_ns =
-> +			clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
-> +		lapic_clockevent.min_delta_ns =
-> +			clockevent_delta2ns(0xF, &lapic_clockevent);
-> +		lapic_clockevent.features &= ~CLOCK_EVT_FEAT_DUMMY;
+> --- drivers/serial/apbuart.c.orig	2010-04-26 16:48:30.000000000 +0200
+> +++ drivers/serial/apbuart.c	2010-05-11 15:21:28.984666230 +0200
+> @@ -525,6 +525,9 @@ static void grlib_apbuart_configure(void
+>  static int __init apbuart_console_init(void)
+>  {
+>  	grlib_apbuart_configure();
+> +	if (grlib_apbuart_port_nr == 0)
 > +		return 0;
-
-  Grr. I hate duplicated code.
-
-> +	}
 > +
->  	local_irq_disable();
+>  	register_console(&grlib_apbuart_console);
+>  	return 0;
+>  }
+> @@ -612,6 +615,10 @@ static void grlib_apbuart_configure(void
+>  	rp = of_find_node_by_path("/");
+>  	rp = of_get_next_child(rp, NULL);
+>  	prop = of_get_property(rp, "clock-frequency", NULL);
+> +	if (prop == NULL) {
+> +		grlib_apbuart_port_nr = 0;
+> +		return;
+> +	}
+>  	freq_khz = *prop;
 >  
->  	/* Replace the global interrupt handler */
-> -- 
-> 1.6.3.3
+>  	line = 0;
+> @@ -666,6 +673,10 @@ static int __init grlib_apbuart_init(voi
+>  
+>  	/* Find all APBUARTS in device the tree and initialize their ports */
+>  	grlib_apbuart_configure();
+> +	if (grlib_apbuart_port_nr == 0) {
+> +		printk(KERN_INFO "Serial: GRLIB APBUART: No ports found.\n");
+> +		return -ENODEV;
+> +	}
+>  
+>  	printk(KERN_INFO "Serial: GRLIB APBUART driver\n");
+>  
 > 
+> 
+
