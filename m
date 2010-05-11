@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab0EKQds (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 12:33:48 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:37689 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751135Ab0EKQdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 12:33:46 -0400
-Date: Tue, 11 May 2010 18:33:39 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>,
-       linux-kernel@vger.kernel.org, Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [PATCH] scripts/get_maintainer.pl: default to not include
- unspecified tags
-Message-ID: <20100511183339.2f8028c9@schatten.dmk.lab>
-In-Reply-To: <1273593595.20514.116.camel@Joe-Laptop.home>
-References: <30a2fd47565ff33d6f47d9a76746b56d923856ac.1273466698.git.joe@perches.com>
-	<1273559797-6910-1-git-send-email-florian@mickler.org>
-	<1273593595.20514.116.camel@Joe-Laptop.home>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752786Ab0EKQg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 12:36:56 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:59383 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab0EKQgy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 12:36:54 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 69.181.193.102
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/TlN/6Dq9ZOWeu3WV6UPp+
+Date: Tue, 11 May 2010 09:36:33 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100511163632.GE13600@atomide.com>
+References: <1272667021-21312-1-git-send-email-arve@android.com>
+ <87wrvl5479.fsf@deeprootsystems.com>
+ <87632vhbs8.fsf@deeprootsystems.com>
+ <201005102225.52431.rjw@sisk.pl>
+ <20100511161227.GD13600@atomide.com>
+ <20100511161448.GA16148@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100511161448.GA16148@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 May 2010 08:59:55 -0700
-Joe Perches <joe@perches.com> wrote:
-
-> On Tue, 2010-05-11 at 08:36 +0200, florian@mickler.org wrote:
-> > This changes the default of the option --git-all-signature-types to be
-> > disabled by default.
-> > [i probably could make a diploma thesis out of this changelog :)]
+* Matthew Garrett <mjg@redhat.com> [100511 09:10]:
+> On Tue, May 11, 2010 at 09:12:28AM -0700, Tony Lindgren wrote:
 > 
-> Then of course you would spell check it before submission. ;)
->
+> > To me it sounds like this should only be allowed to happen when you do:
+> > 
+> > # echo 1 > /sys/power/suspend_while_idle
+> > 
+> > As it kills the timers and leads to non-standard behaviour of the apps
+> > as they won't run :)
+> > 
+> > And then the remaining question is how to make sure the use cases
+> > below can be handled in a clean way.
+> 
+> That's handled by the /sys/power/policy opportunistic/forced switch.
 
-Come on! There were some difficult words in there! Give me some
-credit... :)
+OK, so can the suspend blocker then become just:
 
-Cheers,
-Flo
+# Block suspend while idle, system stays running
+# echo default > /sys/power/policy
 
-p.s.: 
-And of course i don't wanna miss out on the obligatory "lalala sorry,
-i'm not a native speaker lalala". 
+and the when it's OK to suspend:
+
+# Allow suspend while idle, system suspends when it hits kernel idle loop
+# echo opportunistic > /sys/power/policy
+
+or do you still need something more to ensure the data gets into your
+app and be handled?
+
+The part I really don't like is the idea of patching all over the drivers
+and userspace for the wakelocks/suspendblocks.
+
+Regards,
+
+Tony
