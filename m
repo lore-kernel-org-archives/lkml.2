@@ -1,96 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab0EKNtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 09:49:12 -0400
-Received: from mail168c2.megamailservers.com ([69.49.111.68]:46260 "EHLO
-	mail168c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757218Ab0EKNtL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 09:49:11 -0400
-X-Authenticated-User: kristoffer.gaisler.com
-Message-ID: <4BE95EC4.9040007@gaisler.com>
-Date: Tue, 11 May 2010 15:42:28 +0200
-From: Kristoffer Glembo <kristoffer@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.4) Gecko/20070601 SeaMonkey/1.1.2
+	id S1757914Ab0EKN5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 09:57:55 -0400
+Received: from mail-va3.bigfish.com ([216.32.180.112]:45529 "EHLO
+	mail77-va3-R.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756902Ab0EKN5v convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 09:57:51 -0400
+X-SpamScore: -24
+X-BigFish: VPS-24(zz1432P98dN936eM1442J62a3Lab9bhzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-MS-Exchange-Organization-Antispam-Report: OrigIP: 163.181.251.22;Service: EHS
+X-WSS-ID: 0L29DFX-01-BEP-02
+X-M-MSG: 
+Date: Tue, 11 May 2010 15:57:32 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 11/12] perf, x86: implement AMD IBS event configuration
+Message-ID: <20100511135732.GL6450@erda.amd.com>
+References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
+ <1271190201-25705-12-git-send-email-robert.richter@amd.com>
+ <h2obd4cb8901004190646v8231b6a1sf47d0cff6481cc5e@mail.gmail.com>
+ <20100420160557.GT11907@erda.amd.com>
+ <20100421084700.GU11907@erda.amd.com>
+ <o2ibd4cb8901004210202i1ba91c3dlc775a9f7759ece68@mail.gmail.com>
+ <20100421092145.GV11907@erda.amd.com>
+ <20100421105439.GA6450@erda.amd.com>
+ <r2sbd4cb8901004210437i343850b4z94ca99b9ec0316b6@mail.gmail.com>
 MIME-Version: 1.0
-To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       David Miller <davem@davemloft.net>
-Subject: Re: [PATCH] [OOPS] apbuart.c: Two problems related to grlib_apbuart_configure()
-References: <1273355935.13191.6.camel@carter> <1273585084.8948.12.camel@carter>
-In-Reply-To: <1273585084.8948.12.camel@carter>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-CHA: v=1.1 cv=xtCnJSom9T2N2UelX0toS8pAVgrNlnn4sCvERQ3pbX4= c=1 sm=1
-		a=BiUTNxJIdrUA:10 a=IkcTkHD0fZMA:10 a=jXKJviUpWSOlMmIvGrHOfw==:17
-		a=ebG-ZW-8AAAA:8 a=pGLkceISAAAA:8 a=t-zvxfE_yFA8KV9oKpoA:9
-		a=lzMLTxmbwYwclHfjIqoA:7 a=9UdasKBbNJ6dCqVdXwY1_WJCU24A:4 a=QEXdDO2ut3YA:10
-		a=cCYF7-FHeg4A:10 a=MSl-tDqOz04A:10 a=jXKJviUpWSOlMmIvGrHOfw==:117
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <r2sbd4cb8901004210437i343850b4z94ca99b9ec0316b6@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 21.04.10 13:37:27, Stephane Eranian wrote:
+> Robert,
+> 
+> Some more comments about model_spec.
+> 
+> > Except for the sample period IBS can only be set up with raw (model
+> > specific) config values and raw data samples. The event attributes for
+> > the syscall should be programmed like this (IBS_FETCH):
+> >
+> >        memset(&attr, 0, sizeof(attr));
+> >        attr.type        = PERF_TYPE_RAW;
+> >        attr.sample_type = PERF_SAMPLE_CPU | PERF_SAMPLE_RAW;
+> >        attr.config      = IBS_FETCH_CONFIG_DEFAULT
+> >        attr.config     |=
+> >                ((unsigned long long)MODEL_SPEC_TYPE_IBS_FETCH << 32)
+> >                & MODEL_SPEC_TYPE_MASK;
+> >        attr.model_spec  = 1;
+> >
+> Why do you need model_spec, in addition to your special encoding?
+> 
+> >  /*
+> > + * Model specific hardware events
+> > + *
+> > + * With the attr.model_spec bit set we can setup hardware events
+> > + * others than generic performance counters. A special PMU 64 bit
+> > + * config value can be passed through the perf_event interface. The
+> > + * concept of PMU model-specific arguments was practiced already in
+> > + * Perfmon2. The type of event (8 bits) is determinded from the config
+> > + * value too, bit 32-39 are reserved for this.
+> > + */
+> Isn't the config field big enough to encode all the information you need?
+> In the kernel, you could check bit 32-39 and based on host CPU determine
+> whether it refers to IBS or is a bogus value. I am trying to figure out what
+> model_spec buys you. I believe RAW does not mean the final value as
+> accepted by HW but a value that must be interpreted by the model-specific
+> code to eventually come up with a raw HW value. In the current code, the
+> RAW value is never passed as is, it is assembled from various bits and
+> pieces incl. attr.config of course.
 
-Looks finer :-)
+What about introducing a raw_type? We could reuse the unused bp_type
+space for this. There is no longer the model_spec flag necessary and
+we could pass the raw 64 bit config value without shifting bits to
+encode the type there.
 
-Acked-by: Kristoffer Glembo <kristoffer@gaisler.com>
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 4924c96..c9b51b3 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -222,7 +222,10 @@ struct perf_event_attr {
+                __u32           wakeup_watermark; /* bytes before wakeup   */
+        };
+ 
+-       __u32                   bp_type;
++       union {
++               __u32           bp_type;
++               __u32           raw_type;
++       }
+        __u64                   bp_addr;
+        __u64                   bp_len;
+ };
 
+Raw type would be architecure specific, e.g. for x86:
 
-Miguel Ojeda wrote:
-> Hi,
-> 
-> Kristoffer, please check this one instead.
-> 
-> Changes:
-> 1. Added the grlib_apbuart_port_nr = 0 line.
-> 2. Returned -ENODEV instead of 0 in the "no ports found branch" in
-> init(), because if compiled as a module, exit() will try to unregister
-> things that were not registered. In addition, this will alert the users
-> that modprobe'd.
-> 3. Deleted the unused __FILE__ argument of the previous patch (oops
-> sorry :).
-> 
-> Andrew, if Kristoffer agrees, please drop the older patch from -mm and
-> merge this one instead.
-> 
-> Signed-off-by: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-> ---
-> --- drivers/serial/apbuart.c.orig	2010-04-26 16:48:30.000000000 +0200
-> +++ drivers/serial/apbuart.c	2010-05-11 15:21:28.984666230 +0200
-> @@ -525,6 +525,9 @@ static void grlib_apbuart_configure(void
->  static int __init apbuart_console_init(void)
->  {
->  	grlib_apbuart_configure();
-> +	if (grlib_apbuart_port_nr == 0)
-> +		return 0;
-> +
->  	register_console(&grlib_apbuart_console);
->  	return 0;
->  }
-> @@ -612,6 +615,10 @@ static void grlib_apbuart_configure(void
->  	rp = of_find_node_by_path("/");
->  	rp = of_get_next_child(rp, NULL);
->  	prop = of_get_property(rp, "clock-frequency", NULL);
-> +	if (prop == NULL) {
-> +		grlib_apbuart_port_nr = 0;
-> +		return;
-> +	}
->  	freq_khz = *prop;
->  
->  	line = 0;
-> @@ -666,6 +673,10 @@ static int __init grlib_apbuart_init(voi
->  
->  	/* Find all APBUARTS in device the tree and initialize their ports */
->  	grlib_apbuart_configure();
-> +	if (grlib_apbuart_port_nr == 0) {
-> +		printk(KERN_INFO "Serial: GRLIB APBUART: No ports found.\n");
-> +		return -ENODEV;
-> +	}
->  
->  	printk(KERN_INFO "Serial: GRLIB APBUART driver\n");
->  
-> 
-> 
+enum perf_raw_type {
+        PERF_RAW_PERFCTR                        = 0,
+        PERF_RAW_IBS_FETCH                      = 1,
+        PERF_RAW_IBS_OP                         = 2,
+
+        PERF_RAW_MAX,
+};
+
+Null is the architecture's default.
+
+The raw event syntax could be suffixed by the type (as for
+breakpoints):
+
+   -e rNNN[:TYPE]
+
+Example:
+
+ perf record -e r186A:1          # ... meaning IBD fetch, cycle count 100000
+ perf record -e r0:1 -c 100000   # ... the same
+
+Or with named types:
+
+ perf record -e r186A:IBS_FETCH ...
+ perf record -e r0:IBS_FETCH -c 100000 ...
+
+I would prefer this solution as it has a number of advantages: A raw
+event type may be specified without to encode the type in the config
+value. The attr flags are not 'polluted'. We can follow the already
+existing breakpoint concept in syntax and encoding.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
 
