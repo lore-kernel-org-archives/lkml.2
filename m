@@ -1,165 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab0EKBAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 May 2010 21:00:00 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37043 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755754Ab0EKA74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 May 2010 20:59:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Jk16Tw43nqAcLYodo0btitw9Va8A/u3T79pA9x+ZNoZNb7VyI6MuG6hFVN0TRkhtPN
-         c2sAexq79cIYpG2LHT+GFaJp13+Zaeq/rumUpck8zrfDFHkbd/0P7sFNxFGTr4xf0Pt/
-         p2GJ5736nDW48EGW/mZ+DB24e+JlTcHiFqC8k=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikjgoBQWqvNxncMUFqWOEXtq4ePvGkvF-m0sGUE@mail.gmail.com>
-References: <AANLkTin6D2GP0yJJbPYGH1AcAM9-g219rAxSyW_ZlrXV@mail.gmail.com>
-	 <AANLkTikjgoBQWqvNxncMUFqWOEXtq4ePvGkvF-m0sGUE@mail.gmail.com>
-Date: Mon, 10 May 2010 20:59:54 -0400
-Message-ID: <AANLkTimnlZYonxKzfGHZTV8vwaDptOPHEPBjNhwnV55Y@mail.gmail.com>
-Subject: Re: PROBLEM: tickless scheduling
-From: Donald Allen <donaldcallen@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: multipart/mixed; boundary=0016e68e91a521124b0486470be7
+	id S1754957Ab0EKBIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 May 2010 21:08:50 -0400
+Received: from sh.osrg.net ([192.16.179.4]:51119 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271Ab0EKBIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 May 2010 21:08:48 -0400
+Date: Tue, 11 May 2010 10:06:27 +0900
+To: stern@rowland.harvard.edu
+Cc: dwmw2@infradead.org, fujita.tomonori@lab.ntt.co.jp, daniel@caiaq.de,
+       clemens@ladisch.de, tiwai@suse.de, alsa-devel@alsa-project.org,
+       gregkh@suse.de, konrad.wilk@oracle.com, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org, chrisw@sous-sol.org,
+       iommu@lists.linux-foundation.org, andi@firstfloor.org, pedrib@gmail.com,
+       akpm@linux-foundation.org
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <Pine.LNX.4.44L0.1005101049100.1626-100000@iolanthe.rowland.org>
+References: <1273483265.372.3383.camel@macbook.infradead.org>
+	<Pine.LNX.4.44L0.1005101049100.1626-100000@iolanthe.rowland.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100511100637D.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 11 May 2010 10:06:35 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e68e91a521124b0486470be7
-Content-Type: text/plain; charset=ISO-8859-1
+On Mon, 10 May 2010 10:58:37 -0400 (EDT)
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-On Mon, May 10, 2010 at 8:54 PM, john stultz <johnstul@us.ibm.com> wrote:
-> On Mon, May 10, 2010 at 5:18 PM, Donald Allen <donaldcallen@gmail.com> wrote:
->> 1. Network file transfers and fscks stop on Toshiba netbook unless
->> system receives external events
->
-> Can you provide /proc/timer_list output?
+> On Mon, 10 May 2010, David Woodhouse wrote:
+> 
+> > On Mon, 2010-05-10 at 11:50 +0900, FUJITA Tomonori wrote:
+> > > On Fri, 7 May 2010 10:51:10 -0400 (EDT)
+> > > Alan Stern <stern@rowland.harvard.edu> wrote:
+> > > 
+> > > > On Fri, 7 May 2010, Daniel Mack wrote:
+> > > > 
+> > > > > > At least the audio class and ua101 drivers don't do this and fill the
+> > > > > > buffers before they are submitted.
+> > > > > 
+> > > > > Gnaa, you're right. I _thought_ my code does it the way I described, but
+> > > > > what I wrote is how I _wanted_ to do it, not how it's currently done. I
+> > > > > have a plan to change this in the future.
+> > > > > 
+> > > > > So unfortunately, that doesn't explain it either. Sorry for the noise.
+> > > > 
+> > > > At one point we tried an experiment, printing out the buffer and DMA 
+> > > > addresses.  I don't recall seeing anything obviously wrong, but if an 
+> > > > IOMMU was in use then that might not mean anything.  Is it possible 
+> > > > that the IOMMU mappings sometimes get messed up for addresses above 4 
+> > > > GB?
+> > > 
+> > > You mean that an IOMMU could allocate an address above 4GB wrongly? If
+> > > so, IIRC, all the IOMMU implementations use dev->dma_mask and
+> > > dev->coherent_dma_mask properly. And the DMA address space of the
+> > > majority of IOMMUs are limited less than 4GB.
+> > 
+> > The Intel IOMMU code will use dev->dma_mask and dev->coherent_dma_mask
+> > properly. It is not limited to 4GiB, but it will tend to give virtual
+> > DMA addresses below 4GiB even when a device is capable of more; it'll
+> > only give out higher addresses when the address space below 4GiB is
+> > exhausted.
+> 
+> What I meant was: Is it possible that the IOMMU code will return a
+> virtual DMA address before 4 GB but will somehow forget to actually map
+> that address to the data buffer?
 
-Attached, but again, this is from the system running with tickless disabled.
+Then, the IOMMU is completely broken. Then, we would get tons of DMA
+bugs not only about USB, I guess. So I'm not sure.
 
->
-> I assume booting with nohz=off from grub resolves the issue?
 
-Didn't know about the boot-time option (thanks for pointing it out),
-but I wanted to build a custom kernel anyway, so i did so and disabled
-tickless.
+> The problem goes away when Pedro boots with mem=4G.  And the dma_mask
+> value is set properly (in fact, the ehci-hcd driver currently doesn't
+> use 64-bit DMA at all).
+> 
+> If anyone wants to see the debug log entries showing the buffer and DMA
+> addresses, they are attached to this email message:
+> 
+> 	http://marc.info/?l=linux-kernel&m=127076841801054&w=2
+> 
+> Either the data isn't getting written to the buffer correctly or else
+> the buffer isn't getting sent to the device correctly.  Can anybody
+> suggest a means of determining which is the case?
 
->
-> Sounds similar to https://bugzilla.kernel.org/show_bug.cgi?id=12118
-
-Sure does.
-
-/Don
->
-> thanks
-> -john
->
-
---0016e68e91a521124b0486470be7
-Content-Type: application/octet-stream; name=timer_list
-Content-Disposition: attachment; filename=timer_list
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_g91w6crt0
-
-VGltZXIgTGlzdCBWZXJzaW9uOiB2MC41CkhSVElNRVJfTUFYX0NMT0NLX0JBU0VTOiAyCm5vdyBh
-dCAyMDM4MjM4NTU0MzkzIG5zZWNzCgpjcHU6IDAKIGNsb2NrIDA6CiAgLmJhc2U6ICAgICAgIGZm
-ZmZmZmZmODE2MmEwODAKICAuaW5kZXg6ICAgICAgMAogIC5yZXNvbHV0aW9uOiAxIG5zZWNzCiAg
-LmdldF90aW1lOiAgIGt0aW1lX2dldF9yZWFsCiAgLm9mZnNldDogICAgIDEyNzM1MzAxMDcwNTE5
-NjY0ODkgbnNlY3MKYWN0aXZlIHRpbWVyczoKICMwOiA8ZmZmZjg4MDA2ZWM4MWQyOD4sIGhydGlt
-ZXJfd2FrZXVwLCBTOjAxLCBocnRpbWVyX3N0YXJ0X3JhbmdlX25zLCBmaXJlZm94LWJpbi8xNTcz
-CiAjIGV4cGlyZXMgYXQgMTI3MzUzMjE0NTM0NjgwODAwMC0xMjczNTMyMTQ1MzQ2ODU4MDAwIG5z
-ZWNzIFtpbiAxMjczNTMwMTA3MTA4MjUzNjA3IHRvIDEyNzM1MzAxMDcxMDgzMDM2MDcgbnNlY3Nd
-CiAjMTogPGZmZmY4ODAwNmVjNWZkMjg+LCBocnRpbWVyX3dha2V1cCwgUzowMSwgaHJ0aW1lcl9z
-dGFydF9yYW5nZV9ucywgZmlyZWZveC1iaW4vMTU3MgogIyBleHBpcmVzIGF0IDEyNzM1MzIxNDU2
-NDIxMzUwMDAtMTI3MzUzMjE0NTY0MjE4NTAwMCBuc2VjcyBbaW4gMTI3MzUzMDEwNzQwMzU4MDYw
-NyB0byAxMjczNTMwMTA3NDAzNjMwNjA3IG5zZWNzXQogIzI6IDxmZmZmODgwMDZlZTc3ZDI4Piwg
-aHJ0aW1lcl93YWtldXAsIFM6MDEsIGhydGltZXJfc3RhcnRfcmFuZ2VfbnMsIGZpcmVmb3gtYmlu
-LzczNTUKICMgZXhwaXJlcyBhdCAxMjczNTMyMTk1NzEzMTY3MDAwLTEyNzM1MzIxOTU3MTMyMTcw
-MDAgbnNlY3MgW2luIDEyNzM1MzAxNTc0NzQ2MTI2MDcgdG8gMTI3MzUzMDE1NzQ3NDY2MjYwNyBu
-c2Vjc10KICMzOiA8ZmZmZjg4MDA2ZWZlN2QyOD4sIGhydGltZXJfd2FrZXVwLCBTOjAxLCBocnRp
-bWVyX3N0YXJ0X3JhbmdlX25zLCBmaXJlZm94LWJpbi81MDQ5CiAjIGV4cGlyZXMgYXQgMTI3MzUz
-MjM3MjI2MzgwODAwMC0xMjczNTMyMzcyMjYzODU4MDAwIG5zZWNzIFtpbiAxMjczNTMwMzM0MDI1
-MjUzNjA3IHRvIDEyNzM1MzAzMzQwMjUzMDM2MDcgbnNlY3NdCiAjNDogPGZmZmY4ODAwN2MxNTFk
-Mjg+LCBocnRpbWVyX3dha2V1cCwgUzowMSwgaHJ0aW1lcl9zdGFydF9yYW5nZV9ucywgZmlyZWZv
-eC1iaW4vMzE1MwogIyBleHBpcmVzIGF0IDEyNzM1MzIzNzIyNzM0MTEwMDAtMTI3MzUzMjM3MjI3
-MzQ2MTAwMCBuc2VjcyBbaW4gMTI3MzUzMDMzNDAzNDg1NjYwNyB0byAxMjczNTMwMzM0MDM0OTA2
-NjA3IG5zZWNzXQogIzU6IDxmZmZmODgwMDdjMWQ1ZDI4PiwgaHJ0aW1lcl93YWtldXAsIFM6MDEs
-IGhydGltZXJfc3RhcnRfcmFuZ2VfbnMsIGZpcmVmb3gtYmluLzMxNTIKICMgZXhwaXJlcyBhdCAx
-MjczNTMyMzc0NDg0MjY5MDAwLTEyNzM1MzIzNzQ0ODQzMTkwMDAgbnNlY3MgW2luIDEyNzM1MzAz
-MzYyNDU3MTQ2MDcgdG8gMTI3MzUzMDMzNjI0NTc2NDYwNyBuc2Vjc10KIGNsb2NrIDE6CiAgLmJh
-c2U6ICAgICAgIGZmZmZmZmZmODE2MmEwYzAKICAuaW5kZXg6ICAgICAgMQogIC5yZXNvbHV0aW9u
-OiAxIG5zZWNzCiAgLmdldF90aW1lOiAgIGt0aW1lX2dldAogIC5vZmZzZXQ6ICAgICAwIG5zZWNz
-CmFjdGl2ZSB0aW1lcnM6CiAjMDogPGZmZmZmZmZmODE2MmFiNDA+LCB0aWNrX3NjaGVkX3RpbWVy
-LCBTOjAxLCBocnRpbWVyX3N0YXJ0X3JhbmdlX25zLCBzd2FwcGVyLzAKICMgZXhwaXJlcyBhdCAy
-MDM4MjM5MDAwMDAwLTIwMzgyMzkwMDAwMDAgbnNlY3MgW2luIDQ0NTYwNyB0byA0NDU2MDcgbnNl
-Y3NdCiAjMTogPGZmZmY4ODAwN2Q5ZTI2Mjg+LCBwb3NpeF90aW1lcl9mbiwgUzowMSwgaHJ0aW1l
-cl9zdGFydF9yYW5nZV9ucywgbnRwZC8xMTQ0CiAjIGV4cGlyZXMgYXQgMjAzODU2MjcwNTE4Mi0y
-MDM4NTYyNzA1MTgyIG5zZWNzIFtpbiAzMjQxNTA3ODkgdG8gMzI0MTUwNzg5IG5zZWNzXQogIzI6
-IDxmZmZmODgwMDZlZDI3OTE4PiwgaHJ0aW1lcl93YWtldXAsIFM6MDEsIGhydGltZXJfc3RhcnRf
-cmFuZ2VfbnMsIGVtYWNzLzY0NDkKICMgZXhwaXJlcyBhdCAyMDM4NTg3MTA2MTUxLTIwMzg1ODc2
-MDUyNzQgbnNlY3MgW2luIDM0ODU1MTc1OCB0byAzNDkwNTA4ODEgbnNlY3NdCiAjMzogPGZmZmY4
-ODAwN2Q4Yzk5MTg+LCBocnRpbWVyX3dha2V1cCwgUzowMSwgaHJ0aW1lcl9zdGFydF9yYW5nZV9u
-cywgZW1hY3MvMTUzNQogIyBleHBpcmVzIGF0IDIwMzg3MzI3NjI1MzEtMjAzODczMzI2MDE5NSBu
-c2VjcyBbaW4gNDk0MjA4MTM4IHRvIDQ5NDcwNTgwMiBuc2Vjc10KICM0OiA8ZmZmZjg4MDA3ZTU4
-OTkxOD4sIGhydGltZXJfd2FrZXVwLCBTOjAxLCBocnRpbWVyX3N0YXJ0X3JhbmdlX25zLCBYLzE1
-MTEKICMgZXhwaXJlcyBhdCAyMDM4ODc5MjcxODgyLTIwMzg4Nzk5MTY4NzkgbnNlY3MgW2luIDY0
-MDcxNzQ4OSB0byA2NDEzNjI0ODYgbnNlY3NdCiAjNTogPGZmZmY4ODAwN2Q5NjMwNjA+LCBpdF9y
-ZWFsX2ZuLCBTOjAxLCBocnRpbWVyX3N0YXJ0LCBlbWFjcy8xNTM1CiAjIGV4cGlyZXMgYXQgMjAz
-OTIxOTU1ODgxOS0yMDM5MjE5NTU4ODE5IG5zZWNzIFtpbiA5ODEwMDQ0MjYgdG8gOTgxMDA0NDI2
-IG5zZWNzXQogIzY6IDxmZmZmODgwMDdlNWM1YTY4PiwgaHJ0aW1lcl93YWtldXAsIFM6MDEsIGhy
-dGltZXJfc3RhcnRfcmFuZ2VfbnMsIGhhbGQtYWRkb24tc3Rvci8xMjAzCiAjIGV4cGlyZXMgYXQg
-MjAzOTk0ODU0MTc1Mi0yMDM5OTUwNTM1NzQ5IG5zZWNzIFtpbiAxNzA5OTg3MzU5IHRvIDE3MTE5
-ODEzNTYgbnNlY3NdCiAjNzogPGZmZmY4ODAwN2YwYTE5MTg+LCBocnRpbWVyX3dha2V1cCwgUzow
-MSwgaHJ0aW1lcl9zdGFydF9yYW5nZV9ucywgaW5pdC8xCiAjIGV4cGlyZXMgYXQgMjA0MjMzMDE3
-Mjg0Ni0yMDQyMzM1MTcyODQzIG5zZWNzIFtpbiA0MDkxNjE4NDUzIHRvIDQwOTY2MTg0NTAgbnNl
-Y3NdCiAjODogPGZmZmY4ODAwNTkwYTdlOTg+LCBocnRpbWVyX3dha2V1cCwgUzowMSwgaHJ0aW1l
-cl9zdGFydF9yYW5nZV9ucywgc2xlZXAvOTM4NgogIyBleHBpcmVzIGF0IDIwNDc2MDQ2NjY5MDkt
-MjA0NzYwNDcxNjkwOSBuc2VjcyBbaW4gOTM2NjExMjUxNiB0byA5MzY2MTYyNTE2IG5zZWNzXQog
-Izk6IDxmZmZmODgwMDdkMDMxYTY4PiwgaHJ0aW1lcl93YWtldXAsIFM6MDEsIGhydGltZXJfc3Rh
-cnRfcmFuZ2VfbnMsIFJPWC1GaWxlci8xNTU2CiAjIGV4cGlyZXMgYXQgMjA0Nzk0NjA2NjY4Ni0y
-MDQ3OTU2MDY2Njg0IG5zZWNzIFtpbiA5NzA3NTEyMjkzIHRvIDk3MTc1MTIyOTEgbnNlY3NdCiAj
-MTA6IDxmZmZmODgwMDdlNTZiYTY4PiwgaHJ0aW1lcl93YWtldXAsIFM6MDEsIGhydGltZXJfc3Rh
-cnRfcmFuZ2VfbnMsIGhhbGQvMTE2NQogIyBleHBpcmVzIGF0IDIwNDk5NDgyMjkyMDgtMjA0OTk3
-ODA4MjIwNiBuc2VjcyBbaW4gMTE3MDk2NzQ4MTUgdG8gMTE3Mzk1Mjc4MTMgbnNlY3NdCiAjMTE6
-IDxmZmZmODgwMDZlYzRiYTY4PiwgaHJ0aW1lcl93YWtldXAsIFM6MDEsIGhydGltZXJfc3RhcnRf
-cmFuZ2VfbnMsIGdjb25mZC0yLzE1NjkKICMgZXhwaXJlcyBhdCAyMDUwNzg2MDk1ODc5LTIwNTA4
-MTYwNjY4NzcgbnNlY3MgW2luIDEyNTQ3NTQxNDg2IHRvIDEyNTc3NTEyNDg0IG5zZWNzXQogIzEy
-OiA8ZmZmZjg4MDA3ZTYwM2U5OD4sIGhydGltZXJfd2FrZXVwLCBTOjAxLCBocnRpbWVyX3N0YXJ0
-X3JhbmdlX25zLCBjcm9uZC8xMjIwCiAjIGV4cGlyZXMgYXQgMjA1Mzk0ODE1Njg1Mi0yMDUzOTQ4
-MjA2ODUyIG5zZWNzIFtpbiAxNTcwOTYwMjQ1OSB0byAxNTcwOTY1MjQ1OSBuc2Vjc10KICMxMzog
-PGZmZmY4ODAwN2RhNTYwNjA+LCBpdF9yZWFsX2ZuLCBTOjAxLCBocnRpbWVyX3N0YXJ0LCBzeXNs
-b2dkLzk0OAogIyBleHBpcmVzIGF0IDIwNTk3ODMyMzEzMDQtMjA1OTc4MzIzMTMwNCBuc2VjcyBb
-aW4gMjE1NDQ2NzY5MTEgdG8gMjE1NDQ2NzY5MTEgbnNlY3NdCiAjMTQ6IDxmZmZmODgwMDdkYjRm
-ZTk4PiwgaHJ0aW1lcl93YWtldXAsIFM6MDEsIGhydGltZXJfc3RhcnRfcmFuZ2VfbnMsIGF0ZC8x
-MjIyCiAjIGV4cGlyZXMgYXQgMzY0MTg5NDU1MjU3OC0zNjQxODk0NjAyNTc4IG5zZWNzIFtpbiAx
-NjAzNjU1OTk4MTg1IHRvIDE2MDM2NTYwNDgxODUgbnNlY3NdCiAjMTU6IDxmZmZmODgwMDZlYzU5
-YTY4PiwgaHJ0aW1lcl93YWtldXAsIFM6MDEsIGhydGltZXJfc3RhcnRfcmFuZ2VfbnMsIGZpcmVm
-b3gtYmluLzE1NzAKICMgZXhwaXJlcyBhdCA2NzU3MTY1Nzc0MTA4MS02NzU3MTc1Nzc0MTA4MSBu
-c2VjcyBbaW4gNjU1MzM0MTkxODY2ODggdG8gNjU1MzM1MTkxODY2ODggbnNlY3NdCiAgLmV4cGly
-ZXNfbmV4dCAgIDogMjAzODIzOTAwMDAwMCBuc2VjcwogIC5ocmVzX2FjdGl2ZSAgICA6IDEKICAu
-bnJfZXZlbnRzICAgICAgOiAyMjQyODU0CiAgLm5yX3JldHJpZXMgICAgIDogOTg5CiAgLm5yX2hh
-bmdzICAgICAgIDogMAogIC5tYXhfaGFuZ190aW1lICA6IDAgbnNlY3MKICAubm9oel9tb2RlICAg
-ICAgOiAwCiAgLmlkbGVfdGljayAgICAgIDogMCBuc2VjcwogIC50aWNrX3N0b3BwZWQgICA6IDAK
-ICAuaWRsZV9qaWZmaWVzICAgOiAwCiAgLmlkbGVfY2FsbHMgICAgIDogMAogIC5pZGxlX3NsZWVw
-cyAgICA6IDAKICAuaWRsZV9lbnRyeXRpbWUgOiAwIG5zZWNzCiAgLmlkbGVfd2FrZXRpbWUgIDog
-MCBuc2VjcwogIC5pZGxlX2V4aXR0aW1lICA6IDAgbnNlY3MKICAuaWRsZV9zbGVlcHRpbWUgOiAw
-IG5zZWNzCiAgLmxhc3RfamlmZmllcyAgIDogMAogIC5uZXh0X2ppZmZpZXMgICA6IDAKICAuaWRs
-ZV9leHBpcmVzICAgOiAwIG5zZWNzCmppZmZpZXM6IDQyOTY3MDU1MzQKCgpUaWNrIERldmljZTog
-bW9kZTogICAgIDEKQnJvYWRjYXN0IGRldmljZQpDbG9jayBFdmVudCBEZXZpY2U6IGhwZXQKIG1h
-eF9kZWx0YV9uczogICAxNDk5ODMwMDU5NTkKIG1pbl9kZWx0YV9uczogICA1MDAwCiBtdWx0OiAg
-ICAgICAgICAgNjE0OTYxMTQKIHNoaWZ0OiAgICAgICAgICAzMgogbW9kZTogICAgICAgICAgIDMK
-IG5leHRfZXZlbnQ6ICAgICAyMDM4MjM5MDAwMDAwIG5zZWNzCiBzZXRfbmV4dF9ldmVudDogaHBl
-dF9sZWdhY3lfbmV4dF9ldmVudAogc2V0X21vZGU6ICAgICAgIGhwZXRfbGVnYWN5X3NldF9tb2Rl
-CiBldmVudF9oYW5kbGVyOiAgdGlja19oYW5kbGVfb25lc2hvdF9icm9hZGNhc3QKdGlja19icm9h
-ZGNhc3RfbWFzazogMDAwMDAwMDEKdGlja19icm9hZGNhc3Rfb25lc2hvdF9tYXNrOiAwMDAwMDAw
-MAoKClRpY2sgRGV2aWNlOiBtb2RlOiAgICAgMQpQZXIgQ1BVIGRldmljZTogMApDbG9jayBFdmVu
-dCBEZXZpY2U6IGxhcGljCiBtYXhfZGVsdGFfbnM6ICAgODA3MjEyMzU4CiBtaW5fZGVsdGFfbnM6
-ICAgMTQ0MwogbXVsdDogICAgICAgICAgIDQ0NjMzNTk5CiBzaGlmdDogICAgICAgICAgMzIKIG1v
-ZGU6ICAgICAgICAgICAzCiBuZXh0X2V2ZW50OiAgICAgMjAzODIzOTAwMDAwMCBuc2Vjcwogc2V0
-X25leHRfZXZlbnQ6IGxhcGljX25leHRfZXZlbnQKIHNldF9tb2RlOiAgICAgICBsYXBpY190aW1l
-cl9zZXR1cAogZXZlbnRfaGFuZGxlcjogIGhydGltZXJfaW50ZXJydXB0Cgo=
---0016e68e91a521124b0486470be7--
+I can't say anything about this log that including only DMA addresses.
+I'm not familiar with how the USB core does DMA stuff. And the USB
+stack design that the USB core does DMA stuff (allocating, mappings,
+etc) makes debugging DMA issues really difficult.
