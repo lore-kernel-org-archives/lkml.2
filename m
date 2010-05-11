@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813Ab0EKXdX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 19:33:23 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:58619 "EHLO e5.ny.us.ibm.com"
+	id S1753889Ab0EKXdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 19:33:25 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:58631 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752311Ab0EKXdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 19:33:11 -0400
+	id S1751615Ab0EKXdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 19:33:15 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,11 +15,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [PATCH RFC tip/core/rcu 04/11] powerpc: remove all rcu head initializations
-Date: Tue, 11 May 2010 16:32:59 -0700
-Message-Id: <1273620786-20392-4-git-send-email-paulmck@linux.vnet.ibm.com>
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH RFC tip/core/rcu 06/11] staging: remove all rcu head initializations
+Date: Tue, 11 May 2010 16:33:01 -0700
+Message-Id: <1273620786-20392-6-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100511233241.GA20250@linux.vnet.ibm.com>
 References: <20100511233241.GA20250@linux.vnet.ibm.com>
@@ -32,25 +31,24 @@ it to call_rcu() anyway. Only leave the "on_stack" variants so debugobjects can
 keep track of objects on stack.
 
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/powerpc/mm/pgtable.c |    1 -
+ drivers/staging/batman-adv/hard-interface.c |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/mm/pgtable.c b/arch/powerpc/mm/pgtable.c
-index ebc2f38..2c7e801 100644
---- a/arch/powerpc/mm/pgtable.c
-+++ b/arch/powerpc/mm/pgtable.c
-@@ -92,7 +92,6 @@ static void pte_free_rcu_callback(struct rcu_head *head)
+diff --git a/drivers/staging/batman-adv/hard-interface.c b/drivers/staging/batman-adv/hard-interface.c
+index befd488..96ea0e5 100644
+--- a/drivers/staging/batman-adv/hard-interface.c
++++ b/drivers/staging/batman-adv/hard-interface.c
+@@ -301,7 +301,6 @@ int hardif_add_interface(char *dev, int if_num)
+ 	batman_if->if_num = if_num;
+ 	batman_if->dev = dev;
+ 	batman_if->if_active = IF_INACTIVE;
+-	INIT_RCU_HEAD(&batman_if->rcu);
  
- static void pte_free_submit(struct pte_freelist_batch *batch)
- {
--	INIT_RCU_HEAD(&batch->rcu);
- 	call_rcu(&batch->rcu, pte_free_rcu_callback);
- }
- 
+ 	printk(KERN_INFO "batman-adv:Adding interface: %s\n", dev);
+ 	avail_ifs++;
 -- 
 1.7.0.6
 
