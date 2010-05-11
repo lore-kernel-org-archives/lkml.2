@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab0EKSI5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 14:08:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38677 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756890Ab0EKSIy convert rfc822-to-8bit (ORCPT
+	id S1756941Ab0EKSJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 14:09:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57655 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756890Ab0EKSJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 14:08:54 -0400
-From: "Arce, Abraham" <x0066660@ti.com>
-To: "trivial@kernel.org" <trivial@kernel.org>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-       "greg@kroah.com" <greg@kroah.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 11 May 2010 13:08:15 -0500
-Subject: [PATCH 1/3] EEPROM: Header file cleanup
-Thread-Topic: [PATCH 1/3] EEPROM: Header file cleanup
-Thread-Index: AcrxNO1ls+HaxtRLTlGc3M4OS4xLZg==
-Message-ID: <27F9C60D11D683428E133F85D2BB4A53043DFD5808@dlee03.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 May 2010 14:09:05 -0400
+Date: Tue, 11 May 2010 11:06:42 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+       Ingo Molnar <mingo@elte.hu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Tony Breeds <tonyb@au1.ibm.com>
+Subject: Re: [PATCH/RFC] mutex: Fix optimistic spinning vs. BKL
+In-Reply-To: <1273478159.5605.3324.camel@twins>
+Message-ID: <alpine.LFD.2.00.1005111051330.3711@i5.linux-foundation.org>
+References: <1272429513.24542.83.camel@pasglop>  <201004281406.04080.arnd@arndb.de> <1272494121.24542.113.camel@pasglop>  <20100507042010.GR12389@ozlabs.org> <20100507053023.GF8069@nowhere>  <1273212116.4861.61.camel@pasglop>  <20100507212909.GD5401@nowhere>
+  <1273271262.4861.134.camel@pasglop> <1273478159.5605.3324.camel@twins>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change eeprom.c header file to format as in conventions
 
-Signed-off-by: Abraham Arce <x0066660@ti.com>
----
- drivers/misc/eeprom/eeprom.c |   40 ++++++++++++++++++++--------------------
- 1 files changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/misc/eeprom/eeprom.c b/drivers/misc/eeprom/eeprom.c
-index f939ebc..fffa2e8 100644
---- a/drivers/misc/eeprom/eeprom.c
-+++ b/drivers/misc/eeprom/eeprom.c
-@@ -1,24 +1,24 @@
- /*
--    Copyright (C) 1998, 1999  Frodo Looijaard <frodol@dds.nl> and
--			       Philip Edelbrock <phil@netroedge.com>
--    Copyright (C) 2003 Greg Kroah-Hartman <greg@kroah.com>
--    Copyright (C) 2003 IBM Corp.
--    Copyright (C) 2004 Jean Delvare <khali@linux-fr.org>
--
--    This program is free software; you can redistribute it and/or modify
--    it under the terms of the GNU General Public License as published by
--    the Free Software Foundation; either version 2 of the License, or
--    (at your option) any later version.
--
--    This program is distributed in the hope that it will be useful,
--    but WITHOUT ANY WARRANTY; without even the implied warranty of
--    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--    GNU General Public License for more details.
--
--    You should have received a copy of the GNU General Public License
--    along with this program; if not, write to the Free Software
--    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
--*/
-+ * Copyright (C) 1998, 1999  Frodo Looijaard <frodol@dds.nl> and
-+ *                           Philip Edelbrock <phil@netroedge.com>
-+ * Copyright (C) 2003 Greg Kroah-Hartman <greg@kroah.com>
-+ * Copyright (C) 2003 IBM Corp.
-+ * Copyright (C) 2004 Jean Delvare <khali@linux-fr.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
- 
- #include <linux/kernel.h>
- #include <linux/init.h>
--- 
-1.5.4.3
+On Mon, 10 May 2010, Peter Zijlstra wrote:
+> 
+> As to the 2 jiffy spin timeout, I guess we should add a lockdep warning
+> for that, because anybody holding a mutex for longer than 2 jiffies and
+> not sleeping does need fixing anyway.
 
+I really hate the jiffies thing, but looking at the optimistic spinning, I 
+do wonder about two things..
+
+First - we check "need_resched()" only if owner is NULL. That sounds 
+wrong. If we need to reschedule, we need to stop spinning _regardless_ of 
+whether the owner may have been preempted before setting the owner field.
+
+Second: we allow "owner" to change, and we'll continue spinning. This is 
+how you can end up spinning for a long time - not because anybody holds 
+the mutex for longer than 2 jiffies, but because a lot of other threads 
+_together_ hold the mutex for longer than 2 jiffies.
+
+Now, I think we do want some limited "continue spinning even if somebody 
+else ended up getting it instead", but I think we should at least limit 
+it. Otherwise we end up being potentially rather unfair, since we don't 
+have any fair queueing logic for the optimistic spinning phase.
+
+Now, we could just count the number of times "owner" has changed, and I 
+suspect that would be sufficient. Now, that trivial counting sceme would 
+fail if "owner" stays the same (ie the same process re-takes the lock over 
+and over again, possibly due to hot cacheline things being very unfair 
+to the person who already owns it), but quite frankly, I don't think we 
+can get into that kind of situation. 
+
+Why? Mutexes may end up being very heavily contended, but they can't be 
+contended by just _one_ thread. So if we're really in a starvation issue, 
+the thread that is waiting _will_ see multiple different owners.
+
+So once you have seen X number of other owners, you just say "screw it, 
+this spinning thing isn't working for me, I'll go to the sleeping case".
+
+Of course, that is _really_ unfair. It will make it all that easier for 
+the other spinners to just get the lock by spinning. We used to have some 
+logic to say "we won't spin if there are proper waiters", but that was 
+horrible for performance. See commit ac6e60ee405.
+
+Of course, it's quite possible that as long as "need_resched()" isn't set, 
+spinning really _is_ the right thing to do. Maybe it causes horrible CPU 
+load on some odd "everybody synchronize" loads, but maybe that really is 
+the best we can do.
+
+			Linus
