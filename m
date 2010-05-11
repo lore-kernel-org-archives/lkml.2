@@ -1,101 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504Ab0EKS01 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 14:26:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43167 "EHLO ogre.sisk.pl"
+	id S932531Ab0EKS0j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 14:26:39 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:57042 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932483Ab0EKS0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 14:26:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] acpi: Unconditionally set SCI_EN on resume
-Date: Tue, 11 May 2010 20:27:36 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org
-References: <1273600165-16681-1-git-send-email-mjg@redhat.com>
-In-Reply-To: <1273600165-16681-1-git-send-email-mjg@redhat.com>
+	id S932484Ab0EKS0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 14:26:34 -0400
+Date: Tue, 11 May 2010 20:26:28 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Ursula Braun <ursula.braun@de.ibm.com>,
+       Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/5] drivers/s390/net: Drop memory allocation cast
+Message-ID: <Pine.LNX.4.64.1005112025580.4330@ask.diku.dk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005112027.36923.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 May 2010, Matthew Garrett wrote:
-> The ACPI spec tells us that the firmware will reenable SCI_EN on resume.
-> Reality disagrees in some cases. The ACPI spec tells us that the only way
-> to set SCI_EN is via an SMM call.
-> https://bugzilla.kernel.org/show_bug.cgi?id=13745 shows us that doing so
-> may break machines. Tracing the ACPI calls made by Windows shows that it
-> unconditionally sets SCI_EN on resume with a direct register write, and
-> therefore the overwhelming probability is that everything is fine with
-> this behaviour.
-> 
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> ---
->  arch/x86/kernel/acpi/sleep.c |    2 -
->  drivers/acpi/sleep.c         |  157 +-----------------------------------------
->  include/linux/acpi.h         |    1 -
->  3 files changed, 2 insertions(+), 158 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-> index f996103..82e5086 100644
-> --- a/arch/x86/kernel/acpi/sleep.c
-> +++ b/arch/x86/kernel/acpi/sleep.c
-> @@ -162,8 +162,6 @@ static int __init acpi_sleep_setup(char *str)
->  #endif
->  		if (strncmp(str, "old_ordering", 12) == 0)
->  			acpi_old_suspend_ordering();
-> -		if (strncmp(str, "sci_force_enable", 16) == 0)
-> -			acpi_set_sci_en_on_resume();
->  		str = strchr(str, ',');
->  		if (str != NULL)
->  			str += strspn(str, ", \t");
-> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-> index baa76bb..4ab2275 100644
-> --- a/drivers/acpi/sleep.c
-> +++ b/drivers/acpi/sleep.c
-> @@ -80,22 +80,6 @@ static int acpi_sleep_prepare(u32 acpi_state)
->  
->  #ifdef CONFIG_ACPI_SLEEP
->  static u32 acpi_target_sleep_state = ACPI_STATE_S0;
-> -/*
-> - * According to the ACPI specification the BIOS should make sure that ACPI is
-> - * enabled and SCI_EN bit is set on wake-up from S1 - S3 sleep states.  Still,
-> - * some BIOSes don't do that and therefore we use acpi_enable() to enable ACPI
-> - * on such systems during resume.  Unfortunately that doesn't help in
-> - * particularly pathological cases in which SCI_EN has to be set directly on
-> - * resume, although the specification states very clearly that this flag is
-> - * owned by the hardware.  The set_sci_en_on_resume variable will be set in such
-> - * cases.
-> - */
-> -static bool set_sci_en_on_resume;
-> -
-> -void __init acpi_set_sci_en_on_resume(void)
-> -{
-> -	set_sci_en_on_resume = true;
-> -}
->  
->  /*
->   * ACPI 1.0 wants us to execute _PTS before suspending devices, so we allow the
-> @@ -253,11 +237,8 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
->  		break;
->  	}
->  
-> -	/* If ACPI is not enabled by the BIOS, we need to enable it here. */
-> -	if (set_sci_en_on_resume)
-> -		acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
-> -	else
-> -		acpi_enable();
-> +	/* This violates the spec but is required for bug compatibility. */
-> +	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
+From: Julia Lawall <julia@diku.dk>
 
-No, this breaks my MSI Wind U100 right away.
+Drop cast on the result of kmalloc and similar functions.
 
-If you called acpi_enable() before that and do that depending on its result,
-_that_ would work.
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
 
-Thanks,
-Rafael
+// <smpl>
+@@
+type T;
+@@
+
+- (T *)
+  (\(kmalloc\|kzalloc\|kcalloc\|kmem_cache_alloc\|kmem_cache_zalloc\|
+   kmem_cache_alloc_node\|kmalloc_node\|kzalloc_node\)(...))
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/s390/net/ctcm_main.c      |    6 ++----
+ drivers/s390/net/ctcm_mpc.c       |    6 ++----
+ drivers/s390/net/lcs.c            |    3 +--
+ drivers/s390/net/qeth_core_main.c |    2 +-
+ 4 files changed, 6 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/s390/net/ctcm_main.c b/drivers/s390/net/ctcm_main.c
+index e35713d..4ecafbf 100644
+--- a/drivers/s390/net/ctcm_main.c
++++ b/drivers/s390/net/ctcm_main.c
+@@ -1364,8 +1364,7 @@ static int add_channel(struct ccw_device *cdev, enum ctcm_channel_types type,
+ 
+ 	ch->protocol = priv->protocol;
+ 	if (IS_MPC(priv)) {
+-		ch->discontact_th = (struct th_header *)
+-				kzalloc(TH_HEADER_LENGTH, gfp_type());
++		ch->discontact_th = kzalloc(TH_HEADER_LENGTH, gfp_type());
+ 		if (ch->discontact_th == NULL)
+ 					goto nomem_return;
+ 
+@@ -1379,8 +1378,7 @@ static int add_channel(struct ccw_device *cdev, enum ctcm_channel_types type,
+ 	} else
+ 		ccw_num = 8;
+ 
+-	ch->ccw = (struct ccw1 *)
+-		kzalloc(ccw_num * sizeof(struct ccw1), GFP_KERNEL | GFP_DMA);
++	ch->ccw = kzalloc(ccw_num * sizeof(struct ccw1), GFP_KERNEL | GFP_DMA);
+ 	if (ch->ccw == NULL)
+ 					goto nomem_return;
+ 
+diff --git a/drivers/s390/net/ctcm_mpc.c b/drivers/s390/net/ctcm_mpc.c
+index 5978b39..87c24d2 100644
+--- a/drivers/s390/net/ctcm_mpc.c
++++ b/drivers/s390/net/ctcm_mpc.c
+@@ -669,8 +669,7 @@ static void ctcmpc_send_sweep_resp(struct channel *rch)
+ 				goto done;
+ 	}
+ 
+-	header = (struct th_sweep *)
+-			kmalloc(sizeof(struct th_sweep), gfp_type());
++	header = kmalloc(sizeof(struct th_sweep), gfp_type());
+ 
+ 	if (!header) {
+ 		dev_kfree_skb_any(sweep_skb);
+@@ -1191,8 +1190,7 @@ static void ctcmpc_unpack_skb(struct channel *ch, struct sk_buff *pskb)
+ 			skb_pull(pskb, new_len); /* point to next PDU */
+ 		}
+ 	} else {
+-		mpcginfo = (struct mpcg_info *)
+-				kmalloc(sizeof(struct mpcg_info), gfp_type());
++		mpcginfo = kmalloc(sizeof(struct mpcg_info), gfp_type());
+ 		if (mpcginfo == NULL)
+ 					goto done;
+ 
+diff --git a/drivers/s390/net/lcs.c b/drivers/s390/net/lcs.c
+index 9b19ea1..0f19d54 100644
+--- a/drivers/s390/net/lcs.c
++++ b/drivers/s390/net/lcs.c
+@@ -1238,8 +1238,7 @@ lcs_set_mc_addresses(struct lcs_card *card, struct in_device *in4_dev)
+ 		ipm = lcs_check_addr_entry(card, im4, buf);
+ 		if (ipm != NULL)
+ 			continue;	/* Address already in list. */
+-		ipm = (struct lcs_ipm_list *)
+-			kzalloc(sizeof(struct lcs_ipm_list), GFP_ATOMIC);
++		ipm = kzalloc(sizeof(struct lcs_ipm_list), GFP_ATOMIC);
+ 		if (ipm == NULL) {
+ 			pr_info("Not enough memory to add"
+ 				" new multicast entry!\n");
+diff --git a/drivers/s390/net/qeth_core_main.c b/drivers/s390/net/qeth_core_main.c
+index 3ba738b..065a3fa 100644
+--- a/drivers/s390/net/qeth_core_main.c
++++ b/drivers/s390/net/qeth_core_main.c
+@@ -606,7 +606,7 @@ static int qeth_setup_channel(struct qeth_channel *channel)
+ 
+ 	QETH_DBF_TEXT(SETUP, 2, "setupch");
+ 	for (cnt = 0; cnt < QETH_CMD_BUFFER_NO; cnt++) {
+-		channel->iob[cnt].data = (char *)
++		channel->iob[cnt].data =
+ 			kmalloc(QETH_BUFSIZE, GFP_DMA|GFP_KERNEL);
+ 		if (channel->iob[cnt].data == NULL)
+ 			break;
