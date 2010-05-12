@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab0ELRqy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 13:46:54 -0400
-Received: from kroah.org ([198.145.64.141]:45082 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756584Ab0ELRqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 13:46:53 -0400
-Date: Wed, 12 May 2010 10:46:11 -0700
-From: Greg KH <greg@kroah.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, "Arce, Abraham" <x0066660@ti.com>,
-       "trivial@kernel.org" <trivial@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] EEPROM: Header file cleanup
-Message-ID: <20100512174611.GB27912@kroah.com>
-References: <27F9C60D11D683428E133F85D2BB4A53043DFD5808@dlee03.ent.ti.com>
- <20100512093015.GE13984@pengutronix.de>
- <20100512113814.642f6b10@hyperion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512113814.642f6b10@hyperion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757023Ab0ELRrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 13:47:12 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41434 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756358Ab0ELRrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 13:47:09 -0400
+Subject: Re: Perf and ftrace [was Re: PyTimechart]
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Pierre Tardy <tardyp@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, arjan@infradead.org,
+       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>
+In-Reply-To: <20100512170734.GA15953@Krystal>
+References: <AANLkTilJLcdfK-vgqGdXyaZ_bQ1BDFmQl619egtGAA4i@mail.gmail.com>
+	 <20100511213625.GD5422@nowhere>
+	 <AANLkTikumkBKwYTYIK63mT2i_hI4SAo-Eua0cx9OCHnD@mail.gmail.com>
+	 <20100512144811.GA5405@nowhere>
+	 <1273678596.27703.30.camel@gandalf.stny.rr.com>
+	 <20100512164650.GH5405@nowhere> <1273683624.1626.127.camel@laptop>
+	 <20100512170734.GA15953@Krystal>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 May 2010 19:47:05 +0200
+Message-ID: <1273686425.1626.142.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 11:38:14AM +0200, Jean Delvare wrote:
-> On Wed, 12 May 2010 11:30:15 +0200, Wolfram Sang wrote:
-> > On Tue, May 11, 2010 at 01:08:15PM -0500, Arce, Abraham wrote:
-> > > Change eeprom.c header file to format as in conventions
-> > > 
-> > > Signed-off-by: Abraham Arce <x0066660@ti.com>
-> > > ---
-> > >  drivers/misc/eeprom/eeprom.c |   40 ++++++++++++++++++++--------------------
-> > >  1 files changed, 20 insertions(+), 20 deletions(-)
-> > > 
-> > > diff --git a/drivers/misc/eeprom/eeprom.c b/drivers/misc/eeprom/eeprom.c
-> > > index f939ebc..fffa2e8 100644
-> > > --- a/drivers/misc/eeprom/eeprom.c
-> > > +++ b/drivers/misc/eeprom/eeprom.c
-> > > @@ -1,24 +1,24 @@
-> > >  /*
-> > > -    Copyright (C) 1998, 1999  Frodo Looijaard <frodol@dds.nl> and
-> > > -			       Philip Edelbrock <phil@netroedge.com>
-> > > -    Copyright (C) 2003 Greg Kroah-Hartman <greg@kroah.com>
-> > > -    Copyright (C) 2003 IBM Corp.
-> > > -    Copyright (C) 2004 Jean Delvare <khali@linux-fr.org>
-> > > -
-> > > -    This program is free software; you can redistribute it and/or modify
-> > > -    it under the terms of the GNU General Public License as published by
-> > > -    the Free Software Foundation; either version 2 of the License, or
-> > > -    (at your option) any later version.
-> > > -
-> > > -    This program is distributed in the hope that it will be useful,
-> > > -    but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > > -    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > > -    GNU General Public License for more details.
-> > > -
-> > > -    You should have received a copy of the GNU General Public License
-> > > -    along with this program; if not, write to the Free Software
-> > > -    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-> > > -*/
-> > > + * Copyright (C) 1998, 1999  Frodo Looijaard <frodol@dds.nl> and
-> > > + *                           Philip Edelbrock <phil@netroedge.com>
-> > > + * Copyright (C) 2003 Greg Kroah-Hartman <greg@kroah.com>
-> > > + * Copyright (C) 2003 IBM Corp.
-> > > + * Copyright (C) 2004 Jean Delvare <khali@linux-fr.org>
-> > > + *
-> > > + * This program is free software; you can redistribute it and/or modify
-> > > + * it under the terms of the GNU General Public License as published by
-> > > + * the Free Software Foundation; either version 2 of the License, or
-> > > + * (at your option) any later version.
-> > > + *
-> > > + * This program is distributed in the hope that it will be useful,
-> > > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > > + * GNU General Public License for more details.
-> > > + *
-> > > + * You should have received a copy of the GNU General Public License
-> > > + * along with this program; if not, write to the Free Software
-> > > + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-> > > + */
-> > 
-> > If you are touching this anyhow, could you also update the address of the FSF?
-> > (or maybe remove the address block if the original authors are fine with it).
+On Wed, 2010-05-12 at 13:07 -0400, Mathieu Desnoyers wrote:
+> > Its mostly an interface/api question. You cannot easily splice() a
+> > mmap()'ed buffer on machines that have address constraints like sparc.
 > 
-> This would definitely be fine with me (even though I'm not the original
-> author.)
+> Ah ? Can you explain this issue a bit more ? There is possibly a concern I don't
+> quite see here. 
 
-Removing it would be fine, and better.
+IIRC Sparc has virtually tagged D-caches on the lower 9 bits of the pfn,
+so to avoid cache aliasing both mappings (kernel and user) need to be
+aligned.
 
-thanks,
+Since splice needs to swap pages it needs to allocate replacement pages
+with the exact right alignment, which is rather expensive (in either
+time or space).
 
-greg k-h
+
