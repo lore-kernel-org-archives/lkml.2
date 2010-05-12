@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab0ELAXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 20:23:50 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58194 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab0ELAXs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 20:23:48 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] mm,migration: Avoid race between shift_arg_pages() and rmap_walk() during migration by not migrating temporary stacks
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <20100511085752.GM26611@csn.ul.ie>
-References: <20100511085752.GM26611@csn.ul.ie>
-Message-Id: <20100512092239.2120.A69D9226@jp.fujitsu.com>
+	id S1752841Ab0ELAip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 20:38:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12856 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751754Ab0ELAio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 20:38:44 -0400
+Message-ID: <4BE9F952.3060505@redhat.com>
+Date: Tue, 11 May 2010 20:41:54 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@us.ibm.com>, Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH -tip 4/5] kprobes/x86: Use text_poke_smp_batch
+References: <20100510175313.27396.34605.stgit@localhost6.localdomain6> <20100510175340.27396.7222.stgit@localhost6.localdomain6> <20100511144013.GA17656@Krystal>
+In-Reply-To: <20100511144013.GA17656@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 12 May 2010 09:23:44 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index 725d7ef..13f8e7f 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -242,9 +242,10 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
->  	 * use STACK_TOP because that can depend on attributes which aren't
->  	 * configured yet.
->  	 */
-> +	BUG_ON(VM_STACK_FLAGS & VM_STACK_INCOMPLETE_SETUP);
+Mathieu Desnoyers wrote:
+> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
+>> Use text_poke_smp_batch() in optimization path for reducing
+>> the number of stop_machine() issues.
+>>
+>> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+>> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+>> Cc: Ingo Molnar <mingo@elte.hu>
+>> Cc: Jim Keniston <jkenisto@us.ibm.com>
+>> Cc: Jason Baron <jbaron@redhat.com>
+>> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+>> ---
+>>
+>>  arch/x86/kernel/kprobes.c |   37 ++++++++++++++++++++++++++++++-------
+>>  include/linux/kprobes.h   |    2 +-
+>>  kernel/kprobes.c          |   13 +------------
+>>  3 files changed, 32 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+>> index 345a4b1..63a5c24 100644
+>> --- a/arch/x86/kernel/kprobes.c
+>> +++ b/arch/x86/kernel/kprobes.c
+>> @@ -1385,10 +1385,14 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+>>  	return 0;
+>>  }
+>>  
+>> -/* Replace a breakpoint (int3) with a relative jump.  */
+>> -int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
+>> +#define MAX_OPTIMIZE_PROBES 256
+> 
+> So what kind of interrupt latency does a 256-probes batch generate on the
+> system ?  Are we talking about a few milliseconds, a few seconds ?
 
-Can we use BUILD_BUG_ON()? 
+>From my experiment on kvm/4cpu, it took about 3 seconds in average.
+With this patch, it went down to 30ms. (x100 faster :))
 
-but anyway
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-
+Thank you,
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
 
