@@ -1,54 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab0ELVxe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 17:53:34 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41191
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755851Ab0ELVxc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 17:53:32 -0400
-Date: Wed, 12 May 2010 14:53:39 -0700 (PDT)
-Message-Id: <20100512.145339.00461355.davem@davemloft.net>
-To: randy.dunlap@oracle.com
-Cc: jengelh@medozas.de, kaber@trash.net, sfr@canb.auug.org.au,
-       netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       sebastian.classen@freenet.ag
-Subject: Re: linux-next: Tree for May 12 (netfilter: xt_TEE)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100512131942.f487b3a9.randy.dunlap@oracle.com>
-References: <20100512085045.483f0e2d.randy.dunlap@oracle.com>
-	<alpine.LSU.2.01.1005122210180.11190@obet.zrqbmnf.qr>
-	<20100512131942.f487b3a9.randy.dunlap@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755313Ab0ELVyp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 17:54:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752158Ab0ELVyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 17:54:43 -0400
+Date: Thu, 13 May 2010 00:48:47 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com, Arnd Bergmann <arnd@relay.de.ibm.com>,
+       Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH RFC tip/core/rcu 23/23] vhost: add __rcu annotations
+Message-ID: <20100512214847.GD22930@redhat.com>
+References: <20100512213317.GA15085@linux.vnet.ibm.com> <1273700022-16523-23-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273700022-16523-23-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Wed, 12 May 2010 13:19:42 -0700
-
-> On Wed, 12 May 2010 22:11:35 +0200 (CEST) Jan Engelhardt wrote:
+On Wed, May 12, 2010 at 02:33:42PM -0700, Paul E. McKenney wrote:
+> From: Arnd Bergmann <arnd@relay.de.ibm.com>
 > 
->> parent cba7a98a474a4f2a9316473734ba76829191a78a (v2.6.34-rc5-1489-gcba7a98)
->> commit cff884ea0de4bf8729ac33bb5d98ac9d39d09019
->> Author: Jan Engelhardt <jengelh@medozas.de>
->> Date:   Wed May 12 22:10:03 2010 +0200
->> 
->> netfilter: xtables: add missing depends for xt_TEE
->> 
->> Aviod these link-time errors when IPV6=m, XT_TEE=y:
->> 
->> net/built-in.o: In function `tee_tg_route6':
->> xt_TEE.c:(.text+0x45ca5): undefined reference to `ip6_route_output'
->> net/built-in.o: In function `tee_tg6':
->> xt_TEE.c:(.text+0x45d79): undefined reference to `ip6_local_out'
->> 
->> Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
- ...
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Also add rcu_dreference_protected() for code paths where locks are held.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
 
-I'll apply this directly, thanks everyone.
+Maybe long lines can be fixed? Otherwise looks ok.
+
+> ---
+>  drivers/vhost/net.c   |   11 ++++++++---
+>  drivers/vhost/vhost.c |   14 ++++++++------
+>  drivers/vhost/vhost.h |    4 ++--
+>  3 files changed, 18 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 9777583..945c5cb 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -364,7 +364,10 @@ static void vhost_net_disable_vq(struct vhost_net *n,
+>  static void vhost_net_enable_vq(struct vhost_net *n,
+>  				struct vhost_virtqueue *vq)
+>  {
+> -	struct socket *sock = vq->private_data;
+> +	struct socket *sock;
+> +
+> +	sock = rcu_dereference_protected(vq->private_data,
+> +					 lockdep_is_held(&vq->mutex));
+>  	if (!sock)
+>  		return;
+>  	if (vq == n->vqs + VHOST_NET_VQ_TX) {
+> @@ -380,7 +383,8 @@ static struct socket *vhost_net_stop_vq(struct vhost_net *n,
+>  	struct socket *sock;
+>  
+>  	mutex_lock(&vq->mutex);
+> -	sock = vq->private_data;
+> +	sock = rcu_dereference_protected(vq->private_data,
+> +					 lockdep_is_held(&vq->mutex));
+>  	vhost_net_disable_vq(n, vq);
+>  	rcu_assign_pointer(vq->private_data, NULL);
+>  	mutex_unlock(&vq->mutex);
+> @@ -518,7 +522,8 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+>  	}
+>  
+>  	/* start polling new socket */
+> -	oldsock = vq->private_data;
+> +	oldsock = rcu_dereference_protected(vq->private_data,
+> +					    lockdep_is_held(&vq->mutex));
+>  	if (sock == oldsock)
+>  		goto done;
+>  
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index e69d238..fc0c077 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -180,7 +180,7 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
+>  	vhost_dev_cleanup(dev);
+>  
+>  	memory->nregions = 0;
+> -	dev->memory = memory;
+> +	RCU_INIT_POINTER(dev->memory, memory);
+>  	return 0;
+>  }
+>  
+> @@ -212,8 +212,9 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+>  		fput(dev->log_file);
+>  	dev->log_file = NULL;
+>  	/* No one will access memory at this point */
+> -	kfree(dev->memory);
+> -	dev->memory = NULL;
+> +	kfree(rcu_dereference_protected(dev->memory,
+> +					lockdep_is_held(&dev->mutex)));
+> +	RCU_INIT_POINTER(dev->memory, NULL);
+>  	if (dev->mm)
+>  		mmput(dev->mm);
+>  	dev->mm = NULL;
+> @@ -294,14 +295,14 @@ static int vq_access_ok(unsigned int num,
+>  /* Caller should have device mutex but not vq mutex */
+>  int vhost_log_access_ok(struct vhost_dev *dev)
+>  {
+> -	return memory_access_ok(dev, dev->memory, 1);
+> +	return memory_access_ok(dev, rcu_dereference_protected(dev->memory, lockdep_is_held(&dev->mutex)), 1);
+>  }
+>  
+>  /* Verify access for write logging. */
+>  /* Caller should have vq mutex and device mutex */
+>  static int vq_log_access_ok(struct vhost_virtqueue *vq, void __user *log_base)
+>  {
+> -	return vq_memory_access_ok(log_base, vq->dev->memory,
+> +	return vq_memory_access_ok(log_base, rcu_dereference_protected(vq->dev->memory, lockdep_is_held(&dev->mutex)),
+>  			    vhost_has_feature(vq->dev, VHOST_F_LOG_ALL)) &&
+>  		(!vq->log_used || log_access_ok(log_base, vq->log_addr,
+>  					sizeof *vq->used +
+> @@ -342,7 +343,8 @@ static long vhost_set_memory(struct vhost_dev *d, struct vhost_memory __user *m)
+>  
+>  	if (!memory_access_ok(d, newmem, vhost_has_feature(d, VHOST_F_LOG_ALL)))
+>  		return -EFAULT;
+> -	oldmem = d->memory;
+> +	oldmem = rcu_dereference_protected(d->memory,
+> +					   lockdep_is_held(&d->mutex));
+>  	rcu_assign_pointer(d->memory, newmem);
+>  	synchronize_rcu();
+>  	kfree(oldmem);
+> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> index 44591ba..240396c 100644
+> --- a/drivers/vhost/vhost.h
+> +++ b/drivers/vhost/vhost.h
+> @@ -92,7 +92,7 @@ struct vhost_virtqueue {
+>  	 * work item execution acts instead of rcu_read_lock() and the end of
+>  	 * work item execution acts instead of rcu_read_lock().
+>  	 * Writers use virtqueue mutex. */
+> -	void *private_data;
+> +	void __rcu *private_data;
+>  	/* Log write descriptors */
+>  	void __user *log_base;
+>  	struct vhost_log log[VHOST_NET_MAX_SG];
+> @@ -102,7 +102,7 @@ struct vhost_dev {
+>  	/* Readers use RCU to access memory table pointer
+>  	 * log base pointer and features.
+>  	 * Writers use mutex below.*/
+> -	struct vhost_memory *memory;
+> +	struct vhost_memory __rcu *memory;
+>  	struct mm_struct *mm;
+>  	struct mutex mutex;
+>  	unsigned acked_features;
+> -- 
+> 1.7.0.6
