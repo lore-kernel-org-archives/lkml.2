@@ -1,333 +1,672 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab0ELTyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 15:54:32 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33950 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab0ELTya (ORCPT
+	id S1757536Ab0ELTzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 15:55:42 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59536 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757325Ab0ELTzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 15:54:30 -0400
+	Wed, 12 May 2010 15:55:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=NPth6QB1XIb1fv7acVwI4uDj+Yc2DxV3fxYZfijAzeQegSmu2wm3HIt0LMaJUcYQyq
-         i+BHVGF9u5LW0mDs0ZDNTPTvv60azic5ftJQTljre8got83u0UVt8mTdm4Q7D680WGVC
-         VpZadiWPIjFMHt+GGeEqNl6KBno5AmWUPV4N0=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mkwrGT6HzYlDE9T3X+NP4ktAs3pRikA3o5xVVVK7I//YPjYbLQZhVMvyWNcHCKdnnr
+         jCtGDHAG680CKK4IQ0Fd8b0OfG7hjkw1x/WEg5qXjZDUsseAqdUDuKer5jMUN/oPCbF6
+         zhV48Gh/sraaEjGbfqefinuWhih+ye6dTQAQQ=
+Date: Wed, 12 May 2010 21:55:35 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
+       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com
+Subject: Re: [PATCH 1/8] [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100512195532.GD10028@nowhere>
+References: <1273266711-18706-1-git-send-email-dzickus@redhat.com> <1273266711-18706-2-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilg2cn3lAIOruz6oZE7V-9uAFDORlbvTX3qxmwF@mail.gmail.com>
-References: <AANLkTin6D2GP0yJJbPYGH1AcAM9-g219rAxSyW_ZlrXV@mail.gmail.com>
-	 <AANLkTikjgoBQWqvNxncMUFqWOEXtq4ePvGkvF-m0sGUE@mail.gmail.com>
-	 <AANLkTimnlZYonxKzfGHZTV8vwaDptOPHEPBjNhwnV55Y@mail.gmail.com>
-	 <1273540344.3843.101.camel@localhost.localdomain>
-	 <AANLkTilg2cn3lAIOruz6oZE7V-9uAFDORlbvTX3qxmwF@mail.gmail.com>
-Date: Wed, 12 May 2010 15:54:25 -0400
-Message-ID: <AANLkTilb_CGBolyv5Ps9VuhNxFZKtjck4om4G21ICaif@mail.gmail.com>
-Subject: Re: PROBLEM: tickless scheduling
-From: Donald Allen <donaldcallen@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: multipart/mixed; boundary=001636c5bf545dad3904866b026a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273266711-18706-2-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636c5bf545dad3904866b026a
-Content-Type: text/plain; charset=ISO-8859-1
+On Fri, May 07, 2010 at 05:11:44PM -0400, Don Zickus wrote:
+> The new nmi_watchdog (which uses the perf event subsystem) is very
+> similar in structure to the softlockup detector.  Using Ingo's suggestion,
+> I combined the two functionalities into one file, kernel/watchdog.c.
+> 
+> Now both the nmi_watchdog (or hardlockup detector) and softlockup detector
+> sit on top of the perf event subsystem, which is run every 60 seconds or so
+> to see if there are any lockups.
+> 
+> To detect hardlockups, cpus not responding to interrupts, I implemented an
+> hrtimer that runs 5 times for every perf event overflow event.  If that stops
+> counting on a cpu, then the cpu is most likely in trouble.
+> 
+> To detect softlockups, tasks not yielding to the scheduler, I used the
+> previous kthread idea that now gets kicked every time the hrtimer fires.
+> If the kthread isn't being scheduled neither is anyone else and the
+> warning is printed to the console.
+> 
+> I tested this on x86_64 and both the softlockup and hardlockup paths work.
+> 
+> V2:
+> - cleaned up the Kconfig and softlockup combination
+> - surrounded hardlockup cases with #ifdef CONFIG_PERF_EVENTS_NMI
+> - seperated out the softlockup case from perf event subsystem
+> - re-arranged the enabling/disabling nmi watchdog from proc space
+> - added cpumasks for hardlockup failure cases
+> - removed fallback to soft events if no PMU exists for hard events
+> 
+> V3:
+> - comment cleanups
+> - drop support for older softlockup code
+> - per_cpu cleanups
+> - completely remove software clock base hardlockup detector
+> - use per_cpu masking on hard/soft lockup detection
+> - #ifdef cleanups
+> - rename config option NMI_WATCHDOG to LOCKUP_DETECTOR
+> - documentation additions
+> 
+> V4:
+> - documentation fixes
+> - convert per_cpu to __get_cpu_var
+> - powerpc compile fixes
+> 
+> V5:
+> - split apart warn flags for hard and soft lockups
+> 
+> TODO:
+> - figure out how to make an arch-agnostic clock2cycles call (if possible)
+>   to feed into perf events as a sample period
+> 
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
+>  Documentation/kernel-parameters.txt |    2 +
+>  arch/x86/include/asm/nmi.h          |    2 +-
+>  arch/x86/kernel/apic/Makefile       |    4 +-
+>  arch/x86/kernel/apic/hw_nmi.c       |    2 +-
+>  arch/x86/kernel/traps.c             |    4 +-
+>  include/linux/nmi.h                 |    8 +-
+>  include/linux/sched.h               |    6 +
+>  init/Kconfig                        |    5 +-
+>  kernel/Makefile                     |    3 +-
+>  kernel/sysctl.c                     |   21 +-
+>  kernel/watchdog.c                   |  577 +++++++++++++++++++++++++++++++++++
+>  lib/Kconfig.debug                   |   30 ++-
+>  12 files changed, 635 insertions(+), 29 deletions(-)
+>  create mode 100644 kernel/watchdog.c
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 736d456..705f16f 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1764,6 +1764,8 @@ and is between 256 and 4096 characters. It is defined in the file
+>  
+>  	nousb		[USB] Disable the USB subsystem
+>  
+> +	nowatchdog	[KNL] Disable the lockup detector.
+> +
+>  	nowb		[ARM]
+>  
+>  	nox2apic	[X86-64,APIC] Do not enable x2APIC mode.
+> diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+> index 5b41b0f..932f0f8 100644
+> --- a/arch/x86/include/asm/nmi.h
+> +++ b/arch/x86/include/asm/nmi.h
+> @@ -17,7 +17,7 @@ int do_nmi_callback(struct pt_regs *regs, int cpu);
+>  
+>  extern void die_nmi(char *str, struct pt_regs *regs, int do_panic);
+>  extern int check_nmi_watchdog(void);
+> -#if !defined(CONFIG_NMI_WATCHDOG)
+> +#if !defined(CONFIG_LOCKUP_DETECTOR)
+>  extern int nmi_watchdog_enabled;
+>  #endif
+>  extern int avail_to_resrv_perfctr_nmi_bit(unsigned int);
+> diff --git a/arch/x86/kernel/apic/Makefile b/arch/x86/kernel/apic/Makefile
+> index 1a4512e..52f32e0 100644
+> --- a/arch/x86/kernel/apic/Makefile
+> +++ b/arch/x86/kernel/apic/Makefile
+> @@ -3,10 +3,10 @@
+>  #
+>  
+>  obj-$(CONFIG_X86_LOCAL_APIC)	+= apic.o apic_noop.o probe_$(BITS).o ipi.o
+> -ifneq ($(CONFIG_NMI_WATCHDOG),y)
+> +ifneq ($(CONFIG_LOCKUP_DETECTOR),y)
+>  obj-$(CONFIG_X86_LOCAL_APIC)	+= nmi.o
+>  endif
+> -obj-$(CONFIG_NMI_WATCHDOG)	+= hw_nmi.o
+> +obj-$(CONFIG_LOCKUP_DETECTOR)	+= hw_nmi.o
+>  
+>  obj-$(CONFIG_X86_IO_APIC)	+= io_apic.o
+>  obj-$(CONFIG_SMP)		+= ipi.o
+> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+> index e8b78a0..79425f9 100644
+> --- a/arch/x86/kernel/apic/hw_nmi.c
+> +++ b/arch/x86/kernel/apic/hw_nmi.c
+> @@ -89,7 +89,7 @@ int hw_nmi_is_cpu_stuck(struct pt_regs *regs)
+>  
+>  u64 hw_nmi_get_sample_period(void)
+>  {
+> -	return cpu_khz * 1000;
+> +	return (u64)(cpu_khz) * 1000 * 60;
+>  }
+>  
+>  #ifdef ARCH_HAS_NMI_WATCHDOG
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index bdc7fab..bd347c2 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -406,7 +406,7 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+>  							== NOTIFY_STOP)
+>  			return;
+>  
+> -#ifndef CONFIG_NMI_WATCHDOG
+> +#ifndef CONFIG_LOCKUP_DETECTOR
+>  		/*
+>  		 * Ok, so this is none of the documented NMI sources,
+>  		 * so it must be the NMI watchdog.
+> @@ -414,7 +414,7 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+>  		if (nmi_watchdog_tick(regs, reason))
+>  			return;
+>  		if (!do_nmi_callback(regs, cpu))
+> -#endif /* !CONFIG_NMI_WATCHDOG */
+> +#endif /* !CONFIG_LOCKUP_DETECTOR */
+>  			unknown_nmi_error(reason, regs);
+>  #else
+>  		unknown_nmi_error(reason, regs);
+> diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+> index 22cc796..abd48aa 100644
+> --- a/include/linux/nmi.h
+> +++ b/include/linux/nmi.h
+> @@ -20,7 +20,7 @@ extern void touch_nmi_watchdog(void);
+>  extern void acpi_nmi_disable(void);
+>  extern void acpi_nmi_enable(void);
+>  #else
+> -#ifndef CONFIG_NMI_WATCHDOG
+> +#ifndef CONFIG_LOCKUP_DETECTOR
+>  static inline void touch_nmi_watchdog(void)
+>  {
+>  	touch_softlockup_watchdog();
+> @@ -51,12 +51,12 @@ static inline bool trigger_all_cpu_backtrace(void)
+>  }
+>  #endif
+>  
+> -#ifdef CONFIG_NMI_WATCHDOG
+> +#ifdef CONFIG_LOCKUP_DETECTOR
+>  int hw_nmi_is_cpu_stuck(struct pt_regs *);
+>  u64 hw_nmi_get_sample_period(void);
+> -extern int nmi_watchdog_enabled;
+> +extern int watchdog_enabled;
+>  struct ctl_table;
+> -extern int proc_nmi_enabled(struct ctl_table *, int ,
+> +extern int proc_dowatchdog_enabled(struct ctl_table *, int ,
+>  			void __user *, size_t *, loff_t *);
+>  #endif
+>  
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 6f7bba9..2455ff5 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -338,6 +338,12 @@ extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
+>  					 size_t *lenp, loff_t *ppos);
+>  #endif
+>  
+> +#ifdef CONFIG_LOCKUP_DETECTOR
+> +extern int proc_dowatchdog_thresh(struct ctl_table *table, int write,
+> +				  void __user *buffer,
+> +				  size_t *lenp, loff_t *ppos);
+> +#endif
+> +
+>  /* Attach to any functions which should be ignored in wchan output. */
+>  #define __sched		__attribute__((__section__(".sched.text")))
+>  
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 7331a16..c5ce8b7 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -948,8 +948,11 @@ config PERF_USE_VMALLOC
+>  
+>  config PERF_EVENTS_NMI
+>  	bool
+> +	depends on PERF_EVENTS
+>  	help
+> -	  Arch has support for nmi_watchdog
+> +	  System hardware can generate an NMI using the perf event
+> +	  subsystem.  Also has support for calculating CPU cycle events
+> +	  to determine how many clock cycles in a given period.
+>  
+>  menu "Kernel Performance Events And Counters"
+>  
+> diff --git a/kernel/Makefile b/kernel/Makefile
+> index 8a5abe5..cc3acb3 100644
+> --- a/kernel/Makefile
+> +++ b/kernel/Makefile
+> @@ -75,9 +75,8 @@ obj-$(CONFIG_GCOV_KERNEL) += gcov/
+>  obj-$(CONFIG_AUDIT_TREE) += audit_tree.o
+>  obj-$(CONFIG_KPROBES) += kprobes.o
+>  obj-$(CONFIG_KGDB) += kgdb.o
+> -obj-$(CONFIG_DETECT_SOFTLOCKUP) += softlockup.o
+> -obj-$(CONFIG_NMI_WATCHDOG) += nmi_watchdog.o
+>  obj-$(CONFIG_DETECT_HUNG_TASK) += hung_task.o
+> +obj-$(CONFIG_LOCKUP_DETECTOR) += watchdog.o
+>  obj-$(CONFIG_GENERIC_HARDIRQS) += irq/
+>  obj-$(CONFIG_SECCOMP) += seccomp.o
+>  obj-$(CONFIG_RCU_TORTURE_TEST) += rcutorture.o
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index ac72c9e..1083897 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -60,7 +60,7 @@
+>  #include <asm/io.h>
+>  #endif
+>  
+> -#ifdef CONFIG_NMI_WATCHDOG
+> +#ifdef CONFIG_LOCKUP_DETECTOR
+>  #include <linux/nmi.h>
+>  #endif
+>  
+> @@ -696,16 +696,25 @@ static struct ctl_table kern_table[] = {
+>  		.mode		= 0444,
+>  		.proc_handler	= proc_dointvec,
+>  	},
+> -#if defined(CONFIG_NMI_WATCHDOG)
+> +#if defined(CONFIG_LOCKUP_DETECTOR)
+>  	{
+> -		.procname       = "nmi_watchdog",
+> -		.data           = &nmi_watchdog_enabled,
+> +		.procname       = "watchdog",
+> +		.data           = &watchdog_enabled,
 
-Before doing what you asked, I ran my home-brew backup script, which
-tars up the whole machine, save my home directory, to a big sata drive
-in a usb shoebox. I did so by booting the most recent Arch Linux
-install/live CD (while I use Slackware, the Slackware install CDs are
-not suitable for this sort of thing, having very old versions of
-things like tar). While doing so, I observed exactly the same symptoms
-I did with the Slackware 13.1 install, which I described in the bug
-report. So rather than messing with the hard-won custom kernel that I
-now have installed on the netbook, I am attaching the various things
-from /proc gathered with the Arch kernel running. Yes, it's a somewhat
-older kernel (2.6.30), but I'm hoping that things haven't changed much
-in tickless land. If that's not the case, then I will attempt to
-reproduce this with the newer kernel on the Slackware 13.1 install
-DVD. Let me know if you need me to do this. The attached tar file is
-bzip2-compressed, so you want xjf to extract.
 
-/Don
 
-On Mon, May 10, 2010 at 9:52 PM, Donald Allen <donaldcallen@gmail.com> wrote:
-> On Mon, May 10, 2010 at 9:12 PM, john stultz <johnstul@us.ibm.com> wrote:
->> On Mon, 2010-05-10 at 20:59 -0400, Donald Allen wrote:
->>> On Mon, May 10, 2010 at 8:54 PM, john stultz <johnstul@us.ibm.com> wrote:
->>> > On Mon, May 10, 2010 at 5:18 PM, Donald Allen <donaldcallen@gmail.com> wrote:
->>> >> 1. Network file transfers and fscks stop on Toshiba netbook unless
->>> >> system receives external events
->>> >
->>> > Can you provide /proc/timer_list output?
->>>
->>> Attached, but again, this is from the system running with tickless disabled.
->>
->> Is it possible to boot with the kernel showing the issue and provide the
->> details?
->
-> It's a minor pain, but I'll do it.
->
->>
->>
->>> > I assume booting with nohz=off from grub resolves the issue?
->>>
->>> Didn't know about the boot-time option (thanks for pointing it out),
->>> but I wanted to build a custom kernel anyway, so i did so and disabled
->>> tickless.
->>
->> Ok. It may still be of value to know booting with nohz=off does avoid
->> the problem.
->
-> Ok. When I've got the original kernel installed and bootable, I'll try
-> it. I won't be able to get to this for a day or so.
->
-> /Don
->
->>
->>
->> thanks
->> -john
->>
->>
->
+I suspect this could break some userspace apps that rely on
+this sysctl option.
 
---001636c5bf545dad3904866b026a
-Content-Type: application/octet-stream; name="tickless.tbz2"
-Content-Disposition: attachment; filename="tickless.tbz2"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_g94kjjxf0
+May be you should keep the nmi_watchdog around and schedule its
+removal for later in the feature_removal_schedule.txt file.
 
-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
-uZsEMD4LcHQC5r8oL/+LuSKcKEgDjKX4gA==
---001636c5bf545dad3904866b026a--
+
+
+>  		.maxlen         = sizeof (int),
+>  		.mode           = 0644,
+> -		.proc_handler   = proc_nmi_enabled,
+> +		.proc_handler   = proc_dowatchdog_enabled,
+> +	},
+> +	{
+> +		.procname	= "watchdog_thresh",
+> +		.data		= &softlockup_thresh,
+> +		.maxlen		= sizeof(int),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_dowatchdog_thresh,
+> +		.extra1		= &neg_one,
+> +		.extra2		= &sixty,
+>  	},
+>  #endif
+> -#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86) && !defined(CONFIG_NMI_WATCHDOG)
+> +#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86) && !defined(CONFIG_LOCKUP_DETECTOR)
+>  	{
+>  		.procname       = "unknown_nmi_panic",
+>  		.data           = &unknown_nmi_panic,
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> new file mode 100644
+> index 0000000..2684e95
+> --- /dev/null
+> +++ b/kernel/watchdog.c
+> @@ -0,0 +1,577 @@
+> +/*
+> + * Detect hard and soft lockups on a system
+> + *
+> + * started by Don Zickus, Copyright (C) 2010 Red Hat, Inc.
+> + *
+> + * this code detects hard lockups: incidents in where on a CPU
+> + * the kernel does not respond to anything except NMI.
+> + *
+> + * Note: Most of this code is borrowed heavily from softlockup.c,
+> + * so thanks to Ingo for the initial implementation.
+> + * Some chunks also taken from arch/x86/kernel/apic/nmi.c, thanks
+> + * to those contributors as well.
+> + */
+> +
+> +#include <linux/mm.h>
+> +#include <linux/cpu.h>
+> +#include <linux/nmi.h>
+> +#include <linux/init.h>
+> +#include <linux/delay.h>
+> +#include <linux/freezer.h>
+> +#include <linux/kthread.h>
+> +#include <linux/lockdep.h>
+> +#include <linux/notifier.h>
+> +#include <linux/module.h>
+> +#include <linux/sysctl.h>
+> +
+> +#include <asm/irq_regs.h>
+> +#include <linux/perf_event.h>
+> +
+> +int watchdog_enabled;
+> +int __read_mostly softlockup_thresh = 60;
+> +
+> +static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
+> +static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
+> +static DEFINE_PER_CPU(struct hrtimer, watchdog_hrtimer);
+> +static DEFINE_PER_CPU(bool, hard_watchdog_warn);
+
+
+This one should be under CONFIG_PERF_EVENTS_NMI
+
+
+> +static DEFINE_PER_CPU(bool, soft_watchdog_warn);
+> +#ifdef CONFIG_PERF_EVENTS_NMI
+> +static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
+> +static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
+> +static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
+> +#endif
+> +
+> +static int __read_mostly did_panic;
+> +static int __initdata no_watchdog;
+> +
+> +
+> +/* boot commands */
+> +/*
+> + * Should we panic when a soft-lockup or hard-lockup occurs:
+> + */
+> +#ifdef CONFIG_PERF_EVENTS_NMI
+> +static int hardlockup_panic;
+> +
+> +static int __init hardlockup_panic_setup(char *str)
+> +{
+> +	if (!strncmp(str, "panic", 5))
+> +		hardlockup_panic = 1;
+> +	return 1;
+> +}
+> +__setup("nmi_watchdog=", hardlockup_panic_setup);
+
+
+
+If nmi_watchdog=0, this won't deactivate anymore the hardlockup
+detector.
+
+
+
+> +#endif
+> +
+> +unsigned int __read_mostly softlockup_panic =
+> +			CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE;
+> +
+> +static int __init softlockup_panic_setup(char *str)
+> +{
+> +	softlockup_panic = simple_strtoul(str, NULL, 0);
+> +
+> +	return 1;
+> +}
+> +__setup("softlockup_panic=", softlockup_panic_setup);
+> +
+> +static int __init nowatchdog_setup(char *str)
+> +{
+> +	no_watchdog = 1;
+> +	return 1;
+> +}
+> +__setup("nowatchdog", nowatchdog_setup);
+> +
+> +/* deprecated */
+> +static int __init nosoftlockup_setup(char *str)
+> +{
+> +	no_watchdog = 1;
+> +	return 1;
+> +}
+> +__setup("nosoftlockup", nosoftlockup_setup);
+> +/*  */
+> +
+> +
+> +/*
+> + * Returns seconds, approximately.  We don't need nanosecond
+> + * resolution, and we don't need to waste time with a big divide when
+> + * 2^30ns == 1.074s.
+> + */
+> +static unsigned long get_timestamp(int this_cpu)
+> +{
+> +	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
+> +}
+> +
+> +static unsigned long get_sample_period(void)
+> +{
+> +	/*
+> +	 * convert softlockup_thresh from seconds to ns
+> +	 * the divide by 5 is to give hrtimer 5 chances to
+> +	 * increment before the hardlockup detector generates
+> +	 * a warning
+> +	 */
+> +	return softlockup_thresh / 5 * NSEC_PER_SEC;
+> +}
+> +
+> +/* Commands for resetting the watchdog */
+> +static void __touch_watchdog(void)
+> +{
+> +	int this_cpu = raw_smp_processor_id();
+
+
+This must use smp_processor_id() for preemption disabled
+checks.
+
+
+
+> +
+> +	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
+> +}
+> +
+> +void touch_watchdog(void)
+> +{
+> +	__get_cpu_var(watchdog_touch_ts) = 0;
+> +}
+> +EXPORT_SYMBOL(touch_watchdog);
+> +
+> +void touch_all_watchdog(void)
+> +{
+> +	int cpu;
+> +
+> +	/*
+> +	 * this is done lockless
+> +	 * do we care if a 0 races with a timestamp?
+> +	 * all it means is the softlock check starts one cycle later
+> +	 */
+> +	for_each_online_cpu(cpu)
+> +		per_cpu(watchdog_touch_ts, cpu) = 0;
+> +}
+> +
+> +void touch_nmi_watchdog(void)
+> +{
+> +	touch_watchdog();
+> +}
+> +EXPORT_SYMBOL(touch_nmi_watchdog);
+> +
+> +void touch_all_nmi_watchdog(void)
+> +{
+> +	touch_all_watchdog();
+> +}
+> +
+> +void touch_softlockup_watchdog(void)
+> +{
+> +	touch_watchdog();
+> +}
+> +
+> +void touch_all_softlockup_watchdogs(void)
+> +{
+> +	touch_all_watchdog();
+> +}
+> +
+> +void softlockup_tick(void)
+> +{
+> +}
+> +
+> +#ifdef CONFIG_PERF_EVENTS_NMI
+> +/* watchdog detector functions */
+> +static int is_hardlockup(int cpu)
+> +{
+> +	unsigned long hrint = per_cpu(hrtimer_interrupts, cpu);
+> +
+> +	if (per_cpu(hrtimer_interrupts_saved, cpu) == hrint)
+> +		return 1;
+> +
+> +	per_cpu(hrtimer_interrupts_saved, cpu) = hrint;
+
+
+
+All these per_cpu() should be __this_cpu_var() for readability,
+for the preemption disabled safety check, and may be even
+for optimization reasons: if an arch defines its own __my_cpu_offset,
+it may get it faster.
+
+
+
+
+> +static int is_softlockup(unsigned long touch_ts, int cpu)
+> +{
+> +	unsigned long now = get_timestamp(cpu);
+> +
+> +	/* Warn about unreasonable delays: */
+> +	if (now > (touch_ts + softlockup_thresh))
+> +		return now - touch_ts;
+> +
+> +	return 0;
+> +}
+> +
+> +static int
+> +watchdog_panic(struct notifier_block *this, unsigned long event, void *ptr)
+> +{
+> +	did_panic = 1;
+> +
+> +	return NOTIFY_DONE;
+> +}
+> +
+> +static struct notifier_block panic_block = {
+> +	.notifier_call = watchdog_panic,
+> +};
+> +
+> +#ifdef CONFIG_PERF_EVENTS_NMI
+> +static struct perf_event_attr wd_hw_attr = {
+> +	.type		= PERF_TYPE_HARDWARE,
+> +	.config		= PERF_COUNT_HW_CPU_CYCLES,
+> +	.size		= sizeof(struct perf_event_attr),
+> +	.pinned		= 1,
+> +	.disabled	= 1,
+> +};
+> +
+> +/* Callback function for perf event subsystem */
+> +void watchdog_overflow_callback(struct perf_event *event, int nmi,
+> +		 struct perf_sample_data *data,
+> +		 struct pt_regs *regs)
+> +{
+> +	int this_cpu = smp_processor_id();
+> +	unsigned long touch_ts = per_cpu(watchdog_touch_ts, this_cpu);
+
+
+same here
+
+
+
+> +
+> +	if (touch_ts == 0) {
+> +		__touch_watchdog();
+> +		return;
+> +	}
+> +
+> +	/* check for a hardlockup
+> +	 * This is done by making sure our timer interrupt
+> +	 * is incrementing.  The timer interrupt should have
+> +	 * fired multiple times before we overflow'd.  If it hasn't
+> +	 * then this is a good indication the cpu is stuck
+> +	 */
+> +	if (is_hardlockup(this_cpu)) {
+> +		/* only print hardlockups once */
+> +		if (__get_cpu_var(hard_watchdog_warn) == true)
+> +			return;
+> +
+> +		if (hardlockup_panic)
+> +			panic("Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+> +		else
+> +			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+> +
+> +		__get_cpu_var(hard_watchdog_warn) = true;
+> +		return;
+> +	}
+> +
+> +	__get_cpu_var(hard_watchdog_warn) = false;
+> +	return;
+> +}
+> +static void watchdog_interrupt_count(void)
+> +{
+> +	__get_cpu_var(hrtimer_interrupts)++;
+> +}
+> +#else
+> +static inline void watchdog_interrupt_count(void) { return; }
+> +#endif /* CONFIG_PERF_EVENTS_NMI */
+> +
+> +/* watchdog kicker functions */
+> +static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+> +{
+> +	int this_cpu = smp_processor_id();
+> +	unsigned long touch_ts = __get_cpu_var(watchdog_touch_ts);
+> +	struct pt_regs *regs = get_irq_regs();
+> +	int duration;
+> +
+> +	/* kick the hardlockup detector */
+> +	watchdog_interrupt_count();
+> +
+> +	/* kick the softlockup detector */
+> +	wake_up_process(__get_cpu_var(softlockup_watchdog));
+> +
+> +	/* .. and repeat */
+> +	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
+> +
+> +	if (touch_ts == 0) {
+> +		__touch_watchdog();
+> +		return HRTIMER_RESTART;
+> +	}
+> +
+> +	/* check for a softlockup
+> +	 * This is done by making sure a high priority task is
+> +	 * being scheduled.  The task touches the watchdog to
+> +	 * indicate it is getting cpu time.  If it hasn't then
+> +	 * this is a good indication some task is hogging the cpu
+> +	 */
+> +	duration = is_softlockup(touch_ts, this_cpu);
+> +	if (unlikely(duration)) {
+> +		/* only warn once */
+> +		if (__get_cpu_var(soft_watchdog_warn) == true)
+> +			return HRTIMER_RESTART;
+> +
+> +		printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
+> +			this_cpu, duration,
+> +			current->comm, task_pid_nr(current));
+> +		print_modules();
+> +		print_irqtrace_events(current);
+> +		if (regs)
+> +			show_regs(regs);
+> +		else
+> +			dump_stack();
+> +
+> +		if (softlockup_panic)
+> +			panic("softlockup: hung tasks");
+> +		__get_cpu_var(soft_watchdog_warn) = true;
+> +	} else
+> +		__get_cpu_var(soft_watchdog_warn) = false;
+> +
+> +	return HRTIMER_RESTART;
+> +}
+> +
+> +
+> +/*
+> + * The watchdog thread - touches the timestamp.
+> + */
+> +static int watchdog(void *__bind_cpu)
+> +{
+> +	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+> +	struct hrtimer *hrtimer = &per_cpu(watchdog_hrtimer, (unsigned long)__bind_cpu);
+
+
+This is bound to a single cpu already: __raw_get_cpu_var() (because we don't
+need the preempt disabled check here).
+
+Thanks.
+
