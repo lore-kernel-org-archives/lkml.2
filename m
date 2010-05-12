@@ -1,170 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab0ELU3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 16:29:21 -0400
-Received: from tex.lwn.net ([70.33.254.29]:40962 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757183Ab0ELU3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 16:29:20 -0400
-Date: Wed, 12 May 2010 14:29:17 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Add a document for the padata interface
-Message-ID: <20100512142917.4287bf6e@bike.lwn.net>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1757508Ab0ELUbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 16:31:23 -0400
+Received: from mail-qy0-f171.google.com ([209.85.221.171]:39556 "EHLO
+	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757183Ab0ELUbV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 16:31:21 -0400
+Date: Wed, 12 May 2010 15:30:54 -0500
+From: Will Drewry <wad@chromium.org>
+To: dm-devel@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] init: boot to device-mapper targets without an initr*
+Message-ID: <20100512203054.GA22104@z600>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Last month I promised to format this information up as a documentation
-addition; here it is.  In the absence of unhappiness, I'll send it
-Linusward through my docs tree when the merge window opens.
+This change adds a dm= kernel parameter modeled after the md=
+parameter from do_mounts_md.  It allows for simple device-mapper
+targets to be configured at boot time for use early in the boot
+process (as the root device or otherwise).
 
-Comments welcome,
+The format is dm=minor,rwmode,begin,length,target,target,params,with,commas
+And may be used as root with dm.major=MAJOR root=MAJOR:minor.
 
-jon
+Ideally, the prototypes from dm.h in do_mounts_dm.c could reside in
+include/linux/device-mapper.h, or do_mounts_dm.c could pull in
+drivers/md/dm.h.  Any preferences there or thoughts on how likely this
+is to be an acceptable addition to the boot path are appreciated.
+
+Signed-off-by: Will Drewry <wad@chromium.org>
 ---
-Add a document describing the padata interface
+ init/Makefile       |    1 +
+ init/do_mounts.c    |    1 +
+ init/do_mounts.h    |   10 +++
+ init/do_mounts_dm.c |  203 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 215 insertions(+), 0 deletions(-)
+ create mode 100644 init/do_mounts_dm.c
 
-This originally appeared as http://lwn.net/Articles/382257/.
-
-Signed-off-by: Jonathan Corbet <corbet@lwn.net>
----
- Documentation/00-INDEX   |    2 +
- Documentation/padata.txt |  107 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 109 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/padata.txt
-
-diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-index 06b982a..dd10b51 100644
---- a/Documentation/00-INDEX
-+++ b/Documentation/00-INDEX
-@@ -250,6 +250,8 @@ numastat.txt
- 	- info on how to read Numa policy hit/miss statistics in sysfs.
- oops-tracing.txt
- 	- how to decode those nasty internal kernel error dump messages.
-+padata.txt
-+	- An introduction to the "padata" parallel execution API
- parisc/
- 	- directory with info on using Linux on PA-RISC architecture.
- parport.txt
-diff --git a/Documentation/padata.txt b/Documentation/padata.txt
+diff --git a/init/Makefile b/init/Makefile
+index 0bf677a..1677baa 100644
+--- a/init/Makefile
++++ b/init/Makefile
+@@ -14,6 +14,7 @@ mounts-y			:= do_mounts.o
+ mounts-$(CONFIG_BLK_DEV_RAM)	+= do_mounts_rd.o
+ mounts-$(CONFIG_BLK_DEV_INITRD)	+= do_mounts_initrd.o
+ mounts-$(CONFIG_BLK_DEV_MD)	+= do_mounts_md.o
++mounts-$(CONFIG_BLK_DEV_DM)	+= do_mounts_dm.o
+ 
+ # dependencies on generated files need to be listed explicitly
+ $(obj)/version.o: include/generated/compile.h
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 02e3ca4..0848a5b 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -383,6 +383,7 @@ void __init prepare_namespace(void)
+ 	wait_for_device_probe();
+ 
+ 	md_run_setup();
++	dm_run_setup();
+ 
+ 	if (saved_root_name[0]) {
+ 		root_device_name = saved_root_name;
+diff --git a/init/do_mounts.h b/init/do_mounts.h
+index f5b978a..09d2286 100644
+--- a/init/do_mounts.h
++++ b/init/do_mounts.h
+@@ -74,3 +74,13 @@ void md_run_setup(void);
+ static inline void md_run_setup(void) {}
+ 
+ #endif
++
++#ifdef CONFIG_BLK_DEV_DM
++
++void dm_run_setup(void);
++
++#else
++
++static inline void dm_run_setup(void) {}
++
++#endif
+diff --git a/init/do_mounts_dm.c b/init/do_mounts_dm.c
 new file mode 100644
-index 0000000..32bd1e4
+index 0000000..3db4219
 --- /dev/null
-+++ b/Documentation/padata.txt
-@@ -0,0 +1,107 @@
-+The padata parallel execution mechanism
-+Last updated for 2.6.34
++++ b/init/do_mounts_dm.c
+@@ -0,0 +1,203 @@
++/* do_mounts_dm.c
++ * Copyright (C) 2010 The Chromium OS Authors <chromium-os-dev@chromium.org>
++ *                    All Rights Reserved.
++ * Based on do_mounts_md.c
++ *
++ * This file is released under the GPL.
++ */
++#include <linux/device-mapper.h>
++#include <linux/fs.h>
++#include <linux/string.h>
 +
-+Padata is a mechanism by which the kernel can farm work out to be done in
-+parallel on multiple CPUs while retaining the ordering of tasks.  It was
-+developed for use with the IPsec code, which needs to be able to perform
-+encryption and decryption on large numbers of packets without reordering
-+those packets.  The crypto developers made a point of writing padata in a
-+sufficiently general fashion that it could be put to other uses as well.
++#include "do_mounts.h"
 +
-+The first step in using padata is to set up a padata_instance structure for
-+overall control of how tasks are to be run:
++/*
++ * When the device-mapper and any targets are compiled into the kernel
++ * (not a module), one target may be created and used as the root device at
++ * boot time with the parameters given with the boot line dm=...
++ * The code for that is here.
++ */
 +
-+    #include <linux/padata.h>
++static struct {
++	int minor;
++	int rw;
++	sector_t begin;
++	sector_t length;
++	char target[24];
++	char target_params[256];
++} dm_setup_args __initdata;
 +
-+    struct padata_instance *padata_alloc(const struct cpumask *cpumask,
-+				         struct workqueue_struct *wq);
++static __initdata int dm_root = 0;
 +
-+The cpumask describes which processors will be used to execute work
-+submitted to this instance.  The workqueue wq is where the work will
-+actually be done; it should be a multithreaded queue, naturally.
 +
-+There are functions for enabling and disabling the instance:
++/*
++ * Parse the command-line parameters given our kernel, but do not
++ * actually try to invoke the DM device now; that is handled by
++ * dm_setup_drive after the low-level disk drivers have initialised.
++ * dm format is as follows:
++ *    dm=dev_minor,rw,start,length,target,comma,separated,target,params
++ * May be used with dm.major=X root=X:minor
++ */
 +
-+    void padata_start(struct padata_instance *pinst);
-+    void padata_stop(struct padata_instance *pinst);
++static int __init dm_setup(char *str)
++{
++	char *endp = NULL;
++	if (get_option(&str, &dm_setup_args.minor) != 2)  /* DM Number */
++		goto parse_fail;
 +
-+These functions literally do nothing beyond setting or clearing the
-+"padata_start() was called" flag; if that flag is not set, other functions
-+will refuse to work.
++	if (get_option(&str, &dm_setup_args.rw) != 2)  /* rw or ro */
++		goto parse_fail;
 +
-+The list of CPUs to be used can be adjusted with these functions:
++	dm_setup_args.begin = simple_strtoull(str, &endp, 10);
++	if (!endp || *endp == 0)
++		goto parse_fail;
++	str = endp + 1;	 /* consume the comma */
 +
-+    int padata_set_cpumask(struct padata_instance *pinst,
-+			   cpumask_var_t cpumask);
-+    int padata_add_cpu(struct padata_instance *pinst, int cpu);
-+    int padata_remove_cpu(struct padata_instance *pinst, int cpu);
++	dm_setup_args.length = simple_strtoull(str, &endp, 10);
++	if (!endp || *endp == 0)
++		goto parse_fail;
 +
-+Changing the CPU mask has the look of an expensive operation, though, so it
-+probably should not be done with great frequency.
++	str = endp + 1;	 /* consume the comma */
 +
-+Actually submitting work to the padata instance requires the creation of a
-+padata_priv structure:
++	endp = strchr(str, ',');
 +
-+    struct padata_priv {
-+        /* Other stuff here... */
-+	void                    (*parallel)(struct padata_priv *padata);
-+	void                    (*serial)(struct padata_priv *padata);
-+    };
++	/* May be NULL if the target takes no parameters */
++	if (endp)
++		*endp = '\0';
++	if (strlcpy(dm_setup_args.target, str, sizeof(dm_setup_args.target)) ==
++	    sizeof(dm_setup_args.target) - 1) {
++		printk(KERN_WARNING "dm: Target name may be truncated.\n");
++		/* Continue anyway */
++	}
++	/* If no trailing comma was found, that's it. */
++	if (!endp)
++		goto parsed;
++	str = endp + 1;
 +
-+This structure will almost certainly be embedded within some larger
-+structure specific to the work to be done.  Most its fields are private to
-+padata, but the structure should be zeroed at initialization time, and the
-+parallel() and serial() functions should be provided.  Those functions will
-+be called in the process of getting the work done as we will see
-+momentarily.
++	/* The remainder will be the target parameters. */
++	if (strlcpy(dm_setup_args.target_params, str,
++		    sizeof(dm_setup_args.target_params)) ==
++		    sizeof(dm_setup_args.target_params) - 1) {
++		printk(KERN_WARNING
++		       "dm: Target parameters may be truncated.\n");
++		/* Continue anyway */
++	}
 +
-+The submission of work is done with:
++	/* Replace all commas with spaces to match the expected format */
++	str = dm_setup_args.target_params;
++	while (str && *str) {
++		endp = strchr(str, ',');
++		if (endp)
++			*endp++ = ' ';
++		str = endp;
++	}
 +
-+    int padata_do_parallel(struct padata_instance *pinst,
-+		           struct padata_priv *padata, int cb_cpu);
++parsed:
++	printk(KERN_INFO "dm: Will configure '%s' on dm-%d using params '%s'\n",
++	       dm_setup_args.target, dm_setup_args.minor,
++	       dm_setup_args.target_params);
 +
-+The pinst and padata structures must be set up as described above; cb_cpu
-+specifies which CPU will be used for the final callback when the work is
-+done; it must be in the current instance's CPU mask.  The return value from
-+padata_do_parallel() is a little strange; zero is an error return
-+indicating that the caller forgot the padata_start() formalities.  -EBUSY
-+means that somebody, somewhere else is messing with the instance's CPU
-+mask, while -EINVAL is a complaint about cb_cpu not being in that CPU mask.
-+If all goes well, this function will return -EINPROGRESS, indicating that
-+the work is in progress.
++	dm_root = 1;
++	return 1;
 +
-+Each task submitted to padata_do_parallel() will, in turn, be passed to
-+exactly one call to the above-mentioned parallel() function, on one CPU, so
-+true parallelism is achieved by submitting multiple tasks.  The workqueue
-+is used to actually make these calls, so parallel() runs in process context
-+and is allowed to sleep.  The parallel() function gets the padata_priv
-+structure pointer as its lone parameter; information about the actual work
-+to be done is probably obtained by using container_of() to find the
-+enclosing structure.
++parse_fail:
++	printk(KERN_WARNING "dm: Too few arguments supplied to dm=.\n");
++	return 0;
++}
 +
-+Note that parallel() has no return value; the padata subsystem assumes that
-+parallel() will take responsibility for the task from this point.  The work
-+need not be completed during this call, but, if parallel() leaves work
-+outstanding, it should be prepared to be called again with a new job before
-+the previous one completes.  When a task does complete, parallel() (or
-+whatever function actually finishes the job) should inform padata of the
-+fact with a call to:
++/* From drivers/md/dm.h */
++#define DM_SUSPEND_NOFLUSH_FLAG         (1 << 1)
++int dm_table_alloc_md_mempools(struct dm_table *t);
++int dm_table_set_type(struct dm_table *t);
 +
-+    void padata_do_serial(struct padata_priv *padata);
++static void __init dm_setup_drive(void)
++{
++	struct mapped_device *md = NULL;
++	struct dm_table *table = NULL;
++	fmode_t fmode;
 +
-+At some point in the future, padata_do_serial() will trigger a call to the
-+serial() function in the padata_priv structure.  That call will happen on
-+the CPU requested in the initial call to padata_do_parallel(); it, too, is
-+done through the workqueue, but with local software interrupts disabled.
-+Note that this call may be deferred for a while since the padata code takes
-+pains to ensure that tasks are completed in the order in which they were
-+submitted.
++	if (dm_create(dm_setup_args.minor, &md)) {
++		DMDEBUG("failed to create the device");
++		goto dm_create_fail;
++	}
++	DMDEBUG("created device '%s'", dm_device_name(md));
 +
-+The one remaining function in the padata API should be called to clean up
-+when a padata instance is no longer needed:
++	fmode = (dm_setup_args.rw ? FMODE_READ|FMODE_WRITE : FMODE_READ);
++	if (dm_table_create(&table, fmode, 1, md)) {
++		DMDEBUG("failed to create the table");
++		goto dm_table_create_fail;
++	}
 +
-+    void padata_free(struct padata_instance *pinst);
++	if (dm_table_add_target(table, dm_setup_args.target,
++				dm_setup_args.begin, dm_setup_args.length,
++				dm_setup_args.target_params)) {
++		DMDEBUG("failed to add the target to the table");
++		goto add_target_fail;
++	}
 +
-+This function will busy-wait while any remaining tasks are completed, so it
-+might be best not to call it while there is work outstanding.  Shutting
-+down the workqueue, if necessary, should be done separately.
++	if (dm_table_complete(table)) {
++		DMDEBUG("failed to complete the table");
++		goto table_complete_fail;
++	}
++
++	/* Set the type (request v bio) based on the target */
++	if (dm_table_set_type(table)) {
++		DMDEBUG("failed to set table type");
++		goto set_type_fail;
++	}
++
++	/* Allocate pools for handling incoming requests */
++	if (dm_table_alloc_md_mempools(table)) {
++		DMDEBUG("failed to alloc mempools");
++		goto mempool_fail;
++	}
++
++	/* Suspend the device so that we can bind it to the table. */
++	if (dm_suspend(md, DM_SUSPEND_NOFLUSH_FLAG)) {
++		DMDEBUG("failed to suspend the device pre-bind");
++		goto suspend_fail;
++	}
++
++	/* Bind the table to the device. This is the only way to associate
++	 * md->map with the table and set the disk capacity directly. */
++	if (dm_swap_table(md, table)) {
++		DMDEBUG("failed to bind the device to the table");
++		goto table_bind_fail;
++	}
++	
++	/* Finally, resume and the device should be ready. */
++	if (dm_resume(md)) {
++		DMDEBUG("failed to resume the device");
++		goto resume_fail;
++	}
++	
++	printk(KERN_INFO "dm: target '%s' of size %llu on dm-%d is ready\n",
++	       dm_setup_args.target, dm_table_get_size(table),
++	       dm_setup_args.minor);
++
++	return;
++
++resume_fail:
++table_bind_fail:
++suspend_fail:
++mempool_fail:
++set_type_fail:
++table_complete_fail:
++add_target_fail:
++	dm_table_put(table);
++dm_table_create_fail:
++	dm_put(md);
++dm_create_fail:
++	printk(KERN_WARNING "dm: starting dm-%d (%s) failed\n",
++	       dm_setup_args.minor, dm_setup_args.target);
++}
++
++__setup("dm=", dm_setup);
++
++void __init dm_run_setup(void)
++{
++	if (!dm_root)
++		return;
++	printk(KERN_INFO "dm: attempting configuration as root device\n");
++	dm_setup_drive();
++}
+-- 
+1.6.6.1
 
