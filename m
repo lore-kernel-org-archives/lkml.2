@@ -1,146 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab0ELVCh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 17:02:37 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:60325 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753622Ab0ELVCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 17:02:36 -0400
-Date: Wed, 12 May 2010 22:02:17 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 4/5] always lock the root (oldest) anon_vma
-Message-ID: <20100512210216.GP24989@csn.ul.ie>
-References: <20100512133815.0d048a86@annuminas.surriel.com> <20100512134029.36c286c4@annuminas.surriel.com>
+	id S1756796Ab0ELVDE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 17:03:04 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:51492 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751113Ab0ELVDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 17:03:00 -0400
+Message-ID: <4BEB1781.1080907@sgi.com>
+Date: Wed, 12 May 2010 14:02:57 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100512134029.36c286c4@annuminas.surriel.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Yinghai <yinghai.lu@oracle.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if add_efi_memmap
+ specified.
+References: <4BEAEF10.9040809@sgi.com> <4BEAF9B6.2040606@zytor.com> <4BEB0D5F.8070806@oracle.com>
+In-Reply-To: <4BEB0D5F.8070806@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 01:40:29PM -0400, Rik van Riel wrote:
-> Subject: always lock the root (oldest) anon_vma
-> 
-> Always (and only) lock the root (oldest) anon_vma whenever we do something in an
-> anon_vma.  The recently introduced anon_vma scalability is due to the rmap code
-> scanning only the VMAs that need to be scanned.  Many common operations still
-> took the anon_vma lock on the root anon_vma, so always taking that lock is not
-> expected to introduce any scalability issues.
-> 
-> However, always taking the same lock does mean we only need to take one lock,
-> which means rmap_walk on pages from any anon_vma in the vma is excluded from
-> occurring during an munmap, expand_stack or other operation that needs to
-> exclude rmap_walk and similar functions.
-> 
-> Also add the proper locking to vma_adjust.
-> 
 
-This last comment is a bit light. It's actually restoring the lock that
-was taken in 2.6.33 to some extent except we are always taking it now.
-In 2.6.33, it was resricted to
 
-       if (vma->anon_vma && (insert || importer || start != vma->vm_start))
-                anon_vma = vma->anon_vma;
-
-but now it's always. Has it been determined that the locking in 2.6.33
-was insufficient or are we playing it safe now?
-
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  include/linux/rmap.h |    8 ++++----
->  mm/ksm.c             |    2 +-
->  mm/mmap.c            |    6 +++++-
->  3 files changed, 10 insertions(+), 6 deletions(-)
+Yinghai wrote:
+> On 05/12/2010 11:55 AM, H. Peter Anvin wrote:
+>> On 05/12/2010 11:10 AM, Mike Travis wrote:
+>>> Currently, the e820_reserve_resources() function does not add entries
+>>> obtained via the "add_efi_memmap" kernel cmdline option.  This causes
+>>> /sys/firmware/memmap/... to be incomplete (stops after 128 entries).
+>>> Utilities that examine these entries then do not get the complete
+>>> picture of system memory.
+>>>
+>>> This patch causes the above function to use the e820 memmap instead
+>>> of the e820_saved memmap if "add_efi_memmap" cmdline option is
+>>> specified.
+>>>
+>>> Signed-off-by: Mike Travis <travis@sgi.com>
+>>> Signed-off-by: Jack Steiner <steiner@sgi.com>
+>> If I'm not mistaken, the very reason for the e820 vs e820_saved map is
+>> that the latter is supposed to reflect the firmware report, whereas the
+>> former is subject to be modified by the kernel.  As this is actually a
+>> reflection of the firmware (although it would be better if you could fix
+>> the bootloader instead of adding hacks in the kernel...) it really
+>> should go into e820_saved as well as e820.  Displaying the adjusted e820
+>> map doesn't seem appropriate under any circumstances.
 > 
-> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-> index 457ae1e..33ffe14 100644
-> --- a/include/linux/rmap.h
-> +++ b/include/linux/rmap.h
-> @@ -95,24 +95,24 @@ static inline void vma_lock_anon_vma(struct vm_area_struct *vma)
->  {
->  	struct anon_vma *anon_vma = vma->anon_vma;
->  	if (anon_vma)
-> -		spin_lock(&anon_vma->lock);
-> +		spin_lock(&anon_vma->root->lock);
->  }
->  
->  static inline void vma_unlock_anon_vma(struct vm_area_struct *vma)
->  {
->  	struct anon_vma *anon_vma = vma->anon_vma;
->  	if (anon_vma)
-> -		spin_unlock(&anon_vma->lock);
-> +		spin_unlock(&anon_vma->root->lock);
->  }
->  
->  static inline void anon_vma_lock(struct anon_vma *anon_vma)
->  {
-> -	spin_lock(&anon_vma->lock);
-> +	spin_lock(&anon_vma->root->lock);
->  }
->  
->  static inline void anon_vma_unlock(struct anon_vma *anon_vma)
->  {
-> -	spin_unlock(&anon_vma->lock);
-> +	spin_unlock(&anon_vma->root->lock);
->  }
->  
->  /*
-> diff --git a/mm/ksm.c b/mm/ksm.c
-> index d488012..7ca0dd7 100644
-> --- a/mm/ksm.c
-> +++ b/mm/ksm.c
-> @@ -325,7 +325,7 @@ static void drop_anon_vma(struct rmap_item *rmap_item)
->  {
->  	struct anon_vma *anon_vma = rmap_item->anon_vma;
->  
-> -	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->lock)) {
-> +	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->root->lock)) {
->  		int empty = list_empty(&anon_vma->head);
->  		anon_vma_unlock(anon_vma);
->  		if (empty)
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index f70bc65..b7dfe30 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -553,6 +553,8 @@ again:			remove_next = 1 + (end > next->vm_end);
->  		}
->  	}
->  
-> +	vma_lock_anon_vma(vma);
-> +
->  	if (file) {
->  		mapping = file->f_mapping;
->  		if (!(vma->vm_flags & VM_NONLINEAR))
-> @@ -600,6 +602,8 @@ again:			remove_next = 1 + (end > next->vm_end);
->  		flush_dcache_mmap_unlock(mapping);
->  	}
->  
-> +	vma_unlock_anon_vma(vma);
-> +
->  	if (remove_next) {
->  		/*
->  		 * vma_merge has merged next into vma, and needs
-> @@ -2471,7 +2475,7 @@ static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
->  		 * The LSB of head.next can't change from under us
->  		 * because we hold the mm_all_locks_mutex.
->  		 */
-> -		spin_lock_nest_lock(&anon_vma->lock, &mm->mmap_sem);
-> +		spin_lock_nest_lock(&anon_vma->root->lock, &mm->mmap_sem);
->  		/*
->  		 * We can safely modify head.next after taking the
->  		 * anon_vma->lock. If some other vma in this mm shares
+> Yes, you are right.
 > 
+> We should not touch e820_saved and keep /sys/firmware/memmap to be consistent with it.
+> 
+> YH
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+
+I'm confused.  Should I:
+
+ - copy the extra memmap entries into e820_saved and fill early_memmap from that?
+or
+ - don't touch e820_saved and use e820 to fill early_memmap (which is how it is now).
+
+Thanks,
+Mike
