@@ -1,94 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab0ELU4r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 16:56:47 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44496 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756199Ab0ELU4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 16:56:45 -0400
-Date: Wed, 12 May 2010 13:56:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Thomas Stewart <thomas@stewarts.org.uk>
-Cc: linux-kernel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>
-Subject: Re: Mounting BorderWare UFS File Systems
-Message-Id: <20100512135603.b0a6777b.akpm@linux-foundation.org>
-In-Reply-To: <20100511215300.GA22152@stewarts.org.uk>
-References: <20100511215300.GA22152@stewarts.org.uk>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757608Ab0ELU6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 16:58:15 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47982 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751583Ab0ELU6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 16:58:13 -0400
+Date: Wed, 12 May 2010 21:57:54 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 1/5] rename anon_vma_lock to vma_lock_anon_vma
+Message-ID: <20100512205754.GM24989@csn.ul.ie>
+References: <20100512133815.0d048a86@annuminas.surriel.com> <20100512133931.14c79d22@annuminas.surriel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100512133931.14c79d22@annuminas.surriel.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 May 2010 22:53:04 +0100
-Thomas Stewart <thomas@stewarts.org.uk> wrote:
-
-> Hi,
+On Wed, May 12, 2010 at 01:39:31PM -0400, Rik van Riel wrote:
+> Subject: rename anon_vma_lock to vma_lock_anon_vma
 > 
-> I recently had to recover some files from an old broken machine that was
-> running BorderWare Document Gateway. It's basically a drop in web server
-> for sharing files. From the look of the init process and using strings
-> on of a few files it seems to be based on FreeBSD 3.3. The process
-> turned out to be more difficult than I imagined, but to cut a long story
-> short BorderWare in their wisdom use a nonstandard magic number in their
-> UFS (ufstype=44bsd) file systems. Thus Linux refuses to mount the file
-> systems in order to recover the data. After a bit of hunting I was able
-> to make a quick fix to fs/ufs/super.c in order to detect the new magic
-> number. I don't think this needs to get into mainline, but hopefully
-> this will hit the archives to save anyone else the effort.
-
-Oh, I expect we'll merge it - we're crazy like that.  Thanks.
-
-> I'm assume
-> that this number is the same for all installations. It's quite easy to
-> find out from ufs_fs.h. The superblock sits 8k into the block device and
-> the magic number its 1372 bytes into the superblock struct.
+> Rename anon_vma_lock to vma_lock_anon_vma.  This matches the
+> naming style used in page_lock_anon_vma and will come in really
+> handy further down in this patch series.
 > 
-> # dd if=/dev/sda5 skip=$(( 8192 + 1372 )) bs=1 count=4 2> /dev/null | hd
-> 00000000  97 26 24 0f                                       |.&$.|
-> #
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+> ---
+>  include/linux/rmap.h |    4 ++--
+>  mm/mmap.c            |   14 +++++++-------
+>  2 files changed, 9 insertions(+), 9 deletions(-)
 > 
-> Here is the patch, please cc any questions or comments as I'm off list.
+> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> index d25bd22..88cae59 100644
+> --- a/include/linux/rmap.h
+> +++ b/include/linux/rmap.h
+> @@ -90,14 +90,14 @@ static inline struct anon_vma *page_anon_vma(struct page *page)
+>  	return page_rmapping(page);
+>  }
+>  
+> -static inline void anon_vma_lock(struct vm_area_struct *vma)
+> +static inline void vma_lock_anon_vma(struct vm_area_struct *vma)
+>  {
+>  	struct anon_vma *anon_vma = vma->anon_vma;
+>  	if (anon_vma)
+>  		spin_lock(&anon_vma->lock);
+>  }
+>  
+> -static inline void anon_vma_unlock(struct vm_area_struct *vma)
+> +static inline void vma_unlock_anon_vma(struct vm_area_struct *vma)
+>  {
+>  	struct anon_vma *anon_vma = vma->anon_vma;
+>  	if (anon_vma)
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 456ec6f..d30bed3 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -452,12 +452,12 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		spin_lock(&mapping->i_mmap_lock);
+>  		vma->vm_truncate_count = mapping->truncate_count;
+>  	}
+> -	anon_vma_lock(vma);
+> +	vma_lock_anon_vma(vma);
+>  
+>  	__vma_link(mm, vma, prev, rb_link, rb_parent);
+>  	__vma_link_file(vma);
+>  
+> -	anon_vma_unlock(vma);
+> +	vma_unlock_anon_vma(vma);
+>  	if (mapping)
+>  		spin_unlock(&mapping->i_mmap_lock);
+>  
+> @@ -1710,7 +1710,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+>  	 */
+>  	if (unlikely(anon_vma_prepare(vma)))
+>  		return -ENOMEM;
+> -	anon_vma_lock(vma);
+> +	vma_lock_anon_vma(vma);
+>  
+>  	/*
+>  	 * vma->vm_start/vm_end cannot change under us because the caller
+> @@ -1721,7 +1721,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+>  	if (address < PAGE_ALIGN(address+4))
+>  		address = PAGE_ALIGN(address+4);
+>  	else {
+> -		anon_vma_unlock(vma);
+> +		vma_unlock_anon_vma(vma);
+>  		return -ENOMEM;
+>  	}
+>  	error = 0;
+> @@ -1737,7 +1737,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+>  		if (!error)
+>  			vma->vm_end = address;
+>  	}
+> -	anon_vma_unlock(vma);
+> +	vma_unlock_anon_vma(vma);
+>  	return error;
+>  }
+>  #endif /* CONFIG_STACK_GROWSUP || CONFIG_IA64 */
+> @@ -1762,7 +1762,7 @@ static int expand_downwards(struct vm_area_struct *vma,
+>  	if (error)
+>  		return error;
+>  
+> -	anon_vma_lock(vma);
+> +	vma_lock_anon_vma(vma);
+>  
+>  	/*
+>  	 * vma->vm_start/vm_end cannot change under us because the caller
+> @@ -1783,7 +1783,7 @@ static int expand_downwards(struct vm_area_struct *vma,
+>  			vma->vm_pgoff -= grow;
+>  		}
+>  	}
+> -	anon_vma_unlock(vma);
+> +	vma_unlock_anon_vma(vma);
+>  	return error;
+>  }
+>  
+> 
 
-It would be preferred if you could send us your Signed-off-by: for this
-change, please.  It's described in Documentation/SubmittingPatches.
-
-> diff -urN linux-2.6.33.1.orig/fs/ufs/super.c linux-2.6.33.1/fs/ufs/super.c
-> --- linux-2.6.33.1.orig/fs/ufs/super.c  2010-05-11 20:07:08.000000000 +0100
-> +++ linux-2.6.33.1/fs/ufs/super.c       2010-05-11 21:23:06.000000000 +0100
-> @@ -918,6 +918,7 @@
->         sbi->s_bytesex = BYTESEX_LE;
->         switch ((uspi->fs_magic = fs32_to_cpu(sb, usb3->fs_magic))) {
->                 case UFS_MAGIC:
-> +               case UFS_MAGIC_BW:
->                 case UFS2_MAGIC:
->                 case UFS_MAGIC_LFN:
->                 case UFS_MAGIC_FEA:
-> @@ -927,6 +928,7 @@
->         sbi->s_bytesex = BYTESEX_BE;
->         switch ((uspi->fs_magic = fs32_to_cpu(sb, usb3->fs_magic))) {
->                 case UFS_MAGIC:
-> +               case UFS_MAGIC_BW:
->                 case UFS2_MAGIC:
->                 case UFS_MAGIC_LFN:
->                 case UFS_MAGIC_FEA:
-
-Your email client replaces tabs with spaces.  I fixed that up.
-
-> diff -urN linux-2.6.33.1.orig/fs/ufs/ufs_fs.h linux-2.6.33.1/fs/ufs/ufs_fs.h
-> --- linux-2.6.33.1.orig/fs/ufs/ufs_fs.h 2010-03-15 16:09:39.000000000 +0000
-> +++ linux-2.6.33.1/fs/ufs/ufs_fs.h      2010-05-11 21:20:35.000000000 +0100
-> @@ -48,6 +48,7 @@
->  #define UFS_SECTOR_SIZE 512
->  #define UFS_SECTOR_BITS 9
->  #define UFS_MAGIC  0x00011954
-> +#define UFS_MAGIC_BW 0x0f242697
->  #define UFS2_MAGIC 0x19540119
->  #define UFS_CIGAM  0x54190100 /* byteswapped MAGIC */
-
-Perhaps we should move these to magic.h.  I'm not sure what benefit
-that would provide, really.
-
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
