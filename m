@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab0ELPSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 11:18:45 -0400
-Received: from mtagate2.de.ibm.com ([195.212.17.162]:40452 "EHLO
-	mtagate2.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab0ELPSo (ORCPT
+	id S1754763Ab0ELPUZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 11:20:25 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:25648 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab0ELPUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 11:18:44 -0400
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-Organization: IBM
-To: reinette chatre <reinette.chatre@intel.com>
-Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some accesspoint == hardlock
-Date: Wed, 12 May 2010 17:18:41 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-self-00056-gcea0d76; KDE/4.3.4; x86_64; ; )
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-       "NilsRadtkelkml@think-future.de" <NilsRadtkelkml@think-future.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-References: <20100503191756.GA3479@localhost> <201005111750.08533.borntraeger@de.ibm.com> <1273598493.2370.7891.camel@rchatre-DESK>
-In-Reply-To: <1273598493.2370.7891.camel@rchatre-DESK>
+	Wed, 12 May 2010 11:20:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=WdHpm1SiMmMBDb0VXYB8fGK7JKxMYfsdQDGPsziHQMHcfO0Ge0nzTGcP3/jIZHogDa
+         zbdFFxDDUIKDJirv57zzJqTvzQfpmz1V/4CuiLUAOGO6HCHFQzUmp4iJwnaeIL1Il8nM
+         4kCfeCKRyrtgpSpUR6MIV/yCSgDw/q5iFa1aQ=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005121718.41326.borntraeger@de.ibm.com>
+Date: Wed, 12 May 2010 17:20:22 +0200
+Message-ID: <AANLkTiniV7MElKMWOuxbyaVWe__X0BmUvIeIuOmq9u1J@mail.gmail.com>
+Subject: diskstats - sectors written, what does it mean for mmc-cards?
+From: Clemens Eisserer <linuxhippy@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag 11 Mai 2010 19:21:33 schrieb reinette chatre:
-> > de0f60ea94e132c858caa64a44b2012e1e8580b0
-> > 8b9fce77737ae9983f61ec56cd53f52fb738b2c7
-> > 
-> > reverting both solves my hard lockup. I will try to isolate the "bad" patch
-> > but this takes some more days since I wont be in the "hazardous environment"
-> > this week.
+Hi,
 
-Drat! Now I got a lockup with these two patches reverted. Dont know if that  was
-the same bug.
+I have a small arm based server running enterly from an mmc-card.
+To get some glue how much the mmc-card is written to, I had a look at
+diskstat, which, after 9 days uptime, looks like:
 
-> Thank you for digging into this. It will be very helpful it you can get
-> us a trace of the crash - any chance that netconsole may work?
+ 254    0 mmcblk0 87047 34549 2851200 3081695 483009 484000 7736450
+30472168 0 5847544 51650
+ 254    1 mmcblk0p1 63356 2037674 920699 7365592
+ 254    2 mmcblk0p2 58214 813270 46364 370858
 
-No success so far.
+So, to mmcblk0 7736450 sectors have been written, and the kernel had
+to wait 5,7h for the writes to complete.
+But how can I find out how large a sector is?
 
+If I assume its 512 bytes, that would mean 3,8gb have been written to
+that card in the last few days, which seems quite a lot.
 
-
+Thanks, Clemens
