@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab0ELL7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 07:59:20 -0400
-Received: from mail-ew0-f216.google.com ([209.85.219.216]:43614 "EHLO
-	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754699Ab0ELL7S (ORCPT
+	id S932105Ab0ELMDj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 08:03:39 -0400
+Received: from mail96.messagelabs.com ([216.82.254.19]:21776 "EHLO
+	mail96.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755758Ab0ELMDh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 07:59:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=c2rdUSgSn/lMu3IZf0VMnqbfsMiaYM/y93xe/csq+ib5Hz56q8pwSAFXzr3ldIElkn
-         lENg6Wb3adZjxCQsODiFjpp/hQPqyzY1Be1Hwh9xWVxJMQMzwXe8irZAuwm8bh8MKFji
-         HtHgWWnxr6tQXn1txaENqHK+BlLBtkUAvygAc=
-Date: Wed, 12 May 2010 13:59:14 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH resend] x86, amd: Check X86_FEATURE_OSVW bit before
- accessing OSVW MSRs
-Message-ID: <20100512115914.GA10254@alberich.amd.com>
+	Wed, 12 May 2010 08:03:37 -0400
+X-VirusChecked: Checked
+X-Env-Sender: Viral.Mehta@lntinfotech.com
+X-Msg-Ref: server-3.tower-96.messagelabs.com!1273665813!39446564!1
+X-StarScan-Version: 6.2.4; banners=lntinfotech.com,-,-
+X-Originating-IP: [203.199.118.206]
+From: Viral Mehta <Viral.Mehta@lntinfotech.com>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Michal Nazarewicz <mina86@mina86.com>
+Date: Wed, 12 May 2010 17:33:20 +0530
+Subject: RE: [PATCH] USB: gadget: f_mass_storage: fix in error recovery
+Thread-Topic: [PATCH] USB: gadget: f_mass_storage: fix in error recovery
+Thread-Index: AcrxwP5Kq3t6taDZQ8ie23ybPXqGOwABqBss
+Message-ID: <70376CA23424B34D86F1C7DE6B9973430254343AC2@VSHINMSMBX01.vshodc.lntinfotech.com>
+References: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>
+ <op.vck4q0c87p4s8u@pikus>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABB@VSHINMSMBX01.vshodc.lntinfotech.com>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABC@VSHINMSMBX01.vshodc.lntinfotech.com>
+ <op.vck7aofj7p4s8u@pikus>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABF@VSHINMSMBX01.vshodc.lntinfotech.com>,<1148fb1fcb3a9864a2a12fbbf2e3444827c9ed4a.1273661077.git.mina86@mina86.com>
+In-Reply-To: <1148fb1fcb3a9864a2a12fbbf2e3444827c9ed4a.1273661077.git.mina86@mina86.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If host CPU is exposed to a guest the OSVW MSRs are not guaranteed
-to be present and a GP fault occurs. Thus checking the feature flag is
-essential.
 
-Cc: <stable@kernel.org> # .32.x .33.x, .34.x
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/kernel/process.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+>In to places in fsg_common_init() an unconditional call to kfree()
+>on common was performed in error recovery which is not a valid
+>behaviour since fsg_common structure is not always allocated by
+>fsg_common_init().
+>
+>To fix, the calls has been replaced with a goto to a proper error
+>recovery which does the correct thing.
+>
+>Also, refactored fsg_common_release() function.
+In that case,
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Reviewed-by: Viral Mehta <viral.mehta@lntinfotech.com>
+>---
+>On Wed, 12 May 2010 12:33:43 +0200, Viral Mehta <Viral.Mehta@lntinfotech.com> wrote:
+>> In that case, in addition to your previous patch, below hunk is needed
+>>
+>> diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+>> index f4911c0..b1648fc 100644
+>> --- a/drivers/usb/gadget/f_mass_storage.c
+>> +++ b/drivers/usb/gadget/f_mass_storage.c
+>> @@ -2883,15 +2883,16 @@ static void fsg_common_release(struct kref *ref)
 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 28ad9f4..0415c3e 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -546,11 +546,13 @@ static int __cpuinit check_c1e_idle(const struct cpuinfo_x86 *c)
- 		 * check OSVW bit for CPUs that are not affected
- 		 * by erratum #400
- 		 */
--		rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
--		if (val >= 2) {
--			rdmsrl(MSR_AMD64_OSVW_STATUS, val);
--			if (!(val & BIT(1)))
--				goto no_c1e_idle;
-+		if (cpu_has(c, X86_FEATURE_OSVW)) {
-+			rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
-+			if (val >= 2) {
-+				rdmsrl(MSR_AMD64_OSVW_STATUS, val);
-+				if (!(val & BIT(1)))
-+					goto no_c1e_idle;
-+			}
- 		}
- 		return 1;
- 	}
--- 
-1.6.4.4
+>This is not entairly true but if you insist, attached is a bit
+>different version of your proposed chang.
 
+But, no problem with the earlier patch as well.
+______________________________________________________________________
+
+This Email may contain confidential or privileged information for the intended recipient (s) If you are not the intended recipient, please do not use or disseminate the information, notify the sender and delete it from your system.
+
+______________________________________________________________________
