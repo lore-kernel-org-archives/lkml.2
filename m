@@ -1,39 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757862Ab0ELWWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 18:22:21 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:54606 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757149Ab0ELWWR (ORCPT
+	id S932187Ab0ELWYt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 18:24:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52860 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756694Ab0ELWYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 18:22:17 -0400
-Date: Wed, 12 May 2010 23:21:54 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Nicolas Pitre <nico@marvell.com>, Saeed Bishara <saeed@marvell.com>,
-       "James E.J. Bottomley" <jejb@parisc-linux.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell 88f5182)
-Message-ID: <20100512222154.GA6841@shareable.org>
-References: <1273569821.21352.19.camel@pasglop> <1273575478.21352.29.camel@pasglop> <EAF47CD23C76F840A9E7FCE10091EFAB02C545537F@dbde02.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <EAF47CD23C76F840A9E7FCE10091EFAB02C545537F@dbde02.ent.ti.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Wed, 12 May 2010 18:24:48 -0400
+Date: Wed, 12 May 2010 15:24:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eduardo Valentin <eduardo.valentin@nokia.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
+       Linux-OMAP <linux-omap@vger.kernel.org>,
+       Russell King <linux@arm.linux.org.uk>,
+       ext Tony Lindgren <tony@atomide.com>,
+       ext Kevin Hilman <khilman@deeprootsystems.com>,
+       Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
+       santosh.shilimkar@ti.com, Ambresh <a0393775@ti.com>,
+       felipe.balbi@nokia.com, Jouni Hogander <jouni.hogander@nokia.com>,
+       Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCHv5 0/3] Introduce the /proc/socinfo and use it to export
+ OMAP data
+Message-Id: <20100512152424.803ea807.akpm@linux-foundation.org>
+In-Reply-To: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>
+References: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shilimkar, Santosh wrote:
-> There was a memory write barrier missing before the DMA descriptors 
-> are handed over to DMA controller.
+On Tue, 11 May 2010 17:15:28 +0300
+Eduardo Valentin <eduardo.valentin@nokia.com> wrote:
 
-On that note, are the cache flush functions implicit memory barriers?
+> Here is the version 5 of the change to export OMAP data to userspace
+> (name, revision, id code, production id and die id).
+> 
+> Basically, this version is still attempting to create a new file under /proc.
+> It is the /proc/socinfo, which should be used to export bits which are SoC specific
+> (not CPU related, nor machine related).
+> 
+> So, differences between previous version are:
+> - merged patch 02/04 with 03/04 to avoid compilation breakages.
+> - simplified the seq_file usage by using the single_open and single_release functions
+> - exported a function to register a seq_operation .show callback
+> - adapted the changes accordingly
+> 
+> As usual, comments are welcome.
 
--- Jamie
+This changelog would be rather more useful if it was to show us some
+sample output from /proc/socinfo, perhaps accompanied with an
+explanation for people who aren't familar with this area of the kernel.
+
+I'd have thought that sysfs was an appropriate place for this info. 
+Perhaps under /sys/devices/platform?  Or /sys/devices/system?  Peter's
+original patch didn't tell us where in the hierarchy the file was
+placed, nor why it was placed there, not what its contents look like. 
+But crappy changelogs are the norm :(
+
+The objections stated in this email:
+http://www.mail-archive.com/linux-omap@vger.kernel.org/msg17630.html
+appear to still apply to this version of the patches?
+
+Kevin didn't explain why he said "Please export these via debugfs". 
+Tony didn't clearly explain why he said "I don't think we want to
+export unique chip identifiers by default".
+
+
+
+So apart from having certain opinions regarding communication skills
+and wondering why people cc me on stuff without vaguely providing
+enough info for me to understand what they're thinking, I don't know
+what to make of it all :(
