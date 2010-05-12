@@ -1,97 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab0ELPpc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 11:45:32 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:42200 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756281Ab0ELPpS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 11:45:18 -0400
-Date: Wed, 12 May 2010 17:45:16 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: Alessandro Zummo <a.zummo@towertech.it>,
-       Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Andrew Morton <akpm@linux-foundation.org>, maltesch@gmx.de,
-       Ralf Baechle <ralf@linux-mips.org>,
-       Herton Ronaldo Krzesinski <herton@mandriva.com.br>,
-       rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Cc: vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH] Un(de)selectable block for DISCONTIGMEM/64BIT on parisc
-Message-ID: <20100512154516.GB722@faui48a.informatik.uni-erlangen.de>
-References: <20100512153229.GA3379@faui49.informatik.uni-erlangen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512153229.GA3379@faui49.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756216Ab0ELPtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 11:49:10 -0400
+Received: from c60.cesmail.net ([216.154.195.49]:43675 "EHLO c60.cesmail.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755556Ab0ELPtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 11:49:08 -0400
+Subject: Re: [ath5k-devel] [PATCH] [ath5k][leds] Ability to disable leds
+ support. If leds support enabled do not force mac802.11 leds layer
+ selection.
+From: Pavel Roskin <proski@gnu.org>
+To: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Cc: ath5k-devel@venema.h4ckr.net, Kalle Valo <kalle.valo@iki.fi>,
+       linux-wireless@vger.kernel.org, GeunSik Lim <geunsik.lim@samsung.com>,
+       Jiri Slaby <jirislaby@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Keng-Yu Lin <keng-yu.lin@canonical.com>, netdev@vger.kernel.org,
+       Jiri Kosina <jkosina@suse.cz>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Shahar Or <shahar@shahar-or.co.il>, linux-kernel@vger.kernel.org,
+       Luca Verdesca <magooz@salug.it>
+In-Reply-To: <4bea1f81.09b6660a.746e.1c12@mx.google.com>
+References: <4bea1f81.09b6660a.746e.1c12@mx.google.com>
+Content-Type: text/plain
+Date: Wed, 12 May 2010 11:48:56 -0400
+Message-Id: <1273679336.10823.15.camel@mj>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
+On Wed, 2010-04-07 at 21:58 +0300, Dmytro Milinevskyy wrote:
 
-   Seems I messed up the logic a bit -- reading the ifndef for an
-ifdef reversing the actual behaviour of the code when applying the
-patch. Below the corrected variant.
+> Here is the patch to disable ath5k leds support on build stage.
+> However if the leds support was enabled do not force selection of 802.11 leds layer.
 
-Regards
+The idea is good, but the implementation could be improved.
 
-   Christoph
+There are too many preprocessor conditionals in your patch.
 
-On Wed, May 12, 2010 at 05:32:29PM +0200, Christoph Egger wrote:
-> Hi all!
-> 
-> 	As part of the VAMOS[0] research project at the University of
-> Erlangen we are looking at multiple integrity errors in linux'
-> configuration system.
-> 
-> 	When considering the restrictions inposed in kconfig 64BIT
-> will *always* be set when DISCONTIGMEM is present on parisc so the
-> code path depending on !64BIT is actually unreachable and the whole
-> check unnecessary.
-> 
-> 	Please keep me informed of this patch getting confirmed /
-> merged so we can keep track of it.
-> 
-> Regards
-> 
-> 	Christoph Egger
-> 
-> [0] http://vamos1.informatik.uni-erlangen.de/
+> +#ifdef CONFIG_ATH5K_LEDS
+>  /*
+>   * These match net80211 definitions (not used in
+>   * mac80211).
+> @@ -939,11 +940,7 @@ enum ath5k_power_mode {
+>  #define AR5K_LED_AUTH	2 /*IEEE80211_S_AUTH*/
+>  #define AR5K_LED_ASSOC	3 /*IEEE80211_S_ASSOC*/
+>  #define AR5K_LED_RUN	4 /*IEEE80211_S_RUN*/
 
-----
->From 5eeae9c56e2602a68b62b21691e6756fb5198dd7 Mon Sep 17 00:00:00 2001
-From: Christoph Egger <siccegge@cs.fau.de>
-Date: Wed, 12 May 2010 16:59:24 +0200
-Subject: [PATCH] on parisc CONFIG_DISCONTIGMEM always depends on CONFIG_64BIT
+It should be OK to leave the constants defined even if they are not
+used.
 
-Removing a conditional on 64BIT inside a DISCONTIGMEM block inside
-arch/parisc. DISCONTIGMEM depends on ARCH_DISCONTIGMEM_ENABLE either
-directly or through DISCONTIGMEM_MANUAL which in turn depends on 64BIT
-inside Kconfig so the check and the else case isn't needed at all (the
-else case can't ever be reached)
+> +#ifdef CONFIG_ATH5K_LEDS
+>  /* LED functions */
+>  extern int ath5k_init_leds(struct ath5k_softc *sc);
+>  extern void ath5k_led_enable(struct ath5k_softc *sc);
+>  extern void ath5k_led_off(struct ath5k_softc *sc);
+>  extern void ath5k_unregister_leds(struct ath5k_softc *sc);
+> +#endif
 
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
----
- arch/parisc/include/asm/mmzone.h |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+You could add inline functions for the case when CONFIG_ATH5K_LEDS is
+not defined.  That would avoid may conditionals in the code.
 
-diff --git a/arch/parisc/include/asm/mmzone.h b/arch/parisc/include/asm/mmzone.h
-index 9608d2c..dbddcac 100644
---- a/arch/parisc/include/asm/mmzone.h
-+++ b/arch/parisc/include/asm/mmzone.h
-@@ -35,12 +35,8 @@ extern struct node_map_data node_data[];
- #define PFNNID_MAP_MAX  512     /* support 512GB */
- extern unsigned char pfnnid_map[PFNNID_MAP_MAX];
- 
--#ifndef CONFIG_64BIT
--#define pfn_is_io(pfn) ((pfn & (0xf0000000UL >> PAGE_SHIFT)) == (0xf0000000UL >> PAGE_SHIFT))
--#else
- /* io can be 0xf0f0f0f0f0xxxxxx or 0xfffffffff0000000 */
- #define pfn_is_io(pfn) ((pfn & (0xf000000000000000UL >> PAGE_SHIFT)) == (0xf000000000000000UL >> PAGE_SHIFT))
--#endif
- 
- static inline int pfn_to_nid(unsigned long pfn)
- {
+>  /* GPIO Functions */
+> +#ifdef CONFIG_ATH5K_LEDS
+>  extern void ath5k_hw_set_ledstate(struct ath5k_hw *ah, unsigned int state);
+> +#endif
+
+The same comment applies.
+
+Also, there is nothing wrong with having an external declaration that is
+not used in some particular configuration.
+
+> +#ifdef CONFIG_ATH5K_LEDS
+>  	/* turn on HW LEDs */
+>  	ath5k_hw_set_ledstate(ah, AR5K_LED_INIT);
+> +#endif
+
+This is avoidable by having an inline ath5k_hw_set_ledstate() that does
+nothing.
+
+> +#ifdef CONFIG_ATH5K_LEDS
+>  	struct ieee80211_hw *hw = pci_get_drvdata(to_pci_dev(dev));
+>  	struct ath5k_softc *sc = hw->priv;
+>  
+>  	ath5k_led_off(sc);
+> +#endif
+
+Even this is avoidable if ath5k_led_off() does nothing.  gcc should be
+smart enough to optimize out unneeded function calls.
+
+> +#ifdef CONFIG_ATH5K_LEDS
+>  /*
+>   * State for LED triggers
+>   */
+>  struct ath5k_led
+>  {
+> +#ifdef CONFIG_LEDS_CLASS
+
+I'm not sure this complexity is needed.  Are you going to support LEDs
+if CONFIG_LEDS_CLASS is disabled?
+
+> +#ifdef CONFIG_ATH5K_LEDS
+>  	unsigned int		led_pin,	/* GPIO pin for driving LED */
+>  				led_on;		/* pin setting for LED on */
+> +#endif
+>  
+>  	struct tasklet_struct	restq;		/* reset tasklet */
+>  
+> @@ -164,7 +172,9 @@ struct ath5k_softc {
+>  	spinlock_t		rxbuflock;
+>  	u32			*rxlink;	/* link ptr in last RX desc */
+>  	struct tasklet_struct	rxtq;		/* rx intr tasklet */
+> +#ifdef CONFIG_ATH5K_LEDS
+>  	struct ath5k_led	rx_led;		/* rx led */
+> +#endif
+
+You may want to group those fields together to make the code more
+readable.
+
+> --- a/drivers/net/wireless/ath/ath5k/led.c
+> +++ b/drivers/net/wireless/ath/ath5k/led.c
+
+I wonder if you could omit led.c completely in the Makefile.  If there
+are some parts of led.c that are needed without CONFIG_ATH5K_LEDS, maybe
+they belong elsewhere?
+
 -- 
-1.6.3.3
+Regards,
+Pavel Roskin
