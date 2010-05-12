@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab0ELN7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 09:59:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37813 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab0ELN7r (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 12 May 2010 09:59:47 -0400
-Date: Wed, 12 May 2010 09:58:43 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, linux-kernel@vger.kernel.org,
-       gpxe-devel@etherboot.org, Peter Jones <pjones@redhat.com>
-Subject: Re: [LKML] Re: [PATCH 1/2] ibft: Update iBFT handling for v1.03 of
-	the spec.
-Message-ID: <20100512135843.GA5686@phenom.dumpdata.com>
-References: <1270822888-13192-1-git-send-email-konrad@kernel.org> <1270822888-13192-2-git-send-email-konrad@kernel.org> <alpine.LFD.2.00.1005120125170.5297@localhost.localdomain>
+	id S1755669Ab0ELODM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 10:03:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42178 "EHLO mx2.suse.de"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751923Ab0ELODL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 10:03:11 -0400
+Date: Wed, 12 May 2010 16:03:07 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+       mdpoole@troilus.org
+Subject: Re: [PATCH] HID:magicmouse: This fixes a connection problem with
+ the magicmouse.
+In-Reply-To: <4BEAB3AF.6020909@gmail.com>
+Message-ID: <alpine.LNX.2.00.1005121602240.28092@pobox.suse.cz>
+References: <1273595363-4020-1-git-send-email-justinmattock@gmail.com> <alpine.LNX.2.00.1005121456150.28092@pobox.suse.cz> <4BEAAF9C.909@gmail.com> <alpine.LNX.2.00.1005121540340.28092@pobox.suse.cz> <4BEAB3AF.6020909@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005120125170.5297@localhost.localdomain>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090208.4BEAB41D.000C:SCFMA922111,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 01:26:59AM -0400, Len Brown wrote:
-> 
-> >  #define IBFT_SIGN "iBFT"
-> ...
-> > +#ifdef CONFIG_ACPI
-> > +	/*
-> > +	 * One spec says "IBFT", the other says "iBFT". We have to check
-> > +	 * for both.
-> > +	 */
-> 
-> Really?
-> Which one do you see in the field?
+On Wed, 12 May 2010, Justin P. Mattock wrote:
 
-The one machine I do remember seeing this in the ACPI tables was the IBM
-HS20, but I can't remember which one it was. Mike, Peter - any
-recollection? Don't know about about Intel ones.
+> > > > > --- a/drivers/hid/hid-magicmouse.c
+> > > > > +++ b/drivers/hid/hid-magicmouse.c
+> > > > > @@ -354,7 +354,7 @@ static int magicmouse_probe(struct hid_device
+> > > > > *hdev,
+> > > > >    		goto err_free;
+> > > > >    	}
+> > > > > 
+> > > > > -	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT&
+> > > > > ~HID_CONNECT_HIDINPUT);
+> > > > > +	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+> > > > > 
+> > > > >          
+> > > > This is not particularly right, as we'll end up having dangling 
+> > > > input device.
+> > > > 
+> > > > The problem is, that when HIDRAW is not set, hid_hw_start() 
+> > > > returns ENODEV as no subsystem has claimed the device, and probe 
+> > > > routine bails out. Which is not what we want.
+> > > > 
+> > > > Does the testing patch below fix the problems you are seeing?
+> > > >        
+> > > works good.. rebooted a few times mouse connects. suspended a few times
+> > > mouse reconnects.
+> > >      
+> > I'd be glad if you could also double-check that device removal and
+> > re-connecting it works well as well with this patch.
+> > 
+> with  test I did different techniques,
+> 1) regular suspend(leave device on)
+> 2)suspend then shut off device
+> 3)shut off device then suspend
+> all of these techniques work properly
 
-For cases where there was no ACPI, the 'iBFT' was definitly the string I saw.
+Thanks for reporting and testing, I have queued the patch.
 
-> any reason to #define "iBFT" above and not use it below?
-> 
-> > +	if (!ibft_addr)
-> > +		acpi_table_parse(ACPI_SIG_IBFT, acpi_find_ibft);
-> > +	if (!ibft_addr)
-> > +		acpi_table_parse("iBFT", acpi_find_ibft);
-
-Could definitly use the IBFT_SIGN here.
-
-Thanks for taking a look!
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
