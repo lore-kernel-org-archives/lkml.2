@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab0ELIb2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 04:31:28 -0400
-Received: from mail96.messagelabs.com ([216.82.254.19]:26141 "EHLO
-	mail96.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524Ab0ELIbZ convert rfc822-to-8bit (ORCPT
+	id S1754748Ab0ELIdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 04:33:20 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46769 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524Ab0ELIdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 04:31:25 -0400
-X-VirusChecked: Checked
-X-Env-Sender: Viral.Mehta@lntinfotech.com
-X-Msg-Ref: server-14.tower-96.messagelabs.com!1273653082!49683305!1
-X-StarScan-Version: 6.2.4; banners=lntinfotech.com,-,-
-X-Originating-IP: [203.199.118.207]
-From: Viral Mehta <Viral.Mehta@lntinfotech.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>,
-       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 12 May 2010 13:59:02 +0530
-Subject: RE: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
- error recovery
-Thread-Topic: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
- error recovery
-Thread-Index: Acrxq3EP2BExQmvVRDWkkJniKdMvuwAAbvaN
-Message-ID: <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>
-References: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
-In-Reply-To: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 12 May 2010 04:33:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=YMJtBOKpO8ECI7CHzzp3i2B3Zj8okbI5hKghu9X0mq4L/1qpJ1UOuSDWf0kTwiw/Dk
+         6NRfeAx1s0FWplI14l8AqsBsmdZiKes/D3+sLWsC/IMxeG3ccn6nteV8ce4fJZkfJ3Kw
+         kAnJe1TFxDGvXqow7F4sS9gejzRgVQQI2bPHs=
+Date: Wed, 12 May 2010 16:37:06 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: =?utf-8?B?QW5kcsOp?= Goddard Rosa <andre.goddard@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Sanchin Sant <sanchinp@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mqueue: fix kernel BUG caused by double free() on
+ mq_open()
+Message-ID: <20100512083706.GE5718@cr0.nay.redhat.com>
+References: <17ea945f6d53443000524eb7cc5c4fc66ee3ecf8.1273396690.git.andre.goddard@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <17ea945f6d53443000524eb7cc5c4fc66ee3ecf8.1273396690.git.andre.goddard@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-________________________________________
->From: linux-usb-owner@vger.kernel.org [linux-usb-owner@vger.kernel.org] On Behalf Of Michal Nazarewicz [m.nazarewicz@samsung.com]
->Sent: Wednesday, May 12, 2010 1:46 PM
->To: linux-usb@vger.kernel.org
->Cc: Kyungmin Park; Marek Szyprowski; linux-kernel@vger.kernel.org
->Subject: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init() error recovery
+On Sun, May 09, 2010 at 06:22:28AM -0300, André Goddard Rosa wrote:
+>
+>kernel BUG at mm/slub.c:2846!
+>invalid opcode: 0000 [#1] PREEMPT SMP
+>last sysfs file: /sys/devices/system/cpu/cpu1/cache/index2/shared_cpu_map
+>CPU 0
+>Modules linked in: nfs lockd nfs_acl auth_rpcgss sunrpc vboxnetadp vboxnetflt vboxdrv af_packet snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd ipv6 cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq binfmt_misc fuse loop arc4 snd_hda_codec_idt ecb iwl3945 snd_hda_intel iwlcore snd_hda_codec uvcvideo snd_hwdep snd_pcm videodev mac80211 snd_timer v4l1_compat snd v4l2_compat_ioctl32 i2c_i801 ide_cd_mod cfg80211 soundcore video sony_laptop snd_page_alloc rfkill i2c_core cdrom output sg joydev serio_raw pcspkr ac battery button usbhid hid sd_mod uhci_hcd ahci libata rtc_cmos rtc_core rtc_lib scsi_mod ehci_hcd usbcore fan processor piix ide_core thermal thermal_sys hwmon
+>
+>Pid: 2743, comm: a.out Not tainted 2.6.34-rc7-3.2-default #252 VAIO/VGN-FZ15L
+>RIP: 0010:[<ffffffff810c94d1>]  [<ffffffff810c94d1>] kfree+0xa1/0xb0
+>RSP: 0018:ffff880073321dc8  EFLAGS: 00010246
+>RAX: ffffea000191ca00 RBX: ffff880073150708 RCX: ffff8800731503a8
+>RDX: 4000000000080000 RSI: ffffffff81609520 RDI: ffff880072cc0000
+>RBP: ffff880072cc0000 R08: 00000000000004c0 R09: 0000000000000001
+>R10: ffff880001622550 R11: ffff880073150700 R12: ffff880073150708
+>R13: ffffffff814f84e0 R14: 00000000000fde80 R15: ffff880073150700
+>FS:  00007fd6845616f0(0000) GS:ffff880001800000(0000) knlGS:0000000000000000
+>CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>CR2: 00007fd684194fe0 CR3: 000000007e0a4000 CR4: 00000000000006f0
+>DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>Process a.out (pid: 2743, threadinfo ffff880073320000, task ffff88007dd5f800)
+>Stack:
+>0000000000000040 ffff880073150708 ffff880073150700 ffffffff811e0012
+><0> ffff880073150708 ffffffff813cb200 ffffffff814f0820 0000000000124f80
+><0> 00000000000fde80 ffffffff810e47ec ffff880073150708 0000000000000000
+>Call Trace:
+>[<ffffffff811e0012>] ? mqueue_delete_inode+0x92/0x120
+>[<ffffffff810e47ec>] ? generic_delete_inode+0x8c/0x130
+>[<ffffffff811e0322>] ? mqueue_get_inode+0x282/0x290
+>[<ffffffff811e0430>] ? mqueue_create+0x90/0x190
+>[<ffffffff810d8eec>] ? vfs_create+0xac/0xd0
+>[<ffffffff811e0ae2>] ? sys_mq_open+0x5b2/0x710
+>[<ffffffff81002eab>] ? system_call_fastpath+0x16/0x1b
+>Code: 5d c3 48 89 ea 48 89 c6 e8 ed fa ff ff eb ea 66 f7 c2 00 c0 74 15 41 5b 48 89 c7 5b 5d e9 c8 75 fd ff 48 8b 40 10 48 8b 10 eb 90 <0f> 0b eb fe 66 66 2e 0f 1f 84 00 00 00 00 00 48 83 ec 08 48 81
+>
+>Signed-off-by: André Goddard Rosa <andre.goddard@gmail.com>
+>---
+> ipc/mqueue.c |    1 +
+> 1 files changed, 1 insertions(+), 0 deletions(-)
+>
+>diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+>index 722b013..77a3c8e 100644
+>--- a/ipc/mqueue.c
+>+++ b/ipc/mqueue.c
+>@@ -159,6 +159,7 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
+> 			    task_rlimit(p, RLIMIT_MSGQUEUE)) {
+> 				spin_unlock(&mq_lock);
+> 				kfree(info->messages);
+>+				info->messages = NULL;
+> 				goto out_inode;
+> 			}
 
->In to places in fsg_common_init() an unconditional call to kfree()
->on common was performed in error recovery which is not a valid
+In the latest git, you already removed the above kfree() since it is
+not necessary. mqueue_delete_inode() will kfree it.
+so why this fix though?
 
-If I am not wrong, common can not be NULL since it was already checked above.
-
-2685         if (!common) {
-2686                 common = kzalloc(sizeof *common, GFP_KERNEL);
-2687                 if (!common)
-2688                         return ERR_PTR(-ENOMEM);
-2689                 common->free_storage_on_release = 1;
-
-
->behaviour since fsg_common structure is not always allocated by
->fsg_common_init().
-
->To fix, the calls has been replaced with a goto to a proper error
->recovery which does the correct thing.
----
-
-This Email may contain confidential or privileged information for the intended recipient (s) If you are not the intended recipient, please do not use or disseminate the information, notify the sender and delete it from your system.
-
-______________________________________________________________________
+Thanks.
