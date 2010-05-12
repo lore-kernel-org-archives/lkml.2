@@ -1,36 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab0ELGeI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 02:34:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27828 "EHLO mx1.redhat.com"
+	id S1753626Ab0ELGfS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 02:35:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59497 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044Ab0ELGeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 02:34:04 -0400
-Message-ID: <4BEA4BD4.6070207@redhat.com>
-Date: Wed, 12 May 2010 09:33:56 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Zachary Amsden <zamsden@redhat.com>, Glauber Costa <glommer@redhat.com>,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1752800Ab0ELGfP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 02:35:15 -0400
 Subject: Re: [PATCH 0/9] pvclock misc fixes - v4.
-References: <1273594667-17175-1-git-send-email-glommer@redhat.com> <4BEA21A1.8040702@redhat.com> <AFD76714-2559-4281-AB61-EA5C6395C13A@suse.de>
-In-Reply-To: <AFD76714-2559-4281-AB61-EA5C6395C13A@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <4BEA4BD4.6070207@redhat.com>
+Date: Wed, 12 May 2010 08:35:13 +0200
+Cc: Zachary Amsden <zamsden@redhat.com>, Glauber Costa <glommer@redhat.com>,
+       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <9318FF3C-DD25-48E7-B705-0ADA818CA13A@suse.de>
+References: <1273594667-17175-1-git-send-email-glommer@redhat.com> <4BEA21A1.8040702@redhat.com> <AFD76714-2559-4281-AB61-EA5C6395C13A@suse.de> <4BEA4BD4.6070207@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2010 08:47 AM, Alexander Graf wrote:
-> How about stable queuing of this one?
->
 
-Only after this gets some serious field testing.  I'm not happy to trade 
-a known issue for an unknown regression.  While I don't expect any 
-problems with the patchset, testing has often proven me wrong.
+On 12.05.2010, at 08:33, Avi Kivity wrote:
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+> On 05/12/2010 08:47 AM, Alexander Graf wrote:
+>> How about stable queuing of this one?
+>> 
+> 
+> Only after this gets some serious field testing.  I'm not happy to trade a known issue for an unknown regression.  While I don't expect any problems with the patchset, testing has often proven me wrong.
+
+Agreed. I merely wanted to raise awareness of me wanting to see this in -stable when it is stable :).
+
+
+Alex
 
