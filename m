@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab0ELWG5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 18:06:57 -0400
-Received: from mail.gmx.net ([213.165.64.20]:52745 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754508Ab0ELWG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 18:06:56 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18QyNBE9eYQ0JR8Gqz6BcyTppiv3UCGKMF8YBOekM
-	cs3/9XRVTrnon7
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: David Woodhouse <dwmw2@infradead.org>, Ferenc Wagner <wferi@niif.hu>
-Subject: [PATCH] mtd: Move function mtd_to_flctl to fix build failure
-Date: Thu, 13 May 2010 00:06:54 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
-Cc: Magnus Damm <damm@opensource.se>, Paul Mundt <lethal@linux-sh.org>,
-       Yoshihiro Shimoda <shimoda.yoshihiro@renesas.com>,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-       linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1755859Ab0ELWNM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 18:13:12 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:55884 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab0ELWNK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 18:13:10 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: Re: mmotm 2010-05-11 - dies in pm_qos_update_request()
+In-Reply-To: Your message of "Wed, 12 May 2010 23:07:20 +0200."
+             <201005122307.20860.rjw@sisk.pl>
+From: Valdis.Kletnieks@vt.edu
+References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org> <5525.1273693962@localhost>
+            <201005122307.20860.rjw@sisk.pl>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1273702370_3904P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005130006.54616.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Date: Wed, 12 May 2010 18:12:50 -0400
+Message-ID: <17286.1273702370@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020204.4BEB27E2.00F7,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+--==_Exmh_1273702370_3904P
+Content-Type: text/plain; charset=us-ascii
 
-This patch fixes a build failure[1] by simply moving the function mtd_to_flctl
-beneath the definition of sh_flctl which it uses.
-
-BF introduced by patch 
-'mtd/nand/sh_flctl: Replace the dangerous mtd_to_flctl macro' (67026418)
-
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-KernelVersion: linux-next of 20100512
-References:
-[1] http://kisskb.ellerman.id.au/kisskb/buildresult/2601986/
-
- include/linux/mtd/sh_flctl.h |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/mtd/sh_flctl.h b/include/linux/mtd/sh_flctl.h
-index 178b5c2..d7b686a 100644
---- a/include/linux/mtd/sh_flctl.h
-+++ b/include/linux/mtd/sh_flctl.h
-@@ -93,11 +93,6 @@
- #define INIT_FL4ECCRESULT_VAL	0x03FF03FF
- #define LOOP_TIMEOUT_MAX	0x00010000
+On Wed, 12 May 2010 23:07:20 +0200, "Rafael J. Wysocki" said:
  
--static inline struct sh_flctl *mtd_to_flctl(struct mtd_info *mtdinfo)
--{
--	return container_of(mtdinfo, struct sh_flctl, mtd);
--}
--
- struct sh_flctl {
- 	struct mtd_info		mtd;
- 	struct nand_chip	chip;
-@@ -128,4 +123,9 @@ struct sh_flctl_platform_data {
- 	unsigned has_hwecc:1;
- };
- 
-+static inline struct sh_flctl *mtd_to_flctl(struct mtd_info *mtdinfo)
-+{
-+	return container_of(mtdinfo, struct sh_flctl, mtd);
-+}
-+
- #endif	/* __SH_FLCTL_H__ */
--- 
-1.6.4.4
+> > I suspect this commit:
+> > 
+> > commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+> > Author: Rafael J. Wysocki <rjw@sisk.pl>
+> > Date:   Sun Mar 14 14:35:17 2010 +0000
+> > 
+> >     e1000e / PCI / PM: Add basic runtime PM support (rev. 4)
+> 
+> No, I don't think so.  I'm running -rc6 with this patch applied on a box with
+> e1000e and it works just fine.
+> 
+> Please try to revert this one instead:
+> 
+> http://git.kernel.org/?p=linux/kernel/git/rafael/suspend-2.6.git;a=patch;h=ed77134bfccf5e75b6cbadab268e559dbe6a4ebb
+
+Isn't a clean revert - build dies with:
+
+  CC      net/mac80211/scan.o
+net/mac80211/scan.c: In function 'ieee80211_scan_state_decision':
+net/mac80211/scan.c:510: error: implicit declaration of function 'pm_qos_request'
+make[1]: *** [net/mac80211/scan.o] Error 1
+make: *** [net/mac80211/scan.o] Error 2
+
+Will investigate more later, find what other commit needs reverting.
+
+--==_Exmh_1273702370_3904P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFL6yficC3lWbTT17ARAg4GAJ4mP56FJ4j7BKFY+fx3EYZn3WBjBACgiNks
+IfrHw5PXW5twuBm29VbGzkw=
+=l25Q
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1273702370_3904P--
 
