@@ -1,131 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab0ELRdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 13:33:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36281 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756775Ab0ELRdR (ORCPT
+	id S1756832Ab0ELReQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 13:34:16 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:52822 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961Ab0ELReO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 13:33:17 -0400
-Message-ID: <4BEAE6A7.8070809@colorfullife.com>
-Date: Wed, 12 May 2010 19:34:31 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	Wed, 12 May 2010 13:34:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=V9O18kX5wlCxVNVj2FviBgGaAWxLQllmu7Azz3t0pEenpeS74iJutXg7hagtw0Bex4
+         s5ua69nf3uCGD8qeiejtKsfw5DfW068UzpwP3w+CYY0kNTK9MICJNTDNk+izol6rdVOq
+         Uw51/dJa5fPmmKTeKdhwIbgSbqQ3dc2F05l8Y=
+Date: Wed, 12 May 2010 10:33:59 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: mjg@redhat.com, mzxreary@0pointer.de, rpurdie@linux.intel.com,
+       jlee@novell.com, linux-kernel@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org, greg@kroah.com
+Subject: Re: [PATCH 4/4] msi-laptop: Add i8042 filter to sync sw state with
+ BIOS when function key pressed
+Message-ID: <20100512173359.GA16431@core.coreip.homeip.net>
+References: <20100512141149.GB20564@kroah.com>
+ <1273683490-27090-4-git-send-email-gregkh@suse.de>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Chris Mason <chris.mason@oracle.com>,
-       Zach Brown <zach.brown@oracle.com>, Jens Axboe <jens.axboe@oracle.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 2/2] ipc/sem.c: move wake_up_process out of the spinlock
- section
-References: <1272481588-1941-1-git-send-email-manfred@colorfullife.com> <1272481588-1941-2-git-send-email-manfred@colorfullife.com> <1272481588-1941-3-git-send-email-manfred@colorfullife.com> <20100511142149.83bb3538.akpm@linux-foundation.org>
-In-Reply-To: <20100511142149.83bb3538.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273683490-27090-4-git-send-email-gregkh@suse.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2010 11:21 PM, Andrew Morton wrote:
-> On Wed, 28 Apr 2010 21:06:27 +0200
-> Manfred Spraul<manfred@colorfullife.com>  wrote:
->
->    
->> The wake-up part of semtimedop() consists out of two steps:
->> - the right tasks must be identified.
->> - they must be woken up.
->>
->> Right now, both steps run while the array spinlock is held.
->> This patch reorders the code and moves the actual wake_up_process()
->> behind the point where the spinlock is dropped.
->>
->> The code also moves setting sem->sem_otime to one place: It does not
->> make sense to set the last modify time multiple times.
->>      
-> ipc/sem.c: In function 'update_queue':
-> ipc/sem.c:545: warning: 'retval' may be used uninitialized in this function
->
-> which indeed was a bug.
->
->    
-Duh - hiding in shame.
+On Wed, May 12, 2010 at 09:58:10AM -0700, Greg Kroah-Hartman wrote:
+> From: Lee, Chun-Yi <jlee@novell.com>
+> 
+> There have some MSI netbook change devices state by EC when user press
+> wlan/bluetooth/wwan function keys. So, add a i8042 filter to sync sw
+> state with BIOS when function keys pressed.
+> 
+> Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> ---
+>  drivers/platform/x86/msi-laptop.c |   59 ++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 58 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/msi-laptop.c b/drivers/platform/x86/msi-laptop.c
+> index 34bec2e..3c6e160 100644
+> --- a/drivers/platform/x86/msi-laptop.c
+> +++ b/drivers/platform/x86/msi-laptop.c
+> @@ -59,6 +59,7 @@
+>  #include <linux/backlight.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/rfkill.h>
+> +#include <linux/i8042.h>
+>  
+>  #define MSI_DRIVER_VERSION "0.5"
+>  
+> @@ -581,6 +582,46 @@ static void rfkill_cleanup(void)
+>  	}
+>  }
+>  
+> +static void msi_update_rfkill(struct work_struct *ignored)
+> +{
+> +	get_wireless_state_ec_standard();
+> +
+> +	if (rfk_wlan)
+> +		rfkill_set_sw_state(rfk_wlan, !wlan_s);
+> +	if (rfk_bluetooth)
+> +		rfkill_set_sw_state(rfk_bluetooth, !bluetooth_s);
+> +	if (rfk_threeg)
+> +		rfkill_set_sw_state(rfk_threeg, !threeg_s);
+> +}
+> +static DECLARE_DELAYED_WORK(msi_rfkill_work, msi_update_rfkill);
+> +
+> +bool msi_laptop_i8042_filter(unsigned char data, unsigned char str,
+> +				struct serio *port)
 
-The effect would be that e.g. a semctl(SETALL) operation might change 
-sem_otime.
-semctl(SETALL) must only change sem_ctime (and sem_otime only if it 
-causes a wakeup
-and the woken up thread modifies the array)
+Make it static bool...
 
+> +{
+> +	static bool extended;
+> +
+> +	if (str & 0x20)
+> +		return false;
+> +
+> +	/* 0x54 wwan, 0x62 bluetooth, 0x76 wlan*/
+> +	if (unlikely(data == 0xe0)) {
+> +		extended = true;
+> +		return false;
+> +	} else if (unlikely(extended)) {
+> +		switch (data) {
+> +		case 0x54:
+> +		case 0x62:
+> +		case 0x76:
+> +			schedule_delayed_work(&msi_rfkill_work,
+> +				round_jiffies_relative(0.5 * HZ));
+> +			break;
+> +		}
+> +		extended = false;
+> +	}
+> +
+> +	return false;
+> +}
+> +
+>  static void msi_init_rfkill(struct work_struct *ignored)
+>  {
+>  	if (rfk_wlan) {
+> @@ -706,9 +747,24 @@ static int load_scm_model_init(struct platform_device *sdev)
+>  	/* initial rfkill */
+>  	result = rfkill_init(sdev);
+>  	if (result < 0)
+> -		return result;
+> +		goto fail_rfkill;
+> +
+> +	result = i8042_install_filter(msi_laptop_i8042_filter);
+> +	if (result) {
+> +		printk(KERN_WARNING
 
-> +++ a/ipc/sem.c
-> @@ -542,7 +542,7 @@ static int update_queue(struct sem_array
->   	struct list_head *walk;
->   	struct list_head *pending_list;
->   	int offset;
-> -	int retval;
-> +	int retval = 0;
->
->   	/* if there are complex operations around, then knowing the semaphore
->   	 * that was modified doesn't help us. Assume that multiple semaphores
-> _
->
-> But I worry that the patch which you sent might not have been the one
-> which you tested.
->    
+Since we fail driver load this should be error, not warning message.
 
-I think I tested the patch that I sent out.
+> +			"msi-laptop: Unable to install key filter\n");
+> +		goto fail_filter;
+> +	}
+>  
+>  	return 0;
+> +
+> +fail_filter:
+> +	rfkill_cleanup();
+> +
+> +fail_rfkill:
+> +
+> +	return result;
+> +
+>  }
+>  
+>  static int __init msi_init(void)
+> @@ -819,6 +875,7 @@ static void __exit msi_cleanup(void)
+>  	platform_driver_unregister(&msipf_driver);
+>  	backlight_device_unregister(msibl_device);
+>  
+> +	i8042_remove_filter(msi_laptop_i8042_filter);
+>  	rfkill_cleanup();
+>  
+>  	/* Enable automatic brightness control again */
 
-Thus I'll retest everything (including sem_ctime/sem_otime and SETALL)
-
-The odd thing: My gcc somehow doesn't report the missing initialization :-(
-
- >>>
-[manfred@cores linux-2.6]$ grep 'int update_queue' -A 10 ipc/sem.c
-static int update_queue(struct sem_array *sma, int semnum, struct 
-list_head *pt)
-{
-         struct sem_queue *q;
-         struct list_head *walk;
-         struct list_head *pending_list;
-         int offset;
-         int retval;
-
-         /* if there are complex operations around, then knowing the 
-semaphore
-          * that was modified doesn't help us. Assume that multiple 
-semaphores
-          * were modified.
-[manfred@cores linux-2.6]$ touch ipc/sem.o
-[manfred@cores linux-2.6]$ make ipc
-   CHK     include/linux/version.h
-   CHK     include/generated/utsrelease.h
-   CALL    scripts/checksyscalls.sh
-   LD      ipc/built-in.o
-[manfred@cores linux-2.6]$ gcc --version
-gcc (GCC) 4.4.3 20100127 (Red Hat 4.4.3-4)
-Copyright (C) 2010 Free Software Foundation, Inc.
-This is free software; see the source for copying conditions.  There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-[manfred@cores linux-2.6]$ cat ipc/.sem.o.cmd
-cmd_ipc/sem.o := gcc -Wp,-MD,ipc/.sem.o.d  -nostdinc -isystem 
-/usr/lib/gcc/x86_64-redhat-linux/4.4.3/include 
--I/home/manfred/git/linux-2.6/arch/x86/include -Iinclude  -include 
-include/generated/autoconf.h -D__KERNEL__ -Wall -Wundef 
--Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common 
--Werror-implicit-function-declaration -Wno-format-security 
--fno-delete-null-pointer-checks -Os -m64 -mtune=generic -mno-red-zone 
--mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args 
--DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -pipe -Wno-sign-compare 
--fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow 
--Wframe-larger-than=1024 -fno-stack-protector -fno-omit-frame-pointer 
--fno-optimize-sibling-calls -g -Wdeclaration-after-statement 
--Wno-pointer-sign -fno-strict-overflow -fno-dwarf2-cfi-asm 
--fconserve-stack   -D"KBUILD_STR(s)=\#s" 
--D"KBUILD_BASENAME=KBUILD_STR(sem)"  -D"KBUILD_MODNAME=KBUILD_STR(sem)"  
--c -o ipc/sem.o ipc/sem.c
-
-<<<
-
---
-     Manfred
+-- 
+Dmitry
