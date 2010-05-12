@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab0ELLRx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 07:17:53 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:33765 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955Ab0ELLRv convert rfc822-to-8bit (ORCPT
+	id S1755587Ab0ELLWg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 07:22:36 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56312 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab0ELLWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 07:17:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=RHCrWWAZCeQ0Dmc8E6bCgYMK4tgk2z9rleGApFNog/3Oc3UDfd0C2As3HMgkBQgzYD
-         9n/QhHVXIOAR6eKV+HOh9q8mdjdGriQaHbHiDQIAsass3GKYEzL8hVcPMU8HLSWArxqa
-         P+4IVfFymlCSzwDchtYQ6bk24kZQrVdcBjHo4=
+	Wed, 12 May 2010 07:22:34 -0400
+Date: Wed, 12 May 2010 12:22:28 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arve Hj?nnev?g <arve@android.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100512112227.GA4312@sirena.org.uk>
+References: <1272667021-21312-1-git-send-email-arve@android.com> <87wrvl5479.fsf@deeprootsystems.com> <87632vhbs8.fsf@deeprootsystems.com> <AANLkTikJV-wQX9xh8mRVptebJBctcRrQaUls-IGDhQar@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20100512083706.GE5718@cr0.nay.redhat.com>
-References: <17ea945f6d53443000524eb7cc5c4fc66ee3ecf8.1273396690.git.andre.goddard@gmail.com> 
-	<20100512083706.GE5718@cr0.nay.redhat.com>
-From: =?ISO-8859-1?Q?Andr=E9_Goddard_Rosa?= <andre.goddard@gmail.com>
-Date: Wed, 12 May 2010 08:17:30 -0300
-Message-ID: <AANLkTinDz8zNrFcziMvpHOLLujYK9AEeQ10uWrrrMC5e@mail.gmail.com>
-Subject: Re: [PATCH] mqueue: fix kernel BUG caused by double free() on 
-	mq_open()
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       Sanchin Sant <sanchinp@in.ibm.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikJV-wQX9xh8mRVptebJBctcRrQaUls-IGDhQar@mail.gmail.com>
+X-Cookie: Used staples are good with SOY SAUCE!
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Américo!
+On Tue, May 11, 2010 at 06:11:09PM -0700, Arve Hj?nnev?g wrote:
 
-> In the latest git, you already removed the above kfree() since it is
-> not necessary. mqueue_delete_inode() will kfree it.
-> so why this fix though?
+> > 2.2 Usage in PM aware drivers
+> > ==============================
 
-The applied patch is a newer/better version. This is an old version,
-please just ignore it. Thank you!
+> > [An example of how a driver already using runtime PM would use
+> > ?a suspend blocker would also be helpful.
+
+> An audio driver can block suspend while audio is playing. We don't
+> currently use the runtime pm framework since this is new, but we do
+> runtime pm by turning off clocks and power when the device is
+> inactive.
+
+Could you clarify what's going on here please?  What do you mean by an
+"audio driver" here - there's several different classes of driver which
+work together to produce the embedded audio subsystem and I'm not clear
+which you're referring to here.  I'd not expect a chip-specific audio
+driver to be taking suspend blockers at all except during things like
+accessory detect handling which can take a long time.  A system-specific
+driver could reasonably block during playback but doing it in a chip
+specific driver sounds like a bit too much of a policy decision.
+
+The kernel runtime PM framwwork tends not to come into play for anything
+except MFD and SoC drivers with audio where they're a component of PM on
+the larger chip and it's useful for coordinating with the other drivers
+in play.  Otherwise we already have very detailed automatic power
+management (especially for the CODECs) and there's no benefit in
+bouncing through runtime PM.
