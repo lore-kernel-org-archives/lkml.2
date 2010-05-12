@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327Ab0ELVic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 17:38:32 -0400
-Received: from fg-out-1718.google.com ([72.14.220.154]:19261 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758002Ab0ELVi0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 17:38:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Rpj3+ea2CuoFGKvkFQuRMAhiwRc7Mk3mN8iOLT5sWVEZ/xEAR9dAg37tgnGjAnkqb+
-         Y+B5/qTWGqrxSizW9f2/3qt9rUqMBOdp7JW6ZN1YzOwZJzRtuK3eOfUvdSTak0JCEUoE
-         Kx27TPYBwOaM24QFsD3zSxejyvHpDU40fnjIE=
-Date: Thu, 13 May 2010 01:38:14 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>, mingo@elte.hu
-Cc: Don Zickus <dzickus@redhat.com>, peterz@infradead.org, aris@redhat.com,
-       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com
-Subject: Re: [PATCH 2/8] [nmi watchdog] touch_softlockup cleanups and
-	softlockup_tick removal
-Message-ID: <20100512213814.GB5190@lenovo>
-References: <1273266711-18706-1-git-send-email-dzickus@redhat.com> <1273266711-18706-3-git-send-email-dzickus@redhat.com> <20100512200652.GF10028@nowhere> <20100512202628.GK15159@redhat.com> <20100512202832.GG10028@nowhere> <20100512205616.GL15159@redhat.com> <20100512210034.GH10028@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512210034.GH10028@nowhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758335Ab0ELVjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 17:39:10 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:48404 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757927Ab0ELVdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 17:33:54 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 01/23] rcu: add an rcu_dereference_index_check()
+Date: Wed, 12 May 2010 14:33:20 -0700
+Message-Id: <1273700022-16523-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0.6
+In-Reply-To: <20100512213317.GA15085@linux.vnet.ibm.com>
+References: <20100512213317.GA15085@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 11:00:36PM +0200, Frederic Weisbecker wrote:
-...
-> > > 
-> > > Ah right.
-> > > 
-> > > BTW, if you address my reviews, please do it incrementally, I'm going
-> > > to apply this set and push it to Ingo.
-> > 
-> > Ok, probably easier to review too. :-)
-> 
-> 
-> Yeah, and it's time to flush this code as it's good globally.
-> 
-> Plus it would be nice to get this for .35
-> 
-> Ah and forget about the sysctl ABI breakages. Since this is only
-> used for kernel development, this is not going to break much things.
-> If somebody complains, we can still reintegrate what we had.
-> 
-> Thanks.
-> 
-...
-Guys, could you please spend a few minutes and enlighten me a bit?
-Does all this series mean that we eventually will drop nmi-watchdog
-via io-apic (read via pic) as only the transition to perf complete?
+The sparse RCU-pointer checking relies on type magic that dereferences
+the pointer in question.  This does not work if the pointer is in fact
+an array index.  This commit therefore supplies a new RCU API that
+omits the sparse checking to continue to support rcu_dereference()
+on integers.
 
-I recall someone said about to stop using io-apic, but just to be sure.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ include/linux/rcupdate.h |   33 +++++++++++++++++++++++++++++++++
+ 1 files changed, 33 insertions(+), 0 deletions(-)
 
-	-- Cyrill
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 2f9e56c..3be0ad7 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -560,4 +560,37 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+ }
+ #endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+ 
++#ifndef CONFIG_PROVE_RCU
++#define __do_rcu_dereference_check(c) do { } while (0)
++#endif /* #ifdef CONFIG_PROVE_RCU */
++
++#define __rcu_dereference_index_check(p, c) \
++	({ \
++		typeof(p) _________p1 = ACCESS_ONCE(p); \
++		__do_rcu_dereference_check(c); \
++		smp_read_barrier_depends(); \
++		(_________p1); \
++	})
++
++/**
++ * rcu_dereference_index_check() - rcu_dereference for indices with debug checking
++ * @p: The pointer to read, prior to dereferencing
++ * @c: The conditions under which the dereference will take place
++ *
++ * Similar to rcu_dereference_check(), but omits the sparse checking.
++ * This allows rcu_dereference_index_check() to be used on integers,
++ * which can then be used as array indices.  Attempting to use
++ * rcu_dereference_check() on an integer will give compiler warnings
++ * because the sparse address-space mechanism relies on dereferencing
++ * the RCU-protected pointer.  Dereferencing integers is not something
++ * that even gcc will put up with.
++ *
++ * Note that this function does not implicitly check for RCU read-side
++ * critical sections.  If this function gains lots of uses, it might
++ * make sense to provide versions for each flavor of RCU, but it does
++ * not make sense as of early 2010.
++ */
++#define rcu_dereference_index_check(p, c) \
++	__rcu_dereference_index_check((p), (c))
++
+ #endif /* __LINUX_RCUPDATE_H */
+-- 
+1.7.0.6
+
