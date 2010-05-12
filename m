@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539Ab0ELVAl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 17:00:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35972 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753203Ab0ELVAi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 17:00:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=u4BpUpuePKS5wlR2hgd+sw2dIuCbYjyAs0AqzITb9Tv74ibY7OZiz+9Df1iSMdTCIw
-         645lpBI0ayI09H2Za7TP06H8w1WI1ter76bjUuXzEVDdllk7TMM2QoXOzLpEwoGOO4+9
-         ugf3Eda3BQw5B+ax+5KlPk5TyTMyzkqRy4tK4=
-Date: Wed, 12 May 2010 23:00:36 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
-       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com
-Subject: Re: [PATCH 2/8] [nmi watchdog] touch_softlockup cleanups and
-	softlockup_tick removal
-Message-ID: <20100512210034.GH10028@nowhere>
-References: <1273266711-18706-1-git-send-email-dzickus@redhat.com> <1273266711-18706-3-git-send-email-dzickus@redhat.com> <20100512200652.GF10028@nowhere> <20100512202628.GK15159@redhat.com> <20100512202832.GG10028@nowhere> <20100512205616.GL15159@redhat.com>
+	id S1753804Ab0ELVCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 17:02:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35458 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751627Ab0ELVCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 17:02:15 -0400
+Message-ID: <4BEB1732.1010503@redhat.com>
+Date: Wed, 12 May 2010 17:01:38 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512205616.GL15159@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Mel Gorman <mel@csn.ul.ie>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3/5] track the root (oldest) anon_vma
+References: <20100512133815.0d048a86@annuminas.surriel.com> <20100512133958.3aff0515@annuminas.surriel.com> <20100512205941.GO24989@csn.ul.ie>
+In-Reply-To: <20100512205941.GO24989@csn.ul.ie>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 04:56:16PM -0400, Don Zickus wrote:
-> On Wed, May 12, 2010 at 10:28:35PM +0200, Frederic Weisbecker wrote:
-> > On Wed, May 12, 2010 at 04:26:28PM -0400, Don Zickus wrote:
-> > > On Wed, May 12, 2010 at 10:06:54PM +0200, Frederic Weisbecker wrote:
-> > > > > diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> > > > > index 1083897..1fec781 100644
-> > > > > --- a/kernel/sysctl.c
-> > > > > +++ b/kernel/sysctl.c
-> > > > > @@ -827,15 +827,6 @@ static struct ctl_table kern_table[] = {
-> > > > >  		.extra1		= &zero,
-> > > > >  		.extra2		= &one,
-> > > > >  	},
-> > > > > -	{
-> > > > > -		.procname	= "softlockup_thresh",
-> > > > > -		.data		= &softlockup_thresh,
-> > > > > -		.maxlen		= sizeof(int),
-> > > > > -		.mode		= 0644,
-> > > > > -		.proc_handler	= proc_dosoftlockup_thresh,
-> > > > > -		.extra1		= &neg_one,
-> > > > > -		.extra2		= &sixty,
-> > > > > -	},
-> > > > 
-> > > > 
-> > > > 
-> > > > I wonder about the ABI breakage.
-> > > > 
-> > > > But I suspect few userspace tools use it though, since this is
-> > > > mostly for kernel dev.
-> > > 
-> > > There is no breakage, this chunk of code was duplicated later in the file.
-> > > I am just removing the duplicated bits to simplify the SOFTLOCKUP Kconfig
-> > > stuff.
-> > > 
-> > > Cheers,
-> > > Don
-> > 
-> > 
-> > Ah right.
-> > 
-> > BTW, if you address my reviews, please do it incrementally, I'm going
-> > to apply this set and push it to Ingo.
-> 
-> Ok, probably easier to review too. :-)
+On 05/12/2010 04:59 PM, Mel Gorman wrote:
+> On Wed, May 12, 2010 at 01:39:58PM -0400, Rik van Riel wrote:
+>> Subject: track the root (oldest) anon_vma
+>>
+>> Track the root (oldest) anon_vma in each anon_vma tree.   Because we only
+>> take the lock on the root anon_vma, we cannot use the lock on higher-up
+>> anon_vmas to lock anything.  This makes it impossible to do an indirect
+>> lookup of the root anon_vma, since the data structures could go away from
+>> under us.
+>>
+>> However, a direct pointer is safe because the root anon_vma is always the
+>> last one that gets freed on munmap or exit, by virtue of the same_vma list
+>> order and unlink_anon_vmas walking the list forward.
+>>
+>
+> Shouldn't this be "usually the last one that gets freed" because of the
+> ref-counting by KSM aspect? Minor nit anyway.
 
+It needs to be the last one that gets freed.  Patch 5/5 makes
+sure that it is when KSM refcounting is involved.
 
-Yeah, and it's time to flush this code as it's good globally.
+>> Signed-off-by: Rik van Riel<riel@redhat.com>
+>
+> Otherwise
+>
+> Acked-by: Mel Gorman<mel@csn.ul.ie>
 
-Plus it would be nice to get this for .35
+Thank you for reviewing these patches.
 
-Ah and forget about the sysctl ABI breakages. Since this is only
-used for kernel development, this is not going to break much things.
-If somebody complains, we can still reintegrate what we had.
-
-Thanks.
-
+-- 
+All rights reversed
