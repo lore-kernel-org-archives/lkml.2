@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062Ab0ELIrX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 04:47:23 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:56695 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab0ELIrV (ORCPT
+	id S1755194Ab0ELItm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 04:49:42 -0400
+Received: from www84.your-server.de ([213.133.104.84]:54483 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755071Ab0ELItl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 04:47:21 -0400
-X-Greylist: delayed 995 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 May 2010 04:47:21 EDT
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.98.68;
-From: Milton Miller <miltonm@bga.com>
-Subject: Re: cpumask: fix compat getaffinity
-To: Arnd Bergmann <arnd@arndb.de>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rusty Russell <rusty@rustcorp.com.au>, Greg KH <greg@kroah.com>
-Cc: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-In-Reply-To: <201005112013.56392.arnd@arndb.de>
-X-Mailer: vi
-References: <201005112013.56392.arnd@arndb.de>
- <201005081111.08720.arnd@arndb.de>
- <20100511104334.E572.A69D9226@jp.fujitsu.com>
- <20100511031354.GA9327@kroah.com>
-Date: Wed, 12 May 2010 03:30:45 -0500
-X-Originating-IP: 71.22.98.68
-Message-ID: <1273653045_3386@mail4.comsite.net>
+	Wed, 12 May 2010 04:49:41 -0400
+From: stefani@seibold.net
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       andi@firstfloor.org, gregkh@suse.de, alan@lxorguk.ukuu.org.uk,
+       tytso@mit.edu, iws@ovro.caltech.edu
+Cc: stefani@seibold.net
+Subject: [PATCH 1/4] fix kfifo miss use of nozami.c
+Date: Wed, 12 May 2010 10:49:24 +0200
+Message-Id: <1273654167-31067-2-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1273654167-31067-1-git-send-email-stefani@seibold.net>
+References: <1273654167-31067-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stefani Seibold <stefani@seibold.net>
 
-At least for parsing, we need to allocate and parse NR_CPUS until
-all places like arch/powerpc/platforms/pseries/xics.c that compare a
-user-supplied mask to CPUMASK_ALL are eliminated.
+User of the kernel fifo should never bypass the API and directly access
+the fifo structure. Otherwise it will be very hard to maintain the API.
 
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ drivers/char/nozomi.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-> Would it make sense to use my initial patch for -stable, which reverts
-> the ABI back to before the change that caused the problem, but apply
-> the correct fix (changing the ABI throughout) for future releases?
+diff --git a/drivers/char/nozomi.c b/drivers/char/nozomi.c
+index a663800..d578449 100644
+--- a/drivers/char/nozomi.c
++++ b/drivers/char/nozomi.c
+@@ -1741,8 +1741,7 @@ static int ntty_write_room(struct tty_struct *tty)
+ 	if (dc) {
+ 		mutex_lock(&port->tty_sem);
+ 		if (port->port.count)
+-			room = port->fifo_ul.size -
+-					kfifo_len(&port->fifo_ul);
++			room = kfifo_avail(&port->fifo_ul);
+ 		mutex_unlock(&port->tty_sem);
+ 	}
+ 	return room;
+-- 
+1.7.0.4
 
-This would definitly be the conservative fix.
-
-milton
