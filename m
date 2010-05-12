@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab0ELPY4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 11:24:56 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53866 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121Ab0ELPYz (ORCPT
+	id S1755440Ab0ELP1v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 11:27:51 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:46096 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752801Ab0ELP1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 11:24:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Kg4XCNgAfHWgrZvyki2b8wdbUAAYONzaXTYmXkNHltqsLp7u0OdN5FgJdsZaJeRftP
-         G/zlUsGTao+BxzIgTtEu6l7bhBqUWooaG00NQpu6e10EPVm+Kr5ImVSSyKw6zOS9JW9D
-         wVbivkCybYoTeBdKeNOhQEHztF8k3LFopoKHE=
-Date: Wed, 12 May 2010 17:24:52 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, acme@infradead.org,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com
-Subject: Re: [PATCH] perf: change event inheritance logic in stat and record
-Message-ID: <20100512152447.GF5405@nowhere>
-References: <4bea9d2f.d60ce30a.0b5b.08e1@mx.google.com>
+	Wed, 12 May 2010 11:27:50 -0400
+Date: Wed, 12 May 2010 11:27:47 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@us.ibm.com>, Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH -tip 4/5] kprobes/x86: Use text_poke_smp_batch
+Message-ID: <20100512152747.GA12326@Krystal>
+References: <20100510175313.27396.34605.stgit@localhost6.localdomain6> <20100510175340.27396.7222.stgit@localhost6.localdomain6> <20100511144013.GA17656@Krystal> <4BE9F952.3060505@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4bea9d2f.d60ce30a.0b5b.08e1@mx.google.com>
+In-Reply-To: <4BE9F952.3060505@redhat.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:25:55 up 109 days, 18:03,  8 users,  load average: 0.21, 0.14,
+	0.13
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 10:40:01AM +0200, Stephane Eranian wrote:
->   By default, event inheritance across fork and pthread_create was
->   on but the -i option of stat and record, which enabled inheritance,
->   led to believe it was off by default.
+* Masami Hiramatsu (mhiramat@redhat.com) wrote:
+> Mathieu Desnoyers wrote:
+> > * Masami Hiramatsu (mhiramat@redhat.com) wrote:
+> >> Use text_poke_smp_batch() in optimization path for reducing
+> >> the number of stop_machine() issues.
+> >>
+> >> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+> >> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> >> Cc: Ingo Molnar <mingo@elte.hu>
+> >> Cc: Jim Keniston <jkenisto@us.ibm.com>
+> >> Cc: Jason Baron <jbaron@redhat.com>
+> >> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> >> ---
+> >>
+> >>  arch/x86/kernel/kprobes.c |   37 ++++++++++++++++++++++++++++++-------
+> >>  include/linux/kprobes.h   |    2 +-
+> >>  kernel/kprobes.c          |   13 +------------
+> >>  3 files changed, 32 insertions(+), 20 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+> >> index 345a4b1..63a5c24 100644
+> >> --- a/arch/x86/kernel/kprobes.c
+> >> +++ b/arch/x86/kernel/kprobes.c
+> >> @@ -1385,10 +1385,14 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+> >>  	return 0;
+> >>  }
+> >>  
+> >> -/* Replace a breakpoint (int3) with a relative jump.  */
+> >> -int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
+> >> +#define MAX_OPTIMIZE_PROBES 256
+> > 
+> > So what kind of interrupt latency does a 256-probes batch generate on the
+> > system ?  Are we talking about a few milliseconds, a few seconds ?
 > 
->   This patch fixes this logic by inverting the meaning of the -i option.
->   By default inheritance is on whether you attach to a process (-p), a
->   thread (-t) or start a process. If you pass -i, then you turn off
->   inheritance. Turning off inheritance if you don't need it, helps
->   limit perf resource usage as well.
+> From my experiment on kvm/4cpu, it took about 3 seconds in average.
+
+That's 3 seconds for multiple calls to stop_machine(). So we can expect
+latencies in the area of few microseconds for each call, right ?
+
+> With this patch, it went down to 30ms. (x100 faster :))
+
+This is beefing up the latency from few microseconds to 30ms. It sounds like a
+regression rather than a gain to me.
+
+Thanks,
+
+Mathieu
+
 > 
->   The patch also fixes perf stat -t xxxx and perf record -t xxxx
->   which did not start the counters.
+> Thank you,
+> -- 
+> Masami Hiramatsu
+> e-mail: mhiramat@redhat.com
 > 
->   Signed-off-by: Stephane Eranian <eranian@google.com>
 
-
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
