@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758235Ab0ELVgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 17:36:16 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48428 "EHLO e7.ny.us.ibm.com"
+	id S1758244Ab0ELVgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 17:36:32 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:45255 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758106Ab0ELVeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 17:34:04 -0400
+	id S1758087Ab0ELVd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 17:33:57 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,11 +15,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        Arnd Bergmann <arnd@arndb.de>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 07/23] rculist: avoid __rcu annotations
-Date: Wed, 12 May 2010 14:33:26 -0700
-Message-Id: <1273700022-16523-7-git-send-email-paulmck@linux.vnet.ibm.com>
+       Al Viro <viro@ZenIV.linux.org.uk>, Jens Axboe <jens.axboe@oracle.com>
+Subject: [PATCH RFC tip/core/rcu 20/23] kernel: __rcu annotations
+Date: Wed, 12 May 2010 14:33:39 -0700
+Message-Id: <1273700022-16523-20-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100512213317.GA15085@linux.vnet.ibm.com>
 References: <20100512213317.GA15085@linux.vnet.ibm.com>
@@ -29,233 +28,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnd Bergmann <arnd@arndb.de>
 
-This avoids warnings from missing __rcu annotations
-in the rculist implementation, making it possible to
-use the same lists in both RCU and non-RCU cases.
-
-We can add rculist annotations later, together with
-lockdep support for rculist, which is missing as well,
-but that may involve changing all the users.
+This adds annotations for RCU operations in core kernel components
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Pavel Emelyanov <xemul@openvz.org>
-Cc: Sukadev Bhattiprolu <sukadev@us.ibm.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jens Axboe <jens.axboe@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/rculist.h       |   53 ++++++++++++++++++++++++++--------------
- include/linux/rculist_nulls.h |   16 ++++++++----
- kernel/pid.c                  |    2 +-
- 3 files changed, 46 insertions(+), 25 deletions(-)
+ include/linux/fdtable.h   |    6 +++---
+ include/linux/fs.h        |    2 +-
+ include/linux/genhd.h     |    6 +++---
+ include/linux/init_task.h |    4 ++--
+ include/linux/iocontext.h |    2 +-
+ include/linux/mm_types.h  |    2 +-
+ 6 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index 2c9b46c..891c52a 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -10,6 +10,12 @@
- #include <linux/rcupdate.h>
+diff --git a/include/linux/fdtable.h b/include/linux/fdtable.h
+index 551671e..3e4c4f4 100644
+--- a/include/linux/fdtable.h
++++ b/include/linux/fdtable.h
+@@ -31,7 +31,7 @@ struct embedded_fd_set {
  
- /*
-+ * return the ->next pointer of a list_head in an rcu safe
-+ * way, we must not access it directly
-+ */
-+#define list_next_rcu(list)	(*((struct list_head __rcu **)(&(list)->next)))
-+
-+/*
-  * Insert a new entry between two known consecutive entries.
-  *
-  * This is only for internal list manipulation where we know
-@@ -20,7 +26,7 @@ static inline void __list_add_rcu(struct list_head *new,
- {
- 	new->next = next;
- 	new->prev = prev;
--	rcu_assign_pointer(prev->next, new);
-+	rcu_assign_pointer(list_next_rcu(prev), new);
- 	next->prev = new;
- }
+ struct fdtable {
+ 	unsigned int max_fds;
+-	struct file ** fd;      /* current fd array */
++	struct file __rcu **fd;      /* current fd array */
+ 	fd_set *close_on_exec;
+ 	fd_set *open_fds;
+ 	struct rcu_head rcu;
+@@ -46,7 +46,7 @@ struct files_struct {
+    * read mostly part
+    */
+ 	atomic_t count;
+-	struct fdtable *fdt;
++	struct fdtable __rcu *fdt;
+ 	struct fdtable fdtab;
+   /*
+    * written part on a separate cache line in SMP
+@@ -55,7 +55,7 @@ struct files_struct {
+ 	int next_fd;
+ 	struct embedded_fd_set close_on_exec_init;
+ 	struct embedded_fd_set open_fds_init;
+-	struct file * fd_array[NR_OPEN_DEFAULT];
++	struct file __rcu * fd_array[NR_OPEN_DEFAULT];
+ };
  
-@@ -138,7 +144,7 @@ static inline void list_replace_rcu(struct list_head *old,
- {
- 	new->next = old->next;
- 	new->prev = old->prev;
--	rcu_assign_pointer(new->prev->next, new);
-+	rcu_assign_pointer(list_next_rcu(new->prev), new);
- 	new->next->prev = new;
- 	old->prev = LIST_POISON2;
- }
-@@ -193,7 +199,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
+ #define rcu_dereference_check_fdtable(files, fdtfd) \
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 44f35ae..752bc76 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1382,7 +1382,7 @@ struct super_block {
+ 	 * Saved mount options for lazy filesystems using
+ 	 * generic_show_options()
  	 */
+-	char *s_options;
++	char __rcu *s_options;
+ };
  
- 	last->next = at;
--	rcu_assign_pointer(head->next, first);
-+	rcu_assign_pointer(list_next_rcu(head), first);
- 	first->prev = head;
- 	at->prev = last;
- }
-@@ -208,7 +214,9 @@ static inline void list_splice_init_rcu(struct list_head *list,
-  * primitives such as list_add_rcu() as long as it's guarded by rcu_read_lock().
-  */
- #define list_entry_rcu(ptr, type, member) \
--	container_of(rcu_dereference_raw(ptr), type, member)
-+	({typeof (*ptr) __rcu *__ptr = (typeof (*ptr) __rcu __force *)ptr; \
-+	 container_of((typeof(ptr))rcu_dereference_raw(__ptr), type, member); \
-+	})
+ extern struct timespec current_fs_time(struct super_block *sb);
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 5f2f4c4..af3f06b 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -129,8 +129,8 @@ struct blk_scsi_cmd_filter {
+ struct disk_part_tbl {
+ 	struct rcu_head rcu_head;
+ 	int len;
+-	struct hd_struct *last_lookup;
+-	struct hd_struct *part[];
++	struct hd_struct __rcu *last_lookup;
++	struct hd_struct __rcu *part[];
+ };
  
- /**
-  * list_first_entry_rcu - get the first element from a list
-@@ -225,9 +233,9 @@ static inline void list_splice_init_rcu(struct list_head *list,
- 	list_entry_rcu((ptr)->next, type, member)
+ struct gendisk {
+@@ -149,7 +149,7 @@ struct gendisk {
+ 	 * non-critical accesses use RCU.  Always access through
+ 	 * helpers.
+ 	 */
+-	struct disk_part_tbl *part_tbl;
++	struct disk_part_tbl __rcu *part_tbl;
+ 	struct hd_struct part0;
  
- #define __list_for_each_rcu(pos, head) \
--	for (pos = rcu_dereference_raw((head)->next); \
-+	for (pos = rcu_dereference_raw(list_next_rcu(head)); \
- 		pos != (head); \
--		pos = rcu_dereference_raw(pos->next))
-+		pos = rcu_dereference_raw(list_next_rcu((pos)))
+ 	const struct block_device_operations *fops;
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 7996fc2..f05af8c 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -137,8 +137,8 @@ extern struct cred init_cred;
+ 	.children	= LIST_HEAD_INIT(tsk.children),			\
+ 	.sibling	= LIST_HEAD_INIT(tsk.sibling),			\
+ 	.group_leader	= &tsk,						\
+-	.real_cred	= &init_cred,					\
+-	.cred		= &init_cred,					\
++	RCU_INIT_POINTER(.real_cred, &init_cred),			\
++	RCU_INIT_POINTER(.cred, &init_cred),				\
+ 	.cred_guard_mutex =						\
+ 		 __MUTEX_INITIALIZER(tsk.cred_guard_mutex),		\
+ 	.comm		= "swapper",					\
+diff --git a/include/linux/iocontext.h b/include/linux/iocontext.h
+index a0bb301..6d4cd79 100644
+--- a/include/linux/iocontext.h
++++ b/include/linux/iocontext.h
+@@ -54,7 +54,7 @@ struct io_context {
  
- /**
-  * list_for_each_entry_rcu	-	iterate over rcu list of given type
-@@ -257,9 +265,9 @@ static inline void list_splice_init_rcu(struct list_head *list,
-  * as long as the traversal is guarded by rcu_read_lock().
-  */
- #define list_for_each_continue_rcu(pos, head) \
--	for ((pos) = rcu_dereference_raw((pos)->next); \
-+	for ((pos) = rcu_dereference_raw(list_next_rcu(pos)); \
- 		prefetch((pos)->next), (pos) != (head); \
--		(pos) = rcu_dereference_raw((pos)->next))
-+		(pos) = rcu_dereference_raw(list_next_rcu(pos)))
+ 	struct radix_tree_root radix_root;
+ 	struct hlist_head cic_list;
+-	void *ioc_data;
++	void __rcu *ioc_data;
+ };
  
- /**
-  * list_for_each_entry_continue_rcu - continue iteration over list of given type
-@@ -314,12 +322,19 @@ static inline void hlist_replace_rcu(struct hlist_node *old,
- 
- 	new->next = next;
- 	new->pprev = old->pprev;
--	rcu_assign_pointer(*new->pprev, new);
-+	rcu_assign_pointer(*(struct hlist_node __rcu **)new->pprev, new);
- 	if (next)
- 		new->next->pprev = &new->next;
- 	old->pprev = LIST_POISON2;
- }
- 
-+/*
-+ * return the first or the next element in an RCU protected hlist
-+ */
-+#define hlist_first_rcu(head)	(*((struct hlist_node __rcu **)(&(head)->first)))
-+#define hlist_next_rcu(node)	(*((struct hlist_node __rcu **)(&(node)->next)))
-+#define hlist_pprev_rcu(node)	(*((struct hlist_node __rcu **)((node)->pprev)))
-+
- /**
-  * hlist_add_head_rcu
-  * @n: the element to add to the hash list.
-@@ -346,7 +361,7 @@ static inline void hlist_add_head_rcu(struct hlist_node *n,
- 
- 	n->next = first;
- 	n->pprev = &h->first;
--	rcu_assign_pointer(h->first, n);
-+	rcu_assign_pointer(hlist_first_rcu(h), n);
- 	if (first)
- 		first->pprev = &n->next;
- }
-@@ -374,7 +389,7 @@ static inline void hlist_add_before_rcu(struct hlist_node *n,
- {
- 	n->pprev = next->pprev;
- 	n->next = next;
--	rcu_assign_pointer(*(n->pprev), n);
-+	rcu_assign_pointer(hlist_pprev_rcu(n), n);
- 	next->pprev = &n->next;
- }
- 
-@@ -401,15 +416,15 @@ static inline void hlist_add_after_rcu(struct hlist_node *prev,
- {
- 	n->next = prev->next;
- 	n->pprev = &prev->next;
--	rcu_assign_pointer(prev->next, n);
-+	rcu_assign_pointer(hlist_next_rcu(prev), n);
- 	if (n->next)
- 		n->next->pprev = &n->next;
- }
- 
--#define __hlist_for_each_rcu(pos, head)			\
--	for (pos = rcu_dereference((head)->first);	\
--	     pos && ({ prefetch(pos->next); 1; });	\
--	     pos = rcu_dereference(pos->next))
-+#define __hlist_for_each_rcu(pos, head)				\
-+	for (pos = rcu_dereference(hlist_first_rcu(head));	\
-+	     pos && ({ prefetch(pos->next); 1; });		\
-+	     pos = rcu_dereference(hlist_next_rcu(pos)))
- 
- /**
-  * hlist_for_each_entry_rcu - iterate over rcu list of given type
-@@ -422,11 +437,11 @@ static inline void hlist_add_after_rcu(struct hlist_node *prev,
-  * the _rcu list-mutation primitives such as hlist_add_head_rcu()
-  * as long as the traversal is guarded by rcu_read_lock().
-  */
--#define hlist_for_each_entry_rcu(tpos, pos, head, member)		 \
--	for (pos = rcu_dereference_raw((head)->first);			 \
-+#define hlist_for_each_entry_rcu(tpos, pos, head, member)		\
-+	for (pos = rcu_dereference_raw(hlist_first_rcu(head));		\
- 		pos && ({ prefetch(pos->next); 1; }) &&			 \
- 		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1; }); \
--		pos = rcu_dereference_raw(pos->next))
-+		pos = rcu_dereference_raw(hlist_next_rcu(pos)))
- 
- #endif	/* __KERNEL__ */
+ static inline struct io_context *ioc_task_link(struct io_context *ioc)
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index b8bb9a6..05537a5 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -299,7 +299,7 @@ struct mm_struct {
+ 	 * new_owner->mm == mm
+ 	 * new_owner->alloc_lock is held
+ 	 */
+-	struct task_struct *owner;
++	struct task_struct __rcu *owner;
  #endif
-diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
-index b70ffe5..2ae1371 100644
---- a/include/linux/rculist_nulls.h
-+++ b/include/linux/rculist_nulls.h
-@@ -37,6 +37,12 @@ static inline void hlist_nulls_del_init_rcu(struct hlist_nulls_node *n)
- 	}
- }
  
-+#define hlist_nulls_first_rcu(head) \
-+	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
-+
-+#define hlist_nulls_next_rcu(node) \
-+	(*((struct hlist_nulls_node __rcu __force **)&(node)->next))
-+
- /**
-  * hlist_nulls_del_rcu - deletes entry from hash list without re-initialization
-  * @n: the element to delete from the hash list.
-@@ -88,7 +94,7 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
- 
- 	n->next = first;
- 	n->pprev = &h->first;
--	rcu_assign_pointer(h->first, n);
-+	rcu_assign_pointer(hlist_nulls_first_rcu(h), n);
- 	if (!is_a_nulls(first))
- 		first->pprev = &n->next;
- }
-@@ -100,11 +106,11 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
-  * @member:	the name of the hlist_nulls_node within the struct.
-  *
-  */
--#define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member) \
--	for (pos = rcu_dereference_raw((head)->first);			 \
--		(!is_a_nulls(pos)) &&			\
-+#define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)			\
-+	for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
-+		(!is_a_nulls(pos)) &&						\
- 		({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
--		pos = rcu_dereference_raw(pos->next))
-+		pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
- 
- #endif
- #endif
-diff --git a/kernel/pid.c b/kernel/pid.c
-index aebb30d..8bb38ee 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -367,7 +367,7 @@ struct task_struct *pid_task(struct pid *pid, enum pid_type type)
- 	struct task_struct *result = NULL;
- 	if (pid) {
- 		struct hlist_node *first;
--		first = rcu_dereference_check(pid->tasks[type].first,
-+		first = rcu_dereference_check(hlist_first_rcu(&pid->tasks[type]),
- 					      rcu_read_lock_held() ||
- 					      lockdep_tasklist_lock_is_held());
- 		if (first)
+ #ifdef CONFIG_PROC_FS
 -- 
 1.7.0.6
 
