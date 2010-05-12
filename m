@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350Ab0ELEgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 00:36:10 -0400
-Received: from mail-yw0-f198.google.com ([209.85.211.198]:34171 "EHLO
-	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab0ELEgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 00:36:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=uSmNBtlboX+qlNkx3YP2qtzHBR6HAirhg9EG/CJHFsj9EY45uwYQx1SQxPF0dR470y
-         8S/9JfMiphii5AKgdmlVq7yyV7/7eQlZU13UN6TYxh/uABvAyEYaelV/fPvhRJsaX6K6
-         F9HsO5oxy5ffPDQm1vsCQLJ1tGtKN4Z4rU9rc=
-MIME-Version: 1.0
-In-Reply-To: <20100512122323J.fujita.tomonori@lab.ntt.co.jp>
-References: <AANLkTimm7bOmIz2sdODgHwtCk26kdHgZt7PvceM6gjS3@mail.gmail.com> 
-	<522C1DF17AF50042AD8AE87F7887BD3D0163549554@exch.hq.tensilica.com> 
-	<20100512030350.GJ15903@laptop> <20100512122323J.fujita.tomonori@lab.ntt.co.jp>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Wed, 12 May 2010 00:35:45 -0400
-Message-ID: <AANLkTine8JmtsUo3_z6Cwdgm3LINCkJ9jL21r9eQWRm8@mail.gmail.com>
-Subject: Re: [LKML] Re: [PATCH v3] ad7877: keep dma rx buffers in seperate 
-	cache lines
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: npiggin@suse.de, marc@tensilica.com, dmitry.torokhov@gmail.com,
-       jw@emlix.com, cl@linux.com, penberg@cs.helsinki.fi, mpm@selenic.com,
-       akpm@linux-foundation.org, os@emlix.com, Michael.Hennerich@analog.com,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org, dg@emlix.com,
-       osw@emlix.com, rientjes@google.com, dbrownell@users.sourceforge.net,
-       grant.likely@secretlab.ca, chris@zankel.net, Piet.Delaney@tensilica.com
-Content-Type: text/plain; charset=UTF-8
+	id S1751455Ab0ELEhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 00:37:48 -0400
+Received: from mail.perches.com ([173.55.12.10]:2196 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736Ab0ELEhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 00:37:47 -0400
+Subject: Re: [trivial PATCH] arch/x86: Remove unnecessary returns from void
+ function()'s
+From: Joe Perches <joe@perches.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       Jiri Kosina <trivial@kernel.org>
+In-Reply-To: <4BEA277A.3000505@zytor.com>
+References: <1273624747.20514.316.camel@Joe-Laptop.home>
+	 <4BE9F94A.9000907@zytor.com>  <1273626052.20514.319.camel@Joe-Laptop.home>
+	 <1273629234.20514.333.camel@Joe-Laptop.home>  <4BEA226D.3080103@zytor.com>
+	 <1273636283.20514.337.camel@Joe-Laptop.home>  <4BEA277A.3000505@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 May 2010 21:37:44 -0700
+Message-ID: <1273639064.20514.353.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 23:23, FUJITA Tomonori wrote:
-> Seems that kmalloc is not cacheline aligned on some architectures but
-> they works. Probably, we might be just lucky because in general they
-> allocate larger buffers than 64 for DMA via kmalloc and the buffers
-> are aligned on the size?
+On Tue, 2010-05-11 at 20:58 -0700, H. Peter Anvin wrote:
+> On 05/11/2010 08:51 PM, Joe Perches wrote:
+> > On Tue, 2010-05-11 at 20:37 -0700, H. Peter Anvin wrote:
+> >> Churn is *not* motivated just
+> >> for "consistency" unless it improves readability.
+> > Consistency improves readability.
+> As a general rule, sure.
+> For any specific instance it is a big "it
+> depends".
 
-i think the magic combo is:
- - DMA buffer is written to (receive)
- - some driver state is in the same cacheline as the DMA buffer
- - that driver state is used after the flush but before the DMA finishes
- - only on arches that need software cache coherency
+In these specific instances, in my opinion it does.
+Your assertion is simply your opinion.
+In the end, neither opinion matters much.
 
-so i could see this not being an obvious issue for many people
--mike
+cheers, Joe
+
