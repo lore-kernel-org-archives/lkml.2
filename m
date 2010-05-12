@@ -1,94 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab0ELP1v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 11:27:51 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:46096 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752801Ab0ELP1u (ORCPT
+	id S1755711Ab0ELP24 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 11:28:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33303 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164Ab0ELP2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 11:27:50 -0400
-Date: Wed, 12 May 2010 11:27:47 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@us.ibm.com>, Jason Baron <jbaron@redhat.com>
-Subject: Re: [PATCH -tip 4/5] kprobes/x86: Use text_poke_smp_batch
-Message-ID: <20100512152747.GA12326@Krystal>
-References: <20100510175313.27396.34605.stgit@localhost6.localdomain6> <20100510175340.27396.7222.stgit@localhost6.localdomain6> <20100511144013.GA17656@Krystal> <4BE9F952.3060505@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BE9F952.3060505@redhat.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:25:55 up 109 days, 18:03,  8 users,  load average: 0.21, 0.14,
-	0.13
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 12 May 2010 11:28:54 -0400
+X-Authority-Analysis: v=1.1 cv=QBaIlYAip0cLYvdi/Wu3On4+kilSXYulM+a9j4asJ0c= c=1 sm=0 a=klgvmRpsAnEA:10 a=uEzv4HemXiYA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=b8VgSBC0AAAA:8 a=VwQbUJbxAAAA:8 a=6Kpo8weSiNoRTgQ7vkgA:9 a=eJxR5V_dxm5ek0SAWtsA:7 a=7slx4_YqWJtG_4afwRj1xW1FN8QA:4 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Message-Id: <20100512152810.819338250@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 12 May 2010 11:28:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Mathieu Desnoyers <compudj@krystal.dyndns.org>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 00/10 final] tracing: Lowering the footprint of TRACE_EVENTs
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Masami Hiramatsu (mhiramat@redhat.com) wrote:
-> Mathieu Desnoyers wrote:
-> > * Masami Hiramatsu (mhiramat@redhat.com) wrote:
-> >> Use text_poke_smp_batch() in optimization path for reducing
-> >> the number of stop_machine() issues.
-> >>
-> >> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-> >> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> >> Cc: Ingo Molnar <mingo@elte.hu>
-> >> Cc: Jim Keniston <jkenisto@us.ibm.com>
-> >> Cc: Jason Baron <jbaron@redhat.com>
-> >> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> >> ---
-> >>
-> >>  arch/x86/kernel/kprobes.c |   37 ++++++++++++++++++++++++++++++-------
-> >>  include/linux/kprobes.h   |    2 +-
-> >>  kernel/kprobes.c          |   13 +------------
-> >>  3 files changed, 32 insertions(+), 20 deletions(-)
-> >>
-> >> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-> >> index 345a4b1..63a5c24 100644
-> >> --- a/arch/x86/kernel/kprobes.c
-> >> +++ b/arch/x86/kernel/kprobes.c
-> >> @@ -1385,10 +1385,14 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
-> >>  	return 0;
-> >>  }
-> >>  
-> >> -/* Replace a breakpoint (int3) with a relative jump.  */
-> >> -int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
-> >> +#define MAX_OPTIMIZE_PROBES 256
-> > 
-> > So what kind of interrupt latency does a 256-probes batch generate on the
-> > system ?  Are we talking about a few milliseconds, a few seconds ?
-> 
-> From my experiment on kvm/4cpu, it took about 3 seconds in average.
 
-That's 3 seconds for multiple calls to stop_machine(). So we can expect
-latencies in the area of few microseconds for each call, right ?
+[ Final final version! ]
 
-> With this patch, it went down to 30ms. (x100 faster :))
+Ingo,
 
-This is beefing up the latency from few microseconds to 30ms. It sounds like a
-regression rather than a gain to me.
+This also affects kprobes and perf.
 
-Thanks,
+At the Linux Collaboration Summit, I talked with Mathieu and others about
+lowering the footprint of trace events. I spent all of last two weeks
+trying to get the size as small as I could.
 
-Mathieu
+Currently, each TRACE_EVENT() macro adds 1 - 5K per tracepoint. I got various
+results by adding a TRACE_EVENT() with the compiler, depending on
+config options that did not seem related. The new tracepoint I added
+would add between 1 and 5K, but I did not investigate enough to
+see what the true size was.
 
-> 
-> Thank you,
-> -- 
-> Masami Hiramatsu
-> e-mail: mhiramat@redhat.com
-> 
+What was consistent, was the DEFINE_EVENT(). Currently, it adds
+a little over 700 bytes per DEFINE_EVENT().
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+This patch series does not seem to affect TRACE_EVENT() much (had
+the same various sizes), but consistently brings DEFINE_EVENT()s
+down from 700 bytes to 250 bytes per DEFINE_EVENT(). Since syscalls
+use one "class" and are equivalent to DEFINE_EVENT() this can
+be a significant savings.
+
+With events and syscalls (82 events and 618 syscalls), before this
+patch series, the size of vmlinux was: 6863829, and afterward: 6768675.
+
+That is 95,154 bytes in savings! (over 92K)
+
+Note: I did this series with disabling KERNEL_DEBUG and that made
+ the effect of savings smaller. The original numbers with KERNEL_DEBUG
+ options enabled was: orinal-16161794, new-16058182, savings-103612
+ which was over 100K) This may still be true with KERNEL_DEBUG enabled
+ but I only tried it this time with it disabled.
+
+ But if I go by percentage, this series saves 1.38% where the
+ KERNEL_DEBUG series only saved 0.64% of the total vmlinux image.
+
+ Config for this run can be found here:
+  http://rostedt.homelinux.com/config-size
+
+Without tracing syscalls (82 events), it brought the size of vmlinux
+down from 6617121 to 659870.
+
+18,421 bytes in savings.
+
+Note: Original numbers with KERNEL_DEBUG options enabled:
+ original-1591046, new-15888394, savings-22071
+
+Final final changes:
+
+ o  Fixed trace_event.c self tests to use the probe field in the
+    structure to determine if the event should be tested.
+    (old regfunc no longer exists)
+
+ o  Fixed missing ';' in static struct in macro.
+
+ o  Fixed the trace register functions in net drop monitor to conform
+    with the new API.
+
+Final changes:
+
+ o  Updated the change logs to reflect the sizes with KERNEL_DEBUG
+    disabled.
+
+ o  Added Mathieu Desnoyers's Acked-by to the change logs.
+
+Changes in v3:
+
+ o  Ported to latest tip/tracing/core
+
+ o  Fixed typo in change log that a comment in LWN noticed:
+    Wrote: 15999394 when it should have been 15888394.
+    (Note: these numbers are from the original posting. I need to
+     redo them again before posting officially).
+
+ o  Added Mathieu Desnoyers's check_trace patch that will check
+    the callback to make sure it matches what DECLARE_TRACE() expects
+    it.
+
+ o  Added the check_trace to the ftrace and perf callback probes.
+    Note, kprobes and syscalls do not use the register tracepoint
+    so they are not affected.
+
+ o  Moved the define of DECLARE_TRACE() and DECLARE_TRACE_NOARGS()
+    out of the #ifdef CONFIG_TRACEPOINTS, since they were the same
+    whether or not CONFIG_TRACEPOINTS was enabled. The internal
+    __DECLARE_TRACE() changed.
+
+Changes in v2:
+
+ o  Ported to latest tip/tracing/core
+
+ o  Removed DECLARE_TRACE_DATA() and made DECLARE_TRACE() have
+    the ability to pass a data parameter. This makes DECLARE_TRACE()
+    not work with no args. A new DECLARE_TRACE_NOARGS() has been created
+    that also allows data to be passed, but does is for tracepoint(void).
+
+ o  Made the callbacks be "proto, void *data" and typecast the data
+    within the function.
+
+Please pull the latest tip/tracing/core tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/tracing/core
+
+
+Mathieu Desnoyers (1):
+      tracepoints: Add check trace callback type
+
+Steven Rostedt (9):
+      tracing: Create class struct for events
+      tracing: Let tracepoints have data passed to tracepoint callbacks
+      tracing: Remove per event trace registering
+      tracing: Move fields from event to class structure
+      tracing: Move raw_init from events to class
+      tracing: Allow events to share their print functions
+      tracing: Move print functions into event class
+      tracing: Remove duplicate id information in event structure
+      tracing: Combine event filter_active and enable into single flags field
+
+----
+ include/linux/ftrace_event.h                   |   73 ++++++--
+ include/linux/syscalls.h                       |   57 ++----
+ include/linux/tracepoint.h                     |   98 ++++++++---
+ include/trace/ftrace.h                         |  237 +++++++++---------------
+ include/trace/syscall.h                        |   10 +-
+ kernel/trace/blktrace.c                        |  138 ++++++++------
+ kernel/trace/ftrace.c                          |    7 +-
+ kernel/trace/kmemtrace.c                       |   70 +++++---
+ kernel/trace/trace.c                           |    9 +-
+ kernel/trace/trace.h                           |    5 +-
+ kernel/trace/trace_event_perf.c                |   17 ++-
+ kernel/trace/trace_events.c                    |  137 +++++++++-----
+ kernel/trace/trace_events_filter.c             |   28 ++--
+ kernel/trace/trace_export.c                    |   16 +-
+ kernel/trace/trace_functions_graph.c           |   13 +-
+ kernel/trace/trace_kprobe.c                    |  104 +++++++----
+ kernel/trace/trace_output.c                    |  137 +++++++++-----
+ kernel/trace/trace_output.h                    |    2 +-
+ kernel/trace/trace_sched_switch.c              |   23 ++-
+ kernel/trace/trace_sched_wakeup.c              |   27 ++--
+ kernel/trace/trace_syscalls.c                  |  137 ++++++++++++---
+ kernel/trace/trace_workqueue.c                 |   26 ++-
+ kernel/tracepoint.c                            |   91 +++++----
+ net/core/drop_monitor.c                        |   12 +-
+ samples/tracepoints/tp-samples-trace.h         |    4 +-
+ samples/tracepoints/tracepoint-probe-sample.c  |   13 +-
+ samples/tracepoints/tracepoint-probe-sample2.c |    7 +-
+ 27 files changed, 890 insertions(+), 608 deletions(-)
