@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab0ELIgO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 04:36:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47148 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752547Ab0ELIgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 04:36:11 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100511185141.6139.98842.stgit@localhost.localdomain>
-References: <20100511185141.6139.98842.stgit@localhost.localdomain> <20100511184949.6139.96826.stgit@localhost.localdomain>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-       linux-raid@vger.kernel.org, netdev@vger.kernel.org,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Maciej Sosnowski <maciej.sosnowski@intel.com>
-Subject: Re: [PATCH 2/2] ioat2,3: convert to producer/consumer locking
-Date: Wed, 12 May 2010 09:36:05 +0100
-Message-ID: <31229.1273653365@redhat.com>
+	id S1754857Ab0ELIh5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 04:37:57 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34988 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab0ELIhz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 04:37:55 -0400
+Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>, "greg@kroah.com" <greg@kroah.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+In-Reply-To: <20100512055112.GA4691@linux-sh.org>
+References: <20100510115344.GA11238@elte.hu>
+	 <4BE8931C.9070106@linux.vnet.ibm.com> <1273560419.5605.3426.camel@twins>
+	 <20100511072127.GB10421@elte.hu>
+	 <1273566031.30322.31.camel@minggr.sh.intel.com>
+	 <1273567815.5605.3491.camel@twins>
+	 <1273568620.30322.42.camel@minggr.sh.intel.com>
+	 <1273569154.5605.3499.camel@twins>
+	 <1273570845.30322.59.camel@minggr.sh.intel.com>
+	 <1273571322.5605.3523.camel@twins>  <20100512055112.GA4691@linux-sh.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 12 May 2010 10:37:23 +0200
+Message-ID: <1273653443.5605.3529.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-05-12 at 14:51 +0900, Paul Mundt wrote:
+> On Tue, May 11, 2010 at 11:48:42AM +0200, Peter Zijlstra wrote:
 
-Out of interest, does it make the code smaller if you mark
-ioat2_get_ring_ent() and ioat2_ring_mask() with __attribute_const__?
+> > No all the cpus would have the same event sources. I'm not sure if we
+> > can make sysfs understand that though (added GregKH and Kay to CC).
+> > 
+> This is something I've been thinking about, too. On SH we have a
+> large set of perf counter events that are entirely dependent on the
+> configuration of the CPU they're on, with no requirement that these
+> configurations are identical on all CPUs in an SMP configuration.
+> 
+> As an example, it's possible to halve the L1 dcache and use that part of
+> it as a small and fast memory which has completely different events
+> associated with it from the regular L1 dcache events. These events would
+> be invalid on a CPU that was running with all cache ways enabled but
+> might also be valid on other CPUs that bolt these events to an extra SRAM
+> outside of the cache topology completely.
+> 
+> In any event, the events are at least consistent across all CPUs, it's
+> only which ones are valid on a given CPU at a given time that can change.
 
-I'm not sure whether it'll affect how long gcc is willing to cache these, but
-once computed, I would guess they won't change within the calling function.
-
-Also, is the device you're driving watching the ring and its indices?  If so,
-does it modify the indices?  If that is the case, you might need to use
-read_barrier_depends() rather than smp_read_barrier_depends().
-
-> +		prefetch(ioat2_get_ring_ent(ioat, idx + i + 1));
-> +		desc = ioat2_get_ring_ent(ioat, idx + i);
->  		dump_desc_dbg(ioat, desc);
->  		tx = &desc->txd;
->  		if (tx->cookie) {
-
-Is this right, I wonder?  You're prefetching [i+1] before reading [i]?  Doesn't
-this mean that you might have to wait for [i+1] to be retrieved from RAM before
-[i] can be read?  Should you instead read tx->cookie before issuing the
-prefetch?  Admittedly, this is only likely to affect the reading of the head of
-the queue - subsequent reads in the same loop will, of course, have been
-prefetched.
-
-David
+So you're running with asymmetric SMP systems? I really hadn't
+considered that. Will this change at runtime or is it a system boot time
+thing?
