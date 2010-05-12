@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128Ab0ELSIi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 14:08:38 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34337 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab0ELSIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 14:08:36 -0400
-Subject: Re: Perf and ftrace [was Re: PyTimechart]
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Pierre Tardy <tardyp@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>
-In-Reply-To: <20100512180438.GE15953@Krystal>
-References: <20100511213625.GD5422@nowhere>
-	 <AANLkTikumkBKwYTYIK63mT2i_hI4SAo-Eua0cx9OCHnD@mail.gmail.com>
-	 <20100512144811.GA5405@nowhere>
-	 <1273678596.27703.30.camel@gandalf.stny.rr.com>
-	 <20100512164650.GH5405@nowhere> <1273683624.1626.127.camel@laptop>
-	 <20100512170734.GA15953@Krystal> <1273686425.1626.142.camel@laptop>
-	 <20100512175305.GB32496@Krystal> <1273687212.1626.147.camel@laptop>
-	 <20100512180438.GE15953@Krystal>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 May 2010 20:08:32 +0200
-Message-ID: <1273687712.1626.151.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752950Ab0ELSKd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 14:10:33 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:48465 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751849Ab0ELSKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 14:10:32 -0400
+Message-ID: <4BEAEF10.9040809@sgi.com>
+Date: Wed, 12 May 2010 11:10:24 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [Patch 1/1] x86 efi: Fill all reserved memmap entries if add_efi_memmap
+ specified.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-12 at 14:04 -0400, Mathieu Desnoyers wrote:
-> Can't we keep multiple references to each page ? (shared page) so it's still in
-> the buffer, also accessed by mmap(), and in addition accessed by splice.
 
-I'm not sure, the problem seems to be that a splice-consumer might want
-to inject the page into a whole different address-space, over-writing
-page->mapping/->index etc.
+Currently, the e820_reserve_resources() function does not add entries
+obtained via the "add_efi_memmap" kernel cmdline option.  This causes
+/sys/firmware/memmap/... to be incomplete (stops after 128 entries).
+Utilities that examine these entries then do not get the complete
+picture of system memory.
 
+This patch causes the above function to use the e820 memmap instead
+of the e820_saved memmap if "add_efi_memmap" cmdline option is
+specified.
 
+Signed-off-by: Mike Travis <travis@sgi.com>
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+---
+ arch/x86/include/asm/e820.h |    1 +
+ arch/x86/kernel/e820.c      |    8 ++++++--
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
+--- linux.orig/arch/x86/include/asm/e820.h
++++ linux/arch/x86/include/asm/e820.h
+@@ -89,6 +89,7 @@ extern int e820_search_gap(unsigned long
+ 			unsigned long start_addr, unsigned long long end_addr);
+ struct setup_data;
+ extern void parse_e820_ext(struct setup_data *data, unsigned long pa_data);
++extern int add_efi_memmap;
+ 
+ #if defined(CONFIG_X86_64) || \
+ 	(defined(CONFIG_X86_32) && defined(CONFIG_HIBERNATION))
+--- linux.orig/arch/x86/kernel/e820.c
++++ linux/arch/x86/kernel/e820.c
+@@ -1074,6 +1074,7 @@ void __init e820_reserve_resources(void)
+ 	int i;
+ 	struct resource *res;
+ 	u64 end;
++	struct e820map *e_map = &e820_saved;
+ 
+ 	res = alloc_bootmem(sizeof(struct resource) * e820.nr_map);
+ 	e820_res = res;
+@@ -1101,8 +1102,11 @@ void __init e820_reserve_resources(void)
+ 		res++;
+ 	}
+ 
+-	for (i = 0; i < e820_saved.nr_map; i++) {
+-		struct e820entry *entry = &e820_saved.map[i];
++	if (add_efi_memmap)
++		e_map = &e820;
++
++	for (i = 0; i < e_map->nr_map; i++) {
++		struct e820entry *entry = &e_map->map[i];
+ 		firmware_map_add_early(entry->addr,
+ 			entry->addr + entry->size - 1,
+ 			e820_type_to_string(entry->type));
