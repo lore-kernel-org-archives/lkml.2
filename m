@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab0ELFYy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 01:24:54 -0400
-Received: from gate.crashing.org ([63.228.1.57]:50286 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611Ab0ELFYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 01:24:53 -0400
-Subject: Re: [PATCH 05/25] lmb: Factor the lowest level alloc function
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linuxtronix.de,
-       mingo@elte.hu, davem@davemloft.net, lethal@linux-sh.org
-In-Reply-To: <alpine.LFD.2.00.1005111428470.3401@localhost.localdomain>
-References: <1273484339-28911-1-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-2-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-3-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-4-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-5-git-send-email-benh@kernel.crashing.org>
-	 <1273484339-28911-6-git-send-email-benh@kernel.crashing.org>
-	 <alpine.LFD.2.00.1005111428470.3401@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 May 2010 15:24:09 +1000
-Message-ID: <1273641849.21352.109.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1750997Ab0ELF11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 01:27:27 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:61409 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750698Ab0ELF10 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 01:27:26 -0400
+Date: Wed, 12 May 2010 01:26:59 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Cc: linux-kernel@vger.kernel.org, gpxe-devel@etherboot.org,
+       Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH 1/2] ibft: Update iBFT handling for v1.03 of the spec.
+In-reply-to: <1270822888-13192-2-git-send-email-konrad@kernel.org>
+Message-id: <alpine.LFD.2.00.1005120125170.5297@localhost.localdomain>
+References: <1270822888-13192-1-git-send-email-konrad@kernel.org>
+ <1270822888-13192-2-git-send-email-konrad@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 14:30 +0200, Thomas Gleixner wrote:
-> On Mon, 10 May 2010, Benjamin Herrenschmidt wrote:
-> >  
-> > @@ -396,33 +406,24 @@ u64 __init __lmb_alloc_base(u64 size, u64 align, u64 max_addr)
-> >  	if (max_addr == LMB_ALLOC_ANYWHERE)
-> >  		max_addr = LMB_REAL_LIMIT;
-> >  
-> > +	/* Pump up max_addr */
-> > +	if (max_addr == LMB_ALLOC_ANYWHERE)
-> > +		max_addr = ~(u64)0;
-> > +	
-> 
->   That if is pretty useless as you set max_addr to LMB_REAL_LIMIT
->   right above.
 
-Well, actually no :-) LMB_REAL_LIMIT can actually be == to
-LMB_ALLOC_ANYWHERE which at this stage in the series is still 0, so we
-must not miss the second bit.
+>  #define IBFT_SIGN "iBFT"
+...
+> +#ifdef CONFIG_ACPI
+> +	/*
+> +	 * One spec says "IBFT", the other says "iBFT". We have to check
+> +	 * for both.
+> +	 */
 
-Subsequent patches remove this anyways as LMB_ALLOC_ANYWHERE gets turned
-into ~0 which makes more sense.
+Really?
+Which one do you see in the field?
+any reason to #define "iBFT" above and not use it below?
 
-So it's a bit weird looking, but it's correct and transitory code only.
+> +	if (!ibft_addr)
+> +		acpi_table_parse(ACPI_SIG_IBFT, acpi_find_ibft);
+> +	if (!ibft_addr)
+> +		acpi_table_parse("iBFT", acpi_find_ibft);
+> +#endif /* CONFIG_ACPI */
 
-Cheers,
-Ben.
-
-
+Len Brown, Intel Open Source Technology Center
