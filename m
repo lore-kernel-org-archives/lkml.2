@@ -1,69 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab0ELTwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 15:52:15 -0400
-Received: from web82307.mail.mud.yahoo.com ([209.191.85.227]:48253 "HELO
-	web82307.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754769Ab0ELTwN (ORCPT
+	id S1757472Ab0ELTxh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 15:53:37 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:54613 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754769Ab0ELTxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 15:52:13 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=xgWH/X+Bu8tnBXlpMF2evMMRWWpX+Iztyb6GTijD+uNafddNA/zGdRA+kHV8vpcbkxOmUy/iHZmy51VPnYAT5dXiYBuO0Ok0vTQZ04qsThNLmNoW7+29SjAH2rM1d2oxZn22L/gAjO57R1id1DWmBf92bpZjfMbgPU6v5M3mnK8=;
-Message-ID: <301502.66208.qm@web82307.mail.mud.yahoo.com>
-X-YMail-OSG: qTSZ3OAVM1kgenIcaqmnI_5TBNIyRL7DbV9NYqwyWXmjntX
- 9oGhPCkU2YlSAMhu3oonOdfhZ3Ync3qVVhaCf8jC9y_pZtV4Wm_e.hfX1tDs
- bSPBozI44l96IsaVxzCuJ1r2v01V6SkLpieQFjVbR4PWj0TGMXAo5DVDmgsy
- lJJWJIZGqc6.2ae0oXtpF51dtrb8BN3hyMCTctWxfQ_p5L0nTBukJqrEFOLb
- gZL5P6RsgHSB0ccdod3Xz1lUCZBLpbR_LXL5FPBNcSphv48f2cDCbiw91jRY
- 9N2s1qxqegoL.Vmi76_JlZ8FTRrK1uvhluzLTxeXE.Qio._Cctnr4kE49TdQ
- 4ED0dBk0XpZFGkHjgWNSXX9kJO8reihdwcKFciznoPkLUiGI_R99Dh3yTOFI
- mgLX2SeBiU__WUYuL3YJ3dryLG2GzN14CprlMP8E55c79eE9LYgvpG.fHaBv
- kqNPCynayKRtLcAbW0b9DNdV5LL1nhoRieYeK585mXfts517fGgtMvMVtETJ
- MCQjaj4mvotV6mUIfTvs8S5IrevHBq8Q8knLh6Z6epNc4NvXtVeEAQu.VrQL
- pqaLZzuiAMYTHRBFk7i2q8.9Ri1GeMJJTMsmoIzUx_FJgzE9GPp_oBuIrBCx
- cJQhBIbhJbxYRwJqG2QBaqLIqeYEPiLk1pgzQ0Mc_yiEUo1RqtFEp915SOIm
- nVDAcWPckmZ0IvBKl39FU_yP_l0rDkgScfYS3AxYqqSMgneysNqFM4EsVxfC
- RfyqMhPEXLQqzu8gzOavwuBbyhzCvnu3._euiVUpS6yuht1K5J1WfNys6_4P
- PmXvTLr_FOKvfzxxGIZEV6Av_GXYUDVC.bPN3WuG2XiviER_V6zDMLvKdohU
- 87.g623.2LplmSi8vWTigjzObfPaoQE1NyVxJlX41w72_pmU7VBsslGxjnnl
- fDm35tbwBcVUHZ28FLnEMT7AHQwN3BX1UvebK8CaMGxfEXoyORpJ5iC.wFIP
- fUN.aDPATb.StP5acss3EeviwrC1vsZr8jummGXxQC3TGla83rR1VnRe4FAu
- NY7NIBj_eLWJcZ.keuNmoB75HYmlRf9LXpSYwwbCC99WgBmU14tpfhJn_0hR
- cAR7AC6t2MGNeh91.7uiIrCz89B6w9CNi7dc5D2HoMBRIYOMdovSQTowb1pM
- OwiV4kVxAGHCYN._HgJSNBU3OSwptZiea7y7ix2yHDLts3S.4gijXzsaDmAF
- .6Mg9YkFpuqcg2nAquDGpsK8HX0Th3nIN1ggddO795qK1koiBoPcBG_5Rqp.
- chshIWEtmz6BAwDMDHCpW_J__cz4AIx6sAl2NU_2_gP2SsvQV7zq1SWNCRJt
- BHIrngxVEyJQf5.Pc4eURrxrQgG7fbdcX2JkxktY8BAI5V51QTtLWIaAzivL
- LpxyHO4b7Z8mZdw6s8lQRsNI6enKGKN0BaBrZLhMiOZosx2NENifg8Vk6xCg
- MUa.UIpiXdX9GYrGgbfNSMMIU6AxLZ3DTpoqpr_utoWB6C1JuRK1tT_.HPnG
- Bgbm2jjep18w4hdetTGHN8o7VeEirJaTbGSfqqJfjoWo1gIk.az7E93grB6.
- hvOt.sZGwTaxX1A_Cr6iSz__9mrHkK9zRyVZZdJy6.nxeVRCK1qqEI7uzHak
- S_WdxLvtB9HkA5k8gy8uq4KVXFJz_9pIURbUz7nxddM3m5NZzNTsX4nOZG9o
- JAL8iYNEYLdSP2HDOX4QqRhdanBUrfE4W1H1nghWJb2KjST.G44uk1Ps3FO4
- FtNAJEWzI.PO.UX2gFfU8l0wg.WjRYeaWY2nCxKktbewh3LRPn.tyK_Lq_Zp
- .ln.NZtTbYtJAOeJ43cXc_qnfMLXbvNyaq_J52jL4onnbxgxRY5uVcC2XyTe
- Giyyv5NJjIJyoZABSM53LAuZvSnY4pZV0Uakew.8FijfLWWZOHU9CziOtnih
- SuZFje22CL1GzRFh_0drhQOmWtpEjJHKjTgiODJiSDesl6_AwEogRNgDvDFX
- I21Dk0zr81byfEy_x1ks1cqFbTDKWMz7CBtz6.RK4jGo1nuf309PF.ASGJ2a
- gWkwCp597qk2BhMsgAQgl0OGSBsJqRaoE3olPHvkVi6wVV1N8jV_mfxMlTYd
- cDrEU9fFpV9EOrRgxFK1wyPutmh1Zcdoxve_kwVQt_Y.e8sD4_sqIsqhPlQC
- 2eWDhNTvOymlQ9udFg49haky0kocvZ8SY6FF8qg3XmTm0UAbLUb7vsy7YevS
- g9QDiKeWM2b8uARyLttnoWTeyRCWYB3kJr6fqfUX35Q--
-X-Mailer: YahooMailClassic/10.1.11 YahooMailWebService/0.8.103.269680
-Date: Wed, 12 May 2010 12:52:11 -0700 (PDT)
-From: Eric Christon <echriston-ies@sbcglobal.net>
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 12 May 2010 15:53:35 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+       netdev@vger.kernel.org
+Subject: mmotm 2010-05-11 - dies in pm_qos_update_request()
+In-Reply-To: Your message of "Tue, 11 May 2010 18:21:22 PDT."
+             <201005120149.o4C1n7P4002637@imap1.linux-foundation.org>
+From: Valdis.Kletnieks@vt.edu
+References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1273693962_3904P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 12 May 2010 15:52:42 -0400
+Message-ID: <5525.1273693962@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020209.4BEB070A.0297,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--==_Exmh_1273693962_3904P
+Content-Type: text/plain; charset=us-ascii
 
-1,000,000.00 Pounds has been Awarded to your E-mail ID in our Tobacco Promo. Send: 
-1.Name in full
-2.Address 
-3.Age 
-4.Sex
+On Tue, 11 May 2010 18:21:22 PDT, akpm@linux-foundation.org said:
+> The mm-of-the-moment snapshot 2010-05-11-18-20 has been uploaded to
+> 
+>    http://userweb.kernel.org/~akpm/mmotm/
+
+Dell Latitude E6500, x86_64 kernel.
+
+Died a horrid death at boot in the e1000e driver.  Seems to be
+something in linux-next.patch. Didn't get a netconsole trace for obvious
+reasons...
+
+Copied-by-hand traceback:
+pm_qos_update_request()+0x22
+e1000_configure+0x478
+e1000_open_device+0xee
+? _raw_notifier_call_chain+0xf
+__dev_open+0xec
+dev_open+0x1b
+netpoll_setup+0x28b
+init_netconsole+0xbc
+
+I suspect this commit:
+
+commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+Author: Rafael J. Wysocki <rjw@sisk.pl>
+Date:   Sun Mar 14 14:35:17 2010 +0000
+
+    e1000e / PCI / PM: Add basic runtime PM support (rev. 4)
+
+    Use the PCI runtime power management framework to add basic PCI
+    runtime PM support to the e1000e driver.  Namely, make the driver
+    suspend the device when the link is off and set it up for generating
+    a wakeup event after the link has been detected again.  [This
+    feature is disabled until the user space enables it with the help of
+    the /sys/devices/.../power/contol device attribute.]
+
+Not sure how to reconcile "this feature is disabled until" with my
+traceback, since userspace hasn't even started when init_netconsole is
+happening.
+
+        /*
+         * Enable early receives on supported devices, only takes effect when
+         * packet size is equal or larger than the specified value (in 8 byte
+         * units), e.g. using jumbo frames when setting to E1000_ERT_2048
+         */
+        if (adapter->flags & FLAG_HAS_ERT) {
+
+How the heck did FLAG_HAS_ERT get set, we can't call pm_qos_update_request()
+otherwise?
+
+Aha.  Over in ich8lan.c, we have:
+
+struct e1000_info e1000_ich9_info = {
+        .mac                    = e1000_ich9lan,
+        .flags                  = FLAG_HAS_JUMBO_FRAMES
+                                  | FLAG_IS_ICH
+                                  | FLAG_HAS_WOL
+                                  | FLAG_RX_CSUM_ENABLED
+                                  | FLAG_HAS_CTRLEXT_ON_LOAD
+                                  | FLAG_HAS_AMT
+                                  | FLAG_HAS_ERT
+                                  | FLAG_HAS_FLASH
+                                  | FLAG_APME_IN_WUC,
+
+And lspci says:
+00:00.0 Host bridge: Intel Corporation Mobile 4 Series Chipset Memory Controller Hub (rev 07)
+00:01.0 PCI bridge: Intel Corporation Mobile 4 Series Chipset PCI Express Graphics Port (rev 07)
+00:19.0 Ethernet controller: Intel Corporation 82567LM Gigabit Network Connection (rev 03)
+00:1a.0 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #4 (rev 03)
+00:1a.1 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #5 (rev 03)
+00:1a.2 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #6 (rev 03)
+00:1a.7 USB Controller: Intel Corporation 82801I (ICH9 Family) USB2 EHCI Controller #2 (rev 03)
+00:1b.0 Audio device: Intel Corporation 82801I (ICH9 Family) HD Audio Controller (rev 03)
+00:1c.0 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 1 (rev 03)
+00:1c.1 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 2 (rev 03)
+00:1c.2 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 3 (rev 03)
+00:1c.3 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 4 (rev 03)
+00:1d.0 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #1 (rev 03)
+00:1d.1 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #2 (rev 03)
+00:1d.2 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #3 (rev 03)
+00:1d.7 USB Controller: Intel Corporation 82801I (ICH9 Family) USB2 EHCI Controller #1 (rev 03)
+00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev 93)
+00:1f.0 ISA bridge: Intel Corporation ICH9M-E LPC Interface Controller (rev 03)
+00:1f.2 RAID bus controller: Intel Corporation Mobile 82801 SATA RAID Controller (rev 03)
+00:1f.3 SMBus: Intel Corporation 82801I (ICH9 Family) SMBus Controller (rev 03)
+01:00.0 VGA compatible controller: nVidia Corporation G98M [Quadro NVS 160M] (rev a1)
+03:01.0 CardBus bridge: Ricoh Co Ltd RL5c476 II (rev ba)
+03:01.1 FireWire (IEEE 1394): Ricoh Co Ltd R5C832 IEEE 1394 Controller (rev 04)
+03:01.2 SD Host controller: Ricoh Co Ltd R5C822 SD/SDIO/MMC/MS/MSPro Host Adapter (rev 21)
+0c:00.0 Network controller: Intel Corporation Wireless WiFi Link 5100
+
+I see a lot of ICH9 listed there, guess a Mobile 4 is ICH9-ish enough...
+
+Unfortunately, that's the limit of my ability to chase this down.
+
+
+
+
+
+
+--==_Exmh_1273693962_3904P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFL6wcKcC3lWbTT17ARAkHJAJ9aQT0+oD8cpzt7h32A3NVuFdHolACfSwnN
+6E2ndQzNArI7uGCg+fzRhZc=
+=gZw/
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1273693962_3904P--
+
