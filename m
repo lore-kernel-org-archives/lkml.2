@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab0ELUHK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 16:07:10 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:57036 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754904Ab0ELUHF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 16:07:05 -0400
-To: Taras Glek <tglek@mozilla.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: How to use perf to log page faults
-From: Andi Kleen <andi@halobates.de>
-References: <4BEB03B6.6080706@mozilla.com>
-Date: Wed, 12 May 2010 22:07:03 +0200
-In-Reply-To: <4BEB03B6.6080706@mozilla.com> (Taras Glek's message of "Wed\, 12 May 2010 12\:38\:30 -0700")
-Message-ID: <8739xwvq8o.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
+	id S1754956Ab0ELULi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 16:11:38 -0400
+Received: from borg.medozas.de ([188.40.89.202]:33806 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751403Ab0ELULg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 16:11:36 -0400
+Date: Wed, 12 May 2010 22:11:35 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Patrick McHardy <kaber@trash.net>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+       Netfilter Developer Mailing List 
+	<netfilter-devel@vger.kernel.org>,
+       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       sebastian.classen@freenet.ag, Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: linux-next: Tree for May 12 (netfilter: xt_TEE)
+In-Reply-To: <20100512085045.483f0e2d.randy.dunlap@oracle.com>
+Message-ID: <alpine.LSU.2.01.1005122210180.11190@obet.zrqbmnf.qr>
+References: <20100512164638.75e6e111.sfr@canb.auug.org.au> <20100512085045.483f0e2d.randy.dunlap@oracle.com>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Taras Glek <tglek@mozilla.com> writes:
-
-> Hi,
-> From the docs it seems that perf may be useful for logging page
-> faults. I tried
-> perf record -g -d -f -e page-faults <mycommand>
-> but all I got were PERF_RECORD_MMAP events.
+On Wednesday 2010-05-12 17:50, Randy Dunlap wrote:
+>On Wed, 12 May 2010 16:46:38 +1000 Stephen Rothwell wrote:
 >
-> I'm using 2.6.32. Ideally I'd like to collect fault addresses and
-> userspace stacks that caused them. Isn't this what the page-fault
-> event is for?
+>net/built-in.o: In function `tee_tg_route6':
+>xt_TEE.c:(.text+0x45ca5): undefined reference to `ip6_route_output'
+>net/built-in.o: In function `tee_tg6':
+>xt_TEE.c:(.text+0x45d79): undefined reference to `ip6_local_out'
 
-Some time ago I used systemtap to do this for my pbitmaps
-works. This was the old systemtap script.
+parent cba7a98a474a4f2a9316473734ba76829191a78a (v2.6.34-rc5-1489-gcba7a98)
+commit cff884ea0de4bf8729ac33bb5d98ac9d39d09019
+Author: Jan Engelhardt <jengelh@medozas.de>
+Date:   Wed May 12 22:10:03 2010 +0200
 
--Andi
+netfilter: xtables: add missing depends for xt_TEE
 
-probe vm.pagefault  { 
-	if (task_execname(task_current()) == "executable" && address < 0x100000000) { 
-		printf("%u\n", address); 
-	}
+Aviod these link-time errors when IPV6=m, XT_TEE=y:
 
-} 
+net/built-in.o: In function `tee_tg_route6':
+xt_TEE.c:(.text+0x45ca5): undefined reference to `ip6_route_output'
+net/built-in.o: In function `tee_tg6':
+xt_TEE.c:(.text+0x45d79): undefined reference to `ip6_local_out'
 
+Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
+---
+ net/netfilter/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-
+diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
+index 673a6c8..e223f47 100644
+--- a/net/netfilter/Kconfig
++++ b/net/netfilter/Kconfig
+@@ -505,6 +505,7 @@ config NETFILTER_XT_TARGET_RATEEST
+ config NETFILTER_XT_TARGET_TEE
+ 	tristate '"TEE" - packet cloning to alternate destiantion'
+ 	depends on NETFILTER_ADVANCED
++	depends on (IPV6 || IPV6=n)
+ 	---help---
+ 	This option adds a "TEE" target with which a packet can be cloned and
+ 	this clone be rerouted to another nexthop.
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+# Created with git-export-patch
