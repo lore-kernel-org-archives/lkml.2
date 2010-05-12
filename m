@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab0ELApX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 20:45:23 -0400
-Received: from blue-ld-261.synserver.de ([217.119.54.83]:46204 "EHLO
+	id S1754557Ab0ELApw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 20:45:52 -0400
+Received: from blue-ld-261.synserver.de ([217.119.54.83]:46197 "EHLO
 	smtp-out-072.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754093Ab0ELApP (ORCPT
+	by vger.kernel.org with ESMTP id S1754081Ab0ELApP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 May 2010 20:45:15 -0400
 X-SynServer-TrustedSrc: 1
@@ -13,10 +13,10 @@ X-SynServer-PPID: 1517
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: rpurdie@rpsys.net
 Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>, Ben Dooks <ben-linux@fluff.org>
-Subject: [PATCH 3/3] gta02: Use pcf50633 backlight driver instead of platform backlight driver.
-Date: Wed, 12 May 2010 02:44:34 +0200
-Message-Id: <1273625074-15312-4-git-send-email-lars@metafoo.de>
+       Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 2/3] MFD: pcf50633: Register a pcf50633-backlight device in pcf50633 core driver.
+Date: Wed, 12 May 2010 02:44:33 +0200
+Message-Id: <1273625074-15312-3-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1273625074-15312-1-git-send-email-lars@metafoo.de>
 References: <1273625074-15312-1-git-send-email-lars@metafoo.de>
@@ -24,135 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the pcf50633 backlight driver instead of the platform backlight driver.
+Register a device newly added pcf50633-backlight driver as a child device in
+the pcf50633 core driver.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 ---
- arch/arm/mach-s3c2440/mach-gta02.c |   76 ++++-------------------------------
- 1 files changed, 9 insertions(+), 67 deletions(-)
+ drivers/mfd/pcf50633-core.c       |    3 +++
+ include/linux/mfd/pcf50633/core.h |    4 ++++
+ 2 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-s3c2440/mach-gta02.c b/arch/arm/mach-s3c2440/mach-gta02.c
-index 45799c6..120a26f 100644
---- a/arch/arm/mach-s3c2440/mach-gta02.c
-+++ b/arch/arm/mach-s3c2440/mach-gta02.c
-@@ -49,7 +49,6 @@
- #include <linux/io.h>
+diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
+index e1ee046..704736e 100644
+--- a/drivers/mfd/pcf50633-core.c
++++ b/drivers/mfd/pcf50633-core.c
+@@ -305,6 +305,9 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
+ 						&pcf->mbc_pdev);
+ 	pcf50633_client_dev_register(pcf, "pcf50633-adc",
+ 						&pcf->adc_pdev);
++	pcf50633_client_dev_register(pcf, "pcf50633-backlight",
++						&pcf->bl_pdev);
++
  
- #include <linux/i2c.h>
--#include <linux/backlight.h>
+ 	for (i = 0; i < PCF50633_NUM_REGULATORS; i++) {
+ 		struct platform_device *pdev;
+diff --git a/include/linux/mfd/pcf50633/core.h b/include/linux/mfd/pcf50633/core.h
+index 3398bd9..ad411a7 100644
+--- a/include/linux/mfd/pcf50633/core.h
++++ b/include/linux/mfd/pcf50633/core.h
+@@ -18,6 +18,7 @@
+ #include <linux/regulator/driver.h>
  #include <linux/regulator/machine.h>
- 
- #include <linux/mfd/pcf50633/core.h>
-@@ -57,6 +56,7 @@
- #include <linux/mfd/pcf50633/adc.h>
- #include <linux/mfd/pcf50633/gpio.h>
- #include <linux/mfd/pcf50633/pmic.h>
+ #include <linux/power_supply.h>
 +#include <linux/mfd/pcf50633/backlight.h>
  
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-@@ -254,6 +254,12 @@ static char *gta02_batteries[] = {
- 	"battery",
- };
+ struct pcf50633;
  
-+static struct pcf50633_bl_platform_data gta02_backlight_data = {
-+	.default_brightness = 0x3f,
-+	.default_brightness_limit = 0,
-+	.ramp_time = 5,
-+};
+@@ -43,6 +44,8 @@ struct pcf50633_platform_data {
+ 	void (*force_shutdown)(struct pcf50633 *);
+ 
+ 	u8 resumers[5];
 +
- struct pcf50633_platform_data gta02_pcf_pdata = {
- 	.resumers = {
- 		[0] =	PCF50633_INT1_USBINS |
-@@ -271,6 +277,8 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
- 
- 	.charger_reference_current_ma = 1000,
- 
-+	.backlight_data = &gta02_backlight_data,
-+
- 	.reg_init_data = {
- 		[PCF50633_REGULATOR_AUTO] = {
- 			.constraints = {
-@@ -478,71 +486,6 @@ static struct s3c2410_udc_mach_info gta02_udc_cfg = {
- 
++	struct pcf50633_bl_platform_data *backlight_data;
  };
  
--
--
--static void gta02_bl_set_intensity(int intensity)
--{
--	struct pcf50633 *pcf = gta02_pcf;
--	int old_intensity = pcf50633_reg_read(pcf, PCF50633_REG_LEDOUT);
--
--	/* We map 8-bit intensity to 6-bit intensity in hardware. */
--	intensity >>= 2;
--
--	/*
--	 * This can happen during, eg, print of panic on blanked console,
--	 * but we can't service i2c without interrupts active, so abort.
--	 */
--	if (in_atomic()) {
--		printk(KERN_ERR "gta02_bl_set_intensity called while atomic\n");
--		return;
--	}
--
--	old_intensity = pcf50633_reg_read(pcf, PCF50633_REG_LEDOUT);
--	if (intensity == old_intensity)
--		return;
--
--	/* We can't do this anywhere else. */
--	pcf50633_reg_write(pcf, PCF50633_REG_LEDDIM, 5);
--
--	if (!(pcf50633_reg_read(pcf, PCF50633_REG_LEDENA) & 3))
--		old_intensity = 0;
--
--	/*
--	 * The PCF50633 cannot handle LEDOUT = 0 (datasheet p60)
--	 * if seen, you have to re-enable the LED unit.
--	 */
--	if (!intensity || !old_intensity)
--		pcf50633_reg_write(pcf, PCF50633_REG_LEDENA, 0);
--
--	/* Illegal to set LEDOUT to 0. */
--	if (!intensity)
--		pcf50633_reg_set_bit_mask(pcf, PCF50633_REG_LEDOUT, 0x3f, 2);
--	else
--		pcf50633_reg_set_bit_mask(pcf, PCF50633_REG_LEDOUT, 0x3f,
--					  intensity);
--
--	if (intensity)
--		pcf50633_reg_write(pcf, PCF50633_REG_LEDENA, 2);
--
--}
--
--static struct generic_bl_info gta02_bl_info = {
--	.name			= "gta02-bl",
--	.max_intensity		= 0xff,
--	.default_intensity	= 0xff,
--	.set_bl_intensity	= gta02_bl_set_intensity,
--};
--
--static struct platform_device gta02_bl_dev = {
--	.name			= "generic-bl",
--	.id			= 1,
--	.dev = {
--		.platform_data = &gta02_bl_info,
--	},
--};
--
--
--
- /* USB */
- static struct s3c2410_hcd_info gta02_usb_info __initdata = {
- 	.port[0]	= {
-@@ -579,7 +522,6 @@ static struct platform_device *gta02_devices[] __initdata = {
- /* These guys DO need to be children of PMU. */
- 
- static struct platform_device *gta02_devices_pmu_children[] = {
--	&gta02_bl_dev,
+ struct pcf50633_irq {
+@@ -152,6 +155,7 @@ struct pcf50633 {
+ 	struct platform_device *mbc_pdev;
+ 	struct platform_device *adc_pdev;
+ 	struct platform_device *input_pdev;
++	struct platform_device *bl_pdev;
+ 	struct platform_device *regulator_pdev[PCF50633_NUM_REGULATORS];
  };
- 
  
 -- 
 1.5.6.5
