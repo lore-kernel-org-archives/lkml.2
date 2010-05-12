@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab0ELXtX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 19:49:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44246 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754100Ab0ELXtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 19:49:22 -0400
-Message-ID: <4BEB3CD5.9060803@zytor.com>
-Date: Wed, 12 May 2010 16:42:13 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1756464Ab0ELXuw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 19:50:52 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:40555 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab0ELXuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 19:50:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=juawCHFABC4owRKfymjDDm6MicyKmfK1VewuH6s8itGmdEY1g0/iJkiYZ2prdVO7qy
+         cxgg2vjOtkybHkFb5+6C7Nbb4EF1vcapasJO6jhwP/CwxBWjVxTk/tJYUGY3v0XcHBVj
+         nnEW5oXVLjD3Ui/brdZda64MxYBgcxs3TBvas=
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Borislav Petkov <borislav.petkov@amd.com>, Jiri Kosina <jkosina@suse.cz>,
-       "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>,
-       "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-       Greg KH <gregkh@suse.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "stable@kernel.org" <stable@kernel.org>, Jiri Benc <jbenc@suse.cz>,
-       Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "stable-review@kernel.org" <stable-review@kernel.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [stable] [113/197] x86, cacheinfo: Calculate L3 indices
-References: <20100422190917.467545308@kvm.kroah.org> <alpine.LNX.2.00.1005051736080.9849@pobox.suse.cz> <20100505180228.GC15804@aftab> <alpine.LNX.2.00.1005052328000.9849@pobox.suse.cz> <20100506081721.GA20616@aftab> <alpine.LNX.2.00.1005061532390.9849@pobox.suse.cz> <20100506141358.GB20994@aftab> <20100512231906.GB3588@kroah.com> <4BEB3A77.1020907@zytor.com>
-In-Reply-To: <4BEB3A77.1020907@zytor.com>
+In-Reply-To: <20100511173830.GF30801@buzzloop.caiaq.de>
+References: <20100512003450P.fujita.tomonori@lab.ntt.co.jp>
+	 <Pine.LNX.4.44L0.1005111158420.1834-100000@iolanthe.rowland.org>
+	 <AANLkTikoF4qgkN9p0SpDEOrHAMxdh4jzPusCdrq1tRag@mail.gmail.com>
+	 <20100511171025.GB30801@buzzloop.caiaq.de>
+	 <AANLkTimdsIJt69TKf2CgXjEXDJXSNib2jt9JSapmuJyW@mail.gmail.com>
+	 <20100511173830.GF30801@buzzloop.caiaq.de>
+Date: Thu, 13 May 2010 00:50:48 +0100
+Message-ID: <AANLkTinTOWZbZ_7n6YEcCgjbh1_Jsj2_zRKKwspAMuwE@mail.gmail.com>
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+From: Pedro Ribeiro <pedrib@gmail.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, gregkh@suse.de,
+       konrad.wilk@oracle.com, tiwai@suse.de,
+       USB list <linux-usb@vger.kernel.org>, clemens@ladisch.de,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       chrisw@sous-sol.org, iommu@lists.linux-foundation.org,
+       andi@firstfloor.org, Andrew Morton <akpm@linux-foundation.org>,
+       dwmw2@infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2010 04:32 PM, H. Peter Anvin wrote:
-> On 05/12/2010 04:19 PM, Greg KH wrote:
->>>
->>> So if K8_NB has failed initializing for some reason, we never go near
->>> the pci devs and the node_to_k8_nb_misc() calls since we effectively
->>> disable the L3 functionality.
->>>
->>> Thus the NULL pointer checks you remove in the patch below are
->>> superfluous, I agree, and I have already removed those in my tree along
->>> with the other improvements/fixes I'm working on right now.
+On 11 May 2010 18:38, Daniel Mack <daniel@caiaq.de> wrote:
+> On Tue, May 11, 2010 at 06:32:50PM +0100, Pedro Ribeiro wrote:
+>> On 11 May 2010 18:10, Daniel Mack <daniel@caiaq.de> wrote:
+>> > No surprise here. The 4 channels are mux'ed in an interleaved fashion,
+>> > so if the buffers contain rubbish, you will hear artefacts on all
+>> > channels.
 >>
->> So, was there ever a patch applied that fixed the bug that Jiri found in
->> the stable kernels with this original patch that I could apply?
->>
-> 
-> Sounds like this patch in -tip should be promoted to mainline/stable...
-> could the AMD people please confirm?
-> 
+>> So what would be the testcase you would like me to try?
+>
+> Would be good to see what happens if you could record audio (with
+> arecord would be sufficient), just to see whether the same problem
+> exists in the other direction.
+>
+> Either record an externally generated sine tone and open the resulting
+> wave file in an editor. With the amount of artefacts you describe, they
+> should easily be visible.
 
-Specifically, "waiting to hit mainline" is not an option since they are
-currently queued for .35, but we need a minimal fix in .34 -- this is
-the "stable backport".  If this "stable backport" is simply a subset of
-the patch series then let me know which ones should be moved to urgent
-and sent to Linus immediately.  I obviously don't have access to a setup
-which can replicate this particular problem.
+Ok let me see if I got this straight:
 
-	-hpa
+I should record some sound with the audio card and see if it impacts
+the recording? May take me a few days, I need to get a microphone or
+something like that borrowed.
+
+> Another option is to play back any kind of recorded audio thru an audio
+> device that does not show the problem (some internal, onboard device?).
+>
+
+What do you mean by this? I didn't get it. I usually use my onboard
+intel HDA for listening to music and have no problems.
+
+> Thanks,
+> Daniel
+>
+
+Pedro
