@@ -1,101 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab0ELToj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 15:44:39 -0400
-Received: from sous-sol.org ([216.99.217.87]:54472 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757210Ab0ELToi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 15:44:38 -0400
-Date: Wed, 12 May 2010 12:44:24 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Greg KH <greg@kroah.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, jbarnes@virtuousgeek.org,
-       matthew@wil.cx, linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, ddutile@redhat.com, alex.williamson@redhat.com
-Subject: Re: [RFC PATCH] sysfs: bin_attr permission checking
-Message-ID: <20100512194424.GY28034@sequoia.sous-sol.org>
-References: <20100512184713.GV28034@sequoia.sous-sol.org>
- <20100512191336.GA30678@kroah.com>
- <20100512192828.GX28034@sequoia.sous-sol.org>
- <20100512193943.GA31301@kroah.com>
+	id S1757471Ab0ELTuY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 15:50:24 -0400
+Received: from kroah.org ([198.145.64.141]:33055 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757307Ab0ELTuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 15:50:15 -0400
+Date: Wed, 12 May 2010 12:50:05 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: Re: linux-next: manual merge of the staging-next tree with the
+ pcmcia tree
+Message-ID: <20100512195005.GD31534@kroah.com>
+References: <20100512160352.daa747f8.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100512193943.GA31301@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100512160352.daa747f8.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH (greg@kroah.com) wrote:
-> On Wed, May 12, 2010 at 12:28:28PM -0700, Chris Wright wrote:
-> > * Greg KH (greg@kroah.com) wrote:
-> > > On Wed, May 12, 2010 at 11:47:13AM -0700, Chris Wright wrote:
-> > > > The PCI config space bin_attr read handler has a hardcoded CAP_SYS_ADMIN
-> > > > check to verify privileges before allowing a user to read device
-> > > > dependent config space.  This is meant to protect from an unprivileged
-> > > > user potentially locking up the box.
-> > > > 
-> > > > When assigning a PCI device directly to a guest with libvirt and KVM, the 
-> > > > sysfs config space file is chown'd to the user that the KVM guest will
-> > > > run as.  The guest needs to have full access to the device's config
-> > > > space since it's responsible for driving the device.  However, despite
-> > > > being the owner of the sysfs file, the CAP_SYS_ADMIN check will not
-> > > > allow read access beyond the config header.
-> > > > 
-> > > > This patch adds a new bin_attr->read_file() callback which adds a struct
-> > > > file to the normal argument list.  This allows an implementation such as
-> > > > PCI config space bin_attr read_file handler to check both inode
-> > > > permission as well as privileges to determine whether to allow
-> > > > privileged actions through the handler.
-> > > 
-> > > Ick, this is all because we like showing different information if the
-> > > user is "privileged or not" :(
-> > 
-> > yup
-> > 
-> > > Turns out, that this probably isn't the best user api to implement,
-> > > remind me never to do that again...
-> > 
-> > Yeah, it's challenging to deal with.  Alternative here is a new config
-> > sysfs entry that doesn't have this 'feature'.  (I looked into trying to
-> > allow manageing the internal capable() check externally, not so pretty).
+On Wed, May 12, 2010 at 04:03:52PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> That would require people to update libpci and maybe their scripts as
-> well, which wouldn't be as good.
-
-Not necessarily.  We'd end up with
-
-  /config <-- legacy w/ CAP_SYS_AMDIN check)
-  /config_not_f'd_up <-- new one w/out CAP_SYS_ADMIN, default to 0600 root:root
-
-> > > > This is just RFC, although I've tested that it does allow the chown +
-> > > > read to work as expected.  Any other ideas of how to handle this are
-> > > > welcome.
-> > > 
-> > > Can we just pass in the 'file' for all users of the bin files instead of
-> > > the dentry? 
-> > 
-> > The dentry doesn't currently go beyond sysfs/bin.c.  So, yes, I pushed
-> > 'file' through to last level in bin.c before ->read(), and can certinaly
-> > just push through to ->read() as well.
+> Today's linux-next merge of the staging-next tree got a conflict in
+> drivers/staging/wlags49_h2/wl_cs.c between commit
+> c8df2d45846e374de8ff601b9ea0537becfe75ca ("pcmcia: re-work
+> pcmcia_request_irq()") from the pcmcia tree and commit  ("") from the
+> staging-next tree.
 > 
-> That would be better than having a 'read_file' callback, right?
+> I fixed it up (see below) and can carry the fix as necessary.
 
-I think so.
+Heh, I just hacked that driver up to build properly, odds are it doesn't
+run :)
 
-> > >  You can always get the dentry from the file (as your patch
-> > > showes), and there isn't that many users of this interface.  I'd really
-> > > rather not have two different types of callbacks here.
-> > 
-> > Absolutely, this is just RFC (i.e. quicker to compile and test).  What
-> > about write()?
-> 
-> Sure, might as well make it symmetrical :)
+But your fix looks fine, thanks for it.
 
-:-)
-
-I'll update, split sysfs from pci and resend shortly.
-
-thanks,
-chris
+greg k-h
