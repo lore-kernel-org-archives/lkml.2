@@ -1,125 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758430Ab0ELWxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 18:53:40 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44663 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806Ab0ELWxi (ORCPT
+	id S1758454Ab0ELWyQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 18:54:16 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:38974 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757222Ab0ELWyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 18:53:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH 12/12] Use down_read_unfair() for /sys/<pid>/exe and /sys/<pid>/maps files
-Cc: kosaki.motohiro@jp.fujitsu.com,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-In-Reply-To: <1273634462-2672-13-git-send-email-walken@google.com>
-References: <1273634462-2672-1-git-send-email-walken@google.com> <1273634462-2672-13-git-send-email-walken@google.com>
-Message-Id: <20100513074949.2136.A69D9226@jp.fujitsu.com>
+	Wed, 12 May 2010 18:54:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=JUNGUwspNnJ1+7CoO4qjbq+1aS/G8+kXM17SLM3moZxW36NuxblGxVTB/3Ae0tsXsT
+         Nf84SfALKynFf0Un9LlJCmtGAkdbWy1By1wAgOuGaJVqAdV8tMs/QO4FNQ+nnwFHs2wg
+         6uJpP/P4U6xsfVSn2iWGXIpRnau0jnXUADBao=
+Date: Thu, 13 May 2010 00:53:41 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: Tejun Heo <tj@kernel.org>, Vasu Dev <vasu.dev@intel.com>,
+       Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [patch] libsas: potential null dereference
+Message-ID: <20100512225341.GA5695@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	"James E.J. Bottomley" <James.Bottomley@suse.de>,
+	Tejun Heo <tj@kernel.org>, Vasu Dev <vasu.dev@intel.com>,
+	Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 13 May 2010 07:53:31 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This helps in the following situation:
-> - Thread A takes a page fault while reading or writing memory.
->   do_page_fault() acquires the mmap_sem for read and blocks on disk
->   (either reading the page from file, or hitting swap) for a long time.
-> - Thread B does an mmap call and blocks trying to acquire the mmap_sem
->   for write
-> - Thread C is a monitoring process trying to read every /proc/pid/maps
->   in the system. This requires acquiring the mmap_sem for read. Thread C
->   blocks behind B, waiting for A to release the rwsem.  If thread C
->   could be allowed to run in parallel with A, it would probably get done
->   long before thread A's disk access completes, thus not actually slowing
->   down thread B.
-> 
-> Test results with down_read_unfair_test (10 seconds):
-> 
-> 2.6.33.3:
-> threadA completes ~600 faults
-> threadB completes ~300 mmap/munmap cycles
-> threadC completes ~600 /proc/pid/maps reads
-> 
-> 2.6.33.3 + down_read_unfair:
-> threadA completes ~600 faults
-> threadB completes ~300 mmap/munmap cycles
-> threadC completes ~160000 /proc/pid/maps reads
-> 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+The "sc" variable can potentially be null here, so we have to initialize
+"q" later.  This was introduced in: 70b25f890 "[SCSI] fix locking around
+blk_abort_request()"
 
-Is it good idea?
-So I think /proc shouldn't use unfair thing as backdoor. 
-It doesn't only makes performance improvement, but also 
-DoS chance is there.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+---
+I appologize if I sent this already.  I was having trouble with my email 
+earlier today and I don't see this in my gmail outbox.
 
-Please use this feature only in internal.
-
-
-
-> ---
->  fs/proc/base.c       |    2 +-
->  fs/proc/task_mmu.c   |    2 +-
->  fs/proc/task_nommu.c |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index 8418fcc..9132488 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -1367,7 +1367,7 @@ struct file *get_mm_exe_file(struct mm_struct *mm)
->  
->  	/* We need mmap_sem to protect against races with removal of
->  	 * VM_EXECUTABLE vmas */
-> -	down_read(&mm->mmap_sem);
-> +	down_read_unfair(&mm->mmap_sem);
->  	exe_file = mm->exe_file;
->  	if (exe_file)
->  		get_file(exe_file);
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index 0705534..09647ad 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -123,7 +123,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
->  	mm = mm_for_maps(priv->task);
->  	if (!mm)
->  		return NULL;
-> -	down_read(&mm->mmap_sem);
-> +	down_read_unfair(&mm->mmap_sem);
->  
->  	tail_vma = get_gate_vma(priv->task);
->  	priv->tail_vma = tail_vma;
-> diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
-> index 46d4b5d..56ca830 100644
-> --- a/fs/proc/task_nommu.c
-> +++ b/fs/proc/task_nommu.c
-> @@ -194,7 +194,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
->  		priv->task = NULL;
->  		return NULL;
->  	}
-> -	down_read(&mm->mmap_sem);
-> +	down_read_unfair(&mm->mmap_sem);
->  
->  	/* start from the Nth VMA */
->  	for (p = rb_first(&mm->mm_rb); p; p = rb_next(p))
-> -- 
-> 1.7.0.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+diff --git a/drivers/scsi/libsas/sas_scsi_host.c b/drivers/scsi/libsas/sas_scsi_host.c
+index 8228350..96dc7d0 100644
+--- a/drivers/scsi/libsas/sas_scsi_host.c
++++ b/drivers/scsi/libsas/sas_scsi_host.c
+@@ -1030,7 +1030,7 @@ int __sas_task_abort(struct sas_task *task)
+ void sas_task_abort(struct sas_task *task)
+ {
+ 	struct scsi_cmnd *sc = task->uldd_task;
+-	struct request_queue *q = sc->device->request_queue;
++	struct request_queue *q;
+ 	unsigned long flags;
+ 
+ 	/* Escape for libsas internal commands */
+@@ -1046,6 +1046,7 @@ void sas_task_abort(struct sas_task *task)
+ 		return;
+ 	}
+ 
++	q = sc->device->request_queue;
+ 	spin_lock_irqsave(q->queue_lock, flags);
+ 	blk_abort_request(sc->request);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
 
