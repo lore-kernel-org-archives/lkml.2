@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab0ELKbQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 06:31:16 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:53685 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab0ELKbO (ORCPT
+	id S1752802Ab0ELKdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 06:33:38 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:47471 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab0ELKdh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 06:31:14 -0400
-Date: Wed, 12 May 2010 16:01:09 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
-       Mel Gorman <mel@csn.ul.ie>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 7/11] Uprobes Implementation
-Message-ID: <20100512103109.GL7426@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100413183537.GA17538@redhat.com>
- <20100415093506.GA2064@linux.vnet.ibm.com>
- <20100419193139.GA24080@redhat.com>
- <20100420124358.GA20675@linux.vnet.ibm.com>
- <20100420153023.GA9351@redhat.com>
- <20100421065948.GA5440@linux.vnet.ibm.com>
- <20100421160515.GA11321@redhat.com>
- <20100422133154.GA10776@linux.vnet.ibm.com>
- <20100422154059.GA5916@redhat.com>
- <1273610723.1810.105.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1273610723.1810.105.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 12 May 2010 06:33:37 -0400
+Date: Wed, 12 May 2010 12:34:02 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
+ error recovery
+In-reply-to: <70376CA23424B34D86F1C7DE6B9973430254343ABD@VSHINMSMBX01.vshodc.lntinfotech.com>
+To: Viral Mehta <Viral.Mehta@lntinfotech.com>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-id: <op.vck8y0uv7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.10 (Linux)
+References: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>
+ <op.vck4q0c87p4s8u@pikus>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABB@VSHINMSMBX01.vshodc.lntinfotech.com>
+ <op.vck63vc77p4s8u@pikus>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABD@VSHINMSMBX01.vshodc.lntinfotech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2010-05-11 22:45:23]:
+On Wed, 12 May 2010 12:06:11 +0200, Viral Mehta <Viral.Mehta@lntinfotech.com> wrote:
+> In fsg_common_release(), we are freeing common->luns.
+> 2894         kfree(common->luns);
+>
+> However, these gets allocd in fsg_common_init()
+> 2712         /* Create the LUNs, open their backing files, and register the
+> 2713          * LUN devices in sysfs. */
+> 2714         curlun = kzalloc(nluns * sizeof *curlun, GFP_KERNEL);
+> 2715         if (!curlun) {
+> 2716                 kfree(common);
+> 2717                 return ERR_PTR(-ENOMEM);
+> 2718         }
+>
+> Now, if this kzalloc at line 2714 failed
+> And if your patch is applied, you will follow error_release path which in
+> turn will call kfree on a pointer whose allocation is failed.
 
-> On Thu, 2010-04-22 at 17:40 +0200, Oleg Nesterov wrote:
-> > 
-> > Either way, I think register_uprobe() should disallow the probes in
-> > VM_SHARED/VM_MAYWRITE vmas. 
-> 
-> VM_SHARED, fully agreed, MAYWRITE not so sure, MAP_PRIVATE has MAYWRITE
-> iirc and its perfectly fine to poke at those.
-> 
+If luns allocation fails, common->luns will be NULL and freeing a NULL
+pointer is a no-operation thus the code works just fine.
 
-Okay, I will put a check to disallow probes in VM_SHARED vmas.
-
---
-Thanks and Regards
-Srikar
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
