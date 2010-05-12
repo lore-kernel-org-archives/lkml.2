@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab0ELNxh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 09:53:37 -0400
-Received: from fg-out-1718.google.com ([72.14.220.154]:58554 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab0ELNxg (ORCPT
+	id S1755528Ab0ELNyX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 09:54:23 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:37147 "HELO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751113Ab0ELNyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 09:53:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=kV9LiDgSfe7mkrmU5qkjQ1c4mFJ6569dvrfD+Y68CEYPeIWVTbcCUxsoeSKfatQtV3
-         XdDBYyW2fYwKX7HYVSHeH05KLHdTaI1wiwklTLTnnDD4Oh2NTOJ2hEtyZ1N0uJ+c8Pty
-         osOPn7Crz6Efi5SMS8uDCeamGzDHqgIcQCM8g=
-Subject: [pm] resume from s3 oops? (last checked on rc6)
-From: "=?gb2312?Q?=B1=F6=CE=F7=C3=C9?=" <binximeng@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: BinXimeng@gmail.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 May 2010 15:59:32 +0200
-Message-ID: <1273672772.7284.32.camel@eee51>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2
-Content-Transfer-Encoding: 7bit
+	Wed, 12 May 2010 09:54:22 -0400
+From: Michael Poole <mdpoole@troilus.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+       linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID:magicmouse: This fixes a connection problem with the magicmouse.
+References: <1273595363-4020-1-git-send-email-justinmattock@gmail.com>
+	<alpine.LNX.2.00.1005121456150.28092@pobox.suse.cz>
+	<4BEAAF9C.909@gmail.com>
+	<alpine.LNX.2.00.1005121540340.28092@pobox.suse.cz>
+Date: Wed, 12 May 2010 09:54:17 -0400
+In-Reply-To: <alpine.LNX.2.00.1005121540340.28092@pobox.suse.cz> (Jiri
+	Kosina's message of "Wed, 12 May 2010 15:41:50 +0200 (CEST)")
+Message-ID: <87aas5i5ti.fsf@troilus.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi lkml,
+Jiri Kosina writes:
 
-I'm trying to get suspend to ram working on a opensuse 11.2. (The box is
-unfortunately not connected to the Internet). So far I've tried with
-distribution's kernel 2.6.31.12 & now with 2.6.34-rc6 (already
-downloaded a copy of rc7 and will try it today)
+> On Wed, 12 May 2010, Justin P. Mattock wrote:
+>
+>> > > --- a/drivers/hid/hid-magicmouse.c
+>> > > +++ b/drivers/hid/hid-magicmouse.c
+>> > > @@ -354,7 +354,7 @@ static int magicmouse_probe(struct hid_device *hdev,
+>> > >   		goto err_free;
+>> > >   	}
+>> > > 
+>> > > -	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT&  ~HID_CONNECT_HIDINPUT);
+>> > > +	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+>> > >      
+>> > This is not particularly right, as we'll end up having dangling input
+>> > device.
+>> > 
+>> > The problem is, that when HIDRAW is not set, hid_hw_start() returns ENODEV
+>> > as no subsystem has claimed the device, and probe routine bails out. Which
+>> > is not what we want.
+>> > 
+>> > Does the testing patch below fix the problems you are seeing?
+>> > 
+>> > 
+>> >    
+>> works good.. rebooted a few times mouse connects. suspended a few times 
+>> mouse reconnects.
+>
+> I'd be glad if you could also double-check that device removal and 
+> re-connecting it works well as well with this patch.
+>
+>> > diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+>> > index 0d471fc..f10d56a 100644
+>> > --- a/drivers/hid/hid-magicmouse.c
+>> > +++ b/drivers/hid/hid-magicmouse.c
+>> > @@ -354,12 +354,15 @@ static int magicmouse_probe(struct hid_device *hdev,
+>> >   		goto err_free;
+>> >   	}
+>> > 
+>> > -	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT&  ~HID_CONNECT_HIDINPUT);
+>> > +	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+>> >   	if (ret) {
+>> >   		dev_err(&hdev->dev, "magicmouse hw start failed\n");
+>> >   		goto err_free;
+>> >   	}
+>> > 
+>> > +	/* we are handling the input ourselves */
+>> > +	hidinput_disconnect(hdev);
+>> > +
+>> >   	report = hid_register_report(hdev, HID_INPUT_REPORT, TOUCH_REPORT_ID);
+>> >   	if (!report) {
+>> >   		dev_err(&hdev->dev, "unable to register touch report\n");
+>> > 
+>> >    
+>> 
+>> looks good over here.. If you'd like I can re-du this patch, add your 
+>> sign off etc.. and re-send, or not worry.. either way this little 
+>> quirk/problem is fixed.
+>
+> No problem, once you confirm that device removal wasn't broken again and 
+> if I don't hear any objections from Michael, I will queue the patch 
+> myself.
 
-It suspends fine with "echo mem > /sys/power/state", resumes not though.
-The caps lock and scroll lock leds are flashing, I think this relates to
-a kernel oops? However, screen remains black.
+It looks good to me.  Thanks for doing this -- work has been busy this
+week, so I haven't had time to dig into the issue yet.
 
-I did this from a "bare" system with vga=0 init=/bin/zsh command line.
-When using acpi_sleep=s3_beep, I get 3 high + 1 low beep right after
-wake-up. With acpi_sleep=s3_mode, I don't get the blinking keyboard
-leds, but the resume doesn't work either, especially do I believe it is
-not only a "black screen", otherwise I should be able to toggle the
-keyboard leds after resume.
-
-The board has a debug led connected to an AMI bios, which shows "24" --
-manual claims this to mean "Uncompress and initialize any platform
-specific BIOS modules. GPNV is initialized at this checkpoint." Don't
-know if this has any meaning and not just bogus though.
-
-probably unrelated, s1&s4 work.
-
-The hardware in question: ASRock Intel-X58 Extreme3 motherboard, AMD
-HD3450 graphics.
-
-any debug help/suggestions, things to try/look at to track this down
-that you guys could give me?
-
-cheers, ximeng
-
+Michael
