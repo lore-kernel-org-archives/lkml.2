@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab0ELIUm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 04:20:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34141 "EHLO mx1.suse.de"
+	id S1754169Ab0ELIW7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 04:22:59 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:48610 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754042Ab0ELIUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 04:20:40 -0400
-Date: Wed, 12 May 2010 10:20:38 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Morgan Gatti <morgan.gatti@gmail.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging:comedi:Fix bug and coding style issue in usbdux.c
- This is a patch to the usbdux.c file that resolve 2 errors in coding and
- fix the warning about lengt of code lines Signed-off-by: Morgan Gatti
- <morgan.gatti@gmail.com>
-In-Reply-To: <1273614953-3263-1-git-send-email-morgan.gatti@gmail.com>
-Message-ID: <alpine.LNX.2.00.1005121015350.28092@pobox.suse.cz>
-References: <patch usbdux> <1273614953-3263-1-git-send-email-morgan.gatti@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754068Ab0ELIW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 04:22:57 -0400
+Date: Wed, 12 May 2010 10:21:36 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: walter harms <wharms@bfs.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       ", H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 5/5] arch/x86/kernel: Drop memory allocation cast
+In-Reply-To: <4BEA58C6.7030103@bfs.de>
+Message-ID: <Pine.LNX.4.64.1005121021110.31474@ask.diku.dk>
+References: <Pine.LNX.4.64.1005112028160.4330@ask.diku.dk> <4BEA58C6.7030103@bfs.de>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 May 2010, Morgan Gatti wrote:
+From: Julia Lawall <julia@diku.dk>
 
-> ---
->  drivers/staging/comedi/drivers/usbdux.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
+Drop cast on the result of kmalloc and similar functions.
 
-Morgan,
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
 
-please look into fixing you patch submission tools -- the whole changelog, 
-including your Signed-off-by: line, ended up in Subject:, which is 
-probably not what you intended.
+// <smpl>
+@@
+type T;
+@@
 
-> diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
-> index 8942ae4..c39c36a 100644
-> --- a/drivers/staging/comedi/drivers/usbdux.c
-> +++ b/drivers/staging/comedi/drivers/usbdux.c
-> @@ -793,7 +793,7 @@ static int usbduxsub_stop(struct usbduxsub *usbduxsub)
->  }
->  
->  static int usbduxsub_upload(struct usbduxsub *usbduxsub,
-> -			    uint8_t * local_transfer_buffer,
-> +			    uint8_t *local_transfer_buffer,
->  			    unsigned int startAddr, unsigned int len)
->  {
->  	int errcode;
-> @@ -825,7 +825,7 @@ static int usbduxsub_upload(struct usbduxsub *usbduxsub,
->  #define FIRMWARE_MAX_LEN 0x2000
->  
->  static int firmwareUpload(struct usbduxsub *usbduxsub,
-> -			  const u8 * firmwareBinary, int sizeFirmware)
-> +			  const u8 *firmwareBinary, int sizeFirmware)
+- (T *)
+  (\(kmalloc\|kzalloc\|kcalloc\|kmem_cache_alloc\|kmem_cache_zalloc\|
+   kmem_cache_alloc_node\|kmalloc_node\|kzalloc_node\)(...))
+// </smpl>
 
-While you are performing the glorious task of fixing the coding style in 
-this driver, maybe also converting it not to use CamelNamingConvention 
-would be worthwile.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
->  {
->  	int ret;
->  	uint8_t *fwBuf;
-> @@ -835,7 +835,7 @@ static int firmwareUpload(struct usbduxsub *usbduxsub,
->  
->  	if (sizeFirmware > FIRMWARE_MAX_LEN) {
->  		dev_err(&usbduxsub->interface->dev,
-> -			"comedi_: usbdux firmware binary it too large for FX2.\n");
-> +		"comedi_: usbdux firmware binary it too large for FX2.\n");
->  		return -ENOMEM;
->  	}
->  
-> @@ -1264,8 +1264,8 @@ static int usbdux_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
->  			    (this_usbduxsub->ai_interval) * 2;
->  		}
->  		this_usbduxsub->ai_timer = cmd->scan_begin_arg / (125000 *
-> -								  (this_usbduxsub->
-> -								   ai_interval));
-> +					  (this_usbduxsub->
-> +					   ai_interval));
+---
+ arch/x86/kernel/tlb_uv.c            |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-Pasting this to one line would improve readability.
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
+index 7fea555..217c361 100644
+--- a/arch/x86/kernel/tlb_uv.c
++++ b/arch/x86/kernel/tlb_uv.c
+@@ -1141,7 +1141,7 @@ uv_activation_descriptor_init(int node, int pnode)
+ 	 * each bau_desc is 64 bytes; there are 8 (UV_ITEMS_PER_DESCRIPTOR)
+ 	 * per cpu; and up to 32 (UV_ADP_SIZE) cpu's per uvhub
+ 	 */
+-	bau_desc = (struct bau_desc *)kmalloc_node(sizeof(struct bau_desc)*
++	bau_desc = kmalloc_node(sizeof(struct bau_desc) *
+ 		UV_ADP_SIZE*UV_ITEMS_PER_DESCRIPTOR, GFP_KERNEL, node);
+ 	BUG_ON(!bau_desc);
+ 
+@@ -1200,7 +1200,7 @@ uv_payload_queue_init(int node, int pnode)
+ 	struct bau_payload_queue_entry *pqp_malloc;
+ 	struct bau_control *bcp;
+ 
+-	pqp = (struct bau_payload_queue_entry *) kmalloc_node(
++	pqp = kmalloc_node(
+ 		(DEST_Q_SIZE + 1) * sizeof(struct bau_payload_queue_entry),
+ 		GFP_KERNEL, node);
+ 	BUG_ON(!pqp);
+@@ -1286,9 +1286,8 @@ static void uv_init_per_cpu(int nuvhubs)
+ 	};
+ 	struct uvhub_desc *uvhub_descs;
+ 
+-	uvhub_descs = (struct uvhub_desc *)
+-		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
+-	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
++	uvhub_descs = kzalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
++	BUG_ON(!uvhub_descs);
+ 	for_each_present_cpu(cpu) {
+ 		bcp = &per_cpu(bau_control, cpu);
+ 		memset(bcp, 0, sizeof(struct bau_control));
