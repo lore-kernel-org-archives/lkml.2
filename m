@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab0ELFwB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 01:52:01 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:55970 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab0ELFv7 (ORCPT
+	id S1752427Ab0ELF5j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 01:57:39 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58498 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab0ELF5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 01:51:59 -0400
-Date: Wed, 12 May 2010 14:51:12 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, "greg@kroah.com" <greg@kroah.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-Message-ID: <20100512055112.GA4691@linux-sh.org>
-References: <20100510115344.GA11238@elte.hu> <4BE8931C.9070106@linux.vnet.ibm.com> <1273560419.5605.3426.camel@twins> <20100511072127.GB10421@elte.hu> <1273566031.30322.31.camel@minggr.sh.intel.com> <1273567815.5605.3491.camel@twins> <1273568620.30322.42.camel@minggr.sh.intel.com> <1273569154.5605.3499.camel@twins> <1273570845.30322.59.camel@minggr.sh.intel.com> <1273571322.5605.3523.camel@twins>
+	Wed, 12 May 2010 01:57:38 -0400
+Message-ID: <4BEA434E.3030403@jp.fujitsu.com>
+Date: Wed, 12 May 2010 14:57:34 +0900
+From: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273571322.5605.3523.camel@twins>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Mikulas Patocka <mpatocka@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
+       dm-devel@redhat.com
+CC: linux-kernel@vger.kernel.org, kusumi.tomohiro@jp.fujitsu.com
+Subject: Re: [PATCH] fix hard-coded disk header chunk size for persistent
+ snapshot
+References: <4BEA0472.1060300@jp.fujitsu.com> <20100512013909.GD2377@agk-dp.fab.redhat.com> <Pine.LNX.4.64.1005120055020.1551@hs20-bc2-1.build.redhat.com>
+In-Reply-To: <Pine.LNX.4.64.1005120055020.1551@hs20-bc2-1.build.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 11:48:42AM +0200, Peter Zijlstra wrote:
-> On Tue, 2010-05-11 at 17:40 +0800, Lin Ming wrote:
-> > Is /sys/class/event_sources/* looks like,
-> > 
-> > /sys/class/event_sources/cpu_hw_events0
-> > -> /sys/devices/system/cpu/cpu0/cpu_hw_events
-> > ...
-> > /sys/class/event_sources/cpu_hw_eventsN
-> > -> /sys/devices/system/cpu/cpuN/cpu_hw_events
-> > 
-> > /sys/class/event_sources/cpu_hw_cache_events0
-> > -> /sys/devices/system/cpu/cpu0/cpu_hw_events
-> > ...
-> > /sys/class/event_sources/cpu_hw_cache_eventsN
-> > -> /sys/devices/system/cpu/cpuN/cpu_hw_events
-> 
-> Hmm, good question.
-> 
-> No all the cpus would have the same event sources. I'm not sure if we
-> can make sysfs understand that though (added GregKH and Kay to CC).
-> 
-This is something I've been thinking about, too. On SH we have a
-large set of perf counter events that are entirely dependent on the
-configuration of the CPU they're on, with no requirement that these
-configurations are identical on all CPUs in an SMP configuration.
+(2010/05/12 13:58), Mikulas Patocka wrote:
+>
+>
+> On Wed, 12 May 2010, Alasdair G Kergon wrote:
+>
+>> On Wed, May 12, 2010 at 10:29:22AM +0900, Tomohiro Kusumi wrote:
+>>> This patch fixes hard-coded value for the size of a chunk that includes
+>>> disk header for persistent snapshot. It should be changed to existing
+>>> macro NUM_SNAPSHOT_HDR_CHUNKS instead of using hard-coded value 1.
+>>
+>> Any more places too?  (E.g. persistent_commit_merge)
+>>
+>> Alasdair
+>
+> I think the expression in persistent_commit_merge should be changed to:
+> ps->next_free = area_location(ps, ps->current_area) +
+>                  ps->current_committed + 1;
+>
+> It is numerically the same, but will avoid trouble if
+> NUM_SNAPSHOT_HDR_CHUNKS is increased.
+>
+> Mikulas
+>
+>
 
-As an example, it's possible to halve the L1 dcache and use that part of
-it as a small and fast memory which has completely different events
-associated with it from the regular L1 dcache events. These events would
-be invalid on a CPU that was running with all cache ways enabled but
-might also be valid on other CPUs that bolt these events to an extra SRAM
-outside of the cache topology completely.
+agree,
 
-In any event, the events are at least consistent across all CPUs, it's
-only which ones are valid on a given CPU at a given time that can change.
+a single chunk is large enough to contain 16byte disk header
+which does not seem necessary to increase NUM_SNAPSHOT_HDR_CHUNKS in the future
+(unless whole structure get totally changed),
+but it should also get fixed to avoid trouble.
+
+I merged it to the patch with your names signed off.
+
+Thanks,
+Tomohiro Kusumi
+
+
+Signed-off-by: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+---
+
+diff -aNur linux-2.6.34-rc7.org/drivers/md/dm-snap-persistent.c linux-2.6.34-rc7/drivers/md/dm-snap-persistent.c
+--- linux-2.6.34-rc7.org/drivers/md/dm-snap-persistent.c	2010-05-10 10:36:28.000000000 +0900
++++ linux-2.6.34-rc7/drivers/md/dm-snap-persistent.c	2010-05-12 14:49:13.000000000 +0900
+@@ -266,7 +266,7 @@
+   */
+  static chunk_t area_location(struct pstore *ps, chunk_t area)
+  {
+-	return 1 + ((ps->exceptions_per_area + 1) * area);
++	return NUM_SNAPSHOT_HDR_CHUNKS + ((ps->exceptions_per_area + 1) * area);
+  }
+  
+  /*
+@@ -780,8 +780,8 @@
+  	 * ps->current_area does not get reduced by prepare_merge() until
+  	 * after commit_merge() has removed the nr_merged previous exceptions.
+  	 */
+-	ps->next_free = (area_location(ps, ps->current_area) - 1) +
+-			(ps->current_committed + 1) + NUM_SNAPSHOT_HDR_CHUNKS;
++	ps->next_free = area_location(ps, ps->current_area) +
++			ps->current_committed + 1;
+  
+  	return 0;
+  }
+
