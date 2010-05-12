@@ -1,103 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab0ELJ2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 05:28:38 -0400
-Received: from mail96.messagelabs.com ([216.82.254.19]:23024 "EHLO
-	mail96.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab0ELJ2g convert rfc822-to-8bit (ORCPT
+	id S1752843Ab0ELJac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 05:30:32 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41882 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778Ab0ELJab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 05:28:36 -0400
-X-VirusChecked: Checked
-X-Env-Sender: Viral.Mehta@lntinfotech.com
-X-Msg-Ref: server-8.tower-96.messagelabs.com!1273656512!64498078!1
-X-StarScan-Version: 6.2.4; banners=lntinfotech.com,-,-
-X-Originating-IP: [203.199.118.205]
-From: Viral Mehta <Viral.Mehta@lntinfotech.com>
-To: =?iso-8859-2?Q?Micha=B3_Nazarewicz?= <m.nazarewicz@samsung.com>,
-       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
+	Wed, 12 May 2010 05:30:31 -0400
+Date: Wed, 12 May 2010 11:30:15 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: "Arce, Abraham" <x0066660@ti.com>
+Cc: "trivial@kernel.org" <trivial@kernel.org>,
+       "khali@linux-fr.org" <khali@linux-fr.org>,
+       "greg@kroah.com" <greg@kroah.com>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 12 May 2010 14:58:31 +0530
-Subject: RE: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
- error recovery
-Thread-Topic: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
- error recovery
-Thread-Index: AcrxseRzNT3yaA2BSOqTvrNBKSsxqQAAp+Cv
-Message-ID: <70376CA23424B34D86F1C7DE6B9973430254343ABB@VSHINMSMBX01.vshodc.lntinfotech.com>
-References: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
- <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>,<op.vck4q0c87p4s8u@pikus>
-In-Reply-To: <op.vck4q0c87p4s8u@pikus>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Subject: Re: [PATCH 1/3] EEPROM: Header file cleanup
+Message-ID: <20100512093015.GE13984@pengutronix.de>
+References: <27F9C60D11D683428E133F85D2BB4A53043DFD5808@dlee03.ent.ti.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y2zxS2PfCDLh6JVG"
+Content-Disposition: inline
+In-Reply-To: <27F9C60D11D683428E133F85D2BB4A53043DFD5808@dlee03.ent.ti.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
->> Michal Nazarewicz [m.nazarewicz@samsung.com]
->>> In to places in fsg_common_init() an unconditional call to kfree()
->>> on common was performed in error recovery which is not a valid
+--y2zxS2PfCDLh6JVG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->On Wed, 12 May 2010 10:29:02 +0200, Viral Mehta <Viral.Mehta@lntinfotech.com> wrote:
->> If I am not wrong, common can not be NULL since it was already checked above.
->>
->> 2685         if (!common) {
->> 2686                 common = kzalloc(sizeof *common, GFP_KERNEL);
->> 2687                 if (!common)
->> 2688                         return ERR_PTR(-ENOMEM);
->> 2689                 common->free_storage_on_release = 1;
+On Tue, May 11, 2010 at 01:08:15PM -0500, Arce, Abraham wrote:
+> Change eeprom.c header file to format as in conventions
+>=20
+> Signed-off-by: Abraham Arce <x0066660@ti.com>
+> ---
+>  drivers/misc/eeprom/eeprom.c |   40 ++++++++++++++++++++----------------=
+----
+>  1 files changed, 20 insertions(+), 20 deletions(-)
+>=20
+> diff --git a/drivers/misc/eeprom/eeprom.c b/drivers/misc/eeprom/eeprom.c
+> index f939ebc..fffa2e8 100644
+> --- a/drivers/misc/eeprom/eeprom.c
+> +++ b/drivers/misc/eeprom/eeprom.c
+> @@ -1,24 +1,24 @@
+>  /*
+> -    Copyright (C) 1998, 1999  Frodo Looijaard <frodol@dds.nl> and
+> -			       Philip Edelbrock <phil@netroedge.com>
+> -    Copyright (C) 2003 Greg Kroah-Hartman <greg@kroah.com>
+> -    Copyright (C) 2003 IBM Corp.
+> -    Copyright (C) 2004 Jean Delvare <khali@linux-fr.org>
+> -
+> -    This program is free software; you can redistribute it and/or modify
+> -    it under the terms of the GNU General Public License as published by
+> -    the Free Software Foundation; either version 2 of the License, or
+> -    (at your option) any later version.
+> -
+> -    This program is distributed in the hope that it will be useful,
+> -    but WITHOUT ANY WARRANTY; without even the implied warranty of
+> -    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> -    GNU General Public License for more details.
+> -
+> -    You should have received a copy of the GNU General Public License
+> -    along with this program; if not, write to the Free Software
+> -    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> -*/
+> + * Copyright (C) 1998, 1999  Frodo Looijaard <frodol@dds.nl> and
+> + *                           Philip Edelbrock <phil@netroedge.com>
+> + * Copyright (C) 2003 Greg Kroah-Hartman <greg@kroah.com>
+> + * Copyright (C) 2003 IBM Corp.
+> + * Copyright (C) 2004 Jean Delvare <khali@linux-fr.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> + */
 
->That is correct but it is not the issue.
+If you are touching this anyhow, could you also update the address of the F=
+SF?
+(or maybe remove the address block if the original authors are fine with it=
+).
+Same for patch 2.
 
->fsg_common_init() as a first argument takes a pointer to a fsg_common
->structure which, if not NULL, is reused and it is then assumed that
->caller is responsible far maintaining allocation and deallocation of
->this structure.
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
->The idea is that one can do:
+--y2zxS2PfCDLh6JVG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
->static struct fsg_common fsg_common;
->/* ... */
->fsg_common_init(&fsg_common, cdev, fsg_config);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
->or allocate fsg_common structure as a part of a larger structure.  In such
->cases kfree() cannot be called on the object.  Which case we are dealing
->with is indicated by the common->free_storage_on_release flag.
->fsg_common_release() consults it and either calls or does not call krfee().
+iEYEARECAAYFAkvqdScACgkQD27XaX1/VRu2BQCgop4at6wiRxIpVBjKrFWiSxIt
+S5EAoJRMuTAsw2vDRtVAlpKDKr0QGPhA
+=g1zf
+-----END PGP SIGNATURE-----
 
-Oh, makes sense. All instances has fsg_common_init(0, ...) and so i just missed...
-
-But, still the central idea was, why should we go to whole error_release path which really does removing device file and closing luns and etc.
-However, it will not make any difference since curlun->nluns will be zero and so there will be no loop in fsg_common_releas() function.
-
-Apart from that, IMHO,
-2894         kfree(common->luns);
-should crash in case if your error path is followed.
-
-common->luns is allocd
-2712         /* Create the LUNs, open their backing files, and register the
-2713          * LUN devices in sysfs. */
-2714         curlun = kzalloc(nluns * sizeof *curlun, GFP_KERNEL);
-2715         if (!curlun) {
-2716                 kfree(common);
-2717                 return ERR_PTR(-ENOMEM);
-2718         }
-
-
-Thanks,
-Viral
-
-
-
-______________________________________________________________________
-
-This Email may contain confidential or privileged information for the intended recipient (s) If you are not the intended recipient, please do not use or disseminate the information, notify the sender and delete it from your system.
-
-______________________________________________________________________
+--y2zxS2PfCDLh6JVG--
