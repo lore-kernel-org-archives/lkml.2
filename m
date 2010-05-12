@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097Ab0ELU43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 16:56:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57517 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752145Ab0ELU42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 16:56:28 -0400
-Date: Wed, 12 May 2010 16:56:16 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
-       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com
-Subject: Re: [PATCH 2/8] [nmi watchdog] touch_softlockup cleanups and
- softlockup_tick removal
-Message-ID: <20100512205616.GL15159@redhat.com>
-References: <1273266711-18706-1-git-send-email-dzickus@redhat.com>
- <1273266711-18706-3-git-send-email-dzickus@redhat.com>
- <20100512200652.GF10028@nowhere>
- <20100512202628.GK15159@redhat.com>
- <20100512202832.GG10028@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512202832.GG10028@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1757671Ab0ELU4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 16:56:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44496 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756199Ab0ELU4p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 16:56:45 -0400
+Date: Wed, 12 May 2010 13:56:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Thomas Stewart <thomas@stewarts.org.uk>
+Cc: linux-kernel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>
+Subject: Re: Mounting BorderWare UFS File Systems
+Message-Id: <20100512135603.b0a6777b.akpm@linux-foundation.org>
+In-Reply-To: <20100511215300.GA22152@stewarts.org.uk>
+References: <20100511215300.GA22152@stewarts.org.uk>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 10:28:35PM +0200, Frederic Weisbecker wrote:
-> On Wed, May 12, 2010 at 04:26:28PM -0400, Don Zickus wrote:
-> > On Wed, May 12, 2010 at 10:06:54PM +0200, Frederic Weisbecker wrote:
-> > > > diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> > > > index 1083897..1fec781 100644
-> > > > --- a/kernel/sysctl.c
-> > > > +++ b/kernel/sysctl.c
-> > > > @@ -827,15 +827,6 @@ static struct ctl_table kern_table[] = {
-> > > >  		.extra1		= &zero,
-> > > >  		.extra2		= &one,
-> > > >  	},
-> > > > -	{
-> > > > -		.procname	= "softlockup_thresh",
-> > > > -		.data		= &softlockup_thresh,
-> > > > -		.maxlen		= sizeof(int),
-> > > > -		.mode		= 0644,
-> > > > -		.proc_handler	= proc_dosoftlockup_thresh,
-> > > > -		.extra1		= &neg_one,
-> > > > -		.extra2		= &sixty,
-> > > > -	},
-> > > 
-> > > 
-> > > 
-> > > I wonder about the ABI breakage.
-> > > 
-> > > But I suspect few userspace tools use it though, since this is
-> > > mostly for kernel dev.
-> > 
-> > There is no breakage, this chunk of code was duplicated later in the file.
-> > I am just removing the duplicated bits to simplify the SOFTLOCKUP Kconfig
-> > stuff.
-> > 
-> > Cheers,
-> > Don
-> 
-> 
-> Ah right.
-> 
-> BTW, if you address my reviews, please do it incrementally, I'm going
-> to apply this set and push it to Ingo.
+On Tue, 11 May 2010 22:53:04 +0100
+Thomas Stewart <thomas@stewarts.org.uk> wrote:
 
-Ok, probably easier to review too. :-)
+> Hi,
+> 
+> I recently had to recover some files from an old broken machine that was
+> running BorderWare Document Gateway. It's basically a drop in web server
+> for sharing files. From the look of the init process and using strings
+> on of a few files it seems to be based on FreeBSD 3.3. The process
+> turned out to be more difficult than I imagined, but to cut a long story
+> short BorderWare in their wisdom use a nonstandard magic number in their
+> UFS (ufstype=44bsd) file systems. Thus Linux refuses to mount the file
+> systems in order to recover the data. After a bit of hunting I was able
+> to make a quick fix to fs/ufs/super.c in order to detect the new magic
+> number. I don't think this needs to get into mainline, but hopefully
+> this will hit the archives to save anyone else the effort.
 
-Cheers,
-Don
+Oh, I expect we'll merge it - we're crazy like that.  Thanks.
+
+> I'm assume
+> that this number is the same for all installations. It's quite easy to
+> find out from ufs_fs.h. The superblock sits 8k into the block device and
+> the magic number its 1372 bytes into the superblock struct.
+> 
+> # dd if=/dev/sda5 skip=$(( 8192 + 1372 )) bs=1 count=4 2> /dev/null | hd
+> 00000000  97 26 24 0f                                       |.&$.|
+> #
+> 
+> Here is the patch, please cc any questions or comments as I'm off list.
+
+It would be preferred if you could send us your Signed-off-by: for this
+change, please.  It's described in Documentation/SubmittingPatches.
+
+> diff -urN linux-2.6.33.1.orig/fs/ufs/super.c linux-2.6.33.1/fs/ufs/super.c
+> --- linux-2.6.33.1.orig/fs/ufs/super.c  2010-05-11 20:07:08.000000000 +0100
+> +++ linux-2.6.33.1/fs/ufs/super.c       2010-05-11 21:23:06.000000000 +0100
+> @@ -918,6 +918,7 @@
+>         sbi->s_bytesex = BYTESEX_LE;
+>         switch ((uspi->fs_magic = fs32_to_cpu(sb, usb3->fs_magic))) {
+>                 case UFS_MAGIC:
+> +               case UFS_MAGIC_BW:
+>                 case UFS2_MAGIC:
+>                 case UFS_MAGIC_LFN:
+>                 case UFS_MAGIC_FEA:
+> @@ -927,6 +928,7 @@
+>         sbi->s_bytesex = BYTESEX_BE;
+>         switch ((uspi->fs_magic = fs32_to_cpu(sb, usb3->fs_magic))) {
+>                 case UFS_MAGIC:
+> +               case UFS_MAGIC_BW:
+>                 case UFS2_MAGIC:
+>                 case UFS_MAGIC_LFN:
+>                 case UFS_MAGIC_FEA:
+
+Your email client replaces tabs with spaces.  I fixed that up.
+
+> diff -urN linux-2.6.33.1.orig/fs/ufs/ufs_fs.h linux-2.6.33.1/fs/ufs/ufs_fs.h
+> --- linux-2.6.33.1.orig/fs/ufs/ufs_fs.h 2010-03-15 16:09:39.000000000 +0000
+> +++ linux-2.6.33.1/fs/ufs/ufs_fs.h      2010-05-11 21:20:35.000000000 +0100
+> @@ -48,6 +48,7 @@
+>  #define UFS_SECTOR_SIZE 512
+>  #define UFS_SECTOR_BITS 9
+>  #define UFS_MAGIC  0x00011954
+> +#define UFS_MAGIC_BW 0x0f242697
+>  #define UFS2_MAGIC 0x19540119
+>  #define UFS_CIGAM  0x54190100 /* byteswapped MAGIC */
+
+Perhaps we should move these to magic.h.  I'm not sure what benefit
+that would provide, really.
+
