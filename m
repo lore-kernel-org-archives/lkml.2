@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab0ELVDE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 17:03:04 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:51492 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751113Ab0ELVDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 17:03:00 -0400
-Message-ID: <4BEB1781.1080907@sgi.com>
-Date: Wed, 12 May 2010 14:02:57 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1754346Ab0ELVGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 17:06:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48742 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751627Ab0ELVGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 17:06:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Valdis.Kletnieks@vt.edu
+Subject: Re: mmotm 2010-05-11 - dies in pm_qos_update_request()
+Date: Wed, 12 May 2010 23:07:20 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org> <5525.1273693962@localhost>
+In-Reply-To: <5525.1273693962@localhost>
 MIME-Version: 1.0
-To: Yinghai <yinghai.lu@oracle.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if add_efi_memmap
- specified.
-References: <4BEAEF10.9040809@sgi.com> <4BEAF9B6.2040606@zytor.com> <4BEB0D5F.8070806@oracle.com>
-In-Reply-To: <4BEB0D5F.8070806@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005122307.20860.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Yinghai wrote:
-> On 05/12/2010 11:55 AM, H. Peter Anvin wrote:
->> On 05/12/2010 11:10 AM, Mike Travis wrote:
->>> Currently, the e820_reserve_resources() function does not add entries
->>> obtained via the "add_efi_memmap" kernel cmdline option.  This causes
->>> /sys/firmware/memmap/... to be incomplete (stops after 128 entries).
->>> Utilities that examine these entries then do not get the complete
->>> picture of system memory.
->>>
->>> This patch causes the above function to use the e820 memmap instead
->>> of the e820_saved memmap if "add_efi_memmap" cmdline option is
->>> specified.
->>>
->>> Signed-off-by: Mike Travis <travis@sgi.com>
->>> Signed-off-by: Jack Steiner <steiner@sgi.com>
->> If I'm not mistaken, the very reason for the e820 vs e820_saved map is
->> that the latter is supposed to reflect the firmware report, whereas the
->> former is subject to be modified by the kernel.  As this is actually a
->> reflection of the firmware (although it would be better if you could fix
->> the bootloader instead of adding hacks in the kernel...) it really
->> should go into e820_saved as well as e820.  Displaying the adjusted e820
->> map doesn't seem appropriate under any circumstances.
+On Wednesday 12 May 2010, Valdis.Kletnieks@vt.edu wrote:
+> On Tue, 11 May 2010 18:21:22 PDT, akpm@linux-foundation.org said:
+> > The mm-of-the-moment snapshot 2010-05-11-18-20 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
 > 
-> Yes, you are right.
+> Dell Latitude E6500, x86_64 kernel.
 > 
-> We should not touch e820_saved and keep /sys/firmware/memmap to be consistent with it.
+> Died a horrid death at boot in the e1000e driver.  Seems to be
+> something in linux-next.patch. Didn't get a netconsole trace for obvious
+> reasons...
 > 
-> YH
+> Copied-by-hand traceback:
+> pm_qos_update_request()+0x22
+> e1000_configure+0x478
+> e1000_open_device+0xee
+> ? _raw_notifier_call_chain+0xf
+> __dev_open+0xec
+> dev_open+0x1b
+> netpoll_setup+0x28b
+> init_netconsole+0xbc
+> 
+> I suspect this commit:
+> 
+> commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+> Author: Rafael J. Wysocki <rjw@sisk.pl>
+> Date:   Sun Mar 14 14:35:17 2010 +0000
+> 
+>     e1000e / PCI / PM: Add basic runtime PM support (rev. 4)
 
+No, I don't think so.  I'm running -rc6 with this patch applied on a box with
+e1000e and it works just fine.
 
-I'm confused.  Should I:
+Please try to revert this one instead:
 
- - copy the extra memmap entries into e820_saved and fill early_memmap from that?
-or
- - don't touch e820_saved and use e820 to fill early_memmap (which is how it is now).
+http://git.kernel.org/?p=linux/kernel/git/rafael/suspend-2.6.git;a=patch;h=ed77134bfccf5e75b6cbadab268e559dbe6a4ebb
 
-Thanks,
-Mike
+Rafael
