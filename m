@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245Ab0ELVu6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 17:50:58 -0400
-Received: from kroah.org ([198.145.64.141]:37760 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758135Ab0ELVuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 17:50:55 -0400
-Date: Wed, 12 May 2010 14:47:37 -0700
-From: Greg KH <greg@kroah.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-       linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] Add x64 support to debugfs
-Message-ID: <20100512214737.GA27785@kroah.com>
-References: <1273653641-4519-1-git-send-email-ying.huang@intel.com>
- <1273653641-4519-2-git-send-email-ying.huang@intel.com>
-MIME-Version: 1.0
+	id S1758283Ab0ELVvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 17:51:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59792 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab0ELVvC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 17:51:02 -0400
+Subject: Re: [PATCH -V7 3/9] vfs: Add name to file handle conversion support
+Mime-Version: 1.0 (Apple Message framework v1078)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273653641-4519-2-git-send-email-ying.huang@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Andreas Dilger <andreas.dilger@oracle.com>
+In-Reply-To: <1273679444-14903-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Date: Wed, 12 May 2010 15:49:49 -0600
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@Sun.COM,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de,
+       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E1DE62DE-D9E1-493B-8AEB-91E10D7D35B2@oracle.com>
+References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1273679444-14903-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: Apple Mail (2.1078)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090204.4BEB22AC.012B:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 04:40:40PM +0800, Huang Ying wrote:
-> Add debugfs_create_x64. This is needed by ACPI APEI EINJ parameters support.
-> 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> CC: Greg KH <greg@kroah.com>
+On 2010-05-12, at 09:50, Aneesh Kumar K.V wrote:
+> +static long do_sys_name_to_handle(struct path *path,
+> +			struct file_handle __user *ufh)
+> +{
+> +	if (handle_size <= f_handle.handle_size) {
+> +		/* get the uuid */
+> +		retval = sb->s_op->get_fsid(sb, &this_fs_id);
+> +		if (!retval) {
+> +			/*
+> +			 * Now verify whether we get the same vfsmount
+> +			 * if we lookup with uuid. In case we end up having
+> +			 * same uuid for the multiple file systems. When doing
+> +			 * uuid based lookup we would return the first one.So
+> +			 * with name_to_handle if we don't find the same
+> +			 * vfsmount with lookup return EOPNOTSUPP
+> +			 */
+> +			mnt = fs_get_vfsmount(current, &this_fs_id);
+> +			if (mnt != path->mnt) {
+> +				retval = -EOPNOTSUPP;
+> +				mntput(mnt);
+> +				goto err_free_out;
+> +			}
 
-Do you want me to take this through my tree?  Or should it go through
-the acpi one as you depend on it?
+I don't see that this does anything for us except add overhead.  This is no protection against mounting a second filesystem with the same UUID after the handle is returned, since there is no expiration for file handles.
 
-If so, that's fine with me, feel free to add:
-	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-to the patch then.
+At best I think we could start by changing the list-based UUID lookup with a hash-based one, and when adding a duplicate UUID at mount time start by printing out an error message to the console in case of duplicated UUIDs, and maybe at some point in the future this might cause the mount to fail (though I don't think we can make that decision lightly or quickly).
 
-thanks,
+That moves the overhead to mount time instead of for each name_to_handle() call (which would be brutal for a system with many filesystems mounted).
 
-greg k-h
+> +SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
+> +		struct file_handle __user *, handle, int, flag)
+> +{
+> +	int follow;
+> +	long ret = -EINVAL;
+> +	struct path path;
+> +
+> +	if ((flag & ~AT_SYMLINK_NOFOLLOW) != 0)
+> +		goto err_out;
+
+Won't this break the use of AT_FDCWD to get a relative file handle?
+
+
+Cheers, Andreas
+--
+Andreas Dilger
+Lustre Technical Lead
+Oracle Corporation Canada Inc.
+
