@@ -1,33 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757283Ab0ELTiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 15:38:50 -0400
-Received: from dm-mail02.mozilla.org ([63.245.208.176]:37012 "EHLO
-	dm-mail02.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726Ab0ELTit (ORCPT
+	id S1757322Ab0ELTjS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 15:39:18 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:51670 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386Ab0ELTjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 15:38:49 -0400
-Message-ID: <4BEB03B6.6080706@mozilla.com>
-Date: Wed, 12 May 2010 12:38:30 -0700
-From: Taras Glek <tglek@mozilla.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Wed, 12 May 2010 15:39:16 -0400
+Date: Thu, 13 May 2010 01:09:10 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Paul Menage <menage@google.com>
+Cc: Dhaval Giani <dhaval.giani@gmail.com>, peterz@infradead.org,
+       lennart@poettering.net, jsafrane@redhat.com, tglx@linutronix.de,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC] Have sane default values for cpusets
+Message-ID: <20100512193910.GP3296@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1273669541.3086.24.camel@localhost>
+ <j2n6599ad831005121201za5fd85bpfc4fa2304a81acaf@mail.gmail.com>
+ <AANLkTilLXWEYHJZCoNk1Tb4P8qgjK-zoVZSg1pDhR-3I@mail.gmail.com>
+ <h2z6599ad831005121220h7956eb62yeea13626093b4a6e@mail.gmail.com>
+ <AANLkTikyXpXKhyy2oZxAF5ums2go2qie0ShOGt2dtHBH@mail.gmail.com>
+ <m2x6599ad831005121236ufa1bff7fz78423b1fb6b513e7@mail.gmail.com>
 MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>
-Subject: How to use perf to log page faults
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <m2x6599ad831005121236ufa1bff7fz78423b1fb6b513e7@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
- From the docs it seems that perf may be useful for logging page faults. 
-I tried
-perf record -g -d -f -e page-faults <mycommand>
-but all I got were PERF_RECORD_MMAP events.
+* menage@google.com <menage@google.com> [2010-05-12 12:36:57]:
 
-I'm using 2.6.32. Ideally I'd like to collect fault addresses and 
-userspace stacks that caused them. Isn't this what the page-fault event 
-is for?
+> On Wed, May 12, 2010 at 12:29 PM, Dhaval Giani <dhaval.giani@gmail.com> wrote:
+> >> I think the idea is reasonable - the only way that I could see it
+> >> breaking someone would be code that currently does something like:
+> >>
+> >> mkdir A
+> >> mkdir B
+> >> echo 1 > A/mem_exclusive
+> >> echo 1 > B/mem_exclusive
+> >> echo $mems_for_a > A/mems
+> >> echo $mems_for_b > B/mems
+> >>
+> >> The attempts to set the mem_exclusive flags would fail, since A and B
+> >> would both have all of the parent's mems.
+> >>
+> >
+> > But would this not fail otherwise?
+> >
+> 
+> Assuming that mems_for_a and mems_for_b were disjoint, it would be
+> fine currently.
+>
 
-Taras
+Yep, that does seem like breakage. 
+
+-- 
+	Three Cheers,
+	Balbir
