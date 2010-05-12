@@ -1,53 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab0ELXkM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 19:40:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40208 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756227Ab0ELXkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 19:40:08 -0400
-Message-ID: <4BEB3A77.1020907@zytor.com>
-Date: Wed, 12 May 2010 16:32:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Borislav Petkov <borislav.petkov@amd.com>, Jiri Kosina <jkosina@suse.cz>,
-       "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>,
-       "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-       Greg KH <gregkh@suse.de>,
+	id S1756316Ab0ELXlx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 19:41:53 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41953 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753147Ab0ELXlv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 19:41:51 -0400
+Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
+ 88f5182)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Jamie Lokier <jamie@shareable.org>,
+       "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+       "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+       Nicolas Pitre <nico@marvell.com>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "stable@kernel.org" <stable@kernel.org>, Jiri Benc <jbenc@suse.cz>,
-       Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
+       "James E.J. Bottomley" <jejb@parisc-linux.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "stable-review@kernel.org" <stable-review@kernel.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [stable] [113/197] x86, cacheinfo: Calculate L3 indices
-References: <20100422190917.467545308@kvm.kroah.org> <alpine.LNX.2.00.1005051736080.9849@pobox.suse.cz> <20100505180228.GC15804@aftab> <alpine.LNX.2.00.1005052328000.9849@pobox.suse.cz> <20100506081721.GA20616@aftab> <alpine.LNX.2.00.1005061532390.9849@pobox.suse.cz> <20100506141358.GB20994@aftab> <20100512231906.GB3588@kroah.com>
-In-Reply-To: <20100512231906.GB3588@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+       Saeed Bishara <saeed@marvell.com>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1273704431.21352.136.camel@pasglop>
+References: <1273569821.21352.19.camel@pasglop>
+	 <1273575478.21352.29.camel@pasglop>
+	 <EAF47CD23C76F840A9E7FCE10091EFAB02C545537F@dbde02.ent.ti.com>
+	 <20100512222154.GA6841@shareable.org>  <1273704431.21352.136.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 May 2010 18:41:48 -0500
+Message-ID: <1273707708.15428.4.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2010 04:19 PM, Greg KH wrote:
->>
->> So if K8_NB has failed initializing for some reason, we never go near
->> the pci devs and the node_to_k8_nb_misc() calls since we effectively
->> disable the L3 functionality.
->>
->> Thus the NULL pointer checks you remove in the patch below are
->> superfluous, I agree, and I have already removed those in my tree along
->> with the other improvements/fixes I'm working on right now.
-> 
-> So, was there ever a patch applied that fixed the bug that Jiri found in
-> the stable kernels with this original patch that I could apply?
-> 
+On Thu, 2010-05-13 at 08:47 +1000, Benjamin Herrenschmidt wrote:
+> On Wed, 2010-05-12 at 23:21 +0100, Jamie Lokier wrote:
+> > Shilimkar, Santosh wrote:
+> > > There was a memory write barrier missing before the DMA descriptors 
+> > > are handed over to DMA controller.
+> > 
+> > On that note, are the cache flush functions implicit memory barriers?
 
-Sounds like this patch in -tip should be promoted to mainline/stable...
-could the AMD people please confirm?
+Not exactly ... they *should* be stream ordered with respect to accesses
+to the memory they're flushing (which isn't the same thing, and no-one
+ever went broke overestimating the stupidity of chip designers, but if a
+flush instruction needs explicit ordering, I'd expect that to be built
+into the arch layer).
 
-	-hpa
+> (Adding Fujita on CC)
+> 
+> That's a very good question. The generic inline implementation of
+> dma_sync_* is:
+> 
+> static inline void dma_sync_single_for_cpu(struct device *dev, dma_addr_t addr,
+> 					   size_t size,
+> 					   enum dma_data_direction dir)
+> {
+> 	struct dma_map_ops *ops = get_dma_ops(dev);
+> 
+> 	BUG_ON(!valid_dma_direction(dir));
+> 	if (ops->sync_single_for_cpu)
+> 		ops->sync_single_for_cpu(dev, addr, size, dir);
+> 	debug_dma_sync_single_for_cpu(dev, addr, size, dir);
+> }
+> 
+> Which means that for coherent architectures that do not implement
+> the ops->sync_* hooks, we are probably missing a barrier here... 
+> 
+> Thus if the above is expected to be a memory barrier, it's broken on
+> cache coherent powerpc for example. On non-coherent powerpc, we do cache
+> flushes and those are implicit barriers.
+
+Can you explain this a little more.  On a cache coherent machine, the
+sync is a nop ... why would you want a nop to be any type of barrier?
+
+James
+
 
