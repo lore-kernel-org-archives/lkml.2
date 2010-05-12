@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab0ELQHH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 12:07:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10796 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751414Ab0ELQHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 12:07:04 -0400
-Date: Wed, 12 May 2010 18:03:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Cedric Le Goater <clg@vnet.ibm.com>, Dave Hansen <haveblue@us.ibm.com>,
-       Eric Biederman <ebiederm@xmission.com>,
-       Herbert Poetzl <herbert@13thfloor.at>, Ingo Molnar <mingo@elte.hu>,
-       Mathias Krause <Mathias.Krause@secunet.com>,
-       Roland McGrath <roland@redhat.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] pids: init_struct_pid.tasks should never see the
-	swapper process
-Message-ID: <20100512160359.GB20906@redhat.com>
-References: <4BE01C86.3050908@secunet.com> <20100509184510.GA15219@redhat.com> <4BE7B3BD.70901@secunet.com> <20100510194917.GA5249@redhat.com> <20100510195014.GC5249@redhat.com> <20100511095410.GA27850@us.ibm.com>
+	id S1756183Ab0ELQHh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 12:07:37 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:35869 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755606Ab0ELQHf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 12:07:35 -0400
+Date: Thu, 13 May 2010 01:07:31 +0900
+From: Norbert Preining <preining@logic.at>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alejandro Riveira =?iso-8859-15?Q?Fern=E1ndez?= 
+	<ariveira@gmail.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: ipheth device not showing up
+Message-ID: <20100512160730.GP16168@gamma.logic.tuwien.ac.at>
+References: <20100511165159.GA9614@gamma.logic.tuwien.ac.at> <20100511205918.70c21413@varda> <20100512024258.GB14797@gamma.logic.tuwien.ac.at> <20100512160216.GA9548@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100511095410.GA27850@us.ibm.com>
+In-Reply-To: <20100512160216.GA9548@srcf.ucam.org>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11, Serge E. Hallyn wrote:
->
-> Quoting Oleg Nesterov (oleg@redhat.com):
-> > Change INIT_STRUCT_PID/INIT_PID_LINK to create the empty/unhashed
-> > hlist_head/hlist_node. Like any other idle thread swapper can never exit,
-> > so detach_pid()->__hlist_del() is not possible, but we could change
-> > INIT_PID_LINK() to set pprev = &next if needed.
-> >
-> > All we need is the valid swapper->pids[].pid == &init_struct_pid.
-> >
-> > Reported-by: Mathias Krause <mathias.krause@secunet.com>
->
-> Crimey, trying to find some way this could get dereferenced,
+On Mi, 12 Mai 2010, Matthew Garrett wrote:
+> On Wed, May 12, 2010 at 11:42:58AM +0900, Norbert Preining wrote:
+> 
+> > Sorry, forgot that, pairing program is called, but does not change
+> > anything. It is called automatically by udev, but I also tried manually.
+> 
+> Have you enabled tethering on your phone?
 
-Yes, I was worried too. But afaics we should never use this hlist_node.
-Except, of course, it is linked into pid->task.
+Yes, of course.
 
-> finding
-> myself impressed with the likes of set_ftrace_swapper().
->
-> Anyway, not finding anything, so
->
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
->
-> Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Best wishes
 
-Thanks for review!
-
-Oleg.
-
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan            TU Wien, Austria           Debian TeX Task Force
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+WEEM (n.)
+The tools with which a dentist can inflict the greatest
+pain. Formerly, which tool this was dependent upon the imagination and
+skill of the individual dentist, though now, with technological
+advances, weems can be bought specially.
+			--- Douglas Adams, The Meaning of Liff
