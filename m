@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab0ELVeI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 17:34:08 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:48379 "EHLO e1.ny.us.ibm.com"
+	id S1758163Ab0ELVeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 17:34:18 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:51994 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758052Ab0ELVeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 17:34:02 -0400
+	id S1758093Ab0ELVd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 17:33:58 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,12 +13,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Arnd Bergmann <arnd@relay.de.ibm.com>, Arnd Bergmann <arnd@arndb.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH RFC tip/core/rcu 23/23] vhost: add __rcu annotations
-Date: Wed, 12 May 2010 14:33:42 -0700
-Message-Id: <1273700022-16523-23-git-send-email-paulmck@linux.vnet.ibm.com>
+       Arnd Bergmann <arnd@arndb.de>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 10/23] keys: __rcu annotations
+Date: Wed, 12 May 2010 14:33:29 -0700
+Message-Id: <1273700022-16523-10-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100512213317.GA15085@linux.vnet.ibm.com>
 References: <20100512213317.GA15085@linux.vnet.ibm.com>
@@ -26,129 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@relay.de.ibm.com>
-
-Also add rcu_dreference_protected() for code paths where locks are held.
+From: Arnd Bergmann <arnd@arndb.de>
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: David Howells <dhowells@redhat.com>
 ---
- drivers/vhost/net.c   |   11 ++++++++---
- drivers/vhost/vhost.c |   14 ++++++++------
- drivers/vhost/vhost.h |    4 ++--
- 3 files changed, 18 insertions(+), 11 deletions(-)
+ include/linux/cred.h |    2 +-
+ include/linux/key.h  |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 9777583..945c5cb 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -364,7 +364,10 @@ static void vhost_net_disable_vq(struct vhost_net *n,
- static void vhost_net_enable_vq(struct vhost_net *n,
- 				struct vhost_virtqueue *vq)
- {
--	struct socket *sock = vq->private_data;
-+	struct socket *sock;
-+
-+	sock = rcu_dereference_protected(vq->private_data,
-+					 lockdep_is_held(&vq->mutex));
- 	if (!sock)
- 		return;
- 	if (vq == n->vqs + VHOST_NET_VQ_TX) {
-@@ -380,7 +383,8 @@ static struct socket *vhost_net_stop_vq(struct vhost_net *n,
- 	struct socket *sock;
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 52507c3..413f98a 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -84,7 +84,7 @@ struct thread_group_cred {
+ 	atomic_t	usage;
+ 	pid_t		tgid;			/* thread group process ID */
+ 	spinlock_t	lock;
+-	struct key	*session_keyring;	/* keyring inherited over fork */
++	struct key __rcu *session_keyring;	/* keyring inherited over fork */
+ 	struct key	*process_keyring;	/* keyring private to this process */
+ 	struct rcu_head	rcu;			/* RCU deletion hook */
+ };
+diff --git a/include/linux/key.h b/include/linux/key.h
+index cd50dfa..3db0adc 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -178,8 +178,9 @@ struct key {
+ 	 */
+ 	union {
+ 		unsigned long		value;
++		void __rcu		*rcudata;
+ 		void			*data;
+-		struct keyring_list	*subscriptions;
++		struct keyring_list __rcu *subscriptions;
+ 	} payload;
+ };
  
- 	mutex_lock(&vq->mutex);
--	sock = vq->private_data;
-+	sock = rcu_dereference_protected(vq->private_data,
-+					 lockdep_is_held(&vq->mutex));
- 	vhost_net_disable_vq(n, vq);
- 	rcu_assign_pointer(vq->private_data, NULL);
- 	mutex_unlock(&vq->mutex);
-@@ -518,7 +522,8 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
- 	}
- 
- 	/* start polling new socket */
--	oldsock = vq->private_data;
-+	oldsock = rcu_dereference_protected(vq->private_data,
-+					    lockdep_is_held(&vq->mutex));
- 	if (sock == oldsock)
- 		goto done;
- 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index e69d238..fc0c077 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -180,7 +180,7 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
- 	vhost_dev_cleanup(dev);
- 
- 	memory->nregions = 0;
--	dev->memory = memory;
-+	RCU_INIT_POINTER(dev->memory, memory);
- 	return 0;
- }
- 
-@@ -212,8 +212,9 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
- 		fput(dev->log_file);
- 	dev->log_file = NULL;
- 	/* No one will access memory at this point */
--	kfree(dev->memory);
--	dev->memory = NULL;
-+	kfree(rcu_dereference_protected(dev->memory,
-+					lockdep_is_held(&dev->mutex)));
-+	RCU_INIT_POINTER(dev->memory, NULL);
- 	if (dev->mm)
- 		mmput(dev->mm);
- 	dev->mm = NULL;
-@@ -294,14 +295,14 @@ static int vq_access_ok(unsigned int num,
- /* Caller should have device mutex but not vq mutex */
- int vhost_log_access_ok(struct vhost_dev *dev)
- {
--	return memory_access_ok(dev, dev->memory, 1);
-+	return memory_access_ok(dev, rcu_dereference_protected(dev->memory, lockdep_is_held(&dev->mutex)), 1);
- }
- 
- /* Verify access for write logging. */
- /* Caller should have vq mutex and device mutex */
- static int vq_log_access_ok(struct vhost_virtqueue *vq, void __user *log_base)
- {
--	return vq_memory_access_ok(log_base, vq->dev->memory,
-+	return vq_memory_access_ok(log_base, rcu_dereference_protected(vq->dev->memory, lockdep_is_held(&dev->mutex)),
- 			    vhost_has_feature(vq->dev, VHOST_F_LOG_ALL)) &&
- 		(!vq->log_used || log_access_ok(log_base, vq->log_addr,
- 					sizeof *vq->used +
-@@ -342,7 +343,8 @@ static long vhost_set_memory(struct vhost_dev *d, struct vhost_memory __user *m)
- 
- 	if (!memory_access_ok(d, newmem, vhost_has_feature(d, VHOST_F_LOG_ALL)))
- 		return -EFAULT;
--	oldmem = d->memory;
-+	oldmem = rcu_dereference_protected(d->memory,
-+					   lockdep_is_held(&d->mutex));
- 	rcu_assign_pointer(d->memory, newmem);
- 	synchronize_rcu();
- 	kfree(oldmem);
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 44591ba..240396c 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -92,7 +92,7 @@ struct vhost_virtqueue {
- 	 * work item execution acts instead of rcu_read_lock() and the end of
- 	 * work item execution acts instead of rcu_read_lock().
- 	 * Writers use virtqueue mutex. */
--	void *private_data;
-+	void __rcu *private_data;
- 	/* Log write descriptors */
- 	void __user *log_base;
- 	struct vhost_log log[VHOST_NET_MAX_SG];
-@@ -102,7 +102,7 @@ struct vhost_dev {
- 	/* Readers use RCU to access memory table pointer
- 	 * log base pointer and features.
- 	 * Writers use mutex below.*/
--	struct vhost_memory *memory;
-+	struct vhost_memory __rcu *memory;
- 	struct mm_struct *mm;
- 	struct mutex mutex;
- 	unsigned acked_features;
 -- 
 1.7.0.6
 
