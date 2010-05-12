@@ -1,198 +1,1498 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab0ELIts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 04:49:48 -0400
-Received: from www84.your-server.de ([213.133.104.84]:54492 "EHLO
+	id S1755284Ab0ELIuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 04:50:04 -0400
+Received: from www84.your-server.de ([213.133.104.84]:54486 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071Ab0ELItp (ORCPT
+	with ESMTP id S1755086Ab0ELItl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 04:49:45 -0400
+	Wed, 12 May 2010 04:49:41 -0400
 From: stefani@seibold.net
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
        andi@firstfloor.org, gregkh@suse.de, alan@lxorguk.ukuu.org.uk,
        tytso@mit.edu, iws@ovro.caltech.edu
 Cc: stefani@seibold.net
-Subject: really generic, type save and type definable. 
-Date: Wed, 12 May 2010 10:49:23 +0200
-Message-Id: <1273654167-31067-1-git-send-email-stefani@seibold.net>
+Subject: [PATCH 2/4] add the new generic kfifo API
+Date: Wed, 12 May 2010 10:49:25 +0200
+Message-Id: <1273654167-31067-3-git-send-email-stefani@seibold.net>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1273654167-31067-1-git-send-email-stefani@seibold.net>
+References: <1273654167-31067-1-git-send-email-stefani@seibold.net>
 X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The API is still stable, no code which use the current  kfifo API must 
-be modified!
+From: Stefani Seibold <stefani@seibold.net>
 
-Here are the results of the text section usage:
+add the new version of the kfifo API files kfifo.c and kfifo.h.
 
-Example 1:
-                        kfifo_put/_get  kfifo_in/out    current kfifo
-dynamic allocated       0x000002a8      0x00000291      0x00000299
-in place                0x00000291      0x0000026e      0x00000273
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ include/linux/kfifo-new.h |  844 +++++++++++++++++++++++++++++++++++++++++++++
+ kernel/kfifo-new.c        |  602 ++++++++++++++++++++++++++++++++
+ 2 files changed, 1446 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/kfifo-new.h
+ create mode 100644 kernel/kfifo-new.c
 
-kfifo.c                 new             old
-text section size       0x00000be5      0x000008b2
+diff --git a/include/linux/kfifo-new.h b/include/linux/kfifo-new.h
+new file mode 100644
+index 0000000..311f875
+--- /dev/null
++++ b/include/linux/kfifo-new.h
+@@ -0,0 +1,844 @@
++/*
++ * A generic kernel FIFO implementation
++ *
++ * Copyright (C) 2009/2010 Stefani Seibold <stefani@seibold.net>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#ifndef _LINUX_KFIFO_H
++#define _LINUX_KFIFO_H
++
++/*
++ * How to porting drivers to the new generic FIFO API:
++ *
++ * - Modify the declaration of the "struct kfifo *" object into a
++ *   in-place "struct kfifo" object
++ * - Init the in-place object with kfifo_alloc() or kfifo_init()
++ *   Note: The address of the in-place "struct kfifo" object must be
++ *   passed as the first argument to this functions
++ * - Replace the use of __kfifo_put into kfifo_in and __kfifo_get
++ *   into kfifo_out
++ * - Replace the use of kfifo_put into kfifo_in_spinlocked and kfifo_get
++ *   into kfifo_out_spinlocked
++ *   Note: the spinlock pointer formerly passed to kfifo_init/kfifo_alloc
++ *   must be passed now to the kfifo_in_spinlocked and kfifo_out_spinlocked
++ *   as the last parameter
++ * - The formerly __kfifo_* functions are renamed into kfifo_*
++ */
++
++/*
++ * Note about locking : There is no locking required until only * one reader
++ * and one writer is using the fifo and no kfifo_reset() will be * called
++ *  kfifo_reset_out() can be safely used, until it will be only called
++ * in the reader thread.
++ *  For multiple writer and one reader there is only a need to lock the writer.
++ * And vice versa for only one writer and multiple reader there is only a need
++ * to lock the reader.
++ */
++
++#include <linux/kernel.h>
++#include <linux/spinlock.h>
++#include <linux/stddef.h>
++#include <linux/scatterlist.h>
++
++struct __kfifo {
++	unsigned int	in;
++	unsigned int	out;
++	unsigned int	mask;
++	unsigned int	esize;
++	void		*data;
++};
++
++#define __STRUCT_KFIFO_COMMON(datatype, recsize, ptrtype) \
++	union { \
++		struct __kfifo	kfifo; \
++		datatype	*type; \
++		char		(*rectype)[recsize]; \
++		ptrtype		*ptr; \
++		const ptrtype	*ptr_const; \
++	}
++
++#define __STRUCT_KFIFO(type, size, recsize, ptrtype) \
++{ \
++	__STRUCT_KFIFO_COMMON(type, recsize, ptrtype); \
++	type		buf[((size < 2) || (size & (size - 1))) ? -1 : size]; \
++}
++
++#define STRUCT_KFIFO(type, size) \
++	struct __STRUCT_KFIFO(type, size, 0, type)
++
++#define __STRUCT_KFIFO_PTR(type, recsize, ptrtype) \
++{ \
++	__STRUCT_KFIFO_COMMON(type, recsize, ptrtype); \
++	type		buf[0]; \
++}
++
++#define STRUCT_KFIFO_PTR(type) \
++	struct __STRUCT_KFIFO_PTR(type, 0, type)
++
++/*
++ * define compatibility "struct kfifo" for dynamic allocated fifos
++ */
++struct kfifo __STRUCT_KFIFO_PTR(unsigned char, 0, void);
++
++#define STRUCT_KFIFO_REC_1(size) \
++	struct __STRUCT_KFIFO(unsigned char, size, 1, void)
++
++#define STRUCT_KFIFO_REC_2(size) \
++	struct __STRUCT_KFIFO(unsigned char, size, 2, void)
++
++/*
++ * define kfifo_rec types
++ */
++struct kfifo_rec_ptr_1 __STRUCT_KFIFO_PTR(unsigned char, 1, void);
++struct kfifo_rec_ptr_2 __STRUCT_KFIFO_PTR(unsigned char, 2, void);
++
++/*
++ * helper macro to distinguish between real in place fifo where the fifo
++ * array is a part of the structure and the fifo type where the array is
++ * outside of the fifo structure.
++ */
++#define	__is_kfifo_ptr(fifo)	(sizeof(*fifo) == sizeof(struct __kfifo))
++
++/**
++ * DECLARE_KFIFO_PTR - macro to declare a fifo pointer object
++ * @fifo: name of the declared fifo
++ * @type: type of the fifo elements
++ */
++#define DECLARE_KFIFO_PTR(fifo, type)	STRUCT_KFIFO_PTR(type) fifo
++
++/**
++ * DECLARE_KFIFO - macro to declare a fifo object
++ * @fifo: name of the declared fifo
++ * @type: type of the fifo elements
++ * @size: the number of elements in the fifo, this must be a power of 2
++ */
++#define DECLARE_KFIFO(fifo, type, size)	STRUCT_KFIFO(type, size) fifo
++
++/**
++ * INIT_KFIFO - Initialize a fifo declared by DECLARE_KFIFO
++ * @fifo: name of the declared fifo datatype
++ */
++#define INIT_KFIFO(fifo) \
++(void)({ \
++	typeof(&(fifo)) __tmp = &(fifo); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	__kfifo->in = 0; \
++	__kfifo->out = 0; \
++	__kfifo->mask = __is_kfifo_ptr(__tmp) ? 0 : ARRAY_SIZE(__tmp->buf) - 1;\
++	__kfifo->esize = sizeof(*__tmp->buf); \
++	__kfifo->data = __is_kfifo_ptr(__tmp) ?  NULL : __tmp->buf; \
++})
++
++/**
++ * DEFINE_KFIFO - macro to define and initialize a fifo
++ * @fifo: name of the declared fifo datatype
++ * @type: type of the fifo elements
++ * @size: the number of elements in the fifo, this must be a power of 2
++ *
++ * Note: the macro can be used for global and local fifo data type variables.
++ */
++#define DEFINE_KFIFO(fifo, type, size) \
++	DECLARE_KFIFO(fifo, type, size) = \
++	(typeof(fifo)) { \
++		{ \
++			{ \
++			.in	= 0, \
++			.out	= 0, \
++			.mask	= __is_kfifo_ptr(&(fifo)) ? \
++				  0 : \
++				  ARRAY_SIZE((fifo).buf) - 1, \
++			.esize	= sizeof(*(fifo).buf), \
++			.data	= __is_kfifo_ptr(&(fifo)) ? \
++				NULL : \
++				(fifo).buf, \
++			} \
++		} \
++	}
++
++
++static inline unsigned int __must_check
++__kfifo_must_check_helper(unsigned int val)
++{
++	return val;
++}
++
++/**
++ * kfifo_initialized - Check if the fifo is initialized
++ * @fifo: address of the fifo to check
++ *
++ * Return %true if fifo is initialized, otherwise %false.
++ * Assumes the fifo was 0 before.
++ */
++#define kfifo_initialized(fifo) ((fifo)->kfifo.mask)
++
++/**
++ * kfifo_esize - returns the size of the element managed by the fifo
++ * @fifo: address of the fifo to be used
++ */
++#define kfifo_esize(fifo)	((fifo)->kfifo.esize)
++
++/**
++ * kfifo_recsize - returns the size of the record length field
++ * @fifo: address of the fifo to be used
++ */
++#define kfifo_recsize(fifo)	(sizeof(*(fifo)->rectype))
++
++/**
++ * kfifo_size - returns the size of the fifo in elements
++ * @fifo: address of the fifo to be used
++ */
++#define kfifo_size(fifo)	((fifo)->kfifo.mask + 1)
++
++/**
++ * kfifo_reset - removes the entire fifo content
++ * @fifo: address of the fifo to be used
++ *
++ * Note: usage of kfifo_reset() is dangerous. It should be only called when the
++ * fifo is exclusived locked or when it is secured that no other thread is
++ * accessing the fifo.
++ */
++#define kfifo_reset(fifo) \
++(void)({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	__tmp->kfifo.in = __tmp->kfifo.out = 0; \
++})
++
++/**
++ * kfifo_reset_out - skip fifo content
++ * @fifo: address of the fifo to be used
++ *
++ * Note: The usage of kfifo_reset_out() is safe until it will be only called
++ * from the reader thread and there is only one concurrent reader. Otherwise
++ * it is dangerous and must be handled in the same way as kfifo_reset().
++ */
++#define kfifo_reset_out(fifo)	\
++(void)({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	__tmp->kfifo.out = __tmp->kfifo.in; \
++})
++
++/**
++ * kfifo_len - returns the number of used elements in the fifo
++ * @fifo: address of the fifo to be used
++ */
++#define kfifo_len(fifo) \
++({ \
++	typeof(fifo + 1) __tmpl = (fifo); \
++	__tmpl->kfifo.in - __tmpl->kfifo.out; \
++})
++
++/**
++ * kfifo_is_empty - returns true if the fifo is empty
++ * @fifo: address of the fifo to be used
++ */
++#define	kfifo_is_empty(fifo) \
++({ \
++	typeof(fifo + 1) __tmpq = (fifo); \
++	__tmpq->kfifo.in == __tmpq->kfifo.out; \
++})
++
++/**
++ * kfifo_is_full - returns true if the fifo is full
++ * @fifo: address of the fifo to be used
++ */
++#define	kfifo_is_full(fifo) \
++({ \
++	typeof(fifo + 1) __tmpq = (fifo); \
++	kfifo_len(__tmpq) > __tmpq->kfifo.mask; \
++})
++
++/**
++ * kfifo_avail - returns the number of unused elements in the fifo
++ * @fifo: address of the fifo to be used
++ */
++#define	kfifo_avail(fifo) \
++__kfifo_must_check_helper( \
++({ \
++	typeof(fifo + 1) __tmpq = (fifo); \
++	const size_t __recsize = sizeof(*__tmpq->rectype); \
++	unsigned int __avail = kfifo_size(__tmpq) - kfifo_len(__tmpq); \
++	(__recsize) ? ((__avail <= __recsize) ? 0 : \
++	__kfifo_max_r(__avail - __recsize, __recsize)) : \
++	__avail; \
++}) \
++)
++
++/**
++ * kfifo_skip - skip output data
++ * @fifo: address of the fifo to be used
++ */
++#define	kfifo_skip(fifo) \
++(void)({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	if (__recsize) \
++		__kfifo_skip_r(__kfifo, __recsize); \
++	else \
++		__kfifo->out++; \
++})
++
++/**
++ * kfifo_peek_len - gets the size of the next fifo record
++ * @fifo: address of the fifo to be used
++ *
++ * This function returns the size of the next fifo record in number of bytes.
++ */
++#define kfifo_peek_len(fifo) \
++__kfifo_must_check_helper( \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	(!__recsize) ? kfifo_len(__tmp) * sizeof(*__tmp->type) : \
++	__kfifo_len_r(__kfifo, __recsize); \
++}) \
++)
++
++/**
++ * kfifo_alloc - dynamically allocates a new fifo buffer
++ * @fifo: pointer to the fifo
++ * @size: the number of elements in the fifo, this must be a power of 2
++ * @gfp_mask: get_free_pages mask, passed to kmalloc()
++ *
++ * This macro dynamically allocates a new fifo buffer.
++ *
++ * The numer of elements will be rounded-up to a power of 2.
++ * The fifo will be release with kfifo_free().
++ * Return 0 if no error, otherwise an error code.
++ */
++#define kfifo_alloc(fifo, size, gfp_mask) \
++__kfifo_must_check_helper( \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	__is_kfifo_ptr(__tmp) ? \
++	__kfifo_alloc(__kfifo, size, sizeof(*__tmp->type), gfp_mask) : \
++	-EINVAL; \
++}) \
++)
++
++/**
++ * kfifo_free - frees the fifo
++ * @fifo: the fifo to be freed
++ */
++#define kfifo_free(fifo) \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	if (__is_kfifo_ptr(__tmp)) \
++		__kfifo_free(__kfifo); \
++})
++
++/**
++ * kfifo_init - initialize a fifo using a preallocated buffer
++ * @fifo: the fifo to assign the buffer
++ * @buffer: the preallocated buffer to be used
++ * @size: the size of the internal buffer, this have to be a power of 2
++ *
++ * This macro initialize a fifo using a preallocated buffer.
++ *
++ * The numer of elements will be rounded-up to a power of 2.
++ * Return 0 if no error, otherwise an error code.
++ */
++#define kfifo_init(fifo, buffer, size) \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	__is_kfifo_ptr(__tmp) ? \
++	__kfifo_init(__kfifo, buffer, size, sizeof(*__tmp->type)) : \
++	-EINVAL; \
++})
++
++/**
++ * kfifo_put - put data into the fifo
++ * @fifo: address of the fifo to be used
++ * @val: the data to be added
++ *
++ * This macro copies the given value into the fifo.
++ * It returns 0 if the fifo was full. Otherwise it returns the number
++ * processed elements.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macro.
++ */
++#define	kfifo_put(fifo, val) \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	typeof(val + 1) __val = (val); \
++	unsigned int __ret; \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	if (0) { \
++		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
++		__dummy = (typeof(__val))NULL; \
++	} \
++	if (__recsize) \
++		__ret = __kfifo_in_r(__kfifo, __val, sizeof(*__val), \
++			__recsize); \
++	else { \
++		__ret = !kfifo_is_full(__tmp); \
++		if (__ret) { \
++			(__is_kfifo_ptr(__tmp) ? \
++			((typeof(__tmp->type))__kfifo->data) : \
++			(__tmp->buf) \
++			)[__kfifo->in & __tmp->kfifo.mask] = \
++				*(typeof(__tmp->type))__val; \
++			smp_wmb(); \
++			__kfifo->in++; \
++		} \
++	} \
++	__ret; \
++})
++
++/**
++ * kfifo_get - get data from the fifo
++ * @fifo: address of the fifo to be used
++ * @val: the var where to store the data to be added
++ *
++ * This macro reads the data from the fifo.
++ * It returns 0 if the fifo was empty. Otherwise it returns the number
++ * processed elements.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macro.
++ */
++#define	kfifo_get(fifo, val) \
++__kfifo_must_check_helper( \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	typeof(val + 1) __val = (val); \
++	unsigned int __ret; \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	if (0) \
++		__val = (typeof(__tmp->ptr))0; \
++	if (__recsize) \
++		__ret = __kfifo_out_r(__kfifo, __val, sizeof(*__val), \
++			__recsize); \
++	else { \
++		__ret = !kfifo_is_empty(__tmp); \
++		if (__ret) { \
++			*(typeof(__tmp->type))__val = \
++				(__is_kfifo_ptr(__tmp) ? \
++				((typeof(__tmp->type))__kfifo->data) : \
++				(__tmp->buf) \
++				)[__kfifo->out & __tmp->kfifo.mask]; \
++			smp_wmb(); \
++			__kfifo->out++; \
++		} \
++	} \
++	__ret; \
++}) \
++)
++
++/**
++ * kfifo_peek - get data from the fifo without removing
++ * @fifo: address of the fifo to be used
++ * @val: the var where to store the data to be added
++ *
++ * This reads the data from the fifo without removing it from the fifo.
++ * It returns 0 if the fifo was empty. Otherwise it returns the number
++ * processed elements.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macro.
++ */
++#define	kfifo_peek(fifo, val) \
++__kfifo_must_check_helper( \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	typeof(val + 1) __val = (val); \
++	unsigned int __ret; \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	if (0) \
++		__val = (typeof(__tmp->ptr))NULL; \
++	if (__recsize) \
++		__ret = __kfifo_out_peek_r(__kfifo, __val, sizeof(*__val), \
++			__recsize); \
++	else { \
++		__ret = !kfifo_is_empty(__tmp); \
++		if (__ret) { \
++			*(typeof(__tmp->type))__val = \
++				(__is_kfifo_ptr(__tmp) ? \
++				((typeof(__tmp->type))__kfifo->data) : \
++				(__tmp->buf) \
++				)[__kfifo->out & __tmp->kfifo.mask]; \
++			smp_wmb(); \
++		} \
++	} \
++	__ret; \
++}) \
++)
++
++/**
++ * kfifo_in - put data into the fifo
++ * @fifo: address of the fifo to be used
++ * @buf: the data to be added
++ * @n: number of elements to be added
++ *
++ * This macro copies the given buffer into the fifo and returns the
++ * number of copied elements.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macro.
++ */
++#define	kfifo_in(fifo, buf, n) \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	typeof(buf + 1) __buf = (buf); \
++	unsigned long __n = (n); \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	if (0) { \
++		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
++		__dummy = (typeof(__buf))NULL; \
++	} \
++	(__recsize) ?\
++	__kfifo_in_r(__kfifo, __buf, __n, __recsize) : \
++	__kfifo_in(__kfifo, __buf, __n); \
++})
++
++/**
++ * kfifo_in_spinlocked - put data into the fifo using a spinlock for locking
++ * @fifo: address of the fifo to be used
++ * @buf: the data to be added
++ * @n: number of elements to be added
++ * @lock: pointer to the spinlock to use for locking
++ *
++ * This macro copies the given values buffer into the fifo and returns the
++ * number of copied elements.
++ */
++#define	kfifo_in_spinlocked(fifo, buf, n, lock) \
++({ \
++	unsigned long __flags; \
++	unsigned int __ret; \
++	spin_lock_irqsave(lock, __flags); \
++	__ret = kfifo_in(fifo, buf, n); \
++	spin_unlock_irqrestore(lock, __flags); \
++	__ret; \
++})
++
++/* alias for kfifo_in_spinlocked, will be removed in a future release */
++#define kfifo_in_locked(fifo, buf, n, lock) \
++		kfifo_in_spinlocked(fifo, buf, n, lock)
++
++/**
++ * kfifo_out - get data from the fifo
++ * @fifo: address of the fifo to be used
++ * @buf: pointer to the storage buffer
++ * @n: max. number of elements to get
++ *
++ * This macro get some data from the fifo and return the numbers of elements
++ * copied.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macro.
++ */
++#define	kfifo_out(fifo, buf, n) \
++__kfifo_must_check_helper( \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	typeof(buf + 1) __buf = (buf); \
++	unsigned long __n = (n); \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	if (0) { \
++		typeof(__tmp->ptr) __dummy = NULL; \
++		__buf = __dummy; \
++	} \
++	(__recsize) ?\
++	__kfifo_out_r(__kfifo, __buf, __n, __recsize) : \
++	__kfifo_out(__kfifo, __buf, __n); \
++}) \
++)
++
++/**
++ * kfifo_out_spinlocked - get data from the fifo using a spinlock for locking
++ * @fifo: address of the fifo to be used
++ * @buf: pointer to the storage buffer
++ * @n: max. number of elements to get
++ * @lock: pointer to the spinlock to use for locking
++ *
++ * This macro get the data from the fifo and return the numbers of elements
++ * copied.
++ */
++#define	kfifo_out_spinlocked(fifo, buf, n, lock) \
++__kfifo_must_check_helper( \
++({ \
++	unsigned long __flags; \
++	unsigned int __ret; \
++	spin_lock_irqsave(lock, __flags); \
++	__ret = kfifo_out(fifo, buf, n); \
++	spin_unlock_irqrestore(lock, __flags); \
++	__ret; \
++}) \
++)
++
++/* alias for kfifo_out_spinlocked, will be removed in a future release */
++#define kfifo_out_locked(fifo, buf, n, lock) \
++		kfifo_out_spinlocked(fifo, buf, n, lock)
++
++/**
++ * kfifo_from_user - puts some data from user space into the fifo
++ * @fifo: address of the fifo to be used
++ * @from: pointer to the data to be added
++ * @len: the length of the data to be added
++ * @copied: pointer to output variable to store the number of copied bytes
++ *
++ * This macro copies at most @len bytes from the @from into the
++ * fifo, depending of the available space and returns -EFAULT/0.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macro.
++ */
++#define	kfifo_from_user(fifo, from, len, copied) \
++__kfifo_must_check_helper( \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	const void __user *__from = (from); \
++	unsigned int __len = (len); \
++	unsigned int *__copied = (copied); \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	(__recsize) ? \
++	__kfifo_from_user_r(__kfifo, __from, __len,  __copied, __recsize) : \
++	__kfifo_from_user(__kfifo, __from, __len, __copied); \
++}) \
++)
++
++/**
++ * kfifo_to_user - copies data from the fifo into user space
++ * @fifo: address of the fifo to be used
++ * @to: where the data must be copied
++ * @len: the size of the destination buffer
++ * @copied: pointer to output variable to store the number of copied bytes
++ *
++ * This macro copies at most @len bytes from the fifo into the
++ * @to buffer and returns -EFAULT/0.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macro.
++ */
++#define	kfifo_to_user(fifo, to, len, copied) \
++__kfifo_must_check_helper( \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	void __user *__to = (to); \
++	unsigned int __len = (len); \
++	unsigned int *__copied = (copied); \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	(__recsize) ? \
++	__kfifo_to_user_r(__kfifo, __to, __len, __copied, __recsize) : \
++	__kfifo_to_user(__kfifo, __to, __len, __copied); \
++}) \
++)
++
++/**
++ * kfifo_dma_in_prepare - setup a scatterlist for DMA input
++ * @fifo: address of the fifo to be used
++ * @sgl: pointer to the scatterlist array
++ * @nents: number of entries in the scatterlist array
++ * @len: number of elements to transfer
++ *
++ * This macro fills a scatterlist for DMA input.
++ * It returns the number entries in the scatterlist array.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macros.
++ */
++#define	kfifo_dma_in_prepare(fifo, sgl, nents, len) \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	struct scatterlist *__sgl = (sgl); \
++	int __nents = (nents); \
++	unsigned int __len = (len); \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	(__recsize) ? \
++	__kfifo_dma_in_prepare_r(__kfifo, __sgl, __nents, __len, __recsize) : \
++	__kfifo_dma_in_prepare(__kfifo, __sgl, __nents, __len); \
++})
++
++/**
++ * kfifo_dma_in_finish - finish a DMA IN operation
++ * @fifo: address of the fifo to be used
++ * @len: number of bytes to received
++ *
++ * This macro finish a DMA IN operation. The in counter will be updated by
++ * the len parameter. No error checking will be done.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macros.
++ */
++#define kfifo_dma_in_finish(fifo, len) \
++(void)({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	unsigned int __len = (len); \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	if (__recsize) \
++		__kfifo_dma_in_finish_r(__kfifo, __len, __recsize); \
++	else \
++		__kfifo->in += __len / sizeof(*__tmp->type); \
++})
++
++/**
++ * kfifo_dma_out_prepare - setup a scatterlist for DMA output
++ * @fifo: address of the fifo to be used
++ * @sgl: pointer to the scatterlist array
++ * @nents: number of entries in the scatterlist array
++ * @len: number of elements to transfer
++ *
++ * This macro fills a scatterlist for DMA output which at most @len bytes
++ * to transfer.
++ * It returns the number entries in the scatterlist array.
++ * A zero means there is no space available and the scatterlist is not filled.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macros.
++ */
++#define	kfifo_dma_out_prepare(fifo, sgl, nents, len) \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	struct scatterlist *__sgl = (sgl); \
++	int __nents = (nents); \
++	unsigned int __len = (len); \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	(__recsize) ? \
++	__kfifo_dma_out_prepare_r(__kfifo, __sgl, __nents, __len, __recsize) : \
++	__kfifo_dma_out_prepare(__kfifo, __sgl, __nents, __len); \
++})
++
++/**
++ * kfifo_dma_out_finish - finish a DMA OUT operation
++ * @fifo: address of the fifo to be used
++ * @len: number of bytes transferd
++ *
++ * This macro finish a DMA OUT operation. The out counter will be updated by
++ * the len parameter. No error checking will be done.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macros.
++ */
++#define kfifo_dma_out_finish(fifo, len) \
++(void)({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	unsigned int __len = (len); \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	if (__recsize) \
++		__kfifo_dma_out_finish_r(__kfifo, __recsize); \
++	else \
++		__kfifo->out += __len / sizeof(*__tmp->type); \
++})
++
++/**
++ * kfifo_out_peek - gets some data from the fifo
++ * @fifo: address of the fifo to be used
++ * @buf: pointer to the storage buffer
++ * @n: max. number of elements to get
++ *
++ * This macro get the data from the fifo and return the numbers of elements
++ * copied. The data is not removed from the fifo.
++ *
++ * Note that with only one concurrent reader and one concurrent
++ * writer, you don't need extra locking to use these macro.
++ */
++#define	kfifo_out_peek(fifo, buf, n) \
++__kfifo_must_check_helper( \
++({ \
++	typeof(fifo + 1) __tmp = (fifo); \
++	typeof(buf + 1) __buf = (buf); \
++	unsigned long __n = (n); \
++	const size_t __recsize = sizeof(*__tmp->rectype); \
++	struct __kfifo *__kfifo = &__tmp->kfifo; \
++	if (0) { \
++		typeof(__tmp->ptr) __dummy __attribute__ ((unused)) = NULL; \
++		__buf = __dummy; \
++	} \
++	(__recsize) ? \
++	__kfifo_out_peek_r(__kfifo, __buf, __n, __recsize) : \
++	__kfifo_out_peek(__kfifo, __buf, __n); \
++}) \
++)
++
++extern int __kfifo_alloc(struct __kfifo *fifo, unsigned int size,
++	size_t esize, gfp_t gfp_mask);
++
++extern void __kfifo_free(struct __kfifo *fifo);
++
++extern int __kfifo_init(struct __kfifo *fifo, void *buffer,
++	unsigned int size, size_t esize);
++
++extern unsigned int __kfifo_in(struct __kfifo *fifo,
++	const void *buf, unsigned int len);
++
++extern unsigned int __kfifo_out(struct __kfifo *fifo,
++	void *buf, unsigned int len);
++
++extern int __kfifo_from_user(struct __kfifo *fifo,
++	const void __user *from, unsigned long len, unsigned int *copied);
++
++extern int __kfifo_to_user(struct __kfifo *fifo,
++	void __user *to, unsigned long len, unsigned int *copied);
++
++extern unsigned int __kfifo_dma_in_prepare(struct __kfifo *fifo,
++	struct scatterlist *sgl, int nents, unsigned int len);
++
++extern unsigned int __kfifo_dma_out_prepare(struct __kfifo *fifo,
++	struct scatterlist *sgl, int nents, unsigned int len);
++
++extern unsigned int __kfifo_out_peek(struct __kfifo *fifo,
++	void *buf, unsigned int len);
++
++extern unsigned int __kfifo_in_r(struct __kfifo *fifo,
++	const void *buf, unsigned int len, size_t recsize);
++
++extern unsigned int __kfifo_out_r(struct __kfifo *fifo,
++	void *buf, unsigned int len, size_t recsize);
++
++extern int __kfifo_from_user_r(struct __kfifo *fifo,
++	const void __user *from, unsigned long len, unsigned int *copied,
++	size_t recsize);
++
++extern int __kfifo_to_user_r(struct __kfifo *fifo, void __user *to,
++	unsigned long len, unsigned int *copied, size_t recsize);
++
++extern unsigned int __kfifo_dma_in_prepare_r(struct __kfifo *fifo,
++	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize);
++
++extern void __kfifo_dma_in_finish_r(struct __kfifo *fifo,
++	unsigned int len, size_t recsize);
++
++extern unsigned int __kfifo_dma_out_prepare_r(struct __kfifo *fifo,
++	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize);
++
++extern void __kfifo_dma_out_finish_r(struct __kfifo *fifo, size_t recsize);
++
++extern unsigned int __kfifo_len_r(struct __kfifo *fifo, size_t recsize);
++
++extern unsigned int __kfifo_out_peek_r(struct __kfifo *fifo,
++	void *buf, unsigned int len, size_t recsize);
++
++extern unsigned int __kfifo_max_r(unsigned int len, size_t recsize);
++
++#endif
+diff --git a/kernel/kfifo-new.c b/kernel/kfifo-new.c
+new file mode 100644
+index 0000000..02192dd
+--- /dev/null
++++ b/kernel/kfifo-new.c
+@@ -0,0 +1,602 @@
++/*
++ * A generic kernel FIFO implementation
++ *
++ * Copyright (C) 2009/2010 Stefani Seibold <stefani@seibold.net>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/log2.h>
++#include <linux/uaccess.h>
++#include <linux/kfifo.h>
++
++/*
++ * internal helper to calculate the unused elements in a fifo
++ */
++static inline unsigned int kfifo_unused(struct __kfifo *fifo)
++{
++	return (fifo->mask + 1) - (fifo->in - fifo->out);
++}
++
++int __kfifo_alloc(struct __kfifo *fifo, unsigned int size,
++		size_t esize, gfp_t gfp_mask)
++{
++	/*
++	 * round down to the next power of 2, since our 'let the indices
++	 * wrap' technique works only in this case.
++	 */
++	if (!is_power_of_2(size))
++		size = rounddown_pow_of_two(size);
++
++	fifo->in = 0;
++	fifo->out = 0;
++	fifo->esize = esize;
++
++	if (size < 2) {
++		fifo->data = NULL;
++		fifo->mask = 0;
++		return -EINVAL;
++	}
++
++	fifo->data = kmalloc(size * esize, gfp_mask);
++
++	if (!fifo->data) {
++		fifo->mask = 0;
++		return -ENOMEM;
++	}
++	fifo->mask = size - 1;
++
++	return 0;
++}
++EXPORT_SYMBOL(__kfifo_alloc);
++
++void __kfifo_free(struct __kfifo *fifo)
++{
++	kfree(fifo->data);
++	fifo->in = 0;
++	fifo->out = 0;
++	fifo->esize = 0;
++	fifo->data = NULL;
++	fifo->mask = 0;
++}
++EXPORT_SYMBOL(__kfifo_free);
++
++int __kfifo_init(struct __kfifo *fifo, void *buffer,
++		unsigned int size, size_t esize)
++{
++	size /= esize;
++
++	if (!is_power_of_2(size))
++		size = rounddown_pow_of_two(size);
++
++	fifo->in = 0;
++	fifo->out = 0;
++	fifo->esize = esize;
++	fifo->data = buffer;
++
++	if (size < 2) {
++		fifo->mask = 0;
++		return -EINVAL;
++	}
++	fifo->mask = size - 1;
++
++	return 0;
++}
++EXPORT_SYMBOL(__kfifo_init);
++
++static void kfifo_copy_in(struct __kfifo *fifo, const void *src,
++		unsigned int len, unsigned int off)
++{
++	unsigned int size = fifo->mask + 1;
++	unsigned int esize = fifo->esize;
++	unsigned int l;
++
++	off &= fifo->mask;
++	if (esize != 1) {
++		off *= esize;
++		size *= esize;
++		len *= esize;
++	}
++	l = min(len, size - off);
++
++	memcpy(fifo->data + off, src, l);
++	memcpy(fifo->data, src + l, len - l);
++	/*
++	 * make sure that the data in the fifo is up to date before
++	 * incrementing the fifo->in index counter
++	 */
++	smp_wmb();
++}
++
++unsigned int __kfifo_in(struct __kfifo *fifo,
++		const void *buf, unsigned int len)
++{
++	unsigned int l;
++
++	l = kfifo_unused(fifo);
++	if (len > l)
++		len = l;
++
++	kfifo_copy_in(fifo, buf, len, fifo->in);
++	fifo->in += len;
++	return len;
++}
++EXPORT_SYMBOL(__kfifo_in);
++
++static void kfifo_copy_out(struct __kfifo *fifo, void *dst,
++		unsigned int len, unsigned int off)
++{
++	unsigned int size = fifo->mask + 1;
++	unsigned int esize = fifo->esize;
++	unsigned int l;
++
++	off &= fifo->mask;
++	if (esize != 1) {
++		off *= esize;
++		size *= esize;
++		len *= esize;
++	}
++	l = min(len, size - off);
++
++	memcpy(dst, fifo->data + off, l);
++	memcpy(dst + l, fifo->data, len - l);
++	/*
++	 * make sure that the data is copied before
++	 * incrementing the fifo->out index counter
++	 */
++	smp_wmb();
++}
++
++unsigned int __kfifo_out_peek(struct __kfifo *fifo,
++		void *buf, unsigned int len)
++{
++	unsigned int l;
++
++	l = fifo->in - fifo->out;
++	if (len > l)
++		len = l;
++
++	kfifo_copy_out(fifo, buf, len, fifo->out);
++	return len;
++}
++EXPORT_SYMBOL(__kfifo_out_peek);
++
++unsigned int __kfifo_out(struct __kfifo *fifo,
++		void *buf, unsigned int len)
++{
++	len = __kfifo_out_peek(fifo, buf, len);
++	fifo->out += len;
++	return len;
++}
++EXPORT_SYMBOL(__kfifo_out);
++
++static unsigned long kfifo_copy_from_user(struct __kfifo *fifo,
++	const void __user *from, unsigned int len, unsigned int off,
++	unsigned int *copied)
++{
++	unsigned int size = fifo->mask + 1;
++	unsigned int esize = fifo->esize;
++	unsigned int l;
++	unsigned long ret;
++
++	off &= fifo->mask;
++	if (esize != 1) {
++		off *= esize;
++		size *= esize;
++		len *= esize;
++	}
++	l = min(len, size - off);
++
++	ret = copy_from_user(fifo->data + off, from, l);
++	if (unlikely(ret))
++		ret = DIV_ROUND_UP(ret + len - l, esize);
++	else {
++		ret = copy_from_user(fifo->data, from + l, len - l);
++		if (unlikely(ret))
++			ret = DIV_ROUND_UP(ret, esize);
++	}
++	/*
++	 * make sure that the data in the fifo is up to date before
++	 * incrementing the fifo->in index counter
++	 */
++	smp_wmb();
++	*copied = len - ret;
++	/* return the number of elements which are not copied */
++	return ret;
++}
++
++int __kfifo_from_user(struct __kfifo *fifo, const void __user *from,
++		unsigned long len, unsigned int *copied)
++{
++	unsigned int l;
++	unsigned long ret;
++	unsigned int esize = fifo->esize;
++	int err;
++
++	if (esize != 1)
++		len /= esize;
++
++	l = kfifo_unused(fifo);
++	if (len > l)
++		len = l;
++
++	ret = kfifo_copy_from_user(fifo, from, len, fifo->in, copied);
++	if (unlikely(ret)) {
++		len -= ret;
++		err = -EFAULT;
++	} else
++		err = 0;
++	fifo->in += len;
++	return err;
++}
++EXPORT_SYMBOL(__kfifo_from_user);
++
++static unsigned long kfifo_copy_to_user(struct __kfifo *fifo, void __user *to,
++		unsigned int len, unsigned int off, unsigned int *copied)
++{
++	unsigned int l;
++	unsigned long ret;
++	unsigned int size = fifo->mask + 1;
++	unsigned int esize = fifo->esize;
++
++	off &= fifo->mask;
++	if (esize != 1) {
++		off *= esize;
++		size *= esize;
++		len *= esize;
++	}
++	l = min(len, size - off);
++
++	ret = copy_to_user(to, fifo->data + off, l);
++	if (unlikely(ret))
++		ret = DIV_ROUND_UP(ret + len - l, esize);
++	else {
++		ret = copy_to_user(to + l, fifo->data, len - l);
++		if (unlikely(ret))
++			ret = DIV_ROUND_UP(ret, esize);
++	}
++	/*
++	 * make sure that the data is copied before
++	 * incrementing the fifo->out index counter
++	 */
++	smp_wmb();
++	*copied = len - ret;
++	/* return the number of elements which are not copied */
++	return ret;
++}
++
++int __kfifo_to_user(struct __kfifo *fifo, void __user *to,
++		unsigned long len, unsigned int *copied)
++{
++	unsigned int l;
++	unsigned long ret;
++	unsigned int esize = fifo->esize;
++	int err;
++
++	if (esize != 1)
++		len /= esize;
++
++	l = fifo->in - fifo->out;
++	if (len > l)
++		len = l;
++	ret = kfifo_copy_to_user(fifo, to, len, fifo->out, copied);
++	if (unlikely(ret)) {
++		len -= ret;
++		err = -EFAULT;
++	} else
++		err = 0;
++	fifo->out += len;
++	return err;
++}
++EXPORT_SYMBOL(__kfifo_to_user);
++
++static int setup_sgl_buf(struct scatterlist *sgl, void *buf,
++		int nents, unsigned int len)
++{
++	int n;
++	unsigned int l;
++	unsigned int off;
++	struct page *page;
++
++	if (!nents)
++		return 0;
++
++	if (!len)
++		return 0;
++
++	n = 0;
++	page = virt_to_page(buf);
++	off = offset_in_page(buf);
++	l = 0;
++
++	while (len >= l + PAGE_SIZE - off) {
++		struct page *npage;
++
++		l += PAGE_SIZE;
++		buf += PAGE_SIZE;
++		npage = virt_to_page(buf);
++		if (page_to_phys(page) != page_to_phys(npage) - l) {
++			sgl->page_link = 0;
++			sg_set_page(sgl++, page, l - off, off);
++			if (++n == nents)
++				return n;
++			page = npage;
++			len -= l - off;
++			l = off = 0;
++		}
++	}
++	sgl->page_link = 0;
++	sg_set_page(sgl++, page, len, off);
++	return n + 1;
++}
++
++static unsigned int setup_sgl(struct __kfifo *fifo, struct scatterlist *sgl,
++		int nents, unsigned int len, unsigned int off)
++{
++	unsigned int size = fifo->mask + 1;
++	unsigned int esize = fifo->esize;
++	unsigned int l;
++	unsigned int n;
++
++	off &= fifo->mask;
++	if (esize != 1) {
++		off *= esize;
++		size *= esize;
++		len *= esize;
++	}
++	l = min(len, size - off);
++
++	n  = setup_sgl_buf(sgl, fifo->data + off, nents, l);
++	n += setup_sgl_buf(sgl + n, fifo->data, nents - n, len - l);
++
++	if (n)
++		sg_mark_end(sgl + n - 1);
++	return n;
++}
++
++unsigned int __kfifo_dma_in_prepare(struct __kfifo *fifo,
++		struct scatterlist *sgl, int nents, unsigned int len)
++{
++	unsigned int l;
++
++	l = kfifo_unused(fifo);
++	if (len > l)
++		len = l;
++
++	return setup_sgl(fifo, sgl, nents, len, fifo->in);
++}
++EXPORT_SYMBOL(__kfifo_dma_in_prepare);
++
++unsigned int __kfifo_dma_out_prepare(struct __kfifo *fifo,
++		struct scatterlist *sgl, int nents, unsigned int len)
++{
++	unsigned int l;
++
++	l = fifo->in - fifo->out;
++	if (len > l)
++		len = l;
++
++	return setup_sgl(fifo, sgl, nents, len, fifo->out);
++}
++EXPORT_SYMBOL(__kfifo_dma_out_prepare);
++
++unsigned int __kfifo_max_r(unsigned int len, size_t recsize)
++{
++	unsigned int max = (1 << (recsize << 3)) - 1;
++
++	if (len > max)
++		return max;
++	return len;
++}
++
++#define	__KFIFO_PEEK(data, out, mask) \
++	((data)[(out) & (mask)])
++/*
++ * __kfifo_peek_n internal helper function for determinate the length of
++ * the next record in the fifo
++ */
++static unsigned int __kfifo_peek_n(struct __kfifo *fifo, size_t recsize)
++{
++	unsigned int l;
++	unsigned int mask = fifo->mask;
++	unsigned char *data = fifo->data;
++
++	l = __KFIFO_PEEK(data, fifo->out, mask);
++
++	if (--recsize)
++		l |= __KFIFO_PEEK(data, fifo->out + 1, mask) << 8;
++
++	return l;
++}
++
++#define	__KFIFO_POKE(data, in, mask, val) \
++	( \
++	(data)[(in) & (mask)] = (unsigned char)(val) \
++	)
++
++/*
++ * __kfifo_poke_n internal helper function for storeing the length of
++ * the record into the fifo
++ */
++static void __kfifo_poke_n(struct __kfifo *fifo, unsigned int n, size_t recsize)
++{
++	unsigned int mask = fifo->mask;
++	unsigned char *data = fifo->data;
++
++	__KFIFO_POKE(data, fifo->in, mask, n);
++
++	if (recsize > 1)
++		__KFIFO_POKE(data, fifo->in + 1, mask, n >> 8);
++}
++
++unsigned int __kfifo_len_r(struct __kfifo *fifo, size_t recsize)
++{
++	return __kfifo_peek_n(fifo, recsize);
++}
++EXPORT_SYMBOL(__kfifo_len_r);
++
++unsigned int __kfifo_in_r(struct __kfifo *fifo, const void *buf,
++		unsigned int len, size_t recsize)
++{
++	if (len + recsize > kfifo_unused(fifo))
++		return 0;
++
++	__kfifo_poke_n(fifo, len, recsize);
++
++	kfifo_copy_in(fifo, buf, len, fifo->in + recsize);
++	fifo->in += len + recsize;
++	return len;
++}
++EXPORT_SYMBOL(__kfifo_in_r);
++
++static unsigned int kfifo_out_copy_r(struct __kfifo *fifo,
++	void *buf, unsigned int len, size_t recsize, unsigned int *n)
++{
++	*n = __kfifo_peek_n(fifo, recsize);
++
++	if (len > *n)
++		len = *n;
++
++	kfifo_copy_out(fifo, buf, len, fifo->out + recsize);
++	return len;
++}
++
++unsigned int __kfifo_out_peek_r(struct __kfifo *fifo, void *buf,
++		unsigned int len, size_t recsize)
++{
++	unsigned int n;
++
++	if (fifo->in == fifo->out)
++		return 0;
++
++	return kfifo_out_copy_r(fifo, buf, len, recsize, &n);
++}
++EXPORT_SYMBOL(__kfifo_out_peek_r);
++
++unsigned int __kfifo_out_r(struct __kfifo *fifo, void *buf,
++		unsigned int len, size_t recsize)
++{
++	unsigned int n;
++
++	if (fifo->in == fifo->out)
++		return 0;
++
++	len = kfifo_out_copy_r(fifo, buf, len, recsize, &n);
++	fifo->out += n + recsize;
++	return len;
++}
++EXPORT_SYMBOL(__kfifo_out_r);
++
++int __kfifo_from_user_r(struct __kfifo *fifo, const void __user *from,
++	unsigned long len, unsigned int *copied, size_t recsize)
++{
++	unsigned long ret;
++
++	len = __kfifo_max_r(len, recsize);
++
++	if (len + recsize > kfifo_unused(fifo)) {
++		*copied = 0;
++		return 0;
++	}
++
++	__kfifo_poke_n(fifo, len, recsize);
++
++	ret = kfifo_copy_from_user(fifo, from, len, fifo->in + recsize, copied);
++	if (unlikely(ret)) {
++		*copied = 0;
++		return -EFAULT;
++	}
++	fifo->in += len + recsize;
++	return 0;
++}
++EXPORT_SYMBOL(__kfifo_from_user_r);
++
++int __kfifo_to_user_r(struct __kfifo *fifo, void __user *to,
++	unsigned long len, unsigned int *copied, size_t recsize)
++{
++	unsigned long ret;
++	unsigned int n;
++
++	if (fifo->in == fifo->out) {
++		*copied = 0;
++		return 0;
++	}
++
++	n = __kfifo_peek_n(fifo, recsize);
++	if (len > n)
++		len = n;
++
++	ret = kfifo_copy_to_user(fifo, to, len, fifo->out + recsize, copied);
++	if (unlikely(ret)) {
++		*copied = 0;
++		return -EFAULT;
++	}
++	fifo->out += n + recsize;
++	return 0;
++}
++EXPORT_SYMBOL(__kfifo_to_user_r);
++
++unsigned int __kfifo_dma_in_prepare_r(struct __kfifo *fifo,
++	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize)
++{
++	if (!nents)
++		BUG();
++
++	len = __kfifo_max_r(len, recsize);
++
++	if (len + recsize > kfifo_unused(fifo))
++		return 0;
++
++	return setup_sgl(fifo, sgl, nents, len, fifo->in + recsize);
++}
++EXPORT_SYMBOL(__kfifo_dma_in_prepare_r);
++
++void __kfifo_dma_in_finish_r(struct __kfifo *fifo,
++	unsigned int len, size_t recsize)
++{
++	len = __kfifo_max_r(len, recsize);
++	__kfifo_poke_n(fifo, len, recsize);
++	fifo->in += len + recsize;
++}
++EXPORT_SYMBOL(__kfifo_dma_in_finish_r);
++
++unsigned int __kfifo_dma_out_prepare_r(struct __kfifo *fifo,
++	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize)
++{
++	if (!nents)
++		BUG();
++
++	len = __kfifo_max_r(len, recsize);
++
++	if (len + recsize > fifo->in - fifo->out)
++		return 0;
++
++	return setup_sgl(fifo, sgl, nents, len, fifo->out + recsize);
++}
++EXPORT_SYMBOL(__kfifo_dma_out_prepare_r);
++
++void __kfifo_dma_out_finish_r(struct __kfifo *fifo, size_t recsize)
++{
++	unsigned int len;
++
++	len = __kfifo_peek_n(fifo, recsize);
++	fifo->out += len + recsize;
++}
++EXPORT_SYMBOL(__kfifo_dma_out_finish_r);
+-- 
+1.7.0.4
 
-As you can see, kfifo_put/kfifo_get creates a little bit more code than 
-kfifo_in/kfifo_out, but it is much faster (the code is inline).
-
-The code is complete hand crafted and optimized. The text section size is as 
-small as possible. You get all the fifo handling in only 3 kb. This includes 
-type safe fix size records, dynamic records and DMA handling.
-
-This should be the final version. All requested features are implemented.
-
-Note: Most features of this API doesn't have any users. All functions which
-are not used in the next 9 months will be removed. So, please adapt your
-drivers and other sources as soon as possible to the new API and post it. 
-
-This are the features which are currently not used in the kernel:
-
-kfifo_to_user()
-kfifo_from_user()
-kfifo_dma_....() macros
-kfifo_esize()
-kfifo_recsize()
-kfifo_put()
-kfifo_get()
-the fixed size record elements, exclude "unsigned char" fifo's and
-the variable size records fifo's
-
-ChangeLog:
-
-12.05.2010 Sync with kernel 2.6.34-rc7
-20.04.2010 Fix possible break of the kernel build by the patch sequence
-18.04.2010 Sync with kernel 2.6.34-rc4
-12.02.2010 Sync with kernel 2.6.33-rc7
-           Add example code to the kernel sample directory
-           Make more exact comments for the kerneldoc tools
-           Split the patch
-05.02.2010 Sync with kernel 2.6.33-rc6
-           Fix comments for the kerneldoc tools
-           Fix kernel-api.tmpl
-           Checked with sparse
-           Tested and analize with gcc-3.4.6
-           Fix INIT_KFIFO to create better code
-           make checkpath.pl clean
-           add some comments for better understanding the code
-           rename kfifo_out_locked() into kfifo_out_spinlocked() and add an
-           alias kfifo_out_locked() for kfifo_out_spinlocked() which will be
-           removed in future.
-           Did the same for kfifo_in_locked()
-           Fix kfifo_free to free the fifo buffer, not the fifo structure
-           Add all fixes suggested by Andrew Morton
-           Modify test1.c sample code
-27.01.2010 renamed kfifo_sizeof into kfifo_esize
-           code refactoring: shrink foot print 
-           fix bugs
-           changed all 0 pointer into NULL
-           fix a miss use in drivers/char/nozomi.c
-           enhanced DMA functions to handle a non continues fifo buffer (e.g. vmalloc)
-           reintroduced record dynamic handling as requested (tried to implemented it 
-           separately, but this will double the code)
-           Sync with kernel 2.6.33-rc5           
-16.01.2010 Kicked away dynamic record handling. If anybody want it please let me know.
-           Add a esize field which represents the size of the element stored in
-           the fifo. This will increase the size of the fifo stucture by 4 bytes 
-           but obtain a smaller code.
-           Generalized the kfifo.c funtions to handle byte and all other element 
-           sizes in common functions.
-           Shrink the code size of kfifo.c from 2k to 1k
-           Code cleanup
-15.01.2010 fix kfifo_dma_*() bugs
-           add a DMA usage exmaple
-           fix kfifo_free()
-           prevent creation of fifo with less then 2 entries
-           prevent a real in place fifo manipulation with kfifo_alloc(), 
-           kfifo_init() or kfifo_free()
-           make INIT_KFIFO save with a dynamic allocated fifo
-14.01.2010 Change the size field of the fifo structure into a mask field, which
-           is size - 1. This will save some instructions 
-           Make the basic structure mode generic. Add a data pointer and mask
-           field, also for real in place fifo, because the extra function parameter
-           passing of the data pointer and and the fifo size was to costly
-           Change all internal functions to work with the generic base structure
-           Optimized the kfifo_put and kfifo_get macros to prevent an indirection
-           Code cleanup
-           Bug fixes in kfifo_dma_* macros
-           Update examples
-           Sync with kernel 2.6.33-rc4
-06.01.2010 Add a note about locking: clarify when locking is needed
-           Fix byte stream example
-           Remove unnecessary typedefs
-           Make checkpatch.pl clean: one error left, but there is no way to
-           solve this...
-28.12.2009 Sanitize kfifo_*_user() error handling (suggested by Andi Kleen)
-           kfifo_from_user() and kfifo_to_user() will now return an error
-           code and the number of copied bytes will be stored in a variable
-           passed as pointer
-           Make patch readable
-           Update examples
-           Fix a typo
-27.12.2009 Sync with kernel 2.6.33-rc2
-           Introduce new kfifo_initialized macro (suggested by Andi Kleen)
-           Renamed kfifo_peek into kfifo_peek_len
-           Introduce new kfifo_peek macro (suggest by Andi Kleen)
-           Introduce new kfifo_out_peek macro (suggested by Andi Kleen)
-           Fix broken kernel-doc notation
-           Fix samples
-21.12.2009 Fix checkpatch.pl, fix samples
-20.12.2009 Bug fixing
-           Fix samples
-19.12.2009 First draft
-13.12.2009 First implementation of a type safe fifo implementation, called kqueue
-
-There are different types of a fifo which can not handled in C without a
-lot of overhead. So i decided to write the API as a set of macros, which 
-is the only way to do a kind of template meta programming without C++. 
-This macros handles the different types of fifos in a transparent way.
-
-There are a lot of benefits:
-
-- Compile time handling of the different fifo types
-- Better performance (a save put or get of an integer does only generate 
-  9 assembly instructions on a x86) 
-- Type save
-- Cleaner interface, the additional kfifo_..._rec() functions are gone
-- Easier to use
-- Less error prone
-- Different types of fifos: it is now possible to define a int fifo or
-  any other type. See below for an example.
-- Smaller footprint for none byte type fifos
-- No need of creating a second hidden variable, like in the old DEFINE_KFIFO
-
-The API was not changed.
-
-There are now real in place fifos where the data space is a part of the 
-structure. The fifo needs now 20 byte plus the fifo space. Dynamic 
-assigned or allocated create a little bit more code.
-
-Most of the macros code will be optimized away and simple generate a 
-function call. Only the really small one generates inline code.
-
-Additional you can now create fifos for any data type, not only the
-"unsigned char" byte streamed fifos.
-
-There is also a new kfifo_put and kfifo_get function, to handle a single
-element in a fifo. This macros generates inline code, which is lit bit
-larger but faster.
-
-I know that this kind of macros are very sophisticated and not easy to
-maintain. But i have all tested and it works as expected. I analyzed the
-output of the compiler and for the x86 the code is as good as hand
-written assembler code. For the byte stream fifo the generate code is exact 
-the same as with the current kfifo implementation. For all other types of
-fifos the code is smaller before, because the interface is easier to use. 
-
-The main goal was to provide an API which is very intuitive, save and easy
-to use. So linux will get now a powerful fifo API which provides all what 
-a developer needs. This will save in the future a lot of kernel space, since
-there is no need to write an own implementation. Most of the device driver 
-developers need a fifo, and also deep kernel development will gain benefit 
-from this API.
-
-This code is ready for merge into the mm tree or linux next. Please review 
-it and merge.
-
-Stefani
