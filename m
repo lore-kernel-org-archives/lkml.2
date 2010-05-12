@@ -1,45 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab0ELKkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 06:40:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40162 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752625Ab0ELKkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 06:40:45 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1273634462-2672-2-git-send-email-walken@google.com>
-References: <1273634462-2672-2-git-send-email-walken@google.com> <1273634462-2672-1-git-send-email-walken@google.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
+	id S1754653Ab0ELKls (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 06:41:48 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:60785 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab0ELKlr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 06:41:47 -0400
+Date: Wed, 12 May 2010 16:11:38 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 01/12] rwsem: test for no active locks in __rwsem_do_wake undo code
-Date: Wed, 12 May 2010 11:39:18 +0100
-Message-ID: <27596.1273660758@redhat.com>
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
+       Mel Gorman <mel@csn.ul.ie>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH v2 7/11] Uprobes Implementation
+Message-ID: <20100512104138.GM7426@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100331155228.4181.61294.sendpatchset@localhost6.localdomain6>
+ <20100413183537.GA17538@redhat.com>
+ <20100415093506.GA2064@linux.vnet.ibm.com>
+ <20100419193139.GA24080@redhat.com>
+ <20100420124358.GA20675@linux.vnet.ibm.com>
+ <20100420153023.GA9351@redhat.com>
+ <20100421065948.GA5440@linux.vnet.ibm.com>
+ <20100421160515.GA11321@redhat.com>
+ <20100422133154.GA10776@linux.vnet.ibm.com>
+ <1273610603.1810.101.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1273610603.1810.101.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michel Lespinasse <walken@google.com> wrote:
+* Peter Zijlstra <peterz@infradead.org> [2010-05-11 22:43:23]:
 
-> If there are no active threasd using a semaphore, it is always correct to
-> unqueue blocked threads. This seems to be what was intended in the undo code.
+> On Thu, 2010-04-22 at 19:01 +0530, Srikar Dronamraju wrote:
+> > * Oleg Nesterov <oleg@redhat.com> [2010-04-21 18:05:15]:
 > 
-> What was done instead, was to look for a sem count of zero - this is an
-> impossible situation, given that at least one thread is known to be queued
-> on the semaphore. The code might be correct as written, but it's hard to
-> reason about and it's not what was intended (otherwise the goto out would
-> have been unconditional).
+> > > 4. mremap(). What if the application does mremap() and moves the
+> > >    memory? After that vaddr of user_bkpt/uprobe no longer matches
+> > >    the virtual address of bp. This breaks uprobe_bkpt_notifier(),
+> > >    unregister_uprobe(), etc.
+> > > 
+> > >    Even worse. Say, unregister_uprobe() calls remove_bkpt().
+> > >    mremap()+mmap() can be called after ->read_opcode() verifies vaddr
+> > >    points to bkpt_insn, but before write_opcode() changes the page.
+> > > 
+> > 
+> > I dont think we handle this case now. I think even munmap of the region
+> > where there are probes inserted also can have the same problem.
+> > 
+> > Are there ways to handle this. 
+> > I think taking a write lock on mmap_sem instead of the read lock could
+> > handle this problem.
+> > 
+> > I am copying Mel Gorman and Andrea Arcangeli so that they can provide
+> > their inputs on VM and KSM related issues.
 > 
-> Go for checking the active count - the alternative is not worth the headache.
+> KSM only does anonymous pages, and I thought uprobes was limited to
+> MAP_PRIVATE|PROT_EXEC file maps.
+> 
+> We can't hold mmap_sem (for either read or write -- read would be
+> sufficient to serialize against mmap/mremap/munmap) from atomic uprobe
+> context, what we can do is validate that there is a INT3 on that
+> particular address, a mremap/munmap/munmap+mmap will either end not
+> having a pte entry for the address, or not have the INT3.
 
-I think this is a definite bug fix, so I've sent it upstream in advance.
+Did you mean "We can hold mmap_sem?" Else I am not sure if we can
+traverse the vma. Infact alloc_page_vma() needs mmap_sem to be acquired.
+Please clarify?
 
-David
+> 
+> That said, you shouldn't be executing code on maps you're changing, much
+> fun can happen if you try, so I don't think we should expend too much
+> effort as long as the race will only result in the app crashing and not
+> the kernel.
+> 
+
+Okay.
+
+--
+Thanks and Regards
+Srikar
