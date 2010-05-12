@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab0ELOeX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 10:34:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23829 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755237Ab0ELOeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 10:34:21 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] CacheFiles: Fix error handling in
-	cachefiles_determine_cache_security()
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: dhowells@redhat.com, linux-cachefs@redhat.com,
-       linux-kernel@vger.kernel.org
-Date: Wed, 12 May 2010 15:34:03 +0100
-Message-ID: <20100512143403.2722.29652.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1755548Ab0ELOgZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 10:36:25 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:39496 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901Ab0ELOgY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 10:36:24 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH] ibft: Use IBFT_SIGN instead of open-coding the search string.
+Date: Wed, 12 May 2010 10:35:32 -0400
+User-Agent: KMail/1.9.10
+Cc: Len Brown <lenb@kernel.org>, Konrad Rzeszutek Wilk <konrad@kernel.org>,
+       linux-kernel@vger.kernel.org, gpxe-devel@etherboot.org,
+       Andrew Morton <akpm@linux-foundation.org>
+References: <4BEAB683.8040600@redhat.com> <1273674308-9366-1-git-send-email-pjones@redhat.com>
+In-Reply-To: <1273674308-9366-1-git-send-email-pjones@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201005121035.33199.konrad@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cachefiles_determine_cache_security() is expected to return with a security
-override in place.  However, if set_create_files_as() fails, we fail to do
-this.  In this case, we should just reinstate the security override that was
-set by the caller.
+Andrew,
 
-Furthermore, if set_create_files_as() fails, we should dispose of the new
-credentials we were in the process of creating.
+Please also consider this patch with the others I've sent.
+I've put this (and the other ones) on:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/ibft-2.6.git dev.ibft
 
- fs/cachefiles/security.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+On Wednesday 12 May 2010 10:25:08 Peter Jones wrote:
+> We define IBFT_SIGN to "iBFT"; may as well use it.
+>
+> Signed-off-by: Peter Jones <pjones@redhat.com>
 
-diff --git a/fs/cachefiles/security.c b/fs/cachefiles/security.c
-index b5808cd..039b501 100644
---- a/fs/cachefiles/security.c
-+++ b/fs/cachefiles/security.c
-@@ -77,6 +77,8 @@ static int cachefiles_check_cache_dir(struct cachefiles_cache *cache,
- /*
-  * check the security details of the on-disk cache
-  * - must be called with security override in force
-+ * - must return with a security override in force - even in the case of an
-+ *   error
-  */
- int cachefiles_determine_cache_security(struct cachefiles_cache *cache,
- 					struct dentry *root,
-@@ -99,6 +101,8 @@ int cachefiles_determine_cache_security(struct cachefiles_cache *cache,
- 	 * which create files */
- 	ret = set_create_files_as(new, root->d_inode);
- 	if (ret < 0) {
-+		abort_creds(new);
-+		cachefiles_begin_secure(cache, _saved_cred);
- 		_leave(" = %d [cfa]", ret);
- 		return ret;
- 	}
+Signed-off-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
+
+> ---
+>  drivers/firmware/iscsi_ibft_find.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/firmware/iscsi_ibft_find.c
+> b/drivers/firmware/iscsi_ibft_find.c index 82a7a15..2192456 100644
+> --- a/drivers/firmware/iscsi_ibft_find.c
+> +++ b/drivers/firmware/iscsi_ibft_find.c
+> @@ -100,7 +100,7 @@ unsigned long __init find_ibft_region(unsigned long
+> *sizep) if (!ibft_addr)
+>  		acpi_table_parse(ACPI_SIG_IBFT, acpi_find_ibft);
+>  	if (!ibft_addr)
+> -		acpi_table_parse("iBFT", acpi_find_ibft);
+> +		acpi_table_parse(IBFT_SIGN, acpi_find_ibft);
+>  #endif /* CONFIG_ACPI */
+>
+>  	/* iBFT 1.03 section 1.4.3.1 mandates that UEFI machines will
+
 
