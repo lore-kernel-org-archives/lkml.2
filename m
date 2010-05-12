@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab0ELTjX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 15:39:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42277 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386Ab0ELTjT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 15:39:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DzkhLh+5HXwzM22Ak8Gzz9FbZ+l+o9RAP1+NQ+Sz3dN9j4tyB+5FBVhkxRJoQD5byp
-         TfIw5WD+HMNdyjAmWL8CAsZ13dOgpQvR0Um0AdxLSJ30Ds06Z39QHHERg3wnKxfMtZ1C
-         lnFIk1USt79MvhdJPQQZglRLirdLs02XB40GU=
-Date: Wed, 12 May 2010 23:39:12 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Daniel Mack <daniel@caiaq.de>,
-       linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-       Alexey Starikovskiy <astarikovskiy@suse.de>,
-       Len Brown <len.brown@intel.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Matt Reimer <mreimer@vpop.net>, Evgeniy Polyakov <zbr@ioremap.net>,
-       Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] Introduce {sysfs,device}_create_file_mode
-Message-ID: <20100512193912.GA17500@oksana.dev.rtsoft.ru>
-References: <1273595926-26249-1-git-send-email-daniel@caiaq.de>
- <20100511174708.GA26777@oksana.dev.rtsoft.ru>
- <20100511175812.GH30801@buzzloop.caiaq.de>
- <20100511182347.GA31831@oksana.dev.rtsoft.ru>
- <20100511222825.GJ30801@buzzloop.caiaq.de>
- <20100512181546.GA4804@oksana.dev.rtsoft.ru>
- <20100512183806.GA28658@suse.de>
- <20100512190814.GA9674@oksana.dev.rtsoft.ru>
- <AANLkTimQq30DklQUDBokPXsLiXKsuiaCUFg_5ddkJbXa@mail.gmail.com>
- <20100512191955.GA30861@suse.de>
+	id S1757338Ab0ELTk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 15:40:58 -0400
+Received: from kroah.org ([198.145.64.141]:49028 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752701Ab0ELTk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 15:40:56 -0400
+Date: Wed, 12 May 2010 12:39:43 -0700
+From: Greg KH <greg@kroah.com>
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: jbarnes@virtuousgeek.org, matthew@wil.cx, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, ddutile@redhat.com,
+       alex.williamson@redhat.com
+Subject: Re: [RFC PATCH] sysfs: bin_attr permission checking
+Message-ID: <20100512193943.GA31301@kroah.com>
+References: <20100512184713.GV28034@sequoia.sous-sol.org>
+ <20100512191336.GA30678@kroah.com>
+ <20100512192828.GX28034@sequoia.sous-sol.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100512191955.GA30861@suse.de>
+In-Reply-To: <20100512192828.GX28034@sequoia.sous-sol.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 12:19:55PM -0700, Greg KH wrote:
-> On Wed, May 12, 2010 at 09:12:46PM +0200, Kay Sievers wrote:
-> > On Wed, May 12, 2010 at 21:08, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-> > > On Wed, May 12, 2010 at 11:38:06AM -0700, Greg KH wrote:
-> > >> On Wed, May 12, 2010 at 10:15:46PM +0400, Anton Vorontsov wrote:
-> > >> > We need to create attributes with different modes across devices.
-> > >> > We can do this by modifying attr.mode between device_create_file
-> > >> > invocations, but that is racy in case of globally defined attrs.
-> > >> >
-> > >> > Luckily, there's sysfs_add_file_mode() function that seems to do
-> > >> > exactly what we want, and if we use it, we don't need any locks
-> > >> > to avoid races. Though, it isn't exposed via device-drivers core
-> > >> > API.
-> > >>
-> > >> But you race the creation of the device notifying userspace, and then
-> > >> the file being created, right?
-> > >
-> > > Yep, you've raised that question once, like 3 years ago. :-)
-> > >
-> > > http://lkml.org/lkml/2007/4/11/452
-> > > http://lkml.org/lkml/2007/4/12/144
-> > >
-> > > In short: we can't use attr groups since the attributes creation
-> > > is conditional. And we especially don't want to use the attr groups
-> > > for attrs with different modes. But it's not a problem, because...
+On Wed, May 12, 2010 at 12:28:28PM -0700, Chris Wright wrote:
+> * Greg KH (greg@kroah.com) wrote:
+> > On Wed, May 12, 2010 at 11:47:13AM -0700, Chris Wright wrote:
+> > > The PCI config space bin_attr read handler has a hardcoded CAP_SYS_ADMIN
+> > > check to verify privileges before allowing a user to read device
+> > > dependent config space.  This is meant to protect from an unprivileged
+> > > user potentially locking up the box.
+> > > 
+> > > When assigning a PCI device directly to a guest with libvirt and KVM, the 
+> > > sysfs config space file is chown'd to the user that the KVM guest will
+> > > run as.  The guest needs to have full access to the device's config
+> > > space since it's responsible for driving the device.  However, despite
+> > > being the owner of the sysfs file, the CAP_SYS_ADMIN check will not
+> > > allow read access beyond the config header.
+> > > 
+> > > This patch adds a new bin_attr->read_file() callback which adds a struct
+> > > file to the normal argument list.  This allows an implementation such as
+> > > PCI config space bin_attr read_file handler to check both inode
+> > > permission as well as privileges to determine whether to allow
+> > > privileged actions through the handler.
 > > 
-> > Groups have a filter callback for every member, to decide if the
-> > attribute should be created or not.
+> > Ick, this is all because we like showing different information if the
+> > user is "privileged or not" :(
 > 
-> Yeah, that's how we solved that issue a long time ago :)
+> yup
+> 
+> > Turns out, that this probably isn't the best user api to implement,
+> > remind me never to do that again...
+> 
+> Yeah, it's challenging to deal with.  Alternative here is a new config
+> sysfs entry that doesn't have this 'feature'.  (I looked into trying to
+> allow manageing the internal capable() check externally, not so pretty).
 
-But not loud enough for us to notice. ;-)
+That would require people to update libpci and maybe their scripts as
+well, which wouldn't be as good.
 
-> Can you please switch to using attribute groups now, so that userspace
-> doesn't have to handle 'change' events?
+> > > This is just RFC, although I've tested that it does allow the chown +
+> > > read to work as expected.  Any other ideas of how to handle this are
+> > > welcome.
+> > 
+> > Can we just pass in the 'file' for all users of the bin files instead of
+> > the dentry? 
+> 
+> The dentry doesn't currently go beyond sysfs/bin.c.  So, yes, I pushed
+> 'file' through to last level in bin.c before ->read(), and can certinaly
+> just push through to ->read() as well.
 
-Yep.
+That would be better than having a 'read_file' callback, right?
 
-Thanks,
+> >  You can always get the dentry from the file (as your patch
+> > showes), and there isn't that many users of this interface.  I'd really
+> > rather not have two different types of callbacks here.
+> 
+> Absolutely, this is just RFC (i.e. quicker to compile and test).  What
+> about write()?
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+Sure, might as well make it symmetrical :)
+
+thanks,
+
+greg k-h
