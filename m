@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab0ELTdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 15:33:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38099 "EHLO
+	id S932084Ab0ELTgo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 15:36:44 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33610 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757129Ab0ELTdo (ORCPT
+	by vger.kernel.org with ESMTP id S1752701Ab0ELTgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 15:33:44 -0400
-Date: Wed, 12 May 2010 12:33:23 -0700
+	Wed, 12 May 2010 15:36:43 -0400
+Date: Wed, 12 May 2010 12:36:29 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Cc: Peter Jones <pjones@redhat.com>, Len Brown <lenb@kernel.org>,
-       linux-kernel@vger.kernel.org, gpxe-devel@etherboot.org,
-       linux-next@vger.kernel.org
-Subject: Re: [PATCH] ibft: Use IBFT_SIGN instead of open-coding the search
- string.
-Message-Id: <20100512123323.2badc5a7.akpm@linux-foundation.org>
-In-Reply-To: <201005121035.33199.konrad@kernel.org>
-References: <4BEAB683.8040600@redhat.com>
-	<1273674308-9366-1-git-send-email-pjones@redhat.com>
-	<201005121035.33199.konrad@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@linux-foundation.org, linux-cachefs@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] CacheFiles: Fix error handling in
+ cachefiles_determine_cache_security()
+Message-Id: <20100512123629.41139fd5.akpm@linux-foundation.org>
+In-Reply-To: <20100512143403.2722.29652.stgit@warthog.procyon.org.uk>
+References: <20100512143403.2722.29652.stgit@warthog.procyon.org.uk>
 X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -28,18 +25,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 10:35:32 -0400
-Konrad Rzeszutek Wilk <konrad@kernel.org> wrote:
+On Wed, 12 May 2010 15:34:03 +0100
+David Howells <dhowells@redhat.com> wrote:
 
-> Please also consider this patch with the others I've sent.
-> I've put this (and the other ones) on:
+> cachefiles_determine_cache_security() is expected to return with a security
+> override in place.  However, if set_create_files_as() fails, we fail to do
+> this.  In this case, we should just reinstate the security override that was
+> set by the caller.
 > 
->  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/ibft-2.6.git dev.ibft
+> Furthermore, if set_create_files_as() fails, we should dispose of the new
+> credentials we were in the process of creating.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+> 
+>  fs/cachefiles/security.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/cachefiles/security.c b/fs/cachefiles/security.c
+> index b5808cd..039b501 100644
+> --- a/fs/cachefiles/security.c
+> +++ b/fs/cachefiles/security.c
+> @@ -77,6 +77,8 @@ static int cachefiles_check_cache_dir(struct cachefiles_cache *cache,
+>  /*
+>   * check the security details of the on-disk cache
+>   * - must be called with security override in force
+> + * - must return with a security override in force - even in the case of an
+> + *   error
+>   */
+>  int cachefiles_determine_cache_security(struct cachefiles_cache *cache,
+>  					struct dentry *root,
+> @@ -99,6 +101,8 @@ int cachefiles_determine_cache_security(struct cachefiles_cache *cache,
+>  	 * which create files */
+>  	ret = set_create_files_as(new, root->d_inode);
+>  	if (ret < 0) {
+> +		abort_creds(new);
+> +		cachefiles_begin_secure(cache, _saved_cred);
+>  		_leave(" = %d [cfa]", ret);
+>  		return ret;
+>  	}
 
-Well, you're the maintainer and you have a git tree and I cannot tell
-the difference between an IBFT and a bar of soap.  So I suggest that
-you ask Stephen to permanently include your git tree in linux-next and
-send Linus a pull request in the 2.6.35-rc1 merge window like so many
-other people do?
+The changelog makes it hard for civilians to work out what the
+user-visible effect of this bug was.
 
-
+Should this fix be backported into -stable?
