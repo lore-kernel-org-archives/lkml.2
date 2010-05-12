@@ -1,77 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab0ELXuw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 19:50:52 -0400
-Received: from mail-ew0-f216.google.com ([209.85.219.216]:40555 "EHLO
-	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab0ELXuu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 19:50:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=juawCHFABC4owRKfymjDDm6MicyKmfK1VewuH6s8itGmdEY1g0/iJkiYZ2prdVO7qy
-         cxgg2vjOtkybHkFb5+6C7Nbb4EF1vcapasJO6jhwP/CwxBWjVxTk/tJYUGY3v0XcHBVj
-         nnEW5oXVLjD3Ui/brdZda64MxYBgcxs3TBvas=
+	id S1757077Ab0ELXzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 19:55:00 -0400
+Received: from mail.gmx.net ([213.165.64.20]:57222 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751261Ab0ELXy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 19:54:59 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX19C+C9UpMJCwKRdd2LKLIj1RnjTJOaFKhh/GmB0uu
+	i3PDq0CX+p1SEt
+From: Peter Huewe <PeterHuewe@gmx.de>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: [PATCH] power: Rename get_current to fix build failure / name conflict
+Date: Thu, 13 May 2010 01:54:57 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
+Cc: Mike Rapoport <mike@compulab.co.il>, Wolfram Sang <w.sang@pengutronix.de>,
+       Tejun Heo <tj@kernel.org>, Ryan Mallon <ryan@bluewatersys.com>,
+       linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20100511173830.GF30801@buzzloop.caiaq.de>
-References: <20100512003450P.fujita.tomonori@lab.ntt.co.jp>
-	 <Pine.LNX.4.44L0.1005111158420.1834-100000@iolanthe.rowland.org>
-	 <AANLkTikoF4qgkN9p0SpDEOrHAMxdh4jzPusCdrq1tRag@mail.gmail.com>
-	 <20100511171025.GB30801@buzzloop.caiaq.de>
-	 <AANLkTimdsIJt69TKf2CgXjEXDJXSNib2jt9JSapmuJyW@mail.gmail.com>
-	 <20100511173830.GF30801@buzzloop.caiaq.de>
-Date: Thu, 13 May 2010 00:50:48 +0100
-Message-ID: <AANLkTinTOWZbZ_7n6YEcCgjbh1_Jsj2_zRKKwspAMuwE@mail.gmail.com>
-Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
-From: Pedro Ribeiro <pedrib@gmail.com>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, gregkh@suse.de,
-       konrad.wilk@oracle.com, tiwai@suse.de,
-       USB list <linux-usb@vger.kernel.org>, clemens@ladisch.de,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       chrisw@sous-sol.org, iommu@lists.linux-foundation.org,
-       andi@firstfloor.org, Andrew Morton <akpm@linux-foundation.org>,
-       dwmw2@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005130154.58459.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 May 2010 18:38, Daniel Mack <daniel@caiaq.de> wrote:
-> On Tue, May 11, 2010 at 06:32:50PM +0100, Pedro Ribeiro wrote:
->> On 11 May 2010 18:10, Daniel Mack <daniel@caiaq.de> wrote:
->> > No surprise here. The 4 channels are mux'ed in an interleaved fashion,
->> > so if the buffers contain rubbish, you will hear artefacts on all
->> > channels.
->>
->> So what would be the testcase you would like me to try?
->
-> Would be good to see what happens if you could record audio (with
-> arecord would be sufficient), just to see whether the same problem
-> exists in the other direction.
->
-> Either record an externally generated sine tone and open the resulting
-> wave file in an editor. With the amount of artefacts you describe, they
-> should easily be visible.
+From: Peter Huewe <peterhuewe@gmx.de>
 
-Ok let me see if I got this straight:
+This patch changes the name of get_current function pointer to
+get_battery_current to resolve a name conflict with the get_current
+macro defined in current.h.
 
-I should record some sound with the audio card and see if it impacts
-the recording? May take me a few days, I need to get a microphone or
-something like that borrowed.
+This conflict resulted in a build-failure[1] for the sh4 arch
+allyesconfig which is resolved by this patch.
 
-> Another option is to play back any kind of recorded audio thru an audio
-> device that does not show the problem (some internal, onboard device?).
->
+To be consistent the other function pointers (_voltage,_capacity) were
+renamed too.
 
-What do you mean by this? I didn't get it. I usually use my onboard
-intel HDA for listening to music and have no problems.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+KernelVersion: linux-next 20100512
+References:
+[1] http://kisskb.ellerman.id.au/kisskb/buildresult/2572665/
 
-> Thanks,
-> Daniel
->
+ drivers/power/ds2782_battery.c |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
-Pedro
+diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
+index d762a0c..9b3b4b7 100644
+--- a/drivers/power/ds2782_battery.c
++++ b/drivers/power/ds2782_battery.c
+@@ -43,10 +43,9 @@
+ struct ds278x_info;
+ 
+ struct ds278x_battery_ops {
+-	int	(*get_current)(struct ds278x_info *info, int *current_uA);
+-	int	(*get_voltage)(struct ds278x_info *info, int *voltage_uA);
+-	int	(*get_capacity)(struct ds278x_info *info, int *capacity_uA);
+-
++	int (*get_battery_current)(struct ds278x_info *info, int *current_uA);
++	int (*get_battery_voltage)(struct ds278x_info *info, int *voltage_uA);
++	int (*get_battery_capacity)(struct ds278x_info *info, int *capacity_uA);
+ };
+ 
+ #define to_ds278x_info(x) container_of(x, struct ds278x_info, battery)
+@@ -213,11 +212,11 @@ static int ds278x_get_status(struct ds278x_info *info, int *status)
+ 	int current_uA;
+ 	int capacity;
+ 
+-	err = info->ops->get_current(info, &current_uA);
++	err = info->ops->get_battery_current(info, &current_uA);
+ 	if (err)
+ 		return err;
+ 
+-	err = info->ops->get_capacity(info, &capacity);
++	err = info->ops->get_battery_capacity(info, &capacity);
+ 	if (err)
+ 		return err;
+ 
+@@ -246,15 +245,15 @@ static int ds278x_battery_get_property(struct power_supply *psy,
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_CAPACITY:
+-		ret = info->ops->get_capacity(info, &val->intval);
++		ret = info->ops->get_battery_capacity(info, &val->intval);
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+-		ret = info->ops->get_voltage(info, &val->intval);
++		ret = info->ops->get_battery_voltage(info, &val->intval);
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+-		ret = info->ops->get_current(info, &val->intval);
++		ret = info->ops->get_battery_current(info, &val->intval);
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_TEMP:
+@@ -307,14 +306,14 @@ enum ds278x_num_id {
+ 
+ static struct ds278x_battery_ops ds278x_ops[] = {
+ 	[DS2782] = {
+-		.get_current  = ds2782_get_current,
+-		.get_voltage  = ds2782_get_voltage,
+-		.get_capacity = ds2782_get_capacity,
++		.get_battery_current  = ds2782_get_current,
++		.get_battery_voltage  = ds2782_get_voltage,
++		.get_battery_capacity = ds2782_get_capacity,
+ 	},
+ 	[DS2786] = {
+-		.get_current  = ds2786_get_current,
+-		.get_voltage  = ds2786_get_voltage,
+-		.get_capacity = ds2786_get_capacity,
++		.get_battery_current  = ds2786_get_current,
++		.get_battery_voltage  = ds2786_get_voltage,
++		.get_battery_capacity = ds2786_get_capacity,
+ 	}
+ };
+ 
+-- 
+1.6.4.4
+
