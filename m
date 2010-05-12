@@ -1,139 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab0ELSbK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 14:31:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63696 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692Ab0ELSbH (ORCPT
+	id S1754887Ab0ELSfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 14:35:24 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60475 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754692Ab0ELSfW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 14:31:07 -0400
+	Wed, 12 May 2010 14:35:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=FJuImf8iPGcwnfXTWYwJisc6jBqJ8R+bmxl/FTsOMlUeqfY/mDPHJFnDX9Udj0wUug
-         k76zmM0rxBZvjSnbSJgs+t35vmPaYFngnk+syme+g4JpwV/dqDhciOtBc9292k3ZckOf
-         GMlP731O8kM81kS2b2wEPpzGrDZ51MAaatOjU=
-Date: Wed, 12 May 2010 20:31:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Mathieu Desnoyers <compudj@krystal.dyndns.org>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH 07/10 final] tracing: Allow events to share their print
-	functions
-Message-ID: <20100512183100.GA10028@nowhere>
-References: <20100512152810.819338250@goodmis.org> <20100512152854.079439206@goodmis.org>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=kCS6dEI3ExjKFwOb80wQAmMThQ2EZJSBfjSsJiZhUgZO9tGHbLPPASYy50gGljvrd+
+         GUf3kqepTSUjrUy+RrnZOULZyfGRKj9uAGWEsq5jptMKpfOX+vfJgjhF7a5H8VsA8GGw
+         pMredHsW6CiqzLcvvMZDVynJKO/4YQyCn/GeI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512152854.079439206@goodmis.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CEE6BB42CAD6E947908279175AF8470A025A6DE803@EXDCVYMBSTM006.EQ1STM.local>
+References: <1272848076-28315-1-git-send-email-linus.walleij@stericsson.com>
+	 <AANLkTinAVhnpjgVTtbZYYKb1t_DInVwTKkkJRzcO97RX@mail.gmail.com>
+	 <AANLkTim7Tp8lCwMbQwW5QiQ49j7idFFUWdU3x8azIlok@mail.gmail.com>
+	 <CEE6BB42CAD6E947908279175AF8470A025A6DE803@EXDCVYMBSTM006.EQ1STM.local>
+Date: Wed, 12 May 2010 11:35:21 -0700
+X-Google-Sender-Auth: ZrQWtmJHUHru-XXsGnz3rtyNQIY
+Message-ID: <AANLkTilwcXmNjiuosbmaBudH965dNg3C7VIwlxNWkbzd@mail.gmail.com>
+Subject: Re: [PATCH 1/7] DMAENGINE: add generic PrimeCell interface to COH 901 
+	318 v6
+From: Dan Williams <dan.j.williams@intel.com>
+To: Linus WALLEIJ <linus.walleij@stericsson.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 11:28:17AM -0400, Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> Multiple events may use the same method to print their data.
-> Instead of having all events have a pointer to their print funtions,
-> the trace_event structure now points to a trace_event_functions structure
-> that will hold the way to print ouf the event.
-> 
-> The event itself is now passed to the print function to let the print
-> function know what kind of event it should print.
-> 
-> This opens the door to consolidating the way several events print
-> their output.
-> 
->    text	   data	    bss	    dec	    hex	filename
-> 4913961	1088356	 861512	6863829	 68bbd5	vmlinux.orig
-> 4900382	1048964	 861512	6810858	 67ecea	vmlinux.init
-> 4900446	1049028	 861512	6810986	 67ed6a	vmlinux.preprint
-> 
-> This change slightly increases the size but is needed for the next change.
-> 
-> v2: Fix the new function graph tracer event calls to handle this change.
-> 
-> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/linux/ftrace_event.h         |   17 +++-
->  include/linux/syscalls.h             |   10 ++-
->  include/trace/ftrace.h               |   13 ++-
->  include/trace/syscall.h              |    6 +-
->  kernel/trace/blktrace.c              |   13 ++-
->  kernel/trace/kmemtrace.c             |   28 +++++--
->  kernel/trace/trace.c                 |    9 +-
->  kernel/trace/trace_functions_graph.c |   13 ++-
->  kernel/trace/trace_kprobe.c          |   22 ++++--
->  kernel/trace/trace_output.c          |  137 +++++++++++++++++++++++-----------
->  kernel/trace/trace_output.h          |    2 +-
->  kernel/trace/trace_syscalls.c        |    6 +-
->  12 files changed, 186 insertions(+), 90 deletions(-)
-> 
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index 393a839..4f77932 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -70,18 +70,25 @@ struct trace_iterator {
->  };
->  
->  
-> +struct trace_event;
-> +
->  typedef enum print_line_t (*trace_print_func)(struct trace_iterator *iter,
-> -					      int flags);
-> -struct trace_event {
-> -	struct hlist_node	node;
-> -	struct list_head	list;
-> -	int			type;
-> +				      int flags, struct trace_event *event);
-> +
-> +struct trace_event_functions {
->  	trace_print_func	trace;
->  	trace_print_func	raw;
->  	trace_print_func	hex;
->  	trace_print_func	binary;
->  };
->  
-> +struct trace_event {
-> +	struct hlist_node		node;
-> +	struct list_head		list;
-> +	int				type;
-> +	struct trace_event_functions	*funcs;
-> +};
-> +
->  extern int register_ftrace_event(struct trace_event *event);
->  extern int unregister_ftrace_event(struct trace_event *event);
->  
-> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-> index 211c704..f725677 100644
-> --- a/include/linux/syscalls.h
-> +++ b/include/linux/syscalls.h
-> @@ -125,9 +125,12 @@ extern struct ftrace_event_class event_class_syscall_exit;
->  	static struct syscall_metadata __syscall_meta_##sname;		\
->  	static struct ftrace_event_call					\
->  	__attribute__((__aligned__(4))) event_enter_##sname;		\
-> -	static struct trace_event enter_syscall_print_##sname = {	\
-> +	static struct trace_event_functions enter_syscall_print_funcs_##sname = { \
->  		.trace                  = print_syscall_enter,		\
->  	};								\
-> +	static struct trace_event enter_syscall_print_##sname = {	\
-> +		.funcs                  = &enter_syscall_print_funcs_##sname, \
-> +	};								\
+On Wed, May 12, 2010 at 12:39 AM, Linus WALLEIJ
+<linus.walleij@stericsson.com> wrote:
+> [Dan]
+>
+>> >> +void dma_set_ambaconfig(struct dma_chan *chan,
+>> >> +                       struct amba_dma_channel_config *config)
+>> >
+>> > What happens when two primecell dma devices are present on one soc?
+>> > Can that happen?  In that case we'll have conflicting providers of
+>> > dma_set_ambaconfig().
+>> >
+>>
+>> ...the ->device_control() method is already approaching an ioctl()
+>> let's just add the argument parameter to complete the capability,
+>> i.e.:
+>>
+>> int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>> unsigned long arg);
+>
+> So the unsigned long arg is to match an ioctl? Okidoki...
+>
+> If it was only for in-kernel use a void* would be preferred
+> I believe since assuming unsigned long to be == bus width
+> is ... well, disturbing, since we'll be casting this into
+> a struct pointer.
 
+It's safe to assume that Linux does not run on any architecture where
+sizeof(unsigned long) < sizeof(void *).
 
+> So this should also be used for the AMBA configuration stuff
+> then, so I have to make first a patch to convert all the
+> device_control functions and then a patch on top of that to
+> implement the AMBA call as a device_control() thingie?
+>
+> (Should work out...)
+>
+> Just a bit of work, so will take some more hours :-)
 
-It looks like having a generic enter_syscall_print_func and enter_syscall_print
-would reduce the footprint even more.
+Apologies for not discovering this earlier in the review process, but
+it gets rid of the last bit of 'specialness' of the Primecell api and
+I can see it allowing other weird commands to be implemented
+generically down the road.  Just let me know if you want to run any
+compile tests for you.
 
-I'll make an incremental patch.
+> I will just have to make a proof-of-concept for the AMBA config
+> interface for Russell first, then I'll be on the ioctl-like API.
 
+Ok, I really appreciate your patience, I'll see what I can do to push
+this post-rc1 if things turn out that way.
+
+Regards,
+Dan
