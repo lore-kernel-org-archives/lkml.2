@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab0ELLAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 07:00:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47429 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab0ELLAI (ORCPT
+	id S1755565Ab0ELLBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 07:01:40 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58595 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753408Ab0ELLBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 07:00:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=gqvuUFC9J2wxOEB33Ber50jgZqEmG4aKuCH2AVfbblVAkIbYfpEXRstlT4es02SffR
-         DmCGcXuXA8kFvKiZh7/mm/E5bPil7hVjzS0h5klUjoOKPHHswOztUOvSPkIsNngBg8w4
-         I6vKuKTVSTJtPL9xb3XKevWGc9hRQts0E8aeA=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimUrjqc3cVt7pDcPZ_-GSalU4mCL5TfetdT-Sel@mail.gmail.com>
-References: <1273623083.2314.4.camel@localhost.localdomain>
-	 <AANLkTimUrjqc3cVt7pDcPZ_-GSalU4mCL5TfetdT-Sel@mail.gmail.com>
-Date: Wed, 12 May 2010 14:00:06 +0300
-Message-ID: <AANLkTimOtED_QvUY4dzEckwW21D36H3x7yCxUOwQWKuQ@mail.gmail.com>
-Subject: Re: [PATCH] Disable i8042 checks on Intel Apple Macs
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 12 May 2010 07:01:38 -0400
+Subject: Re: [PATCH v2] [RESEND] Handle instruction cache maintenance fault
+ properly
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Russell King <linux@arm.linux.org.uk>,
+       Siarhei Siamashka <siarhei.siamashka@nokia.com>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       Aaro Koskinen <aaro.koskinen@nokia.com>, Valdis.Kletnieks@vt.edu
+In-Reply-To: <AANLkTilVp0xvAJNns3TEe4SzEUpN8hMC9DdwmwW7i9yX@mail.gmail.com>
+References: <AANLkTilVp0xvAJNns3TEe4SzEUpN8hMC9DdwmwW7i9yX@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Wed, 12 May 2010 12:01:27 +0100
+Message-ID: <1273662087.23818.63.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 May 2010 11:01:28.0303 (UTC) FILETIME=[789DAFF0:01CAF1C2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 1:51 PM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> No need for that extra {}
+On Tue, 2010-05-11 at 11:33 +0100, Kirill A. Shutemov wrote:
+> Between "clean D line..." and "invalidate I line" operations in
+> v7_coherent_user_range(), the memory page may get swapped out.
+> And the fault on "invalidate I line" could not be properly handled
+> causing the oops.
+> 
+> In ARMv6 "external abort on linefetch" replaced by "instruction cache
+> maintenance fault". Let's handle it as translation fault. It fixes the
+> issue.
+> 
+> I'm not sure if it's reasonable to check arch version in run-time.
+> Let's do it in compile time for now.
+> 
+> Signed-off-by: Siarhei Siamashka <siarhei.siamashka@nokia.com>
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-Disregard that... didn't notice dmi_check_system() doesn't have an
-element count argument.
+FWIW:
+
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
 
 -- 
-Felipe Contreras
+Catalin
+
