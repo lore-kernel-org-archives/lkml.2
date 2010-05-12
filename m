@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab0ELNu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 09:50:56 -0400
-Received: from mga12.intel.com ([143.182.124.36]:26689 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752089Ab0ELNuz (ORCPT
+	id S1755348Ab0ELNxh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 09:53:37 -0400
+Received: from fg-out-1718.google.com ([72.14.220.154]:58554 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089Ab0ELNxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 09:50:55 -0400
-Message-Id: <89k83a$87e1b2@azsmga001.ch.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,215,1272870000"; 
-   d="scan'208";a="276235618"
-Date: Wed, 12 May 2010 14:50:50 +0100
-To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Subject: Re: [PATCH] drm/i915: Record error batch buffers using iomem
-Cc: Andrew Morton <akpm@linux-foundation.org>, dri-devel@lists.freedesktop.org,
-       Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
-References: <0100511104818.8382a7de.akpm@linux-foundation.org> <1273602134-6359-1-git-send-email-chris@chris-wilson.co.uk> <AANLkTimglAyS94q0Y3DEx9RROPxus-7l3OfF2_b-zAR3@mail.gmail.com> <AANLkTinmXAAq1HQTb_k3A-bl4uCz1ERhOIHNoCjqzEB4@mail.gmail.com> <89khjo$fd2th6@orsmga002.jf.intel.com> <AANLkTilbqi5crUD8KXmZ5SIv92KioEAN7Ra6nk2ALU6F@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <AANLkTilbqi5crUD8KXmZ5SIv92KioEAN7Ra6nk2ALU6F@mail.gmail.com>
+	Wed, 12 May 2010 09:53:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=kV9LiDgSfe7mkrmU5qkjQ1c4mFJ6569dvrfD+Y68CEYPeIWVTbcCUxsoeSKfatQtV3
+         XdDBYyW2fYwKX7HYVSHeH05KLHdTaI1wiwklTLTnnDD4Oh2NTOJ2hEtyZ1N0uJ+c8Pty
+         osOPn7Crz6Efi5SMS8uDCeamGzDHqgIcQCM8g=
+Subject: [pm] resume from s3 oops? (last checked on rc6)
+From: "=?gb2312?Q?=B1=F6=CE=F7=C3=C9?=" <binximeng@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: BinXimeng@gmail.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 May 2010 15:59:32 +0200
+Message-ID: <1273672772.7284.32.camel@eee51>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 18:45:55 +0530, Jaswinder Singh Rajput <jaswinderlinux@gmail.com> wrote:
-> Hello Chris,
-> 
-> With this patch after XWindows freezes, I get :
-[snip]
-> freeze dmesg : http://userweb.kernel.org/~jaswinder/acer_netbook/dmesg_2634_chris_hang.txt
-> 
-> freeze Xorg.log : http://userweb.kernel.org/~jaswinder/acer_netbook/Xorg_log.txt
+Hi lkml,
 
-Jaswinder can you also upload the /sys/kernel/debug/dri/0/i915_error_state
-following a freeze as well, please. If your /sys/kernel/debug is empty,
-you will need to "mount -tdebugfs debug /sys/kernel/debug".
+I'm trying to get suspend to ram working on a opensuse 11.2. (The box is
+unfortunately not connected to the Internet). So far I've tried with
+distribution's kernel 2.6.31.12 & now with 2.6.34-rc6 (already
+downloaded a copy of rc7 and will try it today)
 
-> So it means this patches shifted the BUG and warning messages after
-> some time. So I can only work on XWindows for few minutes with this
-> patch.
-> Andrew patch is in linus git tree. Can you please update your patch
-> above Andrew patch. So that I can do further testing.
+It suspends fine with "echo mem > /sys/power/state", resumes not though.
+The caps lock and scroll lock leds are flashing, I think this relates to
+a kernel oops? However, screen remains black.
 
-What is in the tree is adequate for the time being. It will capture the
-batch buffer into the error state. My follow-on patch only increases the
-level of paranoia. Thanks for testing.
+I did this from a "bare" system with vga=0 init=/bin/zsh command line.
+When using acpi_sleep=s3_beep, I get 3 high + 1 low beep right after
+wake-up. With acpi_sleep=s3_mode, I don't get the blinking keyboard
+leds, but the resume doesn't work either, especially do I believe it is
+not only a "black screen", otherwise I should be able to toggle the
+keyboard leds after resume.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+The board has a debug led connected to an AMI bios, which shows "24" --
+manual claims this to mean "Uncompress and initialize any platform
+specific BIOS modules. GPNV is initialized at this checkpoint." Don't
+know if this has any meaning and not just bogus though.
+
+probably unrelated, s1&s4 work.
+
+The hardware in question: ASRock Intel-X58 Extreme3 motherboard, AMD
+HD3450 graphics.
+
+any debug help/suggestions, things to try/look at to track this down
+that you guys could give me?
+
+cheers, ximeng
+
