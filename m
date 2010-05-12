@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab0ELQIF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 12:08:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52802 "EHLO mx1.redhat.com"
+	id S1756486Ab0ELQPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 12:15:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:65224 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756315Ab0ELQIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 12:08:01 -0400
-From: Eric Paris <eparis@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] inotify: race use after free/double free in inotify inode marks
-Date: Wed, 12 May 2010 12:08:00 -0400
-Message-Id: <1273680480-2550-1-git-send-email-eparis@redhat.com>
+	id S1755797Ab0ELQPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 12:15:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,216,1272870000"; 
+   d="scan'208";a="276297017"
+Subject: Re: linux-next: manual merge of the net tree with the
+ wireless-current tree
+From: reinette chatre <reinette.chatre@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Berg, Johannes" <johannes.berg@intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+In-Reply-To: <20100512121539.8956720a.sfr@canb.auug.org.au>
+References: <20100512121539.8956720a.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 May 2010 09:15:43 -0700
+Message-ID: <1273680943.2370.9533.camel@rchatre-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: root <root@tyan-gt24-04.rhts.eng.bos.redhat.com>
+Hi Stephen,
 
-There is a race in the inotify add/rm watch code.  A task can find and
-remove a mark which doesn't have all of it's references.  This can
-result in a use after free/double free situation.
+On Tue, 2010-05-11 at 19:15 -0700, Stephen Rothwell wrote:
+> Today's linux-next merge of the net tree got a conflict in
+> drivers/net/wireless/iwlwifi/iwl-dev.h between commit
+> 562db532760827f6ce30801a08e6b568848bc9f2 ("iwlagn: wait for
+> asynchronous
+> firmware loading") from the wireless-current tree and commit
+> ee525d13f501baeaa33209620398adaf0a820629 ("iwlwifi: move 3945 specific
+> data into union") from the net tree.
+> 
+> Just context changes. I fixed it up (see below) and can carry the fix
+> for
+> a while.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc drivers/net/wireless/iwlwifi/iwl-dev.h
+> index 4d4c651,58c69a5..0000000
+> --- a/drivers/net/wireless/iwlwifi/iwl-dev.h
+> +++ b/drivers/net/wireless/iwlwifi/iwl-dev.h
+> @@@ -1304,12 -1274,6 +1274,8 @@@ struct iwl_priv 
+>         struct delayed_work alive_start;
+>         struct delayed_work scan_check;
+>   
+>  +      struct completion firmware_loading_complete;
+>  +
 
-Task A					Task B
-------------				-----------
-inotify_new_watch()
- allocate a mark (refcnt == 1)
- add it to the idr
-					inotify_rm_watch()
-					 inotify_remove_from_idr()
-					  fsnotify_put_mark()
-					      refcnt hits 0, free
- take reference because we are on idr
- [at this point it is a use after free]
- [time goes on]
- refcnt may hit 0 again, double free
+Please note that this member of iwl_priv is now located in two
+places ... here and also in the device specific union a few lines up
+inside the _agn struct. In the code it is indeed the one in the _agn
+struct that is being used (see usage in iwl-agn.c), so adding this line
+is not necessary.
 
-The fix is to take the reference BEFORE the object can be found in the
-idr.
+This should not cause any problems with driver operation and can
+probably remain as such if indeed it is cleaned up somewhere else before
+it hits you again or linux-2.6.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
----
- fs/notify/inotify/inotify_user.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+> -       /*For 3945 only*/
+> -       struct delayed_work thermal_periodic;
+> -       struct delayed_work rfkill_poll;
+> - 
+>         /* TX Power */
+>         s8 tx_power_user_lmt;
+>         s8 tx_power_device_lmt;
+> 
+> 
 
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index 40da732..e46ca68 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -546,21 +546,24 @@ retry:
- 	if (unlikely(!idr_pre_get(&group->inotify_data.idr, GFP_KERNEL)))
- 		goto out_err;
- 
-+	/* we are putting the mark on the idr, take a reference */
-+	fsnotify_get_mark(&tmp_ientry->fsn_entry);
-+
- 	spin_lock(&group->inotify_data.idr_lock);
- 	ret = idr_get_new_above(&group->inotify_data.idr, &tmp_ientry->fsn_entry,
- 				group->inotify_data.last_wd+1,
- 				&tmp_ientry->wd);
- 	spin_unlock(&group->inotify_data.idr_lock);
- 	if (ret) {
-+		/* we didn't get on the idr, drop the idr reference */
-+		fsnotify_put_mark(&tmp_ientry->fsn_entry);
-+
- 		/* idr was out of memory allocate and try again */
- 		if (ret == -EAGAIN)
- 			goto retry;
- 		goto out_err;
- 	}
- 
--	/* we put the mark on the idr, take a reference */
--	fsnotify_get_mark(&tmp_ientry->fsn_entry);
--
- 	/* we are on the idr, now get on the inode */
- 	ret = fsnotify_add_mark(&tmp_ientry->fsn_entry, group, inode);
- 	if (ret) {
--- 
-1.6.5.3
+Reinette
+
 
