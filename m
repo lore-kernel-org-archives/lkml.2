@@ -1,133 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab0ELPtK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 11:49:10 -0400
-Received: from c60.cesmail.net ([216.154.195.49]:43675 "EHLO c60.cesmail.net"
+	id S1756345Ab0ELPt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 11:49:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18874 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755556Ab0ELPtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 11:49:08 -0400
-Subject: Re: [ath5k-devel] [PATCH] [ath5k][leds] Ability to disable leds
- support. If leds support enabled do not force mac802.11 leds layer
- selection.
-From: Pavel Roskin <proski@gnu.org>
-To: Dmytro Milinevskyy <milinevskyy@gmail.com>
-Cc: ath5k-devel@venema.h4ckr.net, Kalle Valo <kalle.valo@iki.fi>,
-       linux-wireless@vger.kernel.org, GeunSik Lim <geunsik.lim@samsung.com>,
-       Jiri Slaby <jirislaby@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Keng-Yu Lin <keng-yu.lin@canonical.com>, netdev@vger.kernel.org,
-       Jiri Kosina <jkosina@suse.cz>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Shahar Or <shahar@shahar-or.co.il>, linux-kernel@vger.kernel.org,
-       Luca Verdesca <magooz@salug.it>
-In-Reply-To: <4bea1f81.09b6660a.746e.1c12@mx.google.com>
-References: <4bea1f81.09b6660a.746e.1c12@mx.google.com>
-Content-Type: text/plain
-Date: Wed, 12 May 2010 11:48:56 -0400
-Message-Id: <1273679336.10823.15.camel@mj>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1756267Ab0ELPt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 11:49:58 -0400
+From: Eric Paris <eparis@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, Eric Paris <eparis@redhat.com>
+Subject: [PATCH] fsnotify: initialize mask in fsnotify_perm
+Date: Wed, 12 May 2010 11:49:21 -0400
+Message-Id: <1273679361-2346-1-git-send-email-eparis@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-07 at 21:58 +0300, Dmytro Milinevskyy wrote:
+akpm got a warning the fsnotify_mask could be used uninitialized in
+fsnotify_perm().  It's not actually possible but his compiler complained
+about it.  This patch just initializes it to 0 to shut up the compiler.
 
-> Here is the patch to disable ath5k leds support on build stage.
-> However if the leds support was enabled do not force selection of 802.11 leds layer.
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+---
+ include/linux/fsnotify.h |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-The idea is good, but the implementation could be improved.
-
-There are too many preprocessor conditionals in your patch.
-
-> +#ifdef CONFIG_ATH5K_LEDS
->  /*
->   * These match net80211 definitions (not used in
->   * mac80211).
-> @@ -939,11 +940,7 @@ enum ath5k_power_mode {
->  #define AR5K_LED_AUTH	2 /*IEEE80211_S_AUTH*/
->  #define AR5K_LED_ASSOC	3 /*IEEE80211_S_ASSOC*/
->  #define AR5K_LED_RUN	4 /*IEEE80211_S_RUN*/
-
-It should be OK to leave the constants defined even if they are not
-used.
-
-> +#ifdef CONFIG_ATH5K_LEDS
->  /* LED functions */
->  extern int ath5k_init_leds(struct ath5k_softc *sc);
->  extern void ath5k_led_enable(struct ath5k_softc *sc);
->  extern void ath5k_led_off(struct ath5k_softc *sc);
->  extern void ath5k_unregister_leds(struct ath5k_softc *sc);
-> +#endif
-
-You could add inline functions for the case when CONFIG_ATH5K_LEDS is
-not defined.  That would avoid may conditionals in the code.
-
->  /* GPIO Functions */
-> +#ifdef CONFIG_ATH5K_LEDS
->  extern void ath5k_hw_set_ledstate(struct ath5k_hw *ah, unsigned int state);
-> +#endif
-
-The same comment applies.
-
-Also, there is nothing wrong with having an external declaration that is
-not used in some particular configuration.
-
-> +#ifdef CONFIG_ATH5K_LEDS
->  	/* turn on HW LEDs */
->  	ath5k_hw_set_ledstate(ah, AR5K_LED_INIT);
-> +#endif
-
-This is avoidable by having an inline ath5k_hw_set_ledstate() that does
-nothing.
-
-> +#ifdef CONFIG_ATH5K_LEDS
->  	struct ieee80211_hw *hw = pci_get_drvdata(to_pci_dev(dev));
->  	struct ath5k_softc *sc = hw->priv;
->  
->  	ath5k_led_off(sc);
-> +#endif
-
-Even this is avoidable if ath5k_led_off() does nothing.  gcc should be
-smart enough to optimize out unneeded function calls.
-
-> +#ifdef CONFIG_ATH5K_LEDS
->  /*
->   * State for LED triggers
->   */
->  struct ath5k_led
->  {
-> +#ifdef CONFIG_LEDS_CLASS
-
-I'm not sure this complexity is needed.  Are you going to support LEDs
-if CONFIG_LEDS_CLASS is disabled?
-
-> +#ifdef CONFIG_ATH5K_LEDS
->  	unsigned int		led_pin,	/* GPIO pin for driving LED */
->  				led_on;		/* pin setting for LED on */
-> +#endif
->  
->  	struct tasklet_struct	restq;		/* reset tasklet */
->  
-> @@ -164,7 +172,9 @@ struct ath5k_softc {
->  	spinlock_t		rxbuflock;
->  	u32			*rxlink;	/* link ptr in last RX desc */
->  	struct tasklet_struct	rxtq;		/* rx intr tasklet */
-> +#ifdef CONFIG_ATH5K_LEDS
->  	struct ath5k_led	rx_led;		/* rx led */
-> +#endif
-
-You may want to group those fields together to make the code more
-readable.
-
-> --- a/drivers/net/wireless/ath/ath5k/led.c
-> +++ b/drivers/net/wireless/ath/ath5k/led.c
-
-I wonder if you could omit led.c completely in the Makefile.  If there
-are some parts of led.c that are needed without CONFIG_ATH5K_LEDS, maybe
-they belong elsewhere?
-
+diff --git a/include/linux/fsnotify.h b/include/linux/fsnotify.h
+index 64efda9..59d0df4 100644
+--- a/include/linux/fsnotify.h
++++ b/include/linux/fsnotify.h
+@@ -39,16 +39,18 @@ static inline int fsnotify_perm(struct file *file, int mask)
+ {
+ 	struct path *path = &file->f_path;
+ 	struct inode *inode = path->dentry->d_inode;
+-	__u32 fsnotify_mask;
++	__u32 fsnotify_mask = 0;
+ 
+ 	if (file->f_mode & FMODE_NONOTIFY)
+ 		return 0;
+ 	if (!(mask & (MAY_READ | MAY_OPEN)))
+ 		return 0;
+-	if (mask & MAY_READ)
+-		fsnotify_mask = FS_ACCESS_PERM;
+ 	if (mask & MAY_OPEN)
+ 		fsnotify_mask = FS_OPEN_PERM;
++	else if (mask & MAY_READ)
++		fsnotify_mask = FS_ACCESS_PERM;
++	else
++		BUG();
+ 
+ 	return fsnotify(inode, fsnotify_mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
+ }
 -- 
-Regards,
-Pavel Roskin
+1.6.5.3
+
