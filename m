@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab0ELAmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 20:42:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45704 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751075Ab0ELAmi (ORCPT
+	id S1754249Ab0ELApR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 20:45:17 -0400
+Received: from blue-ld-261.synserver.de ([217.119.54.83]:46174 "EHLO
+	smtp-out-072.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754008Ab0ELApM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 20:42:38 -0400
-Date: Tue, 11 May 2010 17:39:23 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@elte.hu>
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf fixes
-In-Reply-To: <20100511191807.GA12035@elte.hu>
-Message-ID: <alpine.LFD.2.00.1005111738460.3711@i5.linux-foundation.org>
-References: <20100511191807.GA12035@elte.hu>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 11 May 2010 20:45:12 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 1517
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: rpurdie@rpsys.net
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+       Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 0/3] Add pcf50633 backlight driver
+Date: Wed, 12 May 2010 02:44:31 +0200
+Message-Id: <1273625074-15312-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
+This patch series adds a backlight driver for the pcf50633.
+The first patch adds the backlight driver, the second patch registers the
+backlight driver in the pcf50633 core driver and the third patch replaces the
+platform backlight driver in mach-gta02 with the pcf50633 backlight driver.
 
-On Tue, 11 May 2010, Ingo Molnar wrote:
->
-> Frederic Weisbecker (1):
->       perf: Fix static strings treated like dynamic ones
+- Lars
 
-Grr. This one doesn't have a proper sign-off chain.
+Lars-Peter Clausen (3):
+  backlight/mfd: Add pcf50633 backlight driver
+  pcf50633: Register a pcf50633-backlight device in pcf50633 core
+    driver.
+  gta02: Use pcf50633 backlight driver instead of platform backlight
+    driver.
 
-I pulled it, but please be more careful.
+ arch/arm/mach-s3c2440/mach-gta02.c           |   76 ++---------
+ drivers/mfd/pcf50633-core.c                  |    3 +
+ drivers/video/backlight/Kconfig              |    7 +
+ drivers/video/backlight/Makefile             |    1 +
+ drivers/video/backlight/pcf50633-backlight.c |  190 ++++++++++++++++++++++++++
+ include/linux/mfd/pcf50633/backlight.h       |   51 +++++++
+ include/linux/mfd/pcf50633/core.h            |    4 +
+ 7 files changed, 265 insertions(+), 67 deletions(-)
+ create mode 100644 drivers/video/backlight/pcf50633-backlight.c
+ create mode 100644 include/linux/mfd/pcf50633/backlight.h
 
-		Linus
