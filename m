@@ -1,133 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab0ELOeQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 10:34:16 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:49583 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab0ELOeP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 10:34:15 -0400
-Date: Wed, 12 May 2010 20:04:08 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 11/11] Uprobes traceevents patch.
-Message-ID: <20100512143408.GP7426@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6>
- <20100331155311.4181.85103.sendpatchset@localhost6.localdomain6>
- <20100512110224.GB5408@nowhere>
+	id S1755453Ab0ELOeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 10:34:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23829 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755237Ab0ELOeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 10:34:21 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] CacheFiles: Fix error handling in
+	cachefiles_determine_cache_security()
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: dhowells@redhat.com, linux-cachefs@redhat.com,
+       linux-kernel@vger.kernel.org
+Date: Wed, 12 May 2010 15:34:03 +0100
+Message-ID: <20100512143403.2722.29652.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100512110224.GB5408@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  
-> > +config UPROBE_EVENT
-> > +	depends on UPROBES
-> > +	bool "Enable uprobes-based dynamic events"
-> > +	select TRACING
-> > +	default y
-> > +	help
-> > +	  This allows the user to add tracing events (similar to tracepoints)
-> > +	  on the fly via the traceevents interface.
-> 
-> 
-> 
-> That doesn't explain much what it does. Please explain its goal of
-> creating a trace event on top of a userspace dynamic probe.
-> 
+cachefiles_determine_cache_security() is expected to return with a security
+override in place.  However, if set_create_files_as() fails, we fail to do
+this.  In this case, we should just reinstate the security override that was
+set by the caller.
 
-Okay. 
+Furthermore, if set_create_files_as() fails, we should dispose of the new
+credentials we were in the process of creating.
 
-> 
-> 
-> > +#define MAX_TRACE_ARGS 128
-> > +#define MAX_ARGSTR_LEN 63
-> > +#define MAX_EVENT_NAME_LEN 64
-> 
-> 
-> This can be shared with kprobes in a new kernel/trace/dyn_probes.h
-> or something.
-> 
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-Okay. 
+ fs/cachefiles/security.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-> > +	ret = register_uprobe_event(tp);
-> > +	if (ret) {
-> > +		pr_warning("Faild to register probe event(%d)\n", ret);
-> 
-> 
-> "Failed"
+diff --git a/fs/cachefiles/security.c b/fs/cachefiles/security.c
+index b5808cd..039b501 100644
+--- a/fs/cachefiles/security.c
++++ b/fs/cachefiles/security.c
+@@ -77,6 +77,8 @@ static int cachefiles_check_cache_dir(struct cachefiles_cache *cache,
+ /*
+  * check the security details of the on-disk cache
+  * - must be called with security override in force
++ * - must return with a security override in force - even in the case of an
++ *   error
+  */
+ int cachefiles_determine_cache_security(struct cachefiles_cache *cache,
+ 					struct dentry *root,
+@@ -99,6 +101,8 @@ int cachefiles_determine_cache_security(struct cachefiles_cache *cache,
+ 	 * which create files */
+ 	ret = set_create_files_as(new, root->d_inode);
+ 	if (ret < 0) {
++		abort_creds(new);
++		cachefiles_begin_secure(cache, _saved_cred);
+ 		_leave(" = %d [cfa]", ret);
+ 		return ret;
+ 	}
 
-Okay. 
-
-> 
-> 
-> > +		group = UPROBE_EVENT_SYSTEM;
-> > +
-> > +	if (is_delete) {
-> > +		if (!event) {
-> > +			pr_info("Delete command needs an event name.\n");
-> > +			return -EINVAL;
-> > +		}
-> > +		tp = find_probe_event(event, group);
-> > +		if (!tp) {
-> > +			pr_info("Event %s/%s doesn't exist.\n", group, event);
-> > +			return -ENOENT;
-> > +		}
-> > +		/* delete an event */
-> > +		unregister_trace_uprobe(tp);
-> 
-> 
-> 
-> Doesn't seem to be under uprobe_lock.
-
-Agree, the unregister_trace_uprobe() has to be called after locking 
-uprobe_lock.
-
-> 
-> 
-> 
-> > +/* Make a debugfs interface for controling probe points */
-> > +static __init int init_uprobe_trace(void)
-> > +{
-> > +	struct dentry *d_tracer;
-> > +	struct dentry *entry;
-> > +
-> > +	d_tracer = tracing_init_dentry();
-> > +	if (!d_tracer)
-> > +		return 0;
-> > +
-> > +	entry = debugfs_create_file("uprobe_events", 0644, d_tracer,
-> > +				    NULL, &uprobe_events_ops);
-> > +
-> > +	/* Event list interface */
-> > +	if (!entry)
-> > +		pr_warning("Could not create debugfs "
-> > +			   "'uprobe_events' entry\n");
-> 
-> 
-> 
-> You can use trace_create_file I think.
-
-Okay, will check that. 
-
-> 
-> 
-
--- 
-Thanks and Regards
-Srikar
