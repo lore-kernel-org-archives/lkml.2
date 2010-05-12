@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758170Ab0ELVsA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 17:48:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55656 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755152Ab0ELVr5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 17:47:57 -0400
-Date: Wed, 12 May 2010 14:44:53 -0700
-From: Stephen Hemminger <shemminger@linux-foundation.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, Arnd Bergmann <arnd@arndb.de>,
-       David Miller <davem@davemloft.net>
-Subject: Re: [PATCH RFC tip/core/rcu 04/23] net: Make accesses to ->br_port
- safe for sparse RCU
-Message-ID: <20100512144453.4df81bdd@nehalam>
-In-Reply-To: <1273700022-16523-4-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20100512213317.GA15085@linux.vnet.ibm.com>
-	<1273700022-16523-4-git-send-email-paulmck@linux.vnet.ibm.com>
-Organization: Linux Foundation
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758062Ab0ELVuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 17:50:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41077 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751259Ab0ELVuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 17:50:44 -0400
+Date: Wed, 12 May 2010 17:50:15 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@elte.hu,
+       peterz@infradead.org, aris@redhat.com, linux-kernel@vger.kernel.org,
+       randy.dunlap@oracle.com
+Subject: Re: [PATCH 2/8] [nmi watchdog] touch_softlockup cleanups and
+ softlockup_tick removal
+Message-ID: <20100512215015.GM15159@redhat.com>
+References: <1273266711-18706-1-git-send-email-dzickus@redhat.com>
+ <1273266711-18706-3-git-send-email-dzickus@redhat.com>
+ <20100512200652.GF10028@nowhere>
+ <20100512202628.GK15159@redhat.com>
+ <20100512202832.GG10028@nowhere>
+ <20100512205616.GL15159@redhat.com>
+ <20100512210034.GH10028@nowhere>
+ <20100512213814.GB5190@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100512213814.GB5190@lenovo>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 14:33:23 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Thu, May 13, 2010 at 01:38:14AM +0400, Cyrill Gorcunov wrote:
+> On Wed, May 12, 2010 at 11:00:36PM +0200, Frederic Weisbecker wrote:
+> ...
+> > > > 
+> > > > Ah right.
+> > > > 
+> > > > BTW, if you address my reviews, please do it incrementally, I'm going
+> > > > to apply this set and push it to Ingo.
+> > > 
+> > > Ok, probably easier to review too. :-)
+> > 
+> > 
+> > Yeah, and it's time to flush this code as it's good globally.
+> > 
+> > Plus it would be nice to get this for .35
+> > 
+> > Ah and forget about the sysctl ABI breakages. Since this is only
+> > used for kernel development, this is not going to break much things.
+> > If somebody complains, we can still reintegrate what we had.
+> > 
+> > Thanks.
+> > 
+> ...
+> Guys, could you please spend a few minutes and enlighten me a bit?
+> Does all this series mean that we eventually will drop nmi-watchdog
+> via io-apic (read via pic) as only the transition to perf complete?
+> 
+> I recall someone said about to stop using io-apic, but just to be sure.
 
-> diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
-> index 9101a4e..3f66cd1 100644
-> --- a/net/bridge/br_fdb.c
-> +++ b/net/bridge/br_fdb.c
-> @@ -246,7 +246,7 @@ int br_fdb_test_addr(struct net_device *dev, unsigned char *addr)
->  		return 0;
->  
->  	rcu_read_lock();
-> -	fdb = __br_fdb_get(dev->br_port->br, addr);
-> +	fdb = __br_fdb_get(br_port(dev)->br, addr);
->  	ret = fdb && fdb->dst->dev != dev &&
->  		fdb->dst->state == BR_STATE_FORWARDING;
->  	rcu_read_unlock();
-> diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
-> index 846d7d1..4fedb60 100644
-> --- a/net/bridge/br_private.h
-> +++ b/net/bridge/br_private.h
-> @@ -229,6 +229,14 @@ static inline int br_is_root_bridge(const struct net_bridge *br)
->  	return !memcmp(&br->bridge_id, &br->designated_root, 8);
->  }
->  
-> +static inline struct net_bridge_port *br_port(const struct net_device *dev)
-> +{
-> +	if (!dev)
-> +		return NULL;
-> +
-> +	return rcu_dereference(dev->br_port);
-> +}
+Right, this code sits on top of the perf subsystem which uses lapic.
+Eventually, the old nmi watchdog code will disappear along with the
+support for io-apic.
 
-Looks like this is wrapping existing problems, and hurting not helping.
-
-Why introduce a wrapper that could return NULL and not check the
-result?
-
-I would rather that:
-   1. dev should never be null in this cases so the first if() is 
-      unnecessary, and confuses the semantics.
-   2. don't use wrapper br_port()
-   3. have callers check that rcu_dereference(dev->br_port) did not
-      return NULL.
-      If they derefernce does return NULL, then it means other CPU
-      has started tear down and this CPU should just go home quietly.
-
--- 
+Cheers,
+Don
