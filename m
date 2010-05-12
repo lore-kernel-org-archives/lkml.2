@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab0ELSvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 14:51:14 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:44485 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755189Ab0ELSvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 14:51:13 -0400
-Date: Wed, 12 May 2010 14:51:11 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Pierre Tardy <tardyp@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>
-Subject: Re: Perf and ftrace [was Re: PyTimechart]
-Message-ID: <20100512185111.GH21432@Krystal>
-References: <20100512164650.GH5405@nowhere> <1273683624.1626.127.camel@laptop> <20100512170734.GA15953@Krystal> <1273686425.1626.142.camel@laptop> <20100512175305.GB32496@Krystal> <1273687212.1626.147.camel@laptop> <20100512180438.GE15953@Krystal> <1273687712.1626.151.camel@laptop> <20100512183704.GD21432@Krystal> <1273690142.1626.158.camel@laptop>
+	id S1753646Ab0ELS4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 14:56:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59031 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752044Ab0ELS4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 14:56:39 -0400
+Message-ID: <4BEAF9B6.2040606@zytor.com>
+Date: Wed, 12 May 2010 11:55:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273690142.1626.158.camel@laptop>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:50:18 up 109 days, 21:27,  9 users,  load average: 0.28, 0.23,
-	0.19
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Mike Travis <travis@sgi.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if add_efi_memmap
+ specified.
+References: <4BEAEF10.9040809@sgi.com>
+In-Reply-To: <4BEAEF10.9040809@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Wed, 2010-05-12 at 14:37 -0400, Mathieu Desnoyers wrote:
-> > * Peter Zijlstra (peterz@infradead.org) wrote:
-> > > On Wed, 2010-05-12 at 14:04 -0400, Mathieu Desnoyers wrote:
-> > > > Can't we keep multiple references to each page ? (shared page) so it's still in
-> > > > the buffer, also accessed by mmap(), and in addition accessed by splice.
-> > > 
-> > > I'm not sure, the problem seems to be that a splice-consumer might want
-> > > to inject the page into a whole different address-space, over-writing
-> > > page->mapping/->index etc.
-> > 
-> > OK, I see. In LTTng, I dropped the mmap() support when I integrated splice(). In
-> > both case, I can share the pages between the "output" (mmap or splice) and the
-> > ring buffer because my ring buffer does not care about
-> > page->mapping/->index/etc, so I never have to swap them.
-> > 
-> > However, doing mmap() and splice() at the same time on the same pages seems
-> > problematic for the reason you point out here (and not very useful anyway).
-> > But I think restrictions could be done more transparently than what you propose,
-> > e.g.:
-> > 
-> > 1) create buffer -> return fd
-> >    (perform pfn alignment for the architecture worse-case, e.g. support mmap()
-> >     on sparc)
-> > 
-> > 2a) mmap(fd)
-> >     return -EBUSY if any of the pages has non-NULL mapping.
-> > 3a) munmap(fd)
-> > 
-> > 2b) splice(fd)
-> >     return -EBUSY if any of the pages has non-NULL mapping.
-> > 
-> > 2c) read(fd)
-> >     Could probably be done concurrently with splice() or mmap().
-> > 
-> > This way we would ensure that only mmap or splice is used on the buffer at a
-> > given time without crippling the API.
-> > 
-> > Thoughts ?
+On 05/12/2010 11:10 AM, Mike Travis wrote:
 > 
-> Right, so the problem is that we now use mmap() to size the buffer. I
-> guess we could go adding a size attribute to perf_event_attr, but I
-> think its makes more sense to separate the actual event and the output
-> buffer objects.
+> Currently, the e820_reserve_resources() function does not add entries
+> obtained via the "add_efi_memmap" kernel cmdline option.  This causes
+> /sys/firmware/memmap/... to be incomplete (stops after 128 entries).
+> Utilities that examine these entries then do not get the complete
+> picture of system memory.
+> 
+> This patch causes the above function to use the e820 memmap instead
+> of the e820_saved memmap if "add_efi_memmap" cmdline option is
+> specified.
+> 
+> Signed-off-by: Mike Travis <travis@sgi.com>
+> Signed-off-by: Jack Steiner <steiner@sgi.com>
 
-It makes it hard to use splice() or read() if you don't specify the buffer size
-at creation time. That alone seems like a pretty good argument for fixing the
-size before the mmap() call.
+If I'm not mistaken, the very reason for the e820 vs e820_saved map is
+that the latter is supposed to reflect the firmware report, whereas the
+former is subject to be modified by the kernel.  As this is actually a
+reflection of the firmware (although it would be better if you could fix
+the bootloader instead of adding hacks in the kernel...) it really
+should go into e820_saved as well as e820.  Displaying the adjusted e820
+map doesn't seem appropriate under any circumstances.
 
-Thanks,
-
-Mathieu
-
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+	-hpa
