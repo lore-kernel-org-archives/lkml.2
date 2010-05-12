@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab0ELAFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 20:05:51 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57482 "EHLO gate.crashing.org"
+	id S1753755Ab0ELAI3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 20:08:29 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:55775 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753312Ab0ELAFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 20:05:48 -0400
-Subject: Re: [PATCH 07/22] lmb: Add lmb_to_bootmem()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai <yinghai.lu@oracle.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <4BE78C37.5080103@oracle.com>
-References: <1273331860-14325-1-git-send-email-yinghai@kernel.org>
-	 <1273331860-14325-8-git-send-email-yinghai@kernel.org>
-	 <1273461193.23699.9.camel@pasglop>  <4BE78C37.5080103@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 May 2010 10:03:36 +1000
-Message-ID: <1273622616.21352.59.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753308Ab0ELAI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 20:08:28 -0400
+Date: Tue, 11 May 2010 17:08:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH RFC tip/core/rcu 06/11] staging: remove all rcu head
+ initializations
+Message-ID: <20100512000821.GH2336@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100511233241.GA20250@linux.vnet.ibm.com>
+ <1273620786-20392-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20100511234523.GA1450@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100511234523.GA1450@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-05-09 at 21:31 -0700, Yinghai wrote:
-> > This is clumsy. Doesn't work with NUMA either. Also,
+On Tue, May 11, 2010 at 04:45:23PM -0700, Greg KH wrote:
+> On Tue, May 11, 2010 at 04:33:01PM -0700, Paul E. McKenney wrote:
+> > Remove all rcu head inits. We don't care about the RCU head state before passing
+> > it to call_rcu() anyway. Only leave the "on_stack" variants so debugobjects can
+> > keep track of objects on stack.
+> > 
+> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> > ---
+> >  drivers/staging/batman-adv/hard-interface.c |    1 -
 > 
-> it works NUMA. for x86 we managed to call that one time from
-> 2.6.34-rc1. (still called early_res_to_bootmem().
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=1842f90cc98625d4d9bf8f8b927f17705ceb4e9c
+> Is this safe to apply to my tree now?  Or do you want to take it through
+> your tree as it depends on other stuff?
+
+Because the rcu_head in this case is not in an auto (on-stack) variable,
+this commit is safe to apply to your tree now.
+
+Let me know when you have applied it, and I will happily remove it
+from mine.  ;-)
+
+							Thanx, Paul
+
+> If your tree, no objection from me, feel free to add:
+> 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> > reserve_bootmem_generic() only exists on x86 afaik.
+> thanks,
 > 
-> previous patch add weak version 
-> [PATCH 06/22] bootmem, x86: Add weak version of
-> reserve_bootmem_generic
-
-It might work on x86, it won't work on sparc as far as I understand. In
-any case, I don't think that should be in lmb.c, that's boilerplate crap
-that eventually will go away.
-
-One thing you don't seem to get is that several archs already have some
-code to move from lmb to bootmem.
-
-The right approach when making something "generic" like that is not to
-make up another one deep into x86 gunkyness and make -that- generic
-ignoring the existing implementations.
-
-Instead, make sure that the existing implementations are in sync, and
-then move -that- to a generic place, eventually adding (in a separate
-patch) the changes needed by x86 if any.
-
-Cheers,
-Ben.
-
-
+> greg k-h
