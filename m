@@ -1,301 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab0ELGoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 02:44:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:24573 "EHLO mga11.intel.com"
+	id S1753764Ab0ELGqq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 02:46:46 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53975 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751560Ab0ELGoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 02:44:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,212,1272870000"; 
-   d="scan'208";a="566377777"
-Subject: [PATCH -v2] KVM, Fix QEMU-KVM is killed by guest SRAO MCE
-From: Huang Ying <ying.huang@intel.com>
-To: Avi Kivity <avi@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>, masbock@linux.vnet.ibm.com,
-       "Wu, Fengguang" <fengguang.wu@intel.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 May 2010 14:44:03 +0800
-Message-ID: <1273646643.3564.51.camel@yhuang-dev.sh.intel.com>
+	id S1753175Ab0ELGqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 02:46:44 -0400
+Date: Wed, 12 May 2010 16:46:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for May 12
+Message-Id: <20100512164638.75e6e111.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__12_May_2010_16_46_38_+1000_nag.5a_Q4Hu04q0D"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In common cases, guest SRAO MCE will cause corresponding poisoned page
-be un-mapped and SIGBUS be sent to QEMU-KVM, then QEMU-KVM will relay
-the MCE to guest OS.
+--Signature=_Wed__12_May_2010_16_46_38_+1000_nag.5a_Q4Hu04q0D
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-But it is reported that if the poisoned page is accessed in guest
-after un-mapped and before MCE is relayed to guest OS, QEMU-KVM will
-be killed.
+Hi all,
 
-The reason is as follow. Because poisoned page has been un-mapped,
-guest access will cause guest exit and kvm_mmu_page_fault will be
-called. kvm_mmu_page_fault can not get the poisoned page for fault
-address, so kernel and user space MMIO processing is tried in turn. In
-user MMIO processing, poisoned page is accessed again, then QEMU-KVM
-is killed by force_sig_info.
+Changes since 20100511:
 
-To fix the bug, kvm_mmu_page_fault send HWPOISON signal to QEMU-KVM
-and do not try kernel and user space MMIO processing for poisoned
-page.
+Dropped trees: tmio-mmc (long unresolved conflicts and unable to fetch)
+	hwlat (at the maintainer's request)
 
+The ext3 tree gained a conflict against the cifs tree.
 
-Changelog:
+The vl4-dvb tree lost its conflicts.
 
-v2:
+The acpi tree gained a conflict against Linus' tree.
 
-- Use page table walker to determine whether the virtual address is
-  poisoned to avoid change user space interface (via changing
-  get_user_pages).
+The net tree gained conflicts against Linus' and the wireless-current
+trees and a build failure that required a merge fix.
 
-- Wrap bad page processing into kvm_handle_bad_page to avoid code
-  duplicating.
+The backlight tree still has its build failure so I used the version from
+next-20100507.
 
-Reported-by: Max Asbock <masbock@linux.vnet.ibm.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- arch/x86/kvm/mmu.c         |   34 ++++++++++++++++++++++++++--------
- arch/x86/kvm/paging_tmpl.h |    7 ++-----
- include/linux/kvm_host.h   |    1 +
- include/linux/mm.h         |    8 ++++++++
- mm/memory-failure.c        |   28 ++++++++++++++++++++++++++++
- virt/kvm/kvm_main.c        |   30 ++++++++++++++++++++++++++++--
- 6 files changed, 93 insertions(+), 15 deletions(-)
+The usb tree gained a conflict against the v4l-dvb tree.
 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -32,6 +32,7 @@
- #include <linux/compiler.h>
- #include <linux/srcu.h>
- #include <linux/slab.h>
-+#include <linux/uaccess.h>
- 
- #include <asm/page.h>
- #include <asm/cmpxchg.h>
-@@ -1975,6 +1976,27 @@ static int __direct_map(struct kvm_vcpu
- 	return pt_write;
- }
- 
-+static void kvm_send_hwpoison_signal(struct kvm *kvm, gfn_t gfn)
-+{
-+	char buf[1];
-+	void __user *hva;
-+	int r;
-+
-+	/* Touch the page, so send SIGBUS */
-+	hva = (void __user *)gfn_to_hva(kvm, gfn);
-+	r = copy_from_user(buf, hva, 1);
-+}
-+
-+static int kvm_handle_bad_page(struct kvm *kvm, gfn_t gfn, pfn_t pfn)
-+{
-+	kvm_release_pfn_clean(pfn);
-+	if (is_hwpoison_pfn(pfn)) {
-+		kvm_send_hwpoison_signal(kvm, gfn);
-+		return 0;
-+	}
-+	return 1;
-+}
-+
- static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn)
- {
- 	int r;
-@@ -1998,10 +2020,8 @@ static int nonpaging_map(struct kvm_vcpu
- 	pfn = gfn_to_pfn(vcpu->kvm, gfn);
- 
- 	/* mmio */
--	if (is_error_pfn(pfn)) {
--		kvm_release_pfn_clean(pfn);
--		return 1;
--	}
-+	if (is_error_pfn(pfn))
-+		return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
- 
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	if (mmu_notifier_retry(vcpu, mmu_seq))
-@@ -2204,10 +2224,8 @@ static int tdp_page_fault(struct kvm_vcp
- 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
- 	smp_rmb();
- 	pfn = gfn_to_pfn(vcpu->kvm, gfn);
--	if (is_error_pfn(pfn)) {
--		kvm_release_pfn_clean(pfn);
--		return 1;
--	}
-+	if (is_error_pfn(pfn))
-+		return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	if (mmu_notifier_retry(vcpu, mmu_seq))
- 		goto out_unlock;
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -424,11 +424,8 @@ static int FNAME(page_fault)(struct kvm_
- 	pfn = gfn_to_pfn(vcpu->kvm, walker.gfn);
- 
- 	/* mmio */
--	if (is_error_pfn(pfn)) {
--		pgprintk("gfn %lx is mmio\n", walker.gfn);
--		kvm_release_pfn_clean(pfn);
--		return 1;
--	}
-+	if (is_error_pfn(pfn))
-+		return kvm_handle_bad_page(vcpu->kvm, walker.gfn, pfn);
- 
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	if (mmu_notifier_retry(vcpu, mmu_seq))
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -254,6 +254,7 @@ extern pfn_t bad_pfn;
- 
- int is_error_page(struct page *page);
- int is_error_pfn(pfn_t pfn);
-+int is_hwpoison_pfn(pfn_t pfn);
- int kvm_is_error_hva(unsigned long addr);
- int kvm_set_memory_region(struct kvm *kvm,
- 			  struct kvm_userspace_memory_region *mem,
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -92,6 +92,9 @@ static bool kvm_rebooting;
- 
- static bool largepages_enabled = true;
- 
-+struct page *hwpoison_page;
-+pfn_t hwpoison_pfn;
-+
- inline int kvm_is_mmio_pfn(pfn_t pfn)
- {
- 	if (pfn_valid(pfn)) {
-@@ -809,16 +812,22 @@ EXPORT_SYMBOL_GPL(kvm_disable_largepages
- 
- int is_error_page(struct page *page)
- {
--	return page == bad_page;
-+	return page == bad_page || page == hwpoison_page;
- }
- EXPORT_SYMBOL_GPL(is_error_page);
- 
- int is_error_pfn(pfn_t pfn)
- {
--	return pfn == bad_pfn;
-+	return pfn == bad_pfn || pfn == hwpoison_pfn;
- }
- EXPORT_SYMBOL_GPL(is_error_pfn);
- 
-+int is_hwpoison_pfn(pfn_t pfn)
-+{
-+	return pfn == hwpoison_pfn;
-+}
-+EXPORT_SYMBOL_GPL(is_hwpoison_pfn);
-+
- static inline unsigned long bad_hva(void)
- {
- 	return PAGE_OFFSET;
-@@ -939,6 +948,11 @@ static pfn_t hva_to_pfn(struct kvm *kvm,
- 	if (unlikely(npages != 1)) {
- 		struct vm_area_struct *vma;
- 
-+		if (is_hwpoison_address(addr)) {
-+			get_page(hwpoison_page);
-+			return page_to_pfn(hwpoison_page);
-+		}
-+
- 		down_read(&current->mm->mmap_sem);
- 		vma = find_vma(current->mm, addr);
- 
-@@ -2198,6 +2212,15 @@ int kvm_init(void *opaque, unsigned int
- 
- 	bad_pfn = page_to_pfn(bad_page);
- 
-+	hwpoison_page = alloc_page(GFP_KERNEL | __GFP_ZERO);
-+
-+	if (hwpoison_page == NULL) {
-+		r = -ENOMEM;
-+		goto out_free_0;
-+	}
-+
-+	hwpoison_pfn = page_to_pfn(hwpoison_page);
-+
- 	if (!zalloc_cpumask_var(&cpus_hardware_enabled, GFP_KERNEL)) {
- 		r = -ENOMEM;
- 		goto out_free_0;
-@@ -2269,6 +2292,8 @@ out_free_1:
- out_free_0a:
- 	free_cpumask_var(cpus_hardware_enabled);
- out_free_0:
-+	if (hwpoison_page)
-+		__free_page(hwpoison_page);
- 	__free_page(bad_page);
- out:
- 	kvm_arch_exit();
-@@ -2291,6 +2316,7 @@ void kvm_exit(void)
- 	kvm_arch_hardware_unsetup();
- 	kvm_arch_exit();
- 	free_cpumask_var(cpus_hardware_enabled);
-+	__free_page(hwpoison_page);
- 	__free_page(bad_page);
- }
- EXPORT_SYMBOL_GPL(kvm_exit);
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -45,6 +45,7 @@
- #include <linux/page-isolation.h>
- #include <linux/suspend.h>
- #include <linux/slab.h>
-+#include <linux/swapops.h>
- #include "internal.h"
- 
- int sysctl_memory_failure_early_kill __read_mostly = 0;
-@@ -1296,3 +1297,30 @@ done:
- 	/* keep elevated page count for bad page */
- 	return ret;
- }
-+
-+int is_hwpoison_address(unsigned long addr)
-+{
-+	pgd_t *pgdp;
-+	pud_t *pudp;
-+	pmd_t *pmdp;
-+	pte_t pte, *ptep;
-+	swp_entry_t entry;
-+
-+	pgdp = pgd_offset(current->mm, addr);
-+	if (!pgd_present(*pgdp))
-+		return 0;
-+	pudp = pud_offset(pgdp, addr);
-+	if (!pud_present(*pudp))
-+		return 0;
-+	pmdp = pmd_offset(pudp, addr);
-+	if (!pmd_present(*pmdp))
-+		return 0;
-+	ptep = pte_offset_map(pmdp, addr);
-+	pte = *ptep;
-+	pte_unmap(ptep);
-+	if (!is_swap_pte(pte))
-+		return 0;
-+	entry = pte_to_swp_entry(pte);
-+	return is_hwpoison_entry(entry);
-+}
-+EXPORT_SYMBOL_GPL(is_hwpoison_address);
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1464,6 +1464,14 @@ extern int sysctl_memory_failure_recover
- extern void shake_page(struct page *p, int access);
- extern atomic_long_t mce_bad_pages;
- extern int soft_offline_page(struct page *page, int flags);
-+#ifdef CONFIG_MEMORY_FAILURE
-+int is_hwpoison_address(unsigned long addr);
-+#else
-+static inline int is_hwpoison_address(unsigned long addr)
-+{
-+	return 0;
-+}
-+#endif
- 
- extern void dump_page(struct page *page);
- 
+The staging-next tree gained a conflict against the pcmcia tree.
 
+----------------------------------------------------------------------------
 
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 162 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/for-linus
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Applying: arm: update gfp/slab.h includes
+Merging davinci/davinci-next
+Applying: davinci: update gfp/slab.h includes
+Merging i.MX/for-next
+Merging msm/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/Kconfig
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+CONFLICT (content): Merge conflict in fs/cifs/cifsfs.c
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Applying: ocfs2: update gfp/slab.h includes
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+CONFLICT (content): Merge conflict in fs/9p/vfs_super.c
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+CONFLICT (content): Merge conflict in fs/cifs/file.c
+CONFLICT (content): Merge conflict in fs/namei.c
+CONFLICT (content): Merge conflict in fs/nfs/inode.c
+CONFLICT (content): Merge conflict in fs/nfsd/nfs4xdr.c
+CONFLICT (content): Merge conflict in fs/nfsd/vfs.c
+CONFLICT (content): Merge conflict in fs/ufs/inode.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
+CONFLICT (content): Merge conflict in security/tomoyo/realpath.c
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Applying: v4l-dvb: update gfp/slab.h includes
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+CONFLICT (content): Merge conflict in drivers/acpi/sleep.c
+Applying: acpi: update gfp/slab.h includes
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+CONFLICT (content): Merge conflict in drivers/net/wireless/ath/ar9170/usb.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-dev.h
+CONFLICT (content): Merge conflict in drivers/scsi/iscsi_tcp.c
+CONFLICT (content): Merge conflict in net/ipv4/ipmr.c
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-dev.h
+Applying: wireless: update gfp/slab.h includes
+Applying: net: merge fix for ipmr.c
+Merging mtd/master
+Applying: mtd: update gfp/slab.h includes
+Merging crypto/master
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+CONFLICT (content): Merge conflict in drivers/net/virtio_net.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/libertas_tf/if_u=
+sb.c
+CONFLICT (content): Merge conflict in include/linux/mod_devicetable.h
+CONFLICT (content): Merge conflict in scripts/mod/file2alias.c
+Merging mmc/next
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in fs/ext3/fsync.c
+CONFLICT (content): Merge conflict in fs/ext4/fsync.c
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+CONFLICT (content): Merge conflict in drivers/net/pcmcia/3c589_cs.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/orinoco/orinoco_=
+cs.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/orinoco/spectrum=
+_cs.c
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+$ git reset --hard HEAD^
+Merging refs/next/20100507/backlight
+Merging kgdb/kgdb-next
+Applying: kgdb: update for sysrq handling change
+Applying: kdb: update gfp/slab.h includes
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/dma/Makefile
+CONFLICT (add/add): Merge conflict in drivers/dma/timb_dma.c
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/i915_drv.h
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/r300.c
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Applying: wireless: update for pm_qos_requirement to pm_qos_request rename
+Merging bluetooth/master
+Merging fsnotify/for-next
+Applying: fsnotify: update gfp/slab.h includes
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging drbd/for-jens
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Applying: vbus: use of kzalloc/kfree requires the include of slab.h
+Applying: vbus: update gfp/slab.h includes
+Merging i7core_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging omap_dss2/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-rx51-periph=
+erals.c
+Merging tip/auto-latest
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+CONFLICT (content): Merge conflict in arch/cris/arch-v10/drivers/ds1302.c
+CONFLICT (content): Merge conflict in drivers/block/pktcdvd.c
+Merging quilt/driver-core
+CONFLICT (content): Merge conflict in drivers/base/platform.c
+Applying: md: fixup for sysfs_get_dirent API change
+Merging quilt/tty
+CONFLICT (content): Merge conflict in include/linux/tty.h
+Merging quilt/usb
+CONFLICT (content): Merge conflict in drivers/input/tablet/acecad.c
+CONFLICT (content): Merge conflict in drivers/input/tablet/kbtab.c
+CONFLICT (content): Merge conflict in drivers/input/tablet/wacom_sys.c
+CONFLICT (content): Merge conflict in drivers/media/video/gspca/gspca.c
+CONFLICT (delete/modify): sound/usb/usbaudio.c deleted in HEAD and modified=
+ in quilt/usb. Version quilt/usb of sound/usb/usbaudio.c left in tree.
+$ git rm -f sound/usb/usbaudio.c
+Applying: usb: update gfp/slab.h includes
+Applying: sound: fixup for usb_buffer_alloc/free rename
+Merging staging-next/staging-next
+CONFLICT (rename/modify): Merge conflict in drivers/staging/hv/hv.c
+CONFLICT (delete/modify): drivers/staging/arlan/arlan-main.c deleted in sta=
+ging-next/staging-next and modified in HEAD. Version HEAD of drivers/stagin=
+g/arlan/arlan-main.c left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/comedi/drivers/cb_das=
+16_cs.c
+CONFLICT (content): Merge conflict in drivers/staging/cx25821/cx25821-alsa.c
+CONFLICT (content): Merge conflict in drivers/staging/dt3155/dt3155_drv.c
+CONFLICT (delete/modify): drivers/staging/netwave/netwave_cs.c deleted in s=
+taging-next/staging-next and modified in HEAD. Version HEAD of drivers/stag=
+ing/netwave/netwave_cs.c left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/rtl8187se/r8180_core.c
+CONFLICT (delete/modify): drivers/staging/wavelan/wavelan.c deleted in stag=
+ing-next/staging-next and modified in HEAD. Version HEAD of drivers/staging=
+/wavelan/wavelan.c left in tree.
+CONFLICT (delete/modify): drivers/staging/wavelan/wavelan_cs.c deleted in s=
+taging-next/sRecorded preimage for 'drivers/staging/wlags49_h2/wl_cs.c'
+CONFLICT (content): Merge conflict in drivers/staging/wlags49_h2/wl_cs.c
+$ git rm -f drivers/staging/arlan/arlan-main.c
+$ git rm -f drivers/staging/netwave/netwave_cs.c
+$ git rm -f drivers/staging/wavelan/wavelan.c
+$ git rm -f drivers/staging/wavelan/wavelan_cs.c
+Merging slabh/slabh
+Merging scsi-post-merge/master
+
+--Signature=_Wed__12_May_2010_16_46_38_+1000_nag.5a_Q4Hu04q0D
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvqTs4ACgkQjjKRsyhoI8zwvACgsiJS2TbFcpzj8nflXIC5qYSF
+c/AAoL1I//U+U2/VxwUUeIyrAuCXTNPy
+=Ib63
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_May_2010_16_46_38_+1000_nag.5a_Q4Hu04q0D--
