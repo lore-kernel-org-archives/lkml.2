@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373Ab0ELSXh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 14:23:37 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:48097 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753377Ab0ELSXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 14:23:36 -0400
-Date: Wed, 12 May 2010 20:23:21 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Pierre Tardy <tardyp@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, mathieu.desnoyers@efficios.com,
-       arjan@infradead.org, ziga.mahkovec@gmail.com
-Subject: Re: [RFC] PyTimechart
-Message-ID: <20100512182321.GA10510@elte.hu>
-References: <AANLkTilJLcdfK-vgqGdXyaZ_bQ1BDFmQl619egtGAA4i@mail.gmail.com>
- <20100511213625.GD5422@nowhere>
- <AANLkTikumkBKwYTYIK63mT2i_hI4SAo-Eua0cx9OCHnD@mail.gmail.com>
- <20100512144811.GA5405@nowhere>
- <1273678596.27703.30.camel@gandalf.stny.rr.com>
- <20100512165947.GA11921@elte.hu>
- <1273684511.27703.37.camel@gandalf.stny.rr.com>
+	id S1754749Ab0ELS12 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 14:27:28 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34240 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754617Ab0ELS11 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 14:27:27 -0400
+Date: Wed, 12 May 2010 23:57:20 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Chris Friesen <cfriesen@nortel.com>
+Cc: James Kosin <jkosin@intcomgrp.com>, Dhaval Giani <dhaval.giani@gmail.com>,
+       Jan Safranek <jsafrane@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       menage@google.com, lennart@poettering.net, tglx@linutronix.de
+Subject: Re: [PATCH/RFC] Have sane default values for cpusets
+Message-ID: <20100512182720.GN3296@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <eJktY-7JG-7@gated-at.bofh.it>
+ <eJktY-7JG-5@gated-at.bofh.it>
+ <4BEAB6FC.8090105@intcomgrp.com>
+ <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
+ <1273674048.1626.117.camel@laptop>
+ <4BEABDF8.40206@redhat.com>
+ <4BEAE7A1.2010001@intcomgrp.com>
+ <AANLkTikEyJ8q9GkpyZo0OUY4MLM_soWEviiBG2R6H-mY@mail.gmail.com>
+ <4BEAEC2A.6090306@intcomgrp.com>
+ <4BEAED98.30502@nortel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1273684511.27703.37.camel@gandalf.stny.rr.com>
+In-Reply-To: <4BEAED98.30502@nortel.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
-	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
-	[score: 0.1748]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Chris Friesen <cfriesen@nortel.com> [2010-05-12 12:04:08]:
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+> Something I haven't tried is whether or not it's possible to set
+> ownership/permissions on subtrees within the cgroup hierarchy to allow
+> unprivileged users/groups to control their own tasks (basically letting
+> them prioritize their own jobs without being able to affect anything
+> else).  Does anyone know if this sort of thing is possible?
 
-> On Wed, 2010-05-12 at 18:59 +0200, Ingo Molnar wrote:
-> > * Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > > On Wed, 2010-05-12 at 16:48 +0200, Frederic Weisbecker wrote:
-> > > > On Wed, May 12, 2010 at 03:37:27PM +0200, Pierre Tardy wrote:
-> > > 
-> > > > But we don't yet support trace_printk in perf. May be we could wrap
-> > > > them in trace events.
-> > > 
-> > > Hmm, do we really want to do that?
-> > > 
-> > > We really need to get the perf and ftrace trace buffers combined. I 
-> > > understand why perf chose to do the mmap buffers for the counting, but 
-> > > for live streaming, it is very inefficient compared to splice.
-> > 
-> > The thing is that for a very long time ftrace didnt have splice support 
-> > and survived just fine. Even today most of the ftrace usage isnt utilizing 
-> > splice.
-> 
-> Actually, trace-cmd implements the splice interface and is used by several 
-> people. I find myself using trace-cmd 90% of the time that I use ftrace, 
-> specifically because of this speedup.
+Yep, it is.
 
-i know, but most people still use /debug/tracing/ bits not trace-cmd.
-
-> > Yes, splice might help in some situations but on average it's an 
-> > independent speedup on the order of magnitude of a few percents, not a 
-> > 'must have' item.
-> 
-> I'll have start running benchmarks to see what the actual speed up is. I'm 
-> guessing it may be more than a few percent. It allows for zero copy overhead 
-> and reuse of the data page.
-
-Make sure you measure it in the context of a full app like PyTimechart.
-
-You can measure the overhead using perf stat ;-)
-
-	Ingo
+-- 
+	Three Cheers,
+	Balbir
