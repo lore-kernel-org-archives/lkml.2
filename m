@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab0ELIlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 04:41:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:53713 "EHLO mga01.intel.com"
+	id S1754688Ab0ELIlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 04:41:23 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54401 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754876Ab0ELIku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 04:40:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,213,1272870000"; 
-   d="scan'208";a="797697836"
-From: Huang Ying <ying.huang@intel.com>
-To: lenb@kernel.org
-Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
-       linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-       Greg KH <greg@kroah.com>
-Subject: [PATCH 1/2] Add x64 support to debugfs
-Date: Wed, 12 May 2010 16:40:40 +0800
-Message-Id: <1273653641-4519-2-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1273653641-4519-1-git-send-email-ying.huang@intel.com>
-References: <1273653641-4519-1-git-send-email-ying.huang@intel.com>
+	id S1755096Ab0ELIlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 04:41:18 -0400
+Date: Wed, 12 May 2010 08:40:23 GMT
+From: tip-bot for Kyle McMartin <kyle@mcmartin.ca>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+       mingo@redhat.com, kyle@mcmartin.ca, kyle@redhat.com, tglx@linutronix.de,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       acme@redhat.com, kyle@mcmartin.ca, kyle@redhat.com, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <20100510204335.GA7565@bombadil.infradead.org>
+References: <20100510204335.GA7565@bombadil.infradead.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf symbols: allow forcing use of cplus_demangle
+Message-ID: <tip-d11c7addfe0fa501cb54c824c0fac3481d527433@git.kernel.org>
+Git-Commit-ID: d11c7addfe0fa501cb54c824c0fac3481d527433
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 12 May 2010 08:40:24 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add debugfs_create_x64. This is needed by ACPI APEI EINJ parameters support.
+Commit-ID:  d11c7addfe0fa501cb54c824c0fac3481d527433
+Gitweb:     http://git.kernel.org/tip/d11c7addfe0fa501cb54c824c0fac3481d527433
+Author:     Kyle McMartin <kyle@mcmartin.ca>
+AuthorDate: Mon, 10 May 2010 16:43:35 -0400
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 11 May 2010 12:43:11 -0300
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-CC: Greg KH <greg@kroah.com>
+perf symbols: allow forcing use of cplus_demangle
+
+For Fedora, I want to force perf to link against libiberty.a for
+cplus_demangle, rather than libbfd.a for bfd_demangle due to licensing insanity
+on binutils. (libiberty is LGPL2, libbfd is GPL3.)
+
+If we just rely on autodetection, we'll end up with libbfd linked against us,
+since they're both in binutils-static in the buildroot.
+
+Cc: Ingo Molnar <mingo@elte.hu>
+LKML-Reference: <20100510204335.GA7565@bombadil.infradead.org>
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- fs/debugfs/file.c       |   21 ++++++++++++++++++++-
- include/linux/debugfs.h |    2 ++
- 2 files changed, 22 insertions(+), 1 deletion(-)
+ tools/perf/Makefile |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -277,8 +277,10 @@ DEFINE_SIMPLE_ATTRIBUTE(fops_x32, debugf
- DEFINE_SIMPLE_ATTRIBUTE(fops_x32_ro, debugfs_u32_get, NULL, "0x%08llx\n");
- DEFINE_SIMPLE_ATTRIBUTE(fops_x32_wo, NULL, debugfs_u32_set, "0x%08llx\n");
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index b28bb73..0797786 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -592,6 +592,9 @@ endif
  
-+DEFINE_SIMPLE_ATTRIBUTE(fops_x64, debugfs_u64_get, debugfs_u64_set, "0x%016llx\n");
-+
- /*
-- * debugfs_create_x{8,16,32} - create a debugfs file that is used to read and write an unsigned {8,16,32}-bit value
-+ * debugfs_create_x{8,16,32,64} - create a debugfs file that is used to read and write an unsigned {8,16,32,64}-bit value
-  *
-  * These functions are exactly the same as the above functions (but use a hex
-  * output for the decimal challenged). For details look at the above unsigned
-@@ -357,6 +359,23 @@ struct dentry *debugfs_create_x32(const
- }
- EXPORT_SYMBOL_GPL(debugfs_create_x32);
+ ifdef NO_DEMANGLE
+ 	BASIC_CFLAGS += -DNO_DEMANGLE
++else ifdef HAVE_CPLUS_DEMANGLE
++	EXTLIBS += -liberty
++	BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+ else
+ 	has_bfd := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd "$(QUIET_STDERR)" && echo y")
  
-+/**
-+ * debugfs_create_x64 - create a debugfs file that is used to read and write an unsigned 64-bit value
-+ * @name: a pointer to a string containing the name of the file to create.
-+ * @mode: the permission that the file should have
-+ * @parent: a pointer to the parent dentry for this file.  This should be a
-+ *          directory dentry if set.  If this parameter is %NULL, then the
-+ *          file will be created in the root of the debugfs filesystem.
-+ * @value: a pointer to the variable that the file should read to and write
-+ *         from.
-+ */
-+struct dentry *debugfs_create_x64(const char *name, mode_t mode,
-+				 struct dentry *parent, u64 *value)
-+{
-+	return debugfs_create_file(name, mode, parent, value, &fops_x64);
-+}
-+EXPORT_SYMBOL_GPL(debugfs_create_x64);
-+
- 
- static int debugfs_size_t_set(void *data, u64 val)
- {
---- a/include/linux/debugfs.h
-+++ b/include/linux/debugfs.h
-@@ -63,6 +63,8 @@ struct dentry *debugfs_create_x16(const
- 				  struct dentry *parent, u16 *value);
- struct dentry *debugfs_create_x32(const char *name, mode_t mode,
- 				  struct dentry *parent, u32 *value);
-+struct dentry *debugfs_create_x64(const char *name, mode_t mode,
-+				  struct dentry *parent, u64 *value);
- struct dentry *debugfs_create_size_t(const char *name, mode_t mode,
- 				     struct dentry *parent, size_t *value);
- struct dentry *debugfs_create_bool(const char *name, mode_t mode,
