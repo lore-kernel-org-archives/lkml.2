@@ -1,214 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab0ELUiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 16:38:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28351 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751113Ab0ELUiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 16:38:52 -0400
-Date: Wed, 12 May 2010 16:38:13 -0400
-From: Josef Bacik <josef@redhat.com>
-To: linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       akpm@linux-foundation.org, hch@infradead.org
-Subject: [PATCH 2/4] direct-io: add a hook for the fs to provide its own
-	submit_bio function V3
-Message-ID: <20100512203812.GB3597@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754585Ab0ELUkb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 16:40:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18831 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab0ELUk3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 16:40:29 -0400
+Date: Wed, 12 May 2010 13:39:15 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: akpm@linux-foundation.org,
+       Michael Hennerich <michael.hennerich@analog.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH -mmotm] misc: fix ad525X_dpot build
+Message-Id: <20100512133915.5af0ab5e.randy.dunlap@oracle.com>
+In-Reply-To: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org>
+References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090203.4BEB1218.007A:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V1->V2:
--Changed dio_end_io to EXPORT_SYMBOL_GPL
--Removed the own_submit blockdev dio helper
--Removed the boundary change
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-V2->V3
--Made it so we keep track of what the current logical offset in the file we have
-a BIO setup for so we can pass it into the submit_io hook.
+Add slab.h to fix build:
 
-Because BTRFS can do RAID and such, we need our own submit hook so we can setup
-the bio's in the correct fashion, and handle checksum errors properly.  So there
-are a few changes here
+drivers/misc/ad525x_dpot.c:609: error: implicit declaration of function 'kzalloc'
+drivers/misc/ad525x_dpot.c:609: warning: assignment makes pointer from integer without a cast
+drivers/misc/ad525x_dpot.c:656: error: implicit declaration of function 'kfree'
 
-1) The submit_io hook.  This is straightforward, just call this instead of
-submit_bio.
-
-2) Allow the fs to return -ENOTBLK for reads.  Usually this has only worked for
-writes, since writes can fallback onto buffered IO.  But BTRFS needs the option
-of falling back on buffered IO if it encounters a compressed extent, since we
-need to read the entire extent in and decompress it.  So if we get -ENOTBLK back
-from get_block we'll return back and fallback on buffered just like the write
-case.
-
-I've tested these changes with fsx and everything seems to work.  Thanks,
-
-Signed-off-by: Josef Bacik <josef@redhat.com>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Michael Hennerich <michael.hennerich@analog.com>
 ---
- fs/direct-io.c     |   33 ++++++++++++++++++++++++++++-----
- include/linux/fs.h |   11 ++++++++---
- 2 files changed, 36 insertions(+), 8 deletions(-)
+ drivers/misc/ad525x_dpot.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index e82adc2..21ec032 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -82,6 +82,8 @@ struct dio {
- 	int reap_counter;		/* rate limit reaping */
- 	get_block_t *get_block;		/* block mapping function */
- 	dio_iodone_t *end_io;		/* IO completion function */
-+	dio_submit_t *submit_io;	/* IO submition function */
-+	loff_t logical_offset_in_bio;	/* current first logical block in bio */
- 	sector_t final_block_in_bio;	/* current final block in bio + 1 */
- 	sector_t next_block_for_io;	/* next block to be put under IO,
- 					   in dio_blocks units */
-@@ -96,6 +98,7 @@ struct dio {
- 	unsigned cur_page_offset;	/* Offset into it, in bytes */
- 	unsigned cur_page_len;		/* Nr of bytes at cur_page_offset */
- 	sector_t cur_page_block;	/* Where it starts */
-+	loff_t cur_page_fs_offset;	/* Offset in file */
+--- mmotm-2010-0511-1820.orig/drivers/misc/ad525x_dpot.c
++++ mmotm-2010-0511-1820/drivers/misc/ad525x_dpot.c
+@@ -70,6 +70,7 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/delay.h>
++#include <linux/slab.h>
  
- 	/* BIO completion state */
- 	spinlock_t bio_lock;		/* protects BIO fields below */
-@@ -300,6 +303,17 @@ static void dio_bio_end_io(struct bio *bio, int error)
- 	spin_unlock_irqrestore(&dio->bio_lock, flags);
- }
+ #define DRIVER_VERSION			"0.2"
  
-+void dio_end_io(struct bio *bio, int error)
-+{
-+	struct dio *dio = bio->bi_private;
-+
-+	if (dio->is_async)
-+		dio_bio_end_aio(bio, error);
-+	else
-+		dio_bio_end_io(bio, error);
-+}
-+EXPORT_SYMBOL_GPL(dio_end_io);
-+
- static int
- dio_bio_alloc(struct dio *dio, struct block_device *bdev,
- 		sector_t first_sector, int nr_vecs)
-@@ -316,6 +330,7 @@ dio_bio_alloc(struct dio *dio, struct block_device *bdev,
- 		bio->bi_end_io = dio_bio_end_io;
- 
- 	dio->bio = bio;
-+	dio->logical_offset_in_bio = dio->cur_page_fs_offset;
- 	return 0;
- }
- 
-@@ -340,10 +355,15 @@ static void dio_bio_submit(struct dio *dio)
- 	if (dio->is_async && dio->rw == READ)
- 		bio_set_pages_dirty(bio);
- 
--	submit_bio(dio->rw, bio);
-+	if (!dio->submit_io)
-+		submit_bio(dio->rw, bio);
-+	else
-+		dio->submit_io(dio->rw, bio, dio->inode,
-+			       dio->logical_offset_in_bio);
- 
- 	dio->bio = NULL;
- 	dio->boundary = 0;
-+	dio->logical_offset_in_bio = 0;
- }
- 
- /*
-@@ -701,6 +721,7 @@ submit_page_section(struct dio *dio, struct page *page,
- 	dio->cur_page_offset = offset;
- 	dio->cur_page_len = len;
- 	dio->cur_page_block = blocknr;
-+	dio->cur_page_fs_offset = dio->block_in_file << dio->blkbits;
- out:
- 	return ret;
- }
-@@ -935,7 +956,7 @@ static ssize_t
- direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode, 
- 	const struct iovec *iov, loff_t offset, unsigned long nr_segs, 
- 	unsigned blkbits, get_block_t get_block, dio_iodone_t end_io,
--	struct dio *dio)
-+	dio_submit_t submit_io, struct dio *dio)
- {
- 	unsigned long user_addr; 
- 	unsigned long flags;
-@@ -952,6 +973,7 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
- 
- 	dio->get_block = get_block;
- 	dio->end_io = end_io;
-+	dio->submit_io = submit_io;
- 	dio->final_block_in_bio = -1;
- 	dio->next_block_for_io = -1;
- 
-@@ -1008,7 +1030,7 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
- 		}
- 	} /* end iovec loop */
- 
--	if (ret == -ENOTBLK && (rw & WRITE)) {
-+	if (ret == -ENOTBLK) {
- 		/*
- 		 * The remaining part of the request will be
- 		 * be handled by buffered I/O when we return
-@@ -1110,7 +1132,7 @@ ssize_t
- __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
- 	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
--	int flags)
-+	dio_submit_t submit_io,	int flags)
- {
- 	int seg;
- 	size_t size;
-@@ -1197,7 +1219,8 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 		(end > i_size_read(inode)));
- 
- 	retval = direct_io_worker(rw, iocb, inode, iov, offset,
--				nr_segs, blkbits, get_block, end_io, dio);
-+				nr_segs, blkbits, get_block, end_io,
-+				submit_io, dio);
- 
- 	/*
- 	 * In case of error extending write may have instantiated a few
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 44f35ae..10704f0 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2250,10 +2250,15 @@ static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
- #endif
- 
- #ifdef CONFIG_BLOCK
-+struct bio;
-+typedef void (dio_submit_t)(int rw, struct bio *bio, struct inode *inode,
-+			    loff_t file_offset);
-+void dio_end_io(struct bio *bio, int error);
-+
- ssize_t __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	struct block_device *bdev, const struct iovec *iov, loff_t offset,
- 	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
--	int lock_type);
-+	dio_submit_t submit_io,	int lock_type);
- 
- enum {
- 	/* need locking between buffered and direct access */
-@@ -2269,7 +2274,7 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
- 	dio_iodone_t end_io)
- {
- 	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
--				    nr_segs, get_block, end_io,
-+				    nr_segs, get_block, end_io, NULL,
- 				    DIO_LOCKING | DIO_SKIP_HOLES);
- }
- 
-@@ -2279,7 +2284,7 @@ static inline ssize_t blockdev_direct_IO_no_locking(int rw, struct kiocb *iocb,
- 	dio_iodone_t end_io)
- {
- 	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
--				nr_segs, get_block, end_io, 0);
-+				    nr_segs, get_block, end_io, NULL, 0);
- }
- #endif
- 
--- 
-1.6.6.1
-
