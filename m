@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab0ELDd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 23:33:27 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:48935 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab0ELDdZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 23:33:25 -0400
-Date: Wed, 12 May 2010 09:03:15 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>
-Cc: David Gibson <dwg@au1.ibm.com>, Roland McGrath <roland@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Michael Neuling <mikey@neuling.org>,
-       Alan Stern <stern@rowland.harvard.edu>, paulus@samba.org,
-       shaggy@linux.vnet.ibm.com, Benjamin Herrenschmidt <benh@au1.ibm.com>,
-       "K.Prasad" <prasad@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [Patch 2/3] Allow arch-specific cleanup before breakpoint
-	unregistration
-Message-ID: <20100512033315.GC6384@in.ibm.com>
-References: <20100512022527.857904312@linux.vnet.ibm.com>
+	id S1754560Ab0ELDd6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 23:33:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59779 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753138Ab0ELDd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 23:33:56 -0400
+Message-ID: <4BEA21A1.8040702@redhat.com>
+Date: Tue, 11 May 2010 17:33:53 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline; filename=arch_unregister_hbp_02
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com
+Subject: Re: [PATCH 0/9] pvclock misc fixes - v4.
+References: <1273594667-17175-1-git-send-email-glommer@redhat.com>
+In-Reply-To: <1273594667-17175-1-git-send-email-glommer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Certain architectures (such as PowerPC Book III S) have a need to cleanup
-data-structures before the breakpoint is unregistered. This patch introduces
-an arch-specific hook in release_bp_slot() along with a weak definition in
-the form of a stub funciton.
-
-Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
----
- kernel/hw_breakpoint.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-Index: linux-2.6.ppc64_test/kernel/hw_breakpoint.c
-===================================================================
---- linux-2.6.ppc64_test.orig/kernel/hw_breakpoint.c
-+++ linux-2.6.ppc64_test/kernel/hw_breakpoint.c
-@@ -203,6 +203,17 @@ static void toggle_bp_slot(struct perf_e
- }
- 
- /*
-+ * Function to perform processor-specific cleanup during unregistration
-+ */
-+__weak void arch_unregister_hw_breakpoint(struct perf_event *bp)
-+{
-+	/*
-+	 * A weak stub function here for those archs that don't define
-+	 * it inside arch/.../kernel/hw_breakpoint.c
-+	 */
-+}
-+
-+/*
-  * Contraints to check before allowing this new breakpoint counter:
-  *
-  *  == Non-pinned counter == (Considered as pinned for now)
-@@ -280,6 +291,7 @@ void release_bp_slot(struct perf_event *
- {
- 	mutex_lock(&nr_bp_mutex);
- 
-+	arch_unregister_hw_breakpoint(bp);
- 	__release_bp_slot(bp);
- 
- 	mutex_unlock(&nr_bp_mutex);
-
+On 05/11/2010 06:17 AM, Glauber Costa wrote:
+> This is the fourth version ov kvmclock fixes.
+>
+> Just two minor changes in patch 5, per avi request, and
+> the addition of cpuid.txt file, documenting all cpuid flags
+> we use.
+>
+> As a side effect, this patch removes the time-travel feature
+> in kvm guests.
+>
+> Glauber Costa (9):
+>    Enable pvclock flags in vcpu_time_info structure
+>    Add a global synchronization point for pvclock
+>    change msr numbers for kvmclock
+>    add new KVMCLOCK cpuid feature
+>    export paravirtual cpuid flags in KVM_GET_SUPPORTED_CPUID
+>    Try using new kvm clock msrs
+>    don't compute pvclock adjustments if we trust the tsc
+>    Tell the guest we'll warn it about tsc stability
+>    Add cpuid.txt file
+>
+>   Documentation/kvm/cpuid.txt        |   44 ++++++++++++++++++++++++++++
+>   arch/x86/include/asm/kvm_para.h    |   13 ++++++++
+>   arch/x86/include/asm/pvclock-abi.h |    4 ++-
+>   arch/x86/include/asm/pvclock.h     |    1 +
+>   arch/x86/kernel/kvmclock.c         |   56 ++++++++++++++++++++++-------------
+>   arch/x86/kernel/pvclock.c          |   37 +++++++++++++++++++++++
+>   arch/x86/kvm/x86.c                 |   44 +++++++++++++++++++++++++++-
+>   7 files changed, 176 insertions(+), 23 deletions(-)
+>   create mode 100644 Documentation/kvm/cpuid.txt
+>
+>    
+Acked-by: Zachary Amsden <zamsden@redhat.com>
