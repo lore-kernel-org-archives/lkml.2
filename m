@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab0ELI7g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 04:59:36 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:61796 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274Ab0ELI7d (ORCPT
+	id S1755045Ab0ELJC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 05:02:26 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:30268 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab0ELJCY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 04:59:33 -0400
-Subject: Re: linux-next: manual merge of the omap_dss2 tree with the omap
- tree
-From: Tomi Valkeinen <tomi.valkeinen@nokia.com>
-To: ext Tony Lindgren <tony@atomide.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Quadros Roger (Nokia-D/Helsinki)" <roger.quadros@nokia.com>,
-       Jarkko Nikula <jhnikula@gmail.com>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-In-Reply-To: <20100510202056.GG16460@atomide.com>
-References: <20100507134334.75808884.sfr@canb.auug.org.au>
-	 <20100510202056.GG16460@atomide.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 May 2010 11:59:04 +0300
-Message-ID: <1273654744.2814.14.camel@tubuntu.research.nokia.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 May 2010 08:59:07.0308 (UTC) FILETIME=[610ABEC0:01CAF1B1]
-X-Nokia-AV: Clean
+	Wed, 12 May 2010 05:02:24 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Wed, 12 May 2010 11:02:50 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
+ error recovery
+In-reply-to: <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>
+To: Viral Mehta <Viral.Mehta@lntinfotech.com>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-id: <op.vck4q0c87p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.10 (Linux)
+References: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> Michal Nazarewicz [m.nazarewicz@samsung.com]
+>> In to places in fsg_common_init() an unconditional call to kfree()
+>> on common was performed in error recovery which is not a valid
 
-On Mon, 2010-05-10 at 22:20 +0200, ext Tony Lindgren wrote:
-> * Stephen Rothwell <sfr@canb.auug.org.au> [100506 22:05]:
-> > Hi Tomi,
-> > 
-> > Today's linux-next merge of the omap_dss2 tree got a conflict in
-> > arch/arm/mach-omap2/board-rx51-peripherals.c between commit
-> > e87da74e34ad151e6ae75ebb7a7bf447f02c0004 ("omap: rx51: Add supplies for
-> > the tlv320aic3x codec driver") from the omap tree and commit
-> > a693839eab0292aa234d7a6f48d40389389baebb ("OMAP: RX51: Add "vdds_sdi"
-> > supply voltage for SDI") from the omap_dss2 tree.
-> > 
-> > Just overlapping additions. I fixed it up (see below) and can carry the
-> > fix as necessary.
-> 
-> Thanks again Stephen. We will move the conflicting DSS board-*.c
-> file changes over to omap for next.
-> 
-> Tomi, do you want to do a branch of board-*.c patches for me to
-> pull, or do you want me to just pick this one?
+On Wed, 12 May 2010 10:29:02 +0200, Viral Mehta <Viral.Mehta@lntinfotech.com> wrote:
+> If I am not wrong, common can not be NULL since it was already checked above.
+>
+> 2685         if (!common) {
+> 2686                 common = kzalloc(sizeof *common, GFP_KERNEL);
+> 2687                 if (!common)
+> 2688                         return ERR_PTR(-ENOMEM);
+> 2689                 common->free_storage_on_release = 1;
 
-I think it's ok to pick just this one. It's just adds a regulator
-supply, and doesn't interfere with anything. I just need to make sure
-linux-omap's for-next is merged first, before I send my pull request.
+That is correct but it is not the issue.
 
-I made a branch for it, based on linux-omap/for-next:
-git://gitorious.org/linux-omap-dss2/linux.git for-tony
+fsg_common_init() as a first argument takes a pointer to a fsg_common
+structure which, if not NULL, is reused and it is then assumed that
+caller is responsible far maintaining allocation and deallocation of
+this structure.
 
-And I dropped the patch from my for-next branch.
+The idea is that one can do:
 
- Tomi
+static struct fsg_common fsg_common;
+/* ... */
+fsg_common_init(&fsg_common, cdev, fsg_config);
 
+or allocate fsg_common structure as a part of a larger structure.  In such
+cases kfree() cannot be called on the object.  Which case we are dealing
+with is indicated by the common->free_storage_on_release flag.
+fsg_common_release() consults it and either calls or does not call krfee().
 
+>> behaviour since fsg_common structure is not always allocated by
+>> fsg_common_init().
+>>
+>> To fix, the calls has been replaced with a goto to a proper error
+>> recovery which does the correct thing.
+
+Uh, I've just noticed I forgot about the:
+
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
