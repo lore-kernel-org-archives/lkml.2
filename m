@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab0ELGIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 02:08:43 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42187 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab0ELGIm (ORCPT
+	id S1753080Ab0ELGNe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 02:13:34 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33554
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752741Ab0ELGNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 02:08:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=JjwWJOdhadKEW7SDh307g4aRH7tNqGZkLrRJVQ0FWgOj3pH30Kpybcb3oJK8ZINclQ
-         tOdeCQur1nU2wx2dqqk2olHDQUYAgSVat7F8R4Z1svAraEHcRQyQkhTFpdNZSZOs5xpP
-         UH0Lu0y08DxaOw8oOvQAgzu8ufgDizx5P4zQE=
-Date: Wed, 12 May 2010 14:12:28 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-       Aristeu Rozanski <aris@redhat.com>, Michal Marek <mmarek@suse.cz>,
-       linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-       davej@redhat.com, kyle@redhat.com, vgoyal@redhat.com,
-       arjan@linux.intel.com
-Subject: Re: [PATCH] kconfig: introduce nonint_oldconfig and
- loose_nonint_oldconfig (v3)
-Message-ID: <20100512061228.GA5718@cr0.nay.redhat.com>
-References: <20100413194747.GX31193@redhat.com>
- <20100413130031.d4dec19b.randy.dunlap@oracle.com>
- <20100413201759.GY31193@redhat.com>
- <4BC4D310.6060705@oracle.com>
- <20100413210352.GA31193@redhat.com>
- <4BC5C190.3020501@suse.cz>
- <20100506164834.GL20778@redhat.com>
- <20100507070257.GD5921@cr0.nay.redhat.com>
- <4BE4237A.8090701@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4BE4237A.8090701@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 12 May 2010 02:13:33 -0400
+Date: Tue, 11 May 2010 23:13:39 -0700 (PDT)
+Message-Id: <20100511.231339.22535803.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, kaber@trash.net,
+       andreas.meissner@sphairon.com
+Subject: Re: linux-next: build failure after merge of the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100512125653.38f442c5.sfr@canb.auug.org.au>
+References: <20100512125653.38f442c5.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 07:28:10AM -0700, Randy Dunlap wrote:
->On 05/07/10 00:02, Américo Wang wrote:
->> On Thu, May 06, 2010 at 12:48:34PM -0400, Aristeu Rozanski wrote:
->>> This patch has been around for a long time in Fedora and Red Hat Enterprise
->>> Linux kernels and it may be useful for others. The nonint_oldconfig target
->>> will fail and print the unset config options while loose_nonint_oldconfig will
->>> simply let the config option unset. They're useful in distro kernel packages
->>> where the config files are built using a combination of smaller config files.
->>>
->>> Arjan van de Ven wrote the initial nonint_config and Roland McGrath added the
->>> loose_nonint_oldconfig.
->>>
->>> v2:
->>> - when -B and -b are used, return "2" so the reason can be distinguished from
->>>  other errors
->>> v3:
->>> - help updated
->>> - nonint_oldconfig won't update the config file if options are missing
->> 
->> The patch looks fine, but, why the name 'nonint_oldconfig'?
->> My English is not good enough to see what 'nonint' standards for...
->
->non-interactive
->
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 12 May 2010 12:56:53 +1000
 
-Got it, thanks!
+> After merging the net tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> net/ipv4/ipmr.c: In function 'ipmr_cache_unresolved':
+> net/ipv4/ipmr.c:1001: error: 'net' undeclared (first use in this function)
+> 
+> Caused by commit 0c12295a741d3186987f96f518cfbdaf01abb087 ("ipv4: ipmr:
+> move mroute data into seperate structure") from the net tree interacting
+> with commit bbd725435ddb1cac732f7a8c23c21ff67f24c60f ("IPv4: unresolved
+> multicast route cleanup") from Linus' tree.
+
+Tricky merge :-)
+
+I'll clear all of these issues up for you tonight Stephen, thanks!
+
+There should have been a merge conflict in
+Documentation/feature-removal-schedule.txt due to some recent
+netfilter commits too, I'll take care of that too of course :)
