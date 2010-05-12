@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab0ELBx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 21:53:57 -0400
-Received: from mail.perches.com ([173.55.12.10]:2186 "EHLO mail.perches.com"
+	id S1754058Ab0ELCEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 22:04:39 -0400
+Received: from sh.osrg.net ([192.16.179.4]:42925 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752102Ab0ELBx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 21:53:56 -0400
-Subject: Re: [trivial PATCH] arch/x86: Remove unnecessary returns from void
- function()'s
-From: Joe Perches <joe@perches.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Jiri Kosina <trivial@kernel.org>
-In-Reply-To: <1273626052.20514.319.camel@Joe-Laptop.home>
-References: <1273624747.20514.316.camel@Joe-Laptop.home>
-	 <4BE9F94A.9000907@zytor.com>  <1273626052.20514.319.camel@Joe-Laptop.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 May 2010 18:53:54 -0700
-Message-ID: <1273629234.20514.333.camel@Joe-Laptop.home>
+	id S1751554Ab0ELCEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 22:04:37 -0400
+Date: Wed, 12 May 2010 10:58:42 +0900
+To: penberg@cs.helsinki.fi
+Cc: vapier.adi@gmail.com, cl@linux.com, mpm@selenic.com,
+       dmitry.torokhov@gmail.com, akpm@linux-foundation.org, os@emlix.com,
+       Michael.Hennerich@analog.com, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, dg@emlix.com, osw@emlix.com, jw@emlix.com,
+       npiggin@suse.de, rientjes@google.com, dbrownell@users.sourceforge.net,
+       grant.likely@secretlab.ca
+Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4BE9C58E.4070204@cs.helsinki.fi>
+References: <alpine.DEB.2.00.1005111544330.8388@router.home>
+	<AANLkTimzxrZyQAfocTwIt5zCVyXP7bReKOvP4K7m8epO@mail.gmail.com>
+	<4BE9C58E.4070204@cs.helsinki.fi>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100512105907H.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 12 May 2010 10:58:45 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 18:00 -0700, Joe Perches wrote:
-> On Tue, 2010-05-11 at 17:41 -0700, H. Peter Anvin wrote:
-> > On 05/11/2010 05:39 PM, Joe Perches wrote:
-> > > This patch removes from arch/x86/ all the unnecessary
-> > > return; statements that precede the last closing brace of
-> > > void functions.
-> > And the point of this is?
-> > I fail to see how this improves the clarity of the code one iota, and
-> > isn't anything but just churn.
-> Most all kernel void functions don't use return before
-> the closing brace.
+On Wed, 12 May 2010 00:01:02 +0300
+Pekka Enberg <penberg@cs.helsinki.fi> wrote:
 
-Just a stat from arch/x86:
+> Mike Frysinger wrote:
+> > On Tue, May 11, 2010 at 16:46, Christoph Lameter wrote:
+> >> On Tue, 11 May 2010, Mike Frysinger wrote:
+> >>>> DMA. If the arch can only DMA into cacheline aligned objects then the
+> >>>> correct method is to force kmalloc alignment to cacheline size.
+> >>> these are SPI drivers and are usable on any arch that supports a SPI
+> >>> bus (which is pretty much every arch).  forget about "embedded"
+> >>> arches.
+> >>>
+> >>> the issue here is simple: a SPI driver (AD7877) needs to do a receive
+> >>> SPI transfer into a DMA safe buffer.  what is the exact API to
+> >>> dynamically allocate memory for the structure with this buffer
+> >>> embedded in it such that the start of the structure is cached aligned
+> >>> ?  creating a dedicated kmem cache may work, but it isnt a scalable
+> >>> solution if every SPI driver needs to create its own cache.
+> >> kmalloc returns a pointer to a DMA safe buffer. There is no requirement on
+> >> the x86 hardware that the DMA buffers have to be cache aligned. Cachelines
+> >> will be invalidated as needed.
+> > 
+> > so this guarantee is made by the kmalloc() API ?  and for arches where
+> > the cacheline invalidation is handled in software rather than
+> > hardware, they must declare a min alignment value for kmalloc to be at
+> > least as big as their cache alignment ?
+> > 
+> > does the phrase "DMA safe buffer" imply cache alignment ?
+> 
+> Yes, you should be able to DMA into kmalloc'd memory. IIRC the block or 
+> the SCSI layer depends on that.
 
-There may be a little over 2000 void functions in arch/x86/,
-40 use returns before the trailing brace.
-
-Call it churn or consistency, <shrug>.
-
-cheers, Joe
-
+Yeah, SCSI subsystem and drivers, and block drivers depend on it.
