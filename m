@@ -1,80 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab0ELUke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 16:40:34 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18851 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573Ab0ELUka (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 16:40:30 -0400
-Date: Wed, 12 May 2010 13:39:19 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: akpm@linux-foundation.org,
-       Michael Hennerich <michael.hennerich@analog.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH -mmotm] backlight: fix adp8860_bl build errors
-Message-Id: <20100512133919.016d6286.randy.dunlap@oracle.com>
-In-Reply-To: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org>
-References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090201.4BEB121A.013A:SCFMA4539811,ss=1,fgs=0
+	id S932200Ab0ELUkz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 16:40:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753804Ab0ELUkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 16:40:53 -0400
+Date: Wed, 12 May 2010 16:40:17 -0400
+From: Josef Bacik <josef@redhat.com>
+To: linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       akpm@linux-foundation.org, hch@infradead.org
+Subject: [PATCH 3/4] fs: kill blockdev_direct_IO_no_locking
+Message-ID: <20100512204016.GC3597@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Christoph said he'd rather everybody use __blockdev_direct_IO directly instead
+of having a bunch of random helper functions, so thats what this patch does.
+It's a basic change, I've tested it with xfstests on ext4 and xfs.  Thanks,
 
-Add slab.h to fix part of build.
-Add a parameter in backlight_device_register() call to fix part of build.
-
-drivers/video/backlight/adp8860_bl.c:215: error: implicit declaration of function 'kzalloc'
-drivers/video/backlight/adp8860_bl.c:215: warning: assignment makes pointer from integer without a cast
-drivers/video/backlight/adp8860_bl.c:285: error: implicit declaration of function 'kfree'
-drivers/video/backlight/adp8860_bl.c:673: warning: assignment makes pointer from integer without a cast
-drivers/video/backlight/adp8860_bl.c:689: error: too few arguments to function 'backlight_device_register'
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Michael Hennerich <michael.hennerich@analog.com>
+Signed-off-by: Josef Bacik <josef@redhat.com>
 ---
- drivers/video/backlight/adp8860_bl.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/block_dev.c              |    5 +++--
+ fs/ext4/inode.c             |    8 ++++----
+ fs/gfs2/aops.c              |    6 +++---
+ fs/ocfs2/aops.c             |    8 +++-----
+ fs/xfs/linux-2.6/xfs_aops.c |    7 +++----
+ include/linux/fs.h          |    9 ---------
+ 6 files changed, 16 insertions(+), 27 deletions(-)
 
---- mmotm-2010-0511-1820.orig/drivers/video/backlight/adp8860_bl.c
-+++ mmotm-2010-0511-1820/drivers/video/backlight/adp8860_bl.c
-@@ -16,6 +16,7 @@
- #include <linux/fb.h>
- #include <linux/backlight.h>
- #include <linux/leds.h>
-+#include <linux/slab.h>
- #include <linux/workqueue.h>
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 6dcee88..0f42cbc 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -172,8 +172,9 @@ blkdev_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
  
- #include <linux/i2c/adp8860.h>
-@@ -647,6 +648,7 @@ static int __devinit adp8860_probe(struc
- 	struct adp8860_bl *data;
- 	struct adp8860_backlight_platform_data *pdata =
- 		client->dev.platform_data;
-+	struct backlight_properties props;
- 	uint8_t reg_val;
- 	int ret;
+-	return blockdev_direct_IO_no_locking(rw, iocb, inode, I_BDEV(inode),
+-				iov, offset, nr_segs, blkdev_get_blocks, NULL);
++	return __blockdev_direct_IO(rw, iocb, inode, I_BDEV(inode), iov,
++				    offset, nr_segs, blkdev_get_blocks, NULL,
++				    NULL, 0);
+ }
  
-@@ -683,10 +685,13 @@ static int __devinit adp8860_probe(struc
- 	data->current_brightness = 0;
- 	i2c_set_clientdata(client, data);
+ int __sync_blockdev(struct block_device *bdev, int wait)
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 81d6054..8f37762 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3494,10 +3494,10 @@ static ssize_t ext4_ind_direct_IO(int rw, struct kiocb *iocb,
  
-+	memset(&props, 0, sizeof(props));
-+	props.max_brightness = ADP8860_MAX_BRIGHTNESS;
-+
- 	mutex_init(&data->lock);
+ retry:
+ 	if (rw == READ && ext4_should_dioread_nolock(inode))
+-		ret = blockdev_direct_IO_no_locking(rw, iocb, inode,
+-				 inode->i_sb->s_bdev, iov,
+-				 offset, nr_segs,
+-				 ext4_get_block, NULL);
++		ret = __blockdev_direct_IO(rw, iocb, inode,
++					   inode->i_sb->s_bdev, iov, offset,
++					   nr_segs, ext4_get_block, NULL, NULL,
++					   0);
+ 	else
+ 		ret = blockdev_direct_IO(rw, iocb, inode,
+ 				 inode->i_sb->s_bdev, iov,
+diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
+index 0c1d0b8..45b23b0 100644
+--- a/fs/gfs2/aops.c
++++ b/fs/gfs2/aops.c
+@@ -1039,9 +1039,9 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
+ 	if (rv != 1)
+ 		goto out; /* dio not valid, fall back to buffered i/o */
  
- 	bl = backlight_device_register(dev_driver_string(&client->dev),
--			&client->dev, data, &adp8860_bl_ops);
-+			&client->dev, data, &adp8860_bl_ops, &props);
- 	if (IS_ERR(bl)) {
- 		dev_err(&client->dev, "failed to register backlight\n");
- 		ret = PTR_ERR(bl);
+-	rv = blockdev_direct_IO_no_locking(rw, iocb, inode, inode->i_sb->s_bdev,
+-					   iov, offset, nr_segs,
+-					   gfs2_get_block_direct, NULL);
++	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev,
++				  iov, offset, nr_segs, gfs2_get_block_direct,
++				  NULL, NULL, 0);
+ out:
+ 	gfs2_glock_dq_m(1, &gh);
+ 	gfs2_holder_uninit(&gh);
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 21441dd..f2e53a9 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -669,11 +669,9 @@ static ssize_t ocfs2_direct_IO(int rw,
+ 	if (i_size_read(inode) <= offset)
+ 		return 0;
+ 
+-	ret = blockdev_direct_IO_no_locking(rw, iocb, inode,
+-					    inode->i_sb->s_bdev, iov, offset,
+-					    nr_segs,
+-					    ocfs2_direct_IO_get_blocks,
+-					    ocfs2_dio_end_io);
++	ret = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
++				   offset, nr_segs, ocfs2_direct_IO_get_blocks,
++				   ocfs2_dio_end_io, NULL, 0);
+ 
+ 	mlog_exit(ret);
+ 	return ret;
+diff --git a/fs/xfs/linux-2.6/xfs_aops.c b/fs/xfs/linux-2.6/xfs_aops.c
+index 0f8b996..fcc14d8 100644
+--- a/fs/xfs/linux-2.6/xfs_aops.c
++++ b/fs/xfs/linux-2.6/xfs_aops.c
+@@ -1617,10 +1617,9 @@ xfs_vm_direct_IO(
+ 	iocb->private = xfs_alloc_ioend(inode, rw == WRITE ?
+ 					IOMAP_UNWRITTEN : IOMAP_READ);
+ 
+-	ret = blockdev_direct_IO_no_locking(rw, iocb, inode, bdev, iov,
+-					    offset, nr_segs,
+-					    xfs_get_blocks_direct,
+-					    xfs_end_io_direct);
++	ret = __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset, nr_segs,
++				   xfs_get_blocks_direct, xfs_end_io_direct,
++				   NULL, 0);
+ 
+ 	if (unlikely(ret != -EIOCBQUEUED && iocb->private))
+ 		xfs_destroy_ioend(iocb->private);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 10704f0..d841e7d 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2277,15 +2277,6 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
+ 				    nr_segs, get_block, end_io, NULL,
+ 				    DIO_LOCKING | DIO_SKIP_HOLES);
+ }
+-
+-static inline ssize_t blockdev_direct_IO_no_locking(int rw, struct kiocb *iocb,
+-	struct inode *inode, struct block_device *bdev, const struct iovec *iov,
+-	loff_t offset, unsigned long nr_segs, get_block_t get_block,
+-	dio_iodone_t end_io)
+-{
+-	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
+-				    nr_segs, get_block, end_io, NULL, 0);
+-}
+ #endif
+ 
+ extern const struct file_operations generic_ro_fops;
+-- 
+1.6.6.1
+
