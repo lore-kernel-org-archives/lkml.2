@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab0ELGYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 02:24:12 -0400
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:33196 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab0ELGYF (ORCPT
+	id S1753477Ab0ELG0y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 02:26:54 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:54211 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab0ELG0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 02:24:05 -0400
-Message-ID: <4BEA4A62.20100@oss.ntt.co.jp>
-Date: Wed, 12 May 2010 15:27:46 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Wed, 12 May 2010 02:26:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=epwi79+YUnd+xwrCvH3JSfwAgrMaXOdWEQYvdRNQ/cQzF41KOla1aZ+A2of8Fs1CYH
+         paFS1AnFwQSj3KaME9gVxySJW3TzTPfy4L7v96NvHs+LQ1KXAR8WB3Apzl2ilhjJIlk3
+         5Nupujb7osVCdRxriu3W4P/YL/jlSvrcvDxpw=
+Date: Wed, 12 May 2010 14:30:42 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Florian Mickler <florian@mickler.org>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] scripts/get_maintainer.pl: add
+ .get_maintainer.conf default options file
+Message-ID: <20100512063042.GB5718@cr0.nay.redhat.com>
+References: <cover.1273466698.git.joe@perches.com>
+ <61106722b46cbf707d3e2641765aae2db93b6ea7.1273466698.git.joe@perches.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, avi@redhat.com,
-       agraf@suse.de, fernando@oss.ntt.co.jp, kvm@vger.kernel.org,
-       kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org, tglx@linutronix.de,
-       mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-       benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
-       arnd@arndb.de, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH RFC 10/12] KVM: move dirty bitmaps to user space
-References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <20100504220702.f8ba6ccc.takuya.yoshikawa@gmail.com> <20100511032827.GA3458@amt.cnet>
-In-Reply-To: <20100511032827.GA3458@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <61106722b46cbf707d3e2641765aae2db93b6ea7.1273466698.git.joe@perches.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->>   	r = 0;
->> @@ -1195,11 +1232,16 @@ void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
->>   	gfn = unalias_gfn(kvm, gfn);
->>   	memslot = gfn_to_memslot_unaliased(kvm, gfn);
->>   	if (memslot&&  memslot->dirty_bitmap) {
->> -		unsigned long rel_gfn = gfn - memslot->base_gfn;
->> +		int nr = generic_le_bit_offset(gfn - memslot->base_gfn);
->>
->> -		generic___set_le_bit(rel_gfn, memslot->dirty_bitmap);
->> +		if (kvm_set_bit_user(nr, memslot->dirty_bitmap))
->> +			goto out_fault;
+On Sun, May 09, 2010 at 09:56:03PM -0700, Joe Perches wrote:
+>Allow the use of a .get_maintainer.conf file to control the
+>default options applied when scripts/get_maintainer.pl is run.
 >
-> mark_page_dirty is called with the mmu_lock spinlock held in set_spte.
-> Must find a way to move it outside of the spinlock section.
+>.get_maintainer.conf can contain any valid command-line argument.
 >
+>File contents are prepended to any additional command line arguments.
+>
+>Multiple lines may be used, blank lines ignored, # is a comment.
 
-Oh, it's a serious problem. I have to consider it.
+Do we really have to do this? This looks odd to me.
 
+If the user of get_maintainer.pl uses some long command line
+arguments, to save his input, he should use bash aliases, not
+configure files. I never see configure files used like this.
 
-Thanks,
-   Takuya
+Also, it doesn't worthy a configure file for such a script like
+get_maintainer.pl.
