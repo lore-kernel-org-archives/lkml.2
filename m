@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab0ELLMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 07:12:37 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46376 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab0ELLMf (ORCPT
+	id S1755557Ab0ELLRx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 07:17:53 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:33765 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753955Ab0ELLRv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 07:12:35 -0400
-Subject: Re: [PATCH v2 7/11] Uprobes Implementation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+	Wed, 12 May 2010 07:17:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=RHCrWWAZCeQ0Dmc8E6bCgYMK4tgk2z9rleGApFNog/3Oc3UDfd0C2As3HMgkBQgzYD
+         9n/QhHVXIOAR6eKV+HOh9q8mdjdGriQaHbHiDQIAsass3GKYEzL8hVcPMU8HLSWArxqa
+         P+4IVfFymlCSzwDchtYQ6bk24kZQrVdcBjHo4=
+MIME-Version: 1.0
+In-Reply-To: <20100512083706.GE5718@cr0.nay.redhat.com>
+References: <17ea945f6d53443000524eb7cc5c4fc66ee3ecf8.1273396690.git.andre.goddard@gmail.com> 
+	<20100512083706.GE5718@cr0.nay.redhat.com>
+From: =?ISO-8859-1?Q?Andr=E9_Goddard_Rosa?= <andre.goddard@gmail.com>
+Date: Wed, 12 May 2010 08:17:30 -0300
+Message-ID: <AANLkTinDz8zNrFcziMvpHOLLujYK9AEeQ10uWrrrMC5e@mail.gmail.com>
+Subject: Re: [PATCH] mqueue: fix kernel BUG caused by double free() on 
+	mq_open()
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
-       Mel Gorman <mel@csn.ul.ie>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Andrea Arcangeli <aarcange@redhat.com>
-In-Reply-To: <20100512104138.GM7426@linux.vnet.ibm.com>
-References: <20100331155228.4181.61294.sendpatchset@localhost6.localdomain6>
-	 <20100413183537.GA17538@redhat.com>
-	 <20100415093506.GA2064@linux.vnet.ibm.com>
-	 <20100419193139.GA24080@redhat.com>
-	 <20100420124358.GA20675@linux.vnet.ibm.com>
-	 <20100420153023.GA9351@redhat.com>
-	 <20100421065948.GA5440@linux.vnet.ibm.com>
-	 <20100421160515.GA11321@redhat.com>
-	 <20100422133154.GA10776@linux.vnet.ibm.com>
-	 <1273610603.1810.101.camel@laptop>
-	 <20100512104138.GM7426@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 May 2010 13:12:31 +0200
-Message-ID: <1273662751.1626.35.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Sanchin Sant <sanchinp@in.ibm.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-12 at 16:11 +0530, Srikar Dronamraju wrote:
-> > We can't hold mmap_sem (for either read or write -- read would be
-> > sufficient to serialize against mmap/mremap/munmap) from atomic uprobe
-> > context, what we can do is validate that there is a INT3 on that
-> > particular address, a mremap/munmap/munmap+mmap will either end not
-> > having a pte entry for the address, or not have the INT3.
-> 
-> Did you mean "We can hold mmap_sem?" Else I am not sure if we can
-> traverse the vma. Infact alloc_page_vma() needs mmap_sem to be acquired.
-> Please clarify? 
+Hi, Américo!
 
-OK, so maybe I misunderstood, this is from the INT3 trap handler, right?
+> In the latest git, you already removed the above kfree() since it is
+> not necessary. mqueue_delete_inode() will kfree it.
+> so why this fix though?
 
-We can _not_ take a sleeping lock from trap context. Why would you want
-the vma anyway?
-
+The applied patch is a newer/better version. This is an old version,
+please just ignore it. Thank you!
