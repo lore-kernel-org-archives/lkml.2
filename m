@@ -1,230 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506Ab0ELSSn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 14:18:43 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:35645 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab0ELSSl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 14:18:41 -0400
-Date: Wed, 12 May 2010 20:18:17 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       David Woodhouse <dwmw2@infradead.org>,
-       Alexey Starikovskiy <astarikovskiy@suse.de>,
-       Len Brown <len.brown@intel.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Matt Reimer <mreimer@vpop.net>, Evgeniy Polyakov <zbr@ioremap.net>,
-       Tejun Heo <tj@kernel.org>, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH] Introduce {sysfs,device}_create_file_mode
-Message-ID: <20100512181817.GD30801@buzzloop.caiaq.de>
-References: <1273595926-26249-1-git-send-email-daniel@caiaq.de>
- <20100511174708.GA26777@oksana.dev.rtsoft.ru>
- <20100511175812.GH30801@buzzloop.caiaq.de>
- <20100511182347.GA31831@oksana.dev.rtsoft.ru>
- <20100511222825.GJ30801@buzzloop.caiaq.de>
- <20100512181546.GA4804@oksana.dev.rtsoft.ru>
+	id S1754373Ab0ELSXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 14:23:37 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48097 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753377Ab0ELSXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 14:23:36 -0400
+Date: Wed, 12 May 2010 20:23:21 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Pierre Tardy <tardyp@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, mathieu.desnoyers@efficios.com,
+       arjan@infradead.org, ziga.mahkovec@gmail.com
+Subject: Re: [RFC] PyTimechart
+Message-ID: <20100512182321.GA10510@elte.hu>
+References: <AANLkTilJLcdfK-vgqGdXyaZ_bQ1BDFmQl619egtGAA4i@mail.gmail.com>
+ <20100511213625.GD5422@nowhere>
+ <AANLkTikumkBKwYTYIK63mT2i_hI4SAo-Eua0cx9OCHnD@mail.gmail.com>
+ <20100512144811.GA5405@nowhere>
+ <1273678596.27703.30.camel@gandalf.stny.rr.com>
+ <20100512165947.GA11921@elte.hu>
+ <1273684511.27703.37.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100512181546.GA4804@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1273684511.27703.37.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
+	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
+	[score: 0.1748]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 10:15:46PM +0400, Anton Vorontsov wrote:
-> We need to create attributes with different modes across devices.
-> We can do this by modifying attr.mode between device_create_file
-> invocations, but that is racy in case of globally defined attrs.
-> 
-> Luckily, there's sysfs_add_file_mode() function that seems to do
-> exactly what we want, and if we use it, we don't need any locks
-> to avoid races. Though, it isn't exposed via device-drivers core
-> API.
-> 
-> Now that we need it, introduce sysfs_create_file_mode()
-> and device_create_file_mode() functions. With these, creating
-> attributes with different modes is a joy.
 
-Ah, nice. Thanks for caring! If this is accepted, I'll respin my patches
-and make them use it.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Thanks,
-Daniel
-
-
-> 
-> Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
-> ---
-> 
-> On Wed, May 12, 2010 at 12:28:25AM +0200, Daniel Mack wrote:
-> > On Tue, May 11, 2010 at 10:23:47PM +0400, Anton Vorontsov wrote:
-> > > Yes, power_supply_attrs is a global array, and you shouldn't change
-> > > it between power_supply_register() calls.
-> > > 
-> > > If you don't see why it's a bad idea in general, think about it
-> > > other way, a race:
-> > > 
-> > > ...someone registers psy0 with attr X marked as read-only...
-> > > ...code flow stops before device_create_file(psy0, global->mode)..
-> > > [preempt]
-> > > ...someone registers psy1 with attr X marked as writable...
-> > > ...you set up global->mode to 0644...
-> > > [preempt again]
-> > > ...we end up calling device_create_file(psy0, 0644)...
+> On Wed, 2010-05-12 at 18:59 +0200, Ingo Molnar wrote:
+> > * Steven Rostedt <rostedt@goodmis.org> wrote:
 > > 
-> > Ah, I see. But the struct passed in is just used as template, right?
+> > > On Wed, 2010-05-12 at 16:48 +0200, Frederic Weisbecker wrote:
+> > > > On Wed, May 12, 2010 at 03:37:27PM +0200, Pierre Tardy wrote:
+> > > 
+> > > > But we don't yet support trace_printk in perf. May be we could wrap
+> > > > them in trace events.
+> > > 
+> > > Hmm, do we really want to do that?
+> > > 
+> > > We really need to get the perf and ftrace trace buffers combined. I 
+> > > understand why perf chose to do the mmap buffers for the counting, but 
+> > > for live streaming, it is very inefficient compared to splice.
+> > 
+> > The thing is that for a very long time ftrace didnt have splice support 
+> > and survived just fine. Even today most of the ftrace usage isnt utilizing 
+> > splice.
 > 
-> In general, you can't assume that it's just a template,
-> otherwise 'const ptrdiff_t off = attr - power_supply_attrs;'
-> wouldn't work.
+> Actually, trace-cmd implements the splice interface and is used by several 
+> people. I find myself using trace-cmd 90% of the time that I use ftrace, 
+> specifically because of this speedup.
+
+i know, but most people still use /debug/tracing/ bits not trace-cmd.
+
+> > Yes, splice might help in some situations but on average it's an 
+> > independent speedup on the order of magnitude of a few percents, not a 
+> > 'must have' item.
 > 
-> I.e. 'attr' points to exact attribute you specified during
-> registration. Weather its fields are used as a template or
-> not, we don't know (well, we know how the sysfs core uses them
-> *today*, but we don't know how sysfs will use them tomorrow).
-> 
-> > So
-> > for the particular case you outlined, a simple lock should do the trick,
-> > right?
-> 
-> Yes, for the particular case.
-> 
-> Still, I don't think that playing with attr->mode is a good
-> idea.
-> 
-> If we don't want to use attr->mode for mode specifier (and I
-> think we don't), we must implement a clean API for such a case.
-> 
-> Luckily, there's sysfs_add_file_mode, so if anyone will want
-> to change attr->mode behaviour, one will have to deal with
-> that function, and so we'll be safe.
-> 
-> And we must use that function, not just silently play
-> attr->mode games during registration. That also avoids
-> any need for locking.
-> 
-> 
-> Greg, does the patch look OK? If so, I'd like it to go
-> via battery-2.6.git tree, along with patches that need
-> that one.
-> 
-> You can see the original thread here:
-> http://lkml.org/lkml/2010/5/11/71
-> 
-> See power_supply_create_attrs(), there we'll use
-> device_create_file_mode() instead of messing with
-> power_supply_attrs[psy->properties[j]].attr.mode.
-> 
->  drivers/base/core.c    |   21 +++++++++++++++++++++
->  fs/sysfs/file.c        |   16 ++++++++++++++++
->  include/linux/device.h |    3 +++
->  include/linux/sysfs.h  |   10 ++++++++++
->  4 files changed, 50 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index b56a0ba..1bc6134 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -440,6 +440,27 @@ struct kset *devices_kset;
->   * device_create_file - create sysfs attribute file for device.
->   * @dev: device.
->   * @attr: device attribute descriptor.
-> + * @mode: file mode.
-> + *
-> + * This function is similar to device_create_file(), except that it
-> + * doesn't use attr->mode for mode specifier.
-> + */
-> +int device_create_file_mode(struct device *dev,
-> +			    const struct device_attribute *attr,
-> +			    mode_t mode)
-> +{
-> +	int error = 0;
-> +
-> +	if (dev)
-> +		error = sysfs_create_file_mode(&dev->kobj, &attr->attr, mode);
-> +	return error;
-> +}
-> +EXPORT_SYMBOL_GPL(device_create_file_mode);
-> +
-> +/**
-> + * device_create_file - create sysfs attribute file for device.
-> + * @dev: device.
-> + * @attr: device attribute descriptor.
->   */
->  int device_create_file(struct device *dev,
->  		       const struct device_attribute *attr)
-> diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-> index e222b25..7bebb60 100644
-> --- a/fs/sysfs/file.c
-> +++ b/fs/sysfs/file.c
-> @@ -528,6 +528,22 @@ int sysfs_add_file(struct sysfs_dirent *dir_sd, const struct attribute *attr,
->  	return sysfs_add_file_mode(dir_sd, attr, type, attr->mode);
->  }
->  
-> +/**
-> + *	sysfs_create_file_mode - create an attribute file for an object.
-> + *	@kobj:	object we're creating for.
-> + *	@attr:	attribute descriptor.
-> + *	@mode:	file mode.
-> + *
-> + *	This function is similar to sysfs_create_file(), except that it
-> + *	doesn't use attr->mode for mode specifier.
-> + */
-> +int sysfs_create_file_mode(struct kobject *kobj, const struct attribute *attr,
-> +			   mode_t mode)
-> +{
-> +	BUG_ON(!kobj || !kobj->sd || !attr);
-> +
-> +	return sysfs_add_file_mode(kobj->sd, attr, SYSFS_KOBJ_ATTR, mode);
-> +}
->  
->  /**
->   *	sysfs_create_file - create an attribute file for an object.
-> diff --git a/include/linux/device.h b/include/linux/device.h
-> index 1821928..8277364 100644
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -337,6 +337,9 @@ struct device_attribute {
->  #define DEVICE_ATTR(_name, _mode, _show, _store) \
->  struct device_attribute dev_attr_##_name = __ATTR(_name, _mode, _show, _store)
->  
-> +extern int __must_check device_create_file_mode(struct device *device,
-> +					const struct device_attribute *entry,
-> +					mode_t mode);
->  extern int __must_check device_create_file(struct device *device,
->  					const struct device_attribute *entry);
->  extern void device_remove_file(struct device *dev,
-> diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-> index f0496b3..222774f 100644
-> --- a/include/linux/sysfs.h
-> +++ b/include/linux/sysfs.h
-> @@ -130,6 +130,9 @@ int __must_check sysfs_rename_dir(struct kobject *kobj, const char *new_name);
->  int __must_check sysfs_move_dir(struct kobject *kobj,
->  				struct kobject *new_parent_kobj);
->  
-> +int __must_check sysfs_create_file_mode(struct kobject *kobj,
-> +					const struct attribute *attr,
-> +					mode_t mode);
->  int __must_check sysfs_create_file(struct kobject *kobj,
->  				   const struct attribute *attr);
->  int __must_check sysfs_create_files(struct kobject *kobj,
-> @@ -202,6 +205,13 @@ static inline int sysfs_move_dir(struct kobject *kobj,
->  	return 0;
->  }
->  
-> +static inline int sysfs_create_file_mode(struct kobject *kobj,
-> +					 const struct attribute *attr,
-> +					 mode_t mode)
-> +{
-> +	return 0;
-> +}
-> +
->  static inline int sysfs_create_file(struct kobject *kobj,
->  				    const struct attribute *attr)
->  {
-> -- 
-> 1.7.0.5
-> 
+> I'll have start running benchmarks to see what the actual speed up is. I'm 
+> guessing it may be more than a few percent. It allows for zero copy overhead 
+> and reuse of the data page.
+
+Make sure you measure it in the context of a full app like PyTimechart.
+
+You can measure the overhead using perf stat ;-)
+
+	Ingo
