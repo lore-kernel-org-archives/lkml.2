@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab0ELJxX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 05:53:23 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:19274 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755393Ab0ELJxU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 05:53:20 -0400
-Date: Wed, 12 May 2010 11:53:45 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
- error recovery
-In-reply-to: <70376CA23424B34D86F1C7DE6B9973430254343ABB@VSHINMSMBX01.vshodc.lntinfotech.com>
-To: Viral Mehta <Viral.Mehta@lntinfotech.com>,
-       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-id: <op.vck63vc77p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.10 (Linux)
-References: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
- <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>
- <op.vck4q0c87p4s8u@pikus>
- <70376CA23424B34D86F1C7DE6B9973430254343ABB@VSHINMSMBX01.vshodc.lntinfotech.com>
+	id S1755483Ab0ELJxh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 05:53:37 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:49590 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755344Ab0ELJxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 05:53:32 -0400
+Date: Wed, 12 May 2010 10:56:38 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: walter harms <wharms@bfs.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       ", H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 5/5] arch/x86/kernel: Drop memory allocation cast
+In-Reply-To: <Pine.LNX.4.64.1005121021110.31474@ask.diku.dk>
+Message-ID: <Pine.LNX.4.64.1005121056240.31474@ask.diku.dk>
+References: <Pine.LNX.4.64.1005112028160.4330@ask.diku.dk> <4BEA58C6.7030103@bfs.de>
+ <Pine.LNX.4.64.1005121021110.31474@ask.diku.dk>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> fsg_common_init() as a first argument takes a pointer to a fsg_common
->> structure which, if not NULL, is reused and it is then assumed that
->> caller is responsible far maintaining allocation and deallocation of
->> this structure.
->>
->> The idea is that one can do:
->>
->> static struct fsg_common fsg_common;
->> /* ... */
->> fsg_common_init(&fsg_common, cdev, fsg_config);
->>
->> or allocate fsg_common structure as a part of a larger structure.  In such
->> cases kfree() cannot be called on the object.  Which case we are dealing
->> with is indicated by the common->free_storage_on_release flag.
->> fsg_common_release() consults it and either calls or does not call krfee().
+From: Julia Lawall <julia@diku.dk>
 
-On Wed, 12 May 2010 11:28:31 +0200, Viral Mehta <Viral.Mehta@lntinfotech.com> wrote:
-> Oh, makes sense. All instances has fsg_common_init(0, ...) and so i just missed...
+Drop cast on the result of kmalloc and similar functions.
+The third occurrence is additionally modified by hand to use kcalloc and to
+check that the result of the allocation is not NULL.
 
-I'm preparing a some patches for g_multi which change that.
+The semantic patch that makes the drop cast change is as follows:
+(http://coccinelle.lip6.fr/)
 
-Also, a change for g_mass_storage which uses a static memory would be like 10 line
-patch which I may submit later.
+// <smpl>
+@@
+type T;
+@@
 
-> But, still the central idea was, why should we go to whole error_release path which
-> really does removing device file and closing luns and etc.
-> However, it will not make any difference since curlun->nluns will be zero and so
-> there will be no loop in fsg_common_releas() function.
+- (T *)
+  (\(kmalloc\|kzalloc\|kcalloc\|kmem_cache_alloc\|kmem_cache_zalloc\|
+   kmem_cache_alloc_node\|kmalloc_node\|kzalloc_node\)(...))
+// </smpl>
 
-The way I see it, it does not matter that much -- it's error recovery so we assume
-it's unlikely to happen and as such speed optimisation is not really needed here --
-it's better to optimise for space and minimise the number of possible paths.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-> Apart from that, IMHO,
-> 2894         kfree(common->luns);
-> should crash in case if your error path is followed.
->
-> common->luns is allocd
-> 2712         /* Create the LUNs, open their backing files, and register the
-> 2713          * LUN devices in sysfs. */
-> 2714         curlun = kzalloc(nluns * sizeof *curlun, GFP_KERNEL);
-> 2715         if (!curlun) {
-> 2716                 kfree(common);
-> 2717                 return ERR_PTR(-ENOMEM);
-> 2718         }
+---
+ arch/x86/kernel/tlb_uv.c            |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-Yes, that's why the submitted patch changes that to "rc = -ENOMEM;
-goto errer_release;".
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
+index 7fea555..97e790c 100644
+--- a/arch/x86/kernel/tlb_uv.c
++++ b/arch/x86/kernel/tlb_uv.c
+@@ -1141,7 +1141,7 @@ uv_activation_descriptor_init(int node, int pnode)
+ 	 * each bau_desc is 64 bytes; there are 8 (UV_ITEMS_PER_DESCRIPTOR)
+ 	 * per cpu; and up to 32 (UV_ADP_SIZE) cpu's per uvhub
+ 	 */
+-	bau_desc = (struct bau_desc *)kmalloc_node(sizeof(struct bau_desc)*
++	bau_desc = kmalloc_node(sizeof(struct bau_desc) *
+ 		UV_ADP_SIZE*UV_ITEMS_PER_DESCRIPTOR, GFP_KERNEL, node);
+ 	BUG_ON(!bau_desc);
+ 
+@@ -1200,7 +1200,7 @@ uv_payload_queue_init(int node, int pnode)
+ 	struct bau_payload_queue_entry *pqp_malloc;
+ 	struct bau_control *bcp;
+ 
+-	pqp = (struct bau_payload_queue_entry *) kmalloc_node(
++	pqp = kmalloc_node(
+ 		(DEST_Q_SIZE + 1) * sizeof(struct bau_payload_queue_entry),
+ 		GFP_KERNEL, node);
+ 	BUG_ON(!pqp);
+@@ -1286,9 +1286,8 @@ static void uv_init_per_cpu(int nuvhubs)
+ 	};
+ 	struct uvhub_desc *uvhub_descs;
+ 
+-	uvhub_descs = (struct uvhub_desc *)
+-		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
+-	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
++	uvhub_descs = kcalloc(nuvhubs, sizeof(struct uvhub_desc), GFP_KERNEL);
++	BUG_ON(!uvhub_descs);
+ 	for_each_present_cpu(cpu) {
+ 		bcp = &per_cpu(bau_control, cpu);
+ 		memset(bcp, 0, sizeof(struct bau_control));
