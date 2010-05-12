@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab0ELRuv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 13:50:51 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57586 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab0ELRut (ORCPT
+	id S1757123Ab0ELRxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 13:53:10 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:34510 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750752Ab0ELRxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 13:50:49 -0400
-Subject: Re: [BUG] perf_event: when events are grouped, the time enabled /
- running values are incorrect
-From: Peter Zijlstra <peterz@infradead.org>
-To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-       Stephane Eranian <eranian@googlemail.com>
-In-Reply-To: <4BEAE476.1090100@linux.vnet.ibm.com>
-References: <4BE4C4BF.6020801@linux.vnet.ibm.com>
-	 <1273588935.1810.6.camel@laptop>  <4BEAE476.1090100@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 May 2010 19:50:46 +0200
-Message-ID: <1273686646.1626.145.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 12 May 2010 13:53:08 -0400
+Date: Wed, 12 May 2010 13:53:05 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Pierre Tardy <tardyp@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, arjan@infradead.org,
+       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>
+Subject: Re: Perf and ftrace [was Re: PyTimechart]
+Message-ID: <20100512175305.GB32496@Krystal>
+References: <AANLkTilJLcdfK-vgqGdXyaZ_bQ1BDFmQl619egtGAA4i@mail.gmail.com> <20100511213625.GD5422@nowhere> <AANLkTikumkBKwYTYIK63mT2i_hI4SAo-Eua0cx9OCHnD@mail.gmail.com> <20100512144811.GA5405@nowhere> <1273678596.27703.30.camel@gandalf.stny.rr.com> <20100512164650.GH5405@nowhere> <1273683624.1626.127.camel@laptop> <20100512170734.GA15953@Krystal> <1273686425.1626.142.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273686425.1626.142.camel@laptop>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:50:52 up 109 days, 20:28, 10 users,  load average: 0.05, 0.12,
+	0.15
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-12 at 10:25 -0700, Corey Ashford wrote:
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Wed, 2010-05-12 at 13:07 -0400, Mathieu Desnoyers wrote:
+> > > Its mostly an interface/api question. You cannot easily splice() a
+> > > mmap()'ed buffer on machines that have address constraints like sparc.
+> > 
+> > Ah ? Can you explain this issue a bit more ? There is possibly a concern I don't
+> > quite see here. 
+> 
+> IIRC Sparc has virtually tagged D-caches on the lower 9 bits of the pfn,
+> so to avoid cache aliasing both mappings (kernel and user) need to be
+> aligned.
 
-> Thanks for looking into this problem!  Unfortunately, I've been unable 
-> to test your patch.  It doesn't apply to 2.6.33.3 
+I see.
 
-Strange the code looks very similar, the below is a diff against a
-virgin v2.6.33.3.
+> 
+> Since splice needs to swap pages it needs to allocate replacement pages
+> with the exact right alignment, which is rather expensive (in either
+> time or space).
+> 
 
----
- kernel/perf_event.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
+Hrm ? Why does splice() _need_ to swap pages exactly ? Or is it purely just the
+way the current Ftrace implementation happens to work ? ;)
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 32d0ae2..e8ae0c2 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -290,6 +290,18 @@ static void update_event_times(struct perf_event *event)
- }
- 
- /*
-+ * Update total_time_enabled and total_time_running for all events in a group.
-+ */
-+static void update_group_times(struct perf_event *leader)
-+{
-+	struct perf_event *event;
-+
-+	update_event_times(leader);
-+	list_for_each_entry(event, &leader->sibling_list, group_entry)
-+		update_event_times(event);
-+}
-+
-+/*
-  * Add a event from the lists for its context.
-  * Must be called with ctx->mutex and ctx->lock held.
-  */
-@@ -337,7 +349,7 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- 	if (event->group_leader != event)
- 		event->group_leader->nr_siblings--;
- 
--	update_event_times(event);
-+	update_group_times(event);
- 
- 	/*
- 	 * If event was in error state, then keep it
-@@ -508,18 +520,6 @@ retry:
- }
- 
- /*
-- * Update total_time_enabled and total_time_running for all events in a group.
-- */
--static void update_group_times(struct perf_event *leader)
--{
--	struct perf_event *event;
--
--	update_event_times(leader);
--	list_for_each_entry(event, &leader->sibling_list, group_entry)
--		update_event_times(event);
--}
--
--/*
-  * Cross CPU call to disable a performance event
-  */
- static void __perf_event_disable(void *info)
+Would you be fine with an alternative implementation and API that support both
+mmap() and splice(), without any need to swap pages ?
+
+Thanks,
+
+Mathieu
 
 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
