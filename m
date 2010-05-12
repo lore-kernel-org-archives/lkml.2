@@ -1,165 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067Ab0ELOzj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 10:55:39 -0400
-Received: from mtagate6.uk.ibm.com ([194.196.100.166]:50295 "EHLO
-	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab0ELOzh (ORCPT
+	id S1751848Ab0ELO54 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 10:57:56 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:35113 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab0ELO5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 10:55:37 -0400
-Subject: Re: [PATCH 2/5] drivers/s390/net: Drop memory allocation cast
-From: Ursula Braun <ubraun@linux.vnet.ibm.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: ursula.braun@de.ibm.com, blaschka@linux.vnet.ibm.com,
-       mschwid2@linux.vnet.ibm.com, heicars2@linux.vnet.ibm.com,
-       linux-s390@vger.kernel.org, linux390@de.ibm.com,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-In-Reply-To: <OFA176CF49.39A9A029-ONC1257721.00506DA9-C1257721.0050820A@de.ibm.com>
-References: <OFA176CF49.39A9A029-ONC1257721.00506DA9-C1257721.0050820A@de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 May 2010 16:55:34 +0200
-Message-ID: <1273676134.18115.9.camel@braunu-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 12 May 2010 10:57:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gxORhJBMIoRuN8rPR9Htnsg0sKsoFTIqS/omIJpix5GZMRGiQnriEmXVPvL4x2mrRB
+         PJzbhcy1PoY2foxvktMMtXIVa8ZEMavCdTPUPQsJQqlKtwv58CYfbH3R8S7y7ZMdZcoL
+         bQbxUwyiiTHzYKeoEecvW1qM3b1flqMtVBvV8=
+Date: Wed, 12 May 2010 16:57:52 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: rostedt@goodmis.org, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 11/11] Uprobes traceevents patch.
+Message-ID: <20100512145746.GC5405@nowhere>
+References: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6> <20100331155311.4181.85103.sendpatchset@localhost6.localdomain6> <1270070691.19685.7899.camel@gandalf.stny.rr.com> <4BB41E38.8080406@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BB41E38.8080406@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Julia, we have added your patch to our local repository and will
-submit it for upstream integration.
+On Thu, Apr 01, 2010 at 12:16:56AM -0400, Masami Hiramatsu wrote:
+> Hi Steven,
+> 
+> Steven Rostedt wrote:
+> > On Wed, 2010-03-31 at 21:23 +0530, Srikar Dronamraju wrote:
+> > 
+> >>  libftrace-y := ftrace.o
+> >> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> >> index 2825ef2..9fe02ab 100644
+> >> --- a/kernel/trace/trace.h
+> >> +++ b/kernel/trace/trace.h
+> >> @@ -126,6 +126,18 @@ struct kretprobe_trace_entry {
+> >>  	(offsetof(struct kretprobe_trace_entry, args) +	\
+> >>  	(sizeof(unsigned long) * (n)))
+> >>  
+> >> +struct uprobe_trace_entry {
+> >> +	struct trace_entry	ent;
+> >> +	pid_t			pid;
+> > 
+> > Unless pid is not the current pid, ent already records it.
+> 
+> Indeed.
+> 
+> >> +	unsigned long		ip;
+> >> +	int			nargs;
+> >> +	unsigned long		args[];
+> >> +};
+> > 
+> > Note, you want to really add this to trace_entries.h instead:
+> > 
+> > FTRACE_ENTRY(uprobe, uprobe_trace_entry,
+> > 
+> > 	TRACE_GRAPH_ENT,
+> > 
+> > 	F_STRUCT(
+> > 		__field(	unsigned long,	ip	)
+> > 		__field(	int,		nargs	)
+> > 		__dynamic_array(unsigned long,	args	)
+> > 	),
+> > 
+> > 	F_printk("%lx nrargs:%u", __entry->ip, __entry->nargs)
+> > );
+> > 
+> > 
+> > This will put this event into the events/ftrace directory. Don't worry
+> > about the printk format, we can write a plugin for it to override it if
+> > need be.
+> 
+> Hmm, interesting idea. But this dynamic event definition allows us
+> to filter events based on each argument value.
+> 
+> As you can see this code, 
+> 
+> >> +struct probe_arg {
+> >> +	struct fetch_func	fetch;
+> >> +	const char		*name;
+> >> +};
+> 
+> each argument can have unique name. Therefore user can write a filter
+> by using these names.
+> 
+> Moreover, dynamic events (at least kprobe-tracer) are going to support
+> 'types' for each argument. this means that the arg[] in *probe_trace_entry
+> will be no longer an unsigned long array.
+> 
+> Thank you,
 
 
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Drop cast on the result of kmalloc and similar functions.
-> 
-> The semantic patch that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> type T;
-> @@
-> 
-> - (T *)
->  (\(kmalloc\|kzalloc\|kcalloc\|kmem_cache_alloc\|kmem_cache_zalloc\|
->   kmem_cache_alloc_node\|kmalloc_node\|kzalloc_node\)(...))
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
-> drivers/s390/net/ctcm_main.c      |    6 ++----
-> drivers/s390/net/ctcm_mpc.c       |    6 ++----
-> drivers/s390/net/lcs.c            |    3 +--
-> drivers/s390/net/qeth_core_main.c |    2 +-
-> 4 files changed, 6 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/s390/net/ctcm_main.c
-> b/drivers/s390/net/ctcm_main.c
-> index e35713d..4ecafbf 100644
-> --- a/drivers/s390/net/ctcm_main.c
-> +++ b/drivers/s390/net/ctcm_main.c
-> @@ -1364,8 +1364,7 @@ static int add_channel(struct ccw_device *cdev,
-> enum ctcm_channel_types type,
-> 
->                  ch->protocol = priv->protocol;
->                  if (IS_MPC(priv)) {
-> -                                  ch->discontact_th = (struct
-> th_header *)
-> -
->  kzalloc(TH_HEADER_LENGTH, gfp_type());
-> +                                  ch->discontact_th =
-> kzalloc(TH_HEADER_LENGTH, gfp_type());
->                                   if (ch->discontact_th == NULL)
-> 
->                goto nomem_return;
-> 
-> @@ -1379,8 +1378,7 @@ static int add_channel(struct ccw_device *cdev,
-> enum ctcm_channel_types type,
->                  } else
->                                   ccw_num = 8;
-> 
-> -                 ch->ccw = (struct ccw1 *)
-> -                                  kzalloc(ccw_num * sizeof(struct
-> ccw1), GFP_KERNEL | GFP_DMA);
-> +                 ch->ccw = kzalloc(ccw_num * sizeof(struct ccw1),
-> GFP_KERNEL | GFP_DMA);
->                  if (ch->ccw == NULL)
-> 
->                goto nomem_return;
-> 
-> diff --git a/drivers/s390/net/ctcm_mpc.c b/drivers/s390/net/ctcm_mpc.c
-> index 5978b39..87c24d2 100644
-> --- a/drivers/s390/net/ctcm_mpc.c
-> +++ b/drivers/s390/net/ctcm_mpc.c
-> @@ -669,8 +669,7 @@ static void ctcmpc_send_sweep_resp(struct channel
-> *rch)
-> 
-> goto done;
->                  }
-> 
-> -                 header = (struct th_sweep *)
-> -
-> kmalloc(sizeof(struct th_sweep), gfp_type());
-> +                 header = kmalloc(sizeof(struct th_sweep),
-> gfp_type());
-> 
->                  if (!header) {
->                                   dev_kfree_skb_any(sweep_skb);
-> @@ -1191,8 +1190,7 @@ static void ctcmpc_unpack_skb(struct channel
-> *ch, struct sk_buff *pskb)
->                                                    skb_pull(pskb,
-> new_len); /* point to next PDU */
->                                   }
->                  } else {
-> -                                  mpcginfo = (struct mpcg_info *)
-> -
->  kmalloc(sizeof(struct mpcg_info), gfp_type());
-> +                                  mpcginfo = kmalloc(sizeof(struct
-> mpcg_info), gfp_type());
->                                   if (mpcginfo == NULL)
-> 
->                goto done;
-> 
-> diff --git a/drivers/s390/net/lcs.c b/drivers/s390/net/lcs.c
-> index 9b19ea1..0f19d54 100644
-> --- a/drivers/s390/net/lcs.c
-> +++ b/drivers/s390/net/lcs.c
-> @@ -1238,8 +1238,7 @@ lcs_set_mc_addresses(struct lcs_card *card,
-> struct in_device *in4_dev)
->                                   ipm = lcs_check_addr_entry(card,
-> im4, buf);
->                                   if (ipm != NULL)
->                                                    continue;
->         /* Address already in list. */
-> -                                  ipm = (struct lcs_ipm_list *)
-> -
-> kzalloc(sizeof(struct lcs_ipm_list), GFP_ATOMIC);
-> +                                  ipm = kzalloc(sizeof(struct
-> lcs_ipm_list), GFP_ATOMIC);
->                                   if (ipm == NULL) {
->                                                    pr_info("Not enough
-> memory to add"
->                                                                     "
-> new multicast entry!\n");
-> diff --git a/drivers/s390/net/qeth_core_main.c
-> b/drivers/s390/net/qeth_core_main.c
-> index 3ba738b..065a3fa 100644
-> --- a/drivers/s390/net/qeth_core_main.c
-> +++ b/drivers/s390/net/qeth_core_main.c
-> @@ -606,7 +606,7 @@ static int qeth_setup_channel(struct qeth_channel
-> *channel)
-> 
->                  QETH_DBF_TEXT(SETUP, 2, "setupch");
->                  for (cnt = 0; cnt < QETH_CMD_BUFFER_NO; cnt++) {
-> -                                  channel->iob[cnt].data = (char *)
-> +                                  channel->iob[cnt].data =
-> 
->  kmalloc(QETH_BUFSIZE, GFP_DMA|GFP_KERNEL);
->                                   if (channel->iob[cnt].data == NULL)
->                                                    break;
-> 
-
+Yeah, I don't think we should FTRACE_ENTRY for that. The format files for
+[k|u]probes events are created dynamically on top of what the user requested,
+which is a very nice feature.
 
