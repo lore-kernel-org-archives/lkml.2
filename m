@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab0ELKiW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 06:38:22 -0400
-Received: from mx4.sophos.com ([74.202.89.161]:60507 "EHLO mx4.sophos.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752706Ab0ELKiU convert rfc822-to-8bit (ORCPT
+	id S1754567Ab0ELKil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 06:38:41 -0400
+Received: from mail142.messagelabs.com ([216.82.249.99]:24803 "EHLO
+	mail142.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299Ab0ELKii convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 06:38:20 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.33.2 kmalloc-8 slab leaks ~512 objects per second
-Date: Wed, 12 May 2010 11:38:05 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
-CC: <dri-devel@lists.sourceforge.net>, David Airlie <airlied@linux.ie>
-References: <11758_1273660249_4BEA8359_11758_1675_1_201005121121.49135.tvrtko.ursulin@sophos.com>
-In-Reply-To: <11758_1273660249_4BEA8359_11758_1675_1_201005121121.49135.tvrtko.ursulin@sophos.com>
-MIME-Version: 1.0
-Message-ID: <201005121138.05254.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 12/05/2010 11:38:05,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 12/05/2010 11:38:06,
-	Serialize complete at 12/05/2010 11:38:06
-X-TNEFEvaluated: 1
+	Wed, 12 May 2010 06:38:38 -0400
+X-VirusChecked: Checked
+X-Env-Sender: Viral.Mehta@lntinfotech.com
+X-Msg-Ref: server-9.tower-142.messagelabs.com!1273660714!61810252!1
+X-StarScan-Version: 6.2.4; banners=lntinfotech.com,-,-
+X-Originating-IP: [203.199.118.206]
+From: Viral Mehta <Viral.Mehta@lntinfotech.com>
+To: =?iso-8859-2?Q?Micha=B3_Nazarewicz?= <m.nazarewicz@samsung.com>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 12 May 2010 16:07:38 +0530
+Subject: RE: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
+ error recovery
+Thread-Topic: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
+ error recovery
+Thread-Index: AcrxvqGqZaUDDjQZTmqrOXA9LeY99QAAIKZc
+Message-ID: <70376CA23424B34D86F1C7DE6B9973430254343AC0@VSHINMSMBX01.vshodc.lntinfotech.com>
+References: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>
+ <op.vck4q0c87p4s8u@pikus>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABB@VSHINMSMBX01.vshodc.lntinfotech.com>
+ <op.vck63vc77p4s8u@pikus>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABD@VSHINMSMBX01.vshodc.lntinfotech.com>,<op.vck8y0uv7p4s8u@pikus>
+In-Reply-To: <op.vck8y0uv7p4s8u@pikus>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-2"
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 May 2010 11:21:48 Tvrtko Ursulin wrote:
-> Hi all,
->
-> As the subject says, is this a know issue? I have been tracking the growth
->  at one second intervals and it looks like this:
->
-> 512 (67716608) Slab:             606744 kB
-> 512 (67717120) Slab:             606752 kB
-> 512 (67717632) Slab:             606756 kB
-> 0 (67718144) Slab:             606756 kB
-> 512 (67718144) Slab:             606760 kB
-> 1024 (67718656) Slab:             606768 kB
-> 512 (67719680) Slab:             606772 kB
-> 512 (67720192) Slab:             606776 kB
-> 0 (67720704) Slab:             606776 kB
-> 512 (67720704) Slab:             606780 kB
->
-> First fiels is the diff in numobj, in parentheses is actual numobj and last
->  is the total slab size from /proc/meminfo.
->
-> kmalloc-8         68044800 68044800      8  512    1 : tunables    0    0
->   0
->
-> : slabdata 132900 132900      0
->
-> dm-io slab also seems large, don't know... :
-> dm_io              75924 147288     40  102    1 : tunables    0    0    0
->  : slabdata   1444   1444      0
->
-> Some other info about the system/kernel is attached.
 
-I think it is DRM (radeon) related, leak stopped when I closed all X programs.
-I am compiling 2.6.33.3 right now and will soon reboot into it.
+>If luns allocation fails, common->luns will be NULL and freeing a NULL
+>pointer is a no-operation thus the code works just fine.
 
-Tvrtko
+Oh, okie.
+This was new to me. Sorry for the noise.
 
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+--
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Micha³ "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+--
+To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+______________________________________________________________________
+
+This Email may contain confidential or privileged information for the intended recipient (s) If you are not the intended recipient, please do not use or disseminate the information, notify the sender and delete it from your system.
+
+______________________________________________________________________
