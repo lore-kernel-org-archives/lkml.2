@@ -1,114 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab0ELRso (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 13:48:44 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:49654 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756663Ab0ELRsm (ORCPT
+	id S1757061Ab0ELRtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 13:49:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47407 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756876Ab0ELRtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 13:48:42 -0400
-Date: Wed, 12 May 2010 13:48:40 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@us.ibm.com>, Jason Baron <jbaron@redhat.com>
-Subject: Re: [PATCH -tip 4/5] kprobes/x86: Use text_poke_smp_batch
-Message-ID: <20100512174840.GA32496@Krystal>
-References: <20100510175313.27396.34605.stgit@localhost6.localdomain6> <20100510175340.27396.7222.stgit@localhost6.localdomain6> <20100511144013.GA17656@Krystal> <4BE9F952.3060505@redhat.com> <20100512152747.GA12326@Krystal> <4BEAE8B8.8080809@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BEAE8B8.8080809@redhat.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:46:39 up 109 days, 20:23, 10 users,  load average: 0.19, 0.18,
-	0.17
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 12 May 2010 13:49:06 -0400
+Date: Wed, 12 May 2010 10:48:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: miaox@cn.fujitsu.com
+Cc: David Rientjes <rientjes@google.com>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Paul Menage <menage@google.com>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>,
+       Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm] cpuset,mm: fix no node to alloc memory when
+ changing cpuset's mems - fix2
+Message-Id: <20100512104817.beeee3b5.akpm@linux-foundation.org>
+In-Reply-To: <4BEA6E3D.10503@cn.fujitsu.com>
+References: <4BEA56D3.6040705@cn.fujitsu.com>
+	<20100512003246.9f0ee03c.akpm@linux-foundation.org>
+	<4BEA6E3D.10503@cn.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Masami Hiramatsu (mhiramat@redhat.com) wrote:
-> Mathieu Desnoyers wrote:
-> > * Masami Hiramatsu (mhiramat@redhat.com) wrote:
-> >> Mathieu Desnoyers wrote:
-> >>> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
-> >>>> Use text_poke_smp_batch() in optimization path for reducing
-> >>>> the number of stop_machine() issues.
-> >>>>
-> >>>> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-> >>>> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> >>>> Cc: Ingo Molnar <mingo@elte.hu>
-> >>>> Cc: Jim Keniston <jkenisto@us.ibm.com>
-> >>>> Cc: Jason Baron <jbaron@redhat.com>
-> >>>> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> >>>> ---
-> >>>>
-> >>>>  arch/x86/kernel/kprobes.c |   37 ++++++++++++++++++++++++++++++-------
-> >>>>  include/linux/kprobes.h   |    2 +-
-> >>>>  kernel/kprobes.c          |   13 +------------
-> >>>>  3 files changed, 32 insertions(+), 20 deletions(-)
-> >>>>
-> >>>> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-> >>>> index 345a4b1..63a5c24 100644
-> >>>> --- a/arch/x86/kernel/kprobes.c
-> >>>> +++ b/arch/x86/kernel/kprobes.c
-> >>>> @@ -1385,10 +1385,14 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
-> >>>>  	return 0;
-> >>>>  }
-> >>>>  
-> >>>> -/* Replace a breakpoint (int3) with a relative jump.  */
-> >>>> -int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
-> >>>> +#define MAX_OPTIMIZE_PROBES 256
-> >>>
-> >>> So what kind of interrupt latency does a 256-probes batch generate on the
-> >>> system ?  Are we talking about a few milliseconds, a few seconds ?
-> >>
-> >> From my experiment on kvm/4cpu, it took about 3 seconds in average.
+On Wed, 12 May 2010 17:00:45 +0800
+Miao Xie <miaox@cn.fujitsu.com> wrote:
+
+> on 2010-5-12 12:32, Andrew Morton wrote:
+> > On Wed, 12 May 2010 15:20:51 +0800 Miao Xie <miaox@cn.fujitsu.com> wrote:
 > > 
-> > That's 3 seconds for multiple calls to stop_machine(). So we can expect
-> > latencies in the area of few microseconds for each call, right ?
-> 
-> Theoretically yes.
-> But if we register more than 1000 probes at once, it's hard to do
-> anything except optimizing a while(more than 10 sec), because
-> it stops machine so frequently.
-> 
-> >> With this patch, it went down to 30ms. (x100 faster :))
+> >> @@ -985,6 +984,7 @@ repeat:
+> >>  	 * for the read-side.
+> >>  	 */
+> >>  	while (ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
+> >> +		task_unlock(tsk);
+> >>  		if (!task_curr(tsk))
+> >>  			yield();
+> >>  		goto repeat;
 > > 
-> > This is beefing up the latency from few microseconds to 30ms. It sounds like a
-> > regression rather than a gain to me.
+> > Oh, I meant to mention that.  No yield()s, please.  Their duration is
+> > highly unpredictable.  Can we do something more deterministic here?
 > 
-> If it is not acceptable, I can add a knob for control how many probes
-> optimize/unoptimize at once. Anyway, it is expectable latency (after
-> registering/unregistering probes) and it will be small if we put a few probes.
-> (30ms is the worst case)
-> And if you want, it can be disabled by sysctl.
+> Maybe we can use wait_for_completion().
 
-I think we are starting to see the stop_machine() approach is really limiting
-our ability to do even relatively small amount of work without hurting
-responsiveness significantly.
+That would work.
 
-What's the current showstopper with the breakpoint-bypass-ipi approach that
-solves this issue properly and makes this batching approach unnecessary ?
-
-Thanks,
-
-Mathieu
-
+> > 
+> > Did you consider doing all this with locking?  get_mems_allowed() does
+> > mutex_lock(current->lock)?
 > 
-> Thank you,
-> 
-> -- 
-> Masami Hiramatsu
-> e-mail: mhiramat@redhat.com
+> do you means using a real lock(such as: mutex) to protect mempolicy and mem_allowed?
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+yes.
+
+> It may cause the performance regression, so I do my best to abstain from using a real
+> lock.
+
+Well, the code as-is is pretty exotic with lots of open-coded tricky
+barriers - it's best to avoid inventing new primitives if possible. 
+For example, there's no lockdep support for this new "lock".
+
+mutex_lock() is pretty quick - basically a simgle atomic op.  How
+frequently do these operations occur?
+
+The code you have at present is fairly similar to sequence locks.  I
+wonder if there's some way of (ab)using sequence locks for this. 
+seqlocks don't have lockdep support either...
+
