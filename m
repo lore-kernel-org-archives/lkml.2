@@ -1,112 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab0ELO54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 10:57:56 -0400
-Received: from fg-out-1718.google.com ([72.14.220.159]:35113 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab0ELO5z (ORCPT
+	id S1752406Ab0ELPBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 11:01:00 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:38959 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751845Ab0ELPA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 10:57:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gxORhJBMIoRuN8rPR9Htnsg0sKsoFTIqS/omIJpix5GZMRGiQnriEmXVPvL4x2mrRB
-         PJzbhcy1PoY2foxvktMMtXIVa8ZEMavCdTPUPQsJQqlKtwv58CYfbH3R8S7y7ZMdZcoL
-         bQbxUwyiiTHzYKeoEecvW1qM3b1flqMtVBvV8=
-Date: Wed, 12 May 2010 16:57:52 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: rostedt@goodmis.org, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 11/11] Uprobes traceevents patch.
-Message-ID: <20100512145746.GC5405@nowhere>
-References: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6> <20100331155311.4181.85103.sendpatchset@localhost6.localdomain6> <1270070691.19685.7899.camel@gandalf.stny.rr.com> <4BB41E38.8080406@redhat.com>
+	Wed, 12 May 2010 11:00:58 -0400
+Date: Wed, 12 May 2010 17:00:57 +0200
+From: Jan Kara <jack@suse.cz>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       Saeed Bishara <saeed@marvell.com>, Nicolas Pitre <nico@marvell.com>,
+       linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       "James E.J. Bottomley" <jejb@parisc-linux.org>
+Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
+	88f5182)
+Message-ID: <20100512150057.GA29867@atrey.karlin.mff.cuni.cz>
+References: <1273569821.21352.19.camel@pasglop> <1273575478.21352.29.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BB41E38.8080406@redhat.com>
+In-Reply-To: <1273575478.21352.29.camel@pasglop>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 12:16:56AM -0400, Masami Hiramatsu wrote:
-> Hi Steven,
+> On Tue, 2010-05-11 at 19:23 +1000, Benjamin Herrenschmidt wrote:
 > 
-> Steven Rostedt wrote:
-> > On Wed, 2010-03-31 at 21:23 +0530, Srikar Dronamraju wrote:
+> > Since I doubt ext3 is busted so dramatically in mainline for "normal" machines,
+> > I tend to suspect things could be related to the infamous vivt caches. On the
+> > other hand, it's pretty clearly metadata or journal corruption and I'm not
+> > sure we ever do things that could cause aliases (such as vmap etc..) on
+> > these things, and they shouldn't be mapped into userspace... unless it's fsck
+> > itself that causes aliases to occur at the block device level ? (I do unmount
+> > though before I run fsck).
 > > 
-> >>  libftrace-y := ftrace.o
-> >> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> >> index 2825ef2..9fe02ab 100644
-> >> --- a/kernel/trace/trace.h
-> >> +++ b/kernel/trace/trace.h
-> >> @@ -126,6 +126,18 @@ struct kretprobe_trace_entry {
-> >>  	(offsetof(struct kretprobe_trace_entry, args) +	\
-> >>  	(sizeof(unsigned long) * (n)))
-> >>  
-> >> +struct uprobe_trace_entry {
-> >> +	struct trace_entry	ent;
-> >> +	pid_t			pid;
+> > On the other hand, it could also be a busticated marvell SATA driver :-)
 > > 
-> > Unless pid is not the current pid, ent already records it.
+> > I have no problem with the vendor kernel, but it's ancient (2.6.12) and based
+> > on an out of tree variant of a Marvell originated BSP, so everything is
+> > completely different, especially in the area of drivers for the chipset.
+> > 
+> > Anyways, I'll see if I can gather more data tomorrow as time, viruses and sick
+> > kids permits.
+> > 
+> > In the meantime, any hint appreciated.
 > 
-> Indeed.
+> A quick other test which brings more infos, using a smaller (about 5GB)
+> partition and no md or raid involved:
 > 
-> >> +	unsigned long		ip;
-> >> +	int			nargs;
-> >> +	unsigned long		args[];
-> >> +};
-> > 
-> > Note, you want to really add this to trace_entries.h instead:
-> > 
-> > FTRACE_ENTRY(uprobe, uprobe_trace_entry,
-> > 
-> > 	TRACE_GRAPH_ENT,
-> > 
-> > 	F_STRUCT(
-> > 		__field(	unsigned long,	ip	)
-> > 		__field(	int,		nargs	)
-> > 		__dynamic_array(unsigned long,	args	)
-> > 	),
-> > 
-> > 	F_printk("%lx nrargs:%u", __entry->ip, __entry->nargs)
-> > );
-> > 
-> > 
-> > This will put this event into the events/ftrace directory. Don't worry
-> > about the printk format, we can write a plugin for it to override it if
-> > need be.
+>  - Boot with NFS root
+>  - mkfs /dev/sdb2 (no md or raid involved)
+>  - mount /dev/sdb2 /mnt/test
+>  - rsync -avx /test-stuff /mnt/test
+>  - cd /mnt/test
+>  - md5sum -c ~/test-stuff-sums.txt
 > 
-> Hmm, interesting idea. But this dynamic event definition allows us
-> to filter events based on each argument value.
+> That gives me a whole bunch of:
 > 
-> As you can see this code, 
-> 
-> >> +struct probe_arg {
-> >> +	struct fetch_func	fetch;
-> >> +	const char		*name;
-> >> +};
-> 
-> each argument can have unique name. Therefore user can write a filter
-> by using these names.
-> 
-> Moreover, dynamic events (at least kprobe-tracer) are going to support
-> 'types' for each argument. this means that the arg[] in *probe_trace_entry
-> will be no longer an unsigned long array.
-> 
-> Thank you,
+> md5sum: ./usr/bin/debconf-escape: No such file or directory
+> ./usr/bin/debconf-escape: FAILED open or read
+> ./usr/bin/stat: OK
+> md5sum: ./usr/bin/chrt: No such file or directory
+> ./usr/bin/chrt: FAILED open or read
+  Could you get the filesystem image with: e2image -r /dev/sdb2 buggy-image
+bzip2 it and make it available somewhere? Maybe I could guess something
+from the way the filesystem gets corrupted.
+  Oh, and also overwrite the partition with zeros before calling mkfs to make
+the analysis simpler.
 
+> In fact, if I do ls /mnt/test/usr/bin/ I see debconf but if I do
+> ls /mnt/test/usr/bin/chrt then I get No such file or directory.
+> 
+> So something is badly wrong :-)
+> 
+> Now, trying without the dir_index feature (mkfs.ext3 -O ^dir_index)
+> and it works fine. All my md5sum's are correct and fsck passes.
+  Funny. Not sure how that could happen...
 
-Yeah, I don't think we should FTRACE_ENTRY for that. The format files for
-[k|u]probes events are created dynamically on top of what the user requested,
-which is a very nice feature.
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SuSE CR Labs
