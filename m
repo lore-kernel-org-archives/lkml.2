@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab0ELTMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 15:12:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2735 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852Ab0ELTMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 15:12:23 -0400
-Message-ID: <4BEAFD67.2000705@redhat.com>
-Date: Wed, 12 May 2010 15:11:35 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+	id S1756803Ab0ELTNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 15:13:10 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:52813 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756480Ab0ELTNI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 15:13:08 -0400
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@us.ibm.com>, Jason Baron <jbaron@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH -tip 4/5] kprobes/x86: Use text_poke_smp_batch
-References: <20100510175313.27396.34605.stgit@localhost6.localdomain6> <20100510175340.27396.7222.stgit@localhost6.localdomain6> <20100511144013.GA17656@Krystal> <4BE9F952.3060505@redhat.com> <20100512152747.GA12326@Krystal> <4BEAE8B8.8080809@redhat.com> <20100512174840.GA32496@Krystal>
-In-Reply-To: <20100512174840.GA32496@Krystal>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100512190814.GA9674@oksana.dev.rtsoft.ru>
+References: <1273595926-26249-1-git-send-email-daniel@caiaq.de> 
+	<20100511174708.GA26777@oksana.dev.rtsoft.ru> <20100511175812.GH30801@buzzloop.caiaq.de> 
+	<20100511182347.GA31831@oksana.dev.rtsoft.ru> <20100511222825.GJ30801@buzzloop.caiaq.de> 
+	<20100512181546.GA4804@oksana.dev.rtsoft.ru> <20100512183806.GA28658@suse.de> 
+	<20100512190814.GA9674@oksana.dev.rtsoft.ru>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 12 May 2010 21:12:46 +0200
+Message-ID: <AANLkTimQq30DklQUDBokPXsLiXKsuiaCUFg_5ddkJbXa@mail.gmail.com>
+Subject: Re: [PATCH] Introduce {sysfs,device}_create_file_mode
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, Daniel Mack <daniel@caiaq.de>,
+       linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+       Alexey Starikovskiy <astarikovskiy@suse.de>,
+       Len Brown <len.brown@intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Matt Reimer <mreimer@vpop.net>, Evgeniy Polyakov <zbr@ioremap.net>,
+       Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathieu Desnoyers wrote:
-> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
->> Mathieu Desnoyers wrote:
->>> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
->>>> Mathieu Desnoyers wrote:
->>>>> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
->>>>>> Use text_poke_smp_batch() in optimization path for reducing
->>>>>> the number of stop_machine() issues.
->>>>>>
->>>>>> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
->>>>>> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
->>>>>> Cc: Ingo Molnar <mingo@elte.hu>
->>>>>> Cc: Jim Keniston <jkenisto@us.ibm.com>
->>>>>> Cc: Jason Baron <jbaron@redhat.com>
->>>>>> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
->>>>>> ---
->>>>>>
->>>>>>  arch/x86/kernel/kprobes.c |   37 ++++++++++++++++++++++++++++++-------
->>>>>>  include/linux/kprobes.h   |    2 +-
->>>>>>  kernel/kprobes.c          |   13 +------------
->>>>>>  3 files changed, 32 insertions(+), 20 deletions(-)
->>>>>>
->>>>>> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
->>>>>> index 345a4b1..63a5c24 100644
->>>>>> --- a/arch/x86/kernel/kprobes.c
->>>>>> +++ b/arch/x86/kernel/kprobes.c
->>>>>> @@ -1385,10 +1385,14 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
->>>>>>  	return 0;
->>>>>>  }
->>>>>>  
->>>>>> -/* Replace a breakpoint (int3) with a relative jump.  */
->>>>>> -int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
->>>>>> +#define MAX_OPTIMIZE_PROBES 256
->>>>>
->>>>> So what kind of interrupt latency does a 256-probes batch generate on the
->>>>> system ?  Are we talking about a few milliseconds, a few seconds ?
->>>>
->>>> From my experiment on kvm/4cpu, it took about 3 seconds in average.
->>>
->>> That's 3 seconds for multiple calls to stop_machine(). So we can expect
->>> latencies in the area of few microseconds for each call, right ?
+On Wed, May 12, 2010 at 21:08, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+> On Wed, May 12, 2010 at 11:38:06AM -0700, Greg KH wrote:
+>> On Wed, May 12, 2010 at 10:15:46PM +0400, Anton Vorontsov wrote:
+>> > We need to create attributes with different modes across devices.
+>> > We can do this by modifying attr.mode between device_create_file
+>> > invocations, but that is racy in case of globally defined attrs.
+>> >
+>> > Luckily, there's sysfs_add_file_mode() function that seems to do
+>> > exactly what we want, and if we use it, we don't need any locks
+>> > to avoid races. Though, it isn't exposed via device-drivers core
+>> > API.
 >>
->> Theoretically yes.
->> But if we register more than 1000 probes at once, it's hard to do
->> anything except optimizing a while(more than 10 sec), because
->> it stops machine so frequently.
->>
->>>> With this patch, it went down to 30ms. (x100 faster :))
->>>
->>> This is beefing up the latency from few microseconds to 30ms. It sounds like a
->>> regression rather than a gain to me.
->>
->> If it is not acceptable, I can add a knob for control how many probes
->> optimize/unoptimize at once. Anyway, it is expectable latency (after
->> registering/unregistering probes) and it will be small if we put a few probes.
->> (30ms is the worst case)
->> And if you want, it can be disabled by sysctl.
-> 
-> I think we are starting to see the stop_machine() approach is really limiting
-> our ability to do even relatively small amount of work without hurting
-> responsiveness significantly.
-> 
-> What's the current showstopper with the breakpoint-bypass-ipi approach that
-> solves this issue properly and makes this batching approach unnecessary ?
+>> But you race the creation of the device notifying userspace, and then
+>> the file being created, right?
+>
+> Yep, you've raised that question once, like 3 years ago. :-)
+>
+> http://lkml.org/lkml/2007/4/11/452
+> http://lkml.org/lkml/2007/4/12/144
+>
+> In short: we can't use attr groups since the attributes creation
+> is conditional. And we especially don't want to use the attr groups
+> for attrs with different modes. But it's not a problem, because...
 
-We still do not have any official answer from chip vendors.
-As you know, basic implementation has been done.
+Groups have a filter callback for every member, to decide if the
+attribute should be created or not.
 
-Thank you,
-
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+Kay
