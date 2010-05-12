@@ -1,72 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab0ELM5f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 08:57:35 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:52726 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab0ELM5d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 08:57:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Mq5ih210EJ3fJ/9/PxgPVwjl2u667iVmOY6RE4YxIdvJdWdgzlOfAR/fzlN6HCw95Q
-         7MEXSAQ1wv3iL5hAdzzDFJ9b5Yc5eR/yNmEqW6kvcLzbFXuvvy27tQcmZDQRfCIRjgJZ
-         o6nkVn1wcVvPPy5YGNJAXqtrceRtI1yPh7PWo=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH] remove bogus #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT for debug_kmap_atomic()
-Date: Wed, 12 May 2010 21:57:01 +0900
-Message-Id: <1273669021-528-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.6.0.6
+	id S1754163Ab0ELM6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 08:58:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41105 "EHLO mx2.suse.de"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753611Ab0ELM6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 08:58:33 -0400
+Date: Wed, 12 May 2010 14:58:31 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+       mdpoole@troilus.org
+Subject: Re: [PATCH] HID:magicmouse: This fixes a connection problem with
+ the magicmouse.
+In-Reply-To: <1273595363-4020-1-git-send-email-justinmattock@gmail.com>
+Message-ID: <alpine.LNX.2.00.1005121456150.28092@pobox.suse.cz>
+References: <1273595363-4020-1-git-send-email-justinmattock@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In f4112de6b679d84bd9b9681c7504be7bdfb7c7d5 I said that debug_kmap_atomic()
-needs CONFIG_TRACE_IRQFLAGS_SUPPORT.
+On Tue, 11 May 2010, Justin P. Mattock wrote:
 
-It was wrong. (I thought irqs_disabled() is only available when
-the architecture has CONFIG_TRACE_IRQFLAGS_SUPPORT)
+> With the latest HEAD, I've noticed that I needed to add: HIDRAW=y in 
+> order for my apple magicmouse to connect. After receiving some posts, it 
+> seems this it not the case(HIDRAW just relays HID events to userspace).
+> 
+> The bisect results of this issue resulted in commit: HID:magicmouse: fix 
+> oops after device removal. 
+> (hash:28918c211d86b6eeb70182c523800c7bc442960c)
+> 
+> After examining this commit, I've noticed that HID_CONNECT_DEFAULT has 
+> also an entry in there of HID_CONNECT_HIDINPUT, not sure what "~" means,
 
-Remove the #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT check to enable
-kmap_atomic() debugging for the architectures which do not have
-CONFIG_TRACE_IRQFLAGS_SUPPORT.
+~ is zeroing out the HID_CONENCT_HIDINPUT bits from the connect mask, as 
+magicmouse driver is handling the input itself.
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
----
- include/linux/highmem.h |    2 +-
- mm/highmem.c            |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> before HID_CONNECT_HIDINPUT, but after removing
+> this(correct me if I'm wrong)"double" definition, 
+> I'm able to have my magicmouse connect without the 
+> need of HIDRAW, and also this in dmesg:
+> 
+> magicmouse 0005:05AC:030D.0004: claimed by neither input, hiddev nor hidraw
+> magicmouse 0005:05AC:030D.0004: magicmouse hw start failed
+> 
+> and as well as the crash that the above commit fixes when waking
+> up from suspend(mouse connects perfectly upon wakeup).
+> 
+> Please have a look, and if this works, take it
+> if theres another solution let me know.
+> (so I can enjoy the power of the magicmouse!!).
+> 
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  drivers/hid/hid-magicmouse.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+> index 0d471fc..0de5e96 100644
+> --- a/drivers/hid/hid-magicmouse.c
+> +++ b/drivers/hid/hid-magicmouse.c
+> @@ -354,7 +354,7 @@ static int magicmouse_probe(struct hid_device *hdev,
+>  		goto err_free;
+>  	}
+>  
+> -	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT & ~HID_CONNECT_HIDINPUT);
+> +	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
 
-diff --git a/include/linux/highmem.h b/include/linux/highmem.h
-index 74152c0..caafd05 100644
---- a/include/linux/highmem.h
-+++ b/include/linux/highmem.h
-@@ -27,7 +27,7 @@ static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
+This is not particularly right, as we'll end up having dangling input 
+device.
+
+The problem is, that when HIDRAW is not set, hid_hw_start() returns ENODEV 
+as no subsystem has claimed the device, and probe routine bails out. Which 
+is not what we want.
+
+Does the testing patch below fix the problems you are seeing?
+
+
+
+diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+index 0d471fc..f10d56a 100644
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -354,12 +354,15 @@ static int magicmouse_probe(struct hid_device *hdev,
+ 		goto err_free;
+ 	}
  
- #include <asm/kmap_types.h>
+-	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT & ~HID_CONNECT_HIDINPUT);
++	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+ 	if (ret) {
+ 		dev_err(&hdev->dev, "magicmouse hw start failed\n");
+ 		goto err_free;
+ 	}
  
--#if defined(CONFIG_DEBUG_HIGHMEM) && defined(CONFIG_TRACE_IRQFLAGS_SUPPORT)
-+#ifdef CONFIG_DEBUG_HIGHMEM
- 
- void debug_kmap_atomic(enum km_type type);
- 
-diff --git a/mm/highmem.c b/mm/highmem.c
-index bed8a8b..66baa20 100644
---- a/mm/highmem.c
-+++ b/mm/highmem.c
-@@ -422,7 +422,7 @@ void __init page_address_init(void)
- 
- #endif	/* defined(CONFIG_HIGHMEM) && !defined(WANT_PAGE_VIRTUAL) */
- 
--#if defined(CONFIG_DEBUG_HIGHMEM) && defined(CONFIG_TRACE_IRQFLAGS_SUPPORT)
-+#ifdef CONFIG_DEBUG_HIGHMEM
- 
- void debug_kmap_atomic(enum km_type type)
- {
++	/* we are handling the input ourselves */
++	hidinput_disconnect(hdev);
++
+ 	report = hid_register_report(hdev, HID_INPUT_REPORT, TOUCH_REPORT_ID);
+ 	if (!report) {
+ 		dev_err(&hdev->dev, "unable to register touch report\n");
+
 -- 
-1.6.0.6
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
