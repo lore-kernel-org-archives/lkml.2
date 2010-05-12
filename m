@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab0ELJVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 05:21:41 -0400
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:40525 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab0ELJVi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 05:21:38 -0400
-Message-ID: <4BEA73F6.7020400@oss.ntt.co.jp>
-Date: Wed, 12 May 2010 18:25:10 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752578Ab0ELJWv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 05:22:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35806 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091Ab0ELJWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 05:22:48 -0400
+From: Juan Quintela <quintela@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+       "David S. Miller" <davem@davemloft.net>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+       virtualization@lists.osdl.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] vhost: fix barrier pairing
+In-Reply-To: <20100511172633.GA9091@redhat.com> (Michael S. Tsirkin's message
+	of "Tue, 11 May 2010 20:26:33 +0300")
+References: <20100511172633.GA9091@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+Date: Wed, 12 May 2010 11:22:12 +0200
+Message-ID: <m3wrv9tqyj.fsf@trasno.mitica>
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, avi@redhat.com,
-       mtosatti@redhat.com, fernando@oss.ntt.co.jp, kvm@vger.kernel.org,
-       kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org, tglx@linutronix.de,
-       mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-       benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org,
-       arnd@arndb.de, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 7/12 not tested yet] PPC: introduce __set_bit() like
- function for bitmaps in user space
-References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <20100504220418.083929bc.takuya.yoshikawa@gmail.com> <4BE97F2A.5080900@suse.de>
-In-Reply-To: <4BE97F2A.5080900@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->>
->> +static inline int set_bit_user_non_atomic(int nr, void __user *addr)
->> +{
->> +	u8 __user *p;
->> +	u8 val;
->> +
->> +	p = (u8 __user *)((unsigned long)addr + nr / BITS_PER_BYTE);
->>
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
+> According to memory-barriers.txt, an smp memory barrier
+> should always be paired with another smp memory barrier,
+> and I quote "a lack of appropriate pairing is almost certainly an
+> error".
 >
-> Does C do the + or the / first? Either way, I'd like to see brackets here :)
-
-OK, I'll change like that! I like brackets style too :)
-
+> In case of vhost, failure to flush out used index
+> update before looking at the interrupt disable flag
+> could result in missed interrupts, resulting in
+> networking hang under stress.
 >
+> This might happen when flags read bypasses used index write.
+> So we see interrupts disabled and do not interrupt, at the
+> same time guest writes flags value to enable interrupt,
+> reads an old used index value, thinks that
+> used ring is empty and waits for interrupt.
 >
-> Alex
+> Note: the barrier we pair with here is in
+> drivers/virtio/virtio_ring.c, function
+> vring_enable_cb.
 >
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>
+> Dave, I think this is needed in 2.6.34, I'll send a pull
+> request after doing some more testing.
+>
+> Rusty, Juan, could you take a look as well please?
+> Thanks!
 
+I would have prefered to put it:
+
+void vhost_add_used_and_signal(struct vhost_dev *dev,
+			       struct vhost_virtqueue *vq,
+			       unsigned int head, int len)
+{
+	vhost_add_used(vq, head, len);
+>>>>    smp_mb();
+	vhost_signal(dev, vq);
+}
+
+Because it looks strange to have a barrier as the 1st instruction of a
+function.  And this way it is clearer (at least to me) what we are
+protecting.
+
+But on the other hand, we would have to put a comment explainingthat all
+users of vhost_signal() have to put that smp_mb() so .....
+
+Perhaps just improving the commet stating that the corresponding barrier
+is there?
+
+> Note: the barrier we pair with here is in
+> drivers/virtio/virtio_ring.c, function
+> vring_enable_cb.
+
+Good catch.
+
+Later, Juan.
