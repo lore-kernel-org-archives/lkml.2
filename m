@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758555Ab0ELX2q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 19:28:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46851 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755857Ab0ELX2n (ORCPT
+	id S1754629Ab0ELXdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 19:33:44 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:55312 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab0ELXdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 19:28:43 -0400
-Date: Wed, 12 May 2010 16:28:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-kernel@vger.kernel.org, Pete Eberlein <pete@sensoray.com>,
-       Ross Cohen <rcohen@snurgle.org>, Greg KH <greg@kroah.com>,
-       linux-ia64@vger.kernel.org
-Subject: Re: [PATCH -mm] remove deprecated dma_sync_single and dma_sync_sg
- API
-Message-Id: <20100512162803.ccb05cb8.akpm@linux-foundation.org>
-In-Reply-To: <20100511101308R.fujita.tomonori@lab.ntt.co.jp>
-References: <20100511101308R.fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 12 May 2010 19:33:42 -0400
+Date: Wed, 12 May 2010 16:36:48 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph fixes for 2.6.34-final
+Message-ID: <Pine.LNX.4.64.1005111258300.17789@cobra.newdream.net>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 May 2010 10:13:23 +0900
-FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+Hi Linus,
 
-> Since 2.6.5, it had been commented, 'for backwards compatibility,
-> removed in 2.7.x'. Since 2.6.31, it have been marked as __deprecated.
-> 
-> I think that we can remove the API safely now.
-> 
-> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> ---
->  include/linux/dma-mapping.h |   15 ---------------
->  1 files changed, 0 insertions(+), 15 deletions(-)
-> 
-> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> index 2ea1494..89b7e1a 100644
-> --- a/include/linux/dma-mapping.h
-> +++ b/include/linux/dma-mapping.h
-> @@ -95,21 +95,6 @@ static inline int is_device_dma_capable(struct device *dev)
->  #include <asm-generic/dma-mapping-broken.h>
->  #endif
->  
-> -/* for backwards compatibility, removed soon */
-> -static inline void __deprecated dma_sync_single(struct device *dev,
-> -						dma_addr_t addr, size_t size,
-> -						enum dma_data_direction dir)
-> -{
-> -	dma_sync_single_for_cpu(dev, addr, size, dir);
-> -}
-> -
-> -static inline void __deprecated dma_sync_sg(struct device *dev,
-> -					    struct scatterlist *sg, int nelems,
-> -					    enum dma_data_direction dir)
-> -{
-> -	dma_sync_sg_for_cpu(dev, sg, nelems, dir);
-> -}
-> -
->  static inline u64 dma_get_mask(struct device *dev)
->  {
->  	if (dev && dev->dma_mask && *dev->dma_mask)
+Please pull this final set of Ceph bugfixes from:
 
-drivers/staging/go7007/saa7134-go7007.c uses dma_sync_single().
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-arch/ia64/kernel/machvec.c has functions machvec_dma_sync_single() and
-machvec_dma_sync_sg() which might be dead code.
+These fix a couple of locking errors, races, and ordering problems, and 
+one bug that caused requests to hang indefinitely.  These close out the 
+last of my open bugs resulting in client crashes.  There's also a subtle 
+protocol fix that crops up when there's a transport error.
 
+Thanks!
+sage
+
+---
+
+Sage Weil (9):
+      ceph: unregister bdi before kill_anon_super releases device name
+      ceph: don't use writeback_control in writepages completion
+      ceph: unregister osd request on failure
+      ceph: fix open file counting on snapped inodes when mds returns no caps
+      ceph: resubmit requests on pg mapping change (not just primary change)
+      ceph: fix locking for waking session requests after reconnect
+      ceph: zero unused message header, footer fields
+      ceph: fix cap removal races
+      ceph: preserve seq # on requeued messages after transient transport errors
+
+ fs/ceph/addr.c       |    6 ------
+ fs/ceph/caps.c       |   19 ++++++++++++-------
+ fs/ceph/inode.c      |    4 ++++
+ fs/ceph/mds_client.c |   34 +++++++++++++++++++---------------
+ fs/ceph/messenger.c  |   17 +++++++++++++++--
+ fs/ceph/messenger.h  |    1 +
+ fs/ceph/osd_client.c |   26 ++++++++++++++++++++------
+ fs/ceph/osd_client.h |    3 ++-
+ fs/ceph/osdmap.c     |   29 ++++++++++++++++++++++++-----
+ fs/ceph/osdmap.h     |    2 ++
+ fs/ceph/rados.h      |    1 +
+ fs/ceph/super.c      |   23 ++++++++++++++++-------
+ 12 files changed, 116 insertions(+), 49 deletions(-)
