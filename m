@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab0ELRA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 13:00:27 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47895 "EHLO mx2.mail.elte.hu"
+	id S1754452Ab0ELRE5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 13:04:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28215 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755071Ab0ELRAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 13:00:25 -0400
-Date: Wed, 12 May 2010 18:59:47 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Pierre Tardy <tardyp@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, mathieu.desnoyers@efficios.com,
-       arjan@infradead.org, ziga.mahkovec@gmail.com
-Subject: Re: [RFC] PyTimechart
-Message-ID: <20100512165947.GA11921@elte.hu>
-References: <AANLkTilJLcdfK-vgqGdXyaZ_bQ1BDFmQl619egtGAA4i@mail.gmail.com>
- <20100511213625.GD5422@nowhere>
- <AANLkTikumkBKwYTYIK63mT2i_hI4SAo-Eua0cx9OCHnD@mail.gmail.com>
- <20100512144811.GA5405@nowhere>
- <1273678596.27703.30.camel@gandalf.stny.rr.com>
+	id S1752563Ab0ELRE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 13:04:56 -0400
+Date: Wed, 12 May 2010 14:04:47 -0300
+From: Glauber Costa <glommer@redhat.com>
+To: Alexander Graf <agraf@suse.de>
+Cc: Zachary Amsden <zamsden@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, avi@redhat.com
+Subject: Re: [PATCH 0/9] pvclock misc fixes - v4.
+Message-ID: <20100512170447.GC14463@mothafucka.localdomain>
+References: <1273594667-17175-1-git-send-email-glommer@redhat.com>
+ <4BEA21A1.8040702@redhat.com>
+ <AFD76714-2559-4281-AB61-EA5C6395C13A@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273678596.27703.30.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <AFD76714-2559-4281-AB61-EA5C6395C13A@suse.de>
+X-ChuckNorris: True
+User-Agent: Jack Bauer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Wed, 2010-05-12 at 16:48 +0200, Frederic Weisbecker wrote:
-> > On Wed, May 12, 2010 at 03:37:27PM +0200, Pierre Tardy wrote:
+On Wed, May 12, 2010 at 07:47:39AM +0200, Alexander Graf wrote:
 > 
-> > But we don't yet support trace_printk in perf. May be we could wrap
-> > them in trace events.
+> On 12.05.2010, at 05:33, Zachary Amsden wrote:
 > 
-> Hmm, do we really want to do that?
+> > On 05/11/2010 06:17 AM, Glauber Costa wrote:
+> >> This is the fourth version ov kvmclock fixes.
+> >> 
+> >> Just two minor changes in patch 5, per avi request, and
+> >> the addition of cpuid.txt file, documenting all cpuid flags
+> >> we use.
+> >> 
+> >> As a side effect, this patch removes the time-travel feature
+> >> in kvm guests.
+> >> 
+> >> Glauber Costa (9):
+> >>   Enable pvclock flags in vcpu_time_info structure
+> >>   Add a global synchronization point for pvclock
+> >>   change msr numbers for kvmclock
+> >>   add new KVMCLOCK cpuid feature
+> >>   export paravirtual cpuid flags in KVM_GET_SUPPORTED_CPUID
+> >>   Try using new kvm clock msrs
+> >>   don't compute pvclock adjustments if we trust the tsc
+> >>   Tell the guest we'll warn it about tsc stability
+> >>   Add cpuid.txt file
+> >> 
+> >>  Documentation/kvm/cpuid.txt        |   44 ++++++++++++++++++++++++++++
+> >>  arch/x86/include/asm/kvm_para.h    |   13 ++++++++
+> >>  arch/x86/include/asm/pvclock-abi.h |    4 ++-
+> >>  arch/x86/include/asm/pvclock.h     |    1 +
+> >>  arch/x86/kernel/kvmclock.c         |   56 ++++++++++++++++++++++-------------
+> >>  arch/x86/kernel/pvclock.c          |   37 +++++++++++++++++++++++
+> >>  arch/x86/kvm/x86.c                 |   44 +++++++++++++++++++++++++++-
+> >>  7 files changed, 176 insertions(+), 23 deletions(-)
+> >>  create mode 100644 Documentation/kvm/cpuid.txt
+> >> 
+> >>   
+> > Acked-by: Zachary Amsden <zamsden@redhat.com>
 > 
-> We really need to get the perf and ftrace trace buffers combined. I 
-> understand why perf chose to do the mmap buffers for the counting, but for 
-> live streaming, it is very inefficient compared to splice.
+> 
+> How about stable queuing of this one?
+I don't think the MSR part classifies for stable.
 
-The thing is that for a very long time ftrace didnt have splice support and 
-survived just fine. Even today most of the ftrace usage isnt utilizing splice.
-
-Yes, splice might help in some situations but on average it's an independent 
-speedup on the order of magnitude of a few percents, not a 'must have' item.
-
-So please keep these issues separate.
-
-Thanks,
-
-	Ingo
+The sync part, that might.
