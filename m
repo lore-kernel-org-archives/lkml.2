@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab0ELD31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 23:29:27 -0400
-Received: from sh.osrg.net ([192.16.179.4]:43923 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740Ab0ELD3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 23:29:25 -0400
-Date: Wed, 12 May 2010 12:23:18 +0900
-To: npiggin@suse.de
-Cc: marc@tensilica.com, vapier.adi@gmail.com, dmitry.torokhov@gmail.com,
-       jw@emlix.com, cl@linux.com, penberg@cs.helsinki.fi, mpm@selenic.com,
-       akpm@linux-foundation.org, os@emlix.com, Michael.Hennerich@analog.com,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org, dg@emlix.com,
-       osw@emlix.com, rientjes@google.com, dbrownell@users.sourceforge.net,
-       grant.likely@secretlab.ca, chris@zankel.net, Piet.Delaney@tensilica.com
-Subject: Re: [LKML] Re: [PATCH v3] ad7877: keep dma rx buffers in seperate
- cache lines
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100512030350.GJ15903@laptop>
-References: <AANLkTimm7bOmIz2sdODgHwtCk26kdHgZt7PvceM6gjS3@mail.gmail.com>
-	<522C1DF17AF50042AD8AE87F7887BD3D0163549554@exch.hq.tensilica.com>
-	<20100512030350.GJ15903@laptop>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100512122323J.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 12 May 2010 12:23:20 +0900 (JST)
+	id S1754315Ab0ELDd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 23:33:27 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:48935 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab0ELDdZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 23:33:25 -0400
+Date: Wed, 12 May 2010 09:03:15 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>
+Cc: David Gibson <dwg@au1.ibm.com>, Roland McGrath <roland@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Michael Neuling <mikey@neuling.org>,
+       Alan Stern <stern@rowland.harvard.edu>, paulus@samba.org,
+       shaggy@linux.vnet.ibm.com, Benjamin Herrenschmidt <benh@au1.ibm.com>,
+       "K.Prasad" <prasad@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [Patch 2/3] Allow arch-specific cleanup before breakpoint
+	unregistration
+Message-ID: <20100512033315.GC6384@in.ibm.com>
+References: <20100512022527.857904312@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline; filename=arch_unregister_hbp_02
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 13:03:50 +1000
-Nick Piggin <npiggin@suse.de> wrote:
+Certain architectures (such as PowerPC Book III S) have a need to cleanup
+data-structures before the breakpoint is unregistered. This patch introduces
+an arch-specific hook in release_bp_slot() along with a weak definition in
+the form of a stub funciton.
 
-> On Tue, May 11, 2010 at 07:07:35PM -0700, Marc Gauthier wrote:
-> > Mike Frysinger wrote:
-> > > lets look at the cacheline sizes for arches that dont set
-> > > ARCH_KMALLOC_MINALIGN to L1_CACHE_BYTES:
-> > >  - alplha - 32 or 64
-> > >  - frv - 32 or 64
-> > >  - blackfin - 32
-> > >  - parisc - 32 or 64
-> > >  - mn10300 - 16
-> > >  - s390 - 256
-> > >  - score - 16
-> > >  - sparc - 32
-> > >  - xtensa - 16 or 32
-> > >
-> > > assuming alpha and s390 handle cache coherency in hardware, it looks
-> > > to me like the proposed assumption (kmalloc returns cachealigned
-> > > pointers when cache management is in software) does not hold true.
-> > >
-> > > so should these other arches also be setting ARCH_KMALLOC_MINALIGN to
-> > > L1_CACHE_BYTES ?
-> > 
-> > IMHO, yes.  It just makes sense to avoid false-sharing issues, not to
-> > allocate unrelated blocks in the same cache line.
-> > 
-> > Also as it turns out (hope he doesn't me telling), Christian Zankel
-> > recently found a bug that was fixed exactly that way, by setting
-> > ARCH_KMALLOC_MINALIGN to L1_CACHE_BYTES for the Xtensa architecture.
-> > (Too recent to have percolated to mainline.)
-> > 
-> > A lot of the above might be cache line aligned (?).
-> 
-> I don't think it's necessarily a good idea. MINALIGN is an enforced
-> minimum alignment and the allocator has no leeway in reducing this.
-> In a UP system, or in a memory constrained system, it might be a better
-> idea to pack objects more tightly, for example.
+Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
+---
+ kernel/hw_breakpoint.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-I agree, however...
+Index: linux-2.6.ppc64_test/kernel/hw_breakpoint.c
+===================================================================
+--- linux-2.6.ppc64_test.orig/kernel/hw_breakpoint.c
++++ linux-2.6.ppc64_test/kernel/hw_breakpoint.c
+@@ -203,6 +203,17 @@ static void toggle_bp_slot(struct perf_e
+ }
+ 
+ /*
++ * Function to perform processor-specific cleanup during unregistration
++ */
++__weak void arch_unregister_hw_breakpoint(struct perf_event *bp)
++{
++	/*
++	 * A weak stub function here for those archs that don't define
++	 * it inside arch/.../kernel/hw_breakpoint.c
++	 */
++}
++
++/*
+  * Contraints to check before allowing this new breakpoint counter:
+  *
+  *  == Non-pinned counter == (Considered as pinned for now)
+@@ -280,6 +291,7 @@ void release_bp_slot(struct perf_event *
+ {
+ 	mutex_lock(&nr_bp_mutex);
+ 
++	arch_unregister_hw_breakpoint(bp);
+ 	__release_bp_slot(bp);
+ 
+ 	mutex_unlock(&nr_bp_mutex);
 
-> If we allow drivers to assume kmalloc is cacheline aligned, it will be
-> (practically) impossible to revert this because it would require driver
-> audits.
-
-SCSI and some block drivers already depend on it. If kmalloc'ed buffer
-is not DMA safe, they breaks.
-
-Seems that kmalloc is not cacheline aligned on some architectures but
-they works. Probably, we might be just lucky because in general they
-allocate larger buffers than 64 for DMA via kmalloc and the buffers
-are aligned on the size?
-
-
-> So whenever strengthening API guarantees like this, it is better to be
-> very careful and conservative. Probably even introducing a new API with
-> the stronger semantics (even if it is just a wrapper in the case where
-> KMALLOC_MINALIGNED *is* cacheline sized).
-> 
-> I think adding to the DMA API would be a better idea. If the arch knows
-> that kmalloc is suitable for the job directly, it can be used. Drivers
-> can use the new interface, and kmalloc doesn't get saddled with
-> alignment requirements.
-
-Or a new GFP flag?
