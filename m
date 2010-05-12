@@ -1,176 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab0ELBCX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 21:02:23 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:51000 "EHLO trinity.fluff.org"
+	id S1754563Ab0ELBG5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 21:06:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46986 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753418Ab0ELBCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 21:02:22 -0400
-Date: Wed, 12 May 2010 02:02:12 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: rpurdie@rpsys.net, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-       Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH 3/3] gta02: Use pcf50633 backlight driver instead of
-	platform backlight driver.
-Message-ID: <20100512010211.GL2589@trinity.fluff.org>
-References: <1273625074-15312-1-git-send-email-lars@metafoo.de> <1273625074-15312-4-git-send-email-lars@metafoo.de>
+	id S1752824Ab0ELBGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 21:06:55 -0400
+Date: Wed, 12 May 2010 01:06:41 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       suresh.b.siddha@intel.com, tglx@linutronix.de, avi@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       suresh.b.siddha@intel.com, tglx@linutronix.de, avi@redhat.com
+In-Reply-To: <1273135546-29690-2-git-send-email-avi@redhat.com>
+References: <1273135546-29690-2-git-send-email-avi@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/fpu] x86: Add new static_cpu_has() function using alternatives
+Message-ID: <tip-a3c8acd04376d604370dcb6cd2143c9c14078a50@git.kernel.org>
+Git-Commit-ID: a3c8acd04376d604370dcb6cd2143c9c14078a50
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1273625074-15312-4-git-send-email-lars@metafoo.de>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 12 May 2010 01:06:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 02:44:34AM +0200, Lars-Peter Clausen wrote:
-> Use the pcf50633 backlight driver instead of the platform backlight driver.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> Cc: Ben Dooks <ben-linux@fluff.org>
+Commit-ID:  a3c8acd04376d604370dcb6cd2143c9c14078a50
+Gitweb:     http://git.kernel.org/tip/a3c8acd04376d604370dcb6cd2143c9c14078a50
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Tue, 11 May 2010 17:47:07 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 11 May 2010 17:47:07 -0700
 
-ok, does anyone else have a comment on this?
+x86: Add new static_cpu_has() function using alternatives
 
- ---
->  arch/arm/mach-s3c2440/mach-gta02.c |   76 ++++-------------------------------
->  1 files changed, 9 insertions(+), 67 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c2440/mach-gta02.c b/arch/arm/mach-s3c2440/mach-gta02.c
-> index 45799c6..120a26f 100644
-> --- a/arch/arm/mach-s3c2440/mach-gta02.c
-> +++ b/arch/arm/mach-s3c2440/mach-gta02.c
-> @@ -49,7 +49,6 @@
->  #include <linux/io.h>
->  
->  #include <linux/i2c.h>
-> -#include <linux/backlight.h>
->  #include <linux/regulator/machine.h>
->  
->  #include <linux/mfd/pcf50633/core.h>
-> @@ -57,6 +56,7 @@
->  #include <linux/mfd/pcf50633/adc.h>
->  #include <linux/mfd/pcf50633/gpio.h>
->  #include <linux/mfd/pcf50633/pmic.h>
-> +#include <linux/mfd/pcf50633/backlight.h>
->  
->  #include <asm/mach/arch.h>
->  #include <asm/mach/map.h>
-> @@ -254,6 +254,12 @@ static char *gta02_batteries[] = {
->  	"battery",
->  };
->  
-> +static struct pcf50633_bl_platform_data gta02_backlight_data = {
-> +	.default_brightness = 0x3f,
-> +	.default_brightness_limit = 0,
-> +	.ramp_time = 5,
-> +};
-> +
->  struct pcf50633_platform_data gta02_pcf_pdata = {
->  	.resumers = {
->  		[0] =	PCF50633_INT1_USBINS |
-> @@ -271,6 +277,8 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
->  
->  	.charger_reference_current_ma = 1000,
->  
-> +	.backlight_data = &gta02_backlight_data,
-> +
->  	.reg_init_data = {
->  		[PCF50633_REGULATOR_AUTO] = {
->  			.constraints = {
-> @@ -478,71 +486,6 @@ static struct s3c2410_udc_mach_info gta02_udc_cfg = {
->  
->  };
->  
-> -
-> -
-> -static void gta02_bl_set_intensity(int intensity)
-> -{
-> -	struct pcf50633 *pcf = gta02_pcf;
-> -	int old_intensity = pcf50633_reg_read(pcf, PCF50633_REG_LEDOUT);
-> -
-> -	/* We map 8-bit intensity to 6-bit intensity in hardware. */
-> -	intensity >>= 2;
-> -
-> -	/*
-> -	 * This can happen during, eg, print of panic on blanked console,
-> -	 * but we can't service i2c without interrupts active, so abort.
-> -	 */
-> -	if (in_atomic()) {
-> -		printk(KERN_ERR "gta02_bl_set_intensity called while atomic\n");
-> -		return;
-> -	}
-> -
-> -	old_intensity = pcf50633_reg_read(pcf, PCF50633_REG_LEDOUT);
-> -	if (intensity == old_intensity)
-> -		return;
-> -
-> -	/* We can't do this anywhere else. */
-> -	pcf50633_reg_write(pcf, PCF50633_REG_LEDDIM, 5);
-> -
-> -	if (!(pcf50633_reg_read(pcf, PCF50633_REG_LEDENA) & 3))
-> -		old_intensity = 0;
-> -
-> -	/*
-> -	 * The PCF50633 cannot handle LEDOUT = 0 (datasheet p60)
-> -	 * if seen, you have to re-enable the LED unit.
-> -	 */
-> -	if (!intensity || !old_intensity)
-> -		pcf50633_reg_write(pcf, PCF50633_REG_LEDENA, 0);
-> -
-> -	/* Illegal to set LEDOUT to 0. */
-> -	if (!intensity)
-> -		pcf50633_reg_set_bit_mask(pcf, PCF50633_REG_LEDOUT, 0x3f, 2);
-> -	else
-> -		pcf50633_reg_set_bit_mask(pcf, PCF50633_REG_LEDOUT, 0x3f,
-> -					  intensity);
-> -
-> -	if (intensity)
-> -		pcf50633_reg_write(pcf, PCF50633_REG_LEDENA, 2);
-> -
-> -}
-> -
-> -static struct generic_bl_info gta02_bl_info = {
-> -	.name			= "gta02-bl",
-> -	.max_intensity		= 0xff,
-> -	.default_intensity	= 0xff,
-> -	.set_bl_intensity	= gta02_bl_set_intensity,
-> -};
-> -
-> -static struct platform_device gta02_bl_dev = {
-> -	.name			= "generic-bl",
-> -	.id			= 1,
-> -	.dev = {
-> -		.platform_data = &gta02_bl_info,
-> -	},
-> -};
-> -
-> -
-> -
->  /* USB */
->  static struct s3c2410_hcd_info gta02_usb_info __initdata = {
->  	.port[0]	= {
-> @@ -579,7 +522,6 @@ static struct platform_device *gta02_devices[] __initdata = {
->  /* These guys DO need to be children of PMU. */
->  
->  static struct platform_device *gta02_devices_pmu_children[] = {
-> -	&gta02_bl_dev,
->  };
->  
->  
-> -- 
-> 1.5.6.5
-> 
+For CPU-feature-specific code that touches performance-critical paths,
+introduce a static patching version of [boot_]cpu_has().  This is run
+at alternatives time and is therefore not appropriate for most
+initialization code, but on the other hand initialization code is
+generally not performance critical.
 
--- 
--- 
-Ben
+On gcc 4.5+ this uses the new "asm goto" feature.
 
-Q:      What's a light-year?
-A:      One-third less calories than a regular year.
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+LKML-Reference: <1273135546-29690-2-git-send-email-avi@redhat.com>
+---
+ arch/x86/include/asm/cpufeature.h |   57 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 57 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 0cd82d0..9b11a5c 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -175,6 +175,7 @@
+ 
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
+ 
++#include <asm/asm.h>
+ #include <linux/bitops.h>
+ 
+ extern const char * const x86_cap_flags[NCAPINTS*32];
+@@ -283,6 +284,62 @@ extern const char * const x86_power_flags[32];
+ 
+ #endif /* CONFIG_X86_64 */
+ 
++/*
++ * Static testing of CPU features.  Used the same as boot_cpu_has().
++ * These are only valid after alternatives have run, but will statically
++ * patch the target code for additional performance.
++ *
++ */
++static __always_inline __pure bool __static_cpu_has(u8 bit)
++{
++#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
++		asm goto("1: jmp %l[t_no]\n"
++			 "2:\n"
++			 ".section .altinstructions,\"a\"\n"
++			 _ASM_ALIGN "\n"
++			 _ASM_PTR "1b\n"
++			 _ASM_PTR "0\n" 	/* no replacement */
++			 " .byte %P0\n"		/* feature bit */
++			 " .byte 2b - 1b\n"	/* source len */
++			 " .byte 0\n"		/* replacement len */
++			 " .byte 0xff + 0 - (2b-1b)\n"	/* padding */
++			 ".previous\n"
++			 : : "i" (bit) : : t_no);
++		return true;
++	t_no:
++		return false;
++#else
++		u8 flag;
++		/* Open-coded due to __stringify() in ALTERNATIVE() */
++		asm volatile("1: movb $0,%0\n"
++			     "2:\n"
++			     ".section .altinstructions,\"a\"\n"
++			     _ASM_ALIGN "\n"
++			     _ASM_PTR "1b\n"
++			     _ASM_PTR "3f\n"
++			     " .byte %P1\n"		/* feature bit */
++			     " .byte 2b - 1b\n"		/* source len */
++			     " .byte 4f - 3f\n"		/* replacement len */
++			     " .byte 0xff + (4f-3f) - (2b-1b)\n" /* padding */
++			     ".previous\n"
++			     ".section .altinstr_replacement,\"ax\"\n"
++			     "3: movb $1,%0\n"
++			     "4:\n"
++			     ".previous\n"
++			     : "=qm" (flag) : "i" (bit));
++		return flag;
++#endif
++}
++
++#define static_cpu_has(bit)					\
++(								\
++	__builtin_constant_p(boot_cpu_has(bit)) ?		\
++		boot_cpu_has(bit) :				\
++	(__builtin_constant_p(bit) && !((bit) & ~0xff)) ?	\
++		__static_cpu_has(bit) :				\
++		boot_cpu_has(bit)				\
++)
++
+ #endif /* defined(__KERNEL__) && !defined(__ASSEMBLY__) */
+ 
+ #endif /* _ASM_X86_CPUFEATURE_H */
