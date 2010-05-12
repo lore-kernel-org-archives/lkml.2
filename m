@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab0ELOYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 10:24:46 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:37231 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab0ELOYp (ORCPT
+	id S1754274Ab0ELOZP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 10:25:15 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36507 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab0ELOZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 10:24:45 -0400
-Date: Wed, 12 May 2010 19:54:37 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
-       Mel Gorman <mel@csn.ul.ie>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH v2 7/11] Uprobes Implementation
-Message-ID: <20100512142437.GO7426@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100415093506.GA2064@linux.vnet.ibm.com>
- <20100419193139.GA24080@redhat.com>
- <20100420124358.GA20675@linux.vnet.ibm.com>
- <20100420153023.GA9351@redhat.com>
- <20100421065948.GA5440@linux.vnet.ibm.com>
- <20100421160515.GA11321@redhat.com>
- <20100422133154.GA10776@linux.vnet.ibm.com>
- <1273610603.1810.101.camel@laptop>
- <20100512104138.GM7426@linux.vnet.ibm.com>
- <1273662751.1626.35.camel@laptop>
+	Wed, 12 May 2010 10:25:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=soovf0DZTiMgnvT938iLjJX4QvlgxorZ7pdAfRRqgT1JgzjFPkjnq2Gyypyn3vyvah
+         SVEe+3aRH1GBF3lA4niQMAHXXjQ1OfWSIhfE6YKMfkKzsiFLrJvkCkhjOsCpW5av1sBY
+         xNPV6V8J83iFYZXGzadD0XH/8WPzHZGCkai34=
+Message-ID: <4BEABA71.7000508@gmail.com>
+Date: Wed, 12 May 2010 07:25:53 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1273662751.1626.35.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+       mdpoole@troilus.org
+Subject: Re: [PATCH] HID:magicmouse: This fixes a connection problem with
+ the magicmouse.
+References: <1273595363-4020-1-git-send-email-justinmattock@gmail.com> <alpine.LNX.2.00.1005121456150.28092@pobox.suse.cz> <4BEAAF9C.909@gmail.com> <alpine.LNX.2.00.1005121540340.28092@pobox.suse.cz> <4BEAB3AF.6020909@gmail.com> <alpine.LNX.2.00.1005121602240.28092@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1005121602240.28092@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2010-05-12 13:12:31]:
+On 05/12/2010 07:03 AM, Jiri Kosina wrote:
+> On Wed, 12 May 2010, Justin P. Mattock wrote:
+>
+>    
+>>>>>> --- a/drivers/hid/hid-magicmouse.c
+>>>>>> +++ b/drivers/hid/hid-magicmouse.c
+>>>>>> @@ -354,7 +354,7 @@ static int magicmouse_probe(struct hid_device
+>>>>>> *hdev,
+>>>>>>     		goto err_free;
+>>>>>>     	}
+>>>>>>
+>>>>>> -	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT&
+>>>>>> ~HID_CONNECT_HIDINPUT);
+>>>>>> +	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+>>>>>>
+>>>>>>
+>>>>>>              
+>>>>> This is not particularly right, as we'll end up having dangling
+>>>>> input device.
+>>>>>
+>>>>> The problem is, that when HIDRAW is not set, hid_hw_start()
+>>>>> returns ENODEV as no subsystem has claimed the device, and probe
+>>>>> routine bails out. Which is not what we want.
+>>>>>
+>>>>> Does the testing patch below fix the problems you are seeing?
+>>>>>
+>>>>>            
+>>>> works good.. rebooted a few times mouse connects. suspended a few times
+>>>> mouse reconnects.
+>>>>
+>>>>          
+>>> I'd be glad if you could also double-check that device removal and
+>>> re-connecting it works well as well with this patch.
+>>>
+>>>        
+>> with  test I did different techniques,
+>> 1) regular suspend(leave device on)
+>> 2)suspend then shut off device
+>> 3)shut off device then suspend
+>> all of these techniques work properly
+>>      
+> Thanks for reporting and testing, I have queued the patch.
+>
+>    
+cool...
 
-> On Wed, 2010-05-12 at 16:11 +0530, Srikar Dronamraju wrote:
-> > > We can't hold mmap_sem (for either read or write -- read would be
-> > > sufficient to serialize against mmap/mremap/munmap) from atomic uprobe
-> > > context, what we can do is validate that there is a INT3 on that
-> > > particular address, a mremap/munmap/munmap+mmap will either end not
-> > > having a pte entry for the address, or not have the INT3.
-> > 
-> > Did you mean "We can hold mmap_sem?" Else I am not sure if we can
-> > traverse the vma. Infact alloc_page_vma() needs mmap_sem to be acquired.
-> > Please clarify? 
-> 
-> OK, so maybe I misunderstood, this is from the INT3 trap handler, right?
-
-
-If I am right, the initial comment was both from the unregister_uprobe()
--> write_opcode() context  and uprobe_bkpt_notifier context.
-
-[ snipping relevant part of Oleg's mail from where the conversation started ]
----------------------------------------------------------------------
-> > 4. mremap(). What if the application does mremap() and moves the                                                                      
-> >    memory? After that vaddr of user_bkpt/uprobe no longer matches                                                                     
-> >    the virtual address of bp. This breaks uprobe_bkpt_notifier(),                                                                     
-> >    unregister_uprobe(), etc.                                                                                                          
-> >                                                                                                                                       
-> >    Even worse. Say, unregister_uprobe() calls remove_bkpt().                                                                          
-> >    mremap()+mmap() can be called after ->read_opcode() verifies
-> >    vaddr                                                                 
-> >    points to bkpt_insn, but before write_opcode() changes the page.     
----------------------------------------------------------------------
-
-But yes, if the mmap/mremap/munmap can happen between validating the
-int3 and removal of the breakpoint in the unregister_uprobe path, then
-it can as well happen between the breakpoint hit and the time uprobes
-does the fixups to continue execution after running the handler and
-single-stepping. 
-
-I agree with you that we shouldnt bother about mmap/mremap/munmap of the
-executable code. Probably we could document the same.
-
-> 
-> We can _not_ take a sleeping lock from trap context. Why would you want
-> the vma anyway?
-
-Yes, we dont look at the vma in trap context at all. If we need to allocate a
-slot in the xol_vma then we set the TIF_UPROBE do the stuff in task
-context.
-
---
-Thanks and Regards
-Srikar
-> 
+Justin P. Mattock
