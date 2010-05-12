@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283Ab0ELVvH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 17:51:07 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59792 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab0ELVvC convert rfc822-to-8bit (ORCPT
+	id S1758260Ab0ELVvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 17:51:55 -0400
+Received: from mail.gmx.net ([213.165.64.20]:40452 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756092Ab0ELVvx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 17:51:02 -0400
-Subject: Re: [PATCH -V7 3/9] vfs: Add name to file handle conversion support
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <andreas.dilger@oracle.com>
-In-Reply-To: <1273679444-14903-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Date: Wed, 12 May 2010 15:49:49 -0600
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@Sun.COM,
-       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de,
-       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+	Wed, 12 May 2010 17:51:53 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+Qey1kGMuQk0Ylu4oyHEhUdQQBizeI2apGzgMnp6
+	sEjfzFpbTRiJgy
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: tony@atomide.com
+Subject: Re: Buildfailure for omap3_defconfig due to patch OMAP: RX51: Add LCD Panel support
+Date: Wed, 12 May 2010 23:51:51 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
+Cc: khilman@deeprootsystems.com, paul@pwsan.com, jpihet@mvista.com,
+       kalle.valo@iki.fi, linux-kernel@vger.kernel.org,
+       linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org
+References: <201005122331.51347.PeterHuewe@gmx.de>
+In-Reply-To: <201005122331.51347.PeterHuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <E1DE62DE-D9E1-493B-8AEB-91E10D7D35B2@oracle.com>
-References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1273679444-14903-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: Apple Mail (2.1078)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4BEB22AC.012B:SCFMA922111,ss=1,fgs=0
+Message-Id: <201005122351.51244.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-05-12, at 09:50, Aneesh Kumar K.V wrote:
-> +static long do_sys_name_to_handle(struct path *path,
-> +			struct file_handle __user *ufh)
-> +{
-> +	if (handle_size <= f_handle.handle_size) {
-> +		/* get the uuid */
-> +		retval = sb->s_op->get_fsid(sb, &this_fs_id);
-> +		if (!retval) {
-> +			/*
-> +			 * Now verify whether we get the same vfsmount
-> +			 * if we lookup with uuid. In case we end up having
-> +			 * same uuid for the multiple file systems. When doing
-> +			 * uuid based lookup we would return the first one.So
-> +			 * with name_to_handle if we don't find the same
-> +			 * vfsmount with lookup return EOPNOTSUPP
-> +			 */
-> +			mnt = fs_get_vfsmount(current, &this_fs_id);
-> +			if (mnt != path->mnt) {
-> +				retval = -EOPNOTSUPP;
-> +				mntput(mnt);
-> +				goto err_free_out;
-> +			}
+Unfortunately I can't get through the nokia mailfilter:
+Message_contained_possible_malicious_content_and_will_not_be_accepted._If_you_consider_this_to_be_due_to_an_error_please_inform_the_intended_recipients_by_sending_a_simple_e-
+mail_or_through_other_means/
 
-I don't see that this does anything for us except add overhead.  This is no protection against mounting a second filesystem with the same UUID after the handle is returned, since there is no expiration for file handles.
+I get this reply even with a simple "hello your mail filter does not like me" 
+message :/
 
-At best I think we could start by changing the list-based UUID lookup with a hash-based one, and when adding a duplicate UUID at mount time start by printing out an error message to the console in case of duplicated UUIDs, and maybe at some point in the future this might cause the mount to fail (though I don't think we can make that decision lightly or quickly).
+Can somebody else please try to forward the message to Roger and Tomi?
 
-That moves the overhead to mount time instead of for each name_to_handle() call (which would be brutal for a system with many filesystems mounted).
-
-> +SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
-> +		struct file_handle __user *, handle, int, flag)
-> +{
-> +	int follow;
-> +	long ret = -EINVAL;
-> +	struct path path;
-> +
-> +	if ((flag & ~AT_SYMLINK_NOFOLLOW) != 0)
-> +		goto err_out;
-
-Won't this break the use of AT_FDCWD to get a relative file handle?
+Thanks,
+Peter
 
 
-Cheers, Andreas
---
-Andreas Dilger
-Lustre Technical Lead
-Oracle Corporation Canada Inc.
+Am Mittwoch 12 Mai 2010 23:31:51 schrieb Peter Hüwe:
+> Hi Roger,
+> 
+> I just wanted to inform you that your Patch
+> OMAP: RX51: Add LCD Panel support
+>  (b499d77834ae292465f8d06bb0a88f1a647dfa1a) introduces a build failure for
+>  the omap3_defconfig.
+> 
+> You can see the error message here:
+> http://kisskb.ellerman.id.au/kisskb/buildresult/2601981/
+> 
 
