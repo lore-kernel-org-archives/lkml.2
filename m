@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab0ELDWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 23:22:09 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:42695 "EHLO
+	id S1753382Ab0ELDWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 23:22:07 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:42691 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab0ELDWF (ORCPT
+	with ESMTP id S1751725Ab0ELDWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 May 2010 23:22:05 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=b2w6EFg7FtlmN52++YZVqAH34vc2/u5pDCwOBtW7ahR6gUCardcWpi2NL1yUwf+3r
-	L3scYnfSBs2BDEfP/FkCA==
+	b=uRz/NL3Tm+fjGx/C5zEs1NeDsEHZ4yPW8Q8DcelZ61aWXGK7U95T1Py6Lk7fnKX6E
+	iA9U8w5zRogGFOCLfRYEw==
 From: Michel Lespinasse <walken@google.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
@@ -20,9 +20,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        Mike Waychison <mikew@google.com>,
        Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>,
        Michel Lespinasse <walken@google.com>
-Subject: [PATCH 10/12] rwsem: down_read_unfair infrastructure support
-Date: Tue, 11 May 2010 20:21:00 -0700
-Message-Id: <1273634462-2672-11-git-send-email-walken@google.com>
+Subject: [PATCH 06/12] rwsem: wake queued readers when other readers are active
+Date: Tue, 11 May 2010 20:20:56 -0700
+Message-Id: <1273634462-2672-7-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1273634462-2672-1-git-send-email-walken@google.com>
 References: <1273634462-2672-1-git-send-email-walken@google.com>
@@ -30,62 +30,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add rwsem_down_read_unfair_failed() function in the non-generic rwsem
-library code, similar to  rwsem_down_read_failed() except that blocked
-threads are placed at the head of the queue.
+This change addresses the following situation:
+
+- Thread A holds the rwsem for write
+- Thread B tries to acquire the rwsem for read; blocks & gets queued
+- Thread A releases the rwsem, notices active count goes back to 0
+- Thread C acquires the rwsem for read
+- Thread A acquires the spinlock & tries to wake thread B, but fails because
+  active count is not zero anymore.
+
+In this situation, it would be perfectly fine to let threads B and C work
+in parallel as they each only want a read acquire on the rwsem. We can
+recognize this situation and let A wake B as long as there are no active
+writers on the rwsem.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- lib/rwsem.c |   22 +++++++++++++++++++++-
- 1 files changed, 21 insertions(+), 1 deletions(-)
+ lib/rwsem.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 1702524..689d4a2 100644
+index 92c8f8e..9d0899b 100644
 --- a/lib/rwsem.c
 +++ b/lib/rwsem.c
-@@ -34,6 +34,7 @@ struct rwsem_waiter {
- 	unsigned int flags;
- #define RWSEM_WAITING_FOR_READ	0x00000001
- #define RWSEM_WAITING_FOR_WRITE	0x00000002
-+#define RWSEM_UNFAIR            0x00000004
- };
+@@ -115,8 +115,8 @@ __rwsem_do_wake(struct rw_semaphore *sem, int downgrading)
  
- #define RWSEM_WAKE_ANY        0 /* Wake whatever's at head of wait list */
-@@ -174,7 +175,11 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+  retry_readers:
+ 	oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
+-	if (!downgrading && (oldcount & RWSEM_ACTIVE_MASK))
+-		/* Someone grabbed the sem already */
++	if (!downgrading && (oldcount < RWSEM_WAITING_BIAS))
++		/* Someone grabbed the sem for write already */
+ 		goto undo_readers;
  
- 	if (list_empty(&sem->wait_list))
- 		adjustment += RWSEM_WAITING_BIAS;
--	list_add_tail(&waiter->list, &sem->wait_list);
-+
-+	if (flags & RWSEM_UNFAIR)
-+		list_add(&waiter.list, &sem->wait_list);
-+	else
-+		list_add_tail(&waiter.list, &sem->wait_list);
+ 	next = sem->wait_list.next;
+@@ -143,7 +143,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int downgrading)
+ 	goto retry_writer;
  
- 	/* we're now waiting on the lock, but no longer actively read-locking */
- 	count = rwsem_atomic_update(adjustment, sem);
-@@ -215,6 +220,21 @@ rwsem_down_read_failed(struct rw_semaphore *sem)
- 					-RWSEM_ACTIVE_READ_BIAS);
+  undo_readers:
+-	if (rwsem_atomic_update(-adjustment, sem) & RWSEM_ACTIVE_MASK)
++	if (rwsem_atomic_update(-adjustment, sem) < RWSEM_WAITING_BIAS)
+ 		goto out;
+ 	goto retry_readers;
  }
- 
-+#ifdef __HAVE_DOWN_READ_UNFAIR
-+
-+/*
-+ * wait for the read lock to be granted - skip waiting writers
-+ */
-+asmregparm struct rw_semaphore __sched *
-+rwsem_down_read_unfair_failed(struct rw_semaphore *sem)
-+{
-+	return rwsem_down_failed_common(sem,
-+					RWSEM_WAITING_FOR_READ | RWSEM_UNFAIR,
-+					-RWSEM_ACTIVE_READ_BIAS);
-+}
-+
-+#endif
-+
- /*
-  * wait for the write lock to be granted
-  */
 -- 
 1.7.0.1
 
