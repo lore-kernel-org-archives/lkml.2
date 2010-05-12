@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab0ELFrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 01:47:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58507 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab0ELFrm convert rfc822-to-8bit (ORCPT
+	id S1752638Ab0ELFwB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 01:52:01 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:55970 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab0ELFv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 01:47:42 -0400
-Subject: Re: [PATCH 0/9] pvclock misc fixes - v4.
-Mime-Version: 1.0 (Apple Message framework v1078)
+	Wed, 12 May 2010 01:51:59 -0400
+Date: Wed, 12 May 2010 14:51:12 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>, "greg@kroah.com" <greg@kroah.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
+Message-ID: <20100512055112.GA4691@linux-sh.org>
+References: <20100510115344.GA11238@elte.hu> <4BE8931C.9070106@linux.vnet.ibm.com> <1273560419.5605.3426.camel@twins> <20100511072127.GB10421@elte.hu> <1273566031.30322.31.camel@minggr.sh.intel.com> <1273567815.5605.3491.camel@twins> <1273568620.30322.42.camel@minggr.sh.intel.com> <1273569154.5605.3499.camel@twins> <1273570845.30322.59.camel@minggr.sh.intel.com> <1273571322.5605.3523.camel@twins>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <4BEA21A1.8040702@redhat.com>
-Date: Wed, 12 May 2010 07:47:39 +0200
-Cc: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, avi@redhat.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AFD76714-2559-4281-AB61-EA5C6395C13A@suse.de>
-References: <1273594667-17175-1-git-send-email-glommer@redhat.com> <4BEA21A1.8040702@redhat.com>
-To: Zachary Amsden <zamsden@redhat.com>
-X-Mailer: Apple Mail (2.1078)
+Content-Disposition: inline
+In-Reply-To: <1273571322.5605.3523.camel@twins>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 11, 2010 at 11:48:42AM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-05-11 at 17:40 +0800, Lin Ming wrote:
+> > Is /sys/class/event_sources/* looks like,
+> > 
+> > /sys/class/event_sources/cpu_hw_events0
+> > -> /sys/devices/system/cpu/cpu0/cpu_hw_events
+> > ...
+> > /sys/class/event_sources/cpu_hw_eventsN
+> > -> /sys/devices/system/cpu/cpuN/cpu_hw_events
+> > 
+> > /sys/class/event_sources/cpu_hw_cache_events0
+> > -> /sys/devices/system/cpu/cpu0/cpu_hw_events
+> > ...
+> > /sys/class/event_sources/cpu_hw_cache_eventsN
+> > -> /sys/devices/system/cpu/cpuN/cpu_hw_events
+> 
+> Hmm, good question.
+> 
+> No all the cpus would have the same event sources. I'm not sure if we
+> can make sysfs understand that though (added GregKH and Kay to CC).
+> 
+This is something I've been thinking about, too. On SH we have a
+large set of perf counter events that are entirely dependent on the
+configuration of the CPU they're on, with no requirement that these
+configurations are identical on all CPUs in an SMP configuration.
 
-On 12.05.2010, at 05:33, Zachary Amsden wrote:
+As an example, it's possible to halve the L1 dcache and use that part of
+it as a small and fast memory which has completely different events
+associated with it from the regular L1 dcache events. These events would
+be invalid on a CPU that was running with all cache ways enabled but
+might also be valid on other CPUs that bolt these events to an extra SRAM
+outside of the cache topology completely.
 
-> On 05/11/2010 06:17 AM, Glauber Costa wrote:
->> This is the fourth version ov kvmclock fixes.
->> 
->> Just two minor changes in patch 5, per avi request, and
->> the addition of cpuid.txt file, documenting all cpuid flags
->> we use.
->> 
->> As a side effect, this patch removes the time-travel feature
->> in kvm guests.
->> 
->> Glauber Costa (9):
->>   Enable pvclock flags in vcpu_time_info structure
->>   Add a global synchronization point for pvclock
->>   change msr numbers for kvmclock
->>   add new KVMCLOCK cpuid feature
->>   export paravirtual cpuid flags in KVM_GET_SUPPORTED_CPUID
->>   Try using new kvm clock msrs
->>   don't compute pvclock adjustments if we trust the tsc
->>   Tell the guest we'll warn it about tsc stability
->>   Add cpuid.txt file
->> 
->>  Documentation/kvm/cpuid.txt        |   44 ++++++++++++++++++++++++++++
->>  arch/x86/include/asm/kvm_para.h    |   13 ++++++++
->>  arch/x86/include/asm/pvclock-abi.h |    4 ++-
->>  arch/x86/include/asm/pvclock.h     |    1 +
->>  arch/x86/kernel/kvmclock.c         |   56 ++++++++++++++++++++++-------------
->>  arch/x86/kernel/pvclock.c          |   37 +++++++++++++++++++++++
->>  arch/x86/kvm/x86.c                 |   44 +++++++++++++++++++++++++++-
->>  7 files changed, 176 insertions(+), 23 deletions(-)
->>  create mode 100644 Documentation/kvm/cpuid.txt
->> 
->>   
-> Acked-by: Zachary Amsden <zamsden@redhat.com>
-
-
-How about stable queuing of this one?
-
-Alex
-
+In any event, the events are at least consistent across all CPUs, it's
+only which ones are valid on a given CPU at a given time that can change.
