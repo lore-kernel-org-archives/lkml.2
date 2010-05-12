@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab0ELB3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 21:29:45 -0400
-Received: from infernal.debian.net ([87.230.26.131]:42608 "EHLO
-	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754674Ab0ELB3m (ORCPT
+	id S1754737Ab0ELBih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 21:38:37 -0400
+Received: from smtp-out-074.synserver.de ([212.40.180.74]:1041 "HELO
+	smtp-out-072.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1752253Ab0ELBif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 21:29:42 -0400
-X-Greylist: delayed 2432 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 21:29:42 EDT
-Date: Wed, 12 May 2010 02:49:06 +0200
-From: Andreas Bombe <aeb@debian.org>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] ARCNET: Limit com20020 PCI ID matches for SOHARD cards
-Message-ID: <20100512004852.GA25845@amos.infernal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 11 May 2010 21:38:35 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 7659
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 0/3] pcf50633: Replace custom gpio api with gpiolib
+Date: Wed, 12 May 2010 03:31:13 +0200
+Message-Id: <1273627876-26922-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SH SOHARD ARCNET cards are implemented using generic PLX Technology
-PCI<->IOBus bridges. Subvendor and subdevice IDs were not specified,
-causing the driver to attach to any such bridge and likely crash the
-system by attempting to initialize an unrelated device.
+Hi
 
-Fix by specifying subvendor and subdevice according to the values found
-in the PCI-ID Repository at http://pci-ids.ucw.cz/ .
+This patch series replaces the custom api in the pcf50633 gpio driver with
+gpiolib. There is only one user of the custom api which can be safely removed.
 
-Cc: stable@kernel.org
-Signed-off-by: Andreas Bombe <aeb@debian.org>
----
+Lars-Peter Clausen (3):
+  gta02: Remove usage of pcf50633 gpio api
+  MFD: pcf50633-gpio: Add gpiolib support
+  MFD: pcf50633: Move pcf50633-gpio driver to the gpio drivers folder
 
-Compile tested only. This bug caused a new machine to be unbootable with
-Debian install media due to rebooting right after some arc%d: SOHARD log
-messages appeared.  Current SUSE and Fedora boot, presumably because
-there are no compiled ARCNET drivers.
-
-I couldn't find any information on the other PLX device ID 10b5:2200.
-Also, the PCI ID repository says 14ba:6000 should really be 14ba:0600.
-I have no way to verify that.
-
- drivers/net/arcnet/com20020-pci.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/arcnet/com20020-pci.c b/drivers/net/arcnet/com20020-pci.c
-index 2c712af..48a1dbf 100644
---- a/drivers/net/arcnet/com20020-pci.c
-+++ b/drivers/net/arcnet/com20020-pci.c
-@@ -164,8 +164,8 @@ static DEFINE_PCI_DEVICE_TABLE(com20020pci_id_table) = {
- 	{ 0x1571, 0xa204, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{ 0x1571, 0xa205, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{ 0x1571, 0xa206, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x10B5, 0x9030, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x10B5, 0x9050, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
-+	{ 0x10B5, 0x9030, 0x10B5,     0x2978,     0, 0, ARC_CAN_10MBIT },
-+	{ 0x10B5, 0x9050, 0x10B5,     0x2273,     0, 0, ARC_CAN_10MBIT },
- 	{ 0x14BA, 0x6000, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{ 0x10B5, 0x2200, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{0,}
--- 
-1.7.1
+ arch/arm/mach-s3c2440/Kconfig      |    1 -
+ arch/arm/mach-s3c2440/mach-gta02.c |   12 +--
+ drivers/gpio/Kconfig               |    7 +
+ drivers/gpio/Makefile              |    1 +
+ drivers/gpio/pcf50633-gpio.c       |  228 ++++++++++++++++++++++++++++++++++++
+ drivers/mfd/Kconfig                |    7 -
+ drivers/mfd/Makefile               |    1 -
+ drivers/mfd/pcf50633-core.c        |    4 +-
+ drivers/mfd/pcf50633-gpio.c        |  121 -------------------
+ include/linux/mfd/pcf50633/core.h  |    4 +
+ include/linux/mfd/pcf50633/gpio.h  |   61 +++++-----
+ 11 files changed, 277 insertions(+), 170 deletions(-)
+ create mode 100644 drivers/gpio/pcf50633-gpio.c
+ delete mode 100644 drivers/mfd/pcf50633-gpio.c
 
