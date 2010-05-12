@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab0ELXRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 19:17:36 -0400
-Received: from mail.hq.newdream.net ([66.33.206.127]:47914 "EHLO
+	id S1758490Ab0ELXSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 19:18:23 -0400
+Received: from mail.hq.newdream.net ([66.33.206.127]:47897 "EHLO
 	mail.hq.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756989Ab0ELXQR (ORCPT
+	with ESMTP id S1756471Ab0ELXQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 19:16:17 -0400
+	Wed, 12 May 2010 19:16:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws; d=hq.newdream.net; h=from:to
 	:cc:subject:date:message-id:in-reply-to:references:in-reply-to
-	:references; q=dns; s=drama; b=fbPy8B4pxTVIj0GdDZwZ3+mW8fxlt1/l1
-	YnSV+ceq0oOEC9NK017AG1rIMrnEwqy7F7724WJ1tvnPdtwWSHfaPqp7VDqZcP90
-	i5keW7KLXQ+DYAhXu1zx9wXtpnxv3AoGNiVJT0USF2GETmkjgxusq2Cp7NS7eNYD
-	vpIG+YJDPE=
+	:references; q=dns; s=drama; b=Iy7tkyJj8anhYgiaiXW65fNuAXKirYEeg
+	ypneLFxFvjsgZ7HL0TNsnwcis9joA7Hs1lx5UNdrJrpy1gSrQRP2muzrnEqKx4lz
+	jzb3hFl+vLNG1PwnMOtYCylNi4a1sZyh5NOR0gjauHat2RHEw7oa9BfYvmRyncW/
+	pw+ioepGf8=
 From: Yehuda Sadeh <yehuda@hq.newdream.net>
 To: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, axboe@kernel.dk, sage@newdream.net,
        Yehuda Sadeh <yehuda@hq.newdream.net>
-Subject: [PATCH 6/8] ceph: sync ceph_fs.h with the server tree version
-Date: Wed, 12 May 2010 16:23:38 -0700
-Message-Id: <224684fc4a9c3cccdaa7342048555c024aaa22d7.1273705398.git.yehuda@hq.newdream.net>
+Subject: [PATCH 2/8] ceph: refactor osdc requests creation functions
+Date: Wed, 12 May 2010 16:23:34 -0700
+Message-Id: <0e317842ec301b9582438b3768f3d5351e40019e.1273705398.git.yehuda@hq.newdream.net>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1273706621-12822-1-git-send-email-yehuda@hq.newdream.net>
 References: <1273706621-12822-1-git-send-email-yehuda@hq.newdream.net>
@@ -29,186 +29,317 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is being done so that we can use the new unattended
-pool operations.
+The osd requests creation are being decoupled from the
+vino parameter, allowing clients using the osd to use
+other arbitrary object names that are not necessarily
+vino based.
 
 Signed-off-by: Yehuda Sadeh <yehuda@hq.newdream.net>
 ---
- fs/ceph/ceph_fs.h      |   47 +++++++++++++++++++++++++++++++++++++++++++++--
- fs/ceph/ceph_strings.c |   23 ++++++++++++++++++++++-
- fs/ceph/messenger.c    |    1 -
- fs/ceph/msgr.h         |    1 -
- fs/ceph/rados.h        |    4 ++--
- 5 files changed, 69 insertions(+), 7 deletions(-)
+ fs/ceph/osd_client.c |  179 +++++++++++++++++++++++++++++++++++---------------
+ fs/ceph/osd_client.h |   24 +++++++
+ 2 files changed, 149 insertions(+), 54 deletions(-)
 
-diff --git a/fs/ceph/ceph_fs.h b/fs/ceph/ceph_fs.h
-index 8b194c6..24cd676 100644
---- a/fs/ceph/ceph_fs.h
-+++ b/fs/ceph/ceph_fs.h
-@@ -20,7 +20,7 @@
-  */
- #define CEPH_VERSION_MAJOR 0
- #define CEPH_VERSION_MINOR 19
--#define CEPH_VERSION_PATCH 0
-+#define CEPH_VERSION_PATCH 1
+diff --git a/fs/ceph/osd_client.c b/fs/ceph/osd_client.c
+index edb8e85..278c6fe 100644
+--- a/fs/ceph/osd_client.c
++++ b/fs/ceph/osd_client.c
+@@ -22,6 +22,32 @@ static int __kick_requests(struct ceph_osd_client *osdc,
  
- #define _CEPH_STRINGIFY(x) #x
- #define CEPH_STRINGIFY(x) _CEPH_STRINGIFY(x)
-@@ -36,7 +36,7 @@
-  * client-facing protocol.
-  */
- #define CEPH_OSD_PROTOCOL     8 /* cluster internal */
--#define CEPH_MDS_PROTOCOL     9 /* cluster internal */
-+#define CEPH_MDS_PROTOCOL    12 /* cluster internal */
- #define CEPH_MON_PROTOCOL     5 /* cluster internal */
- #define CEPH_OSDC_PROTOCOL   24 /* server/client */
- #define CEPH_MDSC_PROTOCOL   32 /* server/client */
-@@ -100,6 +100,8 @@ int ceph_file_layout_is_valid(const struct ceph_file_layout *layout);
- #define CEPH_AUTH_NONE	 	0x1
- #define CEPH_AUTH_CEPHX	 	0x2
+ static void kick_requests(struct ceph_osd_client *osdc, struct ceph_osd *osd);
  
-+#define CEPH_AUTH_UID_DEFAULT ((__u64) -1)
-+
- 
- /*********************************************
-  * message layer
-@@ -137,11 +139,27 @@ int ceph_file_layout_is_valid(const struct ceph_file_layout *layout);
- #define CEPH_MSG_CLIENT_SNAP            0x312
- #define CEPH_MSG_CLIENT_CAPRELEASE      0x313
- 
-+/* pool ops */
-+#define CEPH_MSG_POOLOP_REPLY           48
-+#define CEPH_MSG_POOLOP                 49
-+
-+
- /* osd */
- #define CEPH_MSG_OSD_MAP          41
- #define CEPH_MSG_OSD_OP           42
- #define CEPH_MSG_OSD_OPREPLY      43
- 
-+/* pool operations */
-+enum {
-+  POOL_OP_CREATE			= 0x01,
-+  POOL_OP_DELETE			= 0x02,
-+  POOL_OP_AUID_CHANGE			= 0x03,
-+  POOL_OP_CREATE_SNAP			= 0x11,
-+  POOL_OP_DELETE_SNAP			= 0x12,
-+  POOL_OP_CREATE_UNMANAGED_SNAP		= 0x21,
-+  POOL_OP_DELETE_UNMANAGED_SNAP		= 0x22,
-+};
-+
- struct ceph_mon_request_header {
- 	__le64 have_version;
- 	__le16 session_mon;
-@@ -164,6 +182,31 @@ struct ceph_mon_statfs_reply {
- 	struct ceph_statfs st;
- } __attribute__ ((packed));
- 
-+const char *ceph_pool_op_name(int op);
-+
-+struct ceph_mon_poolop {
-+	struct ceph_mon_request_header monhdr;
-+	struct ceph_fsid fsid;
-+	__le32 pool;
-+	__le32 op;
-+	__le64 auid;
-+	__le64 snapid;
-+	__le32 name_len;
-+} __attribute__ ((packed));
-+
-+struct ceph_mon_poolop_reply {
-+	struct ceph_mon_request_header monhdr;
-+	struct ceph_fsid fsid;
-+	__le32 reply_code;
-+	__le32 epoch;
-+	char has_data;
-+	char data[0];
-+} __attribute__ ((packed));
-+
-+struct ceph_mon_unmanaged_snap {
-+	__le64 snapid;
-+} __attribute__ ((packed));
-+
- struct ceph_osd_getmap {
- 	struct ceph_mon_request_header monhdr;
- 	struct ceph_fsid fsid;
-diff --git a/fs/ceph/ceph_strings.c b/fs/ceph/ceph_strings.c
-index 8e4be6a..af9180b 100644
---- a/fs/ceph/ceph_strings.c
-+++ b/fs/ceph/ceph_strings.c
-@@ -10,7 +10,6 @@ const char *ceph_entity_type_name(int type)
- 	case CEPH_ENTITY_TYPE_OSD: return "osd";
- 	case CEPH_ENTITY_TYPE_MON: return "mon";
- 	case CEPH_ENTITY_TYPE_CLIENT: return "client";
--	case CEPH_ENTITY_TYPE_ADMIN: return "admin";
- 	case CEPH_ENTITY_TYPE_AUTH: return "auth";
- 	default: return "unknown";
- 	}
-@@ -174,3 +173,25 @@ const char *ceph_snap_op_name(int o)
- 	}
- 	return "???";
- }
-+
-+const char *ceph_pool_op_name(int op)
++void ceph_calc_raw_layout(struct ceph_osd_client *osdc,
++			struct ceph_file_layout *layout,
++			u64 off, u64 len, u64 *bno,
++			struct ceph_osd_request *req)
 +{
-+  switch (op) {
-+  case POOL_OP_CREATE:
-+    return "create pool";
-+  case POOL_OP_DELETE:
-+    return "delete pool";
-+  case POOL_OP_AUID_CHANGE:
-+    return "change auid";
-+  case POOL_OP_CREATE_SNAP:
-+    return "create snap";
-+  case POOL_OP_DELETE_SNAP:
-+    return "delete snap";
-+  case POOL_OP_CREATE_UNMANAGED_SNAP:
-+    return "create unmanaged snap";
-+  case POOL_OP_DELETE_UNMANAGED_SNAP:
-+    return "delete unmanaged snap";
-+  default:
-+    return "unknown";
-+  }
++	struct ceph_osd_request_head *reqhead = req->r_request->front.iov_base;
++	struct ceph_osd_op *op = (void *)(reqhead + 1);
++	u64 orig_len = len;
++	u64 objoff, objlen;    /* extent in object */
++
++	/* object extent? */
++	ceph_calc_file_object_mapping(layout, off, &len, bno,
++				      &objoff, &objlen);
++	if (len < orig_len)
++		dout(" skipping last %llu, final file extent %llu~%llu\n",
++		     orig_len - len, off, len);
++
++	op->extent.offset = cpu_to_le64(objoff);
++	op->extent.length = cpu_to_le64(objlen);
++	req->r_num_pages = calc_pages_for(off, len);
++
++	dout("calc_layout bno=%llx %llu~%llu (%d pages)\n",
++	     *bno, objoff, objlen, req->r_num_pages);
++
 +}
-diff --git a/fs/ceph/messenger.c b/fs/ceph/messenger.c
-index e4871d9..3360ed1 100644
---- a/fs/ceph/messenger.c
-+++ b/fs/ceph/messenger.c
-@@ -47,7 +47,6 @@ const char *ceph_name_type_str(int t)
- 	case CEPH_ENTITY_TYPE_MDS: return "mds";
- 	case CEPH_ENTITY_TYPE_OSD: return "osd";
- 	case CEPH_ENTITY_TYPE_CLIENT: return "client";
--	case CEPH_ENTITY_TYPE_ADMIN: return "admin";
- 	default: return "???";
- 	}
- }
-diff --git a/fs/ceph/msgr.h b/fs/ceph/msgr.h
-index 6baa8e4..892a029 100644
---- a/fs/ceph/msgr.h
-+++ b/fs/ceph/msgr.h
-@@ -50,7 +50,6 @@ struct ceph_entity_name {
- #define CEPH_ENTITY_TYPE_MDS    0x02
- #define CEPH_ENTITY_TYPE_OSD    0x04
- #define CEPH_ENTITY_TYPE_CLIENT 0x08
--#define CEPH_ENTITY_TYPE_ADMIN  0x10
- #define CEPH_ENTITY_TYPE_AUTH   0x20
++
+ /*
+  * Implement client access to distributed object storage cluster.
+  *
+@@ -53,29 +79,13 @@ static void calc_layout(struct ceph_osd_client *osdc,
+ 			struct ceph_osd_request *req)
+ {
+ 	struct ceph_osd_request_head *reqhead = req->r_request->front.iov_base;
+-	struct ceph_osd_op *op = (void *)(reqhead + 1);
+-	u64 orig_len = *plen;
+-	u64 objoff, objlen;    /* extent in object */
+ 	u64 bno;
  
- #define CEPH_ENTITY_TYPE_ANY    0xFF
-diff --git a/fs/ceph/rados.h b/fs/ceph/rados.h
-index a1fc1d0..75c3d27 100644
---- a/fs/ceph/rados.h
-+++ b/fs/ceph/rados.h
-@@ -100,8 +100,8 @@ struct ceph_pg_pool {
- 	__le64 snap_seq;          /* seq for per-pool snapshot */
- 	__le32 snap_epoch;        /* epoch of last snap */
- 	__le32 num_snaps;
--	__le32 num_removed_snap_intervals;
--	__le64 uid;
-+	__le32 num_removed_snap_intervals; /* if non-empty, NO per-pool snaps */
-+	__le64 auid;               /* who owns the pg */
- } __attribute__ ((packed));
+ 	reqhead->snapid = cpu_to_le64(vino.snap);
+-
+-	/* object extent? */
+-	ceph_calc_file_object_mapping(layout, off, plen, &bno,
+-				      &objoff, &objlen);
+-	if (*plen < orig_len)
+-		dout(" skipping last %llu, final file extent %llu~%llu\n",
+-		     orig_len - *plen, off, *plen);
++	ceph_calc_raw_layout(osdc, layout, off, *plen, &bno, req);
+ 
+ 	sprintf(req->r_oid, "%llx.%08llx", vino.ino, bno);
+ 	req->r_oid_len = strlen(req->r_oid);
+-
+-	op->extent.offset = cpu_to_le64(objoff);
+-	op->extent.length = cpu_to_le64(objlen);
+-	req->r_num_pages = calc_pages_for(off, *plen);
+-
+-	dout("calc_layout %s (%d) %llu~%llu (%d pages)\n",
+-	     req->r_oid, req->r_oid_len, objoff, objlen, req->r_num_pages);
+ }
  
  /*
+@@ -108,43 +118,34 @@ void ceph_osdc_release_request(struct kref *kref)
+ 		kfree(req);
+ }
+ 
+-/*
+- * build new request AND message, calculate layout, and adjust file
+- * extent as needed.
+- *
+- * if the file was recently truncated, we include information about its
+- * old and new size so that the object can be updated appropriately.  (we
+- * avoid synchronously deleting truncated objects because it's slow.)
+- *
+- * if @do_sync, include a 'startsync' command so that the osd will flush
+- * data quickly.
+- */
+-struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
+-					       struct ceph_file_layout *layout,
+-					       struct ceph_vino vino,
+-					       u64 off, u64 *plen,
+-					       int opcode, int flags,
++struct ceph_osd_request *ceph_osdc_alloc_request(struct ceph_osd_client *osdc,
++					       int flags,
+ 					       struct ceph_snap_context *snapc,
+ 					       int do_sync,
+-					       u32 truncate_seq,
+-					       u64 truncate_size,
+-					       struct timespec *mtime,
+-					       bool use_mempool, int num_reply)
++					       bool use_mempool,
++					       gfp_t gfp_flags,
++					       struct page **pages)
+ {
+ 	struct ceph_osd_request *req;
+ 	struct ceph_msg *msg;
+-	struct ceph_osd_request_head *head;
+-	struct ceph_osd_op *op;
+-	void *p;
+ 	int num_op = 1 + do_sync;
+-	size_t msg_size = sizeof(*head) + num_op*sizeof(*op);
+-	int i;
++	size_t msg_size = sizeof(struct ceph_osd_request_head) +
++			  num_op*sizeof(struct ceph_osd_op);
++
++	if (use_mempool) {
++		req = mempool_alloc(osdc->req_mempool, gfp_flags);
++		memset(req, 0, sizeof(*req));
++	} else {
++		req = kzalloc(sizeof(*req), gfp_flags);
++	}
++	if (!req)
++		return NULL;
+ 
+ 	if (use_mempool) {
+-		req = mempool_alloc(osdc->req_mempool, GFP_NOFS);
++		req = mempool_alloc(osdc->req_mempool, gfp_flags);
+ 		memset(req, 0, sizeof(*req));
+ 	} else {
+-		req = kzalloc(sizeof(*req), GFP_NOFS);
++		req = kzalloc(sizeof(*req), gfp_flags);
+ 	}
+ 	if (req == NULL)
+ 		return NULL;
+@@ -164,7 +165,7 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
+ 		msg = ceph_msgpool_get(&osdc->msgpool_op_reply, 0);
+ 	else
+ 		msg = ceph_msg_new(CEPH_MSG_OSD_OPREPLY,
+-				   OSD_OPREPLY_FRONT_LEN, GFP_NOFS);
++				   OSD_OPREPLY_FRONT_LEN, gfp_flags);
+ 	if (!msg) {
+ 		ceph_osdc_put_request(req);
+ 		return NULL;
+@@ -178,18 +179,48 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
+ 	if (use_mempool)
+ 		msg = ceph_msgpool_get(&osdc->msgpool_op, 0);
+ 	else
+-		msg = ceph_msg_new(CEPH_MSG_OSD_OP, msg_size, GFP_NOFS);
++		msg = ceph_msg_new(CEPH_MSG_OSD_OP, msg_size, gfp_flags);
+ 	if (!msg) {
+ 		ceph_osdc_put_request(req);
+ 		return NULL;
+ 	}
+ 	msg->hdr.type = cpu_to_le16(CEPH_MSG_OSD_OP);
+ 	memset(msg->front.iov_base, 0, msg->front.iov_len);
++
++	req->r_request = msg;
++	req->r_pages = pages;
++
++	return req;
++}
++
++/*
++ * build new request AND message
++ *
++ */
++void ceph_osdc_build_request(struct ceph_osd_request *req,
++			    u64 off, u64 *plen,
++			    int opcode,
++			    struct ceph_snap_context *snapc,
++			    int do_sync,
++			    u32 truncate_seq,
++			    u64 truncate_size,
++			    struct timespec *mtime,
++			    const char *oid,
++			    int oid_len)
++{
++	struct ceph_msg *msg = req->r_request;
++	struct ceph_osd_request_head *head;
++	struct ceph_osd_op *op;
++	void *p;
++	int num_op = 1 + do_sync;
++	size_t msg_size = sizeof(*head) + num_op*sizeof(*op);
++	int i;
++	int flags = req->r_flags;
++
+ 	head = msg->front.iov_base;
+ 	op = (void *)(head + 1);
+ 	p = (void *)(op + num_op);
+ 
+-	req->r_request = msg;
+ 	req->r_snapc = ceph_get_snap_context(snapc);
+ 
+ 	head->client_inc = cpu_to_le32(1); /* always, for now. */
+@@ -199,10 +230,6 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
+ 	head->num_ops = cpu_to_le16(num_op);
+ 	op->op = cpu_to_le16(opcode);
+ 
+-	/* calculate max write size */
+-	calc_layout(osdc, vino, layout, off, plen, req);
+-	req->r_file_layout = *layout;  /* keep a copy */
+-
+ 	if (flags & CEPH_OSD_FLAG_WRITE) {
+ 		req->r_request->hdr.data_off = cpu_to_le16(off);
+ 		req->r_request->hdr.data_len = cpu_to_le32(*plen);
+@@ -212,9 +239,9 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
+ 	op->extent.truncate_seq = cpu_to_le32(truncate_seq);
+ 
+ 	/* fill in oid */
+-	head->object_len = cpu_to_le32(req->r_oid_len);
+-	memcpy(p, req->r_oid, req->r_oid_len);
+-	p += req->r_oid_len;
++	head->object_len = cpu_to_le32(oid_len);
++	memcpy(p, oid, oid_len);
++	p += oid_len;
+ 
+ 	if (do_sync) {
+ 		op++;
+@@ -233,6 +260,50 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
+ 	msg_size = p - msg->front.iov_base;
+ 	msg->front.iov_len = msg_size;
+ 	msg->hdr.front_len = cpu_to_le32(msg_size);
++	return;
++}
++
++/*
++ * build new request AND message, calculate layout, and adjust file
++ * extent as needed.
++ *
++ * if the file was recently truncated, we include information about its
++ * old and new size so that the object can be updated appropriately.  (we
++ * avoid synchronously deleting truncated objects because it's slow.)
++ *
++ * if @do_sync, include a 'startsync' command so that the osd will flush
++ * data quickly.
++ */
++struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
++					       struct ceph_file_layout *layout,
++					       struct ceph_vino vino,
++					       u64 off, u64 *plen,
++					       int opcode, int flags,
++					       struct ceph_snap_context *snapc,
++					       int do_sync,
++					       u32 truncate_seq,
++					       u64 truncate_size,
++					       struct timespec *mtime,
++					       bool use_mempool, int num_reply)
++{
++	struct ceph_osd_request *req =
++		ceph_osdc_alloc_request(osdc, flags,
++					 snapc, do_sync,
++					 use_mempool,
++					 GFP_NOFS, NULL);
++	if (IS_ERR(req))
++		return req;
++
++	/* calculate max write size */
++	calc_layout(osdc, vino, layout, off, plen, req);
++	req->r_file_layout = *layout;  /* keep a copy */
++
++	ceph_osdc_build_request(req, off, plen, opcode,
++				snapc, do_sync,
++				truncate_seq, truncate_size,
++				mtime,
++				req->r_oid, req->r_oid_len);
++
+ 	return req;
+ }
+ 
+diff --git a/fs/ceph/osd_client.h b/fs/ceph/osd_client.h
+index b075991..0b6b697 100644
+--- a/fs/ceph/osd_client.h
++++ b/fs/ceph/osd_client.h
+@@ -118,6 +118,30 @@ extern void ceph_osdc_handle_reply(struct ceph_osd_client *osdc,
+ extern void ceph_osdc_handle_map(struct ceph_osd_client *osdc,
+ 				 struct ceph_msg *msg);
+ 
++extern void ceph_calc_raw_layout(struct ceph_osd_client *osdc,
++			struct ceph_file_layout *layout,
++			u64 off, u64 len, u64 *bno,
++			struct ceph_osd_request *req);
++
++extern struct ceph_osd_request *ceph_osdc_alloc_request(struct ceph_osd_client *osdc,
++					       int flags,
++					       struct ceph_snap_context *snapc,
++					       int do_sync,
++					       bool use_mempool,
++					       gfp_t gfp_flags,
++					       struct page **pages);
++
++extern void ceph_osdc_build_request(struct ceph_osd_request *req,
++			    u64 off, u64 *plen,
++			    int opcode,
++			    struct ceph_snap_context *snapc,
++			    int do_sync,
++			    u32 truncate_seq,
++			    u64 truncate_size,
++			    struct timespec *mtime,
++			    const char *oid,
++			    int oid_len);
++
+ extern struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *,
+ 				      struct ceph_file_layout *layout,
+ 				      struct ceph_vino vino,
 -- 
 1.5.6.5
 
