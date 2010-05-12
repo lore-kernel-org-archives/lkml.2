@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab0ELWYt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 18:24:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52860 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756694Ab0ELWYs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 18:24:48 -0400
-Date: Wed, 12 May 2010 15:24:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eduardo Valentin <eduardo.valentin@nokia.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
-       Linux-OMAP <linux-omap@vger.kernel.org>,
-       Russell King <linux@arm.linux.org.uk>,
-       ext Tony Lindgren <tony@atomide.com>,
-       ext Kevin Hilman <khilman@deeprootsystems.com>,
-       Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
-       santosh.shilimkar@ti.com, Ambresh <a0393775@ti.com>,
-       felipe.balbi@nokia.com, Jouni Hogander <jouni.hogander@nokia.com>,
-       Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCHv5 0/3] Introduce the /proc/socinfo and use it to export
- OMAP data
-Message-Id: <20100512152424.803ea807.akpm@linux-foundation.org>
-In-Reply-To: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>
-References: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	id S1758106Ab0ELW25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 18:28:57 -0400
+Received: from mail.perches.com ([173.55.12.10]:2203 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755039Ab0ELW24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 18:28:56 -0400
+Subject: Re: [PATCH] get_maintainer.pl: improve config-file support
+From: Joe Perches <joe@perches.com>
+To: florian@mickler.org
+Cc: akpm@linux-foundation.org, Stephen Hemminger <shemminger@vyatta.com>,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1273698720-4010-1-git-send-email-florian@mickler.org>
+References: <1273698720-4010-1-git-send-email-florian@mickler.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 May 2010 15:28:53 -0700
+Message-ID: <1273703333.20514.392.camel@Joe-Laptop.home>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 May 2010 17:15:28 +0300
-Eduardo Valentin <eduardo.valentin@nokia.com> wrote:
+On Wed, 2010-05-12 at 23:12 +0200, florian@mickler.org wrote:
+> This changes the syntax of the config-file introduced in the commit
+> "scripts/get_maintainer.pl: add .get_maintainer.conf default options
+> file".
+> Entries are now of the more commonly found form:
+> 	key = value
+> where keys are cmd-line arguments without the "--" prefixed.
 
-> Here is the version 5 of the change to export OMAP data to userspace
-> (name, revision, id code, production id and die id).
-> 
-> Basically, this version is still attempting to create a new file under /proc.
-> It is the /proc/socinfo, which should be used to export bits which are SoC specific
-> (not CPU related, nor machine related).
-> 
-> So, differences between previous version are:
-> - merged patch 02/04 with 03/04 to avoid compilation breakages.
-> - simplified the seq_file usage by using the single_open and single_release functions
-> - exported a function to register a seq_operation .show callback
-> - adapted the changes accordingly
-> 
-> As usual, comments are welcome.
+I don't have a strong opinion one way or another about the
+.conf file format.
 
-This changelog would be rather more useful if it was to show us some
-sample output from /proc/socinfo, perhaps accompanied with an
-explanation for people who aren't familar with this area of the kernel.
+Another option which could be useful:  --noconf, don't read the file.
 
-I'd have thought that sysfs was an appropriate place for this info. 
-Perhaps under /sys/devices/platform?  Or /sys/devices/system?  Peter's
-original patch didn't tell us where in the hierarchy the file was
-placed, nor why it was placed there, not what its contents look like. 
-But crappy changelogs are the norm :(
+> as well as warn if unrecognized options are
+> specified.
 
-The objections stated in this email:
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg17630.html
-appear to still apply to this version of the patches?
+The old approach does that as well.
 
-Kevin didn't explain why he said "Please export these via debugfs". 
-Tony didn't clearly explain why he said "I don't think we want to
-export unique chip identifiers by default".
+> +if (!GetOptions( \%prefs,
+
+I think you don't need to repeat the options.
+Doesn't this work?
+	if (!GetOptions(\%prefs)) {
+	    die "$P: invalid argument - use --help if necessary\n";
 
 
-
-So apart from having certain opinions regarding communication skills
-and wondering why people cc me on stuff without vaguely providing
-enough info for me to understand what they're thinking, I don't know
-what to make of it all :(
