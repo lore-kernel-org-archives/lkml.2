@@ -1,80 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758339Ab0ELWtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 18:49:00 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53057 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753921Ab0ELWs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 18:48:58 -0400
-Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
- 88f5182)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jamie Lokier <jamie@shareable.org>
-Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-       "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-       Nicolas Pitre <nico@marvell.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "James E.J. Bottomley" <jejb@parisc-linux.org>,
+	id S1758430Ab0ELWxk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 18:53:40 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44663 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755806Ab0ELWxi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 18:53:38 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 12/12] Use down_read_unfair() for /sys/<pid>/exe and /sys/<pid>/maps files
+Cc: kosaki.motohiro@jp.fujitsu.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Saeed Bishara <saeed@marvell.com>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100512222154.GA6841@shareable.org>
-References: <1273569821.21352.19.camel@pasglop>
-	 <1273575478.21352.29.camel@pasglop>
-	 <EAF47CD23C76F840A9E7FCE10091EFAB02C545537F@dbde02.ent.ti.com>
-	 <20100512222154.GA6841@shareable.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 May 2010 08:47:11 +1000
-Message-ID: <1273704431.21352.136.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+In-Reply-To: <1273634462-2672-13-git-send-email-walken@google.com>
+References: <1273634462-2672-1-git-send-email-walken@google.com> <1273634462-2672-13-git-send-email-walken@google.com>
+Message-Id: <20100513074949.2136.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 13 May 2010 07:53:31 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-12 at 23:21 +0100, Jamie Lokier wrote:
-> Shilimkar, Santosh wrote:
-> > There was a memory write barrier missing before the DMA descriptors 
-> > are handed over to DMA controller.
+> This helps in the following situation:
+> - Thread A takes a page fault while reading or writing memory.
+>   do_page_fault() acquires the mmap_sem for read and blocks on disk
+>   (either reading the page from file, or hitting swap) for a long time.
+> - Thread B does an mmap call and blocks trying to acquire the mmap_sem
+>   for write
+> - Thread C is a monitoring process trying to read every /proc/pid/maps
+>   in the system. This requires acquiring the mmap_sem for read. Thread C
+>   blocks behind B, waiting for A to release the rwsem.  If thread C
+>   could be allowed to run in parallel with A, it would probably get done
+>   long before thread A's disk access completes, thus not actually slowing
+>   down thread B.
 > 
-> On that note, are the cache flush functions implicit memory barriers?
+> Test results with down_read_unfair_test (10 seconds):
+> 
+> 2.6.33.3:
+> threadA completes ~600 faults
+> threadB completes ~300 mmap/munmap cycles
+> threadC completes ~600 /proc/pid/maps reads
+> 
+> 2.6.33.3 + down_read_unfair:
+> threadA completes ~600 faults
+> threadB completes ~300 mmap/munmap cycles
+> threadC completes ~160000 /proc/pid/maps reads
+> 
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-(Adding Fujita on CC)
+Is it good idea?
+So I think /proc shouldn't use unfair thing as backdoor. 
+It doesn't only makes performance improvement, but also 
+DoS chance is there.
 
-That's a very good question. The generic inline implementation of
-dma_sync_* is:
+Please use this feature only in internal.
 
-static inline void dma_sync_single_for_cpu(struct device *dev, dma_addr_t addr,
-					   size_t size,
-					   enum dma_data_direction dir)
-{
-	struct dma_map_ops *ops = get_dma_ops(dev);
 
-	BUG_ON(!valid_dma_direction(dir));
-	if (ops->sync_single_for_cpu)
-		ops->sync_single_for_cpu(dev, addr, size, dir);
-	debug_dma_sync_single_for_cpu(dev, addr, size, dir);
-}
 
-Which means that for coherent architectures that do not implement
-the ops->sync_* hooks, we are probably missing a barrier here... 
+> ---
+>  fs/proc/base.c       |    2 +-
+>  fs/proc/task_mmu.c   |    2 +-
+>  fs/proc/task_nommu.c |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index 8418fcc..9132488 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -1367,7 +1367,7 @@ struct file *get_mm_exe_file(struct mm_struct *mm)
+>  
+>  	/* We need mmap_sem to protect against races with removal of
+>  	 * VM_EXECUTABLE vmas */
+> -	down_read(&mm->mmap_sem);
+> +	down_read_unfair(&mm->mmap_sem);
+>  	exe_file = mm->exe_file;
+>  	if (exe_file)
+>  		get_file(exe_file);
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index 0705534..09647ad 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -123,7 +123,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+>  	mm = mm_for_maps(priv->task);
+>  	if (!mm)
+>  		return NULL;
+> -	down_read(&mm->mmap_sem);
+> +	down_read_unfair(&mm->mmap_sem);
+>  
+>  	tail_vma = get_gate_vma(priv->task);
+>  	priv->tail_vma = tail_vma;
+> diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
+> index 46d4b5d..56ca830 100644
+> --- a/fs/proc/task_nommu.c
+> +++ b/fs/proc/task_nommu.c
+> @@ -194,7 +194,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+>  		priv->task = NULL;
+>  		return NULL;
+>  	}
+> -	down_read(&mm->mmap_sem);
+> +	down_read_unfair(&mm->mmap_sem);
+>  
+>  	/* start from the Nth VMA */
+>  	for (p = rb_first(&mm->mm_rb); p; p = rb_next(p))
+> -- 
+> 1.7.0.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Thus if the above is expected to be a memory barrier, it's broken on
-cache coherent powerpc for example. On non-coherent powerpc, we do cache
-flushes and those are implicit barriers.
-
-Now, in the case at hand, which is my ARM based NAS, I believe this
-is non cache-coherent and thus uses cache flush ops. I don't know ARM
-well enough but I would expect these to be implicit barriers. Russell ?
-Nico ?
-
-IE. You may have found a bug here though I don't know whether it's the
-bug we are hitting right now :-)
-
-Cheers,
-Ben.
 
 
