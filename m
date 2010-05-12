@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab0ELN3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 09:29:19 -0400
-Received: from nox2.protox.org ([95.130.11.66]:55741 "EHLO protox.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923Ab0ELN3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 09:29:17 -0400
-Date: Wed, 12 May 2010 15:29:16 +0200
-From: Jerome Glisse <glisse@freedesktop.org>
-To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Airlie <airlied@linux.ie>,
-       "dri-devel@lists.sourceforge.net" <dri-devel@lists.sourceforge.net>,
-       David@barney.localdomain
-Subject: Re: 2.6.33.2 kmalloc-8 slab leaks ~512 objects per second
-Message-ID: <20100512132916.GD2790@barney.localdomain>
-References: <11758_1273660249_4BEA8359_11758_1675_1_201005121121.49135.tvrtko.ursulin@sophos.com>
- <201005121138.05254.tvrtko.ursulin@sophos.com>
- <201005121150.42462.tvrtko.ursulin@sophos.com>
+	id S1754628Ab0ELNh3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 09:37:29 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60694 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab0ELNh2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 09:37:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GdvkA/xPeaybMiz6+XsDko64EYmofeaNbqFsndJAjgG+8h2pBsS95tFHfiT4ptmKQe
+         qJnTQOTA4gJ2jLF4kA/v8wJ1dufo9uKsmcmQITr81+N2qxLt6TW310hY+Al4SlXcdB9L
+         Oz7+6C6CojqzPmAGUaRbdd/VWwD837mAvo3nw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005121150.42462.tvrtko.ursulin@sophos.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100511213625.GD5422@nowhere>
+References: <AANLkTilJLcdfK-vgqGdXyaZ_bQ1BDFmQl619egtGAA4i@mail.gmail.com>
+	 <20100511213625.GD5422@nowhere>
+Date: Wed, 12 May 2010 15:37:27 +0200
+Message-ID: <AANLkTikumkBKwYTYIK63mT2i_hI4SAo-Eua0cx9OCHnD@mail.gmail.com>
+Subject: Re: [RFC] PyTimechart
+From: Pierre Tardy <tardyp@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+       mathieu.desnoyers@efficios.com, arjan@infradead.org,
+       ziga.mahkovec@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 11:50:41AM +0100, Tvrtko Ursulin wrote:
-> On Wednesday 12 May 2010 11:38:05 Tvrtko Ursulin wrote:
-> 
-> [snip]
-> > I think it is DRM (radeon) related, leak stopped when I closed all X
-> >  programs. I am compiling 2.6.33.3 right now and will soon reboot into it.
-> 
-> Leak is still present in 2.6.33.3 - the more GUI activity the more it leaks.
-> So the ~512 objects per second was with xosview running, but moving windows or
-> browsing through menus can leak a lot more (per second).
-> 
-> Is version of userspace drm library interesting? It is 2.4.20
-> (libdrm-2.4.20-12.1.x86_64).
-> 
-> Tvrtko
-> 
+> Plugging to the scripting API is really easy, run:
+>
+>        $ perf timechart record
+>        $ sudo ./perf trace -g python
+>        generated Python script: perf-trace.py
 
-Do the number of object stay constant over longuer period of time
-(30min, 1hour) ? If there was a leak i think we would have notice
-it by now, some of my desktop are running 24h for several days with
-radeon kms.
+This is something that I want to try since I saw the perf scripting
+patch, thanks for the recipe, I'll look at it in the next few days.
 
-Cheers,
-Jerome
+The next problem is that perf timechart record is frozen on the number
+of event it records.
+Pytimechart is able to display irq:* and workqueues:* events, as well
+as trace_printks ( I dont know if perf is able to dump those )
+
+I use trace_printk to mark the big traces with events I'm trying to debug.
+Being able to look at ISR and workqueues is very useful, and there is
+a special feature that warns when an ISR lasts more than 1ms.
+
+For inclusion in mainline, this might take more time. The quality of
+some portion of the code is far from being linux kernel's standards
+:-}
+
+Regards,
+Pierre
