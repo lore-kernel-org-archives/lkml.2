@@ -1,125 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab0ELXzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 19:55:00 -0400
-Received: from mail.gmx.net ([213.165.64.20]:57222 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751261Ab0ELXy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 19:54:59 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19C+C9UpMJCwKRdd2LKLIj1RnjTJOaFKhh/GmB0uu
-	i3PDq0CX+p1SEt
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: [PATCH] power: Rename get_current to fix build failure / name conflict
-Date: Thu, 13 May 2010 01:54:57 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
-Cc: Mike Rapoport <mike@compulab.co.il>, Wolfram Sang <w.sang@pengutronix.de>,
-       Tejun Heo <tj@kernel.org>, Ryan Mallon <ryan@bluewatersys.com>,
-       linux-kernel@vger.kernel.org
+	id S1757115Ab0ELX40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 19:56:26 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:46711 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab0ELX4Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 19:56:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=eDGGghq1uiBnVoguNRMR+eF3RcELnLPULF1Mlu21Qq6ujb/Gn2Cm0oD90mHxRPZzZ8
+         mukYZZxs2WzaaxarGCEWpFfO8FrcqHlBNju25NsMFNq62gPLGOXd38syWtP3TBKo6CMG
+         zDKJhG1hIxfNeBsiBTIOwqSdxuz68Pz+4pPC8=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005130154.58459.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+In-Reply-To: <SNT111-DS115B558E5855C0FAEA860CA7F60@phx.gbl>
+References: <SNT111-DS115B558E5855C0FAEA860CA7F60@phx.gbl>
+Date: Wed, 12 May 2010 16:56:23 -0700
+X-Google-Sender-Auth: 6i7yV-MMBUMt_uusFnzNaIsWj-k
+Message-ID: <AANLkTin7itFVRzywm9g776bpE5IaFNsGVVW_PUbv0RKm@mail.gmail.com>
+Subject: Re: Weird timer handler used with LAPIC selected
+From: john stultz <johnstul@us.ibm.com>
+To: limp <johnkyr83@hotmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+On Fri, May 7, 2010 at 4:10 AM, limp <johnkyr83@hotmail.com> wrote:
+> Hi all,
+>
+> I have configured my kernel (2.6.31.6) so that I get periodic ticks from the
+> timer interrupt (i.e. tickless is not configured) with a rate determined by
+> the HZ value. I have also selected the "Local APIC support on uniprocessors"
+> option so that the LAPIC timer is used as a tick source. The problem is that
+> the handler used for the timer is not the "local_apic_timer_interrupt"
+> handler as I was excepted but the "tick_handle_periodic" handler. This can
+> be verified by seeing the output of /proc/timer_list:
+>
+> Tick Device: mode:     0
+> Per CPU device: 0
+> Clock Event Device: lapic
+>  max_delta_ns:   1006457290
+>  min_delta_ns:   1799
+>  mult:           35797637
+>  shift:          32
+>  mode:           1
+>  next_event:     9223372036854775807 nsecs
+>  set_next_event: lapic_next_event
+>  set_mode:       lapic_timer_setup
+>  event_handler:  tick_handle_periodic
 
-This patch changes the name of get_current function pointer to
-get_battery_current to resolve a name conflict with the get_current
-macro defined in current.h.
+You might want to read the code in further detail. The clockevent
+device is an abstraction on top of the actual hardware, so the
+event_handler method is not mapped into the irq handler directly.
 
-This conflict resulted in a build-failure[1] for the sh4 arch
-allyesconfig which is resolved by this patch.
+So the local_apic_timer_interrupt() is called by the apic hardware
+interrupt, it then calls lapic clockevent device's event_handler()
+method, which is set to tick_handle_periodic(). Since you're in
+_PERIODIC mode, not _ONESHOT (hrtimers/nohz), this seems correct to
+me.
 
-To be consistent the other function pointers (_voltage,_capacity) were
-renamed too.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-KernelVersion: linux-next 20100512
-References:
-[1] http://kisskb.ellerman.id.au/kisskb/buildresult/2572665/
 
- drivers/power/ds2782_battery.c |   29 ++++++++++++++---------------
- 1 files changed, 14 insertions(+), 15 deletions(-)
+> Is there an explanation for that? The board in which I am running the kernel
+> is a Kontron 986LCD-M/mITX one with an Intel Celeron M 440 installed on it.
+> I have verified that Intel Celeron M Processors have a LAPIC and
+> consequently, a LAPIC timer.
+>
+> --------------------------------------------
+> Another weird thing that I noticed is that by running the same kernel but
+> configured for "Core 2/newer Xeon" processors, the timer handler used is the
+> "hrtimer_interrupt" handler. Again, this is verified by /proc/timer_list:
+>
+> Tick Device: mode:     1
+> Per CPU device: 0
+> Clock Event Device: lapic
+> event_handler:  hrtimer_interrupt
 
-diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-index d762a0c..9b3b4b7 100644
---- a/drivers/power/ds2782_battery.c
-+++ b/drivers/power/ds2782_battery.c
-@@ -43,10 +43,9 @@
- struct ds278x_info;
- 
- struct ds278x_battery_ops {
--	int	(*get_current)(struct ds278x_info *info, int *current_uA);
--	int	(*get_voltage)(struct ds278x_info *info, int *voltage_uA);
--	int	(*get_capacity)(struct ds278x_info *info, int *capacity_uA);
--
-+	int (*get_battery_current)(struct ds278x_info *info, int *current_uA);
-+	int (*get_battery_voltage)(struct ds278x_info *info, int *voltage_uA);
-+	int (*get_battery_capacity)(struct ds278x_info *info, int *capacity_uA);
- };
- 
- #define to_ds278x_info(x) container_of(x, struct ds278x_info, battery)
-@@ -213,11 +212,11 @@ static int ds278x_get_status(struct ds278x_info *info, int *status)
- 	int current_uA;
- 	int capacity;
- 
--	err = info->ops->get_current(info, &current_uA);
-+	err = info->ops->get_battery_current(info, &current_uA);
- 	if (err)
- 		return err;
- 
--	err = info->ops->get_capacity(info, &capacity);
-+	err = info->ops->get_battery_capacity(info, &capacity);
- 	if (err)
- 		return err;
- 
-@@ -246,15 +245,15 @@ static int ds278x_battery_get_property(struct power_supply *psy,
- 		break;
- 
- 	case POWER_SUPPLY_PROP_CAPACITY:
--		ret = info->ops->get_capacity(info, &val->intval);
-+		ret = info->ops->get_battery_capacity(info, &val->intval);
- 		break;
- 
- 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
--		ret = info->ops->get_voltage(info, &val->intval);
-+		ret = info->ops->get_battery_voltage(info, &val->intval);
- 		break;
- 
- 	case POWER_SUPPLY_PROP_CURRENT_NOW:
--		ret = info->ops->get_current(info, &val->intval);
-+		ret = info->ops->get_battery_current(info, &val->intval);
- 		break;
- 
- 	case POWER_SUPPLY_PROP_TEMP:
-@@ -307,14 +306,14 @@ enum ds278x_num_id {
- 
- static struct ds278x_battery_ops ds278x_ops[] = {
- 	[DS2782] = {
--		.get_current  = ds2782_get_current,
--		.get_voltage  = ds2782_get_voltage,
--		.get_capacity = ds2782_get_capacity,
-+		.get_battery_current  = ds2782_get_current,
-+		.get_battery_voltage  = ds2782_get_voltage,
-+		.get_battery_capacity = ds2782_get_capacity,
- 	},
- 	[DS2786] = {
--		.get_current  = ds2786_get_current,
--		.get_voltage  = ds2786_get_voltage,
--		.get_capacity = ds2786_get_capacity,
-+		.get_battery_current  = ds2786_get_current,
-+		.get_battery_voltage  = ds2786_get_voltage,
-+		.get_battery_capacity = ds2786_get_capacity,
- 	}
- };
- 
--- 
-1.6.4.4
+Yep. On this system I'm guessing you have hrtimers or nohz/tickless enabled?
 
+
+> I have put some printks inside "local_apic_timer_interrupt" handler which
+> should never be executed as the handler selected for the timer is
+> "hrtimer_interrupt" and not "local_apic_timer_interrupt" as verified.
+
+Nope. Again, local_apic_timer_interrupt is the actual irq hook. It
+then calls the lapic clockevent device's event_handler() method, which
+is hrtimer_interrupt.
+
+thanks
+-john
