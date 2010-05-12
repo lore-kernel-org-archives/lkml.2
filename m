@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab0ELSFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 14:05:40 -0400
-Received: from zcars04e.nortel.com ([47.129.242.56]:61927 "EHLO
-	zcars04e.nortel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab0ELSFi (ORCPT
+	id S1752128Ab0ELSIi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 14:08:38 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34337 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab0ELSIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 14:05:38 -0400
-Message-ID: <4BEAED98.30502@nortel.com>
-Date: Wed, 12 May 2010 12:04:08 -0600
-From: "Chris Friesen" <cfriesen@nortel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: James Kosin <jkosin@intcomgrp.com>
-CC: Dhaval Giani <dhaval.giani@gmail.com>, Jan Safranek <jsafrane@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       menage@google.com, balbir@linux.vnet.ibm.com, lennart@poettering.net,
-       tglx@linutronix.de
-Subject: Re: [PATCH/RFC] Have sane default values for cpusets
-References: <eJjRf-6YM-1@gated-at.bofh.it> <eJktY-7JG-7@gated-at.bofh.it>	 <eJktY-7JG-5@gated-at.bofh.it> <4BEAB6FC.8090105@intcomgrp.com>	 <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>	 <1273674048.1626.117.camel@laptop> <4BEABDF8.40206@redhat.com>	 <4BEAE7A1.2010001@intcomgrp.com> <AANLkTikEyJ8q9GkpyZo0OUY4MLM_soWEviiBG2R6H-mY@mail.gmail.com> <4BEAEC2A.6090306@intcomgrp.com>
-In-Reply-To: <4BEAEC2A.6090306@intcomgrp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 May 2010 14:08:36 -0400
+Subject: Re: Perf and ftrace [was Re: PyTimechart]
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Pierre Tardy <tardyp@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, arjan@infradead.org,
+       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>
+In-Reply-To: <20100512180438.GE15953@Krystal>
+References: <20100511213625.GD5422@nowhere>
+	 <AANLkTikumkBKwYTYIK63mT2i_hI4SAo-Eua0cx9OCHnD@mail.gmail.com>
+	 <20100512144811.GA5405@nowhere>
+	 <1273678596.27703.30.camel@gandalf.stny.rr.com>
+	 <20100512164650.GH5405@nowhere> <1273683624.1626.127.camel@laptop>
+	 <20100512170734.GA15953@Krystal> <1273686425.1626.142.camel@laptop>
+	 <20100512175305.GB32496@Krystal> <1273687212.1626.147.camel@laptop>
+	 <20100512180438.GE15953@Krystal>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 May 2010 20:08:32 +0200
+Message-ID: <1273687712.1626.151.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 May 2010 18:05:33.0832 (UTC) FILETIME=[B7554880:01CAF1FD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2010 11:58 AM, James Kosin wrote:
+On Wed, 2010-05-12 at 14:04 -0400, Mathieu Desnoyers wrote:
+> Can't we keep multiple references to each page ? (shared page) so it's still in
+> the buffer, also accessed by mmap(), and in addition accessed by splice.
 
-> Thanks for clearing that up.
-> It looks like they are not under the control of the programmer on
-> purpose.  It is not outlined in the description of how to use this feature.
-> The tasks have to be added separately by an administrator that is
-> operating the system to tune performance and to provide resources where
-> most needed.
+I'm not sure, the problem seems to be that a splice-consumer might want
+to inject the page into a whole different address-space, over-writing
+page->mapping/->index etc.
 
-Depending on the type of system, they may or may not be under the
-control of the programmer. In an embedded environment, the programmer is
-the administrator and generally has control over how the groups are set
-up. On a more generic time-sharing system it's likely that the
-individual programmer won't have control over the groups.
 
-Something I haven't tried is whether or not it's possible to set
-ownership/permissions on subtrees within the cgroup hierarchy to allow
-unprivileged users/groups to control their own tasks (basically letting
-them prioritize their own jobs without being able to affect anything
-else).  Does anyone know if this sort of thing is possible?
 
-Chris
