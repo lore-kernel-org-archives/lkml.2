@@ -1,119 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab0ELSPk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 14:15:40 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:45505 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab0ELSPi (ORCPT
+	id S1754604Ab0ELSPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 14:15:54 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:63100 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476Ab0ELSPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 14:15:38 -0400
-Message-ID: <4BEAF033.7080802@linux.vnet.ibm.com>
-Date: Wed, 12 May 2010 11:15:15 -0700
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Wed, 12 May 2010 14:15:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Jf6hIIMAToNJON3GqHMddpqshwsfPftFtXPGvuD7TOPH0dkscIMh6oAduDUI0dGDAb
+         6DdUUljb2vH0cUbLT302SCW7xcOzRnTb2Laq+pKKkGOQdImlc2c1fsAFtD09BK9jTz2t
+         lfonNRhp/uPyEWzEMysjAtXePOpveLxGYHlqM=
+Date: Wed, 12 May 2010 22:15:46 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+       Alexey Starikovskiy <astarikovskiy@suse.de>,
+       Len Brown <len.brown@intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Matt Reimer <mreimer@vpop.net>, Evgeniy Polyakov <zbr@ioremap.net>,
+       Tejun Heo <tj@kernel.org>, Kay Sievers <kay.sievers@vrfy.org>
+Subject: [PATCH] Introduce {sysfs,device}_create_file_mode
+Message-ID: <20100512181546.GA4804@oksana.dev.rtsoft.ru>
+References: <1273595926-26249-1-git-send-email-daniel@caiaq.de>
+ <20100511174708.GA26777@oksana.dev.rtsoft.ru>
+ <20100511175812.GH30801@buzzloop.caiaq.de>
+ <20100511182347.GA31831@oksana.dev.rtsoft.ru>
+ <20100511222825.GJ30801@buzzloop.caiaq.de>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-       Stephane Eranian <eranian@googlemail.com>
-Subject: Re: [BUG] perf_event: when events are grouped, the time enabled /
- running values are incorrect
-References: <4BE4C4BF.6020801@linux.vnet.ibm.com> <1273588935.1810.6.camel@laptop>  <4BEAE476.1090100@linux.vnet.ibm.com> <1273686646.1626.145.camel@laptop>
-In-Reply-To: <1273686646.1626.145.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100511222825.GJ30801@buzzloop.caiaq.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Peter,
+We need to create attributes with different modes across devices.
+We can do this by modifying attr.mode between device_create_file
+invocations, but that is racy in case of globally defined attrs.
 
-I had copied and pasted the patch from the web gossamer-threads lkml archive (I didn't have access to my email at the time), and had problems with the patch program complaining that the patch was in improper format.  I couldn't see anything wrong with what it was complaining about, so I assumed that it was something to do with the code it was actually patching.  Probably a bad assumption in retrospect.
+Luckily, there's sysfs_add_file_mode() function that seems to do
+exactly what we want, and if we use it, we don't need any locks
+to avoid races. Though, it isn't exposed via device-drivers core
+API.
 
-I will try your patch for 2.6.33.3, and since I have access to my email again, there probably won't be any problems.   Stay tuned :)
+Now that we need it, introduce sysfs_create_file_mode()
+and device_create_file_mode() functions. With these, creating
+attributes with different modes is a joy.
 
-- Corey
+Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+---
 
-On 5/12/2010 10:50 AM, Peter Zijlstra wrote:
-> On Wed, 2010-05-12 at 10:25 -0700, Corey Ashford wrote:
+On Wed, May 12, 2010 at 12:28:25AM +0200, Daniel Mack wrote:
+> On Tue, May 11, 2010 at 10:23:47PM +0400, Anton Vorontsov wrote:
+> > Yes, power_supply_attrs is a global array, and you shouldn't change
+> > it between power_supply_register() calls.
+> > 
+> > If you don't see why it's a bad idea in general, think about it
+> > other way, a race:
+> > 
+> > ...someone registers psy0 with attr X marked as read-only...
+> > ...code flow stops before device_create_file(psy0, global->mode)..
+> > [preempt]
+> > ...someone registers psy1 with attr X marked as writable...
+> > ...you set up global->mode to 0644...
+> > [preempt again]
+> > ...we end up calling device_create_file(psy0, 0644)...
 > 
->> Thanks for looking into this problem!  Unfortunately, I've been unable 
->> to test your patch.  It doesn't apply to 2.6.33.3 
-> 
-> Strange the code looks very similar, the below is a diff against a
-> virgin v2.6.33.3.
-> 
-> ---
->  kernel/perf_event.c |   26 +++++++++++++-------------
->  1 files changed, 13 insertions(+), 13 deletions(-)
-> 
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index 32d0ae2..e8ae0c2 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -290,6 +290,18 @@ static void update_event_times(struct perf_event *event)
->  }
-> 
->  /*
-> + * Update total_time_enabled and total_time_running for all events in a group.
-> + */
-> +static void update_group_times(struct perf_event *leader)
-> +{
-> +	struct perf_event *event;
-> +
-> +	update_event_times(leader);
-> +	list_for_each_entry(event, &leader->sibling_list, group_entry)
-> +		update_event_times(event);
-> +}
-> +
-> +/*
->   * Add a event from the lists for its context.
->   * Must be called with ctx->mutex and ctx->lock held.
->   */
-> @@ -337,7 +349,7 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
->  	if (event->group_leader != event)
->  		event->group_leader->nr_siblings--;
-> 
-> -	update_event_times(event);
-> +	update_group_times(event);
-> 
->  	/*
->  	 * If event was in error state, then keep it
-> @@ -508,18 +520,6 @@ retry:
->  }
-> 
->  /*
-> - * Update total_time_enabled and total_time_running for all events in a group.
-> - */
-> -static void update_group_times(struct perf_event *leader)
-> -{
-> -	struct perf_event *event;
-> -
-> -	update_event_times(leader);
-> -	list_for_each_entry(event, &leader->sibling_list, group_entry)
-> -		update_event_times(event);
-> -}
-> -
-> -/*
->   * Cross CPU call to disable a performance event
->   */
->  static void __perf_event_disable(void *info)
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Ah, I see. But the struct passed in is just used as template, right?
 
+In general, you can't assume that it's just a template,
+otherwise 'const ptrdiff_t off = attr - power_supply_attrs;'
+wouldn't work.
+
+I.e. 'attr' points to exact attribute you specified during
+registration. Weather its fields are used as a template or
+not, we don't know (well, we know how the sysfs core uses them
+*today*, but we don't know how sysfs will use them tomorrow).
+
+> So
+> for the particular case you outlined, a simple lock should do the trick,
+> right?
+
+Yes, for the particular case.
+
+Still, I don't think that playing with attr->mode is a good
+idea.
+
+If we don't want to use attr->mode for mode specifier (and I
+think we don't), we must implement a clean API for such a case.
+
+Luckily, there's sysfs_add_file_mode, so if anyone will want
+to change attr->mode behaviour, one will have to deal with
+that function, and so we'll be safe.
+
+And we must use that function, not just silently play
+attr->mode games during registration. That also avoids
+any need for locking.
+
+
+Greg, does the patch look OK? If so, I'd like it to go
+via battery-2.6.git tree, along with patches that need
+that one.
+
+You can see the original thread here:
+http://lkml.org/lkml/2010/5/11/71
+
+See power_supply_create_attrs(), there we'll use
+device_create_file_mode() instead of messing with
+power_supply_attrs[psy->properties[j]].attr.mode.
+
+ drivers/base/core.c    |   21 +++++++++++++++++++++
+ fs/sysfs/file.c        |   16 ++++++++++++++++
+ include/linux/device.h |    3 +++
+ include/linux/sysfs.h  |   10 ++++++++++
+ 4 files changed, 50 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index b56a0ba..1bc6134 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -440,6 +440,27 @@ struct kset *devices_kset;
+  * device_create_file - create sysfs attribute file for device.
+  * @dev: device.
+  * @attr: device attribute descriptor.
++ * @mode: file mode.
++ *
++ * This function is similar to device_create_file(), except that it
++ * doesn't use attr->mode for mode specifier.
++ */
++int device_create_file_mode(struct device *dev,
++			    const struct device_attribute *attr,
++			    mode_t mode)
++{
++	int error = 0;
++
++	if (dev)
++		error = sysfs_create_file_mode(&dev->kobj, &attr->attr, mode);
++	return error;
++}
++EXPORT_SYMBOL_GPL(device_create_file_mode);
++
++/**
++ * device_create_file - create sysfs attribute file for device.
++ * @dev: device.
++ * @attr: device attribute descriptor.
+  */
+ int device_create_file(struct device *dev,
+ 		       const struct device_attribute *attr)
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index e222b25..7bebb60 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -528,6 +528,22 @@ int sysfs_add_file(struct sysfs_dirent *dir_sd, const struct attribute *attr,
+ 	return sysfs_add_file_mode(dir_sd, attr, type, attr->mode);
+ }
+ 
++/**
++ *	sysfs_create_file_mode - create an attribute file for an object.
++ *	@kobj:	object we're creating for.
++ *	@attr:	attribute descriptor.
++ *	@mode:	file mode.
++ *
++ *	This function is similar to sysfs_create_file(), except that it
++ *	doesn't use attr->mode for mode specifier.
++ */
++int sysfs_create_file_mode(struct kobject *kobj, const struct attribute *attr,
++			   mode_t mode)
++{
++	BUG_ON(!kobj || !kobj->sd || !attr);
++
++	return sysfs_add_file_mode(kobj->sd, attr, SYSFS_KOBJ_ATTR, mode);
++}
+ 
+ /**
+  *	sysfs_create_file - create an attribute file for an object.
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 1821928..8277364 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -337,6 +337,9 @@ struct device_attribute {
+ #define DEVICE_ATTR(_name, _mode, _show, _store) \
+ struct device_attribute dev_attr_##_name = __ATTR(_name, _mode, _show, _store)
+ 
++extern int __must_check device_create_file_mode(struct device *device,
++					const struct device_attribute *entry,
++					mode_t mode);
+ extern int __must_check device_create_file(struct device *device,
+ 					const struct device_attribute *entry);
+ extern void device_remove_file(struct device *dev,
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index f0496b3..222774f 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -130,6 +130,9 @@ int __must_check sysfs_rename_dir(struct kobject *kobj, const char *new_name);
+ int __must_check sysfs_move_dir(struct kobject *kobj,
+ 				struct kobject *new_parent_kobj);
+ 
++int __must_check sysfs_create_file_mode(struct kobject *kobj,
++					const struct attribute *attr,
++					mode_t mode);
+ int __must_check sysfs_create_file(struct kobject *kobj,
+ 				   const struct attribute *attr);
+ int __must_check sysfs_create_files(struct kobject *kobj,
+@@ -202,6 +205,13 @@ static inline int sysfs_move_dir(struct kobject *kobj,
+ 	return 0;
+ }
+ 
++static inline int sysfs_create_file_mode(struct kobject *kobj,
++					 const struct attribute *attr,
++					 mode_t mode)
++{
++	return 0;
++}
++
+ static inline int sysfs_create_file(struct kobject *kobj,
+ 				    const struct attribute *attr)
+ {
 -- 
-Regards,
-
-- Corey
-
-Corey Ashford
-Software Engineer
-IBM Linux Technology Center, Linux Toolchain
-Beaverton, OR 
-503-578-3507 
-cjashfor@us.ibm.com
+1.7.0.5
 
