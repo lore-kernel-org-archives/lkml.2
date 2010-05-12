@@ -1,136 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab0ELTGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 15:06:39 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51269 "EHLO mx1.suse.de"
+	id S1756726Ab0ELTGn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 15:06:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50762 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756152Ab0ELTGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 15:06:37 -0400
-Date: Wed, 12 May 2010 11:56:47 -0700
+	id S1756463Ab0ELTGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 15:06:40 -0400
+Date: Wed, 12 May 2010 12:03:00 -0700
 From: Greg KH <gregkh@suse.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: mjg@redhat.com, mzxreary@0pointer.de, rpurdie@linux.intel.com,
-       jlee@novell.com, linux-kernel@vger.kernel.org,
-       platform-driver-x86@vger.kernel.org, greg@kroah.com
-Subject: [PATCH 4/4] msi-laptop: Add i8042 filter to sync sw state with
- BIOS when function key pressed
-Message-ID: <20100512185647.GC28990@suse.de>
-References: <20100512141149.GB20564@kroah.com>
- <1273683490-27090-4-git-send-email-gregkh@suse.de>
- <20100512173359.GA16431@core.coreip.homeip.net>
+To: Matthew Garrett <mjg@redhat.com>,
+       Lennart Poettering <mzxreary@0pointer.de>,
+       Richard Purdie <rpurdie@linux.intel.com>,
+       "Lee, Chun-Yi" <jlee@novell.com>, linux-kernel@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org
+Subject: [PATCH 5/4] msi-laptop: fix up some coding style issues found by
+ checkpatch
+Message-ID: <20100512190300.GD28990@suse.de>
+References: <20100512165645.GA27064@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100512173359.GA16431@core.coreip.homeip.net>
+In-Reply-To: <20100512165645.GA27064@kroah.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee, Chun-Yi <jlee@novell.com>
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-There have some MSI netbook change devices state by EC when user press
-wlan/bluetooth/wwan function keys. So, add a i8042 filter to sync sw
-state with BIOS when function keys pressed.
-
-Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+Cc: Lee, Chun-Yi <jlee@novell.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- v2 - fixed some things Dmitry pointed out - gregkh
-
- drivers/platform/x86/msi-laptop.c |   59 ++++++++++++++++++++++++++++++++++++-
- 1 files changed, 58 insertions(+), 1 deletions(-)
+ drivers/platform/x86/msi-laptop.c |   37 ++++++++++++++++++++++++-------------
+ 1 files changed, 24 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/platform/x86/msi-laptop.c b/drivers/platform/x86/msi-laptop.c
-index 34bec2e..0b17590 100644
+index 0b17590..ce4a8ff 100644
 --- a/drivers/platform/x86/msi-laptop.c
 +++ b/drivers/platform/x86/msi-laptop.c
-@@ -59,6 +59,7 @@
- #include <linux/backlight.h>
- #include <linux/platform_device.h>
- #include <linux/rfkill.h>
-+#include <linux/i8042.h>
+@@ -119,7 +119,8 @@ static int set_lcd_level(int level)
+ 	buf[0] = 0x80;
+ 	buf[1] = (u8) (level*31);
  
- #define MSI_DRIVER_VERSION "0.5"
- 
-@@ -581,6 +582,46 @@ static void rfkill_cleanup(void)
- 	}
+-	return ec_transaction(MSI_EC_COMMAND_LCD_LEVEL, buf, sizeof(buf), NULL, 0, 1);
++	return ec_transaction(MSI_EC_COMMAND_LCD_LEVEL, buf, sizeof(buf),
++			      NULL, 0, 1);
  }
  
-+static void msi_update_rfkill(struct work_struct *ignored)
-+{
-+	get_wireless_state_ec_standard();
-+
-+	if (rfk_wlan)
-+		rfkill_set_sw_state(rfk_wlan, !wlan_s);
-+	if (rfk_bluetooth)
-+		rfkill_set_sw_state(rfk_bluetooth, !bluetooth_s);
-+	if (rfk_threeg)
-+		rfkill_set_sw_state(rfk_threeg, !threeg_s);
-+}
-+static DECLARE_DELAYED_WORK(msi_rfkill_work, msi_update_rfkill);
-+
-+static bool msi_laptop_i8042_filter(unsigned char data, unsigned char str,
-+				    struct serio *port)
-+{
-+	static bool extended;
-+
-+	if (str & 0x20)
-+		return false;
-+
-+	/* 0x54 wwan, 0x62 bluetooth, 0x76 wlan*/
-+	if (unlikely(data == 0xe0)) {
-+		extended = true;
-+		return false;
-+	} else if (unlikely(extended)) {
-+		switch (data) {
-+		case 0x54:
-+		case 0x62:
-+		case 0x76:
-+			schedule_delayed_work(&msi_rfkill_work,
-+				round_jiffies_relative(0.5 * HZ));
-+			break;
-+		}
-+		extended = false;
-+	}
-+
-+	return false;
-+}
-+
- static void msi_init_rfkill(struct work_struct *ignored)
- {
- 	if (rfk_wlan) {
-@@ -706,9 +747,24 @@ static int load_scm_model_init(struct platform_device *sdev)
- 	/* initial rfkill */
- 	result = rfkill_init(sdev);
+ static int get_lcd_level(void)
+@@ -127,7 +128,8 @@ static int get_lcd_level(void)
+ 	u8 wdata = 0, rdata;
+ 	int result;
+ 
+-	result = ec_transaction(MSI_EC_COMMAND_LCD_LEVEL, &wdata, 1, &rdata, 1, 1);
++	result = ec_transaction(MSI_EC_COMMAND_LCD_LEVEL, &wdata, 1,
++				&rdata, 1, 1);
  	if (result < 0)
--		return result;
-+		goto fail_rfkill;
-+
-+	result = i8042_install_filter(msi_laptop_i8042_filter);
-+	if (result) {
-+		printk(KERN_ERR
-+			"msi-laptop: Unable to install key filter\n");
-+		goto fail_filter;
-+	}
+ 		return result;
  
- 	return 0;
-+
-+fail_filter:
-+	rfkill_cleanup();
-+
-+fail_rfkill:
-+
-+	return result;
-+
+@@ -139,7 +141,8 @@ static int get_auto_brightness(void)
+ 	u8 wdata = 4, rdata;
+ 	int result;
+ 
+-	result = ec_transaction(MSI_EC_COMMAND_LCD_LEVEL, &wdata, 1, &rdata, 1, 1);
++	result = ec_transaction(MSI_EC_COMMAND_LCD_LEVEL, &wdata, 1,
++				&rdata, 1, 1);
+ 	if (result < 0)
+ 		return result;
+ 
+@@ -153,14 +156,16 @@ static int set_auto_brightness(int enable)
+ 
+ 	wdata[0] = 4;
+ 
+-	result = ec_transaction(MSI_EC_COMMAND_LCD_LEVEL, wdata, 1, &rdata, 1, 1);
++	result = ec_transaction(MSI_EC_COMMAND_LCD_LEVEL, wdata, 1,
++				&rdata, 1, 1);
+ 	if (result < 0)
+ 		return result;
+ 
+ 	wdata[0] = 0x84;
+ 	wdata[1] = (rdata & 0xF7) | (enable ? 8 : 0);
+ 
+-	return ec_transaction(MSI_EC_COMMAND_LCD_LEVEL, wdata, 2, NULL, 0, 1);
++	return ec_transaction(MSI_EC_COMMAND_LCD_LEVEL, wdata, 2,
++			      NULL, 0, 1);
  }
  
- static int __init msi_init(void)
-@@ -819,6 +875,7 @@ static void __exit msi_cleanup(void)
- 	platform_driver_unregister(&msipf_driver);
- 	backlight_device_unregister(msibl_device);
+ static ssize_t set_device_state(const char *buf, size_t count, u8 mask)
+@@ -255,7 +260,7 @@ static int bl_update_status(struct backlight_device *b)
+ 	return set_lcd_level(b->props.brightness);
+ }
  
-+	i8042_remove_filter(msi_laptop_i8042_filter);
- 	rfkill_cleanup();
+-static struct backlight_ops msibl_ops = {
++static const struct backlight_ops msibl_ops = {
+ 	.get_brightness = bl_get_brightness,
+ 	.update_status  = bl_update_status,
+ };
+@@ -354,7 +359,8 @@ static ssize_t store_lcd_level(struct device *dev,
  
- 	/* Enable automatic brightness control again */
+ 	int level, ret;
+ 
+-	if (sscanf(buf, "%i", &level) != 1 || (level < 0 || level >= MSI_LCD_LEVEL_MAX))
++	if (sscanf(buf, "%i", &level) != 1 ||
++	    (level < 0 || level >= MSI_LCD_LEVEL_MAX))
+ 		return -EINVAL;
+ 
+ 	ret = set_lcd_level(level);
+@@ -394,7 +400,8 @@ static ssize_t store_auto_brightness(struct device *dev,
+ }
+ 
+ static DEVICE_ATTR(lcd_level, 0644, show_lcd_level, store_lcd_level);
+-static DEVICE_ATTR(auto_brightness, 0644, show_auto_brightness, store_auto_brightness);
++static DEVICE_ATTR(auto_brightness, 0644, show_auto_brightness,
++		   store_auto_brightness);
+ static DEVICE_ATTR(bluetooth, 0444, show_bluetooth, NULL);
+ static DEVICE_ATTR(wlan, 0444, show_wlan, NULL);
+ static DEVICE_ATTR(threeg, 0444, show_threeg, NULL);
+@@ -425,8 +432,9 @@ static struct platform_device *msipf_device;
+ 
+ static int dmi_check_cb(const struct dmi_system_id *id)
+ {
+-        printk("msi-laptop: Identified laptop model '%s'.\n", id->ident);
+-        return 0;
++	printk(KERN_INFO "msi-laptop: Identified laptop model '%s'.\n",
++	       id->ident);
++	return 0;
+ }
+ 
+ static struct dmi_system_id __initdata msi_dmi_table[] = {
+@@ -436,7 +444,8 @@ static struct dmi_system_id __initdata msi_dmi_table[] = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "MICRO-STAR INT'L CO.,LTD"),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "MS-1013"),
+ 			DMI_MATCH(DMI_PRODUCT_VERSION, "0131"),
+-			DMI_MATCH(DMI_CHASSIS_VENDOR, "MICRO-STAR INT'L CO.,LTD")
++			DMI_MATCH(DMI_CHASSIS_VENDOR,
++				  "MICRO-STAR INT'L CO.,LTD")
+ 		},
+ 		.callback = dmi_check_cb
+ 	},
+@@ -466,7 +475,8 @@ static struct dmi_system_id __initdata msi_dmi_table[] = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "NOTEBOOK"),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "SAM2000"),
+ 			DMI_MATCH(DMI_PRODUCT_VERSION, "0131"),
+-			DMI_MATCH(DMI_CHASSIS_VENDOR, "MICRO-STAR INT'L CO.,LTD")
++			DMI_MATCH(DMI_CHASSIS_VENDOR,
++				  "MICRO-STAR INT'L CO.,LTD")
+ 		},
+ 		.callback = dmi_check_cb
+ 	},
+@@ -823,7 +833,8 @@ static int __init msi_init(void)
+ 		goto fail_platform_device1;
+ 	}
+ 
+-	ret = sysfs_create_group(&msipf_device->dev.kobj, &msipf_attribute_group);
++	ret = sysfs_create_group(&msipf_device->dev.kobj,
++				 &msipf_attribute_group);
+ 	if (ret)
+ 		goto fail_platform_device2;
+ 
+-- 
+1.7.1
+
