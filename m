@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab0ELB31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 21:29:27 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37298 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab0ELB3Z (ORCPT
+	id S1754731Ab0ELB3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 21:29:45 -0400
+Received: from infernal.debian.net ([87.230.26.131]:42608 "EHLO
+	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754674Ab0ELB3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 21:29:25 -0400
-Message-ID: <4BEA0472.1060300@jp.fujitsu.com>
-Date: Wed, 12 May 2010 10:29:22 +0900
-From: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Tue, 11 May 2010 21:29:42 -0400
+X-Greylist: delayed 2432 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 21:29:42 EDT
+Date: Wed, 12 May 2010 02:49:06 +0200
+From: Andreas Bombe <aeb@debian.org>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] ARCNET: Limit com20020 PCI ID matches for SOHARD cards
+Message-ID: <20100512004852.GA25845@amos.infernal>
 MIME-Version: 1.0
-To: dm-devel@redhat.com, agk@redhat.com
-CC: linux-kernel@vger.kernel.org, kusumi.tomohiro@jp.fujitsu.com
-Subject: [PATCH] fix hard-coded disk header chunk size for persistent snapshot
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The SH SOHARD ARCNET cards are implemented using generic PLX Technology
+PCI<->IOBus bridges. Subvendor and subdevice IDs were not specified,
+causing the driver to attach to any such bridge and likely crash the
+system by attempting to initialize an unrelated device.
 
-This patch fixes hard-coded value for the size of a chunk that includes
-disk header for persistent snapshot. It should be changed to existing
-macro NUM_SNAPSHOT_HDR_CHUNKS instead of using hard-coded value 1.
+Fix by specifying subvendor and subdevice according to the values found
+in the PCI-ID Repository at http://pci-ids.ucw.cz/ .
 
-Thanks,
-Tomohiro Kusumi
-
-
-Signed-off-by: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+Cc: stable@kernel.org
+Signed-off-by: Andreas Bombe <aeb@debian.org>
 ---
 
-diff -aNur linux-2.6.34-rc7.org/drivers/md/dm-snap-persistent.c linux-2.6.34-rc7/drivers/md/dm-snap-persistent.c
---- linux-2.6.34-rc7.org/drivers/md/dm-snap-persistent.c        2010-05-10 10:36:28.000000000 +0900
-+++ linux-2.6.34-rc7/drivers/md/dm-snap-persistent.c    2010-05-12 09:21:50.000000000 +0900
-@@ -266,7 +266,7 @@
-  */
- static chunk_t area_location(struct pstore *ps, chunk_t area)
- {
--       return 1 + ((ps->exceptions_per_area + 1) * area);
-+       return NUM_SNAPSHOT_HDR_CHUNKS + ((ps->exceptions_per_area + 1) * area);
- }
- 
- /*
+Compile tested only. This bug caused a new machine to be unbootable with
+Debian install media due to rebooting right after some arc%d: SOHARD log
+messages appeared.  Current SUSE and Fedora boot, presumably because
+there are no compiled ARCNET drivers.
+
+I couldn't find any information on the other PLX device ID 10b5:2200.
+Also, the PCI ID repository says 14ba:6000 should really be 14ba:0600.
+I have no way to verify that.
+
+ drivers/net/arcnet/com20020-pci.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/arcnet/com20020-pci.c b/drivers/net/arcnet/com20020-pci.c
+index 2c712af..48a1dbf 100644
+--- a/drivers/net/arcnet/com20020-pci.c
++++ b/drivers/net/arcnet/com20020-pci.c
+@@ -164,8 +164,8 @@ static DEFINE_PCI_DEVICE_TABLE(com20020pci_id_table) = {
+ 	{ 0x1571, 0xa204, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+ 	{ 0x1571, 0xa205, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+ 	{ 0x1571, 0xa206, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+-	{ 0x10B5, 0x9030, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+-	{ 0x10B5, 0x9050, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
++	{ 0x10B5, 0x9030, 0x10B5,     0x2978,     0, 0, ARC_CAN_10MBIT },
++	{ 0x10B5, 0x9050, 0x10B5,     0x2273,     0, 0, ARC_CAN_10MBIT },
+ 	{ 0x14BA, 0x6000, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+ 	{ 0x10B5, 0x2200, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+ 	{0,}
+-- 
+1.7.1
 
