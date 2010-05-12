@@ -1,42 +1,23 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757670Ab0EKJNe (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 11 May 2010 05:13:34 -0400
-Received: from server5a.woolnet.net ([209.59.181.202]:59200 "EHLO
-	server5a.woolnet.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753250Ab0EKJNb (ORCPT
+	id S1756284Ab0ELQMY (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 12 May 2010 12:12:24 -0400
+Received: from comsmtp1.singnet.com.sg ([165.21.101.74]:34921 "EHLO
+	comsmtp1.singnet.com.sg" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab0ELQMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 05:13:31 -0400
-X-Greylist: delayed 443 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 May 2010 05:13:31 EDT
-To: linux-kernel@vger.kernel.org
-Subject: 2% LOAN OFFER
-From: ROYALMARBLE LOANS <info@loan.co.uk>
-Reply-To: rmloans88@hotmail.com
+	Wed, 12 May 2010 12:12:22 -0400
+To: info@loan.ocm
+Subject: Loan Application !!!
+Message-ID: <1273680567.4bead2b78f23d@arrowana.singnet.com.sg>
+Date: Thu, 13 May 2010 00:09:27 +0800 (SGT)
+From: Loan Solution Team <infweb723@singnet.com.sg>
+Reply-To: solutionteam2009@f-mail.net
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <E1OBlWp-0005OJ-Og@server5a.woolnet.net>
-Date: Tue, 11 May 2010 05:13:27 -0400
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - server5a.woolnet.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [99 99] / [47 12]
-X-AntiAbuse: Sender Address Domain - server5a.woolnet.net
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+User-Agent: SingNet WebMail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Royalmarble Loan
-Bridge Studios,34a Deodar Road,
-London, SW15 2NN
- 
-     We offer loans ranging from $5000 to $150,000,000 at a 2% interest
-rate on a duration for a year to 50 years. If you are
-interested,contact me asap
- 
-Thomas Gary.
-Email: skyholdings@live.co.uk
- 
- 
-
-
-
+we lend loan at 3%,contact us via email: solutionteam2009@f-mail.net
