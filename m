@@ -1,90 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756983Ab0ELRnz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 13:43:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60949 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754675Ab0ELRnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 13:43:52 -0400
-Message-ID: <4BEAE8B8.8080809@redhat.com>
-Date: Wed, 12 May 2010 13:43:20 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@us.ibm.com>, Jason Baron <jbaron@redhat.com>
-Subject: Re: [PATCH -tip 4/5] kprobes/x86: Use text_poke_smp_batch
-References: <20100510175313.27396.34605.stgit@localhost6.localdomain6> <20100510175340.27396.7222.stgit@localhost6.localdomain6> <20100511144013.GA17656@Krystal> <4BE9F952.3060505@redhat.com> <20100512152747.GA12326@Krystal>
-In-Reply-To: <20100512152747.GA12326@Krystal>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757017Ab0ELRom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 13:44:42 -0400
+Received: from loki.ee.unimelb.edu.au ([128.250.76.73]:41311 "EHLO
+	loki.ee.unimelb.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756846Ab0ELRoj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 13:44:39 -0400
+X-Greylist: delayed 3113 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 May 2010 13:44:31 EDT
+Subject: Re: [RFC][PATCH 3/3] Try to convert non-trivial clocksources to clocksource_register_hz
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Julien Ridoux <jridoux@unimelb.edu.au>
+In-Reply-To: <1273538261.3843.99.camel@localhost.localdomain>
+Date: Wed, 12 May 2010 12:43:27 -0400
+Cc: Jim Cromie <jim.cromie@gmail.com>, Darryl Veitch <dveitch@unimelb.edu.au>,
+       lkml <linux-kernel@vger.kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <525FE321-39F1-4EDB-AED2-E453FAD36F20@unimelb.edu.au>
+References: <1272677785-23881-1-git-send-email-johnstul@us.ibm.com> <1272677785-23881-2-git-send-email-johnstul@us.ibm.com> <1272677785-23881-3-git-send-email-johnstul@us.ibm.com> <AANLkTik35lel9vGzepy10zshOnvY1_P7Vbr91Q_G0PkC@mail.gmail.com> <1273538261.3843.99.camel@localhost.localdomain>
+To: john stultz <johnstul@us.ibm.com>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathieu Desnoyers wrote:
-> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
->> Mathieu Desnoyers wrote:
->>> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
->>>> Use text_poke_smp_batch() in optimization path for reducing
->>>> the number of stop_machine() issues.
->>>>
->>>> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
->>>> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
->>>> Cc: Ingo Molnar <mingo@elte.hu>
->>>> Cc: Jim Keniston <jkenisto@us.ibm.com>
->>>> Cc: Jason Baron <jbaron@redhat.com>
->>>> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
->>>> ---
->>>>
->>>>  arch/x86/kernel/kprobes.c |   37 ++++++++++++++++++++++++++++++-------
->>>>  include/linux/kprobes.h   |    2 +-
->>>>  kernel/kprobes.c          |   13 +------------
->>>>  3 files changed, 32 insertions(+), 20 deletions(-)
->>>>
->>>> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
->>>> index 345a4b1..63a5c24 100644
->>>> --- a/arch/x86/kernel/kprobes.c
->>>> +++ b/arch/x86/kernel/kprobes.c
->>>> @@ -1385,10 +1385,14 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
->>>>  	return 0;
->>>>  }
->>>>  
->>>> -/* Replace a breakpoint (int3) with a relative jump.  */
->>>> -int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
->>>> +#define MAX_OPTIMIZE_PROBES 256
->>>
->>> So what kind of interrupt latency does a 256-probes batch generate on the
->>> system ?  Are we talking about a few milliseconds, a few seconds ?
->>
->> From my experiment on kvm/4cpu, it took about 3 seconds in average.
+Hi John and all!
+
+I put some comments inline.
+
+On 10/05/2010, at 8:37 PM, john stultz wrote:
+
+> On Mon, 2010-05-10 at 17:33 -0400, Jim Cromie wrote:
+>> <OT - out of scope in this thread>
+>> 
+>> on 5/3, slashdot had a synopsis of this item:
+>> http://queue.acm.org/detail.cfm?id=1773943
+>> It proposes a different split of duty between kernel and NTP daemon,
+>> but oddly doesnt mention PTP.
+
+As a quick comment, IEEE 1588 essentially specifies the network protocol and does not say much about the synchronisation algorithm itself. Our work focuses mostly on the synchronisation algorithm. We should be able to adapt to any network protocol without too many problems (hopefully).
+
+> Yea, I emailed with some the RADclocks folks last year. They have done
+> quite a bit of very interesting work, but to my knowledge, they haven't
+> been working with upstream very much to push the patches.
 > 
-> That's 3 seconds for multiple calls to stop_machine(). So we can expect
-> latencies in the area of few microseconds for each call, right ?
+> Julien/Darryl: Sorry for dragging you out here, but I was curious if you
+> had any plans to push your patches to lkml in the near term? From the
+> patches in the tarball, it looks like you're structurally fairly clean
+> (and you're using git, so that's good!) so they're probably a good
+> starting point.
 
-Theoretically yes.
-But if we register more than 1000 probes at once, it's hard to do
-anything except optimizing a while(more than 10 sec), because
-it stops machine so frequently.
+We still really want to clean up our patches and push them upstream. We have been working at a fairly wide range of issues in the past months that have been keeping us really busy.
 
->> With this patch, it went down to 30ms. (x100 faster :))
+> However, I do still have some concerns about the new interfaces that
+> expose the raw counter values. From your paper (its very nice btw,
+> congrats!) you mentioned CLOCK_MONOTONIC_RAW as a possible C_c(t) clock,
+> but from the patches it seems that you found it insufficient? It would
+> be really interesting to hear more about that, as well as your thoughts
+> about the dual-system in-kernel and out of kernel NTP adjustment loops. 
+
+On the particular CLOCK_MONOTONIC_RAW issue, I believe we will be able to find a solution that makes use of it and avoid the need for extra interfaces. I haven't had the time to check all the possible consequences, but we will definitely bring possible issues up in the community.
+
+We have however fairly strong feelings regarding the dual-system (kernel, NTPd adjustment loop) as you know. Some recent experiments with virtual system are giving us strong arguments to push our approach. Again, we hope to share this with the community soon.
+
+
+> I'm curious if the RADclocks calculation of C_a(t) = Cd(t) - E(t) can
+> actually be done in the kernel, assuming E(t) is provided by userland.
+> Or is that missing something core to RADclocks design?
+
+It can!  Our kernel patches do exactly that. The current mechanism could be improved for sure, but it is functional.
+
 > 
-> This is beefing up the latency from few microseconds to 30ms. It sounds like a
-> regression rather than a gain to me.
+>> Does this or PTP make any sense in Linux ?
+> 
+> Folks are working on using PTP with Linux. My understanding is that the
+> interfaces don't really change except for the packet timestamping.
+> Google up Patrick Ohly's work for some details (although I've not heard
+> too much on this recently, so I'm not sure how active it is).
 
-If it is not acceptable, I can add a knob for control how many probes
-optimize/unoptimize at once. Anyway, it is expectable latency (after
-registering/unregistering probes) and it will be small if we put a few probes.
-(30ms is the worst case)
-And if you want, it can be disabled by sysctl.
+Completely agree and we hope the RADclock will be able to benefit from this low level timestamping.
 
-Thank you,
+I am not following the linux-kernel mailing list much at the moment. Please Cc: me on any comments or questions you guys may have.
 
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+Cheers,
+Julien
+
+> 
+> thanks
+> -john
+
