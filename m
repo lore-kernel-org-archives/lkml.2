@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab0ELGfS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 02:35:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59497 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752800Ab0ELGfP convert rfc822-to-8bit (ORCPT
+	id S1753083Ab0ELGin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 02:38:43 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:37246 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab0ELGil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 02:35:15 -0400
-Subject: Re: [PATCH 0/9] pvclock misc fixes - v4.
-Mime-Version: 1.0 (Apple Message framework v1078)
+	Wed, 12 May 2010 02:38:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=JXMrfUD1fEb/85XGiuvZYJIrFuyxjpkwlIeSbvzh/bH+4vkiQJEiTtanHl+kNsIBRO
+         +XYac41TJugUg2dhlV6oKH1c626SWphufjRBB/DlIAkQ4dsf0kt9L8oYYVeqwC4AuxnC
+         QZ1yThUMOQX6alcZwXicJEtWvqal0Oe38DcjU=
+Date: Wed, 12 May 2010 14:42:30 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Nicolas Palix <npalix@diku.dk>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
+       Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
+       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
+       linux-kbuild@vger.kernel.org, cocci@diku.dk,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Kernel Janitors <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH 1/4] Add targets to use the Coccinelle checker
+Message-ID: <20100512064230.GC5718@cr0.nay.redhat.com>
+References: <1273508667-5152-1-git-send-email-npalix@diku.dk>
+ <1273508667-5152-2-git-send-email-npalix@diku.dk>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <4BEA4BD4.6070207@redhat.com>
-Date: Wed, 12 May 2010 08:35:13 +0200
-Cc: Zachary Amsden <zamsden@redhat.com>, Glauber Costa <glommer@redhat.com>,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9318FF3C-DD25-48E7-B705-0ADA818CA13A@suse.de>
-References: <1273594667-17175-1-git-send-email-glommer@redhat.com> <4BEA21A1.8040702@redhat.com> <AFD76714-2559-4281-AB61-EA5C6395C13A@suse.de> <4BEA4BD4.6070207@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-X-Mailer: Apple Mail (2.1078)
+Content-Disposition: inline
+In-Reply-To: <1273508667-5152-2-git-send-email-npalix@diku.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 10, 2010 at 06:24:24PM +0200, Nicolas Palix wrote:
+>Four targets are added. Each one generates a different
+>output kind: context, patch, org, report.
+>Every SmPL file in 'scripts/coccinelle' is given to the spatch frontend
+>(located in the 'scripts' directory), and applied to the entire
+>source tree.
+>
+>Signed-off-by: Nicolas Palix <npalix@diku.dk>
+>Signed-off-by: Julia Lawall <julia@diku.dk>
 
-On 12.05.2010, at 08:33, Avi Kivity wrote:
+Hi,
 
-> On 05/12/2010 08:47 AM, Alexander Graf wrote:
->> How about stable queuing of this one?
->> 
-> 
-> Only after this gets some serious field testing.  I'm not happy to trade a known issue for an unknown regression.  While I don't expect any problems with the patchset, testing has often proven me wrong.
+This is great! I would like to see coccinelle to be integrated with kbuild,
+but the name 'coccicheck' is really confusing, how about 'sema_check'? Which
+means 'semantic check'.
 
-Agreed. I merely wanted to raise awareness of me wanting to see this in -stable when it is stable :).
+Or we can use something like for sparse, i.e. 'make C=1' etc..
 
-
-Alex
+Thanks!
 
