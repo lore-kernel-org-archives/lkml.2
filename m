@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab0ELTR1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 15:17:27 -0400
-Received: from kroah.org ([198.145.64.141]:56227 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852Ab0ELTR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 15:17:26 -0400
-Date: Wed, 12 May 2010 12:13:36 -0700
-From: Greg KH <greg@kroah.com>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: jbarnes@virtuousgeek.org, matthew@wil.cx, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, ddutile@redhat.com,
-       alex.williamson@redhat.com
-Subject: Re: [RFC PATCH] sysfs: bin_attr permission checking
-Message-ID: <20100512191336.GA30678@kroah.com>
-References: <20100512184713.GV28034@sequoia.sous-sol.org>
+	id S1756997Ab0ELTUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 15:20:39 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:59053 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756666Ab0ELTUi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 15:20:38 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=MbaT24Vix8vRzq9v1bnlUeedgpIABSQd6EBW6udMFO4jbCMwVy/tloQRJe2F5AeNz
+	0zAl57pSvsghYVX1YsVsQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512184713.GV28034@sequoia.sous-sol.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTilLXWEYHJZCoNk1Tb4P8qgjK-zoVZSg1pDhR-3I@mail.gmail.com>
+References: <1273669541.3086.24.camel@localhost>
+	 <j2n6599ad831005121201za5fd85bpfc4fa2304a81acaf@mail.gmail.com>
+	 <AANLkTilLXWEYHJZCoNk1Tb4P8qgjK-zoVZSg1pDhR-3I@mail.gmail.com>
+Date: Wed, 12 May 2010 12:20:33 -0700
+Message-ID: <h2z6599ad831005121220h7956eb62yeea13626093b4a6e@mail.gmail.com>
+Subject: Re: [PATCH/RFC] Have sane default values for cpusets
+From: Paul Menage <menage@google.com>
+To: Dhaval Giani <dhaval.giani@gmail.com>
+Cc: balbir@linux.vnet.ibm.com, peterz@infradead.org, lennart@poettering.net,
+       jsafrane@redhat.com, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 11:47:13AM -0700, Chris Wright wrote:
-> The PCI config space bin_attr read handler has a hardcoded CAP_SYS_ADMIN
-> check to verify privileges before allowing a user to read device
-> dependent config space.  This is meant to protect from an unprivileged
-> user potentially locking up the box.
-> 
-> When assigning a PCI device directly to a guest with libvirt and KVM, the 
-> sysfs config space file is chown'd to the user that the KVM guest will
-> run as.  The guest needs to have full access to the device's config
-> space since it's responsible for driving the device.  However, despite
-> being the owner of the sysfs file, the CAP_SYS_ADMIN check will not
-> allow read access beyond the config header.
-> 
-> This patch adds a new bin_attr->read_file() callback which adds a struct
-> file to the normal argument list.  This allows an implementation such as
-> PCI config space bin_attr read_file handler to check both inode
-> permission as well as privileges to determine whether to allow
-> privileged actions through the handler.
+On Wed, May 12, 2010 at 12:10 PM, Dhaval Giani <dhaval.giani@gmail.com> wrote:
+> On Wed, May 12, 2010 at 9:01 PM, Paul Menage <menage@google.com> wrote:
+>> What about the case where some subset of the parent's mems/cpus are
+>> given to a child with the exclusive flag set?
+>>
+>
+> As I mentioned in the TODO, it is still to be handled.
 
-Ick, this is all because we like showing different information if the
-user is "privileged or not" :(
+Oops, sorry, just read the patch :-)
 
-Turns out, that this probably isn't the best user api to implement,
-remind me never to do that again...
+> But it should
+> simply exclude those mems/cpus which are exclusive. It was a bit more
+> involved than the effort I wanted to put in before gauging the
+> reactions.
 
-> This is just RFC, although I've tested that it does allow the chown +
-> read to work as expected.  Any other ideas of how to handle this are
-> welcome.
+I think the idea is reasonable - the only way that I could see it
+breaking someone would be code that currently does something like:
 
-Can we just pass in the 'file' for all users of the bin files instead of
-the dentry?  You can always get the dentry from the file (as your patch
-showes), and there isn't that many users of this interface.  I'd really
-rather not have two different types of callbacks here.
+mkdir A
+mkdir B
+echo 1 > A/mem_exclusive
+echo 1 > B/mem_exclusive
+echo $mems_for_a > A/mems
+echo $mems_for_b > B/mems
 
-thanks,
+The attempts to set the mem_exclusive flags would fail, since A and B
+would both have all of the parent's mems.
 
-greg k-h
+Paul
