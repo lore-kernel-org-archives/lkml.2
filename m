@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab0ELApw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 20:45:52 -0400
-Received: from blue-ld-261.synserver.de ([217.119.54.83]:46197 "EHLO
-	smtp-out-072.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754081Ab0ELApP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 May 2010 20:45:15 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 1517
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: rpurdie@rpsys.net
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 2/3] MFD: pcf50633: Register a pcf50633-backlight device in pcf50633 core driver.
-Date: Wed, 12 May 2010 02:44:33 +0200
-Message-Id: <1273625074-15312-3-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1273625074-15312-1-git-send-email-lars@metafoo.de>
-References: <1273625074-15312-1-git-send-email-lars@metafoo.de>
+	id S1754220Ab0ELAsy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 20:48:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57024 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752514Ab0ELAsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 May 2010 20:48:53 -0400
+Message-ID: <4BE9F94A.9000907@zytor.com>
+Date: Tue, 11 May 2010 17:41:46 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       Jiri Kosina <trivial@kernel.org>
+Subject: Re: [trivial PATCH] arch/x86: Remove unnecessary returns from void
+ function()'s
+References: <1273624747.20514.316.camel@Joe-Laptop.home>
+In-Reply-To: <1273624747.20514.316.camel@Joe-Laptop.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register a device newly added pcf50633-backlight driver as a child device in
-the pcf50633 core driver.
+On 05/11/2010 05:39 PM, Joe Perches wrote:
+> This patch removes from arch/x86/ all the unnecessary
+> return; statements that precede the last closing brace of
+> void functions.
+> 
+> It does not remove returns that are immediately
+> preceded by a label as gcc doesn't like that.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
----
- drivers/mfd/pcf50633-core.c       |    3 +++
- include/linux/mfd/pcf50633/core.h |    4 ++++
- 2 files changed, 7 insertions(+), 0 deletions(-)
+And the point of this is?
 
-diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
-index e1ee046..704736e 100644
---- a/drivers/mfd/pcf50633-core.c
-+++ b/drivers/mfd/pcf50633-core.c
-@@ -305,6 +305,9 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
- 						&pcf->mbc_pdev);
- 	pcf50633_client_dev_register(pcf, "pcf50633-adc",
- 						&pcf->adc_pdev);
-+	pcf50633_client_dev_register(pcf, "pcf50633-backlight",
-+						&pcf->bl_pdev);
-+
- 
- 	for (i = 0; i < PCF50633_NUM_REGULATORS; i++) {
- 		struct platform_device *pdev;
-diff --git a/include/linux/mfd/pcf50633/core.h b/include/linux/mfd/pcf50633/core.h
-index 3398bd9..ad411a7 100644
---- a/include/linux/mfd/pcf50633/core.h
-+++ b/include/linux/mfd/pcf50633/core.h
-@@ -18,6 +18,7 @@
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
- #include <linux/power_supply.h>
-+#include <linux/mfd/pcf50633/backlight.h>
- 
- struct pcf50633;
- 
-@@ -43,6 +44,8 @@ struct pcf50633_platform_data {
- 	void (*force_shutdown)(struct pcf50633 *);
- 
- 	u8 resumers[5];
-+
-+	struct pcf50633_bl_platform_data *backlight_data;
- };
- 
- struct pcf50633_irq {
-@@ -152,6 +155,7 @@ struct pcf50633 {
- 	struct platform_device *mbc_pdev;
- 	struct platform_device *adc_pdev;
- 	struct platform_device *input_pdev;
-+	struct platform_device *bl_pdev;
- 	struct platform_device *regulator_pdev[PCF50633_NUM_REGULATORS];
- };
- 
+I fail to see how this improves the clarity of the code one iota, and
+isn't anything but just churn.
+
+	-hpa
+
 -- 
-1.5.6.5
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
