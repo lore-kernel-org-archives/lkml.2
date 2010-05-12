@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab0ELAS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 May 2010 20:18:57 -0400
-Received: from blue-ld-261.synserver.de ([217.119.54.83]:58048 "EHLO
+	id S1754010Ab0ELAS7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 May 2010 20:18:59 -0400
+Received: from blue-ld-261.synserver.de ([217.119.54.83]:58047 "EHLO
 	smtp-out-072.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752733Ab0ELASw (ORCPT
+	by vger.kernel.org with ESMTP id S1752886Ab0ELASw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 May 2010 20:18:52 -0400
 X-SynServer-TrustedSrc: 1
@@ -14,100 +14,169 @@ From: Lars-Peter Clausen <lars@metafoo.de>
 To: sameo@linux.intel.com
 Cc: fercerpav@gmail.com, linux-kernel@vger.kernel.org,
        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 2/4] MFD: pcf50633-adc: Fix potential race pcf50633_adc_sync_read
-Date: Wed, 12 May 2010 02:10:54 +0200
-Message-Id: <1273623056-1243-3-git-send-email-lars@metafoo.de>
+Subject: [PATCH 3/4] MFD: pcf50633: Use threaded irq
+Date: Wed, 12 May 2010 02:10:55 +0200
+Message-Id: <1273623056-1243-4-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1273623056-1243-2-git-send-email-lars@metafoo.de>
+In-Reply-To: <1273623056-1243-3-git-send-email-lars@metafoo.de>
 References: <1273623056-1243-1-git-send-email-lars@metafoo.de>
  <1273623056-1243-2-git-send-email-lars@metafoo.de>
+ <1273623056-1243-3-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently it's not guaranteed that request struct is not already freed when
-reading from it. Fix this by moving synced request related fields from the
-pcf50633_adc_request struct to its own struct and store it on the functions
-stack.
+Use threaded oneshot irq handler instead of normal irq handler and a workqueue.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- drivers/mfd/pcf50633-adc.c |   39 +++++++++++++++------------------------
- 1 files changed, 15 insertions(+), 24 deletions(-)
+ drivers/mfd/Makefile        |    2 +-
+ drivers/mfd/pcf50633-core.c |   57 +++++++------------------------------------
+ 2 files changed, 10 insertions(+), 49 deletions(-)
 
-diff --git a/drivers/mfd/pcf50633-adc.c b/drivers/mfd/pcf50633-adc.c
-index fe8f922..aed0d2a 100644
---- a/drivers/mfd/pcf50633-adc.c
-+++ b/drivers/mfd/pcf50633-adc.c
-@@ -30,13 +30,13 @@
- struct pcf50633_adc_request {
- 	int mux;
- 	int avg;
--	int result;
- 	void (*callback)(struct pcf50633 *, void *, int);
- 	void *callback_param;
-+};
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 4c684c1..8593496 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -57,7 +57,7 @@ obj-$(CONFIG_PMIC_DA903X)	+= da903x.o
+ max8925-objs			:= max8925-core.o max8925-i2c.o
+ obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
  
--	/* Used in case of sync requests */
-+struct pcf50633_adc_sync_request {
-+	int result;
- 	struct completion completion;
+-obj-$(CONFIG_MFD_PCF50633)	+= pcf50633-core.o
++obj-$(CONFIG_MFD_PCF50633)	+= pcf50633-core.o pcf50633-irq.o
+ obj-$(CONFIG_PCF50633_ADC)	+= pcf50633-adc.o
+ obj-$(CONFIG_PCF50633_GPIO)	+= pcf50633-gpio.o
+ obj-$(CONFIG_ABX500_CORE)	+= abx500-core.o
+diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
+index 6f7fb60..fc5cd7f 100644
+--- a/drivers/mfd/pcf50633-core.c
++++ b/drivers/mfd/pcf50633-core.c
+@@ -325,14 +325,12 @@ static void pcf50633_irq_call_handler(struct pcf50633 *pcf, int irq)
+ /* Maximum amount of time ONKEY is held before emergency action is taken */
+ #define PCF50633_ONKEY1S_TIMEOUT 8
+ 
+-static void pcf50633_irq_worker(struct work_struct *work)
++static irqreturn_t pcf50633_irq(int irq, void *data)
+ {
+-	struct pcf50633 *pcf;
++	struct pcf50633 *pcf = data;
+ 	int ret, i, j;
+ 	u8 pcf_int[5], chgstat;
+ 
+-	pcf = container_of(work, struct pcf50633, irq_work);
 -
- };
+ 	/* Read the 5 INT regs in one transaction */
+ 	ret = pcf50633_read_block(pcf, PCF50633_REG_INT1,
+ 						ARRAY_SIZE(pcf_int), pcf_int);
+@@ -436,21 +434,7 @@ static void pcf50633_irq_worker(struct work_struct *work)
+ 	}
  
- #define PCF50633_MAX_ADC_FIFO_DEPTH 8
-@@ -109,10 +109,10 @@ adc_enqueue_request(struct pcf50633 *pcf, struct pcf50633_adc_request *req)
+ out:
+-	put_device(pcf->dev);
+-	enable_irq(pcf->irq);
+-}
+-
+-static irqreturn_t pcf50633_irq(int irq, void *data)
+-{
+-	struct pcf50633 *pcf = data;
+-
+-	dev_dbg(pcf->dev, "pcf50633_irq\n");
+-
+-	get_device(pcf->dev);
+-	disable_irq_nosync(pcf->irq);
+-	queue_work(pcf->work_queue, &pcf->irq_work);
+-
+-	return IRQ_HANDLED;
++	return IRQ_HANDLED
+ }
+ 
+ static void
+@@ -488,9 +472,6 @@ static int pcf50633_suspend(struct i2c_client *client, pm_message_t state)
+ 	 * henceforth */
+ 	disable_irq(pcf->irq);
+ 
+-	/* Make sure that any running IRQ worker has quit */
+-	cancel_work_sync(&pcf->irq_work);
+-
+ 	/* Save the masks */
+ 	ret = pcf50633_read_block(pcf, PCF50633_REG_INT1M,
+ 				ARRAY_SIZE(pcf->suspend_irq_masks),
+@@ -531,16 +512,7 @@ static int pcf50633_resume(struct i2c_client *client)
+ 	if (ret < 0)
+ 		dev_err(pcf->dev, "Error restoring saved suspend masks\n");
+ 
+-	/* Restore regulators' state */
+-
+-
+-	get_device(pcf->dev);
+-
+-	/*
+-	 * Clear any pending interrupts and set resume reason if any.
+-	 * This will leave with enable_irq()
+-	 */
+-	pcf50633_irq_worker(&pcf->irq_work);
++	enable_irq(pcf->irq);
+ 
  	return 0;
  }
- 
--static void
--pcf50633_adc_sync_read_callback(struct pcf50633 *pcf, void *param, int result)
-+static void pcf50633_adc_sync_read_callback(struct pcf50633 *pcf, void *param,
-+	int result)
- {
--	struct pcf50633_adc_request *req = param;
-+	struct pcf50633_adc_sync_request *req = param;
- 
- 	req->result = result;
- 	complete(&req->completion);
-@@ -120,28 +120,19 @@ pcf50633_adc_sync_read_callback(struct pcf50633 *pcf, void *param, int result)
- 
- int pcf50633_adc_sync_read(struct pcf50633 *pcf, int mux, int avg)
- {
--	struct pcf50633_adc_request *req;
--	int err;
-+	struct pcf50633_adc_sync_request req;
-+	int ret;
- 
--	/* req is freed when the result is ready, in interrupt handler */
--	req = kzalloc(sizeof(*req), GFP_KERNEL);
--	if (!req)
--		return -ENOMEM;
+@@ -574,22 +546,13 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
+ 	pcf->dev = &client->dev;
+ 	pcf->i2c_client = client;
+ 	pcf->irq = client->irq;
+-	pcf->work_queue = create_singlethread_workqueue("pcf50633");
 -
--	req->mux = mux;
--	req->avg = avg;
--	req->callback =  pcf50633_adc_sync_read_callback;
--	req->callback_param = req;
-+	init_completion(&req.completion);
+-	if (!pcf->work_queue) {
+-		dev_err(&client->dev, "Failed to alloc workqueue\n");
+-		ret = -ENOMEM;
+-		goto err_free;
+-	}
+-
+-	INIT_WORK(&pcf->irq_work, pcf50633_irq_worker);
  
--	init_completion(&req->completion);
--	err = adc_enqueue_request(pcf, req);
--	if (err)
--		return err;
-+	ret = pcf50633_adc_async_read(pcf, mux, avg,
-+		pcf50633_adc_sync_read_callback, &req);
-+	if (ret)
-+		return ret;
+ 	version = pcf50633_reg_read(pcf, 0);
+ 	variant = pcf50633_reg_read(pcf, 1);
+ 	if (version < 0 || variant < 0) {
+ 		dev_err(pcf->dev, "Unable to probe pcf50633\n");
+ 		ret = -ENODEV;
+-		goto err_destroy_workqueue;
++		goto err_free;
+ 	}
  
--	wait_for_completion(&req->completion);
-+	wait_for_completion(&req.completion);
+ 	dev_info(pcf->dev, "Probed device version %d variant %d\n",
+@@ -603,12 +566,13 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
+ 	pcf50633_reg_write(pcf, PCF50633_REG_INT4M, 0x00);
+ 	pcf50633_reg_write(pcf, PCF50633_REG_INT5M, 0x00);
  
--	/* FIXME by this time req might be already freed */
--	return req->result;
-+	return req.result;
- }
- EXPORT_SYMBOL_GPL(pcf50633_adc_sync_read);
+-	ret = request_irq(client->irq, pcf50633_irq,
+-					IRQF_TRIGGER_LOW, "pcf50633", pcf);
++	ret = request_threaded_irq(client->irq, NULL, pcf50633_irq,
++					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++					"pcf50633", pcf);
  
+ 	if (ret) {
+ 		dev_err(pcf->dev, "Failed to request IRQ %d\n", ret);
+-		goto err_destroy_workqueue;
++		goto err_free;
+ 	}
+ 
+ 	/* Create sub devices */
+@@ -651,8 +615,6 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
+ 
+ 	return 0;
+ 
+-err_destroy_workqueue:
+-	destroy_workqueue(pcf->work_queue);
+ err_free:
+ 	i2c_set_clientdata(client, NULL);
+ 	kfree(pcf);
+@@ -666,7 +628,6 @@ static int __devexit pcf50633_remove(struct i2c_client *client)
+ 	int i;
+ 
+ 	free_irq(pcf->irq, pcf);
+-	destroy_workqueue(pcf->work_queue);
+ 
+ 	platform_device_unregister(pcf->input_pdev);
+ 	platform_device_unregister(pcf->rtc_pdev);
 -- 
 1.5.6.5
 
