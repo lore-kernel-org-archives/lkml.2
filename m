@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455Ab0ELEhs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 00:37:48 -0400
-Received: from mail.perches.com ([173.55.12.10]:2196 "EHLO mail.perches.com"
+	id S1751510Ab0ELE6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 00:58:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23736 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736Ab0ELEhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 00:37:47 -0400
-Subject: Re: [trivial PATCH] arch/x86: Remove unnecessary returns from void
- function()'s
-From: Joe Perches <joe@perches.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Jiri Kosina <trivial@kernel.org>
-In-Reply-To: <4BEA277A.3000505@zytor.com>
-References: <1273624747.20514.316.camel@Joe-Laptop.home>
-	 <4BE9F94A.9000907@zytor.com>  <1273626052.20514.319.camel@Joe-Laptop.home>
-	 <1273629234.20514.333.camel@Joe-Laptop.home>  <4BEA226D.3080103@zytor.com>
-	 <1273636283.20514.337.camel@Joe-Laptop.home>  <4BEA277A.3000505@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 May 2010 21:37:44 -0700
-Message-ID: <1273639064.20514.353.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1750729Ab0ELE6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 00:58:36 -0400
+Date: Wed, 12 May 2010 00:58:27 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: Alasdair G Kergon <agk@redhat.com>
+cc: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>, dm-devel@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix hard-coded disk header chunk size for persistent
+ snapshot
+In-Reply-To: <20100512013909.GD2377@agk-dp.fab.redhat.com>
+Message-ID: <Pine.LNX.4.64.1005120055020.1551@hs20-bc2-1.build.redhat.com>
+References: <4BEA0472.1060300@jp.fujitsu.com> <20100512013909.GD2377@agk-dp.fab.redhat.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 20:58 -0700, H. Peter Anvin wrote:
-> On 05/11/2010 08:51 PM, Joe Perches wrote:
-> > On Tue, 2010-05-11 at 20:37 -0700, H. Peter Anvin wrote:
-> >> Churn is *not* motivated just
-> >> for "consistency" unless it improves readability.
-> > Consistency improves readability.
-> As a general rule, sure.
-> For any specific instance it is a big "it
-> depends".
 
-In these specific instances, in my opinion it does.
-Your assertion is simply your opinion.
-In the end, neither opinion matters much.
 
-cheers, Joe
+On Wed, 12 May 2010, Alasdair G Kergon wrote:
 
+> On Wed, May 12, 2010 at 10:29:22AM +0900, Tomohiro Kusumi wrote:
+> > This patch fixes hard-coded value for the size of a chunk that includes
+> > disk header for persistent snapshot. It should be changed to existing
+> > macro NUM_SNAPSHOT_HDR_CHUNKS instead of using hard-coded value 1.
+>  
+> Any more places too?  (E.g. persistent_commit_merge)
+> 
+> Alasdair
+
+I think the expression in persistent_commit_merge should be changed to:
+ps->next_free = area_location(ps, ps->current_area) +
+                ps->current_committed + 1;
+
+It is numerically the same, but will avoid trouble if 
+NUM_SNAPSHOT_HDR_CHUNKS is increased.
+
+Mikulas
