@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483Ab0ELJxh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 05:53:37 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:49590 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755344Ab0ELJxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 05:53:32 -0400
-Date: Wed, 12 May 2010 10:56:38 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: walter harms <wharms@bfs.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       ", H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 5/5] arch/x86/kernel: Drop memory allocation cast
-In-Reply-To: <Pine.LNX.4.64.1005121021110.31474@ask.diku.dk>
-Message-ID: <Pine.LNX.4.64.1005121056240.31474@ask.diku.dk>
-References: <Pine.LNX.4.64.1005112028160.4330@ask.diku.dk> <4BEA58C6.7030103@bfs.de>
- <Pine.LNX.4.64.1005121021110.31474@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755461Ab0ELJ5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 05:57:25 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:34798 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab0ELJ5Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 05:57:24 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Wed, 12 May 2010 11:57:50 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
+ error recovery
+In-reply-to: <70376CA23424B34D86F1C7DE6B9973430254343ABC@VSHINMSMBX01.vshodc.lntinfotech.com>
+To: Viral Mehta <Viral.Mehta@lntinfotech.com>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-id: <op.vck7aofj7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.10 (Linux)
+References: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>
+ <op.vck4q0c87p4s8u@pikus>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABB@VSHINMSMBX01.vshodc.lntinfotech.com>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABC@VSHINMSMBX01.vshodc.lntinfotech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Wed, 12 May 2010 11:36:06 +0200, Viral Mehta <Viral.Mehta@lntinfotech.com> wrote:
+> diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+> index f4911c0..7ad9a89 100644
+> --- a/drivers/usb/gadget/f_mass_storage.c
+> +++ b/drivers/usb/gadget/f_mass_storage.c
+> @@ -2702,7 +2702,8 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+>         if (fsg_strings[FSG_STRING_INTERFACE].id == 0) {
+>                 rc = usb_string_id(cdev);
+>                 if (rc < 0) {
+> -                       kfree(common);
+> +                       if(common->free_storage_on_release)
+> +                               kfree(common);
+>                         return ERR_PTR(rc);
+>                 }
+>                 fsg_strings[FSG_STRING_INTERFACE].id = rc;
+> @@ -2713,7 +2714,8 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+>          * LUN devices in sysfs. */
+>         curlun = kzalloc(nluns * sizeof *curlun, GFP_KERNEL);
+>         if (!curlun) {
+> -               kfree(common);
+> +               if(common->free_storage_on_release)
+> +                       kfree(common);
+>                 return ERR_PTR(-ENOMEM);
+>         }
+>         common->luns = curlun;
+>
+> looks correct and simple fix.
 
-Drop cast on the result of kmalloc and similar functions.
-The third occurrence is additionally modified by hand to use kcalloc and to
-check that the result of the allocation is not NULL.
+Yes, it should work fine and in fact was my first approach but as I've written in
+my previous mail:
 
-The semantic patch that makes the drop cast change is as follows:
-(http://coccinelle.lip6.fr/)
+> The way I see it, it does not matter that much -- it's error recovery so we assume
+> it's unlikely to happen and as such speed optimisation is not really needed here --
+> it's better to optimise for space and minimise the number of possible paths.
 
-// <smpl>
-@@
-type T;
-@@
+Because of that, I the "goto error_release" to be cleaner in the sense that
+there is a single error recovery path and only one place where
+free_storage_on_release flag is checked and common freed.
 
-- (T *)
-  (\(kmalloc\|kzalloc\|kcalloc\|kmem_cache_alloc\|kmem_cache_zalloc\|
-   kmem_cache_alloc_node\|kmalloc_node\|kzalloc_node\)(...))
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- arch/x86/kernel/tlb_uv.c            |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
-index 7fea555..97e790c 100644
---- a/arch/x86/kernel/tlb_uv.c
-+++ b/arch/x86/kernel/tlb_uv.c
-@@ -1141,7 +1141,7 @@ uv_activation_descriptor_init(int node, int pnode)
- 	 * each bau_desc is 64 bytes; there are 8 (UV_ITEMS_PER_DESCRIPTOR)
- 	 * per cpu; and up to 32 (UV_ADP_SIZE) cpu's per uvhub
- 	 */
--	bau_desc = (struct bau_desc *)kmalloc_node(sizeof(struct bau_desc)*
-+	bau_desc = kmalloc_node(sizeof(struct bau_desc) *
- 		UV_ADP_SIZE*UV_ITEMS_PER_DESCRIPTOR, GFP_KERNEL, node);
- 	BUG_ON(!bau_desc);
- 
-@@ -1200,7 +1200,7 @@ uv_payload_queue_init(int node, int pnode)
- 	struct bau_payload_queue_entry *pqp_malloc;
- 	struct bau_control *bcp;
- 
--	pqp = (struct bau_payload_queue_entry *) kmalloc_node(
-+	pqp = kmalloc_node(
- 		(DEST_Q_SIZE + 1) * sizeof(struct bau_payload_queue_entry),
- 		GFP_KERNEL, node);
- 	BUG_ON(!pqp);
-@@ -1286,9 +1286,8 @@ static void uv_init_per_cpu(int nuvhubs)
- 	};
- 	struct uvhub_desc *uvhub_descs;
- 
--	uvhub_descs = (struct uvhub_desc *)
--		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
--	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
-+	uvhub_descs = kcalloc(nuvhubs, sizeof(struct uvhub_desc), GFP_KERNEL);
-+	BUG_ON(!uvhub_descs);
- 	for_each_present_cpu(cpu) {
- 		bcp = &per_cpu(bau_control, cpu);
- 		memset(bcp, 0, sizeof(struct bau_control));
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
