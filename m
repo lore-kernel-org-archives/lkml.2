@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab0ELLxr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 07:53:47 -0400
-Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:60057 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755572Ab0ELLxp (ORCPT
+	id S1755782Ab0ELL7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 07:59:20 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:43614 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754699Ab0ELL7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 07:53:45 -0400
-Date: Wed, 12 May 2010 13:53:40 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Robert Hancock <hancockrwd@gmail.com>,
-       saeed bishara <saeed.bishara@gmail.com>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       DE/ATA development list <linux-ide@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
-       Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: Re: [BUG] bug when enabling VM DEBUG
-Message-ID: <20100512115340.GA11261@Chamillionaire.breakpoint.cc>
-References: <AANLkTikkSRI6u_mp6mNQReECB84t3oh-_MPVzAYEQULN@mail.gmail.com>
- <AANLkTikoNc6oAY5JthYX1jWx1w2KeJ1fGab72Z-OvIVG@mail.gmail.com>
- <4BEA1559.9000107@gmail.com>
- <1273662639.23818.67.camel@e102109-lin.cambridge.arm.com>
+	Wed, 12 May 2010 07:59:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=c2rdUSgSn/lMu3IZf0VMnqbfsMiaYM/y93xe/csq+ib5Hz56q8pwSAFXzr3ldIElkn
+         lENg6Wb3adZjxCQsODiFjpp/hQPqyzY1Be1Hwh9xWVxJMQMzwXe8irZAuwm8bh8MKFji
+         HtHgWWnxr6tQXn1txaENqHK+BlLBtkUAvygAc=
+Date: Wed, 12 May 2010 13:59:14 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH resend] x86, amd: Check X86_FEATURE_OSVW bit before
+ accessing OSVW MSRs
+Message-ID: <20100512115914.GA10254@alberich.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273662639.23818.67.camel@e102109-lin.cambridge.arm.com>
-X-Key-Id: FE3F4706
-X-Key-Fingerprint: FFDA BBBB 3563 1B27 75C9  925B 98D5 5C1C FE3F 4706
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Catalin Marinas | 2010-05-12 12:10:39 [+0100]:
+If host CPU is exposed to a guest the OSVW MSRs are not guaranteed
+to be present and a GP fault occurs. Thus checking the feature flag is
+essential.
 
->> > --- a/drivers/ata/libata-sff.c
->> > +++ b/drivers/ata/libata-sff.c
->> > @@ -894,7 +894,7 @@ static void ata_pio_sector(struct ata_queued_cmd *qc)
->> >                                         do_write);
->> >          }
->> >
->> > -       if (!do_write)
->> > +       if (!do_write&&  !PageSlab(page))
->> >                  flush_dcache_page(page);
->> 
->> I would think that check belongs inside flush_dcache_page itself, rather
->> than forcing every driver to include it..
->
->Sebastian (cc'ed) reported this as well for MIPS.
-Thx. The patch above looks what I've sent a while ago. Jeff was going to
-merge it afaik.
+Cc: <stable@kernel.org> # .32.x .33.x, .34.x
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ arch/x86/kernel/process.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
->I think it makes sense for this check to be done in the
->flush_dcache_page() function.
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 28ad9f4..0415c3e 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -546,11 +546,13 @@ static int __cpuinit check_c1e_idle(const struct cpuinfo_x86 *c)
+ 		 * check OSVW bit for CPUs that are not affected
+ 		 * by erratum #400
+ 		 */
+-		rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
+-		if (val >= 2) {
+-			rdmsrl(MSR_AMD64_OSVW_STATUS, val);
+-			if (!(val & BIT(1)))
+-				goto no_c1e_idle;
++		if (cpu_has(c, X86_FEATURE_OSVW)) {
++			rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
++			if (val >= 2) {
++				rdmsrl(MSR_AMD64_OSVW_STATUS, val);
++				if (!(val & BIT(1)))
++					goto no_c1e_idle;
++			}
+ 		}
+ 		return 1;
+ 	}
+-- 
+1.6.4.4
 
-Why should flush_dcache_page() not flush pages you tell it?
->From Documentation/cachetlb.txt:
-|   NOTE: This routine need only be called for page cache pages
-|          which can potentially ever be mapped into the address
-|          space of a user process.  So for example, VFS layer code
-|          handling vfs symlinks in the page cache need not call
-|          this interface at all.
-
-A page from slab or stack is not going to see the sky of user land and
-therefore it should not be fed into flush_dcache_page().
-
-Sebastian
