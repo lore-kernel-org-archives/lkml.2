@@ -1,244 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087Ab0ELRnT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 13:43:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60435 "EHLO mx1.redhat.com"
+	id S1756983Ab0ELRnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 13:43:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60949 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756829Ab0ELRmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 13:42:12 -0400
-Date: Wed, 12 May 2010 13:41:18 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 2/5] change direct call of spin_lock(anon_vma->lock) to
- inline function
-Message-ID: <20100512134118.4a261072@annuminas.surriel.com>
-In-Reply-To: <20100512133815.0d048a86@annuminas.surriel.com>
-References: <20100512133815.0d048a86@annuminas.surriel.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754675Ab0ELRnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 13:43:52 -0400
+Message-ID: <4BEAE8B8.8080809@redhat.com>
+Date: Wed, 12 May 2010 13:43:20 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@us.ibm.com>, Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH -tip 4/5] kprobes/x86: Use text_poke_smp_batch
+References: <20100510175313.27396.34605.stgit@localhost6.localdomain6> <20100510175340.27396.7222.stgit@localhost6.localdomain6> <20100511144013.GA17656@Krystal> <4BE9F952.3060505@redhat.com> <20100512152747.GA12326@Krystal>
+In-Reply-To: <20100512152747.GA12326@Krystal>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: change direct call of spin_lock(anon_vma->lock) to inline function
+Mathieu Desnoyers wrote:
+> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
+>> Mathieu Desnoyers wrote:
+>>> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
+>>>> Use text_poke_smp_batch() in optimization path for reducing
+>>>> the number of stop_machine() issues.
+>>>>
+>>>> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+>>>> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+>>>> Cc: Ingo Molnar <mingo@elte.hu>
+>>>> Cc: Jim Keniston <jkenisto@us.ibm.com>
+>>>> Cc: Jason Baron <jbaron@redhat.com>
+>>>> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+>>>> ---
+>>>>
+>>>>  arch/x86/kernel/kprobes.c |   37 ++++++++++++++++++++++++++++++-------
+>>>>  include/linux/kprobes.h   |    2 +-
+>>>>  kernel/kprobes.c          |   13 +------------
+>>>>  3 files changed, 32 insertions(+), 20 deletions(-)
+>>>>
+>>>> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+>>>> index 345a4b1..63a5c24 100644
+>>>> --- a/arch/x86/kernel/kprobes.c
+>>>> +++ b/arch/x86/kernel/kprobes.c
+>>>> @@ -1385,10 +1385,14 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+>>>>  	return 0;
+>>>>  }
+>>>>  
+>>>> -/* Replace a breakpoint (int3) with a relative jump.  */
+>>>> -int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
+>>>> +#define MAX_OPTIMIZE_PROBES 256
+>>>
+>>> So what kind of interrupt latency does a 256-probes batch generate on the
+>>> system ?  Are we talking about a few milliseconds, a few seconds ?
+>>
+>> From my experiment on kvm/4cpu, it took about 3 seconds in average.
+> 
+> That's 3 seconds for multiple calls to stop_machine(). So we can expect
+> latencies in the area of few microseconds for each call, right ?
 
-Subsitute a direct call of spin_lock(anon_vma->lock) with
-an inline function doing exactly the same.
+Theoretically yes.
+But if we register more than 1000 probes at once, it's hard to do
+anything except optimizing a while(more than 10 sec), because
+it stops machine so frequently.
 
-This makes it easier to do the substitution to the root
-anon_vma lock in a following patch.
+>> With this patch, it went down to 30ms. (x100 faster :))
+> 
+> This is beefing up the latency from few microseconds to 30ms. It sounds like a
+> regression rather than a gain to me.
 
-We will deal with the handful of special locks (nested,
-dec_and_lock, etc) separately.
+If it is not acceptable, I can add a knob for control how many probes
+optimize/unoptimize at once. Anyway, it is expectable latency (after
+registering/unregistering probes) and it will be small if we put a few probes.
+(30ms is the worst case)
+And if you want, it can be disabled by sysctl.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- include/linux/rmap.h |   10 ++++++++++
- mm/ksm.c             |   18 +++++++++---------
- mm/mmap.c            |    2 +-
- mm/rmap.c            |   20 ++++++++++----------
- 4 files changed, 30 insertions(+), 20 deletions(-)
+Thank you,
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index 88cae59..72ecd87 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -104,6 +104,16 @@ static inline void vma_unlock_anon_vma(struct vm_area_struct *vma)
- 		spin_unlock(&anon_vma->lock);
- }
- 
-+static inline void anon_vma_lock(struct anon_vma *anon_vma)
-+{
-+	spin_lock(&anon_vma->lock);
-+}
-+
-+static inline void anon_vma_unlock(struct anon_vma *anon_vma)
-+{
-+	spin_unlock(&anon_vma->lock);
-+}
-+
- /*
-  * anon_vma helper functions.
-  */
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 956880f..d488012 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -327,7 +327,7 @@ static void drop_anon_vma(struct rmap_item *rmap_item)
- 
- 	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->lock)) {
- 		int empty = list_empty(&anon_vma->head);
--		spin_unlock(&anon_vma->lock);
-+		anon_vma_unlock(anon_vma);
- 		if (empty)
- 			anon_vma_free(anon_vma);
- 	}
-@@ -1566,7 +1566,7 @@ again:
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
- 
--		spin_lock(&anon_vma->lock);
-+		anon_vma_lock(anon_vma);
- 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
- 			vma = vmac->vma;
- 			if (rmap_item->address < vma->vm_start ||
-@@ -1589,7 +1589,7 @@ again:
- 			if (!search_new_forks || !mapcount)
- 				break;
- 		}
--		spin_unlock(&anon_vma->lock);
-+		anon_vma_unlock(anon_vma);
- 		if (!mapcount)
- 			goto out;
- 	}
-@@ -1619,7 +1619,7 @@ again:
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
- 
--		spin_lock(&anon_vma->lock);
-+		anon_vma_lock(anon_vma);
- 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
- 			vma = vmac->vma;
- 			if (rmap_item->address < vma->vm_start ||
-@@ -1637,11 +1637,11 @@ again:
- 			ret = try_to_unmap_one(page, vma,
- 					rmap_item->address, flags);
- 			if (ret != SWAP_AGAIN || !page_mapped(page)) {
--				spin_unlock(&anon_vma->lock);
-+				anon_vma_unlock(anon_vma);
- 				goto out;
- 			}
- 		}
--		spin_unlock(&anon_vma->lock);
-+		anon_vma_unlock(anon_vma);
- 	}
- 	if (!search_new_forks++)
- 		goto again;
-@@ -1671,7 +1671,7 @@ again:
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
- 
--		spin_lock(&anon_vma->lock);
-+		anon_vma_lock(anon_vma);
- 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
- 			vma = vmac->vma;
- 			if (rmap_item->address < vma->vm_start ||
-@@ -1688,11 +1688,11 @@ again:
- 
- 			ret = rmap_one(page, vma, rmap_item->address, arg);
- 			if (ret != SWAP_AGAIN) {
--				spin_unlock(&anon_vma->lock);
-+				anon_vma_unlock(anon_vma);
- 				goto out;
- 			}
- 		}
--		spin_unlock(&anon_vma->lock);
-+		anon_vma_unlock(anon_vma);
- 	}
- 	if (!search_new_forks++)
- 		goto again;
-diff --git a/mm/mmap.c b/mm/mmap.c
-index d30bed3..f70bc65 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2589,7 +2589,7 @@ static void vm_unlock_anon_vma(struct anon_vma *anon_vma)
- 		if (!__test_and_clear_bit(0, (unsigned long *)
- 					  &anon_vma->head.next))
- 			BUG();
--		spin_unlock(&anon_vma->lock);
-+		anon_vma_unlock(anon_vma);
- 	}
- }
- 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 07fc947..4eb8937 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -134,7 +134,7 @@ int anon_vma_prepare(struct vm_area_struct *vma)
- 			allocated = anon_vma;
- 		}
- 
--		spin_lock(&anon_vma->lock);
-+		anon_vma_lock(anon_vma);
- 		/* page_table_lock to protect against threads */
- 		spin_lock(&mm->page_table_lock);
- 		if (likely(!vma->anon_vma)) {
-@@ -147,7 +147,7 @@ int anon_vma_prepare(struct vm_area_struct *vma)
- 			avc = NULL;
- 		}
- 		spin_unlock(&mm->page_table_lock);
--		spin_unlock(&anon_vma->lock);
-+		anon_vma_unlock(anon_vma);
- 
- 		if (unlikely(allocated))
- 			anon_vma_free(allocated);
-@@ -170,9 +170,9 @@ static void anon_vma_chain_link(struct vm_area_struct *vma,
- 	avc->anon_vma = anon_vma;
- 	list_add(&avc->same_vma, &vma->anon_vma_chain);
- 
--	spin_lock(&anon_vma->lock);
-+	anon_vma_lock(anon_vma);
- 	list_add_tail(&avc->same_anon_vma, &anon_vma->head);
--	spin_unlock(&anon_vma->lock);
-+	anon_vma_unlock(anon_vma);
- }
- 
- /*
-@@ -246,12 +246,12 @@ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
- 	if (!anon_vma)
- 		return;
- 
--	spin_lock(&anon_vma->lock);
-+	anon_vma_lock(anon_vma);
- 	list_del(&anon_vma_chain->same_anon_vma);
- 
- 	/* We must garbage collect the anon_vma if it's empty */
- 	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma);
--	spin_unlock(&anon_vma->lock);
-+	anon_vma_unlock(anon_vma);
- 
- 	if (empty)
- 		anon_vma_free(anon_vma);
-@@ -302,7 +302,7 @@ struct anon_vma *page_lock_anon_vma(struct page *page)
- 		goto out;
- 
- 	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
--	spin_lock(&anon_vma->lock);
-+	anon_vma_lock(anon_vma);
- 	return anon_vma;
- out:
- 	rcu_read_unlock();
-@@ -311,7 +311,7 @@ out:
- 
- void page_unlock_anon_vma(struct anon_vma *anon_vma)
- {
--	spin_unlock(&anon_vma->lock);
-+	anon_vma_unlock(anon_vma);
- 	rcu_read_unlock();
- }
- 
-@@ -1364,7 +1364,7 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
- 	anon_vma = page_anon_vma(page);
- 	if (!anon_vma)
- 		return ret;
--	spin_lock(&anon_vma->lock);
-+	anon_vma_lock(anon_vma);
- 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
- 		struct vm_area_struct *vma = avc->vma;
- 		unsigned long address = vma_address(page, vma);
-@@ -1374,7 +1374,7 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
- 		if (ret != SWAP_AGAIN)
- 			break;
- 	}
--	spin_unlock(&anon_vma->lock);
-+	anon_vma_unlock(anon_vma);
- 	return ret;
- }
- 
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
