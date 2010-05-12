@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab0ELIZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 04:25:26 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:34926 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754042Ab0ELIZX (ORCPT
+	id S1754702Ab0ELIb2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 04:31:28 -0400
+Received: from mail96.messagelabs.com ([216.82.254.19]:26141 "EHLO
+	mail96.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524Ab0ELIbZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 04:25:23 -0400
-Message-ID: <4BEA659F.9050206@ct.jp.nec.com>
-Date: Wed, 12 May 2010 17:23:59 +0900
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	Wed, 12 May 2010 04:31:25 -0400
+X-VirusChecked: Checked
+X-Env-Sender: Viral.Mehta@lntinfotech.com
+X-Msg-Ref: server-14.tower-96.messagelabs.com!1273653082!49683305!1
+X-StarScan-Version: 6.2.4; banners=lntinfotech.com,-,-
+X-Originating-IP: [203.199.118.207]
+From: Viral Mehta <Viral.Mehta@lntinfotech.com>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 12 May 2010 13:59:02 +0530
+Subject: RE: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
+ error recovery
+Thread-Topic: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
+ error recovery
+Thread-Index: Acrxq3EP2BExQmvVRDWkkJniKdMvuwAAbvaN
+Message-ID: <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>
+References: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
+In-Reply-To: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       Vivek Goyal <vgoyal@redhat.com>, Nikanth Karthikesan <knikanth@suse.de>
-Subject: Re: [RFC PATCH 2/2] dm: only initialize full request_queue for request-based
- device
-References: <1273532139-23043-1-git-send-email-snitzer@redhat.com> <1273532139-23043-2-git-send-email-snitzer@redhat.com> <4BE8DBB0.5060701@ct.jp.nec.com> <20100511131502.GA25211@redhat.com>
-In-Reply-To: <20100511131502.GA25211@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+Hi,
+________________________________________
+>From: linux-usb-owner@vger.kernel.org [linux-usb-owner@vger.kernel.org] On Behalf Of Michal Nazarewicz [m.nazarewicz@samsung.com]
+>Sent: Wednesday, May 12, 2010 1:46 PM
+>To: linux-usb@vger.kernel.org
+>Cc: Kyungmin Park; Marek Szyprowski; linux-kernel@vger.kernel.org
+>Subject: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init() error recovery
 
-On 05/11/2010 10:15 PM +0900, Mike Snitzer wrote:
-> On Tue, May 11 2010 at 12:23am -0400,
-> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
-> 
->> Hi Mike,
->>
->> On 05/11/2010 07:55 AM +0900, Mike Snitzer wrote:
->>> Revert back to only allocating a minimalist request_queue structure
->>> initially (needed for both bio and request-based DM).  Initialization of
->>> a full request_queue (request_fn, elevator, etc) is deferred until it is
->>> known that the DM device is request-based.
->>
->> Thank you for working on this.
->> However, I still disagree with this patch as we discussed on this thread:
->> http://marc.info/?t=124990138700003&r=1&w=2
->> (Exporting a part of queue's features may cause some maintenance costs
->>  in future.)
-> 
-> Thanks for the reference.  I completely forgot about that thread (even
-> though I responded to Nikanth's patches in detail! :)
-> 
-> It is clear we need to resolve the current full request_queue
-> initialization that occurs even for bio-based DM devices.
-> 
-> I believe the 2 patches I posted accomplish this in a stright-forward
-> way.  We can always improve on it (by looking at what you proposed
-> below) but we need a minimlaist fix that doesn't depend on userspace
-> LVM2 changes right now.
+>In to places in fsg_common_init() an unconditional call to kfree()
+>on common was performed in error recovery which is not a valid
 
-Humm, OK.
-Indeed, showing iosched directory in bio-based device's sysfs is
-confusing users actually, and we need something to resolve that soon.
-So I don't strongly object to your approach as the first step, as long
-as we can accept the risk of the maintenance cost which I mentioned.
+If I am not wrong, common can not be NULL since it was already checked above.
 
-By the way, your current patch has a problem below.
-It needs to be fixed at least.
+2685         if (!common) {
+2686                 common = kzalloc(sizeof *common, GFP_KERNEL);
+2687                 if (!common)
+2688                         return ERR_PTR(-ENOMEM);
+2689                 common->free_storage_on_release = 1;
 
 
-> Similarly, my proposed DM changes are also quite natural. By using
-> dm_table_set_type() as the hook to initialize the request-based DM
-> device's elevator we perform allocations during table load.
+>behaviour since fsg_common structure is not always allocated by
+>fsg_common_init().
 
-Your patch initializes queue everytime request-based table is loaded.
-I think that could cause a problem (although I haven't tested your
-patch yet).
+>To fix, the calls has been replaced with a goto to a proper error
+>recovery which does the correct thing.
+---
 
+This Email may contain confidential or privileged information for the intended recipient (s) If you are not the intended recipient, please do not use or disseminate the information, notify the sender and delete it from your system.
 
-Also, as you know, the table load can be canceled.
-So initializing queue at table loading time may cause some weird
-behaviors for users.  For example,
-    # dmsetup create --notable bio-based
-    # echo "0 100 multipath ..." | dmsetup load bio-based
-    # echo "0 100 linear ..."    | dmsetup load bio-based
-    # dmsetup resume bio-based
-    # ls /sys/block/dm-0/queue/
-    ... iosched ...
-If you (and Alasdair) think this behavior is acceptable, it might
-be OK.  I just feel it's weird though...
-
-
-> Having just looked at Nikanth's proposed DM patch 2/2 again it shows
-> that blk_init_allocated_queue(), which allocates memory, was being
-> called during resume (dm_swap_table).  Allocations are not allowed
-> during resume.
-
-Right, in general.
-However, in this special case, I think initializing queue (allocating
-memory) during resume should be OK as I mentioned like below in:
-    http://marc.info/?l=linux-kernel&m=124999806420663&w=2
-
-    > Generally, dm must not allocate memory during resume because
-    > it may cause a deadlock in no memory situation.
-    > However, there is no I/O on this device at this point,
-    > so the allocation should be ok for this special case.
-    > I think some comments are needed here to describe that.
-
-So you should be able to take this approach.
-
-Thanks,
-Kiyoshi Ueda
+______________________________________________________________________
