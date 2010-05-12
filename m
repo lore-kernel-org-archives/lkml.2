@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab0ELKhH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 06:37:07 -0400
-Received: from gate.crashing.org ([63.228.1.57]:33662 "EHLO gate.crashing.org"
+	id S1753561Ab0ELKiG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 06:38:06 -0400
+Received: from mx1.emlix.com ([193.175.82.87]:36578 "EHLO mx1.emlix.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563Ab0ELKhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 06:37:05 -0400
-Subject: Re: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel list <linux-kernel@vger.kernel.org>
-In-Reply-To: <B0104965-09F9-4372-AA9F-F6D0FDEA67F2@kernel.crashing.org>
-References: <1273650396.21352.121.camel@pasglop>
-	 <B0104965-09F9-4372-AA9F-F6D0FDEA67F2@kernel.crashing.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 May 2010 20:36:44 +1000
-Message-ID: <1273660604.21352.123.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751669Ab0ELKiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 06:38:01 -0400
+Date: Wed, 12 May 2010 12:36:58 +0200
+From: Johannes Weiner <jw@emlix.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, npiggin@suse.de,
+       marc@tensilica.com, dmitry.torokhov@gmail.com, cl@linux.com,
+       penberg@cs.helsinki.fi, mpm@selenic.com, akpm@linux-foundation.org,
+       os@emlix.com, Michael.Hennerich@analog.com, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, dg@emlix.com, osw@emlix.com,
+       rientjes@google.com, dbrownell@users.sourceforge.net,
+       grant.likely@secretlab.ca, chris@zankel.net, Piet.Delaney@tensilica.com
+Subject: Re: [LKML] Re: [PATCH v3] ad7877: keep dma rx buffers in seperate
+ cache lines
+Message-ID: <20100512103658.GB2635@emlix.com>
+References: <AANLkTimm7bOmIz2sdODgHwtCk26kdHgZt7PvceM6gjS3@mail.gmail.com>
+ <522C1DF17AF50042AD8AE87F7887BD3D0163549554@exch.hq.tensilica.com>
+ <20100512030350.GJ15903@laptop>
+ <20100512122323J.fujita.tomonori@lab.ntt.co.jp>
+ <AANLkTine8JmtsUo3_z6Cwdgm3LINCkJ9jL21r9eQWRm8@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTine8JmtsUo3_z6Cwdgm3LINCkJ9jL21r9eQWRm8@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+Organization: emlix gmbh, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-12 at 05:24 -0500, Kumar Gala wrote:
-
-> Did where you going to also send linus:
+On Wed, May 12, 2010 at 12:35:45AM -0400, Mike Frysinger wrote:
+> On Tue, May 11, 2010 at 23:23, FUJITA Tomonori wrote:
+> > Seems that kmalloc is not cacheline aligned on some architectures but
+> > they works. Probably, we might be just lucky because in general they
+> > allocate larger buffers than 64 for DMA via kmalloc and the buffers
+> > are aligned on the size?
 > 
-> http://patchwork.ozlabs.org/patch/51496/
+> i think the magic combo is:
+>  - DMA buffer is written to (receive)
 
-Forgot about that one... I'll add it to the pile tomorrow.
+Check.
 
-Cheers,
-Ben.
+>  - some driver state is in the same cacheline as the DMA buffer
+>  - that driver state is used after the flush but before the DMA finishes
 
+The kmalloc caches are system-wide.  Any other kmalloc(samesize) user
+could interfer when touching its object between dma_map_single() on
+the neighbor object and the end of the transfer.
 
+>  - only on arches that need software cache coherency
+> 
+> so i could see this not being an obvious issue for many people
+> -mike
