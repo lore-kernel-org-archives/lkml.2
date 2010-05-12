@@ -1,439 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab0ELJfT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 05:35:19 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:46705 "EHLO mgw1.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab0ELJfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 05:35:14 -0400
-Date: Wed, 12 May 2010 10:10:38 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: walter harms <wharms@bfs.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 3/5] drivers/staging: Drop memory allocation cast
-In-Reply-To: <4BEA5856.9040704@bfs.de>
-Message-ID: <Pine.LNX.4.64.1005121006001.31474@ask.diku.dk>
-References: <Pine.LNX.4.64.1005112026300.4330@ask.diku.dk> <4BEA5856.9040704@bfs.de>
+	id S1754361Ab0ELJhw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 05:37:52 -0400
+Received: from mail192.messagelabs.com ([216.82.241.243]:55555 "EHLO
+	mail192.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab0ELJhu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 05:37:50 -0400
+X-VirusChecked: Checked
+X-Env-Sender: Viral.Mehta@lntinfotech.com
+X-Msg-Ref: server-4.tower-192.messagelabs.com!1273657066!59979079!1
+X-StarScan-Version: 6.2.4; banners=lntinfotech.com,-,-
+X-Originating-IP: [203.199.118.205]
+From: Viral Mehta <Viral.Mehta@lntinfotech.com>
+To: Viral Mehta <Viral.Mehta@lntinfotech.com>,
+       =?iso-8859-2?Q?Micha=B3_Nazarewicz?= <m.nazarewicz@samsung.com>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 12 May 2010 15:06:06 +0530
+Subject: RE: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
+ error recovery
+Thread-Topic: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
+ error recovery
+Thread-Index: AcrxseRzNT3yaA2BSOqTvrNBKSsxqQAAp+CvAACB9HA=
+Message-ID: <70376CA23424B34D86F1C7DE6B9973430254343ABC@VSHINMSMBX01.vshodc.lntinfotech.com>
+References: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>,<op.vck4q0c87p4s8u@pikus>,<70376CA23424B34D86F1C7DE6B9973430254343ABB@VSHINMSMBX01.vshodc.lntinfotech.com>
+In-Reply-To: <70376CA23424B34D86F1C7DE6B9973430254343ABB@VSHINMSMBX01.vshodc.lntinfotech.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-2"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the suggestions.  I received a message that this patch has been 
-picked up and will appear in linux-next shortly, so I will just fix these 
-problems after that happens, if that is ok.
 
-julia
+________________________________________
+>From: linux-usb-owner@vger.kernel.org [linux-usb-owner@vger.kernel.org] On Behalf Of Viral Mehta [Viral.Mehta@lntinfotech.com]
+>Sent: Wednesday, May 12, 2010 2:58 PM
+>To: Micha³ Nazarewicz; linux-usb@vger.kernel.org
+>Cc: Kyungmin Park; Marek Szyprowski; linux-kernel@vger.kernel.org
+>Subject: RE: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init() error recovery
+
+>>> Michal Nazarewicz [m.nazarewicz@samsung.com]
+>>>> In to places in fsg_common_init() an unconditional call to kfree()
+>>>> on common was performed in error recovery which is not a valid
+
+>>On Wed, 12 May 2010 10:29:02 +0200, Viral Mehta <Viral.Mehta@lntinfotech.com> wrote:
+>>> If I am not wrong, common can not be NULL since it was already checked above.
+>>>
+>>> 2685         if (!common) {
+>>> 2686                 common = kzalloc(sizeof *common, GFP_KERNEL);
+>>> 2687                 if (!common)
+>>> 2688                         return ERR_PTR(-ENOMEM);
+>>> 2689                 common->free_storage_on_release = 1;
+
+>>That is correct but it is not the issue.
+
+>>fsg_common_init() as a first argument takes a pointer to a fsg_common
+>>structure which, if not NULL, is reused and it is then assumed that
+>>caller is responsible far maintaining allocation and deallocation of
+>>this structure.
+
+>>The idea is that one can do:
+
+>>static struct fsg_common fsg_common;
+>>/* ... */
+>>fsg_common_init(&fsg_common, cdev, fsg_config);
+
+>>or allocate fsg_common structure as a part of a larger structure.  In such
+>>cases kfree() cannot be called on the object.  Which case we are dealing
+>>with is indicated by the common->free_storage_on_release flag.
+>>fsg_common_release() consults it and either calls or does not call krfee().
+
+>Oh, makes sense. All instances has fsg_common_init(0, ...) and so i just missed...
+
+>But, still the central idea was, why should we go to whole error_release path which really does removing device file and closing luns and etc.
+>However, it will not make any difference since curlun->nluns will be zero and so there will be no loop in fsg_common_releas() function.
+
+>Apart from that, IMHO,
+>2894         kfree(common->luns);
+>should crash in case if your error path is followed.
+
+>common->luns is allocd
+>2712         /* Create the LUNs, open their backing files, and register the
+>2713          * LUN devices in sysfs. */
+>2714         curlun = kzalloc(nluns * sizeof *curlun, GFP_KERNEL);
+>2715         if (!curlun) {
+>2716                 kfree(common);
+>2717                 return ERR_PTR(-ENOMEM);
+>2718         }
 
 
-On Wed, 12 May 2010, walter harms wrote:
+To me,
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index f4911c0..7ad9a89 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -2702,7 +2702,8 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+        if (fsg_strings[FSG_STRING_INTERFACE].id == 0) {
+                rc = usb_string_id(cdev);
+                if (rc < 0) {
+-                       kfree(common);
++                       if(common->free_storage_on_release)
++                               kfree(common);
+                        return ERR_PTR(rc);
+                }
+                fsg_strings[FSG_STRING_INTERFACE].id = rc;
+@@ -2713,7 +2714,8 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+         * LUN devices in sysfs. */
+        curlun = kzalloc(nluns * sizeof *curlun, GFP_KERNEL);
+        if (!curlun) {
+-               kfree(common);
++               if(common->free_storage_on_release)
++                       kfree(common);
+                return ERR_PTR(-ENOMEM);
+        }
+        common->luns = curlun;
 
-> 
-> 
-> Julia Lawall schrieb:
-> > From: Julia Lawall <julia@diku.dk>
-> > 
-> > Drop cast on the result of kmalloc and similar functions.
-> > 
-> > The semantic patch that makes this change is as follows:
-> > (http://coccinelle.lip6.fr/)
-> > 
-> > // <smpl>
-> > @@
-> > type T;
-> > @@
-> > 
-> > - (T *)
-> >   (\(kmalloc\|kzalloc\|kcalloc\|kmem_cache_alloc\|kmem_cache_zalloc\|
-> >    kmem_cache_alloc_node\|kmalloc_node\|kzalloc_node\)(...))
-> > // </smpl>
-> > 
-> > Signed-off-by: Julia Lawall <julia@diku.dk>
-> > 
-> > ---
-> >  drivers/staging/comedi/drivers/unioxx5.c                |    2 +-
-> >  drivers/staging/crystalhd/crystalhd_misc.c              |    2 +-
-> >  drivers/staging/cx25821/cx25821-audio-upstream.c        |    6 ++----
-> >  drivers/staging/cx25821/cx25821-video-upstream-ch2.c    |    6 ++----
-> >  drivers/staging/cx25821/cx25821-video-upstream.c        |    4 ++--
-> >  drivers/staging/et131x/et1310_rx.c                      |    2 +-
-> >  drivers/staging/et131x/et1310_tx.c                      |    2 +-
-> >  drivers/staging/rt2860/common/cmm_data.c                |    2 +-
-> >  drivers/staging/rt2860/common/cmm_mac_pci.c             |    2 +-
-> >  drivers/staging/rt2860/common/cmm_mac_usb.c             |    2 +-
-> >  drivers/staging/rt2860/rt_linux.c                       |    2 +-
-> >  drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c |    7 +++----
-> >  drivers/staging/rtl8192e/ieee80211/ieee80211_module.c   |    2 +-
-> >  drivers/staging/rtl8192e/ieee80211/ieee80211_rx.c       |    2 +-
-> >  drivers/staging/rtl8192e/ieee80211/ieee80211_softmac.c  |    7 +++----
-> >  drivers/staging/rtl8192e/r8192E_core.c                  |    2 +-
-> >  drivers/staging/rtl8192su/ieee80211/ieee80211_module.c  |    2 +-
-> >  drivers/staging/rtl8192su/ieee80211/ieee80211_rx.c      |    2 +-
-> >  drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c |    7 +++----
-> >  drivers/staging/rtl8192su/r8192U_core.c                 |    2 +-
-> >  drivers/staging/rtl8192u/ieee80211/ieee80211_module.c   |    2 +-
-> >  drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c       |    2 +-
-> >  drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c  |    7 +++----
-> >  drivers/staging/rtl8192u/r8192U_core.c                  |   10 ++++++----
-> >  drivers/staging/vme/bridges/vme_ca91cx42.c              |    3 +--
-> >  drivers/staging/vme/bridges/vme_tsi148.c                |    2 +-
-> >  drivers/staging/vt6655/device_main.c                    |    2 +-
-> >  drivers/staging/vt6655/hostap.c                         |    4 ++--
-> >  drivers/staging/vt6655/wpactl.c                         |    2 +-
-> >  drivers/staging/vt6656/hostap.c                         |    4 ++--
-> >  drivers/staging/vt6656/main_usb.c                       |    2 +-
-> >  drivers/staging/vt6656/wpactl.c                         |    2 +-
-> >  drivers/staging/wlags49_h2/wl_priv.c                    |    4 ++--
-> >  33 files changed, 52 insertions(+), 59 deletions(-)
-> > 
-> > diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
-> > index be1d83d..16d4c9f 100644
-> > --- a/drivers/staging/comedi/drivers/unioxx5.c
-> > +++ b/drivers/staging/comedi/drivers/unioxx5.c
-> > @@ -285,7 +285,7 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
-> >  		return -EIO;
-> >  	}
-> >  
-> > -	usp = (struct unioxx5_subd_priv *)kzalloc(sizeof(*usp), GFP_KERNEL);
-> > +	usp = kzalloc(sizeof(*usp), GFP_KERNEL);
-> >  
-> >  	if (usp == NULL) {
-> >  		printk(KERN_ERR "comedi%d: erorr! --> out of memory!\n", minor);
-> > diff --git a/drivers/staging/crystalhd/crystalhd_misc.c b/drivers/staging/crystalhd/crystalhd_misc.c
-> > index d134667..548dc09 100644
-> > --- a/drivers/staging/crystalhd/crystalhd_misc.c
-> > +++ b/drivers/staging/crystalhd/crystalhd_misc.c
-> > @@ -887,7 +887,7 @@ int crystalhd_create_dio_pool(struct crystalhd_adp *adp, uint32_t max_pages)
-> >  	       BC_LINK_SG_POOL_SZ, max_pages, asz, adp->fill_byte_pool);
-> >  
-> >  	for (i = 0; i < BC_LINK_SG_POOL_SZ; i++) {
-> > -		temp = (uint8_t *)kzalloc(asz, GFP_KERNEL);
-> > +		temp = kzalloc(asz, GFP_KERNEL);
-> >  		if ((temp) == NULL) {
-> >  			BCMLOG_ERR("Failed to alloc %d mem\n", asz);
-> >  			return -ENOMEM;
-> > diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
-> > index ac13ba9..dbd7bc6 100644
-> > --- a/drivers/staging/cx25821/cx25821-audio-upstream.c
-> > +++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
-> > @@ -753,8 +753,7 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
-> >  
-> >  	if (dev->input_audiofilename) {
-> >  		str_length = strlen(dev->input_audiofilename);
-> > -		dev->_audiofilename =
-> > -		    (char *)kmalloc(str_length + 1, GFP_KERNEL);
-> > +		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> >  		if (!dev->_audiofilename)
-> >  			goto error;
-> > @@ -768,8 +767,7 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
-> >  		}
-> >  	} else {
-> >  		str_length = strlen(_defaultAudioName);
-> > -		dev->_audiofilename =
-> > -		    (char *)kmalloc(str_length + 1, GFP_KERNEL);
-> > +		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> >  		if (!dev->_audiofilename)
-> >  			goto error;
-> > diff --git a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-> > index cc51618..343df66 100644
-> > --- a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-> > +++ b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-> > @@ -769,8 +769,7 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
-> >  
-> >  	if (dev->input_filename_ch2) {
-> >  		str_length = strlen(dev->input_filename_ch2);
-> > -		dev->_filename_ch2 =
-> > -		    (char *)kmalloc(str_length + 1, GFP_KERNEL);
-> > +		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> >  		if (!dev->_filename_ch2)
-> >  			goto error;
-> > @@ -779,8 +778,7 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
-> >  		       str_length + 1);
-> >  	} else {
-> >  		str_length = strlen(dev->_defaultname_ch2);
-> > -		dev->_filename_ch2 =
-> > -		    (char *)kmalloc(str_length + 1, GFP_KERNEL);
-> > +		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> >  		if (!dev->_filename_ch2)
-> >  			goto error;
-> this look like the begin of kstrdup()
-> 
-> 
-> 
-> > diff --git a/drivers/staging/cx25821/cx25821-video-upstream.c b/drivers/staging/cx25821/cx25821-video-upstream.c
-> > index a22a569..09f4756 100644
-> > --- a/drivers/staging/cx25821/cx25821-video-upstream.c
-> > +++ b/drivers/staging/cx25821/cx25821-video-upstream.c
-> > @@ -831,7 +831,7 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
-> >  
-> >  	if (dev->input_filename) {
-> >  		str_length = strlen(dev->input_filename);
-> > -		dev->_filename = (char *)kmalloc(str_length + 1, GFP_KERNEL);
-> > +		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> >  		if (!dev->_filename)
-> >  			goto error;
-> 
-> this look like the begin of kstrdup()
-> > @@ -839,7 +839,7 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
-> >  		memcpy(dev->_filename, dev->input_filename, str_length + 1);
-> >  	} else {
-> >  		str_length = strlen(dev->_defaultname);
-> > -		dev->_filename = (char *)kmalloc(str_length + 1, GFP_KERNEL);
-> > +		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> >  		if (!dev->_filename)
-> >  			goto error;
-> 
-> this look like the begin of kstrdup()
-> 
-> > diff --git a/drivers/staging/et131x/et1310_rx.c b/drivers/staging/et131x/et1310_rx.c
-> > index 8f5dceb..8e04bdd 100644
-> > --- a/drivers/staging/et131x/et1310_rx.c
-> > +++ b/drivers/staging/et131x/et1310_rx.c
-> > @@ -547,7 +547,7 @@ int et131x_init_recv(struct et131x_adapter *adapter)
-> >  
-> >  	/* Setup each RFD */
-> >  	for (rfdct = 0; rfdct < rx_ring->NumRfd; rfdct++) {
-> > -		rfd = (MP_RFD *) kmem_cache_alloc(rx_ring->RecvLookaside,
-> > +		rfd = kmem_cache_alloc(rx_ring->RecvLookaside,
-> >  						     GFP_ATOMIC | GFP_DMA);
-> >  
-> >  		if (!rfd) {
-> > diff --git a/drivers/staging/et131x/et1310_tx.c b/drivers/staging/et131x/et1310_tx.c
-> > index b6ff20f..0f3473d 100644
-> > --- a/drivers/staging/et131x/et1310_tx.c
-> > +++ b/drivers/staging/et131x/et1310_tx.c
-> > @@ -112,7 +112,7 @@ int et131x_tx_dma_memory_alloc(struct et131x_adapter *adapter)
-> >  	struct tx_ring *tx_ring = &adapter->tx_ring;
-> >  
-> >  	/* Allocate memory for the TCB's (Transmit Control Block) */
-> > -	adapter->tx_ring.tcb_ring = (struct tcb *)
-> > +	adapter->tx_ring.tcb_ring =
-> >  		kcalloc(NUM_TCB, sizeof(struct tcb), GFP_ATOMIC | GFP_DMA);
-> >  	if (!adapter->tx_ring.tcb_ring) {
-> >  		dev_err(&adapter->pdev->dev, "Cannot alloc memory for TCBs\n");
-> > diff --git a/drivers/staging/rt2860/common/cmm_data.c b/drivers/staging/rt2860/common/cmm_data.c
-> > index 65b00e6..93a5347 100644
-> > --- a/drivers/staging/rt2860/common/cmm_data.c
-> > +++ b/drivers/staging/rt2860/common/cmm_data.c
-> > @@ -1424,7 +1424,7 @@ u32 deaggregate_AMSDU_announce(struct rt_rtmp_adapter *pAd,
-> >  		if ((Header802_3[12] == 0x88) && (Header802_3[13] == 0x8E)) {
-> >  			/* avoid local heap overflow, use dyanamic allocation */
-> >  			struct rt_mlme_queue_elem *Elem =
-> > -			    (struct rt_mlme_queue_elem *)kmalloc(sizeof(struct rt_mlme_queue_elem),
-> > +			    kmalloc(sizeof(struct rt_mlme_queue_elem),
-> >  							MEM_ALLOC_FLAG);
-> >  			if (Elem != NULL) {
-> >  				memmove(Elem->Msg +
-> > diff --git a/drivers/staging/rt2860/common/cmm_mac_pci.c b/drivers/staging/rt2860/common/cmm_mac_pci.c
-> > index 560ebd3..e26ba49 100644
-> > --- a/drivers/staging/rt2860/common/cmm_mac_pci.c
-> > +++ b/drivers/staging/rt2860/common/cmm_mac_pci.c
-> > @@ -1558,7 +1558,7 @@ void RT28xxPciMlmeRadioOFF(struct rt_rtmp_adapter *pAd)
-> >  		if (INFRA_ON(pAd) || ADHOC_ON(pAd)) {
-> >  			struct rt_mlme_disassoc_req DisReq;
-> >  			struct rt_mlme_queue_elem *pMsgElem =
-> > -			    (struct rt_mlme_queue_elem *)kmalloc(sizeof(struct rt_mlme_queue_elem),
-> > +			    kmalloc(sizeof(struct rt_mlme_queue_elem),
-> >  							MEM_ALLOC_FLAG);
-> >  
-> >  			if (pMsgElem) {
-> > diff --git a/drivers/staging/rt2860/common/cmm_mac_usb.c b/drivers/staging/rt2860/common/cmm_mac_usb.c
-> > index 9dd6959..8aec70f 100644
-> > --- a/drivers/staging/rt2860/common/cmm_mac_usb.c
-> > +++ b/drivers/staging/rt2860/common/cmm_mac_usb.c
-> > @@ -1087,7 +1087,7 @@ void RT28xxUsbMlmeRadioOFF(struct rt_rtmp_adapter *pAd)
-> >  		if (INFRA_ON(pAd) || ADHOC_ON(pAd)) {
-> >  			struct rt_mlme_disassoc_req DisReq;
-> >  			struct rt_mlme_queue_elem *pMsgElem =
-> > -			    (struct rt_mlme_queue_elem *)kmalloc(sizeof(struct rt_mlme_queue_elem),
-> > +			    kmalloc(sizeof(struct rt_mlme_queue_elem),
-> >  							MEM_ALLOC_FLAG);
-> >  
-> >  			if (pMsgElem) {
-> > diff --git a/drivers/staging/rt2860/rt_linux.c b/drivers/staging/rt2860/rt_linux.c
-> > index 27b7810..0029b2d 100644
-> > --- a/drivers/staging/rt2860/rt_linux.c
-> > +++ b/drivers/staging/rt2860/rt_linux.c
-> > @@ -154,7 +154,7 @@ void RTMP_GetCurrentSystemTime(LARGE_INTEGER *time)
-> >  /* pAd MUST allow to be NULL */
-> >  int os_alloc_mem(struct rt_rtmp_adapter *pAd, u8 ** mem, unsigned long size)
-> >  {
-> > -	*mem = (u8 *)kmalloc(size, GFP_ATOMIC);
-> > +	*mem = kmalloc(size, GFP_ATOMIC);
-> >  	if (*mem)
-> >  		return NDIS_STATUS_SUCCESS;
-> >  	else
-> > diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-> > index e099a5f..b7426fe 100644
-> > --- a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-> > +++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-> > @@ -1435,7 +1435,7 @@ static inline u16 auth_parse(struct sk_buff *skb, u8** challenge, int *chlen)
-> >  
-> >  		if(*(t++) == MFIE_TYPE_CHALLENGE){
-> >  			*chlen = *(t++);
-> > -			*challenge = (u8*)kmalloc(*chlen, GFP_ATOMIC);
-> > +			*challenge = kmalloc(*chlen, GFP_ATOMIC);
-> >  			memcpy(*challenge, t, *chlen);
-> >  		}
-> >  	}
-> 
-> kmalloc() will succeed ?
-> 
-> 
-> 
-> > @@ -2861,8 +2861,7 @@ static int ieee80211_wpa_set_encryption(struct ieee80211_device *ieee,
-> >  
-> >  		ieee80211_crypt_delayed_deinit(ieee, crypt);
-> >  
-> > -		new_crypt = (struct ieee80211_crypt_data *)
-> > -			kmalloc(sizeof(*new_crypt), GFP_KERNEL);
-> > +		new_crypt = kmalloc(sizeof(*new_crypt), GFP_KERNEL);
-> >  		if (new_crypt == NULL) {
-> >  			ret = -ENOMEM;
-> >  			goto done;
-> > @@ -2953,7 +2952,7 @@ int ieee80211_wpa_supplicant_ioctl(struct ieee80211_device *ieee, struct iw_poin
-> >  		goto out;
-> >  	}
-> >  
-> > -	param = (struct ieee_param *)kmalloc(p->length, GFP_KERNEL);
-> > +	param = kmalloc(p->length, GFP_KERNEL);
-> >  	if (param == NULL){
-> >  		ret = -ENOMEM;
-> >  		goto out;
-> > diff --git a/drivers/staging/rtl8192e/ieee80211/ieee80211_module.c b/drivers/staging/rtl8192e/ieee80211/ieee80211_module.c
-> > index f43a7db..c7aa1c6 100644
-> > --- a/drivers/staging/rtl8192e/ieee80211/ieee80211_module.c
-> > +++ b/drivers/staging/rtl8192e/ieee80211/ieee80211_module.c
-> > @@ -170,7 +170,7 @@ struct net_device *alloc_ieee80211(int sizeof_priv)
-> >  	ieee80211_softmac_init(ieee);
-> >  
-> >  #if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,13))
-> > -	ieee->pHTInfo = (RT_HIGH_THROUGHPUT*)kzalloc(sizeof(RT_HIGH_THROUGHPUT), GFP_KERNEL);
-> > +	ieee->pHTInfo = kzalloc(sizeof(RT_HIGH_THROUGHPUT), GFP_KERNEL);
-> >  #else
-> >  	ieee->pHTInfo = (RT_HIGH_THROUGHPUT*)kmalloc(sizeof(RT_HIGH_THROUGHPUT), GFP_KERNEL);
-> >  	memset(ieee->pHTInfo,0,sizeof(RT_HIGH_THROUGHPUT));
-> > diff --git a/drivers/staging/rtl8192e/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8192e/ieee80211/ieee80211_rx.c
-> > index ce265ae..da10067 100644
-> > --- a/drivers/staging/rtl8192e/ieee80211/ieee80211_rx.c
-> > +++ b/drivers/staging/rtl8192e/ieee80211/ieee80211_rx.c
-> > @@ -1397,7 +1397,7 @@ int ieee80211_rtl_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
-> >  	/* skb: hdr + (possible reassembled) full plaintext payload */
-> >  	payload = skb->data + hdrlen;
-> >  	//ethertype = (payload[6] << 8) | payload[7];
-> > -	rxb = (struct ieee80211_rxb*)kmalloc(sizeof(struct ieee80211_rxb),GFP_ATOMIC);
-> > +	rxb = kmalloc(sizeof(struct ieee80211_rxb), GFP_ATOMIC);
-> >  	if(rxb == NULL)
-> >  	{
-> >  		IEEE80211_DEBUG(IEEE80211_DL_ERR,"%s(): kmalloc rxb error\n",__FUNCTION__);
-> > diff --git a/drivers/staging/rtl8192e/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8192e/ieee80211/ieee80211_softmac.c
-> > index b4beb20..4f6ce06 100644
-> > --- a/drivers/staging/rtl8192e/ieee80211/ieee80211_softmac.c
-> > +++ b/drivers/staging/rtl8192e/ieee80211/ieee80211_softmac.c
-> > @@ -1800,7 +1800,7 @@ static inline u16 auth_parse(struct sk_buff *skb, u8** challenge, int *chlen)
-> >  
-> >  		if(*(t++) == MFIE_TYPE_CHALLENGE){
-> >  			*chlen = *(t++);
-> > -			*challenge = (u8*)kmalloc(*chlen, GFP_ATOMIC);
-> > +			*challenge = kmalloc(*chlen, GFP_ATOMIC);
-> >  			memcpy(*challenge, t, *chlen);
-> >  		}
-> >  	}
-> 
-> kmalloc() will succeed ?
-> 
-> 
-> > @@ -3459,8 +3459,7 @@ static int ieee80211_wpa_set_encryption(struct ieee80211_device *ieee,
-> >  
-> >  		ieee80211_crypt_delayed_deinit(ieee, crypt);
-> >  
-> > -		new_crypt = (struct ieee80211_crypt_data *)
-> > -			kmalloc(sizeof(*new_crypt), GFP_KERNEL);
-> > +		new_crypt = kmalloc(sizeof(*new_crypt), GFP_KERNEL);
-> >  		if (new_crypt == NULL) {
-> >  			ret = -ENOMEM;
-> >  			goto done;
-> > @@ -3592,7 +3591,7 @@ int ieee80211_wpa_supplicant_ioctl(struct ieee80211_device *ieee, struct iw_poin
-> >  		goto out;
-> >  	}
-> >  
-> > -	param = (struct ieee_param *)kmalloc(p->length, GFP_KERNEL);
-> > +	param = kmalloc(p->length, GFP_KERNEL);
-> >  	if (param == NULL){
-> >  		ret = -ENOMEM;
-> >  		goto out;
-> > diff --git a/drivers/staging/rtl8192e/r8192E_core.c b/drivers/staging/rtl8192e/r8192E_core.c
-> > index 604c691..533be48 100644
-> > --- a/drivers/staging/rtl8192e/r8192E_core.c
-> > +++ b/drivers/staging/rtl8192e/r8192E_core.c
-> > @@ -5040,7 +5040,7 @@ static int rtl8192_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
-> >               goto out;
-> >       }
-> >  
-> > -     ipw = (struct ieee_param *)kmalloc(p->length, GFP_KERNEL);
-> > +     ipw = kmalloc(p->length, GFP_KERNEL);
-> >       if (ipw == NULL){
-> >               ret = -ENOMEM;
-> >               goto out;
-> > diff --git a/drivers/staging/rtl8192su/ieee80211/ieee80211_module.c b/drivers/staging/rtl8192su/ieee80211/ieee80211_module.c
-> > index c024fa6..73de3ba 100644
-> > --- a/drivers/staging/rtl8192su/ieee80211/ieee80211_module.c
-> > +++ b/drivers/staging/rtl8192su/ieee80211/ieee80211_module.c
-> > @@ -161,7 +161,7 @@ struct net_device *alloc_ieee80211(int sizeof_priv)
-> >  
-> >  	ieee80211_softmac_init(ieee);
-> >  
-> > -	ieee->pHTInfo = (RT_HIGH_THROUGHPUT*)kzalloc(sizeof(RT_HIGH_THROUGHPUT), GFP_KERNEL);
-> > +	ieee->pHTInfo = kzalloc(sizeof(RT_HIGH_THROUGHPUT), GFP_KERNEL);
-> >  	if (ieee->pHTInfo == NULL)
-> >  	{
-> >  		IEEE80211_DEBUG(IEEE80211_DL_ERR, "can't alloc memory for HTInfo\n");
-> > diff --git a/drivers/staging/rtl8192su/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8192su/ieee80211/ieee80211_rx.c
-> > index cc80faf..d3b34cc 100644
-> > --- a/drivers/staging/rtl8192su/ieee80211/ieee80211_rx.c
-> > +++ b/drivers/staging/rtl8192su/ieee80211/ieee80211_rx.c
-> > @@ -1191,7 +1191,7 @@ int ieee80211_rtl_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
-> >  	/* skb: hdr + (possible reassembled) full plaintext payload */
-> >  	payload = skb->data + hdrlen;
-> >  	//ethertype = (payload[6] << 8) | payload[7];
-> > -	rxb = (struct ieee80211_rxb*)kmalloc(sizeof(struct ieee80211_rxb),GFP_ATOMIC);
-> > +	rxb = kmalloc(sizeof(struct ieee80211_rxb), GFP_ATOMIC);
-> >  	if(rxb == NULL)
-> >  	{
-> >  		IEEE80211_DEBUG(IEEE80211_DL_ERR,"%s(): kmalloc rxb error\n",__FUNCTION__);
-> > diff --git a/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c
-> > index 3cf5fdf..660aee2 100644
-> > --- a/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c
-> > +++ b/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c
-> > @@ -1557,7 +1557,7 @@ static inline u16 auth_parse(struct sk_buff *skb, u8** challenge, int *chlen)
-> >  
-> >  		if(*(t++) == MFIE_TYPE_CHALLENGE){
-> >  			*chlen = *(t++);
-> > -			*challenge = (u8*)kmalloc(*chlen, GFP_ATOMIC);
-> > +			*challenge = kmalloc(*chlen, GFP_ATOMIC);
-> >  			memcpy(*challenge, t, *chlen);
-> >  		}
-> >  	}
-> 
-> kmalloc() will succeed ?
-> 
-> 
-> 
-> hope that helps,
-> 
-> re,
->  wh
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+
+looks correct and simple fix.
+
+
+
+Thanks,
+Viral
+
+
+
+______________________________________________________________________
+
+This Email may contain confidential or privileged information for the intended recipient (s) If you are not the intended recipient, please do not use or disseminate the information, notify the sender and delete it from your system.
+
+______________________________________________________________________
+--
+To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+______________________________________________________________________
+
+This Email may contain confidential or privileged information for the intended recipient (s) If you are not the intended recipient, please do not use or disseminate the information, notify the sender and delete it from your system.
+
+______________________________________________________________________
