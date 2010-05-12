@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab0ELWNM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 18:13:12 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:55884 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506Ab0ELWNK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 18:13:10 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: mmotm 2010-05-11 - dies in pm_qos_update_request()
-In-Reply-To: Your message of "Wed, 12 May 2010 23:07:20 +0200."
-             <201005122307.20860.rjw@sisk.pl>
-From: Valdis.Kletnieks@vt.edu
-References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org> <5525.1273693962@localhost>
-            <201005122307.20860.rjw@sisk.pl>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1273702370_3904P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 12 May 2010 18:12:50 -0400
-Message-ID: <17286.1273702370@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020204.4BEB27E2.00F7,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	id S1756229Ab0ELWPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 18:15:40 -0400
+Received: from kroah.org ([198.145.64.141]:34949 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754909Ab0ELWPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 18:15:38 -0400
+Date: Wed, 12 May 2010 15:14:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Kosina <jkosina@suse.cz>,
+       Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+       Steven Rostedt <rostedt@goodmis.org>, stable@kernel.org,
+       Jiri Benc <jbenc@suse.cz>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>,
+       akpm@linux-foundation.org, Eric Dumazet <dada1@cosmosbay.com>,
+       torvalds@linux-foundation.org, stable-review@kernel.org,
+       alan@lxorguk.ukuu.org.uk
+Subject: Re: [stable] [171/197] module: fix __module_ref_addr()
+Message-ID: <20100512221434.GA2786@kroah.com>
+References: <20100422191857.GA13268@kroah.com>
+ <20100422190922.702027944@kvm.kroah.org>
+ <20100428165201.3d7d6b4a@griffin.suse.cz>
+ <20100428162056.GA2846@Krystal>
+ <20100428185550.4406319c@logostar.upir.cz>
+ <4BD86F3D.7040907@kernel.org>
+ <20100428172944.GA14660@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100428172944.GA14660@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1273702370_3904P
-Content-Type: text/plain; charset=us-ascii
-
-On Wed, 12 May 2010 23:07:20 +0200, "Rafael J. Wysocki" said:
- 
-> > I suspect this commit:
+On Wed, Apr 28, 2010 at 10:29:44AM -0700, Greg KH wrote:
+> On Wed, Apr 28, 2010 at 07:24:13PM +0200, Tejun Heo wrote:
+> > On 04/28/2010 06:55 PM, Jiri Benc wrote:
+> > > On Wed, 28 Apr 2010 12:20:56 -0400, Mathieu Desnoyers wrote:
+> > >> Can you try reverting commit c8d52465f95c4187871f8e65666c07806ca06d41 and see if
+> > >> it helps ?
+> > > 
+> > > It doesn't. The produced code is identical.
+> > > 
+> > >> If you have other compiler versions handy, that would also be helpful to see if
+> > >> the problem is specific to the gcc version you are using.
+> > > 
+> > > Tried 4.5.0, the same problem (at least looking at the produced assembler
+> > > code, I haven't booted the kernel, but it looks very similar to 4.3.3).
 > > 
-> > commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
-> > Author: Rafael J. Wysocki <rjw@sisk.pl>
-> > Date:   Sun Mar 14 14:35:17 2010 +0000
-> > 
-> >     e1000e / PCI / PM: Add basic runtime PM support (rev. 4)
+> > I wrote on the bugzilla but this is not a compiler bug but the -stable
+> > patch shouldn't have been applied only to 2.6.33.  Not 2.6.32.  This
+> > is because till 2.6.32, ia64 hadn't been converted to dynamic percpu
+> > allocator, so its static and dynamic percpu areas were separate and
+> > the per_cpu_ptr() wouldn't do the offsetting the module code expects
+> > there.  So, please revert the patch from 2.6.32.
 > 
-> No, I don't think so.  I'm running -rc6 with this patch applied on a box with
-> e1000e and it works just fine.
-> 
-> Please try to revert this one instead:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/rafael/suspend-2.6.git;a=patch;h=ed77134bfccf5e75b6cbadab268e559dbe6a4ebb
+> Ah crap, I missed that.  I'll go revert it from .32 now, sorry about
+> that.
 
-Isn't a clean revert - build dies with:
+And of course, I forgot to do that before releasing the next .32 kernel.
+It will be in the one after this one.  bah.
 
-  CC      net/mac80211/scan.o
-net/mac80211/scan.c: In function 'ieee80211_scan_state_decision':
-net/mac80211/scan.c:510: error: implicit declaration of function 'pm_qos_request'
-make[1]: *** [net/mac80211/scan.o] Error 1
-make: *** [net/mac80211/scan.o] Error 2
-
-Will investigate more later, find what other commit needs reverting.
-
---==_Exmh_1273702370_3904P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFL6yficC3lWbTT17ARAg4GAJ4mP56FJ4j7BKFY+fx3EYZn3WBjBACgiNks
-IfrHw5PXW5twuBm29VbGzkw=
-=l25Q
------END PGP SIGNATURE-----
-
---==_Exmh_1273702370_3904P--
-
+greg k-h
