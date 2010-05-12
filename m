@@ -1,125 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab0ELRmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 13:42:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756902Ab0ELRmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 13:42:18 -0400
-Date: Wed, 12 May 2010 13:39:31 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 1/5] rename anon_vma_lock to vma_lock_anon_vma
-Message-ID: <20100512133931.14c79d22@annuminas.surriel.com>
-In-Reply-To: <20100512133815.0d048a86@annuminas.surriel.com>
-References: <20100512133815.0d048a86@annuminas.surriel.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756977Ab0ELRm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 13:42:29 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35398 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756902Ab0ELRmY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 13:42:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JKgCIR0E0vQviVvQ5LdcYCszmAZmH74WdfuU+eeYxiQVGJFSvm49WIPpqvJAotqUOe
+         owJZQpu3rUOOF2nw6aOJyCCgegKvI0Y672pcmP51nZBmZXtOQdu9IY6XDOk7uTJ0Mbo5
+         IgBiAVawnZ7t6GKGH4JfZS0DOjbES7dOqyO+0=
+MIME-Version: 1.0
+In-Reply-To: <4BEAE7A1.2010001@intcomgrp.com>
+References: <eJjRf-6YM-1@gated-at.bofh.it> <eJktY-7JG-7@gated-at.bofh.it>
+	 <eJktY-7JG-5@gated-at.bofh.it> <4BEAB6FC.8090105@intcomgrp.com>
+	 <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
+	 <1273674048.1626.117.camel@laptop> <4BEABDF8.40206@redhat.com>
+	 <4BEAE7A1.2010001@intcomgrp.com>
+Date: Wed, 12 May 2010 19:42:20 +0200
+Message-ID: <AANLkTikEyJ8q9GkpyZo0OUY4MLM_soWEviiBG2R6H-mY@mail.gmail.com>
+Subject: Re: [PATCH/RFC] Have sane default values for cpusets
+From: Dhaval Giani <dhaval.giani@gmail.com>
+To: James Kosin <jkosin@intcomgrp.com>
+Cc: Jan Safranek <jsafrane@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       linux-kernel@vger.kernel.org, menage@google.com,
+       balbir@linux.vnet.ibm.com, lennart@poettering.net, tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: rename anon_vma_lock to vma_lock_anon_vma
+On Wed, May 12, 2010 at 7:38 PM, James Kosin <jkosin@intcomgrp.com> wrote:
+> On 5/12/2010 10:40 AM, Jan Safranek wrote:
+>
+> On 05/12/2010 04:20 PM, Peter Zijlstra wrote:
+>
+> On Wed, 2010-05-12 at 16:13 +0200, Dhaval Giani wrote:
+>
+> What you are saying is that an application
+> programmer who wants to just use memory cgroups should also care about
+> cpusets and just about countless other cgroup subsystems that can
+> exist.
+>
+> That's exactly what he says if he mounts them together.
+>
+> No, the programmer does not mount anything. Programmer writes application
+> which wants to create a subgroup. System admin is the one who decides what
+> is mounted how. And the programmer (=me) needs a way how to reliably create
+> a subgroup, without knowing details about all controllers. E.g. 'blkio'
+> controller is quite new one, old applications do now know anything about it,
+> yet according to your idea, the application *must* provide sane defaults to
+> it.
+>
+> Jan
+>
+>
+> Jan,
+>
+> I think sane defaults should be enforced only if the application actively
+> uses the device.  Your right in that you don't want to have to guess as to
+> which devices are mounted as long as you don't touch the devices that aren't
+> mounted everything should be okay and work for the specific device or mount
+> you are working with  (which by the way you need to know!!!)....
+>
 
-Rename anon_vma_lock to vma_lock_anon_vma.  This matches the
-naming style used in page_lock_anon_vma and will come in really
-handy further down in this patch series.
+I seem to get the impression that there is a miscommunication here. We
+are talking about the cgroups feature here (more details are available
+at http://www.mjmwired.net/kernel/Documentation/cgroups.txt ). We
+really are not talking about devices, but about specific cgroup
+subsystems which can be mounted together, and are not under the
+control of the programmer.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- include/linux/rmap.h |    4 ++--
- mm/mmap.c            |   14 +++++++-------
- 2 files changed, 9 insertions(+), 9 deletions(-)
+> PS: Providing a set of defaults on creation may lead to a security
+> problem... just an afterthought.
+>
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index d25bd22..88cae59 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -90,14 +90,14 @@ static inline struct anon_vma *page_anon_vma(struct page *page)
- 	return page_rmapping(page);
- }
- 
--static inline void anon_vma_lock(struct vm_area_struct *vma)
-+static inline void vma_lock_anon_vma(struct vm_area_struct *vma)
- {
- 	struct anon_vma *anon_vma = vma->anon_vma;
- 	if (anon_vma)
- 		spin_lock(&anon_vma->lock);
- }
- 
--static inline void anon_vma_unlock(struct vm_area_struct *vma)
-+static inline void vma_unlock_anon_vma(struct vm_area_struct *vma)
- {
- 	struct anon_vma *anon_vma = vma->anon_vma;
- 	if (anon_vma)
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 456ec6f..d30bed3 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -452,12 +452,12 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
- 		spin_lock(&mapping->i_mmap_lock);
- 		vma->vm_truncate_count = mapping->truncate_count;
- 	}
--	anon_vma_lock(vma);
-+	vma_lock_anon_vma(vma);
- 
- 	__vma_link(mm, vma, prev, rb_link, rb_parent);
- 	__vma_link_file(vma);
- 
--	anon_vma_unlock(vma);
-+	vma_unlock_anon_vma(vma);
- 	if (mapping)
- 		spin_unlock(&mapping->i_mmap_lock);
- 
-@@ -1710,7 +1710,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 	 */
- 	if (unlikely(anon_vma_prepare(vma)))
- 		return -ENOMEM;
--	anon_vma_lock(vma);
-+	vma_lock_anon_vma(vma);
- 
- 	/*
- 	 * vma->vm_start/vm_end cannot change under us because the caller
-@@ -1721,7 +1721,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 	if (address < PAGE_ALIGN(address+4))
- 		address = PAGE_ALIGN(address+4);
- 	else {
--		anon_vma_unlock(vma);
-+		vma_unlock_anon_vma(vma);
- 		return -ENOMEM;
- 	}
- 	error = 0;
-@@ -1737,7 +1737,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 		if (!error)
- 			vma->vm_end = address;
- 	}
--	anon_vma_unlock(vma);
-+	vma_unlock_anon_vma(vma);
- 	return error;
- }
- #endif /* CONFIG_STACK_GROWSUP || CONFIG_IA64 */
-@@ -1762,7 +1762,7 @@ static int expand_downwards(struct vm_area_struct *vma,
- 	if (error)
- 		return error;
- 
--	anon_vma_lock(vma);
-+	vma_lock_anon_vma(vma);
- 
- 	/*
- 	 * vma->vm_start/vm_end cannot change under us because the caller
-@@ -1783,7 +1783,7 @@ static int expand_downwards(struct vm_area_struct *vma,
- 			vma->vm_pgoff -= grow;
- 		}
- 	}
--	anon_vma_unlock(vma);
-+	vma_unlock_anon_vma(vma);
- 	return error;
- }
- 
+Which is why you have *sane* defaults.
+
+Dhaval
