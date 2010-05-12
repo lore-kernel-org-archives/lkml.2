@@ -1,76 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab0ELJ15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 05:27:57 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43783 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752238Ab0ELJ1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 05:27:55 -0400
-Date: Wed, 12 May 2010 09:27:38 GMT
-From: tip-bot for Peter P Waskiewicz Jr 
-	<peter.p.waskiewicz.jr@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       peter.p.waskiewicz.jr@intel.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       peter.p.waskiewicz.jr@intel.com, tglx@linutronix.de
-In-Reply-To: <20100505205638.5426.87189.stgit@ppwaskie-hc2.jf.intel.com>
-References: <20100505205638.5426.87189.stgit@ppwaskie-hc2.jf.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq: Clear CPU mask in affinity_hint when none is provided
-Message-ID: <tip-4308ad801193f14ff42cb746da37cf07e35f0d08@git.kernel.org>
-Git-Commit-ID: 4308ad801193f14ff42cb746da37cf07e35f0d08
-X-Mailer: tip-git-log-daemon
+	id S1754008Ab0ELJ2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 05:28:38 -0400
+Received: from mail96.messagelabs.com ([216.82.254.19]:23024 "EHLO
+	mail96.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554Ab0ELJ2g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 05:28:36 -0400
+X-VirusChecked: Checked
+X-Env-Sender: Viral.Mehta@lntinfotech.com
+X-Msg-Ref: server-8.tower-96.messagelabs.com!1273656512!64498078!1
+X-StarScan-Version: 6.2.4; banners=lntinfotech.com,-,-
+X-Originating-IP: [203.199.118.205]
+From: Viral Mehta <Viral.Mehta@lntinfotech.com>
+To: =?iso-8859-2?Q?Micha=B3_Nazarewicz?= <m.nazarewicz@samsung.com>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 12 May 2010 14:58:31 +0530
+Subject: RE: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
+ error recovery
+Thread-Topic: [PATCH] USB: gadget: f_mass_storage: fix in fsg_common_init()
+ error recovery
+Thread-Index: AcrxseRzNT3yaA2BSOqTvrNBKSsxqQAAp+Cv
+Message-ID: <70376CA23424B34D86F1C7DE6B9973430254343ABB@VSHINMSMBX01.vshodc.lntinfotech.com>
+References: <994e1bf34d3b6f1fbc58c0f7ce61c7f258208ddd.1273651956.git.mina86@mina86.com>
+ <70376CA23424B34D86F1C7DE6B9973430254343ABA@VSHINMSMBX01.vshodc.lntinfotech.com>,<op.vck4q0c87p4s8u@pikus>
+In-Reply-To: <op.vck4q0c87p4s8u@pikus>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 12 May 2010 09:27:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4308ad801193f14ff42cb746da37cf07e35f0d08
-Gitweb:     http://git.kernel.org/tip/4308ad801193f14ff42cb746da37cf07e35f0d08
-Author:     Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-AuthorDate: Wed, 5 May 2010 13:56:42 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 12 May 2010 11:23:34 +0200
 
-genirq: Clear CPU mask in affinity_hint when none is provided
+>> Michal Nazarewicz [m.nazarewicz@samsung.com]
+>>> In to places in fsg_common_init() an unconditional call to kfree()
+>>> on common was performed in error recovery which is not a valid
 
-When an interrupt is disabled and torn down, the CPU mask returned
-through affinity_hint right now is all CPUs. Also, for drivers that
-don't provide an affinity_hint mask, this can be misleading. There
-should be no hint at all, meaning an empty CPU mask.
+>On Wed, 12 May 2010 10:29:02 +0200, Viral Mehta <Viral.Mehta@lntinfotech.com> wrote:
+>> If I am not wrong, common can not be NULL since it was already checked above.
+>>
+>> 2685         if (!common) {
+>> 2686                 common = kzalloc(sizeof *common, GFP_KERNEL);
+>> 2687                 if (!common)
+>> 2688                         return ERR_PTR(-ENOMEM);
+>> 2689                 common->free_storage_on_release = 1;
 
-[ tglx: use zalloc_cpumask_var instead of clearing it under the lock ]
+>That is correct but it is not the issue.
 
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Cc: davem@davemloft.net
-Cc: arjan@linux.jf.intel.com
-Cc: bhutchings@solarflare.com
-LKML-Reference: <20100505205638.5426.87189.stgit@ppwaskie-hc2.jf.intel.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/proc.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+>fsg_common_init() as a first argument takes a pointer to a fsg_common
+>structure which, if not NULL, is reused and it is then assumed that
+>caller is responsible far maintaining allocation and deallocation of
+>this structure.
 
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index 4f9427a..09a2ee5 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -38,14 +38,12 @@ static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
- 	unsigned long flags;
- 	cpumask_var_t mask;
- 
--	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-+	if (!zalloc_cpumask_var(&mask, GFP_KERNEL))
- 		return -ENOMEM;
- 
- 	raw_spin_lock_irqsave(&desc->lock, flags);
- 	if (desc->affinity_hint)
- 		cpumask_copy(mask, desc->affinity_hint);
--	else
--		cpumask_setall(mask);
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
- 
- 	seq_cpumask(m, mask);
+>The idea is that one can do:
+
+>static struct fsg_common fsg_common;
+>/* ... */
+>fsg_common_init(&fsg_common, cdev, fsg_config);
+
+>or allocate fsg_common structure as a part of a larger structure.  In such
+>cases kfree() cannot be called on the object.  Which case we are dealing
+>with is indicated by the common->free_storage_on_release flag.
+>fsg_common_release() consults it and either calls or does not call krfee().
+
+Oh, makes sense. All instances has fsg_common_init(0, ...) and so i just missed...
+
+But, still the central idea was, why should we go to whole error_release path which really does removing device file and closing luns and etc.
+However, it will not make any difference since curlun->nluns will be zero and so there will be no loop in fsg_common_releas() function.
+
+Apart from that, IMHO,
+2894         kfree(common->luns);
+should crash in case if your error path is followed.
+
+common->luns is allocd
+2712         /* Create the LUNs, open their backing files, and register the
+2713          * LUN devices in sysfs. */
+2714         curlun = kzalloc(nluns * sizeof *curlun, GFP_KERNEL);
+2715         if (!curlun) {
+2716                 kfree(common);
+2717                 return ERR_PTR(-ENOMEM);
+2718         }
+
+
+Thanks,
+Viral
+
+
+
+______________________________________________________________________
+
+This Email may contain confidential or privileged information for the intended recipient (s) If you are not the intended recipient, please do not use or disseminate the information, notify the sender and delete it from your system.
+
+______________________________________________________________________
