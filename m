@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758113Ab0ELVlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 17:41:14 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48487 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758093Ab0ELVlM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 17:41:12 -0400
+	id S1758075Ab0ELVr7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 17:47:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8344 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755717Ab0ELVr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 17:47:57 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH] kvm: remove CAP_SYS_RAWIO requirement from
+	kvm_vm_ioctl_assign_irq
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, chrisw@redhat.com,
+       alex.williamson@redhat.com
+Date: Wed, 12 May 2010 09:46:31 -0400
+Message-ID: <20100512134619.30602.63792.stgit@virtlab9.virt.bos.redhat.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-X-Originating-IP: [172.24.11.26]
-In-Reply-To: <20100512205846.GG2377@agk-dp.fab.redhat.com>
-References: <20100512203054.GA22104@z600>
-	 <20100512205846.GG2377@agk-dp.fab.redhat.com>
-Date: Wed, 12 May 2010 16:41:10 -0500
-X-Google-Sender-Auth: Bni-3V-q_NY1GNnHAFrq19rO-5Q
-Message-ID: <AANLkTikJrrq7vfr9VwRsE92wfW8smJe8WNwOJoZQygk1@mail.gmail.com>
-Subject: Re: [dm-devel] [RFC PATCH] init: boot to device-mapper targets 
-	without an initr*
-From: Will Drewry <wad@chromium.org>
-To: agk@redhat.com
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 3:58 PM, Alasdair G Kergon <agk@redhat.com> wrote:
-> On Wed, May 12, 2010 at 03:30:54PM -0500, Will Drewry wrote:
->> The format is dm=minor,rwmode,begin,length,target,target,params,with,commas
->
-> 1. If we go down this route, pick a format that gives access to the full
-> set of allowed table formats (or which can be extended trivially to do
-> so in future).  So cope with multi-line tables e.g. with a marker (empty
-> field?) to start a new table line.
+Remove this check in an effort to allow kvm guests to run without
+root privileges.  This capability check doesn't seem to add any
+security since the device needs to have already been added via the
+assign device ioctl and the io actually occurs through the pci
+sysfs interface.
 
-Sounds good.  That shouldn't add any serious code complexity either.
-An empty field (,,) would probably work nicely.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
 
-> 2. It would be wise to define a name and optional uuid too, so the device is
-> fully visible and accessible from userspace through existing mechanisms.
-> Originally the name+uuid were decoupled from the mapped device itself,
-> but that got changed, though the code layout (dm-ioctl.c vs. dm.c) still
-> makes them appear to be separate.
+ virt/kvm/assigned-dev.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-It wasn't clear how I could define those externally to the dm-ioctl code.
+diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
+index 4d10b1e..64672e2 100644
+--- a/virt/kvm/assigned-dev.c
++++ b/virt/kvm/assigned-dev.c
+@@ -448,9 +448,6 @@ static int kvm_vm_ioctl_assign_irq(struct kvm *kvm,
+ 	struct kvm_assigned_dev_kernel *match;
+ 	unsigned long host_irq_type, guest_irq_type;
+ 
+-	if (!capable(CAP_SYS_RAWIO))
+-		return -EPERM;
+-
+ 	if (!irqchip_in_kernel(kvm))
+ 		return r;
+ 
 
->> +     char target[24];
->> +     char target_params[256];
->
-> I'm never a fan of hard-coded restrictions, but at least make them
-> explicit as #defines, so people can see at a glance what to change
-> if they get errors for exceeding them.
-
-Agreed. I'll add defines or see if I can use the existing ones.
-(Alternately, it might be possible to use the passed in string in place
- depending on the changes.)
-
->> +static void __init dm_setup_drive(void)
->
-> Arguably most of this code could be a helper function exported from drivers/md.
-
-True, or I could follow the do_mounts_md model and just use the ioctl interface.
-Would a parallel function to ctl_ioctl which behaved the same but didn't expect
-user-sourced dm_ioctl struct be a reasonable compromise?
-
-That'd limit the code to parsing the parameter line and calling through without
-duplicating the code in dev_create and table_load to yield the same behavior.
-
-thanks!
-will
