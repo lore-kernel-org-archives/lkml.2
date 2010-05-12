@@ -1,151 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab0ELReQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 13:34:16 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:52822 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961Ab0ELReO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 13:34:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=V9O18kX5wlCxVNVj2FviBgGaAWxLQllmu7Azz3t0pEenpeS74iJutXg7hagtw0Bex4
-         s5ua69nf3uCGD8qeiejtKsfw5DfW068UzpwP3w+CYY0kNTK9MICJNTDNk+izol6rdVOq
-         Uw51/dJa5fPmmKTeKdhwIbgSbqQ3dc2F05l8Y=
-Date: Wed, 12 May 2010 10:33:59 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: mjg@redhat.com, mzxreary@0pointer.de, rpurdie@linux.intel.com,
-       jlee@novell.com, linux-kernel@vger.kernel.org,
-       platform-driver-x86@vger.kernel.org, greg@kroah.com
-Subject: Re: [PATCH 4/4] msi-laptop: Add i8042 filter to sync sw state with
- BIOS when function key pressed
-Message-ID: <20100512173359.GA16431@core.coreip.homeip.net>
-References: <20100512141149.GB20564@kroah.com>
- <1273683490-27090-4-git-send-email-gregkh@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273683490-27090-4-git-send-email-gregkh@suse.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1756890Ab0ELRmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 13:42:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20081 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754675Ab0ELRmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 13:42:08 -0400
+Date: Wed, 12 May 2010 13:40:29 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 4/5] always lock the root (oldest) anon_vma
+Message-ID: <20100512134029.36c286c4@annuminas.surriel.com>
+In-Reply-To: <20100512133815.0d048a86@annuminas.surriel.com>
+References: <20100512133815.0d048a86@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 09:58:10AM -0700, Greg Kroah-Hartman wrote:
-> From: Lee, Chun-Yi <jlee@novell.com>
-> 
-> There have some MSI netbook change devices state by EC when user press
-> wlan/bluetooth/wwan function keys. So, add a i8042 filter to sync sw
-> state with BIOS when function keys pressed.
-> 
-> Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> ---
->  drivers/platform/x86/msi-laptop.c |   59 ++++++++++++++++++++++++++++++++++++-
->  1 files changed, 58 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/msi-laptop.c b/drivers/platform/x86/msi-laptop.c
-> index 34bec2e..3c6e160 100644
-> --- a/drivers/platform/x86/msi-laptop.c
-> +++ b/drivers/platform/x86/msi-laptop.c
-> @@ -59,6 +59,7 @@
->  #include <linux/backlight.h>
->  #include <linux/platform_device.h>
->  #include <linux/rfkill.h>
-> +#include <linux/i8042.h>
->  
->  #define MSI_DRIVER_VERSION "0.5"
->  
-> @@ -581,6 +582,46 @@ static void rfkill_cleanup(void)
->  	}
->  }
->  
-> +static void msi_update_rfkill(struct work_struct *ignored)
-> +{
-> +	get_wireless_state_ec_standard();
-> +
-> +	if (rfk_wlan)
-> +		rfkill_set_sw_state(rfk_wlan, !wlan_s);
-> +	if (rfk_bluetooth)
-> +		rfkill_set_sw_state(rfk_bluetooth, !bluetooth_s);
-> +	if (rfk_threeg)
-> +		rfkill_set_sw_state(rfk_threeg, !threeg_s);
-> +}
-> +static DECLARE_DELAYED_WORK(msi_rfkill_work, msi_update_rfkill);
-> +
-> +bool msi_laptop_i8042_filter(unsigned char data, unsigned char str,
-> +				struct serio *port)
+Subject: always lock the root (oldest) anon_vma
 
-Make it static bool...
+Always (and only) lock the root (oldest) anon_vma whenever we do something in an
+anon_vma.  The recently introduced anon_vma scalability is due to the rmap code
+scanning only the VMAs that need to be scanned.  Many common operations still
+took the anon_vma lock on the root anon_vma, so always taking that lock is not
+expected to introduce any scalability issues.
 
-> +{
-> +	static bool extended;
-> +
-> +	if (str & 0x20)
-> +		return false;
-> +
-> +	/* 0x54 wwan, 0x62 bluetooth, 0x76 wlan*/
-> +	if (unlikely(data == 0xe0)) {
-> +		extended = true;
-> +		return false;
-> +	} else if (unlikely(extended)) {
-> +		switch (data) {
-> +		case 0x54:
-> +		case 0x62:
-> +		case 0x76:
-> +			schedule_delayed_work(&msi_rfkill_work,
-> +				round_jiffies_relative(0.5 * HZ));
-> +			break;
-> +		}
-> +		extended = false;
-> +	}
-> +
-> +	return false;
-> +}
-> +
->  static void msi_init_rfkill(struct work_struct *ignored)
->  {
->  	if (rfk_wlan) {
-> @@ -706,9 +747,24 @@ static int load_scm_model_init(struct platform_device *sdev)
->  	/* initial rfkill */
->  	result = rfkill_init(sdev);
->  	if (result < 0)
-> -		return result;
-> +		goto fail_rfkill;
-> +
-> +	result = i8042_install_filter(msi_laptop_i8042_filter);
-> +	if (result) {
-> +		printk(KERN_WARNING
+However, always taking the same lock does mean we only need to take one lock,
+which means rmap_walk on pages from any anon_vma in the vma is excluded from
+occurring during an munmap, expand_stack or other operation that needs to
+exclude rmap_walk and similar functions.
 
-Since we fail driver load this should be error, not warning message.
+Also add the proper locking to vma_adjust.
 
-> +			"msi-laptop: Unable to install key filter\n");
-> +		goto fail_filter;
-> +	}
->  
->  	return 0;
-> +
-> +fail_filter:
-> +	rfkill_cleanup();
-> +
-> +fail_rfkill:
-> +
-> +	return result;
-> +
->  }
->  
->  static int __init msi_init(void)
-> @@ -819,6 +875,7 @@ static void __exit msi_cleanup(void)
->  	platform_driver_unregister(&msipf_driver);
->  	backlight_device_unregister(msibl_device);
->  
-> +	i8042_remove_filter(msi_laptop_i8042_filter);
->  	rfkill_cleanup();
->  
->  	/* Enable automatic brightness control again */
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/rmap.h |    8 ++++----
+ mm/ksm.c             |    2 +-
+ mm/mmap.c            |    6 +++++-
+ 3 files changed, 10 insertions(+), 6 deletions(-)
 
--- 
-Dmitry
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 457ae1e..33ffe14 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -95,24 +95,24 @@ static inline void vma_lock_anon_vma(struct vm_area_struct *vma)
+ {
+ 	struct anon_vma *anon_vma = vma->anon_vma;
+ 	if (anon_vma)
+-		spin_lock(&anon_vma->lock);
++		spin_lock(&anon_vma->root->lock);
+ }
+ 
+ static inline void vma_unlock_anon_vma(struct vm_area_struct *vma)
+ {
+ 	struct anon_vma *anon_vma = vma->anon_vma;
+ 	if (anon_vma)
+-		spin_unlock(&anon_vma->lock);
++		spin_unlock(&anon_vma->root->lock);
+ }
+ 
+ static inline void anon_vma_lock(struct anon_vma *anon_vma)
+ {
+-	spin_lock(&anon_vma->lock);
++	spin_lock(&anon_vma->root->lock);
+ }
+ 
+ static inline void anon_vma_unlock(struct anon_vma *anon_vma)
+ {
+-	spin_unlock(&anon_vma->lock);
++	spin_unlock(&anon_vma->root->lock);
+ }
+ 
+ /*
+diff --git a/mm/ksm.c b/mm/ksm.c
+index d488012..7ca0dd7 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -325,7 +325,7 @@ static void drop_anon_vma(struct rmap_item *rmap_item)
+ {
+ 	struct anon_vma *anon_vma = rmap_item->anon_vma;
+ 
+-	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->lock)) {
++	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->root->lock)) {
+ 		int empty = list_empty(&anon_vma->head);
+ 		anon_vma_unlock(anon_vma);
+ 		if (empty)
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f70bc65..b7dfe30 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -553,6 +553,8 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		}
+ 	}
+ 
++	vma_lock_anon_vma(vma);
++
+ 	if (file) {
+ 		mapping = file->f_mapping;
+ 		if (!(vma->vm_flags & VM_NONLINEAR))
+@@ -600,6 +602,8 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		flush_dcache_mmap_unlock(mapping);
+ 	}
+ 
++	vma_unlock_anon_vma(vma);
++
+ 	if (remove_next) {
+ 		/*
+ 		 * vma_merge has merged next into vma, and needs
+@@ -2471,7 +2475,7 @@ static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
+ 		 * The LSB of head.next can't change from under us
+ 		 * because we hold the mm_all_locks_mutex.
+ 		 */
+-		spin_lock_nest_lock(&anon_vma->lock, &mm->mmap_sem);
++		spin_lock_nest_lock(&anon_vma->root->lock, &mm->mmap_sem);
+ 		/*
+ 		 * We can safely modify head.next after taking the
+ 		 * anon_vma->lock. If some other vma in this mm shares
