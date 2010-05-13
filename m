@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab0EMBWA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 21:22:00 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:37520 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758197Ab0EMBVY (ORCPT
+	id S1758523Ab0EMBWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 21:22:19 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39181 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758176Ab0EMBVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 21:21:24 -0400
+	Wed, 12 May 2010 21:21:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=EAEWfN3qhrRXeh90w6Ts1BVdNujmkRGUxZKJvHvRfmaPqgAWXUcNaJvcs1wiCsUZQO
-         mHdIAERWczuqHuprIp2hJ63r2qIWWh0PUbzwSvrQMRCFo+TCIA/aLG81Cw1LzllT7Ox0
-         5EX13v0Z1FONv651taaL6m4A/BZdeTaCoaZpo=
+        b=m1o74djH3LOSX5LFuJiPmiTbBldhGBMI9qxDlHnfRkc2SzDg+pl+TghVD9tFPK1Gu1
+         QJGMFbWSkMfUtP3enw7vRstJP5dgx2rpsMh6qIDeIU76AsVISdqyNE82ZsPRa6lWMtMe
+         pFwj3KXn+vk17qoDrmzV1sgoTIKfsAFn4vL5g=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
@@ -21,9 +21,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
        Cyrill Gorcunov <gorcunov@gmail.com>, Eric Paris <eparis@redhat.com>,
        Randy Dunlap <randy.dunlap@oracle.com>,
        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 7/9] lockup_detector: Separate touch_nmi_watchdog code path from touch_watchdog
-Date: Thu, 13 May 2010 03:21:12 +0200
-Message-Id: <1273713674-8434-8-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH 6/9] x86: Cleanup hw_nmi.c cruft
+Date: Thu, 13 May 2010 03:21:11 +0200
+Message-Id: <1273713674-8434-7-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1273713674-8434-1-git-send-regression-fweisbec@gmail.com>
@@ -34,13 +34,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Don Zickus <dzickus@redhat.com>
 
-When I combined the nmi_watchdog (hardlockup) and softlockup code, I
-also combined the paths the touch_watchdog and touch_nmi_watchdog took.
-This may not be the best idea as pointed out by Frederic W., that the
-touch_watchdog case probably should not reset the hardlockup count.
-
-Therefore the patch below falls back to the previous idea of keeping
-the touch_nmi_watchdog a superset of the touch_watchdog case.
+The design of the hardlockup watchdog has changed and cruft was left
+behind in the hw_nmi.c file.  Just remove the code that isn't used
+anymore.
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -48,45 +44,91 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Cyrill Gorcunov <gorcunov@gmail.com>
 Cc: Eric Paris <eparis@redhat.com>
 Cc: Randy Dunlap <randy.dunlap@oracle.com>
-LKML-Reference: <1273266711-18706-9-git-send-email-dzickus@redhat.com>
+LKML-Reference: <1273266711-18706-7-git-send-email-dzickus@redhat.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/watchdog.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/kernel/apic/hw_nmi.c |   58 -----------------------------------------
+ 1 files changed, 0 insertions(+), 58 deletions(-)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index f1541b7..57b8e2c 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -31,6 +31,7 @@ int watchdog_enabled;
- int __read_mostly softlockup_thresh = 60;
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index 8c3edfb..3b40082 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -9,74 +9,16 @@
+  *
+  */
  
- static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
-+static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
- static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
- static DEFINE_PER_CPU(struct hrtimer, watchdog_hrtimer);
- static DEFINE_PER_CPU(bool, softlockup_touch_sync);
-@@ -139,6 +140,7 @@ void touch_all_softlockup_watchdogs(void)
+-#include <asm/apic.h>
+-#include <linux/smp.h>
+ #include <linux/cpumask.h>
+-#include <linux/sched.h>
+-#include <linux/percpu.h>
+-#include <linux/cpumask.h>
+-#include <linux/kernel_stat.h>
+-#include <asm/mce.h>
+ #include <linux/kdebug.h>
+ #include <linux/notifier.h>
+ #include <linux/kprobes.h>
+-
+-
+ #include <linux/nmi.h>
+ #include <linux/module.h>
  
- void touch_nmi_watchdog(void)
+ /* For reliability, we're prepared to waste bits here. */
+ static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
+ 
+-static DEFINE_PER_CPU(unsigned, last_irq_sum);
+-
+-/*
+- * Take the local apic timer and PIT/HPET into account. We don't
+- * know which one is active, when we have highres/dyntick on
+- */
+-static inline unsigned int get_timer_irqs(int cpu)
+-{
+-	unsigned int irqs = per_cpu(irq_stat, cpu).irq0_irqs;
+-
+-#if defined(CONFIG_X86_LOCAL_APIC)
+-	irqs += per_cpu(irq_stat, cpu).apic_timer_irqs;
+-#endif
+-
+-	return irqs;
+-}
+-
+-static inline int mce_in_progress(void)
+-{
+-#if defined(CONFIG_X86_MCE)
+-	return atomic_read(&mce_entry) > 0;
+-#endif
+-	return 0;
+-}
+-
+-int hw_nmi_is_cpu_stuck(struct pt_regs *regs)
+-{
+-	unsigned int sum;
+-	int cpu = smp_processor_id();
+-
+-	/* if we are doing an mce, just assume the cpu is not stuck */
+-	/* Could check oops_in_progress here too, but it's safer not to */
+-	if (mce_in_progress())
+-		return 0;
+-
+-	/* We determine if the cpu is stuck by checking whether any
+-	 * interrupts have happened since we last checked.  Of course
+-	 * an nmi storm could create false positives, but the higher
+-	 * level logic should account for that
+-	 */
+-	sum = get_timer_irqs(cpu);
+-	if (__get_cpu_var(last_irq_sum) == sum) {
+-		return 1;
+-	} else {
+-		__get_cpu_var(last_irq_sum) = sum;
+-		return 0;
+-	}
+-}
+-
+ u64 hw_nmi_get_sample_period(void)
  {
-+	__get_cpu_var(watchdog_nmi_touch) = true;
- 	touch_softlockup_watchdog();
- }
- EXPORT_SYMBOL(touch_nmi_watchdog);
-@@ -201,10 +203,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
- 		 struct pt_regs *regs)
- {
- 	int this_cpu = smp_processor_id();
--	unsigned long touch_ts = per_cpu(watchdog_touch_ts, this_cpu);
- 
--	if (touch_ts == 0) {
--		__touch_watchdog();
-+	if (__get_cpu_var(watchdog_nmi_touch) == true) {
-+		__get_cpu_var(watchdog_nmi_touch) = false;
- 		return;
- 	}
- 
+ 	return (u64)(cpu_khz) * 1000 * 60;
 -- 
 1.6.2.3
 
