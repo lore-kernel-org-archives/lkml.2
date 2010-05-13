@@ -1,151 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab0EMGdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 02:33:01 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:49959 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab0EMGc6 (ORCPT
+	id S1754855Ab0EMGhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 02:37:20 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:49806 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170Ab0EMGhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 02:32:58 -0400
+	Thu, 13 May 2010 02:37:18 -0400
 From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Dave Chinner <david@fromorbit.com>
+To: Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>
 Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de,
-       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V7 6/9] ext4: Add get_fsid callback
-In-Reply-To: <20100513031133.GF13617@dastard>
-References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1273679444-14903-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100513031133.GF13617@dastard>
+       corbet@lwn.net, serue@us.ibm.com, linux-fsdevel@vger.kernel.org,
+       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V7 4/9] vfs: Add open by file handle support
+In-Reply-To: <20100513060955.GG13617@dastard>
+References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1273679444-14903-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100513094422.0f7991a0@notabene.brown> <20100513060955.GG13617@dastard>
 User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Thu, 13 May 2010 12:02:52 +0530
-Message-ID: <87sk5w1fcb.fsf@linux.vnet.ibm.com>
+Date: Thu, 13 May 2010 12:07:02 +0530
+Message-ID: <87pr101f5d.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 May 2010 13:11:33 +1000, Dave Chinner <david@fromorbit.com> wrote:
-> On Wed, May 12, 2010 at 09:20:41PM +0530, Aneesh Kumar K.V wrote:
-> > Acked-by: Serge Hallyn <serue@us.ibm.com>
-> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> > ---
-> >  fs/ext4/super.c |   15 +++++++++++++++
-> >  1 files changed, 15 insertions(+), 0 deletions(-)
+On Thu, 13 May 2010 16:09:55 +1000, Dave Chinner <david@fromorbit.com> wrote:
+> On Thu, May 13, 2010 at 09:44:22AM +1000, Neil Brown wrote:
+> > On Wed, 12 May 2010 21:20:39 +0530
+> > "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 > > 
-> > diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> > index e14d22c..fc7d464 100644
-> > --- a/fs/ext4/super.c
-> > +++ b/fs/ext4/super.c
-> > @@ -1049,6 +1049,19 @@ static int bdev_try_to_free_page(struct super_block *sb, struct page *page,
-> >  	return try_to_free_buffers(page);
-> >  }
-> >  
-> > +static int ext4_get_fsid(struct super_block *sb, struct uuid *fsid)
-> > +{
-> > +	struct ext4_sb_info *sbi = EXT4_SB(sb);
-> > +	struct ext4_super_block *es = sbi->s_es;
-> > +
-> > +	memcpy(fsid->uuid, es->s_uuid, sizeof(fsid->uuid));
-> > +	/*
-> > +	 * We may want to make sure we return error if the s_uuid is not
-> > +	 * exactly unique
-> > +	 */
-> > +	return 0;
-> > +}
-> > +
-> >  #ifdef CONFIG_QUOTA
-> >  #define QTYPE2NAME(t) ((t) == USRQUOTA ? "user" : "group")
-> >  #define QTYPE2MOPT(on, t) ((t) == USRQUOTA?((on)##USRJQUOTA):((on)##GRPJQUOTA))
-> > @@ -1109,6 +1122,7 @@ static const struct super_operations ext4_sops = {
-> >  	.quota_write	= ext4_quota_write,
-> >  #endif
-> >  	.bdev_try_to_free_page = bdev_try_to_free_page,
-> > +	.get_fsid	= ext4_get_fsid,
-> >  };
-> >  
-> >  static const struct super_operations ext4_nojournal_sops = {
-> > @@ -1128,6 +1142,7 @@ static const struct super_operations ext4_nojournal_sops = {
-> >  	.quota_write	= ext4_quota_write,
-> >  #endif
-> >  	.bdev_try_to_free_page = bdev_try_to_free_page,
-> > +	.get_fsid	= ext4_get_fsid,
-> >  };
+> > > +		filp->f_flags |= O_NOATIME;
+> > > +		filp->f_mode |= FMODE_NOCMTIME;
+> > > +	}
+> > 
+> > I think you need a comment here explaining the rational for these setting.
 > 
-> This all looks pretty simple - can you add XFS support to this
-> interface (uuid is in XFS_M(sb)->m_sb.sb_uuid) so that it can be
-> tested to work on multiple filesystems.
+> If you've never seen how applications use the XFS handle interface
+> in conjunction with other XFS functionality, then I guess if would
+> seem like bad voodoo.
 > 
-> FWIW, I didn't get patch 0 of this series, so I'll comment on
-> one line of it right here because it is definitely relevant:
+> > Why is O_NOATIME important IFREG but not for IFDIR?
 > 
-> > I am also looking at getting xfsprogs libhandle.so on top of these
-> > syscalls.
+> No application has ever required directory access or modification
+> via the handle interface to be invisible to the rest of the system.
 > 
-> If you plan to modify libhandle to use these syscalls, then you need
-> to guarantee:
+> > Why is it not sufficient to honour O_NOATIME that is passed in.
 > 
-> 	1. XFS support for the syscalls
-> 	2. the handle format, lifecycle and protections for XFS
-> 	   handles are *exactly* the same as the current XFS
-> 	   handles.  i.e. there's a fixed userspace API that
-> 	   cannot be broken.
-> 	3. you don't break any of the other XFS specific handle
-> 	   interfaces that aren't implemented by the new syscalls
-> 	3. You don't break and existing XFS utilites - dump/restore,
-> 	   and fsr come to mind immediately.
-> 	4. that you'll fix the xfstests that may break because of the
-> 	   change
-> 	5. that you'll write new tests for xfstests that validates
-> 	   that the libhandle API works correctly and that handle
-> 	   formats and lifecycles do not get accidentally changed in
-> 	   future.
+> Because the XFS handle library is cross platform and predates
+> O_NOATIME on linux. Hence the library it has never set that flag and
+> always relied on the kernel implementation of the API to ensure
+> atime was never updated on fds derived from handles..
 > 
-> That's a lot of work and, IMO, is completely pointless. All we'd get
-> out of it is more complexity, bloat, scope for regressions and a
-> biger test matrix, and we wouldn't have any new functionality to
-> speak of.
+> > How can you ever justify setting FMODE_NOCMTIME ?
+> 
+> Quite easily. ;)
+> 
+> The XFS handle interface was designed specifically to allow
+> applications to execute silent/invisible movement of data in, out
+> and around the filesystem without leaving user visible traces in
+> file metadata. This enables backup or filesysetm utilities that
+> operate on active filesystems need to be able to access or modify
+> inodes and data without affecting running applications.  It's a
+> feature of the handle interface, and used by xfs_dump, xfs_fsr,
+> SGI's HSM, etc to do stuff that isn't otherwise possible.
+> 
+> FWIW, if you are curious, here's the initial commit of the XFS
+> handle code into Irix tree from 3 Sep 1994, showing that the initial
+> XFS open_by_handle() implementation sets the FINVIS flag to trigger
+> invisible IO semantics:
+> 
+> http://oss.sgi.com/cgi-bin/gitweb.cgi?p=archive/xfs-import.git;a=commitdiff;h=575b66fae833429a51fcadb204d45521c2dfc26f
 
-getting libhandle.so to work with the syscall is something that is
-suggested on the list. The goal is to see if syscall achieve everything
-that XFS ioctl does
-
+Thanks for sharing this. I haven't looked at the details you mentioned here.
 
 > 
-> However, this leads to the bigger question: what's the point of a
-> new interface if all it ends up getting used for is to re-implement
-> part of an existing library?
+> > I guess you are just copying from xfs code, but it still needs justification.
 > 
-> I know this goes against the severe ext4 NIH syndrome that seems to
-> pervade anything that XFS has already implemented, but lets be
-> realistic here. If you want applications to use libhandle then there
-> is no need for a new kernel API - it already has a perfectly
-> funtional one that has stood the test of time, and all it requires
-> is moving the  XFS ioctl handler up into the VFS and modifying the
-> implementation to use existing filesystem callouts.
+> 	"They are intended for use by a limited set of system
+> 	utilities such as backup programs."
 > 
-> FWIW, there really isn't anything XFS specific to these handle
-> functions, so moving it to the VFS should be pretty easy, and that
-> will result in a full libhandle support for all filesystems that
-> provide NFS support. That, IMO, is a far superior result than having
-> two different handle interfaces that have different functionality and
-> semantics, neither of which have wide fs support...
-
-That is more or less what i am doing. I started with xfs ioctls, But
-instead of moving them as ioctls to the VFS layer what I did was to do a
-syscall around the same functionality.
-
-> 
-> So please make up your mind - either the handle interface is a
-> completely new interface with new userspace and kernel APIs,
-> or it uses the existing userspace and kernel APIs. Anything else
-> does not make sense.
+> 		- open_by_handle(3) man page
 > 
 
-The goal was to get functionality similar to XFS ioctl in a file system
-independent manner. That is why my first patch (v1) used a mountdir fd
-similar to ioctl. But review feedback on the list suggested changes to
-the interface. 
-
+Should we retain all the above behaviour in the new syscall ?. Or just
+do what a normal open(2) call does ?
 
 -aneesh
