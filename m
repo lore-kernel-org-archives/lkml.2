@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab0EMAKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 20:10:50 -0400
-Received: from ozlabs.org ([203.10.76.45]:44994 "EHLO ozlabs.org"
+	id S1756479Ab0EMARP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 20:17:15 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55569 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752564Ab0EMAKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 20:10:49 -0400
-Date: Thu, 13 May 2010 10:10:36 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-       Stephane Eranian <eranian@googlemail.com>
-Subject: Re: [BUG] perf_event: when events are grouped, the time enabled /
- running values are incorrect
-Message-ID: <20100513001036.GE11450@brick.ozlabs.ibm.com>
-References: <4BE4C4BF.6020801@linux.vnet.ibm.com>
- <1273588935.1810.6.camel@laptop>
- <4BEAE476.1090100@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BEAE476.1090100@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753921Ab0EMARN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 20:17:13 -0400
+Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
+ 88f5182)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       Saeed Bishara <saeed@marvell.com>, Nicolas Pitre <nico@marvell.com>,
+       linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       "James E.J. Bottomley" <jejb@parisc-linux.org>
+In-Reply-To: <20100512150057.GA29867@atrey.karlin.mff.cuni.cz>
+References: <1273569821.21352.19.camel@pasglop>
+	 <1273575478.21352.29.camel@pasglop>
+	 <20100512150057.GA29867@atrey.karlin.mff.cuni.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 May 2010 10:15:14 +1000
+Message-ID: <1273709714.21352.138.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 10:25:10AM -0700, Corey Ashford wrote:
+On Wed, 2010-05-12 at 17:00 +0200, Jan Kara wrote:
 
-> Thanks for looking into this problem!  Unfortunately, I've been
-> unable to test your patch.  It doesn't apply to 2.6.33.3 and so I
-> tried the -tip tree (which has this patch committed).  The kernel
-> built fine, but crashed almost immediately during the boot-up
-> process on my Power5 machine.
+>  Could you get the filesystem image with: e2image -r /dev/sdb2 buggy-image
+> bzip2 it and make it available somewhere? Maybe I could guess something
+> from the way the filesystem gets corrupted.
+>  Oh, and also overwrite the partition with zeros before calling mkfs to make
+> the analysis simpler.
 
-Ugh.  I'll take a look today at that.
+Here we go.
 
-Paul.
+Created a smaller partition (100MB). dd'ed /dev/zero to it, dd'ed it off
+to NFS host to locally cmp it with /dev/zero to make sure it's nice and
+clean. It is. Then mkfs.ext3, mount, rsync over /usr/lib of my test
+root, unmount, and dd it off to the NFS host again.
+
+The result shows the same errors with fsck.ext3 -n -f ./test.img
+
+I uploaded it at:
+
+http://gate.crashing.org/~benh/test.img.bz2
+
+Cheers,
+Ben.
+
+> > In fact, if I do ls /mnt/test/usr/bin/ I see debconf but if I do
+> > ls /mnt/test/usr/bin/chrt then I get No such file or directory.
+> > 
+> > So something is badly wrong :-)
+> > 
+> > Now, trying without the dir_index feature (mkfs.ext3 -O ^dir_index)
+> > and it works fine. All my md5sum's are correct and fsck passes.
+>   Funny. Not sure how that could happen...
+> 
+> 								Honza
+
+
