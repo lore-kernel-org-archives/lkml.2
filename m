@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758516Ab0EMO6e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 10:58:34 -0400
-Received: from mail-yx0-f191.google.com ([209.85.210.191]:44659 "EHLO
-	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab0EMO6c (ORCPT
+	id S1758903Ab0EMPC7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:02:59 -0400
+Received: from mail-gx0-f227.google.com ([209.85.217.227]:54598 "EHLO
+	mail-gx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab0EMPC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 10:58:32 -0400
+	Thu, 13 May 2010 11:02:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=itiof+6sznLRZtx8krXJHNLL7q1BXoFAikd0WO6UoXx7L24zPIsTcdZZgj5QCoDQoy
-         ZjloeVfCA+fhr3C8ZFapxnBrh+9OJg1zbY81s0nIfF3wfIcFsh6+PzrOGDFgMPWyR+V2
-         XM0UruIs5CQoILjQH8sa2KddVDAvAozguTZxw=
-Date: Thu, 13 May 2010 11:58:26 -0300
+        b=xBp9AhsAFp9SG2ISFdYumKkIHQvuLxmR7FAZLZvpXoDLiRU8bABE8iAK1IGizl8Z4C
+         XiwZYecGrW17M2M1ZtMx6anrunyynoiWMaAfzqacix+Ya0cXnZ7xZ6IVvHLIY/UXOFkV
+         uVikzrY2hB7IN3q5ijsjSoE+UhRvkVrb5KO/s=
+Date: Thu, 13 May 2010 12:02:51 -0300
 From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: perf: relative path to source for perf probe?
-Message-ID: <20100513145826.GJ30926@ghostprotocols.net>
-References: <AANLkTins2yCK-rvmdaaSQoBum4haHLhPx34EeJDg21Gg@mail.gmail.com>
+To: Pierre Tardy <tardyp@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+       mathieu.desnoyers@efficios.com, arjan@infradead.org,
+       ziga.mahkovec@gmail.com
+Subject: Re: [RFC] PyTimechart
+Message-ID: <20100513150251.GK30926@ghostprotocols.net>
+References: <AANLkTilJLcdfK-vgqGdXyaZ_bQ1BDFmQl619egtGAA4i@mail.gmail.com> <20100511213625.GD5422@nowhere> <AANLkTikumkBKwYTYIK63mT2i_hI4SAo-Eua0cx9OCHnD@mail.gmail.com> <20100512144811.GA5405@nowhere> <AANLkTim0fEoUXav-KmXPEk67vZVhn-FnpnbLOHpI2HDF@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTins2yCK-rvmdaaSQoBum4haHLhPx34EeJDg21Gg@mail.gmail.com>
+In-Reply-To: <AANLkTim0fEoUXav-KmXPEk67vZVhn-FnpnbLOHpI2HDF@mail.gmail.com>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 13, 2010 at 04:13:41PM +0200, Chase Douglas escreveu:
-> I'm trying to play with perf probe to insert trace events into a
-> running kernel, but I haven't found a way to specify relative
-> pathnames. For example, our build machines for Ubuntu build the kernel
-> inside /build/buildd/linux-2.6.34. If I want to use perf probe, it
-> seems I need to ensure the source exists in exactly the same location
-> on my machine.
-> 
-> Compare this to gdb, where I can put the source at
-> /home/cndougla/perf/build/buildd/linux-2.6.34 and specify a relative
-> path for sources of /home/cndougla/perf using the dir command. I have
-> read the perf code and I have not found any way to do this. I would be
-> interested in adding support for this as a cmd line option, but I'm
-> not very familiar with the rest of perf. Is this functionality
-> specific to perf-probe? Should this be in some logic in util/ or in
-> builtin-probe.c?
+Em Wed, May 12, 2010 at 07:13:00PM +0200, Pierre Tardy escreveu:
+> > The code I'm looking at here doesn't look dirty to me at a glance:
+> > http://gitorious.org/pytimechart/pytimechart/trees/master
 
-Look in tools/perf/util/symbol.c, these variables are the ones tools use
-to govern how the symbol system work wrt finding vmlinux:
+> That's because you did not read between the lines ;-)
+> The display core needs to be simplified.
 
-symbol_conf.use_vmlinux_path
-symbol_conf.vmlinux_name
-
-In addition to this it will use what is in ~/.debug/ if it has a
-build-id in the perf.data header.
-
-The changes for support kvm also touched this and allow for some
-prefixing to look for guest symbols, generalizing that to make guest
-kernel vmlinux + modules relative location be reused to look for
-relative location for host kernel vmlinux + modules seems the way to go.
-
-Probably you won't find this if you look at the old 2.6.34 codebase
-(yay, for tools/perf it is already hundreds of patches behind :-)), so
-I recomend you look at what we have in linux-2.6-tip, branch
-tip/perf/core, what is in 2.6.34 is in tip/perf/urgent and right now,
-IIRC, just a one patch that is not in 2.6.34 proper, a cherry-pick from
-tip/perf/core, no less :-)
+Not even having looked at the code, I like your attitude! :-)
 
 - Arnaldo
