@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759435Ab0EMUge (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:36:34 -0400
-Received: from fifo99.com ([67.223.236.141]:60771 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756577Ab0EMUgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:36:32 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-From: Daniel Walker <dwalker@fifo99.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-       Paul Walmsley <paul@pwsan.com>,
-       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       =?ISO-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-In-Reply-To: <20100513202320.GF3428@atomide.com>
-References: <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com>
-	 <Pine.LNX.4.44L0.1005131002380.1695-100000@iolanthe.rowland.org>
-	 <20100513191717.GA3428@atomide.com> <20100513192522.GA19256@srcf.ucam.org>
-	 <20100513194205.GC3428@atomide.com> <20100513195349.GB19722@srcf.ucam.org>
-	 <20100513200003.GE3428@atomide.com> <20100513200814.GA20254@srcf.ucam.org>
-	 <20100513202320.GF3428@atomide.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 May 2010 13:36:20 -0700
-Message-ID: <1273782980.19100.96.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1759485Ab0EMUh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 16:37:27 -0400
+Received: from tango.0pointer.de ([85.214.72.216]:58274 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756577Ab0EMUh0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 16:37:26 -0400
+Date: Thu, 13 May 2010 22:36:54 +0200
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Paul Menage <menage@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Dhaval Giani <dhaval.giani@gmail.com>,
+       James Kosin <jkosin@intcomgrp.com>, linux-kernel@vger.kernel.org,
+       balbir@linux.vnet.ibm.com, jsafrane@redhat.com, tglx@linutronix.de
+Subject: Re: [PATCH/RFC] Have sane default values for cpusets
+Message-ID: <20100513203654.GA14528@tango.0pointer.de>
+References: <eJjRf-6YM-1@gated-at.bofh.it>
+ <eJktY-7JG-7@gated-at.bofh.it>
+ <eJktY-7JG-5@gated-at.bofh.it>
+ <4BEAB6FC.8090105@intcomgrp.com>
+ <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
+ <1273674048.1626.117.camel@laptop>
+ <20100512190757.GA421@tango.0pointer.de>
+ <1273755719.5605.3537.camel@twins>
+ <20100513140354.GA12639@tango.0pointer.de>
+ <s2s6599ad831005131306pa7db4c4dyd7712de7fda73cfd@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s2s6599ad831005131306pa7db4c4dyd7712de7fda73cfd@mail.gmail.com>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 13:23 -0700, Tony Lindgren wrote:
-> * Matthew Garrett <mjg@redhat.com> [100513 13:03]:
-> > On Thu, May 13, 2010 at 01:00:04PM -0700, Tony Lindgren wrote:
-> > 
-> > > The system stays running because there's something to do. The system
-> > > won't suspend until all the processors hit the kernel idle loop and
-> > > the next_timer_interrupt_critical() returns nothing.
-> > 
-> > At which point an application in a busy loop cripples you.
+On Thu, 13.05.10 13:06, Paul Menage (menage@google.com) wrote:
+
 > 
-> Maybe you could deal with the misbehaving untrusted apps in the userspace
-> by sending kill -STOP to them when the screen blanks? Then continue
-> when some event wakes up the system again.
-
-Couldn't you just use priorities (nice), or cgroups to deal with that?
-I'm sure there is a way to limit an apps runtime, so the system does go
-idle sometimes.
-
-> > I think we could implement your suggestion more easily by just giving
-> > untrusted applications an effectively infinite amount of timer slack,
-> > but it still doesn't handle the case where an app behaves excrutiatingly
-> > badly.
+> On Thu, May 13, 2010 at 7:03 AM, Lennart Poettering
+> <mzxreary@0pointer.de> wrote:
+> > By default systemd will create its groups in the "debug" hierarchy, (at
+> > least for now, in the long run i'd like to see "noop" hierarchy or so,
+> > that doesn't sound so temporary), since that controller is not useful
 > 
-> Hmm, if you use timer slack then you still need to search through
-> the whole timer list instead of a smaller critical timer list.
-> Both ways sound doable though.
+> If you just want to track processes, mount a (named) hierarchy with no
+> attached subsystems.
 
-There are deferrable timers already in Linux.. It seems like it would
-just be an extension of that.
+Oh, that is possible? How would I do that? 
 
-Daniel
+This certainly doesn't work:
 
+# mount waldo -t cgroup /tmp/xxxx -o defaults
+
+Lennart
+
+-- 
+Lennart Poettering                        Red Hat, Inc.
+lennart [at] poettering [dot] net
+http://0pointer.net/lennart/           GnuPG 0x1A015CC4
