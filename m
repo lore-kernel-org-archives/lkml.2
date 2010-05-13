@@ -1,107 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815Ab0EMN5i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 09:57:38 -0400
-Received: from mail-gx0-f227.google.com ([209.85.217.227]:49705 "EHLO
-	mail-gx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575Ab0EMN5g convert rfc822-to-8bit (ORCPT
+	id S1756678Ab0EMOAZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 10:00:25 -0400
+Received: from mga07.intel.com ([143.182.124.22]:12566 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755671Ab0EMOAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 09:57:36 -0400
+	Thu, 13 May 2010 10:00:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,222,1272870000"; 
+   d="scan'208";a="276706722"
+Date: Thu, 13 May 2010 16:00:48 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [GIT] [2.6.34] MFD fixes
+Message-ID: <20100513140045.GA23349@sortiz.org>
 MIME-Version: 1.0
-In-Reply-To: <1268770854-5530-1-git-send-email-khilman@deeprootsystems.com>
-References: <1268770854-5530-1-git-send-email-khilman@deeprootsystems.com>
-Date: Thu, 13 May 2010 06:57:25 -0700
-Message-ID: <AANLkTil3CqFL6ncfxOquYZOCDbU1iKtWmdw5p7xD-Iek@mail.gmail.com>
-Subject: Re: [PATCH] rtc: omap: let device wakeup capability be configured 
-	from chip init logic
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Sekhar Nori <nsekhar@ti.com>, Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Tony Lindgren <tony@atomide.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-       rtc-linux@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 1:20 PM, Kevin Hilman
-<khilman@deeprootsystems.com> wrote:
-> From: Sekhar Nori <nsekhar@ti.com>
->
-> The rtc-omap driver currently hardcodes the RTC wakeup capability
-> to be "not capable". While this seems to be true for existing OMAP1
-> boards which are not wired for this, the DA850/OMAP-L138 SoC, the
-> RTC can always be wake up source from its "deep sleep" mode.
->
-> This patch lets the wakeup capability to be set from platform data and
-> does not override the setting from the driver. For DA850/OMAP-L138, this
-> is done from arch/arm/mach-davinci/devices-da8xx.c:da8xx_register_rtc()
->
-> Note that this patch does not change the behavior on any existing OMAP1
-> board since the platform device registration sets the wakeup capability
-> to 0 by default.
->
-> Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-> Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
-> ---
->
-> Alessandro, with your ack, I can merge this one as well via the davinci
-> tree.
+Hi Linus,
 
-Alessandro, do I have your ack for this one?
+Sorry for being late, I just got back from a (way earlier than expected)
+paternity leave. I have one MFD fix pending for 2.6.34, I'd appreciate if you
+could still pull:
 
-We agreed[1] that the main driver would go upstream via my davinci
-tree so I may as well merge this one as well.  It's been in linux-next
-for a while now, but I just realized I didn't have your ack.
+The following changes since commit be835674b55324c1abe973b15343c3663910c620:
+  Linus Torvalds (1):
+        Merge branch 'merge' of git://git.kernel.org/.../benh/powerpc
 
-Kevin
+are available in the git repository at:
 
-[1] http://marc.info/?l=linux-kernel&m=126844362130704&w=2
+  git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git for-linus
 
->  drivers/rtc/rtc-omap.c |   12 +++++++-----
->  1 files changed, 7 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-> index 64d9727..73377b0 100644
-> --- a/drivers/rtc/rtc-omap.c
-> +++ b/drivers/rtc/rtc-omap.c
-> @@ -34,7 +34,8 @@
->  * Board-specific wiring options include using split power mode with
->  * RTC_OFF_NOFF used as the reset signal (so the RTC won't be reset),
->  * and wiring RTC_WAKE_INT (so the RTC alarm can wake the system from
-> - * low power modes).  See the BOARD-SPECIFIC CUSTOMIZATION comment.
-> + * low power modes) for OMAP1 boards (OMAP-L138 has this built into
-> + * the SoC). See the BOARD-SPECIFIC CUSTOMIZATION comment.
->  */
->
->  #define OMAP_RTC_BASE                  0xfffb4800
-> @@ -401,16 +402,17 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
->
->        /* BOARD-SPECIFIC CUSTOMIZATION CAN GO HERE:
->         *
-> -        *  - Boards wired so that RTC_WAKE_INT does something, and muxed
-> -        *    right (W13_1610_RTC_WAKE_INT is the default after chip reset),
-> -        *    should initialize the device wakeup flag appropriately.
-> +        *  - Device wake-up capability setting should come through chip
-> +        *    init logic. OMAP1 boards should initialize the "wakeup capable"
-> +        *    flag in the platform device if the board is wired right for
-> +        *    being woken up by RTC alarm. For OMAP-L138, this capability
-> +        *    is built into the SoC by the "Deep Sleep" capability.
->         *
->         *  - Boards wired so RTC_ON_nOFF is used as the reset signal,
->         *    rather than nPWRON_RESET, should forcibly enable split
->         *    power mode.  (Some chip errata report that RTC_CTRL_SPLIT
->         *    is write-only, and always reads as zero...)
->         */
-> -       device_init_wakeup(&pdev->dev, 0);
->
->        if (new_ctrl & (u8) OMAP_RTC_CTRL_SPLIT)
->                pr_info("%s: split power mode\n", pdev->name);
-> --
-> 1.7.0.2
->
->
+Mark Brown (1):
+      mfd: Clean up after WM83xx AUXADC interrupt if it arrives late
+
+ drivers/mfd/wm831x-core.c |    3 +++
+ drivers/mfd/wm8350-core.c |    4 ++++
+ 2 files changed, 7 insertions(+), 0 deletions(-)
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
