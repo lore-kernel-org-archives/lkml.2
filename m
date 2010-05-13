@@ -1,62 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab0EMVT0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:19:26 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46510 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab0EMVTY convert rfc822-to-8bit (ORCPT
+	id S1756421Ab0EMVUT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:20:19 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:55311 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754034Ab0EMVUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:19:24 -0400
-Subject: Re: [PATCH/RFC] Have sane default values for cpusets
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Dhaval Giani <dhaval.giani@gmail.com>, James Kosin <jkosin@intcomgrp.com>,
-       linux-kernel@vger.kernel.org, menage@google.com,
-       balbir@linux.vnet.ibm.com, jsafrane@redhat.com, tglx@linutronix.de
-In-Reply-To: <20100513140354.GA12639@tango.0pointer.de>
-References: <eJjRf-6YM-1@gated-at.bofh.it> <eJktY-7JG-7@gated-at.bofh.it>
-	 <eJktY-7JG-5@gated-at.bofh.it> <4BEAB6FC.8090105@intcomgrp.com>
-	 <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
-	 <1273674048.1626.117.camel@laptop> <20100512190757.GA421@tango.0pointer.de>
-	 <1273755719.5605.3537.camel@twins>
-	 <20100513140354.GA12639@tango.0pointer.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 13 May 2010 23:19:06 +0200
-Message-ID: <1273785546.5605.3556.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 13 May 2010 17:20:16 -0400
+Date: Thu, 13 May 2010 17:20:14 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@us.ibm.com>, Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH -tip 4/5] kprobes/x86: Use text_poke_smp_batch
+Message-ID: <20100513212013.GB17382@Krystal>
+References: <20100510175313.27396.34605.stgit@localhost6.localdomain6> <20100510175340.27396.7222.stgit@localhost6.localdomain6> <20100511144013.GA17656@Krystal> <4BE9F952.3060505@redhat.com> <20100512152747.GA12326@Krystal> <4BEC4DE5.1020101@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BEC4DE5.1020101@redhat.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 17:19:41 up 110 days, 23:56,  9 users,  load average: 0.19, 0.26,
+	0.18
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 16:03 +0200, Lennart Poettering wrote:
-> > On Wed, 2010-05-12 at 21:07 +0200, Lennart Poettering wrote:
-> > > See Dhaval's patch on the background of systemd
-> > > (http://0pointer.de/blog/projects/systemd.html). When a service is
-> > > started in systemd, we create a cgroup for it, when it ends, we remove
-> > > it. 
+* Masami Hiramatsu (mhiramat@redhat.com) wrote:
+> Mathieu Desnoyers wrote:
+> > * Masami Hiramatsu (mhiramat@redhat.com) wrote:
+> >> Mathieu Desnoyers wrote:
+> >>> * Masami Hiramatsu (mhiramat@redhat.com) wrote:
+> >>>> Use text_poke_smp_batch() in optimization path for reducing
+> >>>> the number of stop_machine() issues.
+> >>>>
+> >>>> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+> >>>> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> >>>> Cc: Ingo Molnar <mingo@elte.hu>
+> >>>> Cc: Jim Keniston <jkenisto@us.ibm.com>
+> >>>> Cc: Jason Baron <jbaron@redhat.com>
+> >>>> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> >>>> ---
+> >>>>
+> >>>>  arch/x86/kernel/kprobes.c |   37 ++++++++++++++++++++++++++++++-------
+> >>>>  include/linux/kprobes.h   |    2 +-
+> >>>>  kernel/kprobes.c          |   13 +------------
+> >>>>  3 files changed, 32 insertions(+), 20 deletions(-)
+> >>>>
+> >>>> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+> >>>> index 345a4b1..63a5c24 100644
+> >>>> --- a/arch/x86/kernel/kprobes.c
+> >>>> +++ b/arch/x86/kernel/kprobes.c
+> >>>> @@ -1385,10 +1385,14 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+> >>>>  	return 0;
+> >>>>  }
+> >>>>  
+> >>>> -/* Replace a breakpoint (int3) with a relative jump.  */
+> >>>> -int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
+> >>>> +#define MAX_OPTIMIZE_PROBES 256
+> >>>
+> >>> So what kind of interrupt latency does a 256-probes batch generate on the
+> >>> system ?  Are we talking about a few milliseconds, a few seconds ?
+> >>
+> >> From my experiment on kvm/4cpu, it took about 3 seconds in average.
 > > 
-> > I seriously hope that's optional, because I for one would really hate a
-> > system that does that. I still mostly build kernels with only cpuset in
-> > and really don't want anybody but me creating groups in there.
+> > That's 3 seconds for multiple calls to stop_machine(). So we can expect
+> > latencies in the area of few microseconds for each call, right ?
 > 
-> By default systemd will create its groups in the "debug" hierarchy, (at
-> least for now, in the long run i'd like to see "noop" hierarchy or so,
-> that doesn't sound so temporary), since that controller is not useful
-> for anything but keeping track of processes. So it shouldn't bother you
-> at all. 
+> Sorry, my bad. Non tuned kvm guest is so slow...
+> I've tried to check it again on *bare machine* (4core Xeon 2.33GHz, 4cpu).
+> I found that even without this patch, optimizing 256 probes took 770us in
+> average (min 150us, max 3.3ms.)
+> With this patch, it went down to 90us in average (min 14us, max 324us!)
+> 
+> Isn't it enough low latency? :)
+> 
+> >> With this patch, it went down to 30ms. (x100 faster :))
+> > 
+> > This is beefing up the latency from few microseconds to 30ms. It sounds like a
+> > regression rather than a gain to me.
+> 
+> so, it just takes 90us. I hope it is acceptable.
 
-Will it still work with a CONFIG_CGROUP=n kernel? I see distributions
-deteriorate, you cannot even boot a raw bzImage kernel without initrd on
-most distros (sure, its not too hard to fix, but still).
+Yes, this is far below the scheduler tick, which is much more acceptable.
 
-Also, I get all kinds of dumb-ass init-script failures for not having
-modules but stuff built-in. A prime example is NFS failing on start on
-both fedora and ubuntu with a built-in nfs server (for different but
-both retarded reasons).
+Thanks,
 
-Requiring CONFIG_CGROUP=y to even get init running seems like a final
-straw to ensure nobody will ever get anything to boot these days.
+Mathieu
 
+> 
+> Thank you,
+> 
+> 
+> -- 
+> Masami Hiramatsu
+> e-mail: mhiramat@redhat.com
 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
