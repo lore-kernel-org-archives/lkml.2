@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782Ab0EMUbW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:31:22 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:53335 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932298Ab0EMUbU (ORCPT
+	id S1758923Ab0EMUdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 16:33:50 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:52466 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398Ab0EMUds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:31:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZicKFjFblC9GijK3+3W4Sd0zXSF9dkcLFXeGjyNr1R/PJGqzNSvReLSHgv45lWc1kb
-         npfE4OwfVKyCLyTjZL1UQaMA0r5CAbzpRjvEJ7BcKVwOXY6kQcqk1mRAXmAX2Jd97ARi
-         OsxH5vgdtpUo7oM+50NeMCHYyXQSxyp110O6Q=
-Date: Thu, 13 May 2010 17:23:10 -0300
-From: "Gustavo F. Padovan" <gustavo@padovan.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 9/20] drivers/bluetooth: Use kzalloc
-Message-ID: <20100513202310.GA11617@vigoh>
-References: <Pine.LNX.4.64.1005132201470.6282@ask.diku.dk>
+	Thu, 13 May 2010 16:33:48 -0400
+Message-ID: <4BEC62EB.3050803@oracle.com>
+Date: Thu, 13 May 2010 13:36:59 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1005132201470.6282@ask.diku.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mike Habeck <habeck@sgi.com>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Mike Travis <travis@sgi.com>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
+ assigned
+References: <4BEAF008.9030805@sgi.com> <201005131256.17997.bjorn.helgaas@hp.com> <4BEC5530.1000008@sgi.com>
+In-Reply-To: <4BEC5530.1000008@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4BEC61ED.018F:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Julia Lawall <julia@diku.dk> [2010-05-13 22:02:03 +0200]:
+On 05/13/2010 12:38 PM, Mike Habeck wrote:
+>
+>
+> Nothing really breaks, it's more of a problem that the kernel uses
+> up the rest of the I/O Space, and starts spitting out warning
+> messages as it tries to assign the rest of the I/O BARs that the
+> BIOS didn't assign, something like:
+>
+>   pci 0010:03:00.0: BAR 5: can't allocate I/O resource [0x0-0x7f]
+>   pci 0012:05:00.0: BAR 5: can't allocate I/O resource [0x0-0x7f]
+>   ...
+>
+> And in using up all the I/O space, I think that could prevent a
+> hotplug attach of a pci device requiring I/O space (although I
+> believe most BIOSes pad the bridge decoders to support that).
+> I'm not to familiar with how pci hotplug works on x86 so I may
+> be wrong in what I just stated.
 
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Use kzalloc rather than the combination of kmalloc and memset.
-> 
-> The semantic patch that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression x,size,flags;
-> statement S;
-> @@
-> 
-> -x = kmalloc(size,flags);
-> +x = kzalloc(size,flags);
->  if (x == NULL) S
-> -memset(x, 0, size);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  drivers/bluetooth/btmrvl_sdio.c |    8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
-> 
-> diff -u -p a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
-> --- a/drivers/bluetooth/btmrvl_sdio.c
-> +++ b/drivers/bluetooth/btmrvl_sdio.c
-> @@ -216,7 +216,7 @@ static int btmrvl_sdio_download_helper(s
->  
->  	tmphlprbufsz = ALIGN_SZ(BTM_UPLD_SIZE, BTSDIO_DMA_ALIGN);
->  
-> -	tmphlprbuf = kmalloc(tmphlprbufsz, GFP_KERNEL);
-> +	tmphlprbuf = kzalloc(tmphlprbufsz, GFP_KERNEL);
->  	if (!tmphlprbuf) {
->  		BT_ERR("Unable to allocate buffer for helper."
->  			" Terminating download");
-> @@ -224,8 +224,6 @@ static int btmrvl_sdio_download_helper(s
->  		goto done;
->  	}
->  
-> -	memset(tmphlprbuf, 0, tmphlprbufsz);
-> -
->  	helperbuf = (u8 *) ALIGN_ADDR(tmphlprbuf, BTSDIO_DMA_ALIGN);
->  
->  	/* Perform helper data transfer */
-> @@ -318,7 +316,7 @@ static int btmrvl_sdio_download_fw_w_hel
->  	BT_DBG("Downloading FW image (%d bytes)", firmwarelen);
->  
->  	tmpfwbufsz = ALIGN_SZ(BTM_UPLD_SIZE, BTSDIO_DMA_ALIGN);
-> -	tmpfwbuf = kmalloc(tmpfwbufsz, GFP_KERNEL);
-> +	tmpfwbuf = kzalloc(tmpfwbufsz, GFP_KERNEL);
->  	if (!tmpfwbuf) {
->  		BT_ERR("Unable to allocate buffer for firmware."
->  		       " Terminating download");
-> @@ -326,8 +324,6 @@ static int btmrvl_sdio_download_fw_w_hel
->  		goto done;
->  	}
->  
-> -	memset(tmpfwbuf, 0, tmpfwbufsz);
-> -
->  	/* Ensure aligned firmware buffer */
->  	fwbuf = (u8 *) ALIGN_ADDR(tmpfwbuf, BTSDIO_DMA_ALIGN);
->  
+assume you have several IOHs on your system, and for hotplug support,
+BIOS is supposed to balance the IO ioport range allocation
+between IOHs.
 
-Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
+mmio range should be much better, it could use mmio64
 
--- 
-Gustavo F. Padovan
-http://padovan.org
+if your BIOS can not provide right _CRS for peer root buses,  some
+devices may get wrong allocation from kernel.
+or BIOS set small BAR in the bridge, that could cause problem too.
+
+YH
+
+
