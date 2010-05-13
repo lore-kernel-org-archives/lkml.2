@@ -1,90 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759577Ab0EMWPo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 18:15:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:50544 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab0EMWMv (ORCPT
+	id S932851Ab0EMWQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 18:16:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10725 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758503Ab0EMWQe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 18:12:51 -0400
-X-Authority-Analysis: v=1.1 cv=PaD2Wv+9xJqXNP3J8apim3QBTBpXOuB+BaCFQon6buA= c=1 sm=0 a=Ni1Jyl8EvUwA:10 a=UBIxAjGgU1YA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=Z4Rwk6OoAAAA:8 a=JfrnYn6hAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=omOdbC7AAAAA:8 a=iRrFxeVTYHbQNZdbrRgA:9 a=MdYbQJTnQu1bAF1be6EA:7 a=BVPYyhIVMf1ixIfLdVWZlY1mS4AA:4 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=jbrJJM5MRmoA:10 a=Zh68SRI7RUMA:10 a=3Rfx1nUSh_UA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=oUQuMaGMe1cA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Message-Id: <20100513221247.420624332@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Thu, 13 May 2010 18:10:06 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 02/12 v2] tracepoints: Add check trace callback type
-References: <20100513221004.765293881@goodmis.org>
-Content-Disposition: inline; filename=0002-tracepoints-Add-check-trace-callback-type.patch
+	Thu, 13 May 2010 18:16:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,224,1272870000"; 
+   d="scan'208";a="566987452"
+From: "Pan, Jacob jun" <jacob.jun.pan@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+       Jacob Pan <jacob.jun.pan@linux.intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       "Du, Alek" <alek.du@intel.com>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       "Tang, Feng" <feng.tang@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 13 May 2010 15:16:29 -0700
+Subject: RE: [PATCH 4/8] x86/mrst: change clock selection logic to support
+ medfield
+Thread-Topic: [PATCH 4/8] x86/mrst: change clock selection logic to support
+ medfield
+Thread-Index: AcrxF2VWcLli0NsER8GaYEOKwo847gBzqCHg
+Message-ID: <43F901BD926A4E43B106BF17856F0755A77DF118@orsmsx508.amr.corp.intel.com>
+References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1273254108-3234-5-git-send-email-jacob.jun.pan@linux.intel.com>
+ <alpine.LFD.2.00.1005111546260.3401@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1005111546260.3401@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+sorry for the late reply, we are working on the fixes. just to give some answers to your comments.
 
-This check is meant to be used by tracepoint users which do a direct cast of
-callbacks to (void *) for direct registration, thus bypassing the
-register_trace_##name and unregister_trace_##name checks.
+> 
+>  apbt sucks performance wise, so why do you consider it a better
+>  choice than lapic + broadcast ?
+> 
+apbt is always-on, I guess depends on the load, it can be better than
+having broadcast timers. e.g. if there are frequency transitions
+between C0 to deep C states. if we are always in c0, I can easily see
+native performance impact with per cpu apbt. I don't have power number
+to backup either cases. ftrace shows programming lapic timer is quite
+expensive, I don't understand.
 
-This permits to ensure that the callback type matches the function type at the
-call site, but without generating any code.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-LKML-Reference: <20100430165959.GA25605@Krystal>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Li Zefan <lizf@cn.fujitsu.com>
-CC: Masami Hiramatsu <mhiramat@redhat.com>
-CC: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/tracepoint.h |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ 1)               |          clockevents_program_event() {
+ 1)               |            lapic_next_event() {
+ 1)   2.947 us    |              native_apic_mem_write();
+ 1)   8.682 us    |            }
+ 1) + 14.676 us   |          }
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 1d85f9a..8d5e4f6 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -137,9 +137,11 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
- 	static inline int unregister_trace_##name(void (*probe)(proto))	\
- 	{								\
- 		return tracepoint_probe_unregister(#name, (void *)probe);\
-+	}								\
-+	static inline void check_trace_callback_type_##name(void (*cb)(proto)) \
-+	{								\
- 	}
- 
--
- #define DEFINE_TRACE_FN(name, reg, unreg)				\
- 	static const char __tpstrtab_##name[]				\
- 	__attribute__((section("__tracepoints_strings"))) = #name;	\
-@@ -168,6 +170,9 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
- 	static inline int unregister_trace_##name(void (*probe)(proto))	\
- 	{								\
- 		return -ENOSYS;						\
-+	}								\
-+	static inline void check_trace_callback_type_##name(void (*cb)(proto)) \
-+	{								\
- 	}
- 
- #define DEFINE_TRACE_FN(name, reg, unreg)
--- 
-1.7.0
+ 0)               |                  clockevents_program_event() {
+ 0)   4.146 us    |                    apbt_next_event();
+ 0)   9.910 us    |                  }
 
+
+> > + * lapic (always-on,ARAT) ------ 150
+> > + */
+> > +
+> > +int mrst_timer_options __cpuinitdata;
+> > +
+> >  static u32 sfi_mtimer_usage[SFI_MTMR_MAX_NUM];
+> >  static struct sfi_timer_table_entry
+> sfi_mtimer_array[SFI_MTMR_MAX_NUM];
+> > +static u32 mrst_cpu_chip;
+> >  int sfi_mtimer_num;
+> >
+> >  struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
+> > @@ -167,15 +191,16 @@ int __init sfi_parse_mrtc(struct
+> sfi_table_header *table)
+> >  	return 0;
+> >  }
+> >
+> > -/*
+> > - * the secondary clock in Moorestown can be APBT or LAPIC clock,
+> default to
+> > - * APBT but cmdline option can also override it.
+> > - */
+> >  static void __cpuinit mrst_setup_secondary_clock(void)
+> >  {
+> > -	/* restore default lapic clock if disabled by cmdline */
+> > -	if (disable_apbt_percpu)
+> > -		return setup_secondary_APIC_clock();
+> > +	if ((mrst_timer_options == MRST_TIMER_APBT_ONLY))
+> > +		return apbt_setup_secondary_clock();
+> > +	if (cpu_has(&current_cpu_data, X86_FEATURE_ARAT)
+> > +		||  (mrst_timer_options == MRST_TIMER_LAPIC_APBT)) {
+> > +		pr_info("using lapic timers for secondary clock\n");
+> > +		setup_secondary_APIC_clock();
+> > +		return;
+> 
+>   The logic is confusing.
+> 
+it can be more straightforward if we don't allow user cmdline
+overwrite.
+
+>  I guess the 111 is Penwell/MRST specific, right ?
+> 
+>  According to SDM we have anyway different results for the various CPU
+>  families, but we should utilize this in a generic way and have the
+>  translation tables for the various CPUs in one place.
+agreed. 111b is Penwell specific 83MHz spread spectrum
+
+
+> 
+>   Yikes. From which Intel cookbook is this ?
+> 
+>   Aside of that we have that info in boot_cpu_info already, don't we ?
+>   So there is neither a requirement for the extra cpuid call nor for
+>   the extra mrst_cpu_chip id magic.
+> 
+initially, I thought we need this before boot_cpu_data is initialized.
+But we actually don't need it early. I will fix that.
 
