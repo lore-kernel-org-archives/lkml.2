@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab0EMGEZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 02:04:25 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33593 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308Ab0EMGEX (ORCPT
+	id S1753203Ab0EMGEq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 02:04:46 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:34093 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab0EMGEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 02:04:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] Cleanup migrate case in try_to_unmap_one
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       linux-mm <linux-mm@kvack.org>
-In-Reply-To: <1272899957-11604-1-git-send-email-ngupta@vflare.org>
-References: <1272899957-11604-1-git-send-email-ngupta@vflare.org>
-Message-Id: <20100513144336.216D.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 13 May 2010 15:04:21 +0900 (JST)
+	Thu, 13 May 2010 02:04:43 -0400
+From: "Ian Munsie" <imunsie@au1.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+       Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Ian Munsie <imunsie@au1.ibm.com>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 1/7] perf trace: Defensive programming
+Date: Thu, 13 May 2010 16:03:46 +1000
+Message-Id: <1273730632-21008-2-git-send-email-imunsie@au1.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1273730632-21008-1-git-send-email-imunsie@au1.ibm.com>
+References: <1273730632-21008-1-git-send-email-imunsie@au1.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Remove duplicate handling of TTU_MIGRATE case for
-> anonymous and filesystem pages.
-> 
-> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+From: Ian Munsie <imunsie@au1.ibm.com>
 
-This patch change swap cache case. I think this is not intentional.
+This patch makes the failure case where the size that read_size is
+passed is invalid kill perf immediately rather than silently failing, so
+that further bugs or regressions using read_size can be found more
+easily and squashed early.
 
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+ tools/perf/util/trace-event-parse.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-
-> ---
->  mm/rmap.c |   17 ++++-------------
->  1 files changed, 4 insertions(+), 13 deletions(-)
-> 
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 07fc947..8ccfe4a 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -946,6 +946,10 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
->  			dec_mm_counter(mm, MM_FILEPAGES);
->  		set_pte_at(mm, address, pte,
->  				swp_entry_to_pte(make_hwpoison_entry(page)));
-> +	} else if (PAGE_MIGRATION && (TTU_ACTION(flags) == TTU_MIGRATION)) {
-> +		swp_entry_t entry;
-> +		entry = make_migration_entry(page, pte_write(pteval));
-> +		set_pte_at(mm, address, pte, swp_entry_to_pte(entry));
->
->  	} else if (PageAnon(page)) {
->  		swp_entry_t entry = { .val = page_private(page) };
->  
-> @@ -967,22 +971,9 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
->  			}
->  			dec_mm_counter(mm, MM_ANONPAGES);
->  			inc_mm_counter(mm, MM_SWAPENTS);
-> -		} else if (PAGE_MIGRATION) {
-> -			/*
-> -			 * Store the pfn of the page in a special migration
-> -			 * pte. do_swap_page() will wait until the migration
-> -			 * pte is removed and then restart fault handling.
-> -			 */
-> -			BUG_ON(TTU_ACTION(flags) != TTU_MIGRATION);
-> -			entry = make_migration_entry(page, pte_write(pteval));
->  		}
->  		set_pte_at(mm, address, pte, swp_entry_to_pte(entry));
->  		BUG_ON(pte_file(*pte));
-> -	} else if (PAGE_MIGRATION && (TTU_ACTION(flags) == TTU_MIGRATION)) {
-> -		/* Establish migration entry for a file page */
-> -		swp_entry_t entry;
-> -		entry = make_migration_entry(page, pte_write(pteval));
-> -		set_pte_at(mm, address, pte, swp_entry_to_pte(entry));
->  	} else
->  		dec_mm_counter(mm, MM_FILEPAGES);
->  
-> -- 
-> 1.6.6.1
-> 
-
-
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 73a0222..8f470f6 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -1912,8 +1912,7 @@ unsigned long long read_size(void *ptr, int size)
+ 	case 8:
+ 		return data2host8(ptr);
+ 	default:
+-		/* BUG! */
+-		return 0;
++		die("read_size BUG: Invalid size %d", size);
+ 	}
+ }
+ 
+-- 
+1.7.1
 
