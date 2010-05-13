@@ -1,46 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355Ab0EMTCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 15:02:52 -0400
-Received: from 29.mail-out.ovh.net ([87.98.216.213]:38367 "HELO
-	29.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932261Ab0EMTCt (ORCPT
+	id S932386Ab0EMTDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 15:03:32 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:56860 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932261Ab0EMTDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 15:02:49 -0400
-Message-ID: <4BEC4CD6.6090402@example.com>
-Date: Thu, 13 May 2010 21:02:46 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
+	Thu, 13 May 2010 15:03:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IwX/W0T7SN0oLPN0/q/VOn5oYQTAeXIwsaMHKiuqIDJ3KvGMk0cf4M0LtEcLUiTdQh
+         Op4glLla9RzKmJfr48BLTZ/1bNRQqtV7OwfqnrAwaaW7aBke0uIlhpSvePApea3wNFR0
+         qVM9ZmpONFM9w7L5xyusRK5xEzPjPLORcPoEs=
+Date: Thu, 13 May 2010 21:03:28 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
+       paulus@samba.org, acme@redhat.com
+Subject: Re: [PATCH RFC] perf: fix find_swevent_head() RCU lockdep splat
+Message-ID: <20100513190325.GB5377@nowhere>
+References: <20100513182556.GA14326@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: piotr@hosowicz.com
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: General questiin about SYSFS
-References: <4BEC4B0D.8010102@example.com>
-In-Reply-To: <4BEC4B0D.8010102@example.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 5536894268117643634
-X-Ovh-Remote: 83.24.77.38 (dmv38.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100513182556.GA14326@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.05.2010 20:55, Piotr Hosowicz wrote:
+On Thu, May 13, 2010 at 11:25:56AM -0700, Paul E. McKenney wrote:
+> This commit guesses at the perf_cpu_context locking design and deploys
+> an rcu_dereference_check() accordingly.  The design appears to require
+> that a given CPU be accessing its own per_cpu_context or that it be
+> traversing under RCU protection.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+>  perf_event.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index a4fa381..002791c 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -4074,7 +4074,9 @@ find_swevent_head(struct perf_cpu_context *ctx, u64 type, u32 event_id)
+>  
+>  	hash = swevent_hash(type, event_id);
+>  
+> -	hlist = rcu_dereference(ctx->swevent_hlist);
+> +	hlist = rcu_dereference_check(ctx->swevent_hlist,
+> +				      rcu_read_lock_held() ||
+> +				      ctx == &__get_cpu_var(perf_cpu_context));
+>  	if (!hlist)
+>  		return NULL;
+>  
 
-> I could find the option in menuconfig and I don't want to edit .config
-> by hand, because there are various *SYSFS* options there.
 
-Sorry, I mistyped, I meant I _cannot_ find it in menuconfig nor in .config.
+Hmm, that's not exactly that. It will always be the ctx of this cpu
+but not always under rcu read lock. I mean touching the current cpu
+ctx is not inherently safe.
 
-Regards,
+In fact we have two paths:
 
-Piotr Hosowicz
+perf_swevent_enable() gets the hlist and if it is called it means
+that this hlist is not supposed to be NULL. If it is, it's a bug.
 
--- 
-Polsat: ogl±dasz z rodzink± reklamy, a tu nagle - trach! - film!
-NP: Alice In Chains - All Secrets Known
-NB: 2.6.34-rc7-git4
+If we have created a software event, the hlist has been allocated
+and perf_swevent_enable() is called later to activate this event.
+May be I shouldn't use rcu_dereference() here but a simple dereference.
+And the hlist can't be freed under us at this time so we don't need
+rcu_read_lock().
+
+OTOH, do_perf_sw_event() can be called anytime so it need this
+rcu_read_lock().
+
+
+On the perf_swevent_enable() path, what prevents the hlist to be
+freed under us is the ctx->lock. Because we won't ever remove
+an event from its context list outside this lock, and we might only
+release the hlist after a software event gets removed from its
+context list.
+
+So either we do this:
+
+hlist = rcu_dereference_check(ctx->swevent_hlist,
+                              rcu_read_lock_held() ||
+                              raw_spin_lock_is_held(&ctx->lock));
+
+or:
+
+
+hlist = ctx->swevent_hlist;
+
