@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303Ab0EMBqe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 21:46:34 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54703 "EHLO gate.crashing.org"
+	id S1755298Ab0EMBxB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 21:53:01 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48467 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753506Ab0EMBqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 21:46:32 -0400
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel list <linux-kernel@vger.kernel.org>,
-       Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1273660604.21352.123.camel@pasglop>
-References: <1273650396.21352.121.camel@pasglop>
-	 <B0104965-09F9-4372-AA9F-F6D0FDEA67F2@kernel.crashing.org>
-	 <1273660604.21352.123.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 May 2010 11:46:21 +1000
-Message-ID: <1273715181.21352.157.camel@pasglop>
+	id S1753424Ab0EMBw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 21:52:59 -0400
+Date: Thu, 13 May 2010 11:52:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
+Message-Id: <20100513115258.41b01dec.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+Hi Mauro,
 
-I've added to my merge branch Kumar's swiotlb fix. Here's the updated
-pull request.
+Today's linux-next merge of the v4l-dvb tree got a conflict in
+drivers/input/evdev.c between commit
+58b939959d228681208ba997595411fddc860849 ("Input: scancode in
+get/set_keycodes should be unsigned") from Linus' tree and commit
+edeada2cde748860846784cf3e5518d7c7c51ca2 ("V4L/DVB: input: Add support
+for EVIO[CS]GKEYCODEBIG") from the v4l-dvb tree.
 
-Thanks !
-
+Just context changes.  I fixed it up (see below) and can carry the fix
+for a while.
+-- 
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The following changes since commit cea0d767c29669bf89f86e4aee46ef462d2ebae8:
-  Linus Torvalds (1):
-        Merge branch 'hwmon-for-linus' of git://git.kernel.org/.../jdelvare/staging
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-Benjamin Herrenschmidt (1):
-      Merge commit 'kumar/merge' into merge
-
-Kumar Gala (1):
-      powerpc/swiotlb: Fix off by one in determining boundary of which ops to use
-
-Paul Mackerras (1):
-      powerpc/perf_event: Fix oops due to perf_event_do_pending call
-
- arch/powerpc/include/asm/hw_irq.h |   38 -----------------------
- arch/powerpc/kernel/asm-offsets.c |    1 -
- arch/powerpc/kernel/dma-swiotlb.c |    5 ++-
- arch/powerpc/kernel/entry_64.S    |    9 -----
- arch/powerpc/kernel/irq.c         |    6 ----
- arch/powerpc/kernel/time.c        |   60 +++++++++++++++++++++++++++++-------
- 6 files changed, 51 insertions(+), 68 deletions(-)
-
-
+diff --cc drivers/input/evdev.c
+index 2ee6c7a,1730b5b..0000000
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@@ -515,7 -513,9 +515,9 @@@ static long evdev_do_ioctl(struct file 
+  	struct input_absinfo abs;
+  	struct ff_effect effect;
+  	int __user *ip = (int __user *)p;
++ 	struct keycode_table_entry kt, *kt_p = p;
++ 	char scancode[16];
+ -	int i, t, u, v;
+ +	unsigned int i, t, u, v;
+  	int error;
+  
+  	switch (cmd) {
