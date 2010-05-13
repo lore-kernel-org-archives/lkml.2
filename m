@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759561Ab0EMWq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 18:46:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60836 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754075Ab0EMWqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 18:46:18 -0400
-Date: Thu, 13 May 2010 15:46:00 -0700
-From: Greg KH <gregkh@suse.de>
-To: "Woodruff, Richard" <r-woodruff2@ti.com>
-Cc: Daniel Walker <dwalker@fifo99.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Garrett <mjg@redhat.com>, Brian Swetland <swetland@google.com>,
-       Paul Walmsley <paul@pwsan.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Tony Lindgren <tony@atomide.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       "magnus.damm@gmail.com" <magnus.damm@gmail.com>,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       "Cousson, Benoit" <b-cousson@ti.com>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100513224600.GB23014@suse.de>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
- <201005132311.26293.rjw@sisk.pl>
- <1273785399.19100.98.camel@c-dwalke-linux.qualcomm.com>
- <201005132327.16163.rjw@sisk.pl>
- <1273786409.19100.104.camel@c-dwalke-linux.qualcomm.com>
- <20100513214653.GA21120@suse.de>
- <13B9B4C6EF24D648824FF11BE896716203BB0EEAE9@dlee02.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <13B9B4C6EF24D648824FF11BE896716203BB0EEAE9@dlee02.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759595Ab0EMWqi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 18:46:38 -0400
+Received: from mga12.intel.com ([143.182.124.36]:11626 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759546Ab0EMWqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 18:46:35 -0400
+Message-Id: <89k83a$882me0@azsmga001.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,224,1272870000"; 
+   d="scan'208";a="276912576"
+Date: Thu, 13 May 2010 23:46:30 +0100
+To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
+       dri-devel@lists.freedesktop.org, Dave Airlie <airlied@linux.ie>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: render error detected, EIR: 0x00000010
+References: <AANLkTikfzHWeVjto4Q8bWDie_5BjRz3V0fc3LW7k4uob@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <AANLkTikfzHWeVjto4Q8bWDie_5BjRz3V0fc3LW7k4uob@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 05:33:58PM -0500, Woodruff, Richard wrote:
+On Fri, 14 May 2010 03:59:08 +0530, Jaswinder Singh Rajput <jaswinderlinux@gmail.com> wrote:
+> Hello Chris,
 > 
-> > From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
-> > owner@vger.kernel.org] On Behalf Of Greg KH
-> > Sent: Thursday, May 13, 2010 4:47 PM
+> I am also getting display error on another PC :
 > 
-> > Also note that such a driver, without wakelocks, would never get tested,
-> > and so, things start quickly diverging.
-> 
-> Do wakelock enabled drivers require a wakelock aware user space to
-> function properly?
+> [   34.198957] render error detected, EIR: 0x00000010
+> [   34.198972] [drm:i915_handle_error] *ERROR* EIR stuck: 0x00000010, masking
+> [   34.198998] render error detected, EIR: 0x00000010
 
-Not that I can tell, but others might know more.
+Wow. Things are really amiss there. MI_SET_CONTEXT (the first instruction
+in the batch) was removed in
 
-> If the driver is added you want to make sure the benefit is there and
-> testable for all userspaces.
+  commit 45f45c73469f1bd46a1b6fb206f2e9e5e4fd66b3
+  Author: Eric Anholt <eric@anholt.net>
+  Date:   Mon Dec 29 11:26:11 2008 -0800
 
-Agreed.
+      Remove logical context setup.
 
-thanks,
+which explains why the destination bo is not on the active list, you
+have a pre-GEM UMS xf86-video-intel (so the batchbuffer is using absolute
+addressing rather than relocs and the kernel memory manager). The hardware
+is reporting a PTE error (in the overlay plane!) and the single active
+command is to clear the absolute buffer. As it is not being tracked by the
+kernel, I can't tell you what's wrong with the buffer, but most probably
+either the size or its stride is illegal in the context of that command.
+Or maybe even the GTT hasn't been fully initialised for the buffer, it is
+impossible to tell.
 
-greg k-h
+In short, you can trade this bug against the risk of GTT incoherency that
+is endemic on i8xx by updating your driver.
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
