@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759197Ab0EMS0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 14:26:20 -0400
-Received: from fifo99.com ([67.223.236.141]:55584 "EHLO fifo99.com"
+	id S1759157Ab0EMSbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 14:31:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15875 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759161Ab0EMS0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 14:26:13 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-From: Daniel Walker <dwalker@fifo99.com>
-To: Brian Swetland <swetland@google.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Tony Lindgren <tony@atomide.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       =?ISO-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Linus Walleij <linus.walleij@ericsson.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-In-Reply-To: <s2ga55d774e1005131117yd138c59bk54cc109401eb4a8d@mail.gmail.com>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
-	 <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com>
-	 <20100513121745.GA10749@srcf.ucam.org>
-	 <1273771990.19100.13.camel@c-dwalke-linux.qualcomm.com>
-	 <s2ga55d774e1005131117yd138c59bk54cc109401eb4a8d@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 May 2010 11:25:57 -0700
-Message-ID: <1273775157.19100.20.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1756172Ab0EMSbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 14:31:11 -0400
+Date: Thu, 13 May 2010 14:39:35 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Josef Bacik <josef@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 4/4] Btrfs: add basic DIO read/write support V3
+Message-ID: <20100513183935.GI27011@dhcp231-156.rdu.redhat.com>
+References: <20100512204052.GD3597@localhost.localdomain> <20100513151429.GA16916@infradead.org> <20100513153145.GE27011@dhcp231-156.rdu.redhat.com> <20100513152639.GA30954@infradead.org> <20100513180137.GH27011@dhcp231-156.rdu.redhat.com> <20100513111136.6986e8cc.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100513111136.6986e8cc.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 11:17 -0700, Brian Swetland wrote:
-
+On Thu, May 13, 2010 at 11:11:36AM -0700, Andrew Morton wrote:
+> On Thu, 13 May 2010 14:01:37 -0400
+> Josef Bacik <josef@redhat.com> wrote:
 > 
-> I'm not sure this necessitates using only debugfs for the userspace
-> interface.  A userspace interface is necessary to accomplish what
-> we're trying to do here, otherwise we have only half a solution, and
-> our hope is that it'd be a stable interface (as userspace interfaces
-> are supposed to be) for as long as its needed.  I could totally
-> imagine the userspace interface eventually becoming a no-op or
-> punching through to some other facility, depending on how this problem
-> is solved long-term in the ideal post-suspend-block future.
+> > On Thu, May 13, 2010 at 11:26:39AM -0400, Christoph Hellwig wrote:
+> > > On Thu, May 13, 2010 at 11:31:45AM -0400, Josef Bacik wrote:
+> > > > AIO's aio_complete does kmap with KM_IRQ0/1 and it gets called in the same
+> > > > context as the btrfs completion handler, so if it's ok for aio_complete it
+> > > > should be ok for btrfs right?  Thanks,
+> > > 
+> > > aio_complete does a spin_lock_irqsave before that, which disables
+> > > interrupts on the local CPU.
+> > > 
+> > 
+> > Ok how about I just do
+> > 
+> > local_irq_disable()
+> > kmap(KM_IRQ0)
+> > local_irq_enable()
+> > 
+> > would that be acceptable?  Thanks,
+> 
+> yup.
+> 
+> local_irq_disable() (or local_irq_save())
+> kmap_atomic(KM_IRQx);
+> <stuff>
+> kunmap_atomic(KM_IRQx);
+> local_irq_enable() (or local_irq_restore()).
+> 
+> then perhaps flush_dcache_page().
 
-The problem is that once this userspace interface is exposed, it's
-nearly permanent and has to be support for a long long time .. It might
-seen trivial to just remove something your not using, but we never know
-who is using what once the kernel is released.
+Great, thank you, I will fix this up and resend.
 
-Daniel
-
+Josef
