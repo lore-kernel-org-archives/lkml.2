@@ -1,133 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab0EMIjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 04:39:14 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41974 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab0EMIjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 04:39:11 -0400
-Date: Thu, 13 May 2010 10:38:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: greg@kroah.com, Peter Zijlstra <peterz@infradead.org>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-Message-ID: <20100513083818.GA21924@elte.hu>
-References: <20100510115344.GA11238@elte.hu>
- <4BE8931C.9070106@linux.vnet.ibm.com>
- <1273560419.5605.3426.camel@twins>
- <20100511072127.GB10421@elte.hu>
- <1273566031.30322.31.camel@minggr.sh.intel.com>
- <1273567815.5605.3491.camel@twins>
- <1273568620.30322.42.camel@minggr.sh.intel.com>
- <1273569154.5605.3499.camel@twins>
- <20100511091833.GB18869@elte.hu>
- <1273739333.30322.119.camel@minggr.sh.intel.com>
+	id S1754386Ab0EMInr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 04:43:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59126 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab0EMIno (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 04:43:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=U+PT3uadWDfG6GZSCrJ3OWdCCIeGIzQ6HLdb7RETCT0yWocG0eLL20xNvDrW9EnGeZ
+         +HMcHYcs4UndeEqpZUCmkDTp2CQPWtSWFi1WeuRcgy+sn2K+LmICjMszK3T3JOt3Liko
+         2rTvTYrbFmjbdOOfPoC46Vf6P+Uk6qEMECc24=
+Message-ID: <4BEBBBBB.3050201@suse.cz>
+Date: Thu, 13 May 2010 10:43:39 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.5pre) Gecko/20100430 SUSE/3.1b2-7.1 Thunderbird/3.1b2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273739333.30322.119.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Changli Gao <xiaosuo@gmail.com>, akpm@linux-foundation.org,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Subject: Re: [RFC] mm: generic adaptive large memory allocation APIs
+References: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com> <20100513134124.2164.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20100513134124.2164.A69D9226@jp.fujitsu.com>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Lin Ming <ming.m.lin@intel.com> wrote:
-
-> On Tue, 2010-05-11 at 17:18 +0800, Ingo Molnar wrote:
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > The new PMUs will use a dynamic range that starts at PERF_TYPE_MAX.
-> > 
-> > I dont think we should use a dynamic range of event sources - it's a 
-> > completely useless indirection that has no meaning to humans.
-> > 
-> > As far as machine interfaces go a much cleaner approach would be to allow an 
-> > open fd to a sysfs file to be passed to sys_perf_event_open() - this would 
-> > identify the event source. This needs a small extension of the ABI but we 
-> > could thus get rid of the 'type' enumeration altogether and express _all_ 
-> > event sources via fds to sysfs files.
+On 05/13/2010 06:45 AM, KOSAKI Motohiro wrote:
+> Hi
 > 
-> I still don't understand this sys_fd -> pmu lookup, would you please
-> explain it more detail?
+>> void *kvmalloc(size_t size)
+>> {
+>> 	void *ptr;
+>>
+>> 	if (size < PAGE_SIZE)
+>> 		return kmalloc(PAGE_SIZE, GFP_KERNEL);
+>> 	ptr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
 > 
-> struct pmu {
-> 	kobject kobj;
-> 	...
-> };
+> low order GFP_KERNEL allocation never fail. then, this doesn't works
+> as you expected.
+
+Hi, I suppose you mean the kmalloc allocation -- so kmalloc should fail
+iff alloc_pages_exact (unless somebody frees a heap of memory indeed)?
+
+>> 	if (ptr != NULL)
+>> 		return ptr;
+>>
+>> 	return vmalloc(size);
 > 
-> What I can imagine is,
-> 
-> 1. In userspace, sys_fd =
-> open("/sys/devices/system/cpu/event_source", ..), then sys_fd is passed
-> to sys_perf_event_open()
+> On x86, vmalloc area is only 128MB address space. it is very rare 
+> resource than physical ram. vmalloc fallback is not good idea.
 
-Yes, open() an event_source - or rather an event itself. For raw events there 
-has to be a separate event entry that can be opened.
+These functions are a replacement for explicit
+if (!(x = kmalloc()))
+   x = vmalloc();
+...
+if (is_vmalloc(x))
+  vfree(x);
+else
+  kfree(x);
+in the code (like fdtable does this).
 
-I.e. we'd have a layout like:
+The 128M limit on x86_32 for vmalloc is configurable so if drivers in
+sum need more on some specific hardware, it can be increased on the
+command line (I had to do this on one machine in the past).
 
- /sys/devices/system/cpu/events/cycles/id
- /sys/devices/system/cpu/events/instructions/id
- /sys/devices/system/cpu/events/raw/id
+Anyway as this is a replacement for explicit tests, it shouldn't change
+the behaviour in any way. Obviously when a user doesn't need virtually
+contiguous space, he shouldn't use this interface at all.
 
-By making each event category a directory we gain the flexibility of 
-integrating tracepoints as well, for example:
-
- /sys/kernel/sched/events/wakeup/id
- /sys/kernel/sched/events/wakeup/format
-
-Where 'format' describes the event record layout:
-
- # cat /debug/tracing/events/sched/sched_wakeup/format 
- name: sched_wakeup
- ID: 59
- format:
-	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-	field:int common_pid;	offset:4;	size:4;	signed:1;
-	field:int common_lock_depth;	offset:8;	size:4;	signed:1;
-
-	field:char comm[TASK_COMM_LEN];	offset:12;	size:16;	signed:1;
-	field:pid_t pid;	offset:28;	size:4;	signed:1;
-	field:int prio;	offset:32;	size:4;	signed:1;
-	field:int success;	offset:36;	size:4;	signed:1;
-	field:int target_cpu;	offset:40;	size:4;	signed:1;
-
- print fmt: "comm=%s pid=%d prio=%d success=%d target_cpu=%03d", REC->comm, REC->pid, REC->prio, REC->success, REC->target_cpu
-
-> 2. In kernel, sys_file = <find the sys file structure with sys_fd>
-> 
-> 3. kobject = <retrieve the kobject from sys_file>
-> 
-> 4. pmu = container_of(kobject, struct pmu, kobj)
-> 
-> If my understanding is correct, then step 3 above seems strange. It's
-> not the typical usage of sys file.
-
-I dont think it's stange - we demux from the generic sysfs object to the more 
-specific perf events related object. This is similar how driver specific sysfs 
-functionality does the demux as well.
-
-	Ingo
+thanks,
+-- 
+js
+suse labs
