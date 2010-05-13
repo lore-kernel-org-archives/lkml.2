@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082Ab0EMQ7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 12:59:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52049 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756344Ab0EMQ7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 12:59:35 -0400
-Date: Thu, 13 May 2010 09:55:11 -0700
-From: Greg KH <gregkh@suse.de>
-To: akpm@linux-foundation.org, linux-mm@kvack.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       David Rientjes <rientjes@google.com>, Alex Chiang <achiang@hp.com>,
-       linux-kernel@vger.kernel.org, ak@linux.intel.com,
-       fengguang.wu@intel.com, haicheng.li@linux.intel.com,
-       shaohui.zheng@linux.intel.com
-Subject: Re: [RFC, 3/7] NUMA hotplug emulator
-Message-ID: <20100513165511.GB25212@suse.de>
-References: <20100513114835.GD2169@shaohui>
+	id S1759403Ab0EMRAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:00:40 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46963 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754075Ab0EMRAi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 13:00:38 -0400
+Date: Thu, 13 May 2010 09:58:27 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+In-Reply-To: <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1005130955240.3711@i5.linux-foundation.org>
+References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100513160117.GB22238@core.coreip.homeip.net> <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513114835.GD2169@shaohui>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 07:48:35PM +0800, Shaohui Zheng wrote:
-> Userland interface to hotplug-add fake offlined nodes.
 
-Why include 2 copies of the patch in one email?
 
-> Add a sysfs entry "probe" under /sys/devices/system/node/:
+On Thu, 13 May 2010, Linus Torvalds wrote:
 > 
->  - to show all fake offlined nodes:
->     $ cat /sys/devices/system/node/probe
+> PnP information _commonly_ doesn't inclure PS/2 ports, even when they 
+> exist. Lack of PnP information about the keyboard port means absolutely 
+> nothing, and anybody who tells you otherwise is totally and utterly wrong. 
 > 
->  - to hotadd a fake offlined node, e.g. nodeid is N:
->     $ echo N > /sys/devices/system/node/probe
+> So don't confuse this with PnP issues. That's a total red herring, and 
+> Apple is _not_at_all_ "doing the proper thing in the BIOS". 
 
-As you are trying to add a new sysfs file, please create the matching
-Documentation/ABI/ file as well.
+Btw, was this an EFI boot?
 
-Also note that sysfs files are "one value per file", which I don't think
-this file follows, right?
+I could easily see bootcamp working (it's been tested with Windows, after 
+all), but not EFI (I've heard rumors of Windows booting from EFI, but I 
+don't know if those are actually correct). 
 
-thanks,
+And I'd be a _lot_ more open to saying "if you booted from EFI, then we're 
+going to ignore any legacy devices that aren't in PnP tables".
 
-greg k-h
+In fact, we effectively do that today by having different code-paths for 
+ia64 (which was EFI) and x86 (which is obviously traditionally not EFI).
+
+			Linus
