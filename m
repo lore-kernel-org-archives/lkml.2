@@ -1,124 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450Ab0EMJvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 05:51:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755503Ab0EMJvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 05:51:48 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100512123629.41139fd5.akpm@linux-foundation.org>
-References: <20100512123629.41139fd5.akpm@linux-foundation.org> <20100512143403.2722.29652.stgit@warthog.procyon.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: dhowells@redhat.com, torvalds@linux-foundation.org,
-       linux-cachefs@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] CacheFiles: Fix error handling in cachefiles_determine_cache_security()
-Date: Thu, 13 May 2010 10:51:00 +0100
-Message-ID: <20327.1273744260@redhat.com>
+	id S1758174Ab0EMJwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 05:52:06 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33219 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757806Ab0EMJwA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 05:52:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=vci5UQJus+Gu6rNYQ2MsbdTnTbBVsUfQPUtRKjULDvAKvu7UFk1dlIMtjp2VYb4LY5
+         +d3pu+uTYQVjefTn/eniW+wWAZQRDtSPFMRfY/pTDUWaAN2YSzn3eD+o0hqJgL6jsmjK
+         Kh5xDeUxKeVgJfyzJvck7IUU1PztkwZMGOZ3U=
+From: Changli Gao <xiaosuo@gmail.com>
+To: akpm@linux-foundation.org
+Cc: Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
+       Christoph Raisch <raisch@de.ibm.com>, Roland Dreier <rolandd@cisco.com>,
+       Sean Hefty <sean.hefty@intel.com>,
+       Hal Rosenstock <hal.rosenstock@gmail.com>,
+       Divy Le Ray <divy@chelsio.com>,
+       "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@sun.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, linux-scsi@vger.kernel.org,
+       linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, containers@lists.linux-foundation.org,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+       Peter Zijlstra <peterz@infradead.org>, Changli Gao <xiaosuo@gmail.com>
+Subject: [PATCH 1/9] mm: add generic adaptive large memory allocation APIs
+Date: Thu, 13 May 2010 17:51:25 +0800
+Message-Id: <1273744285-8128-1-git-send-email-xiaosuo@gmail.com>
+X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> wrote:
+generic adaptive large memory allocation APIs
 
-> The changelog makes it hard for civilians to work out what the
-> user-visible effect of this bug was.
+kv*alloc are used to allocate large contiguous memory and the users don't mind
+whether the memory is physically or virtually contiguous. The allocator always
+try its best to allocate physically contiguous memory first.
 
-Sorry, I should've included the below oops report in the patch description.
+In this patch set, some APIs are introduced: kvmalloc(), kvzalloc(), kvcalloc(),
+kvrealloc(), kvfree() and kvfree_inatomic().
 
-Sadly, I think it's too late to fix that now as Linus has taken the patch.
-
-The problem can only occur when the cache is being started up and if an LSM
-(such as SELinux) is being used that can reject set_create_files_as().  It can
-only be incurred by root, as only root can start up a cache.
-
-Yes, it should got to stable too.
-
-David
----
-CacheFiles: Failed to register: -13
-------------[ cut here ]------------
-kernel BUG at kernel/cred.c:171!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/block/sda/sda6/start
-CPU 1
-Modules linked in: cachefiles nfs fscache auth_rpcgss nfs_acl lockd sunrpc
-
-Pid: 0, comm: swapper Not tainted 2.6.34-rc7-cachefs #74 DG965RY/
-RIP: 0010:[<ffffffff81049bdf>]  [<ffffffff81049bdf>] __put_cred+0x1a/0x65
-RSP: 0018:ffff880002103e10  EFLAGS: 00010202
-RAX: 0000000000000001 RBX: ffff88003dd94d80 RCX: 0000000000000000
-RDX: ffff88003dc7d6e0 RSI: 0000000000000000 RDI: ffff88003dd94d80
-RBP: ffff880002103e10 R08: 0000000000000050 R09: 09f911029d74e35b
-R10: ffffffff8107ba45 R11: ffff88000210e640 R12: ffff880030670040
-R13: ffff88000210e640 R14: ffff880030670f50 R15: ffff88003dc93d58
-FS:  0000000000000000(0000) GS:ffff880002100000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007f78e0e42098 CR3: 000000000161c000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper (pid: 0, threadinfo ffff88003dcb0000, task ffff88003dc84040)
-Stack:
- ffff880002103e30 ffffffff8104a78e ffff880030670040 ffffffff816326c0
-<0> ffff880002103e50 ffffffff8102f87a ffff88000210e640 ffff880030670040
-<0> ffff880002103e70 ffffffff810319d4 ffff880002103e70 ffff88000210e610
-Call Trace:
- <IRQ>
- [<ffffffff8104a78e>] exit_creds+0x7f/0x15a
- [<ffffffff8102f87a>] __put_task_struct+0x65/0x94
- [<ffffffff810319d4>] delayed_put_task_struct+0x4e/0x52
- [<ffffffff8107bb41>] __rcu_process_callbacks+0x191/0x2a4
- [<ffffffff8107bc7a>] rcu_process_callbacks+0x26/0x4c
- [<ffffffff810355e6>] __do_softirq+0xa2/0x140
- [<ffffffff81002e0c>] call_softirq+0x1c/0x28
- [<ffffffff81004b54>] do_softirq+0x38/0x80
- [<ffffffff81034f82>] irq_exit+0x45/0x47
- [<ffffffff81017833>] smp_apic_timer_interrupt+0x88/0x96
- [<ffffffff810028d3>] apic_timer_interrupt+0x13/0x20
- <EOI>
- [<ffffffff810489e1>] ? __atomic_notifier_call_chain+0x0/0x86
- [<ffffffff810096bf>] ? mwait_idle+0x6e/0x78
- [<ffffffff810096b6>] ? mwait_idle+0x65/0x78
- [<ffffffff810011dc>] cpu_idle+0x4d/0x83
- [<ffffffff8138f62c>] start_secondary+0x1bd/0x1c1
-Code: da c0 15 00 4c 89 e7 e8 bd 15 06 00 5b 41 5c c9 c3 55 8b 47 04 48 89 e5 8b 07 8b 07 85 c0 74 04 0f 0b eb fe 8b 47 04 85 c0 74 04 <0f> 0b eb fe c7 47 10 44 61 65 44 48 8b 45 08 48 89 47 08 65 48
-RIP  [<ffffffff81049bdf>] __put_cred+0x1a/0x65
- RSP <ffff880002103e10>
----[ end trace f1e0ebe358730a1c ]---
-Kernel panic - not syncing: Fatal exception in interrupt
-Pid: 0, comm: swapper Tainted: G      D    2.6.34-rc7-cachefs #74
-Call Trace:
- <IRQ>  [<ffffffff81392977>] panic+0x73/0xeb
- [<ffffffff81005c7c>] ? oops_end+0x42/0x8e
- [<ffffffff81005cbb>] oops_end+0x81/0x8e
- [<ffffffff81005e9f>] die+0x55/0x5e
- [<ffffffff81003574>] do_trap+0x11c/0x12b
- [<ffffffff810038fd>] ? do_invalid_op+0x72/0x9f
- [<ffffffff81003921>] do_invalid_op+0x96/0x9f
- [<ffffffff81049bdf>] ? __put_cred+0x1a/0x65
- [<ffffffff81395418>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff8107ba45>] ? __rcu_process_callbacks+0x95/0x2a4
- [<ffffffff81395eec>] ? irq_return+0x0/0x2
- [<ffffffff81002b95>] invalid_op+0x15/0x20
- [<ffffffff8107ba45>] ? __rcu_process_callbacks+0x95/0x2a4
- [<ffffffff81049bdf>] ? __put_cred+0x1a/0x65
- [<ffffffff8104a78e>] exit_creds+0x7f/0x15a
- [<ffffffff8102f87a>] __put_task_struct+0x65/0x94
- [<ffffffff810319d4>] delayed_put_task_struct+0x4e/0x52
- [<ffffffff8107bb41>] __rcu_process_callbacks+0x191/0x2a4
- [<ffffffff8107bc7a>] rcu_process_callbacks+0x26/0x4c
- [<ffffffff810355e6>] __do_softirq+0xa2/0x140
- [<ffffffff81002e0c>] call_softirq+0x1c/0x28
- [<ffffffff81004b54>] do_softirq+0x38/0x80
- [<ffffffff81034f82>] irq_exit+0x45/0x47
- [<ffffffff81017833>] smp_apic_timer_interrupt+0x88/0x96
- [<ffffffff810028d3>] apic_timer_interrupt+0x13/0x20
- <EOI>  [<ffffffff810489e1>] ? __atomic_notifier_call_chain+0x0/0x86
- [<ffffffff810096bf>] ? mwait_idle+0x6e/0x78
- [<ffffffff810096b6>] ? mwait_idle+0x65/0x78
- [<ffffffff810011dc>] cpu_idle+0x4d/0x83
- [<ffffffff8138f62c>] start_secondary+0x1bd/0x1c1
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+----
+ include/linux/mm.h      |   31 ++++++++++++++
+ include/linux/vmalloc.h |    1 
+ mm/nommu.c              |    6 ++
+ mm/util.c               |  104 ++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/vmalloc.c            |   14 ++++++
+ 5 files changed, 156 insertions(+)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 462acaf..0ece978 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1467,5 +1467,36 @@ extern int soft_offline_page(struct page *page, int flags);
+ 
+ extern void dump_page(struct page *page);
+ 
++void *__kvmalloc(size_t size, gfp_t flags);
++
++static inline void *kvmalloc(size_t size)
++{
++	return __kvmalloc(size, 0);
++}
++
++static inline void *kvzalloc(size_t size)
++{
++	return __kvmalloc(size, __GFP_ZERO);
++}
++
++static inline void *kvcalloc(size_t n, size_t size)
++{
++	return __kvmalloc(n * size, __GFP_ZERO);
++}
++
++void __kvfree(void *ptr, bool inatomic);
++
++static inline void kvfree(void *ptr)
++{
++	__kvfree(ptr, false);
++}
++
++static inline void kvfree_inatomic(void *ptr)
++{
++	__kvfree(ptr, true);
++}
++
++void *kvrealloc(void *ptr, size_t newsize);
++
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_MM_H */
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 227c2a5..33ec828 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -60,6 +60,7 @@ extern void *__vmalloc(unsigned long size, gfp_t gfp_mask, pgprot_t prot);
+ extern void *__vmalloc_area(struct vm_struct *area, gfp_t gfp_mask,
+ 				pgprot_t prot);
+ extern void vfree(const void *addr);
++extern unsigned long vsize(const void *addr);
+ 
+ extern void *vmap(struct page **pages, unsigned int count,
+ 			unsigned long flags, pgprot_t prot);
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 63fa17d..1ddf3fe 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -223,6 +223,12 @@ void vfree(const void *addr)
+ }
+ EXPORT_SYMBOL(vfree);
+ 
++unsigned long vsize(const void *addr)
++{
++	return ksize(addr);
++}
++EXPORT_SYMBOL(vsize);
++
+ void *__vmalloc(unsigned long size, gfp_t gfp_mask, pgprot_t prot)
+ {
+ 	/*
+diff --git a/mm/util.c b/mm/util.c
+index f5712e8..7cc364a 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -5,6 +5,7 @@
+ #include <linux/err.h>
+ #include <linux/sched.h>
+ #include <asm/uaccess.h>
++#include <linux/vmalloc.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/kmem.h>
+@@ -289,6 +290,109 @@ int __attribute__((weak)) get_user_pages_fast(unsigned long start,
+ }
+ EXPORT_SYMBOL_GPL(get_user_pages_fast);
+ 
++void *__kvmalloc(size_t size, gfp_t flags)
++{
++	void *ptr;
++
++	if (size < PAGE_SIZE)
++		return kmalloc(size, GFP_KERNEL | flags);
++	size = PAGE_ALIGN(size);
++	if (is_power_of_2(size))
++		ptr = (void *)__get_free_pages(GFP_KERNEL | flags |
++					       __GFP_NOWARN, get_order(size));
++	else
++		ptr = alloc_pages_exact(size, GFP_KERNEL | flags |
++					      __GFP_NOWARN);
++	if (ptr != NULL) {
++		virt_to_head_page(ptr)->private = size;
++		return ptr;
++	}
++
++	ptr = vmalloc(size);
++	if (ptr != NULL && (flags & __GFP_ZERO))
++		memset(ptr, 0, size);
++
++	return ptr;
++}
++EXPORT_SYMBOL(__kvmalloc);
++
++static void kvfree_work(struct work_struct *work)
++{
++	vfree(work);
++}
++
++void __kvfree(void *ptr, bool inatomic)
++{
++	if (unlikely(ZERO_OR_NULL_PTR(ptr)))
++		return;
++	if (is_vmalloc_addr(ptr)) {
++		if (inatomic) {
++			struct work_struct *work;
++
++			work = ptr;
++			BUILD_BUG_ON(sizeof(struct work_struct) > PAGE_SIZE);
++			INIT_WORK(work, kvfree_work);
++			schedule_work(work);
++		} else {
++			vfree(ptr);
++		}
++	} else {
++		struct page *page;
++
++		page = virt_to_head_page(ptr);
++		if (PageSlab(page) || PageCompound(page))
++			kfree(ptr);
++		else if (is_power_of_2(page->private))
++			free_pages((unsigned long)ptr,
++				   get_order(page->private));
++		else
++			free_pages_exact(ptr, page->private);
++	}
++}
++EXPORT_SYMBOL(__kvfree);
++
++void *kvrealloc(void *ptr, size_t newsize)
++{
++	void *nptr;
++	size_t oldsize;
++
++	if (unlikely(!newsize)) {
++		kvfree(ptr);
++		return ZERO_SIZE_PTR;
++	}
++
++	if (unlikely(ZERO_OR_NULL_PTR(ptr)))
++		return kvmalloc(newsize);
++
++	if (is_vmalloc_addr(ptr)) {
++		oldsize = vsize(ptr);
++		if (newsize <= oldsize)
++			return ptr;
++	} else {
++		struct page *page;
++
++		page = virt_to_head_page(ptr);
++		if (PageSlab(page) || PageCompound(page)) {
++			if (newsize < PAGE_SIZE)
++				return krealloc(ptr, newsize, GFP_KERNEL);
++			oldsize = ksize(ptr);
++		} else {
++			oldsize = page->private;
++			if (newsize <= oldsize)
++				return ptr;
++		}
++	}
++
++	nptr = kvmalloc(newsize);
++	if (nptr != NULL) {
++		memcpy(nptr, ptr, oldsize);
++		kvfree(ptr);
++	}
++
++	return nptr;
++}
++EXPORT_SYMBOL(kvrealloc);
++
+ /* Tracepoints definitions. */
+ EXPORT_TRACEPOINT_SYMBOL(kmalloc);
+ EXPORT_TRACEPOINT_SYMBOL(kmem_cache_alloc);
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index ae00746..93552a8 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1413,6 +1413,20 @@ void vfree(const void *addr)
+ EXPORT_SYMBOL(vfree);
+ 
+ /**
++ *	vsize  -  get the actual amount of memory allocated by vmalloc()
++ *	@addr:		memory base address
++ */
++unsigned long vsize(const void *addr)
++{
++	struct vmap_area *va;
++
++	va = find_vmap_area((unsigned long)addr);
++
++	return va->va_end - va->va_start - PAGE_SIZE;
++}
++EXPORT_SYMBOL(vsize);
++
++/**
+  *	vunmap  -  release virtual mapping obtained by vmap()
+  *	@addr:		memory base address
+  *
