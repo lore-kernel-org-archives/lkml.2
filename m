@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759255Ab0EMSk0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 14:40:26 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41116 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756288Ab0EMSkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 14:40:24 -0400
-Message-ID: <4BEC4782.7010109@kernel.org>
-Date: Thu, 13 May 2010 20:40:02 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
+	id S1759306Ab0EMSnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 14:43:13 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:54300 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756288Ab0EMSnL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 14:43:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=wfSsI4HYrk/dsACYzIQra1AqLzZD8YQV6BkTXVhEICOPrfAauzwmfWNmta+d5S6B/z
+         PmMnLJsktPsOHtAqmaeSNyzKBr62UltUZYq1ehbgM9uX21V6naU8WvHaEk9Q/fAmuNMa
+         uyAVaEqSMvMmFNJahSZmXWc1LY/3BwXJbIN/4=
+Date: Thu, 13 May 2010 20:42:32 +0200
+From: Dan Carpenter <error27@gmail.com>
 To: James Bottomley <James.Bottomley@suse.de>
-CC: jeff@garzik.org, linux-ide@vger.kernel.org, jens.axboe@oracle.com,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       ben@decadent.org.uk
-Subject: Re: [PATCHSET] libata: implement ->set_capacity()
-References: <1273766206-17402-1-git-send-email-tj@kernel.org>	 <1273766778.4353.200.camel@mulgrave.site>  <4BEC272E.10508@kernel.org>	 <1273768687.4353.235.camel@mulgrave.site>  <4BEC2ED7.9080001@kernel.org> <1273771131.4353.300.camel@mulgrave.site>
-In-Reply-To: <1273771131.4353.300.camel@mulgrave.site>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 13 May 2010 18:40:06 +0000 (UTC)
+Cc: Tejun Heo <tj@kernel.org>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] libsas: dereferencing variable before check
+Message-ID: <20100513184232.GC5695@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	James Bottomley <James.Bottomley@suse.de>,
+	Tejun Heo <tj@kernel.org>, linux-scsi@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20100512225629.GB5695@bicker> <23e0bf65-8758-45b3-b0a8-1df97db07d9a@email.android.com> <1273761114.4353.122.camel@mulgrave.site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273761114.4353.122.camel@mulgrave.site>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, James.
+On Thu, May 13, 2010 at 09:31:54AM -0500, James Bottomley wrote:
+> On Thu, 2010-05-13 at 01:08 +0200, Tejun Heo wrote:
+> > 
+> > "Dan Carpenter" <error27@gmail.com> wrote:
+> > 
+> > >The "qc->scsicmd" could be null so I moved the dereference inside the
+> > >check.  This was introduced by 70b25f890: "[SCSI] fix locking around
+> > >blk_abort_request()" 
+> > >
+> > >Signed-off-by: Dan Carpenter <error27@gmail.com>
+> > 
+> > Ooh.. right.
+> > 
+> > Asked-by: Tejun Heo <tj@kernel.org>
+> 
+> Well, oops, yes.  Two patches to fix one bug is a bit overboard, I
+> think, plus some code rearrangement to fix the locality of the problem
+> and ensure it doesn't happen again might be useful.  What about this.
+> 
 
-On 05/13/2010 07:18 PM, James Bottomley wrote:
-> So I think the bit I missed was you're trying to do this programatically
-> from boot time partition read to detect if the user previously disabled
-> the HPA and partitioned the device?  In which case you still have user
-> context, you can call BLKRRPART here too.
+Looks good.
 
-Yeah, that's what I'm trying to do but the functionality is already in
-the block layer and has been used by IDE layer for a long time.  We
-just forgot to implement it for libata.  The only thing I did was
-fixing up corner case handling in block layer a bit and adding a
-callback to sd so that the block layer call can be passed down to
-libata.  So, it doesn't have anything to do with sysfs attributes,
-block or libata.
+Acked-by: Dan Carpenter <error27@gmail.com>
 
-We sure can trigger the rescan by invoking BLKRRPART from inside the
-partition scan code but I'm afraid that would be more convoluted than
-the currently existing implementation of restarting the scan inside
-the scan function.
+regards,
+dan carpenter
 
-The only thing is that the existing block method is somewhat overly
-generic without any good reason, so simplifying that would be a good
-idea.
-
-Thanks.
-
--- 
-tejun
