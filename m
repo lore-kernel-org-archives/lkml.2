@@ -1,95 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab0EMGyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 02:54:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56803 "EHLO hera.kernel.org"
+	id S1754820Ab0EMG4V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 02:56:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37662 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753413Ab0EMGyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 02:54:06 -0400
-Date: Thu, 13 May 2010 06:53:40 GMT
-From: tip-bot for Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       eparis@redhat.com, peterz@infradead.org, randy.dunlap@oracle.com,
-       gorcunov@gmail.com, fweisbec@gmail.com, tglx@linutronix.de,
-       dzickus@redhat.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       eparis@redhat.com, peterz@infradead.org, gorcunov@gmail.com,
-       randy.dunlap@oracle.com, fweisbec@gmail.com, tglx@linutronix.de,
-       dzickus@redhat.com, mingo@elte.hu
-In-Reply-To: <1273266711-18706-9-git-send-email-dzickus@redhat.com>
-References: <1273266711-18706-9-git-send-email-dzickus@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/nmi] lockup_detector: Separate touch_nmi_watchdog code path from touch_watchdog
-Message-ID: <tip-d7c547335fa6b0090fa09c46ea0e965ac273a27e@git.kernel.org>
-Git-Commit-ID: d7c547335fa6b0090fa09c46ea0e965ac273a27e
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 13 May 2010 06:53:41 +0000 (UTC)
+	id S1753302Ab0EMG4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 02:56:19 -0400
+Date: Thu, 13 May 2010 16:56:06 +1000
+From: Neil Brown <neilb@suse.de>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, linux-fsdevel@vger.kernel.org,
+       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V7 5/9] vfs: Add freadlink syscall
+Message-ID: <20100513165606.4bf57bd6@notabene.brown>
+In-Reply-To: <87vdas1fnv.fsf@linux.vnet.ibm.com>
+References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1273679444-14903-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20100513114351.793caf70@notabene.brown>
+	<87vdas1fnv.fsf@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d7c547335fa6b0090fa09c46ea0e965ac273a27e
-Gitweb:     http://git.kernel.org/tip/d7c547335fa6b0090fa09c46ea0e965ac273a27e
-Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Fri, 7 May 2010 17:11:51 -0400
-Committer:  Frederic Weisbecker <fweisbec@gmail.com>
-CommitDate: Wed, 12 May 2010 23:55:55 +0200
+On Thu, 13 May 2010 11:55:56 +0530
+"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-lockup_detector: Separate touch_nmi_watchdog code path from touch_watchdog
+> On Thu, 13 May 2010 11:43:51 +1000, Neil Brown <neilb@suse.de> wrote:
+> > On Wed, 12 May 2010 21:20:40 +0530
+> > "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> > 
+> > > This enables to use open-by-handle and then get the link target
+> > > details of a symlink using the fd returned by handle
+> > > 
+> > 
+> > 
+> > I find it very frustrating that a new syscall seems to be needed here.
+> > We have 'readlinkat', and it should be enough.
+> > How:  the 'dfd' has to be a 'directory', and the path name as to be non-empty.
+> > 
+> > The following patch allows 'path' to be NULL and in that case 'dfd' to be a
+> > non-directory.  This allows readlinkat and faccessat (and probably others)
+> > to be used on an fd with not following path name.
+> > 
+> > What do people think of this alternative?
+> > 
+> 
+> I will add this in the next iteration and drop the freadlink syscall.
+> 
 
-When I combined the nmi_watchdog (hardlockup) and softlockup code, I
-also combined the paths the touch_watchdog and touch_nmi_watchdog took.
-This may not be the best idea as pointed out by Frederic W., that the
-touch_watchdog case probably should not reset the hardlockup count.
+I wouldn't be quite that hasty.  It was only a proposal.  It might not be
+appropriate to change all those syscalls..
 
-Therefore the patch below falls back to the previous idea of keeping
-the touch_nmi_watchdog a superset of the touch_watchdog case.
+An alternative that I don't think is a nice, but is a lot 'safer' is
+to just change readlinkat to accept a NULL path:
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>
-LKML-Reference: <1273266711-18706-9-git-send-email-dzickus@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/watchdog.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index f1541b7..57b8e2c 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -31,6 +31,7 @@ int watchdog_enabled;
- int __read_mostly softlockup_thresh = 60;
- 
- static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
-+static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
- static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
- static DEFINE_PER_CPU(struct hrtimer, watchdog_hrtimer);
- static DEFINE_PER_CPU(bool, softlockup_touch_sync);
-@@ -139,6 +140,7 @@ void touch_all_softlockup_watchdogs(void)
- 
- void touch_nmi_watchdog(void)
+Signed-off-by: NeilBrown <neilb@suse.de>
+diff --git a/fs/stat.c b/fs/stat.c
+index c4ecd52..85d0856 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
+ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 		char __user *, buf, int, bufsiz)
  {
-+	__get_cpu_var(watchdog_nmi_touch) = true;
- 	touch_softlockup_watchdog();
- }
- EXPORT_SYMBOL(touch_nmi_watchdog);
-@@ -201,10 +203,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
- 		 struct pt_regs *regs)
- {
- 	int this_cpu = smp_processor_id();
--	unsigned long touch_ts = per_cpu(watchdog_touch_ts, this_cpu);
+-	struct path path;
++	struct path path, *pp;
++	struct file *file = NULL;
+ 	int error;
  
--	if (touch_ts == 0) {
--		__touch_watchdog();
-+	if (__get_cpu_var(watchdog_nmi_touch) == true) {
-+		__get_cpu_var(watchdog_nmi_touch) = false;
- 		return;
+ 	if (bufsiz <= 0)
+ 		return -EINVAL;
+ 
+-	error = user_path_at(dfd, pathname, 0, &path);
++	if (filename == NULL && dfd != AT_FDCWD) {
++		struct file *file = fget(dfd);
++
++		if (file)
++			pp = &file->f_path;
++		else
++			error = -EBADF;
++	} else {
++		error = user_path_at(dfd, pathname, 0, &path);
++		pp = &path;
++	}
+ 	if (!error) {
+-		struct inode *inode = path.dentry->d_inode;
++		struct inode *inode = pp->dentry->d_inode;
+ 
+ 		error = -EINVAL;
+ 		if (inode->i_op->readlink) {
+-			error = security_inode_readlink(path.dentry);
++			error = security_inode_readlink(pp->dentry);
+ 			if (!error) {
+-				touch_atime(path.mnt, path.dentry);
+-				error = inode->i_op->readlink(path.dentry,
++				touch_atime(pp->mnt, pp->dentry);
++				error = inode->i_op->readlink(pp->dentry,
+ 							      buf, bufsiz);
+ 			}
+ 		}
+-		path_put(&path);
++		if (file)
++			fput(file);
++		else
++			path_put(&path);
  	}
- 
+ 	return error;
+ }
