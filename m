@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759586Ab0EMW1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 18:27:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38016 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753228Ab0EMW1w (ORCPT
+	id S1759581Ab0EMW2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 18:28:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55733 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753228Ab0EMW2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 18:27:52 -0400
-Date: Thu, 13 May 2010 23:27:49 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Daniel Walker <dwalker@fifo99.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Garrett <mjg@redhat.com>, Brian Swetland <swetland@google.com>,
-       Paul Walmsley <paul@pwsan.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Tony Lindgren <tony@atomide.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100513222748.GA3240@opensource.wolfsonmicro.com>
-References: <1272667021-21312-1-git-send-email-arve@android.com> <201005132311.26293.rjw@sisk.pl> <1273785399.19100.98.camel@c-dwalke-linux.qualcomm.com> <201005132327.16163.rjw@sisk.pl> <1273786409.19100.104.camel@c-dwalke-linux.qualcomm.com> <20100513214653.GA21120@suse.de>
+	Thu, 13 May 2010 18:28:46 -0400
+Date: Thu, 13 May 2010 15:25:01 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
+       Mel Gorman <mel@csn.ul.ie>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 7/11] Uprobes Implementation
+In-Reply-To: <87tyqbbgd7.fsf@basil.nowhere.org>
+Message-ID: <alpine.LFD.2.00.1005131516300.3711@i5.linux-foundation.org>
+References: <20100413183537.GA17538@redhat.com> <20100415093506.GA2064@linux.vnet.ibm.com> <20100419193139.GA24080@redhat.com> <20100420124358.GA20675@linux.vnet.ibm.com> <20100420153023.GA9351@redhat.com> <20100421065948.GA5440@linux.vnet.ibm.com>
+ <20100421160515.GA11321@redhat.com> <20100422133154.GA10776@linux.vnet.ibm.com> <20100422154059.GA5916@redhat.com> <1273610723.1810.105.camel@laptop> <20100513194034.GA11207@redhat.com> <alpine.LFD.2.00.1005131256050.3711@i5.linux-foundation.org>
+ <87tyqbbgd7.fsf@basil.nowhere.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513214653.GA21120@suse.de>
-X-Cookie: You'll be sorry...
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 02:46:53PM -0700, Greg KH wrote:
-> On Thu, May 13, 2010 at 02:33:29PM -0700, Daniel Walker wrote:
 
-> > You get the driver mainlined, then maintain a small patch to add
-> > wakelocks. Not hard at all , with lots of incentive to do so since you
-> > don't have to maintain such a large block of code out of tree.
 
-> Sorry, but it doesn't seem to work that way.  Look at the large number
-> of out-of-tree android device drivers that remain sitting there because
-> of the lack of this interface being in the kernel.
+On Fri, 14 May 2010, Andi Kleen wrote:
+> 
+> But isn't text usually shared?  I don't see how you could set any
+> break points or jump probes on text pages with that restriction.
 
-Is that really the issue?  The ones I've looked at have mostly suffered
-from being built on 2.6.29 and needing refreshes for current kernel APIs
-or from general code quality issues - I don't recall ever looking at one
-and thinking that the wakelocks were the one issue.
+Text is usually private, and read-only. Not generally MAP_SHARED. The 
+pages end up getting shared because nobody writes to them, but that's 
+almost accidental.
 
-> Also note that such a driver, without wakelocks, would never get tested,
-> and so, things start quickly diverging.
+If you write to them, you get a nice clean COW fault, and you are 
+_supposed_ to get a nice clean COW fault. It's not changing any semantics: 
+the write is not visible to outside users, and those "get a private page" 
+semantics were what the mmap() was all about.
 
-Chances are that if the driver is useful people will start using it in
-non-Android systems anyway.  As people have already observed wakelocks
-needn't have any practical effect on the running system so if the
-drivers are broken without wakelocks they'd be broken anyway.  
+In contrast, if it's a MAP_SHARED mapping and writable, the write would 
+actually be _visible_ outside the process. And that's clearly totally 
+wrong on all levels. Tracing a process should _never_ cause visible damage 
+outside that process (you'd hope it wouldn't be all that visibel to the 
+tracee either, but that's still secondary).
 
-If this really is a big concern with getting drivers into mainline then
-surely we could just add some noop wakelock functions for the drivers to
-call?  It's not particularly pretty but it'd deal with the driver merge
-side of things.
+The alternative, ie a MAP_SHARED but read-only mapping (which looks very 
+much like a private mapping) if you use get_user_pages(.force=1), the 
+kernel will actually end up forcing a COW break, because making the write 
+visible outside would be a security issue (you don't even have the right 
+to write to the thing).
+
+Notice how the MAP_SHARED case - writable or not - ends up doing the wrong 
+thing. Arguably it does the _even_worse_ thing in the writable case, but 
+in either case it's not good. 
+
+			Linus
