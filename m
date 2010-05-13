@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab0EMVKa (ORCPT <rfc822;w@1wt.eu>);
+	id S1755980Ab0EMVKc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:10:32 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:50949 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074Ab0EMVKa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 May 2010 17:10:30 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54370 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753666Ab0EMVKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:10:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 69.181.193.102
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/YnQLvg+MVmAufIfxhUDvk
+Date: Thu, 13 May 2010 14:10:06 -0700
+From: Tony Lindgren <tony@atomide.com>
 To: Matthew Garrett <mjg@redhat.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Date: Thu, 13 May 2010 23:11:26 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Daniel Walker <dwalker@fifo99.com>, Brian Swetland <swetland@google.com>,
-       Paul Walmsley <paul@pwsan.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+Cc: Alan Stern <stern@rowland.harvard.edu>, Paul Walmsley <paul@pwsan.com>,
+       Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Tony Lindgren <tony@atomide.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>, magnus.damm@gmail.com,
+       Kevin Hilman <khilman@deeprootsystems.com>, magnus.damm@gmail.com,
        "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
        Arjan van de Ven <arjan@infradead.org>,
        Geoff Smith <geoffx.smith@intel.com>,
-       =?iso-8859-1?q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       =?utf-8?Q?Beno=C3=AEt?= Cousson <b-cousson@ti.com>,
        linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
        Mark Brown <broonie@opensource.wolfsonmicro.com>,
        Liam Girdwood <lrg@slimlogic.co.uk>
-References: <1272667021-21312-1-git-send-email-arve@android.com> <1273779394.19100.47.camel@c-dwalke-linux.qualcomm.com> <20100513194820.GA19722@srcf.ucam.org>
-In-Reply-To: <20100513194820.GA19722@srcf.ucam.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100513211006.GG3428@atomide.com>
+References: <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com>
+ <Pine.LNX.4.44L0.1005131002380.1695-100000@iolanthe.rowland.org>
+ <20100513191717.GA3428@atomide.com>
+ <20100513192522.GA19256@srcf.ucam.org>
+ <20100513194205.GC3428@atomide.com>
+ <20100513195349.GB19722@srcf.ucam.org>
+ <20100513200003.GE3428@atomide.com>
+ <20100513200814.GA20254@srcf.ucam.org>
+ <20100513202320.GF3428@atomide.com>
+ <20100513203412.GA21244@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005132311.26293.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100513203412.GA21244@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 May 2010, Matthew Garrett wrote:
-> On Thu, May 13, 2010 at 12:36:34PM -0700, Daniel Walker wrote:
-> > On Thu, 2010-05-13 at 20:11 +0100, Matthew Garrett wrote:
-> > > See feature-removal-schedule.txt. So far we have no indication that it's 
-> > > going to be replaced, because nobody has actually suggested a working 
-> > > way to do this better. If we had a concrete implementation proposal for 
-> > > that then we'd be in a pretty different position right now.
+* Matthew Garrett <mjg@redhat.com> [100513 13:29]:
+> On Thu, May 13, 2010 at 01:23:20PM -0700, Tony Lindgren wrote:
+> > * Matthew Garrett <mjg@redhat.com> [100513 13:03]:
+> > > On Thu, May 13, 2010 at 01:00:04PM -0700, Tony Lindgren wrote:
+> > > 
+> > > > The system stays running because there's something to do. The system
+> > > > won't suspend until all the processors hit the kernel idle loop and
+> > > > the next_timer_interrupt_critical() returns nothing.
+> > > 
+> > > At which point an application in a busy loop cripples you.
 > > 
-> > Ok, feature-removal-schedule.txt applies to everything tho. What your
-> > saying is that if this interface only last a short time it might take 6
-> > months, if it last for a long time it would take longer. There's no easy
-> > way to know that Google is the only user after some amount of time
-> > passes.
+> > Maybe you could deal with the misbehaving untrusted apps in the userspace
+> > by sending kill -STOP to them when the screen blanks? Then continue
+> > when some event wakes up the system again.
 > 
-> If the interface is there for a long time, it's because we haven't come 
-> up with anything better. And if we haven't come up with anything better, 
-> the interface deserves to be there.
+> And if that's the application that's listening to the network socket 
+> that you want to get a wakeup event from? This problem is hard. I'd love 
+> there to be an elegant solution based on using the scheduler, but I 
+> really don't know what it is.
 
-Moreover, the interface is already in use out-of-tree and that usage is
-actually _growing_, so we have a growing number of out-of-tree drivers that
-aren't megrgeable for this very reason.
+Your system should wake up to an interrupt in that case. Then you have
+the trusted apps running that can decide if the untrusted apps should
+be continued or not.
 
-I don't see any _realistic_ way of solving this problem other than merging
-the opportunistic suspend.  If anyone sees one, and I mean _realistic_ and
-_practically_ _feasible_, please tell me.
+The key would be to have the basic apps behave and use the critical
+timers as needed. The advantage is that then you can do all the
+policy in the userspace and in a custom pm_idle function.
 
-Rafael
+Regards,
+
+Tony
