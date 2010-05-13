@@ -1,76 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab0EMVHr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:07:47 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:44298 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab0EMVHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:07:45 -0400
-Date: Fri, 14 May 2010 02:37:38 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Paul Menage <menage@google.com>, Peter Zijlstra <peterz@infradead.org>,
-       Dhaval Giani <dhaval.giani@gmail.com>,
-       James Kosin <jkosin@intcomgrp.com>, linux-kernel@vger.kernel.org,
-       jsafrane@redhat.com, tglx@linutronix.de
-Subject: Re: [PATCH/RFC] Have sane default values for cpusets
-Message-ID: <20100513210738.GV3296@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <eJktY-7JG-5@gated-at.bofh.it>
- <4BEAB6FC.8090105@intcomgrp.com>
- <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
- <1273674048.1626.117.camel@laptop>
- <20100512190757.GA421@tango.0pointer.de>
- <1273755719.5605.3537.camel@twins>
- <20100513140354.GA12639@tango.0pointer.de>
- <s2s6599ad831005131306pa7db4c4dyd7712de7fda73cfd@mail.gmail.com>
- <20100513203654.GA14528@tango.0pointer.de>
- <20100513204159.GA15291@tango.0pointer.de>
+	id S1754113Ab0EMVJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:09:24 -0400
+Received: from tauceti.net ([62.245.250.166]:44993 "EHLO www.tauceti.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049Ab0EMVJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:09:22 -0400
+Message-ID: <4BEC6A5D.5070304@tauceti.net>
+Date: Thu, 13 May 2010 23:08:45 +0200
+From: Robert Wimmer <kernel@tauceti.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100427 Thunderbird/3.0.4 ThunderBrowse/3.2.8.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100513204159.GA15291@tango.0pointer.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: mst@redhat.com, Avi Kivity <avi@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       bugzilla-daemon@bugzilla.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
+References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain> <4BD5F6C5.8080605@tauceti.net> <1272315854.8984.125.camel@localhost.localdomain> <4BD61147.40709@tauceti.net> <1272324536.16814.45.camel@localhost.localdomain> <4BD76B81.2070606@tauceti.net> <be8a0f012ebb2ae02522998591e6f1a5@tauceti.net> <4BE33259.3000609@tauceti.net> <1273181438.22155.26.camel@localhost.localdomain>
+In-Reply-To: <1273181438.22155.26.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Lennart Poettering <mzxreary@0pointer.de> [2010-05-13 22:41:59]:
+Finally I've had some time to do the next test.
+Here is a wireshark dump (~750 MByte):
+http://213.252.12.93/2.6.34-rc5.cap.gz
 
-> On Thu, 13.05.10 22:36, Lennart Poettering (mzxreary@0pointer.de) wrote:
-> 
-> > On Thu, 13.05.10 13:06, Paul Menage (menage@google.com) wrote:
-> > 
-> > > 
-> > > On Thu, May 13, 2010 at 7:03 AM, Lennart Poettering
-> > > <mzxreary@0pointer.de> wrote:
-> > > > By default systemd will create its groups in the "debug" hierarchy, (at
-> > > > least for now, in the long run i'd like to see "noop" hierarchy or so,
-> > > > that doesn't sound so temporary), since that controller is not useful
-> > > 
-> > > If you just want to track processes, mount a (named) hierarchy with no
-> > > attached subsystems.
-> > 
-> > Oh, that is possible? How would I do that? 
-> > 
-> > This certainly doesn't work:
-> > 
-> > # mount waldo -t cgroup /tmp/xxxx -o defaults
-> 
-> An neither does this:
-> 
-> # mount waldo -t cgroup /tmp/xxxx -o name=systemd
-> 
-> (the mount() syscall fails with EINVAL here, the other one fails with EBUSY)
+dmesg output after page allocation failure:
+https://bugzilla.kernel.org/attachment.cgi?id=26371
+
+stack trace before page allocation failure:
+https://bugzilla.kernel.org/attachment.cgi?id=26369
+
+stack trace after page allocation failure:
+https://bugzilla.kernel.org/attachment.cgi?id=26370
+
+I hope the wireshark dump is not to big to download.
+It was created with
+tshark -f "tcp port 2049" -i eth0 -w 2.6.34-rc5.cap
+
+Thanks!
+Robert
+
+
+
+On 05/06/10 23:30, Trond Myklebust wrote:
+> Sorry. I've been caught up in work in the past few days.
 >
+> I can certainly help with the soft lockup if you are able to supply
+> either a dump that includes all threads stuck in the NFS, or a (binary)
+> wireshark dump that shows the NFSv4 traffic between the client and
+> server around the time of the hang.
+>
+> Cheers
+>   Trond
+>
+> On Thu, 2010-05-06 at 23:19 +0200, Robert Wimmer wrote: 
+>   
+>> I don't know if someone is still interested in this
+>> but I think Trond isn't further interested because
+>> the last error was of cource a "page allocation
+>> failure" and not a "soft lookup" which Trond was
+>> trying to solve. But the patch was for 2.6.34 and
+>> the "soft lookup" comes up only with some 2.6.30 and
+>> maybe some 2.6.31 kernel versions. But the first error
+>> I reported was a "page allocation failure" which
+>> all kernels >= 2.6.32 produces with this configuration
+>> I use (NFSv4).
+>>
+>> Michael suggested to first solve the "soft lookup"
+>> before further investigating the "page allocation
+>> failure". We know that the "soft lookup" only
+>> pop's up with NFSv4 and not v3. I really want to
+>> use v4 but since I'm not a kernel hacker someone
+>> must guide me what to try next.
+>>
+>> I know that you're all have a lot of other work to
+>> do but if there're no ideas left what to do next
+>> it's maybe best to close the bug for now and I stay with
+>> kernel 2.6.30 for now or go back to NFS v3 if I
+>> upgrade to a newer kernel. Maybe the error will
+>> be fixed "by accident" in >= 2.6.35 ;-) 
+>>
+>> Thanks!
+>> Robert
+>>
+>>
+>>
+>> On 05/03/10 10:11, kernel@tauceti.net wrote:
+>>     
+>>> Anything we can do to investigate this further?
+>>>
+>>> Thanks!
+>>> Robert
+>>>
+>>>
+>>> On Wed, 28 Apr 2010 00:56:01 +0200, Robert Wimmer <kernel@tauceti.net>
+>>> wrote:
+>>>   
+>>>       
+>>>> I've applied the patch against the kernel which I got
+>>>> from "git clone ...." resulted in a kernel 2.6.34-rc5.
+>>>>
+>>>> The stack trace after mounting NFS is here:
+>>>> https://bugzilla.kernel.org/attachment.cgi?id=26166
+>>>> /var/log/messages after soft lockup:
+>>>> https://bugzilla.kernel.org/attachment.cgi?id=26167
+>>>>
+>>>> I hope that there is any usefull information in there.
+>>>>
+>>>> Thanks!
+>>>> Robert
+>>>>
+>>>> On 04/27/10 01:28, Trond Myklebust wrote:
+>>>>     
+>>>>         
+>>>>> On Tue, 2010-04-27 at 00:18 +0200, Robert Wimmer wrote: 
+>>>>>   
+>>>>>       
+>>>>>           
+>>>>>>> Sure. In addition to what you did above, please do
+>>>>>>>
+>>>>>>> mount -t debugfs none /sys/kernel/debug
+>>>>>>>
+>>>>>>> and then cat the contents of the pseudofile at
+>>>>>>>
+>>>>>>> /sys/kernel/debug/tracing/stack_trace
+>>>>>>>
+>>>>>>> Please do this more or less immediately after you've finished
+>>>>>>>           
+>>>>>>>               
+>>> mounting
+>>>   
+>>>       
+>>>>>>> the NFSv4 client.
+>>>>>>>   
+>>>>>>>       
+>>>>>>>           
+>>>>>>>               
+>>>>>> I've uploaded the stack trace. It was generated
+>>>>>> directly after mounting. Here are the stacks:
+>>>>>>
+>>>>>> After mounting:
+>>>>>> https://bugzilla.kernel.org/attachment.cgi?id=26153
+>>>>>> After the soft lockup:
+>>>>>> https://bugzilla.kernel.org/attachment.cgi?id=26154
+>>>>>> The dmesg output of the soft lockup:
+>>>>>> https://bugzilla.kernel.org/attachment.cgi?id=26155
+>>>>>>
+>>>>>>     
+>>>>>>         
+>>>>>>             
+>>>>>>> Does your server have the 'crossmnt' or 'nohide' flags set, or does
+>>>>>>>           
+>>>>>>>               
+>>> it
+>>>   
+>>>       
+>>>>>>> use the 'refer' export option anywhere? If so, then we might have to
+>>>>>>> test further, since those may trigger the NFSv4 submount feature.
+>>>>>>>   
+>>>>>>>       
+>>>>>>>           
+>>>>>>>               
+>>>>>> The server has the following settings:
+>>>>>> rw,nohide,insecure,async,no_subtree_check,no_root_squash
+>>>>>>
+>>>>>> Thanks!
+>>>>>> Robert
+>>>>>>
+>>>>>>
+>>>>>>     
+>>>>>>         
+>>>>>>             
+>>>>> That second trace is more than 5.5K deep, more than half of which is
+>>>>> socket overhead :-(((.
+>>>>>
+>>>>> The process stack does not appear to have overflowed, however that
+>>>>>       
+>>>>>           
+>>> trace
+>>>   
+>>>       
+>>>>> doesn't include any IRQ stack overhead.
+>>>>>
+>>>>> OK... So what happens if we get rid of half of that trace by forcing
+>>>>> asynchronous tasks such as this to run entirely in rpciod instead of
+>>>>> first trying to run in the process context?
+>>>>>
+>>>>> See the attachment...
+>>>>>
+>>>>>       
+>>>>>           
+>>     
+>
+>   
 
-Can you try the command below
-
-mount -t cgroup cgroup -o none,name=hello /cgroup/ 
-
-Works for me.
-
--- 
-	Three Cheers,
-	Balbir
