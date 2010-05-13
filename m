@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757051Ab0EMCyk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 22:54:40 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:57018 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755537Ab0EMCyi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 22:54:38 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=B1HZpTweP3O23pUEjU8MHUY8K/TgvabUroEiOEXr75zROu7MUI/MTbKiUgTnXoCAq
-	zLxp/q36rMd0bVthKSQDA==
-MIME-Version: 1.0
-In-Reply-To: <29724.1273668156@redhat.com>
-References: <1273634462-2672-1-git-send-email-walken@google.com>
-	 <1273634462-2672-9-git-send-email-walken@google.com>
-	 <29724.1273668156@redhat.com>
-Date: Wed, 12 May 2010 19:54:33 -0700
-Message-ID: <i2q8d20b11a1005121954l4c8e59al5487c2e34b0fcad3@mail.gmail.com>
-Subject: Re: [PATCH 08/12] rwsem: smaller wrappers around rwsem_down_failed_common
-From: Michel Lespinasse <walken@google.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1756285Ab0EMDAY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 23:00:24 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42988 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753867Ab0EMDAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 23:00:22 -0400
+Date: Thu, 13 May 2010 13:00:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the v4l-dvb tree
+Message-Id: <20100513130016.25b76c3f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__13_May_2010_13_00_16_+1000_1nXgIXgpmQpV0h93"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 5:42 AM, David Howells <dhowells@redhat.com> wrote:
-> Michel Lespinasse <walken@google.com> wrote:
->
->> Following change also enjoys having flags available in a register rather
->> than having to fish it out in the struct rwsem_waiter...
->
-> So what?  It doesn't use flags in rwsem_down_failed_common().
+--Signature=_Thu__13_May_2010_13_00_16_+1000_1nXgIXgpmQpV0h93
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I meant patch 10 wants to use the flags in order to know whether to
-queue at the head or tail of the waiter list.
+Hi Mauro,
 
-Apologies for the compile error, patches 8 and 10 used to be a single
-change and were split off relatively late. :/
+Today's linux-next merge of the v4l-dvb tree produced a mountain of
+conflicts so I have used the version from next-20100512 for today.
+Please either merge Linus' tree into yours or rebase you tree on top of
+Linus' tree.  There are a large number of commits that are in your tree
+that have been rebased before being included into Linus' tree and this
+caused conflicts with further changes in your tree.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Please consider changing your work flow so that you don't rebase things
+in your tree before sending them to Linus.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__13_May_2010_13_00_16_+1000_1nXgIXgpmQpV0h93
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvra0AACgkQjjKRsyhoI8wRxwCgqWVgiAAF5eMRifmVsJDthfdO
+DgQAoIPy6wp+rH3m4tnwrOPut7QlWU/k
+=3Dir
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__13_May_2010_13_00_16_+1000_1nXgIXgpmQpV0h93--
