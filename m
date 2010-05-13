@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758892Ab0EMOh5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 10:37:57 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36159 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057Ab0EMOhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 10:37:55 -0400
-Message-ID: <4BEC0EBE.7000404@kernel.org>
-Date: Thu, 13 May 2010 16:37:50 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Dan Carpenter <error27@gmail.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch] libsas: dereferencing variable before check
-References: <20100512225629.GB5695@bicker>	 <23e0bf65-8758-45b3-b0a8-1df97db07d9a@email.android.com> <1273761114.4353.122.camel@mulgrave.site>
-In-Reply-To: <1273761114.4353.122.camel@mulgrave.site>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 13 May 2010 14:37:51 +0000 (UTC)
+	id S1758675Ab0EMOk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 10:40:26 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:56185 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab0EMOkZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 10:40:25 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.98.68;
+From: Milton Miller <miltonm@bga.com>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: akpm@linux-foundation.org, Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
+       Christoph Raisch <raisch@de.ibm.com>, Roland Dreier <rolandd@cisco.com>,
+       Sean Hefty <sean.hefty@intel.com>,
+       Hal Rosenstock <hal.rosenstock@gmail.com>,
+       Divy Le Ray <divy@chelsio.com>,
+       "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@sun.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, linux-scsi@vger.kernel.org,
+       linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, containers@lists.linux-foundation.org,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+       Peter Zijlstra <peterz@infradead.org>, Changli Gao <xiaosuo@gmail.com>
+Subject: [PATCH 1/9] mm: add generic adaptive large memory allocation APIs
+In-Reply-To: <1273744285-8128-1-git-send-email-xiaosuo@gmail.com>
+X-Mailer: vi
+Date: Thu, 13 May 2010 09:39:36 -0500
+X-Originating-IP: 71.22.98.68
+Message-ID: <1273761576_4060@mail4.comsite.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 13 May 2010 at 17:51:25 +0800, Changli Gao wrote:
 
-On 05/13/2010 04:31 PM, James Bottomley wrote:
->> Ooh.. right.
->>
->> Asked-by: Tejun Heo <tj@kernel.org>
+> +static inline void *kvcalloc(size_t n, size_t size)
+> +{
+> +	return __kvmalloc(n * size, __GFP_ZERO);
+> 
 
-That was my first mail from android and of course I typed Asked
-instead of Acked.  :-)
+This needs multiply overflow checking like kcalloc.
 
-> Well, oops, yes.  Two patches to fix one bug is a bit overboard, I
-> think, plus some code rearrangement to fix the locality of the problem
-> and ensure it doesn't happen again might be useful.  What about this.
-
-Yeap, as long as the silly bug is fixed.
-
-Thank you.
-
--- 
-tejun
+milton
