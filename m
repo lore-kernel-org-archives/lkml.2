@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759479Ab0EMT6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 15:58:46 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50674 "EHLO mgw2.diku.dk"
+	id S932544Ab0EMT7E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 15:59:04 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:50683 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756473Ab0EMT6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 15:58:44 -0400
-Date: Thu, 13 May 2010 21:58:37 +0200 (CEST)
+	id S1759482Ab0EMT67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 15:58:59 -0400
+Date: Thu, 13 May 2010 21:58:56 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-       alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/20] sound/pci/asihpi: Use kzalloc
-Message-ID: <Pine.LNX.4.64.1005132157400.6282@ask.diku.dk>
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/20] drivers/gpu/drm: Use kzalloc
+Message-ID: <Pine.LNX.4.64.1005132158390.6282@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -41,44 +40,73 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- sound/pci/asihpi/hpi6000.c |    3 +--
- sound/pci/asihpi/hpi6205.c |    3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/drm_auth.c          |    3 +--
+ drivers/gpu/drm/drm_dma.c           |    4 +---
+ drivers/gpu/drm/drm_fops.c          |    3 +--
+ drivers/gpu/drm/savage/savage_bci.c |    3 +--
+ 4 files changed, 4 insertions(+), 9 deletions(-)
 
-diff -u -p a/sound/pci/asihpi/hpi6000.c b/sound/pci/asihpi/hpi6000.c
---- a/sound/pci/asihpi/hpi6000.c
-+++ b/sound/pci/asihpi/hpi6000.c
-@@ -448,14 +448,13 @@ static void subsys_create_adapter(struct
- 	if (phm->u.s.resource.r.pci->device_id != HPI_PCI_DEV_ID_PCI2040)
- 		return;
+diff -u -p a/drivers/gpu/drm/drm_auth.c b/drivers/gpu/drm/drm_auth.c
+--- a/drivers/gpu/drm/drm_auth.c
++++ b/drivers/gpu/drm/drm_auth.c
+@@ -79,10 +79,9 @@ static int drm_add_magic(struct drm_mast
+ 	struct drm_device *dev = master->minor->dev;
+ 	DRM_DEBUG("%d\n", magic);
  
--	ao.priv = kmalloc(sizeof(struct hpi_hw_obj), GFP_KERNEL);
-+	ao.priv = kzalloc(sizeof(struct hpi_hw_obj), GFP_KERNEL);
- 	if (!ao.priv) {
- 		HPI_DEBUG_LOG(ERROR, "cant get mem for adapter object\n");
- 		phr->error = HPI_ERROR_MEMORY_ALLOC;
- 		return;
- 	}
+-	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
++	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
+ 	if (!entry)
+ 		return -ENOMEM;
+-	memset(entry, 0, sizeof(*entry));
+ 	entry->priv = priv;
+ 	entry->hash_item.key = (unsigned long)magic;
+ 	mutex_lock(&dev->struct_mutex);
+diff -u -p a/drivers/gpu/drm/drm_dma.c b/drivers/gpu/drm/drm_dma.c
+--- a/drivers/gpu/drm/drm_dma.c
++++ b/drivers/gpu/drm/drm_dma.c
+@@ -47,12 +47,10 @@ int drm_dma_setup(struct drm_device *dev
+ {
+ 	int i;
  
--	memset(ao.priv, 0, sizeof(struct hpi_hw_obj));
- 	/* create the adapter object based on the resource information */
- 	/*? memcpy(&ao.Pci,&phm->u.s.Resource.r.Pci,sizeof(ao.Pci)); */
- 	ao.pci = *phm->u.s.resource.r.pci;
-diff -u -p a/sound/pci/asihpi/hpi6205.c b/sound/pci/asihpi/hpi6205.c
---- a/sound/pci/asihpi/hpi6205.c
-+++ b/sound/pci/asihpi/hpi6205.c
-@@ -482,13 +482,12 @@ static void subsys_create_adapter(struct
- 	if (phm->u.s.resource.r.pci->device_id != HPI_PCI_DEV_ID_DSP6205)
- 		return;
+-	dev->dma = kmalloc(sizeof(*dev->dma), GFP_KERNEL);
++	dev->dma = kzalloc(sizeof(*dev->dma), GFP_KERNEL);
+ 	if (!dev->dma)
+ 		return -ENOMEM;
  
--	ao.priv = kmalloc(sizeof(struct hpi_hw_obj), GFP_KERNEL);
-+	ao.priv = kzalloc(sizeof(struct hpi_hw_obj), GFP_KERNEL);
- 	if (!ao.priv) {
- 		HPI_DEBUG_LOG(ERROR, "cant get mem for adapter object\n");
- 		phr->error = HPI_ERROR_MEMORY_ALLOC;
- 		return;
- 	}
--	memset(ao.priv, 0, sizeof(struct hpi_hw_obj));
+-	memset(dev->dma, 0, sizeof(*dev->dma));
+-
+ 	for (i = 0; i <= DRM_MAX_ORDER; i++)
+ 		memset(&dev->dma->bufs[i], 0, sizeof(dev->dma->bufs[0]));
  
- 	ao.pci = *phm->u.s.resource.r.pci;
- 	err = create_adapter_obj(&ao, &os_error_code);
+diff -u -p a/drivers/gpu/drm/drm_fops.c b/drivers/gpu/drm/drm_fops.c
+--- a/drivers/gpu/drm/drm_fops.c
++++ b/drivers/gpu/drm/drm_fops.c
+@@ -243,11 +243,10 @@ static int drm_open_helper(struct inode 
+ 
+ 	DRM_DEBUG("pid = %d, minor = %d\n", task_pid_nr(current), minor_id);
+ 
+-	priv = kmalloc(sizeof(*priv), GFP_KERNEL);
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+-	memset(priv, 0, sizeof(*priv));
+ 	filp->private_data = priv;
+ 	priv->filp = filp;
+ 	priv->uid = current_euid();
+diff -u -p a/drivers/gpu/drm/savage/savage_bci.c b/drivers/gpu/drm/savage/savage_bci.c
+--- a/drivers/gpu/drm/savage/savage_bci.c
++++ b/drivers/gpu/drm/savage/savage_bci.c
+@@ -539,11 +539,10 @@ int savage_driver_load(struct drm_device
+ {
+ 	drm_savage_private_t *dev_priv;
+ 
+-	dev_priv = kmalloc(sizeof(drm_savage_private_t), GFP_KERNEL);
++	dev_priv = kzalloc(sizeof(drm_savage_private_t), GFP_KERNEL);
+ 	if (dev_priv == NULL)
+ 		return -ENOMEM;
+ 
+-	memset(dev_priv, 0, sizeof(drm_savage_private_t));
+ 	dev->dev_private = (void *)dev_priv;
+ 
+ 	dev_priv->chipset = (enum savage_family)chipset;
