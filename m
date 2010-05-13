@@ -1,89 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757828Ab0EMJFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 05:05:32 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42100 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287Ab0EMJF3 (ORCPT
+	id S1757778Ab0EMJJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 05:09:21 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:46604 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753176Ab0EMJJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 05:05:29 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC] mm: generic adaptive large memory allocation APIs
-Cc: kosaki.motohiro@jp.fujitsu.com, Changli Gao <xiaosuo@gmail.com>,
-       akpm@linux-foundation.org, Eric Dumazet <eric.dumazet@gmail.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-In-Reply-To: <4BEBBBBB.3050201@suse.cz>
-References: <20100513134124.2164.A69D9226@jp.fujitsu.com> <4BEBBBBB.3050201@suse.cz>
-Message-Id: <20100513174512.2179.A69D9226@jp.fujitsu.com>
+	Thu, 13 May 2010 05:09:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jNbR/tlVS4b8r8MkHUBOclJ39E1DHc/AmRc1j7Tjx0BvI0Z8z46L0waSiL/UPLvVEx
+         yYS+1XC+eRilsy7oH5314+U25qPX1TV/1PxhbWmHE0fWSgPklIf4S0d7thwBdGhKoUQh
+         oxFli6H8nnPopY5Jwfpp94d2bijayeafQH5Go=
+Date: Thu, 13 May 2010 17:13:07 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux@brodo.de,
+       ashok.raj@intel.com, jacob.shin@amd.com, linux-kernel@vger.kernel.org,
+       cpufreq@vger.kernel.org
+Subject: Re: [PATCH] [CPUFREQ] fix race condition in store_scaling_governor
+Message-ID: <20100513091307.GC5605@cr0.nay.redhat.com>
+References: <4BE967B9.5050107@udo.edu>
+ <20100512150039.b5b2729d.akpm@linux-foundation.org>
+ <4BEB4096.6030400@udo.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 13 May 2010 18:05:25 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BEB4096.6030400@udo.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-> > Hi
-> > 
-> >> void *kvmalloc(size_t size)
-> >> {
-> >> 	void *ptr;
-> >>
-> >> 	if (size < PAGE_SIZE)
-> >> 		return kmalloc(PAGE_SIZE, GFP_KERNEL);
-> >> 	ptr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
-> > 
-> > low order GFP_KERNEL allocation never fail. then, this doesn't works
-> > as you expected.
-> 
-> Hi, I suppose you mean the kmalloc allocation -- so kmalloc should fail
-> iff alloc_pages_exact (unless somebody frees a heap of memory indeed)?
-
-I mean, if size of alloc_pages_exact() argument is less than 8 pages,
-alloc_pages_exact() never fail. see __alloc_pages_slowpath().
-
-> 
-> >> 	if (ptr != NULL)
-> >> 		return ptr;
-> >>
-> >> 	return vmalloc(size);
-> > 
-> > On x86, vmalloc area is only 128MB address space. it is very rare 
-> > resource than physical ram. vmalloc fallback is not good idea.
-> 
-> These functions are a replacement for explicit
-> if (!(x = kmalloc()))
->    x = vmalloc();
-> ...
-> if (is_vmalloc(x))
->   vfree(x);
-> else
->   kfree(x);
-> in the code (like fdtable does this).
-> 
-> The 128M limit on x86_32 for vmalloc is configurable so if drivers in
-> sum need more on some specific hardware, it can be increased on the
-> command line (I had to do this on one machine in the past).
-
-Right, but 99% end user don't do this. I don't think this is effective advise.
+On Thu, May 13, 2010 at 01:58:14AM +0200, Andrej Gelenberg wrote:
+>Hi,
+>
+>On 05/13/2010 12:00 AM, Andrew Morton wrote:
+>>
+>>Looks sane, I guess.
+>>
+>>I am afraid of moving all those functions inside
+>>cpufreq_governor_mutex.  Not for any specific reason, apart from a long
+>>history of nasty deadlocks with cpufreq global locks :(
+>>
+>>Has this change been well-tested with lockdep enabled?
+>
+>It prevent at least the kernel panic and warnings from sysfs,
+>but cause a deadlock. I can confirm the bug in 2.6.33-ARCH (last
+>stable kernel in archlinux):
+>
 
 
-> Anyway as this is a replacement for explicit tests, it shouldn't change
-> the behaviour in any way. Obviously when a user doesn't need virtually
-> contiguous space, he shouldn't use this interface at all.
-
-Why can't we make fdtable virtually contiguous free?
-Anyway, alloc_fdmem() also don't works as author expected.
+Well, this is not a panic, it is just a WARNING.
 
 
+>------------[ cut here ]------------
+>WARNING: at fs/sysfs/dir.c:487 sysfs_add_one+0xc5/0x150()
+>Hardware name: 287655G
+>sysfs: cannot create duplicate filename
+>'/devices/system/cpu/cpu0/cpufreq/ondemand'
+>Modules linked in: cpufreq_conservative cpufreq_ondemand powernow_k8
+>freq_table joydev radeon ttm drm_kms_helper snd_seq_dummy uvcvideo
+>drm videodev rfkill i2c_algo_bit snd_seq_oss v4l1_compat usb_storage
+>v4l2_compat_ioctl32 snd_seq_midi_event led_class snd_seq
+>snd_seq_device nvram snd_hda_codec_conexant snd_hda_intel video
+>snd_pcm_oss snd_mixer_oss output snd_hda_codec snd_hwdep snd_pcm
+>snd_timer snd ohci_hcd soundcore shpchp ehci_hcd ac wmi battery sg
+>thermal processor button snd_page_alloc psmouse i2c_piix4 edac_core
+>pci_hotplug r8169 usbcore mii edac_mce_amd serio_raw i2c_core k8temp
+>evdev pcspkr rtc_cmos rtc_core rtc_lib ext4 mbcache jbd2 crc16 cryptd
+>aes_x86_64 aes_generic xts gf128mul dm_crypt dm_mod sd_mod ahci
+>libata scsi_mod
+>Pid: 3136, comm: test_cpu.sh Tainted: G        W  2.6.33-ARCH #1
+>Call Trace:
+> [<ffffffff810529f6>] warn_slowpath_common+0x76/0xb0
+> [<ffffffff81052a8c>] warn_slowpath_fmt+0x3c/0x40
+> [<ffffffff81187f45>] sysfs_add_one+0xc5/0x150
+> [<ffffffff81188033>] create_dir+0x63/0xc0
+> [<ffffffff811880a6>] sysfs_create_subdir+0x16/0x20
+> [<ffffffff8118950a>] internal_create_group+0x5a/0x190
+> [<ffffffff8118966e>] sysfs_create_group+0xe/0x10
+> [<ffffffffa056fcfc>] cpufreq_governor_dbs+0xac/0x3e0 [cpufreq_ondemand]
+> [<ffffffff810788bd>] ? notifier_call_chain+0x4d/0x70
+> [<ffffffff81293f25>] __cpufreq_governor+0xf5/0x1e0
+> [<ffffffff812954ec>] __cpufreq_set_policy+0x13c/0x180
+> [<ffffffff812958f8>] store_scaling_governor+0xe8/0x220
+> [<ffffffff81296240>] ? handle_update+0x0/0x10
+> [<ffffffff811cb7ba>] ? kobject_get+0x1a/0x30
+> [<ffffffff81295382>] store+0x62/0x90
+> [<ffffffff81186820>] sysfs_write_file+0xe0/0x160
+> [<ffffffff81121576>] vfs_write+0xb6/0x190
+> [<ffffffff8103175d>] ? do_page_fault+0x15d/0x320
+> [<ffffffff811218ac>] sys_write+0x4c/0x80
+> [<ffffffff81009f02>] system_call_fastpath+0x16/0x1b
+>---[ end trace 939cd7811bc2accf ]---
+>
 
+Hmm, so two processes enter store_scaling_governor() at
+the same time, one will enter mutex_lock(&dbs_mutex);
+while the other one is blocking, when that one leaves
+mutex_unlock(&dbs_mutex), the other one enters.
+
+Yeah, makes sense, but I am still not sure if we could
+reuse this cpufreq_governor_mutex...
+
+Thanks.
