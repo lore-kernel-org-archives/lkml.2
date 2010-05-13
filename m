@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759086Ab0EMPg0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 11:36:26 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58478 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759056Ab0EMPgX (ORCPT
+	id S1759069Ab0EMPj7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:39:59 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33719 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756262Ab0EMPj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 11:36:23 -0400
-Date: Thu, 13 May 2010 11:36:21 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, chris.mason@oracle.com, hch@infradead.org,
-       akpm@linux-foundation.org, npiggin@suse.de,
-       linux-kernel@vger.kernel.org, david@fromorbit.com
-Subject: Re: [RFC] new ->perform_write fop
-Message-ID: <20100513153620.GA2774@infradead.org>
-References: <20100512212403.GE3597@localhost.localdomain> <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 13 May 2010 11:39:57 -0400
+Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
+ 88f5182)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Saeed Bishara <saeed@marvell.com>, Nicolas Pitre <nico@marvell.com>,
+       Jamie Lokier <jamie@shareable.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "James E.J. Bottomley" <jejb@parisc-linux.org>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <1273709890.21352.141.camel@pasglop>
+References: <1273569821.21352.19.camel@pasglop>
+	 <1273575478.21352.29.camel@pasglop>
+	 <EAF47CD23C76F840A9E7FCE10091EFAB02C545537F@dbde02.ent.ti.com>
+	 <20100512222154.GA6841@shareable.org> <1273704431.21352.136.camel@pasglop>
+	 <1273707708.15428.4.camel@mulgrave.site>
+	 <1273709890.21352.141.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 May 2010 10:39:53 -0500
+Message-ID: <1273765193.4353.157.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 09:39:27PM -0400, Josef Bacik wrote:
-> I just got a suggestion from hpa about instead just moving what BTRFS does into
-> the generic_perform_write.  What btrfs does is allocates a chunk of pages to
-> cover the entirety of the write, sets everything up, does the copy from user
-> into the pages, and tears everything down, so essentially what
-> generic_perform_write does, just with more pages.  I could modify
-> generic_perform_write and the write_begin/write_end aops to do this, where
-> write_begin will return how many pages it allocated, copy in all of the
-> userpages into the pages we allocated at once, and then call write_end with the
-> pages we allocated in write begin.  Then I could just make btrfs do
-> write_being/write_end.  So which option seems more palatable?  Thanks,
+On Thu, 2010-05-13 at 10:18 +1000, Benjamin Herrenschmidt wrote:
+> On Wed, 2010-05-12 at 18:41 -0500, James Bottomley wrote:
+> > > Which means that for coherent architectures that do not implement
+> > > the ops->sync_* hooks, we are probably missing a barrier here... 
+> > > 
+> > > Thus if the above is expected to be a memory barrier, it's broken on
+> > > cache coherent powerpc for example. On non-coherent powerpc, we do
+> > cache
+> > > flushes and those are implicit barriers.
+> > 
+> > Can you explain this a little more.  On a cache coherent machine, the
+> > sync is a nop ... why would you want a nop to be any type of barrier?
+> 
+> Well if the driver can peek at the data after the sync, and have any
+> kind of ordering guarantee that it doesn't get stale data (the load
+> isn't prefetched or speculated early), that would require an mb() or at
+> least rmb().
 
-Having a more efficient generic write path would be great.  I'm not
-quite sure btrfs gets everything that is needed right already, but
-getting started on this would be great.
+So the guarantee that it doesn't look at stale data after the sync on a
+cache coherent machine means ordering the dma write to physical memory
+with the subsequent cpu read ... no memory barrier can actually do that.
+Usually this is done externally, by making sure the memory change is
+visible before sending the irq that tells the driver it is there ... on
+some numa systems, this can be a problem (hence the mmiowb/relaxed read
+thing).
 
-And to get back to the original question: adding a ->perform_write
-is a really dumb idea.  It doesn't fit into the structure of the real
-AOPs at all as it required context dependent locking and so and so
-on.  It would just be a nasty hack around the fact that we still leave
-too much work to the filesystem in the write path, and for the bad
-prototype of the ->aio_read/->aio_write methods.
+> It would seem sensible for drivers to assume that something like
+> dma_cache_sync_for_cpu() thus has the semantics of an rmb() at least,
+> no ?
 
-For a start generic_segment_checks should move out of the methods
-and into fs/read_write.c before calling into the methods.  To do
-this fully we'll need to pass down a count of total bytes into
-->aio_read and ->aio_write, though.
+I still don't see why ... I don't see how you'd ever get a read of the
+area speculated before the event that tells the driver its OK to read
+the memory.  In theory, I agree that it looks logical to require the
+read never be speculated before the sync ... but in practice, I don't
+see there ever being a problem with this since the sync isn't the event
+that says the memory is safe to read.
 
-Adding a new generic_write_prep helper for all the boilderplate
-code in ->aio_write also seems fine to me.
+James
+
+
