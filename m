@@ -1,91 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758840Ab0EMMHt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 08:07:49 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:44025 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758771Ab0EMMHr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 08:07:47 -0400
-Date: Thu, 13 May 2010 17:37:39 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>,
-       Mel Gorman <mel@csn.ul.ie>, Randy Dunlap <rdunlap@xenotime.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v3 0/10] Uprobes v3
-Message-ID: <20100513120739.GA2348@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100506180139.28877.81699.sendpatchset@localhost6.localdomain6>
- <1273611585.1810.132.camel@laptop>
- <20100512102518.GA30767@linux.vnet.ibm.com>
- <1273666385.1626.96.camel@laptop>
+	id S1758853Ab0EMMIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 08:08:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33692 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758771Ab0EMMIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 08:08:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,222,1272870000"; 
+   d="scan'208";a="621353158"
+Date: Thu, 13 May 2010 20:03:52 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: akpm@linux-foundation.org, linux-mm@kvack.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+       linux-doc@vger.kernel.org, ak@linux.intel.com, fengguang.wu@intel.com,
+       haicheng.li@linux.intel.com, shaohui.zheng@linux.intel.com
+Subject: [RFC, 7/7] NUMA hotplug emulator
+Message-ID: <20100513120352.GH2169@shaohui>
+Mail-Followup-To: akpm@linux-foundation.org, linux-mm@kvack.org,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+	linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+	ak@linux.intel.com, fengguang.wu@intel.com,
+	haicheng.li@linux.intel.com, shaohui.zheng@linux.intel.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/mixed; boundary="TmwHKJoIRFM7Mu/A"
 Content-Disposition: inline
-In-Reply-To: <1273666385.1626.96.camel@laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Hrmm, you could do something like the above and use write_protect_page()
-> along with that lock_page() you do to sync against concurrent faults. It
-> won't be the fastest code around but it should work I guess.
 
-Okay, thanks for the code.
+--TmwHKJoIRFM7Mu/A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> Something like try_to_merge_one_page() in the KSM code:
-> 
-> write_opcode(struct mm_struct *mm, unsigned long address, void *insn,
-> int len)
-> {
-> 	down_read(mm->mmap_sem);
 
-[ snipped]
-> 
-> 	kunmap_atomic(vaddr_new);
-> 	kunmap_atomic(vaddr_old);
-> 
-> 	/* XXX: frob mlock state */
+Doc/x86_64: documentation of NUMA hotplug emulator
 
-I think you are referring to mlock_vma_page() and munlock_vma_page that
-we have in try_to_merge_one_page(). However mlock_vma_page and
-munlock_vma_page are not exposed outside mm as they are declared inside
-mm/internal.h. So do you suggest moving the declarations out of
-mm/internal.h or have a wrapper function defined in mm/ that could be
-used by both KSM and uprobes.
+add a text file Documentation/x86/x86_64/numa_hotplug_emulator.txt
+to explain the usage for the hotplug emulator.
 
-> 
-> 	/* flip pages, do_wp_page() will fail pte_same() and bail */
-> 	err = replace_page(vma, new_page, old_page, orig_pte)
-> 	if (err) goto fail_more;
-> 
-> 	/* we're done, let 'em rip */
-> 	unlock_page(old_page);
-> 	put_page(old_page);
-> 
-> 	return;
-> 
-> fail:
-> 	/* XXX: fixup stuff */
-> }
-> 
-> Note that this can fail for fun reasons like O_DIRECT IO, but that
-> should be very rare indeed on text pages.
-> 
+Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+---
+diff --git a/Documentation/x86/x86_64/numa_hotplug_emulator.txt b/Documentation/x86/x86_64/numa_hotplug_emulator.txt
+new file mode 100644
+index 0000000..e65ecfe
+--- /dev/null
++++ b/Documentation/x86/x86_64/numa_hotplug_emulator.txt
+@@ -0,0 +1,85 @@
++NUMA Hotplug Emulator for x86
++---------------------------------------------------
++
++NUMA hotplug emulator is able to emulate NUMA Node Hotplug
++thru a pure software way. It intends to help people easily debug
++and test node/cpu/memory hotplug related stuff on a
++none-numa-hotplug-support machine, even a UMA machine and virtual
++environment.
++
++1) Node hotplug emulation:
++
++The emulator firstly hides RAM via E820 table, and then it can
++fake offlined nodes with the hidden RAM.
++
++After system bootup, user is able to hotplug-add these offlined
++nodes, which is just similar to a real hotplug hardware behavior.
++
++Using boot option "numa=hide=N*size" to fake offlined nodes:
++	- N is the number of hidden nodes
++	- size is the memory size (in MB) per hidden node.
++
++There is a sysfs entry "probe" under /sys/devices/system/node/ for user
++to hotplug the fake offlined nodes:
++
++ - to show all fake offlined nodes:
++    $ cat /sys/devices/system/node/probe
++
++ - to hotadd a fake offlined node, e.g. nodeid is N:
++    $ echo N > /sys/devices/system/node/probe
++
++2) CPU hotplug emulation:
++
++The emulator reserve CPUs throu grub parameter, the reserved CPUs can be
++hot-add/hot-remove in software method, it emulates the procuess of physical
++cpu hotplug.
++
++ - to hide CPUs
++	- Using boot option "maxcpus=N" hide CPUs
++	  N is the number of initialize CPUs
++	- Using boot option "cpu_hpe=on" to enable cpu hotplug emulation
++      when cpu_hpe is enabled, the rest CPUs will not be initialized 
++
++ - to hot-add CPU to node
++	$ echo nid > cpu/probe
++
++ - to hot-remove CPU
++	$ echo nid > cpu/release
++
++3) Memory hotplug emulation:
++
++The emulator reserve memory before OS booting, the reserved memory region
++is remove from e820 table, and they can be hot-added via the probe interface,
++this interface was extend to support add memory to the specified node, It
++maintains backwards compatibility.
++
++The difficulty of Memory Release is well-known, we have no plan for it until now.
++
++ - reserve memory throu grub parameter
++ 	mem=1024m
++
++ - add a memory section to node 3
++    $ echo 0x40000000,3 > memory/probe
++	OR
++    $ echo 1024m,3 > memory/probe
++
++4) Script for hotplug testing
++
++These scripts provides convenience when we hot-add memory/cpu in batch.
++
++- Online all pages:
++for m in /sys/devices/system/memory/memory*;
++do 
++	echo online > $m/state;
++done
++
++- CPU Online:
++for c in /sys/devices/system/cpu/cpu*;
++do 
++	echo 1 > $c/online;
++done
++
++- Haicheng Li <haicheng.li@linux.intel.com>
++- Shaohui Zheng <shaohui.zheng@intel.com>
++  May 2010
++
+-- 
+Thanks & Regards,
+Shaohui
+
+
+--TmwHKJoIRFM7Mu/A
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="007-hotplug-emulator-doc-x86_64-of-numa-hotplug-emulator.patch"
+
+Doc/x86_64: documentation of NUMA hotplug emulator
+
+add a text file Documentation/x86/x86_64/numa_hotplug_emulator.txt
+to explain the usage for the hotplug emulator.
+
+Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+---
+diff --git a/Documentation/x86/x86_64/numa_hotplug_emulator.txt b/Documentation/x86/x86_64/numa_hotplug_emulator.txt
+new file mode 100644
+index 0000000..e65ecfe
+--- /dev/null
++++ b/Documentation/x86/x86_64/numa_hotplug_emulator.txt
+@@ -0,0 +1,85 @@
++NUMA Hotplug Emulator for x86
++---------------------------------------------------
++
++NUMA hotplug emulator is able to emulate NUMA Node Hotplug
++thru a pure software way. It intends to help people easily debug
++and test node/cpu/memory hotplug related stuff on a
++none-numa-hotplug-support machine, even a UMA machine and virtual
++environment.
++
++1) Node hotplug emulation:
++
++The emulator firstly hides RAM via E820 table, and then it can
++fake offlined nodes with the hidden RAM.
++
++After system bootup, user is able to hotplug-add these offlined
++nodes, which is just similar to a real hotplug hardware behavior.
++
++Using boot option "numa=hide=N*size" to fake offlined nodes:
++	- N is the number of hidden nodes
++	- size is the memory size (in MB) per hidden node.
++
++There is a sysfs entry "probe" under /sys/devices/system/node/ for user
++to hotplug the fake offlined nodes:
++
++ - to show all fake offlined nodes:
++    $ cat /sys/devices/system/node/probe
++
++ - to hotadd a fake offlined node, e.g. nodeid is N:
++    $ echo N > /sys/devices/system/node/probe
++
++2) CPU hotplug emulation:
++
++The emulator reserve CPUs throu grub parameter, the reserved CPUs can be
++hot-add/hot-remove in software method, it emulates the procuess of physical
++cpu hotplug.
++
++ - to hide CPUs
++	- Using boot option "maxcpus=N" hide CPUs
++	  N is the number of initialize CPUs
++	- Using boot option "cpu_hpe=on" to enable cpu hotplug emulation
++      when cpu_hpe is enabled, the rest CPUs will not be initialized 
++
++ - to hot-add CPU to node
++	$ echo nid > cpu/probe
++
++ - to hot-remove CPU
++	$ echo nid > cpu/release
++
++3) Memory hotplug emulation:
++
++The emulator reserve memory before OS booting, the reserved memory region
++is remove from e820 table, and they can be hot-added via the probe interface,
++this interface was extend to support add memory to the specified node, It
++maintains backwards compatibility.
++
++The difficulty of Memory Release is well-known, we have no plan for it until now.
++
++ - reserve memory throu grub parameter
++ 	mem=1024m
++
++ - add a memory section to node 3
++    $ echo 0x40000000,3 > memory/probe
++	OR
++    $ echo 1024m,3 > memory/probe
++
++4) Script for hotplug testing
++
++These scripts provides convenience when we hot-add memory/cpu in batch.
++
++- Online all pages:
++for m in /sys/devices/system/memory/memory*;
++do 
++	echo online > $m/state;
++done
++
++- CPU Online:
++for c in /sys/devices/system/cpu/cpu*;
++do 
++	echo 1 > $c/online;
++done
++
++- Haicheng Li <haicheng.li@linux.intel.com>
++- Shaohui Zheng <shaohui.zheng@intel.com>
++  May 2010
++
+
+--TmwHKJoIRFM7Mu/A--
