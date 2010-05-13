@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759495Ab0EMVBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:01:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759412Ab0EMVBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:01:46 -0400
-Message-ID: <4BEC6883.4090205@redhat.com>
-Date: Thu, 13 May 2010 17:00:51 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+	id S1752889Ab0EMVFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:05:55 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:40060 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab0EMVFx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:05:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=mrVG/31Or9nEMLGkMwt17ywIowLKO82CwXq5VHpZWOXc2/z/5CQH4hfgrmeXBkKo4t
+         DeQ8nirTGahFk9xEAJX2VQEND93u5Cb45O9MId0srGREfR8iKnIYfY5YgGPvHm/sUalt
+         gKN/+FejYUkjAqk8cf9o//LflFZgCPepHP3v8=
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+Date: Thu, 13 May 2010 14:05:44 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.34-rc7; KDE/4.4.2; x86_64; ; )
+Cc: lenb@kernel.org,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20100513075728.GF30110@core.coreip.homeip.net> <20100513181002.GB23708@core.coreip.homeip.net> <alpine.LFD.2.00.1005131232350.3711@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1005131232350.3711@i5.linux-foundation.org>
 MIME-Version: 1.0
-To: Chase Douglas <chase.douglas@canonical.com>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: perf: relative path to source for perf probe?
-References: <AANLkTins2yCK-rvmdaaSQoBum4haHLhPx34EeJDg21Gg@mail.gmail.com>
-In-Reply-To: <AANLkTins2yCK-rvmdaaSQoBum4haHLhPx34EeJDg21Gg@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005131405.45732.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chase Douglas wrote:
-> I'm trying to play with perf probe to insert trace events into a
-> running kernel, but I haven't found a way to specify relative
-> pathnames. For example, our build machines for Ubuntu build the kernel
-> inside /build/buildd/linux-2.6.34. If I want to use perf probe, it
-> seems I need to ensure the source exists in exactly the same location
-> on my machine.
+On Thursday 13 May 2010 12:40:43 pm Linus Torvalds wrote:
+> On Thu, 13 May 2010, Dmitry Torokhov wrote:
+> > You don't have anything plugged into the ports though, do you?
+> 
+> No. It's a modern machine. But the port is there, and we've been very good
+> at booting up and finding keyboards later (I've done it myself - headless
+> machines that you hotplug a PS/2 keyboard into: it's not necessarily
+> technically something you're supposed to do, but it has worked fine for
+> me).
+> 
+> > I wonder what your DSDT looks like.
 
-Right, perf-probe currently doesn't support relative *source* path option.
-It just uses a source code path information in dwarf. I need to dig it more
-into dwarf, especially kernel debuginfo has those information.
+[... pulling LKML back in...]
 
-That could be a good improvement idea for perf probe (adding -s option?).
+Lookie, lookie:
 
-> Compare this to gdb, where I can put the source at
-> /home/cndougla/perf/build/buildd/linux-2.6.34 and specify a relative
-> path for sources of /home/cndougla/perf using the dir command. I have
-> read the perf code and I have not found any way to do this. I would be
-> interested in adding support for this as a cmd line option, but I'm
-> not very familiar with the rest of perf. Is this functionality
-> specific to perf-probe? Should this be in some logic in util/ or in
-> builtin-probe.c?
+                Device (PS2K)
+                {
+                    Name (_HID, EisaId ("PNP0303"))
+                    Name (_CID, EisaId ("PNP030B"))
+                    Method (_STA, 0, NotSerialized)
+                    {
+                        ShiftLeft (One, 0x0A, Local0)
+                        If (And (IOST, Local0))
+                        {
+                            Return (0x0F)
+                        }
 
-Both of it. Adding -s option handling code to builtin-probe.c and
-actual path modifying code in show_line_range()@util/probe-event.c.
-(I assume you'd like to use -L option)
+                        Return (Zero)
+                    }
+...
 
-Thank you,
+                Device (PS2M)
+                {
+                    Name (_HID, EisaId ("PNP0F03"))
+                    Name (_CID, EisaId ("PNP0F13"))
+                    Method (_STA, 0, NotSerialized)
+                    {
+
+But I guess because there are no devices plugged in ACPI they are "inactive" 
+and thus ACPI drop them. I was always wondered by ACPI did that. Len?
 
 -- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+Dmitry
