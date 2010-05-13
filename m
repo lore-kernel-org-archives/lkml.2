@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758371Ab0EMH6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 03:58:08 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:48684 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758310Ab0EMH6A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758313Ab0EMH6A (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 13 May 2010 03:58:00 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:64751 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758227Ab0EMH5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 03:57:44 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: n-horiguchi@ah.jp.nec.com
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        Andi Kleen <andi@firstfloor.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        Wu Fengguang <fengguang.wu@intel.com>
-Subject: [PATCH 7/7] HWPOISON, hugetlb: support hwpoison injection for hugepage
-Date: Thu, 13 May 2010 16:55:26 +0900
-Message-Id: <1273737326-21211-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 3/7] HWPOISON, hugetlb: set/clear PG_hwpoison bits on hugepage
+Date: Thu, 13 May 2010 16:55:22 +0900
+Message-Id: <1273737326-21211-4-git-send-email-n-horiguchi@ah.jp.nec.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
@@ -23,74 +23,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables hwpoison injection through debug/hwpoison interfaces,
-with which we can test memory error handling for free or reserved
-hugepages (which cannot be tested by madvise() injector).
+To avoid race condition between concurrent memory errors on identified
+hugepage, we atomically test and set PG_hwpoison bit on the head page.
+All pages in the error hugepage are considered as hwpoisoned
+for now, so set and clear all PG_hwpoison bits in the hugepage
+with page lock of the head page held.
+
+Dependency:
+  "HWPOISON, hugetlb: enable error handling path for hugepage"
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/hwpoison-inject.c |   15 +++++++++------
- 1 files changed, 9 insertions(+), 6 deletions(-)
+ mm/memory-failure.c |   38 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 38 insertions(+), 0 deletions(-)
 
-diff --git v2.6.34-rc7/mm/hwpoison-inject.c v2.6.34-rc7/mm/hwpoison-inject.c
-index 10ea719..0948f10 100644
---- v2.6.34-rc7/mm/hwpoison-inject.c
-+++ v2.6.34-rc7/mm/hwpoison-inject.c
-@@ -5,6 +5,7 @@
- #include <linux/mm.h>
- #include <linux/swap.h>
- #include <linux/pagemap.h>
-+#include <linux/hugetlb.h>
- #include "internal.h"
+diff --git v2.6.34-rc7/mm/memory-failure.c v2.6.34-rc7/mm/memory-failure.c
+index 1ec68c8..fee648b 100644
+--- v2.6.34-rc7/mm/memory-failure.c
++++ v2.6.34-rc7/mm/memory-failure.c
+@@ -920,6 +920,22 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	return ret;
+ }
  
- static struct dentry *hwpoison_dir;
-@@ -13,6 +14,7 @@ static int hwpoison_inject(void *data, u64 val)
++static void set_page_hwpoison_huge_page(struct page *hpage)
++{
++	int i;
++	int nr_pages = 1 << compound_order(hpage);
++	for (i = 0; i < nr_pages; i++)
++		SetPageHWPoison(hpage + i);
++}
++
++static void clear_page_hwpoison_huge_page(struct page *hpage)
++{
++	int i;
++	int nr_pages = 1 << compound_order(hpage);
++	for (i = 0; i < nr_pages; i++)
++		ClearPageHWPoison(hpage + i);
++}
++
+ int __memory_failure(unsigned long pfn, int trapno, int flags)
  {
- 	unsigned long pfn = val;
- 	struct page *p;
-+	struct page *hpage;
- 	int err;
- 
- 	if (!capable(CAP_SYS_ADMIN))
-@@ -24,18 +26,19 @@ static int hwpoison_inject(void *data, u64 val)
- 		return -ENXIO;
- 
- 	p = pfn_to_page(pfn);
-+	hpage = compound_head(p);
- 	/*
- 	 * This implies unable to support free buddy pages.
- 	 */
--	if (!get_page_unless_zero(p))
-+	if (!get_page_unless_zero(hpage))
+ 	struct page_state *ps;
+@@ -1014,6 +1030,26 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
  		return 0;
+ 	}
  
--	if (!PageLRU(p))
-+	if (!PageLRU(p) && !PageHuge(p))
- 		shake_page(p, 0);
++	/*
++	 * For error on the tail page, we should set PG_hwpoison
++	 * on the head page to show that the hugepage is hwpoisoned
++	 */
++	if (PageTail(p) && TestSetPageHWPoison(hpage)) {
++		action_result(pfn, "hugepage already hardware poisoned",
++				IGNORED);
++		unlock_page(hpage);
++		put_page(hpage);
++		return 0;
++	}
++	/*
++	 * Set PG_hwpoison on all pages in an error hugepage,
++	 * because containment is done in hugepage unit for now.
++	 * Since we have done TestSetPageHWPoison() for the head page with
++	 * page lock held, we can safely set PG_hwpoison bits on tail pages.
++	 */
++	if (PageHuge(p))
++		set_page_hwpoison_huge_page(hpage);
++
+ 	wait_on_page_writeback(p);
+ 
  	/*
- 	 * This implies unable to support non-LRU pages.
- 	 */
--	if (!PageLRU(p))
-+	if (!PageLRU(p) && !PageHuge(p))
- 		return 0;
+@@ -1118,6 +1154,8 @@ int unpoison_memory(unsigned long pfn)
+ 		atomic_long_dec(&mce_bad_pages);
+ 		freeit = 1;
+ 	}
++	if (PageHuge(p))
++		clear_page_hwpoison_huge_page(page);
+ 	unlock_page(page);
  
- 	/*
-@@ -44,9 +47,9 @@ static int hwpoison_inject(void *data, u64 val)
- 	 * We temporarily take page lock for try_get_mem_cgroup_from_page().
- 	 * __memory_failure() will redo the check reliably inside page lock.
- 	 */
--	lock_page(p);
--	err = hwpoison_filter(p);
--	unlock_page(p);
-+	lock_page(hpage);
-+	err = hwpoison_filter(hpage);
-+	unlock_page(hpage);
- 	if (err)
- 		return 0;
- 
+ 	put_page(page);
 -- 
 1.7.0
 
