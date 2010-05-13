@@ -1,174 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933003Ab0EMUUo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:20:44 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58356 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932899Ab0EMUTj (ORCPT
+	id S932871Ab0EMUXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 16:23:31 -0400
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:49518 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932220Ab0EMUX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:19:39 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3/4] perf tools: change event inheritance logic in stat and record
-Date: Thu, 13 May 2010 17:19:23 -0300
-Message-Id: <1273781964-29552-4-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1273781964-29552-1-git-send-email-acme@infradead.org>
-References: <1273781964-29552-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 13 May 2010 16:23:28 -0400
+Subject: [PATCH] TPM: ACPI/PNP dependency removal
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: jmorris@namei.org, zohar@linux.vnet.ibm.com, randy.dunlap@oracle.com
+Content-Type: text/plain
+Organization: IBM
+Date: Thu, 13 May 2010 17:23:24 -0300
+Message-Id: <1273782204.8536.4.camel@blackbox.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+This patch pushes the ACPI dependency into the device driver code
+itself. Now, even without ACPI/PNP enabled, the device can be registered
+using the TIS specified memory space. This will however result in the
+lack of access to the bios event log, being the only implication of such
+ACPI removal.
 
-By default, event inheritance across fork and pthread_create was on but the -i
-option of stat and record, which enabled inheritance, led to believe it was off
-by default.
-
-This patch fixes this logic by inverting the meaning of the -i option.  By
-default inheritance is on whether you attach to a process (-p), a thread (-t)
-or start a process. If you pass -i, then you turn off inheritance. Turning off
-inheritance if you don't need it, helps limit perf resource usage as well.
-
-The patch also fixes perf stat -t xxxx and perf record -t xxxx which did not
-start the counters.
-
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <4bea9d2f.d60ce30a.0b5b.08e1@mx.google.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- tools/perf/Documentation/perf-record.txt |    4 ++--
- tools/perf/Documentation/perf-stat.txt   |    4 ++--
- tools/perf/builtin-record.c              |   12 ++++++------
- tools/perf/builtin-stat.c                |   10 +++++-----
- 4 files changed, 15 insertions(+), 15 deletions(-)
+ drivers/char/tpm/Kconfig   |    6 ++++--
+ drivers/char/tpm/tpm_tis.c |   42 ++++++++++++++++++++++--------------------
+ 2 files changed, 26 insertions(+), 22 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 020d871..34e255f 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -69,8 +69,8 @@ OPTIONS
- 	Output file name.
+diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
+index f5fc64f..fffc994 100644
+--- a/drivers/char/tpm/Kconfig
++++ b/drivers/char/tpm/Kconfig
+@@ -17,14 +17,16 @@ menuconfig TCG_TPM
+ 	  obtained at: <http://sourceforge.net/projects/trousers>.  To 
+ 	  compile this driver as a module, choose M here; the module 
+ 	  will be called tpm. If unsure, say N.
+-	  Note: For more TPM drivers enable CONFIG_PNP, CONFIG_ACPI
++	  Notes: 
++	  1) For more TPM drivers enable CONFIG_PNP, CONFIG_ACPI
+ 	  and CONFIG_PNPACPI.
++	  2) Without ACPI enabled, the bios event log won't be accessible,
++	  which is required to validate the PCR 0-7 values.
  
- -i::
----inherit::
--	Child tasks inherit counters.
-+--no-inherit::
-+	Child tasks do not inherit counters.
- -F::
- --freq=::
- 	Profile at this frequency.
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 484080d..2cab8e8 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -31,8 +31,8 @@ OPTIONS
- 	 hexadecimal event descriptor.
+ if TCG_TPM
  
- -i::
----inherit::
--        child tasks inherit counters
-+--no-inherit::
-+        child tasks do not inherit counters
- -p::
- --pid=<pid>::
-         stat events on existing pid
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 6b77b28..0f467cf 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -54,7 +54,7 @@ static pid_t			target_tid			=     -1;
- static pid_t			*all_tids			=      NULL;
- static int			thread_num			=      0;
- static pid_t			child_pid			=     -1;
--static bool			inherit				=   true;
-+static bool			no_inherit			=  false;
- static enum write_mode_t	write_mode			= WRITE_FORCE;
- static bool			call_graph			=  false;
- static bool			inherit_stat			=  false;
-@@ -298,8 +298,8 @@ static void create_counter(int counter, int cpu)
- 
- 	attr->mmap		= track;
- 	attr->comm		= track;
--	attr->inherit		= inherit;
--	if (target_pid == -1 && !system_wide) {
-+	attr->inherit		= !no_inherit;
-+	if (target_pid == -1 && target_tid == -1 && !system_wide) {
- 		attr->disabled = 1;
- 		attr->enable_on_exec = 1;
+ config TCG_TIS
+ 	tristate "TPM Interface Specification 1.2 Interface"
+-	depends on PNP
+ 	---help---
+ 	  If you have a TPM security chip that is compliant with the
+ 	  TCG TIS 1.2 TPM specification say Yes and it will be accessible
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 27e8de4..2423d66 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -597,7 +597,7 @@ out_err:
+ 	tpm_remove_hardware(chip->dev);
+ 	return rc;
+ }
+-
++#ifdef CONFIG_PNP
+ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
+ 				      const struct pnp_device_id *pnp_id)
+ {
+@@ -661,7 +661,7 @@ static struct pnp_driver tis_pnp_driver = {
+ module_param_string(hid, tpm_pnp_tbl[TIS_HID_USR_IDX].id,
+ 		    sizeof(tpm_pnp_tbl[TIS_HID_USR_IDX].id), 0444);
+ MODULE_PARM_DESC(hid, "Set additional specific HID for this driver to probe");
+-
++#endif
+ static int tpm_tis_suspend(struct platform_device *dev, pm_message_t msg)
+ {
+ 	return tpm_pm_suspend(&dev->dev, msg);
+@@ -688,21 +688,21 @@ MODULE_PARM_DESC(force, "Force device probe rather than using ACPI entry");
+ static int __init init_tis(void)
+ {
+ 	int rc;
+-
+-	if (force) {
+-		rc = platform_driver_register(&tis_drv);
+-		if (rc < 0)
+-			return rc;
+-		if (IS_ERR(pdev=platform_device_register_simple("tpm_tis", -1, NULL, 0)))
+-			return PTR_ERR(pdev);
+-		if((rc=tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0)) != 0) {
+-			platform_device_unregister(pdev);
+-			platform_driver_unregister(&tis_drv);
+-		}
++#ifdef CONFIG_PNP
++	if (!force)
++		return pnp_register_driver(&tis_pnp_driver);
++#endif
++		
++	rc = platform_driver_register(&tis_drv);
++	if (rc < 0)
+ 		return rc;
++	if (IS_ERR(pdev=platform_device_register_simple("tpm_tis", -1, NULL, 0)))
++		return PTR_ERR(pdev);
++	if((rc=tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0)) != 0) {
++		platform_device_unregister(pdev);
++		platform_driver_unregister(&tis_drv);
  	}
-@@ -641,7 +641,7 @@ static int __cmd_record(int argc, const char **argv)
- 		close(child_ready_pipe[0]);
+-
+-	return pnp_register_driver(&tis_pnp_driver);
++	return rc;
+ }
+ 
+ static void __exit cleanup_tis(void)
+@@ -726,12 +726,14 @@ static void __exit cleanup_tis(void)
+ 		list_del(&i->list);
  	}
+ 	spin_unlock(&tis_lock);
+-
+-	if (force) {
+-		platform_device_unregister(pdev);
+-		platform_driver_unregister(&tis_drv);
+-	} else
++#ifdef CONFIG_PNP
++	if (!force) {
+ 		pnp_unregister_driver(&tis_pnp_driver);
++		return;
++	}
++#endif
++	platform_device_unregister(pdev);
++	platform_driver_unregister(&tis_drv);
+ }
  
--	if ((!system_wide && !inherit) || profile_cpu != -1) {
-+	if ((!system_wide && no_inherit) || profile_cpu != -1) {
- 		open_counters(profile_cpu);
- 	} else {
- 		nr_cpus = read_cpu_map();
-@@ -821,8 +821,8 @@ static const struct option options[] = {
- 		    "event period to sample"),
- 	OPT_STRING('o', "output", &output_name, "file",
- 		    "output file name"),
--	OPT_BOOLEAN('i', "inherit", &inherit,
--		    "child tasks inherit counters"),
-+	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
-+		    "child tasks do not inherit counters"),
- 	OPT_INTEGER('F', "freq", &user_freq,
- 		    "profile at this frequency"),
- 	OPT_INTEGER('m', "mmap-pages", &mmap_pages,
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index e619ac8..ff8c413 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -72,7 +72,7 @@ static unsigned int		nr_cpus				=  0;
- static int			run_idx				=  0;
- 
- static int			run_count			=  1;
--static bool			inherit				=  true;
-+static bool			no_inherit			= false;
- static bool			scale				=  true;
- static pid_t			target_pid			= -1;
- static pid_t			target_tid			= -1;
-@@ -167,8 +167,8 @@ static int create_perf_stat_counter(int counter)
- 				++ncreated;
- 		}
- 	} else {
--		attr->inherit	     = inherit;
--		if (target_pid == -1) {
-+		attr->inherit = !no_inherit;
-+		if (target_pid == -1 && target_tid == -1) {
- 			attr->disabled = 1;
- 			attr->enable_on_exec = 1;
- 		}
-@@ -518,8 +518,8 @@ static const struct option options[] = {
- 	OPT_CALLBACK('e', "event", NULL, "event",
- 		     "event selector. use 'perf list' to list available events",
- 		     parse_events),
--	OPT_BOOLEAN('i', "inherit", &inherit,
--		    "child tasks inherit counters"),
-+	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
-+		    "child tasks do not inherit counters"),
- 	OPT_INTEGER('p', "pid", &target_pid,
- 		    "stat events on existing process id"),
- 	OPT_INTEGER('t', "tid", &target_tid,
+ module_init(init_tis);
 -- 
-1.6.2.5
+1.6.6.1
+
+
 
