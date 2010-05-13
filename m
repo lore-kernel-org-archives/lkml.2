@@ -1,125 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851Ab0EMWQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 18:16:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:10725 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758503Ab0EMWQe convert rfc822-to-8bit (ORCPT
+	id S932890Ab0EMWSA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 18:18:00 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59536 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754485Ab0EMWR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 18:16:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,224,1272870000"; 
-   d="scan'208";a="566987452"
-From: "Pan, Jacob jun" <jacob.jun.pan@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-       Jacob Pan <jacob.jun.pan@linux.intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       "Du, Alek" <alek.du@intel.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       "Tang, Feng" <feng.tang@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 13 May 2010 15:16:29 -0700
-Subject: RE: [PATCH 4/8] x86/mrst: change clock selection logic to support
- medfield
-Thread-Topic: [PATCH 4/8] x86/mrst: change clock selection logic to support
- medfield
-Thread-Index: AcrxF2VWcLli0NsER8GaYEOKwo847gBzqCHg
-Message-ID: <43F901BD926A4E43B106BF17856F0755A77DF118@orsmsx508.amr.corp.intel.com>
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1273254108-3234-5-git-send-email-jacob.jun.pan@linux.intel.com>
- <alpine.LFD.2.00.1005111546260.3401@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1005111546260.3401@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 May 2010 18:17:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=YHJIz+1cVDQXbx3/79nZ/gJPCDqXkT+l/K0mCq/97EP4SR4/C5c0Z1+SbtmF98+qFT
+         b1wpP9yFFPK9m0ArMwuWxV1wTHLjvZsUAXTSIxsE7D6TWyBpfMwOP3uwJxBj+3GP1u83
+         ZrI4VlAxYWOr5/Dj0HFwvB/xKyVFHbcLY/o5U=
 MIME-Version: 1.0
+Date: Fri, 14 May 2010 03:47:55 +0530
+Message-ID: <AANLkTimKHkgWJJOOICzQ4TL3mbL-lvYEocwBSe3XSBVR@mail.gmail.com>
+Subject: Performance Events hangs with Intel P4 system
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sorry for the late reply, we are working on the fixes. just to give some answers to your comments.
+Hello,
 
-> 
->  apbt sucks performance wise, so why do you consider it a better
->  choice than lapic + broadcast ?
-> 
-apbt is always-on, I guess depends on the load, it can be better than
-having broadcast timers. e.g. if there are frequency transitions
-between C0 to deep C states. if we are always in c0, I can easily see
-native performance impact with per cpu apbt. I don't have power number
-to backup either cases. ftrace shows programming lapic timer is quite
-expensive, I don't understand.
+I am testing Performance Events on P4 with HT:
 
+[    0.002243] Performance Events: Netburst events, Netburst P4/Xeon PMU driver.
+[    0.002432] ... version:                0
+[    0.002545] ... bit width:              40
+[    0.002659] ... generic registers:      18
+[    0.002772] ... value mask:             000000ffffffffff
+[    0.002887] ... max period:             0000007fffffffff
+[    0.003004] ... fixed-purpose events:   0
+[    0.003118] ... event mask:             000000000003ffff
 
- 1)               |          clockevents_program_event() {
- 1)               |            lapic_next_event() {
- 1)   2.947 us    |              native_apic_mem_write();
- 1)   8.682 us    |            }
- 1) + 14.676 us   |          }
+dmesg : http://userweb.kernel.org/~jaswinder/P4_HT/dmesg-2634-rc7-tip.txt
+config : http://userweb.kernel.org/~jaswinder/P4_HT/config-2634-rc7-tip.txt
 
- 0)               |                  clockevents_program_event() {
- 0)   4.146 us    |                    apbt_next_event();
- 0)   9.910 us    |                  }
+[jaswinder@ht perf]$ ./perf stat -e cycles ls > /dev/null
 
+ Performance counter stats for 'ls':
 
-> > + * lapic (always-on,ARAT) ------ 150
-> > + */
-> > +
-> > +int mrst_timer_options __cpuinitdata;
-> > +
-> >  static u32 sfi_mtimer_usage[SFI_MTMR_MAX_NUM];
-> >  static struct sfi_timer_table_entry
-> sfi_mtimer_array[SFI_MTMR_MAX_NUM];
-> > +static u32 mrst_cpu_chip;
-> >  int sfi_mtimer_num;
-> >
-> >  struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
-> > @@ -167,15 +191,16 @@ int __init sfi_parse_mrtc(struct
-> sfi_table_header *table)
-> >  	return 0;
-> >  }
-> >
-> > -/*
-> > - * the secondary clock in Moorestown can be APBT or LAPIC clock,
-> default to
-> > - * APBT but cmdline option can also override it.
-> > - */
-> >  static void __cpuinit mrst_setup_secondary_clock(void)
-> >  {
-> > -	/* restore default lapic clock if disabled by cmdline */
-> > -	if (disable_apbt_percpu)
-> > -		return setup_secondary_APIC_clock();
-> > +	if ((mrst_timer_options == MRST_TIMER_APBT_ONLY))
-> > +		return apbt_setup_secondary_clock();
-> > +	if (cpu_has(&current_cpu_data, X86_FEATURE_ARAT)
-> > +		||  (mrst_timer_options == MRST_TIMER_LAPIC_APBT)) {
-> > +		pr_info("using lapic timers for secondary clock\n");
-> > +		setup_secondary_APIC_clock();
-> > +		return;
-> 
->   The logic is confusing.
-> 
-it can be more straightforward if we don't allow user cmdline
-overwrite.
+  <not counted>  cycles
 
->  I guess the 111 is Penwell/MRST specific, right ?
-> 
->  According to SDM we have anyway different results for the various CPU
->  families, but we should utilize this in a generic way and have the
->  translation tables for the various CPUs in one place.
-agreed. 111b is Penwell specific 83MHz spread spectrum
+    0.003447053  seconds time elapsed
 
+[jaswinder@ht perf]$ ./perf stat -e cycles,instructions ls > /dev/null
 
-> 
->   Yikes. From which Intel cookbook is this ?
-> 
->   Aside of that we have that info in boot_cpu_info already, don't we ?
->   So there is neither a requirement for the extra cpuid call nor for
->   the extra mrst_cpu_chip id magic.
-> 
-initially, I thought we need this before boot_cpu_data is initialized.
-But we actually don't need it early. I will fix that.
+ Performance counter stats for 'ls':
 
+  <not counted>  cycles
+        1862188  instructions             #      0.000 IPC    (scaled
+from 54.91%)
+
+    0.003419230  seconds time elapsed
+
+[jaswinder@ht perf]$ ./perf stat -e
+cycles,instructions,cache-references ls > /dev/null
+
+<<this dumps on screen and hangs the systems>>
+
+How can I fix this problem.
+
+Thanks,
+--
+Jaswinder Singh.
