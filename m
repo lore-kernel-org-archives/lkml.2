@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab0EMDpo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 23:45:44 -0400
-Received: from sh.osrg.net ([192.16.179.4]:39331 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753454Ab0EMDpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 23:45:43 -0400
-Date: Thu, 13 May 2010 12:45:31 +0900
-To: greg@kroah.com, pete@sensoray.com, rcohen@snurgle.org
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: saa7134-go7007: replace dma_sync_single with
- dma_sync_single_for_cpu
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100513124613U.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 13 May 2010 12:45:31 +0900 (JST)
+	id S1757655Ab0EMDtc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 23:49:32 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54717 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754909Ab0EMDta (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 23:49:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=JvPf7yLSVrJsnyeqpccR5XY8Ljm1MrJKROnlNH0Z2Rd7zVYxRs9JzbHiIlaWjGL/2W
+         IASrhRub7HZrM1FK0niwo4JEAvWSpcSTtv7ScF/IyP4V0fQbqVqf+E4NpTVTmjV5bEQl
+         qxPUEv/s1looYBUdXtC8s17fhqq4b0EVnP2zs=
+From: =?utf-8?q?Leonardo=20de=20S=C3=A1=20Alt?= <leonardoaltt@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: =?utf-8?q?Leonardo=20de=20S=C3=A1=20Alt?= <leonardoaltt@gmail.com>
+Subject: [PATCH] FIXED: arch/x86/kernel/hpet.c: /* FIXME: add schedule_work_on() */
+Date: Thu, 13 May 2010 00:49:23 -0300
+Message-Id: <1273722563-24491-1-git-send-email-leonardoaltt@gmail.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma_sync_single() is deprecated and will be removed soon.
+Changed schedule_delayed_work_on for schedule_work_on by using work instead of
+delayed work, because the delayed work was used with delay 0.
 
-No functional change since dma_sync_single is the wrapper of
-dma_sync_single_for_cpu.
+Signed-off-by: Leonardo de Sá Alt <leonardoaltt@gmail.com>
 
-saa7134-go7007.c is commented out but anyway let's replace it.
-
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 ---
- drivers/staging/go7007/saa7134-go7007.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/hpet.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/go7007/saa7134-go7007.c b/drivers/staging/go7007/saa7134-go7007.c
-index b25d7d2..0d36ce7 100644
---- a/drivers/staging/go7007/saa7134-go7007.c
-+++ b/drivers/staging/go7007/saa7134-go7007.c
-@@ -242,13 +242,13 @@ static void saa7134_go7007_irq_ts_done(struct saa7134_dev *dev,
- 		printk(KERN_DEBUG "saa7134-go7007: irq: lost %ld\n",
- 				(status >> 16) & 0x0f);
- 	if (status & 0x100000) {
--		dma_sync_single(&dev->pci->dev,
--				saa->bottom_dma, PAGE_SIZE, DMA_FROM_DEVICE);
-+		dma_sync_single_for_cpu(&dev->pci->dev,
-+					saa->bottom_dma, PAGE_SIZE, DMA_FROM_DEVICE);
- 		go7007_parse_video_stream(go, saa->bottom, PAGE_SIZE);
- 		saa_writel(SAA7134_RS_BA2(5), cpu_to_le32(saa->bottom_dma));
- 	} else {
--		dma_sync_single(&dev->pci->dev,
--				saa->top_dma, PAGE_SIZE, DMA_FROM_DEVICE);
-+		dma_sync_single_for_cpu(&dev->pci->dev,
-+					saa->top_dma, PAGE_SIZE, DMA_FROM_DEVICE);
- 		go7007_parse_video_stream(go, saa->top, PAGE_SIZE);
- 		saa_writel(SAA7134_RS_BA1(5), cpu_to_le32(saa->top_dma));
- 	}
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index a198b7c..4516ba1 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -724,12 +724,10 @@ static int hpet_cpuhp_notify(struct notifier_block *n,
+ 
+ 	switch (action & 0xf) {
+ 	case CPU_ONLINE:
+-		INIT_DELAYED_WORK_ON_STACK(&work.work, hpet_work);
++		INIT_WORK_ON_STACK(&work.work.work, hpet_work);
+ 		init_completion(&work.complete);
+-		/* FIXME: add schedule_work_on() */
+-		schedule_delayed_work_on(cpu, &work.work, 0);
++		schedule_work_on(cpu, &work.work.work);
+ 		wait_for_completion(&work.complete);
+-		destroy_timer_on_stack(&work.work.timer);
+ 		break;
+ 	case CPU_DEAD:
+ 		if (hdev) {
 -- 
-1.6.5
+1.6.0.4
 
