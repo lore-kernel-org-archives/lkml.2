@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544Ab0EMT7E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 15:59:04 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50683 "EHLO mgw2.diku.dk"
+	id S932687Ab0EMT70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 15:59:26 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:50689 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759482Ab0EMT67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 15:58:59 -0400
-Date: Thu, 13 May 2010 21:58:56 +0200 (CEST)
+	id S932624Ab0EMT7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 15:59:21 -0400
+Date: Thu, 13 May 2010 21:59:15 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+To: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/20] drivers/gpu/drm: Use kzalloc
-Message-ID: <Pine.LNX.4.64.1005132158390.6282@ask.diku.dk>
+Subject: [PATCH 3/20] drivers/media: Use kzalloc
+Message-ID: <Pine.LNX.4.64.1005132158570.6282@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -40,73 +40,44 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/gpu/drm/drm_auth.c          |    3 +--
- drivers/gpu/drm/drm_dma.c           |    4 +---
- drivers/gpu/drm/drm_fops.c          |    3 +--
- drivers/gpu/drm/savage/savage_bci.c |    3 +--
- 4 files changed, 4 insertions(+), 9 deletions(-)
+ drivers/media/dvb/frontends/ds3000.c |    5 +----
+ drivers/media/video/omap/omap_vout.c |    3 +--
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
-diff -u -p a/drivers/gpu/drm/drm_auth.c b/drivers/gpu/drm/drm_auth.c
---- a/drivers/gpu/drm/drm_auth.c
-+++ b/drivers/gpu/drm/drm_auth.c
-@@ -79,10 +79,9 @@ static int drm_add_magic(struct drm_mast
- 	struct drm_device *dev = master->minor->dev;
- 	DRM_DEBUG("%d\n", magic);
+diff -u -p a/drivers/media/dvb/frontends/ds3000.c b/drivers/media/dvb/frontends/ds3000.c
+--- a/drivers/media/dvb/frontends/ds3000.c
++++ b/drivers/media/dvb/frontends/ds3000.c
+@@ -969,15 +969,12 @@ struct dvb_frontend *ds3000_attach(const
+ 	dprintk("%s\n", __func__);
  
--	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
-+	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
- 	if (!entry)
- 		return -ENOMEM;
--	memset(entry, 0, sizeof(*entry));
- 	entry->priv = priv;
- 	entry->hash_item.key = (unsigned long)magic;
- 	mutex_lock(&dev->struct_mutex);
-diff -u -p a/drivers/gpu/drm/drm_dma.c b/drivers/gpu/drm/drm_dma.c
---- a/drivers/gpu/drm/drm_dma.c
-+++ b/drivers/gpu/drm/drm_dma.c
-@@ -47,12 +47,10 @@ int drm_dma_setup(struct drm_device *dev
- {
- 	int i;
+ 	/* allocate memory for the internal state */
+-	state = kmalloc(sizeof(struct ds3000_state), GFP_KERNEL);
++	state = kzalloc(sizeof(struct ds3000_state), GFP_KERNEL);
+ 	if (state == NULL) {
+ 		printk(KERN_ERR "Unable to kmalloc\n");
+ 		goto error2;
+ 	}
  
--	dev->dma = kmalloc(sizeof(*dev->dma), GFP_KERNEL);
-+	dev->dma = kzalloc(sizeof(*dev->dma), GFP_KERNEL);
- 	if (!dev->dma)
- 		return -ENOMEM;
- 
--	memset(dev->dma, 0, sizeof(*dev->dma));
+-	/* setup the state */
+-	memset(state, 0, sizeof(struct ds3000_state));
 -
- 	for (i = 0; i <= DRM_MAX_ORDER; i++)
- 		memset(&dev->dma->bufs[i], 0, sizeof(dev->dma->bufs[0]));
+ 	state->config = config;
+ 	state->i2c = i2c;
+ 	state->prevUCBS2 = 0;
+diff -u -p a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -2371,12 +2371,11 @@ static int __init omap_vout_create_video
  
-diff -u -p a/drivers/gpu/drm/drm_fops.c b/drivers/gpu/drm/drm_fops.c
---- a/drivers/gpu/drm/drm_fops.c
-+++ b/drivers/gpu/drm/drm_fops.c
-@@ -243,11 +243,10 @@ static int drm_open_helper(struct inode 
+ 	for (k = 0; k < pdev->num_resources; k++) {
  
- 	DRM_DEBUG("pid = %d, minor = %d\n", task_pid_nr(current), minor_id);
+-		vout = kmalloc(sizeof(struct omap_vout_device), GFP_KERNEL);
++		vout = kzalloc(sizeof(struct omap_vout_device), GFP_KERNEL);
+ 		if (!vout) {
+ 			dev_err(&pdev->dev, ": could not allocate memory\n");
+ 			return -ENOMEM;
+ 		}
+-		memset(vout, 0, sizeof(struct omap_vout_device));
  
--	priv = kmalloc(sizeof(*priv), GFP_KERNEL);
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
- 	if (!priv)
- 		return -ENOMEM;
- 
--	memset(priv, 0, sizeof(*priv));
- 	filp->private_data = priv;
- 	priv->filp = filp;
- 	priv->uid = current_euid();
-diff -u -p a/drivers/gpu/drm/savage/savage_bci.c b/drivers/gpu/drm/savage/savage_bci.c
---- a/drivers/gpu/drm/savage/savage_bci.c
-+++ b/drivers/gpu/drm/savage/savage_bci.c
-@@ -539,11 +539,10 @@ int savage_driver_load(struct drm_device
- {
- 	drm_savage_private_t *dev_priv;
- 
--	dev_priv = kmalloc(sizeof(drm_savage_private_t), GFP_KERNEL);
-+	dev_priv = kzalloc(sizeof(drm_savage_private_t), GFP_KERNEL);
- 	if (dev_priv == NULL)
- 		return -ENOMEM;
- 
--	memset(dev_priv, 0, sizeof(drm_savage_private_t));
- 	dev->dev_private = (void *)dev_priv;
- 
- 	dev_priv->chipset = (enum savage_family)chipset;
+ 		vout->vid = k;
+ 		vid_dev->vouts[k] = vout;
