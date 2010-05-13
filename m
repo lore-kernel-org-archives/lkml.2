@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758903Ab0EMPC7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 11:02:59 -0400
-Received: from mail-gx0-f227.google.com ([209.85.217.227]:54598 "EHLO
-	mail-gx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab0EMPC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 11:02:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=xBp9AhsAFp9SG2ISFdYumKkIHQvuLxmR7FAZLZvpXoDLiRU8bABE8iAK1IGizl8Z4C
-         XiwZYecGrW17M2M1ZtMx6anrunyynoiWMaAfzqacix+Ya0cXnZ7xZ6IVvHLIY/UXOFkV
-         uVikzrY2hB7IN3q5ijsjSoE+UhRvkVrb5KO/s=
-Date: Thu, 13 May 2010 12:02:51 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Pierre Tardy <tardyp@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-       mathieu.desnoyers@efficios.com, arjan@infradead.org,
-       ziga.mahkovec@gmail.com
-Subject: Re: [RFC] PyTimechart
-Message-ID: <20100513150251.GK30926@ghostprotocols.net>
-References: <AANLkTilJLcdfK-vgqGdXyaZ_bQ1BDFmQl619egtGAA4i@mail.gmail.com> <20100511213625.GD5422@nowhere> <AANLkTikumkBKwYTYIK63mT2i_hI4SAo-Eua0cx9OCHnD@mail.gmail.com> <20100512144811.GA5405@nowhere> <AANLkTim0fEoUXav-KmXPEk67vZVhn-FnpnbLOHpI2HDF@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim0fEoUXav-KmXPEk67vZVhn-FnpnbLOHpI2HDF@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1758920Ab0EMPEa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:04:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49979 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752685Ab0EMPE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 11:04:28 -0400
+Subject: Re: [PATCH 0/9] mm: generic adaptive large memory allocation APIs
+From: James Bottomley <James.Bottomley@suse.de>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: akpm@linux-foundation.org, Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
+       Christoph Raisch <raisch@de.ibm.com>, Roland Dreier <rolandd@cisco.com>,
+       Sean Hefty <sean.hefty@intel.com>,
+       Hal Rosenstock <hal.rosenstock@gmail.com>,
+       Divy Le Ray <divy@chelsio.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       Andreas Dilger <adilger@sun.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, linux-scsi@vger.kernel.org,
+       linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, containers@lists.linux-foundation.org
+In-Reply-To: <1273744147-7594-1-git-send-email-xiaosuo@gmail.com>
+References: <1273744147-7594-1-git-send-email-xiaosuo@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 May 2010 10:04:15 -0500
+Message-ID: <1273763055.4353.136.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, May 12, 2010 at 07:13:00PM +0200, Pierre Tardy escreveu:
-> > The code I'm looking at here doesn't look dirty to me at a glance:
-> > http://gitorious.org/pytimechart/pytimechart/trees/master
+On Thu, 2010-05-13 at 17:49 +0800, Changli Gao wrote:
+> generic adaptive large memory allocation APIs
+> 
+> kv*alloc are used to allocate large contiguous memory and the users don't mind
+> whether the memory is physically or virtually contiguous. The allocator always
+> try its best to allocate physically contiguous memory first.
 
-> That's because you did not read between the lines ;-)
-> The display core needs to be simplified.
+This isn't necessarily true ... most drivers and filesystems have to
+know what type they're getting.  Often they have to do extra tricks to
+process vmalloc areas.  Conversely, large kmalloc areas are a very
+precious commodity: if a driver or filesystem can handle vmalloc for
+large allocations, it should: it's easier for us to expand the vmalloc
+area than to try to make page reclaim keep large contiguous areas ... I
+notice your proposed API does the exact opposite of this ... tries
+kmalloc first and then does vmalloc.
 
-Not even having looked at the code, I like your attitude! :-)
+Given this policy problem, isn't it easier simply to hand craft the
+vmalloc fall back to kmalloc (or vice versa) in the driver than add this
+whole massive raft of APIs for it?
 
-- Arnaldo
+> In this patch set, some APIs are introduced: kvmalloc(), kvzalloc(), kvcalloc(),
+> kvrealloc(), kvfree() and kvfree_inatomic().
+> 
+> Some code are converted to use the new generic APIs instead.
+> 
+> Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+> ----
+>  drivers/infiniband/hw/ehca/ipz_pt_fn.c |   22 +-----
+>  drivers/net/cxgb3/cxgb3_defs.h         |    2 
+>  drivers/net/cxgb3/cxgb3_offload.c      |   31 ---------
+>  drivers/net/cxgb3/l2t.c                |    4 -
+>  drivers/net/cxgb4/cxgb4.h              |    3 
+>  drivers/net/cxgb4/cxgb4_main.c         |   37 +----------
+>  drivers/net/cxgb4/l2t.c                |    2 
+>  drivers/scsi/cxgb3i/cxgb3i_ddp.c       |   12 +--
+>  drivers/scsi/cxgb3i/cxgb3i_ddp.h       |   26 -------
+>  drivers/scsi/cxgb3i/cxgb3i_offload.c   |    6 -
+>  fs/ext4/super.c                        |   21 +-----
+>  fs/file.c                              |  109 ++++-----------------------------
+>  include/linux/mm.h                     |   31 +++++++++
+>  include/linux/vmalloc.h                |    1 
+>  kernel/cgroup.c                        |   47 +-------------
+>  kernel/relay.c                         |   35 ----------
+>  mm/nommu.c                             |    6 +
+>  mm/util.c                              |  104 +++++++++++++++++++++++++++++++
+>  mm/vmalloc.c                           |   14 ++++
+>  19 files changed, 207 insertions(+), 306 deletions(-)
+
+James
+
+
