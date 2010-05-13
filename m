@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab0EMGKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 02:10:14 -0400
-Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:53725 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752308Ab0EMGKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 02:10:12 -0400
-Date: Thu, 13 May 2010 16:09:55 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Neil Brown <neilb@suse.de>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, hch@infradead.org,
-       viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
-       serue@us.ibm.com, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V7 4/9] vfs: Add open by file handle support
-Message-ID: <20100513060955.GG13617@dastard>
-References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1273679444-14903-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20100513094422.0f7991a0@notabene.brown>
+	id S1753272Ab0EMGPO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 02:15:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49810 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753006Ab0EMGPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 02:15:12 -0400
+Message-ID: <4BEB9941.7040609@cn.fujitsu.com>
+Date: Thu, 13 May 2010 14:16:33 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513094422.0f7991a0@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: David Rientjes <rientjes@google.com>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Paul Menage <menage@google.com>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>,
+       Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm] cpuset,mm: fix no node to alloc memory when changing
+ cpuset's mems - fix2
+References: <4BEA56D3.6040705@cn.fujitsu.com>	<20100512003246.9f0ee03c.akpm@linux-foundation.org>	<4BEA6E3D.10503@cn.fujitsu.com> <20100512104817.beeee3b5.akpm@linux-foundation.org>
+In-Reply-To: <20100512104817.beeee3b5.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 09:44:22AM +1000, Neil Brown wrote:
-> On Wed, 12 May 2010 21:20:39 +0530
-> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+on 2010-5-13 1:48, Andrew Morton wrote:
+>> It may cause the performance regression, so I do my best to abstain from using a real
+>> lock.
 > 
-> > +		filp->f_flags |= O_NOATIME;
-> > +		filp->f_mode |= FMODE_NOCMTIME;
-> > +	}
+> Well, the code as-is is pretty exotic with lots of open-coded tricky
+> barriers - it's best to avoid inventing new primitives if possible. 
+> For example, there's no lockdep support for this new "lock".
+
+I didn't find an existing lock that could fix the problem well till now, so
+I had to design this new "lock" to protect the task's mempolicy and mems_allowed.
+
 > 
-> I think you need a comment here explaining the rational for these setting.
+> mutex_lock() is pretty quick - basically a simgle atomic op.  How
+> frequently do these operations occur?
 
-If you've never seen how applications use the XFS handle interface
-in conjunction with other XFS functionality, then I guess if would
-seem like bad voodoo.
+There is another problem that I forgot to mention.
+besides the performance problem, the read-side may call it in the context
+in which the task can't sleep. so we can't use mutex.
 
-> Why is O_NOATIME important IFREG but not for IFDIR?
+> 
+> The code you have at present is fairly similar to sequence locks.  I
+> wonder if there's some way of (ab)using sequence locks for this. 
+> seqlocks don't have lockdep support either...
+> 
 
-No application has ever required directory access or modification
-via the handle interface to be invisible to the rest of the system.
+We can't use sequence locks here, because the read-side may read the data
+in changing, but it can't put off cleaning the old bits.
 
-> Why is it not sufficient to honour O_NOATIME that is passed in.
+Thanks
+Miao
 
-Because the XFS handle library is cross platform and predates
-O_NOATIME on linux. Hence the library it has never set that flag and
-always relied on the kernel implementation of the API to ensure
-atime was never updated on fds derived from handles..
-
-> How can you ever justify setting FMODE_NOCMTIME ?
-
-Quite easily. ;)
-
-The XFS handle interface was designed specifically to allow
-applications to execute silent/invisible movement of data in, out
-and around the filesystem without leaving user visible traces in
-file metadata. This enables backup or filesysetm utilities that
-operate on active filesystems need to be able to access or modify
-inodes and data without affecting running applications.  It's a
-feature of the handle interface, and used by xfs_dump, xfs_fsr,
-SGI's HSM, etc to do stuff that isn't otherwise possible.
-
-FWIW, if you are curious, here's the initial commit of the XFS
-handle code into Irix tree from 3 Sep 1994, showing that the initial
-XFS open_by_handle() implementation sets the FINVIS flag to trigger
-invisible IO semantics:
-
-http://oss.sgi.com/cgi-bin/gitweb.cgi?p=archive/xfs-import.git;a=commitdiff;h=575b66fae833429a51fcadb204d45521c2dfc26f
-
-> I guess you are just copying from xfs code, but it still needs justification.
-
-	"They are intended for use by a limited set of system
-	utilities such as backup programs."
-
-		- open_by_handle(3) man page
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
