@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757772Ab0EMOro (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 10:47:44 -0400
-Received: from relay1-d.mail.gandi.net ([217.70.183.193]:42747 "EHLO
-	relay1-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755763Ab0EMOrm (ORCPT
+	id S1758839Ab0EMOtu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 10:49:50 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58568 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756219Ab0EMOtr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 10:47:42 -0400
-X-Originating-IP: 217.70.178.41
-X-Originating-IP: 82.8.179.104
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-From: Bastien Nocera <hadess@hadess.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-input@vger.kernel.org
-In-Reply-To: <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
-References: <20100513075728.GF30110@core.coreip.homeip.net>
-	 <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 13 May 2010 15:47:31 +0100
-Message-ID: <1273762051.2308.4671.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.0.1 (2.30.0-3.fc13) 
-Content-Transfer-Encoding: 7bit
+	Thu, 13 May 2010 10:49:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=uIWsfu5uNsoFIou+P6x5zzLaSz9FNUO2G5mEiRXT+G1B6/zMrcW60f9z0HlgpuQO5Q
+         7CapEwhJFsof3fUmBzPfJiNNRLb4WwO+XaNC3tzVdVcyRFqBCAz0atY7cIVa5U15K64w
+         vtMOwWcBTgS8lYC3hssMwDesDFm1VrF+1Fjbg=
+MIME-Version: 1.0
+In-Reply-To: <1273761576_4060@mail4.comsite.net>
+References: <1273744285-8128-1-git-send-email-xiaosuo@gmail.com> 
+	<1273761576_4060@mail4.comsite.net>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Thu, 13 May 2010 22:49:26 +0800
+Message-ID: <AANLkTilanD4PlDpLqtTK7uE5o4aPgLhhYvYvVI37GycU@mail.gmail.com>
+Subject: Re: [PATCH 1/9] mm: add generic adaptive large memory allocation APIs
+To: Milton Miller <miltonm@bga.com>
+Cc: akpm@linux-foundation.org, Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
+       Christoph Raisch <raisch@de.ibm.com>, Roland Dreier <rolandd@cisco.com>,
+       Sean Hefty <sean.hefty@intel.com>,
+       Hal Rosenstock <hal.rosenstock@gmail.com>,
+       Divy Le Ray <divy@chelsio.com>,
+       "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@sun.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, linux-scsi@vger.kernel.org,
+       linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, containers@lists.linux-foundation.org,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+       Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 07:35 -0700, Linus Torvalds wrote:
-> 
-> On Thu, 13 May 2010, Dmitry Torokhov wrote:
-> > 
-> > Bastien Nocera (1):
-> >       Input: i8042 - do not try to probe ports on Intel Apple Macs
-> 
-> I pulled, but I skipped the last commit, because I think this one is 
-> fundamentally _wrong_.
-> 
-> It is _not_ maintainable to create random tables of exceptions ("DMI 
-> tables"), and it's actively _wrong_ to do for something like this where we 
-> not only have historically worked perfectly well, and this apparently 
-> tries to hide some other bug (the commit says "could potentially lock 
-> up/hang/wait for timeout for long periods of time").
-<snip>
-> So if somebody saw "could potentially lock up/hang/wait" issues, then 
-> dangit, say what those issues are, AND LET'S FIX THEM! And not like this, 
-> trying to hide them for some particular machines, rather than fixing the 
-> actual underlying detection bug.
+On Thu, May 13, 2010 at 10:39 PM, Milton Miller <miltonm@bga.com> wrote:
+> On Thu, 13 May 2010 at 17:51:25 +0800, Changli Gao wrote:
+>
+>> +static inline void *kvcalloc(size_t n, size_t size)
+>> +{
+>> +     return __kvmalloc(n * size, __GFP_ZERO);
+>>
+>
+> This needs multiply overflow checking like kcalloc.
+>
 
-I'm waiting for your debug instructions on that one, because we already
-looked at that with Dmitry.
+Thanks.
 
-I already got that patch in my distribution, and now my machine boots up
-uninterrupted. The lock is somewhat random, and will go away as soon as
-I press the power button on my machine.
-
-Maybe you didn't update to the latest firmwares on you Mac Mini, and
-didn't see the problem with the updated BIOSes, I don't know.
-
+-- 
+Regards，
+Changli Gao(xiaosuo@gmail.com)
