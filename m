@@ -1,161 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759190Ab0EMPsh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 11:48:37 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:50599 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759144Ab0EMPsg (ORCPT
+	id S1759165Ab0EMPul (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:50:41 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44374 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab0EMPuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 11:48:36 -0400
-X-Spam-Processed: digidescorp.com, Thu, 13 May 2010 10:48:35 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-MDRemoteIP: 99.144.166.44
-X-Return-Path: prvs=17491102c2=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: microblaze-uclinux@itee.uq.edu.au
-Cc: monstr@monstr.eu, linux-kernel@vger.kernel.org,
-       "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH][noMMU] microblaze: allow PAGE_SIZE configuration
-Date: Thu, 13 May 2010 10:48:27 -0500
-Message-Id: <1273765707-26035-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.6.0.6
+	Thu, 13 May 2010 11:50:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Sm8ff8CRV9gI7hG4FGwPNSJtQOj36kMPekWU6to8eYq2iAvmxff0iR1aaZOjdUGoVf
+         IurDhqK6l9n20/YPsnWn1P2f7iTAOtfqPxg35/lJ5GkaOI2+0HjhG8UXr0/jXsJj4MVL
+         rW8JaywJmYJYO/xyx4km632aoWI5KwE9FGhSQ=
+Date: Thu, 13 May 2010 08:50:31 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bastien Nocera <hadess@hadess.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+Message-ID: <20100513155031.GA22238@core.coreip.homeip.net>
+References: <20100513075728.GF30110@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
+ <1273762051.2308.4671.camel@localhost.localdomain>
+ <alpine.LFD.2.00.1005130751300.3711@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005130751300.3711@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow developer to configure memory page size at compile time.
-Larger pages can improve performance on some workloads.
+On Thu, May 13, 2010 at 08:04:15AM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Thu, 13 May 2010, Bastien Nocera wrote:
+> > 
+> > Maybe you didn't update to the latest firmwares on you Mac Mini, and
+> > didn't see the problem with the updated BIOSes, I don't know.
+> 
+> I can't update the firmware, since it's some random OS X program that does 
+> it (and I don't have OS X on the machine).
+> 
+> But where does it lock up? During the boot probing? Or does it probe as 
+> having a keyboard because Apple added some crazy SMM code to try to 
+> emulate one with USB? 
+> 
+> Afaik, the Apple hardware actually does _physically_ have a keyboard 
+> controller (it's on the regular intel southbridge silicon, afaik), it just 
+> isn't connected to anything. And I think it is turned off in some of the 
+> southbridge control registers. The control registers also allow trapping 
+> into SMI when accessing the keyboard control registers, and maybe Apple 
+> screwed up there somewhere.
+> 
+> On one of my Mac Mini's (didn't check the other), I get this:
+> 
+> 	[    2.955087] PNP: No PS/2 controller found. Probing ports directly.
+> 	[    2.958475] i8042.c: No controller found.
+> 	[    2.960998] mice: PS/2 mouse device common for all mice
+> 
+> what do you get?
+> 
+> The thing is, there's a _lot_ of machines out there with no legacy 
+> keyboard support. They tend to work.
 
-Based on PowerPC code.
+Indeed most of them do just work. My Dell T110 for example boots just
+fine and it only has USB, no PS/2 ports. However there is a rather
+important difference I think - these other boxes are supposed to work
+with multiple versions of Windows which, as far as I know, do probe for
+the i8042. Apple only supports bootcamp on certain BIOSes and does not
+really expect anything to touch these ports.
 
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
----
-diff -uprN a/arch/microblaze/include/asm/page.h b/arch/microblaze/include/asm/page.h
---- a/arch/microblaze/include/asm/page.h	2010-05-13 09:55:59.000000000 -0500
-+++ b/arch/microblaze/include/asm/page.h	2010-05-13 10:39:51.000000000 -0500
-@@ -23,8 +23,16 @@
- #ifdef __KERNEL__
- 
- /* PAGE_SHIFT determines the page size */
--#define PAGE_SHIFT	(12)
--#define PAGE_SIZE	(_AC(1, UL) << PAGE_SHIFT)
-+#if defined(CONFIG_MICROBLAZE_32K_PAGES)
-+#define PAGE_SHIFT		15
-+#elif defined(CONFIG_MICROBLAZE_16K_PAGES)
-+#define PAGE_SHIFT		14
-+#elif defined(CONFIG_MICROBLAZE_8K_PAGES)
-+#define PAGE_SHIFT		13
-+#else
-+#define PAGE_SHIFT		12
-+#endif
-+#define PAGE_SIZE	(ASM_CONST(1) << PAGE_SHIFT)
- #define PAGE_MASK	(~(PAGE_SIZE-1))
- 
- #define LOAD_OFFSET	ASM_CONST((CONFIG_KERNEL_START-CONFIG_KERNEL_BASE_ADDR))
-diff -uprN a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
---- a/arch/microblaze/Kconfig	2010-05-13 09:55:59.000000000 -0500
-+++ b/arch/microblaze/Kconfig	2010-05-13 10:39:16.000000000 -0500
-@@ -223,6 +223,36 @@ config TASK_SIZE
- 	hex "Size of user task space" if TASK_SIZE_BOOL
- 	default "0x80000000"
- 
-+choice
-+	prompt "Page size"
-+	default MICROBLAZE_4K_PAGES
-+	depends on ADVANCED_OPTIONS
-+	help
-+	  Select the kernel logical page size. Increasing the page size
-+	  will reduce software overhead at each page boundary, allow
-+	  hardware prefetch mechanisms to be more effective, and allow
-+	  larger dma transfers increasing IO efficiency and reducing
-+	  overhead. However the utilization of memory will increase.
-+	  For example, each cached file will using a multiple of the
-+	  page size to hold its contents and the difference between the
-+	  end of file and the end of page is wasted.
-+
-+	  If unsure, choose 4K_PAGES.
-+
-+config MICROBLAZE_4K_PAGES
-+	bool "4k page size"
-+
-+config MICROBLAZE_8K_PAGES
-+	bool "8k page size" if !MMU
-+
-+config MICROBLAZE_16K_PAGES
-+	bool "16k page size" if !MMU
-+
-+config MICROBLAZE_32K_PAGES
-+	bool "32k page size" if !MMU
-+
-+endchoice
-+
- endmenu
- 
- source "mm/Kconfig"
-diff -uprN a/arch/microblaze/kernel/cpu/mb.c b/arch/microblaze/kernel/cpu/mb.c
---- a/arch/microblaze/kernel/cpu/mb.c	2010-05-13 09:55:59.000000000 -0500
-+++ b/arch/microblaze/kernel/cpu/mb.c	2010-05-13 10:40:38.000000000 -0500
-@@ -126,6 +126,7 @@ static int show_cpuinfo(struct seq_file 
- 			cpuinfo.pvr_user1,
- 			cpuinfo.pvr_user2);
- 
-+	count += seq_printf(m, "Page size:\t%lu\n", PAGE_SIZE);
- 	return 0;
- }
- 
-diff -uprN a/arch/microblaze/kernel/vmlinux.lds.S b/arch/microblaze/kernel/vmlinux.lds.S
---- a/arch/microblaze/kernel/vmlinux.lds.S	2010-05-13 09:55:59.000000000 -0500
-+++ b/arch/microblaze/kernel/vmlinux.lds.S	2010-05-10 15:32:30.000000000 -0500
-@@ -55,7 +55,7 @@ SECTIONS {
- 	 */
- 	.sdata2 : AT(ADDR(.sdata2) - LOAD_OFFSET) {
- 		_ssrw = .;
--		. = ALIGN(4096); /* page aligned when MMU used - origin 0x8 */
-+		. = ALIGN(PAGE_SIZE); /* page aligned when MMU used */
- 		*(.sdata2)
- 	. = ALIGN(8);
- 	_essrw = .;
-@@ -70,7 +70,7 @@ SECTIONS {
- 	/* Reserve some low RAM for r0 based memory references */
- 	. = ALIGN(0x4) ;
- 	r0_ram = . ;
--	. = . +  4096;	/* a page should be enough */
-+	. = . +  PAGE_SIZE;	/* a page should be enough */
- 
- 	/* Under the microblaze ABI, .sdata and .sbss must be contiguous */
- 	. = ALIGN(8);
-@@ -120,7 +120,7 @@ SECTIONS {
- 
- 	__init_end_before_initramfs = .;
- 
--	.init.ramfs ALIGN(4096) : AT(ADDR(.init.ramfs) - LOAD_OFFSET) {
-+	.init.ramfs ALIGN(PAGE_SIZE) : AT(ADDR(.init.ramfs) - LOAD_OFFSET) {
- 		__initramfs_start = .;
- 		*(.init.ramfs)
- 		__initramfs_end = .;
-@@ -132,11 +132,11 @@ SECTIONS {
-  * so that __init_end == __bss_start. This will make image.elf
-  * consistent with the image.bin
-  */
--		/* . = ALIGN(4096); */
-+		/* . = ALIGN(PAGE_SIZE); */
- 	}
- 	__init_end = .;
- 
--	.bss ALIGN (4096) : AT(ADDR(.bss) - LOAD_OFFSET) {
-+	.bss ALIGN (PAGE_SIZE) : AT(ADDR(.bss) - LOAD_OFFSET) {
- 		/* page aligned when MMU used */
- 		__bss_start = . ;
- 			*(.bss*)
-@@ -145,7 +145,7 @@ SECTIONS {
- 		__bss_stop = . ;
- 		_ebss = . ;
- 	}
--	. = ALIGN(4096);
-+	. = ALIGN(PAGE_SIZE);
- 	_end = .;
- 
- 	DISCARDS
+> We have timeouts for the i8042 
+> commands we do during init, but maybe we missed some case. And maybe we 
+> could easily add some extra tests too.
+> 
+> A few printk's in the i8042 init routines to show where it locks up would 
+> be good.. I assume you did that already if you and Dmitry already tried to 
+> debug this. Where's the original thread?
+> 
 
+>From what I remember (it was a few weeks old thread) we were hanging
+when trying to read from the controller in i8042_flush(). Normally, if
+controller isn't there we'd get a stream of 0xff which will never
+"clear" and so after 32 reads we give up and abort controller
+initialization. But on Bastien's box it just sits there.
+
+-- 
+Dmitry
