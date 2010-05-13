@@ -1,74 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758204Ab0EMH5l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 03:57:41 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35759 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758146Ab0EMH5e (ORCPT
+	id S1758278Ab0EMH6m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 03:58:42 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:64691 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758088Ab0EMH51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 03:57:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=PYUM0BMFNSSrsNTNpcsz3HGEh0zU6bm1JYioFUt4VRebyBKaHN5D/0DMUPwJyyAZHc
-         rwiNLYohzr1uHEZwGfK8ObigsO1ledPEbltUWr4EKbnVpYmTLEWcLuu4SCPKzLY7HyZo
-         POSJAXIXZ/3Iy61XZ3O1WLC5cX7OmzPK5OUdw=
-Date: Thu, 13 May 2010 00:57:28 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 2.6.34-rc6
-Message-ID: <20100513075728.GF30110@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 13 May 2010 03:57:27 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: n-horiguchi@ah.jp.nec.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>
+Subject: [PATCH 6/7] HWPOISON, hugetlb: detect hwpoison in hugetlb code
+Date: Thu, 13 May 2010 16:55:25 +0900
+Message-Id: <1273737326-21211-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This patch enables to block access to hwpoisoned hugepage and
+also enables to block unmapping for it.
 
-Please pull from:
+Dependency:
+  "HWPOISON, hugetlb: enable error handling path for hugepage"
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/hugetlb.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 40 insertions(+), 0 deletions(-)
 
-to receive a few last minute changes to the input subsystem.
-
-Changelog:
----------
-
-Bastien Nocera (1):
-      Input: i8042 - do not try to probe ports on Intel Apple Macs
-
-Dmitry Torokhov (2):
-      Input: elantech - use all 3 bytes when checking version
-      Input: psmouse - reset all types of mice before reconnecting
-
-Marek Vasut (2):
-      Input: iforce - add Guillemot Jet Leader Force Feedback
-      Input: iforce - fix Guillemot Jet Leader 3D entry
-
-Oskar Schirmer (1):
-      Input: ad7877 - keep dma rx buffers in seperate cache lines
-
-
-Diffstat:
---------
-
- drivers/input/joystick/iforce/iforce-main.c |    6 ++++-
- drivers/input/joystick/iforce/iforce-usb.c  |    1 +
- drivers/input/mouse/elantech.c              |   24 ++++++++++----------
- drivers/input/mouse/elantech.h              |    5 +--
- drivers/input/mouse/psmouse-base.c          |   14 +++++++++---
- drivers/input/serio/i8042-x86ia64io.h       |   30 ++++++++++++++++++++++++++-
- drivers/input/touchscreen/ad7877.c          |   15 ++++++++++--
- 7 files changed, 71 insertions(+), 24 deletions(-)
-
+diff --git v2.6.34-rc7/mm/hugetlb.c v2.6.34-rc7/mm/hugetlb.c
+index 3c1232f..8bddaf0 100644
+--- v2.6.34-rc7/mm/hugetlb.c
++++ v2.6.34-rc7/mm/hugetlb.c
+@@ -19,6 +19,8 @@
+ #include <linux/sysfs.h>
+ #include <linux/slab.h>
+ #include <linux/rmap.h>
++#include <linux/swap.h>
++#include <linux/swapops.h>
+ 
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+@@ -2138,6 +2140,19 @@ nomem:
+ 	return -ENOMEM;
+ }
+ 
++static int is_hugetlb_entry_hwpoisoned(pte_t pte)
++{
++	swp_entry_t swp;
++
++	if (huge_pte_none(pte) || pte_present(pte))
++		return 0;
++	swp = pte_to_swp_entry(pte);
++	if (non_swap_entry(swp) && is_hwpoison_entry(swp)) {
++		return 1;
++	} else
++		return 0;
++}
++
+ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+ 			    unsigned long end, struct page *ref_page)
+ {
+@@ -2196,6 +2211,12 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+ 		if (huge_pte_none(pte))
+ 			continue;
+ 
++		/*
++		 * HWPoisoned hugepage is already unmapped and dropped reference
++		 */
++		if (unlikely(is_hugetlb_entry_hwpoisoned(pte)))
++			continue;
++
+ 		page = pte_page(pte);
+ 		if (pte_dirty(pte))
+ 			set_page_dirty(page);
+@@ -2488,6 +2509,18 @@ retry:
+ 	}
+ 
+ 	/*
++	 * Since memory error handler replaces pte into hwpoison swap entry
++	 * at the time of error handling, a process which reserved but not have
++	 * the mapping to the error hugepage does not have hwpoison swap entry.
++	 * So we need to block accesses from such a process by checking
++	 * PG_hwpoison bit here.
++	 */
++	if (unlikely(PageHWPoison(page))) {
++		ret = VM_FAULT_HWPOISON;
++		goto backout_unlocked;
++	}
++
++	/*
+ 	 * If we are going to COW a private mapping later, we examine the
+ 	 * pending reservations for this page now. This will ensure that
+ 	 * any allocations necessary to record that reservation occur outside
+@@ -2547,6 +2580,13 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
+ 	struct hstate *h = hstate_vma(vma);
+ 
++	ptep = huge_pte_offset(mm, address);
++	if (ptep) {
++		entry = huge_ptep_get(ptep);
++		if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
++			return VM_FAULT_HWPOISON;
++	}
++
+ 	ptep = huge_pte_alloc(mm, address, huge_page_size(h));
+ 	if (!ptep)
+ 		return VM_FAULT_OOM;
 -- 
-Dmitry
+1.7.0
 
