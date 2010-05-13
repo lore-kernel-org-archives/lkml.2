@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab0EMAG0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 20:06:26 -0400
-Received: from mail.gmx.net ([213.165.64.20]:53889 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752702Ab0EMAGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 20:06:24 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18y4Y5qqm8yESgvmwSPs09rWqmQeqqlexk3jGRp28
-	4J1P4rC9Rlcd9s
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] lib/atomic64_test: Fix missing include of linux/kernel.h
-Date: Thu, 13 May 2010 02:06:23 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
-Cc: linux-sh@vger.kernel.org, Luca Barbieri <luca@luca-barbieri.com>,
-       linux-kernel@vger.kernel.org
+	id S1755803Ab0EMAKu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 20:10:50 -0400
+Received: from ozlabs.org ([203.10.76.45]:44994 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752564Ab0EMAKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 20:10:49 -0400
+Date: Thu, 13 May 2010 10:10:36 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+       Stephane Eranian <eranian@googlemail.com>
+Subject: Re: [BUG] perf_event: when events are grouped, the time enabled /
+ running values are incorrect
+Message-ID: <20100513001036.GE11450@brick.ozlabs.ibm.com>
+References: <4BE4C4BF.6020801@linux.vnet.ibm.com>
+ <1273588935.1810.6.camel@laptop>
+ <4BEAE476.1090100@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005130206.24329.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BEAE476.1090100@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>:
+On Wed, May 12, 2010 at 10:25:10AM -0700, Corey Ashford wrote:
 
-This patch fixes a build-failure[1] by adding the missing include file
-(linux/kernel.h) for printk and KERN_INFO.
+> Thanks for looking into this problem!  Unfortunately, I've been
+> unable to test your patch.  It doesn't apply to 2.6.33.3 and so I
+> tried the -tip tree (which has this patch committed).  The kernel
+> built fine, but crashed almost immediately during the boot-up
+> process on my Power5 machine.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-KernelVersion: linux-next 20100512
-References:
-[1] http://kisskb.ellerman.id.au/kisskb/buildresult/2601239/
+Ugh.  I'll take a look today at that.
 
- lib/atomic64_test.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/lib/atomic64_test.c b/lib/atomic64_test.c
-index 65e482c..9087d71 100644
---- a/lib/atomic64_test.c
-+++ b/lib/atomic64_test.c
-@@ -9,6 +9,7 @@
-  * (at your option) any later version.
-  */
- #include <linux/init.h>
-+#include <linux/kernel.h>
- #include <asm/atomic.h>
- 
- #define INIT(c) do { atomic64_set(&v, c); r = c; } while (0)
--- 
-1.6.4.4
-
+Paul.
