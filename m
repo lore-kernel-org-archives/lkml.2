@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab0EMRTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:19:00 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53073 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286Ab0EMRS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:18:58 -0400
-Subject: Re: [PATCHSET] libata: implement ->set_capacity()
-From: James Bottomley <James.Bottomley@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: jeff@garzik.org, linux-ide@vger.kernel.org, jens.axboe@oracle.com,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       ben@decadent.org.uk
-In-Reply-To: <4BEC2ED7.9080001@kernel.org>
-References: <1273766206-17402-1-git-send-email-tj@kernel.org>
-	 <1273766778.4353.200.camel@mulgrave.site>  <4BEC272E.10508@kernel.org>
-	 <1273768687.4353.235.camel@mulgrave.site>  <4BEC2ED7.9080001@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 May 2010 12:18:51 -0500
-Message-ID: <1273771131.4353.300.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1755089Ab0EMRW4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:22:56 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:34889 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab0EMRWz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 13:22:55 -0400
+Date: Thu, 13 May 2010 12:22:01 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] mm,migration: Avoid race between shift_arg_pages() and
+ rmap_walk() during migration by not migrating temporary stacks
+In-Reply-To: <20100513091930.9b42e3b8.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1005131219190.20037@router.home>
+References: <20100511085752.GM26611@csn.ul.ie> <20100512092239.2120.A69D9226@jp.fujitsu.com> <20100512125427.d1b170ba.akpm@linux-foundation.org> <alpine.DEB.2.00.1005121627020.1273@router.home> <20100513091930.9b42e3b8.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 18:54 +0200, Tejun Heo wrote:
-> Hello,
-> 
-> On 05/13/2010 06:38 PM, James Bottomley wrote:
-> > Instead of making this a block sysfs attribute, since HPA is SATA only,
-> > why not make it a libata attribute for the disk?
-> > 
-> > That way on unlock, you can unlock the HPA and then trigger a partition
-> > rescan of the block device (BLKRRPART) ... this is an ioctl, so you need
-> > user context, but you have it if you do it from the sysfs write routine.
-> > This looks to be a lot simpler than threading it up through SCSI and
-> > block.
-> 
-> This doesn't have anything to do with sysfs.  It's called from block
-> partition scan code when it detects a partition extends beyond the end
-> of the device.  No user intervention at all and the mechanism has been
-> there for quite some years and possibly predates sysfs.  Am I being
-> really slow or are you looking at something else?
+On Thu, 13 May 2010, KAMEZAWA Hiroyuki wrote:
 
-OK, so maybe I'm misunderstanding what you're trying to do.  I thought
-this set_capacity thing was trying to unlock the HPA and then cause
-block to see a new capacity ... the latter is what calling BLKRRPART
-from the sysfs write would do.
+> > Would it not be possible to do something similar for the temporary stack?
+> >
+>
+> Problem here is unmap->remap. ->migratepage() function is used as
+>
+> 	unmap
+> 	   -> migratepage()
+> 	      -> failed
+> 		-> remap
+>
+> Then, migratepage() itself is no help. We need some check-callback before unmap
+> or lock to wait for an event we can make remapping progress.
 
-If it's just to unlock the HPA, then forget the RRPART piece.
-
-So I think the bit I missed was you're trying to do this programatically
-from boot time partition read to detect if the user previously disabled
-the HPA and partitioned the device?  In which case you still have user
-context, you can call BLKRRPART here too.
-
-James
+We could check earlier if the migrate function points to
+fail_migrate_page()? Where we check for PageKsm() in unmap_and_move f.e.?
 
 
