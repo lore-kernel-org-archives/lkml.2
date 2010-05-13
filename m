@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759141Ab0EMUJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:09:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33198 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757028Ab0EMUJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:09:43 -0400
-Message-ID: <4BEC5C6A.7040205@zytor.com>
-Date: Thu, 13 May 2010 13:09:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S932832Ab0EMUMt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 16:12:49 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:10928 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab0EMUMq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 16:12:46 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=e5Q12pwdiRUfm5wEytVL3z3G3TjON05QQRtNTLFm5UiAJq9fbS/zo4nVs8CiOMyUN
+	Pd61mTcYyW8ACKzGqXDKw==
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Mike Habeck <habeck@sgi.com>, Mike Travis <travis@sgi.com>,
-       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>, Yinghai <yinghai.lu@oracle.com>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       Myron Stowe <myron.stowe@hp.com>
-Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
- assigned
-References: <4BEAF008.9030805@sgi.com> <201005131256.17997.bjorn.helgaas@hp.com> <4BEC5530.1000008@sgi.com> <201005131402.30759.bjorn.helgaas@hp.com>
-In-Reply-To: <201005131402.30759.bjorn.helgaas@hp.com>
+In-Reply-To: <AANLkTimxO3xWmr8jgyiwsLNyqTJ-4OWJ4zNROC9SE7XH@mail.gmail.com>
+References: <1273669541.3086.24.camel@localhost>
+	 <j2n6599ad831005121201za5fd85bpfc4fa2304a81acaf@mail.gmail.com>
+	 <AANLkTilLXWEYHJZCoNk1Tb4P8qgjK-zoVZSg1pDhR-3I@mail.gmail.com>
+	 <h2z6599ad831005121220h7956eb62yeea13626093b4a6e@mail.gmail.com>
+	 <AANLkTikyXpXKhyy2oZxAF5ums2go2qie0ShOGt2dtHBH@mail.gmail.com>
+	 <m2x6599ad831005121236ufa1bff7fz78423b1fb6b513e7@mail.gmail.com>
+	 <AANLkTimxO3xWmr8jgyiwsLNyqTJ-4OWJ4zNROC9SE7XH@mail.gmail.com>
+Date: Thu, 13 May 2010 13:12:42 -0700
+Message-ID: <o2j6599ad831005131312jfef915b5g9cc7c96761742977@mail.gmail.com>
+Subject: Re: [PATCH/RFC] Have sane default values for cpusets
+From: Paul Menage <menage@google.com>
+To: Dhaval Giani <dhaval.giani@gmail.com>
+Cc: balbir@linux.vnet.ibm.com, peterz@infradead.org, lennart@poettering.net,
+       jsafrane@redhat.com, tglx@linutronix.de, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2010 01:02 PM, Bjorn Helgaas wrote:
-> 
-> Yep, that's definitely a problem, and I don't have a good solution.
-> 
-> HP (and probably SGI) had a nice hardware solution for ia64 --
-> address translation across the host bridge, so each bridge could
-> have its own 64K I/O space.  But I don't see that coming in the
-> x86 PC arena.
-> 
+On Wed, May 12, 2010 at 12:59 PM, Dhaval Giani <dhaval.giani@gmail.com> wrote:
+> On Wed, May 12, 2010 at 9:36 PM, Paul Menage <menage@google.com> wrote:
+>> On Wed, May 12, 2010 at 12:29 PM, Dhaval Giani <dhaval.giani@gmail.com> wrote:
+>>>> I think the idea is reasonable - the only way that I could see it
+>>>> breaking someone would be code that currently does something like:
+>>>>
+>>>> mkdir A
+>>>> mkdir B
+>>>> echo 1 > A/mem_exclusive
+>>>> echo 1 > B/mem_exclusive
+>>>> echo $mems_for_a > A/mems
+>>>> echo $mems_for_b > B/mems
+>>>>
+>>>> The attempts to set the mem_exclusive flags would fail, since A and B
+>>>> would both have all of the parent's mems.
+>>>>
+>>>
+>>> But would this not fail otherwise?
+>>>
+>>
+>> Assuming that mems_for_a and mems_for_b were disjoint, it would be
+>> fine currently.
+>>
+>
+> Ah my bad. I misread mems_for_a as taking the value from the parent.
+> You are right, that was a case I missed.
+>
+> Hmm, so how do we fix this? Any solutions? Not fixing the kernel
+> pushes the problem to the userspace, making it hard for tons of more
+> applications to use cgroups without jumping through a lot of hoops.
+>
 
-I would agree, that is unlikely (not that I have any information on this
-subject, mind you.)  Much more likely would be a bridge extension
-capability for finer-grained I/O space routing.
+Well, it's not clear to me whether the case I outlined is actually one
+that would bite people - it's likely a rare case.
 
-	-hpa
+Balbir's point that some apps might get upset by finding non-empty
+mems/cpus in a newly-created cgroup is more reasonable.
+
+How about a per-cgroup cpuset.inherit_defaults file that defaults to
+false and is inherited from the parent. If the parent's file is set to
+true, then the mems/cpus are also inherited?
+
+Then the sysadmin who's giving out user-controllable cpuset-based
+cgroups can just set it to true and the users don't need to worry
+about setting up the defaults.
+
+Paul
