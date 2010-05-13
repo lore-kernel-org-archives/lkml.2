@@ -1,146 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab0EMCyR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 22:54:17 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59356 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755823Ab0EMCyQ (ORCPT
+	id S1757051Ab0EMCyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 22:54:40 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:57018 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755537Ab0EMCyi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 22:54:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] vmscan: page_check_references() check low order lumpy reclaim properly
-Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
-       Andreas Mohr <andi@lisas.de>, Jens Axboe <axboe@kernel.dk>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Memory Management List <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Rik van Riel <riel@redhat.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-In-Reply-To: <20100416141841.300d2361.akpm@linux-foundation.org>
-References: <20100416115437.27AD.A69D9226@jp.fujitsu.com> <20100416141841.300d2361.akpm@linux-foundation.org>
-Message-Id: <20100513115316.2155.A69D9226@jp.fujitsu.com>
+	Wed, 12 May 2010 22:54:38 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=B1HZpTweP3O23pUEjU8MHUY8K/TgvabUroEiOEXr75zROu7MUI/MTbKiUgTnXoCAq
+	zLxp/q36rMd0bVthKSQDA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 13 May 2010 11:54:12 +0900 (JST)
+In-Reply-To: <29724.1273668156@redhat.com>
+References: <1273634462-2672-1-git-send-email-walken@google.com>
+	 <1273634462-2672-9-git-send-email-walken@google.com>
+	 <29724.1273668156@redhat.com>
+Date: Wed, 12 May 2010 19:54:33 -0700
+Message-ID: <i2q8d20b11a1005121954l4c8e59al5487c2e34b0fcad3@mail.gmail.com>
+Subject: Re: [PATCH 08/12] rwsem: smaller wrappers around rwsem_down_failed_common
+From: Michel Lespinasse <walken@google.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > @@ -77,6 +77,8 @@ struct scan_control {
-> >  
-> >  	int order;
-> >  
-> > +	int lumpy_reclaim;
-> > +
-> 
-> Needs a comment explaining its role, please.  Something like "direct
-> this reclaim run to perform lumpy reclaim"?
-> 
-> A clearer name might be "lumpy_relcaim_mode"?
-> 
-> Making it a `bool' would clarify things too.
+On Wed, May 12, 2010 at 5:42 AM, David Howells <dhowells@redhat.com> wrote:
+> Michel Lespinasse <walken@google.com> wrote:
+>
+>> Following change also enjoys having flags available in a register rather
+>> than having to fish it out in the struct rwsem_waiter...
+>
+> So what?  It doesn't use flags in rwsem_down_failed_common().
 
-Sorry, I've missed your this review comment.
-How about this?
+I meant patch 10 wants to use the flags in order to know whether to
+queue at the head or tail of the waiter list.
 
+Apologies for the compile error, patches 8 and 10 used to be a single
+change and were split off relatively late. :/
 
----
- mm/vmscan.c |   39 ++++++++++++++++++++++++---------------
- 1 files changed, 24 insertions(+), 15 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 13d9546..c3bcdd4 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -77,7 +77,11 @@ struct scan_control {
- 
- 	int order;
- 
--	int lumpy_reclaim;
-+	/*
-+	 * Intend to reclaim enough contenious memory rather than to reclaim
-+	 * enough amount memory. I.e, it's the mode for high order allocation.
-+	 */
-+	bool lumpy_reclaim_mode;
- 
- 	/* Which cgroup do we reclaim from */
- 	struct mem_cgroup *mem_cgroup;
-@@ -577,7 +581,7 @@ static enum page_references page_check_references(struct page *page,
- 	referenced_page = TestClearPageReferenced(page);
- 
- 	/* Lumpy reclaim - ignore references */
--	if (sc->lumpy_reclaim)
-+	if (sc->lumpy_reclaim_mode)
- 		return PAGEREF_RECLAIM;
- 
- 	/*
-@@ -1153,7 +1157,7 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
- 		unsigned long nr_freed;
- 		unsigned long nr_active;
- 		unsigned int count[NR_LRU_LISTS] = { 0, };
--		int mode = sc->lumpy_reclaim ? ISOLATE_BOTH : ISOLATE_INACTIVE;
-+		int mode = sc->lumpy_reclaim_mode ? ISOLATE_BOTH : ISOLATE_INACTIVE;
- 		unsigned long nr_anon;
- 		unsigned long nr_file;
- 
-@@ -1206,7 +1210,7 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
- 		 * but that should be acceptable to the caller
- 		 */
- 		if (nr_freed < nr_taken && !current_is_kswapd() &&
--		    sc->lumpy_reclaim) {
-+		    sc->lumpy_reclaim_mode) {
- 			congestion_wait(BLK_RW_ASYNC, HZ/10);
- 
- 			/*
-@@ -1609,6 +1613,21 @@ static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
- 	return nr;
- }
- 
-+static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc)
-+{
-+	/*
-+	 * If we need a large contiguous chunk of memory, or have
-+	 * trouble getting a small set of contiguous pages, we
-+	 * will reclaim both active and inactive pages.
-+	 */
-+	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-+		sc->lumpy_reclaim_mode = 1;
-+	else if (sc->order && priority < DEF_PRIORITY - 2)
-+		sc->lumpy_reclaim_mode = 1;
-+	else
-+		sc->lumpy_reclaim_mode = 0;
-+}
-+
- /*
-  * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
-  */
-@@ -1645,17 +1664,7 @@ static void shrink_zone(int priority, struct zone *zone,
- 					  &reclaim_stat->nr_saved_scan[l]);
- 	}
- 
--	/*
--	 * If we need a large contiguous chunk of memory, or have
--	 * trouble getting a small set of contiguous pages, we
--	 * will reclaim both active and inactive pages.
--	 */
--	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
--		sc->lumpy_reclaim = 1;
--	else if (sc->order && priority < DEF_PRIORITY - 2)
--		sc->lumpy_reclaim = 1;
--	else
--		sc->lumpy_reclaim = 0;
-+	set_lumpy_reclaim_mode(priority, sc);
- 
- 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
- 					nr[LRU_INACTIVE_FILE]) {
 -- 
-1.6.5.2
-
-
-
-
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
