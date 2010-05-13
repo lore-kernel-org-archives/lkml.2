@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759363Ab0EMQWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 12:22:15 -0400
-Received: from mail.perches.com ([173.55.12.10]:2218 "EHLO mail.perches.com"
+	id S1759376Ab0EMQWb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 12:22:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50592 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753784Ab0EMQWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 12:22:13 -0400
-Subject: Re: [PATCH 2/2] scripts/get_maintainer.pl: add
- .get_maintainer.conf default options file
-From: Joe Perches <joe@perches.com>
-To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Florian Mickler <florian@mickler.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Stephen Hemminger <shemminger@vyatta.com>,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100513155839.GE5132@cr0.redhat.com>
-References: <cover.1273466698.git.joe@perches.com>
-	 <61106722b46cbf707d3e2641765aae2db93b6ea7.1273466698.git.joe@perches.com>
-	 <20100512063042.GB5718@cr0.nay.redhat.com>
-	 <20100512112549.650b321c@schatten.dmk.lab>
-	 <20100513155839.GE5132@cr0.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 May 2010 09:22:11 -0700
-Message-ID: <1273767731.21514.49.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1759312Ab0EMQW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 12:22:26 -0400
+Message-ID: <4BEC272E.10508@kernel.org>
+Date: Thu, 13 May 2010 18:22:06 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@suse.de>
+CC: jeff@garzik.org, linux-ide@vger.kernel.org, jens.axboe@oracle.com,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       ben@decadent.org.uk
+Subject: Re: [PATCHSET] libata: implement ->set_capacity()
+References: <1273766206-17402-1-git-send-email-tj@kernel.org> <1273766778.4353.200.camel@mulgrave.site>
+In-Reply-To: <1273766778.4353.200.camel@mulgrave.site>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 13 May 2010 16:22:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 23:58 +0800, Américo Wang wrote:
-> >hm.. the only other way to use it via git send-email would be a wrapper
-> >script? 
-> I still think we should avoid config files as possible as we can.
+Hello,
 
-I had a request for a config capability awhile ago.
+On 05/13/2010 06:06 PM, James Bottomley wrote:
+> I'm not sure this is such a good interface ... it sounds very error
+> prone for what is effectively a binary lock/unlock.
 
-It wasn't then or is now a big deal to me.
+Well, the original block interface was like that.  It has been used as
+binary switch tho.  The requested capacity is always ~0ULL and return
+value smaller than the current capacity is ignored.  I'm all for
+dropping the capacity parameter and the return value from
+->set_capacity() so that it just unlocks native capacity and directly
+sets the new capacity.  Jens?
 
-If it's picked up by Andrew at all, I prefer the
-simpler style I posted as the code is smaller and
-the arguments are just the same as the command line
-so all of aliases work in the .conf file as well.
+> Instead of just saying unlock the HPA and show me the new capacity
+> (with a rescan), you have to echo the right number of sectors to the
+> set_capacity variable.  Isn't a hpa_unlock libata specific attribute
+> better (you could even call BLKRRPART from the user context of the
+> write)?
 
-I do understand the desire for a Windows style .ini
-though.  If it's an .ini I think it should use:
+Hmmm... I lost you.  What are you talking about?
 
-[sections]
-key=value
+Thanks.
 
-Maybe that only if checkpatch or some other script
-uses a config as well.
-
-
+-- 
+tejun
