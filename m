@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758599Ab0EMKnO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 06:43:14 -0400
-Received: from snt0-omc1-s10.snt0.hotmail.com ([65.55.90.21]:10009 "EHLO
-	snt0-omc1-s10.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758539Ab0EMKnN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 06:43:13 -0400
-X-Originating-IP: [94.195.177.167]
-X-Originating-Email: [johnkyr83@hotmail.com]
-Message-ID: <SNT111-DS6290E10B4DF4E25B7054FA7FC0@phx.gbl>
-From: "limp" <johnkyr83@hotmail.com>
-To: "'john stultz'" <johnstul@us.ibm.com>
-CC: <linux-kernel@vger.kernel.org>
-References: <SNT111-DS115B558E5855C0FAEA860CA7F60@phx.gbl> <AANLkTin7itFVRzywm9g776bpE5IaFNsGVVW_PUbv0RKm@mail.gmail.com>
-In-Reply-To: <AANLkTin7itFVRzywm9g776bpE5IaFNsGVVW_PUbv0RKm@mail.gmail.com>
-Subject: RE: Weird timer handler used with LAPIC selected
-Date: Thu, 13 May 2010 11:42:41 +0100
+	id S1758616Ab0EMKnz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 06:43:55 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35646 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758300Ab0EMKnx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 06:43:53 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC] mm: generic adaptive large memory allocation APIs
+Cc: kosaki.motohiro@jp.fujitsu.com, Changli Gao <xiaosuo@gmail.com>,
+       akpm@linux-foundation.org, Eric Dumazet <eric.dumazet@gmail.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+In-Reply-To: <4BEBD180.3040404@suse.cz>
+References: <20100513182403.217C.A69D9226@jp.fujitsu.com> <4BEBD180.3040404@suse.cz>
+Message-Id: <20100513191838.217F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AcryLro21Ckp6R5pQYWrb445woxFDwAVKPzg
-Content-Language: en-gb
-X-OriginalArrivalTime: 13 May 2010 10:43:12.0822 (UTC) FILETIME=[16124D60:01CAF289]
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 13 May 2010 19:43:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John and thanks for your reply,
+> On 05/13/2010 11:40 AM, KOSAKI Motohiro wrote:
+> >>>> Anyway as this is a replacement for explicit tests, it shouldn't change
+> >>>> the behaviour in any way. Obviously when a user doesn't need virtually
+> >>>> contiguous space, he shouldn't use this interface at all.
+> >>>
+> >>> Why can't we make fdtable virtually contiguous free?
+> >>
+> >> This is possible, but the question is why to make the code more complex?
+> > 
+> > because  it's broken.
+> 
+> Well, could you explain what exactly is broken about
+> x = kmalloc(size, GFP_KERNEL);
+> if (!x)
+>   x = vmalloc(size);
+> ? Is is that kmalloc doesn't return until is has the memory to return
+> when asking for order(size) <= COSTLY_ORDER? I think this is expected.
 
->You might want to read the code in further detail. The clockevent
->device is an abstraction on top of the actual hardware, so the
->event_handler method is not mapped into the irq handler directly.
->
->So the local_apic_timer_interrupt() is called by the apic hardware
->interrupt, it then calls lapic clockevent device's event_handler()
->method, which is set to tick_handle_periodic(). Since you're in
->_PERIODIC mode, not _ONESHOT (hrtimers/nohz), this seems correct to
->me.
+Well, but fdtable doesn't really need contenious memory. no?
+To make API mean we recommend to use it. but I don't hope to spread this 
+wrong habit.  Instead, to kill it seems better.
 
-I have examined the code in more detail and now I see what you're saying.
-The thing that is confusing me a bit is why the LAPIC interrupt triggers
-the local_apic_timer_interrupt() and not the timer_interrupt() in time.c?
-ASAIU, every timer IRQ should call timer_interrupt() and for there, 
-according to the selected clocksource, the appropriate event_handler should
-be called but for LAPIC this is not the case...
 
->> I have put some printks inside "local_apic_timer_interrupt" handler which
->> should never be executed as the handler selected for the timer is
->> "hrtimer_interrupt" and not "local_apic_timer_interrupt" as verified.
->
->Nope. Again, local_apic_timer_interrupt is the actual irq hook. It
->then calls the lapic clockevent device's event_handler() method, which
->is hrtimer_interrupt.
-
-Hmm, I am quite sure that hrtimer_interrupt() event_handler is called from
-timer_interrupt() and not from local_apic_timer_interrupt()..
-
-The reason for not getting any printks from the "local_apic_timer_interrupt"
-irq hook was because I was getting about 318-360 LOC (Local timer
-interrupts)
-- the number was varied at every system boot - and then they were stopped
-and the
-LOC number was not incremented!!!! I've put a printk in lapic_timer_setup
-and it
-seems that LAPIC was going to shutdown mode after a while. 
-
-01[14:43] <limp> ...
-01[14:43] <limp> [    0.046999] LIMP: lapic_timer_setup: the mode used is 1
-01[14:43] <limp> [    0.046999] LIMP: lapic_timer_setup: the mode used is 2
-01[14:43] <limp> ...
-01[14:43] <limp> [    0.699077] LIMP: lapic_timer_setup: the mode used is 1
-
-This solved by disabling ACPI from the kernel command line. After that, I
-was
-Getting LOCs at HZ rate and irq0_timer were stalled at boot time after some
-initial ones (I guess there is no sense of getting LOCs and irq0_timer ticks
-simultaneously on a uniprocessor target).  
-
-It seems that the system were entering a deep sleep state and was never
-waking
-up. Again, this seems a bit weird as the irq0 timer interrupt was still
-triggered
-periodically at HZ rate and should have not let ACPI to put LAPIC timer into
-sleep...
-
-Another question is this: Is there a way to know when my target enters an
-ACPI
-power state? Also, is there a way to prevent my target for entering into
-power
-states, without having to disable the whole ACPI support (something like 
-acpi_sleep=false)? 
-
-Many thanks for the useful help.
-
-Kind Regards
-
-John K.
 
