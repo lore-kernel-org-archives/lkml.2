@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758054Ab0EMJEx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 05:04:53 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:57545 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757876Ab0EMJEu (ORCPT
+	id S1757828Ab0EMJFc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 05:05:32 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42100 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754287Ab0EMJF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 05:04:50 -0400
-To: Huang Ying <ying.huang@intel.com>
-Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-       Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH -v2 2/2] ACPI, APEI, EINJ injection parameters support
-From: Andi Kleen <andi@halobates.de>
-References: <1273716563-23573-1-git-send-email-ying.huang@intel.com>
-	<1273716563-23573-3-git-send-email-ying.huang@intel.com>
-Date: Thu, 13 May 2010 11:04:45 +0200
-In-Reply-To: <1273716563-23573-3-git-send-email-ying.huang@intel.com> (Huang Ying's message of "Thu\, 13 May 2010 10\:09\:23 +0800")
-Message-ID: <877hn8uq8i.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
+	Thu, 13 May 2010 05:05:29 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC] mm: generic adaptive large memory allocation APIs
+Cc: kosaki.motohiro@jp.fujitsu.com, Changli Gao <xiaosuo@gmail.com>,
+       akpm@linux-foundation.org, Eric Dumazet <eric.dumazet@gmail.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+In-Reply-To: <4BEBBBBB.3050201@suse.cz>
+References: <20100513134124.2164.A69D9226@jp.fujitsu.com> <4BEBBBBB.3050201@suse.cz>
+Message-Id: <20100513174512.2179.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 13 May 2010 18:05:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Huang Ying <ying.huang@intel.com> writes:
+Hi
 
-> Some hardware error injection needs parameters, for example, it is
-> useful to specify memory address and memory address mask for memory
-> errors.
->
-> Some BIOSes allow parameters to be specified via an unpublished
-> extension. This patch adds support to it. The parameters will be
-> ignored on machines without necessary BIOS support.
+> > Hi
+> > 
+> >> void *kvmalloc(size_t size)
+> >> {
+> >> 	void *ptr;
+> >>
+> >> 	if (size < PAGE_SIZE)
+> >> 		return kmalloc(PAGE_SIZE, GFP_KERNEL);
+> >> 	ptr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
+> > 
+> > low order GFP_KERNEL allocation never fail. then, this doesn't works
+> > as you expected.
+> 
+> Hi, I suppose you mean the kmalloc allocation -- so kmalloc should fail
+> iff alloc_pages_exact (unless somebody frees a heap of memory indeed)?
 
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
+I mean, if size of alloc_pages_exact() argument is less than 8 pages,
+alloc_pages_exact() never fail. see __alloc_pages_slowpath().
 
-Looks good. Len please add to the existing APEI queue.
+> 
+> >> 	if (ptr != NULL)
+> >> 		return ptr;
+> >>
+> >> 	return vmalloc(size);
+> > 
+> > On x86, vmalloc area is only 128MB address space. it is very rare 
+> > resource than physical ram. vmalloc fallback is not good idea.
+> 
+> These functions are a replacement for explicit
+> if (!(x = kmalloc()))
+>    x = vmalloc();
+> ...
+> if (is_vmalloc(x))
+>   vfree(x);
+> else
+>   kfree(x);
+> in the code (like fdtable does this).
+> 
+> The 128M limit on x86_32 for vmalloc is configurable so if drivers in
+> sum need more on some specific hardware, it can be increased on the
+> command line (I had to do this on one machine in the past).
 
--Andi
+Right, but 99% end user don't do this. I don't think this is effective advise.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+
+> Anyway as this is a replacement for explicit tests, it shouldn't change
+> the behaviour in any way. Obviously when a user doesn't need virtually
+> contiguous space, he shouldn't use this interface at all.
+
+Why can't we make fdtable virtually contiguous free?
+Anyway, alloc_fdmem() also don't works as author expected.
+
+
+
