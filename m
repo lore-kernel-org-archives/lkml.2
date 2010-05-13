@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab0EMT70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 15:59:26 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50689 "EHLO mgw2.diku.dk"
+	id S932706Ab0EMT7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 15:59:42 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:39755 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932624Ab0EMT7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 15:59:21 -0400
-Date: Thu, 13 May 2010 21:59:15 +0200 (CEST)
+	id S932624Ab0EMT7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 15:59:38 -0400
+Date: Thu, 13 May 2010 21:59:32 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 3/20] drivers/media: Use kzalloc
-Message-ID: <Pine.LNX.4.64.1005132158570.6282@ask.diku.dk>
+To: Kevin Hilman <davinci-linux-open-source@linux.davincidsp.com>,
+       Russell King <linux@arm.linux.org.uk>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 4/20] arch/arm/mach-davinci: Use kzalloc
+Message-ID: <Pine.LNX.4.64.1005132159170.6282@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -40,44 +42,23 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/media/dvb/frontends/ds3000.c |    5 +----
- drivers/media/video/omap/omap_vout.c |    3 +--
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ arch/arm/mach-davinci/dma.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/media/dvb/frontends/ds3000.c b/drivers/media/dvb/frontends/ds3000.c
---- a/drivers/media/dvb/frontends/ds3000.c
-+++ b/drivers/media/dvb/frontends/ds3000.c
-@@ -969,15 +969,12 @@ struct dvb_frontend *ds3000_attach(const
- 	dprintk("%s\n", __func__);
- 
- 	/* allocate memory for the internal state */
--	state = kmalloc(sizeof(struct ds3000_state), GFP_KERNEL);
-+	state = kzalloc(sizeof(struct ds3000_state), GFP_KERNEL);
- 	if (state == NULL) {
- 		printk(KERN_ERR "Unable to kmalloc\n");
- 		goto error2;
- 	}
- 
--	/* setup the state */
--	memset(state, 0, sizeof(struct ds3000_state));
--
- 	state->config = config;
- 	state->i2c = i2c;
- 	state->prevUCBS2 = 0;
-diff -u -p a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
---- a/drivers/media/video/omap/omap_vout.c
-+++ b/drivers/media/video/omap/omap_vout.c
-@@ -2371,12 +2371,11 @@ static int __init omap_vout_create_video
- 
- 	for (k = 0; k < pdev->num_resources; k++) {
- 
--		vout = kmalloc(sizeof(struct omap_vout_device), GFP_KERNEL);
-+		vout = kzalloc(sizeof(struct omap_vout_device), GFP_KERNEL);
- 		if (!vout) {
- 			dev_err(&pdev->dev, ": could not allocate memory\n");
- 			return -ENOMEM;
+diff -u -p a/arch/arm/mach-davinci/dma.c b/arch/arm/mach-davinci/dma.c
+--- a/arch/arm/mach-davinci/dma.c
++++ b/arch/arm/mach-davinci/dma.c
+@@ -1419,12 +1419,11 @@ static int __init edma_probe(struct plat
+ 			goto fail1;
  		}
--		memset(vout, 0, sizeof(struct omap_vout_device));
  
- 		vout->vid = k;
- 		vid_dev->vouts[k] = vout;
+-		edma_cc[j] = kmalloc(sizeof(struct edma), GFP_KERNEL);
++		edma_cc[j] = kzalloc(sizeof(struct edma), GFP_KERNEL);
+ 		if (!edma_cc[j]) {
+ 			status = -ENOMEM;
+ 			goto fail1;
+ 		}
+-		memset(edma_cc[j], 0, sizeof(struct edma));
+ 
+ 		edma_cc[j]->num_channels = min_t(unsigned, info[j].n_channel,
+ 							EDMA_MAX_DMACH);
