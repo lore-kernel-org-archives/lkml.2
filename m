@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab0EMOhq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 10:37:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47021 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753057Ab0EMOhm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 10:37:42 -0400
-Date: Thu, 13 May 2010 07:35:02 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-In-Reply-To: <20100513075728.GF30110@core.coreip.homeip.net>
-Message-ID: <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
-References: <20100513075728.GF30110@core.coreip.homeip.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758892Ab0EMOh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 10:37:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36159 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753057Ab0EMOhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 10:37:55 -0400
+Message-ID: <4BEC0EBE.7000404@kernel.org>
+Date: Thu, 13 May 2010 16:37:50 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Dan Carpenter <error27@gmail.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] libsas: dereferencing variable before check
+References: <20100512225629.GB5695@bicker>	 <23e0bf65-8758-45b3-b0a8-1df97db07d9a@email.android.com> <1273761114.4353.122.camel@mulgrave.site>
+In-Reply-To: <1273761114.4353.122.camel@mulgrave.site>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 13 May 2010 14:37:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
+On 05/13/2010 04:31 PM, James Bottomley wrote:
+>> Ooh.. right.
+>>
+>> Asked-by: Tejun Heo <tj@kernel.org>
 
-On Thu, 13 May 2010, Dmitry Torokhov wrote:
-> 
-> Bastien Nocera (1):
->       Input: i8042 - do not try to probe ports on Intel Apple Macs
+That was my first mail from android and of course I typed Asked
+instead of Acked.  :-)
 
-I pulled, but I skipped the last commit, because I think this one is 
-fundamentally _wrong_.
+> Well, oops, yes.  Two patches to fix one bug is a bit overboard, I
+> think, plus some code rearrangement to fix the locality of the problem
+> and ensure it doesn't happen again might be useful.  What about this.
 
-It is _not_ maintainable to create random tables of exceptions ("DMI 
-tables"), and it's actively _wrong_ to do for something like this where we 
-not only have historically worked perfectly well, and this apparently 
-tries to hide some other bug (the commit says "could potentially lock 
-up/hang/wait for timeout for long periods of time").
+Yeap, as long as the silly bug is fixed.
 
-We should fix the problems instead of hiding them for specific machines. 
-Does anybody really think that Apple machines are the only ones with no 
-legacy keyboard? Hello? Does anybody seriously think that it's ok to add 
-entries to DMI tables for random new machines coming out?
+Thank you.
 
-So I think that commit was (a) totally inappropriate to send at this point 
-in the late -rc series _anyway_ (it sure as hell isn't a refression fix), 
-and that makes me wonder about the other ones. But (b) I don't think I 
-want to ever see anything like that during a merge window either, because 
-it's quite seriously the wrong thing to do.
-
-What are the _actual_ problems on legacy-free machines? And keep in mind 
-that I ask that exactly because I actually _have_ two Apple Mac Mini's in 
-my household, and have never seen any problems with keyboard/mouse 
-handling. 
-
-So if somebody saw "could potentially lock up/hang/wait" issues, then 
-dangit, say what those issues are, AND LET'S FIX THEM! And not like this, 
-trying to hide them for some particular machines, rather than fixing the 
-actual underlying detection bug.
-
-			Linus
+-- 
+tejun
