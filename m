@@ -1,116 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab0EMG4V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 02:56:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37662 "EHLO mx2.suse.de"
+	id S1755218Ab0EMG6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 02:58:33 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45678 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753302Ab0EMG4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 02:56:19 -0400
-Date: Thu, 13 May 2010 16:56:06 +1000
-From: Neil Brown <neilb@suse.de>
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, linux-fsdevel@vger.kernel.org,
-       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V7 5/9] vfs: Add freadlink syscall
-Message-ID: <20100513165606.4bf57bd6@notabene.brown>
-In-Reply-To: <87vdas1fnv.fsf@linux.vnet.ibm.com>
-References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1273679444-14903-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<20100513114351.793caf70@notabene.brown>
-	<87vdas1fnv.fsf@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753666Ab0EMG6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 02:58:32 -0400
+Date: Thu, 13 May 2010 06:57:58 GMT
+From: tip-bot for Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       peterz@infradead.org, gorcunov@gmail.com, fweisbec@gmail.com,
+       tglx@linutronix.de, mingo@elte.hu, dzickus@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       peterz@infradead.org, gorcunov@gmail.com, fweisbec@gmail.com,
+       tglx@linutronix.de, mingo@elte.hu, dzickus@redhat.com
+In-Reply-To: <1273713674-8434-1-git-send-regression-fweisbec@gmail.com>
+References: <1273713674-8434-1-git-send-regression-fweisbec@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/nmi] watchdog: Export touch_softlockup_watchdog
+Message-ID: <tip-0167c781907fcdc3e1f144ef5ce31d402c91eb94@git.kernel.org>
+Git-Commit-ID: 0167c781907fcdc3e1f144ef5ce31d402c91eb94
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 13 May 2010 06:57:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 May 2010 11:55:56 +0530
-"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+Commit-ID:  0167c781907fcdc3e1f144ef5ce31d402c91eb94
+Gitweb:     http://git.kernel.org/tip/0167c781907fcdc3e1f144ef5ce31d402c91eb94
+Author:     Ingo Molnar <mingo@elte.hu>
+AuthorDate: Thu, 13 May 2010 08:53:33 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 13 May 2010 08:53:33 +0200
 
-> On Thu, 13 May 2010 11:43:51 +1000, Neil Brown <neilb@suse.de> wrote:
-> > On Wed, 12 May 2010 21:20:40 +0530
-> > "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> > 
-> > > This enables to use open-by-handle and then get the link target
-> > > details of a symlink using the fd returned by handle
-> > > 
-> > 
-> > 
-> > I find it very frustrating that a new syscall seems to be needed here.
-> > We have 'readlinkat', and it should be enough.
-> > How:  the 'dfd' has to be a 'directory', and the path name as to be non-empty.
-> > 
-> > The following patch allows 'path' to be NULL and in that case 'dfd' to be a
-> > non-directory.  This allows readlinkat and faccessat (and probably others)
-> > to be used on an fd with not following path name.
-> > 
-> > What do people think of this alternative?
-> > 
-> 
-> I will add this in the next iteration and drop the freadlink syscall.
-> 
+watchdog: Export touch_softlockup_watchdog
 
-I wouldn't be quite that hasty.  It was only a proposal.  It might not be
-appropriate to change all those syscalls..
+There are modules that rely on it:
 
-An alternative that I don't think is a nice, but is a lot 'safer' is
-to just change readlinkat to accept a NULL path:
+  ERROR: "touch_softlockup_watchdog" [drivers/video/nvidia/nvidiafb.ko] undefined!
 
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+LKML-Reference: <1273713674-8434-1-git-send-regression-fweisbec@gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/watchdog.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-diff --git a/fs/stat.c b/fs/stat.c
-index c4ecd52..85d0856 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
- SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- 		char __user *, buf, int, bufsiz)
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 57b8e2c..be5e74e 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -124,6 +124,7 @@ void touch_softlockup_watchdog(void)
  {
--	struct path path;
-+	struct path path, *pp;
-+	struct file *file = NULL;
- 	int error;
- 
- 	if (bufsiz <= 0)
- 		return -EINVAL;
- 
--	error = user_path_at(dfd, pathname, 0, &path);
-+	if (filename == NULL && dfd != AT_FDCWD) {
-+		struct file *file = fget(dfd);
-+
-+		if (file)
-+			pp = &file->f_path;
-+		else
-+			error = -EBADF;
-+	} else {
-+		error = user_path_at(dfd, pathname, 0, &path);
-+		pp = &path;
-+	}
- 	if (!error) {
--		struct inode *inode = path.dentry->d_inode;
-+		struct inode *inode = pp->dentry->d_inode;
- 
- 		error = -EINVAL;
- 		if (inode->i_op->readlink) {
--			error = security_inode_readlink(path.dentry);
-+			error = security_inode_readlink(pp->dentry);
- 			if (!error) {
--				touch_atime(path.mnt, path.dentry);
--				error = inode->i_op->readlink(path.dentry,
-+				touch_atime(pp->mnt, pp->dentry);
-+				error = inode->i_op->readlink(pp->dentry,
- 							      buf, bufsiz);
- 			}
- 		}
--		path_put(&path);
-+		if (file)
-+			fput(file);
-+		else
-+			path_put(&path);
- 	}
- 	return error;
+ 	__get_cpu_var(watchdog_touch_ts) = 0;
  }
++EXPORT_SYMBOL(touch_softlockup_watchdog);
+ 
+ void touch_all_softlockup_watchdogs(void)
+ {
