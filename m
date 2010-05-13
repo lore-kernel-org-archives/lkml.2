@@ -1,119 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758671Ab0EMU7a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:59:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59945 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600Ab0EMU72 (ORCPT
+	id S1759375Ab0EMVBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:01:43 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:62524 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667Ab0EMVBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:59:28 -0400
+	Thu, 13 May 2010 17:01:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DMr7QKupbE66qbc4FI9zEVPlfobLTzv6QbAw9X1u1pRusAy2+AFSLTWRNwBv4uTVvs
-         MPPe+Ep9Z/xolGyqNzbMyycI4Pw62UOOI6wx15PMAuRa/YQ03JYw2mHaRVFuY1/F55Qc
-         gWKKUbCTHXX1bKRNQF0Tnp7VaQi6vPfUbikd8=
-Date: Thu, 13 May 2010 22:59:26 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
-       paulus@samba.org, acme@redhat.com
-Subject: Re: [PATCH RFC] perf: fix find_swevent_head() RCU lockdep splat
-Message-ID: <20100513205925.GE5377@nowhere>
-References: <20100513182556.GA14326@linux.vnet.ibm.com> <20100513190325.GB5377@nowhere> <20100513194605.GG2879@linux.vnet.ibm.com> <20100513204855.GD5377@nowhere>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=QBlODbNS7EMQl9nPqO4hQUl4rLFzM+1Q6s+EJPcjTNjh15gBietcUeJ5XVKaMaZKMl
+         7Nds6umCFOqmwYsA/motFD26tmuO525L6vDWAOXI0xk8XE25DS5kLB5/LHPJ2yUoDx4p
+         GrFv+pWxOiBpTaU41z82w5rR5J6+loAKyCfPw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513204855.GD5377@nowhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTimKHWM46Qci5cF-4VonUkASL_sGFrSwqbzHY2Qe@mail.gmail.com>
+References: <0100511104818.8382a7de.akpm@linux-foundation.org>
+	 <1273602134-6359-1-git-send-email-chris@chris-wilson.co.uk>
+	 <AANLkTimglAyS94q0Y3DEx9RROPxus-7l3OfF2_b-zAR3@mail.gmail.com>
+	 <AANLkTinmXAAq1HQTb_k3A-bl4uCz1ERhOIHNoCjqzEB4@mail.gmail.com>
+	 <89khjo$fd2th6@orsmga002.jf.intel.com>
+	 <AANLkTilbqi5crUD8KXmZ5SIv92KioEAN7Ra6nk2ALU6F@mail.gmail.com>
+	 <89k83a$87e1b2@azsmga001.ch.intel.com>
+	 <AANLkTimKHWM46Qci5cF-4VonUkASL_sGFrSwqbzHY2Qe@mail.gmail.com>
+Date: Fri, 14 May 2010 02:31:40 +0530
+Message-ID: <AANLkTinaN5RrunHoi6NkO3fcQDkmTB0OqyeI-CnU_DtS@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915: Record error batch buffers using iomem
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, dri-devel@lists.freedesktop.org,
+       Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 10:48:58PM +0200, Frederic Weisbecker wrote:
-> Paul, does that look good to you?
-> I've only compile tested. But if it's fine for you, I'll test
-> it for real and provide you a sane patch.
-> 
-> This version won't use more parameters than necessary in the
-> off case.
-> 
-> 
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index a4fa381..d765e48 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -4066,19 +4066,36 @@ static inline u64 swevent_hash(u64 type, u32 event_id)
->  	return hash_64(val, SWEVENT_HLIST_BITS);
->  }
->  
-> -static struct hlist_head *
-> -find_swevent_head(struct perf_cpu_context *ctx, u64 type, u32 event_id)
-> +static inline struct hlist_head *
-> +__find_swevent_head(struct swevent_hlist *hlist, u64 type, u32 event_id)
->  {
->  	u64 hash;
-> -	struct swevent_hlist *hlist;
+Hello Chris,
 
+On Wed, May 12, 2010 at 8:01 PM, Jaswinder Singh Rajput
+<jaswinderlinux@gmail.com> wrote:
+> Hello Chris,
+>
+> On Wed, May 12, 2010 at 7:20 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> On Wed, 12 May 2010 18:45:55 +0530, Jaswinder Singh Rajput <jaswinderlinux@gmail.com> wrote:
+>>> Hello Chris,
+>>>
+>>> With this patch after XWindows freezes, I get :
+>> [snip]
+>>> freeze dmesg : http://userweb.kernel.org/~jaswinder/acer_netbook/dmesg_2634_chris_hang.txt
+>>>
+>>> freeze Xorg.log : http://userweb.kernel.org/~jaswinder/acer_netbook/Xorg_log.txt
+>>
+>> Jaswinder can you also upload the /sys/kernel/debug/dri/0/i915_error_state
+>> following a freeze as well, please. If your /sys/kernel/debug is empty,
+>> you will need to "mount -tdebugfs debug /sys/kernel/debug".
+>>
+>
+> i915_error_state :
+> http://userweb.kernel.org/~jaswinder/acer_netbook/i915_error_state.txt
+>
 
+If you need more information, please let me know.
 
-+	if (!hlist)
-+		return NULL;
+I am waiting for your feedback.
 
-
-
->  
->  	hash = swevent_hash(type, event_id);
->  
-> +	return &hlist->heads[hash];
-> +}
-> +
-> +static inline struct hlist_head *
-> +find_swevent_head_rcu(struct perf_cpu_context *ctx, u64 type, u32 event_id)
-> +{
-> +	struct swevent_hlist *hlist;
-> +
->  	hlist = rcu_dereference(ctx->swevent_hlist);
-> -	if (!hlist)
-> -		return NULL;
->  
-> -	return &hlist->heads[hash];
-> +	return __find_swevent_head(hlist, type, event_id);
-> +}
-> +
-> +static inline struct hlist_head *
-> +find_swevent_head(struct perf_cpu_context *ctx, u64 type,
-> +		  u32 event_id, struct perf_event *event)
-> +{
-> +	struct swevent_hlist *hlist;
-> +
-> +	hlist = rcu_dereference_check(ctx->swevent_hlist,
-> +				      lockdep_is_held(&event->ctx->lock));
-> +
-> +	return __find_swevent_head(hlist, type, event_id);
->  }
->  
->  static void do_perf_sw_event(enum perf_type_id type, u32 event_id,
-> @@ -4095,7 +4112,7 @@ static void do_perf_sw_event(enum perf_type_id type, u32 event_id,
->  
->  	rcu_read_lock();
->  
-> -	head = find_swevent_head(cpuctx, type, event_id);
-> +	head = find_swevent_head_rcu(cpuctx, type, event_id);
->  
->  	if (!head)
->  		goto end;
-> @@ -4178,7 +4195,8 @@ static int perf_swevent_enable(struct perf_event *event)
->  		perf_swevent_set_period(event);
->  	}
->  
-> -	head = find_swevent_head(cpuctx, event->attr.type, event->attr.config);
-> +	head = find_swevent_head(cpuctx, event->attr.type,
-> +				 event->attr.config, event);
->  	if (WARN_ON_ONCE(!head))
->  		return -EINVAL;
->  
-> 
-> 
-
+Thanks,
+--
+Jaswinder Singh.
