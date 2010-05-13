@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758850Ab0EMVfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:35:44 -0400
-Received: from zcars04e.nortel.com ([47.129.242.56]:48598 "EHLO
-	zcars04e.nortel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758567Ab0EMVfj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758743Ab0EMVfj (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 13 May 2010 17:35:39 -0400
-Message-ID: <4BEC704C.9000709@nortel.com>
-Date: Thu, 13 May 2010 15:34:04 -0600
-From: "Chris Friesen" <cfriesen@nortel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: /proc/<pid>/maps question....why aren't adjacent memory chunks merged?
-Content-Type: text/plain; charset=ISO-8859-1
+Received: from gate.crashing.org ([63.228.1.57]:59381 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757445Ab0EMVfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:35:36 -0400
+Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
+ 88f5182)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       Saeed Bishara <saeed@marvell.com>, Nicolas Pitre <nico@marvell.com>,
+       linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       "James E.J. Bottomley" <jejb@parisc-linux.org>
+In-Reply-To: <20100513151245.GA21251@quack.suse.cz>
+References: <1273569821.21352.19.camel@pasglop>
+	 <1273575478.21352.29.camel@pasglop>
+	 <20100512150057.GA29867@atrey.karlin.mff.cuni.cz>
+	 <1273709714.21352.138.camel@pasglop> <20100513151245.GA21251@quack.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 07:33:45 +1000
+Message-ID: <1273786425.21352.191.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 May 2010 21:35:35.0991 (UTC) FILETIME=[3937E470:01CAF2E4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2010-05-13 at 17:12 +0200, Jan Kara wrote:
 
-I've got a system running a somewhat-modified 2.6.27 on 64-bit x86.
+> If you look at the array more in detail, you'll notice that 'offs' part of
+> structure is sometimes identical. That should never happen because 'offs'
+> contains offset of the corresponding directory entry in a block. So when
+> offsets are identical in this array, subsequent move will copy some entries
+> several times and leave entries that should be moved in the old block,
+> resulting in a corruption we see.
+>   The question is, how could offsets be the same? dx_make_map seems to get
+> it right and dx_sort_map as well. Maybe I'd peek into disassembly of
+> dx_sort_map to see whether swap() macro does what it should... If that
+> looks OK, you could try adding some debug checks into dx_sort_map and try
+> to catch the moment when duplicate offsets are created...
 
-While investigating a userspace memory leak issue I noticed that
-/proc/<pid>/maps showed a bunch of adjacent anonymous memory chunks with
-identical permissions:
+Thanks. I'll have a look. It could be a miscompile indeed. My cross-gcc
+is a 4.4.0, maybe that's the root of the problem.
 
-7fd048000000-7fd04c000000 rw-p 00000000 00:00 0
-7fd04c000000-7fd050000000 rw-p 00000000 00:00 0
-7fd050000000-7fd054000000 rw-p 00000000 00:00 0
-7fd054000000-7fd058000000 rw-p 00000000 00:00 0
-7fd058000000-7fd05c000000 rw-p 00000000 00:00 0
-7fd05c000000-7fd060000000 rw-p 00000000 00:00 0
-7fd060000000-7fd064000000 rw-p 00000000 00:00 0
-7fd064000000-7fd068000000 rw-p 00000000 00:00 0
-7fd068000000-7fd06c000000 rw-p 00000000 00:00 0
-7fd06c000000-7fd070000000 rw-p 00000000 00:00 0
-7fd070000000-7fd074000000 rw-p 00000000 00:00 0
-7fd074000000-7fd078000000 rw-p 00000000 00:00 0
-7fd078000000-7fd07c000000 rw-p 00000000 00:00 0
-7fd07c000000-7fd07fffe000 rw-p 00000000 00:00 0
+Cheers,
+Ben.
 
-I was under the impression that the kernel would merge areas together in
-this circumstance.  Does anyone have an idea about what's going on here?
 
-Thanks,
-
-Chris
