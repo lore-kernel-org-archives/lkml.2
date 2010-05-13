@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758560Ab0EMKNx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 06:13:53 -0400
-Received: from bee.hiwaay.net ([216.180.54.11]:11057 "EHLO bee.hiwaay.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758509Ab0EMKNv convert rfc822-to-8bit (ORCPT
+	id S1758569Ab0EMKO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 06:14:28 -0400
+Received: from mga12.intel.com ([143.182.124.36]:17473 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758509Ab0EMKO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 06:13:51 -0400
-Message-ID: <20100513041411.169582o3zi2wsusj@webmail.hiwaay.net>
-Date: Thu, 13 May 2010 04:14:11 -0500
-From: "Beuker Hendrik" <chandler@hiwaay.net>
-Reply-to: beukerhendriks@live.com
-To: undisclosed-recipients:;
-Subject: HOPE I CAN TRUST YOU ON THIS!!!
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
-X-Originating-IP: 222.124.178.98
+	Thu, 13 May 2010 06:14:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,221,1272870000"; 
+   d="scan'208";a="276643284"
+Date: Thu, 13 May 2010 10:33:40 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Juergen Beisert <jbe@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Rusty Russell <rusty@rustcorp.com.au>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Driver for a SmartCard interface on a SoC
+Message-ID: <20100513103340.10e4e0e3@linux.intel.com>
+In-Reply-To: <201005120938.34634.jbe@pengutronix.de>
+References: <201005071518.50406.jbe@pengutronix.de>
+	<201005071625.27872.jbe@pengutronix.de>
+	<20100511223337.05945e68@linux.intel.com>
+	<201005120938.34634.jbe@pengutronix.de>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UBS International Holdings BV
-Herengracht 600
-NL-1017 CJ Amsterdam, Netherlands.
-www.ubs.com/investmentbank
+> requirements to make it work. But these additional requirements are
+> shared by all SmartCards. Where would be the best place/mail list to
+> discuss this API?
 
-Greetings,
+Probably linux-kernel for the kernel view. I don't really know much
+about smartcard user space to know if there is another list that might
+also be useful.
 
-I am an investment consultant working with UBS International Holdings BV
-in the Netherlands. I will be happy to work this transaction out with you
-if you have a corporate or personal Bank Account and if you are reliable
-and honest.
+If you don't get any feedback on an API you suggest I'd then just go
+and implement and submit it.
 
-I need strong Assurance that you will never let me down, as I can arrange
-and provide you details/documentatal proof so that funds($8.5million) will
-be transferred into your account as the next of kin to the late
-depositor(Abbas Farhan al-Jabouri, who was an Election candidate and also
-a business man). Abbas Farhan al-Jabouri and his two relatives were
-executed in Mohammed al Malih, near Mandali onthe 29th of January 2009.
-During one of our periodic auditing I discovered a dormant accounts with
-the said balance (Eight million, five Hundred thousand Dollars only), this
-account have not been operated for some years now.
+> Do you mean to emulate an external serial device in the kernel driver?
+> To make it understand the same data sequences these kind of external
+> device understand? Would be possible, but its more complex than to
+> run the communication via read()/write() and a few additional IOCTLs
+> for the special SmartCard handling.
 
-At this moment I will not be able to issue more details about this
-business, until your response is received.
-
-If you are not familiar with my Bank profile, please take a moment of your
-very busy schedules to read about my Bank
-website(www.ubs.com/investmentbank).
-
-I look forward to hearing from you as soon as possible via my private
-email; beukerhendriker@windowslive.com
-
-Thank you for your time and attention.
-Warmest Regards,
-Mr.Beuker Hendrik
-Investment Consultant.
-UBS
+Agreed - and I don't think the extra complexity is worth it.
