@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758685Ab0EMLI3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 07:08:29 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63721 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758592Ab0EMLI1 (ORCPT
+	id S1758692Ab0EMLLk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 07:11:40 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59040 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755679Ab0EMLLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 07:08:27 -0400
+	Thu, 13 May 2010 07:11:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=XYgWX9jmGKWmDAHA3mVC6UEoAU58JcNvh4ZynaRucu2AD5EbwGe3+y4i7zeQWaS4IS
-         Cu+JjbqOOCaMt0Me/SZHb5UOTETSmuBhlO3GNLOBaT6SEVX5UK5uLmg5+yLOfJFy6R8P
-         AbIfqi+QRWXGxrLu+LRCNt+Hnq7HMqgIRKkiE=
+        b=xuPVwI0UQg3W71Wl56ZkT3jQM50Q1d36prFHJoH9cWwCeuhywo3Ebt/e1ZkBEnWi2g
+         0+cLJLVS5Pmx3ehx6yDd7kE8O56+WxPw3ecSB1hduw5SApYRJHRGgNIYazWyxRG4pMbb
+         b6fq+UUNAhroZjZ/nBCRn6OQwkvpCsayVvS/c=
 From: Changli Gao <xiaosuo@gmail.com>
 To: akpm@linux-foundation.org
-Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
        Changli Gao <xiaosuo@gmail.com>
-Subject: [PATCH 6/9] cxgb3i: use kvzalloc and kvfree
-Date: Thu, 13 May 2010 19:08:07 +0800
-Message-Id: <1273748887-10364-1-git-send-email-xiaosuo@gmail.com>
+Subject: [PATCH 7/9] cxgb4: use kvzalloc and kvfree
+Date: Thu, 13 May 2010 19:11:25 +0800
+Message-Id: <1273749085-10415-1-git-send-email-xiaosuo@gmail.com>
 X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,72 +31,48 @@ use kvzalloc and kvfree
 
 Signed-off-by: Changli Gao <xiaosuo@gmail.com>
 ----
- drivers/scsi/cxgb3i/cxgb3i_ddp.c     |   12 +++++-------
- drivers/scsi/cxgb3i/cxgb3i_ddp.h     |   26 --------------------------
- drivers/scsi/cxgb3i/cxgb3i_offload.c |    6 +++---
- 3 files changed, 8 insertions(+), 36 deletions(-)
-diff --git a/drivers/scsi/cxgb3i/cxgb3i_ddp.c b/drivers/scsi/cxgb3i/cxgb3i_ddp.c
-index b58d913..2795440 100644
---- a/drivers/scsi/cxgb3i/cxgb3i_ddp.c
-+++ b/drivers/scsi/cxgb3i/cxgb3i_ddp.c
-@@ -648,7 +648,7 @@ static void ddp_cleanup(struct kref *kref)
- 		} else
- 			i++;
- 	}
--	cxgb3i_free_big_mem(ddp);
-+	kvfree(ddp);
- }
+ drivers/net/cxgb4/cxgb4.h      |    3 ---
+ drivers/net/cxgb4/cxgb4_main.c |   37 +++++--------------------------------
+ drivers/net/cxgb4/l2t.c        |    2 +-
+ 3 files changed, 6 insertions(+), 36 deletions(-)
+diff --git a/drivers/net/cxgb4/cxgb4.h b/drivers/net/cxgb4/cxgb4.h
+index 8856a75..2a38fad 100644
+--- a/drivers/net/cxgb4/cxgb4.h
++++ b/drivers/net/cxgb4/cxgb4.h
+@@ -584,9 +584,6 @@ static inline struct adapter *netdev2adap(const struct net_device *dev)
+ void t4_os_portmod_changed(const struct adapter *adap, int port_id);
+ void t4_os_link_changed(struct adapter *adap, int port_id, int link_stat);
  
- void cxgb3i_ddp_cleanup(struct t3cdev *tdev)
-@@ -692,11 +692,9 @@ static void ddp_init(struct t3cdev *tdev)
- 		bits = PPOD_IDX_MAX_SIZE;
- 	ppmax = (1 << (bits - 1)) - 1;
- 
--	ddp = cxgb3i_alloc_big_mem(sizeof(struct cxgb3i_ddp_info) +
--				   ppmax *
--					(sizeof(struct cxgb3i_gather_list *) +
--					sizeof(struct sk_buff *)),
--				   GFP_KERNEL);
-+	ddp = kvzalloc(sizeof(struct cxgb3i_ddp_info) + ppmax *
-+		       (sizeof(struct cxgb3i_gather_list *) +
-+			sizeof(struct sk_buff *)));
- 	if (!ddp) {
- 		ddp_log_warn("%s unable to alloc ddp 0x%d, ddp disabled.\n",
- 			     tdev->name, ppmax);
-@@ -743,7 +741,7 @@ static void ddp_init(struct t3cdev *tdev)
- 	return;
- 
- free_ddp_map:
--	cxgb3i_free_big_mem(ddp);
-+	kvfree(ddp);
- }
- 
- /**
-diff --git a/drivers/scsi/cxgb3i/cxgb3i_ddp.h b/drivers/scsi/cxgb3i/cxgb3i_ddp.h
-index 6761b32..1be8c20 100644
---- a/drivers/scsi/cxgb3i/cxgb3i_ddp.h
-+++ b/drivers/scsi/cxgb3i/cxgb3i_ddp.h
-@@ -13,9 +13,6 @@
- #ifndef __CXGB3I_ULP2_DDP_H__
- #define __CXGB3I_ULP2_DDP_H__
- 
--#include <linux/slab.h>
--#include <linux/vmalloc.h>
+-void *t4_alloc_mem(size_t size);
+-void t4_free_mem(void *addr);
 -
- /**
-  * struct cxgb3i_tag_format - cxgb3i ulp tag format for an iscsi entity
-  *
-@@ -143,29 +140,6 @@ struct pagepod {
- #define V_PPOD_PGSZ(x) ((x) << S_PPOD_PGSZ)
+ void t4_free_sge_resources(struct adapter *adap);
+ irq_handler_t t4_intr_handler(struct adapter *adap);
+ netdev_tx_t t4_eth_xmit(struct sk_buff *skb, struct net_device *dev);
+diff --git a/drivers/net/cxgb4/cxgb4_main.c b/drivers/net/cxgb4/cxgb4_main.c
+index 1bad500..776f72f 100644
+--- a/drivers/net/cxgb4/cxgb4_main.c
++++ b/drivers/net/cxgb4/cxgb4_main.c
+@@ -55,7 +55,6 @@
+ #include <linux/sched.h>
+ #include <linux/seq_file.h>
+ #include <linux/sockios.h>
+-#include <linux/vmalloc.h>
+ #include <linux/workqueue.h>
+ #include <net/neighbour.h>
+ #include <net/netevent.h>
+@@ -742,32 +741,6 @@ out:	release_firmware(fw);
+ 	return ret;
+ }
  
- /*
-- * large memory chunk allocation/release
-- * use vmalloc() if kmalloc() fails
+-/*
+- * Allocate a chunk of memory using kmalloc or, if that fails, vmalloc.
+- * The allocated memory is cleared.
 - */
--static inline void *cxgb3i_alloc_big_mem(unsigned int size,
--					 gfp_t gfp)
+-void *t4_alloc_mem(size_t size)
 -{
--	void *p = kmalloc(size, gfp);
+-	void *p = kmalloc(size, GFP_KERNEL);
+-
 -	if (!p)
 -		p = vmalloc(size);
 -	if (p)
@@ -105,7 +80,10 @@ index 6761b32..1be8c20 100644
 -	return p;
 -}
 -
--static inline void cxgb3i_free_big_mem(void *addr)
+-/*
+- * Free memory allocated through alloc_mem().
+- */
+-void t4_free_mem(void *addr)
 -{
 -	if (is_vmalloc_addr(addr))
 -		vfree(addr);
@@ -113,38 +91,50 @@ index 6761b32..1be8c20 100644
 -		kfree(addr);
 -}
 -
--/*
-  * cxgb3i ddp tag are 32 bits, it consists of reserved bits used by h/w and
-  * non-reserved bits that can be used by the iscsi s/w.
-  * The reserved bits are identified by the rsvd_bits and rsvd_shift fields
-diff --git a/drivers/scsi/cxgb3i/cxgb3i_offload.c b/drivers/scsi/cxgb3i/cxgb3i_offload.c
-index a175be9..720d199 100644
---- a/drivers/scsi/cxgb3i/cxgb3i_offload.c
-+++ b/drivers/scsi/cxgb3i/cxgb3i_offload.c
-@@ -1841,7 +1841,7 @@ static void sdev_data_cleanup(struct cxgb3i_sdev_data *cdata)
- 	for (i = 0; i < ports->nports; i++)
- 		NDEV2CDATA(ports->lldevs[i]) = NULL;
+ static inline int is_offload(const struct adapter *adap)
+ {
+ 	return adap->params.offload;
+@@ -2034,7 +2007,7 @@ static int tid_init(struct tid_info *t)
+ 	size = t->ntids * sizeof(*t->tid_tab) + natids * sizeof(*t->atid_tab) +
+ 	       t->nstids * sizeof(*t->stid_tab) +
+ 	       BITS_TO_LONGS(t->nstids) * sizeof(long);
+-	t->tid_tab = t4_alloc_mem(size);
++	t->tid_tab = kvzalloc(size);
+ 	if (!t->tid_tab)
+ 		return -ENOMEM;
  
--	cxgb3i_free_big_mem(cdata);
-+	kvfree(cdata);
- }
+@@ -3308,8 +3281,8 @@ sriov:
+ 	return 0;
  
- void cxgb3i_sdev_cleanup(void)
-@@ -1885,7 +1885,7 @@ void cxgb3i_sdev_add(struct t3cdev *cdev, struct cxgb3_client *client)
- 	int mapsize = cxgb3_max_connect * sizeof(struct s3_conn *);
+  out_free_dev:
+-	t4_free_mem(adapter->tids.tid_tab);
+-	t4_free_mem(adapter->l2t);
++	kvfree(adapter->tids.tid_tab);
++	kvfree(adapter->l2t);
+ 	for_each_port(adapter, i)
+ 		if (adapter->port[i])
+ 			free_netdev(adapter->port[i]);
+@@ -3349,8 +3322,8 @@ static void __devexit remove_one(struct pci_dev *pdev)
+ 
+ 		t4_sge_stop(adapter);
+ 		t4_free_sge_resources(adapter);
+-		t4_free_mem(adapter->l2t);
+-		t4_free_mem(adapter->tids.tid_tab);
++		kvfree(adapter->l2t);
++		kvfree(adapter->tids.tid_tab);
+ 		disable_msi(adapter);
+ 
+ 		for_each_port(adapter, i)
+diff --git a/drivers/net/cxgb4/l2t.c b/drivers/net/cxgb4/l2t.c
+index 9f96724..f975087 100644
+--- a/drivers/net/cxgb4/l2t.c
++++ b/drivers/net/cxgb4/l2t.c
+@@ -513,7 +513,7 @@ struct l2t_data *t4_init_l2t(void)
  	int i;
+ 	struct l2t_data *d;
  
--	cdata =  cxgb3i_alloc_big_mem(sizeof(*cdata) + mapsize, GFP_KERNEL);
-+	cdata = kvzalloc(sizeof(*cdata) + mapsize);
- 	if (!cdata) {
- 		cxgb3i_log_warn("t3dev 0x%p, offload up, OOM %d.\n",
- 				cdev, mapsize);
-@@ -1918,7 +1918,7 @@ void cxgb3i_sdev_add(struct t3cdev *cdev, struct cxgb3_client *client)
- 	return;
+-	d = t4_alloc_mem(sizeof(*d));
++	d = kvzalloc(sizeof(*d));
+ 	if (!d)
+ 		return NULL;
  
- free_cdata:
--	cxgb3i_free_big_mem(cdata);
-+	kvfree(cdata);
- }
- 
- /**
