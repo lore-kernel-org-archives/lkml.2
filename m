@@ -1,102 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758691Ab0EMOft (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 10:35:49 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:43894 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575Ab0EMOfr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 10:35:47 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Mark Gross <mgross@linux.intel.com>
+	id S1758889Ab0EMOfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 10:35:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751575Ab0EMOfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 10:35:50 -0400
+Date: Thu, 13 May 2010 10:34:46 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: mmotm 2010-05-11 - dies in pm_qos_update_request()
-In-Reply-To: Your message of "Wed, 12 May 2010 23:07:20 +0200."
-             <201005122307.20860.rjw@sisk.pl>
-From: Valdis.Kletnieks@vt.edu
-References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org> <5525.1273693962@localhost>
-            <201005122307.20860.rjw@sisk.pl>
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH -v2 5/5] extend KSM refcounts to the anon_vma root
+Message-ID: <20100513103446.7eecd5b9@annuminas.surriel.com>
+In-Reply-To: <20100513132436.GC27949@csn.ul.ie>
+References: <20100512134111.467fb6c2@annuminas.surriel.com>
+	<20100512210706.GQ24989@csn.ul.ie>
+	<4BEB18FE.1090808@redhat.com>
+	<20100513112603.GB27949@csn.ul.ie>
+	<4BEBFA82.2000301@redhat.com>
+	<20100513132436.GC27949@csn.ul.ie>
+Organization: Red Hat, Inc.
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1273761278_3844P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Thu, 13 May 2010 10:34:38 -0400
-Message-ID: <4793.1273761278@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020208.4BEC0E00.010D,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1273761278_3844P
-Content-Type: text/plain; charset=us-ascii
 
-On Wed, 12 May 2010 23:07:20 +0200, "Rafael J. Wysocki" said:
-> On Wednesday 12 May 2010, Valdis.Kletnieks@vt.edu wrote:
-> > On Tue, 11 May 2010 18:21:22 PDT, akpm@linux-foundation.org said:
-> > > The mm-of-the-moment snapshot 2010-05-11-18-20 has been uploaded to
-> > > 
-> > >    http://userweb.kernel.org/~akpm/mmotm/
-> > 
-> > Dell Latitude E6500, x86_64 kernel.
-> > 
-> > Died a horrid death at boot in the e1000e driver.  Seems to be
-> > something in linux-next.patch. Didn't get a netconsole trace for obvious
-> > reasons...
-> > 
-> > Copied-by-hand traceback:
-> > pm_qos_update_request()+0x22
-> > e1000_configure+0x478
-> > e1000_open_device+0xee
-> > ? _raw_notifier_call_chain+0xf
-> > __dev_open+0xec
-> > dev_open+0x1b
-> > netpoll_setup+0x28b
-> > init_netconsole+0xbc
-> > 
-> > I suspect this commit:
-> > 
-> > commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
-> > Author: Rafael J. Wysocki <rjw@sisk.pl>
-> > Date:   Sun Mar 14 14:35:17 2010 +0000
-> > 
-> >     e1000e / PCI / PM: Add basic runtime PM support (rev. 4)
-> 
-> No, I don't think so.  I'm running -rc6 with this patch applied on a box with
-> e1000e and it works just fine.
-> 
-> Please try to revert this one instead:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/rafael/suspend-2.6.git;a=patch;h=ed77134bfccf5e75b6cbadab268e559dbe6a4ebb
+> Ok, now I get it. I was thinking in terms of a reference count being for
+> the duration of a specific operation. In this case, the root anon_vma
+> has an elevated reference count for the lifetime of the anon_vma forest.
+> Thanks.
 
-Confirming - reverting that patch and doing the build fixup results in a
-kernel that doesn't blow up in the e1000e driver...
+I have updated the comment in anon_vma_fork to reflect that the refcount
+lasts for the lifetime of the anon_vma.
+-------------------------------------
 
---==_Exmh_1273761278_3844P
-Content-Type: application/pgp-signature
+Subject: extend KSM refcounts to the anon_vma root
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+KSM reference counts can cause an anon_vma to exist after the processe
+it belongs to have already exited.  Because the anon_vma lock now lives
+in the root anon_vma, we need to ensure that the root anon_vma stays
+around until after all the "child" anon_vmas have been freed.
 
-iD8DBQFL7A3+cC3lWbTT17ARAm3PAKDAE87ziAO2wE6RkIcdkh3geTyBNgCeNxGQ
-pN4PRpx1eTZUoKSO5fvSmfo=
-=Zq3X
------END PGP SIGNATURE-----
+The obvious way to do this is to have a "child" anon_vma take a
+reference to the root in anon_vma_fork.  When the anon_vma is freed
+at munmap or process exit, we drop the refcount in anon_vma_unlink
+and possibly free the root anon_vma.
 
---==_Exmh_1273761278_3844P--
+The KSM anon_vma reference count function also needs to be modified
+to deal with the possibility of freeing 2 levels of anon_vma.  The
+easiest way to do this is to break out the KSM magic and make it
+generic.
 
+When compiling without CONFIG_KSM, this code is compiled out.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+v2:
+ - improve the anon_vma refcount comment in anon_vma_fork with the refcount lifetime
+
+ include/linux/rmap.h |   12 ++++++++++++
+ mm/ksm.c             |   17 ++++++-----------
+ mm/rmap.c            |   45 ++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 62 insertions(+), 12 deletions(-)
+
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 33ffe14..387d40c 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -126,6 +126,18 @@ int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
+ void __anon_vma_link(struct vm_area_struct *);
+ void anon_vma_free(struct anon_vma *);
+ 
++#ifdef CONFIG_KSM
++static inline void get_anon_vma(struct anon_vma *anon_vma)
++{
++	atomic_inc(&anon_vma->ksm_refcount);
++}
++
++void drop_anon_vma(struct anon_vma *);
++#else
++#define get_anon_vma(x)		do {} while(0)
++#define drop_anon_vma(x)	do {} while(0)
++#endif
++
+ static inline void anon_vma_merge(struct vm_area_struct *vma,
+ 				  struct vm_area_struct *next)
+ {
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 7ca0dd7..9f2acc9 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -318,19 +318,14 @@ static void hold_anon_vma(struct rmap_item *rmap_item,
+ 			  struct anon_vma *anon_vma)
+ {
+ 	rmap_item->anon_vma = anon_vma;
+-	atomic_inc(&anon_vma->ksm_refcount);
++	get_anon_vma(anon_vma);
+ }
+ 
+-static void drop_anon_vma(struct rmap_item *rmap_item)
++static void ksm_drop_anon_vma(struct rmap_item *rmap_item)
+ {
+ 	struct anon_vma *anon_vma = rmap_item->anon_vma;
+ 
+-	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->root->lock)) {
+-		int empty = list_empty(&anon_vma->head);
+-		anon_vma_unlock(anon_vma);
+-		if (empty)
+-			anon_vma_free(anon_vma);
+-	}
++	drop_anon_vma(anon_vma);
+ }
+ 
+ /*
+@@ -415,7 +410,7 @@ static void break_cow(struct rmap_item *rmap_item)
+ 	 * It is not an accident that whenever we want to break COW
+ 	 * to undo, we also need to drop a reference to the anon_vma.
+ 	 */
+-	drop_anon_vma(rmap_item);
++	ksm_drop_anon_vma(rmap_item);
+ 
+ 	down_read(&mm->mmap_sem);
+ 	if (ksm_test_exit(mm))
+@@ -470,7 +465,7 @@ static void remove_node_from_stable_tree(struct stable_node *stable_node)
+ 			ksm_pages_sharing--;
+ 		else
+ 			ksm_pages_shared--;
+-		drop_anon_vma(rmap_item);
++		ksm_drop_anon_vma(rmap_item);
+ 		rmap_item->address &= PAGE_MASK;
+ 		cond_resched();
+ 	}
+@@ -558,7 +553,7 @@ static void remove_rmap_item_from_tree(struct rmap_item *rmap_item)
+ 		else
+ 			ksm_pages_shared--;
+ 
+-		drop_anon_vma(rmap_item);
++		ksm_drop_anon_vma(rmap_item);
+ 		rmap_item->address &= PAGE_MASK;
+ 
+ 	} else if (rmap_item->address & UNSTABLE_FLAG) {
+diff --git a/mm/rmap.c b/mm/rmap.c
+index f0ba648..af87ef0 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -238,6 +238,12 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ 	 */
+ 	root_avc = list_entry(vma->anon_vma_chain.prev, struct anon_vma_chain, same_vma);
+ 	anon_vma->root = root_avc->anon_vma;
++	/*
++	 * With KSM refcounts, an anon_vma can stay around longer than the
++	 * process it belongs to.  The root anon_vma needs to be pinned
++	 * until this anon_vma is freed, because that is where the lock lives.
++	 */
++	get_anon_vma(anon_vma->root);
+ 	/* Mark this anon_vma as the one where our new (COWed) pages go. */
+ 	vma->anon_vma = anon_vma;
+ 	anon_vma_chain_link(vma, avc, anon_vma);
+@@ -267,8 +273,11 @@ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
+ 	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma);
+ 	anon_vma_unlock(anon_vma);
+ 
+-	if (empty)
++	if (empty) {
++		/* We no longer need the root anon_vma */
++		drop_anon_vma(anon_vma->root);
+ 		anon_vma_free(anon_vma);
++	}
+ }
+ 
+ void unlink_anon_vmas(struct vm_area_struct *vma)
+@@ -1355,6 +1364,40 @@ int try_to_munlock(struct page *page)
+ 		return try_to_unmap_file(page, TTU_MUNLOCK);
+ }
+ 
++#ifdef CONFIG_KSM
++/*
++ * Drop an anon_vma refcount, freeing the anon_vma and anon_vma->root
++ * if necessary.  Be careful to do all the tests under the lock.  Once
++ * we know we are the last user, nobody else can get a reference and we
++ * can do the freeing without the lock.
++ */
++void drop_anon_vma(struct anon_vma *anon_vma)
++{
++	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->root->lock)) {
++		struct anon_vma *root = anon_vma->root;
++		int empty list_empty(&anon_vma->head);
++		int last_root_user = 0;
++		int root_empty = 0;
++
++		/*
++		 * The refcount on a non-root anon_vma got dropped.  Drop
++		 * the refcount on the root and check if we need to free it.
++		 */
++		if (empty && anon_vma != root) {
++			last_root_user = atomic_dec_and_test(&root->ksm_refcount);
++			root_empty = list_empty(&root->head);
++		}
++		anon_vma_unlock(anon_vma);
++
++		if (empty) {
++			anon_vma_free(anon_vma);
++			if (root_empty && last_root_user)
++				anon_vma_free(root);
++		}
++	}
++}
++#endif
++
+ #ifdef CONFIG_MIGRATION
+ /*
+  * rmap_walk() and its helpers rmap_walk_anon() and rmap_walk_file():
