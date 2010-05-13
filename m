@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758987Ab0EMPPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 11:15:47 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:35738 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756189Ab0EMPPq (ORCPT
+	id S1758949Ab0EMPVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:21:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37593 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712Ab0EMPVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 11:15:46 -0400
-Message-ID: <4BEC1793.1010109@cs.helsinki.fi>
-Date: Thu, 13 May 2010 18:15:31 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
-MIME-Version: 1.0
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ramzswap: Remove backing swap support
-References: <1273740861-1900-1-git-send-email-ngupta@vflare.org>
-In-Reply-To: <1273740861-1900-1-git-send-email-ngupta@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 13 May 2010 11:21:22 -0400
+X-Authority-Analysis: v=1.1 cv=QBaIlYAip0cLYvdi/Wu3On4+kilSXYulM+a9j4asJ0c= c=1 sm=0 a=7pe9fe_TKsgA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=D_SbEOMbAAAA:8 a=y2eFyfI2TYVlqHiHqvYA:9 a=krmAQ6XDo2TWBoo0g9MICOEHGB0A:4 a=PUjeQqilurYA:10 a=7KbvKZvEaC0A:10 a=Ph91IYdXpQRUPT7D:21 a=z2yWQf8znux3rb-V:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 2/4] tracing/sched: Fix task states in sched switch
+ event
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Carsten Emde <C.Emde@osadl.org>, linux-kernel@vger.kernel.org,
+       And rew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <20100513133539.GA17107@elte.hu>
+References: <RYmXFZH5FML2.rJxWwvD3@ce.dyn.web-alm.net>
+	 <20100513133539.GA17107@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 13 May 2010 11:21:19 -0400
+Message-ID: <1273764079.27703.1002.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nitin Gupta wrote:
-> Currently, each ramzswap device can be assigned
-> a separate 'backing swap' file/partition. The ramzswap
-> driver forwards swap I/O requests to this backing swap
-> whenever an incompressible page is found.
+On Thu, 2010-05-13 at 15:35 +0200, Ingo Molnar wrote:
+> * Carsten Emde <C.Emde@osadl.org> wrote:
 > 
-> This feature adds nearly 700 lines of code and it
-> also duplicates much of the swapon() functionality
-> (for example, finding swap extents and so on). Removing
-> this code makes the driver much simpler and should
-> help its transition from staging to stable drivers
-> area (drivers/block/).
+> > Hi Ingo,
+> > 
+> > > Hm, this is totally unreadable. What does 'TASK_STATE_X' mean??
+> > Would this be better?
+> > +#define MAKE_TASK_STATE_STRING(num) TASK_STATE_##num " (" DESCR_TASK_STATE_##num ")"
+> >  static const char *task_state_array[] = {
+> > -	"R (running)",		/*   0 */
+> > -	"S (sleeping)",		/*   1 */
+> > -	"D (disk sleep)",	/*   2 */
+> > -	"T (stopped)",		/*   4 */
+> > -	"t (tracing stop)",	/*   8 */
+> > -	"Z (zombie)",		/*  16 */
+> > -	"X (dead)",		/*  32 */
+> > -	"x (dead)",		/*  64 */
+> > -	"K (wakekill)",		/* 128 */
+> > -	"W (waking)",		/* 256 */
+> > +	MAKE_TASK_STATE_STRING(0),
+> > +	MAKE_TASK_STATE_STRING(1),
+> > +	MAKE_TASK_STATE_STRING(2),
+> > +	MAKE_TASK_STATE_STRING(4),
+> > +	MAKE_TASK_STATE_STRING(8),
+> > +	MAKE_TASK_STATE_STRING(16),
+> > +	MAKE_TASK_STATE_STRING(32),
+> > +	MAKE_TASK_STATE_STRING(64),
+> > +	MAKE_TASK_STATE_STRING(128),
+> > +	MAKE_TASK_STATE_STRING(256)
 > 
-> Similar functionality may be implemented if we can
-> implement migrating pages across swap devices but the
-> details have not yet been worked out.
+> The whole enumeration there is pointless in that .c file - it tells nothing to 
+> the code reader.
 > 
-> Support for _partitions_ as backing swap could be
-> retained as it requires a few lines of code only.
-> This part can be re-introduced later if above swap
-> migration method turns out to be infeasible.
-> 
-> More cleanups and code comments will be added soon.
-> 
-> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> If it cannot be expressed in a meaningful way then introduce 
+> TASK_STATE_STRINGS_INIT construct that is defined next to the strings (in a .h 
+> file or so) - that way it's a coherent whole.
 
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+I'm rebasing both pull requests. I'll leave this one out until there is
+an agreement.
+
+Thanks,
+
+-- Steve
+
+
