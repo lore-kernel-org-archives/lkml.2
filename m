@@ -1,221 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932815Ab0EMUD3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:03:29 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:42027 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932676Ab0EMUDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:03:20 -0400
-Date: Thu, 13 May 2010 22:03:15 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 12/20] drivers/mtd: Use kzalloc
-Message-ID: <Pine.LNX.4.64.1005132202570.6282@ask.diku.dk>
+	id S932830Ab0EMUDm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 16:03:42 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:48375 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932805Ab0EMUD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 16:03:26 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Mike Habeck <habeck@sgi.com>
+Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already assigned
+Date: Thu, 13 May 2010 14:02:30 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
+Cc: Mike Travis <travis@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, Yinghai <yinghai.lu@oracle.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       Myron Stowe <myron.stowe@hp.com>
+References: <4BEAF008.9030805@sgi.com> <201005131256.17997.bjorn.helgaas@hp.com> <4BEC5530.1000008@sgi.com>
+In-Reply-To: <4BEC5530.1000008@sgi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005131402.30759.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Thursday, May 13, 2010 01:38:24 pm Mike Habeck wrote:
+> Bjorn Helgaas wrote:
+> > On Wednesday, May 12, 2010 12:14:32 pm Mike Travis wrote:
+> >> Subject: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already assigned
+> >> From: Mike Habeck <habeck@sgi.com>
+> >>
+> >> The Linux kernel assigns BARs that a BIOS did not assign, most likely
+> >> to handle broken BIOSes that didn't enumerate the devices correctly.
+> >> On UV the BIOS purposely doesn't assign I/O BARs for certain devices/
+> >> drivers we know don't use them (examples, LSI SAS, Qlogic FC, ...).
+> >> We purposely don't assign these I/O BARs because I/O Space is a very
+> >> limited resource.  There is only 64k of I/O Space, and in a PCIe
+> >> topology that space gets divided up into 4k chucks (this is due to
+> >> the fact that a pci-to-pci bridge's I/O decoder is aligned at 4k)...
+> >> Thus a system can have at most 16 cards with I/O BARs: (64k / 4k = 16)
+> >>
+> >> SGI needs to scale to >16 devices with I/O BARs.  So by not assigning
+> >> I/O BARs on devices we know don't use them, we can do that (iff the
+> >> kernel doesn't go and assign these BARs that the BIOS purposely didn't
+> >> assign).
+> > 
+> > I don't quite understand this part.  If you boot with "pci=nobar",
+> > the BIOS doesn't assign BARs, Linux doesn't either, the drivers
+> > don't need them -- everything works, and that makes sense so far.
+> > 
+> > Now, if you boot normally (without "pci=nobar"), what changes?
+> > The BIOS situation is the same, but Linux tries to assign the
+> > unassigned BARs.  It may assign a few before running out of space,
+> > but the drivers still don't need those BARs.  What breaks?
+> 
+> Nothing really breaks, it's more of a problem that the kernel uses
+> up the rest of the I/O Space, and starts spitting out warning
+> messages as it tries to assign the rest of the I/O BARs that the
+> BIOS didn't assign, something like:
+> 
+>    pci 0010:03:00.0: BAR 5: can't allocate I/O resource [0x0-0x7f]
+>    pci 0012:05:00.0: BAR 5: can't allocate I/O resource [0x0-0x7f]
+>    ...
 
-Use kzalloc rather than the combination of kmalloc and memset.
+OK, that's what I would expect.  Personally, I think I'd *like*
+to have those messages.  If 0010:03:00.0 is a device whose driver
+depends on I/O space, the message will be a good clue as to why
+the driver isn't working.
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+> And in using up all the I/O space, I think that could prevent a
+> hotplug attach of a pci device requiring I/O space (although I
+> believe most BIOSes pad the bridge decoders to support that).
+> I'm not to familiar with how pci hotplug works on x86 so I may
+> be wrong in what I just stated.
 
-// <smpl>
-@@
-expression x,size,flags;
-statement S;
-@@
+Yep, that's definitely a problem, and I don't have a good solution.
 
--x = kmalloc(size,flags);
-+x = kzalloc(size,flags);
- if (x == NULL) S
--memset(x, 0, size);
-// </smpl>
+HP (and probably SGI) had a nice hardware solution for ia64 --
+address translation across the host bridge, so each bridge could
+have its own 64K I/O space.  But I don't see that coming in the
+x86 PC arena.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+> > This issue is not specific to x86, so I don't really like having
+> > the implementation be x86-specific.
+> 
+> I agree this isn't a x86 specific issue but given the 'norom'
+> cmdline option is basically doing the same thing (but for pci
+> Expansion ROM BARs) this code was modeled after it.
 
----
- drivers/mtd/lpddr/qinfo_probe.c     |    7 ++-----
- drivers/mtd/maps/ixp2000.c          |    3 +--
- drivers/mtd/maps/ixp4xx.c           |    3 +--
- drivers/mtd/maps/pxa2xx-flash.c     |    3 +--
- drivers/mtd/tests/mtd_pagetest.c    |    3 +--
- drivers/mtd/tests/mtd_readtest.c    |    3 +--
- drivers/mtd/tests/mtd_speedtest.c   |    3 +--
- drivers/mtd/tests/mtd_stresstest.c  |    3 +--
- drivers/mtd/tests/mtd_subpagetest.c |    3 +--
- 9 files changed, 10 insertions(+), 21 deletions(-)
+IMHO, we should fix both.
 
-diff -u -p a/drivers/mtd/lpddr/qinfo_probe.c b/drivers/mtd/lpddr/qinfo_probe.c
---- a/drivers/mtd/lpddr/qinfo_probe.c
-+++ b/drivers/mtd/lpddr/qinfo_probe.c
-@@ -134,13 +134,12 @@ out:
- static int lpddr_chip_setup(struct map_info *map, struct lpddr_private *lpddr)
- {
- 
--	lpddr->qinfo = kmalloc(sizeof(struct qinfo_chip), GFP_KERNEL);
-+	lpddr->qinfo = kzalloc(sizeof(struct qinfo_chip), GFP_KERNEL);
- 	if (!lpddr->qinfo) {
- 		printk(KERN_WARNING "%s: no memory for LPDDR qinfo structure\n",
- 				map->name);
- 		return 0;
- 	}
--	memset(lpddr->qinfo, 0, sizeof(struct qinfo_chip));
- 
- 	/* Get the ManuID */
- 	lpddr->ManufactId = CMDVAL(map_read(map, map->pfow_base + PFOW_MANUFACTURER_ID));
-@@ -185,13 +184,11 @@ static struct lpddr_private *lpddr_probe
- 	lpddr.numchips = 1;
- 
- 	numvirtchips = lpddr.numchips * lpddr.qinfo->HWPartsNum;
--	retlpddr = kmalloc(sizeof(struct lpddr_private) +
-+	retlpddr = kzalloc(sizeof(struct lpddr_private) +
- 			numvirtchips * sizeof(struct flchip), GFP_KERNEL);
- 	if (!retlpddr)
- 		return NULL;
- 
--	memset(retlpddr, 0, sizeof(struct lpddr_private) +
--				numvirtchips * sizeof(struct flchip));
- 	memcpy(retlpddr, &lpddr, sizeof(struct lpddr_private));
- 
- 	retlpddr->numchips = numvirtchips;
-diff -u -p a/drivers/mtd/maps/ixp2000.c b/drivers/mtd/maps/ixp2000.c
---- a/drivers/mtd/maps/ixp2000.c
-+++ b/drivers/mtd/maps/ixp2000.c
-@@ -165,12 +165,11 @@ static int ixp2000_flash_probe(struct pl
- 		return -EIO;
- 	}
- 
--	info = kmalloc(sizeof(struct ixp2000_flash_info), GFP_KERNEL);
-+	info = kzalloc(sizeof(struct ixp2000_flash_info), GFP_KERNEL);
- 	if(!info) {
- 		err = -ENOMEM;
- 		goto Error;
- 	}
--	memset(info, 0, sizeof(struct ixp2000_flash_info));
- 
- 	platform_set_drvdata(dev, info);
- 
-diff -u -p a/drivers/mtd/maps/ixp4xx.c b/drivers/mtd/maps/ixp4xx.c
---- a/drivers/mtd/maps/ixp4xx.c
-+++ b/drivers/mtd/maps/ixp4xx.c
-@@ -196,12 +196,11 @@ static int ixp4xx_flash_probe(struct pla
- 			return err;
- 	}
- 
--	info = kmalloc(sizeof(struct ixp4xx_flash_info), GFP_KERNEL);
-+	info = kzalloc(sizeof(struct ixp4xx_flash_info), GFP_KERNEL);
- 	if(!info) {
- 		err = -ENOMEM;
- 		goto Error;
- 	}
--	memset(info, 0, sizeof(struct ixp4xx_flash_info));
- 
- 	platform_set_drvdata(dev, info);
- 
-diff -u -p a/drivers/mtd/maps/pxa2xx-flash.c b/drivers/mtd/maps/pxa2xx-flash.c
---- a/drivers/mtd/maps/pxa2xx-flash.c
-+++ b/drivers/mtd/maps/pxa2xx-flash.c
-@@ -63,11 +63,10 @@ static int __init pxa2xx_flash_probe(str
- 	if (!res)
- 		return -ENODEV;
- 
--	info = kmalloc(sizeof(struct pxa2xx_flash_info), GFP_KERNEL);
-+	info = kzalloc(sizeof(struct pxa2xx_flash_info), GFP_KERNEL);
- 	if (!info)
- 		return -ENOMEM;
- 
--	memset(info, 0, sizeof(struct pxa2xx_flash_info));
- 	info->map.name = (char *) flash->name;
- 	info->map.bankwidth = flash->width;
- 	info->map.phys = res->start;
-diff -u -p a/drivers/mtd/tests/mtd_pagetest.c b/drivers/mtd/tests/mtd_pagetest.c
---- a/drivers/mtd/tests/mtd_pagetest.c
-+++ b/drivers/mtd/tests/mtd_pagetest.c
-@@ -480,12 +480,11 @@ static int scan_for_bad_eraseblocks(void
- {
- 	int i, bad = 0;
- 
--	bbt = kmalloc(ebcnt, GFP_KERNEL);
-+	bbt = kzalloc(ebcnt, GFP_KERNEL);
- 	if (!bbt) {
- 		printk(PRINT_PREF "error: cannot allocate memory\n");
- 		return -ENOMEM;
- 	}
--	memset(bbt, 0 , ebcnt);
- 
- 	printk(PRINT_PREF "scanning for bad eraseblocks\n");
- 	for (i = 0; i < ebcnt; ++i) {
-diff -u -p a/drivers/mtd/tests/mtd_readtest.c b/drivers/mtd/tests/mtd_readtest.c
---- a/drivers/mtd/tests/mtd_readtest.c
-+++ b/drivers/mtd/tests/mtd_readtest.c
-@@ -141,12 +141,11 @@ static int scan_for_bad_eraseblocks(void
- {
- 	int i, bad = 0;
- 
--	bbt = kmalloc(ebcnt, GFP_KERNEL);
-+	bbt = kzalloc(ebcnt, GFP_KERNEL);
- 	if (!bbt) {
- 		printk(PRINT_PREF "error: cannot allocate memory\n");
- 		return -ENOMEM;
- 	}
--	memset(bbt, 0 , ebcnt);
- 
- 	/* NOR flash does not implement block_isbad */
- 	if (mtd->block_isbad == NULL)
-diff -u -p a/drivers/mtd/tests/mtd_speedtest.c b/drivers/mtd/tests/mtd_speedtest.c
---- a/drivers/mtd/tests/mtd_speedtest.c
-+++ b/drivers/mtd/tests/mtd_speedtest.c
-@@ -295,12 +295,11 @@ static int scan_for_bad_eraseblocks(void
- {
- 	int i, bad = 0;
- 
--	bbt = kmalloc(ebcnt, GFP_KERNEL);
-+	bbt = kzalloc(ebcnt, GFP_KERNEL);
- 	if (!bbt) {
- 		printk(PRINT_PREF "error: cannot allocate memory\n");
- 		return -ENOMEM;
- 	}
--	memset(bbt, 0 , ebcnt);
- 
- 	/* NOR flash does not implement block_isbad */
- 	if (mtd->block_isbad == NULL)
-diff -u -p a/drivers/mtd/tests/mtd_stresstest.c b/drivers/mtd/tests/mtd_stresstest.c
---- a/drivers/mtd/tests/mtd_stresstest.c
-+++ b/drivers/mtd/tests/mtd_stresstest.c
-@@ -221,12 +221,11 @@ static int scan_for_bad_eraseblocks(void
- {
- 	int i, bad = 0;
- 
--	bbt = kmalloc(ebcnt, GFP_KERNEL);
-+	bbt = kzalloc(ebcnt, GFP_KERNEL);
- 	if (!bbt) {
- 		printk(PRINT_PREF "error: cannot allocate memory\n");
- 		return -ENOMEM;
- 	}
--	memset(bbt, 0 , ebcnt);
- 
- 	/* NOR flash does not implement block_isbad */
- 	if (mtd->block_isbad == NULL)
-diff -u -p a/drivers/mtd/tests/mtd_subpagetest.c b/drivers/mtd/tests/mtd_subpagetest.c
---- a/drivers/mtd/tests/mtd_subpagetest.c
-+++ b/drivers/mtd/tests/mtd_subpagetest.c
-@@ -354,12 +354,11 @@ static int scan_for_bad_eraseblocks(void
- {
- 	int i, bad = 0;
- 
--	bbt = kmalloc(ebcnt, GFP_KERNEL);
-+	bbt = kzalloc(ebcnt, GFP_KERNEL);
- 	if (!bbt) {
- 		printk(PRINT_PREF "error: cannot allocate memory\n");
- 		return -ENOMEM;
- 	}
--	memset(bbt, 0 , ebcnt);
- 
- 	printk(PRINT_PREF "scanning for bad eraseblocks\n");
- 	for (i = 0; i < ebcnt; ++i) {
+Bjorn
