@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab0EMLxM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 07:53:12 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:23311 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758796Ab0EMLxJ (ORCPT
-	<rfc822;groupwise-jlee@novell.com:7:1>);
-	Thu, 13 May 2010 07:53:09 -0400
-Message-Id: <4BEC74C002000023000190EE@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 13 May 2010 05:53:04 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <dmitry.torokhov@gmail.com>
-Cc: <mzxreary@0pointer.de>, <greg@kroah.com>, <rpurdie@linux.intel.com>,
-       <mjg@redhat.com>, <gregkh@suse.de>, <linux-kernel@vger.kernel.org>,
-       <platform-driver-x86@vger.kernel.org>
-Subject: Re: [PATCH 4/4] msi-laptop: Add i8042 filter to sync sw state
-	 with BIOS when function key pressed
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S1758783Ab0EML4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 07:56:43 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52932 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab0EML4l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 07:56:41 -0400
+Message-ID: <4BEBE8C8.3090202@monstr.eu>
+Date: Thu, 13 May 2010 13:55:52 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/microblaze fixes for 2.6.34-rc8
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry, 
+Hi Linus,
 
-Thank's for your review.
+please pull the following bug fixes.
 
-於 四，2010-05-13 於 00:52 -0700，Dmitry Torokhov 提到：
-> On Wed, May 12, 2010 at 11:56:47AM -0700, Greg KH wrote:
-> >  static int __init msi_init(void)
-> > @@ -819,6 +875,7 @@ static void __exit msi_cleanup(void)
-> >  	platform_driver_unregister(&msipf_driver);
-> >  	backlight_device_unregister(msibl_device);
-> >  
-> > +	i8042_remove_filter(msi_laptop_i8042_filter);
-> 
-> You also need cancel_delayed_work_sync() here. Sorry for not noticing
-> this before.
-> 
+Thanks,
+Michal
 
-Yes, you are right, need add cancel_delayed_work_sync().
+The following changes since commit be835674b55324c1abe973b15343c3663910c620:
+   Linus Torvalds (1):
+         Merge branch 'merge' of git://git.kernel.org/.../benh/powerpc
 
-Joey Lee
+are available in the git repository at:
 
+   git://git.monstr.eu/linux-2.6-microblaze.git for-linus
+
+Michal Simek (3):
+       microblaze: Remove compilation warnings in cache macro
+       microblaze: Remove powerpc code from Microblaze port
+       microblaze: export assembly functions used by modules
+
+Steven J. Magnani (3):
+       microblaze: re-enable interrupts before calling schedule
+       microblaze: fix get_user/put_user side-effects
+       microblaze: export assembly functions used by modules
+
+  arch/microblaze/include/asm/uaccess.h     |   87 
++++++++++++++++++++++++------
+  arch/microblaze/kernel/cpu/cache.c        |    3 +-
+  arch/microblaze/kernel/entry-nommu.S      |    2 +
+  arch/microblaze/kernel/microblaze_ksyms.c |   11 ++++
+  arch/microblaze/mm/init.c                 |    1 +
+  arch/microblaze/mm/pgtable.c              |    1 +
+  arch/microblaze/pci/pci-common.c          |    2 +-
+  7 files changed, 87 insertions(+), 20 deletions(-)
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
