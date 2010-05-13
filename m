@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758629Ab0EMKtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 06:49:15 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60619 "EHLO hera.kernel.org"
+	id S1758647Ab0EMKtV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 06:49:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60622 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756757Ab0EMKtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 06:49:13 -0400
+	id S1758632Ab0EMKtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 06:49:17 -0400
 From: Tejun Heo <tj@kernel.org>
 To: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/4] sched: consult online mask instead of active in select_fallback_rq()
-Date: Thu, 13 May 2010 12:48:22 +0200
-Message-Id: <1273747705-7829-2-git-send-email-tj@kernel.org>
+Subject: [PATCHSET sched/core] sched: prepare for cmwq
+Date: Thu, 13 May 2010 12:48:21 +0200
+Message-Id: <1273747705-7829-1-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1273747705-7829-1-git-send-email-tj@kernel.org>
-References: <1273747705-7829-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 13 May 2010 10:48:29 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 13 May 2010 10:48:30 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If called after sched_class chooses a CPU which isn't in a task's
-cpus_allowed mask, select_fallback_rq() can end up migrating a task
-which is bound to an !active but online cpu to an active cpu.  This is
-dangerous because active is cleared before CPU_DOWN_PREPARE is called
-and subsystems expect affinities of kthreads and other tasks to be
-maintained till their CPU_DOWN_PREPARE callbacks are complete.
+Hello, Ingo, Peter.
 
-Consult cpu_online_mask instead.
+These four patches are the scheduler modifications necessary for cmwq
+and contains the following four patches.
 
-This problem is triggered by cmwq.  During CPU_DOWN_PREPARE, hotplug
-callback creates the trustee kthread and kthread_bind()s it to the
-target cpu, and the trustee is expected to run on that cpu.
+ 0001-sched-consult-online-mask-instead-of-active-in-selec.patch
+ 0002-sched-implement-__set_cpus_allowed.patch
+ 0003-sched-refactor-try_to_wake_up.patch
+ 0004-sched-add-hooks-for-workqueue.patch
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+The first three have been posted multiple times as part of cmwq
+patchset multiple times.  Other than description updates to explain
+why they are needed, these three patches haven't changed from the last
+posting[L].
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index b531d79..aca4a20 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2262,12 +2262,12 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
- 	const struct cpumask *nodemask = cpumask_of_node(cpu_to_node(cpu));
- 
- 	/* Look for allowed, online CPU in same node. */
--	for_each_cpu_and(dest_cpu, nodemask, cpu_active_mask)
-+	for_each_cpu_and(dest_cpu, nodemask, cpu_online_mask)
- 		if (cpumask_test_cpu(dest_cpu, &p->cpus_allowed))
- 			return dest_cpu;
- 
- 	/* Any allowed, online CPU? */
--	dest_cpu = cpumask_any_and(&p->cpus_allowed, cpu_active_mask);
-+	dest_cpu = cpumask_any_and(&p->cpus_allowed, cpu_online_mask);
- 	if (dest_cpu < nr_cpu_ids)
- 		return dest_cpu;
- 
--- 
-1.6.4.2
+The last patch adds two hardcoded workqueue hooks as suggested in in
+the unify-tracers-in-sched thread[U].  These new hardcoded hooks are
+much simpler and no scheduler behavior change is leaked outside of
+sched.c.  Workqueue workers are marked with PF_WQ_WORKER and hooks are
+called only for them.  Instead of exporting try_to_wake_up_local(),
+the sleeping hook now returns a pointer to local task which is woken
+up by scheduler.  The hooks are defined as noop for now and will be
+filled later by cmwq implementation.
 
+The change from sched_notifier to the hardcoded hooks doesn't make any
+notable difference to cmwq implementation itself.
+
+This patchset is available in the following git tree.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git sched-wq
+
+and contains the following changes.
+
+ include/linux/sched.h    |   15 ++-
+ kernel/fork.c            |    2 
+ kernel/sched.c           |  191 +++++++++++++++++++++++++++++++++--------------
+ kernel/workqueue_sched.h |   16 +++
+ 4 files changed, 163 insertions(+), 61 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[L] http://thread.gmane.org/gmane.linux.kernel/954759
+[U] http://thread.gmane.org/gmane.linux.kernel/980857
