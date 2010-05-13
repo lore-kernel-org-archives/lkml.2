@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab0EMUm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:42:29 -0400
-Received: from tango.0pointer.de ([85.214.72.216]:59518 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab0EMUm2 (ORCPT
+	id S1759081Ab0EMUsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 16:48:38 -0400
+Received: from fw.wantstofly.org ([80.101.37.227]:50174 "EHLO
+	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab0EMUsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:42:28 -0400
-Date: Thu, 13 May 2010 22:41:59 +0200
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Paul Menage <menage@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Dhaval Giani <dhaval.giani@gmail.com>,
-       James Kosin <jkosin@intcomgrp.com>, linux-kernel@vger.kernel.org,
-       balbir@linux.vnet.ibm.com, jsafrane@redhat.com, tglx@linutronix.de
-Subject: Re: [PATCH/RFC] Have sane default values for cpusets
-Message-ID: <20100513204159.GA15291@tango.0pointer.de>
-References: <eJktY-7JG-7@gated-at.bofh.it>
- <eJktY-7JG-5@gated-at.bofh.it>
- <4BEAB6FC.8090105@intcomgrp.com>
- <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
- <1273674048.1626.117.camel@laptop>
- <20100512190757.GA421@tango.0pointer.de>
- <1273755719.5605.3537.camel@twins>
- <20100513140354.GA12639@tango.0pointer.de>
- <s2s6599ad831005131306pa7db4c4dyd7712de7fda73cfd@mail.gmail.com>
- <20100513203654.GA14528@tango.0pointer.de>
-MIME-Version: 1.0
+	Thu, 13 May 2010 16:48:36 -0400
+X-Greylist: delayed 1135 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 May 2010 16:48:36 EDT
+Date: Thu, 13 May 2010 22:29:37 +0200
+From: Lennert Buytenhek <buytenh@wantstofly.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 6/20] drivers/net: Use kzalloc
+Message-ID: <20100513202937.GA1795@mail.wantstofly.org>
+References: <Pine.LNX.4.64.1005132200050.6282@ask.diku.dk>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100513203654.GA14528@tango.0pointer.de>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+In-Reply-To: <Pine.LNX.4.64.1005132200050.6282@ask.diku.dk>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13.05.10 22:36, Lennart Poettering (mzxreary@0pointer.de) wrote:
+On Thu, May 13, 2010 at 10:00:22PM +0200, Julia Lawall wrote:
 
-> On Thu, 13.05.10 13:06, Paul Menage (menage@google.com) wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> > 
-> > On Thu, May 13, 2010 at 7:03 AM, Lennart Poettering
-> > <mzxreary@0pointer.de> wrote:
-> > > By default systemd will create its groups in the "debug" hierarchy, (at
-> > > least for now, in the long run i'd like to see "noop" hierarchy or so,
-> > > that doesn't sound so temporary), since that controller is not useful
-> > 
-> > If you just want to track processes, mount a (named) hierarchy with no
-> > attached subsystems.
+> Use kzalloc rather than the combination of kmalloc and memset.
 > 
-> Oh, that is possible? How would I do that? 
+> The semantic patch that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
 > 
-> This certainly doesn't work:
+> // <smpl>
+> @@
+> expression x,size,flags;
+> statement S;
+> @@
 > 
-> # mount waldo -t cgroup /tmp/xxxx -o defaults
+> -x = kmalloc(size,flags);
+> +x = kzalloc(size,flags);
+>  if (x == NULL) S
+> -memset(x, 0, size);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-An neither does this:
-
-# mount waldo -t cgroup /tmp/xxxx -o name=systemd
-
-(the mount() syscall fails with EINVAL here, the other one fails with EBUSY)
-
-Lennart
-
--- 
-Lennart Poettering                        Red Hat, Inc.
-lennart [at] poettering [dot] net
-http://0pointer.net/lennart/           GnuPG 0x1A015CC4
+Acked-by: Lennert Buytenhek <buytenh@wantstofly.org>
