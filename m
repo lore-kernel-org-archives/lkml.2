@@ -1,71 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890Ab0EMWSA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 18:18:00 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59536 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754485Ab0EMWR6 (ORCPT
+	id S1756334Ab0EMWUO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 18:20:14 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:60062 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab0EMWUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 18:17:58 -0400
+	Thu, 13 May 2010 18:20:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=YHJIz+1cVDQXbx3/79nZ/gJPCDqXkT+l/K0mCq/97EP4SR4/C5c0Z1+SbtmF98+qFT
-         b1wpP9yFFPK9m0ArMwuWxV1wTHLjvZsUAXTSIxsE7D6TWyBpfMwOP3uwJxBj+3GP1u83
-         ZrI4VlAxYWOr5/Dj0HFwvB/xKyVFHbcLY/o5U=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=PEv3dIHVMv/IueH/BNYjlmjfNSruALOwVz+x6H7ePGNQMdZ0Y50NnHLt6luq8JiBpA
+         E4YYyESmv413p6mGq/G3K/XNUqzfWXlcaVQyKODD//dCHyDN5UBWPnR73aIsQo13JUpj
+         LOMOFIjHvWHxbrsejA2SgMl/n9QJR02CSfkv4=
 MIME-Version: 1.0
-Date: Fri, 14 May 2010 03:47:55 +0530
-Message-ID: <AANLkTimKHkgWJJOOICzQ4TL3mbL-lvYEocwBSe3XSBVR@mail.gmail.com>
-Subject: Performance Events hangs with Intel P4 system
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <Pine.LNX.4.44L0.1005131752160.1731-100000@iolanthe.rowland.org>
+References: <AANLkTimW3wLEt-DIRirHic1ZN1Z0k1t3TavwaCxTh_QL@mail.gmail.com>
+	 <Pine.LNX.4.44L0.1005131752160.1731-100000@iolanthe.rowland.org>
+Date: Thu, 13 May 2010 15:20:07 -0700
+Message-ID: <AANLkTimBxoCCeT_ns30JTIGKqgkiRIvKTf4LfE3mopkS@mail.gmail.com>
+Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while 
+	userspace is frozen?
+From: Matt Reimer <mattjreimer@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>
+Content-Type: multipart/mixed; boundary=000e0cd598303cae1304868129f0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--000e0cd598303cae1304868129f0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I am testing Performance Events on P4 with HT:
+On Thu, May 13, 2010 at 2:54 PM, Alan Stern <stern@rowland.harvard.edu> wro=
+te:
+> On Thu, 13 May 2010, Matt Reimer wrote:
+>
+>> So how does the attached patch look?
+>>
+>> Matt
+>>
+>>
+>> From 20d8340471eb05aa54af1349f4ddccecd9c230c6 Mon Sep 17 00:00:00 2001
+>> From: Matt Reimer <mreimer@sdgsystems.com>
+>> Date: Thu, 13 May 2010 14:36:54 -0700
+>> Subject: [PATCH] fs: prevent hang on suspend/resume when MMC/SD card pre=
+sent
+>>
+>> Devices can come and go from the MMC/SD bus during suspend or resume,
+>> when the writeback thread is frozen, resulting in a hang. So thaw the
+>> writeback thread in del_gendisk() to prevent the hang.
+>
+> I don't see anything wrong with the patch itself, but I dislike the
+> description. =A0Devices can come and go from any hotpluggable bus, not
+> just MMC/SD. =A0That just happens to be the first place the problem was
+> observed.
 
-[    0.002243] Performance Events: Netburst events, Netburst P4/Xeon PMU driver.
-[    0.002432] ... version:                0
-[    0.002545] ... bit width:              40
-[    0.002659] ... generic registers:      18
-[    0.002772] ... value mask:             000000ffffffffff
-[    0.002887] ... max period:             0000007fffffffff
-[    0.003004] ... fixed-purpose events:   0
-[    0.003118] ... event mask:             000000000003ffff
+Good point. How about this?
 
-dmesg : http://userweb.kernel.org/~jaswinder/P4_HT/dmesg-2634-rc7-tip.txt
-config : http://userweb.kernel.org/~jaswinder/P4_HT/config-2634-rc7-tip.txt
+Matt
 
-[jaswinder@ht perf]$ ./perf stat -e cycles ls > /dev/null
+>From 813bd223e5a2fa577b9e64ddf12654a93d0aab8b Mon Sep 17 00:00:00 2001
+From: Matt Reimer <mreimer@sdgsystems.com>
+Date: Thu, 13 May 2010 14:36:54 -0700
+Subject: [PATCH] fs: prevent hang on suspend/resume when MMC/SD card presen=
+t
 
- Performance counter stats for 'ls':
+Devices can come and go bus during suspend or resume, when the
+writeback thread is frozen, resulting in a hang. Prevent the hang
+by thawing the writeback thread in del_gendisk().
 
-  <not counted>  cycles
+Signed-off-by: Matt Reimer <mreimer@sdgsystems.com>
+---
+ fs/partitions/check.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-    0.003447053  seconds time elapsed
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index e238ab2..b303919 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -666,6 +666,8 @@ void del_gendisk(struct gendisk *disk)
+        struct disk_part_iter piter;
+        struct hd_struct *part;
 
-[jaswinder@ht perf]$ ./perf stat -e cycles,instructions ls > /dev/null
++       thaw_process(disk->queue->backing_dev_info.wb.task);
++
+        /* invalidate stuff */
+        disk_part_iter_init(&piter, disk,
+                             DISK_PITER_INCL_EMPTY | DISK_PITER_REVERSE);
+--=20
+1.7.0.4
 
- Performance counter stats for 'ls':
+--000e0cd598303cae1304868129f0
+Content-Type: application/octet-stream; 
+	name="0001-fs-prevent-hang-on-suspend-resume-when-MMC-SD-card-p.patch"
+Content-Disposition: attachment; 
+	filename="0001-fs-prevent-hang-on-suspend-resume-when-MMC-SD-card-p.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_g965743o0
 
-  <not counted>  cycles
-        1862188  instructions             #      0.000 IPC    (scaled
-from 54.91%)
-
-    0.003419230  seconds time elapsed
-
-[jaswinder@ht perf]$ ./perf stat -e
-cycles,instructions,cache-references ls > /dev/null
-
-<<this dumps on screen and hangs the systems>>
-
-How can I fix this problem.
-
-Thanks,
---
-Jaswinder Singh.
+RnJvbSA4MTNiZDIyM2U1YTJmYTU3N2I5ZTY0ZGRmMTI2NTRhOTNkMGFhYjhiIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBNYXR0IFJlaW1lciA8bXJlaW1lckBzZGdzeXN0ZW1zLmNvbT4K
+RGF0ZTogVGh1LCAxMyBNYXkgMjAxMCAxNDozNjo1NCAtMDcwMApTdWJqZWN0OiBbUEFUQ0hdIGZz
+OiBwcmV2ZW50IGhhbmcgb24gc3VzcGVuZC9yZXN1bWUgd2hlbiBNTUMvU0QgY2FyZCBwcmVzZW50
+CgpEZXZpY2VzIGNhbiBjb21lIGFuZCBnbyBidXMgZHVyaW5nIHN1c3BlbmQgb3IgcmVzdW1lLCB3
+aGVuIHRoZQp3cml0ZWJhY2sgdGhyZWFkIGlzIGZyb3plbiwgcmVzdWx0aW5nIGluIGEgaGFuZy4g
+UHJldmVudCB0aGUgaGFuZwpieSB0aGF3aW5nIHRoZSB3cml0ZWJhY2sgdGhyZWFkIGluIGRlbF9n
+ZW5kaXNrKCkuCgpTaWduZWQtb2ZmLWJ5OiBNYXR0IFJlaW1lciA8bXJlaW1lckBzZGdzeXN0ZW1z
+LmNvbT4KLS0tCiBmcy9wYXJ0aXRpb25zL2NoZWNrLmMgfCAgICAyICsrCiAxIGZpbGVzIGNoYW5n
+ZWQsIDIgaW5zZXJ0aW9ucygrKSwgMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9mcy9wYXJ0
+aXRpb25zL2NoZWNrLmMgYi9mcy9wYXJ0aXRpb25zL2NoZWNrLmMKaW5kZXggZTIzOGFiMi4uYjMw
+MzkxOSAxMDA2NDQKLS0tIGEvZnMvcGFydGl0aW9ucy9jaGVjay5jCisrKyBiL2ZzL3BhcnRpdGlv
+bnMvY2hlY2suYwpAQCAtNjY2LDYgKzY2Niw4IEBAIHZvaWQgZGVsX2dlbmRpc2soc3RydWN0IGdl
+bmRpc2sgKmRpc2spCiAJc3RydWN0IGRpc2tfcGFydF9pdGVyIHBpdGVyOwogCXN0cnVjdCBoZF9z
+dHJ1Y3QgKnBhcnQ7CiAKKwl0aGF3X3Byb2Nlc3MoZGlzay0+cXVldWUtPmJhY2tpbmdfZGV2X2lu
+Zm8ud2IudGFzayk7CisKIAkvKiBpbnZhbGlkYXRlIHN0dWZmICovCiAJZGlza19wYXJ0X2l0ZXJf
+aW5pdCgmcGl0ZXIsIGRpc2ssCiAJCQkgICAgIERJU0tfUElURVJfSU5DTF9FTVBUWSB8IERJU0tf
+UElURVJfUkVWRVJTRSk7Ci0tIAoxLjcuMC40Cgo=
+--000e0cd598303cae1304868129f0--
