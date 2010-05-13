@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab0EMF7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 01:59:46 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52666 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752308Ab0EMF7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 01:59:44 -0400
-Date: Thu, 13 May 2010 15:59:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the v4l-dvb tree
-Message-Id: <20100513155939.c73f3747.sfr@canb.auug.org.au>
-In-Reply-To: <4BEB8BA9.5070001@infradead.org>
-References: <20100513130016.25b76c3f.sfr@canb.auug.org.au>
-	<4BEB8BA9.5070001@infradead.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__13_May_2010_15_59_39_+1000_r=xAHjBByf4o./JO"
+	id S1752904Ab0EMGEZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 02:04:25 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33593 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308Ab0EMGEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 02:04:23 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] Cleanup migrate case in try_to_unmap_one
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>
+In-Reply-To: <1272899957-11604-1-git-send-email-ngupta@vflare.org>
+References: <1272899957-11604-1-git-send-email-ngupta@vflare.org>
+Message-Id: <20100513144336.216D.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 13 May 2010 15:04:21 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__13_May_2010_15_59_39_+1000_r=xAHjBByf4o./JO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Remove duplicate handling of TTU_MIGRATE case for
+> anonymous and filesystem pages.
+> 
+> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 
-Hi Mauro,
+This patch change swap cache case. I think this is not intentional.
 
-On Thu, 13 May 2010 02:18:33 -0300 Mauro Carvalho Chehab <mchehab@infradead=
-.org> wrote:
+
+
+> ---
+>  mm/rmap.c |   17 ++++-------------
+>  1 files changed, 4 insertions(+), 13 deletions(-)
+> 
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 07fc947..8ccfe4a 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -946,6 +946,10 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+>  			dec_mm_counter(mm, MM_FILEPAGES);
+>  		set_pte_at(mm, address, pte,
+>  				swp_entry_to_pte(make_hwpoison_entry(page)));
+> +	} else if (PAGE_MIGRATION && (TTU_ACTION(flags) == TTU_MIGRATION)) {
+> +		swp_entry_t entry;
+> +		entry = make_migration_entry(page, pte_write(pteval));
+> +		set_pte_at(mm, address, pte, swp_entry_to_pte(entry));
 >
-> I'll be pulling from Linus on my tree. I did it yesterday, after my last =
-changes,
-> but it seems that I've made a huge mistake... Several conflicts that I've=
- already
-> fixed reappeared. I suspect that I've merged it with an older temporary b=
-ranch
-> by mistake.
+>  	} else if (PageAnon(page)) {
+>  		swp_entry_t entry = { .val = page_private(page) };
+>  
+> @@ -967,22 +971,9 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+>  			}
+>  			dec_mm_counter(mm, MM_ANONPAGES);
+>  			inc_mm_counter(mm, MM_SWAPENTS);
+> -		} else if (PAGE_MIGRATION) {
+> -			/*
+> -			 * Store the pfn of the page in a special migration
+> -			 * pte. do_swap_page() will wait until the migration
+> -			 * pte is removed and then restart fault handling.
+> -			 */
+> -			BUG_ON(TTU_ACTION(flags) != TTU_MIGRATION);
+> -			entry = make_migration_entry(page, pte_write(pteval));
+>  		}
+>  		set_pte_at(mm, address, pte, swp_entry_to_pte(entry));
+>  		BUG_ON(pte_file(*pte));
+> -	} else if (PAGE_MIGRATION && (TTU_ACTION(flags) == TTU_MIGRATION)) {
+> -		/* Establish migration entry for a file page */
+> -		swp_entry_t entry;
+> -		entry = make_migration_entry(page, pte_write(pteval));
+> -		set_pte_at(mm, address, pte, swp_entry_to_pte(entry));
+>  	} else
+>  		dec_mm_counter(mm, MM_FILEPAGES);
+>  
+> -- 
+> 1.6.6.1
+> 
 
-That explains it.
 
-> Anyway, it is fixed, by simply going back to the last reflog before the e=
-rror,
-> and re-merging the new patches again. A pull from Linus didn't show any c=
-onflict.
->=20
-> So, it should be now OK for you to merge.
 
-Excellent, thanks.
-
-> > Please consider changing your work flow so that you don't rebase things
-> > in your tree before sending them to Linus.
->=20
-> I'm already in process of changing my procedure. The problem is that I di=
-dn't find
-> yet a perfect way to handle my tree. I'm getting some new ideas, and inte=
-nd to implement
-> them for 2.6.35 development cycle (linux-next for 2.6.36).
-
-OK, good.  The process doesn't have to be perfect ... ;-)
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__13_May_2010_15_59_39_+1000_r=xAHjBByf4o./JO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvrlUsACgkQjjKRsyhoI8ymEgCeNrgoskK7HghN0x5AH0N4Ght8
-HpcAoIHdREljHmDSOP3WXP7105G7ifFu
-=5JVO
------END PGP SIGNATURE-----
-
---Signature=_Thu__13_May_2010_15_59_39_+1000_r=xAHjBByf4o./JO--
