@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759002Ab0EMPgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 11:36:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127Ab0EMPgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 11:36:04 -0400
-Date: Thu, 13 May 2010 11:43:36 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Josef Bacik <josef@redhat.com>, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       akpm@linux-foundation.org
-Subject: Re: [PATCH 4/4] Btrfs: add basic DIO read/write support V3
-Message-ID: <20100513154336.GF27011@dhcp231-156.rdu.redhat.com>
-References: <20100512204052.GD3597@localhost.localdomain> <20100513151429.GA16916@infradead.org> <20100513153145.GE27011@dhcp231-156.rdu.redhat.com> <20100513152639.GA30954@infradead.org>
+	id S1759086Ab0EMPg0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:36:26 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58478 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759056Ab0EMPgX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 11:36:23 -0400
+Date: Thu, 13 May 2010 11:36:21 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Josef Bacik <josef@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, chris.mason@oracle.com, hch@infradead.org,
+       akpm@linux-foundation.org, npiggin@suse.de,
+       linux-kernel@vger.kernel.org, david@fromorbit.com
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100513153620.GA2774@infradead.org>
+References: <20100512212403.GE3597@localhost.localdomain> <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100513152639.GA30954@infradead.org>
+In-Reply-To: <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 11:26:39AM -0400, Christoph Hellwig wrote:
-> On Thu, May 13, 2010 at 11:31:45AM -0400, Josef Bacik wrote:
-> > AIO's aio_complete does kmap with KM_IRQ0/1 and it gets called in the same
-> > context as the btrfs completion handler, so if it's ok for aio_complete it
-> > should be ok for btrfs right?  Thanks,
-> 
-> aio_complete does a spin_lock_irqsave before that, which disables
-> interrupts on the local CPU.
-> 
+On Wed, May 12, 2010 at 09:39:27PM -0400, Josef Bacik wrote:
+> I just got a suggestion from hpa about instead just moving what BTRFS does into
+> the generic_perform_write.  What btrfs does is allocates a chunk of pages to
+> cover the entirety of the write, sets everything up, does the copy from user
+> into the pages, and tears everything down, so essentially what
+> generic_perform_write does, just with more pages.  I could modify
+> generic_perform_write and the write_begin/write_end aops to do this, where
+> write_begin will return how many pages it allocated, copy in all of the
+> userpages into the pages we allocated at once, and then call write_end with the
+> pages we allocated in write begin.  Then I could just make btrfs do
+> write_being/write_end.  So which option seems more palatable?  Thanks,
 
-Ok so looking at debug_kmap_atomic it seems that KM_IRQ0 is ok to use in all
-cases, in_irq(), !irqs_disabled() and !in_interrupt(), so I should be safe.  If
-you still don't like it, would something like this be acceptable?
+Having a more efficient generic write path would be great.  I'm not
+quite sure btrfs gets everything that is needed right already, but
+getting started on this would be great.
 
-if (in_interrupt() || irqs_disabled()) {
-	if (in_irq())
-		type = KM_IRQ0;
-	else if (!irqs_disabled())
-		type = KM_SOFTIRQ0;
-	else
-		type = KM_IRQ0;
-} else {
-	type = KM_USER0;
-}
+And to get back to the original question: adding a ->perform_write
+is a really dumb idea.  It doesn't fit into the structure of the real
+AOPs at all as it required context dependent locking and so and so
+on.  It would just be a nasty hack around the fact that we still leave
+too much work to the filesystem in the write path, and for the bad
+prototype of the ->aio_read/->aio_write methods.
 
-Hrm, you'd think somebody would have had this problem before and already come up
-with a nice helper, oh well.  Thanks,
+For a start generic_segment_checks should move out of the methods
+and into fs/read_write.c before calling into the methods.  To do
+this fully we'll need to pass down a count of total bytes into
+->aio_read and ->aio_write, though.
 
-Josef
+Adding a new generic_write_prep helper for all the boilderplate
+code in ->aio_write also seems fine to me.
