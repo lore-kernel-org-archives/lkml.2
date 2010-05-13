@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757778Ab0EMJJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 05:09:21 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:46604 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753176Ab0EMJJR (ORCPT
+	id S1756797Ab0EMJSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 05:18:10 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:34667 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752702Ab0EMJSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 05:09:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jNbR/tlVS4b8r8MkHUBOclJ39E1DHc/AmRc1j7Tjx0BvI0Z8z46L0waSiL/UPLvVEx
-         yYS+1XC+eRilsy7oH5314+U25qPX1TV/1PxhbWmHE0fWSgPklIf4S0d7thwBdGhKoUQh
-         oxFli6H8nnPopY5Jwfpp94d2bijayeafQH5Go=
-Date: Thu, 13 May 2010 17:13:07 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Andrej Gelenberg <andrej.gelenberg@udo.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux@brodo.de,
-       ashok.raj@intel.com, jacob.shin@amd.com, linux-kernel@vger.kernel.org,
-       cpufreq@vger.kernel.org
-Subject: Re: [PATCH] [CPUFREQ] fix race condition in store_scaling_governor
-Message-ID: <20100513091307.GC5605@cr0.nay.redhat.com>
-References: <4BE967B9.5050107@udo.edu>
- <20100512150039.b5b2729d.akpm@linux-foundation.org>
- <4BEB4096.6030400@udo.edu>
+	Thu, 13 May 2010 05:18:08 -0400
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mel@csn.ul.ie>,
+       aarcange@redhat.com, lwoodman@redhat.com, Lee.Schermerhorn@hp.com
+Subject: Re: [PATCH 1/7] hugetlb, rmap: add reverse mapping for hugepage
+From: Andi Kleen <andi@halobates.de>
+References: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1273737326-21211-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Date: Thu, 13 May 2010 11:18:04 +0200
+In-Reply-To: <1273737326-21211-2-git-send-email-n-horiguchi@ah.jp.nec.com> (Naoya Horiguchi's message of "Thu\, 13 May 2010 16\:55\:20 +0900")
+Message-ID: <87zl04tb1v.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BEB4096.6030400@udo.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 01:58:14AM +0200, Andrej Gelenberg wrote:
->Hi,
->
->On 05/13/2010 12:00 AM, Andrew Morton wrote:
->>
->>Looks sane, I guess.
->>
->>I am afraid of moving all those functions inside
->>cpufreq_governor_mutex.  Not for any specific reason, apart from a long
->>history of nasty deadlocks with cpufreq global locks :(
->>
->>Has this change been well-tested with lockdep enabled?
->
->It prevent at least the kernel panic and warnings from sysfs,
->but cause a deadlock. I can confirm the bug in 2.6.33-ARCH (last
->stable kernel in archlinux):
->
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
 
+Adding a few more recent hugetlb hackers in cc. Folks, please consider
+reviewing the hugetlb.c parts of the original patch kit in linux-mm.
 
-Well, this is not a panic, it is just a WARNING.
-
-
->------------[ cut here ]------------
->WARNING: at fs/sysfs/dir.c:487 sysfs_add_one+0xc5/0x150()
->Hardware name: 287655G
->sysfs: cannot create duplicate filename
->'/devices/system/cpu/cpu0/cpufreq/ondemand'
->Modules linked in: cpufreq_conservative cpufreq_ondemand powernow_k8
->freq_table joydev radeon ttm drm_kms_helper snd_seq_dummy uvcvideo
->drm videodev rfkill i2c_algo_bit snd_seq_oss v4l1_compat usb_storage
->v4l2_compat_ioctl32 snd_seq_midi_event led_class snd_seq
->snd_seq_device nvram snd_hda_codec_conexant snd_hda_intel video
->snd_pcm_oss snd_mixer_oss output snd_hda_codec snd_hwdep snd_pcm
->snd_timer snd ohci_hcd soundcore shpchp ehci_hcd ac wmi battery sg
->thermal processor button snd_page_alloc psmouse i2c_piix4 edac_core
->pci_hotplug r8169 usbcore mii edac_mce_amd serio_raw i2c_core k8temp
->evdev pcspkr rtc_cmos rtc_core rtc_lib ext4 mbcache jbd2 crc16 cryptd
->aes_x86_64 aes_generic xts gf128mul dm_crypt dm_mod sd_mod ahci
->libata scsi_mod
->Pid: 3136, comm: test_cpu.sh Tainted: G        W  2.6.33-ARCH #1
->Call Trace:
-> [<ffffffff810529f6>] warn_slowpath_common+0x76/0xb0
-> [<ffffffff81052a8c>] warn_slowpath_fmt+0x3c/0x40
-> [<ffffffff81187f45>] sysfs_add_one+0xc5/0x150
-> [<ffffffff81188033>] create_dir+0x63/0xc0
-> [<ffffffff811880a6>] sysfs_create_subdir+0x16/0x20
-> [<ffffffff8118950a>] internal_create_group+0x5a/0x190
-> [<ffffffff8118966e>] sysfs_create_group+0xe/0x10
-> [<ffffffffa056fcfc>] cpufreq_governor_dbs+0xac/0x3e0 [cpufreq_ondemand]
-> [<ffffffff810788bd>] ? notifier_call_chain+0x4d/0x70
-> [<ffffffff81293f25>] __cpufreq_governor+0xf5/0x1e0
-> [<ffffffff812954ec>] __cpufreq_set_policy+0x13c/0x180
-> [<ffffffff812958f8>] store_scaling_governor+0xe8/0x220
-> [<ffffffff81296240>] ? handle_update+0x0/0x10
-> [<ffffffff811cb7ba>] ? kobject_get+0x1a/0x30
-> [<ffffffff81295382>] store+0x62/0x90
-> [<ffffffff81186820>] sysfs_write_file+0xe0/0x160
-> [<ffffffff81121576>] vfs_write+0xb6/0x190
-> [<ffffffff8103175d>] ? do_page_fault+0x15d/0x320
-> [<ffffffff811218ac>] sys_write+0x4c/0x80
-> [<ffffffff81009f02>] system_call_fastpath+0x16/0x1b
->---[ end trace 939cd7811bc2accf ]---
->
-
-Hmm, so two processes enter store_scaling_governor() at
-the same time, one will enter mutex_lock(&dbs_mutex);
-while the other one is blocking, when that one leaves
-mutex_unlock(&dbs_mutex), the other one enters.
-
-Yeah, makes sense, but I am still not sure if we could
-reuse this cpufreq_governor_mutex...
+> While hugepage is not currently swappable, rmapping can be useful
+> for memory error handler.
+> Using rmap, memory error handler can collect processes affected
+> by hugepage errors and unmap them to contain error's effect.
 
 Thanks.
+
+I reviewed all the patches and they look good to me. I can merge
+them through the hwpoison git tree.
+
+But before merging it there I would like to have some review
+and acks from mm hackers on the mm/hugetlb.c parts, which
+do (relatively minor) changes outside memory-failure.c
+
+I think you also had a patch for mce-test, can you send me that
+one too?
+
+BTW I wonder: did you verify that the 1GB page support works?
+I would expect it does, but it would be good to double check.
+One would need a Westmere server or AMD Family10h+ system to test that.
+
+> Current status of hugepage rmap differs depending on mapping mode:
+> - for shared hugepage:
+>   we can collect processes using a hugepage through pagecache,
+>   but can not unmap the hugepage because of the lack of mapcount.
+> - for privately mapped hugepage:
+>   we can neither collect processes nor unmap the hugepage.
+
+I hope these points can be eventually addressed too, but this
+is a good first step and closes an important hole in hwpoison
+coverage.
+
+-Andi
+
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
