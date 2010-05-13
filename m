@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501Ab0EMTQo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 15:16:44 -0400
-Received: from sous-sol.org ([216.99.217.87]:60319 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757368Ab0EMTQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 15:16:40 -0400
-Date: Thu, 13 May 2010 12:16:19 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Greg KH <greg@kroah.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       jbarnes@virtuousgeek.org, matthew@wil.cx, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, ddutile@redhat.com,
-       alex.williamson@redhat.com
-Subject: Re: [PATCH 2/2 v2] pci: check caps from sysfs file open to read
- device dependent config space
-Message-ID: <20100513191619.GI28034@sequoia.sous-sol.org>
-References: <20100513012857.GA28034@sequoia.sous-sol.org>
- <20100513012957.GB28034@sequoia.sous-sol.org>
- <20100513105911.6469c434@lxorguk.ukuu.org.uk>
- <20100513174307.GH28034@sequoia.sous-sol.org>
- <20100513190636.GC5979@kroah.com>
+	id S932527Ab0EMTRB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 15:17:01 -0400
+Received: from kroah.org ([198.145.64.141]:43905 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932489Ab0EMTQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 15:16:42 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Valentin Longchamp <valentin.longchamp@epfl.ch>,
+       stable <stable@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 3/3] serial: imx.c: fix CTS trigger level lower to avoid lost chars
+Date: Thu, 13 May 2010 12:16:39 -0700
+Message-Id: <1273778199-17578-3-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100513191601.GA17538@kroah.com>
+References: <20100513191601.GA17538@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513190636.GC5979@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH (greg@kroah.com) wrote:
-> On Thu, May 13, 2010 at 10:43:07AM -0700, Chris Wright wrote:
-> > * Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
-> > > I agree with the problem - but IMHO the fix is to require opening the file
-> > > checks CAP_SYS_something instead: not to hack the read method and make it
-> > > even weirder and more un-Linux than it is now.
-> > 
-> > This patch does that.  Not as convenient from the KVM/libvirt point of view
-> > because it is not prepared to do this setup before dropping privileges
-> > and launching the VM.
-> 
-> So does that mean that this patch doesn't solve your original problem
-> here?
+From: Valentin Longchamp <valentin.longchamp@epfl.ch>
 
-Right, it means we have to change how we create a guest with a directly
-assigned PCI device.
+The imx CTS trigger level is left at its reset value that is 32
+chars. Since the RX FIFO has 32 entries, when CTS is raised, the
+FIFO already is full. However, some serial port devices first empty
+their TX FIFO before stopping when CTS is raised, resulting in lost
+chars.
 
-Currently KVM/libvirt is assuming that sysfs file ownership is sufficient
-to read a sysfs file.  It chowns all relevant sysfs files and updates
-security labels such that only that guest can access the files, then
-drops privileges and launches the guest.
+This patch sets the trigger level lower so that other chars arrive
+after CTS is raised, there is still room for 16 of them.
 
-With the v2 patch we'll have to open the config space sysfs file in the
-privileged context and pass it into the unprivileged one.  It is awkward,
-but it should be doable.
+Signed-off-by: Valentin Longchamp<valentin.longchamp@epfl.ch>
+Tested-by: Philippe Rétornaz<philippe.retornaz@epfl.ch>
+Acked-by: Wolfram Sang<w.sang@pengutronix.de>
+Cc: stable <stable@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/serial/imx.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-thanks,
--chris
+diff --git a/drivers/serial/imx.c b/drivers/serial/imx.c
+index 4315b23..eacb588 100644
+--- a/drivers/serial/imx.c
++++ b/drivers/serial/imx.c
+@@ -120,7 +120,8 @@
+ #define  MX2_UCR3_RXDMUXSEL	 (1<<2)  /* RXD Muxed Input Select, on mx2/mx3 */
+ #define  UCR3_INVT  	 (1<<1)  /* Inverted Infrared transmission */
+ #define  UCR3_BPEN  	 (1<<0)  /* Preset registers enable */
+-#define  UCR4_CTSTL_32   (32<<10) /* CTS trigger level (32 chars) */
++#define  UCR4_CTSTL_SHF  10      /* CTS trigger level shift */
++#define  UCR4_CTSTL_MASK 0x3F    /* CTS trigger is 6 bits wide */
+ #define  UCR4_INVR  	 (1<<9)  /* Inverted infrared reception */
+ #define  UCR4_ENIRI 	 (1<<8)  /* Serial infrared interrupt enable */
+ #define  UCR4_WKEN  	 (1<<7)  /* Wake interrupt enable */
+@@ -591,6 +592,9 @@ static int imx_setup_ufcr(struct imx_port *sport, unsigned int mode)
+ 	return 0;
+ }
+ 
++/* half the RX buffer size */
++#define CTSTL 16
++
+ static int imx_startup(struct uart_port *port)
+ {
+ 	struct imx_port *sport = (struct imx_port *)port;
+@@ -607,6 +611,10 @@ static int imx_startup(struct uart_port *port)
+ 	if (USE_IRDA(sport))
+ 		temp |= UCR4_IRSC;
+ 
++	/* set the trigger level for CTS */
++	temp &= ~(UCR4_CTSTL_MASK<<  UCR4_CTSTL_SHF);
++	temp |= CTSTL<<  UCR4_CTSTL_SHF;
++
+ 	writel(temp & ~UCR4_DREN, sport->port.membase + UCR4);
+ 
+ 	if (USE_IRDA(sport)) {
+-- 
+1.7.1
+
