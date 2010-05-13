@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758955Ab0EMSKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 14:10:15 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:50597 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780Ab0EMSKM (ORCPT
+	id S1758983Ab0EMSMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 14:12:18 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:17456 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221Ab0EMSMR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 14:10:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cJvl9YjPCAnPj2YgCZS7tq8o7u4gts3PK9YJGg2PXAv1hUg+UGo2cfVXZFK7XZibgA
-         IOEkzf5gpswffzvqliS8g9J3Ca+dwaZaTOdI8NhVSWNTv/z//NwsFS/Rbg1rpVepiV+b
-         4hG1VtgUa2rV88ZkFD7PsRpJkvmF9HbHHx6RI=
-Date: Thu, 13 May 2010 11:10:02 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-Message-ID: <20100513181002.GB23708@core.coreip.homeip.net>
-References: <20100513075728.GF30110@core.coreip.homeip.net>
- <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
- <20100513160117.GB22238@core.coreip.homeip.net>
- <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
- <20100513171639.GA23708@core.coreip.homeip.net>
- <alpine.LFD.2.00.1005131017070.3711@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005131017070.3711@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 13 May 2010 14:12:17 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Thu, 13 May 2010 20:12:44 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH -next] usb: fix functionfs for CONFIG_NET disabled
+In-reply-to: <20100513094112.86acf7c2.randy.dunlap@oracle.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Message-id: <op.vcnovimh7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.10 (Linux)
+References: <20100513171540.54b308d0.sfr@canb.auug.org.au>
+ <20100513094112.86acf7c2.randy.dunlap@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 10:30:23AM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Thu, 13 May 2010, Dmitry Torokhov wrote:
-> > 
-> > I think on the newer hardware PNP (or rather ACPI mapped onto PNP) usually 
-> > matches the reality.
-> 
-> Dmitry, you're just making things up.
-> 
-> I have in front of me a Core i5-670. You can't get much newer than that. 
-> And yes, it has a PS/2 connector at the back. And lookie here:
-> 
-> 	[    1.756777] PNP: No PS/2 controller found. Probing ports directly.
-> 	[    1.760645] serio: i8042 KBD port at 0x60,0x64 irq 1
-> 	[    1.762087] serio: i8042 AUX port at 0x60,0x64 irq 12
-> 	[    1.763591] mice: PS/2 mouse device common for all mice
+On Thu, 13 May 2010 18:41:12 +0200, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> Fix functionfs build to handle CONFIG_NET not enabled, to prevent
+> these build errors:
 >
+> ERROR: "netif_carrier_on" [drivers/usb/gadget/g_ffs.ko] undefined!
+[...]
 
-You don't have anything plugged into the ports though, do you? I wonder
-what your DSDT looks like.
- 
-> so let it go. You're wrong. PS/2 is a legacy device, and exactly like the 
-> legacy IO memory region in 0xa000-0xffff (or the motherboard IO port 
-> region 0x00-0xff) it may not be mentioned by the BIOS tables. But it's 
-> still there.
-> 
-> This is also why I think it _would_ be acceptable to say that if you boot 
-> from EFI, you have to find the PnP devices. The whole (and only, as far as 
-> I know) point of EFI was that "legacy-free" thing.
+> @@ -726,7 +726,7 @@ config USB_FUNCTIONFS
+> config USB_FUNCTIONFS_ETH
+>  	bool "Include CDC ECM (Ethernet) function"
+> -	depends on USB_FUNCTIONFS
+> +	depends on USB_FUNCTIONFS && NET
+>  	help
+>  	  Include an CDC ECM (Ethernet) funcion in the CDC ECM (Funcion)
+>  	  Filesystem.  If you also say "y" to the RNDIS query below the
+> @@ -734,7 +734,7 @@ config USB_FUNCTIONFS_ETH
+> config USB_FUNCTIONFS_RNDIS
+>  	bool "Include RNDIS (Ethernet) function"
+> -	depends on USB_FUNCTIONFS
+> +	depends on USB_FUNCTIONFS && NET
+>  	help
+>  	  Include an RNDIS (Ethernet) funcion in the Funcion Filesystem.
+>  	  If you also say "y" to the CDC ECM query above the gadget will
 
-Is there an interface a driver can use to query the style of boot used?
+Looks reasonable.  Thanks!
 
 -- 
-Dmitry
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
