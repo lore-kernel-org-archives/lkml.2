@@ -1,176 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758823Ab0EML7Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 07:59:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61876 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab0EML7N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 07:59:13 -0400
-Message-ID: <4BEBE961.2040501@monstr.eu>
-Date: Thu, 13 May 2010 13:58:25 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1758831Ab0EMMEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 08:04:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:27991 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754911Ab0EMMEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 08:04:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,222,1272870000"; 
+   d="scan'208";a="798091300"
+Date: Thu, 13 May 2010 20:00:16 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: akpm@linux-foundation.org, linux-mm@kvack.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Andi Kleen <ak@linux.intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>,
+       linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+       shaohui.zheng@linux.intel.com
+Subject: [RFC, 6/7] NUMA hotplug emulator 
+Message-ID: <20100513120016.GG2169@shaohui>
+Mail-Followup-To: akpm@linux-foundation.org, linux-mm@kvack.org,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+	Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Wu Fengguang <fengguang.wu@intel.com>,
+	Heiko Carstens <heiko.carstens@de.ibm.com>,
+	linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+	shaohui.zheng@linux.intel.com
 MIME-Version: 1.0
-To: "Steven J. Magnani" <steve@digidescorp.com>
-CC: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] microblaze: fix get_user/put_user side-effects
-References: <1273181913-888-1-git-send-email-steve@digidescorp.com>
-In-Reply-To: <1273181913-888-1-git-send-email-steve@digidescorp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="z+pzSjdB7cqptWpS"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven J. Magnani wrote:
-> The Microblaze implementations of get_user() and (MMU) put_user() evaluate 
-> the address argument more than once. This causes unexpected side-effects for
-> invocations that include increment operators, i.e. get_user(foo, bar++).
-> 
-> This patch also removes the distinction between MMU and noMMU put_user().
-> 
-> Without the patch:
->   $ echo 1234567890 > /proc/sys/kernel/core_pattern
->   $ cat /proc/sys/kernel/core_pattern
->   12345
 
-Applied,
+--z+pzSjdB7cqptWpS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I believe that in future we could use inline function which should solve 
-this problem too.
+hotplug emulator:extend memory probe interface to support NUMA
 
-Thanks,
-Michal
+Extend memory probe interface to support an extra paramter nid,
+the reserved memory can be added into this node if node exists.
 
+Add a memory section(128M) to node 3(boots with mem=1024m)
 
-> 
-> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
-> ---
-> diff -uprN a/arch/microblaze/include/asm/uaccess.h b/arch/microblaze/include/asm/uaccess.h
-> --- a/arch/microblaze/include/asm/uaccess.h	2010-04-27 10:14:33.000000000 -0500
-> +++ b/arch/microblaze/include/asm/uaccess.h	2010-05-06 16:21:02.000000000 -0500
-> @@ -182,6 +182,39 @@ extern long __user_bad(void);
->   * Returns zero on success, or -EFAULT on error.
->   * On error, the variable @x is set to zero.
->   */
-> +#define get_user(x, ptr)						\
-> +	__get_user_check((x), (ptr), sizeof(*(ptr)))
-> +
-> +#define __get_user_check(x, ptr, size)					\
-> +({									\
-> +	unsigned long __gu_val = 0;					\
-> +	const typeof(*(ptr)) __user *__gu_addr = (ptr);			\
-> +	int __gu_err = 0;						\
-> +									\
-> +	if (access_ok(VERIFY_READ, __gu_addr, size)) {			\
-> +		switch (size) {						\
-> +		case 1:							\
-> +			__get_user_asm("lbu", __gu_addr, __gu_val,	\
-> +				       __gu_err);			\
-> +			break;						\
-> +		case 2:							\
-> +			__get_user_asm("lhu", __gu_addr, __gu_val,	\
-> +				       __gu_err);			\
-> +			break;						\
-> +		case 4:							\
-> +			__get_user_asm("lw", __gu_addr, __gu_val,	\
-> +				       __gu_err);			\
-> +			break;						\
-> +		default:						\
-> +			__gu_err = __user_bad();			\
-> +			break;						\
-> +		}							\
-> +	} else {							\
-> +		__gu_err = -EFAULT;					\
-> +	}								\
-> +	x = (typeof(*(ptr)))__gu_val;					\
-> +	__gu_err;							\
-> +})
->  
->  #define __get_user(x, ptr)						\
->  ({									\
-> @@ -206,12 +239,6 @@ extern long __user_bad(void);
->  })
->  
->  
-> -#define get_user(x, ptr)						\
-> -({									\
-> -	access_ok(VERIFY_READ, (ptr), sizeof(*(ptr)))			\
-> -		? __get_user((x), (ptr)) : -EFAULT;			\
-> -})
-> -
->  #define __put_user_asm(insn, __gu_ptr, __gu_val, __gu_err)	\
->  ({								\
->  	__asm__ __volatile__ (					\
-> @@ -266,6 +293,42 @@ extern long __user_bad(void);
->   *
->   * Returns zero on success, or -EFAULT on error.
->   */
-> +#define put_user(x, ptr)						\
-> +	__put_user_check((x), (ptr), sizeof(*(ptr)))
-> +
-> +#define __put_user_check(x, ptr, size)					\
-> +({									\
-> +	typeof(*(ptr)) __pu_val;					\
-> +	typeof(*(ptr)) __user *__pu_addr = (ptr);			\
-> +	int __pu_err = 0;						\
-> +									\
-> +	__pu_val = (x);							\
-> +	if (access_ok(VERIFY_WRITE, __pu_addr, size)) {			\
-> +		switch (size) {						\
-> +		case 1:							\
-> +			__put_user_asm("sb", __pu_addr, __pu_val,	\
-> +				       __pu_err);			\
-> +			break;						\
-> +		case 2:							\
-> +			__put_user_asm("sh", __pu_addr, __pu_val,	\
-> +				       __pu_err);			\
-> +			break;						\
-> +		case 4:							\
-> +			__put_user_asm("sw", __pu_addr, __pu_val,	\
-> +				       __pu_err);			\
-> +			break;						\
-> +		case 8:							\
-> +			__put_user_asm_8(__pu_addr, __pu_val, __pu_err);\
-> +			break;						\
-> +		default:						\
-> +			__pu_err = __user_bad();			\
-> +			break;						\
-> +		}							\
-> +	} else {							\
-> +		__pu_err = -EFAULT;					\
-> +	}								\
-> +	__pu_err;							\
-> +})
->  
->  #define __put_user(x, ptr)						\
->  ({									\
-> @@ -290,18 +353,6 @@ extern long __user_bad(void);
->  	__gu_err;							\
->  })
->  
-> -#ifndef CONFIG_MMU
-> -
-> -#define put_user(x, ptr)	__put_user((x), (ptr))
-> -
-> -#else /* CONFIG_MMU */
-> -
-> -#define put_user(x, ptr)						\
-> -({									\
-> -	access_ok(VERIFY_WRITE, (ptr), sizeof(*(ptr)))			\
-> -		? __put_user((x), (ptr)) : -EFAULT;			\
-> -})
-> -#endif /* CONFIG_MMU */
->  
->  /* copy_to_from_user */
->  #define __copy_from_user(to, from, n)	\
-> 
+	echo 0x40000000,3 > memory/probe
 
+And more we make it friendly, it is possible to add memory to do
 
+	echo 3g > memory/probe
+	echo 1024m,3 > memory/probe
+
+It maintains backwards compatibility.
+
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+Signed-off-by: Haicheng Li <haicheng.li@intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 54ccb0d..787024f 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1239,6 +1239,17 @@ config ARCH_CPU_PROBE_RELEASE
+ 	  is for cpu hot-add/hot-remove to specified node in software method.
+ 	  This is for debuging and testing purpose
+ 
++config ARCH_MEMORY_PROBE
++	def_bool y
++	bool "Memory hotplug emulation"
++	depends on NUMA_HOTPLUG_EMU
++	---help---
++	  Enable memory hotplug emulation. Reserve memory with grub parameter
++	  "mem=N"(such as mem=1024M), where N is the initial memory size, the
++	  rest physical memory will be removed from e820 table; the memory probe
++	  interface is for memory hot-add to specified node in software method.
++	  This is for debuging and testing purpose
++
+ config NODES_SHIFT
+ 	int "Maximum NUMA Nodes (as a power of 2)" if !MAXSMP
+ 	range 1 10
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 933442f..1c2d83d 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -329,6 +329,8 @@ static int block_size_init(void)
+  * will not need to do it from userspace.  The fake hot-add code
+  * as well as ppc64 will do all of their discovery in userspace
+  * and will require this interface.
++ *
++ * Parameter format: start_addr, nid
+  */
+ #ifdef CONFIG_ARCH_MEMORY_PROBE
+ static ssize_t
+@@ -339,10 +341,26 @@ memory_probe_store(struct class *class, struct class_attribute *attr,
+ 	int nid;
+ 	int ret;
+ 
+-	phys_addr = simple_strtoull(buf, NULL, 0);
++	char *p = strchr(buf, ',');
++
++	if (p != NULL && strlen(p+1) > 0) {
++		/* nid specified */
++		*p++ = '\0';
++		nid = simple_strtoul(p, NULL, 0);
++		phys_addr = memparse(buf, NULL);
++	} else {
++		phys_addr = memparse(buf, NULL);
++		nid = memory_add_physaddr_to_nid(phys_addr);
++	}
+ 
+-	nid = memory_add_physaddr_to_nid(phys_addr);
+-	ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
++	if (nid < 0 || nid > nr_node_ids - 1) {
++		printk(KERN_ERR "Invalid node id %d(0<=nid<%d).\n", nid, nr_node_ids);
++	} else {
++		printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
++		ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
++		if (ret)
++			count = ret;
++	}
+ 
+ 	if (ret)
+ 		count = ret;
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Thanks & Regards,
+Shaohui
+
+
+--z+pzSjdB7cqptWpS
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="006-hotplug-emulator-extend-memory-probe-interface-to-support-numa.patch"
+
+hotplug emulator:extend memory probe interface to support NUMA
+
+Extend memory probe interface to support an extra paramter nid,
+the reserved memory can be added into this node if node exists.
+
+Add a memory section(128M) to node 3(boots with mem=1024m)
+
+	echo 0x40000000,3 > memory/probe
+
+And more we make it friendly, it is possible to add memory to do
+
+	echo 3g > memory/probe
+	echo 1024m,3 > memory/probe
+
+It maintains backwards compatibility.
+
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+Signed-off-by: Haicheng Li <haicheng.li@intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 54ccb0d..787024f 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1239,6 +1239,17 @@ config ARCH_CPU_PROBE_RELEASE
+ 	  is for cpu hot-add/hot-remove to specified node in software method.
+ 	  This is for debuging and testing purpose
+ 
++config ARCH_MEMORY_PROBE
++	def_bool y
++	bool "Memory hotplug emulation"
++	depends on NUMA_HOTPLUG_EMU
++	---help---
++	  Enable memory hotplug emulation. Reserve memory with grub parameter
++	  "mem=N"(such as mem=1024M), where N is the initial memory size, the
++	  rest physical memory will be removed from e820 table; the memory probe
++	  interface is for memory hot-add to specified node in software method.
++	  This is for debuging and testing purpose
++
+ config NODES_SHIFT
+ 	int "Maximum NUMA Nodes (as a power of 2)" if !MAXSMP
+ 	range 1 10
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 933442f..1c2d83d 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -329,6 +329,8 @@ static int block_size_init(void)
+  * will not need to do it from userspace.  The fake hot-add code
+  * as well as ppc64 will do all of their discovery in userspace
+  * and will require this interface.
++ *
++ * Parameter format: start_addr, nid
+  */
+ #ifdef CONFIG_ARCH_MEMORY_PROBE
+ static ssize_t
+@@ -339,10 +341,26 @@ memory_probe_store(struct class *class, struct class_attribute *attr,
+ 	int nid;
+ 	int ret;
+ 
+-	phys_addr = simple_strtoull(buf, NULL, 0);
++	char *p = strchr(buf, ',');
++
++	if (p != NULL && strlen(p+1) > 0) {
++		/* nid specified */
++		*p++ = '\0';
++		nid = simple_strtoul(p, NULL, 0);
++		phys_addr = memparse(buf, NULL);
++	} else {
++		phys_addr = memparse(buf, NULL);
++		nid = memory_add_physaddr_to_nid(phys_addr);
++	}
+ 
+-	nid = memory_add_physaddr_to_nid(phys_addr);
+-	ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
++	if (nid < 0 || nid > nr_node_ids - 1) {
++		printk(KERN_ERR "Invalid node id %d(0<=nid<%d).\n", nid, nr_node_ids);
++	} else {
++		printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
++		ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
++		if (ret)
++			count = ret;
++	}
+ 
+ 	if (ret)
+ 		count = ret;
+
+--z+pzSjdB7cqptWpS--
