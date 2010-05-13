@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932685Ab0EMVyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:54:44 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51862 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932269Ab0EMVyl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:54:41 -0400
-Date: Thu, 13 May 2010 17:54:39 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Matt Reimer <mattjreimer@gmail.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while 
- userspace is frozen?
-In-Reply-To: <AANLkTimW3wLEt-DIRirHic1ZN1Z0k1t3TavwaCxTh_QL@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1005131752160.1731-100000@iolanthe.rowland.org>
+	id S932797Ab0EMVzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:55:08 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54652 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932357Ab0EMVzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:55:02 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+Date: Thu, 13 May 2010 23:56:21 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Matthew Garrett <mjg@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+       Paul Walmsley <paul@pwsan.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>, magnus.damm@gmail.com,
+       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>,
+       =?iso-8859-1?q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+References: <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com> <201005132321.59245.rjw@sisk.pl> <20100513212556.GI3428@atomide.com>
+In-Reply-To: <20100513212556.GI3428@atomide.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005132356.21355.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 May 2010, Matt Reimer wrote:
-
-> So how does the attached patch look?
+On Thursday 13 May 2010, Tony Lindgren wrote:
+> * Rafael J. Wysocki <rjw@sisk.pl> [100513 14:16]:
+> > On Thursday 13 May 2010, Matthew Garrett wrote:
+> > > On Thu, May 13, 2010 at 01:23:20PM -0700, Tony Lindgren wrote:
+> > > > * Matthew Garrett <mjg@redhat.com> [100513 13:03]:
+> > > > > On Thu, May 13, 2010 at 01:00:04PM -0700, Tony Lindgren wrote:
+> > > > > 
+> > > > > > The system stays running because there's something to do. The system
+> > > > > > won't suspend until all the processors hit the kernel idle loop and
+> > > > > > the next_timer_interrupt_critical() returns nothing.
+> > > > > 
+> > > > > At which point an application in a busy loop cripples you.
+> > > > 
+> > > > Maybe you could deal with the misbehaving untrusted apps in the userspace
+> > > > by sending kill -STOP to them when the screen blanks? Then continue
+> > > > when some event wakes up the system again.
+> > > 
+> > > And if that's the application that's listening to the network socket 
+> > > that you want to get a wakeup event from? This problem is hard. I'd love 
+> > > there to be an elegant solution based on using the scheduler, but I 
+> > > really don't know what it is.
+> > 
+> > I agree and I don't understand the problem that people have with the
+> > opportunistic suspend feature.
 > 
-> Matt
+> It seems to be picking quite a few comments for one.
+>  
+> > It solves a practical issue that _at_ _the_ _moment_ cannot be solved
+> > differently, while there's a growing number of out-of-tree drivers depending
+> > on this framework.  We need those drivers in and because we don't have any
+> > viable alternative at hand, we have no good reason to reject it.
 > 
-> 
-> From 20d8340471eb05aa54af1349f4ddccecd9c230c6 Mon Sep 17 00:00:00 2001
-> From: Matt Reimer <mreimer@sdgsystems.com>
-> Date: Thu, 13 May 2010 14:36:54 -0700
-> Subject: [PATCH] fs: prevent hang on suspend/resume when MMC/SD card present
-> 
-> Devices can come and go from the MMC/SD bus during suspend or resume,
-> when the writeback thread is frozen, resulting in a hang. So thaw the
-> writeback thread in del_gendisk() to prevent the hang.
+> Nothing is preventing merging the drivers can be merged without
+> these calls.
 
-I don't see anything wrong with the patch itself, but I dislike the 
-description.  Devices can come and go from any hotpluggable bus, not 
-just MMC/SD.  That just happens to be the first place the problem was 
-observed.
+And yet, there _is_ a growing nuber of drivers that don't get merge because
+of that.  That's _reality_.  Are you going to discuss with facts, or what?
 
-Alan Stern
-
+Rafael
